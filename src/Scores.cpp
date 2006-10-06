@@ -1,5 +1,10 @@
 #include<algorithm>
+#include "DataSet.h"
+#include "Normalizer.h"
 #include "Scores.h"
+
+bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
+    {return (one.score>other.score);}
 
 Scores::Scores()
 {
@@ -7,12 +12,14 @@ Scores::Scores()
 
 Scores::~Scores()
 {
-	vector<ScoreHolder>::iterator it;
+/*	vector<ScoreHolder>::iterator it;
 	it=scores.begin();
 	while(it!=scores.end()) {
 		delete &(*it);
+		*it=NULL;
 		it++;
     } 
+*/
 }
 
 double Scores::calcScore(const double *feat) {
@@ -42,15 +49,15 @@ void Scores::calcScores(double *w,IsoChargeSet & set) {
   reverse(scores.begin(),scores.end());
 }
 
-void Scores::getPositiveTrainingIxs(double fdr,vector<int>& ixs) {
-  double tp=0,tn=0;
+void Scores::getPositiveTrainingIxs(const double fdr,vector<int>& ixs) {
+  double tp=0,fp=0;
   vector<ScoreHolder>::iterator it;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
       tp++;
     if (it->label==-1)
-      tn++;
-    if (fdr<(tp/(tp+tn)))
+      fp++;
+    if (fdr<(fp/(tp+fp)))
       break;
     if (it->label!=-1)
       ixs.push_back(it->index);

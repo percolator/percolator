@@ -22,5 +22,6 @@
 <tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.580150508" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release"/>
 </toolChain>
 </configuration>
+<macros/>
 </project>
 </ManagedProjectBuildInfo>

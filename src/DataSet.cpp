@@ -1,11 +1,10 @@
-#include <stdio.h>
 #include <iostream>
+#include <stdio.h>
 #include <set>
 #include <map>
 #include <utility>
 #include "DataSet.h"
 //using namespace std;
-
 
 
 DataSet::DataSet()
@@ -16,9 +15,10 @@ DataSet::DataSet()
 DataSet::~DataSet()
 {
 	if (feature) {
-		for(int i=0;i<n_feature;i++)
-	   		delete feature[i];
+//		for(int i=0;i<n_feature;i++)
+//	   		delete feature[i];
 		delete feature;
+		feature=NULL;
 	}
 }
 
@@ -36,10 +36,18 @@ int DataSet::line2fields(char * str, vector<string> *fields) {
 void DataSet::print_features() {
    for(int i=0;i<n_feature;i++) {
 	   for(int j=0;j<NUM_FEATURE;j++) {
-	      cout << j+1 << ":" << feature[i][j] << " ";
+	      cout << j+1 << ":" << feature[ROW(i)+j] << " ";
 	   }
 	   cout << endl;
    }
+}
+
+int DataSet::getIsoChargeSize(int c){
+  int n=0;
+  for (int ix=0;ix<(signed int)charge.size();ix++) {
+    if (charge[ix]==c) n++;
+  }
+  return n;
 }
 
 double * DataSet::getNext(const int c, int& pos) {
@@ -47,10 +55,10 @@ double * DataSet::getNext(const int c, int& pos) {
   if (pos<0)
     pos=0;
   while((pos<n_feature) && (charge[pos]!=c))
-    (pos)++;
+    pos++;
   if(pos>=n_feature)
     return NULL;
-  return feature[pos];
+  return &feature[ROW(pos)];
 }
 
 void DataSet::read_sqt(char* fname) {
@@ -75,13 +83,13 @@ void DataSet::read_sqt(char* fname) {
   rewind(fp1);
 
   map<string, vector<int> > protids2ix;
-  feature = new double*[n];
+  feature = new double[n*NUM_FEATURE];
   ids.resize(n,"");
   charge.resize(n,0);
   vector<string> ix2seq(n,"");
-  for(int i=0;i<n;i++) {
-    feature[i]=new double[NUM_FEATURE];
-  }
+//  for(int i=0;i<n;i++) {
+//    feature[i]=new double[NUM_FEATURE];
+//  }
   n_feature=n;
   int ix=-1,gotL = 1;
   double mass;
@@ -98,12 +106,12 @@ void DataSet::read_sqt(char* fname) {
     }
     if (str[0]=='M' && !gotL) {
       line2fields(str,&fields);
-      feature[ix][0]=atof(fields[2].data());
-      feature[ix][1]=mass - atof(fields[3].data());
-      feature[ix][2]=atof(fields[4].data());
-      feature[ix][3]=atof(fields[5].data());
-      feature[ix][4]=atof(fields[6].data());
-      feature[ix][5]=atof(fields[7].data())/atof(fields[8].data());
+      feature[ROW(ix)+0]=atof(fields[2].data());
+      feature[ROW(ix)+1]=mass - atof(fields[3].data());
+      feature[ROW(ix)+2]=atof(fields[4].data());
+      feature[ROW(ix)+3]=atof(fields[5].data());
+      feature[ROW(ix)+4]=atof(fields[6].data());
+      feature[ROW(ix)+5]=atof(fields[7].data())/atof(fields[8].data());
       ix2seq[ix].assign(fields[9]);
     }
     if (str[0]=='L' && !gotL) {
@@ -123,8 +131,8 @@ void DataSet::read_sqt(char* fname) {
        seqfreq[ix2seq[ixvec->second[i]]]=(seqfreq.count(ix2seq[ixvec->second[i]])>0?seqfreq[ix2seq[ixvec->second[i]]]+1:1);
      }
      for (unsigned int i=0;i<ixvec->second.size();i++) {
-       feature[ixvec->second[i]][6]=f1;
-       feature[ixvec->second[i]][7]=seqfreq[ix2seq[ixvec->second[i]]];
+       feature[ROW(ixvec->second[i])+6]=f1;
+       feature[ROW(ixvec->second[i])+7]=seqfreq[ix2seq[ixvec->second[i]]];
      }
      
   }            

@@ -16,8 +16,6 @@ public:
     {score=other.score;index=other.index;label=other.label;set=other.set;}
 };
 
-bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
-    {return (one.score>other.score);}
 
 class Scores
 {
@@ -26,7 +24,7 @@ public:
 	~Scores();
 	double calcScore(const double *features);
 	void calcScores(double *w, IsoChargeSet &set);
-	void getPositiveTrainingIxs(double fdr,vector<int>& ixs);	
+	void getPositiveTrainingIxs(const double fdr,vector<int>& ixs);	
 protected:
     double *w_vec;
     vector<ScoreHolder> scores;
