@@ -26,4 +26,5 @@ void IsoChargeSet::setSet(vector<DataSet> *set){
 	int i=-1,j=0;
 	while(getNext(i,j))
 	  n_points++;
+	norm.setSet(this);
 }

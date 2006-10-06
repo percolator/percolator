@@ -132,19 +132,4 @@ void DataSet::read_sqt(char* fname) {
   delete str;
 }
 
-int main() {
-  char *forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
-  char *randomFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
-  char *random2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
-
-  cout << endl << " ReadData\n";
-
-  DataSet * d = new DataSet(); 
-  d->read_sqt(forwardFN);
-  d->print_features();
-  d->read_sqt(randomFN);
-  d->read_sqt(random2FN);
-  delete d;
-  
-}
 

@@ -42,7 +42,7 @@ void Scores::calcScores(double *w,IsoChargeSet & set) {
   reverse(scores.begin(),scores.end());
 }
 
-void Scores::getPositiveTraingIxs(double fdr,vector<int>& ixs) {
+void Scores::getPositiveTrainingIxs(double fdr,vector<int>& ixs) {
   double tp=0,tn=0;
   vector<ScoreHolder>::iterator it;
   for(it=scores.begin();it!=scores.end();it++) {

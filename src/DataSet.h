@@ -23,6 +23,7 @@ public:
 	double ** getFeature() {return feature;}
 	int inline getSize() {return n_feature;}
 	int inline getLabel() {return label;}
+	inline setLabel(int l) {label=l;}
     vector<int> * getCharges() {return &charge;}
     double * getNext(const int charge,int& pos);
     void read_sqt(char* fname);
