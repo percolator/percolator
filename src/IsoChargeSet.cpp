@@ -26,6 +26,7 @@ int const IsoChargeSet::getLabel(int *setPos) {
 }
 
 void IsoChargeSet::setSet(vector<DataSet> *set){
+	n_points=0;
 	pSet=set;
 	int i=0,j=-1;
 	while(getNext(i,j))

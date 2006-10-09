@@ -10,6 +10,7 @@
 DataSet::DataSet()
 {
    delim.assign(" \t\n");
+   feature = NULL;
 }
 
 DataSet::~DataSet()
@@ -17,7 +18,7 @@ DataSet::~DataSet()
 	if (feature) {
 //		for(int i=0;i<n_feature;i++)
 //	   		delete feature[i];
-		delete feature;
+		delete [] feature;
 		feature=NULL;
 	}
 }
@@ -91,7 +92,7 @@ void DataSet::read_sqt(char* fname) {
 //    feature[i]=new double[NUM_FEATURE];
 //  }
   n_feature=n;
-  int ix=-1,gotL = 1;
+  int ix=-1,gotL = 1,gotDeltCn=1;
   double mass;
   string seq;
   while (getline(&str, &len1, fp1) != -1) {
@@ -104,15 +105,22 @@ void DataSet::read_sqt(char* fname) {
       gotL = 0;
       charge[ix]=atoi(fields[3].data());
     }
+    if (str[0]=='M' && !gotDeltCn) {
+      line2fields(str,&fields);
+      feature[ROW(ix)+2]=atof(fields[4].data());
+      gotDeltCn = 1;
+    }
     if (str[0]=='M' && !gotL) {
       line2fields(str,&fields);
       feature[ROW(ix)+0]=atof(fields[2].data());
       feature[ROW(ix)+1]=mass - atof(fields[3].data());
-      feature[ROW(ix)+2]=atof(fields[4].data());
+//      feature[ROW(ix)+2]=atof(fields[4].data());
+      feature[ROW(ix)+2]=0.0;
       feature[ROW(ix)+3]=atof(fields[5].data());
       feature[ROW(ix)+4]=atof(fields[6].data());
       feature[ROW(ix)+5]=atof(fields[7].data())/atof(fields[8].data());
       ix2seq[ix].assign(fields[9]);
+      gotDeltCn = 0;
     }
     if (str[0]=='L' && !gotL) {
       gotL=1;

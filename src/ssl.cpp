@@ -27,23 +27,23 @@ void ssl_train(struct data *Data,
   switch(Options->algo)
     {
     case -1:
-      cout << "Regularized Least Squares Regression (CGLS)\n" << endl;
+//      cout << "Regularized Least Squares Regression (CGLS)\n" << endl;
       optimality=CGLS(Data,Options,Subset,Weights,Outputs);
       break;
     case RLS:
-      cout << "Regularized Least Squares Classification (CGLS)\n" << endl;
+//      cout << "Regularized Least Squares Classification (CGLS)\n" << endl;
       optimality=CGLS(Data,Options,Subset,Weights,Outputs);
       break;
     case SVM:
-      cout << "Modified Finite Newton L2-SVM (L2-SVM-MFN)\n" << endl;
+//      cout << "Modified Finite Newton L2-SVM (L2-SVM-MFN)\n" << endl;
       optimality=L2_SVM_MFN(Data,Options,Weights,Outputs,0);
       break;
     case TSVM:
-      cout << "Transductive L2-SVM (TSVM)\n" << endl;
+//      cout << "Transductive L2-SVM (TSVM)\n" << endl;
       optimality=TSVM_MFN(Data,Options,Weights,Outputs);
       break;
     case DA_SVM:
-      cout << "Deterministic Annealing Semi-supervised L2-SVM (DAS3VM)\n" << endl;
+//      cout << "Deterministic Annealing Semi-supervised L2-SVM (DAS3VM)\n" << endl;
       optimality=DA_S3VM(Data,Options,Weights,Outputs);
       break;
     default:
@@ -172,7 +172,7 @@ int CGLS(const struct data *Data,
   if(VERBOSE_CGLS)
     cout << "...Done." << endl;
   tictoc.stop();
-  cout << "CGLS converged in " << cgiter << " iteration(s) and " << tictoc.time() << " seconds." << endl;
+//  cout << "CGLS converged in " << cgiter << " iteration(s) and " << tictoc.time() << " seconds." << endl;
   delete[] z;
   delete[] q;
   delete[] r;
@@ -249,12 +249,12 @@ int L2_SVM_MFN(const struct data *Data,
   while(iter<MFNITERMAX)
     {
       iter++;
-      cout << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
+//      cout << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
       for(int i=n; i-- ;) 
 	w_bar[i]=w[i];
       for(int i=m; i-- ;)  
 	o_bar[i]=o[i];
-      cout << " " ;
+//      cout << " " ;
       opt=CGLS(Data,Options,ActiveSubset,Weights_bar,Outputs_bar);
       for(register int i=active; i < m; i++) 
 	{
@@ -281,7 +281,7 @@ int L2_SVM_MFN(const struct data *Data,
 	    {
 	      epsilon=EPSILON;
 	      Options->epsilon=EPSILON;
-	      cout << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
+//	      cout << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
 	      continue;
 	    }
 	  else
@@ -297,13 +297,13 @@ int L2_SVM_MFN(const struct data *Data,
 	       delete[] Weights_bar;
 	       delete[] Outputs_bar;
 	       tictoc.stop();
-	       cout << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
+//	       cout << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
 	       return 1;      
 	    }
 	}
-      cout << " " ;
+//      cout << " " ;
       delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m); 
-      cout << "LINE_SEARCH delta = " << delta << endl;     
+//      cout << "LINE_SEARCH delta = " << delta << endl;     
       F_old=F;
       F=0.0;
       for(int i=n; i-- ;){ 
@@ -332,7 +332,7 @@ int L2_SVM_MFN(const struct data *Data,
       ActiveSubset->d=active;      
       if(fabs(F-F_old)<RELATIVE_STOP_EPS*fabs(F_old))
 	{
-	  cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
+//	  cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
 	  return 2;
 	}
     }
@@ -343,7 +343,7 @@ int L2_SVM_MFN(const struct data *Data,
   delete[] Weights_bar;
   delete[] Outputs_bar;
   tictoc.stop();
-  cout << "L2_SVM_MFN converged (max iter exceeded) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
+//  cout << "L2_SVM_MFN converged (max iter exceeded) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
   return 0;
 }
 
@@ -435,7 +435,7 @@ int TSVM_MFN(const struct data *Data,
   struct data *Data_Labeled = new data[1];
   struct vector_double *Outputs_Labeled = new vector_double[1];
   initialize(Outputs_Labeled,Data->l,0.0);
-  cout << "Initializing weights, unknown labels" << endl; 
+//  cout << "Initializing weights, unknown labels" << endl; 
   GetLabeledData(Data_Labeled,Data); /* gets labeled data and sets C=1/l */
   L2_SVM_MFN(Data_Labeled, Options, Weights,Outputs_Labeled,0);
   Clear(Data_Labeled);

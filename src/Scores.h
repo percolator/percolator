@@ -24,7 +24,7 @@ public:
 	~Scores();
 	double calcScore(const double *features);
 	void calcScores(double *w, IsoChargeSet &set);
-	void getPositiveTrainingIxs(const double fdr,vector<int>& ixs);	
+	double getPositiveTrainingIxs(const double fdr,vector<int>& ixs);	
 protected:
     double *w_vec;
     vector<ScoreHolder> scores;

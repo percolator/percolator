@@ -18,14 +18,14 @@ void Caller::step(double *w) {
   	scores.calcScores(w,*pSet);
   	vector<int> ixs;
   	vector<int>::iterator it;
-  	scores.getPositiveTrainingIxs(0.01,ixs);
+  	w[NUM_FEATURE]=scores.getPositiveTrainingIxs(0.01,ixs);
   	int rows = ixs.size();
   	int negatives = pSet->getSubSet(1)->getIsoChargeSize(pSet->getCharge());
   	rows += negatives;
   	int nz = (NUM_FEATURE+1)*rows;
   	double* VAL = new double[nz];
     int* C = new int[nz];
-    int* R = new int[rows];
+    int* R = new int[rows+1];
   	int r=0;
   	int pos=0;
   	Normalizer *norm =pSet->getNormalizer();
@@ -52,6 +52,14 @@ void Caller::step(double *w) {
   	  } 
   	  VAL[pos-1]=1.0;        	  
   	}
+  	R[r]=nz;
+/*  	int ixy;
+  	for (ixy=0;ixy<20;ixy++){
+  	  cout << ixy << " " << VAL[ixy] << " " << C[ixy] << " " << R[ixy] << "\n";
+  	}
+  	for (ixy=nz-3;ixy<nz;ixy++){
+  	  cout << ixy << " " << VAL[ixy] << " " << C[ixy] << " " << R[ixy-nz+rows] << "\n";
+  	} */
   	cout << "Calling with " << positives << " positives and " << negatives << " negatives\n";
   	struct data *Data = new data[1];
   	Data->n=NUM_FEATURE+1;
@@ -91,6 +99,9 @@ void Caller::step(double *w) {
     struct vector_double *Outputs = new vector_double[1];
   	ssl_train(Data, Options,Weights,Outputs);
   	norm->unnormalizeweight(Weights->vec,w);
+  	Clear(Data);
+  	Clear(Weights);
+  	Clear(Outputs);
 }
 
 int main(int argc, char **argv){
@@ -102,6 +113,7 @@ int main(int argc, char **argv){
   vector<DataSet> set(2); 
   set[0].read_sqt(forwardFN);
   set[0].setLabel(0);
+//  set[0].print_features();
   set[1].read_sqt(randomFN);
   set[1].setLabel(-1);
   
@@ -115,4 +127,10 @@ int main(int argc, char **argv){
   for(int i=0;i<10;i++) {
   	caller.step(w);
   }
-}
+}	
+
+
+
+
+
+
