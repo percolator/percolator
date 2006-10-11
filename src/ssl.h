@@ -108,22 +108,6 @@ void Clear(struct vector_double *a); /* deletes a */
 void Clear(struct vector_int *a); /* deletes a */
 double norm_square(const vector_double *A); /* returns squared length of A */
 
-/* ssl_train: takes data, options, uninitialized weight and output
-   vector_doubles, routes it to the algorithm */
-/* the learnt weight vector and the outputs it gives on the data matrix are saved */
-void ssl_train(struct data *Data, 
-	       struct options *Options,
-	       struct vector_double *W, /* weight vector */
-	       struct vector_double *O); /* output vector */
-
-/* Main svmlin Subroutines */
-/*ssl_predict: reads test inputs from input_file_name, a weight vector, and an 
- uninitialized outputs vector. Performs */
-void ssl_predict(char *inputs_file_name, const struct vector_double *Weights, 
-		 struct vector_double *Outputs);
-/* ssl_evaluate: if test labels are given in the vector True, and predictions in vector Output,
-   this code prints out various performance statistics. Currently only accuracy. */
-void ssl_evaluate(struct vector_double *Outputs,struct vector_double *True);
  
 /* svmlin algorithms and their subroutines */
  
@@ -153,20 +137,6 @@ double line_search(double *w,
                    int d,
                    int l);
 
-/* Transductive L2-SVM */
-/* Solves : min_(w, Y[i],i in UNlabeled) 0.5*Options->lamda*w'*w + 0.5*(1/Data->l)*sum_{i in labeled} max(0,1 - Y[i] w' x_i)^2 + 0.5*(Options->lambda_u/Data->u)*sum_{i in UNlabeled} max(0,1 - Y[i] w' x_i)^2 
- subject to: (1/Data->u)*sum_{i in UNlabeled} max(0,Y[i]) = Options->R */
-int   TSVM_MFN(const struct data *Data, 
-	      struct options *Options, 
-	      struct vector_double *Weights,
-	      struct vector_double *Outputs);
-int switch_labels(double* Y, double* o, int* JU, int u, int S);
-
-/* Deterministic Annealing*/
-int DA_S3VM(struct data *Data, 
-	   struct options *Options, 
-	   struct vector_double *Weights,
-	   struct vector_double *Outputs);
 void optimize_p(const double* g, int u, double T, double r, double*p);
 int optimize_w(const struct data *Data, 
 	       const  double *p,

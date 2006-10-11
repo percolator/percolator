@@ -1,10 +1,7 @@
 #ifndef DATASET_H_
 #define DATASET_H_
-#include <vector>
-#include <string>
-using namespace std;
 
-#define NUM_FEATURE 8
+#define NUM_FEATURE 11
 #define ROW(x) x*NUM_FEATURE
 
 class DataSet
@@ -28,8 +25,9 @@ public:
 //    vector<int> * getCharges() {return &charge;}
     int getIsoChargeSize(int c);
     double * getNext(const int charge,int& pos);
-    void read_sqt(char* fname);
+    void read_sqt(string & fname);
     void print_features();
+    bool isTryptic(const string & str);
 };
 
 #endif /*DATASET_H_*/

@@ -1,8 +1,14 @@
+#include <vector>
+#include <string>
+using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "IsoChargeSet.h"
 
-IsoChargeSet::IsoChargeSet(int c) {charge=c;norm=new Normalizer();}
+IsoChargeSet::IsoChargeSet(int c) {
+	charge=c;
+	norm=Normalizer::getNew();
+}
 
 IsoChargeSet::~IsoChargeSet()
 {

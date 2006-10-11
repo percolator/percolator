@@ -1,5 +1,9 @@
 #include<iostream>
+#include<fstream>
 #include<algorithm>
+#include <vector>
+#include <string>
+using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "Scores.h"
@@ -25,6 +29,15 @@ Scores::~Scores()
     } 
 */
 }
+
+void Scores::printRoc(string & fn){
+ ofstream rocStream(fn.data(),ios::out);
+ vector<ScoreHolder>::iterator it;
+ for(it=scores.begin();it!=scores.end();it++) {
+   rocStream << (it->label==-1?-1:1) << endl;
+ }
+ rocStream.close();
+}	
 
 double Scores::calcScore(const double *feat) {
   double score = 0.0;

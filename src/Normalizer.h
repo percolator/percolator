@@ -1,21 +1,23 @@
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
 
-#include <vector>
-
 class IsoChargeSet;
 
 class Normalizer
 {
 public:
-	Normalizer();
 	virtual ~Normalizer();
-    void setSet(IsoChargeSet *);
-    void normalize(const double *in,double* out);
-    void unnormalizeweight(const double *in,double* out);
+    virtual void setSet(IsoChargeSet *){;}
+    virtual void normalize(const double *in,double* out){;}
+    virtual void unnormalizeweight(const double *in,double* out){;}
+    virtual void normalizeweight(const double *in,double* out){;}
+    static Normalizer * getNew();
+    static void setType(int type);
+	const static int UNI = 0;
+	const static int STDV = 1;
 protected:
-	vector<double> avg;
-	vector<double> stdv;
+	Normalizer();
+	static int subclass_type;
 };
 
 #endif /*NORMALIZER_H_*/
