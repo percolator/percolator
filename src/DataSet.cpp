@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <math.h>
 #include <set>
@@ -8,13 +9,15 @@
 #include <string>
 using namespace std;
 #include "DataSet.h"
-//using namespace std;
 
+int DataSet::numFeatures;
+bool DataSet::calcQuadraticFeatures;
 
 DataSet::DataSet()
 {
    delim.assign(" \t\n");
    feature = NULL;
+   n_feature=0;
 }
 
 DataSet::~DataSet()
@@ -40,22 +43,23 @@ int DataSet::line2fields(char * str, vector<string> *fields) {
 }
 void DataSet::print_features() {
    for(int i=0;i<n_feature;i++) {
-	   for(int j=0;j<NUM_FEATURE;j++) {
-	      cout << j+1 << ":" << feature[ROW(i)+j] << " ";
+	   for(int j=0;j<DataSet::getNumFeatures();j++) {
+	      cout << j+1 << ":" << feature[DataSet::rowIx(i)+j] << " ";
 	   }
 	   cout << endl;
    }
 }
 
-bool DataSet::isTryptic(const string & str) {
+double DataSet::isTryptic(const string & str) {
   assert(str[1]=='.');
-  return ((str[0]=='K' || str[0]=='R') && str[2]!= 'P');
+  return (((str[0]=='K' || str[0]=='R') && str[2]!= 'P')?1.0:0.0);
 }
 
 int DataSet::getIsoChargeSize(int c){
   int n=0;
   for (int ix=0;ix<(signed int)charge.size();ix++) {
-    if (charge[ix]==c) n++;
+//    if (charge[ix]==c)
+      n++;    
   }
   return n;
 }
@@ -64,20 +68,35 @@ double * DataSet::getNext(const int c, int& pos) {
   pos++;
   if (pos<0)
     pos=0;
-  while((pos<n_feature) && (charge[pos]!=c))
-    pos++;
+//  while((pos<n_feature) && (charge[pos]!=c)) Put charge as feature instead
+//    pos++;
   if(pos>=n_feature)
     return NULL;
-  return &feature[ROW(pos)];
+  return &feature[DataSet::rowIx(pos)];
+}
+
+bool DataSet::getGistDataRow(int & pos,string &out){
+  ostringstream s1;
+  double * feature = NULL;
+//  while (!feature || charge[pos] !=2)  { //tmp fix
+  if ((feature = getNext(0,pos)) == NULL) return false; 
+//  }
+  s1 << ids[pos];
+  for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
+    s1 << '\t' << feature[ix];
+  }
+  s1 << endl;
+  out = s1.str();
+  return true;
 }
 
 void DataSet::read_sqt(string & fname) {
   FILE *fp1;
   int n = 0;
-  size_t len1 = 0;
+  size_t len1 = 1024;
   vector<string> fields(30,"");
 
-  char * str = (char *) calloc(1023,sizeof(char));
+  char * str = new char[1024];
 
   if ((fp1=fopen(fname.data(),"r"))==NULL) {
   	cerr << "Could not open file " << fname << endl;
@@ -96,12 +115,12 @@ void DataSet::read_sqt(string & fname) {
   rewind(fp1);
 
   map<string, vector<int> > protids2ix;
-  feature = new double[n*NUM_FEATURE];
+  feature = new double[n*DataSet::getNumFeatures()];
   ids.resize(n,"");
   charge.resize(n,0);
   vector<string> ix2seq(n,"");
 //  for(int i=0;i<n;i++) {
-//    feature[i]=new double[NUM_FEATURE];
+//    feature[i]=new double[DataSet::getNumFeatures()];
 //  }
   n_feature=n;
   int ix=-1,gotL = 1,gotDeltCn=1;
@@ -118,24 +137,27 @@ void DataSet::read_sqt(string & fname) {
     }
     if (str[0]=='M' && !gotDeltCn) {
       line2fields(str,&fields);
-      feature[ROW(ix)+2]=atof(fields[4].data());
+      feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
       gotDeltCn = 1;
     }
     if (str[0]=='M' && !gotL) {
       line2fields(str,&fields);
-      feature[ROW(ix)+0]=atof(fields[2].data());
-      feature[ROW(ix)+1]=mass - atof(fields[3].data());
-//      feature[ROW(ix)+2]=atof(fields[4].data());
-      feature[ROW(ix)+2]=0.0;
-      feature[ROW(ix)+3]=atof(fields[5].data());
-      feature[ROW(ix)+4]=atof(fields[6].data());
-      feature[ROW(ix)+5]=atof(fields[7].data())/atof(fields[8].data());
+      feature[DataSet::rowIx(ix)+0]=atof(fields[2].data());
+      feature[DataSet::rowIx(ix)+1]=mass - atof(fields[3].data());
+//      feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
+      feature[DataSet::rowIx(ix)+2]=0.0;
+      feature[DataSet::rowIx(ix)+3]=atof(fields[5].data());
+      feature[DataSet::rowIx(ix)+4]=atof(fields[6].data());
+      feature[DataSet::rowIx(ix)+5]=atof(fields[7].data())/atof(fields[8].data());
       string seq(fields[9]);
       string sub1=seq.substr(0,3);
       string sub2=seq.substr(seq.size()-3);
       ix2seq[ix].assign(seq);
-      feature[ROW(ix)+6]=isTryptic(sub1);
-      feature[ROW(ix)+7]=isTryptic(sub2);
+      feature[DataSet::rowIx(ix)+6]=isTryptic(sub1);
+      feature[DataSet::rowIx(ix)+7]=isTryptic(sub2);
+      feature[DataSet::rowIx(ix)+8]=(charge[ix]==1?1.0:0.0);
+      feature[DataSet::rowIx(ix)+9]=(charge[ix]==2?1.0:0.0);
+      feature[DataSet::rowIx(ix)+10]=(charge[ix]==3?1.0:0.0);
       gotDeltCn = 0;
     }
     if (str[0]=='L' && !gotL) {
@@ -155,14 +177,34 @@ void DataSet::read_sqt(string & fname) {
        seqfreq[ix2seq[ixvec->second[i]]]=(seqfreq.count(ix2seq[ixvec->second[i]])>0?seqfreq[ix2seq[ixvec->second[i]]]+1:1);
      }
      for (unsigned int i=0;i<ixvec->second.size();i++) {
-       feature[ROW(ixvec->second[i])+8]=log((float)seqfreq.size());
-       feature[ROW(ixvec->second[i])+9]=log((float)seqfreq[ix2seq[ixvec->second[i]]]);
-       feature[ROW(ixvec->second[i])+10]=f1;
+       feature[DataSet::rowIx(ixvec->second[i])+11]=log((float)seqfreq.size());
+       feature[DataSet::rowIx(ixvec->second[i])+12]=log((float)seqfreq[ix2seq[ixvec->second[i]]]);
+       feature[DataSet::rowIx(ixvec->second[i])+13]=f1;
      }
      
   }            
-  cout << "Read File" << endl;
-  delete str;
+//  cout << "Read File" << endl;
+  delete [] str;
+  if (DataSet::calcQuadraticFeatures) {
+    for (int r=0;r<n_feature;r++){
+      int ix = DataSet::numRealFeatures;
+      for (int ixf1=1;ixf1<DataSet::numRealFeatures;ixf1++){
+        double f1 = feature[DataSet::rowIx(r)+ixf1];
+        for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
+          double f2 = feature[DataSet::rowIx(r)+ixf2];
+          double fp=f1*f2;
+          double newFeature;
+          if (fp>=0.0) {
+            newFeature=sqrt(fp);
+          } else {
+            newFeature=-sqrt(-fp);
+          }
+          feature[DataSet::rowIx(r)+ix]=newFeature;
+        }        
+      }
+      assert(ix==numFeatures);    
+    }
+  }
 }
 
 

@@ -11,6 +11,8 @@ public:
   int label;
   int set;
   ScoreHolder() {score=0.0;index=0;label=0;set=0;}
+  ScoreHolder(const ScoreHolder& other)
+    {score=other.score;index=other.index;label=other.label;set=other.set;}
   virtual ~ScoreHolder() {;}
   void operator = (const ScoreHolder& other)
     {score=other.score;index=other.index;label=other.label;set=other.set;}

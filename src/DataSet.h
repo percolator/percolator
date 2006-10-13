@@ -1,13 +1,9 @@
 #ifndef DATASET_H_
 #define DATASET_H_
 
-#define NUM_FEATURE 11
-#define ROW(x) x*NUM_FEATURE
-
 class DataSet
 {
 protected:
-//    int line(string s) {
     int line2fields(char * s, vector<string> *fields);
     double *feature;
     int n_feature;
@@ -15,19 +11,26 @@ protected:
     vector<int> charge;
 	string delim;
 	int label;
+    static int numFeatures;
+    static bool calcQuadraticFeatures;
+    const static int numRealFeatures = 14;
 public:
 	DataSet();
 	virtual ~DataSet();
 	double * getFeature() {return feature;}
 	int inline getSize() {return n_feature;}
-	int inline getLabel() {return label;}
+    int inline getLabel() {return label;}
+    bool getGistDataRow(int& pos,string & out);
 	void inline setLabel(int l) {label=l;}
-//    vector<int> * getCharges() {return &charge;}
     int getIsoChargeSize(int c);
     double * getNext(const int charge,int& pos);
     void read_sqt(string & fname);
     void print_features();
-    bool isTryptic(const string & str);
+    static double isTryptic(const string & str);
+    static inline int getNumFeatures() { return numFeatures; }
+    static void setQuadraticFeatures(bool on)
+      { numFeatures=(on?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures); calcQuadraticFeatures=on;}
+    static inline int rowIx(int row) { return row*numFeatures; }
 };
 
 #endif /*DATASET_H_*/

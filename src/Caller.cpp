@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <getopt.h>
 #include <vector>
 #include <string>
@@ -15,9 +16,13 @@ Caller::Caller()
 {
   forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
   shuffledFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
-//  char *random2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
+  shuffled2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
   doRoc = false;
   rocFN = "";
+  gistFN = "";
+  weightFN = "";
+  DataSet::setQuadraticFeatures(false);
+  fdr=0.01;
 }
 
 Caller::~Caller()
@@ -28,7 +33,7 @@ bool Caller::parseOptions(int argc, char **argv){
    int c;
    opterr = 0;
  
-   while ((c = getopt (argc, argv, "f:s:r:u")) != -1)
+   while ((c = getopt (argc, argv, "f:s:S:r:ug:w:qF:")) != -1)
    switch (c)
    {
    case 'f':
@@ -37,12 +42,27 @@ bool Caller::parseOptions(int argc, char **argv){
    case 's':
      shuffledFN = optarg;
      break;
+   case 'S':
+     shuffled2FN = optarg;
+     break;
+   case 'g':
+     gistFN = optarg;
+     break;
+   case 'w':
+     weightFN = optarg;
+     break;
    case 'r':
      doRoc = true;
      rocFN = optarg;
      break;
    case 'u':
      Normalizer::setType(Normalizer::UNI);
+     break;
+   case 'q':
+     DataSet::setQuadraticFeatures(true);
+     break;
+   case 'F':
+     fdr=atof(optarg);
      break;
    case '?':
      if (isprint (optopt))
@@ -64,11 +84,11 @@ void Caller::step(double *w) {
   	scores.calcScores(w,*pSet);
   	vector<int> ixs;
   	vector<int>::iterator it;
-  	w[NUM_FEATURE]=scores.getPositiveTrainingIxs(0.01,ixs);
+  	w[DataSet::getNumFeatures()]=scores.getPositiveTrainingIxs(fdr,ixs);
   	int rows = ixs.size();
-  	int negatives = pSet->getSubSet(1)->getIsoChargeSize(pSet->getCharge());
+  	int negatives = pSet->getSubSet(1)->getIsoChargeSize(100);
   	rows += negatives;
-  	int nz = (NUM_FEATURE+1)*rows;
+  	int nz = (DataSet::getNumFeatures()+1)*rows;
   	double* VAL = new double[nz];
     int* C = new int[nz];
     int* R = new int[rows+1];
@@ -78,8 +98,8 @@ void Caller::step(double *w) {
   	double * featUnl = pSet->getSubSet(0)->getFeature();
   	for(it=ixs.begin();it!=ixs.end();it++) {
   	  R[r++]=pos;
-  	  norm->normalize(&featUnl[ROW(*it)],&VAL[pos]);
-  	  for(int i=0;i<=NUM_FEATURE;i++,pos++) {
+  	  norm->normalize(&featUnl[DataSet::rowIx(*it)],&VAL[pos]);
+  	  for(int i=0;i<=DataSet::getNumFeatures();i++,pos++) {
   	    C[pos]=i;
   	  } 
   	  VAL[pos-1]=1.0;        	  
@@ -93,7 +113,7 @@ void Caller::step(double *w) {
     while(const double * featNeg = pSet->getNext(set,rowInSet)) {
   	  R[r++]=pos;
   	  norm->normalize(featNeg,&VAL[pos]);
-  	  for(int i=0;i<=NUM_FEATURE;i++,pos++) {
+  	  for(int i=0;i<=DataSet::getNumFeatures();i++,pos++) {
   	    C[pos]=i;
   	  } 
   	  VAL[pos-1]=1.0;        	  
@@ -108,7 +128,7 @@ void Caller::step(double *w) {
   	} */
   	cout << "Calling with " << positives << " positives and " << negatives << " negatives\n";
   	struct data *Data = new data;
-  	Data->n=NUM_FEATURE+1;
+  	Data->n=DataSet::getNumFeatures()+1;
     Data->m=rows;
     Data->l=rows;
     Data->u=0;
@@ -140,7 +160,7 @@ void Caller::step(double *w) {
     Options->Cn = 10;
     
     struct vector_double *Weights = new vector_double;
-    Weights->d = NUM_FEATURE+1;
+    Weights->d = DataSet::getNumFeatures()+1;
     Weights->vec = new double[Weights->d];
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
     
@@ -150,7 +170,7 @@ void Caller::step(double *w) {
     for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
 
 //    norm->normalizeweight(w,Weights->vec);
-//    Weights->vec[NUM_FEATURE] = 0;
+//    Weights->vec[DataSet::getNumFeatures()] = 0;
     L2_SVM_MFN(Data,Options,Weights,Outputs,0);
   	norm->unnormalizeweight(Weights->vec,w);
 
@@ -164,25 +184,57 @@ void Caller::step(double *w) {
 
 
 int Caller::run() {
-  vector<DataSet> set(2); 
-  set[0].read_sqt(forwardFN);
-  set[0].setLabel(0);
-//  set[0].print_features();
-  set[1].read_sqt(shuffledFN);
-  set[1].setLabel(-1);
+  bool doShuffled2 = shuffled2FN.size()>0;
+  DataSet forward,shuffled,shuffled2;
+  forward.read_sqt(forwardFN);
+  forward.setLabel(0);
+  shuffled.read_sqt(shuffledFN);
+  shuffled.setLabel(-1);
+  if (doShuffled2) {
+    shuffled2.read_sqt(shuffled2FN);
+    shuffled2.setLabel(-1);
+  }
   
-  IsoChargeSet all(2);
-  all.setSet(&set);
-  setSet(&all);
-  double w[NUM_FEATURE+1];
+  vector<DataSet *> set1(2); 
+  set1[0]=&forward;
+  set1[1]=&shuffled;
+
+  vector<DataSet *> set2(2); 
+  set2[0]=&forward;
+  set2[1]=(doShuffled2?&shuffled2:&shuffled);
+  
+  IsoChargeSet train,test;
+  train.setSet(&set1);
+  test.setSet(&set2);
+  setSet(&train);
+  if (gistFN.length()>0) {
+    pSet->gistWrite(gistFN);
+  }
+  double w[DataSet::getNumFeatures()+1];
+  for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=0;
   w[3]=1;
-  w[NUM_FEATURE]=1;
-  for(int i=0;i<10;i++) {
+  w[DataSet::getNumFeatures()]=1;
+  for(int i=0;i<20;i++) {
   	step(w);
   }
-  if (doRoc) {
-  	scores.printRoc(rocFN);
+  if (weightFN.length()>0) {
+     ofstream weightStream(weightFN.data(),ios::out);
+     for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+        weightStream << w[ix] << " ";
+     }
+     weightStream << endl;
+     weightStream.close(); 
   }
+  if (doRoc) {
+    if(doShuffled2) {
+      Scores testScores;
+      testScores.calcScores(w,test);
+      testScores.printRoc(rocFN);
+    } else {
+      scores.printRoc(rocFN);
+    }
+  }
+  
   return 0;
 }
 

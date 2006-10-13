@@ -14,8 +14,12 @@ protected:
     Scores scores;
     string forwardFN;
     string shuffledFN;
+    string shuffled2FN;
     string rocFN;
+    string gistFN;
+    string weightFN;
     bool doRoc;
+    double fdr;
 };
 
 #endif /*CALLER_H_*/

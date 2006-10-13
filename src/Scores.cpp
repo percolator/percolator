@@ -41,10 +41,10 @@ void Scores::printRoc(string & fn){
 
 double Scores::calcScore(const double *feat) {
   double score = 0.0;
-  for(int ix=0;ix<NUM_FEATURE;ix++) {
+  for(int ix=0;ix<DataSet::getNumFeatures();ix++) {
   	score += feat[ix]*w_vec[ix];
   }
-//  if (w_vec[NUM_FEATURE]<0)
+//  if (w_vec[DataSet::getNumFeatures()]<0)
 //    score = - score;
   return score;
 }
@@ -56,13 +56,14 @@ void Scores::calcScores(double *w,IsoChargeSet & set) {
   int setPos=0;
   int ixPos=-1;
   const double * features;
-  int ix=-1;
+  unsigned int ix=0;
   while((features=set.getNext(setPos,ixPos))!=NULL) {
-  	scores[++ix].score = calcScore(features);
+  	scores[ix].score = calcScore(features);
   	scores[ix].label = set.getLabel(&setPos);
   	scores[ix].index = ixPos;
-  	scores[ix].set = setPos;
+  	scores[ix++].set = setPos;
   }
+  assert(scores.size()==ix);
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
 /*  for (ix=0;ix < 10;ix++) {
