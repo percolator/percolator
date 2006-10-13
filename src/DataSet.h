@@ -6,7 +6,7 @@ class DataSet
 protected:
     int line2fields(char * s, vector<string> *fields);
     double *feature;
-    int n_feature;
+    int n_examples;
     vector<string> ids;
     vector<int> charge;
 	string delim;
@@ -18,12 +18,11 @@ public:
 	DataSet();
 	virtual ~DataSet();
 	double * getFeature() {return feature;}
-	int inline getSize() {return n_feature;}
+	int inline getSize() {return n_examples;}
     int inline getLabel() {return label;}
     bool getGistDataRow(int& pos,string & out);
 	void inline setLabel(int l) {label=l;}
-    int getIsoChargeSize(int c);
-    double * getNext(const int charge,int& pos);
+    double * getNext(int& pos);
     void read_sqt(string & fname);
     void print_features();
     static double isTryptic(const string & str);

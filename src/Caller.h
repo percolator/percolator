@@ -5,12 +5,12 @@ class Caller
 public:
 	Caller();
 	virtual ~Caller();
-	inline void setSet(IsoChargeSet *p){pSet=p;}
+	inline void setSet(SetHandler *p){pSet=p;}
 	void step(double *);
     bool parseOptions(int argc, char **argv);
     int run();
 protected:
-    IsoChargeSet *pSet;
+    SetHandler *pSet;
     Scores scores;
     string forwardFN;
     string shuffledFN;
@@ -18,8 +18,8 @@ protected:
     string rocFN;
     string gistFN;
     string weightFN;
-    bool doRoc;
     double fdr;
+    int nitter;
 };
 
 #endif /*CALLER_H_*/

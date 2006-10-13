@@ -1,24 +1,24 @@
-#ifndef ISOCHARGESET_H_
-#define ISOCHARGESET_H_
-class IsoChargeSet
+#ifndef SETHANDLER_H_
+#define SETHANDLER_H_
+class SetHandler
 {
 protected:
 //    int charge;
-    vector<DataSet *> *pSet;
+    vector<DataSet *> subsets;
     int n_points;
     Normalizer * norm;
 public:
-	IsoChargeSet();
-	virtual ~IsoChargeSet();
-	void setSet(vector<DataSet *> *set);
+	SetHandler();
+	virtual ~SetHandler();
+	void setSet(DataSet &pos, DataSet &neg);
 	const double * getNext(int& ,int& );
     void gistWrite(const string & fileNameTrunk);
 	int const getLabel(int *setPos);
 	inline int const getSize() {return n_points;}
 //	inline int const getCharge() {return charge;}
-	inline int const getSubSetSize(int ix) {return (*pSet)[ix]->getSize();}
-	inline DataSet * getSubSet(int ix) {return ((*pSet)[ix]);}
+	inline int const getSubSetSize(int ix) {return subsets[ix]->getSize();}
+	inline DataSet * getSubSet(int ix) {return (subsets[ix]);}
 	inline Normalizer * getNormalizer() {return norm;} 
 };
 
-#endif /*ISOCHARGESET_H_*/
+#endif /*SETHANDLER_H_*/

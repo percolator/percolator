@@ -9,7 +9,7 @@ public:
     void normalize(const double *in,double* out);
     void unnormalizeweight(const double *in,double* out);
     void normalizeweight(const double *in,double* out);
-    void setSet(IsoChargeSet *);
+    void setSet(SetHandler *);
 protected:
 	vector<double> sub;
 	vector<double> div;

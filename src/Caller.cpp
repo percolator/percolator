@@ -4,11 +4,13 @@
 #include <vector>
 #include <string>
 using namespace std;
+#include "argvparser.h"
+using namespace CommandLineProcessing;
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "Scores.h"
 #include "Normalizer.h"
-#include "IsoChargeSet.h"
+#include "SetHandler.h"
 #include "Caller.h"
 #include "ssl.h"
 
@@ -17,76 +19,107 @@ Caller::Caller()
   forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
   shuffledFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
   shuffled2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
-  doRoc = false;
   rocFN = "";
   gistFN = "";
   weightFN = "";
-  DataSet::setQuadraticFeatures(false);
   fdr=0.01;
+  nitter = 20;
 }
 
 Caller::~Caller()
 {
 }
-
 bool Caller::parseOptions(int argc, char **argv){
-   int c;
-   opterr = 0;
- 
-   while ((c = getopt (argc, argv, "f:s:S:r:ug:w:qF:")) != -1)
-   switch (c)
-   {
-   case 'f':
-     forwardFN = optarg;
-     break;
-   case 's':
-     shuffledFN = optarg;
-     break;
-   case 'S':
-     shuffled2FN = optarg;
-     break;
-   case 'g':
-     gistFN = optarg;
-     break;
-   case 'w':
-     weightFN = optarg;
-     break;
-   case 'r':
-     doRoc = true;
-     rocFN = optarg;
-     break;
-   case 'u':
-     Normalizer::setType(Normalizer::UNI);
-     break;
-   case 'q':
-     DataSet::setQuadraticFeatures(true);
-     break;
-   case 'F':
-     fdr=atof(optarg);
-     break;
-   case '?':
-     if (isprint (optopt))
-	   fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-     else
-       fprintf (stderr, "Unknown option character `\\x%x'.\n",optopt);
-     return false;
-   default:
-     abort ();
-   }
-     
-/*       for (index = optind; index < argc; index++)
-         printf ("Non-option argument %s\n", argv[index]);
-       return 0;
-*/
+  ArgvParser cmd;
+  string intro = "percolator (c) 2006 Lukas Kall\n";
+  intro += __DATE__;
+  intro += " version\n\n";
+  intro += "Usage: \n";
+  intro += "   percolator [-huq] [-g truncFN] [-F val] [-n val] [-w filename]\\\n";
+  intro += "           [-r filename] forward shuffled [shuffled2]\n\n";
+  intro += "   where forward is the normal sqt-file,\n";
+  intro += "         shuffle the shuffled sqt-file,\n";
+  intro += "         and shuffle2 is a possible second shuffled sqt-file for validation\n";
+  // init
+  cmd.setIntroductoryDescription(intro);
+  cmd.defineOption("u",
+    "Use unit normalization [0-1] instead of standard deviation normalization");
+  cmd.defineOption("q",
+    "Calculate quadratic feature terms");
+  cmd.defineOption("F",
+    "The FDR filter value. Default is 0.01",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOption("n",
+    "Maximal number of iteratins",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOption("g",
+    "Output test features to a Gist format files with the given trunc filename",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOption("w",
+    "Output final weights to the given filename",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOption("r",
+    "Output result file (score ranked labels) to given filename",
+    ArgvParser::OptionRequiresValue);
+
+  //define error codes
+  cmd.addErrorCode(0, "Success");
+  cmd.addErrorCode(-1, "Error");
+
+  cmd.setHelpOption("h", "help", "Print this help page");
+
+  // finally parse and handle return codes (display help etc...)
+  int result = cmd.parse(argc, argv);
+
+  if (result != ArgvParser::NoParserError)
+  {
+    cout << cmd.parseErrorDescription(result);
+    exit(-1);
+  }
+  
+  // now query the parsing results
+  if (cmd.foundOption("g"))
+    gistFN = cmd.optionValue("g");
+  if (cmd.foundOption("w"))
+    weightFN = cmd.optionValue("w");
+  if (cmd.foundOption("r"))
+    rocFN = cmd.optionValue("r");
+  if (cmd.foundOption("u"))
+    Normalizer::setType(Normalizer::UNI);
+  if (cmd.foundOption("q"))
+    DataSet::setQuadraticFeatures(true);
+  if (cmd.foundOption("n")) {
+    nitter = atoi(cmd.optionValue("n").c_str());
+  }
+  if (cmd.foundOption("F")) {
+    fdr = atof(cmd.optionValue("F").c_str());
+    if (fdr<=0.0 || fdr > 1.0) {
+      cerr << "-F option requres a positive number < 1" << endl;
+      cerr << cmd.usageDescription();
+      exit(1); 
+    }
+  }
+  if (cmd.arguments()>3) {
+      cerr << "Too many arguments given" << endl;
+      cerr << cmd.usageDescription();
+      exit(1);   
+  }
+  if (cmd.arguments()>0)
+    forwardFN = cmd.argument(0);
+  if (cmd.arguments()>1)
+     shuffledFN = cmd.argument(1);
+  if (cmd.arguments()>2)
+     shuffled2FN = cmd.argument(2);
   return true;
 }
+
 void Caller::step(double *w) {
   	scores.calcScores(w,*pSet);
   	vector<int> ixs;
   	vector<int>::iterator it;
   	w[DataSet::getNumFeatures()]=scores.getPositiveTrainingIxs(fdr,ixs);
   	int rows = ixs.size();
-  	int negatives = pSet->getSubSet(1)->getIsoChargeSize(100);
+  	int negatives = pSet->getSubSet(1)->getSize();
   	rows += negatives;
   	int nz = (DataSet::getNumFeatures()+1)*rows;
   	double* VAL = new double[nz];
@@ -203,9 +236,9 @@ int Caller::run() {
   set2[0]=&forward;
   set2[1]=(doShuffled2?&shuffled2:&shuffled);
   
-  IsoChargeSet train,test;
-  train.setSet(&set1);
-  test.setSet(&set2);
+  SetHandler train,test;
+  train.setSet(forward,shuffled);
+  test.setSet(forward,shuffled2);
   setSet(&train);
   if (gistFN.length()>0) {
     pSet->gistWrite(gistFN);
@@ -214,7 +247,8 @@ int Caller::run() {
   for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=0;
   w[3]=1;
   w[DataSet::getNumFeatures()]=1;
-  for(int i=0;i<20;i++) {
+  for(int i=0;i<nitter;i++) {
+    cout << "Iteration " << i+1 << " : ";
   	step(w);
   }
   if (weightFN.length()>0) {
@@ -225,7 +259,7 @@ int Caller::run() {
      weightStream << endl;
      weightStream.close(); 
   }
-  if (doRoc) {
+  if (rocFN.size()>0) {
     if(doShuffled2) {
       Scores testScores;
       testScores.calcScores(w,test);

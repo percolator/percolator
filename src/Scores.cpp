@@ -49,7 +49,7 @@ double Scores::calcScore(const double *feat) {
   return score;
 }
 
-void Scores::calcScores(double *w,IsoChargeSet & set) {
+void Scores::calcScores(double *w,SetHandler & set) {
   ScoreHolder s;
   scores.resize(set.getSize(),s);
   w_vec=w;

@@ -5,7 +5,7 @@ using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "UniNormalizer.h"
-#include "IsoChargeSet.h"
+#include "SetHandler.h"
 
 UniNormalizer::UniNormalizer()
 {
@@ -43,7 +43,7 @@ void UniNormalizer::normalizeweight(const double *in,double* out){
   out[i]=in[i]+sum;
 }
 
-void UniNormalizer::setSet(IsoChargeSet * set){
+void UniNormalizer::setSet(SetHandler * set){
   int setPos=0;
   int ixPos=-1;
   const double * features;

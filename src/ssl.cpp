@@ -897,7 +897,7 @@ void Clear(struct data *a)
   delete [] a->colind;
   delete [] a->Y;
   delete [] a->C;
-  delete [] a;
+  delete a;
   return;
 }
 void Clear(struct vector_double *c)

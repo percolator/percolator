@@ -1,7 +1,7 @@
 #ifndef SCORES_H_
 #define SCORES_H_
 #include <vector>
-#include "IsoChargeSet.h"
+#include "SetHandler.h"
 using namespace std;
 
 class ScoreHolder{
@@ -25,7 +25,7 @@ public:
 	Scores();
 	~Scores();
 	double calcScore(const double *features);
-	void calcScores(double *w, IsoChargeSet &set);
+	void calcScores(double *w, SetHandler &set);
 	double getPositiveTrainingIxs(const double fdr,vector<int>& ixs);
 	void printRoc(string & fn);	
 protected:

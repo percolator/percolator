@@ -7,7 +7,7 @@ using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
-#include "IsoChargeSet.h"
+#include "SetHandler.h"
 
 StdvNormalizer::StdvNormalizer()
 {
@@ -45,7 +45,7 @@ void StdvNormalizer::normalizeweight(const double *in,double* out){
   out[i]=in[i]+sum;
 }
 
-void StdvNormalizer::setSet(IsoChargeSet * set){
+void StdvNormalizer::setSet(SetHandler * set){
   double n=0.0;
   int setPos=0;
   int ixPos=-1;

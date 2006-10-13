@@ -10,14 +10,14 @@
 using namespace std;
 #include "DataSet.h"
 
-int DataSet::numFeatures;
-bool DataSet::calcQuadraticFeatures;
+int DataSet::numFeatures = numRealFeatures;
+bool DataSet::calcQuadraticFeatures = false;
 
 DataSet::DataSet()
 {
    delim.assign(" \t\n");
    feature = NULL;
-   n_feature=0;
+   n_examples=0;
 }
 
 DataSet::~DataSet()
@@ -42,7 +42,7 @@ int DataSet::line2fields(char * str, vector<string> *fields) {
   return ix;
 }
 void DataSet::print_features() {
-   for(int i=0;i<n_feature;i++) {
+   for(int i=0;i<getSize();i++) {
 	   for(int j=0;j<DataSet::getNumFeatures();j++) {
 	      cout << j+1 << ":" << feature[DataSet::rowIx(i)+j] << " ";
 	   }
@@ -55,22 +55,12 @@ double DataSet::isTryptic(const string & str) {
   return (((str[0]=='K' || str[0]=='R') && str[2]!= 'P')?1.0:0.0);
 }
 
-int DataSet::getIsoChargeSize(int c){
-  int n=0;
-  for (int ix=0;ix<(signed int)charge.size();ix++) {
-//    if (charge[ix]==c)
-      n++;    
-  }
-  return n;
-}
 
-double * DataSet::getNext(const int c, int& pos) {
+double * DataSet::getNext(int& pos) {
   pos++;
   if (pos<0)
     pos=0;
-//  while((pos<n_feature) && (charge[pos]!=c)) Put charge as feature instead
-//    pos++;
-  if(pos>=n_feature)
+  if(pos>=getSize())
     return NULL;
   return &feature[DataSet::rowIx(pos)];
 }
@@ -79,7 +69,7 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   ostringstream s1;
   double * feature = NULL;
 //  while (!feature || charge[pos] !=2)  { //tmp fix
-  if ((feature = getNext(0,pos)) == NULL) return false; 
+  if ((feature = getNext(pos)) == NULL) return false; 
 //  }
   s1 << ids[pos];
   for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
@@ -122,7 +112,7 @@ void DataSet::read_sqt(string & fname) {
 //  for(int i=0;i<n;i++) {
 //    feature[i]=new double[DataSet::getNumFeatures()];
 //  }
-  n_feature=n;
+  n_examples=n;
   int ix=-1,gotL = 1,gotDeltCn=1;
   double mass;
   while (getline(&str, &len1, fp1) != -1) {
@@ -186,7 +176,7 @@ void DataSet::read_sqt(string & fname) {
 //  cout << "Read File" << endl;
   delete [] str;
   if (DataSet::calcQuadraticFeatures) {
-    for (int r=0;r<n_feature;r++){
+    for (int r=0;r<getSize();r++){
       int ix = DataSet::numRealFeatures;
       for (int ixf1=1;ixf1<DataSet::numRealFeatures;ixf1++){
         double f1 = feature[DataSet::rowIx(r)+ixf1];
