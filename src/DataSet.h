@@ -1,6 +1,10 @@
 #ifndef DATASET_H_
 #define DATASET_H_
 
+class Scores;
+class Normalizer;
+class SetHandler;
+
 class DataSet
 {
 protected:
@@ -14,6 +18,7 @@ protected:
     static int numFeatures;
     static bool calcQuadraticFeatures;
     const static int numRealFeatures = 14;
+    string sqtFN;
 public:
 	DataSet();
 	virtual ~DataSet();
@@ -24,6 +29,7 @@ public:
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
     void read_sqt(string & fname);
+    void modify_sqt(string& out, Scores &sc);
     void print_features();
     static double isTryptic(const string & str);
     static inline int getNumFeatures() { return numFeatures; }

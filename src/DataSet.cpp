@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <stdio.h>
 #include <math.h>
@@ -9,6 +10,7 @@
 #include <string>
 using namespace std;
 #include "DataSet.h"
+#include "Scores.h"
 
 int DataSet::numFeatures = numRealFeatures;
 bool DataSet::calcQuadraticFeatures = false;
@@ -80,7 +82,53 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
+void DataSet::modify_sqt(string & outFN, Scores & scores) {
+  int ix;
+  map<string,int> id2ix;
+  for (ix=0;ix<n_examples;ix++)
+    id2ix[ids[ix]]=ix;
+  string line,lineRem;
+  bool print = true;
+  ifstream sqtIn(sqtFN.data(),ios::in);
+  ofstream sqtOut(outFN.data(),ios::out);
+  sqtOut.precision(5);
+  while(getline(sqtIn,line)) {
+    if(!print && line[0]!= 'M' && line[0] != 'L')
+      print = true;
+    if (print)
+      sqtOut << line << endl;
+    if (line[0] == 'S') {
+      string tmp,charge,scan;
+      istringstream iss;
+      iss.str(line);
+      iss >> tmp >> tmp >> scan >> charge;
+      string id = charge + '_' + scan;
+      ix = id2ix[id]-1;
+      double * feature = getNext(ix);
+      double score = scores.calcScore(feature);  
+      getline(sqtIn,line); // Get M line
+      iss.str(line);
+      for(int a=0;a<4;a++) {
+        iss >> tmp;
+        sqtOut << tmp << "\t";
+      }
+      // deltCn and XCorr
+      iss >> tmp >> tmp;
+      sqtOut << 0.0 << "\t" << score;
+      getline(iss,lineRem);
+      sqtOut << lineRem << endl;
+      // L line
+      getline(sqtIn,line);      
+      sqtOut << line << endl;
+      print=false;
+    } 
+  }
+  sqtIn.close();
+  sqtOut.close();
+}
+
 void DataSet::read_sqt(string & fname) {
+  sqtFN = fname;
   FILE *fp1;
   int n = 0;
   size_t len1 = 1024;

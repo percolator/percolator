@@ -19,6 +19,7 @@ Caller::Caller()
   forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
   shuffledFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
   shuffled2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
+  modifiedFN = "";
   rocFN = "";
   gistFN = "";
   weightFN = "";
@@ -31,21 +32,20 @@ Caller::~Caller()
 }
 bool Caller::parseOptions(int argc, char **argv){
   ArgvParser cmd;
-  string intro = "percolator (c) 2006 Lukas Kall\n";
+  string intro = "percolator (c) 2006 Lukas Käll, University of Washington\n";
   intro += __DATE__;
   intro += " version\n\n";
   intro += "Usage: \n";
-  intro += "   percolator [-huq] [-g truncFN] [-F val] [-n val] [-w filename]\\\n";
-  intro += "           [-r filename] forward shuffled [shuffled2]\n\n";
+  intro += "   percolator [-huq] [-g trunc_fn] [-F val] [-n val] [-w fn]\\\n";
+  intro += "           [-r fn] [-o sqt_fn] forward shuffled [shuffled2]\n\n";
   intro += "   where forward is the normal sqt-file,\n";
   intro += "         shuffle the shuffled sqt-file,\n";
   intro += "         and shuffle2 is a possible second shuffled sqt-file for validation\n";
   // init
   cmd.setIntroductoryDescription(intro);
-  cmd.defineOption("u",
-    "Use unit normalization [0-1] instead of standard deviation normalization");
-  cmd.defineOption("q",
-    "Calculate quadratic feature terms");
+  cmd.defineOption("o",
+    "Output predictions to a modified sqt-file",
+    ArgvParser::OptionRequiresValue);
   cmd.defineOption("F",
     "The FDR filter value. Default is 0.01",
     ArgvParser::OptionRequiresValue);
@@ -61,6 +61,10 @@ bool Caller::parseOptions(int argc, char **argv){
   cmd.defineOption("r",
     "Output result file (score ranked labels) to given filename",
     ArgvParser::OptionRequiresValue);
+  cmd.defineOption("u",
+    "Use unit normalization [0-1] instead of standard deviation normalization");
+  cmd.defineOption("q",
+    "Calculate quadratic feature terms");
 
   //define error codes
   cmd.addErrorCode(0, "Success");
@@ -78,6 +82,8 @@ bool Caller::parseOptions(int argc, char **argv){
   }
   
   // now query the parsing results
+  if (cmd.foundOption("o"))
+    modifiedFN = cmd.optionValue("o");
   if (cmd.foundOption("g"))
     gistFN = cmd.optionValue("g");
   if (cmd.foundOption("w"))
@@ -228,17 +234,10 @@ int Caller::run() {
     shuffled2.setLabel(-1);
   }
   
-  vector<DataSet *> set1(2); 
-  set1[0]=&forward;
-  set1[1]=&shuffled;
-
-  vector<DataSet *> set2(2); 
-  set2[0]=&forward;
-  set2[1]=(doShuffled2?&shuffled2:&shuffled);
   
   SetHandler train,test;
   train.setSet(forward,shuffled);
-  test.setSet(forward,shuffled2);
+  test.setSet(forward,(doShuffled2?shuffled2:shuffled));
   setSet(&train);
   if (gistFN.length()>0) {
     pSet->gistWrite(gistFN);
@@ -251,7 +250,10 @@ int Caller::run() {
     cout << "Iteration " << i+1 << " : ";
   	step(w);
   }
-  if (weightFN.length()>0) {
+  if (modifiedFN.size()>0) {
+    forward.modify_sqt(modifiedFN,scores);
+  }
+  if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
      for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
         weightStream << w[ix] << " ";

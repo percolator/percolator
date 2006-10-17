@@ -12,6 +12,7 @@ public:
 protected:
     SetHandler *pSet;
     Scores scores;
+    string modifiedFN;
     string forwardFN;
     string shuffledFN;
     string shuffled2FN;

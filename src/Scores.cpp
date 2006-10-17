@@ -6,6 +6,7 @@
 using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
+#include "SetHandler.h"
 #include "Scores.h"
 
 bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
