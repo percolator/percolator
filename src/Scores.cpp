@@ -75,6 +75,19 @@ void Scores::calcScores(double *w,SetHandler & set) {
   } */
 }
 
+void Scores::getScoreAndFdr(int setPos,vector<double> & s, vector<double> & fdr) {
+  int tp=0,fp=0;
+  vector<ScoreHolder>::iterator it;
+  for(it=scores.begin();it!=scores.end();it++) {
+    if (it->label==-1) {fp++;} else {tp++;}
+    if (it->set == setPos) {
+      s[it->index]=it->score;
+      double f = fp/(double(tp)+fp);
+      fdr[it->index]=f;
+    }
+  }
+}
+
 double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& ixs) {
   double tp=0,fp=0;
   vector<ScoreHolder>::iterator it;

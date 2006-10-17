@@ -24,7 +24,7 @@ Caller::Caller()
   gistFN = "";
   weightFN = "";
   fdr=0.01;
-  nitter = 20;
+  nitter = 10;
 }
 
 Caller::~Caller()
@@ -201,6 +201,7 @@ void Caller::step(double *w) {
     struct vector_double *Weights = new vector_double;
     Weights->d = DataSet::getNumFeatures()+1;
     Weights->vec = new double[Weights->d];
+//    for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=w[ix];
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
     
     struct vector_double *Outputs = new vector_double;
@@ -250,8 +251,12 @@ int Caller::run() {
     cout << "Iteration " << i+1 << " : ";
   	step(w);
   }
+  Scores testScores;
+  testScores.calcScores(w,test);
   if (modifiedFN.size()>0) {
-    forward.modify_sqt(modifiedFN,scores);
+    vector<double> sc(forward.getSize(),0.0),fdr(forward.getSize(),0.0);
+    testScores.getScoreAndFdr(0,sc,fdr);
+    forward.modify_sqt(modifiedFN,sc,fdr);
   }
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
@@ -262,13 +267,7 @@ int Caller::run() {
      weightStream.close(); 
   }
   if (rocFN.size()>0) {
-    if(doShuffled2) {
-      Scores testScores;
-      testScores.calcScores(w,test);
       testScores.printRoc(rocFN);
-    } else {
-      scores.printRoc(rocFN);
-    }
   }
   
   return 0;

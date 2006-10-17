@@ -20,6 +20,7 @@ DataSet::DataSet()
    delim.assign(" \t\n");
    feature = NULL;
    n_examples=0;
+   sqtFN = "";
 }
 
 DataSet::~DataSet()
@@ -82,11 +83,8 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
-void DataSet::modify_sqt(string & outFN, Scores & scores) {
-  int ix;
-  map<string,int> id2ix;
-  for (ix=0;ix<n_examples;ix++)
-    id2ix[ids[ix]]=ix;
+void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & fdr) {
+  int ix=-1;
   string line,lineRem;
   bool print = true;
   ifstream sqtIn(sqtFN.data(),ios::in);
@@ -95,30 +93,41 @@ void DataSet::modify_sqt(string & outFN, Scores & scores) {
   while(getline(sqtIn,line)) {
     if(!print && line[0]!= 'M' && line[0] != 'L')
       print = true;
+    while (line[0] == 'S') {
+        char c;
+        sqtIn.get(c);
+        sqtIn.putback(c);
+        if (c!='S')
+          break;
+        getline(sqtIn,line);
+    }
     if (print)
       sqtOut << line << endl;
     if (line[0] == 'S') {
       string tmp,charge,scan;
+      ix++;
       istringstream iss;
       iss.str(line);
       iss >> tmp >> tmp >> scan >> charge;
       string id = charge + '_' + scan;
-      ix = id2ix[id]-1;
-      double * feature = getNext(ix);
-      double score = scores.calcScore(feature);  
+      while (id!=ids[ix]){cout << "dropping " << ids[ix] <<endl;ix++;}
+//      cout << id << " " << ids[ix] << endl;
+//      assert(id ==ids[ix]);
       getline(sqtIn,line); // Get M line
+      assert(line[0]=='M');
       iss.str(line);
       for(int a=0;a<4;a++) {
         iss >> tmp;
         sqtOut << tmp << "\t";
       }
-      // deltCn and XCorr
-      iss >> tmp >> tmp;
-      sqtOut << 0.0 << "\t" << score;
+      // deltCn and XCorr and Sp
+      iss >> tmp >> tmp >> tmp;
+      sqtOut << 0.0 << "\t" << sc[ix] << "\t" << -fdr[ix];
       getline(iss,lineRem);
       sqtOut << lineRem << endl;
       // L line
       getline(sqtIn,line);      
+      assert(line[0]=='L');
       sqtOut << line << endl;
       print=false;
     } 
@@ -128,7 +137,7 @@ void DataSet::modify_sqt(string & outFN, Scores & scores) {
 }
 
 void DataSet::read_sqt(string & fname) {
-  sqtFN = fname;
+  sqtFN.assign(fname);
   FILE *fp1;
   int n = 0;
   size_t len1 = 1024;
@@ -161,17 +170,22 @@ void DataSet::read_sqt(string & fname) {
 //    feature[i]=new double[DataSet::getNumFeatures()];
 //  }
   n_examples=n;
-  int ix=-1,gotL = 1,gotDeltCn=1;
+  int ix=-1,gotL = 1,gotDeltCn=1,chrg;
+  string id;
   double mass;
   while (getline(&str, &len1, fp1) != -1) {
     if (str[0]=='S') {
+//      char c = getc(fp1);
+//      ungetc(c,fp1);
+//      if (c=='S')
+//        getline(&str, &len1, fp1);
       line2fields(str,&fields);
-      ids[++ix]+=fields[3];
-      ids[ix]+='_';
-      ids[ix]+=fields[2];
+      id = fields[3];
+      id += '_';
+      id += fields[2];
+      chrg=atoi(fields[3].data());
       mass=atof(fields[6].data());
       gotL = 0;
-      charge[ix]=atoi(fields[3].data());
     }
     if (str[0]=='M' && !gotDeltCn) {
       line2fields(str,&fields);
@@ -179,6 +193,8 @@ void DataSet::read_sqt(string & fname) {
       gotDeltCn = 1;
     }
     if (str[0]=='M' && !gotL) {
+      ids[++ix]=id;
+      charge[ix]=chrg;
       line2fields(str,&fields);
       feature[DataSet::rowIx(ix)+0]=atof(fields[2].data());
       feature[DataSet::rowIx(ix)+1]=mass - atof(fields[3].data());

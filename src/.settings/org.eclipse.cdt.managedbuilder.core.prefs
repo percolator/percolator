@@ -1,6 +1,8 @@
-#Fri Oct 13 09:14:28 PDT 2006
+#Tue Oct 17 16:15:21 PDT 2006
 cdt.managedbuild.config.gnu.exe.debug.429909230/internalBuilder/enabled=false
 cdt.managedbuild.config.gnu.exe.debug.429909230/internalBuilder/ignoreErr=true
+cdt.managedbuild.config.gnu.exe.debug.67638733/internalBuilder/enabled=false
+cdt.managedbuild.config.gnu.exe.debug.67638733/internalBuilder/ignoreErr=true
 cdt.managedbuild.config.gnu.exe.release.161470799/internalBuilder/enabled=false
 cdt.managedbuild.config.gnu.exe.release.161470799/internalBuilder/ignoreErr=true
 cdt.managedbuild.config.gnu.exe.release.215965045/internalBuilder/enabled=false
@@ -14,5 +16,6 @@ environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.exe.release.1614
 environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.exe.release.215965045=<?xml version\="1.0" encoding\="UTF-8"?>\n<environment>\n<variable name\="LIBRARY_PATH" operation\="remove"/>\n</environment>\n
 environment/project=<?xml version\="1.0" encoding\="UTF-8"?>\n<environment/>\n
 environment/project/cdt.managedbuild.config.gnu.exe.debug.429909230=<?xml version\="1.0" encoding\="UTF-8"?>\n<environment/>\n
+environment/project/cdt.managedbuild.config.gnu.exe.debug.67638733=<?xml version\="1.0" encoding\="UTF-8"?>\n<environment/>\n
 environment/project/cdt.managedbuild.config.gnu.exe.release.161470799=<?xml version\="1.0" encoding\="UTF-8"?>\n<environment/>\n
 environment/project/cdt.managedbuild.config.gnu.exe.release.215965045=<?xml version\="1.0" encoding\="UTF-8"?>\n<environment/>\n
