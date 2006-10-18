@@ -277,7 +277,7 @@ int main(int argc, char **argv){
   Caller caller;
   if(caller.parseOptions(argc,argv))
     return caller.run();
-  return 1;
+  return -1;
 }	
 
 

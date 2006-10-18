@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <stdio.h>
 #include <math.h>
 #include <set>
 #include <map>
@@ -33,16 +32,18 @@ DataSet::~DataSet()
 	}
 }
 
-int DataSet::line2fields(char * str, vector<string> *fields) {
-  char *brkt,*wrd;
-  int ix = 0;
-  wrd=strtok_r(str, delim.data(), &brkt);
-  while(wrd) {
-//    fields[ix] = (char*)malloc(sizeof(char)*100);//tmp.copy();
-    (*fields)[ix++].assign(wrd);
-    wrd=strtok_r(NULL, delim.data(), &brkt);
+int DataSet::line2fields(string & line, vector<string> * words) {
+  words->clear();
+  istringstream iss;
+  iss.str(line);
+  string word;
+//  iss >> word;
+  while(iss.good()) {
+    iss >> word;
+    words->push_back(word);
+//    iss >> word;
   }
-  return ix;
+  return words->size();
 }
 void DataSet::print_features() {
    for(int i=0;i<getSize();i++) {
@@ -95,8 +96,7 @@ void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & f
       print = true;
     while (line[0] == 'S') {
         char c;
-        sqtIn.get(c);
-        sqtIn.putback(c);
+        c=sqtIn.peek();
         if (c!='S')
           break;
         getline(sqtIn,line);
@@ -138,48 +138,38 @@ void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & f
 
 void DataSet::read_sqt(string & fname) {
   sqtFN.assign(fname);
-  FILE *fp1;
   int n = 0;
-  size_t len1 = 1024;
-  vector<string> fields(30,"");
+  vector<string> fields;
 
-  char * str = new char[1024];
-
-  if ((fp1=fopen(fname.data(),"r"))==NULL) {
-  	cerr << "Could not open file " << fname << endl;
+  string line;
+  ifstream sqtIn;
+  sqtIn.open(sqtFN.data(),ios::in);
+  if (sqtIn.fail()) {
+  	cerr << "Could not open file " << sqtFN << endl;
   	exit(-1);
   }
-  while (getline(&str, &len1, fp1) != -1) {
-    if (str[0]=='S') {
-/*      line2fields(str,&fields);
-      int charge = atoi(fields[3].data());
-      if (charge == DataSet::ONLY_CHARGE) */
+  while (getline(sqtIn,line)) {
+    if (line[0]=='S') {
+         getline(sqtIn,line);  // Protect ourselfs against double S-line errors
          n++;
     }
   }
-  cout << n << " records in file" << endl;
-
-  rewind(fp1);
+  cout << n << " records in file " << sqtFN << endl;
+  sqtIn.clear();
+  sqtIn.seekg(0,ios::beg);
 
   map<string, vector<int> > protids2ix;
   feature = new double[n*DataSet::getNumFeatures()];
   ids.resize(n,"");
   charge.resize(n,0);
   vector<string> ix2seq(n,"");
-//  for(int i=0;i<n;i++) {
-//    feature[i]=new double[DataSet::getNumFeatures()];
-//  }
   n_examples=n;
   int ix=-1,gotL = 1,gotDeltCn=1,chrg;
   string id;
   double mass;
-  while (getline(&str, &len1, fp1) != -1) {
-    if (str[0]=='S') {
-//      char c = getc(fp1);
-//      ungetc(c,fp1);
-//      if (c=='S')
-//        getline(&str, &len1, fp1);
-      line2fields(str,&fields);
+  while (getline(sqtIn,line)) {
+    if (line[0]=='S') {
+      line2fields(line,&fields);
       id = fields[3];
       id += '_';
       id += fields[2];
@@ -187,15 +177,15 @@ void DataSet::read_sqt(string & fname) {
       mass=atof(fields[6].data());
       gotL = 0;
     }
-    if (str[0]=='M' && !gotDeltCn) {
-      line2fields(str,&fields);
+    if (line[0]=='M' && !gotDeltCn) {
+      line2fields(line,&fields);
       feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
       gotDeltCn = 1;
     }
-    if (str[0]=='M' && !gotL) {
+    if (line[0]=='M' && !gotL) {
       ids[++ix]=id;
       charge[ix]=chrg;
-      line2fields(str,&fields);
+      line2fields(line,&fields);
       feature[DataSet::rowIx(ix)+0]=atof(fields[2].data());
       feature[DataSet::rowIx(ix)+1]=mass - atof(fields[3].data());
 //      feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
@@ -214,14 +204,15 @@ void DataSet::read_sqt(string & fname) {
       feature[DataSet::rowIx(ix)+10]=(charge[ix]==3?1.0:0.0);
       gotDeltCn = 0;
     }
-    if (str[0]=='L' && !gotL) {
+    if (line[0]=='L' && !gotL) {
       gotL=1;
-      line2fields(str,&fields);
-      string * prot_id= new string(fields[1]);
-      protids2ix[*prot_id].push_back(ix);
+      line2fields(line,&fields);
+//      string * prot_id= new string(fields[1]);
+//      protids2ix[*prot_id].push_back(ix);
+      protids2ix[fields[1]].push_back(ix);
     }
   }
-  fclose(fp1);
+  sqtIn.close();
   map<string,int> seqfreq;
   map<string, vector<int> >::iterator ixvec;
   for( ixvec = protids2ix.begin(); ixvec != protids2ix.end(); ixvec++ ) {
@@ -238,7 +229,6 @@ void DataSet::read_sqt(string & fname) {
      
   }            
 //  cout << "Read File" << endl;
-  delete [] str;
   if (DataSet::calcQuadraticFeatures) {
     for (int r=0;r<getSize();r++){
       int ix = DataSet::numRealFeatures;

@@ -8,7 +8,7 @@ class SetHandler;
 class DataSet
 {
 protected:
-    int line2fields(char * s, vector<string> *fields);
+    int line2fields(string & s, vector<string>  * fields);
     double *feature;
     int n_examples;
     vector<string> ids;
