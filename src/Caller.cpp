@@ -303,7 +303,7 @@ int Caller::run() {
   double dif = difftime (end,startTime);
   
   ostringstream timerValues;
-  timerValues << "Processing took " << (clock()-startClock)/CLK_TCK;
+  timerValues << "Processing took " << (clock()-startClock)/CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << dif << " wall time seconds" << endl; 
   cout << timerValues.str();
   Scores testScores;
