@@ -37,10 +37,12 @@ Caller::~Caller()
 
 string Caller::extendedGreeter() {
   ostringstream oss;
+  char * host = getenv("HOST");
   oss << greeter();
   oss << "Issued command:" << endl << call;
-  oss << "Started " << ctime(&startTime) << " on " << getenv("HOST") << endl;
-  oss << 
+  oss << "Started " << ctime(&startTime);
+  oss.seekp(-1, ios_base::cur);
+  oss << " on " << host << endl;
   oss << "fdr=" << fdr << " (defining positive set)" << endl;
   oss << "Cpos=" << Cpos << " ,Cneg=" << Cneg << endl;
   oss << "maxNiter=" << niter << endl;
@@ -270,7 +272,7 @@ void Caller::step(double *w) {
 int Caller::run() {
   time(&startTime);
   startClock=clock();
-  cerr << greeter();
+  cout << extendedGreeter();
   bool doShuffled2 = shuffled2FN.size()>0;
   DataSet forward,shuffled,shuffled2;
   forward.read_sqt(forwardFN);
@@ -281,7 +283,6 @@ int Caller::run() {
     shuffled2.read_sqt(shuffled2FN);
     shuffled2.setLabel(-1);
   }
-  
   
   SetHandler train,test;
   train.setSet(forward,shuffled);
@@ -303,7 +304,8 @@ int Caller::run() {
   double dif = difftime (end,startTime);
   
   ostringstream timerValues;
-  timerValues << "Processing took " << (clock()-startClock)/CLOCKS_PER_SEC;
+  timerValues.precision(1);
+  timerValues << "Processing took " << (clock()-startClock)/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << dif << " wall time seconds" << endl; 
   cout << timerValues.str();
   Scores testScores;
