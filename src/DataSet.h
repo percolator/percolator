@@ -28,7 +28,7 @@ public:
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
     void read_sqt(string & fname);
-    void modify_sqt(string& out, vector<double> & sc, vector<double> & fdr);
+    void modify_sqt(string& out, vector<double> & sc, vector<double> & fdr, string greet);
     void print_features();
     static double isTryptic(const string & str);
     static inline int getNumFeatures() { return numFeatures; }

@@ -10,7 +10,6 @@
 using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
-#include "Caller.h"
 
 int DataSet::numFeatures = numRealFeatures;
 bool DataSet::calcQuadraticFeatures = false;
@@ -84,14 +83,18 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
-void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & fdr) {
+void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & fdr,string greet) {
   int ix=-1;
   string line,lineRem;
   bool print = true;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
+  istringstream greetStream(greet);
   sqtOut.precision(5);
-  sqtOut << "H\tFile processed by percolator " << Caller::versionString();
+  sqtOut << "H\tfile massaged by" << endl;
+  while(getline(greetStream,line)) {
+    sqtOut << "H\t" << line << endl;
+  }
   while(getline(sqtIn,line)) {
     if(!print && line[0]!= 'M' && line[0] != 'L')
       print = true;

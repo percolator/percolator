@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
-#include <getopt.h>
+#include <sstream>
+#include <time.h>
+#include <cstdlib>
 #include <vector>
 #include <string>
 using namespace std;
@@ -24,7 +26,7 @@ Caller::Caller()
   gistFN = "";
   weightFN = "";
   fdr=0.01;
-  nitter = 10;
+  niter = 10;
   Cpos=10;
   Cneg=10;
 }
@@ -33,24 +35,41 @@ Caller::~Caller()
 {
 }
 
-string Caller::versionString() {
-  string intro = "Version  " ;
-  intro = intro + __DATE__ + " " + __TIME__ + "\n";
-  return intro;
+string Caller::extendedGreeter() {
+  ostringstream oss;
+  oss << greeter();
+  oss << "Issued command:" << endl << call;
+  oss << "Started " << ctime(&startTime) << " on " << getenv("HOST") << endl;
+  oss << 
+  oss << "fdr=" << fdr << " (defining positive set)" << endl;
+  oss << "Cpos=" << Cpos << " ,Cneg=" << Cneg << endl;
+  oss << "maxNiter=" << niter << endl;
+  return oss.str();
+}
+
+string Caller::greeter() {
+  ostringstream oss;
+  oss << "percolator (c) 2006 Lukas Käll, University of Washington" << endl;
+  oss << "Version  " << __DATE__ << " " << __TIME__ << endl;
+  return oss.str();
 }
 
 bool Caller::parseOptions(int argc, char **argv){
-  ArgvParser cmd;
-  string intro = "percolator (c) 2006 Lukas Käll, University of Washington\n";
-  intro += versionString() + "\n";
-  intro += "Usage:\n";
-  intro += "   percolator [-huq] [-g trunc_fn] [-F val] [-i val] [-w fn] \\\n";
-  intro += "           [-r fn] [-o sqt_fn] forward shuffled [shuffled2]\n\n";
-  intro += "   where forward is the normal sqt-file,\n";
-  intro += "         shuffle the shuffled sqt-file,\n";
-  intro += "         and shuffle2 is a possible second shuffled sqt-file for validation\n";
+  ostringstream callStream;
+  callStream << argv[0];
+  for (int i=1;i<argc;i++) callStream << " " << argv[i];
+  callStream << endl;
+  call = callStream.str();
+  ostringstream intro;
+  intro << greeter() << endl << "Usage:" << endl;
+  intro << "   percolator [-huq] [-g trunc_fn] [-F val] [-i val] [-w fn] \\" << endl;
+  intro << "           [-r fn] [-o sqt_fn] forward shuffled [shuffled2]" << endl << endl;
+  intro << "   where forward is the normal sqt-file," << endl;
+  intro << "         shuffle the shuffled sqt-file," << endl;
+  intro << "         and shuffle2 is a possible second shuffled sqt-file for validation" << endl;
   // init
-  cmd.setIntroductoryDescription(intro);
+  ArgvParser cmd;
+  cmd.setIntroductoryDescription(intro.str());
   cmd.defineOption("o",
     "Output predictions to a modified sqt-file",
     ArgvParser::OptionRequiresValue);
@@ -125,7 +144,7 @@ bool Caller::parseOptions(int argc, char **argv){
   if (cmd.foundOption("q"))
     DataSet::setQuadraticFeatures(true);
   if (cmd.foundOption("i")) {
-    nitter = atoi(cmd.optionValue("n").c_str());
+    niter = atoi(cmd.optionValue("n").c_str());
   }
   if (cmd.foundOption("F")) {
     fdr = atof(cmd.optionValue("F").c_str());
@@ -249,6 +268,9 @@ void Caller::step(double *w) {
 
 
 int Caller::run() {
+  time(&startTime);
+  startClock=clock();
+  cerr << greeter();
   bool doShuffled2 = shuffled2FN.size()>0;
   DataSet forward,shuffled,shuffled2;
   forward.read_sqt(forwardFN);
@@ -272,16 +294,24 @@ int Caller::run() {
   for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=0;
   w[3]=1;
   w[DataSet::getNumFeatures()]=1;
-  for(int i=0;i<nitter;i++) {
+  for(int i=0;i<niter;i++) {
     cout << "Iteration " << i+1 << " : ";
   	step(w);
   }
+  time_t end;
+  time (&end);
+  double dif = difftime (end,startTime);
+  
+  ostringstream timerValues;
+  timerValues << "Processing took " << (clock()-startClock)/CLK_TCK;
+  timerValues << " cpu seconds or " << dif << " wall time seconds" << endl; 
+  cout << timerValues.str();
   Scores testScores;
   testScores.calcScores(w,test);
   if (modifiedFN.size()>0) {
     vector<double> sc(forward.getSize(),0.0),fdr(forward.getSize(),0.0);
     testScores.getScoreAndFdr(0,sc,fdr);
-    forward.modify_sqt(modifiedFN,sc,fdr);
+    forward.modify_sqt(modifiedFN,sc,fdr,extendedGreeter()+timerValues.str());
   }
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);

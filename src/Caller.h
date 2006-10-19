@@ -7,7 +7,8 @@ public:
 	virtual ~Caller();
 	inline void setSet(SetHandler *p){pSet=p;}
 	void step(double *);
-	static string versionString();
+	static string greeter();
+	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
     int run();
 protected:
@@ -20,10 +21,13 @@ protected:
     string rocFN;
     string gistFN;
     string weightFN;
+    string call;
     double fdr;
     double Cpos;
     double Cneg;
-    int nitter;
+    int niter;
+    time_t startTime;
+    clock_t startClock;
 };
 
 #endif /*CALLER_H_*/
