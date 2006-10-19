@@ -18,9 +18,12 @@ using namespace CommandLineProcessing;
 
 Caller::Caller()
 {
-  forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
-  shuffledFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
-  shuffled2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
+  forwardFN = "";
+  shuffledFN = "";
+  shuffled2FN = "";
+//  forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
+//  shuffledFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
+//  shuffled2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
   modifiedFN = "";
   rocFN = "";
   gistFN = "";
@@ -44,7 +47,7 @@ string Caller::extendedGreeter() {
   oss.seekp(-1, ios_base::cur);
   oss << " on " << host << endl;
   oss << "Hyperparameters fdr=" << fdr;
-  oss << ", Cpos=" << Cpos << " ,Cneg=" << Cneg << ", maxNiter=" << niter << endl;
+  oss << ", Cpos=" << Cpos << ", Cneg=" << Cneg << ", maxNiter=" << niter << endl;
   return oss.str();
 }
 
@@ -63,8 +66,7 @@ bool Caller::parseOptions(int argc, char **argv){
   call = callStream.str();
   ostringstream intro;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   percolator [-huq] [-g trunc_fn] [-F val] [-i val] [-w fn] \\" << endl;
-  intro << "           [-r fn] [-o sqt_fn] forward shuffled [shuffled2]" << endl << endl;
+  intro << "   percolator [options] forward shuffled [shuffled2]" << endl << endl;
   intro << "   where forward is the normal sqt-file," << endl;
   intro << "         shuffle the shuffled sqt-file," << endl;
   intro << "         and shuffle2 is a possible second shuffled sqt-file for validation" << endl;
@@ -304,7 +306,7 @@ int Caller::run() {
   
   ostringstream timerValues;
   timerValues.precision(4);
-  timerValues << "Processing took " << (clock()-startClock)/(double)CLOCKS_PER_SEC;
+  timerValues << "Processing took " << ((double)(clock()-startClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   cout << timerValues.str();
   Scores testScores;
