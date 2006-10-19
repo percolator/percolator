@@ -10,6 +10,7 @@
 using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
+#include "Caller.h"
 
 int DataSet::numFeatures = numRealFeatures;
 bool DataSet::calcQuadraticFeatures = false;
@@ -90,6 +91,7 @@ void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & f
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
   sqtOut.precision(5);
+  sqtOut << "H\tFile processed by percolator " << Caller::versionString();
   while(getline(sqtIn,line)) {
     if(!print && line[0]!= 'M' && line[0] != 'L')
       print = true;

@@ -7,6 +7,7 @@ public:
 	virtual ~Caller();
 	inline void setSet(SetHandler *p){pSet=p;}
 	void step(double *);
+	static string versionString();
     bool parseOptions(int argc, char **argv);
     int run();
 protected:

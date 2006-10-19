@@ -44,8 +44,6 @@ struct vector_int /* defines a vector of ints for index subsets */
   int *vec; /* ptr to vector elements */
 };
 
-enum { RLS, SVM, TSVM, DA_SVM }; /* currently implemented algorithms */
-
 struct options 
 {
   /* user options */
@@ -81,8 +79,6 @@ class Delta { /* used in line search */
 };
 inline bool operator<(const Delta& a , const Delta& b) { return (a.delta < b.delta);};
 
-void SetData(struct data *Data, int m,int n, int l,int u, int nz, 
-	     double *VAL, int *R, int *C, double *Y, double *COSTS); /* sets data fields */
 void Clear(struct data *a); /* deletes a */
 void Clear(struct vector_double *a); /* deletes a */
 void Clear(struct vector_int *a); /* deletes a */

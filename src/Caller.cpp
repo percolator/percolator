@@ -32,13 +32,19 @@ Caller::Caller()
 Caller::~Caller()
 {
 }
+
+string Caller::versionString() {
+  string intro = "Version  " ;
+  intro = intro + __DATE__ + " " + __TIME__ + "\n";
+  return intro;
+}
+
 bool Caller::parseOptions(int argc, char **argv){
   ArgvParser cmd;
   string intro = "percolator (c) 2006 Lukas Käll, University of Washington\n";
-  intro += __DATE__;
-  intro += " version\n\n";
-  intro += "Usage: \n";
-  intro += "   percolator [-huq] [-g trunc_fn] [-F val] [-i val] [-w fn]\\\n";
+  intro += versionString() + "\n";
+  intro += "Usage:\n";
+  intro += "   percolator [-huq] [-g trunc_fn] [-F val] [-i val] [-w fn] \\\n";
   intro += "           [-r fn] [-o sqt_fn] forward shuffled [shuffled2]\n\n";
   intro += "   where forward is the normal sqt-file,\n";
   intro += "         shuffle the shuffled sqt-file,\n";
