@@ -20,6 +20,8 @@ protected:
     string gistFN;
     string weightFN;
     double fdr;
+    double Cpos;
+    double Cneg;
     int nitter;
 };
 

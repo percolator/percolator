@@ -16,7 +16,6 @@ bool DataSet::calcQuadraticFeatures = false;
 
 DataSet::DataSet()
 {
-   delim.assign(" \t\n");
    feature = NULL;
    n_examples=0;
    sqtFN = "";
@@ -129,6 +128,8 @@ void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & f
       getline(sqtIn,line);      
       assert(line[0]=='L');
       sqtOut << line << endl;
+      sqtOut << "M\t2\t15\t600.0\t" << (sc[ix]+10)/(sc[ix]==0.0?1:sc[ix]) << "\t-10.0\t-1.0\t3\t10\tK.IAMAFAK.E\tU" << endl;
+      sqtOut << "L\tBogusin" << endl;
       print=false;
     } 
   }

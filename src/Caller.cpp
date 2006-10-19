@@ -25,6 +25,8 @@ Caller::Caller()
   weightFN = "";
   fdr=0.01;
   nitter = 10;
+  Cpos=10;
+  Cneg=10;
 }
 
 Caller::~Caller()
@@ -36,7 +38,7 @@ bool Caller::parseOptions(int argc, char **argv){
   intro += __DATE__;
   intro += " version\n\n";
   intro += "Usage: \n";
-  intro += "   percolator [-huq] [-g trunc_fn] [-F val] [-n val] [-w fn]\\\n";
+  intro += "   percolator [-huq] [-g trunc_fn] [-F val] [-i val] [-w fn]\\\n";
   intro += "           [-r fn] [-o sqt_fn] forward shuffled [shuffled2]\n\n";
   intro += "   where forward is the normal sqt-file,\n";
   intro += "         shuffle the shuffled sqt-file,\n";
@@ -46,10 +48,16 @@ bool Caller::parseOptions(int argc, char **argv){
   cmd.defineOption("o",
     "Output predictions to a modified sqt-file",
     ArgvParser::OptionRequiresValue);
+  cmd.defineOption("p",
+    "Cpos, penalizing factor for misstakes made on positive examples. Default is 10",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOption("n",
+    "Cneg, penalizing factor for misstakes made on negative examples. Default is 10",
+    ArgvParser::OptionRequiresValue);
   cmd.defineOption("F",
     "The FDR filter value. Default is 0.01",
     ArgvParser::OptionRequiresValue);
-  cmd.defineOption("n",
+  cmd.defineOption("i",
     "Maximal number of iteratins",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("g",
@@ -84,6 +92,22 @@ bool Caller::parseOptions(int argc, char **argv){
   // now query the parsing results
   if (cmd.foundOption("o"))
     modifiedFN = cmd.optionValue("o");
+  if (cmd.foundOption("p")) {
+    Cpos = atof(cmd.optionValue("p").c_str());
+    if (Cpos<=0.0 || Cpos > 1e127) {
+      cerr << "-p option requres a positive float value" << endl;
+      cerr << cmd.usageDescription();
+      exit(-1); 
+    }
+  }
+  if (cmd.foundOption("n")) {
+    Cneg = atof(cmd.optionValue("n").c_str());
+    if (Cneg<=0.0 || Cneg > 1e127) {
+      cerr << "-n option requres a positive float value" << endl;
+      cerr << cmd.usageDescription();
+      exit(-1); 
+    }
+  }
   if (cmd.foundOption("g"))
     gistFN = cmd.optionValue("g");
   if (cmd.foundOption("w"))
@@ -94,7 +118,7 @@ bool Caller::parseOptions(int argc, char **argv){
     Normalizer::setType(Normalizer::UNI);
   if (cmd.foundOption("q"))
     DataSet::setQuadraticFeatures(true);
-  if (cmd.foundOption("n")) {
+  if (cmd.foundOption("i")) {
     nitter = atoi(cmd.optionValue("n").c_str());
   }
   if (cmd.foundOption("F")) {
@@ -102,7 +126,7 @@ bool Caller::parseOptions(int argc, char **argv){
     if (fdr<=0.0 || fdr > 1.0) {
       cerr << "-F option requres a positive number < 1" << endl;
       cerr << cmd.usageDescription();
-      exit(1); 
+      exit(-1); 
     }
   }
   if (cmd.arguments()>3) {
@@ -179,24 +203,19 @@ void Caller::step(double *w) {
     Data->C = new double[rows];
   	for(int a=0;a<positives;a++) {
   		Data->Y[a]=1;
-  		Data->C[a]=10;  		
+  		Data->C[a]=Cpos;  		
   	}
   	for(int b=positives;b<negatives+positives;b++) {
   		Data->Y[b]=-1;
-  		Data->C[b]=10;  		
+  		Data->C[b]=Cneg;  		
   	}
   	// Setup options
     struct options *Options = new options;
-  	Options->algo = 1;
     Options->lambda=1.0;
     Options->lambda_u=1.0;
-    Options->S=10000;
-    Options->R=0.5;
     Options->epsilon=EPSILON;
     Options->cgitermax=CGITERMAX;
     Options->mfnitermax=MFNITERMAX;
-    Options->Cp = 10;
-    Options->Cn = 10;
     
     struct vector_double *Weights = new vector_double;
     Weights->d = DataSet::getNumFeatures()+1;

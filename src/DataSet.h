@@ -13,7 +13,6 @@ protected:
     int n_examples;
     vector<string> ids;
     vector<int> charge;
-	string delim;
 	int label;
     static int numFeatures;
     static bool calcQuadraticFeatures;
