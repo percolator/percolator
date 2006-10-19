@@ -43,9 +43,8 @@ string Caller::extendedGreeter() {
   oss << "Started " << ctime(&startTime);
   oss.seekp(-1, ios_base::cur);
   oss << " on " << host << endl;
-  oss << "fdr=" << fdr << " (defining positive set)" << endl;
-  oss << "Cpos=" << Cpos << " ,Cneg=" << Cneg << endl;
-  oss << "maxNiter=" << niter << endl;
+  oss << "Hyperparameters fdr=" << fdr;
+  oss << ", Cpos=" << Cpos << " ,Cneg=" << Cneg << ", maxNiter=" << niter << endl;
   return oss.str();
 }
 
@@ -301,12 +300,12 @@ int Caller::run() {
   }
   time_t end;
   time (&end);
-  double dif = difftime (end,startTime);
+  double diff = difftime (end,startTime);
   
   ostringstream timerValues;
-  timerValues.precision(1);
+  timerValues.precision(4);
   timerValues << "Processing took " << (clock()-startClock)/(double)CLOCKS_PER_SEC;
-  timerValues << " cpu seconds or " << dif << " wall time seconds" << endl; 
+  timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   cout << timerValues.str();
   Scores testScores;
   testScores.calcScores(w,test);
