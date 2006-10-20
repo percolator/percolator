@@ -19,19 +19,20 @@ protected:
     static bool calcIntraSetFeatures;
     static int numFeatures;
     static int numRealFeatures;
-    const static int maxNumRealFeatures = 14;
+    const static int maxNumRealFeatures = 16;
     string sqtFN;
 public:
 	DataSet();
 	virtual ~DataSet();
 	double * getFeature() {return feature;}
+    const double * getFeatures(const int pos);
 	int inline getSize() {return n_examples;}
     int inline getLabel() {return label;}
     bool getGistDataRow(int& pos,string & out);
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
-    void read_sqt(string & fname);
-    void modify_sqt(string& out, vector<double> & sc, vector<double> & fdr, string greet);
+    void read_sqt(const string fname);
+    void modify_sqt(const string out, vector<double> & sc, vector<double> & fdr, const string greet);
     void print_features();
     static double isTryptic(const string & str);
     static inline int getNumFeatures() { return numFeatures; }

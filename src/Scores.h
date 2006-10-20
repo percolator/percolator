@@ -25,8 +25,8 @@ public:
 	~Scores();
 	double calcScore(const double *features);
 	void calcScores(double *w, SetHandler &set, double fdr=0.0);
-	double getPositiveTrainingIxs(const double fdr,vector<int>& ixs);
-    void Scores::getScoreAndFdr(int setPos,vector<double> & s,vector<double> & fdr);
+	double getPositiveTrainingIxs(const double fdr,vector<int>& set ,vector<int>& ixs);
+    void Scores::getScoreAndQ(int setPos,vector<double> & s,vector<double> & fdr);
 	void printRoc(string & fn);	
 protected:
     double *w_vec;

@@ -65,7 +65,10 @@ void DataSet::print_features() {
 
 double DataSet::isTryptic(const string & str) {
   assert(str[1]=='.');
-  return (((str[0]=='K' || str[0]=='R') && str[2]!= 'P')?1.0:0.0);
+  return (
+  (((str[0]=='K' || str[0]=='R') && str[2]!= 'P') ||
+  str[0]=='-' || str[2]=='-')
+  ?1.0:0.0);
 }
 
 
@@ -75,6 +78,10 @@ double * DataSet::getNext(int& pos) {
     pos=0;
   if(pos>=getSize())
     return NULL;
+  return &feature[DataSet::rowIx(pos)];
+}
+
+const double * DataSet::getFeatures(const int pos) {
   return &feature[DataSet::rowIx(pos)];
 }
 
@@ -93,7 +100,7 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
-void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & fdr,string greet) {
+void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double> & fdr,const string greet) {
   int ix=-1;
   string line,lineRem;
   bool print = true;
@@ -152,7 +159,7 @@ void DataSet::modify_sqt(string & outFN, vector<double> & sc, vector<double> & f
   sqtOut.close();
 }
 
-void DataSet::read_sqt(string & fname) {
+void DataSet::read_sqt(const string fname) {
   setNumFeatures();
   sqtFN.assign(fname);
   int n = 0;
@@ -161,13 +168,13 @@ void DataSet::read_sqt(string & fname) {
   string line;
   ifstream sqtIn;
   sqtIn.open(sqtFN.data(),ios::in);
-  if (sqtIn.fail()) {
+  if (!sqtIn) {
   	cerr << "Could not open file " << sqtFN << endl;
   	exit(-1);
   }
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
-         getline(sqtIn,line);  // Protect ourselfs against double S-line errors
+         getline(sqtIn,line);  // Protect our selves against double S-line errors
          n++;
     }
   }
@@ -203,23 +210,24 @@ void DataSet::read_sqt(string & fname) {
       ids[++ix]=id;
       charge[ix]=chrg;
       line2fields(line,&fields);
-      feature[rowIx(ix)+0]=atof(fields[2].data());
-      feature[rowIx(ix)+1]=mass - atof(fields[3].data());
-//      feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
-      feature[rowIx(ix)+2]=0.0;
-      feature[rowIx(ix)+3]=atof(fields[5].data());
-      feature[rowIx(ix)+4]=atof(fields[6].data());
-      feature[rowIx(ix)+5]=atof(fields[7].data())/atof(fields[8].data());
-      feature[rowIx(ix)+6]=(charge[ix]==1?1.0:0.0);
-      feature[rowIx(ix)+7]=(charge[ix]==2?1.0:0.0);
-      feature[rowIx(ix)+8]=(charge[ix]==3?1.0:0.0);
+      feature[rowIx(ix)+0]=atof(fields[2].data());      // rank by Sp
+      feature[rowIx(ix)+1]=mass-atof(fields[3].data()); // obs - calc mass
+      feature[rowIx(ix)+2]=0.0;                         // deltCn (leave until next M line)
+      feature[rowIx(ix)+3]=atof(fields[5].data());      // Xcorr
+      feature[rowIx(ix)+4]=atof(fields[6].data());      // Sp
+      feature[rowIx(ix)+5]=atof(fields[7].data())/atof(fields[8].data()); //Fraction matched/expected ions
+      feature[rowIx(ix)+6]=mass;                        // Observed mass
       string seq(fields[9]);
+      feature[rowIx(ix)+7]=seq.size()-4;                // Peptide length
+      feature[rowIx(ix)+8]=(charge[ix]==1?1.0:0.0);     // Charge
+      feature[rowIx(ix)+9]=(charge[ix]==2?1.0:0.0);
+      feature[rowIx(ix)+10]=(charge[ix]==3?1.0:0.0);
       string sub1=seq.substr(0,3);
       string sub2=seq.substr(seq.size()-3);
       ix2seq[ix].assign(seq);
       if (calcTrypticFeatures) {
-        feature[rowIx(ix)+9]=isTryptic(sub1);
-        feature[rowIx(ix)+10]=isTryptic(sub2);
+        feature[rowIx(ix)+11]=isTryptic(sub1);        
+        feature[rowIx(ix)+12]=isTryptic(sub2);
       }
       gotDeltCn = 0;
     }

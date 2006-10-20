@@ -9,7 +9,9 @@ using namespace std;
 SetHandler::SetHandler() {
 //	charge=c;
 	norm=Normalizer::getNew();
-    n_points=0;
+    n_examples=0;
+    n_pos=0;
+    n_neg=0;
 }
 
 SetHandler::~SetHandler()
@@ -27,19 +29,28 @@ const double * SetHandler::getNext(int& setPos,int& ixPos) {
   return subsets[setPos]->getNext(ixPos);
 }
 
-int const SetHandler::getLabel(int *setPos) {
-  assert(*setPos>=0 && *setPos<(signed int)subsets.size());
-  return subsets[*setPos]->getLabel();
+const double * SetHandler::getFeatures(const int setPos,const int ixPos) {
+  return subsets[setPos]->getFeatures(ixPos);
 }
 
-void SetHandler::setSet(DataSet &pos,DataSet &neg){
+int const SetHandler::getLabel(int setPos) {
+  assert(setPos>=0 && setPos<(signed int)subsets.size());
+  return subsets[setPos]->getLabel();
+}
+
+void SetHandler::setSet(vector<DataSet *> & pos,vector<DataSet *> &neg){
     subsets.clear();
-    subsets.push_back(&pos);
-    subsets.push_back(&neg);    
-	n_points=0;
+    subsets.assign(pos.begin(),pos.end());
+    subsets.insert(subsets.end(),neg.begin(),neg.end());
+	n_examples=0;
+    n_pos=0;
+    n_neg=0;
 	int i=0,j=-1;
-	while(getNext(i,j))
-	  n_points++;
+	while(getNext(i,j)) {
+	  n_examples++;
+      if (getLabel(i)==-1) n_neg++;
+      else n_pos++;
+    }
 	norm->setSet(this);
 }
 

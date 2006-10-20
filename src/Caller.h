@@ -10,6 +10,8 @@ public:
 	static string greeter();
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
+    void readFile(const string fn, const int label, vector<DataSet *> & sets);
+    void modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , const string greet);
     int run();
 protected:
     SetHandler *pSet;

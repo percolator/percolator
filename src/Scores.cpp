@@ -21,14 +21,6 @@ Scores::Scores()
 
 Scores::~Scores()
 {
-/*	vector<ScoreHolder>::iterator it;
-	it=scores.begin();
-	while(it!=scores.end()) {
-		delete &(*it);
-		*it=NULL;
-		it++;
-    } 
-*/
 }
 
 void Scores::printRoc(string & fn){
@@ -60,7 +52,7 @@ void Scores::calcScores(double *w,SetHandler & set, double fdr) {
   unsigned int ix=0;
   while((features=set.getNext(setPos,ixPos))!=NULL) {
   	scores[ix].score = calcScore(features);
-  	scores[ix].label = set.getLabel(&setPos);
+  	scores[ix].label = set.getLabel(setPos);
   	scores[ix].index = ixPos;
   	scores[ix++].set = setPos;
   }
@@ -72,49 +64,49 @@ void Scores::calcScores(double *w,SetHandler & set, double fdr) {
   }
   for (ix=scores.size()-10;ix < scores.size();ix++) {
   	cout << scores[ix].score << " " << scores[ix].label << endl;
-  } */
+  } */ 
   if (fdr>0.0) {
   	int tp=0,fp=0;
-    vector<ScoreHolder>::iterator it;
+    vector<ScoreHolder>::iterator it,it2;
     for(it=scores.begin();it!=scores.end();it++) {
       if (it->label!=-1)
         tp++;
       if (it->label==-1)
         fp++;
       if (fdr<(fp/(tp+fp))) {
-        w[DataSet::getNumFeatures()] = - it->score;
-        w_vec[DataSet::getNumFeatures()] = - it->score;
+        double zero = it->score;
+        w[DataSet::getNumFeatures()] -= zero;
+        for(it2=scores.begin();it2!=scores.end();it2++) 
+          it2->score -= zero;
         break;
       }
     }
   }
 }
 
-void Scores::getScoreAndFdr(int setPos,vector<double> & s, vector<double> & fdr) {
+void Scores::getScoreAndQ(int setPos,vector<double> & s, vector<double> & q) {
   int tp=0,fp=0;
   vector<ScoreHolder>::iterator it;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label==-1) {fp++;} else {tp++;}
     if (it->set == setPos) {
       s[it->index]=it->score;
-      double f = fp/(double(tp)+fp);
-      fdr[it->index]=f;
+      double fdr = fp/(double(tp)+fp);
+      q[it->index]=fdr;
     }
   }
 }
 
-double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& ixs) {
+double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& set,vector<int>& ixs) {
   double tp=0,fp=0;
   vector<ScoreHolder>::iterator it;
   for(it=scores.begin();it!=scores.end();it++) {
-    if (it->label!=-1)
-      tp++;
-    if (it->label==-1)
-      fp++;
+    if (it->label==-1) fp++; else tp++;
     if (fdr<(fp/(tp+fp)))
       return -it->score;
     if (it->label!=-1)
       ixs.push_back(it->index);
+      set.push_back(it->set);      
   }
   return 0;
 }
