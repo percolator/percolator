@@ -172,7 +172,7 @@ bool Caller::parseOptions(int argc, char **argv){
 }
 
 void Caller::step(double *w) {
-  	scores.calcScores(w,*pSet);
+  	scores.calcScores(w,*pSet,fdr);
   	vector<int> ixs;
   	vector<int>::iterator it;
   	w[DataSet::getNumFeatures()]=scores.getPositiveTrainingIxs(fdr,ixs);

@@ -50,7 +50,7 @@ double Scores::calcScore(const double *feat) {
   return score;
 }
 
-void Scores::calcScores(double *w,SetHandler & set) {
+void Scores::calcScores(double *w,SetHandler & set, double fdr) {
   ScoreHolder s;
   scores.resize(set.getSize(),s);
   w_vec=w;
@@ -73,6 +73,21 @@ void Scores::calcScores(double *w,SetHandler & set) {
   for (ix=scores.size()-10;ix < scores.size();ix++) {
   	cout << scores[ix].score << " " << scores[ix].label << endl;
   } */
+  if (fdr>0.0) {
+  	int tp=0,fp=0;
+    vector<ScoreHolder>::iterator it;
+    for(it=scores.begin();it!=scores.end();it++) {
+      if (it->label!=-1)
+        tp++;
+      if (it->label==-1)
+        fp++;
+      if (fdr<(fp/(tp+fp))) {
+        w[DataSet::getNumFeatures()] = - it->score;
+        w_vec[DataSet::getNumFeatures()] = - it->score;
+        break;
+      }
+    }
+  }
 }
 
 void Scores::getScoreAndFdr(int setPos,vector<double> & s, vector<double> & fdr) {
