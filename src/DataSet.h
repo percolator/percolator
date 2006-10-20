@@ -14,9 +14,12 @@ protected:
     vector<string> ids;
     vector<int> charge;
 	int label;
-    static int numFeatures;
     static bool calcQuadraticFeatures;
-    const static int numRealFeatures = 14;
+    static bool calcTrypticFeatures;
+    static bool calcIntraSetFeatures;
+    static int numFeatures;
+    static int numRealFeatures;
+    const static int maxNumRealFeatures = 14;
     string sqtFN;
 public:
 	DataSet();
@@ -33,7 +36,10 @@ public:
     static double isTryptic(const string & str);
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on)
-      { numFeatures=(on?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures); calcQuadraticFeatures=on;}
+      { calcQuadraticFeatures=on;}
+    static void setTrypticFeatures(bool on)
+      { calcTrypticFeatures=on;}
+    static void setNumFeatures();
     static inline int rowIx(int row) { return row*numFeatures; }
 };
 

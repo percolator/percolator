@@ -101,6 +101,8 @@ bool Caller::parseOptions(int argc, char **argv){
     "Use unit normalization [0-1] instead of standard deviation normalization");
   cmd.defineOption("q",
     "Calculate quadratic feature terms");
+  cmd.defineOption("y",
+    "Turn off calculation of tryptic features");
 
   //define error codes
   cmd.addErrorCode(0, "Success");
@@ -146,6 +148,8 @@ bool Caller::parseOptions(int argc, char **argv){
     Normalizer::setType(Normalizer::UNI);
   if (cmd.foundOption("q"))
     DataSet::setQuadraticFeatures(true);
+  if (cmd.foundOption("y"))
+    DataSet::setTrypticFeatures(false);
   if (cmd.foundOption("i")) {
     niter = atoi(cmd.optionValue("n").c_str());
   }
