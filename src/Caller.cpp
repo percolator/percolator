@@ -183,8 +183,8 @@ bool Caller::parseOptions(int argc, char **argv){
   return true;
 }
 
-void Caller::readFile(string & fn, const int label, vector<DataSet *> & sets) {
-  ifstream fileIn(fn.data(),ios::in);
+void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets) {
+  ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {
     cerr << "Could not open file " << fn << endl;
     exit(-1);
@@ -206,10 +206,12 @@ void Caller::readFile(string & fn, const int label, vector<DataSet *> & sets) {
     sets.push_back(pSet);
   } else {
     // we hopefully found a meta file
+    string line2;
     ifstream meta(fn.data(),ios::in);
-    while(getline(meta,line)) {
-      if (line.size()>0 && line[0] != '#')
-        readFile(line,label,sets);
+    while(getline(meta,line2)) {
+      if (line2.size()>0 && line2[0] != '#')
+//        cout << "0:" << line2[0] << " 1:" << line2[1] << " e:" << line2[line2.size()-1] << endl;
+        readFile(line2,label,sets);
     }
     meta.close();
   }
