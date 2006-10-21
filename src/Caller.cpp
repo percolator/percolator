@@ -219,7 +219,7 @@ void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets
 
 void Caller::modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , const string greet) {
   string line;
-  ifstream fileIn(fn.data(),ios::in);
+  ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {
     cerr << "More than one input file, and file " << fn << 
             " do not contain listing to a set of files" << endl;
@@ -242,14 +242,14 @@ void Caller::modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , 
     return;
   }
   unsigned int ix=0;
-  fileIn.open(fn.data(),ios::in);
+  fileIn.open(fn.c_str(),ios::in);
   while(getline(fileIn,line)) {
     if(line.size()>0 && line[0]!='#') {
       vector<double> s,q;
       s.resize(sets[ix]->getSize(),-100);
       q.resize(sets[ix]->getSize(),-100);
       sc.getScoreAndQ(ix,s,q);
-      sets[ix++]->modify_sqt(fn,s,q,greet);
+      sets[ix++]->modify_sqt(line,s,q,greet);
     }    
   }
   fileIn.close();
