@@ -222,7 +222,7 @@ void Caller::modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , 
   ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {
     cerr << "More than one input file, and file " << fn << 
-            " do not contain listing to a set of files" << endl;
+            " that should contain listing to a set of files is not readable" << endl;
     exit(-1);
   }
   if (sets.size()>1 && getline(fileIn,line) && line.size()>1 && 
