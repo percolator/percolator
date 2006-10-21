@@ -153,7 +153,7 @@ bool Caller::parseOptions(int argc, char **argv){
   if (cmd.foundOption("y"))
     DataSet::setTrypticFeatures(false);
   if (cmd.foundOption("i")) {
-    niter = atoi(cmd.optionValue("n").c_str());
+    niter = atoi(cmd.optionValue("i").c_str());
   }
   if (cmd.foundOption("F")) {
     fdr = atof(cmd.optionValue("F").c_str());
