@@ -5,8 +5,7 @@ class Caller
 public:
 	Caller();
 	virtual ~Caller();
-	inline void setSet(SetHandler *p){pSet=p;}
-	void step(double *);
+	void step(double *w,SetHandler & train);
 	static string greeter();
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
@@ -14,7 +13,7 @@ public:
     void modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , const string greet);
     int run();
 protected:
-    SetHandler *pSet;
+    Normalizer * pNorm;
     Scores scores;
     string modifiedFN;
     string forwardFN;

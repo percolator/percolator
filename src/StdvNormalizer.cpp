@@ -45,32 +45,35 @@ void StdvNormalizer::normalizeweight(const double *in,double* out){
   out[i]=in[i]+sum;
 }
 
-void StdvNormalizer::setSet(SetHandler * set){
+void StdvNormalizer::setSet(vector<DataSet *> & setVec){
   double n=0.0;
-  int setPos=0;
-  int ixPos=-1;
   const double * features;
   int ix;
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
     avg[ix]=0.0;
     stdv[ix]=0.0;
   }
-  while((features=set->getNext(setPos,ixPos))!=NULL) {
-	n++;
-	for (ix=0;ix<DataSet::getNumFeatures();ix++) {
-	  avg[ix]+=features[ix];
-	}
+  vector<DataSet *>::iterator it;
+  for (it=setVec.begin();it!=setVec.end();++it) {
+    int ixPos=-1;
+    while((features=(*it)->getNext(ixPos))!=NULL) {
+	  n++;
+	  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+	    avg[ix]+=features[ix];
+	  }
+    }
   }
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
   	if (n>0.0)
      avg[ix]/=n;
   }
-  setPos=0;
-  ixPos=-1;
-  while((features=set->getNext(setPos,ixPos))!=NULL) {
-    for (ix=0;ix<DataSet::getNumFeatures();ix++) {
-      double d = features[ix]-avg[ix];
-      stdv[ix]+=d*d;
+  for (it=setVec.begin();it!=setVec.end();++it) {
+    int ixPos=-1;
+    while((features=(*it)->getNext(ixPos))!=NULL) {
+      for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+        double d = features[ix]-avg[ix];
+        stdv[ix]+=d*d;
+      }
     }
   }
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {

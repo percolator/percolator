@@ -24,8 +24,10 @@ public:
 	Scores();
 	~Scores();
 	double calcScore(const double *features);
+    const vector<ScoreHolder>::const_iterator begin() const {return scores.begin();}
+    const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
 	void calcScores(double *w, SetHandler &set, double fdr=0.0);
-	double getPositiveTrainingIxs(const double fdr,vector<int>& set ,vector<int>& ixs);
+//	double getPositiveTrainingIxs(const double fdr,vector<int>& set ,vector<int>& ixs);
     void Scores::getScoreAndQ(int setPos,vector<double> & s,vector<double> & fdr);
 	void printRoc(string & fn);	
 protected:

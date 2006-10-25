@@ -10,6 +10,7 @@
 using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
+#include "global.h"
 
 int DataSet::numFeatures = maxNumRealFeatures;
 int DataSet::numRealFeatures = maxNumRealFeatures;
@@ -42,17 +43,18 @@ void DataSet::setNumFeatures() {
 }
 
 int DataSet::line2fields(string & line, vector<string> * words) {
-  words->clear();
   istringstream iss;
   iss.str(line);
   string word;
 //  iss >> word;
+  unsigned int n_w=0;
   while(iss.good()) {
-    iss >> word;
-    words->push_back(word);
-//    iss >> word;
+    iss >> (*words)[n_w++];
   }
-  return words->size();
+  unsigned int i = n_w;
+  while (i<words->size())
+    (*words)[i++]="";
+  return n_w;
 }
 void DataSet::print_features() {
    for(int i=0;i<getSize();i++) {
@@ -164,6 +166,7 @@ void DataSet::read_sqt(const string fname) {
   sqtFN.assign(fname);
   int n = 0;
   vector<string> fields;
+  fields.resize(25,"");
 
   string line;
   ifstream sqtIn;
@@ -178,7 +181,7 @@ void DataSet::read_sqt(const string fname) {
          n++;
     }
   }
-  cout << n << " records in file " << sqtFN << endl;
+  if (verbose>1) cerr << n << " records in file " << sqtFN << endl;
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
 

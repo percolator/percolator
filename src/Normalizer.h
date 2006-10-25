@@ -1,13 +1,12 @@
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
 
-class SetHandler;
-
 class Normalizer
 {
 public:
 	virtual ~Normalizer();
-    virtual void setSet(SetHandler *){;}
+    virtual void setSet(vector<DataSet *> & setVec){;}
+    void normalizeSet(vector<DataSet *> & setVec);
     virtual void normalize(const double *in,double* out){;}
     virtual void unnormalizeweight(const double *in,double* out){;}
     virtual void normalizeweight(const double *in,double* out){;}

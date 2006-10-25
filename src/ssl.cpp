@@ -3,16 +3,21 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <cmath>
+#include <string>
+#include <vector>
 #include <ctype.h>
+using namespace std;
+#include "global.h"
+#include "DataSet.h"
+#include "SetHandler.h"
 #include "ssl.h"
 
 #define VERBOSE 1
 #define LOG2(x) 1.4426950408889634*log(x) 
 // for compatibility issues, not using log2
 
-using namespace std;
 
-int CGLS(const struct data *Data, 
+int CGLS(SetHandler & data, 
      const double lambda,
 	 const int cgitermax,
      const double epsilon, 
@@ -27,39 +32,40 @@ int CGLS(const struct data *Data,
   tictoc.restart();
   int active = Subset->d;
   int *J = Subset->vec;
-  double *val = Data->val;
-  int *row = Data->rowptr;
-  int *col = Data->colind;
-  double *Y = Data->Y;
-  double *C = Data->C;
-  int n  = Data->n;
+  vector<const double *> * pSet = data.getTrainingSet();
+  const double * Y = data.getLabels();
+  const double * C = data.getC();
+  const int n  = DataSet::getNumFeatures()+1;
+//  int m  = pSet->size();
   double *beta = Weights->vec;
   double *o  = Outputs->vec; 
   // initialize z 
   double *z = new double[active];
   double *q = new double[active];
   int ii=0;
-  for(int i = active ; i-- ;){
+  register int i,j;
+  for(i = active ; i-- ;){
     ii=J[i];      
     z[i]  = C[ii]*(Y[ii] - o[ii]);
   }
   double *r = new double[n];
-  for(int i = n ; i-- ;)
+  for(i = n ; i-- ;)
     r[i] = 0.0;
-  for(register int j=0; j < active; j++)
-    {
-      ii=J[j];
-      for(register int i=row[ii]; i < row[ii+1]; i++)
-	r[col[i]]+=val[i]*z[j];
-    }
+  for(j=0; j < active; j++)
+  {
+    const double * val = (*pSet)[J[j]];   
+    for(i=n-1; i--;)
+      r[i]+=val[i]*z[j];
+    r[n-1]+=z[j];
+  }
   double *p = new double[n];   
   double omega1 = 0.0;
-  for(int i = n ; i-- ;)
-    {
-      r[i] -= lambda*beta[i];
-      p[i] = r[i];
-      omega1 += r[i]*r[i];
-    }   
+  for(i = n ; i-- ;)
+  {
+    r[i] -= lambda*beta[i];
+    p[i] = r[i];
+    omega1 += r[i]*r[i];
+  }   
   double omega_p = omega1;
   double omega_q = 0.0;
   double inv_omega2 = 1/omega1;
@@ -69,92 +75,93 @@ int CGLS(const struct data *Data,
   int cgiter = 0;
   int optimality = 0;
   double epsilon2 = epsilon*epsilon;   
-  // iterate
+    // iterate
   while(cgiter < cgitermax)
+  {
+    cgiter++;
+    omega_q=0.0;
+    double t=0.0;
+//    register int i,j; 
+    // #pragma omp parallel for private(i,j)
+    for(i=0; i < active; i++)
     {
-      cgiter++;
-      omega_q=0.0;
-      double t=0.0;
-      register int i,j; 
-      // #pragma omp parallel for private(i,j)
-      for(i=0; i < active; i++)
-	{
-	  ii=J[i];
-	  t=0.0;
-	  for(j=row[ii]; j < row[ii+1]; j++)
-	    t+=val[j]*p[col[j]];
-	  q[i]=t;
-	  omega_q += C[ii]*t*t;
-	}       
-      gamma = omega1/(lambda*omega_p + omega_q);    
-      inv_omega2 = 1/omega1;     
-      for(int i = n ; i-- ;)
-	{
-	  r[i] = 0.0;
-	  beta[i] += gamma*p[i];
-	} 
-      omega_z=0.0;
-      for(int i = active ; i-- ;)
-	{
-	  ii=J[i];
-	  o[ii] += gamma*q[i];
-	  z[i] -= gamma*C[ii]*q[i];
-	  omega_z+=z[i]*z[i];
-	} 
-      for(register int j=0; j < active; j++)
-	{
-	  ii=J[j];
-	  t=z[j];
-	  for(register int i=row[ii]; i < row[ii+1]; i++)
-	    r[col[i]]+=val[i]*t;
-	}
-      omega1 = 0.0;
-      for(int i = n ; i-- ;)
-	{
-	  r[i] -= lambda*beta[i];
-	  omega1 += r[i]*r[i];
-	}
-      if(VERBOSE_CGLS)
-	cout << "..." << cgiter << " ( " << omega1 << " )" ; 
-      if(omega1 < epsilon2*omega_z)
-	{
-	  optimality=1;
-	  break;
-	}
-      omega_p=0.0;
-      scale=omega1*inv_omega2;
-      for(int i = n ; i-- ;)
-	{
-	  p[i] = r[i] + p[i]*scale;
-	  omega_p += p[i]*p[i]; 
-	} 
-    }            
+      ii=J[i];
+      t=0.0;
+      const double * val = (*pSet)[ii];   
+      for(j=0; j < n-1; j++)
+        t+=val[j]*p[j];
+      t+=p[n-1];
+      q[i]=t;
+      omega_q += C[ii]*t*t;
+    }       
+    gamma = omega1/(lambda*omega_p + omega_q);    
+    inv_omega2 = 1/omega1;     
+    for(int i = n ; i-- ;)
+    {
+      r[i] = 0.0;
+      beta[i] += gamma*p[i];
+    } 
+    omega_z=0.0;
+    for(int i = active ; i-- ;)
+    {
+      ii=J[i];
+      o[ii] += gamma*q[i];
+      z[i] -= gamma*C[ii]*q[i];
+      omega_z+=z[i]*z[i];
+    } 
+    for(register int j=0; j < active; j++)
+    {
+      ii=J[j];
+      t=z[j];      
+      const double * val = (*pSet)[ii];   
+      for(register int i=0; i < n-1; i++)
+        r[i]+=val[i]*t;
+      r[n-1]+=t;
+    }
+    omega1 = 0.0;
+    for(int i = n ; i-- ;)
+    {
+      r[i] -= lambda*beta[i];
+      omega1 += r[i]*r[i];
+    }
+    if(VERBOSE_CGLS)
+      cout << "..." << cgiter << " ( " << omega1 << " )" ; 
+    if(omega1 < epsilon2*omega_z)
+    {
+      optimality=1;
+      break;
+    }
+    omega_p=0.0;
+    scale=omega1*inv_omega2;
+    for(int i = n ; i-- ;)
+    {
+      p[i] = r[i] + p[i]*scale;
+      omega_p += p[i]*p[i]; 
+    } 
+  }            
   if(VERBOSE_CGLS)
     cout << "...Done." << endl;
   tictoc.stop();
-//  cout << "CGLS converged in " << cgiter << " iteration(s) and " << tictoc.time() << " seconds." << endl;
+  if (verbose>4) cerr << "CGLS converged in " << cgiter << " iteration(s) and " << tictoc.time() << " seconds." << endl;
   delete[] z;
   delete[] q;
   delete[] r;
   delete[] p;
   return optimality;
 }
-int L2_SVM_MFN(const struct data *Data, 
+int L2_SVM_MFN(SetHandler & data, 
 	       struct options *Options, 
 	       struct vector_double *Weights,
-	       struct vector_double *Outputs,
-	       int ini)
+	       struct vector_double *Outputs)
 { 
   /* Disassemble the structures */  
   timer tictoc;
   tictoc.restart();
-  double *val = Data->val;
-  int *row = Data->rowptr;
-  int *col = Data->colind;
-  double *Y = Data->Y;
-  double *C = Data->C;
-  int n  = Data->n;
-  int m  = Data->m;
+  vector<const double *> * pSet = data.getTrainingSet();
+  const double * Y = data.getLabels();
+  const double * C = data.getC();
+  const int n  = DataSet::getNumFeatures()+1;
+  const int m  = pSet->size();
   double lambda = Options->lambda;
   double epsilon=BIG_EPSILON;
   int cgitermax=SMALL_CGITERMAX;
@@ -163,6 +170,7 @@ int L2_SVM_MFN(const struct data *Data,
   double F_old = 0.0;
   double F = 0.0;
   double diff=0.0;
+  int ini=0;
   vector_int *ActiveSubset = new vector_int[1];
   ActiveSubset->vec = new int[m];
   ActiveSubset->d = m;
@@ -201,62 +209,63 @@ int L2_SVM_MFN(const struct data *Data,
   double delta=0.0;
   double t=0.0;
   int ii = 0;
-  while(iter<MFNITERMAX)
-    {
-      iter++;
-//      cout << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
-      for(int i=n; i-- ;) 
-	w_bar[i]=w[i];
+  while(iter<Options->mfnitermax)
+  {
+    iter++;
+    if (verbose>2) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
+    for(int i=n; i-- ;) 
+      w_bar[i]=w[i];
       for(int i=m; i-- ;)  
-	o_bar[i]=o[i];
-//      cout << " " ;
-      opt=CGLS(Data,lambda,cgitermax,epsilon,ActiveSubset,Weights_bar,Outputs_bar);
-      for(register int i=active; i < m; i++) 
-	{
-	  ii=ActiveSubset->vec[i];   
-	  t=0.0;
-	  for(register int j=row[ii]; j < row[ii+1]; j++)
-	    t+=val[j]*w_bar[col[j]];
-	  o_bar[ii]=t;
-	}
-      if(ini==0) {cgitermax=CGITERMAX; ini=1;};
-      opt2=1;
-      for(int i=0;i<m;i++)
-	{ 
-	  ii=ActiveSubset->vec[i];
-	  if(i<active)
-	    opt2=(opt2 && (Y[ii]*o_bar[ii]<=1+epsilon));
-	  else
-	    opt2=(opt2 && (Y[ii]*o_bar[ii]>=1-epsilon));  
-	  if(opt2==0) break;
-	}      
-      if(opt && opt2) // l
-	{
-	  if(epsilon==BIG_EPSILON) 
+	    o_bar[i]=o[i];
+        opt=CGLS(data,lambda,cgitermax,epsilon,ActiveSubset,Weights_bar,Outputs_bar);
+        for(register int i=active; i < m; i++) 
 	    {
-	      epsilon=Options->epsilon;
-//	      cout << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
-	      continue;
-	    }
-	  else
+	      ii=ActiveSubset->vec[i];
+          const double * val = (*pSet)[ii];   
+	      t=0.0;
+	      for(register int j=0; j < n-1; j++)
+	        t+=val[j]*w_bar[j];
+          t+=w_bar[n-1];
+	      o_bar[ii]=t;
+        }
+        if(ini==0) {cgitermax=CGITERMAX; ini=1;};
+        opt2=1;
+        for(int i=0;i<m;i++)
+        { 
+          ii=ActiveSubset->vec[i];
+	      if(i<active)
+	        opt2=(opt2 && (Y[ii]*o_bar[ii]<=1+epsilon));
+	      else
+	        opt2=(opt2 && (Y[ii]*o_bar[ii]>=1-epsilon));  
+	      if(opt2==0) break;
+        }      
+        if(opt && opt2) // l
 	    {
-	      for(int i=n; i-- ;) 
-		w[i]=w_bar[i];      
-	      for(int i=m; i-- ;)
-		o[i]=o_bar[i]; 
-	       delete[] ActiveSubset->vec;
-	       delete[] ActiveSubset;
-	       delete[] o_bar;
-	       delete[] w_bar;
-	       delete[] Weights_bar;
-	       delete[] Outputs_bar;
-	       tictoc.stop();
-//	       cout << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
-	       return 1;      
-	    }
-	}
+	      if(epsilon==BIG_EPSILON) 
+	      {
+            epsilon=Options->epsilon;
+            if (verbose>2) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
+            continue;
+	      }
+          else
+	      {
+            for(int i=n; i-- ;) 
+              w[i]=w_bar[i];      
+	        for(int i=m; i-- ;)
+              o[i]=o_bar[i]; 
+	        delete[] ActiveSubset->vec;
+	        delete[] ActiveSubset;
+	        delete[] o_bar;
+	        delete[] w_bar;
+	        delete[] Weights_bar;
+	        delete[] Outputs_bar;
+	        tictoc.stop();
+	          if (verbose>3) cerr << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
+	        return 1;      
+	      }
+        }
 //      cout << " " ;
-      delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m); 
+        delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m); 
 //      cout << "LINE_SEARCH delta = " << delta << endl;     
       F_old=F;
       F=0.0;
@@ -306,8 +315,8 @@ double line_search(double *w,
                    double lambda,
                    double *o, 
                    double *o_bar, 
-                   double *Y, 
-                   double *C,
+                   const double *Y, 
+                   const double *C,
                    int d, /* data dimensionality -- 'n' */
                    int l) /* number of examples */                  
 {                       

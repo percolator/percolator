@@ -15,6 +15,7 @@ using namespace CommandLineProcessing;
 #include "SetHandler.h"
 #include "Caller.h"
 #include "ssl.h"
+#include "global.h"
 
 Caller::Caller()
 {
@@ -29,10 +30,14 @@ Caller::Caller()
   niter = 10;
   Cpos=10;
   Cneg=10;
+  pNorm=NULL;
 }
 
 Caller::~Caller()
 {
+    if (pNorm)
+      delete pNorm;
+    pNorm=NULL;
 }
 
 string Caller::extendedGreeter() {
@@ -94,6 +99,9 @@ bool Caller::parseOptions(int argc, char **argv){
   cmd.defineOption("w",
     "Output final weights to the given filename",
     ArgvParser::OptionRequiresValue);
+  cmd.defineOption("v",
+    "Set verbosity of output: 0=no processing info, 5=all, default is 2",
+    ArgvParser::OptionRequiresValue);
   cmd.defineOption("r",
     "Output result file (score ranked labels) to given filename",
     ArgvParser::OptionRequiresValue);
@@ -154,6 +162,9 @@ bool Caller::parseOptions(int argc, char **argv){
     DataSet::setTrypticFeatures(false);
   if (cmd.foundOption("i")) {
     niter = atoi(cmd.optionValue("i").c_str());
+  }
+  if (cmd.foundOption("v")) {
+    verbose = atoi(cmd.optionValue("v").c_str());
   }
   if (cmd.foundOption("F")) {
     fdr = atof(cmd.optionValue("F").c_str());
@@ -264,72 +275,13 @@ void clean(vector<DataSet *> & set) {
   }
 }
 
-void Caller::step(double *w) {
-  	scores.calcScores(w,*pSet,fdr);
-  	vector<int> pos_ix;
-    vector<int> pos_set;
-    scores.getPositiveTrainingIxs(fdr,pos_set,pos_ix);
-  	int rows = pos_ix.size();
-  	int negatives = pSet->getNegativeSize();
-  	rows += negatives;
-  	int nz = (DataSet::getNumFeatures()+1)*rows;
-  	double* VAL = new double[nz];
-    int* C = new int[nz];
-    int* R = new int[rows+1];
-  	int r=0;
-  	int pos=0;
-  	Normalizer *norm =pSet->getNormalizer();
-  	for(unsigned int ix=0;ix<pos_ix.size();ix++) {
-  	  R[r++]=pos;
-  	  norm->normalize(pSet->getFeatures(pos_set[ix],pos_ix[ix]),&VAL[pos]);
-  	  for(int i=0;i<=DataSet::getNumFeatures();i++,pos++) {
-  	    C[pos]=i;
-  	  } 
-  	  VAL[pos-1]=1.0;        	  
-  	}
-  	int positives = r;
-//  	double * featNeg = pSet->getSubSet(1)->getFeature();
-//  	getNext...
-//  	int negatives = pSet->getSubSet(1)->getSize();
-    int rowInSet = -1;
-    int set =-1;
-    while(pSet->getLabel(++set)!=-1);
-    while(const double * featNeg = pSet->getNext(set,rowInSet)) {
-  	  R[r++]=pos;
-  	  norm->normalize(featNeg,&VAL[pos]);
-  	  for(int i=0;i<=DataSet::getNumFeatures();i++,pos++) {
-  	    C[pos]=i;
-  	  } 
-  	  VAL[pos-1]=1.0;        	  
-  	}
-  	R[r]=nz;
-/*  	int ixy;
-  	for (ixy=0;ixy<20;ixy++){
-  	  cout << ixy << " " << VAL[ixy] << " " << C[ixy] << " " << R[ixy] << "\n";
-  	}
-  	for (ixy=nz-3;ixy<nz;ixy++){
-  	  cout << ixy << " " << VAL[ixy] << " " << C[ixy] << " " << R[ixy-nz+rows] << "\n";
-  	} */
-  	cout << "Calling with " << positives << " positives and " << negatives << " negatives\n";
-  	struct data *Data = new data;
-  	Data->n=DataSet::getNumFeatures()+1;
-    Data->m=rows;
-    Data->l=rows;
-    Data->u=0;
-    Data->val=VAL;
-    Data->rowptr=R;
-    Data->colind=C;
-    Data->nz = nz;
-    Data->Y = new double[rows];
-    Data->C = new double[rows];
-  	for(int a=0;a<positives;a++) {
-  		Data->Y[a]=1;
-  		Data->C[a]=Cpos;  		
-  	}
-  	for(int b=positives;b<negatives+positives;b++) {
-  		Data->Y[b]=-1;
-  		Data->C[b]=Cneg;  		
-  	}
+void Caller::step(double *w,SetHandler & train) {
+  	scores.calcScores(w,train);
+    train.generateTrainingSet(fdr,Cpos,Cneg,scores);
+    int nex=train.getTrainingSetSize();
+    int negatives = train.getNegativeSize();
+    int positives = nex - negatives;
+  	if (verbose>1) cerr << "Calling with " << positives << " positives and " << negatives << " negatives\n";
   	// Setup options
     struct options *Options = new options;
     Options->lambda=1.0;
@@ -345,16 +297,15 @@ void Caller::step(double *w) {
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
     
     struct vector_double *Outputs = new vector_double;
-    Outputs->vec = new double[rows];
-    Outputs->d = rows;
+    Outputs->vec = new double[nex];
+    Outputs->d = nex;
     for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
 
 //    norm->normalizeweight(w,Weights->vec);
 //    Weights->vec[DataSet::getNumFeatures()] = 0;
-    L2_SVM_MFN(Data,Options,Weights,Outputs,0);
-  	norm->unnormalizeweight(Weights->vec,w);
-
-  	Clear(Data);
+    L2_SVM_MFN(train,Options,Weights,Outputs);
+    for(int i= DataSet::getNumFeatures()+1;i--;)
+      w[i]=Weights->vec[i];
   	delete [] Weights->vec;
   	delete Weights;
   	delete [] Outputs->vec;
@@ -366,7 +317,7 @@ void Caller::step(double *w) {
 int Caller::run() {
   time(&startTime);
   startClock=clock();
-  cout << extendedGreeter();
+  if(verbose>0)  cerr << extendedGreeter();
   bool doShuffled2 = shuffled2FN.size()>0;
   vector<DataSet *> forward,shuffled,shuffled2;
   readFile(forwardFN,1,forward);
@@ -377,17 +328,28 @@ int Caller::run() {
   SetHandler train,test;
   train.setSet(forward,shuffled);
   test.setSet(forward,(doShuffled2?shuffled2:shuffled));
-  setSet(&train);
   if (gistFN.length()>0) {
-    pSet->gistWrite(gistFN);
+    train.gistWrite(gistFN);
   }
+  //Normalize features
+  vector<DataSet *> all;
+  all.assign(forward.begin(),forward.end());
+  all.insert(all.end(),shuffled.begin(),shuffled.end());  
+  all.insert(all.end(),shuffled2.begin(),shuffled2.end());  
+  pNorm=Normalizer::getNew();
+  pNorm->setSet(all);
+  pNorm->normalizeSet(all);
+  
+  // Set up a first guess of w
   double w[DataSet::getNumFeatures()+1];
   for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=0;
   w[3]=1;
   w[DataSet::getNumFeatures()]=1;
+  
+  // iterate
   for(int i=0;i<niter;i++) {
-    cout << "Iteration " << i+1 << " : ";
-  	step(w);
+    if(verbose>1) cerr << "Iteration " << i+1 << " : ";
+  	step(w,train);
   }
   time_t end;
   time (&end);
@@ -397,9 +359,9 @@ int Caller::run() {
   timerValues.precision(4);
   timerValues << "Processing took " << ((double)(clock()-startClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
-  cout << timerValues.str();
+  if (verbose>1) cerr << timerValues.str();
   Scores testScores;
-  testScores.calcScores(w,test);
+  testScores.calcScores(w,test,fdr);
   if (modifiedFN.size()>0) {
     modifyFile(modifiedFN,forward,testScores,extendedGreeter()+timerValues.str());
   }

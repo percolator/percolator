@@ -43,17 +43,19 @@ void UniNormalizer::normalizeweight(const double *in,double* out){
   out[i]=in[i]+sum;
 }
 
-void UniNormalizer::setSet(SetHandler * set){
-  int setPos=0;
-  int ixPos=-1;
+void UniNormalizer::setSet(vector<DataSet *> &setVec){
   const double * features;
   int ix;
   vector<double> mins(DataSet::getNumFeatures(),1e+100);
   vector<double> maxs(DataSet::getNumFeatures(),-1e+100);
-  while((features=set->getNext(setPos,ixPos))!=NULL) {
-	for (ix=0;ix<DataSet::getNumFeatures();ix++) {
-	  mins[ix]=min(features[ix],mins[ix]);
-	  maxs[ix]=max(features[ix],maxs[ix]);
+  vector<DataSet *>::iterator it;
+  for (it=setVec.begin();it!=setVec.end();++it) {
+    int ixPos=-1;
+    while((features=(*it)->getNext(ixPos))!=NULL) {
+	  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+	    mins[ix]=min(features[ix],mins[ix]);
+	    maxs[ix]=max(features[ix],maxs[ix]);
+      }
 	}
   }
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {

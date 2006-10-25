@@ -96,7 +96,7 @@ void Scores::getScoreAndQ(int setPos,vector<double> & s, vector<double> & q) {
     }
   }
 }
-
+/*
 double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& set,vector<int>& ixs) {
   double tp=0,fp=0;
   vector<ScoreHolder>::iterator it;
@@ -110,3 +110,4 @@ double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& set,vector<i
   }
   return 0;
 }
+*/

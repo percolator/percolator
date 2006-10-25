@@ -6,10 +6,10 @@ class UniNormalizer : public Normalizer // virtual Normalizer
 public:
 	UniNormalizer();
 	virtual ~UniNormalizer();
+    virtual void setSet(vector<DataSet *> & setVec);
     void normalize(const double *in,double* out);
     void unnormalizeweight(const double *in,double* out);
     void normalizeweight(const double *in,double* out);
-    void setSet(SetHandler *);
 protected:
 	vector<double> sub;
 	vector<double> div;

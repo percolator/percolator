@@ -6,10 +6,10 @@ class StdvNormalizer : public Normalizer // virtual Normalizer
 public:
 	StdvNormalizer();
 	virtual ~StdvNormalizer();
+    virtual void setSet(vector<DataSet *> & setVec);
     void normalize(const double *in,double* out);
     void unnormalizeweight(const double *in,double* out);
     void normalizeweight(const double *in,double* out);
-    void setSet(SetHandler *);
 protected:
 	vector<double> avg;
 	vector<double> stdv;
