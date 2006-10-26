@@ -3,6 +3,8 @@
 #include <vector>
 using namespace std;
 
+class SetHandler;
+
 class ScoreHolder{
 public:
   double score;

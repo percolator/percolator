@@ -3,7 +3,6 @@
 
 class Scores;
 class Normalizer;
-class SetHandler;
 
 class DataSet
 {
