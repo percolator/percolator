@@ -73,6 +73,15 @@ double DataSet::isTryptic(const string & str) {
   ?1.0:0.0);
 }
 
+// [FHWY].[^P]
+double DataSet::isChymoTryptic(const string & str) {
+  assert(str[1]=='.');
+  return (
+  (((str[0]=='F' || str[0]=='H' || str[0]=='W' || str[0]=='Y') && str[2]!= 'P') ||
+  str[0]=='-' || str[2]=='-')
+  ?1.0:0.0);
+}
+
 
 double * DataSet::getNext(int& pos) {
   pos++;
@@ -159,6 +168,16 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
   }
   sqtIn.close();
   sqtOut.close();
+}
+   
+void DataSet::getFeatureNames(string &outString) {
+  ostringstream oss;
+  oss << "RankSp\tdeltaMass\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
+  if (calcTrypticFeatures)
+    oss << "\tenzN\tenzC";
+  if (calcIntraSetFeatures)
+    oss << "\tnumPepSite\tnumProt\tnumPep";
+  outString = oss.str();
 }
 
 void DataSet::read_sqt(const string fname) {
