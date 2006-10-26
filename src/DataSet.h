@@ -7,12 +7,12 @@ class Normalizer;
 class DataSet
 {
 protected:
-    int line2fields(string & s, vector<string>  * fields);
+    int label;
     double *feature;
     int n_examples;
+    int line2fields(string & s, vector<string>  * fields);
     vector<string> ids;
     vector<int> charge;
-	int label;
     static bool calcQuadraticFeatures;
     static bool calcTrypticFeatures;
     static bool calcIntraSetFeatures;

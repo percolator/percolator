@@ -5,14 +5,16 @@ using namespace std;
 #include "DataSet.h"
 #include "VirtualSet.h"
 
-VirtualSet::VirtualSet(DataSet &mother,int fold,int ix) : DataSet()
+VirtualSet::VirtualSet(DataSet & mother,int fold,int ix) : DataSet()
 {
-	label=mother.label;
-	double nex=mother.n_examples/((double)fold);
-	int start=round(nex*ix);
-	int end=round(nex*(ix+1));
+    assert(ix<fold);
+	label=mother.getLabel();
+	double nex=mother.getSize()/((double)fold);
+	int start=(int)round(nex*ix);
+	int end=(int)round(nex*(ix+1));
 	n_examples=end-start;
-	feature=&mother.feature[start];
+    double * f = mother.getFeature();
+	feature=&f[start];
 }
 
 VirtualSet::~VirtualSet()

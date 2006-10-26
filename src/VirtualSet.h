@@ -5,7 +5,7 @@
 class VirtualSet : public DataSet
 {
 public:
-	VirtualSet(DataSet &mother,int fold,int ix);
+	VirtualSet(DataSet & mother,int fold,int ix);
 	virtual ~VirtualSet();
 };
 
