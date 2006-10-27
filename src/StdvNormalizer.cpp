@@ -8,6 +8,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
 #include "SetHandler.h"
+#include "Globals.h"
 
 StdvNormalizer::StdvNormalizer()
 {
@@ -63,9 +64,12 @@ void StdvNormalizer::setSet(vector<DataSet *> & setVec){
 	  }
     }
   }
+  if (VERB>2) cerr << "Normalization factors" << endl
+    << "Type\t" << DataSet::getFeatureNames() << endl << "Avg";
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
   	if (n>0.0)
      avg[ix]/=n;
+     if (VERB>2) cerr << "\t" << avg[ix]; 
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
@@ -76,12 +80,14 @@ void StdvNormalizer::setSet(vector<DataSet *> & setVec){
       }
     }
   }
+  if (VERB>2) cerr << endl << "Stdv"; 
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
     if (stdv[ix]<=0 || n==0) {
       stdv[ix]=1.0;
     } else {
   	  stdv[ix]=sqrt(stdv[ix]/n);
+  	  if (VERB>2) cerr << "\t" << stdv[ix]; 
     }
-//  	cout << ix << " " << avg[ix] << " " << stdv[ix] << "\n";
+  	if (VERB>2) cerr << endl; 
   }
 }

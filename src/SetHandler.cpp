@@ -92,7 +92,7 @@ void SetHandler::gistWrite(const string & fileNameTrunk) {
   ofstream dataStream(dataFN.data(),ios::out);
   ofstream labelStream(labelFN.data(),ios::out);
   labelStream << "SpecId\tLabel\n"; 
-  dataStream << "SpecId\tF1\tF2\tF3\tF4\tF5\tF6\tF7\tF8\tF9\tF10\tF11\tF12\tF13\tF14\n";
+  dataStream << "SpecId\t" << DataSet::getFeatureNames();
   string str;
   for (int setPos=0;setPos< (signed int)subsets.size();setPos++) {
     int ixPos=-1;

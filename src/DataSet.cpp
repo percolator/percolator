@@ -170,14 +170,14 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
   sqtOut.close();
 }
    
-void DataSet::getFeatureNames(string &outString) {
+string DataSet::getFeatureNames() {
   ostringstream oss;
   oss << "RankSp\tdeltaMass\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
   if (calcTrypticFeatures)
     oss << "\tenzN\tenzC";
   if (calcIntraSetFeatures)
     oss << "\tnumPepSite\tnumProt\tnumPep";
-  outString = oss.str();
+  return oss.str();
 }
 
 void DataSet::read_sqt(const string fname) {

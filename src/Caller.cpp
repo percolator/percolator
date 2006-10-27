@@ -453,6 +453,7 @@ int Caller::run() {
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
      for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+     	weightStream << DataSet::getFeatureNames() << endl;
         weightStream << w[ix] << " ";
      }
      weightStream << endl;

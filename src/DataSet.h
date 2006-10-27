@@ -27,7 +27,7 @@ public:
     const double * getFeatures(const int pos);
 	int inline getSize() {return n_examples;}
     int inline getLabel() {return label;}
-    static void getFeatureNames(string & out);
+    static string getFeatureNames();
     bool getGistDataRow(int& pos,string & out);
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
