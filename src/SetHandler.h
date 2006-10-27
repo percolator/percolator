@@ -10,7 +10,6 @@ protected:
     int n_examples;
     int n_pos;
     int n_neg;
-    Normalizer * norm;
 public:
 	SetHandler();
 	virtual ~SetHandler();
@@ -23,15 +22,12 @@ public:
     inline int const getTrainingSetSize() {return examples.size();}
     
     inline int const getSize() {return n_examples;}
-    inline int const getPositiveSize() {return n_pos;}
+//    inline int const getPositiveSize() {return n_pos;}
     inline int const getNegativeSize() {return n_neg;}
-//	inline int const getCharge() {return charge;}
-//	inline int const getSubSetSize(int ix) {return subsets[ix]->getSize();}
     inline DataSet * getSubSet(int ix) {return (subsets[ix]);}
     vector<const double *> * getTrainingSet() {return & examples;}
     inline const double * getLabels() {return labels;}
     inline const double * getC() {return c_vec;}
-	inline Normalizer * getNormalizer() {return norm;} 
 };
 
 #endif /*SETHANDLER_H_*/

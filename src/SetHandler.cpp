@@ -9,7 +9,7 @@ using namespace std;
 
 SetHandler::SetHandler() {
 //	charge=c;
-	norm=Normalizer::getNew();
+//	norm=Normalizer::getNew();
     n_examples=0;
     n_pos=0;
     n_neg=0;
@@ -19,9 +19,9 @@ SetHandler::SetHandler() {
 
 SetHandler::~SetHandler()
 {
-	if (norm)
-      delete norm;
-	norm=NULL;
+//	if (norm)
+//      delete norm;
+//	norm=NULL;
     if (labels)
       delete [] labels;
     labels=NULL;

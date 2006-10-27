@@ -10,7 +10,7 @@
 using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
-#include "global.h"
+#include "Globals.h"
 
 int DataSet::numFeatures = maxNumRealFeatures;
 int DataSet::numRealFeatures = maxNumRealFeatures;
@@ -200,7 +200,7 @@ void DataSet::read_sqt(const string fname) {
          n++;
     }
   }
-  if (verbose>1) cerr << n << " records in file " << sqtFN << endl;
+  if (VERB>1) cerr << n << " records in file " << sqtFN << endl;
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
 

@@ -8,6 +8,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "SetHandler.h"
 #include "Scores.h"
+#include "Globals.h"
 
 bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score>other.score);}
@@ -34,15 +35,17 @@ void Scores::printRoc(string & fn){
 
 double Scores::calcScore(const double *feat) {
   double score = 0.0;
-  for(int ix=0;ix<DataSet::getNumFeatures();ix++) {
+  register int ix=0;
+  for(;ix<DataSet::getNumFeatures();ix++) {
   	score += feat[ix]*w_vec[ix];
   }
+  score += w_vec[ix];
 //  if (w_vec[DataSet::getNumFeatures()]<0)
 //    score = - score;
   return score;
 }
 
-void Scores::calcScores(double *w,SetHandler & set, double fdr) {
+int Scores::calcScores(double *w,SetHandler & set, double fdr) {
   ScoreHolder s;
   scores.resize(set.getSize(),s);
   w_vec=w;
@@ -59,12 +62,15 @@ void Scores::calcScores(double *w,SetHandler & set, double fdr) {
   assert(scores.size()==ix);
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
-/*  for (ix=0;ix < 10;ix++) {
-  	cout << scores[ix].score << " " << scores[ix].label << endl;
-  }
-  for (ix=scores.size()-10;ix < scores.size();ix++) {
-  	cout << scores[ix].score << " " << scores[ix].label << endl;
-  } */ 
+//  cerr << "Verbose is " << VERB << endl;
+  if (VERB>3) {
+    for (ix=0;ix < 10;ix++) {
+  	  cerr << scores[ix].score << " " << scores[ix].label << endl;
+    }
+    for (ix=scores.size()-10;ix < scores.size();ix++) {
+  	  cerr << scores[ix].score << " " << scores[ix].label << endl;
+    }
+  } 
   if (fdr>0.0) {
   	int tp=0,fp=0;
     vector<ScoreHolder>::iterator it,it2;
@@ -81,7 +87,9 @@ void Scores::calcScores(double *w,SetHandler & set, double fdr) {
         break;
       }
     }
+    return tp;
   }
+  return 0;
 }
 
 void Scores::getScoreAndQ(int setPos,vector<double> & s, vector<double> & q) {

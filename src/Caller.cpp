@@ -9,13 +9,14 @@ using namespace std;
 #include "argvparser.h"
 using namespace CommandLineProcessing;
 #include "DataSet.h"
+#include "VirtualSet.h"
 #include "Normalizer.h"
 #include "Scores.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
 #include "Caller.h"
 #include "ssl.h"
-#include "global.h"
+#include "Globals.h"
 
 Caller::Caller()
 {
@@ -26,10 +27,10 @@ Caller::Caller()
   rocFN = "";
   gistFN = "";
   weightFN = "";
-  fdr=0.01;
+  selectedfdr=-0.01;
   niter = 10;
-  Cpos=10;
-  Cneg=10;
+  selectedCpos=10;
+  selectedCneg=10;
   pNorm=NULL;
 }
 
@@ -48,8 +49,8 @@ string Caller::extendedGreeter() {
   oss << "Started " << ctime(&startTime);
   oss.seekp(-1, ios_base::cur);
   oss << " on " << host << endl;
-  oss << "Hyperparameters fdr=" << fdr;
-  oss << ", Cpos=" << Cpos << ", Cneg=" << Cneg << ", maxNiter=" << niter << endl;
+  oss << "Hyperparameters fdr=" << selectedfdr;
+  oss << ", Cpos=" << selectedCpos << ", Cneg=" << selectedCneg << ", maxNiter=" << niter << endl;
   return oss.str();
 }
 
@@ -133,16 +134,16 @@ bool Caller::parseOptions(int argc, char **argv){
   if (cmd.foundOption("o"))
     modifiedFN = cmd.optionValue("o");
   if (cmd.foundOption("p")) {
-    Cpos = atof(cmd.optionValue("p").c_str());
-    if (Cpos<=0.0 || Cpos > 1e127) {
+    selectedCpos = atof(cmd.optionValue("p").c_str());
+    if (selectedCpos<=0.0 || selectedCpos > 1e127) {
       cerr << "-p option requres a positive float value" << endl;
       cerr << cmd.usageDescription();
       exit(-1); 
     }
   }
   if (cmd.foundOption("n")) {
-    Cneg = atof(cmd.optionValue("n").c_str());
-    if (Cneg<=0.0 || Cneg > 1e127) {
+    selectedCneg = atof(cmd.optionValue("n").c_str());
+    if (selectedCneg<=0.0 || selectedCneg > 1e127) {
       cerr << "-n option requres a positive float value" << endl;
       cerr << cmd.usageDescription();
       exit(-1); 
@@ -164,11 +165,11 @@ bool Caller::parseOptions(int argc, char **argv){
     niter = atoi(cmd.optionValue("i").c_str());
   }
   if (cmd.foundOption("v")) {
-    verbose = atoi(cmd.optionValue("v").c_str());
+    Globals::getInstance()->setVerbose(atoi(cmd.optionValue("v").c_str()));
   }
   if (cmd.foundOption("F")) {
-    fdr = atof(cmd.optionValue("F").c_str());
-    if (fdr<=0.0 || fdr > 1.0) {
+    selectedfdr = atof(cmd.optionValue("F").c_str());
+    if (selectedfdr<=0.0 || selectedfdr > 1.0) {
       cerr << "-F option requres a positive number < 1" << endl;
       cerr << cmd.usageDescription();
       exit(-1); 
@@ -275,13 +276,13 @@ void clean(vector<DataSet *> & set) {
   }
 }
 
-void Caller::step(double *w,SetHandler & train) {
+void Caller::step(SetHandler & train,double * w, double Cpos, double Cneg, double fdr) {
   	scores.calcScores(w,train);
     train.generateTrainingSet(fdr,Cpos,Cneg,scores);
     int nex=train.getTrainingSetSize();
     int negatives = train.getNegativeSize();
     int positives = nex - negatives;
-  	if (verbose>1) cerr << "Calling with " << positives << " positives and " << negatives << " negatives\n";
+  	if (VERB>1) cerr << "Calling with " << positives << " positives and " << negatives << " negatives\n";
   	// Setup options
     struct options *Options = new options;
     Options->lambda=1.0;
@@ -313,11 +314,93 @@ void Caller::step(double *w,SetHandler & train) {
     delete Options;
 }
 
+void Caller::trainEm(SetHandler & set,double * w, double Cpos, double Cneg, double fdr) {
+  // iterate
+  for(int i=0;i<niter;i++) {
+    if(VERB>1) cerr << "Iteration " << i+1 << " : ";
+    step(set,w,Cpos,Cneg,fdr);
+  }
+}
+
+void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, double *w) {
+  vector<vector<DataSet *> > forwards(xval_fold),shuffleds(xval_fold);
+  for(unsigned int j=0;j<xval_fold;j++) {
+    forwards[j].resize(forward.size());
+    for(unsigned int i=0;i<forward.size();i++) {
+      forwards[j][i]=new VirtualSet(*(forward[i]),xval_fold,j);
+    }  
+  }
+  for(unsigned int j=0;j<xval_fold;j++) {
+    shuffleds[j].resize(shuffled.size());
+    for(unsigned int i=0;i<shuffled.size();i++) {
+      shuffleds[j][i]=new VirtualSet(*(shuffled[i]),xval_fold,j);
+    }  
+  }
+  vector<SetHandler> train(xval_fold),test(xval_fold);
+  for(unsigned int j=0;j<xval_fold;j++) {
+    vector<DataSet *> ff(0),ss(0);
+    for(unsigned int i=0;i<xval_fold;i++) {
+      if (i==j) continue;
+      ff.insert(ff.end(),forwards[i].begin(),forwards[i].end());
+      ss.insert(ss.end(),shuffleds[i].begin(),shuffleds[i].end());
+    }
+    train[j].setSet(ff,ss);
+    test[j].setSet(forwards[j],shuffleds[j]);
+  }  
+  vector<double> fdrs,cposs,cfracs;
+  if (selectedfdr > 0) {
+    fdrs.push_back(selectedfdr);
+  } else {
+    fdrs.push_back(0.01);fdrs.push_back(0.03); fdrs.push_back(0.07);
+    if(VERB>0) cerr << "selecting fdr by cross validation" << endl;
+  }
+  if (selectedCpos > 0) {
+    cposs.push_back(selectedCpos);
+  } else {
+    cposs.push_back(10);cposs.push_back(1);cposs.push_back(0.1);
+    if(VERB>0) cerr << "selecting cpos by cross validation" << endl;
+  }
+  if (selectedCpos > 0 && selectedCneg > 0) {
+    cfracs.push_back(selectedCneg/selectedCpos);
+  } else  {
+    cfracs.push_back(1);cfracs.push_back(3);cfracs.push_back(10);
+    if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
+  }
+  int bestTP = 0;
+  vector<double>::iterator fdr,cpos,cfrac;
+  for(fdr=fdrs.begin();fdr!=fdrs.end();fdr++) {
+    for(cpos=cposs.begin();cpos!=cposs.end();cpos++) {
+      for(cfrac=cfracs.begin();cfrac!=cfracs.end();cfrac++) {
+        if(VERB>0) cerr << "-cross validation with cpos=" << *cpos <<
+          ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
+        int tp=0;
+        double ww[DataSet::getNumFeatures()+1];
+        for (unsigned int i=0;i<xval_fold;i++) {
+          for(int ix=0;ix<DataSet::getNumFeatures();ix++) ww[ix]=0;
+          ww[3]=1;
+          trainEm(train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
+          Scores sc;
+          tp += sc.calcScores(ww,test[i],test_fdr);
+        }
+        if(VERB>0) cerr << "-cross validation found " << tp << " positives" << endl;
+        if (tp>bestTP) {
+          if(VERB>1) cerr << "Better than previous result, store this" << endl;
+          bestTP = tp;
+          selectedfdr=*fdr;
+          selectedCpos = *cpos;
+          selectedCneg = (*cpos)*(*cfrac);          
+          for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=ww[ix];
+        }
+      }     
+    }
+  }
+}
+
 
 int Caller::run() {
   time(&startTime);
   startClock=clock();
-  if(verbose>0)  cerr << extendedGreeter();
+  if(VERB>0)  cerr << extendedGreeter();
   bool doShuffled2 = shuffled2FN.size()>0;
   vector<DataSet *> forward,shuffled,shuffled2;
   readFile(forwardFN,1,forward);
@@ -325,11 +408,11 @@ int Caller::run() {
   if (doShuffled2)
     readFile(shuffled2FN,-1,shuffled2);
   
-  SetHandler train,test;
-  train.setSet(forward,shuffled);
-  test.setSet(forward,(doShuffled2?shuffled2:shuffled));
+  SetHandler trainset,testset;
+  trainset.setSet(forward,shuffled);
+  testset.setSet(forward,(doShuffled2?shuffled2:shuffled));
   if (gistFN.length()>0) {
-    train.gistWrite(gistFN);
+    trainset.gistWrite(gistFN);
   }
   //Normalize features
   vector<DataSet *> all;
@@ -344,13 +427,15 @@ int Caller::run() {
   double w[DataSet::getNumFeatures()+1];
   for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=0;
   w[3]=1;
-  w[DataSet::getNumFeatures()]=1;
+//  w[DataSet::getNumFeatures()]=1;
   
-  // iterate
-  for(int i=0;i<niter;i++) {
-    if(verbose>1) cerr << "Iteration " << i+1 << " : ";
-  	step(w,train);
+  if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
+    xvalidate(forward,shuffled,w);  
   }
+  if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
+          ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
+    
+  trainEm(trainset,w,selectedCpos,selectedCneg,selectedfdr);
   time_t end;
   time (&end);
   double diff = difftime (end,startTime);
@@ -359,9 +444,9 @@ int Caller::run() {
   timerValues.precision(4);
   timerValues << "Processing took " << ((double)(clock()-startClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
-  if (verbose>1) cerr << timerValues.str();
+  if (VERB>1) cerr << timerValues.str();
   Scores testScores;
-  testScores.calcScores(w,test,fdr);
+  testScores.calcScores(w,testset,selectedfdr);
   if (modifiedFN.size()>0) {
     modifyFile(modifiedFN,forward,testScores,extendedGreeter()+timerValues.str());
   }

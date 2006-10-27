@@ -7,7 +7,7 @@
 #include <vector>
 #include <ctype.h>
 using namespace std;
-#include "global.h"
+#include "Globals.h"
 #include "DataSet.h"
 #include "SetHandler.h"
 #include "ssl.h"
@@ -142,7 +142,7 @@ int CGLS(SetHandler & data,
   if(VERBOSE_CGLS)
     cout << "...Done." << endl;
   tictoc.stop();
-  if (verbose>4) cerr << "CGLS converged in " << cgiter << " iteration(s) and " << tictoc.time() << " seconds." << endl;
+  if (VERB>4) cerr << "CGLS converged in " << cgiter << " iteration(s) and " << tictoc.time() << " seconds." << endl;
   delete[] z;
   delete[] q;
   delete[] r;
@@ -212,7 +212,7 @@ int L2_SVM_MFN(SetHandler & data,
   while(iter<Options->mfnitermax)
   {
     iter++;
-    if (verbose>2) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
+    if (VERB>2) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
     for(int i=n; i-- ;) 
       w_bar[i]=w[i];
       for(int i=m; i-- ;)  
@@ -244,7 +244,7 @@ int L2_SVM_MFN(SetHandler & data,
 	      if(epsilon==BIG_EPSILON) 
 	      {
             epsilon=Options->epsilon;
-            if (verbose>2) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
+            if (VERB>2) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
             continue;
 	      }
           else
@@ -260,7 +260,7 @@ int L2_SVM_MFN(SetHandler & data,
 	        delete[] Weights_bar;
 	        delete[] Outputs_bar;
 	        tictoc.stop();
-	          if (verbose>3) cerr << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
+	          if (VERB>3) cerr << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
 	        return 1;      
 	      }
         }
