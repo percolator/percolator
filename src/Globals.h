@@ -10,6 +10,8 @@ public:
     static Globals * getInstance();
     int getVerbose() {return verbose;}
     void setVerbose(int verb) {verbose=verb;}
+    void decVerbose() {verbose--;}
+    void incVerbose() {verbose++;}
 private:
 	Globals();
     int verbose;

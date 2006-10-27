@@ -27,10 +27,10 @@ Caller::Caller()
   rocFN = "";
   gistFN = "";
   weightFN = "";
-  selectedfdr=-0.01;
+  selectedfdr=0;
   niter = 10;
-  selectedCpos=10;
-  selectedCneg=10;
+  selectedCpos=0;
+  selectedCneg=0;
   pNorm=NULL;
 }
 
@@ -335,6 +335,7 @@ void Caller::trainEm(SetHandler & set,double * w, double Cpos, double Cneg, doub
 }
 
 void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, double *w) {
+  Globals::getInstance()->decVerbose();
   vector<vector<DataSet *> > forwards(xval_fold),shuffleds(xval_fold);
   for(unsigned int j=0;j<xval_fold;j++) {
     forwards[j].resize(forward.size());
@@ -389,6 +390,7 @@ void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, d
         int tp=0;
         double ww[DataSet::getNumFeatures()+1];
         for (unsigned int i=0;i<xval_fold;i++) {
+          if(VERB>0) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=0;
           ww[3]=1;
           trainEm(train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
@@ -408,6 +410,7 @@ void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, d
       }     
     }
   }
+  Globals::getInstance()->incVerbose();
 }
 
 
