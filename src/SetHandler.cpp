@@ -1,3 +1,4 @@
+#include<iostream>
 #include<fstream>
 #include <vector>
 #include <string>
@@ -6,6 +7,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "SetHandler.h"
 #include "Scores.h"
+#include "Globals.h"
 
 SetHandler::SetHandler() {
 //	charge=c;
@@ -84,6 +86,20 @@ void SetHandler::setSet(vector<DataSet *> & pos,vector<DataSet *> &neg){
     }
     if(!labels) labels= new double[n_examples];
     if(!c_vec) c_vec = new double[n_examples];
+    if (VERB>3) {
+      int pos=0,neg=0;
+      for (unsigned int i=0;i<subsets.size();i++) {
+        if (subsets[i]->getLabel()==1) pos++; else neg++;
+      }
+      cerr << "Set up a SetHandler with " << pos << " positive DataSet:s and " << n_pos << " examples" << endl;
+      cerr << "and " << neg << " negative DataSet:s and " << n_neg << " examples" << endl;
+      if (VERB>4) {
+        for (unsigned int i=0;i<subsets.size();i++) {
+          cerr << "First 10 lines of " << i+1 << " set with " << subsets[i]->getLabel() << " label" << endl;
+          subsets[i]->print_10features();
+        }
+      }
+    }
 }
 
 void SetHandler::gistWrite(const string & fileNameTrunk) {

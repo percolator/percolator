@@ -212,7 +212,7 @@ int L2_SVM_MFN(SetHandler & data,
   while(iter<Options->mfnitermax)
   {
     iter++;
-    if (VERB>2) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
+    if (VERB>4) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
     for(int i=n; i-- ;) 
       w_bar[i]=w[i];
       for(int i=m; i-- ;)  
@@ -244,7 +244,7 @@ int L2_SVM_MFN(SetHandler & data,
 	      if(epsilon==BIG_EPSILON) 
 	      {
             epsilon=Options->epsilon;
-            if (VERB>2) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
+            if (VERB>4) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
             continue;
 	      }
           else

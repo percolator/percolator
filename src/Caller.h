@@ -15,6 +15,7 @@ public:
     bool parseOptions(int argc, char **argv);
     void readFile(const string fn, const int label, vector<DataSet *> & sets);
     void modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , const string greet);
+    static void printWeights(ostream & weightStream, double * weights);
     int run();
 protected:
     Normalizer * pNorm;

@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <string>
 using namespace std;
@@ -5,6 +6,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
 #include "UniNormalizer.h"
+#include "Globals.h"
 
 Normalizer::Normalizer()
 {
@@ -17,11 +19,38 @@ Normalizer::~Normalizer()
 void Normalizer::normalizeSet(vector<DataSet *> & setVec) {
   double * features;
   vector<DataSet *>::iterator it;
+  if (VERB>4) {
+    cerr << "First 10 feature vectors before normalization" << endl;
+    cerr.precision(3);
+    it=setVec.begin();
+    int ixPos=-1;
+    cerr << "Label of this set is " << (*it)->getLabel() << endl;
+    while((features=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
+      for (int a=0;a<DataSet::getNumFeatures();a++) {
+        cerr << features[a] << " ";
+      }
+      cerr << endl;
+    }
+    
+  }
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
     while((features=(*it)->getNext(ixPos))!=NULL) {
       normalize(features,features);
     }
+  }
+  if (VERB>4) {
+    cerr << "First 10 feature vectors after normalization" << endl;
+    cerr.precision(3);
+    it=setVec.begin();
+    int ixPos=-1;
+    while((features=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
+      for (int a=0;a<DataSet::getNumFeatures();a++) {
+        cerr << features[a] << " ";
+      }
+      cerr << endl;
+    }
+    
   }
 }
 

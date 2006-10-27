@@ -65,6 +65,16 @@ void DataSet::print_features() {
    }
 }
 
+void DataSet::print_10features() {
+   cerr << getFeatureNames() << endl;
+   for(int i=0;i<10;i++) {
+       for(int j=0;j<DataSet::getNumFeatures();j++) {
+          cerr << feature[DataSet::rowIx(i)+j] << "\t";
+       }
+       cerr << endl;
+   }
+}
+
 double DataSet::isTryptic(const string & str) {
   assert(str[1]=='.');
   return (
@@ -172,11 +182,11 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
    
 string DataSet::getFeatureNames() {
   ostringstream oss;
-  oss << "RankSp\tdeltaMass\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
+  oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
   if (calcTrypticFeatures)
     oss << "\tenzN\tenzC";
   if (calcIntraSetFeatures)
-    oss << "\tnumPepSite\tnumProt\tnumPep";
+    oss << "\tpepSite\tnumProt\tnumPep";
   return oss.str();
 }
 

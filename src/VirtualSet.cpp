@@ -14,7 +14,7 @@ VirtualSet::VirtualSet(DataSet & mother,int fold,int ix) : DataSet()
 	int end=(int)round(nex*(ix+1));
 	n_examples=end-start;
     double * f = mother.getFeature();
-	feature=&f[start];
+	feature=&f[DataSet::rowIx(start)];
 }
 
 VirtualSet::~VirtualSet()

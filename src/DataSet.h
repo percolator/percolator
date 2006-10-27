@@ -33,6 +33,7 @@ public:
     double * getNext(int& pos);
     void read_sqt(const string fname);
     void modify_sqt(const string out, vector<double> & sc, vector<double> & fdr, const string greet);
+    void print_10features();
     void print_features();
     static double isTryptic(const string & str);
     static double isChymoTryptic(const string & str);

@@ -64,8 +64,11 @@ void StdvNormalizer::setSet(vector<DataSet *> & setVec){
 	  }
     }
   }
-  if (VERB>2) cerr << "Normalization factors" << endl
-    << "Type\t" << DataSet::getFeatureNames() << endl << "Avg";
+  if (VERB>2) { 
+    cerr.precision(2);
+    cerr << "Normalization factors" << endl
+    << "Type\t" << DataSet::getFeatureNames() << endl << "Avg ";
+  }
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
   	if (n>0.0)
      avg[ix]/=n;
@@ -88,6 +91,6 @@ void StdvNormalizer::setSet(vector<DataSet *> & setVec){
   	  stdv[ix]=sqrt(stdv[ix]/n);
   	  if (VERB>2) cerr << "\t" << stdv[ix]; 
     }
-  	if (VERB>2) cerr << endl; 
   }
+  if (VERB>2) cerr << endl; 
 }

@@ -62,17 +62,18 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
   assert(scores.size()==ix);
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
-//  cerr << "Verbose is " << VERB << endl;
   if (VERB>3) {
+    cerr << "10 best scores and labels" << endl;
     for (ix=0;ix < 10;ix++) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
+    cerr << "10 worst scores and labels" << endl;
     for (ix=scores.size()-10;ix < scores.size();ix++) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
   } 
   if (fdr>0.0) {
-  	int tp=0,fp=0;
+  	double tp=0,fp=0;
     vector<ScoreHolder>::iterator it,it2;
     for(it=scores.begin();it!=scores.end();it++) {
       if (it->label!=-1)
@@ -84,10 +85,11 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
         w[DataSet::getNumFeatures()] -= zero;
         for(it2=scores.begin();it2!=scores.end();it2++) 
           it2->score -= zero;
+        if (VERB>4) { cerr << "Scores lowered by " << zero << endl;}
         break;
       }
     }
-    return tp;
+    return (int) tp;
   }
   return 0;
 }

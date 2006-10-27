@@ -195,6 +195,16 @@ bool Caller::parseOptions(int argc, char **argv){
   return true;
 }
 
+void Caller::printWeights(ostream & weightStream, double * w) {
+  weightStream << DataSet::getFeatureNames() << "\tm0" << endl;
+  weightStream.precision(4);
+  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+    weightStream << w[ix] << "\t";
+  }
+  weightStream << endl;
+}
+
+
 void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets) {
   ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {
@@ -319,7 +329,9 @@ void Caller::trainEm(SetHandler & set,double * w, double Cpos, double Cneg, doub
   for(int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
     step(set,w,Cpos,Cneg,fdr);
+    if(VERB>2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
   }
+  if(VERB<=2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
 }
 
 void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, double *w) {
@@ -340,7 +352,8 @@ void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, d
   for(unsigned int j=0;j<xval_fold;j++) {
     vector<DataSet *> ff(0),ss(0);
     for(unsigned int i=0;i<xval_fold;i++) {
-      if (i==j) continue;
+      if (i==j)
+        continue;
       ff.insert(ff.end(),forwards[i].begin(),forwards[i].end());
       ss.insert(ss.end(),shuffleds[i].begin(),shuffleds[i].end());
     }
@@ -376,13 +389,14 @@ void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, d
         int tp=0;
         double ww[DataSet::getNumFeatures()+1];
         for (unsigned int i=0;i<xval_fold;i++) {
-          for(int ix=0;ix<DataSet::getNumFeatures();ix++) ww[ix]=0;
+          for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=0;
           ww[3]=1;
           trainEm(train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
           Scores sc;
           tp += sc.calcScores(ww,test[i],test_fdr);
+          if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
         }
-        if(VERB>0) cerr << "-cross validation found " << tp << " positives" << endl;
+        if(VERB>0) cerr << "- cross validation found " << tp << " positives" << endl;
         if (tp>bestTP) {
           if(VERB>1) cerr << "Better than previous result, store this" << endl;
           bestTP = tp;
@@ -425,13 +439,13 @@ int Caller::run() {
   
   // Set up a first guess of w
   double w[DataSet::getNumFeatures()+1];
-  for(int ix=0;ix<DataSet::getNumFeatures();ix++) w[ix]=0;
+  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) w[ix]=0;
   w[3]=1;
 //  w[DataSet::getNumFeatures()]=1;
   
-  if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
+//  if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
     xvalidate(forward,shuffled,w);  
-  }
+//  }
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
     
@@ -452,11 +466,7 @@ int Caller::run() {
   }
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
-     for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
-     	weightStream << DataSet::getFeatureNames() << endl;
-        weightStream << w[ix] << " ";
-     }
-     weightStream << endl;
+     printWeights(weightStream,w);
      weightStream.close(); 
   }
   if (rocFN.size()>0) {
