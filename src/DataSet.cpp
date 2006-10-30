@@ -9,6 +9,7 @@
 #include <string>
 using namespace std;
 #include "DataSet.h"
+#include "IntraSetRelation.h"
 #include "Scores.h"
 #include "Globals.h"
 
@@ -16,6 +17,7 @@ int DataSet::numFeatures = maxNumRealFeatures;
 int DataSet::numRealFeatures = maxNumRealFeatures;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcTrypticFeatures = true;
+bool DataSet::chymoInsteadOfTryptic = false;
 bool DataSet::calcIntraSetFeatures = true;
 
 DataSet::DataSet()
@@ -186,11 +188,48 @@ string DataSet::getFeatureNames() {
   if (calcTrypticFeatures)
     oss << "\tenzN\tenzC";
   if (calcIntraSetFeatures)
-    oss << "\tpepSite\tnumProt\tnumPep";
+    oss << "\tnumPep\tnumProt\tpepSite";
   return oss.str();
 }
 
-void DataSet::read_sqt(const string fname) {
+void DataSet::computeIntraSetFeatures() {
+  if (DataSet::calcIntraSetFeatures) {
+    for(int ix=0;ix<n_examples;ix++) {
+      feature[rowIx(ix)+numRealFeatures-3]=
+        log((double)intra->getNumPep(pepSeq[ix]));
+      feature[rowIx(ix)+numRealFeatures-2]=
+        log((double)intra->getNumProt(proteinIds[ix]));
+      feature[rowIx(ix)+numRealFeatures-1]=
+        log((double)intra->getPepSites(proteinIds[ix]));
+//      cerr << ix << " " << feature[rowIx(ix)+numRealFeatures-3] << " " << feature[rowIx(ix)+numRealFeatures-2] << " "  << feature[rowIx(ix)+numRealFeatures-1] << endl;
+    }
+  }
+  if (DataSet::calcQuadraticFeatures) {
+    for (int r=0;r<getSize();r++){
+      int ix = numRealFeatures;
+      for (int ixf1=1;ixf1<numRealFeatures;ixf1++){
+        double f1 = feature[rowIx(r)+ixf1];
+        for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
+          double f2 = feature[rowIx(r)+ixf2];
+          double fp=f1*f2;
+          double newFeature;
+          if (fp>=0.0) {
+            newFeature=sqrt(fp);
+          } else {
+            newFeature=-sqrt(-fp);
+          }
+          feature[rowIx(r)+ix]=newFeature;
+        }        
+      }
+      assert(ix==numFeatures);    
+    }
+  }
+  
+  return;
+}
+
+void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
+  intra=intraRel;
   setNumFeatures();
   sqtFN.assign(fname);
   int n = 0;
@@ -213,14 +252,18 @@ void DataSet::read_sqt(const string fname) {
   if (VERB>1) cerr << n << " records in file " << sqtFN << endl;
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
+  
+  set<string> proteins;
+  proteinIds.resize(n);
+  pepSeq.resize(n);
+  string seq;
 
-  map<string, vector<int> > protids2ix;
   feature = new double[n*DataSet::getNumFeatures()];
   ids.resize(n,"");
   charge.resize(n,0);
-  vector<string> ix2seq(n,"");
   n_examples=n;
-  int ix=-1,gotL = 1,gotDeltCn=1,chrg;
+  int ix=-1,chrg;
+  bool gotL = true,gotDeltCn=true;
   string id;
   double mass;
   while (getline(sqtIn,line)) {
@@ -236,11 +279,12 @@ void DataSet::read_sqt(const string fname) {
     if (line[0]=='M' && !gotDeltCn) {
       line2fields(line,&fields);
       feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
-      gotDeltCn = 1;
+      gotDeltCn = true;
     }
     if (line[0]=='M' && !gotL) {
       ids[++ix]=id;
       charge[ix]=chrg;
+      proteins.clear();
       line2fields(line,&fields);
       feature[rowIx(ix)+0]=atof(fields[2].data());      // rank by Sp
       feature[rowIx(ix)+1]=mass-atof(fields[3].data()); // obs - calc mass
@@ -249,66 +293,32 @@ void DataSet::read_sqt(const string fname) {
       feature[rowIx(ix)+4]=atof(fields[6].data());      // Sp
       feature[rowIx(ix)+5]=atof(fields[7].data())/atof(fields[8].data()); //Fraction matched/expected ions
       feature[rowIx(ix)+6]=mass;                        // Observed mass
-      string seq(fields[9]);
+      seq=fields[9];
+      pepSeq[ix]=fields[9];
       feature[rowIx(ix)+7]=seq.size()-4;                // Peptide length
       feature[rowIx(ix)+8]=(charge[ix]==1?1.0:0.0);     // Charge
       feature[rowIx(ix)+9]=(charge[ix]==2?1.0:0.0);
       feature[rowIx(ix)+10]=(charge[ix]==3?1.0:0.0);
       string sub1=seq.substr(0,3);
       string sub2=seq.substr(seq.size()-3);
-      ix2seq[ix].assign(seq);
       if (calcTrypticFeatures) {
-        feature[rowIx(ix)+11]=isTryptic(sub1);        
-        feature[rowIx(ix)+12]=isTryptic(sub2);
+        feature[rowIx(ix)+11]=isEnz(sub1);        
+        feature[rowIx(ix)+12]=isEnz(sub2);
       }
-      gotDeltCn = 0;
+      gotDeltCn = false;
     }
     if (line[0]=='L' && !gotL) {
-      gotL=1;
+      if (sqtIn.peek() != 'L') gotL=true;
       line2fields(line,&fields);
-//      string * prot_id= new string(fields[1]);
-//      protids2ix[*prot_id].push_back(ix);
-      protids2ix[fields[1]].push_back(ix);
+      proteins.insert(fields[1]);
+      if (gotL) {
+        proteinIds[ix].insert(proteins.begin(),proteins.end());
+        intra->registerRel(seq,proteins);
+      }
     }
   }
   sqtIn.close();
-  if (calcIntraSetFeatures) {
-    map<string,int> seqfreq;
-    map<string, vector<int> >::iterator ixvec;
-    for( ixvec = protids2ix.begin(); ixvec != protids2ix.end(); ixvec++ ) {
-  	  seqfreq.clear();
-      double f1=(double)ixvec->second.size();
-      for (unsigned int i=0;i<ixvec->second.size();i++) {
-        seqfreq[ix2seq[ixvec->second[i]]]=(seqfreq.count(ix2seq[ixvec->second[i]])>0?seqfreq[ix2seq[ixvec->second[i]]]+1:1);
-      }
-      for (unsigned int i=0;i<ixvec->second.size();i++) {
-        feature[rowIx(ixvec->second[i])+numRealFeatures-3]=log((float)seqfreq.size());
-        feature[rowIx(ixvec->second[i])+numRealFeatures-2]=log((float)seqfreq[ix2seq[ixvec->second[i]]]);
-        feature[rowIx(ixvec->second[i])+numRealFeatures-1]=f1;
-      }
-    } 
-  }            
 //  cout << "Read File" << endl;
-  if (DataSet::calcQuadraticFeatures) {
-    for (int r=0;r<getSize();r++){
-      int ix = numRealFeatures;
-      for (int ixf1=1;ixf1<numRealFeatures;ixf1++){
-        double f1 = feature[rowIx(r)+ixf1];
-        for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
-          double f2 = feature[rowIx(r)+ixf2];
-          double fp=f1*f2;
-          double newFeature;
-          if (fp>=0.0) {
-            newFeature=sqrt(fp);
-          } else {
-            newFeature=-sqrt(-fp);
-          }
-          feature[rowIx(r)+ix]=newFeature;
-        }        
-      }
-      assert(ix==numFeatures);    
-    }
-  }
 }
 
 

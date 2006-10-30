@@ -23,12 +23,24 @@ void IntraSetRelation::registerRel(string pep, set<string> &prot){
 }
 
 int IntraSetRelation::getPepSites(set<string> &prot) {
-  int maxn=0;
+  int maxn=1;
   set<string>::iterator iProt;
   for(iProt=prot.begin();iProt!=prot.end();iProt++) {
-  	int n=prot2pep[*iProt].size();
-  	if (n>maxn) maxn=n;
+    if (prot2pep.count(*iProt)!=0) {
+  	  int n=prot2pep[*iProt].size();
+  	  if (n>maxn) maxn=n;
+    }
   }
   return maxn;
 }
 
+int IntraSetRelation::getNumProt(set<string> &prot) {
+  int maxn=1;
+  set<string>::iterator iProt;
+  for(iProt=prot.begin();iProt!=prot.end();iProt++) {
+    string pr = *iProt;
+    int n=getNumProt(pr);
+    if (n>maxn) maxn=n;
+  }
+  return maxn;
+}

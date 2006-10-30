@@ -4,12 +4,14 @@
 #include <time.h>
 #include <cstdlib>
 #include <vector>
+#include <set>
 #include <string>
 using namespace std;
 #include "argvparser.h"
 using namespace CommandLineProcessing;
 #include "DataSet.h"
 #include "VirtualSet.h"
+#include "IntraSetRelation.h"
 #include "Normalizer.h"
 #include "Scores.h"
 #include "Normalizer.h"
@@ -196,24 +198,25 @@ bool Caller::parseOptions(int argc, char **argv){
 }
 
 void Caller::printWeights(ostream & weightStream, double * w) {
-  weightStream << "Type\t" << DataSet::getFeatureNames() << "\tm0" << endl;
+  weightStream << "# first line contains normalized weights, second line the raw weights" << endl;  
+  weightStream << DataSet::getFeatureNames() << "\tm0" << endl;
   weightStream.precision(4);
-  weightStream << "Normalized";
-  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+  weightStream << w[0];
+  for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
     weightStream << "\t" << w[ix];
   }
   weightStream << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);
-  weightStream << "Raw       ";
-  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+  weightStream << ww[0];
+  for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
     weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
 }
 
 
-void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets) {
+void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation *intra, bool calc) {
   ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {
     cerr << "Could not open file " << fn << endl;
@@ -232,7 +235,7 @@ void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets
     }
     DataSet * pSet = new DataSet();
     pSet->setLabel(label);
-    pSet->read_sqt(fn);
+    pSet->read_sqt(fn,intra);
     sets.push_back(pSet);
   } else {
     // we hopefully found a meta file
@@ -241,10 +244,16 @@ void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets
     while(getline(meta,line2)) {
       if (line2.size()>0 && line2[0] != '#')
 //        cout << "0:" << line2[0] << " 1:" << line2[1] << " e:" << line2[line2.size()-1] << endl;
-        readFile(line2,label,sets);
+        readFile(line2,label,sets,intra,false);
     }
     meta.close();
   }
+  if (calc) {
+    vector<DataSet *>::iterator it;
+    for (it=sets.begin();it!=sets.end();it++) {
+      (*it)->computeIntraSetFeatures();
+    }
+  }  
 }
 
 void Caller::modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , const string greet) {
@@ -418,6 +427,16 @@ void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, d
       }     
     }
   }
+  for(unsigned int j=0;j<xval_fold;j++) {
+    for(unsigned int i=0;i<forward.size();i++) {
+      delete forwards[j][i];
+    }  
+  }
+  for(unsigned int j=0;j<xval_fold;j++) {
+    for(unsigned int i=0;i<shuffled.size();i++) {
+      delete shuffleds[j][i];
+    }  
+  }
   Globals::getInstance()->incVerbose();
 }
 
@@ -428,10 +447,11 @@ int Caller::run() {
   if(VERB>0)  cerr << extendedGreeter();
   bool doShuffled2 = shuffled2FN.size()>0;
   vector<DataSet *> forward,shuffled,shuffled2;
-  readFile(forwardFN,1,forward);
-  readFile(shuffledFN,-1,shuffled);
+  IntraSetRelation forRel,shuRel,shu2Rel;
+  readFile(forwardFN,1,forward,&forRel);
+  readFile(shuffledFN,-1,shuffled,&shuRel);
   if (doShuffled2)
-    readFile(shuffled2FN,-1,shuffled2);
+    readFile(shuffled2FN,-1,shuffled2,&shu2Rel);
   
   SetHandler trainset,testset;
   trainset.setSet(forward,shuffled);

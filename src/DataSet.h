@@ -3,6 +3,7 @@
 
 class Scores;
 class Normalizer;
+class IntraSetRelation;
 
 class DataSet
 {
@@ -15,11 +16,15 @@ protected:
     vector<int> charge;
     static bool calcQuadraticFeatures;
     static bool calcTrypticFeatures;
+    static bool chymoInsteadOfTryptic;
     static bool calcIntraSetFeatures;
     static int numFeatures;
     static int numRealFeatures;
     const static int maxNumRealFeatures = 16;
     string sqtFN;
+    IntraSetRelation * intra;
+    vector<set<string> > proteinIds;
+    vector<string> pepSeq;
 public:
 	DataSet();
 	virtual ~DataSet();
@@ -31,12 +36,16 @@ public:
     bool getGistDataRow(int& pos,string & out);
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
-    void read_sqt(const string fname);
+    void computeIntraSetFeatures();
+    void read_sqt(const string fname,IntraSetRelation * intrarel);
     void modify_sqt(const string out, vector<double> & sc, vector<double> & fdr, const string greet);
     void print_10features();
     void print_features();
     static double isTryptic(const string & str);
     static double isChymoTryptic(const string & str);
+    static double isEnz(const string & str) {return (chymoInsteadOfTryptic?
+                                                     isChymoTryptic(str):
+                                                     isTryptic(str));}
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on)
       { calcQuadraticFeatures=on;}
