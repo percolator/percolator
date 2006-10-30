@@ -454,9 +454,9 @@ int Caller::run() {
   w[3]=1;
 //  w[DataSet::getNumFeatures()]=1;
   
-//  if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
+  if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
     xvalidate(forward,shuffled,w);  
-//  }
+  }
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
     
