@@ -196,10 +196,18 @@ bool Caller::parseOptions(int argc, char **argv){
 }
 
 void Caller::printWeights(ostream & weightStream, double * w) {
-  weightStream << DataSet::getFeatureNames() << "\tm0" << endl;
+  weightStream << "Type\t" << DataSet::getFeatureNames() << "\tm0" << endl;
   weightStream.precision(4);
+  weightStream << "Normalized";
   for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
-    weightStream << w[ix] << "\t";
+    weightStream << "\t" << w[ix];
+  }
+  weightStream << endl;
+  double ww[DataSet::getNumFeatures()+1];
+  pNorm->unnormalizeweight(w,ww);
+  weightStream << "Raw       ";
+  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+    weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
 }
