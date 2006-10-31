@@ -123,10 +123,35 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
+void DataSet::modifyRec(const string record,string &outStr,int ix, int mLines) {
+  double feat[DataSet::numFeatures+1];
+  if (mLines>3) mLines=3;
+  istringstream in(record);
+  ostringstream out;
+  string line,tmp,lineRem;
+  getLine(in,line);
+  out << line;
+  for(int m=0;m<mLines;m++) {
+    readFeatures(record,feat,m,proteinIds[ix],pepSeq[ix],true);
+    for(int a=0;a<4;a++) {
+      in >> tmp;
+      out << tmp << "\t";
+    }
+    // deltCn and XCorr and Sp
+    in >> tmp >> tmp >> tmp;
+    out << 0.0 << "\t" << sc[ix] << "\t" << -fdr[ix];
+    getline(in,lineRem);
+    out << lineRem << endl;
+    // L lines
+    while(in.peek()=='L' && getline(in,line)) {      
+      assert(line[0]=='L');
+      out << line << endl;
+    }
+  }
+}
+
 void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double> & fdr,const string greet) {
-  int ix=-1;
-  string line,lineRem;
-  bool print = true;
+  string line;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
   istringstream greetStream(greet);
@@ -137,7 +162,36 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
   }
   sqtOut << "H\t" << "InputFile: " << sqtFN << endl;
   sqtOut << "H\t" << "OutputFile: " << outFN << endl;
-  
+
+  ostringstream buff;
+  istringstream lineParse;
+  int ix=0,lines=0,ms=0,charge=0;
+  string tmp,lineRem;
+  bool print = true;
+  while (getline(sqtIn,line)) {
+    if (line[0]=='S') {
+      if(lines>1 && charge<=3) {
+        string record=buff.str();
+        readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
+        ix++;
+        buff.str("");
+        buff.clear();
+      }
+      lines=1;
+      buff << line << endl;
+      lineParse.str(line);
+      lineParse >> tmp >> tmp >> tmp >> charge;
+    }
+    if (line[0]=='L'||(line[0]=='M' && ++ms)) {
+      lines++;
+      buff << line << endl;
+    }
+  }
+  if(lines>1 && charge<=3) {
+    string record=buff.str();
+    readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],true);
+  }
+
   while(getline(sqtIn,line)) {
     if(!print && line[0]!= 'M' && line[0] != 'L')
       print = true;
