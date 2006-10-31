@@ -135,6 +135,9 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
   while(getline(greetStream,line)) {
     sqtOut << "H\t" << line << endl;
   }
+  sqtOut << "H\t" << "InputFile: " << sqtFN << endl;
+  sqtOut << "H\t" << "OutputFile: " << outFN << endl;
+  
   while(getline(sqtIn,line)) {
     if(!print && line[0]!= 'M' && line[0] != 'L')
       print = true;
@@ -295,11 +298,9 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
   intra=intraRel;
   setNumFeatures();
   sqtFN.assign(fname);
-  int n = 0;
-  vector<string> fields;
-  fields.resize(25,"");
-
-  string line;
+  int n = 0,charge=0;
+  string line,tmp;
+  istringstream lineParse;  
   ifstream sqtIn;
   sqtIn.open(sqtFN.data(),ios::in);
   if (!sqtIn) {
@@ -307,9 +308,10 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
   	exit(-1);
   }
   while (getline(sqtIn,line)) {
-    if (line[0]=='S') {
-         getline(sqtIn,line);  // Protect our selves against double S-line errors
-         n++;
+    if (line[0]=='S' && sqtIn.peek() != 'S') {
+         lineParse.str(line);  
+         lineParse >> tmp >> tmp >> tmp >> charge;       
+         if (charge <= 3) n++;
     }
   }
   if (VERB>1) cerr << n << " records in file " << sqtFN << endl;
@@ -322,11 +324,10 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
 
   feature = new double[n*DataSet::getNumFeatures()];
   ostringstream buff;
-  istringstream lineParse;  
   ids.resize(n,"");
   n_examples=n;
-  int ix=0,charge,lines=0;
-  string id,scan,pep,tmp;
+  int ix=0,lines=0;
+  string id,scan,pep;
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {

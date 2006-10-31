@@ -200,7 +200,7 @@ bool Caller::parseOptions(int argc, char **argv){
 void Caller::printWeights(ostream & weightStream, double * w) {
   weightStream << "# first line contains normalized weights, second line the raw weights" << endl;  
   weightStream << DataSet::getFeatureNames() << "\tm0" << endl;
-  weightStream.precision(4);
+  weightStream.precision(3);
   weightStream << w[0];
   for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
     weightStream << "\t" << w[ix];
