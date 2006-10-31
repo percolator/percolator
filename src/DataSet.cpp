@@ -123,23 +123,33 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
-void DataSet::modifyRec(const string record,string &outStr,int ix, int mLines) {
-  double feat[DataSet::numFeatures+1];
+string DataSet::modifyRec(const string record,int ix, int mLines, const double *w, Scores * pSc) {
+  double feat[DataSet::numFeatures];
   if (mLines>3) mLines=3;
   istringstream in(record);
   ostringstream out;
   string line,tmp,lineRem;
-  getLine(in,line);
-  out << line;
+  getline(in,line);
+  out << line << endl;
+  double x0=0,delt;
   for(int m=0;m<mLines;m++) {
     readFeatures(record,feat,m,proteinIds[ix],pepSeq[ix],true);
+    double score = 0;
+    for (int i=DataSet::numFeatures;i--;)
+      score += feat[i]*w[i];
+    score += w[DataSet::numFeatures];
+    if (m==0) x0=score;
+    if (x0 != 0) {
+      delt = (x0-score)/x0;
+    } else delt = 0;
+    double q = pSc->getQ(score);
     for(int a=0;a<4;a++) {
       in >> tmp;
       out << tmp << "\t";
     }
     // deltCn and XCorr and Sp
     in >> tmp >> tmp >> tmp;
-    out << 0.0 << "\t" << sc[ix] << "\t" << -fdr[ix];
+    out << delt << "\t" << score << "\t" << -q;
     getline(in,lineRem);
     out << lineRem << endl;
     // L lines
@@ -148,9 +158,10 @@ void DataSet::modifyRec(const string record,string &outStr,int ix, int mLines) {
       out << line << endl;
     }
   }
+  return out.str();
 }
 
-void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double> & fdr,const string greet) {
+void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet) {
   string line;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
@@ -165,22 +176,23 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
 
   ostringstream buff;
   istringstream lineParse;
-  int ix=0,lines=0,ms=0,charge=0;
+  int ix=-1,lines=0,ms=0,charge=0;
   string tmp,lineRem;
-  bool print = true;
   while (getline(sqtIn,line)) {
+    if (line[0]=='H')
+      sqtOut << line <<endl;
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {
         string record=buff.str();
-        readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
-        ix++;
-        buff.str("");
-        buff.clear();
+        sqtOut << modifyRec(record,++ix,ms, w, pSc);
       }
+      buff.str("");
+      buff.clear();
       lines=1;
       buff << line << endl;
       lineParse.str(line);
       lineParse >> tmp >> tmp >> tmp >> charge;
+      ms=0;
     }
     if (line[0]=='L'||(line[0]=='M' && ++ms)) {
       lines++;
@@ -189,51 +201,7 @@ void DataSet::modify_sqt(const string outFN, vector<double> & sc, vector<double>
   }
   if(lines>1 && charge<=3) {
     string record=buff.str();
-    readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],true);
-  }
-
-  while(getline(sqtIn,line)) {
-    if(!print && line[0]!= 'M' && line[0] != 'L')
-      print = true;
-    while (line[0] == 'S') {
-        char c;
-        c=sqtIn.peek();
-        if (c!='S')
-          break;
-        getline(sqtIn,line);
-    }
-    if (print)
-      sqtOut << line << endl;
-    if (line[0] == 'S') {
-      string tmp,charge,scan;
-      ix++;
-      istringstream iss;
-      iss.str(line);
-      iss >> tmp >> tmp >> scan >> charge;
-      string id = charge + '_' + scan;
-      while (id!=ids[ix]){cout << "dropping " << ids[ix] <<endl;ix++;}
-//      cout << id << " " << ids[ix] << endl;
-//      assert(id ==ids[ix]);
-      getline(sqtIn,line); // Get M line
-      assert(line[0]=='M');
-      iss.str(line);
-      for(int a=0;a<4;a++) {
-        iss >> tmp;
-        sqtOut << tmp << "\t";
-      }
-      // deltCn and XCorr and Sp
-      iss >> tmp >> tmp >> tmp;
-      sqtOut << 0.0 << "\t" << sc[ix] << "\t" << -fdr[ix];
-      getline(iss,lineRem);
-      sqtOut << lineRem << endl;
-      // L line
-      getline(sqtIn,line);      
-      assert(line[0]=='L');
-      sqtOut << line << endl;
-      sqtOut << "M\t2\t15\t600.0\t" << (sc[ix]+10)/(sc[ix]==0.0?1:sc[ix]) << "\t-10.0\t-1.0\t3\t10\tK.IAMAFAK.E\tU" << endl;
-      sqtOut << "L\tBogusin" << endl;
-      print=false;
-    } 
+    sqtOut << modifyRec(record,++ix,ms, w, pSc);
   }
   sqtIn.close();
   sqtOut.close();
@@ -249,7 +217,7 @@ string DataSet::getFeatureNames() {
   return oss.str();
 }
 
-void DataSet::readFeatures(string &in,double *feat,int match,set<string> & proteins, string & pep, bool getIntra) {
+void DataSet::readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep, bool getIntra) {
   istringstream instr(in),linestr;
   string line,tmp;
   int charge;
@@ -389,9 +357,9 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
         readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
         intra->registerRel(pepSeq[ix],proteinIds[ix]);
         ix++;
-        buff.str("");
-        buff.clear();
       }
+      buff.str("");
+      buff.clear();
       lines=1;
       buff << line << endl;
       lineParse.str(line);
@@ -406,6 +374,7 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
     string record=buff.str();
     readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
     intra->registerRel(pepSeq[ix],proteinIds[ix]);
+    ix++;
   }
   sqtIn.close();
 //  cout << "Read File" << endl;

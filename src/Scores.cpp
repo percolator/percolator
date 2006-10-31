@@ -72,27 +72,51 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
     for (ix=scores.size()-10;ix < scores.size();ix++) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
-  } 
-  if (fdr>0.0) {
-  	double tp=0,fp=0;
-    vector<ScoreHolder>::iterator it,it2;
-    for(it=scores.begin();it!=scores.end();it++) {
-      if (it->label!=-1)
-        tp++;
-      if (it->label==-1)
-        fp++;
-      if (fdr<(fp/(tp+fp))) {
-        double zero = it->score;
-        w[DataSet::getNumFeatures()] -= zero;
-        for(it2=scores.begin();it2!=scores.end();it2++) 
-          it2->score -= zero;
-        if (VERB>4) { cerr << "Scores lowered by " << zero << endl;}
-        break;
-      }
-    }
-    return (int) tp;
   }
-  return 0;
+  qVals.resize(set.getSize()); 
+  double tp=0,fp=0,q;
+  int tp_at_treshold = 0;
+  ix=0;
+  vector<ScoreHolder>::iterator it,it2;
+  for(it=scores.begin();it!=scores.end();it++) {
+    if (it->label!=-1)
+      tp++;
+    if (it->label==-1)
+      fp++;
+    q=fp/(tp+fp);
+    qVals[ix++]=q;
+    if (fdr>0.0 && fdr<q) {
+      tp_at_treshold = (int) tp;
+      double zero = it->score;
+      w[DataSet::getNumFeatures()] -= zero;
+      for(it2=scores.begin();it2!=scores.end();it2++) 
+        it2->score -= zero;
+      if (VERB>4) { cerr << "Scores lowered by " << zero << endl;}
+      fdr = -1;
+    }
+  }
+  return tp_at_treshold;
+}
+
+ double Scores::getQ(const double score) {
+  int loIx = scores.size()-1, hiIx = 0;
+  double lo = scores[loIx].score, hi = scores[hiIx].score;
+  if (score<lo) {return qVals[loIx];}
+  if (score>hi) {return qVals[hiIx];}
+  int ix = 0;
+  while((loIx-hiIx>1) && (qVals[loIx] > qVals[hiIx])) {
+//    double d = (hiIx-loIx)/(hi-lo);
+    ix = hiIx + (loIx-hiIx)/2;
+    double sc = scores[ix].score;
+    if (sc<score) {
+      lo = sc;
+      loIx = ix;
+    } else {
+      hi = sc;
+      hiIx = ix;    
+    }
+  }
+  return qVals[ix];
 }
 
 void Scores::getScoreAndQ(int setPos,vector<double> & s, vector<double> & q) {

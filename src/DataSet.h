@@ -37,9 +37,10 @@ public:
     double * getNext(int& pos);
     void computeIntraSetFeatures();
     void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
-    void readFeatures(string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
+    void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
     void read_sqt(const string fname,IntraSetRelation * intrarel);
-    void modify_sqt(const string out, vector<double> & sc, vector<double> & fdr, const string greet);
+    string modifyRec(const string record,int ix, int mLines, const double *w, Scores * pSc);
+    void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet);
     void print_10features();
     void print_features();
     static double isTryptic(const string & str);

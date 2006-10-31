@@ -256,7 +256,7 @@ void Caller::readFile(const string fn, const int label, vector<DataSet *> & sets
   }  
 }
 
-void Caller::modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , const string greet) {
+void Caller::modifyFile(const string fn, vector<DataSet *> & sets, double *w, Scores &sc , const string greet) {
   string line;
   ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {
@@ -273,22 +273,14 @@ void Caller::modifyFile(const string fn, vector<DataSet *> & sets, Scores &sc , 
   if (!!fileIn)
     fileIn.close();
   if (sets.size()==1 ) {
-    vector<double> s,q;
-    s.resize(sets[0]->getSize(),-100);
-    q.resize(sets[0]->getSize(),-100);
-    sc.getScoreAndQ(0,s,q);
-    sets[0]->modify_sqt(fn,s,q,greet);
+    sets[0]->modify_sqt(fn,w,&sc,greet);
     return;
   }
   unsigned int ix=0;
   fileIn.open(fn.c_str(),ios::in);
   while(getline(fileIn,line)) {
     if(line.size()>0 && line[0]!='#') {
-      vector<double> s,q;
-      s.resize(sets[ix]->getSize(),-100);
-      q.resize(sets[ix]->getSize(),-100);
-      sc.getScoreAndQ(ix,s,q);
-      sets[ix++]->modify_sqt(line,s,q,greet);
+      sets[ix++]->modify_sqt(line,w,&sc,greet);
     }    
   }
   fileIn.close();
@@ -493,7 +485,9 @@ int Caller::run() {
   Scores testScores;
   testScores.calcScores(w,testset,selectedfdr);
   if (modifiedFN.size()>0) {
-    modifyFile(modifiedFN,forward,testScores,extendedGreeter()+timerValues.str());
+    double ww[DataSet::getNumFeatures()+1];
+    pNorm->unnormalizeweight(w,ww);    
+    modifyFile(modifiedFN,forward,ww,testScores,extendedGreeter()+timerValues.str());
   }
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);

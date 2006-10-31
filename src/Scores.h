@@ -30,11 +30,13 @@ public:
     const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
 	int calcScores(double *w, SetHandler &set, double fdr=0.0);
 //	double getPositiveTrainingIxs(const double fdr,vector<int>& set ,vector<int>& ixs);
-    void Scores::getScoreAndQ(int setPos,vector<double> & s,vector<double> & fdr);
+    void getScoreAndQ(int setPos,vector<double> & s,vector<double> & fdr);
+    double getQ(const double score);
 	void printRoc(string & fn);	
 protected:
     double *w_vec;
     vector<ScoreHolder> scores;
+    vector<double> qVals;
 };
 
 #endif /*SCORES_H_*/
