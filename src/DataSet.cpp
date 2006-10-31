@@ -192,39 +192,102 @@ string DataSet::getFeatureNames() {
   return oss.str();
 }
 
-void DataSet::computeIntraSetFeatures() {
-  if (DataSet::calcIntraSetFeatures) {
-    for(int ix=0;ix<n_examples;ix++) {
-      feature[rowIx(ix)+numRealFeatures-3]=
-        log((double)intra->getNumPep(pepSeq[ix]));
-      feature[rowIx(ix)+numRealFeatures-2]=
-        log((double)intra->getNumProt(proteinIds[ix]));
-      feature[rowIx(ix)+numRealFeatures-1]=
-        log((double)intra->getPepSites(proteinIds[ix]));
-//      cerr << ix << " " << feature[rowIx(ix)+numRealFeatures-3] << " " << feature[rowIx(ix)+numRealFeatures-2] << " "  << feature[rowIx(ix)+numRealFeatures-1] << endl;
+void DataSet::readFeatures(string &in,double *feat,int match,set<string> & proteins, string & pep, bool getIntra) {
+  istringstream instr(in),linestr;
+  string line,tmp;
+  int charge;
+  double mass,deltCn,otherXcorr=0,xcorr=0;
+  bool gotL=true,gotDeltCn=(match==0);
+  int ms=0;
+  
+  while (getline(instr,line)) {
+    if (line[0]=='S') {
+      linestr.clear();
+      linestr.str(line);
+      linestr >> tmp >> tmp >> tmp >> charge >> tmp >> tmp >> mass;
     }
+    if (line[0]=='M' && !gotDeltCn) {
+      linestr.clear();
+      linestr.str(line);
+      linestr >> tmp >> tmp >> tmp >> tmp >> deltCn >> otherXcorr;
+      gotDeltCn = true;
+    }
+    if ((line[0]=='M') && (match==ms++)) {
+      double rSp,cMass,sp,matched,expected;
+      linestr.clear();
+      linestr.str(line);
+      linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
+      
+      feat[0]=rSp;      // rank by Sp
+      feat[1]=mass-cMass; // obs - calc mass
+      feat[2]=0.0;                         // deltCn (leave until next M line)
+      feat[3]=xcorr;      // Xcorr
+      feat[4]=sp;      // Sp
+      feat[5]=matched/expected; //Fraction matched/expected ions
+      feat[6]=mass;                        // Observed mass
+      feat[7]=pep.size()-4;                // Peptide length
+      feat[8]=(charge==1?1.0:0.0);     // Charge
+      feat[9]=(charge==2?1.0:0.0);
+      feat[10]=(charge==3?1.0:0.0);
+      string sub1=pep.substr(0,3);
+      string sub2=pep.substr(pep.size()-3);
+      if (calcTrypticFeatures) {
+        feat[11]=isEnz(sub1);        
+        feat[12]=isEnz(sub2);
+      }
+      gotDeltCn = (match!=0);
+      gotL = false;
+    }
+    if (line[0]=='L' && !gotL) {
+      if (instr.peek() != 'L') gotL=true;
+      string p;
+      linestr.clear();
+      linestr.str(line);
+      linestr >> tmp >> p;      
+      proteins.insert(p.c_str());
+    }
+  }
+//  feat[2]=deltCn;
+  if (xcorr>0)
+    feat[2]=(xcorr-otherXcorr)/xcorr;
+  if (!isfinite(feat[2])) cerr << in;
+  if (getIntra)
+    computeIntraSetFeatures(feat,pep,proteins);
+}
+
+void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &prots) {
+  if (DataSet::calcIntraSetFeatures) {
+    feat[numRealFeatures-3]=
+      log((double)intra->getNumPep(pep));
+    feat[numRealFeatures-2]=
+      log((double)intra->getNumProt(prots));
+    feat[numRealFeatures-1]=
+      log((double)intra->getPepSites(prots));
   }
   if (DataSet::calcQuadraticFeatures) {
-    for (int r=0;r<getSize();r++){
-      int ix = numRealFeatures;
-      for (int ixf1=1;ixf1<numRealFeatures;ixf1++){
-        double f1 = feature[rowIx(r)+ixf1];
-        for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
-          double f2 = feature[rowIx(r)+ixf2];
-          double fp=f1*f2;
-          double newFeature;
-          if (fp>=0.0) {
-            newFeature=sqrt(fp);
-          } else {
-            newFeature=-sqrt(-fp);
-          }
-          feature[rowIx(r)+ix]=newFeature;
-        }        
-      }
-      assert(ix==numFeatures);    
+    int ix = numRealFeatures;
+    for (int ixf1=1;ixf1<numRealFeatures;ixf1++){
+      double f1 = feat[ixf1];
+      for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
+        double f2 = feature[ixf2];
+        double fp=f1*f2;
+        double newFeature;
+        if (fp>=0.0) {
+          newFeature=sqrt(fp);
+        } else {
+          newFeature=-sqrt(-fp);
+        }
+        feat[ix]=newFeature;
+      }        
     }
+    assert(ix==numFeatures);    
   }
-  
+}
+
+void DataSet::computeIntraSetFeatures() {
+  for(int row=0;row<n_examples;row++) {
+    computeIntraSetFeatures(&feature[rowIx(row)],pepSeq[row],proteinIds[row]);
+  }
   return;
 }
 
@@ -253,69 +316,41 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
   
-  set<string> proteins;
   proteinIds.resize(n);
   pepSeq.resize(n);
   string seq;
 
   feature = new double[n*DataSet::getNumFeatures()];
+  ostringstream buff;
+  istringstream lineParse;  
   ids.resize(n,"");
-  charge.resize(n,0);
   n_examples=n;
-  int ix=-1,chrg;
-  bool gotL = true,gotDeltCn=true;
-  string id;
-  double mass;
+  int ix=0,charge,lines=0;
+  string id,scan,pep,tmp;
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
-      line2fields(line,&fields);
-      id = fields[3];
-      id += '_';
-      id += fields[2];
-      chrg=atoi(fields[3].data());
-      mass=atof(fields[6].data());
-      gotL = 0;
-    }
-    if (line[0]=='M' && !gotDeltCn) {
-      line2fields(line,&fields);
-      feature[DataSet::rowIx(ix)+2]=atof(fields[4].data());
-      gotDeltCn = true;
-    }
-    if (line[0]=='M' && !gotL) {
-      ids[++ix]=id;
-      charge[ix]=chrg;
-      proteins.clear();
-      line2fields(line,&fields);
-      feature[rowIx(ix)+0]=atof(fields[2].data());      // rank by Sp
-      feature[rowIx(ix)+1]=mass-atof(fields[3].data()); // obs - calc mass
-      feature[rowIx(ix)+2]=0.0;                         // deltCn (leave until next M line)
-      feature[rowIx(ix)+3]=atof(fields[5].data());      // Xcorr
-      feature[rowIx(ix)+4]=atof(fields[6].data());      // Sp
-      feature[rowIx(ix)+5]=atof(fields[7].data())/atof(fields[8].data()); //Fraction matched/expected ions
-      feature[rowIx(ix)+6]=mass;                        // Observed mass
-      seq=fields[9];
-      pepSeq[ix]=fields[9];
-      feature[rowIx(ix)+7]=seq.size()-4;                // Peptide length
-      feature[rowIx(ix)+8]=(charge[ix]==1?1.0:0.0);     // Charge
-      feature[rowIx(ix)+9]=(charge[ix]==2?1.0:0.0);
-      feature[rowIx(ix)+10]=(charge[ix]==3?1.0:0.0);
-      string sub1=seq.substr(0,3);
-      string sub2=seq.substr(seq.size()-3);
-      if (calcTrypticFeatures) {
-        feature[rowIx(ix)+11]=isEnz(sub1);        
-        feature[rowIx(ix)+12]=isEnz(sub2);
+      if(lines>1 && charge<=3) {
+        string record=buff.str();
+        readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
+        intra->registerRel(pepSeq[ix],proteinIds[ix]);
+        ix++;
+        buff.str("");
+        buff.clear();
       }
-      gotDeltCn = false;
+      lines=1;
+      buff << line << endl;
+      lineParse.str(line);
+      lineParse >> tmp >> tmp >> tmp >> charge;
     }
-    if (line[0]=='L' && !gotL) {
-      if (sqtIn.peek() != 'L') gotL=true;
-      line2fields(line,&fields);
-      proteins.insert(fields[1]);
-      if (gotL) {
-        proteinIds[ix].insert(proteins.begin(),proteins.end());
-        intra->registerRel(seq,proteins);
-      }
+    if (line[0]=='M' || line[0]=='L') {
+      lines++;
+      buff << line << endl;
     }
+  }
+  if(lines>1 && charge<=3) {
+    string record=buff.str();
+    readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
+    intra->registerRel(pepSeq[ix],proteinIds[ix]);
   }
   sqtIn.close();
 //  cout << "Read File" << endl;

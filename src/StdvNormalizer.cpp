@@ -79,6 +79,8 @@ void StdvNormalizer::setSet(vector<DataSet *> & setVec){
     int ixPos=-1;
     while((features=(*it)->getNext(ixPos))!=NULL) {
       for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+        if (!isfinite(features[ix]))
+          cerr << "Reached strange feature with val=" << features[ix] << " at row=" << ix << ", col=" << ixPos << endl;
         double d = features[ix]-avg[ix];
         stdv[ix]+=d*d;
       }

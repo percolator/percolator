@@ -13,7 +13,6 @@ protected:
     int n_examples;
     int line2fields(string & s, vector<string>  * fields);
     vector<string> ids;
-    vector<int> charge;
     static bool calcQuadraticFeatures;
     static bool calcTrypticFeatures;
     static bool chymoInsteadOfTryptic;
@@ -37,6 +36,8 @@ public:
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
     void computeIntraSetFeatures();
+    void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
+    void readFeatures(string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
     void read_sqt(const string fname,IntraSetRelation * intrarel);
     void modify_sqt(const string out, vector<double> & sc, vector<double> & fdr, const string greet);
     void print_10features();
