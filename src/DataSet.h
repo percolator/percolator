@@ -53,6 +53,8 @@ public:
       { calcQuadraticFeatures=on;}
     static void setTrypticFeatures(bool on)
       { calcTrypticFeatures=on;}
+    static void setChymoTrypticFeatures(bool on)
+      { chymoInsteadOfTryptic=on;}
     static void setNumFeatures();
     static inline int rowIx(int row) { return row*numFeatures; }
 };

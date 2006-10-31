@@ -83,13 +83,13 @@ bool Caller::parseOptions(int argc, char **argv){
     ArgvParser::OptionRequiresValue);
   cmd.defineOptionAlternative("o","sqt-out");
   cmd.defineOption("p",
-    "Cpos, penalizing factor for misstakes made on positive examples. Default is 10",
+    "Cpos, penalizing factor for misstakes made on positive examples. Set by cross validation if not specified.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("n",
-    "Cneg, penalizing factor for misstakes made on negative examples. Default is 10",
+    "Cneg, penalizing factor for misstakes made on negative examples. Set by cross validation if not specified.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("F",
-    "Use the specified false discovery rate threshold to define positive examples.  Default=0.01.",
+    "Use the specified false discovery rate threshold to define positive examples in training. Set by cross validation if not specified.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOptionAlternative("F","fdr");
   cmd.defineOption("i",
@@ -113,7 +113,9 @@ bool Caller::parseOptions(int argc, char **argv){
   cmd.defineOption("q",
     "Calculate quadratic feature terms");
   cmd.defineOption("y",
-    "Turn off calculation of tryptic features");
+    "Turn off calculation of tryptic/chymo-tryptic features.");
+  cmd.defineOption("y",
+    "Replace tryptic features with chymo-tryptic features.");
   cmd.defineOption("aaron",
     "Debuging option: use Aarons files");
 
@@ -163,6 +165,8 @@ bool Caller::parseOptions(int argc, char **argv){
     DataSet::setQuadraticFeatures(true);
   if (cmd.foundOption("y"))
     DataSet::setTrypticFeatures(false);
+  if (cmd.foundOption("c"))
+    DataSet::setChymoTrypticFeatures(true);
   if (cmd.foundOption("i")) {
     niter = atoi(cmd.optionValue("i").c_str());
   }
