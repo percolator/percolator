@@ -114,7 +114,7 @@ bool Caller::parseOptions(int argc, char **argv){
     "Calculate quadratic feature terms");
   cmd.defineOption("y",
     "Turn off calculation of tryptic/chymo-tryptic features.");
-  cmd.defineOption("y",
+  cmd.defineOption("c",
     "Replace tryptic features with chymo-tryptic features.");
   cmd.defineOption("aaron",
     "Debuging option: use Aarons files");

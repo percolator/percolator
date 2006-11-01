@@ -114,7 +114,7 @@ bool DataSet::getGistDataRow(int & pos,string &out){
 //  while (!feature || charge[pos] !=2)  { //tmp fix
   if ((feature = getNext(pos)) == NULL) return false; 
 //  }
-  s1 << ids[pos];
+  s1 << pos;
   for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
     s1 << '\t' << feature[ix];
   }
