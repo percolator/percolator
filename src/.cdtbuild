@@ -31,41 +31,27 @@
 <macros/>
 </toolChain>
 </configuration>
-<configuration artifactName="percolator" cleanCommand="rm -rf" description="32-bit version" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.release.215965045" name="Release32" parent="cdt.managedbuild.config.gnu.exe.release">
-<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.816253400" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
-<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.23906125" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
-<option id="gnu.cpp.compiler.option.other.other.1480308645" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -m32" valueType="string"/>
+<configuration artifactName="percolator" cleanCommand="rm -rf" description="gprof version" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.debug.2106676608" name="Profile" parent="cdt.managedbuild.config.gnu.exe.debug">
+<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.1390398324" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
+<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.211820254" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+<option id="gnu.cpp.compiler.option.debugging.gprof.636405434" superClass="gnu.cpp.compiler.option.debugging.gprof" value="true" valueType="boolean"/>
 </tool>
-<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.551865532" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
-<option id="gnu.c.compiler.option.misc.other.192604229" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -m32" valueType="string"/>
+<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1329737161" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug"/>
+<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1118305333" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
+<tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1981490392" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
+<option id="gnu.cpp.link.option.flags.1328077621" superClass="gnu.cpp.link.option.flags" value="-pg" valueType="string"/>
 </tool>
-<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1087098098" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
-<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1979965244" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
-<option id="gnu.cpp.link.option.flags.532343854" superClass="gnu.cpp.link.option.flags" value="-m32" valueType="string"/>
-</tool>
-<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.764238174" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
-<option id="gnu.both.asm.option.flags.106929176" superClass="gnu.both.asm.option.flags" value="-m32" valueType="string"/>
-</tool>
+<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.368527044" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug"/>
 <macros/>
 </toolChain>
-</configuration>
-<configuration artifactName="percolator" cleanCommand="rm -rf" description="32-bit Debug" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.debug.67638733" name="Debug32" parent="cdt.managedbuild.config.gnu.exe.debug">
-<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.407270620" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
-<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1472342601" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
-<option id="gnu.cpp.compiler.option.other.other.725712506" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -m32" valueType="string"/>
+<resourceConfiguration exclude="false" id="cdt.managedbuild.config.gnu.exe.debug.2106676608./percolator/Caller.h" name="Caller.h" rcbsApplicability="disable" resourcePath="/percolator/Caller.h" toolsToInvoke="">
+<tool announcement="Invoking: Resource Custom Build Step" command="" customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.1144662763.1259533076" name="Resource Custom Build Step">
+<inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.1641549444.874906525" name="Resource Custom Build Step Input Type">
+<additionalInput kind="additionalinputdependency" paths=""/>
+</inputType>
+<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.580736769.767580984" name="Resource Custom Build Step Output Type" outputNames="percolator"/>
 </tool>
-<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1479202819" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
-<option id="gnu.c.compiler.option.misc.other.1930478924" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -m32" valueType="string"/>
-</tool>
-<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.454854453" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
-<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.845901887" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
-<option id="gnu.cpp.link.option.flags.556574126" superClass="gnu.cpp.link.option.flags" value="-m32 -v" valueType="string"/>
-</tool>
-<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1392798779" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
-<option id="gnu.both.asm.option.flags.1282973739" superClass="gnu.both.asm.option.flags" value="-m32" valueType="string"/>
-</tool>
-<macros/>
-</toolChain>
+</resourceConfiguration>
 </configuration>
 <macros/>
 </project>

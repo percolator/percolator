@@ -39,7 +39,7 @@ public:
     void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
     void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
     void read_sqt(const string fname,IntraSetRelation * intrarel);
-    string modifyRec(const string record,int ix, int mLines, const double *w, Scores * pSc);
+    string modifyRec(const string record, int mLines, const double *w, Scores * pSc);
     void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet);
     void print_10features();
     void print_features();

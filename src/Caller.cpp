@@ -29,6 +29,7 @@ Caller::Caller()
   shuffledFN = "";
   shuffled2FN = "";
   modifiedFN = "";
+  modifiedShuffledFN = "";
   rocFN = "";
   gistFN = "";
   weightFN = "";
@@ -82,9 +83,17 @@ bool Caller::parseOptions(int argc, char **argv){
   ArgvParser cmd;
   cmd.setIntroductoryDescription(intro.str());
   cmd.defineOption("o",
-    "Create an SQT file with the given name, in which the XCorr value has been replaced with the learned score.",
+    "Remake an sqt file out of the normal sqt-file with the given name, \
+in which the XCorr value has been replaced with the learned score \
+and Sp has been replaced with the negated Q-value.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOptionAlternative("o","sqt-out");
+  cmd.defineOption("s",
+    "Remake an SQT file out of the test (shuffled or if present shuffled2) sqt-file \
+with the given name, \
+in which the XCorr value has been replaced with the learned score \
+and Sp has been replaced with the negated Q-value.",
+    ArgvParser::OptionRequiresValue);
   cmd.defineOption("p",
     "Cpos, penalizing factor for misstakes made on positive examples. Set by cross validation if not specified.",
     ArgvParser::OptionRequiresValue);
@@ -140,6 +149,8 @@ bool Caller::parseOptions(int argc, char **argv){
   // now query the parsing results
   if (cmd.foundOption("o"))
     modifiedFN = cmd.optionValue("o");
+  if (cmd.foundOption("s"))
+    modifiedShuffledFN = cmd.optionValue("s");
   if (cmd.foundOption("p")) {
     selectedCpos = atof(cmd.optionValue("p").c_str());
     if (selectedCpos<=0.0 || selectedCpos > 1e127) {
@@ -279,15 +290,18 @@ void Caller::modifyFile(const string fn, vector<DataSet *> & sets, double *w, Sc
   }
   if (!!fileIn)
     fileIn.close();
+  double ww[DataSet::getNumFeatures()+1];
+  pNorm->unnormalizeweight(w,ww);    
+  
   if (sets.size()==1 ) {
-    sets[0]->modify_sqt(fn,w,&sc,greet);
+    sets[0]->modify_sqt(fn,ww,&sc,greet);
     return;
   }
   unsigned int ix=0;
   fileIn.open(fn.c_str(),ios::in);
   while(getline(fileIn,line)) {
     if(line.size()>0 && line[0]!='#') {
-      sets[ix++]->modify_sqt(line,w,&sc,greet);
+      sets[ix++]->modify_sqt(line,ww,&sc,greet);
     }    
   }
   fileIn.close();
@@ -492,9 +506,10 @@ int Caller::run() {
   Scores testScores;
   testScores.calcScores(w,testset,selectedfdr);
   if (modifiedFN.size()>0) {
-    double ww[DataSet::getNumFeatures()+1];
-    pNorm->unnormalizeweight(w,ww);    
-    modifyFile(modifiedFN,forward,ww,testScores,extendedGreeter()+timerValues.str());
+    modifyFile(modifiedFN,forward,w,testScores,extendedGreeter()+timerValues.str());
+  }
+  if (modifiedShuffledFN.size()>0) {
+    modifyFile(modifiedShuffledFN,(doShuffled2?shuffled2:shuffled),w,testScores,extendedGreeter()+timerValues.str());
   }
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
@@ -514,7 +529,6 @@ int main(int argc, char **argv){
     return caller.run();
   return -1;
 }	
-
 
 
 

@@ -21,6 +21,7 @@ protected:
     Normalizer * pNorm;
     Scores scores;
     string modifiedFN;
+    string modifiedShuffledFN;
     string forwardFN;
     string shuffledFN;
     string shuffled2FN;

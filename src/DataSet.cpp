@@ -123,40 +123,58 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   return true;
 }
 
-string DataSet::modifyRec(const string record,int ix, int mLines, const double *w, Scores * pSc) {
+string DataSet::modifyRec(const string record,int mLines, const double *w, Scores * pSc) {
   double feat[DataSet::numFeatures];
-  if (mLines>3) mLines=3;
+//  if (mLines>3) mLines=3;
+  vector<pair<double,string> > outputs(mLines);
   istringstream in(record);
-  ostringstream out;
+  ostringstream out,outtmp;
   string line,tmp,lineRem;
   getline(in,line);
   out << line << endl;
-  double x0=0,delt;
+  set<string> proteinsTmp;
+  string tmpPepSeq;
+  double rSp,mass;
   for(int m=0;m<mLines;m++) {
-    readFeatures(record,feat,m,proteinIds[ix],pepSeq[ix],true);
+    proteinsTmp.clear();
+    readFeatures(record,feat,m,proteinsTmp,tmpPepSeq,true);
     double score = 0;
     for (int i=DataSet::numFeatures;i--;)
       score += feat[i]*w[i];
     score += w[DataSet::numFeatures];
-    if (m==0) x0=score;
-    if (x0 != 0) {
-      delt = (x0-score)/x0;
-    } else delt = 0;
     double q = pSc->getQ(score);
-    for(int a=0;a<4;a++) {
-      in >> tmp;
-      out << tmp << "\t";
-    }
+    in >> tmp >> tmp >> rSp >> mass;
+//    outtmp << "M\t%i\t" << rSp << "\t" << mass << "\t";
+    outtmp << "M\t" << tmp << "\t" << rSp << "\t" << mass << "\t";
     // deltCn and XCorr and Sp
     in >> tmp >> tmp >> tmp;
-    out << delt << "\t" << score << "\t" << -q;
+    outtmp << "%6.4g\t" << score << "\t" << -q;
     getline(in,lineRem);
-    out << lineRem << endl;
+    outtmp << lineRem << endl;
     // L lines
     while(in.peek()=='L' && getline(in,line)) {      
       assert(line[0]=='L');
-      out << line << endl;
+      outtmp << line << endl;
     }
+    pair<double,string> outpair(score,outtmp.str());
+    outputs[m]=outpair;
+    outtmp.clear();
+    outtmp.str("");
+  }
+  sort(outputs.begin(),outputs.end());
+  reverse(outputs.begin(),outputs.end());
+  double x0=0,delt;
+  char buf[1024];
+  for(unsigned int i=0;i<outputs.size();i++) {
+    string aStr = outputs[i].second;
+    double score = outputs[i].first;
+    if (i==0) x0=score;
+    if (x0 != 0) {
+      delt = (x0-score)/x0;
+    } else delt = 0;
+//    sprintf(buf,outputs[i].second.c_str(),i+1,delt);
+    sprintf(buf,aStr.c_str(),delt);
+    out << buf;
   }
   return out.str();
 }
@@ -173,10 +191,11 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
   }
   sqtOut << "H\t" << "InputFile: " << sqtFN << endl;
   sqtOut << "H\t" << "OutputFile: " << outFN << endl;
-
+  if (VERB>1) cerr << "Writing Output to sqt file " << outFN << endl;
+  
   ostringstream buff;
   istringstream lineParse;
-  int ix=-1,lines=0,ms=0,charge=0;
+  int lines=0,ms=0,charge=0;
   string tmp,lineRem;
   while (getline(sqtIn,line)) {
     if (line[0]=='H')
@@ -184,7 +203,7 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {
         string record=buff.str();
-        sqtOut << modifyRec(record,++ix,ms, w, pSc);
+        sqtOut << modifyRec(record,ms, w, pSc);
       }
       buff.str("");
       buff.clear();
@@ -201,7 +220,7 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
   }
   if(lines>1 && charge<=3) {
     string record=buff.str();
-    sqtOut << modifyRec(record,++ix,ms, w, pSc);
+    sqtOut << modifyRec(record,ms, w, pSc);
   }
   sqtIn.close();
   sqtOut.close();
