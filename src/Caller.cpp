@@ -20,6 +20,9 @@ using namespace CommandLineProcessing;
 #include "ssl.h"
 #include "Globals.h"
 
+const unsigned int Caller::xval_fold = 3;
+const double Caller::test_fdr = 0.01;
+
 Caller::Caller()
 {
   forwardFN = "";

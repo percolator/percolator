@@ -34,8 +34,8 @@ protected:
     int niter;
     time_t startTime;
     clock_t startClock;
-    const static unsigned int xval_fold = 3;
-    const static double test_fdr = 0.01;
+    const static unsigned int xval_fold;
+    const static double test_fdr;
 };
 
 #endif /*CALLER_H_*/
