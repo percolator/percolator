@@ -19,6 +19,7 @@ protected:
     static bool calcIntraSetFeatures;
     static int numFeatures;
     static int numRealFeatures;
+    static string featureNames;
     const static int maxNumRealFeatures = 16;
     string sqtFN;
     IntraSetRelation * intra;
@@ -32,7 +33,9 @@ public:
 	int inline getSize() {return n_examples;}
     int inline getLabel() {return label;}
     static string getFeatureNames();
+    static void setFeatureNames(string fn){DataSet::featureNames=fn;}
     bool getGistDataRow(int& pos,string & out);
+    void readGistData(ifstream & is, vector<unsigned int> ixs);
 	void inline setLabel(int l) {label=l;}
     double * getNext(int& pos);
     void computeIntraSetFeatures();

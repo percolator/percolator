@@ -19,6 +19,7 @@ bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcTrypticFeatures = true;
 bool DataSet::chymoInsteadOfTryptic = false;
 bool DataSet::calcIntraSetFeatures = true;
+string DataSet::featureNames = "";
 
 DataSet::DataSet()
 {
@@ -121,6 +122,45 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   s1 << endl;
   out = s1.str();
   return true;
+}
+
+void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
+  string tmp,line;
+  double val;
+  is.clear();
+  is.seekg(0,ios::beg);
+  getline(is,line);
+  getline(is,line);
+  unsigned int m=0,n=ixs.size();
+  istringstream buff(line);
+  while(true) {
+    buff >> tmp;
+    if (!buff) break;
+    m++;
+  }
+  if (m<3) {
+    cerr << "To few features in Gist data file";
+    exit(-1);
+  }
+  m--; // remove id line
+  DataSet::numFeatures = m;
+
+  proteinIds.resize(0);
+  pepSeq.resize(0);
+  string seq;
+
+  feature = new double[n*DataSet::getNumFeatures()];
+  ids.resize(n,"");
+  n_examples=n;
+  double val;
+  for(unsigned int i=0;i<n;i++) {
+    getline(is,line);
+    buff.str(line);
+    buff.clear();
+    for(unsigned int j=0;j<m;j++) {
+      buff >> val;
+    } 
+  } 
 }
 
 string DataSet::modifyRec(const string record,int mLines, const double *w, Scores * pSc) {
@@ -227,13 +267,16 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
 }
    
 string DataSet::getFeatureNames() {
-  ostringstream oss;
-  oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
-  if (calcTrypticFeatures)
-    oss << "\tenzN\tenzC";
-  if (calcIntraSetFeatures)
-    oss << "\tnumPep\tnumProt\tpepSite";
-  return oss.str();
+  if (featureNames.empty()) {
+    ostringstream oss;
+    oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
+    if (calcTrypticFeatures)
+      oss << "\tenzN\tenzC";
+    if (calcIntraSetFeatures)
+      oss << "\tnumPep\tnumProt\tpepSite";
+    featureNames = oss.str();
+  }
+  return featureNames;
 }
 
 void DataSet::readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep, bool getIntra) {

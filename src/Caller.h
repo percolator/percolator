@@ -13,8 +13,6 @@ public:
 	static string greeter();
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
-    void readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation * intra, bool calc=true);
-    void modifyFile(const string fn, vector<DataSet *> & sets, double * w, Scores &sc , const string greet);
     void printWeights(ostream & weightStream, double * weights);
     int run();
 protected:
@@ -29,6 +27,7 @@ protected:
     string gistFN;
     string weightFN;
     string call;
+    bool gistInput;
     double selectedfdr;
     double selectedCpos;
     double selectedCneg;
