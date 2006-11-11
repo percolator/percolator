@@ -126,7 +126,6 @@ bool DataSet::getGistDataRow(int & pos,string &out){
 
 void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
   string tmp,line;
-  double val;
   is.clear();
   is.seekg(0,ios::beg);
   getline(is,line);
@@ -152,13 +151,23 @@ void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
   feature = new double[n*DataSet::getNumFeatures()];
   ids.resize(n,"");
   n_examples=n;
-  double val;
+
+  is.clear();
+  is.seekg(0,ios::beg);
+  getline(is,line); // id line
+
+  unsigned int ix = 0;
+  getline(is,line);
   for(unsigned int i=0;i<n;i++) {
-    getline(is,line);
+    while (ix<ixs[i]){
+    	getline(is,line);
+    	ix++;
+    }
     buff.str(line);
     buff.clear();
-    for(unsigned int j=0;j<m;j++) {
-      buff >> val;
+    double *featureRow=&feature[rowIx(i)];
+    for(register unsigned int j=0;j<m;j++) {
+      buff >> featureRow[j];
     } 
   } 
 }

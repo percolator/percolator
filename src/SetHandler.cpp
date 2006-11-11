@@ -147,34 +147,34 @@ int const SetHandler::getLabel(int setPos) {
 
 
 void SetHandler::setSet(vector<DataSet *> & pos,vector<DataSet *> &neg){
-    subsets.clear();
-    subsets.assign(pos.begin(),pos.end());
-    subsets.insert(subsets.end(),neg.begin(),neg.end());
-	n_examples=0;
-    n_pos=0;
-    n_neg=0;
-	int i=0,j=-1;
-	while(getNext(i,j)) {
-	  n_examples++;
-      if (getLabel(i)==-1) n_neg++;
-      else n_pos++;
+  subsets.clear();
+  subsets.assign(pos.begin(),pos.end());
+  subsets.insert(subsets.end(),neg.begin(),neg.end());
+  n_examples=0;
+  n_pos=0;
+  n_neg=0;
+  int i=0,j=-1;
+  while(getNext(i,j)) {
+    n_examples++;
+    if (getLabel(i)==-1) n_neg++;
+    else n_pos++;
+  }
+  if(!labels) labels= new double[n_examples];
+  if(!c_vec) c_vec = new double[n_examples];
+  if (VERB>3) {
+    int pos=0,neg=0;
+    for (unsigned int i=0;i<subsets.size();i++) {
+      if (subsets[i]->getLabel()==1) pos++; else neg++;
     }
-    if(!labels) labels= new double[n_examples];
-    if(!c_vec) c_vec = new double[n_examples];
-    if (VERB>3) {
-      int pos=0,neg=0;
+    cerr << "Set up a SetHandler with " << pos << " positive DataSet:s and " << n_pos << " examples" << endl;
+    cerr << "and " << neg << " negative DataSet:s and " << n_neg << " examples" << endl;
+    if (VERB>4) {
       for (unsigned int i=0;i<subsets.size();i++) {
-        if (subsets[i]->getLabel()==1) pos++; else neg++;
-      }
-      cerr << "Set up a SetHandler with " << pos << " positive DataSet:s and " << n_pos << " examples" << endl;
-      cerr << "and " << neg << " negative DataSet:s and " << n_neg << " examples" << endl;
-      if (VERB>4) {
-        for (unsigned int i=0;i<subsets.size();i++) {
-          cerr << "First 10 lines of " << i+1 << " set with " << subsets[i]->getLabel() << " label" << endl;
-          subsets[i]->print_10features();
-        }
+        cerr << "First 10 lines of " << i+1 << " set with " << subsets[i]->getLabel() << " label" << endl;
+        subsets[i]->print_10features();
       }
     }
+  }
 }
 
 void SetHandler::readGist(const string dataFN, const string labelFN, vector<DataSet *> & poss, vector<DataSet *> & negs) {
@@ -205,8 +205,12 @@ void SetHandler::readGist(const string dataFN, const string labelFN, vector<Data
   DataSet::setFeatureNames(line);
   DataSet * posSet = new DataSet();
   posSet->setLabel(1);
-  pSet->read_sqt(fn,intra);
+  posSet->readGistData(dataStream,posIx);
   poss.push_back(posSet);
+  DataSet * negSet = new DataSet();
+  negSet->setLabel(-1);
+  negSet->readGistData(dataStream,negIx);
+  negs.push_back(negSet);
 
 }    
 
