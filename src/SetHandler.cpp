@@ -177,8 +177,9 @@ void SetHandler::setSet(vector<DataSet *> & pos,vector<DataSet *> &neg){
   }
 }
 
-void SetHandler::readGist(const string dataFN, const string labelFN, vector<DataSet *> & poss, vector<DataSet *> & negs) {
-  ifstream labelStream(labelFN.data(),ios::out);
+void SetHandler::readGist(const string & dataFN, const string & labelFN, vector<DataSet *> & poss, vector<DataSet *> & negs) {
+  if (VERB>1) cerr << "Reading gist input from datafile " << dataFN << " and labels from " << labelFN << endl; 
+  ifstream labelStream(labelFN.c_str(),ios::out);
   if (!labelStream) {
     cerr << "Can not open file " << labelFN << endl;
     exit(-1);
@@ -195,12 +196,13 @@ void SetHandler::readGist(const string dataFN, const string labelFN, vector<Data
     else {negIx.push_back(ix++);}
   }
   labelStream.close();
-  ifstream dataStream(dataFN.data(),ios::out);
+  ifstream dataStream(dataFN.c_str(),ios::out);
   if (!dataStream) {
-    cerr << "Can not open file " << labelFN << endl;
+    cerr << "Can not open file " << dataFN << endl;
     exit(-1);
   }
   dataStream >> tmp;
+  dataStream.get();        // removed enumrator and tab 
   getline(dataStream,line);
   DataSet::setFeatureNames(line);
   DataSet * posSet = new DataSet();
@@ -219,8 +221,8 @@ void SetHandler::gistWrite(const string & fileNameTrunk) {
   string labelFN = fileNameTrunk + ".label";
   ofstream dataStream(dataFN.data(),ios::out);
   ofstream labelStream(labelFN.data(),ios::out);
-  labelStream << "SpecId\tLabel\n"; 
-  dataStream << "SpecId\t" << DataSet::getFeatureNames();
+  labelStream << "SpecId\tLabel" << endl; 
+  dataStream << "SpecId\t" << DataSet::getFeatureNames() << endl;
   string str;
   for (int setPos=0;setPos< (signed int)subsets.size();setPos++) {
     int ixPos=-1;

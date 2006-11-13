@@ -76,7 +76,8 @@ bool Caller::parseOptions(int argc, char **argv){
   call = callStream.str();
   ostringstream intro;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   percolator [options] forward shuffled [shuffled2]" << endl << endl;
+  intro << "   percolator [options] forward shuffled [shuffled2]" << endl;
+  intro << "or percolator [options] -g gist.data gist.label" << endl << endl;
   intro << "   where forward is the normal sqt-file," << endl;
   intro << "         shuffle the shuffled sqt-file," << endl;
   intro << "         and shuffle2 is a possible second shuffled sqt-file for validation" << endl;
@@ -109,9 +110,12 @@ and Sp has been replaced with the negated Q-value.",
     "Maximal number of iteratins",
     ArgvParser::OptionRequiresValue);
   cmd.defineOptionAlternative("i","maxiter");
-  cmd.defineOption("g",
+  cmd.defineOption("gist-out",
     "Output test features to a Gist format files with the given trunc filename",
     ArgvParser::OptionRequiresValue);
+  cmd.defineOption("g",
+    "Input files are given as gist files");
+  cmd.defineOptionAlternative("g","gist-in");
   cmd.defineOption("w",
     "Output final weights to the given filename",
     ArgvParser::OptionRequiresValue);
@@ -129,8 +133,6 @@ and Sp has been replaced with the negated Q-value.",
     "Turn off calculation of tryptic/chymo-tryptic features.");
   cmd.defineOption("c",
     "Replace tryptic features with chymo-tryptic features.");
-  cmd.defineOption("aaron",
-    "Debuging option: use Aarons files");
 
   //define error codes
   cmd.addErrorCode(0, "Success");
@@ -168,8 +170,10 @@ and Sp has been replaced with the negated Q-value.",
       exit(-1); 
     }
   }
+  if (cmd.foundOption("gist-out"))
+    gistFN = cmd.optionValue("gist-out");
   if (cmd.foundOption("g"))
-    gistFN = cmd.optionValue("g");
+    gistInput=true;
   if (cmd.foundOption("w"))
     weightFN = cmd.optionValue("w");
   if (cmd.foundOption("r"))
@@ -207,12 +211,6 @@ and Sp has been replaced with the negated Q-value.",
      shuffledFN = cmd.argument(1);
   if (cmd.arguments()>2)
      shuffled2FN = cmd.argument(2);
-
-  if (cmd.foundOption("aaron")) {
-    forwardFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/forward/050606-pps-2-01-forward-no-norm.sqt";
-    shuffledFN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random/050606-pps-2-01-random-no-norm.sqt";
-    shuffled2FN = "/var/noble/data/tandem-ms/maccoss/rphase/2006-05-06/random2/050606-pps-2-01-random2-nonorm.sqt";
-  }
   return true;
 }
 
@@ -388,11 +386,14 @@ int Caller::run() {
   bool doShuffled2 = shuffled2FN.size()>0;
   vector<DataSet *> forward,shuffled,shuffled2;
   IntraSetRelation forRel,shuRel,shu2Rel;
-  SetHandler::readFile(forwardFN,1,forward,&forRel);
-  SetHandler::readFile(shuffledFN,-1,shuffled,&shuRel);
-  if (doShuffled2)
-    SetHandler::readFile(shuffled2FN,-1,shuffled2,&shu2Rel);
-  
+  if (gistInput) {
+    SetHandler::readGist(forwardFN,shuffledFN,forward,shuffled);
+  } else {
+    SetHandler::readFile(forwardFN,1,forward,&forRel);
+    SetHandler::readFile(shuffledFN,-1,shuffled,&shuRel);
+    if (doShuffled2)
+      SetHandler::readFile(shuffled2FN,-1,shuffled2,&shu2Rel);
+  }
   SetHandler trainset,testset;
   trainset.setSet(forward,shuffled);
   testset.setSet(forward,(doShuffled2?shuffled2:shuffled));

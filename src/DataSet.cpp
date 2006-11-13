@@ -165,7 +165,7 @@ void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
     }
     buff.str(line);
     buff.clear();
-    buff >> ids[ix];
+    buff >> ids[i];
     double *featureRow=&feature[rowIx(i)];
     for(register unsigned int j=0;j<m;j++) {
       buff >> featureRow[j];

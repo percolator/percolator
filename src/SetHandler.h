@@ -19,7 +19,7 @@ public:
 	void setSet(vector<DataSet *> & pos, vector<DataSet *> & neg);
 	const double * getNext(int& ,int& );
     const double * getFeatures(const int setPos,const int ixPos);
-    void static readGist(const string dataFN, const string labelFN, vector<DataSet *> & poss, vector<DataSet *> & negs);    void gistWrite(const string & fileNameTrunk);
+    void static readGist(const string & dataFN, const string & labelFN, vector<DataSet *> & poss, vector<DataSet *> & negs);    void gistWrite(const string & fileNameTrunk);
 	int const getLabel(int setPos);
     inline int const getTrainingSetSize() {return examples.size();}
     
