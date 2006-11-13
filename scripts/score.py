@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 import sys
-
 ffeatures = open(sys.argv[1],"r")
 flab = open(sys.argv[2],"r")
 fweights = open(sys.argv[3],"r")
-wei=fweights.readline().split()
+wl=fweights.readlines()
+wei=wl[-1].split()
 weights = [float(w) for w in wei]
 lf=ffeatures.readlines()
 ll=flab.readlines()
