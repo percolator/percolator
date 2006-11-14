@@ -78,6 +78,7 @@ bool Caller::parseOptions(int argc, char **argv){
   ostringstream intro;
   intro << greeter() << endl << "Usage:" << endl;
   intro << "   percolator [options] forward shuffled [shuffled2]" << endl;
+  intro << "or percolator [options] -P pattern mormal_and_shuffled.sqt" << endl;
   intro << "or percolator [options] -g gist.data gist.label" << endl << endl;
   intro << "   where forward is the normal sqt-file," << endl;
   intro << "         shuffle the shuffled sqt-file," << endl;
@@ -96,6 +97,9 @@ and Sp has been replaced with the negated Q-value.",
 with the given name, \
 in which the XCorr value has been replaced with the learned score \
 and Sp has been replaced with the negated Q-value.",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOption("P",
+    "Option for single sqt file mode defining the name pattern used for shuffled data base. Typically set to random_seq",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("p",
     "Cpos, penalizing factor for misstakes made on positive examples. Set by cross validation if not specified.",
@@ -155,6 +159,8 @@ and Sp has been replaced with the negated Q-value.",
     modifiedFN = cmd.optionValue("o");
   if (cmd.foundOption("s"))
     modifiedShuffledFN = cmd.optionValue("s");
+  if (cmd.foundOption("P"))
+    shuffledWC = cmd.optionValue("P");
   if (cmd.foundOption("p")) {
     selectedCpos = atof(cmd.optionValue("p").c_str());
     if (selectedCpos<=0.0 || selectedCpos > 1e127) {
@@ -395,7 +401,7 @@ int Caller::run() {
     if (doShuffled2)
       SetHandler::readFile(shuffled2FN,-1,shuffled2,&shu2Rel);
   } else {
-    SetHandler::readFile(forwardFN,forward,&forRel,shuffled,&shuRel);  
+    SetHandler::readFile(forwardFN,forward,&forRel,shuffled,&shuRel,shuffledWC);  
   }
   SetHandler trainset,testset;
   trainset.setSet(forward,shuffled);

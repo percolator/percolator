@@ -33,11 +33,12 @@ SetHandler::~SetHandler()
     c_vec=NULL;
 }
 
-void static SetHandler::readFile(const string fn, vector<DataSet *> & pSets, IntraSetRelation * pIntra, vector<DataSet *> & nSets, IntraSetRelation * nIntra,const string & wc) {
-  readFile(fn,1,pSets,pIntra,wc
+void SetHandler::readFile(const string fn, vector<DataSet *> & pSets, IntraSetRelation * pIntra, vector<DataSet *> & nSets, IntraSetRelation * nIntra,const string & wc) {
+  readFile(fn,1,pSets,pIntra,wc,false);
+  readFile(fn,-1,nSets,nIntra,wc,true);
 }
 
-void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation *intra, bool calc) {
+void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation *intra, const string & wild, const bool match, bool calc) {
   ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {
     cerr << "Could not open file " << fn << endl;
@@ -56,7 +57,7 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
     }
     DataSet * pSet = new DataSet();
     pSet->setLabel(label);
-    pSet->read_sqt(fn,intra);
+    pSet->read_sqt(fn,intra,wild,match);
     sets.push_back(pSet);
   } else {
     // we hopefully found a meta file
@@ -65,7 +66,7 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
     while(getline(meta,line2)) {
       if (line2.size()>0 && line2[0] != '#')
 //        cout << "0:" << line2[0] << " 1:" << line2[1] << " e:" << line2[line2.size()-1] << endl;
-        readFile(line2,label,sets,intra,false);
+        readFile(line2,label,sets,intra,wild,match,false);
     }
     meta.close();
   }
