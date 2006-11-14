@@ -388,8 +388,9 @@ void DataSet::computeIntraSetFeatures() {
   return;
 }
 
-void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
+void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const string & wild, bool match) {
   intra=intraRel;
+  bool doMatch = !wild.empty();
   setNumFeatures();
   sqtFN.assign(fname);
   int n = 0,charge=0;
@@ -420,15 +421,18 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
   ostringstream buff;
   ids.resize(n,"");
   n_examples=n;
-  int ix=0,lines=0;
+  int ix=0,lines=0,ms=0,firstM=-1;
   string id,scan,pep;
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {
         string record=buff.str();
-        readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
-        intra->registerRel(pepSeq[ix],proteinIds[ix]);
-        ix++;
+        if (!doMatch) firstM=0;
+        if (firstM>=0) {
+          readFeatures(record,&feature[rowIx(ix)],firstM,proteinIds[ix],pepSeq[ix],false);
+          intra->registerRel(pepSeq[ix],proteinIds[ix]);
+          ix++;
+        }
       }
       buff.str("");
       buff.clear();
@@ -436,10 +440,21 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel) {
       buff << line << endl;
       lineParse.str(line);
       lineParse >> tmp >> tmp >> tmp >> charge;
+      ms=0;
+      firstM=-1;
     }
-    if (line[0]=='M' || line[0]=='L') {
-      lines++;
+    if (line[0]=='M') {
+      ++ms;
+      ++lines;
+      buff << line << endl;    
+    }
+    if (line[0]=='L') {
+      ++lines;
       buff << line << endl;
+      if(doMatch && firstM<0) {
+         if((line.find(wild,0)!= string::npos)!=match)
+           firstM=ms;
+      }
     }
   }
   if(lines>1 && charge<=3) {

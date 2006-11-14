@@ -33,6 +33,10 @@ SetHandler::~SetHandler()
     c_vec=NULL;
 }
 
+void static SetHandler::readFile(const string fn, vector<DataSet *> & pSets, IntraSetRelation * pIntra, vector<DataSet *> & nSets, IntraSetRelation * nIntra,const string & wc) {
+  readFile(fn,1,pSets,pIntra,wc
+}
+
 void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation *intra, bool calc) {
   ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {

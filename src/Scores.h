@@ -35,8 +35,11 @@ public:
 	void printRoc(string & fn);	
 protected:
     double *w_vec;
+    const static int shortCutSize = 100;
     vector<ScoreHolder> scores;
     vector<double> qVals;
+    vector<unsigned int> shortCut;
+    double shortStep;
 };
 
 #endif /*SCORES_H_*/

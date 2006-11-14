@@ -54,6 +54,20 @@
 </tool>
 </resourceConfiguration>
 </configuration>
+<configuration artifactName="percolator" cleanCommand="rm -rf" description="Opteron Instructionset" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.release.921204776" name="ReleaseOpteron" parent="cdt.managedbuild.config.gnu.exe.release">
+<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.698115875" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
+<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1861110743" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
+<option id="gnu.cpp.compiler.option.optimization.flags.760226601" superClass="gnu.cpp.compiler.option.optimization.flags" value="-mcpu=opteron" valueType="string"/>
+</tool>
+<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.371613911" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
+<option id="gnu.c.compiler.option.optimization.flags.1140810343" superClass="gnu.c.compiler.option.optimization.flags" value="-march=opteron" valueType="string"/>
+</tool>
+<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1357863806" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
+<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1344747733" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release"/>
+<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1834097731" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release"/>
+<macros/>
+</toolChain>
+</configuration>
 <macros/>
 </project>
 </ManagedProjectBuildInfo>

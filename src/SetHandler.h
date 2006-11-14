@@ -14,6 +14,7 @@ public:
 	SetHandler();
 	virtual ~SetHandler();
     void static readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation * intra, bool calc=true);
+    void static readFile(const string fn, vector<DataSet *> & pSets, IntraSetRelation * pIntra, vector<DataSet *> & nSets, IntraSetRelation * nIntra, const string & wc);
     void static modifyFile(const string fn, vector<DataSet *> & sets, double * w, Scores &sc , const string greet);
     void generateTrainingSet(const double fdr,const double cpos, const double cneg, const Scores & sc);
 	void setSet(vector<DataSet *> & pos, vector<DataSet *> & neg);

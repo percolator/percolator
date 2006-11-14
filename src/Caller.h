@@ -23,6 +23,7 @@ protected:
     string forwardFN;
     string shuffledFN;
     string shuffled2FN;
+    string shuffledWC;
     string rocFN;
     string gistFN;
     string weightFN;

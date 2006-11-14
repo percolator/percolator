@@ -30,6 +30,7 @@ Caller::Caller()
   shuffled2FN = "";
   modifiedFN = "";
   modifiedShuffledFN = "";
+  shuffledWC = "";
   rocFN = "";
   gistFN = "";
   weightFN = "";
@@ -388,11 +389,13 @@ int Caller::run() {
   IntraSetRelation forRel,shuRel,shu2Rel;
   if (gistInput) {
     SetHandler::readGist(forwardFN,shuffledFN,forward,shuffled);
-  } else {
+  } else if (shuffledWC.empty()) {
     SetHandler::readFile(forwardFN,1,forward,&forRel);
     SetHandler::readFile(shuffledFN,-1,shuffled,&shuRel);
     if (doShuffled2)
       SetHandler::readFile(shuffled2FN,-1,shuffled2,&shu2Rel);
+  } else {
+    SetHandler::readFile(forwardFN,forward,&forRel,shuffled,&shuRel);  
   }
   SetHandler trainset,testset;
   trainset.setSet(forward,shuffled);
