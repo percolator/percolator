@@ -99,24 +99,30 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
 }
 
  double Scores::getQ(const double score) {
-  int loIx = scores.size()-1, hiIx = 0;
+  unsigned int loIx = scores.size()-1, hiIx = 0;
   double lo = scores[loIx].score, hi = scores[hiIx].score;
   if (score<=lo) {return qVals[loIx];}
   if (score>=hi) {return qVals[hiIx];}
-  int ix = -1, pos = -1;
+  int ix = 0, pos = -1;
   if (shortCut.empty()) {
     shortStep = (lo - hi)/(double)shortCutSize;
     while(++pos<shortCutSize) {
       double val = hi + shortStep*pos;
-      while (scores[++ix].score>val);
-      shortCut.push_back(ix);
+      while (scores[ix].score>=val)
+        ++ix;
+      shortCut.push_back(ix-1);
     }
     shortCut.push_back(loIx);   
   }
   pos = (int) ((score - hi)/shortStep);
   hiIx = shortCut[pos];
-  loIx = shortCut[pos+1];
-  lo = scores[loIx].score; hi = scores[hiIx].score;
+  if (shortCut[pos+1]==hiIx && hiIx<loIx) {
+    loIx=hiIx+1;
+  } else {
+    loIx = shortCut[pos+1];
+  }
+  hi = scores[hiIx].score;
+  lo = scores[loIx].score; 
   while((loIx-hiIx>1) && (qVals[loIx] > qVals[hiIx])) {
 //    double d = (hiIx-loIx)/(hi-lo);
     ix = hiIx + (loIx-hiIx)/2;
@@ -129,7 +135,7 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
       hiIx = ix;    
     }
   }
-  return qVals[ix];
+  return qVals[loIx];
 }
 
 void Scores::getScoreAndQ(int setPos,vector<double> & s, vector<double> & q) {

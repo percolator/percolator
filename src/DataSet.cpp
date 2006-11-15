@@ -452,7 +452,7 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
       ++lines;
       buff << line << endl;
       if(doMatch && firstM<0) {
-         if((line.find(wild,0)!= string::npos)!=match)
+         if((line.find(wild,0)!= string::npos)==match)
            firstM=ms;
       }
     }

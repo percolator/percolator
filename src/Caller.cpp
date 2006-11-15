@@ -293,7 +293,7 @@ void Caller::trainEm(SetHandler & set,double * w, double Cpos, double Cneg, doub
     step(set,w,Cpos,Cneg,fdr);
     if(VERB>2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
   }
-  if(VERB<=2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
+  if(VERB==2 ) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
 }
 
 void Caller::xvalidate(vector<DataSet *> &forward,vector<DataSet *> &shuffled, double *w) {
@@ -441,7 +441,8 @@ int Caller::run() {
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
   Scores testScores;
-  testScores.calcScores(w,testset,selectedfdr);
+  int overFDR = testScores.calcScores(w,testset,selectedfdr);
+  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectedfdr*100 << "% FDR level on testset" << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
   if (modifiedFN.size()>0) {
