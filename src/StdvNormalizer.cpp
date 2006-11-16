@@ -47,7 +47,7 @@ void StdvNormalizer::normalizeweight(const double *in,double* out){
   out[i]=in[i]+sum;
 }
 
-void StdvNormalizer::setSet(vector<DataSet *> & setVec){
+void StdvNormalizer::setSet(set<VirtualSet *> & setVec){
   double n=0.0;
   const double * features;
   int ix;
@@ -55,7 +55,7 @@ void StdvNormalizer::setSet(vector<DataSet *> & setVec){
     avg[ix]=0.0;
     stdv[ix]=0.0;
   }
-  vector<DataSet *>::iterator it;
+  set<VirtualSet *>::iterator it;
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
     while((features=(*it)->getNext(ixPos))!=NULL) {

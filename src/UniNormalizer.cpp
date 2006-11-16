@@ -44,12 +44,12 @@ void UniNormalizer::normalizeweight(const double *in,double* out){
   out[i]=in[i]+sum;
 }
 
-void UniNormalizer::setSet(vector<DataSet *> &setVec){
+void UniNormalizer::setSet(set<VirtualSet *> &setVec){
   const double * features;
   int ix;
   vector<double> mins(DataSet::getNumFeatures(),1e+100);
   vector<double> maxs(DataSet::getNumFeatures(),-1e+100);
-  vector<DataSet *>::iterator it;
+  set<VirtualSet *>::iterator it;
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
     while((features=(*it)->getNext(ixPos))!=NULL) {
