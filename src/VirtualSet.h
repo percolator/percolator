@@ -18,6 +18,8 @@ public:
     bool getGistDataRow(int& pos,string & out);
     void print_10features();
     void print_features();
+    inline bool isNormalized() {return *normalizedFlag;}
+    inline void setNormalized() {*normalizedFlag=true;}
     
 protected:
     int label;
@@ -25,6 +27,7 @@ protected:
     int n_examples;
     string sqtFN;
     IntraSetRelation * intra;
+    bool *normalizedFlag;
 };
 
 #endif /*VIRTUALSET_H_*/

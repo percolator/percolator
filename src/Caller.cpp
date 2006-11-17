@@ -21,7 +21,8 @@ using namespace CommandLineProcessing;
 #include "Globals.h"
 
 const unsigned int Caller::xval_fold = 3;
-const double Caller::test_fdr = 0.01;
+const double Caller::test_fdr = 0.03;
+int Caller::xv_type = 1;
 
 Caller::Caller()
 {
@@ -82,7 +83,7 @@ bool Caller::parseOptions(int argc, char **argv){
   intro << "or percolator [options] -g gist.data gist.label" << endl << endl;
   intro << "   where forward is the normal sqt-file," << endl;
   intro << "         shuffle the shuffled sqt-file," << endl;
-  intro << "         and shuffle2 is a possible second shuffled sqt-file for validation" << endl;
+  intro << "         and shuffle2 is an otional second shuffled sqt-file for q-value calculation" << endl;
   // init
   ArgvParser cmd;
   cmd.setIntroductoryDescription(intro.str());
@@ -102,10 +103,10 @@ and Sp has been replaced with the negated Q-value.",
     "Option for single sqt file mode defining the name pattern used for shuffled data base. Typically set to random_seq",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("p",
-    "Cpos, penalize for mistakes made on positive examples. Set by cross validation if not specified.",
+    "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("n",
-    "Cneg, penalize for mistakes made on negative examples. Set by cross validation if not specified.",
+    "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("F",
     "Use the specified false discovery rate threshold to define positive examples in training. Set by cross validation if not specified.",
@@ -138,7 +139,8 @@ and Sp has been replaced with the negated Q-value.",
     "Turn off calculation of tryptic/chymo-tryptic features.");
   cmd.defineOption("c",
     "Replace tryptic features with chymo-tryptic features.");
-
+  cmd.defineOption("x",
+    "Select hyper parameter cross validation to be performed on whole itterating procedure, rather than on each iteratin step.");
   //define error codes
   cmd.addErrorCode(0, "Success");
   cmd.addErrorCode(-1, "Error");
@@ -193,6 +195,8 @@ and Sp has been replaced with the negated Q-value.",
     DataSet::setTrypticFeatures(false);
   if (cmd.foundOption("c"))
     DataSet::setChymoTrypticFeatures(true);
+  if (cmd.foundOption("x"))
+    xv_type=2;
   if (cmd.foundOption("i")) {
     niter = atoi(cmd.optionValue("i").c_str());
   }
@@ -282,42 +286,23 @@ void Caller::trainEm(double * w) {
   // iterate
   for(int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
-    if (xv_train.empty())
+    if (xv_type!=1)
       step(trainset,w,selectedCpos,selectedCneg,selectedfdr);
     else
-      xvalidate(w);
+      xvalidate_step(w);
     if(VERB>2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
   }
   if(VERB==2 ) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
 }
 
-void Caller::xvalidate(double *w) {
+void Caller::xvalidate_step(double *w) {
   Globals::getInstance()->decVerbose();
-  vector<double> fdrs,cposs,cfracs;
-  if (selectedfdr > 0) {
-    fdrs.push_back(selectedfdr);
-  } else {
-    fdrs.push_back(0.01);fdrs.push_back(0.03); fdrs.push_back(0.07);
-    if(VERB>0) cerr << "selecting fdr by cross validation" << endl;
-  }
-  if (selectedCpos > 0) {
-    cposs.push_back(selectedCpos);
-  } else {
-    cposs.push_back(10);cposs.push_back(1);cposs.push_back(0.1);
-    if(VERB>0) cerr << "selecting cpos by cross validation" << endl;
-  }
-  if (selectedCpos > 0 && selectedCneg > 0) {
-    cfracs.push_back(selectedCneg/selectedCpos);
-  } else  {
-    cfracs.push_back(1);cfracs.push_back(3);cfracs.push_back(10);
-    if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
-  }
   int bestTP = 0;
   double best_fdr,best_cpos,best_cneg;
   vector<double>::iterator fdr,cpos,cfrac;
-  for(fdr=fdrs.begin();fdr!=fdrs.end();fdr++) {
-    for(cpos=cposs.begin();cpos!=cposs.end();cpos++) {
-      for(cfrac=cfracs.begin();cfrac!=cfracs.end();cfrac++) {
+  for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
+    for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
+      for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
         if(VERB>0) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
@@ -330,7 +315,7 @@ void Caller::xvalidate(double *w) {
           tp += sc.calcScores(ww,xv_test[i],test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
         }
-        if(VERB>1) cerr << "- cross validation found " << tp << " positives" << endl;
+        if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
         if (tp>bestTP) {
           if(VERB>1) cerr << "Better than previous result, store this" << endl;
           bestTP = tp;
@@ -342,12 +327,50 @@ void Caller::xvalidate(double *w) {
     }
   }
   Globals::getInstance()->incVerbose();
-  if(VERB>0) cerr << "cross validation found " << bestTP << " positives for Cpos=" << best_cpos
+  if(VERB>0) cerr << "cross validation found " << bestTP << " positives over " << test_fdr*100 << "% FDR level for hyperparameters Cpos=" << best_cpos
                   << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;
   
   step(trainset,w,best_cpos,best_cneg,best_fdr);
 }
 
+void Caller::xvalidate(double *w) {
+  Globals::getInstance()->decVerbose();
+  int bestTP = 0;
+  double ww[DataSet::getNumFeatures()+1],www[DataSet::getNumFeatures()+1];
+  vector<double>::iterator fdr,cpos,cfrac;
+  for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
+    for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
+      for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
+        if(VERB>0) cerr << "-cross validation with cpos=" << *cpos <<
+          ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
+        int tp=0;
+        for (unsigned int i=0;i<xval_fold;i++) {
+          if(VERB>1) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
+          for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
+          for(int k=0;k<niter;k++) {
+            step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
+          }
+          Scores sc;
+          tp += sc.calcScores(ww,xv_test[i],test_fdr);
+          if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
+        }
+        if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
+        if (tp>bestTP) {
+          if(VERB>1) cerr << "Better than previous result, store this" << endl;
+          bestTP = tp;
+          selectedfdr=*fdr;
+          selectedCpos = *cpos;
+          selectedCneg = (*cpos)*(*cfrac);          
+          for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) www[ix]=ww[ix];
+        }
+      }     
+    }
+  }
+  Globals::getInstance()->incVerbose();
+  if(VERB>0) cerr << "cross validation found " << bestTP << " positives over " << test_fdr*100 << "% FDR level for hyperparameters Cpos=" << selectedCpos
+                  << ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
+  trainEm(www);
+}
 
 int Caller::run() {
   time(&startTime);
@@ -381,11 +404,33 @@ int Caller::run() {
   if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
   	xv_train.resize(xval_fold); xv_test.resize(xval_fold);
   	trainset.createXvalSets(xv_train,xv_test,xval_fold);
+    if (selectedfdr > 0) {
+      xv_fdrs.push_back(selectedfdr);
+    } else {
+      xv_fdrs.push_back(0.01);xv_fdrs.push_back(0.03); xv_fdrs.push_back(0.07);
+      if(VERB>0) cerr << "selecting fdr by cross validation" << endl;
+    }
+    if (selectedCpos > 0) {
+      xv_cposs.push_back(selectedCpos);
+    } else {
+      xv_cposs.push_back(10);xv_cposs.push_back(1);xv_cposs.push_back(0.1);
+      if(VERB>0) cerr << "selecting cpos by cross validation" << endl;
+    }
+    if (selectedCpos > 0 && selectedCneg > 0) {
+      xv_cfracs.push_back(selectedCneg/selectedCpos);
+    } else  {
+      xv_cfracs.push_back(1);xv_cfracs.push_back(3);xv_cfracs.push_back(10);
+      if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
+    }
+  } else {
+    xv_type = 0;
   }
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
-    
-  trainEm(w);
+  if (xv_type==2)
+    xvalidate(w);
+  else  
+    trainEm(w);
   time_t end;
   time (&end);
   double diff = difftime (end,startTime);

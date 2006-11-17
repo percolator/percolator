@@ -60,7 +60,9 @@ void SetHandler::fillTestSet(SetHandler& trainSet,const string& shuffled2FN) {
          subsets.push_back(new VirtualSet(*trainSet.subsets[i]));
        }
      }
-     readFile(shuffled2FN,-1,subsets,s_intra);     
+     vector<VirtualSet *> shuffled;
+     readFile(shuffled2FN,-1,shuffled,s_intra);
+     subsets.insert(subsets.end(),shuffled.begin(),shuffled.end());     
    } else {
      n_intra = trainSet.n_intra;
      s_intra = trainSet.s_intra;
@@ -86,7 +88,9 @@ void SetHandler::createXvalSets(vector<SetHandler>& train,vector<SetHandler>& te
     for(unsigned int i=0;i<xval_fold;i++) {
       if (i==j)
         continue;
-      ff.insert(ff.end(),minors[i].begin(),minors[i].end());
+      for(unsigned int k=0;k<subsets.size();k++) {
+        ff.push_back(new VirtualSet(*minors[i][k]));
+      }
     }
     train[j].setSet(ff);
     test[j].setSet(minors[j]);

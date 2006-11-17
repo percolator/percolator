@@ -19,6 +19,8 @@ public:
     {score=other.score;index=other.index;label=other.label;set=other.set;}
 };
 
+inline bool operator>(const ScoreHolder &one, const ScoreHolder &other); 
+inline bool operator<(const ScoreHolder &one, const ScoreHolder &other); 
 
 class Scores
 {

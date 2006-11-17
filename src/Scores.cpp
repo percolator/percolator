@@ -11,10 +11,10 @@ using namespace std;
 #include "Scores.h"
 #include "Globals.h"
 
-bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
+inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score>other.score);}
 
-bool operator<(const ScoreHolder &one, const ScoreHolder &other) 
+inline bool operator<(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score<other.score);}
 
 Scores::Scores()
@@ -63,6 +63,18 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
   assert(scores.size()==ix);
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
+/*  double lastScore = 1e200;
+  unsigned int p=0,n=0;
+  for (ix=0;ix<scores.size();ix++) {
+    if (scores[ix].score>lastScore)
+      cerr << "ajajaj " << ix << endl;
+    lastScore = scores[ix].score;
+    if (scores[ix].label==1) {p++;}
+    else if (scores[ix].label==-1) {n++;}
+    else cerr << "Strange label " << scores[ix].label << endl;
+  }
+  cerr << p << " +1 labels and " << n << " -1 labels" << endl;
+*/
   if (VERB>3) {
     cerr << "10 best scores and labels" << endl;
     for (ix=0;ix < 10;ix++) {

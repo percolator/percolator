@@ -23,6 +23,8 @@ string DataSet::featureNames = "";
 
 DataSet::DataSet() : VirtualSet()
 {
+    normalizedFlag = new bool;
+    *normalizedFlag = false;
 }
 
 DataSet::~DataSet()
@@ -33,6 +35,8 @@ DataSet::~DataSet()
 		delete [] feature;
 		feature=NULL;
 	}
+    delete normalizedFlag;
+    normalizedFlag = NULL;
 }
 
 void DataSet::setNumFeatures() {

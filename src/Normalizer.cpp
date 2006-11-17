@@ -35,10 +35,13 @@ void Normalizer::normalizeSet(set<VirtualSet *> & setVec) {
     
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
-    int ixPos=-1;
-    while((features=(*it)->getNext(ixPos))!=NULL) {
-      normalize(features,features);
+    if (!(*it)->isNormalized()) {
+      int ixPos=-1;
+      while((features=(*it)->getNext(ixPos))!=NULL) {
+        normalize(features,features);
+      }
     }
+    (*it)->setNormalized();
   }
   if (VERB>4) {
     cerr << "First 10 feature vectors after normalization" << endl;
