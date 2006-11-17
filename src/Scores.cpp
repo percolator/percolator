@@ -57,8 +57,7 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
   while((features=set.getNext(setPos,ixPos))!=NULL) {
   	scores[ix].score = calcScore(features);
   	scores[ix].label = set.getLabel(setPos);
-  	scores[ix].index = ixPos;
-  	scores[ix++].set = setPos;
+  	scores[ix++].featVec = features;
   }
   assert(scores.size()==ix);
   sort(scores.begin(),scores.end());
@@ -150,18 +149,6 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
   return qVals[loIx];
 }
 
-void Scores::getScoreAndQ(int setPos,vector<double> & s, vector<double> & q) {
-  int tp=0,fp=0;
-  vector<ScoreHolder>::iterator it;
-  for(it=scores.begin();it!=scores.end();it++) {
-    if (it->label==-1) {fp++;} else {tp++;}
-    if (it->set == setPos) {
-      s[it->index]=it->score;
-      double fdr = fp/(double(tp)+fp);
-      q[it->index]=fdr;
-    }
-  }
-}
 /*
 double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& set,vector<int>& ixs) {
   double tp=0,fp=0;

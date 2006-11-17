@@ -215,7 +215,7 @@ void SetHandler::generateTrainingSet(const double fdr,const double cpos, const d
     if (underCutOff && fdr<(fp/(tp+fp)))
       underCutOff=false;
     if (it->label==-1 || underCutOff) {
-      examples.push_back(getFeatures(it->set,it->index));
+      examples.push_back(it->featVec);
       labels[ix]=it->label;
       c_vec[ix++]=(it->label!=-1?cpos:cneg);
     }
