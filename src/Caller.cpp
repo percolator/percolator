@@ -244,7 +244,7 @@ void Caller::printWeights(ostream & weightStream, double * w) {
 }
 
 
-void Caller::step(SetHandler & train,double * w, double Cpos, double Cneg, double fdr) {
+void Caller::step(Scores& train,double * w, double Cpos, double Cneg, double fdr) {
   	scores.calcScores(w,train);
     train.generateTrainingSet(fdr,Cpos,Cneg,scores);
     int nex=train.getTrainingSetSize();
@@ -376,24 +376,34 @@ int Caller::run() {
   time(&startTime);
   startClock=clock();
   if(VERB>0)  cerr << extendedGreeter();
+  bool doShuffled2 = !shuffled2FN.empty();
   if (gistInput) {
-    trainset.readGist(forwardFN,shuffledFN);
+    normal.readGist(forwardFN,shuffledFN,1);
+    shuffled.readGist(forwardFN,shuffledFN,-1);
   } else if (shuffledWC.empty()) {
-    trainset.readFile(forwardFN,shuffledFN);
+    normal.readFile(forwardFN,1);
+    shuffled.readFile(shuffledFN,-1);    
   } else {
-    trainset.readOneFile(forwardFN,shuffledWC);  
+    normal.readFile(forwardFN,shuffledWC,false);  
+    shuffled.readFile(forwardFN,shuffledWC,true);  
   }
+  if (doShuffled2) 
+    shuffled2.readFile(shuffled2FN,-1);
   testset.fillTestSet(trainset,shuffled2FN);
   if (gistFN.length()>0) {
-    trainset.gistWrite(gistFN);
+    SetHandler::gistWrite(gistFN,normal,shuffled);
   }
   //Normalize features
-  set<VirtualSet *> all;
-  all.insert(trainset.getSubsets().begin(),trainset.getSubsets().end());
-  all.insert(testset.getSubsets().begin(),testset.getSubsets().end());
+  set<DataSet *> all;
+  all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
+  all.insert(shuffled.getSubsets().begin(),shuffled.getSubsets().end());
+  if (doShuffled2) 
+    all.insert(shuffled2.getSubsets().begin(),shuffled2.getSubsets().end());
   pNorm=Normalizer::getNew();
   pNorm->setSet(all);
   pNorm->normalizeSet(all);
+  
+  
   
   // Set up a first guess of w
   double w[DataSet::getNumFeatures()+1];
@@ -445,7 +455,11 @@ int Caller::run() {
   if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectedfdr*100 << "% FDR level on testset" << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
-  testset.modifyFile(modifiedFN,modifiedShuffledFN,ww,testScores,extendedGreeter()+timerValues.str());
+  normal.modifyFile(modifiedFN,ww,testScores,extendedGreeter()+timerValues.str());
+  if (doShuffled2)
+    shuffled2.modifyFile(modifiedShuffledFN,ww,testScores,extendedGreeter()+timerValues.str());
+  else
+    shuffled.modifyFile(modifiedShuffledFN,ww,testScores,extendedGreeter()+timerValues.str());
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
      printWeights(weightStream,w);

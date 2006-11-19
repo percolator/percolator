@@ -16,12 +16,9 @@ SetHandler::SetHandler() {
 //	charge=c;
 //	norm=Normalizer::getNew();
     n_examples=0;
-    n_pos=0;
-    n_neg=0;
     labels = NULL;
     c_vec = NULL;
-    n_intra=NULL;
-    s_intra=NULL;
+    intra=NULL;
 }
 
 SetHandler::~SetHandler()
@@ -35,12 +32,9 @@ SetHandler::~SetHandler()
     if (c_vec)
       delete [] c_vec;
     c_vec=NULL;
-    if (n_intra) 
-       delete n_intra;
-    if (s_intra) 
-       delete s_intra;
-    n_intra=NULL;
-    s_intra=NULL;
+    if (intra) 
+       delete intra;
+    intra=NULL;
     for(unsigned int ix=0;ix<subsets.size();ix++) {
       if (subsets[ix]!=NULL) 
         delete subsets[ix];
@@ -49,47 +43,21 @@ SetHandler::~SetHandler()
 }
     
 
-void SetHandler::fillTestSet(SetHandler& trainSet,const string& shuffled2FN) {
-   subsets.clear();
-   if(!shuffled2FN.empty()) {
-     s_intra = new IntraSetRelation();
-     n_intra = trainSet.n_intra;
-     trainSet.n_intra = NULL;
-     for(unsigned int i=0;i<trainSet.subsets.size();i++) {
-       if (trainSet.subsets[i]->getLabel()==1) {
-         subsets.push_back(new VirtualSet(*trainSet.subsets[i]));
-       }
-     }
-     vector<VirtualSet *> shuffled;
-     readFile(shuffled2FN,-1,shuffled,s_intra);
-     subsets.insert(subsets.end(),shuffled.begin(),shuffled.end());     
-   } else {
-     n_intra = trainSet.n_intra;
-     s_intra = trainSet.s_intra;
-     trainSet.n_intra = NULL;
-     trainSet.s_intra = NULL;
-     for(unsigned int i=0;i<trainSet.subsets.size();i++) {
-       subsets.push_back(new VirtualSet(*trainSet.subsets[i]));
-     }
-   }
-   setSet();
-}
-
 void SetHandler::createXvalSets(vector<SetHandler>& train,vector<SetHandler>& test, const unsigned int xval_fold) {
- vector<vector<VirtualSet *> > minors(subsets.size()*xval_fold);
+ vector<vector<DataSet *> > minors(subsets.size()*xval_fold);
   for(unsigned int j=0;j<xval_fold;j++) {
     minors[j].resize(subsets.size());
     for(unsigned int i=0;i<subsets.size();i++) {
-      minors[j][i]=new VirtualSet(*(subsets[i]),xval_fold,j);
+      minors[j][i]=new DataSet(*(subsets[i]),xval_fold,j);
     }  
   }
   for(unsigned int j=0;j<xval_fold;j++) {
-    vector<VirtualSet *> ff(0);
+    vector<DataSet *> ff(0);
     for(unsigned int i=0;i<xval_fold;i++) {
       if (i==j)
         continue;
       for(unsigned int k=0;k<subsets.size();k++) {
-        ff.push_back(new VirtualSet(*minors[i][k]));
+        ff.push_back(new DataSet(*minors[i][k]));
       }
     }
     train[j].setSet(ff);
@@ -97,25 +65,19 @@ void SetHandler::createXvalSets(vector<SetHandler>& train,vector<SetHandler>& te
   }  
 }
 
-void SetHandler::readFile(const string & n_fn, const string & s_fn) {
-  vector<VirtualSet *> forward,shuffled;
-  n_intra = new IntraSetRelation();
-  s_intra = new IntraSetRelation();
-  readFile(n_fn,1,forward,n_intra);
-  readFile(s_fn,-1,shuffled,s_intra);
-  setSet(forward,shuffled);
+void SetHandler::readFile(const string & fn, const int label) {
+  intra = new IntraSetRelation();
+  readFile(fn,label,subsets,intra);
+  setSet();
 }
 
-void SetHandler::readOneFile(const string& fn, const string& wc) {
-  vector<VirtualSet *> forward,shuffled;
-  n_intra = new IntraSetRelation();
-  s_intra = new IntraSetRelation();
-  readFile(fn,1,forward,n_intra,wc,false);
-  readFile(fn,-1,shuffled,s_intra,wc,true);
-  setSet(forward,shuffled);
+void SetHandler::readFile(const string& fn, const string& wc, const bool match) {
+  intra = new IntraSetRelation();
+  readFile(fn,match?-1:1,subsets,intra,wc,match);
+  setSet();
 }
 
-void SetHandler::readFile(const string fn, const int label, vector<VirtualSet *> & sets, IntraSetRelation *intra, const string & wild, const bool match, bool calc) {
+void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation *intra, const string & wild, const bool match, bool calc) {
   ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {
     cerr << "Could not open file " << fn << endl;
@@ -148,29 +110,20 @@ void SetHandler::readFile(const string fn, const int label, vector<VirtualSet *>
     meta.close();
   }
   if (calc) {
-    vector<VirtualSet *>::iterator it;
+    vector<DataSet *>::iterator it;
     for (it=sets.begin();it!=sets.end();it++) {
       ((DataSet *)(*it))->computeIntraSetFeatures();
     }
   }  
 }
 
-void SetHandler::modifyFile(const string& normFN, const string& shuffFN, double *w, Scores& sc , const string& greet) {
-  vector<VirtualSet *> forw,shuff;
-  vector<VirtualSet *>::iterator it;
-  for (it=subsets.begin();it!=subsets.end();it++) {
-    if((*it)->getLabel()==1) forw.push_back(*it);
-    else shuff.push_back(*it);
-  }
-  if (!normFN.empty()) {
-    modifyFile(normFN,forw,w,sc,greet);
-  }
-  if (!shuffFN.empty()) {
-    modifyFile(shuffFN,shuff,w,sc,greet);
+void SetHandler::modifyFile(const string& fn, double *w, Scores& sc , const string& greet) {
+  if (!fn.empty()) {
+    modifyFile(fn,subsets,w,sc,greet);
   }
 }
 
-void SetHandler::modifyFile(const string& fn, vector<VirtualSet *> & sets, double *w, Scores& sc , const string& greet) {
+void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *w, Scores& sc , const string& greet) {
   string line;
   ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {
@@ -223,7 +176,7 @@ void SetHandler::generateTrainingSet(const double fdr,const double cpos, const d
 }
 
 
-const double * SetHandler::getNext(int& setPos,int& ixPos) {
+const double * SetHandler::getNext(int& setPos,int& ixPos) const {
   double * features = subsets[setPos]->getNext(ixPos);
   if (features) return features;
   if (++setPos>=((signed int)subsets.size()))
@@ -232,7 +185,7 @@ const double * SetHandler::getNext(int& setPos,int& ixPos) {
   return subsets[setPos]->getNext(ixPos);
 }
 
-const double * SetHandler::getFeatures(const int setPos,const int ixPos) {
+const double * SetHandler::getFeatures(const int setPos,const int ixPos) const {
   return subsets[setPos]->getFeatures(ixPos);
 }
 
@@ -243,23 +196,14 @@ int const SetHandler::getLabel(int setPos) {
 
 void SetHandler::setSet(){
   n_examples=0;
-  n_pos=0;
-  n_neg=0;
   int i=0,j=-1;
   while(getNext(i,j)) {
     n_examples++;
-    if (getLabel(i)==-1) n_neg++;
-    else n_pos++;
   }
   if(!labels) labels= new double[n_examples];
   if(!c_vec) c_vec = new double[n_examples];
   if (VERB>3) {
-    int pos=0,neg=0;
-    for (unsigned int i=0;i<subsets.size();i++) {
-      if (subsets[i]->getLabel()==1) pos++; else neg++;
-    }
-    cerr << "Set up a SetHandler with " << pos << " positive DataSet:s and " << n_pos << " examples" << endl;
-    cerr << "and " << neg << " negative DataSet:s and " << n_neg << " examples" << endl;
+    cerr << "Set up a SetHandler with " << subsets.size() << " DataSet:s and " << n_examples << " examples" << endl;
     if (VERB>4) {
       for (unsigned int i=0;i<subsets.size();i++) {
         cerr << "First 10 lines of " << i+1 << " set with " << subsets[i]->getLabel() << " label" << endl;
@@ -270,31 +214,16 @@ void SetHandler::setSet(){
 }
 
 
-void SetHandler::setSet(vector<VirtualSet *> & sets){
-  subsets.clear();
-  subsets.assign(sets.begin(),sets.end());
-  setSet();
-}
 
-
-void SetHandler::setSet(vector<VirtualSet *> & pos,vector<VirtualSet *> &neg){
-  subsets.clear();
-  subsets.assign(pos.begin(),pos.end());
-  subsets.insert(subsets.end(),neg.begin(),neg.end());
-  setSet();
-}
-
-void SetHandler::readGist(const string & dataFN, const string & labelFN) {
-  vector<VirtualSet *> forward,shuffled;
-  n_intra = NULL;
-  s_intra = NULL;
+void SetHandler::readGist(const string & dataFN, const string & labelFN, const int setLabel) {
+  intra = NULL;
   if (VERB>1) cerr << "Reading gist input from datafile " << dataFN << " and labels from " << labelFN << endl; 
   ifstream labelStream(labelFN.c_str(),ios::out);
   if (!labelStream) {
     cerr << "Can not open file " << labelFN << endl;
     exit(-1);
   }
-  vector<unsigned int> posIx,negIx;
+  vector<unsigned int> ixs;
   string tmp,line;
   int label;
   unsigned int ix=0;
@@ -302,8 +231,7 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN) {
   while(true) {
     labelStream >> tmp >> label;
     if (!labelStream) break;
-    if (label==1) {posIx.push_back(ix++);}
-    else {negIx.push_back(ix++);}
+    if (label==setLabel) {ixs.push_back(ix++);}
   }
   labelStream.close();
   ifstream dataStream(dataFN.c_str(),ios::out);
@@ -315,19 +243,16 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN) {
   dataStream.get();        // removed enumrator and tab 
   getline(dataStream,line);
   DataSet::setFeatureNames(line);
-  DataSet * posSet = new DataSet();
-  posSet->setLabel(1);
-  posSet->readGistData(dataStream,posIx);
-  forward.push_back(posSet);
-  DataSet * negSet = new DataSet();
-  negSet->setLabel(-1);
-  negSet->readGistData(dataStream,negIx);
-  shuffled.push_back(negSet);
-  setSet(forward,shuffled);
+  DataSet * theSet = new DataSet();
+  theSet->setLabel(1);
+  theSet->readGistData(dataStream,ixs);
+  dataStream.close();
+  subsets.push_back(theSet);
+  setSet();
 
 }    
 
-void SetHandler::gistWrite(const string & fileNameTrunk) {
+void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff) {
   string dataFN = fileNameTrunk + ".data";
   string labelFN = fileNameTrunk + ".label";
   ofstream dataStream(dataFN.data(),ios::out);
@@ -335,11 +260,18 @@ void SetHandler::gistWrite(const string & fileNameTrunk) {
   labelStream << "SpecId\tLabel" << endl; 
   dataStream << "SpecId\t" << DataSet::getFeatureNames() << endl;
   string str;
-  for (int setPos=0;setPos< (signed int)subsets.size();setPos++) {
+  for (int setPos=0;setPos< (signed int)norm.subsets.size();setPos++) {
     int ixPos=-1;
-    while (subsets[setPos]->getGistDataRow(ixPos,str)) {
+    while (norm.subsets[setPos]->getGistDataRow(ixPos,str)) {
       dataStream << str;
-      labelStream << str.substr(0,str.find('\t')+1) << (subsets[setPos]->getLabel()==-1?-1:+1) << endl; 
+      labelStream << str.substr(0,str.find('\t')+1) << (norm.subsets[setPos]->getLabel()==-1?-1:+1) << endl; 
+    }
+  }    
+  for (int setPos=0;setPos< (signed int)shuff.subsets.size();setPos++) {
+    int ixPos=-1;
+    while (shuff.subsets[setPos]->getGistDataRow(ixPos,str)) {
+      dataStream << str;
+      labelStream << str.substr(0,str.find('\t')+1) << (shuff.subsets[setPos]->getLabel()==-1?-1:+1) << endl; 
     }
   }    
   dataStream.close();

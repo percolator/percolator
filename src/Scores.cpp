@@ -34,7 +34,7 @@ void Scores::printRoc(string & fn){
  rocStream.close();
 }	
 
-double Scores::calcScore(const double *feat) {
+double Scores::calcScore(const double *feat) const{
   double score = 0.0;
   register int ix=0;
   for(;ix<DataSet::getNumFeatures();ix++) {
@@ -46,20 +46,98 @@ double Scores::calcScore(const double *feat) {
   return score;
 }
 
-int Scores::calcScores(double *w,SetHandler & set, double fdr) {
+void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
+  assert(ratio>0 && ratio < 1);
+  int n = norm.getSize();
+  int k = (int)(shuff.getSize()*ratio);
+  int l = shuff.getSize() - k;
   ScoreHolder s;
-  scores.resize(set.getSize(),s);
-  w_vec=w;
-  int setPos=0;
-  int ixPos=-1;
-  const double * features;
-  unsigned int ix=0;
-  while((features=set.getNext(setPos,ixPos))!=NULL) {
-  	scores[ix].score = calcScore(features);
-  	scores[ix].label = set.getLabel(setPos);
-  	scores[ix++].featVec = features;
+  train.scores.resize(n+k,s);
+  train.qVals.resize(n+k,-1e200); 
+  test.scores.resize(n+l,s);
+  test.qVals.resize(n+l,-1e200); 
+
+  int pos = -1,set=0,ix1=0,ix2=0;
+  const double * featVec;
+  while((featVec=norm.getNext(set,pos))!=NULL) {
+    if (((int)(ix1+ix2)*ratio)>ix1) {
+      train.scores[ix1].label=1;
+      train.scores[ix1].featVec=featVec;
+      ++ix1;
+    } else {
+      test.scores[ix2].label=1;
+      test.scores[ix2].featVec=featVec;
+      ++ix2;    
+    }
   }
-  assert(scores.size()==ix);
+  pos = -1,set=0;
+  while((featVec=shuff.getNext(set,pos))!=NULL) {
+    train.scores[ix1].label=-1;
+    train.scores[ix1].featVec=featVec;
+    ++ix1;
+    test.scores[ix2].label=-1;
+    test.scores[ix2].featVec=featVec;
+    ++ix2;
+  }
+  assert(ix1==n+k);
+  assert(ix2==n+l);
+  train.factor = ix1/(n+k+l);
+  test.factor = ix2/(n+k+l);
+}
+
+void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
+  int n = norm.getSize()+shuff.getSize();
+  ScoreHolder s;
+  scores.resize(n,s);
+  qVals.resize(n,-1e200); 
+  int pos = -1,set=0,ix=0;
+  const double * featVec;
+  while((featVec=norm.getNext(set,pos))!=NULL) {
+    scores[ix].label=1;
+    scores[ix].featVec=featVec;
+    ++ix;
+  }
+  pos = -1,set=0;
+  while((featVec=shuff.getNext(set,pos))!=NULL) {
+    scores[ix].label=-1;
+    scores[ix].featVec=featVec;
+    ++ix;
+  }
+  factor=1.0;
+}
+
+
+void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold) {
+ vector<vector<DataSet *> > minors(subsets.size()*xval_fold);
+  for(unsigned int j=0;j<xval_fold;j++) {
+    minors[j].resize(subsets.size());
+    for(unsigned int i=0;i<subsets.size();i++) {
+      minors[j][i]=new DataSet(*(subsets[i]),xval_fold,j);
+    }  
+  }
+  for(unsigned int j=0;j<xval_fold;j++) {
+    vector<DataSet *> ff(0);
+    for(unsigned int i=0;i<xval_fold;i++) {
+      if (i==j)
+        continue;
+      for(unsigned int k=0;k<subsets.size();k++) {
+        ff.push_back(new DataSet(*minors[i][k]));
+      }
+    }
+    train[j].setSet(ff);
+    test[j].setSet(minors[j]);
+  }  
+}
+
+int Scores::calcScores(double *w,double fdr) {
+  w_vec=w;
+  const double * features;
+  vector<ScoreHolder>::iterator it = scores.begin(),it2;
+  while(it!=scores.end()) {
+    features = it->featVec;
+  	it->score = calcScore(features);
+    it++;
+  }
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
 /*  double lastScore = 1e200;
@@ -76,6 +154,7 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
 */
   if (VERB>3) {
     cerr << "10 best scores and labels" << endl;
+    unsigned int ix;
     for (ix=0;ix < 10;ix++) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
@@ -84,20 +163,21 @@ int Scores::calcScores(double *w,SetHandler & set, double fdr) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
   }
-  qVals.resize(set.getSize()); 
-  double tp=0,fp=0,q;
+  int tp=0,fp=0;
   int tp_at_treshold = 0;
-  ix=0;
-  vector<ScoreHolder>::iterator it,it2;
+  double scaled_fp,q;
+  unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
       tp++;
-    if (it->label==-1)
+    if (it->label==-1) {
       fp++;
-    q=fp/(tp+fp);
+      scaled_fp=fp/factor;
+    }
+    q=scaled_fp/(tp+scaled_fp);
     qVals[ix++]=q;
     if (fdr>0.0 && fdr<q) {
-      tp_at_treshold = (int) tp;
+      tp_at_treshold = tp;
       double zero = it->score;
       w[DataSet::getNumFeatures()] -= zero;
       for(it2=scores.begin();it2!=scores.end();it2++) 

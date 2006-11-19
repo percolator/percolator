@@ -22,14 +22,19 @@ class Scores
 public:
 	Scores();
 	~Scores();
-	double calcScore(const double *features);
+	double calcScore(const double *features) const;
     const vector<ScoreHolder>::const_iterator begin() const {return scores.begin();}
     const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
-	int calcScores(double *w, SetHandler &set, double fdr=0.0);
+	int calcScores(double *w, double fdr=0.0);
+    void fillFeatures(SetHandler& norm,SetHandler& shuff);
+    void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
+
 //	double getPositiveTrainingIxs(const double fdr,vector<int>& set ,vector<int>& ixs);
     double getQ(const double score);
-	void printRoc(string & fn);	
+    void printRoc(string & fn); 
+    void fill(string & fn); 
 protected:
+    double factor;
     double *w_vec;
     const static int shortCutSize = 100;
     vector<ScoreHolder> scores;

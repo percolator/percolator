@@ -18,7 +18,8 @@ VirtualSet::VirtualSet()
 
 
 VirtualSet::VirtualSet(const VirtualSet& mother,int fold,int ix)
-{
+{   bool *normalizedFlag;
+    
     assert(ix<fold);
 	label=mother.label;
 	double nex=mother.n_examples/((double)fold);

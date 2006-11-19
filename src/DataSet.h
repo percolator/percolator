@@ -5,7 +5,7 @@ class Scores;
 class Normalizer;
 class IntraSetRelation;
 
-class DataSet : public VirtualSet
+class DataSet
 {
 protected:
     vector<string> ids;
@@ -19,7 +19,12 @@ protected:
     const static int maxNumRealFeatures = 16;
     vector<set<string> > proteinIds;
     vector<string> pepSeq;
-public:
+    int label;
+    double *feature;
+    int n_examples;
+    string sqtFN;
+    IntraSetRelation * intra;
+ public:
 	DataSet();
 	virtual ~DataSet();
     static string getFeatureNames();
@@ -46,6 +51,14 @@ public:
       { chymoInsteadOfTryptic=on;}
     static void setNumFeatures();
     static inline int rowIx(int row) { return row*numFeatures; }
+    double * getFeature() {return feature;}
+    const double * getFeatures(const int pos) const;
+    int inline getSize() const {return n_examples;}
+    int inline const getLabel() const {return label;}
+    double * getNext(int& pos);
+    bool getGistDataRow(int& pos,string & out);
+    void print_10features();
+    void print_features();
 };
 
 #endif /*DATASET_H_*/

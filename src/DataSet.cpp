@@ -21,10 +21,11 @@ bool DataSet::chymoInsteadOfTryptic = false;
 bool DataSet::calcIntraSetFeatures = true;
 string DataSet::featureNames = "";
 
-DataSet::DataSet() : VirtualSet()
+DataSet::DataSet()
 {
-    normalizedFlag = new bool;
-    *normalizedFlag = false;
+   feature = NULL;
+   n_examples=0;
+   sqtFN = "";
 }
 
 DataSet::~DataSet()
@@ -35,9 +36,55 @@ DataSet::~DataSet()
 		delete [] feature;
 		feature=NULL;
 	}
-    delete normalizedFlag;
-    normalizedFlag = NULL;
 }
+
+double * DataSet::getNext(int& pos) {
+  pos++;
+  if (pos<0)
+    pos=0;
+  if(pos>=getSize())
+    return NULL;
+  return &feature[DataSet::rowIx(pos)];
+}
+
+const double * DataSet::getFeatures(const int pos) const {
+  return &feature[DataSet::rowIx(pos)];
+}
+
+bool DataSet::getGistDataRow(int & pos,string &out){
+  ostringstream s1;
+  double * feature = NULL;
+//  while (!feature || charge[pos] !=2)  { //tmp fix
+  if ((feature = getNext(pos)) == NULL) return false; 
+//  }
+  s1 << pos;
+  for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
+    s1 << '\t' << feature[ix];
+  }
+  s1 << endl;
+  out = s1.str();
+  return true;
+}
+
+void DataSet::print_features() {
+   for(int i=0;i<getSize();i++) {
+       for(int j=0;j<DataSet::getNumFeatures();j++) {
+          cout << j+1 << ":" << feature[DataSet::rowIx(i)+j] << " ";
+       }
+       cout << endl;
+   }
+}
+
+void DataSet::print_10features() {
+   cerr << DataSet::getFeatureNames() << endl;
+   for(int i=0;i<10;i++) {
+       for(int j=0;j<DataSet::getNumFeatures();j++) {
+          cerr << feature[DataSet::rowIx(i)+j] << "\t";
+       }
+       cerr << endl;
+   }
+}
+
 
 void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
