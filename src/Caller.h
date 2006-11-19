@@ -18,7 +18,7 @@ public:
     int run();
 protected:
     Normalizer * pNorm;
-    Scores scores;
+    AlgIn *svmInput;
     string modifiedFN;
     string modifiedShuffledFN;
     string forwardFN;

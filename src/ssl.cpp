@@ -17,8 +17,20 @@ using namespace std;
 #define LOG2(x) 1.4426950408889634*log(x) 
 // for compatibility issues, not using log2
 
+AlgIn::AlgIn(const int size,const int numFeat) {
+  vals=new const double*[size];
+  Y=new double[size];
+  C=new double[size];
+  n=numFeat;
+}
+AlgIn::~AlgIn(){
+  delete [] vals;
+  delete [] Y;
+  delete [] C;
+}
 
-int CGLS(SetHandler & data, 
+
+int CGLS(const AlgIn& data, 
      const double lambda,
 	 const int cgitermax,
      const double epsilon, 
@@ -33,10 +45,10 @@ int CGLS(SetHandler & data,
   tictoc.restart();
   int active = Subset->d;
   int *J = Subset->vec;
-  vector<const double *> * pSet = data.getTrainingSet();
-  const double * Y = data.getLabels();
-  const double * C = data.getC();
-  const int n  = DataSet::getNumFeatures()+1;
+  const double ** set = data.vals;
+  const double * Y = data.Y;
+  const double * C = data.C;
+  const int n  = data.n;
 //  int m  = pSet->size();
   double *beta = Weights->vec;
   double *o  = Outputs->vec; 
@@ -54,7 +66,7 @@ int CGLS(SetHandler & data,
     r[i] = 0.0;
   for(j=0; j < active; j++)
   {
-    const double * val = (*pSet)[J[j]];   
+    const double * val = set[J[j]];   
     for(i=n-1; i--;)
       r[i]+=val[i]*z[j];
     r[n-1]+=z[j];
@@ -88,7 +100,7 @@ int CGLS(SetHandler & data,
     {
       ii=J[i];
       t=0.0;
-      const double * val = (*pSet)[ii];   
+      const double * val = set[ii];   
       for(j=0; j < n-1; j++)
         t+=val[j]*p[j];
       t+=p[n-1];
@@ -114,7 +126,7 @@ int CGLS(SetHandler & data,
     {
       ii=J[j];
       t=z[j];      
-      const double * val = (*pSet)[ii];   
+      const double * val = set[ii];   
       for(register int i=0; i < n-1; i++)
         r[i]+=val[i]*t;
       r[n-1]+=t;
@@ -150,7 +162,8 @@ int CGLS(SetHandler & data,
   delete[] p;
   return optimality;
 }
-int L2_SVM_MFN(SetHandler & data, 
+
+int L2_SVM_MFN(const AlgIn & data, 
 	       struct options *Options, 
 	       struct vector_double *Weights,
 	       struct vector_double *Outputs)
@@ -158,11 +171,11 @@ int L2_SVM_MFN(SetHandler & data,
   /* Disassemble the structures */  
   timer tictoc;
   tictoc.restart();
-  vector<const double *> * pSet = data.getTrainingSet();
-  const double * Y = data.getLabels();
-  const double * C = data.getC();
+  const double ** set = data.vals;
+  const double * Y = data.Y;
+  const double * C = data.C;
   const int n  = DataSet::getNumFeatures()+1;
-  const int m  = pSet->size();
+  const int m  = data.m;
   double lambda = Options->lambda;
   double epsilon=BIG_EPSILON;
   int cgitermax=SMALL_CGITERMAX;
@@ -222,11 +235,10 @@ int L2_SVM_MFN(SetHandler & data,
         for(register int i=active; i < m; i++) 
 	    {
 	      ii=ActiveSubset->vec[i];
-          const double * val = (*pSet)[ii];   
-	      t=0.0;
-	      for(register int j=0; j < n-1; j++)
+          const double * val = set[ii];   
+          t=w_bar[n-1];
+	      for(register int j=n-1; j--;)
 	        t+=val[j]*w_bar[j];
-          t+=w_bar[n-1];
 	      o_bar[ii]=t;
         }
         if(ini==0) {cgitermax=CGITERMAX; ini=1;};

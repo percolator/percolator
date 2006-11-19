@@ -43,28 +43,6 @@ SetHandler::~SetHandler()
 }
     
 
-void SetHandler::createXvalSets(vector<SetHandler>& train,vector<SetHandler>& test, const unsigned int xval_fold) {
- vector<vector<DataSet *> > minors(subsets.size()*xval_fold);
-  for(unsigned int j=0;j<xval_fold;j++) {
-    minors[j].resize(subsets.size());
-    for(unsigned int i=0;i<subsets.size();i++) {
-      minors[j][i]=new DataSet(*(subsets[i]),xval_fold,j);
-    }  
-  }
-  for(unsigned int j=0;j<xval_fold;j++) {
-    vector<DataSet *> ff(0);
-    for(unsigned int i=0;i<xval_fold;i++) {
-      if (i==j)
-        continue;
-      for(unsigned int k=0;k<subsets.size();k++) {
-        ff.push_back(new DataSet(*minors[i][k]));
-      }
-    }
-    train[j].setSet(ff);
-    test[j].setSet(minors[j]);
-  }  
-}
-
 void SetHandler::readFile(const string & fn, const int label) {
   intra = new IntraSetRelation();
   readFile(fn,label,subsets,intra);

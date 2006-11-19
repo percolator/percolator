@@ -1,6 +1,5 @@
 #ifndef DATASET_H_
 #define DATASET_H_
-#include "VirtualSet.h"
 class Scores;
 class Normalizer;
 class IntraSetRelation;

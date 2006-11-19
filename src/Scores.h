@@ -17,6 +17,8 @@ public:
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other); 
 inline bool operator<(const ScoreHolder &one, const ScoreHolder &other); 
 
+class AlgIn;
+
 class Scores
 {
 public:
@@ -28,14 +30,21 @@ public:
 	int calcScores(double *w, double fdr=0.0);
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
     void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
-
-//	double getPositiveTrainingIxs(const double fdr,vector<int>& set ,vector<int>& ixs);
+    void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
+    void generateTrainingSet(AlgIn& data,const double fdr,const double cpos, const double cneg);
     double getQ(const double score);
     void printRoc(string & fn); 
-    void fill(string & fn); 
+    void fill(string & fn);
+    inline unsigned int size() {return (pos+neg);} 
+    inline unsigned int posSize() {return (pos);} 
+    inline unsigned int posNowSize() {return (posNow);} 
+    inline unsigned int negSize() {return (pos);} 
 protected:
     double factor;
     double *w_vec;
+    int neg;
+    int pos;
+    int posNow;
     const static int shortCutSize = 100;
     vector<ScoreHolder> scores;
     vector<double> qVals;

@@ -22,7 +22,7 @@ public:
 	void fillTestSet(SetHandler& trainSet,const string& shuffled2FN="");
     void createXvalSets(vector<SetHandler>& train,vector<SetHandler>& test, const unsigned int xval_fold);
 	const double * getNext(int& ,int& ) const;
-    const double * getFeatures(const int setPos,const int ixPos);
+    const double * getFeatures(const int setPos,const int ixPos) const;
     void readGist(const string & dataFN, const string & labelFN, const int label);
     void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff);
 	int const getLabel(int setPos);

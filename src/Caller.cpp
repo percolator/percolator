@@ -10,14 +10,13 @@ using namespace std;
 #include "argvparser.h"
 using namespace CommandLineProcessing;
 #include "DataSet.h"
-#include "VirtualSet.h"
 #include "IntraSetRelation.h"
 #include "Normalizer.h"
 #include "Scores.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
-#include "Caller.h"
 #include "ssl.h"
+#include "Caller.h"
 #include "Globals.h"
 
 const unsigned int Caller::xval_fold = 3;
@@ -41,6 +40,7 @@ Caller::Caller()
   selectedCneg=0;
   gistInput=false;
   pNorm=NULL;
+  svmInput=NULL;
 }
 
 Caller::~Caller()
@@ -48,6 +48,8 @@ Caller::~Caller()
     if (pNorm)
       delete pNorm;
     pNorm=NULL;
+    if (svmInput)
+      delete svmInput;
 }
 
 string Caller::extendedGreeter() {
@@ -245,11 +247,11 @@ void Caller::printWeights(ostream & weightStream, double * w) {
 
 
 void Caller::step(Scores& train,double * w, double Cpos, double Cneg, double fdr) {
-  	scores.calcScores(w,train);
-    train.generateTrainingSet(fdr,Cpos,Cneg,scores);
-    int nex=train.getTrainingSetSize();
-    int negatives = train.getNegativeSize();
-    int positives = nex - negatives;
+  	train.calcScores(w);
+    train.generateTrainingSet(*svmInput,fdr,Cpos,Cneg);
+//    int nex=train.getTrainingSetSize();
+    int negatives = train.negSize();
+    int positives = train.posNowSize();
   	if (VERB>1) cerr << "Calling with " << positives << " positives and " << negatives << " negatives\n";
   	// Setup options
     struct options *Options = new options;
@@ -266,13 +268,13 @@ void Caller::step(Scores& train,double * w, double Cpos, double Cneg, double fdr
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
     
     struct vector_double *Outputs = new vector_double;
-    Outputs->vec = new double[nex];
-    Outputs->d = nex;
+    Outputs->vec = new double[positives+negatives];
+    Outputs->d = positives+negatives;
     for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
 
 //    norm->normalizeweight(w,Weights->vec);
 //    Weights->vec[DataSet::getNumFeatures()] = 0;
-    L2_SVM_MFN(train,Options,Weights,Outputs);
+    L2_SVM_MFN(*svmInput,Options,Weights,Outputs);
     for(int i= DataSet::getNumFeatures()+1;i--;)
       w[i]=Weights->vec[i];
   	delete [] Weights->vec;
@@ -311,8 +313,7 @@ void Caller::xvalidate_step(double *w) {
           if(VERB>1) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
           step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
-          Scores sc;
-          tp += sc.calcScores(ww,xv_test[i],test_fdr);
+          tp += xv_test[i].calcScores(ww,test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
         }
         if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
@@ -350,8 +351,7 @@ void Caller::xvalidate(double *w) {
           for(int k=0;k<niter;k++) {
             step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
           }
-          Scores sc;
-          tp += sc.calcScores(ww,xv_test[i],test_fdr);
+          tp += xv_test[i].calcScores(ww,test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
         }
         if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
@@ -387,9 +387,13 @@ int Caller::run() {
     normal.readFile(forwardFN,shuffledWC,false);  
     shuffled.readFile(forwardFN,shuffledWC,true);  
   }
-  if (doShuffled2) 
+  if (doShuffled2) {
     shuffled2.readFile(shuffled2FN,-1);
-  testset.fillTestSet(trainset,shuffled2FN);
+    trainset.fillFeatures(normal,shuffled);
+    testset.fillFeatures(normal,shuffled2);
+  } else {
+  	Scores::fillFeatures(trainset,testset,normal,shuffled,0.7);
+  }
   if (gistFN.length()>0) {
     SetHandler::gistWrite(gistFN,normal,shuffled);
   }
@@ -403,7 +407,7 @@ int Caller::run() {
   pNorm->setSet(all);
   pNorm->normalizeSet(all);
   
-  
+  svmInput = new AlgIn(trainset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
   
   // Set up a first guess of w
   double w[DataSet::getNumFeatures()+1];
@@ -450,23 +454,22 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-startClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  Scores testScores;
-  int overFDR = testScores.calcScores(w,testset,selectedfdr);
+  int overFDR = testset.calcScores(w,selectedfdr);
   if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectedfdr*100 << "% FDR level on testset" << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
-  normal.modifyFile(modifiedFN,ww,testScores,extendedGreeter()+timerValues.str());
+  normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str());
   if (doShuffled2)
-    shuffled2.modifyFile(modifiedShuffledFN,ww,testScores,extendedGreeter()+timerValues.str());
+    shuffled2.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str());
   else
-    shuffled.modifyFile(modifiedShuffledFN,ww,testScores,extendedGreeter()+timerValues.str());
+    shuffled.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str());
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
      printWeights(weightStream,w);
      weightStream.close(); 
   }
   if (rocFN.size()>0) {
-      testScores.printRoc(rocFN);
+      testset.printRoc(rocFN);
   }
   return 0;
 }

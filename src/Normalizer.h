@@ -5,8 +5,8 @@ class Normalizer
 {
 public:
 	virtual ~Normalizer();
-    virtual void setSet(set<VirtualSet *> & setVec){;}
-    void normalizeSet(set<VirtualSet *> & setVec);
+    virtual void setSet(set<DataSet *> & setVec){;}
+    void normalizeSet(set<DataSet *> & setVec);
     virtual void normalize(const double *in,double* out){;}
     virtual void unnormalizeweight(const double *in,double* out){;}
     virtual void normalizeweight(const double *in,double* out){;}

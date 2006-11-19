@@ -10,6 +10,7 @@ using namespace std;
 #include "SetHandler.h"
 #include "Scores.h"
 #include "Globals.h"
+#include "ssl.h"
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score>other.score);}
@@ -48,30 +49,30 @@ double Scores::calcScore(const double *feat) const{
 
 void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
   assert(ratio>0 && ratio < 1);
-  int n = norm.getSize();
-  int k = (int)(shuff.getSize()*ratio);
-  int l = shuff.getSize() - k;
+  int n = shuff.getSize();
+  int k = (int)(norm.getSize()*ratio);
+  int l = norm.getSize() - k;
   ScoreHolder s;
   train.scores.resize(n+k,s);
   train.qVals.resize(n+k,-1e200); 
   test.scores.resize(n+l,s);
   test.qVals.resize(n+l,-1e200); 
 
-  int pos = -1,set=0,ix1=0,ix2=0;
+  int loc = -1,set=0,ix1=0,ix2=0;
   const double * featVec;
-  while((featVec=norm.getNext(set,pos))!=NULL) {
+  while((featVec=shuff.getNext(set,loc))!=NULL) {
     if (((int)(ix1+ix2)*ratio)>ix1) {
-      train.scores[ix1].label=1;
+      train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
       ++ix1;
     } else {
-      test.scores[ix2].label=1;
+      test.scores[ix2].label=-1;
       test.scores[ix2].featVec=featVec;
       ++ix2;    
     }
   }
-  pos = -1,set=0;
-  while((featVec=shuff.getNext(set,pos))!=NULL) {
+  loc = -1,set=0;
+  while((featVec=norm.getNext(set,loc))!=NULL) {
     train.scores[ix1].label=-1;
     train.scores[ix1].featVec=featVec;
     ++ix1;
@@ -81,8 +82,12 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   }
   assert(ix1==n+k);
   assert(ix2==n+l);
-  train.factor = ix1/(n+k+l);
-  test.factor = ix2/(n+k+l);
+  train.pos=k;
+  test.pos=l;
+  train.neg=n;
+  test.neg=n;
+  train.factor = n/(double)k;
+  test.factor = n/(double)l;
 }
 
 void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
@@ -90,43 +95,52 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
   ScoreHolder s;
   scores.resize(n,s);
   qVals.resize(n,-1e200); 
-  int pos = -1,set=0,ix=0;
+  int loc = -1,set=0,ix=0;
   const double * featVec;
-  while((featVec=norm.getNext(set,pos))!=NULL) {
+  while((featVec=norm.getNext(set,loc))!=NULL) {
     scores[ix].label=1;
     scores[ix].featVec=featVec;
     ++ix;
   }
-  pos = -1,set=0;
-  while((featVec=shuff.getNext(set,pos))!=NULL) {
+  pos=ix;
+  loc = -1,set=0;
+  while((featVec=shuff.getNext(set,loc))!=NULL) {
     scores[ix].label=-1;
     scores[ix].featVec=featVec;
     ++ix;
   }
-  factor=1.0;
+  neg=ix-pos;
+  factor=norm.getSize()/shuff.getSize();
 }
 
 
 void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold) {
- vector<vector<DataSet *> > minors(subsets.size()*xval_fold);
-  for(unsigned int j=0;j<xval_fold;j++) {
-    minors[j].resize(subsets.size());
-    for(unsigned int i=0;i<subsets.size();i++) {
-      minors[j][i]=new DataSet(*(subsets[i]),xval_fold,j);
+  train.resize(xval_fold);
+  test.resize(xval_fold);
+  for(unsigned int j=0;j<scores.size();j++) {
+    for(unsigned int i=0;i<xval_fold;i++) {
+      if(j%xval_fold==i) {
+        test[i].scores.push_back(scores[j]);
+      } else {
+        train[i].scores.push_back(scores[j]);
+      }
     }  
   }
-  for(unsigned int j=0;j<xval_fold;j++) {
-    vector<DataSet *> ff(0);
-    for(unsigned int i=0;i<xval_fold;i++) {
-      if (i==j)
-        continue;
-      for(unsigned int k=0;k<subsets.size();k++) {
-        ff.push_back(new DataSet(*minors[i][k]));
-      }
-    }
-    train[j].setSet(ff);
-    test[j].setSet(minors[j]);
-  }  
+  vector<ScoreHolder>::const_iterator it;
+  for(unsigned int i=0;i<xval_fold;i++) {
+    train[i].qVals.resize(train[i].scores.size(),-1e200); 
+  	train[i].pos=0;train[i].neg=0;
+  	for(it=train[i].begin();it!=train[i].end();it++) {
+      if (it->label==1) train[i].pos++;
+      else train[i].neg++;
+  	}
+    test[i].qVals.resize(test[i].scores.size(),-1e200); 
+    test[i].pos=0;test[i].neg=0;
+  	for(it=test[i].begin();it!=test[i].end();it++) {
+      if (it->label==1) test[i].pos++;
+      else test[i].neg++;
+  	}
+  }
 }
 
 int Scores::calcScores(double *w,double fdr) {
@@ -164,7 +178,6 @@ int Scores::calcScores(double *w,double fdr) {
     }
   }
   int tp=0,fp=0;
-  int tp_at_treshold = 0;
   double scaled_fp,q;
   unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
@@ -172,21 +185,24 @@ int Scores::calcScores(double *w,double fdr) {
       tp++;
     if (it->label==-1) {
       fp++;
-      scaled_fp=fp/factor;
+      scaled_fp=fp*factor;
     }
-    q=scaled_fp/(tp+scaled_fp);
+    if (tp)
+      q=scaled_fp/(double)tp;
+    else
+      q=1;
     qVals[ix++]=q;
     if (fdr>0.0 && fdr<q) {
-      tp_at_treshold = tp;
-      double zero = it->score;
-      w[DataSet::getNumFeatures()] -= zero;
-      for(it2=scores.begin();it2!=scores.end();it2++) 
-        it2->score -= zero;
-      if (VERB>4) { cerr << "Scores lowered by " << zero << endl;}
+      posNow = tp;
+//      double zero = it->score;
+//      w[DataSet::getNumFeatures()] -= zero;
+//      for(it2=scores.begin();it2!=scores.end();it2++) 
+//        it2->score -= zero;
+//      if (VERB>4) { cerr << "Scores lowered by " << zero << endl;}
       fdr = -1;
     }
   }
-  return tp_at_treshold;
+  return posNow;
 }
 
  double Scores::getQ(const double score) {
@@ -228,6 +244,27 @@ int Scores::calcScores(double *w,double fdr) {
   }
   return qVals[loIx];
 }
+
+void Scores::generateTrainingSet(AlgIn& data,const double fdr,const double cpos, const double cneg) {
+  unsigned int ix1=0,ix2=0,pos=0;
+  bool underCutOff = true;
+  vector<ScoreHolder>::const_iterator it;
+  for(ix1=0;ix1<size();ix1++) {
+  	ScoreHolder *pH = &(scores[ix1]);
+    if (underCutOff && fdr<qVals[ix1]) {
+      underCutOff=false;
+      posNow=pos;
+    }
+    if (pH->label==-1 || underCutOff) {
+      data.vals[ix2]=pH->featVec;
+      data.Y[ix2]=pH->label;
+      data.C[ix2++]=(pH->label!=-1?cpos:cneg);
+      if (pH->label==1) ++pos;
+    }
+  }
+  data.m=ix2;
+}
+
 
 /*
 double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& set,vector<int>& ixs) {

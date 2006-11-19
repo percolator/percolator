@@ -17,9 +17,9 @@ Normalizer::~Normalizer()
 {
 }
 
-void Normalizer::normalizeSet(set<VirtualSet *> & setVec) {
+void Normalizer::normalizeSet(set<DataSet *> & setVec) {
   double * features;
-  set<VirtualSet *>::iterator it;
+  set<DataSet *>::iterator it;
   if (VERB>4) {
     cerr << "First 10 feature vectors before normalization" << endl;
     cerr.precision(3);
@@ -35,13 +35,10 @@ void Normalizer::normalizeSet(set<VirtualSet *> & setVec) {
     
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
-    if (!(*it)->isNormalized()) {
       int ixPos=-1;
       while((features=(*it)->getNext(ixPos))!=NULL) {
         normalize(features,features);
       }
-    }
-    (*it)->setNormalized();
   }
   if (VERB>4) {
     cerr << "First 10 feature vectors after normalization" << endl;

@@ -15,6 +15,17 @@ using namespace std;
 
 #define VERBOSE_CGLS 0
 
+class AlgIn {
+public:
+  AlgIn(const int size, const int numFeat);
+  virtual ~AlgIn();
+  int m; /* number of examples */
+  int n; /* number of features */ 
+  const double **vals;
+  double *Y;   /* labels */
+  double *C;   /* cost associated with each example */  
+};
+
 /* Data: Input examples are stored in sparse (Compressed Row Storage) format */
 struct data 
 {
@@ -90,7 +101,7 @@ double norm_square(const vector_double *A); /* returns squared length of A */
 /* Conjugate Gradient for Sparse Linear Least Squares Problems */
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_{i in Subset} Data->C[i] (Y[i]- w' x_i)^2 */
 /* over a subset of examples x_i specified by vector_int Subset */
-int CGLS(SetHandler & set, 
+int CGLS(const AlgIn& set, 
      const double lambda,
      const int cgitermax,
      const double epsilon, 
@@ -100,7 +111,7 @@ int CGLS(SetHandler & set,
      
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
-int L2_SVM_MFN(SetHandler & set, 
+int L2_SVM_MFN(const AlgIn& set, 
 	       struct options *Options, 
 	       struct vector_double *Weights,
 	       struct vector_double *Outputs); 
