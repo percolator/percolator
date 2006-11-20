@@ -133,13 +133,15 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
   	for(it=train[i].begin();it!=train[i].end();it++) {
       if (it->label==1) train[i].pos++;
       else train[i].neg++;
-  	}
+    }
+    train[i].factor=train[i].pos/train[i].neg;
     test[i].qVals.resize(test[i].scores.size(),-1e200); 
     test[i].pos=0;test[i].neg=0;
   	for(it=test[i].begin();it!=test[i].end();it++) {
       if (it->label==1) test[i].pos++;
       else test[i].neg++;
   	}
+    test[i].factor=test[i].pos/test[i].neg;
   }
 }
 
@@ -246,20 +248,19 @@ int Scores::calcScores(double *w,double fdr) {
 }
 
 void Scores::generateTrainingSet(AlgIn& data,const double fdr,const double cpos, const double cneg) {
-  unsigned int ix1=0,ix2=0,pos=0;
+  unsigned int ix1=0,ix2=0,p=0;
   bool underCutOff = true;
-  vector<ScoreHolder>::const_iterator it;
   for(ix1=0;ix1<size();ix1++) {
   	ScoreHolder *pH = &(scores[ix1]);
     if (underCutOff && fdr<qVals[ix1]) {
       underCutOff=false;
-      posNow=pos;
+      posNow=p;
     }
     if (pH->label==-1 || underCutOff) {
       data.vals[ix2]=pH->featVec;
       data.Y[ix2]=pH->label;
       data.C[ix2++]=(pH->label!=-1?cpos:cneg);
-      if (pH->label==1) ++pos;
+      if (pH->label==1) ++p;
     }
   }
   data.m=ix2;
