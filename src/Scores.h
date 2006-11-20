@@ -38,7 +38,7 @@ public:
     inline unsigned int size() {return (pos+neg);} 
     inline unsigned int posSize() {return (pos);} 
     inline unsigned int posNowSize() {return (posNow);} 
-    inline unsigned int negSize() {return (pos);} 
+    inline unsigned int negSize() {return (neg);} 
 protected:
     double factor;
     double *w_vec;

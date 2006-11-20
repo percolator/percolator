@@ -146,7 +146,7 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
 int Scores::calcScores(double *w,double fdr) {
   w_vec=w;
   const double * features;
-  vector<ScoreHolder>::iterator it = scores.begin(),it2;
+  vector<ScoreHolder>::iterator it = scores.begin();
   while(it!=scores.end()) {
     features = it->featVec;
   	it->score = calcScore(features);
