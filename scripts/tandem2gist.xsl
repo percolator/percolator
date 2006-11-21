@@ -2,7 +2,7 @@
 <xsl:stylesheet version = "1.0" xmlns:xsl = "http://www.w3.org/1999/XSL/Transform">
 <xsl:output method="text"/>
 <xsl:template match="/">
-<xsl:text>Id dM Mass pepLen score expect z1 z2 z3 enzN enzC
+<xsl:text>Id dM Mass pepLen score expect z1 z2 z3 enzN enzC numPep numProt pepSite
 </xsl:text>
 <xsl:for-each select="//group[@type='model']">
 <xsl:value-of select="concat(@id,'_',@z,' ')"/>
@@ -20,8 +20,13 @@
 <xsl:variable name="postN" select="substring(protein[1]/peptide/domain/@post,1,1)"/>
 <xsl:variable name="trypN" select="$preC='[' or (($preC='K' or $preC='R') and $pepN!='P')"/>
 <xsl:variable name="trypC" select="$postN=']' or (($pepC='K' or $pepC='R') and $postN!='P')"/>
+<xsl:variable name="pep" select="protein[1]/peptide/domain/@seq"/>
+<xsl:variable name="prot" select="protein[1]/@label"/>
 <xsl:if test="$trypN"><xsl:text>1 </xsl:text></xsl:if><xsl:if test="$trypN!=true()"><xsl:text>0 </xsl:text></xsl:if>
 <xsl:if test="$trypC"><xsl:text>1 </xsl:text></xsl:if><xsl:if test="$trypC!=true()"><xsl:text>0 </xsl:text></xsl:if>
+<xsl:value-of select="count(//group[@type='model']/protein[1]/peptide/domain[@seq=$pep])"/><xsl:text> </xsl:text>
+<xsl:value-of select="count(//group[@type='model']/protein[1][@label=$prot])"/><xsl:text> </xsl:text>
+<xsl:value-of select="count(distinct-values(//group[@type='model']/protein[@label=$prot]/peptide/domain/@seq))"/><xsl:text> </xsl:text>
 <xsl:text>
 </xsl:text>
 </xsl:for-each>
