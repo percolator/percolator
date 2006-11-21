@@ -3,6 +3,7 @@ import sys
 import math
 ffeatures = open(sys.argv[1],"r")
 flab = open(sys.argv[2],"r")
+onlyTryp = (len(sys.argv)>3)
 lf=ffeatures.readlines()
 ll=flab.readlines()
 flab.close()
@@ -22,8 +23,8 @@ for i in range(1,len(lf)):
     continue
   if wf[pepSite]==0.0:
     continue
-#  if wf[tryC]!=1 or wf[tryN]!=1:
-#    continue
+  if onlyTryp and (wf[tryC]!=1 or wf[tryN]!=1):
+    continue
   if wf[8]==1:
     if wf[xcorr]<1.8:
       continue

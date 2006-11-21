@@ -1,10 +1,10 @@
 #! /usr/bin/env python
+upFDR = 0.10
 from pylab import  *
 matplotlib.use('PS')
 import glob
 curves = []
 curveNames = []
-upFDR = 0.06
 for doc in glob.glob('*.res'):
   print doc
   curveName = doc[:-4]
