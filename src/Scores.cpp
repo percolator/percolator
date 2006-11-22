@@ -112,7 +112,7 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
     ++ix;
   }
   neg=ix-pos;
-  factor=norm.getSize()/shuff.getSize();
+  factor=pos/neg;
 }
 
 
@@ -182,7 +182,7 @@ int Scores::calcScores(double *w,double fdr) {
     }
   }
   int tp=0,fp=0;
-  double scaled_fp,q;
+  double scaled_fp=0.0,q;
   unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
