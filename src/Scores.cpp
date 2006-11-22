@@ -49,9 +49,9 @@ double Scores::calcScore(const double *feat) const{
 
 void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
   assert(ratio>0 && ratio < 1);
-  int n = shuff.getSize();
-  int k = (int)(norm.getSize()*ratio);
-  int l = norm.getSize() - k;
+  int n = norm.getSize();
+  int k = (int)(shuff.getSize()*ratio);
+  int l = shuff.getSize() - k;
   ScoreHolder s;
   train.scores.resize(n+k,s);
   train.qVals.resize(n+k,-1e200); 
@@ -61,7 +61,7 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   int loc = -1,set=0,ix1=0,ix2=0;
   const double * featVec;
   while((featVec=shuff.getNext(set,loc))!=NULL) {
-    if (((int)(ix1+ix2)*ratio)>ix1) {
+    if (((int)(ix1+ix2+1)*ratio)>ix1+1) {
       train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
       ++ix1;
@@ -71,21 +71,23 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
       ++ix2;    
     }
   }
+  assert(ix1==k);
+  assert(ix2==l);
   loc = -1,set=0;
   while((featVec=norm.getNext(set,loc))!=NULL) {
-    train.scores[ix1].label=-1;
+    train.scores[ix1].label=1;
     train.scores[ix1].featVec=featVec;
     ++ix1;
-    test.scores[ix2].label=-1;
+    test.scores[ix2].label=1;
     test.scores[ix2].featVec=featVec;
     ++ix2;
   }
   assert(ix1==n+k);
   assert(ix2==n+l);
-  train.pos=k;
-  test.pos=l;
-  train.neg=n;
-  test.neg=n;
+  train.pos=n;
+  test.pos=n;
+  train.neg=k;
+  test.neg=l;
   train.factor = n/(double)k;
   test.factor = n/(double)l;
 }

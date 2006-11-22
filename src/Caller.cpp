@@ -394,6 +394,10 @@ int Caller::run() {
   } else {
   	Scores::fillFeatures(trainset,testset,normal,shuffled,0.7);
   }
+  if (VERB>1) {
+    cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives." << endl;
+    cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives." << endl;
+  }
   if (gistFN.length()>0) {
     SetHandler::gistWrite(gistFN,normal,shuffled);
   }
@@ -422,6 +426,7 @@ int Caller::run() {
       xv_fdrs.push_back(selectedfdr);
     } else {
       xv_fdrs.push_back(0.01);xv_fdrs.push_back(0.03); xv_fdrs.push_back(0.07);
+      selectedfdr=test_fdr;
       if(VERB>0) cerr << "selecting fdr by cross validation" << endl;
     }
     if (selectedCpos > 0) {
