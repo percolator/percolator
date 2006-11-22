@@ -480,10 +480,14 @@ int Caller::run() {
 }
 
 int main(int argc, char **argv){
-  Caller caller;
-  if(caller.parseOptions(argc,argv))
-    return caller.run();
-  return -1;
+  Caller *pCaller=new Caller();
+  int retVal=-1;
+  if(pCaller->parseOptions(argc,argv))
+  {
+    retVal=pCaller->run();
+  }
+  delete pCaller;
+  return retVal;
 }	
 
 

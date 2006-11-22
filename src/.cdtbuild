@@ -5,7 +5,10 @@
 <project id="percolator.cdt.managedbuild.target.gnu.exe.1271973168" name="Executable (Gnu)" projectType="cdt.managedbuild.target.gnu.exe">
 <configuration artifactName="percolator" cleanCommand="rm -rf" description="" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.debug.429909230" name="Debug" parent="cdt.managedbuild.config.gnu.exe.debug">
 <toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.278972967" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
-<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.318253670" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug"/>
+<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.318253670" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+<option id="gnu.cpp.compiler.option.debugging.other.964552772" superClass="gnu.cpp.compiler.option.debugging.other" value="" valueType="string"/>
+<option id="gnu.cpp.compiler.option.optimization.flags.1267862029" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
+</tool>
 <tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.96380196" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug"/>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.416843835" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
 <tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1560281494" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug"/>
