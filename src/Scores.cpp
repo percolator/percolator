@@ -20,6 +20,12 @@ inline bool operator<(const ScoreHolder &one, const ScoreHolder &other)
 
 Scores::Scores()
 {
+    factor=1;
+    neg=0;
+    pos=0;
+    posNow=0;
+    shortStep=0;
+    w_vec = NULL;
 }
 
 Scores::~Scores()
@@ -36,14 +42,11 @@ void Scores::printRoc(string & fn){
 }	
 
 double Scores::calcScore(const double *feat) const{
-  double score = 0.0;
-  register int ix=0;
-  for(;ix<DataSet::getNumFeatures();ix++) {
+  register int ix=DataSet::getNumFeatures();
+  register double score = w_vec[ix];
+  for(;ix--;) {
   	score += feat[ix]*w_vec[ix];
   }
-  score += w_vec[ix];
-//  if (w_vec[DataSet::getNumFeatures()]<0)
-//    score = - score;
   return score;
 }
 

@@ -247,7 +247,7 @@ void Caller::printWeights(ostream & weightStream, double * w) {
 
 
 void Caller::step(Scores& train,double * w, double Cpos, double Cneg, double fdr) {
-  	train.calcScores(w);
+  	train.calcScores(w,test_fdr);
     train.generateTrainingSet(*svmInput,fdr,Cpos,Cneg);
 //    int nex=train.getTrainingSetSize();
     int negatives = train.negSize();
