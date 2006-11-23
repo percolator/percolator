@@ -25,12 +25,10 @@ sub readSQT {
       $charge=$fields[3];
       $mass=$fields[6];
     }
-    if ($fields[0] eq 'M') { # dont do that && $fields[4]>0) { # only look for second best deltasc>0
-#      print;
+    if ($fields[0] eq 'M') { 
       push (@hits,[$fields[2],$mass-$fields[3],$fields[4],$fields[5],$fields[6],$fields[7]/$fields[8],$fields[9]]);
     }
   }
-#  print "Read $#all_hits spectras\n";
   return %all_hits;
 }
 
@@ -57,7 +55,10 @@ my ($label,@values,@LandS);
 foreach my $psmId (keys %fHits) {
 #  print $psmId . "\n";
 #  print @{$fHits{$psmId}} . "\n";
-  next if (!defined($rHits{$psmId}));
+  if (!defined($rHits{$psmId})){
+      print $psmId;
+      next;
+  }
   if ($fHits{$psmId}->[3]<$rHits{$psmId}->[3]) {
     $label = -1;
     @values = @{$rHits{$psmId}};    
@@ -65,7 +66,8 @@ foreach my $psmId (keys %fHits) {
     $label = 1;
     @values = @{$fHits{$psmId}};    
   }
-  if (isFullyTryptic($values[6]) && $values[1]<1) {
+#  print $values[1] . "\n";
+  if (isFullyTryptic($values[6]) && abs($values[1])<5) {
     push @LandS,[$values[3],$label];
   }
 }
