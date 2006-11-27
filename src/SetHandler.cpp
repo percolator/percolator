@@ -202,6 +202,7 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
     exit(-1);
   }
   vector<unsigned int> ixs;
+  ixs.clear();
   string tmp,line;
   int label;
   unsigned int ix=0;
