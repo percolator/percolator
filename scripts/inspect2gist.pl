@@ -24,7 +24,7 @@ print "Id\tCutScore\tp-value\tDeltaCN\tMQScore\tDeltaCnOther\tpepLen\tz1\tz2\tz3
 while ($line=<FH>) {
     chomp $line;
     split /\t/,$line;
-    my @of = ($_[0] . '_' . $_[1] . $_[4], $_[6], $_[10], $_[11], $_[5], $_[12], chargeVec($_->[4]),isTrypN($_->[2]), isTrypC($_->[2]));
+    my @of = ($_[0] . '_' . $_[1] . '_' . $_[4], $_[6], $_[10], $_[11], $_[5], $_[12], chargeVec($_[4]),isTrypN($_[2]), isTrypC($_[2]));
     print join('\t',@of) . "\n";
 }
 close(*FH);
