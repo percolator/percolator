@@ -21,11 +21,11 @@ sub chargeVec {
 
 open(*FH,"< " . shift ARGV);
 my $line = <FH>; # skipp annotation line
-print "Id\tCutScore\tp-value\tDeltaCN\tMQScore\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\n";
+print "Id\tCutScore\tp-value\tDeltaCn\tMQScore\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\n";
 while ($line=<FH>) {
     chomp $line;
     split /\t/,$line;
-    my @of = ($_[0] . '_' . $_[1] . '_' . $_[4], $_[6], $_[10], $_[5], $_[11], $_[12],length($_[2])-4 ,chargeVec($_[4]),isTrypN($_[2]), isTrypC($_[2]));
+    my @of = ($_[0] . '_' . $_[1] . '_' . $_[4], $_[6], $_[10], $_[11], $_[5], $_[12],length($_[2])-4 ,chargeVec($_[4]),isTrypN($_[2]), isTrypC($_[2]));
     print join("\t",@of) . "\n";
 }
 close(*FH);
