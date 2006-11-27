@@ -33,7 +33,7 @@ sub convert {
       my $id =  $_[0] . '_' . $_[1] . '_' . $_[4];
       my @of = ($id, $_[6], $_[10], $_[11], $_[5], $_[12],length($_[2])-4 ,chargeVec($_[4]),isTrypN($_[2]), isTrypC($_[2]));
       print DATA join("\t",@of) . "\n" if ($id ne $oldId);
-      print LABEL "$id\t$label\n"; if ($id ne $oldId);
+      print LABEL "$id\t$label\n" if ($id ne $oldId);
       $oldId=$id;
   }
 }
