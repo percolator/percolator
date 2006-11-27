@@ -210,7 +210,8 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
   while(true) {
     labelStream >> tmp >> label;
     if (!labelStream) break;
-    if (label==setLabel) {ixs.push_back(ix++);}
+    if (label==setLabel) {ixs.push_back(ix);}
+    ++ix;
   }
   labelStream.close();
   ifstream dataStream(dataFN.c_str(),ios::out);
