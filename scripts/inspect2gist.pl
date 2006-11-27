@@ -25,13 +25,12 @@ sub chargeVec {
 sub convert {
   my $label = shift;
   my $line = <IN>; # skipp annotation line
-  print "Id\tCutScore\tp-value\tDeltaCn\tMQScore\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\n";
   my $oldId = "xx";
   while ($line=<IN>) {
       chomp $line;
       split /\t/,$line;
       my $id =  $_[0] . '_' . $_[1] . '_' . $_[4];
-      my @of = ($id, $_[6], $_[10], $_[11], $_[5], $_[12],length($_[2])-4 ,chargeVec($_[4]),isTrypN($_[2]), isTrypC($_[2]));
+      my @of = ($id, $_[6], $_[7],$_[8],$_[5],$_[10], $_[11], $_[12],length($_[2])-4 ,chargeVec($_[4]),isTrypN($_[2]), isTrypC($_[2]));
       print DATA join("\t",@of) . "\n" if ($id ne $oldId);
       print LABEL "$id\t$label\n" if ($id ne $oldId);
       $oldId=$id;
@@ -39,7 +38,7 @@ sub convert {
 }
 
 open(*DATA,"> " .shift ARGV);
-print DATA "Id\tCutScore\tp-value\tDeltaCn\tMQScore\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\n";
+print DATA "Id\tCutScore\tIntenseBY\tBYPresent\tMQScore\tp-value\tDeltaCn\tMQScore\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\n";
 open(*LABEL,"> " .shift ARGV);
 print LABEL "Id\tLabel\n";
 open(*IN,"< " . shift ARGV);

@@ -67,7 +67,7 @@ foreach my $psmId (keys %fHits) {
     @values = @{$fHits{$psmId}};    
   }
 #  print $values[1] . "\n";
-  if (isFullyTryptic($values[6]) && abs($values[1])<5) {
+  if (isFullyTryptic($values[6]) && abs($values[1])<=3) {
     push @LandS,[$values[3],$label];
   }
 }
