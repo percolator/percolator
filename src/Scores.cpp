@@ -32,6 +32,8 @@ Scores::~Scores()
 {
 }
 
+double Scores::trainRatio = 0.7;
+
 void Scores::printRoc(string & fn){
  ofstream rocStream(fn.data(),ios::out);
  vector<ScoreHolder>::iterator it;
@@ -161,18 +163,6 @@ int Scores::calcScores(double *w,double fdr) {
   }
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
-/*  double lastScore = 1e200;
-  unsigned int p=0,n=0;
-  for (ix=0;ix<scores.size();ix++) {
-    if (scores[ix].score>lastScore)
-      cerr << "ajajaj " << ix << endl;
-    lastScore = scores[ix].score;
-    if (scores[ix].label==1) {p++;}
-    else if (scores[ix].label==-1) {n++;}
-    else cerr << "Strange label " << scores[ix].label << endl;
-  }
-  cerr << p << " +1 labels and " << n << " -1 labels" << endl;
-*/
   if (VERB>3) {
     cerr << "10 best scores and labels" << endl;
     unsigned int ix;
@@ -201,11 +191,6 @@ int Scores::calcScores(double *w,double fdr) {
     qVals[ix++]=q;
     if (fdr>0.0 && fdr<q) {
       posNow = tp;
-//      double zero = it->score;
-//      w[DataSet::getNumFeatures()] -= zero;
-//      for(it2=scores.begin();it2!=scores.end();it2++) 
-//        it2->score -= zero;
-//      if (VERB>4) { cerr << "Scores lowered by " << zero << endl;}
       fdr = -1;
     }
   }

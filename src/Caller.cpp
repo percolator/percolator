@@ -117,12 +117,16 @@ and Sp has been replaced with the negated Q-value.",
   cmd.defineOption("i",
     "Maximal number of iteratins",
     ArgvParser::OptionRequiresValue);
+  cmd.defineOption("f",
+    "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.7 by default.",
+    ArgvParser::OptionRequiresValue);
   cmd.defineOptionAlternative("i","maxiter");
   cmd.defineOption("gist-out",
     "Output test features to a Gist format files with the given trunc filename",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("g",
-    "Input files are given as gist files");
+    "Input files are given as gist files, first argument should be a file name of the data file, the second the label file. \
+Label 1 is interpreted as positive, -1 negative in train set, -2 negative in test set.");
   cmd.defineOptionAlternative("g","gist-in");
   cmd.defineOption("w",
     "Output final weights to the given filename",
@@ -169,7 +173,6 @@ and Sp has been replaced with the negated Q-value.",
     selectedCpos = atof(cmd.optionValue("p").c_str());
     if (selectedCpos<=0.0 || selectedCpos > 1e127) {
       cerr << "-p option requres a positive float value" << endl;
-      cerr << cmd.usageDescription();
       exit(-1); 
     }
   }
@@ -177,16 +180,28 @@ and Sp has been replaced with the negated Q-value.",
     selectedCneg = atof(cmd.optionValue("n").c_str());
     if (selectedCneg<=0.0 || selectedCneg > 1e127) {
       cerr << "-n option requres a positive float value" << endl;
-      cerr << cmd.usageDescription();
       exit(-1); 
     }
   }
   if (cmd.foundOption("gist-out"))
     gistFN = cmd.optionValue("gist-out");
-  if (cmd.foundOption("g"))
+  if (cmd.foundOption("g")) {
     gistInput=true;
+    if (cmd.arguments()!=2) {
+      cerr << "Provide exactly two arguments when using gist input" << endl;
+      exit(-1);
+    }   
+  }
   if (cmd.foundOption("w"))
     weightFN = cmd.optionValue("w");
+  if (cmd.foundOption("f")) {
+    double frac = atof(cmd.optionValue("f").c_str());
+    if (frac <= 0.0 || frac>=1.0) {
+      cerr << "-f option requires a value between 0 and 1" << endl;
+      exit(-1);
+    }
+    Scores::setTrainRatio(frac);
+  }
   if (cmd.foundOption("r"))
     rocFN = cmd.optionValue("r");
   if (cmd.foundOption("u"))
@@ -209,14 +224,13 @@ and Sp has been replaced with the negated Q-value.",
     selectedfdr = atof(cmd.optionValue("F").c_str());
     if (selectedfdr<=0.0 || selectedfdr > 1.0) {
       cerr << "-F option requres a positive number < 1" << endl;
-      cerr << cmd.usageDescription();
       exit(-1); 
     }
   }
   if (cmd.arguments()>3) {
       cerr << "Too many arguments given" << endl;
       cerr << cmd.usageDescription();
-      exit(1);   
+      exit(-1);   
   }
   if (cmd.arguments()>0)
     forwardFN = cmd.argument(0);
@@ -380,19 +394,24 @@ int Caller::run() {
   if (gistInput) {
     normal.readGist(forwardFN,shuffledFN,1);
     shuffled.readGist(forwardFN,shuffledFN,-1);
+    shuffled2.readGist(forwardFN,shuffledFN,-2);
+    if (shuffled2.getSize()>0) {
+      doShuffled2=true;
+    }
   } else if (shuffledWC.empty()) {
     normal.readFile(forwardFN,1);
     shuffled.readFile(shuffledFN,-1);    
+    if (doShuffled2)
+      shuffled2.readFile(shuffled2FN,-1);
   } else {
     normal.readFile(forwardFN,shuffledWC,false);  
     shuffled.readFile(forwardFN,shuffledWC,true);  
   }
   if (doShuffled2) {
-    shuffled2.readFile(shuffled2FN,-1);
     trainset.fillFeatures(normal,shuffled);
     testset.fillFeatures(normal,shuffled2);
   } else {
-  	Scores::fillFeatures(trainset,testset,normal,shuffled,0.7);
+  	Scores::fillFeatures(trainset,testset,normal,shuffled);
   }
   if (VERB>1) {
     cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives." << endl;

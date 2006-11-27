@@ -224,7 +224,7 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
   getline(dataStream,line);
   DataSet::setFeatureNames(line);
   DataSet * theSet = new DataSet();
-  theSet->setLabel(setLabel);
+  theSet->setLabel(setLabel>0?1:-1);
   theSet->readGistData(dataStream,ixs);
   dataStream.close();
   subsets.push_back(theSet);
