@@ -1,7 +1,7 @@
 #!/usr/bin/env perl 
 # Reading file with Inspect output and reformat into a GIST file
 
-0             1     2          3       4      5       6        7         8         9       10      11      12           13           14        15
+#0            1     2          3       4      5       6        7         8         9       10      11      12           13           14        15
 #SpectrumFile Scan# Annotation Protein Charge MQScore CutScore IntenseBY BYPresent Unused  p-value DeltaCN DeltaCNOther RecordNumber DBFilePos SpecFilePos
 
 sub isTrypN {
