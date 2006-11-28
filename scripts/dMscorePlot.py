@@ -21,7 +21,10 @@ for i in range(1,len(lf)):
     sum += float(wf[j+1])*weights[j]
   if (sum>5):
     scores += [(sum,wf[2],int(labels[i]))]
-plot([sc[1] for sc in scores if sc[2]==1],[sc[0] for sc in scores if sc[2]==1],'g+')
-plot([sc[1] for sc in scores if sc[2]==-1],[sc[0] for sc in scores if sc[2]==-1],'rx')
+plot([sc[1] for sc in scores if sc[2]==1],[sc[0] for sc in scores if sc[2]==1],'g+',label='Normal')
+plot([sc[1] for sc in scores if sc[2]==-1],[sc[0] for sc in scores if sc[2]==-1],'rx',label='Shuffled')
 savefig("dMscorePlot.eps")
+xlabel("dM [Dalton]")
+ylabel("Percolator score")
+legend()
 show()

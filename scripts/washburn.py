@@ -39,4 +39,4 @@ for i in range(1,len(lf)):
   if labels[i]==1: tp+=1
   else: fp+=1
 #  print wf[delt],wf[xcorr],wf[8],wf[9],wf[10],wf[tryN],wf[tryC],tp,fp
-print tp, fp/(fp+float(tp))
+print tp, fp/(float(tp))

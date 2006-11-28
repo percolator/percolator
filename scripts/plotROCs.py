@@ -22,7 +22,7 @@ for doc in glob.glob('*.res'):
       fp+=1
     if val == 1:
       tp+=1
-      fdr = fp/(fp+float(tp))
+      fdr = fp/(float(tp))
     if fdr>upFDR:
       continue
     fdrs+=[fdr]
