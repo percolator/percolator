@@ -418,7 +418,7 @@ int Caller::run() {
     cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives." << endl;
   }
   if (gistFN.length()>0) {
-    SetHandler::gistWrite(gistFN,normal,shuffled);
+    SetHandler::gistWrite(gistFN,normal,shuffled,shuffled2);
   }
   //Normalize features
   set<DataSet *> all;

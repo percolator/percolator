@@ -57,7 +57,7 @@ bool DataSet::getGistDataRow(int & pos,string &out){
 //  while (!feature || charge[pos] !=2)  { //tmp fix
   if ((feature = getNext(pos)) == NULL) return false; 
 //  }
-  s1 << pos;
+  s1 << ids[pos];
   for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
     s1 << '\t' << feature[ix];
   }
@@ -403,22 +403,32 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
   
+  ids.resize(n,"");
   proteinIds.resize(n);
   pepSeq.resize(n);
   string seq;
-
+  
+  string fileId(fname);
+  unsigned int spos = fileId.rfind('/');
+  if (spos!=string::npos)
+    fileId.erase(0,spos+1);
+  spos = fileId.find('.');
+  if (spos!=string::npos)
+    fileId.erase(spos);
+  
   feature = new double[n*DataSet::getNumFeatures()];
-  ostringstream buff;
-  ids.resize(n,"");
+  ostringstream buff,id;
   n_examples=n;
+  
   int ix=0,lines=0,ms=0,firstM=-1;
-  string id,scan,pep;
+  string scan;
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {
         string record=buff.str();
         if (!doMatch) firstM=0;
         if (firstM>=0) {
+          ids[ix]=id.str();
           readFeatures(record,&feature[rowIx(ix)],firstM,proteinIds[ix],pepSeq[ix],false);
           intra->registerRel(pepSeq[ix],proteinIds[ix]);
           ix++;
@@ -426,10 +436,12 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
       }
       buff.str("");
       buff.clear();
+      id.str("");
       lines=1;
       buff << line << endl;
       lineParse.str(line);
-      lineParse >> tmp >> tmp >> tmp >> charge;
+      lineParse >> tmp >> scan >> tmp >> charge;
+      id << fileId << '_' << scan << '_' << charge;
       ms=0;
       firstM=-1;
     }
@@ -449,6 +461,7 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
   }
   if(lines>1 && charge<=3) {
     string record=buff.str();
+    ids[ix]=id.str();
     readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
     intra->registerRel(pepSeq[ix],proteinIds[ix]);
     ix++;

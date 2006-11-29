@@ -24,7 +24,7 @@ public:
 	const double * getNext(int& ,int& ) const;
     const double * getFeatures(const int setPos,const int ixPos) const;
     void readGist(const string & dataFN, const string & labelFN, const int label);
-    void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff);
+    void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff,const SetHandler& shuff2);
 	int const getLabel(int setPos);
     inline int const getTrainingSetSize() {return examples.size();}
     

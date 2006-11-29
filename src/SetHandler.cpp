@@ -232,7 +232,7 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
 
 }    
 
-void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff) {
+void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff, const SetHandler& shuff2) {
   string dataFN = fileNameTrunk + ".data";
   string labelFN = fileNameTrunk + ".label";
   ofstream dataStream(dataFN.data(),ios::out);
@@ -252,6 +252,13 @@ void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,c
     while (shuff.subsets[setPos]->getGistDataRow(ixPos,str)) {
       dataStream << str;
       labelStream << str.substr(0,str.find('\t')+1) << (shuff.subsets[setPos]->getLabel()==-1?-1:+1) << endl; 
+    }
+  }    
+  for (int setPos=0;setPos< (signed int)shuff2.subsets.size();setPos++) {
+    int ixPos=-1;
+    while (shuff2.subsets[setPos]->getGistDataRow(ixPos,str)) {
+      dataStream << str;
+      labelStream << str.substr(0,str.find('\t')+1) << (shuff2.subsets[setPos]->getLabel()==-1?-2:+1) << endl; 
     }
   }    
   dataStream.close();
