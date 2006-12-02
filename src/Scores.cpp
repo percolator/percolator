@@ -117,7 +117,7 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
     ++ix;
   }
   neg=ix-pos;
-  factor=pos/neg;
+  factor=pos/(double)neg;
 }
 
 
@@ -141,14 +141,14 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
       if (it->label==1) train[i].pos++;
       else train[i].neg++;
     }
-    train[i].factor=train[i].pos/train[i].neg;
+    train[i].factor=train[i].pos/(double)train[i].neg;
     test[i].qVals.resize(test[i].scores.size(),-1e200); 
     test[i].pos=0;test[i].neg=0;
   	for(it=test[i].begin();it!=test[i].end();it++) {
       if (it->label==1) test[i].pos++;
       else test[i].neg++;
   	}
-    test[i].factor=test[i].pos/test[i].neg;
+    test[i].factor=test[i].pos/(double)test[i].neg;
   }
 }
 
