@@ -138,7 +138,8 @@ void SetHandler::print(Scores &test) {
     subsets[setPos]->print(test,outList);
   }    
   sort(outList.begin(),outList.end());
-  reverse(outList.begin(),outList.end());  
+  reverse(outList.begin(),outList.end());
+  cout << "PSMId\tscore\tq-value\tpeptide\tproteinIds" << endl;  
   vector<pair<double,string> >::const_iterator it = outList.begin();
   for(;it!=outList.end();it++) {
     cout << it->second << endl;
