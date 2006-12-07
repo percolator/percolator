@@ -132,7 +132,18 @@ void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *
   fileIn.close();
 }
 
-
+void SetHandler::print(Scores &test) {
+  vector<pair<double,string> > outList(0);
+  for (unsigned int setPos=0;setPos<subsets.size();setPos++) {
+    subsets[setPos]->print(test,outList);
+  }    
+  sort(outList.begin(),outList.end());
+  reverse(outList.begin(),outList.end());  
+  vector<pair<double,string> >::const_iterator it = outList.begin();
+  for(;it!=outList.end();it++) {
+    cout << it->second << endl;
+  }
+}
 
 
 void SetHandler::generateTrainingSet(const double fdr,const double cpos, const double cneg,const Scores & sc) {

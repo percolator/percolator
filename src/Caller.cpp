@@ -117,6 +117,9 @@ and Sp has been replaced with the negated Q-value.",
   cmd.defineOption("i",
     "Maximal number of iteratins",
     ArgvParser::OptionRequiresValue);
+  cmd.defineOption("m",
+    "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+    ArgvParser::OptionRequiresValue);
   cmd.defineOption("f",
     "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.7 by default.",
     ArgvParser::OptionRequiresValue);
@@ -216,6 +219,9 @@ Label 1 is interpreted as positive, -1 negative in train set, -2 negative in tes
     xv_type=2;
   if (cmd.foundOption("i")) {
     niter = atoi(cmd.optionValue("i").c_str());
+  }
+  if (cmd.foundOption("m")) {
+    DataSet::setHitsPerSpectrum(atoi(cmd.optionValue("m").c_str()));
   }
   if (cmd.foundOption("v")) {
     Globals::getInstance()->setVerbose(atoi(cmd.optionValue("v").c_str()));
@@ -495,6 +501,7 @@ int Caller::run() {
   if (rocFN.size()>0) {
       testset.printRoc(rocFN);
   }
+  normal.print(testset);
   return 0;
 }
 

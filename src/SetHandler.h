@@ -27,7 +27,7 @@ public:
     void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff,const SetHandler& shuff2);
 	int const getLabel(int setPos);
     inline int const getTrainingSetSize() {return examples.size();}
-    
+    void print(Scores &test);    
     inline int const getSize() {return n_examples;}
     inline DataSet * getSubSet(int ix) {return (subsets[ix]);}
     vector<DataSet *> & getSubsets() {return subsets;}

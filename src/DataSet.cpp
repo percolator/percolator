@@ -15,6 +15,7 @@ using namespace std;
 
 int DataSet::numFeatures = maxNumRealFeatures;
 int DataSet::numRealFeatures = maxNumRealFeatures;
+int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcTrypticFeatures = true;
 bool DataSet::chymoInsteadOfTryptic = false;
@@ -69,9 +70,9 @@ bool DataSet::getGistDataRow(int & pos,string &out){
 void DataSet::print_features() {
    for(int i=0;i<getSize();i++) {
        for(int j=0;j<DataSet::getNumFeatures();j++) {
-          cout << j+1 << ":" << feature[DataSet::rowIx(i)+j] << " ";
+          cerr << j+1 << ":" << feature[DataSet::rowIx(i)+j] << " ";
        }
-       cout << endl;
+       cerr << endl;
    }
 }
 
@@ -85,6 +86,23 @@ void DataSet::print_10features() {
    }
 }
 
+void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
+  ostringstream out;
+  int ix =-1;
+  while (double * features=getNext(ix)) {
+    double score = test.calcScore(features);
+    double q = test.getQ(score);
+    out << ids[ix] << "\t" << score << "\t" << q << "\t" << pepSeq[ix];
+    set<string> prots = proteinIds[ix];
+    set<string>::const_iterator it = prots.begin();
+    for(;it!=prots.end();it++) {
+      out << "\t" << *it;
+    }
+    pair<double,string> op(score,out.str());
+    outList.push_back(op);
+    out.str("");
+  }
+}
 
 void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
@@ -242,6 +260,8 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
       sqtOut << line <<endl;
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {
+        if (ms>hitsPerSpectrum)
+          ms=hitsPerSpectrum;
         string record=buff.str();
         sqtOut << modifyRec(record,ms, w, pSc);
       }
@@ -383,8 +403,8 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
   bool doMatch = !wild.empty();
   setNumFeatures();
   sqtFN.assign(fname);
-  int n = 0,charge=0;
-  string line,tmp;
+  int n = 0,charge=0,ms=0;
+  string line,tmp,prot;
   istringstream lineParse;  
   ifstream sqtIn;
   sqtIn.open(sqtFN.data(),ios::in);
@@ -392,11 +412,21 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
   	cerr << "Could not open file " << sqtFN << endl;
   	exit(-1);
   }
+  bool look = false;
   while (getline(sqtIn,line)) {
     if (line[0]=='S' && sqtIn.peek() != 'S') {
          lineParse.str(line);  
          lineParse >> tmp >> tmp >> tmp >> charge;       
-         if (charge <= 3) n++;
+         if (charge <= 3) look=true;
+         ms=0;
+    }
+    if (look & line[0]=='L' && ms < hitsPerSpectrum) {
+         lineParse.str(line);  
+         lineParse >> tmp >> prot;
+         if(!doMatch || ((line.find(wild,0)!= string::npos)==match)) {
+             ++ms;
+             ++n;
+         }
     }
   }
   if (VERB>1) cerr << n << " records in file " << sqtFN << endl;
@@ -420,16 +450,19 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
   ostringstream buff,id;
   n_examples=n;
   
-  int ix=0,lines=0,ms=0,firstM=-1;
+  int ix=0,lines=0;
   string scan;
+  set<int> theMs;
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
       if(lines>1 && charge<=3) {
         string record=buff.str();
-        if (!doMatch) firstM=0;
-        if (firstM>=0) {
+        string idstr = id.str();
+        set<int>::const_iterator it;
+        for(it=theMs.begin();it!=theMs.end();it++) {
+          id.str("");id << idstr << '_' << (*it +1);
           ids[ix]=id.str();
-          readFeatures(record,&feature[rowIx(ix)],firstM,proteinIds[ix],pepSeq[ix],false);
+          readFeatures(record,&feature[rowIx(ix)],*it,proteinIds[ix],pepSeq[ix],false);
           intra->registerRel(pepSeq[ix],proteinIds[ix]);
           ix++;
         }
@@ -439,11 +472,12 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
       id.str("");
       lines=1;
       buff << line << endl;
+      lineParse.clear();
       lineParse.str(line);
-      lineParse >> tmp >> scan >> tmp >> charge;
+      lineParse >> tmp >> tmp >> scan >> charge;
       id << fileId << '_' << scan << '_' << charge;
       ms=0;
-      firstM=-1;
+      theMs.clear();
     }
     if (line[0]=='M') {
       ++ms;
@@ -453,18 +487,22 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
     if (line[0]=='L') {
       ++lines;
       buff << line << endl;
-      if(doMatch && firstM<0) {
-         if((line.find(wild,0)!= string::npos)==match)
-           firstM=ms;
+      if((int)theMs.size()<hitsPerSpectrum && (!doMatch || (line.find(wild,0)!= string::npos)==match)) {
+        theMs.insert(ms-1);
       }
     }
   }
   if(lines>1 && charge<=3) {
     string record=buff.str();
-    ids[ix]=id.str();
-    readFeatures(record,&feature[rowIx(ix)],0,proteinIds[ix],pepSeq[ix],false);
-    intra->registerRel(pepSeq[ix],proteinIds[ix]);
-    ix++;
+    string idstr = id.str();
+    set<int>::const_iterator it;
+    for(it=theMs.begin();it!=theMs.end();it++) {
+      id.str("");id << idstr << '_' << *it;
+      ids[ix]=id.str();
+      readFeatures(record,&feature[rowIx(ix)],*it,proteinIds[ix],pepSeq[ix],false);
+      intra->registerRel(pepSeq[ix],proteinIds[ix]);
+      ix++;
+    }
   }
   sqtIn.close();
 //  cout << "Read File" << endl;

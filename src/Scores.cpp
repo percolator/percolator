@@ -188,6 +188,7 @@ int Scores::calcScores(double *w,double fdr) {
       q=scaled_fp/(double)tp;
     else
       q=1;
+    if (q>1.0) q=1.0;
     qVals[ix++]=q;
     if (fdr>0.0 && fdr<q) {
       posNow = tp;
