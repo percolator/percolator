@@ -29,7 +29,7 @@ void UniNormalizer::unnormalizeweight(const double *in,double* out){
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
   	out[i]=in[i]/div[i];
-  	sum=sub[i]/div[i];
+  	sum+=sub[i]/div[i];
   }
   out[i]=in[i]-sum;
 }
@@ -39,7 +39,7 @@ void UniNormalizer::normalizeweight(const double *in,double* out){
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
   	out[i]=in[i]*div[i];
-  	sum=sub[i]/div[i];
+  	sum+=sub[i]/div[i];
   }
   out[i]=in[i]+sum;
 }

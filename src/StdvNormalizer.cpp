@@ -32,7 +32,7 @@ void StdvNormalizer::unnormalizeweight(const double *in,double* out){
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
   	out[i]=in[i]/stdv[i];
-  	sum=avg[i]/stdv[i];
+  	sum+=avg[i]/stdv[i];
   }
   out[i]=in[i]-sum;
 }
@@ -42,7 +42,7 @@ void StdvNormalizer::normalizeweight(const double *in,double* out){
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
   	out[i]=in[i]*stdv[i];
-  	sum=avg[i]/stdv[i];
+  	sum+=avg[i]/stdv[i];
   }
   out[i]=in[i]+sum;
 }
