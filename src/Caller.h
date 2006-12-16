@@ -1,6 +1,7 @@
 #ifndef CALLER_H_
 #define CALLER_H_
 
+typedef enum {NO_XV=0, EACH_STEP, WHOLE} XvType;
 
 class Caller
 {
@@ -30,15 +31,15 @@ protected:
     string weightFN;
     string call;
     bool gistInput;
-    double selectedfdr;
+    double selectionfdr;
     double selectedCpos;
     double selectedCneg;
     int niter;
     time_t startTime;
     clock_t startClock;
     const static unsigned int xval_fold;
-    const static double test_fdr;
-    static int xv_type; // 0 = None, 1 = intra-itereration, 2 = whole-procedure
+    double test_fdr;
+    XvType xv_type; 
     vector<Scores> xv_train,xv_test;
     vector<double> xv_fdrs,xv_cposs,xv_cfracs;
     SetHandler normal,shuffled,shuffled2;

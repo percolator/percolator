@@ -20,8 +20,6 @@ using namespace CommandLineProcessing;
 #include "Globals.h"
 
 const unsigned int Caller::xval_fold = 3;
-const double Caller::test_fdr = 0.03;
-int Caller::xv_type = 1;
 
 Caller::Caller()
 {
@@ -34,10 +32,12 @@ Caller::Caller()
   rocFN = "";
   gistFN = "";
   weightFN = "";
-  selectedfdr=0;
+  selectionfdr=0.01;
+  test_fdr=0.01;
   niter = 10;
   selectedCpos=0;
   selectedCneg=0;
+  xv_type=EACH_STEP;
   gistInput=false;
   pNorm=NULL;
   svmInput=NULL;
@@ -60,7 +60,7 @@ string Caller::extendedGreeter() {
   oss << "Started " << ctime(&startTime);
   oss.seekp(-1, ios_base::cur);
   oss << " on " << host << endl;
-  oss << "Hyperparameters fdr=" << selectedfdr;
+  oss << "Hyperparameters fdr=" << selectionfdr;
   oss << ", Cpos=" << selectedCpos << ", Cneg=" << selectedCneg << ", maxNiter=" << niter << endl;
   return oss.str();
 }
@@ -111,9 +111,13 @@ and Sp has been replaced with the negated Q-value.",
     "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOption("F",
-    "Use the specified false discovery rate threshold to define positive examples in training. Set by cross validation if not specified.",
+    "False discovery rate threshold to define positive examples in training. Set by cross validation if 0. Default is 0.01.",
     ArgvParser::OptionRequiresValue);
   cmd.defineOptionAlternative("F","fdr");
+  cmd.defineOption("t",
+    "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
+    ArgvParser::OptionRequiresValue);
+  cmd.defineOptionAlternative("t","test-fdr");
   cmd.defineOption("i",
     "Maximal number of iteratins",
     ArgvParser::OptionRequiresValue);
@@ -216,7 +220,7 @@ Label 1 is interpreted as positive, -1 negative in train set, -2 negative in tes
   if (cmd.foundOption("c"))
     DataSet::setChymoTrypticFeatures(true);
   if (cmd.foundOption("x"))
-    xv_type=2;
+    xv_type=WHOLE;
   if (cmd.foundOption("i")) {
     niter = atoi(cmd.optionValue("i").c_str());
   }
@@ -227,9 +231,16 @@ Label 1 is interpreted as positive, -1 negative in train set, -2 negative in tes
     Globals::getInstance()->setVerbose(atoi(cmd.optionValue("v").c_str()));
   }
   if (cmd.foundOption("F")) {
-    selectedfdr = atof(cmd.optionValue("F").c_str());
-    if (selectedfdr<=0.0 || selectedfdr > 1.0) {
+    selectionfdr = atof(cmd.optionValue("F").c_str());
+    if (selectionfdr<0.0 || selectionfdr > 1.0) {
       cerr << "-F option requres a positive number < 1" << endl;
+      exit(-1); 
+    }
+  }
+  if (cmd.foundOption("t")) {
+    test_fdr = atof(cmd.optionValue("t").c_str());
+    if (test_fdr <= 0.0 || test_fdr > 1.0) {
+      cerr << "-t option requres a positive value < 1" << endl;
       exit(-1); 
     }
   }
@@ -308,8 +319,8 @@ void Caller::trainEm(double * w) {
   // iterate
   for(int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
-    if (xv_type!=1)
-      step(trainset,w,selectedCpos,selectedCneg,selectedfdr);
+    if (xv_type!=EACH_STEP)
+      step(trainset,w,selectedCpos,selectedCneg,selectionfdr);
     else
       xvalidate_step(w);
     if(VERB>2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
@@ -325,12 +336,12 @@ void Caller::xvalidate_step(double *w) {
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
       for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
-        if(VERB>0) cerr << "-cross validation with cpos=" << *cpos <<
+        if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
         double ww[DataSet::getNumFeatures()+1];
         for (unsigned int i=0;i<xval_fold;i++) {
-          if(VERB>1) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
+          if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
           step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
           tp += xv_test[i].calcScores(ww,test_fdr);
@@ -362,11 +373,11 @@ void Caller::xvalidate(double *w) {
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
       for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
-        if(VERB>0) cerr << "-cross validation with cpos=" << *cpos <<
+        if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
         for (unsigned int i=0;i<xval_fold;i++) {
-          if(VERB>1) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
+          if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
           for(int k=0;k<niter;k++) {
             step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
@@ -378,7 +389,7 @@ void Caller::xvalidate(double *w) {
         if (tp>bestTP) {
           if(VERB>1) cerr << "Better than previous result, store this" << endl;
           bestTP = tp;
-          selectedfdr=*fdr;
+          selectionfdr=*fdr;
           selectedCpos = *cpos;
           selectedCneg = (*cpos)*(*cfrac);          
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) www[ix]=ww[ix];
@@ -388,7 +399,7 @@ void Caller::xvalidate(double *w) {
   }
   Globals::getInstance()->incVerbose();
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives over " << test_fdr*100 << "% FDR level for hyperparameters Cpos=" << selectedCpos
-                  << ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
+                  << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;
   trainEm(www);
 }
 
@@ -444,14 +455,14 @@ int Caller::run() {
   w[3]=1;
 //  w[DataSet::getNumFeatures()]=1;
   
-  if (selectedfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
+  if (selectionfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
   	xv_train.resize(xval_fold); xv_test.resize(xval_fold);
   	trainset.createXvalSets(xv_train,xv_test,xval_fold);
-    if (selectedfdr > 0) {
-      xv_fdrs.push_back(selectedfdr);
+    if (selectionfdr > 0) {
+      xv_fdrs.push_back(selectionfdr);
     } else {
       xv_fdrs.push_back(0.01);xv_fdrs.push_back(0.03); xv_fdrs.push_back(0.07);
-      selectedfdr=test_fdr;
+      selectionfdr=test_fdr;
       if(VERB>0) cerr << "selecting fdr by cross validation" << endl;
     }
     if (selectedCpos > 0) {
@@ -467,11 +478,11 @@ int Caller::run() {
       if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
     }
   } else {
-    xv_type = 0;
+    xv_type = NO_XV;
   }
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
-          ", Cneg=" << selectedCneg << ", fdr=" << selectedfdr << endl;
-  if (xv_type==2)
+          ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
+  if (xv_type==WHOLE)
     xvalidate(w);
   else  
     trainEm(w);
@@ -484,8 +495,8 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-startClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  int overFDR = testset.calcScores(w,selectedfdr);
-  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectedfdr*100 << "% FDR level on testset" << endl;
+  int overFDR = testset.calcScores(w,selectionfdr);
+  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectionfdr*100 << "% FDR level on testset" << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
   normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str());
