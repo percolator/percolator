@@ -174,24 +174,27 @@ int Scores::calcScores(double *w,double fdr) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
   }
-  int tp=0,fp=0;
-  double scaled_fp=0.0,q;
+  int positives=0,fp=0;
+  double scaled_fp=0.0,q,oldQ=0.0;
   unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
-      tp++;
+      positives++;
     if (it->label==-1) {
       fp++;
       scaled_fp=fp*factor;
     }
-    if (tp)
-      q=scaled_fp/(double)tp;
+    if (positives)
+      q=scaled_fp/(double)positives;
     else
       q=1;
+    if (q<oldQ)
+      q=oldQ;
+    oldQ=q;
     if (q>1.0) q=1.0;
     qVals[ix++]=q;
     if (fdr>0.0 && fdr<q) {
-      posNow = tp;
+      posNow = positives;
       fdr = -1;
     }
   }
