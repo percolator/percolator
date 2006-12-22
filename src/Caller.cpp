@@ -5,10 +5,10 @@
 #include <cstdlib>
 #include <vector>
 #include <set>
+#include <map>
 #include <string>
 using namespace std;
-#include "argvparser.h"
-using namespace CommandLineProcessing;
+#include "Option.h"
 #include "DataSet.h"
 #include "IntraSetRelation.h"
 #include "Normalizer.h"
@@ -87,174 +87,137 @@ bool Caller::parseOptions(int argc, char **argv){
   intro << "         shuffle the shuffled sqt-file," << endl;
   intro << "         and shuffle2 is an otional second shuffled sqt-file for q-value calculation" << endl;
   // init
-  ArgvParser cmd;
-  cmd.setIntroductoryDescription(intro.str());
-  cmd.defineOption("o",
+  CommandLineParser cmd(intro.str());
+  cmd.defineOption("o","sqt-out",
     "Remake an sqt file out of the normal sqt-file with the given name, \
 in which the XCorr value has been replaced with the learned score \
-and Sp has been replaced with the negated Q-value.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOptionAlternative("o","sqt-out");
-  cmd.defineOption("s",
+and Sp has been replaced with the negated Q-value.","filename");
+  cmd.defineOption("s","shuffled-out"
     "Remake an SQT file out of the test (shuffled or if present shuffled2) sqt-file \
 with the given name, \
 in which the XCorr value has been replaced with the learned score \
 and Sp has been replaced with the negated Q-value.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("P",
+    "filename");
+  cmd.defineOption("P","pattern"
     "Option for single sqt file mode defining the name pattern used for shuffled data base. Typically set to random_seq",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("p",
+    "pattern");
+  cmd.defineOption("p","Cpos",
     "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("n",
+    "value");
+  cmd.defineOption("n","Cneg"
     "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("F",
+    "value");
+  cmd.defineOption("F","trainFDR"
     "False discovery rate threshold to define positive examples in training. Set by cross validation if 0. Default is 0.01.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOptionAlternative("F","fdr");
-  cmd.defineOption("t",
+    "value");
+  cmd.defineOption("t","testFDR"
     "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOptionAlternative("t","test-fdr");
-  cmd.defineOption("i",
+    "value");
+  cmd.defineOption("i","maxiter",
     "Maximal number of iteratins",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("m",
+    "number");
+  cmd.defineOption("m","matches",
     "Maximal number of matches to take in consideration per spectrum when using sqt-files",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("f",
+    "number");
+  cmd.defineOption("r","train-ratio"
     "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.7 by default.",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOptionAlternative("i","maxiter");
-  cmd.defineOption("gist-out",
+    "value");
+  cmd.defineOption("G","gist-out",
     "Output test features to a Gist format files with the given trunc filename",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("g",
+    "trunc name");
+  cmd.defineOption("g","gist-in",
     "Input files are given as gist files, first argument should be a file name of the data file, the second the label file. \
-Label 1 is interpreted as positive, -1 negative in train set, -2 negative in test set.");
-  cmd.defineOptionAlternative("g","gist-in");
-  cmd.defineOption("w",
+Label 1 is interpreted as positive, -1 negative in train set, -2 negative in test set.","",TRUE_IF_SET);
+  cmd.defineOption("w","weights",
     "Output final weights to the given filename",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("v",
+    "filename");
+  cmd.defineOption("v","verbose",
     "Set verbosity of output: 0=no processing info, 5=all, default is 2",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("r",
+    "level");
+  cmd.defineOption("r","result",
     "Output result file (score ranked labels) to given filename",
-    ArgvParser::OptionRequiresValue);
-  cmd.defineOption("u",
-    "Use unit normalization [0-1] instead of standard deviation normalization");
-  cmd.defineOption("q",
-    "Calculate quadratic feature terms");
-  cmd.defineOption("y",
-    "Turn off calculation of tryptic/chymo-tryptic features.");
-  cmd.defineOption("c",
-    "Replace tryptic features with chymo-tryptic features.");
-  cmd.defineOption("x",
-    "Select hyper parameter cross validation to be performed on whole itterating procedure, rather than on each iteratin step.");
-  //define error codes
-  cmd.addErrorCode(0, "Success");
-  cmd.addErrorCode(-1, "Error");
-
-  cmd.setHelpOption("h", "help", "Print this help page");
+    "filename");
+  cmd.defineOption("u","unitnorm",
+    "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
+  cmd.defineOption("q","quadratic",
+    "Calculate quadratic feature terms","",TRUE_IF_SET);
+  cmd.defineOption("y","notryptic",
+    "Turn off calculation of tryptic/chymo-tryptic features.","",TRUE_IF_SET);
+  cmd.defineOption("c","chymo",
+    "Replace tryptic features with chymo-tryptic features.","",TRUE_IF_SET);
+  cmd.defineOption("x","whole-xval",
+    "Select hyper parameter cross validation to be performed on whole itterating procedure, rather than on each iteration step."
+    ,"",TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
-  int result = cmd.parse(argc, argv);
+  cmd.parseArgs(argc, argv);
 
-  if (result != ArgvParser::NoParserError)
-  {
-    cout << cmd.parseErrorDescription(result);
-    exit(-1);
-  }
   
   // now query the parsing results
-  if (cmd.foundOption("o"))
-    modifiedFN = cmd.optionValue("o");
-  if (cmd.foundOption("s"))
-    modifiedShuffledFN = cmd.optionValue("s");
-  if (cmd.foundOption("P"))
-    shuffledWC = cmd.optionValue("P");
-  if (cmd.foundOption("p")) {
-    selectedCpos = atof(cmd.optionValue("p").c_str());
-    if (selectedCpos<=0.0 || selectedCpos > 1e127) {
-      cerr << "-p option requres a positive float value" << endl;
-      exit(-1); 
-    }
+  if (cmd.optionSet("o"))
+    modifiedFN = cmd.options["o"];
+  if (cmd.optionSet("s"))
+    modifiedShuffledFN = cmd.options["s"];
+  if (cmd.optionSet("P"))
+    shuffledWC = cmd.options["P"];
+  if (cmd.optionSet("p")) {
+    selectedCpos = cmd.getDouble("p",0.0,1e127);
   }
-  if (cmd.foundOption("n")) {
-    selectedCneg = atof(cmd.optionValue("n").c_str());
-    if (selectedCneg<=0.0 || selectedCneg > 1e127) {
-      cerr << "-n option requres a positive float value" << endl;
-      exit(-1); 
-    }
+  if (cmd.optionSet("n")) {
+    selectedCneg = cmd.getDouble("n",0.0,1e127);
   }
-  if (cmd.foundOption("gist-out"))
-    gistFN = cmd.optionValue("gist-out");
-  if (cmd.foundOption("g")) {
+  if (cmd.optionSet("G"))
+    gistFN = cmd.options["G"];
+  if (cmd.optionSet("g")) {
     gistInput=true;
-    if (cmd.arguments()!=2) {
+    if (cmd.arguments.size()!=2) {
       cerr << "Provide exactly two arguments when using gist input" << endl;
       exit(-1);
     }   
   }
-  if (cmd.foundOption("w"))
-    weightFN = cmd.optionValue("w");
-  if (cmd.foundOption("f")) {
-    double frac = atof(cmd.optionValue("f").c_str());
-    if (frac <= 0.0 || frac>=1.0) {
-      cerr << "-f option requires a value between 0 and 1" << endl;
-      exit(-1);
-    }
+  if (cmd.optionSet("w"))
+    weightFN = cmd.options["w"];
+  if (cmd.optionSet("f")) {
+    double frac = cmd.getDouble("f", 0.0 ,1.0);
     Scores::setTrainRatio(frac);
   }
-  if (cmd.foundOption("r"))
-    rocFN = cmd.optionValue("r");
-  if (cmd.foundOption("u"))
+  if (cmd.optionSet("r"))
+    rocFN = cmd.options["r"];
+  if (cmd.optionSet("u"))
     Normalizer::setType(Normalizer::UNI);
-  if (cmd.foundOption("q"))
+  if (cmd.optionSet("q"))
     DataSet::setQuadraticFeatures(true);
-  if (cmd.foundOption("y"))
+  if (cmd.optionSet("y"))
     DataSet::setTrypticFeatures(false);
-  if (cmd.foundOption("c"))
+  if (cmd.optionSet("c"))
     DataSet::setChymoTrypticFeatures(true);
-  if (cmd.foundOption("x"))
+  if (cmd.optionSet("x"))
     xv_type=WHOLE;
-  if (cmd.foundOption("i")) {
-    niter = atoi(cmd.optionValue("i").c_str());
+  if (cmd.optionSet("i")) {
+    niter = cmd.getInt("i",0,100000000);
   }
-  if (cmd.foundOption("m")) {
-    DataSet::setHitsPerSpectrum(atoi(cmd.optionValue("m").c_str()));
+  if (cmd.optionSet("m")) {
+    DataSet::setHitsPerSpectrum(cmd.getInt("m",1,30000));
   }
-  if (cmd.foundOption("v")) {
-    Globals::getInstance()->setVerbose(atoi(cmd.optionValue("v").c_str()));
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v",0,10));
   }
-  if (cmd.foundOption("F")) {
-    selectionfdr = atof(cmd.optionValue("F").c_str());
-    if (selectionfdr<0.0 || selectionfdr > 1.0) {
-      cerr << "-F option requres a positive number < 1" << endl;
-      exit(-1); 
-    }
+  if (cmd.optionSet("F")) {
+    selectionfdr = cmd.getDouble("F",0.0,1.0);
   }
-  if (cmd.foundOption("t")) {
-    test_fdr = atof(cmd.optionValue("t").c_str());
-    if (test_fdr <= 0.0 || test_fdr > 1.0) {
-      cerr << "-t option requres a positive value < 1" << endl;
-      exit(-1); 
-    }
+  if (cmd.optionSet("t")) {
+    test_fdr = cmd.getDouble("t",0.0,1.0);
   }
-  if (cmd.arguments()>3) {
+  if (cmd.arguments.size()>3) {
       cerr << "Too many arguments given" << endl;
-      cerr << cmd.usageDescription();
-      exit(-1);   
+      cmd.help();
   }
-  if (cmd.arguments()>0)
-    forwardFN = cmd.argument(0);
-  if (cmd.arguments()>1)
-     shuffledFN = cmd.argument(1);
-  if (cmd.arguments()>2)
-     shuffled2FN = cmd.argument(2);
+  if (cmd.arguments.size()>0)
+    forwardFN = cmd.arguments[0];
+  if (cmd.arguments.size()>1)
+     shuffledFN = cmd.arguments[1];
+  if (cmd.arguments.size()>2)
+     shuffled2FN = cmd.arguments[2];
   return true;
 }
 
