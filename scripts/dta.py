@@ -3,7 +3,10 @@ import sys
 import math
 ffeatures = open(sys.argv[1],"r")
 flab = open(sys.argv[2],"r")
-onlyTryp = (len(sys.argv)>3)
+onlyTryp = (len(sys.argv)>3 and sys.argv[3]=="Y")
+onlyCharge = 0
+if len(sys.argv)>4:
+  onlyCharge = 7 + int(sys.argv[4])
 lf=ffeatures.readlines()
 ll=flab.readlines()
 flab.close()
@@ -19,6 +22,8 @@ tp=0
 fp=0
 for i in range(1,len(lf)):
   wf = [float(w) for w in lf[i].split()[1:]]
+  if(onlyCharge>0 and wf[onlyCharge]==0):
+    continue
   if wf[delt]<0.08:
     continue
   if wf[pepSite]==0.0:

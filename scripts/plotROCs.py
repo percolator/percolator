@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 upFDR = 0.10
 from pylab import  *
-matplotlib.use('PS')
 import glob
 curves = []
 curveNames = []
@@ -12,9 +11,9 @@ for doc in glob.glob('*.res'):
 #  fps = []
   fdrs = []
   tps = []
-  fdr=.0
+  fdr,oldfdr=.0,.0
   tpATfdr=0
-  tp,fp,search=0,0,1
+  tp,fp,search,firstBreach=0,0,1,1
   f = open(doc,"r")
   for line in f.readlines():
     val = int(line)
@@ -22,7 +21,13 @@ for doc in glob.glob('*.res'):
       fp+=1
     if val == 1:
       tp+=1
+    if tp>0:
       fdr = fp/(float(tp))
+    else:
+      fdr = 1
+    if fdr<oldfdr:
+      fdr=oldfdr
+    oldfdr=fdr
     if fdr>upFDR:
       continue
     fdrs+=[fdr]
@@ -31,6 +36,11 @@ for doc in glob.glob('*.res'):
       print curveName + ": FDR is 1% when finding " + str(tp) + " positives"
       search = 0
       tpATfdr = tp
+  if len(tps)==0:
+    fdrs+=[0]
+    tps+=[0]
+  fdrs+=[upFDR]
+  tps+=[tps[-1]]
   f.close()
   curves += [(tpATfdr,(fdrs, tps),curveName)]
 curves.sort(reverse=True)
@@ -45,14 +55,13 @@ for doc in glob.glob('*.pnt'):
   line = f.readline()
   f.close
   field = [float(w) for w in line.split()]
+  if field[1]>upFDR:
+    continue
   plot([field[1]],[field[0]],style[i],label=curveName)
   i += 1
 
-#axis([0,0.05,tp-200,tp+300])
-#axis([0,0.05,0,16000])
-#axis([0,0.05,0,200])
-xlabel('False Discovery Rate')
-ylabel('True Positives')
-legend(loc=4,pad=0.1,labelsep = 0.001,handlelen=0.04,handletextsep=0.02)
+xlabel('False Discovery Rate',fontsize='large')
+ylabel('Positives',fontsize='large')
+legend(loc=4,pad=0.1,labelsep = 0.001,handlelen=0.04,handletextsep=0.02,numpoints=3)
 savefig("roc.eps")
 show()

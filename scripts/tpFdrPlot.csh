@@ -1,13 +1,28 @@
 #!/bin/tcsh
-percolator -r percolator.res --gist-out gist -o per.sqt -s shuf.sqt $1 $2 $3
-bestScore.py per.sqt shuf.sqt >! percolator_rerank.res
-pepproph.py gist.data gist.label xx >! prohet_tryp.res
-pepproph.py gist.data gist.label >! prohet.res
-washburn.py gist.data gist.label >! washburn.pnt
-dta.py gist.data gist.label xx >! DTAselect_tryp.pnt
-dta.py gist.data gist.label >! DTAselect.pnt
+percolator -r Percolator.res -w per.w --gist-out gist $1 $2 $3
+percolator -m 5 -r 'Percolator(reranked).res' --gist-out m5_gist -o rerank.norm.sqt -s rerank.shuffled.sqt $1 $2 $3
+pepproph.py gist.data gist.label Y >! 'PeptideProphet(Tryptic).res'
+pepproph.py gist.data gist.label >! 'PeptideProphet.res'
+washburn.py gist.data gist.label >! Washburn.pnt
+dta.py gist.data gist.label Y >! 'DTASelect(Tryptic).pnt'
+dta.py gist.data gist.label >! DTASelect.pnt
 echo "0 0 0 1 0" >! xcorr.w
-echo "0 0 0 1 0 0 0 0 0 0 0 100 100 0" >! xcorr_tryp.w
-score.py gist.data gist.label xcorr.w >! xcorr.res
-score.py gist.data gist.label xcorr_tryp.w >! xcorr_tryp.res
+score.py gist.data gist.label xcorr.w >! XCorr.res
+score.py gist.data gist.label xcorr.w  Y >! 'XCorr(Tryptic).res'
 plotROCs.py
+mv roc.eps main_tp_fdr.eps
+
+foreach n (1 2 3)
+  score.py gist.data gist.label per.w N $n >! $n/Percolator.res
+  sqtScore.pl rerank.norm.sqt rerank.shuffled.sqt $n >! $n/'Percolator(reranked).res'
+  pepproph.py gist.data gist.label Y $n >! $n/'PeptideProphet(Tryptic).res'
+  pepproph.py gist.data gist.label N $n >! $n/PeptideProphet.res
+  washburn.py gist.data gist.label $n >! $n/Washburn.pnt
+  dta.py gist.data gist.label Y $n >! $n/'DTASelect(Tryptic).pnt'
+  dta.py gist.data gist.label N $n >! $n/DTASelect.pnt
+  score.py gist.data gist.label xcorr.w N $n >! $n/XCorr.res
+  score.py gist.data gist.label xcorr.w Y $n >! $n/'XCorr(Tryptic).res'
+  cd $n
+    plotROCs.py
+  cd ..
+end

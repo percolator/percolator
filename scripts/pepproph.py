@@ -3,7 +3,10 @@ import sys
 import math
 ffeatures = open(sys.argv[1],"r")
 flab = open(sys.argv[2],"r")
-onlyTryp = (len(sys.argv)>3)
+onlyTryp = (len(sys.argv)>3 and sys.argv[3]=="Y")
+onlyCharge = 0
+if len(sys.argv)>4:
+  onlyCharge = 7 + int(sys.argv[4])
 lf=ffeatures.readlines()
 ll=flab.readlines()
 flab.close()
@@ -13,6 +16,13 @@ labels = [l.split()[1] for l in ll]
 for i in range(1,len(lf)):
   sum = 0
   wf = [float(w) for w in lf[i].split()[1:]]
+  label = int(labels[i])
+  if (label==-1): # only do test labels
+    continue
+  if (label==-2):
+    label=-1
+  if(onlyCharge>0 and wf[onlyCharge]==0):
+    continue
   if (onlyTryp and ((wf[11]==0) or (wf[12]==0))):
     continue
   rSp = float(wf[0])
@@ -34,7 +44,7 @@ for i in range(1,len(lf)):
             -0.194*rSp + \
             -0.314*dM + \
             -0.959
-    scores += [(score,int(labels[i]))]
+    scores += [(score,label)]
   elif (wf[10]==1):
     # Charge 3
     if (pepLen>25):
@@ -48,7 +58,7 @@ for i in range(1,len(lf)):
             -0.201*rSp + \
             -0.277*dM + \
             -0.1460
-    scores += [(score,int(labels[i]))]
+    scores += [(score,labels[i])]
 scores.sort(reverse=True)
 labels = [sc[1] for sc in scores]
 for l in labels:

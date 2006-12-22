@@ -35,7 +35,7 @@ sub readSQT {
 
 sub isFullyTryptic {
   my $str = $_[0];
-  return (($str =~ m/^[KR][.][^P]/g || $str =~ m/^-./g) && 
+  return (($str =~ m/^[KR][.][^P]/g || $str =~ m/^-./g) &&
           ($str =~ m/[KR][.][^P]$/g || $str =~ m/[.]-$/g));
 }
 
@@ -50,26 +50,26 @@ open(*FH,"< $rFN");
 my %rHits = readSQT(\*FH);
 close(*FH);
 
+
 my ($label,@values,@LandS);
 
 foreach my $psmId (keys %fHits) {
 #  print $psmId . "\n";
 #  print @{$fHits{$psmId}} . "\n";
   if (!defined($rHits{$psmId})){
-      print $psmId;
+      print STDERR "$psmId\n";
       next;
   }
-  if ($fHits{$psmId}->[3]<$rHits{$psmId}->[3]) {
-    $label = -1;
-    @values = @{$rHits{$psmId}};    
+  if ($fHits{$psmId}->[3]>$rHits{$psmId}->[3]) {
+    @values = @{$fHits{$psmId}};
+    if (isFullyTryptic($values[6]) && abs($values[1])<=3) {
+      push @LandS,[$values[3],1];
+    }
   } else {
-    $label = 1;
-    @values = @{$fHits{$psmId}};    
-  }
-#  print $values[1] . "\n";
-  if (isFullyTryptic($values[6]) && abs($values[1])<=3) {
-    push @LandS,[$values[3],$label];
-    print $values[3] . "\n";
+    @values = @{$rHits{$psmId}};
+    if (isFullyTryptic($values[6]) && abs($values[1])<=3) {
+      push @LandS,[$values[3],-1];
+    }
   }
 }
 
@@ -78,11 +78,23 @@ my @labels = map {$_->[1]} @sorted;
 
 open(*FH,"> beausoleil.res");
 foreach $label (@labels) {
-    print FH "$label\n";
+    print FH "$label\n"
 }
 close(*FH);
-my $pos = scalar(grep {$_->[0]>1.4 && $_->[1]==1} @sorted); 
-my $neg = scalar(grep {$_->[0]>1.4 && $_->[1]==-1} @sorted); 
+
+my $for=0;
+my $rev=0;
+foreach $label (@labels) {
+  $for += 1 if $label==1;
+  $rev += 1 if $label==-1;
+  my $fdr = $rev*2.0/(1.0*$for+$rev);
+  my $tp = $for - $rev;
+  print "$tp\t$fdr\n";
+}
+
+
+my $pos = scalar(grep {$_->[0]>1.4 && $_->[1]==1} @sorted);
+my $neg = scalar(grep {$_->[0]>1.4 && $_->[1]==-1} @sorted);
 
 my $fdr = $neg/$pos;
 
