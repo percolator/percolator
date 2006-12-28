@@ -91,26 +91,26 @@ bool Caller::parseOptions(int argc, char **argv){
   cmd.defineOption("o","sqt-out",
     "Remake an sqt file out of the normal sqt-file with the given name, \
 in which the XCorr value has been replaced with the learned score \
-and Sp has been replaced with the negated Q-value.","filename");
-  cmd.defineOption("s","shuffled-out"
+and Sp has been replaced with the negated q-value.","filename");
+  cmd.defineOption("s","shuffled",
     "Remake an SQT file out of the test (shuffled or if present shuffled2) sqt-file \
 with the given name, \
 in which the XCorr value has been replaced with the learned score \
-and Sp has been replaced with the negated Q-value.",
+and Sp has been replaced with the negated q-value.",
     "filename");
-  cmd.defineOption("P","pattern"
+  cmd.defineOption("P","pattern",
     "Option for single sqt file mode defining the name pattern used for shuffled data base. Typically set to random_seq",
     "pattern");
   cmd.defineOption("p","Cpos",
     "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
     "value");
-  cmd.defineOption("n","Cneg"
+  cmd.defineOption("n","Cneg",
     "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
     "value");
-  cmd.defineOption("F","trainFDR"
+  cmd.defineOption("F","trainFDR",
     "False discovery rate threshold to define positive examples in training. Set by cross validation if 0. Default is 0.01.",
     "value");
-  cmd.defineOption("t","testFDR"
+  cmd.defineOption("t","testFDR",
     "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
     "value");
   cmd.defineOption("i","maxiter",
@@ -119,7 +119,7 @@ and Sp has been replaced with the negated Q-value.",
   cmd.defineOption("m","matches",
     "Maximal number of matches to take in consideration per spectrum when using sqt-files",
     "number");
-  cmd.defineOption("r","train-ratio"
+  cmd.defineOption("r","train-ratio",
     "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.7 by default.",
     "value");
   cmd.defineOption("G","gist-out",

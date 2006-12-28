@@ -50,8 +50,8 @@ int CommandLineParser::getInt(string dest,int lower,int upper) {
 void CommandLineParser::defineOption (string shortOpt, string longOpt, string help, string helpType, OptionOption typ, string dfault) {
   opts.insert(opts.begin(),Option("-"+shortOpt, "--" + longOpt, shortOpt, help,helpType, typ));
   options[shortOpt] = dfault;
-  if (strlen(longOpt.c_str())+strlen(shortOpt.c_str())+strlen(helpType.c_str())> optMaxLen)
-    optMaxLen = strlen(longOpt.c_str())+strlen(shortOpt.c_str())+strlen(helpType.c_str());
+  if (longOpt.length()+helpType.length()> optMaxLen)
+    optMaxLen=longOpt.length()+helpType.length();
 }
 
 void CommandLineParser::parseArgs(int argc, char **argv) {
@@ -69,25 +69,29 @@ void CommandLineParser::error(string msg) {
 }
 
 void CommandLineParser::help() {
-  cerr << header << endl << "Options:" << endl;
-  int descLen = optMaxLen + 12;
+  int descLen = optMaxLen + 8;
   int helpLen = lineLen - descLen;
-    for (unsigned int i=0; i < opts.size(); i++) {
-      unsigned int j=0;
-      string desc = " " + opts[i].shortOpt + " or " + opts[i].longOpt;
-      if (opts[i].helpType.length()>0) {
-        desc += " <" + opts[i].helpType + ">";
-      }
+  cerr << header << endl << "Options:" << endl;
+  for (unsigned int i=0; i < opts.size(); i++) {
+    unsigned int j=0;
+    cerr << " " << opts[i].shortOpt;
+    if (opts[i].helpType.length()>0)
+      cerr << " <" << opts[i].helpType << ">";
+    cerr << endl;
+    string desc = " " + opts[i].longOpt;
+    if (opts[i].helpType.length()>0) {
+      desc += " <" + opts[i].helpType + ">";
+    }
+    cerr.width(descLen);
+    cerr << left << desc; 
+    cerr.width(0);
+    cerr << opts[i].help.substr(j,helpLen) << endl; 
+    while ((j+=helpLen)<opts[i].help.length()) {
       cerr.width(descLen);
-      cerr << left << desc; 
+      cerr << " "; 
       cerr.width(0);
       cerr << opts[i].help.substr(j,helpLen) << endl; 
-      while ((j+=helpLen)<opts[i].help.length()) {
-        cerr.width(descLen);
-        cerr << " "; 
-        cerr.width(0);
-        cerr << opts[i].help.substr(j,helpLen) << endl; 
-      }
+    }
   }
   exit(0);
 }
@@ -98,7 +102,7 @@ void CommandLineParser::findOption(char **argv, int &index) {
 
   string optstr = (string)argv[index];
   string valstr("");
-  unsigned int eqsign=optstr.find('=');
+  string::size_type eqsign=optstr.find('=');
   if (eqsign!=string::npos) {
     valstr = optstr.substr(eqsign+1);
     optstr = optstr.substr(0,eqsign);
