@@ -33,6 +33,7 @@ Scores::~Scores()
 }
 
 double Scores::trainRatio = 0.7;
+double Scores::pi0 = 0.9;
 
 void Scores::printRoc(string & fn){
  ofstream rocStream(fn.data(),ios::out);
@@ -174,18 +175,18 @@ int Scores::calcScores(double *w,double fdr) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
   }
-  int positives=0,fp=0;
-  double scaled_fp=0.0,q,oldQ=0.0;
+  int positives=0,nulls=0;
+  double efp=0.0,q,oldQ=0.0;
   unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
       positives++;
     if (it->label==-1) {
-      fp++;
-      scaled_fp=fp*factor;
+      nulls++;
+      efp=pi0*nulls*factor;
     }
     if (positives)
-      q=scaled_fp/(double)positives;
+      q=efp/(double)positives;
     else
       q=1;
     if (q<oldQ)

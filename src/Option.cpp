@@ -69,11 +69,11 @@ void CommandLineParser::error(string msg) {
 }
 
 void CommandLineParser::help() {
-  int descLen = optMaxLen + 8;
-  int helpLen = lineLen - descLen;
+  string::size_type descLen = optMaxLen + 8;
+  string::size_type helpLen = lineLen - descLen;
   cerr << header << endl << "Options:" << endl;
-  for (unsigned int i=0; i < opts.size(); i++) {
-    unsigned int j=0;
+  for (unsigned int i=opts.size(); i-- ;) {
+    string::size_type j=0;
     cerr << " " << opts[i].shortOpt;
     if (opts[i].helpType.length()>0)
       cerr << " <" << opts[i].helpType << ">";
@@ -82,15 +82,19 @@ void CommandLineParser::help() {
     if (opts[i].helpType.length()>0) {
       desc += " <" + opts[i].helpType + ">";
     }
-    cerr.width(descLen);
-    cerr << left << desc; 
-    cerr.width(0);
-    cerr << opts[i].help.substr(j,helpLen) << endl; 
-    while ((j+=helpLen)<opts[i].help.length()) {
+    while (j<opts[i].help.length()) {
       cerr.width(descLen);
-      cerr << " "; 
+      cerr << left << desc;
+      desc = " "; 
       cerr.width(0);
-      cerr << opts[i].help.substr(j,helpLen) << endl; 
+      string::size_type l = helpLen;
+      if (j+l<opts[i].help.length()) {
+        string::size_type p = opts[i].help.rfind(' ',j+l);
+        if (p != string::npos && p>j) 
+          l = p-j+1;
+      }
+      cerr << opts[i].help.substr(j,l) << endl;
+      j += l; 
     }
   }
   exit(0);

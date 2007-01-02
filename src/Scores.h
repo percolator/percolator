@@ -40,6 +40,7 @@ public:
     inline unsigned int posNowSize() {return (posNow);} 
     inline unsigned int negSize() {return (neg);}
     static inline void setTrainRatio(double ratio) {trainRatio = ratio;} 
+    static double pi0;
 protected:
     double factor;
     double *w_vec;
