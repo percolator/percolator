@@ -221,7 +221,7 @@ string DataSet::modifyRec(const string record,int mLines, const double *w, Score
   }
   if(dtaSelect) {
     outputs[m]=pair<double,string>(-10,
-      "M\t600\t600\t1\t%6.4g\t-20\t-1\t0\t0\tI.AMINVALI.D\nL\tPlaceholder satisfying DTA select\n");
+      "M\t600\t600\t1\t%6.4g\t-20\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n");
   }
   sort(outputs.begin(),outputs.end());
   reverse(outputs.begin(),outputs.end());
