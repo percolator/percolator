@@ -31,6 +31,7 @@ protected:
     string weightFN;
     string call;
     bool gistInput;
+    bool dtaSelect;
     double selectionfdr;
     double selectedCpos;
     double selectedCneg;

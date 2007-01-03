@@ -15,8 +15,8 @@ public:
     void readFile(const string & p_fn, const int label);
     void readFile(const string & fn, const string & wc,const bool match);
     void static readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation * intra,const string & wild = "", const bool match=false, bool calc=true);
-    void static modifyFile(const string& fn, vector<DataSet *> & sets, double * w, Scores& sc , const string& greet);
-    void modifyFile(const string& fn, double * w, Scores& sc , const string& greet);
+    void static modifyFile(const string& fn, vector<DataSet *> & sets, double * w, Scores& sc , const string& greet, bool dtaSelect);
+    void modifyFile(const string& fn, double * w, Scores& sc , const string& greet, bool dtaSelect);
     void generateTrainingSet(const double fdr,const double cpos, const double cneg, const Scores & sc);
 	void setSet();
 	void fillTestSet(SetHandler& trainSet,const string& shuffled2FN="");

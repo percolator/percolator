@@ -181,10 +181,10 @@ void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
   } 
 }
 
-string DataSet::modifyRec(const string record,int mLines, const double *w, Scores * pSc) {
+string DataSet::modifyRec(const string record,int mLines, const double *w, Scores * pSc, bool dtaSelect) {
   double feat[DataSet::numFeatures];
 //  if (mLines>3) mLines=3;
-  vector<pair<double,string> > outputs(mLines);
+  vector<pair<double,string> > outputs(mLines+(dtaSelect?1:0));
   istringstream in(record);
   ostringstream out,outtmp;
   string line,tmp,lineRem;
@@ -193,7 +193,8 @@ string DataSet::modifyRec(const string record,int mLines, const double *w, Score
   set<string> proteinsTmp;
   string tmpPepSeq;
   double rSp,mass;
-  for(int m=0;m<mLines;m++) {
+  int m=0;
+  for(;m<mLines;m++) {
     proteinsTmp.clear();
     readFeatures(record,feat,m,proteinsTmp,tmpPepSeq,true);
     double score = 0;
@@ -214,10 +215,13 @@ string DataSet::modifyRec(const string record,int mLines, const double *w, Score
       assert(line[0]=='L');
       outtmp << line << endl;
     }
-    pair<double,string> outpair(score,outtmp.str());
-    outputs[m]=outpair;
+    outputs[m]=pair<double,string>(score,outtmp.str());
     outtmp.clear();
     outtmp.str("");
+  }
+  if(dtaSelect) {
+    outputs[m]=pair<double,string>(-10,
+      "M\t600\t600\t1\t%6.4g\t-20\t-1\t0\t0\tI.AMINVALI.D\nL\tPlaceholder satisfying DTA select\n");
   }
   sort(outputs.begin(),outputs.end());
   reverse(outputs.begin(),outputs.end());
@@ -237,7 +241,7 @@ string DataSet::modifyRec(const string record,int mLines, const double *w, Score
   return out.str();
 }
 
-void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet) {
+void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect) {
   string line;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
@@ -263,7 +267,7 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
         if (ms>hitsPerSpectrum)
           ms=hitsPerSpectrum;
         string record=buff.str();
-        sqtOut << modifyRec(record,ms, w, pSc);
+        sqtOut << modifyRec(record,ms, w, pSc, dtaSelect);
       }
       buff.str("");
       buff.clear();
@@ -280,7 +284,7 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
   }
   if(lines>1 && charge<=3) {
     string record=buff.str();
-    sqtOut << modifyRec(record,ms, w, pSc);
+    sqtOut << modifyRec(record,ms, w, pSc, dtaSelect);
   }
   sqtIn.close();
   sqtOut.close();

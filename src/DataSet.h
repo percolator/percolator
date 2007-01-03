@@ -35,8 +35,8 @@ protected:
     void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
     void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
     void read_sqt(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
-    string modifyRec(const string record, int mLines, const double *w, Scores * pSc);
-    void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet);
+    string modifyRec(const string record, int mLines, const double *w, Scores * pSc, bool dtaSelect);
+    void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
     static double isTryptic(const string & str);
     static double isChymoTryptic(const string & str);
     static double isEnz(const string & str) {return (chymoInsteadOfTryptic?

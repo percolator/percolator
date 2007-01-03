@@ -41,6 +41,7 @@ Caller::Caller()
   gistInput=false;
   pNorm=NULL;
   svmInput=NULL;
+  dtaSelect=false;
 }
 
 Caller::~Caller()
@@ -139,6 +140,8 @@ Label 1 is interpreted as positive, -1 negative in train set, -2 negative in tes
     "filename");
   cmd.defineOption("u","unitnorm",
     "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
+  cmd.defineOption("d","DTASelect",
+    "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
     "Calculate quadratic feature terms","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
@@ -188,6 +191,8 @@ Label 1 is interpreted as positive, -1 negative in train set, -2 negative in tes
     rocFN = cmd.options["r"];
   if (cmd.optionSet("u"))
     Normalizer::setType(Normalizer::UNI);
+  if (cmd.optionSet("d"))
+    dtaSelect=true;
   if (cmd.optionSet("Q"))
     DataSet::setQuadraticFeatures(true);
   if (cmd.optionSet("y"))
@@ -302,7 +307,7 @@ void Caller::trainEm(double * w) {
 void Caller::xvalidate_step(double *w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
-  double best_fdr,best_cpos,best_cneg;
+  double best_fdr=0.01,best_cpos=1,best_cneg=1;
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
@@ -470,11 +475,11 @@ int Caller::run() {
   if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectionfdr*100 << "% FDR level on testset" << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
-  normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str());
+  normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   if (doShuffled2)
-    shuffled2.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str());
+    shuffled2.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   else
-    shuffled.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str());
+    shuffled.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
      printWeights(weightStream,w);

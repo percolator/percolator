@@ -95,13 +95,13 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
   }  
 }
 
-void SetHandler::modifyFile(const string& fn, double *w, Scores& sc , const string& greet) {
+void SetHandler::modifyFile(const string& fn, double *w, Scores& sc , const string& greet, bool dtaSelect) {
   if (!fn.empty()) {
-    modifyFile(fn,subsets,w,sc,greet);
+    modifyFile(fn,subsets,w,sc,greet, dtaSelect);
   }
 }
 
-void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *w, Scores& sc , const string& greet) {
+void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *w, Scores& sc , const string& greet, bool dtaSelect) {
   string line;
   ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {
@@ -119,14 +119,14 @@ void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *
     fileIn.close();
   
   if (sets.size()==1 ) {
-    ((DataSet *)sets[0])->modify_sqt(fn,w,&sc,greet);
+    ((DataSet *)sets[0])->modify_sqt(fn,w,&sc,greet, dtaSelect);
     return;
   }
   unsigned int ix=0;
   fileIn.open(fn.c_str(),ios::in);
   while(getline(fileIn,line)) {
     if(line.size()>0 && line[0]!='#') {
-      ((DataSet *)sets[ix++])->modify_sqt(line,w,&sc,greet);
+      ((DataSet *)sets[ix++])->modify_sqt(line,w,&sc,greet,dtaSelect);
     }    
   }
   fileIn.close();
