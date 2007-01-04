@@ -176,7 +176,7 @@ int Scores::calcScores(double *w,double fdr) {
     }
   }
   int positives=0,nulls=0;
-  double efp=0.0,q,oldQ=0.0;
+  double efp=0.0,q;
   unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
@@ -189,15 +189,14 @@ int Scores::calcScores(double *w,double fdr) {
       q=efp/(double)positives;
     else
       q=1;
-    if (q<oldQ)
-      q=oldQ;
-    oldQ=q;
     if (q>1.0) q=1.0;
     qVals[ix++]=q;
     if (fdr>0.0 && fdr<q) {
       posNow = positives;
-      fdr = -1;
     }
+  }
+  for (;--ix;) {
+    if (qVals[ix-1]>qVals[ix]) qVals[ix-1]=qVals[ix];  
   }
   return posNow;
 }

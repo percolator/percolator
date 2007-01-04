@@ -456,19 +456,30 @@ int Caller::run() {
   } else {
     xv_type = NO_XV;
   }
+
+  time_t procStart;
+  clock_t procStartClock=clock();
+  time (&procStart);
+  double diff = difftime (procStart,startTime);
+  
+  if (VERB>1) cerr << "Reading in data and feature calculation took " << 
+    ((double)(procStartClock-startClock))/(double)CLOCKS_PER_SEC <<
+    " cpu seconds or " << diff << " seconds wall time" << endl; 
+
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
   if (xv_type==WHOLE)
     xvalidate(w);
   else  
     trainEm(w);
+
   time_t end;
   time (&end);
-  double diff = difftime (end,startTime);
+  diff = difftime (end,procStart);
   
   ostringstream timerValues;
   timerValues.precision(4);
-  timerValues << "Processing took " << ((double)(clock()-startClock))/(double)CLOCKS_PER_SEC;
+  timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
   int overFDR = testset.calcScores(w,selectionfdr);

@@ -27,6 +27,9 @@ DataSet::DataSet()
    feature = NULL;
    n_examples=0;
    sqtFN = "";
+   pattern="";
+   doPattern=false;
+   matchPattern=true;
 }
 
 DataSet::~DataSet()
@@ -181,10 +184,10 @@ void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
   } 
 }
 
-string DataSet::modifyRec(const string record,int mLines, const double *w, Scores * pSc, bool dtaSelect) {
+string DataSet::modifyRec(const string record,const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect) {
   double feat[DataSet::numFeatures];
 //  if (mLines>3) mLines=3;
-  vector<pair<double,string> > outputs(mLines+(dtaSelect?1:0));
+  vector<pair<double,string> > outputs;
   istringstream in(record);
   ostringstream out,outtmp;
   string line,tmp,lineRem;
@@ -193,10 +196,10 @@ string DataSet::modifyRec(const string record,int mLines, const double *w, Score
   set<string> proteinsTmp;
   string tmpPepSeq;
   double rSp,mass;
-  int m=0;
-  for(;m<mLines;m++) {
+  set<int>::const_iterator it;
+  for(it=theMs.begin();it!=theMs.end();it++) {
     proteinsTmp.clear();
-    readFeatures(record,feat,m,proteinsTmp,tmpPepSeq,true);
+    readFeatures(record,feat,*it,proteinsTmp,tmpPepSeq,true);
     double score = 0;
     for (int i=DataSet::numFeatures;i--;)
       score += feat[i]*w[i];
@@ -215,13 +218,13 @@ string DataSet::modifyRec(const string record,int mLines, const double *w, Score
       assert(line[0]=='L');
       outtmp << line << endl;
     }
-    outputs[m]=pair<double,string>(score,outtmp.str());
+    outputs.push_back(pair<double,string>(score,outtmp.str()));
     outtmp.clear();
     outtmp.str("");
   }
   if(dtaSelect) {
-    outputs[m]=pair<double,string>(-10,
-      "M\t600\t600\t1\t%6.4g\t-20\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n");
+    outputs.push_back(pair<double,string>(-10,
+      "M\t600\t600\t1\t%6.4g\t-10\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n"));
   }
   sort(outputs.begin(),outputs.end());
   reverse(outputs.begin(),outputs.end());
@@ -259,6 +262,7 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
   istringstream lineParse;
   int lines=0,ms=0,charge=0;
   string tmp,lineRem;
+  set<int> theMs;
   while (getline(sqtIn,line)) {
     if (line[0]=='H')
       sqtOut << line <<endl;
@@ -267,7 +271,7 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
         if (ms>hitsPerSpectrum)
           ms=hitsPerSpectrum;
         string record=buff.str();
-        sqtOut << modifyRec(record,ms, w, pSc, dtaSelect);
+        sqtOut << modifyRec(record,theMs, w, pSc, dtaSelect);
       }
       buff.str("");
       buff.clear();
@@ -276,15 +280,24 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
       lineParse.str(line);
       lineParse >> tmp >> tmp >> tmp >> charge;
       ms=0;
+      theMs.clear();
     }
-    if (line[0]=='L'||(line[0]=='M' && ++ms)) {
-      lines++;
+    if (line[0]=='M') {
+      ++ms;
+      ++lines;
+      buff << line << endl;    
+    }
+    if (line[0]=='L') {
+      ++lines;
       buff << line << endl;
+      if((int)theMs.size()<hitsPerSpectrum && (!doPattern || (line.find(pattern,0)!= string::npos)==matchPattern)) {
+        theMs.insert(ms-1);
+      }
     }
   }
   if(lines>1 && charge<=3) {
     string record=buff.str();
-    sqtOut << modifyRec(record,ms, w, pSc, dtaSelect);
+    sqtOut << modifyRec(record,theMs, w, pSc, dtaSelect);
   }
   sqtIn.close();
   sqtOut.close();
@@ -404,7 +417,9 @@ void DataSet::computeIntraSetFeatures() {
 
 void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const string & wild, bool match) {
   intra=intraRel;
-  bool doMatch = !wild.empty();
+  matchPattern=match;
+  pattern=wild;
+  doPattern = !wild.empty();
   setNumFeatures();
   sqtFN.assign(fname);
   int n = 0,charge=0,ms=0;
@@ -427,7 +442,7 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
     if (look & line[0]=='L' && ms < hitsPerSpectrum) {
          lineParse.str(line);  
          lineParse >> tmp >> prot;
-         if(!doMatch || ((line.find(wild,0)!= string::npos)==match)) {
+         if(!doPattern || ((line.find(wild,0)!= string::npos)==match)) {
              ++ms;
              ++n;
          }
@@ -491,7 +506,7 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
     if (line[0]=='L') {
       ++lines;
       buff << line << endl;
-      if((int)theMs.size()<hitsPerSpectrum && (!doMatch || (line.find(wild,0)!= string::npos)==match)) {
+      if((int)theMs.size()<hitsPerSpectrum && (!doPattern || (line.find(wild,0)!= string::npos)==match)) {
         theMs.insert(ms-1);
       }
     }
