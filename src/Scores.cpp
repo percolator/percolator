@@ -191,7 +191,7 @@ int Scores::calcScores(double *w,double fdr) {
       q=1;
     if (q>1.0) q=1.0;
     qVals[ix++]=q;
-    if (fdr>0.0 && fdr<q) {
+    if (fdr>0.0 && fdr>=q) {
       posNow = positives;
     }
   }
