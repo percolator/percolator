@@ -407,8 +407,10 @@ int Caller::run() {
   	Scores::fillFeatures(trainset,testset,normal,shuffled);
   }
   if (VERB>1) {
-    cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives." << endl;
-    cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives." << endl;
+    cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives, size ratio=" 
+         << trainset.factor << " and pi0=" << trainset.pi0 << endl;
+    cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives, size ratio="
+         << testset.factor << " and pi0=" << testset.pi0 << endl;
   }
   if (gistFN.length()>0) {
     SetHandler::gistWrite(gistFN,normal,shuffled,shuffled2);

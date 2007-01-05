@@ -41,8 +41,8 @@ public:
     inline unsigned int negSize() {return (neg);}
     static inline void setTrainRatio(double ratio) {trainRatio = ratio;} 
     static double pi0;
-protected:
     double factor;
+protected:
     double *w_vec;
     int neg;
     int pos;
