@@ -177,7 +177,7 @@ int Scores::calcScores(double *w,double fdr) {
   }
   int positives=0,nulls=0;
   double efp=0.0,q;
-  unsigned int ix=0;
+  register unsigned int ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
       positives++;
@@ -188,12 +188,12 @@ int Scores::calcScores(double *w,double fdr) {
     if (positives)
       q=efp/(double)positives;
     else
-      q=1;
-    if (q>1.0) q=1.0;
+      q=pi0;
+    if (q>pi0)
+      q=pi0;
     qVals[ix++]=q;
-    if (fdr>0.0 && fdr>=q) {
+    if (fdr>=q)
       posNow = positives;
-    }
   }
   for (;--ix;) {
     if (qVals[ix-1]>qVals[ix]) qVals[ix-1]=qVals[ix];  
@@ -259,20 +259,3 @@ void Scores::generateTrainingSet(AlgIn& data,const double fdr,const double cpos,
   }
   data.m=ix2;
 }
-
-
-/*
-double Scores::getPositiveTrainingIxs(const double fdr,vector<int>& set,vector<int>& ixs) {
-  double tp=0,fp=0;
-  vector<ScoreHolder>::iterator it;
-  for(it=scores.begin();it!=scores.end();it++) {
-    if (it->label==-1) fp++; else tp++;
-    if (fdr<(fp/(tp+fp)))
-      return -it->score;
-    if (it->label!=-1)
-      ixs.push_back(it->index);
-      set.push_back(it->set);      
-  }
-  return 0;
-}
-*/
