@@ -2,8 +2,15 @@
 upFDR = 0.10
 from pylab import  *
 import glob
+
+def countNeg(x,y):
+  if (y!=1):
+    x+=1
+  return x
+
 curves = []
 curveNames = []
+pi0 = 0.9
 for doc in glob.glob('*.res'):
   print doc
   curveName = doc[:-4]
@@ -11,37 +18,42 @@ for doc in glob.glob('*.res'):
 #  fps = []
   fdrs = []
   tps = []
-  fdr,oldfdr=.0,.0
+  fdr=.0
   tpATfdr=0
   tp,fp,search,firstBreach=0,0,1,1
   f = open(doc,"r")
-  for line in f.readlines():
-    val = int(line)
+  labels = [int(line) for line in f.readlines()]
+  f.close()
+  if curveName.find("rank")>0:
+    my_pi0 = 1 - (1-pi0)/5.0
+    print "pi0 div with 5"
+  else:
+    my_pi0=pi0
+  for val in labels:
     if val != 1:
       fp+=1
     if val == 1:
       tp+=1
     if tp>0:
-      fdr = fp/(float(tp))
+      fdr = my_pi0*fp/(float(tp))
     else:
       fdr = 1
-    if fdr<oldfdr:
-      fdr=oldfdr
-    oldfdr=fdr
-    if fdr>upFDR:
-      continue
-    fdrs+=[fdr]
-    tps+=[tp]
-    if search == 1 and fdr > 0.01:
-      print curveName + ": FDR is 1% when finding " + str(tp) + " positives"
-      search = 0
-      tpATfdr = tp
+#    if fdr>upFDR:
+#      continue
+    if fdr<=upFDR:
+      fdrs+=[fdr]
+      tps+=[tp]
   if len(tps)==0:
     fdrs+=[0]
     tps+=[0]
   fdrs+=[upFDR]
   tps+=[tps[-1]]
-  f.close()
+  for i in range(len(fdrs)-1,0,-1): # Make q-values out of the fdrs
+    if fdrs[i-1]>fdrs[i]: fdrs[i-1]=fdrs[i]
+    if search == 1 and fdrs[i-1] <= 0.01:
+      print curveName + ": FDR is 1% when finding " + str(tps[i-1]) + " positives"
+      search = 0
+      tpATfdr = tps[i-1]
   curves += [(tpATfdr,(fdrs, tps),curveName)]
 curves.sort(reverse=True)
 for tp,curve,curveName in curves:
@@ -57,11 +69,11 @@ for doc in glob.glob('*.pnt'):
   field = [float(w) for w in line.split()]
   if field[1]>upFDR:
     continue
-  plot([field[1]],[field[0]],style[i],label=curveName)
+  plot([field[1]*pi0],[field[0]],style[i],label=curveName)
   i += 1
 
-xlabel('False Discovery Rate',fontsize='large')
-ylabel('Positives',fontsize='large')
+xlabel('q-value',fontsize='large')
+ylabel('Number of spectra identified',fontsize='large')
 legend(loc=4,pad=0.1,labelsep = 0.001,handlelen=0.04,handletextsep=0.02,numpoints=3)
 savefig("roc.eps")
 show()

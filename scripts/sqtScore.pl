@@ -32,7 +32,8 @@ if ($#ARGV>-1) {
 } else {
   $ch = 0;
 }
-print STDERR "Looking only at charge $ch\n";
+print STDERR "Looking only at charge $ch\n" if $ch;
+print STDERR "Looking at all charges\n" unless $ch;
 open(*FH,"< $fFN");
 my @normal = readSQT(\*FH,1,$ch);
 close(*FH);
