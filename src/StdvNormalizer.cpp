@@ -92,8 +92,8 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
       stdv[ix]=1.0;
     } else {
   	  stdv[ix]=sqrt(stdv[ix]/n);
-  	  if (VERB>2) cerr << "\t" << stdv[ix]; 
     }
+    if (VERB>2) cerr << "\t" << stdv[ix]; 
   }
   if (VERB>2) cerr << endl; 
 }

@@ -393,7 +393,7 @@ void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &pro
     for (int ixf1=1;ixf1<numRealFeatures;ixf1++){
       double f1 = feat[ixf1];
       for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
-        double f2 = feature[ixf2];
+        double f2 = feat[ixf2];
         double fp=f1*f2;
         double newFeature;
         if (fp>=0.0) {
