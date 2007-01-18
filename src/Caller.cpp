@@ -124,7 +124,7 @@ and Sp has been replaced with the negated q-value.",
     "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.7 by default.",
     "value");
   cmd.defineOption("G","gist-out",
-    "Output the computed features to the given file in tab-delimited format. A file with the features, named <trunc name>.data, and a file with the features named <trunc name>.label will be created",
+    "Output the computed features to the given file in tab-delimited format. A file with the features, named <trunc name>.data, and a file with the labels named <trunc name>.label will be created",
     "trunc name");
   cmd.defineOption("g","gist-in",
     "Input files are given as gist files, first argument should be a file name of the data file, the second the label file. \
