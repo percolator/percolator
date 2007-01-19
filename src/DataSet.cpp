@@ -95,13 +95,17 @@ void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
   while (double * features=getNext(ix)) {
     double score = test.calcScore(features);
     double q = test.getQ(score);
-    out << ids[ix] << "\t" << score << "\t" << q << "\t" << pepSeq[ix];
-    set<string> prots = proteinIds[ix];
-    set<string>::const_iterator it = prots.begin();
-    for(;it!=prots.end();it++) {
-      out << "\t" << *it;
+    out << ids[ix] << "\t" << score << "\t" << q;
+    if ((int)pepSeq.size()>ix)
+        out << "\t" << pepSeq[ix];
+    if ((int)proteinIds.size()>ix) {
+      set<string> prots = proteinIds[ix];
+      set<string>::const_iterator it = prots.begin();
+      for(;it!=prots.end();it++) {
+        out << "\t" << *it;
+      }
     }
-    pair<double,string> op(score,out.str());
+    pair<double,string> op(score,out.str());    
     outList.push_back(op);
     out.str("");
   }
