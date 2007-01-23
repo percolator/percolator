@@ -120,7 +120,7 @@ and Sp has been replaced with the negated q-value.",
   cmd.defineOption("m","matches",
     "Maximal number of matches to take in consideration per spectrum when using sqt-files",
     "number");
-  cmd.defineOption("r","train-ratio",
+  cmd.defineOption("f","train-ratio",
     "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.7 by default.",
     "value");
   cmd.defineOption("G","gist-out",
@@ -140,7 +140,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     "filename");
   cmd.defineOption("u","unitnorm",
     "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
-  cmd.defineOption("a","aa-freq","Turn off calculation amino acid frequency features","",TRUE_IF_SET);
+  cmd.defineOption("a","aa-freq","Calculate amino acid frequency features","",TRUE_IF_SET);
   cmd.defineOption("d","DTASelect",
     "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
@@ -201,7 +201,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   if (cmd.optionSet("c"))
     DataSet::setChymoTrypticFeatures(true);
   if (cmd.optionSet("a"))
-    DataSet::setAAFreqencies(false);
+    DataSet::setAAFreqencies(true);
   if (cmd.optionSet("x"))
     xv_type=WHOLE;
   if (cmd.optionSet("i")) {
