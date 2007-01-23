@@ -322,7 +322,7 @@ string DataSet::getFeatureNames() {
     ostringstream oss;
     oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
     if (calcTrypticFeatures)
-      oss << "\tenzN\tenzC";
+      oss << "\tenzN\tenzC\tenzInt";
     if (calcAAFrequencies) {
       for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
         oss << "\t" << *it << "Freq";
