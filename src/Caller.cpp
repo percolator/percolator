@@ -140,7 +140,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     "filename");
   cmd.defineOption("u","unitnorm",
     "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
-  cmd.defineOption("a","aa-freq","Calculate amino acid frequency features","",TRUE_IF_SET);
+  cmd.defineOption("a","aa-freq","Turn off calculation amino acid frequency features","",TRUE_IF_SET);
   cmd.defineOption("d","DTASelect",
     "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
@@ -201,7 +201,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   if (cmd.optionSet("c"))
     DataSet::setChymoTrypticFeatures(true);
   if (cmd.optionSet("a"))
-    DataSet::setAAFreqencies(true);
+    DataSet::setAAFreqencies(false);
   if (cmd.optionSet("x"))
     xv_type=WHOLE;
   if (cmd.optionSet("i")) {
