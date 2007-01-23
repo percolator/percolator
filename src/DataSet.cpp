@@ -17,10 +17,12 @@ int DataSet::numFeatures = maxNumRealFeatures;
 int DataSet::numRealFeatures = maxNumRealFeatures;
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
+bool DataSet::calcAAFrequencies = false;
 bool DataSet::calcTrypticFeatures = true;
 bool DataSet::chymoInsteadOfTryptic = false;
 bool DataSet::calcIntraSetFeatures = true;
 string DataSet::featureNames = "";
+string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 
 DataSet::DataSet()
 {
@@ -114,30 +116,38 @@ void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
 void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
                  - (calcTrypticFeatures?0:2) 
-                 - (calcIntraSetFeatures?0:3);
+                 - (calcIntraSetFeatures?0:3)
+                 - (calcAAFrequencies?0:aaAlphabet.size());
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
 }
 
 
-double DataSet::isTryptic(const string & str) {
-  assert(str[1]=='.');
+double DataSet::isTryptic(const char n,const char c) {
   return (
-  (((str[0]=='K' || str[0]=='R') && str[2]!= 'P') ||
-  str[0]=='-' || str[2]=='-')
+  (((n=='K' || n=='R') && c != 'P') ||
+  n=='-' || c=='-')
   ?1.0:0.0);
 }
 
 // [FHWY].[^P]
-double DataSet::isChymoTryptic(const string & str) {
-  assert(str[1]=='.');
+double DataSet::isChymoTryptic(const char n,const char c) {
   return (
-  (((str[0]=='F' || str[0]=='H' || str[0]=='W' || str[0]=='Y') && str[2]!= 'P') ||
-  str[0]=='-' || str[2]=='-')
+  (((n=='F' || n=='H' || n=='W' || n=='Y') && c!= 'P') ||
+  n=='-' || c=='-')
   ?1.0:0.0);
 }
 
-
-
+unsigned int DataSet::cntEnz(const string& peptide) {
+    unsigned int pos=2, cnt=0;
+    char n = peptide.at(pos++);
+    while (pos<peptide.size()-2) {
+      char c = peptide.at(pos++);
+      if (isEnz(n,c))
+        cnt++;
+      n=c;
+    }
+    return cnt;
+}
 
 void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
   string tmp,line;
@@ -313,6 +323,10 @@ string DataSet::getFeatureNames() {
     oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
     if (calcTrypticFeatures)
       oss << "\tenzN\tenzC";
+    if (calcAAFrequencies) {
+      for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
+        oss << "\t" << *it << "Freq";
+    }
     if (calcIntraSetFeatures)
       oss << "\tnumPep\tnumProt\tpepSite";
     featureNames = oss.str();
@@ -357,11 +371,15 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       feat[8]=(charge==1?1.0:0.0);     // Charge
       feat[9]=(charge==2?1.0:0.0);
       feat[10]=(charge==3?1.0:0.0);
-      string sub1=pep.substr(0,3);
-      string sub2=pep.substr(pep.size()-3);
+      int nxtFeat=11;
       if (calcTrypticFeatures) {
-        feat[11]=isEnz(sub1);        
-        feat[12]=isEnz(sub2);
+        feat[nxtFeat++]=isEnz(pep.at(0),pep.at(2));        
+        feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
+        feat[nxtFeat++]=(double)cntEnz(pep);
+      }
+      if (calcAAFrequencies) {
+        computeAAFrequencies(pep,&feat[nxtFeat]);
+        nxtFeat += aaAlphabet.size();
       }
       gotDeltCn = (match!=0);
       gotL = false;
@@ -381,6 +399,19 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
   if (!isfinite(feat[2])) cerr << in;
   if (getIntra)
     computeIntraSetFeatures(feat,pep,proteins);
+}
+
+void DataSet::computeAAFrequencies(const string& pep, double *feat) {
+  string::size_type pos = aaAlphabet.size();
+  for (;pos--;) {feat[pos]=0.0;}
+  int len=0;
+  for (string::const_iterator it=pep.begin();it!=pep.end();it++) {
+    pos=aaAlphabet.find(*it);
+    if (pos!=string::npos) feat[pos]++;
+    len++;
+  }
+  for (pos = aaAlphabet.size();pos--;) {feat[pos]/=len;}
+
 }
 
 void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &prots) {

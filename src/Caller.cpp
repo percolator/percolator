@@ -140,6 +140,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     "filename");
   cmd.defineOption("u","unitnorm",
     "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
+  cmd.defineOption("a","aa-freq","Calculate amino acid frequency features","",TRUE_IF_SET);
   cmd.defineOption("d","DTASelect",
     "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
@@ -199,6 +200,8 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     DataSet::setTrypticFeatures(false);
   if (cmd.optionSet("c"))
     DataSet::setChymoTrypticFeatures(true);
+  if (cmd.optionSet("a"))
+    DataSet::setAAFreqencies(true);
   if (cmd.optionSet("x"))
     xv_type=WHOLE;
   if (cmd.optionSet("i")) {
@@ -452,7 +455,7 @@ int Caller::run() {
     if (selectedCpos > 0 && selectedCneg > 0) {
       xv_cfracs.push_back(selectedCneg/selectedCpos);
     } else  {
-      xv_cfracs.push_back(1);xv_cfracs.push_back(3);xv_cfracs.push_back(10);
+      xv_cfracs.push_back(1.0*trainset.factor);xv_cfracs.push_back(3.0*trainset.factor);xv_cfracs.push_back(10.0*trainset.factor);
       if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
     }
   } else {
