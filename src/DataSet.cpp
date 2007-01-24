@@ -322,7 +322,8 @@ string DataSet::getFeatureNames() {
     ostringstream oss;
     oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
     if (calcTrypticFeatures)
-      oss << "\tenzN\tenzC\tenzInt";
+      oss << "\tenzN\tenzC";
+//      oss << "\tenzN\tenzC\tenzInt";
     if (calcAAFrequencies) {
       for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
         oss << "\t" << *it << "Freq";
@@ -375,7 +376,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       if (calcTrypticFeatures) {
         feat[nxtFeat++]=isEnz(pep.at(0),pep.at(2));        
         feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
-        feat[nxtFeat++]=(double)cntEnz(pep);
+//        feat[nxtFeat++]=(double)cntEnz(pep);
       }
       if (calcAAFrequencies) {
         computeAAFrequencies(pep,&feat[nxtFeat]);
