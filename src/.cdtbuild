@@ -15,14 +15,6 @@
 <tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1231293459" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug"/>
 <macros/>
 </toolChain>
-<resourceConfiguration exclude="false" id="cdt.managedbuild.config.gnu.exe.debug.429909230./percolator/Caller.h" name="Caller.h" rcbsApplicability="disable" resourcePath="/percolator/Caller.h" toolsToInvoke="">
-<tool announcement="Invoking: Resource Custom Build Step" command="" customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.1144662763" name="Resource Custom Build Step">
-<inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.1641549444" name="Resource Custom Build Step Input Type">
-<additionalInput kind="additionalinputdependency" paths=""/>
-</inputType>
-<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.580736769" name="Resource Custom Build Step Output Type" outputNames="percolator"/>
-</tool>
-</resourceConfiguration>
 </configuration>
 <configuration artifactName="percolator" cleanCommand="rm -rf" description="" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.release.161470799" name="Release" parent="cdt.managedbuild.config.gnu.exe.release">
 <toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1398096327" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
@@ -48,14 +40,6 @@
 <tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.368527044" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug"/>
 <macros/>
 </toolChain>
-<resourceConfiguration exclude="false" id="cdt.managedbuild.config.gnu.exe.debug.2106676608./percolator/Caller.h" name="Caller.h" rcbsApplicability="disable" resourcePath="/percolator/Caller.h" toolsToInvoke="">
-<tool announcement="Invoking: Resource Custom Build Step" command="" customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.1144662763.1259533076" name="Resource Custom Build Step">
-<inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.1641549444.874906525" name="Resource Custom Build Step Input Type">
-<additionalInput kind="additionalinputdependency" paths=""/>
-</inputType>
-<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.580736769.767580984" name="Resource Custom Build Step Output Type" outputNames="percolator"/>
-</tool>
-</resourceConfiguration>
 </configuration>
 <configuration artifactName="percolator" cleanCommand="rm -rf" description="Opteron Instructionset" errorParsers="org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="cdt.managedbuild.config.gnu.exe.release.921204776" name="ReleaseOpteron" parent="cdt.managedbuild.config.gnu.exe.release">
 <toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.698115875" name="GCC Tool Chain" superClass="cdt.managedbuild.toolchain.gnu.exe.release">

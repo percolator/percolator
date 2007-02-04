@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Percolator v 1.00
+ * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Written by Lukas KŠll (lukall@u.washington.edu) in the 
+ * Department of Genome Science at the University of Washington. 
+ *
+ * $Id: DataSet.h,v 1.34 2007/02/04 04:33:21 lukall Exp $
+ *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
 class Scores;

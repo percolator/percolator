@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * SVMlin
+ * Copyright (c) 2006 University of Washington. All rights reserved.
+ * Written by Vikas Sindhwani at the University of Chicago. 
+ * Adapted to Percolator by Lukas KŠll at the University of Washington
+ *
+ * $Id: ssl.cpp,v 1.11 2007/02/04 04:33:21 lukall Exp $
+ *******************************************************************************/
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
