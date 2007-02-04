@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator v 1.00
  * Copyright (c) 2006-7 University of Washington. All rights reserved.
- * Written by Lukas KŠll (lukall@u.washington.edu) in the 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.29 2007/02/04 04:33:21 lukall Exp $
+ * $Id: Caller.h,v 1.30 2007/02/04 04:50:39 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_

@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator v 1.00
  * Copyright (c) 2006-7 University of Washington. All rights reserved.
- * Written by Lukas KŠll (lukall@u.washington.edu) in the 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.36 2007/02/04 04:33:21 lukall Exp $
+ * $Id: Scores.cpp,v 1.37 2007/02/04 04:50:39 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
