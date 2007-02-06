@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.51 2007/02/04 04:50:39 lukall Exp $
+ * $Id: DataSet.cpp,v 1.52 2007/02/06 00:29:29 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -29,8 +29,10 @@ bool DataSet::calcAAFrequencies = false;
 bool DataSet::calcTrypticFeatures = true;
 bool DataSet::chymoInsteadOfTryptic = false;
 bool DataSet::calcIntraSetFeatures = true;
+bool DataSet::calcPTMs = false;
 string DataSet::featureNames = "";
 string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
+string DataSet::ptmAlphabet = "#*@";
 
 DataSet::DataSet()
 {
@@ -124,6 +126,7 @@ void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
 void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
                  - (calcTrypticFeatures?0:2) 
+                 - (calcPTMs?0:1) 
                  - (calcIntraSetFeatures?0:3)
                  - (calcAAFrequencies?0:aaAlphabet.size());
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
@@ -332,6 +335,8 @@ string DataSet::getFeatureNames() {
     if (calcTrypticFeatures)
       oss << "\tenzN\tenzC";
 //      oss << "\tenzN\tenzC\tenzInt";
+    if (calcPTMs)
+      oss << "\tptm";
     if (calcAAFrequencies) {
       for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
         oss << "\t" << *it << "Freq";
@@ -369,14 +374,14 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       linestr.str(line);
       linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
       
-      feat[0]=rSp;      // rank by Sp
-      feat[1]=mass-cMass; // obs - calc mass
-      feat[2]=0.0;                         // deltCn (leave until next M line)
-      feat[3]=xcorr;      // Xcorr
-      feat[4]=sp;      // Sp
-      feat[5]=matched/expected; //Fraction matched/expected ions
-      feat[6]=mass;                        // Observed mass
-      feat[7]=pep.size()-4;                // Peptide length
+      feat[0]=rSp;                     // rank by Sp
+      feat[1]=mass-cMass;              // obs - calc mass
+      feat[2]=0.0;                     // deltCn (leave until next M line)
+      feat[3]=xcorr;                   // Xcorr
+      feat[4]=sp;                      // Sp
+      feat[5]=matched/expected;        // Fraction matched/expected ions
+      feat[6]=mass;                    // Observed mass
+      feat[7]=peptideLength(pep);      // Peptide length
       feat[8]=(charge==1?1.0:0.0);     // Charge
       feat[9]=(charge==2?1.0:0.0);
       feat[10]=(charge==3?1.0:0.0);
@@ -386,6 +391,8 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
         feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
 //        feat[nxtFeat++]=(double)cntEnz(pep);
       }
+      if (calcPTMs)
+        feat[nxtFeat++]=cntPTMs(pep);        
       if (calcAAFrequencies) {
         computeAAFrequencies(pep,&feat[nxtFeat]);
         nxtFeat += aaAlphabet.size();
@@ -421,6 +428,22 @@ void DataSet::computeAAFrequencies(const string& pep, double *feat) {
   }
   for (pos = aaAlphabet.size();pos--;) {feat[pos]/=len;}
 
+}
+
+unsigned int DataSet::peptideLength(const string& pep) {
+  unsigned int len =0;
+  for (string::size_type pos = 2;pos<(pep.size()-2);pos++) {
+    if (aaAlphabet.find(pep.at(pos))!=string::npos) len++;
+  }
+  return len;
+}
+
+unsigned int DataSet::cntPTMs(const string& pep) {
+  unsigned int len =0;
+  for (string::size_type pos = 2;pos<(pep.size()-2);pos++) {
+    if (ptmAlphabet.find(pep.at(pos))!=string::npos) len++;
+  }
+  return len;
 }
 
 void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &prots) {

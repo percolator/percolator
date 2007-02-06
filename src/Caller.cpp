@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.67 2007/02/04 04:50:39 lukall Exp $
+ * $Id: Caller.cpp,v 1.68 2007/02/06 00:29:29 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -77,7 +77,7 @@ string Caller::extendedGreeter() {
 string Caller::greeter() {
   ostringstream oss;
   oss << "Percolator v 1.00, ";
-  oss << "Build Date " << __DATE__ << " " << __TIME__ << endl << endl;
+  oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Copyright (c) 2006-7 University of Washington. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl; 
   oss << "Department of Genome Science at the University of Washington." << endl; 
@@ -152,6 +152,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   cmd.defineOption("u","unitnorm",
     "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
   cmd.defineOption("a","aa-freq","Calculate amino acid frequency features","",TRUE_IF_SET);
+  cmd.defineOption("b","PTM","Calculate feature for number of post-translational modifications","",TRUE_IF_SET);
   cmd.defineOption("d","DTASelect",
     "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
@@ -213,6 +214,8 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     DataSet::setChymoTrypticFeatures(true);
   if (cmd.optionSet("a"))
     DataSet::setAAFreqencies(true);
+  if (cmd.optionSet("b"))
+    DataSet::setPTMfeature(true);
   if (cmd.optionSet("x"))
     xv_type=WHOLE;
   if (cmd.optionSet("i")) {

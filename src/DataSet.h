@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.35 2007/02/04 04:50:39 lukall Exp $
+ * $Id: DataSet.h,v 1.36 2007/02/06 00:29:29 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -27,14 +27,11 @@ class DataSet
     void read_sqt(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
     void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
     static inline int getNumFeatures() { return numFeatures; }
-    static void setQuadraticFeatures(bool on)
-      { calcQuadraticFeatures=on;}
-    static void setTrypticFeatures(bool on)
-      { calcTrypticFeatures=on;}
-    static void setChymoTrypticFeatures(bool on)
-      { chymoInsteadOfTryptic=on;}
-    static void setAAFreqencies(bool on)
-      { calcAAFrequencies=on;}
+    static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
+    static void setTrypticFeatures(bool on) { calcTrypticFeatures=on; }
+    static void setChymoTrypticFeatures(bool on) { chymoInsteadOfTryptic=on; }
+    static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
+    static void setPTMfeature(bool on) { calcPTMs=on; }      
     static void setNumFeatures();
     static void inline setHitsPerSpectrum(int hits) {hitsPerSpectrum=hits;}
     static inline int rowIx(int row) { return row*numFeatures; }
@@ -50,6 +47,8 @@ class DataSet
 protected:
     void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
     string modifyRec(const string record, const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect);
+    static unsigned int peptideLength(const string& pep);
+    static unsigned int cntPTMs(const string& pep);
     static unsigned int cntEnz(const string& peptide);
     static double isTryptic(const char n,const char c);
     static double isChymoTryptic(const char n,const char c);
@@ -62,12 +61,14 @@ protected:
     static bool calcAAFrequencies;
     static bool chymoInsteadOfTryptic;
     static bool calcIntraSetFeatures;
+    static bool calcPTMs;
     static int numFeatures;
     static int numRealFeatures;
     static int hitsPerSpectrum;
     static string aaAlphabet;
+    static string ptmAlphabet;
     static string featureNames;
-    const static int maxNumRealFeatures = 16 + 20;
+    const static int maxNumRealFeatures = 16 + 20 + 1; // Normal + Amino acid + PTM 
     vector<set<string> > proteinIds;
     vector<string> pepSeq;
     int label;
