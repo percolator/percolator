@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.52 2007/02/06 00:29:29 lukall Exp $
+ * $Id: DataSet.cpp,v 1.53 2007/02/06 00:45:46 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -281,6 +281,10 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
   }
   sqtOut << "H\t" << "InputFile: " << sqtFN << endl;
   sqtOut << "H\t" << "OutputFile: " << outFN << endl;
+  sqtOut << "H\t" << "Output from percolator are put into the M-lines:" << endl;
+  sqtOut << "H\t" << "6th field is relpace the percolator score and" << endl;
+  sqtOut << "H\t" << "7th field is relpace the negative percolator q-value" << endl;
+  sqtOut << "H\t" << "The q-value is negated to be able to set a upper limit with DTASelect" << endl;
   if (VERB>1) cerr << "Writing Output to sqt file " << outFN << endl;
   
   ostringstream buff;
