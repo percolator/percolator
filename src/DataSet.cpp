@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.53 2007/02/06 00:45:46 lukall Exp $
+ * $Id: DataSet.cpp,v 1.54 2007/02/07 22:00:06 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -436,7 +436,7 @@ void DataSet::computeAAFrequencies(const string& pep, double *feat) {
 
 unsigned int DataSet::peptideLength(const string& pep) {
   unsigned int len =0;
-  for (string::size_type pos = 2;pos<(pep.size()-2);pos++) {
+  for (string::size_type pos = 2;(pos+2)<pep.size();pos++) {
     if (aaAlphabet.find(pep.at(pos))!=string::npos) len++;
   }
   return len;
@@ -444,7 +444,7 @@ unsigned int DataSet::peptideLength(const string& pep) {
 
 unsigned int DataSet::cntPTMs(const string& pep) {
   unsigned int len =0;
-  for (string::size_type pos = 2;pos<(pep.size()-2);pos++) {
+  for (string::size_type pos = 2;(pos+2)<pep.size();pos++) {
     if (ptmAlphabet.find(pep.at(pos))!=string::npos) len++;
   }
   return len;
