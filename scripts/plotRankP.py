@@ -15,8 +15,8 @@ for doc in glob.glob('*.res'):
   curveName = doc[:-4]
 #  curve = []
 #  fps = []
-  fdrs = []
-  pi0 = []
+  lams = []
+  pvals = []
   fdr,oldfdr=.0,.0
   tpATfdr=0
   tp,fp,search,firstBreach=0,0,1,1
@@ -41,15 +41,17 @@ for doc in glob.glob('*.res'):
 #      continue
     lam = fp/nneg
     plam = tp/npos
-    if lam<0.95:
-      fdrs+=[lam]
-      pi0+=[min(1,(1-plam)/(1-lam))]
-  curves += [((fdrs, pi0),curveName)]
+    if lam<=1:
+      lams+=[lam]
+      pvals+=[plam]
+  curves += [((pvals,lams),curveName)]
+curves += [(([0,1],[0,1]),"unit")]
+#curves += [(([0.1,1],[0,1]),"line")]
 for curve,curveName in curves:
   plot(curve[0],curve[1],label=curveName)
-xlabel('Lambda',fontsize='large')
-ylabel('Pi0',fontsize='large')
+xlabel('Rank',fontsize='large')
+ylabel('Empirical p-value',fontsize='large')
 legend(loc=4,pad=0.1,labelsep = 0.001,handlelen=0.04,handletextsep=0.02,numpoints=3)
-savefig("pi0.png")
-savefig("pi0.eps")
+savefig("pp.png")
+savefig("pp.eps")
 show()
