@@ -6,7 +6,7 @@ BUILDDIR = Release
 all: $(BUILDDIR)/percolator
 
 
-$(BUILDDIR)/percolator:
+$(BUILDDIR)/percolator: *.cpp *.h
 	$(MAKE) -C $(BUILDDIR)
 
 mark:
