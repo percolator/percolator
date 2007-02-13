@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Percolator v 1.00
+ * Percolator unofficial version
  * Copyright (c) 2006-7 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.68 2007/02/06 00:29:29 lukall Exp $
+ * $Id: Caller.cpp,v 1.69 2007/02/13 18:17:15 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -76,7 +76,7 @@ string Caller::extendedGreeter() {
 
 string Caller::greeter() {
   ostringstream oss;
-  oss << "Percolator v 1.00, ";
+  oss << "Percolator unofficial version, ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Copyright (c) 2006-7 University of Washington. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl; 

@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Percolator v 1.00
+ * Percolator unofficial version
  * Copyright (c) 2006-7 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.36 2007/02/06 00:29:29 lukall Exp $
+ * $Id: DataSet.h,v 1.37 2007/02/13 18:17:15 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_

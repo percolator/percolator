@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Percolator v 1.00
+ * Percolator unofficial version
  * Copyright (c) 2006-7 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.16 2007/02/04 04:50:39 lukall Exp $
+ * $Id: SetHandler.h,v 1.17 2007/02/13 18:17:14 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_

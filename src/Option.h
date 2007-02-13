@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Percolator v 1.00
+ * Percolator unofficial version
  * Copyright (c) 2006-7 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Option.h,v 1.3 2007/02/04 04:50:39 lukall Exp $
+ * $Id: Option.h,v 1.4 2007/02/13 18:17:15 lukall Exp $
  *******************************************************************************/
 #ifndef OPTION_H_
 #define OPTION_H_
