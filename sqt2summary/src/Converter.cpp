@@ -137,7 +137,7 @@ void Converter::read_sqt(const string fname) {
       buff << line << endl;
       lineParse.clear();
       lineParse.str(line);
-      lineParse >> tmp >> tmp >> scan >> charge;
+      lineParse >> tmp >> scan >> tmp >> charge;
       id << fileId << '.' << scan << '.'<< scan << '.' << charge ;
       ms=0;
       theMs.clear();
