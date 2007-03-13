@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.69 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Caller.cpp,v 1.70 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -29,27 +29,13 @@ using namespace std;
 
 const unsigned int Caller::xval_fold = 3;
 
-Caller::Caller()
+Caller::Caller() : pNorm(NULL), svmInput(NULL),
+  modifiedFN(""), modifiedShuffledFN(""), forwardFN(""), shuffledTrainFN (""),shuffledThresholdFN(""), shuffledTestFN(""),
+  shuffledWC(""), rocFN(""), gistFN(""), weightFN(""),
+  gistInput(false), dtaSelect(false), thresholdCalulationOnTrainSet(true), reportPerformanceEachIteration(false),
+  test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.5),
+  niter(10), xv_type(EACH_STEP)
 {
-  forwardFN = "";
-  shuffledFN = "";
-  shuffled2FN = "";
-  modifiedFN = "";
-  modifiedShuffledFN = "";
-  shuffledWC = "";
-  rocFN = "";
-  gistFN = "";
-  weightFN = "";
-  selectionfdr=0.01;
-  test_fdr=0.01;
-  niter = 10;
-  selectedCpos=0;
-  selectedCneg=0;
-  xv_type=EACH_STEP;
-  gistInput=false;
-  pNorm=NULL;
-  svmInput=NULL;
-  dtaSelect=false;
 }
 
 Caller::~Caller()
@@ -92,12 +78,13 @@ bool Caller::parseOptions(int argc, char **argv){
   call = callStream.str();
   ostringstream intro;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   percolator [options] forward shuffled [shuffled2]" << endl;
-  intro << "or percolator [options] -P pattern mormal_and_shuffled.sqt" << endl;
+  intro << "   percolator [options] normal shuffle [[shuffled_treshhold [shuffled_test]]" << endl;
+  intro << "or percolator [options] -P pattern normal_and_shuffled.sqt" << endl;
   intro << "or percolator [options] -g gist.data gist.label" << endl << endl;
-  intro << "   where forward is the normal sqt-file," << endl;
-  intro << "         shuffle the shuffled sqt-file," << endl;
-  intro << "         and shuffle2 is an otional second shuffled sqt-file for q-value calculation" << endl;
+  intro << "   where normal is the normal sqt-file," << endl;
+  intro << "         shuffle the shuffled sqt-file used in the training," << endl;
+  intro << "         shuffle_test is an otional second shuffled sqt-file for q-value calculation" << endl;
+  intro << "         shuffle_treshhold is an otional shuffled sqt-file for determine q-value treshold" << endl;
   // init
   CommandLineParser cmd(intro.str());
   cmd.defineOption("o","sqt-out",
@@ -155,12 +142,15 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   cmd.defineOption("b","PTM","Calculate feature for number of post-translational modifications","",TRUE_IF_SET);
   cmd.defineOption("d","DTASelect",
     "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
+  cmd.defineOption("R","test-each-itteration","Measure performance on test set each itteration","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
     "Calculate quadratic feature terms","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
     "Turn off calculation of tryptic/chymo-tryptic features.","",TRUE_IF_SET);
   cmd.defineOption("c","chymo",
     "Replace tryptic features with chymo-tryptic features.","",TRUE_IF_SET);
+  cmd.defineOption("e","elastase",
+    "Replace tryptic features with elastase features.","",TRUE_IF_SET);
   cmd.defineOption("x","whole-xval",
     "Select hyper parameter cross validation to be performed on whole itterating procedure, rather than on each iteration step."
     ,"",TRUE_IF_SET);
@@ -198,7 +188,7 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     weightFN = cmd.options["w"];
   if (cmd.optionSet("f")) {
     double frac = cmd.getDouble("f", 0.0 ,1.0);
-    Scores::setTrainRatio(frac);
+    trainRatio=frac;
   }
   if (cmd.optionSet("r"))
     rocFN = cmd.options["r"];
@@ -209,9 +199,13 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   if (cmd.optionSet("Q"))
     DataSet::setQuadraticFeatures(true);
   if (cmd.optionSet("y"))
-    DataSet::setTrypticFeatures(false);
+    DataSet::setEnzyme(NO_ENZYME);
+  if (cmd.optionSet("R"))
+    reportPerformanceEachIteration=true;
+  if (cmd.optionSet("e"))
+    DataSet::setEnzyme(ELASTASE);
   if (cmd.optionSet("c"))
-    DataSet::setChymoTrypticFeatures(true);
+    DataSet::setEnzyme(CHYMOTRYPSIN);
   if (cmd.optionSet("a"))
     DataSet::setAAFreqencies(true);
   if (cmd.optionSet("b"))
@@ -238,16 +232,24 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   if (cmd.optionSet("t")) {
     test_fdr = cmd.getDouble("t",0.0,1.0);
   }
-  if (cmd.arguments.size()>3) {
+  if (cmd.arguments.size()>4) {
       cerr << "Too many arguments given" << endl;
+      cmd.help();
+  }
+  if (cmd.arguments.size()==0) {
+      cerr << "No arguments given" << endl;
       cmd.help();
   }
   if (cmd.arguments.size()>0)
     forwardFN = cmd.arguments[0];
   if (cmd.arguments.size()>1)
-     shuffledFN = cmd.arguments[1];
+     shuffledTrainFN = cmd.arguments[1];
   if (cmd.arguments.size()>2)
-     shuffled2FN = cmd.arguments[2];
+     shuffledTestFN = cmd.arguments[2];
+  if (cmd.arguments.size()>3) {
+     shuffledThresholdFN = cmd.arguments[2];
+     shuffledTestFN = cmd.arguments[3];
+  }
   return true;
 }
 
@@ -270,13 +272,12 @@ void Caller::printWeights(ostream & weightStream, double * w) {
 }
 
 
-void Caller::step(Scores& train,double * w, double Cpos, double Cneg, double fdr) {
-  	train.calcScores(w,test_fdr);
-    train.generateTrainingSet(*svmInput,fdr,Cpos,Cneg);
+void Caller::step(Scores& train,Scores& thresh,double * w, double Cpos, double Cneg, double fdr) {
+    train.generateNegativeTrainingSet(*svmInput,Cneg);
+  	thresh.calcScores(w,test_fdr);
+    thresh.generatePositiveTrainingSet(*svmInput,fdr,Cpos);
 //    int nex=train.getTrainingSetSize();
-    int negatives = train.negSize();
-    int positives = train.posNowSize();
-  	if (VERB>1) cerr << "Calling with " << positives << " positives and " << negatives << " negatives\n";
+  	if (VERB>1) cerr << "Calling with " << svmInput->positives << " positives and " << svmInput->negatives << " negatives\n";
   	// Setup options
     struct options *Options = new options;
     Options->lambda=1.0;
@@ -292,8 +293,8 @@ void Caller::step(Scores& train,double * w, double Cpos, double Cneg, double fdr
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
     
     struct vector_double *Outputs = new vector_double;
-    Outputs->vec = new double[positives+negatives];
-    Outputs->d = positives+negatives;
+    Outputs->vec = new double[svmInput->positives+svmInput->negatives];
+    Outputs->d = svmInput->positives+svmInput->negatives;
     for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
 
 //    norm->normalizeweight(w,Weights->vec);
@@ -313,10 +314,14 @@ void Caller::trainEm(double * w) {
   for(int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
     if (xv_type!=EACH_STEP)
-      step(trainset,w,selectedCpos,selectedCneg,selectionfdr);
+      step(trainset,thresholdset,w,selectedCpos,selectedCneg,selectionfdr);
     else
       xvalidate_step(w);
-    if(VERB>2) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
+    if(VERB>2) {cerr<<"Obtained weights" << endl; printWeights(cerr,w);}
+    if (reportPerformanceEachIteration) {
+      cerr << "After the iteration step, " << testset.calcScores(w,selectionfdr) << " positives with q<"
+           << selectionfdr << " were found when measuring on test set" << endl;
+    }
   }
   if(VERB==2 ) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
 }
@@ -336,7 +341,7 @@ void Caller::xvalidate_step(double *w) {
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
-          step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
+          step(xv_train[i],xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
           tp += xv_test[i].calcScores(ww,test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
         }
@@ -352,10 +357,9 @@ void Caller::xvalidate_step(double *w) {
     }
   }
   Globals::getInstance()->incVerbose();
-  if(VERB>0) cerr << "cross validation found " << bestTP << " positives over " << test_fdr*100 << "% FDR level for hyperparameters Cpos=" << best_cpos
-                  << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;
-  
-  step(trainset,w,best_cpos,best_cneg,best_fdr);
+  if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
+                  << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;  
+  step(trainset,thresholdset,w,best_cpos,best_cneg,best_fdr);
 }
 
 void Caller::xvalidate(double *w) {
@@ -373,7 +377,7 @@ void Caller::xvalidate(double *w) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
           for(int k=0;k<niter;k++) {
-            step(xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
+            step(xv_train[i],xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
           }
           tp += xv_test[i].calcScores(ww,test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
@@ -391,8 +395,8 @@ void Caller::xvalidate(double *w) {
     }
   }
   Globals::getInstance()->incVerbose();
-  if(VERB>0) cerr << "cross validation found " << bestTP << " positives over " << test_fdr*100 << "% FDR level for hyperparameters Cpos=" << selectedCpos
-                  << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;
+  if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
+                  << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;  
   trainEm(www);
 }
 
@@ -400,44 +404,69 @@ int Caller::run() {
   time(&startTime);
   startClock=clock();
   if(VERB>0)  cerr << extendedGreeter();
-  bool doShuffled2 = !shuffled2FN.empty();
+  bool doSingleFile = !shuffledWC.empty();
+  bool separateShuffledTestSetHandler = !doSingleFile && !shuffledTestFN.empty();
+  bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
   if (gistInput) {
-    normal.readGist(forwardFN,shuffledFN,1);
-    shuffled.readGist(forwardFN,shuffledFN,-1);
-    shuffled2.readGist(forwardFN,shuffledFN,-2);
-    if (shuffled2.getSize()>0) {
-      doShuffled2=true;
-    }
-  } else if (shuffledWC.empty()) {
+    normal.readGist(forwardFN,shuffledTrainFN,1);
+    shuffled.readGist(forwardFN,shuffledTrainFN,-1);
+    shuffledTest.readGist(forwardFN,shuffledTrainFN,-2);
+    shuffledThreshold.readGist(forwardFN,shuffledTrainFN,-3);
+    if (shuffledTest.getSize()>0)
+      separateShuffledTestSetHandler=true;
+    if (shuffledThreshold.getSize()>0)
+      separateShuffledThresholdSetHandler=true;
+  } else if (!doSingleFile) {
     normal.readFile(forwardFN,1);
-    shuffled.readFile(shuffledFN,-1);    
-    if (doShuffled2)
-      shuffled2.readFile(shuffled2FN,-1);
+    shuffled.readFile(shuffledTrainFN,-1);    
+    if (separateShuffledTestSetHandler)
+      shuffledTest.readFile(shuffledTestFN,-1);
+    if (separateShuffledThresholdSetHandler)
+      shuffledThreshold.readFile(shuffledThresholdFN,-1);
   } else {
     normal.readFile(forwardFN,shuffledWC,false);  
     shuffled.readFile(forwardFN,shuffledWC,true);  
   }
-  if (doShuffled2) {
+  if (separateShuffledThresholdSetHandler) {
     trainset.fillFeatures(normal,shuffled);
-    testset.fillFeatures(normal,shuffled2);
+    thresholdset.fillFeatures(normal,shuffledThreshold);
+    testset.fillFeatures(normal,shuffledTest); 
+  } else if (separateShuffledTestSetHandler) {
+    if (thresholdCalulationOnTrainSet) {
+      trainset.fillFeatures(normal,shuffled);
+      thresholdset=trainset;
+      testset.fillFeatures(normal,shuffledTest);     
+    } else {
+      trainset.fillFeatures(normal,shuffled); 
+      Scores::fillFeatures(thresholdset,testset,normal,shuffledTest,threshTestRatio); 
+    } 
   } else {
-  	Scores::fillFeatures(trainset,testset,normal,shuffled);
+    if (thresholdCalulationOnTrainSet) {
+      Scores::fillFeatures(trainset,testset,normal,shuffled,trainRatio);     
+      thresholdset=trainset;
+    } else {
+      Scores::fillFeatures(trainset,thresholdset,testset,normal,shuffled,trainRatio,threshTestRatio);
+    } 
   }
   if (VERB>1) {
     cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives, size ratio=" 
          << trainset.factor << " and pi0=" << trainset.pi0 << endl;
+    cerr << "Threshold defining set contains " << thresholdset.posSize() << " positives and " << thresholdset.negSize() << " negatives, size ratio=" 
+         << thresholdset.factor << " and pi0=" << thresholdset.pi0 << endl;
     cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives, size ratio="
          << testset.factor << " and pi0=" << testset.pi0 << endl;
   }
   if (gistFN.length()>0) {
-    SetHandler::gistWrite(gistFN,normal,shuffled,shuffled2);
+    SetHandler::gistWrite(gistFN,normal,shuffled,shuffledTest);
   }
   //Normalize features
   set<DataSet *> all;
   all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
   all.insert(shuffled.getSubsets().begin(),shuffled.getSubsets().end());
-  if (doShuffled2) 
-    all.insert(shuffled2.getSubsets().begin(),shuffled2.getSubsets().end());
+  if (separateShuffledTestSetHandler) 
+    all.insert(shuffledTest.getSubsets().begin(),shuffledTest.getSubsets().end());
+  if (separateShuffledThresholdSetHandler) 
+    all.insert(shuffledThreshold.getSubsets().begin(),shuffledThreshold.getSubsets().end());
   pNorm=Normalizer::getNew();
   pNorm->setSet(all);
   pNorm->normalizeSet(all);
@@ -446,9 +475,7 @@ int Caller::run() {
   
   // Set up a first guess of w
   double w[DataSet::getNumFeatures()+1];
-  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) w[ix]=0;
-  w[3]=1;
-//  w[DataSet::getNumFeatures()]=1;
+  trainset.getInitDirection(test_fdr,w);
   
   if (selectionfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
   	xv_train.resize(xval_fold); xv_test.resize(xval_fold);
@@ -506,8 +533,8 @@ int Caller::run() {
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
   normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
-  if (doShuffled2)
-    shuffled2.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
+  if (separateShuffledTestSetHandler)
+    shuffledTest.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   else
     shuffled.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   if (weightFN.size()>0) {

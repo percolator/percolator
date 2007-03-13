@@ -4,13 +4,16 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.37 2007/02/13 18:17:15 lukall Exp $
+ * $Id: DataSet.h,v 1.38 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
 class Scores;
 class Normalizer;
 class IntraSetRelation;
+
+typedef enum {NO_ENZYME,TRYPSIN,CHYMOTRYPSIN,ELASTASE} Enzyme;
+
 
 class DataSet
 {
@@ -28,8 +31,7 @@ class DataSet
     void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
-    static void setTrypticFeatures(bool on) { calcTrypticFeatures=on; }
-    static void setChymoTrypticFeatures(bool on) { chymoInsteadOfTryptic=on; }
+    static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
     static void setPTMfeature(bool on) { calcPTMs=on; }      
     static void setNumFeatures();
@@ -52,14 +54,12 @@ protected:
     static unsigned int cntEnz(const string& peptide);
     static double isTryptic(const char n,const char c);
     static double isChymoTryptic(const char n,const char c);
-    static double isEnz(const char n,const char c) {return (chymoInsteadOfTryptic?
-                                                     isChymoTryptic(n,c):
-                                                     isTryptic(n,c));}
+    static double isElastasic(const char n,const char c);
+    static double isEnz(const char n,const char c); 
     vector<string> ids;
     static bool calcQuadraticFeatures;
-    static bool calcTrypticFeatures;
     static bool calcAAFrequencies;
-    static bool chymoInsteadOfTryptic;
+    static Enzyme enzyme;
     static bool calcIntraSetFeatures;
     static bool calcPTMs;
     static int numFeatures;

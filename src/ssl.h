@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago. 
  * Adapted to Percolator by Lukas Käll at the University of Washington
  *
- * $Id: ssl.h,v 1.9 2007/02/04 04:57:48 lukall Exp $
+ * $Id: ssl.h,v 1.10 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #ifndef _svmlin_H
 #define _svmlin_H
@@ -28,6 +28,8 @@ public:
   virtual ~AlgIn();
   int m; /* number of examples */
   int n; /* number of features */ 
+  int positives;
+  int negatives;
   const double **vals;
   double *Y;   /* labels */
   double *C;   /* cost associated with each example */  

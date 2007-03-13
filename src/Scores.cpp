@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.38 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Scores.cpp,v 1.39 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -40,7 +40,6 @@ Scores::~Scores()
 {
 }
 
-double Scores::trainRatio = 0.7;
 double Scores::pi0 = 0.9;
 
 void Scores::printRoc(string & fn){
@@ -59,6 +58,67 @@ double Scores::calcScore(const double *feat) const{
   	score += feat[ix]*w_vec[ix];
   }
   return score;
+}
+
+void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& norm,SetHandler& shuff,
+                             const double trainRatio,const double testRatio) {
+  assert(trainRatio >0 && testRatio >0 && trainRatio+testRatio < 1);
+  int n = norm.getSize();
+  int k = (int)(shuff.getSize()*trainRatio);
+  int m = (int)(shuff.getSize()*testRatio);
+  int l = shuff.getSize() - k - m;
+  ScoreHolder s;
+  train.scores.resize(n+k,s);
+  train.qVals.resize(n+k,-1e200); 
+  test.scores.resize(n+m,s);
+  test.qVals.resize(n+m,-1e200); 
+  thresh.scores.resize(n+l,s);
+  thresh.qVals.resize(n+l,-1e200); 
+
+  int loc = -1,set=0,ix1=0,ix2=0,ix3=0;
+  const double * featVec;
+  while((featVec=shuff.getNext(set,loc))!=NULL) {
+    if (((int)(ix1+ix2+ix3+1)*trainRatio)>ix1+1) {
+      train.scores[ix1].label=-1;
+      train.scores[ix1].featVec=featVec;
+      ++ix1;
+    } else if (((int)(ix1+ix2+ix3+1)*testRatio)>ix3+1) {
+      test.scores[ix3].label=-1;
+      test.scores[ix3].featVec=featVec;
+      ++ix3;    
+    } else {
+      thresh.scores[ix2].label=-1;
+      thresh.scores[ix2].featVec=featVec;
+      ++ix2;    
+    }
+  }
+  assert(ix1==k);
+  assert(ix2==l);
+  assert(ix3==m);
+  loc = -1,set=0;
+  while((featVec=norm.getNext(set,loc))!=NULL) {
+    train.scores[ix1].label=1;
+    train.scores[ix1].featVec=featVec;
+    ++ix1;
+    thresh.scores[ix2].label=1;
+    thresh.scores[ix2].featVec=featVec;
+    ++ix2;
+    test.scores[ix3].label=1;
+    test.scores[ix3].featVec=featVec;
+    ++ix3;
+  }
+  assert(ix1==n+k);
+  assert(ix2==n+l);
+  assert(ix3==n+m);
+  train.pos=n;
+  thresh.pos=n;
+  test.pos=n;
+  train.neg=k;
+  thresh.neg=l;
+  test.neg=m;
+  train.factor = n/(double)k;
+  thresh.factor = n/(double)l;
+  test.factor = n/(double)m;
 }
 
 void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
@@ -249,21 +309,83 @@ int Scores::calcScores(double *w,double fdr) {
   return qVals[loIx];
 }
 
-void Scores::generateTrainingSet(AlgIn& data,const double fdr,const double cpos, const double cneg) {
-  unsigned int ix1=0,ix2=0,p=0;
-  bool underCutOff = true;
+void Scores::generateNegativeTrainingSet(AlgIn& data,const double cneg) {
+  unsigned int ix1=0,ix2=0;
   for(ix1=0;ix1<size();ix1++) {
-  	ScoreHolder *pH = &(scores[ix1]);
-    if (underCutOff && fdr<qVals[ix1]) {
-      underCutOff=false;
-      posNow=p;
-    }
-    if (pH->label==-1 || underCutOff) {
+    ScoreHolder *pH = &(scores[ix1]);
+    if (pH->label==-1) {
       data.vals[ix2]=pH->featVec;
       data.Y[ix2]=pH->label;
-      data.C[ix2++]=(pH->label!=-1?cpos:cneg);
-      if (pH->label==1) ++p;
+      data.C[ix2++]=cneg;
+    }
+  }
+  data.negatives=ix2;
+}
+
+
+void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos) {
+  unsigned int ix1=0,ix2=data.negatives,p=0;
+  for(ix1=0;ix1<size();ix1++) {
+  	ScoreHolder *pH = &(scores[ix1]);
+    if (pH->label==1) {
+      if (fdr<qVals[ix1]) {
+        posNow=p;
+        break;
+      }
+      data.vals[ix2]=pH->featVec;
+      data.Y[ix2]=1;
+      data.C[ix2++]=cpos;
+      ++p;
     }
   }
   data.m=ix2;
+}
+
+void Scores::getInitDirection(const double fdr, double * direction) {
+  int bestPositives = -1;
+  int bestFeature =-1;
+  bool lowBest = false;
+  
+  for (int featNo=0;featNo<DataSet::getNumFeatures();featNo++) {
+    vector<ScoreHolder>::iterator it = scores.begin();
+    while(it!=scores.end()) {
+      it->score = it->featVec[featNo];
+      it++;
+    }
+    sort(scores.begin(),scores.end());
+    for (int i=0;i<2;i++) {
+      int positives=0,nulls=0;
+      double efp=0.0,q;
+      for(it=scores.begin();it!=scores.end();it++) {
+        if (it->label!=-1)
+          positives++;
+        if (it->label==-1) {
+          nulls++;
+          efp=pi0*nulls*factor;
+        }
+        if (positives)
+          q=efp/(double)positives;
+        else
+          q=pi0;
+        if (fdr<=q) {
+          if (positives>bestPositives && scores.begin()->score!=it->score) {
+            bestPositives=positives;
+            bestFeature = featNo;
+            lowBest = (i==0);
+          }
+          if (i==0) {
+            reverse(scores.begin(),scores.end());
+          }
+          break;
+        }
+      }
+    }
+  }
+  for (int ix=DataSet::getNumFeatures();ix--;) {
+    direction[ix]=0;
+  }
+  direction[bestFeature]=(lowBest?-1:1);
+  if (VERB>1) {
+    cerr << "Selected feature number " << bestFeature +1 << " as initial search direction" << endl;
+  }
 }

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.55 2007/02/13 18:17:14 lukall Exp $
+ * $Id: DataSet.cpp,v 1.56 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -26,8 +26,7 @@ int DataSet::numRealFeatures = maxNumRealFeatures;
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcAAFrequencies = false;
-bool DataSet::calcTrypticFeatures = true;
-bool DataSet::chymoInsteadOfTryptic = false;
+Enzyme DataSet::enzyme = TRYPSIN;
 bool DataSet::calcIntraSetFeatures = true;
 bool DataSet::calcPTMs = false;
 string DataSet::featureNames = "";
@@ -125,7 +124,7 @@ void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
 
 void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
-                 - (calcTrypticFeatures?0:2) 
+                 - (enzyme==NO_ENZYME?0:2) 
                  - (calcPTMs?0:1) 
                  - (calcIntraSetFeatures?0:3)
                  - (calcAAFrequencies?0:aaAlphabet.size());
@@ -140,12 +139,34 @@ double DataSet::isTryptic(const char n,const char c) {
   ?1.0:0.0);
 }
 
-// [FHWY].[^P]
+// [FHWYLM].[^P]
 double DataSet::isChymoTryptic(const char n,const char c) {
   return (
-  (((n=='F' || n=='H' || n=='W' || n=='Y') && c!= 'P') ||
+  (((n=='F' || n=='H' || n=='W' || n=='Y' || n=='L' || n=='M') && c!= 'P') ||
   n=='-' || c=='-')
   ?1.0:0.0);
+}
+
+// [LVAG].[^P]
+double DataSet::isElastasic(const char n,const char c) {
+  return (
+  (((n=='L' || n=='V' || n=='A' || n=='G' ) && c!= 'P') ||
+  n=='-' || c=='-')
+  ?1.0:0.0);
+}
+
+double DataSet::isEnz(const char n,const char c) {
+    switch(enzyme) {
+      case TRYPSIN:
+        return isTryptic(n,c);
+      case CHYMOTRYPSIN:
+        return isChymoTryptic(n,c);
+      case ELASTASE:
+        return isElastasic(n,c);
+      case NO_ENZYME:
+      default:
+        return 0;
+    }
 }
 
 unsigned int DataSet::cntEnz(const string& peptide) {
@@ -336,7 +357,7 @@ string DataSet::getFeatureNames() {
   if (featureNames.empty()) {
     ostringstream oss;
     oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
-    if (calcTrypticFeatures)
+    if (enzyme!=NO_ENZYME)
       oss << "\tenzN\tenzC";
 //      oss << "\tenzN\tenzC\tenzInt";
     if (calcPTMs)
@@ -390,7 +411,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       feat[9]=(charge==2?1.0:0.0);
       feat[10]=(charge==3?1.0:0.0);
       int nxtFeat=11;
-      if (calcTrypticFeatures) {
+      if (enzyme!=NO_ENZYME) {
         feat[nxtFeat++]=isEnz(pep.at(0),pep.at(2));        
         feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
 //        feat[nxtFeat++]=(double)cntEnz(pep);

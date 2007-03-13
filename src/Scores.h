@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.27 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Scores.h,v 1.28 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -37,17 +37,20 @@ public:
     const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
 	int calcScores(double *w, double fdr=0.0);
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
-    void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio = trainRatio);
+    void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
+    void static fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& norm,SetHandler& shuff,
+                             const double trainRatio,const double testRatio);
     void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
-    void generateTrainingSet(AlgIn& data,const double fdr,const double cpos, const double cneg);
+    void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
+    void generateNegativeTrainingSet(AlgIn& data,const double cneg);
+    void getInitDirection(const double fdr, double * direction);
     double getQ(const double score);
     void printRoc(string & fn); 
     void fill(string & fn);
     inline unsigned int size() {return (pos+neg);} 
     inline unsigned int posSize() {return (pos);} 
     inline unsigned int posNowSize() {return (posNow);} 
-    inline unsigned int negSize() {return (neg);}
-    static inline void setTrainRatio(double ratio) {trainRatio = ratio;} 
+    inline unsigned int negSize() {return (neg);} 
     static double pi0;
     double factor;
 protected:
@@ -55,7 +58,6 @@ protected:
     int neg;
     int pos;
     int posNow;
-    static double trainRatio;
     const static int shortCutSize = 100;
     vector<ScoreHolder> scores;
     vector<double> qVals;

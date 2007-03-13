@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago. 
  * Adapted to Percolator by Lukas Käll at the University of Washington
  *
- * $Id: ssl.cpp,v 1.13 2007/02/04 04:57:48 lukall Exp $
+ * $Id: ssl.cpp,v 1.14 2007/03/13 03:04:51 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <stdio.h>
@@ -29,6 +29,8 @@ AlgIn::AlgIn(const int size,const int numFeat) {
   Y=new double[size];
   C=new double[size];
   n=numFeat;
+  positives=0;
+  negatives=0;
 }
 AlgIn::~AlgIn(){
   delete [] vals;
