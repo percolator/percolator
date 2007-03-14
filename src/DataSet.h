@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.39 2007/03/14 20:50:22 lukall Exp $
+ * $Id: DataSet.h,v 1.40 2007/03/14 22:34:36 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -31,6 +31,7 @@ class DataSet
     void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
+    static void setCalcIntraSetFeatures(bool on) { calcIntraSetFeatures=on; }
     static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
     static void setPTMfeature(bool on) { calcPTMs=on; }      

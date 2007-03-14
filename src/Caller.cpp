@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.70 2007/03/13 03:04:51 lukall Exp $
+ * $Id: Caller.cpp,v 1.71 2007/03/14 22:34:36 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -145,6 +145,8 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   cmd.defineOption("R","test-each-itteration","Measure performance on test set each itteration","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
     "Calculate quadratic feature terms","",TRUE_IF_SET);
+  cmd.defineOption("I","intra-set",
+    "Turn Off calculation of intra set features","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
     "Turn off calculation of tryptic/chymo-tryptic features.","",TRUE_IF_SET);
   cmd.defineOption("c","chymo",
@@ -198,6 +200,8 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
     dtaSelect=true;
   if (cmd.optionSet("Q"))
     DataSet::setQuadraticFeatures(true);
+  if (cmd.optionSet("I"))
+    DataSet::setCalcIntraSetFeatures(false);
   if (cmd.optionSet("y"))
     DataSet::setEnzyme(NO_ENZYME);
   if (cmd.optionSet("R"))
