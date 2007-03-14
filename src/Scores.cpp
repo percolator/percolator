@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.39 2007/03/13 03:04:51 lukall Exp $
+ * $Id: Scores.cpp,v 1.40 2007/03/14 20:50:22 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -312,10 +312,9 @@ int Scores::calcScores(double *w,double fdr) {
 void Scores::generateNegativeTrainingSet(AlgIn& data,const double cneg) {
   unsigned int ix1=0,ix2=0;
   for(ix1=0;ix1<size();ix1++) {
-    ScoreHolder *pH = &(scores[ix1]);
-    if (pH->label==-1) {
-      data.vals[ix2]=pH->featVec;
-      data.Y[ix2]=pH->label;
+    if (scores[ix1].label==-1) {
+      data.vals[ix2]=scores[ix1].featVec;
+      data.Y[ix2]=-1;
       data.C[ix2++]=cneg;
     }
   }
@@ -326,18 +325,18 @@ void Scores::generateNegativeTrainingSet(AlgIn& data,const double cneg) {
 void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos) {
   unsigned int ix1=0,ix2=data.negatives,p=0;
   for(ix1=0;ix1<size();ix1++) {
-  	ScoreHolder *pH = &(scores[ix1]);
-    if (pH->label==1) {
+    if (scores[ix1].label==1) {
       if (fdr<qVals[ix1]) {
         posNow=p;
         break;
       }
-      data.vals[ix2]=pH->featVec;
+      data.vals[ix2]=scores[ix1].featVec;
       data.Y[ix2]=1;
       data.C[ix2++]=cpos;
       ++p;
     }
   }
+  data.positives=p;
   data.m=ix2;
 }
 

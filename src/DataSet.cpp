@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.56 2007/03/13 03:04:51 lukall Exp $
+ * $Id: DataSet.cpp,v 1.57 2007/03/14 20:50:22 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -124,7 +124,7 @@ void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
 
 void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
-                 - (enzyme==NO_ENZYME?0:2) 
+                 - (enzyme==NO_ENZYME?3:0) 
                  - (calcPTMs?0:1) 
                  - (calcIntraSetFeatures?0:3)
                  - (calcAAFrequencies?0:aaAlphabet.size());
@@ -356,10 +356,11 @@ void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,co
 string DataSet::getFeatureNames() {
   if (featureNames.empty()) {
     ostringstream oss;
-    oss << "RankSp\tdeltaMa\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
+    oss << "lnrSp\tdeltLCn\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
     if (enzyme!=NO_ENZYME)
-      oss << "\tenzN\tenzC";
-//      oss << "\tenzN\tenzC\tenzInt";
+      oss << "\tenzN\tenzC\tenzInt";
+//      oss << "\tenzN\tenzC";
+    oss << "\tlnSM\tdM\tabsdM";
     if (calcPTMs)
       oss << "\tptm";
     if (calcAAFrequencies) {
@@ -377,7 +378,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
   istringstream instr(in),linestr;
   string line,tmp;
   int charge;
-  double mass,deltCn,otherXcorr=0,xcorr=0;
+  double mass,deltCn,otherXcorr=0.0,xcorr=0.0,lastXcorr=0.0, nSM=0.0;
   bool gotL=true,gotDeltCn=(match==0);
   int ms=0;
   
@@ -385,13 +386,18 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
     if (line[0]=='S') {
       linestr.clear();
       linestr.str(line);
-      linestr >> tmp >> tmp >> tmp >> charge >> tmp >> tmp >> mass;
+      linestr >> tmp >> tmp >> tmp >> charge >> tmp >> tmp >> mass >> tmp >> tmp >> nSM;
     }
-    if (line[0]=='M' && !gotDeltCn) {
+    if (line[0]=='M') {
       linestr.clear();
       linestr.str(line);
-      linestr >> tmp >> tmp >> tmp >> tmp >> deltCn >> otherXcorr;
-      gotDeltCn = true;
+      if (!gotDeltCn) {
+        linestr >> tmp >> tmp >> tmp >> tmp >> deltCn >> otherXcorr;
+        lastXcorr=otherXcorr;
+        gotDeltCn = true;
+      } else {
+        linestr >> tmp >> tmp >> tmp >> tmp >> tmp >> lastXcorr;     
+      }
     }
     if ((line[0]=='M') && (match==ms++)) {
       double rSp,cMass,sp,matched,expected;
@@ -399,8 +405,8 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       linestr.str(line);
       linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
       
-      feat[0]=rSp;                     // rank by Sp
-      feat[1]=mass-cMass;              // obs - calc mass
+      feat[0]=log(rSp);                     // rank by Sp
+      feat[1]=0.0;                     // delt5Cn (leave until last M line)
       feat[2]=0.0;                     // deltCn (leave until next M line)
       feat[3]=xcorr;                   // Xcorr
       feat[4]=sp;                      // Sp
@@ -414,8 +420,11 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       if (enzyme!=NO_ENZYME) {
         feat[nxtFeat++]=isEnz(pep.at(0),pep.at(2));        
         feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
-//        feat[nxtFeat++]=(double)cntEnz(pep);
+        feat[nxtFeat++]=(double)cntEnz(pep);
       }
+      feat[nxtFeat++]=log(nSM);
+      feat[nxtFeat++]=mass-cMass;              // obs - calc mass
+      feat[nxtFeat++]=abs(mass-cMass);              // obs - calc mass
       if (calcPTMs)
         feat[nxtFeat++]=cntPTMs(pep);        
       if (calcAAFrequencies) {
@@ -435,8 +444,10 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
     }
   }
 //  feat[2]=deltCn;
-  if (xcorr>0)
+  if (xcorr>0) {
+    feat[1]=(xcorr-lastXcorr)/xcorr;
     feat[2]=(xcorr-otherXcorr)/xcorr;
+  }
   if (!isfinite(feat[2])) cerr << in;
   if (getIntra)
     computeIntraSetFeatures(feat,pep,proteins);
