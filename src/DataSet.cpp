@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.59 2007/03/15 21:07:01 lukall Exp $
+ * $Id: DataSet.cpp,v 1.60 2007/03/15 21:12:22 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -423,8 +423,9 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
           feat[nxtFeat++]=(double)cntEnz(pep);
         }
         feat[nxtFeat++]=log(nSM);
-        feat[nxtFeat++]=mass-cMass;              // obs - calc mass
-        feat[nxtFeat++]=abs(mass-cMass);              // obs - calc mass
+        double dM=mass-cMass;
+        feat[nxtFeat++]=dM;              // obs - calc mass
+        feat[nxtFeat++]=(dM<0?-dM:dM);   // abs only defined for integers on some systems   
         if (calcPTMs)
           feat[nxtFeat++]=cntPTMs(pep);        
         if (hitsPerSpectrum>1)
