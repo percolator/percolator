@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.57 2007/03/14 20:50:22 lukall Exp $
+ * $Id: DataSet.cpp,v 1.58 2007/03/15 17:12:42 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -379,7 +379,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
   string line,tmp;
   int charge;
   double mass,deltCn,otherXcorr=0.0,xcorr=0.0,lastXcorr=0.0, nSM=0.0;
-  bool gotL=true,gotDeltCn=(match==0);
+  bool gotL=true;
   int ms=0;
   
   while (getline(instr,line)) {
@@ -391,48 +391,45 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
     if (line[0]=='M') {
       linestr.clear();
       linestr.str(line);
-      if (!gotDeltCn) {
+      if (ms==1) {
         linestr >> tmp >> tmp >> tmp >> tmp >> deltCn >> otherXcorr;
         lastXcorr=otherXcorr;
-        gotDeltCn = true;
       } else {
         linestr >> tmp >> tmp >> tmp >> tmp >> tmp >> lastXcorr;     
       }
-    }
-    if ((line[0]=='M') && (match==ms++)) {
-      double rSp,cMass,sp,matched,expected;
-      linestr.clear();
-      linestr.str(line);
-      linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
-      
-      feat[0]=log(rSp);                     // rank by Sp
-      feat[1]=0.0;                     // delt5Cn (leave until last M line)
-      feat[2]=0.0;                     // deltCn (leave until next M line)
-      feat[3]=xcorr;                   // Xcorr
-      feat[4]=sp;                      // Sp
-      feat[5]=matched/expected;        // Fraction matched/expected ions
-      feat[6]=mass;                    // Observed mass
-      feat[7]=peptideLength(pep);      // Peptide length
-      feat[8]=(charge==1?1.0:0.0);     // Charge
-      feat[9]=(charge==2?1.0:0.0);
-      feat[10]=(charge==3?1.0:0.0);
-      int nxtFeat=11;
-      if (enzyme!=NO_ENZYME) {
-        feat[nxtFeat++]=isEnz(pep.at(0),pep.at(2));        
-        feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
-        feat[nxtFeat++]=(double)cntEnz(pep);
+      if (match==ms++) {
+        double rSp,cMass,sp,matched,expected;
+        linestr.seekg(0, ios::beg);
+        linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
+        
+        feat[0]=log(rSp);                     // rank by Sp
+        feat[1]=0.0;                     // delt5Cn (leave until last M line)
+        feat[2]=0.0;                     // deltCn (leave until next M line)
+        feat[3]=xcorr;                   // Xcorr
+        feat[4]=sp;                      // Sp
+        feat[5]=matched/expected;        // Fraction matched/expected ions
+        feat[6]=mass;                    // Observed mass
+        feat[7]=peptideLength(pep);      // Peptide length
+        feat[8]=(charge==1?1.0:0.0);     // Charge
+        feat[9]=(charge==2?1.0:0.0);
+        feat[10]=(charge==3?1.0:0.0);
+        int nxtFeat=11;
+        if (enzyme!=NO_ENZYME) {
+          feat[nxtFeat++]=isEnz(pep.at(0),pep.at(2));        
+          feat[nxtFeat++]=isEnz(pep.at(pep.size()-3),pep.at(pep.size()-1));
+          feat[nxtFeat++]=(double)cntEnz(pep);
+        }
+        feat[nxtFeat++]=log(nSM);
+        feat[nxtFeat++]=mass-cMass;              // obs - calc mass
+        feat[nxtFeat++]=abs(mass-cMass);              // obs - calc mass
+        if (calcPTMs)
+          feat[nxtFeat++]=cntPTMs(pep);        
+        if (calcAAFrequencies) {
+          computeAAFrequencies(pep,&feat[nxtFeat]);
+          nxtFeat += aaAlphabet.size();
+        }
+        gotL = false;
       }
-      feat[nxtFeat++]=log(nSM);
-      feat[nxtFeat++]=mass-cMass;              // obs - calc mass
-      feat[nxtFeat++]=abs(mass-cMass);              // obs - calc mass
-      if (calcPTMs)
-        feat[nxtFeat++]=cntPTMs(pep);        
-      if (calcAAFrequencies) {
-        computeAAFrequencies(pep,&feat[nxtFeat]);
-        nxtFeat += aaAlphabet.size();
-      }
-      gotDeltCn = (match!=0);
-      gotL = false;
     }
     if (line[0]=='L' && !gotL) {
       if (instr.peek() != 'L') gotL=true;
