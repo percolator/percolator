@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.40 2007/03/14 22:34:36 lukall Exp $
+ * $Id: DataSet.h,v 1.41 2007/03/15 21:07:01 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -69,7 +69,7 @@ protected:
     static string aaAlphabet;
     static string ptmAlphabet;
     static string featureNames;
-    const static int maxNumRealFeatures = 16 + 4 + 20 + 1; // Normal + Amino acid + PTM 
+    const static int maxNumRealFeatures = 16 + 4 + 20 + 1 + 1; // Normal + Amino acid + PTM + hitsPerSpectrum
     vector<set<string> > proteinIds;
     vector<string> pepSeq;
     int label;

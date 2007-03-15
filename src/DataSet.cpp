@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.58 2007/03/15 17:12:42 lukall Exp $
+ * $Id: DataSet.cpp,v 1.59 2007/03/15 21:07:01 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -126,6 +126,7 @@ void DataSet::setNumFeatures() {
   numRealFeatures= maxNumRealFeatures
                  - (enzyme==NO_ENZYME?3:0) 
                  - (calcPTMs?0:1) 
+                 - (hitsPerSpectrum>1?0:1) 
                  - (calcIntraSetFeatures?0:3)
                  - (calcAAFrequencies?0:aaAlphabet.size());
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
@@ -363,6 +364,8 @@ string DataSet::getFeatureNames() {
     oss << "\tlnSM\tdM\tabsdM";
     if (calcPTMs)
       oss << "\tptm";
+    if (hitsPerSpectrum>1)
+      oss << "\trank1";
     if (calcAAFrequencies) {
       for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
         oss << "\t" << *it << "Freq";
@@ -397,7 +400,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       } else {
         linestr >> tmp >> tmp >> tmp >> tmp >> tmp >> lastXcorr;     
       }
-      if (match==ms++) {
+      if (match==ms) {
         double rSp,cMass,sp,matched,expected;
         linestr.seekg(0, ios::beg);
         linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
@@ -424,12 +427,15 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
         feat[nxtFeat++]=abs(mass-cMass);              // obs - calc mass
         if (calcPTMs)
           feat[nxtFeat++]=cntPTMs(pep);        
+        if (hitsPerSpectrum>1)
+          feat[nxtFeat++]=(ms==0?1.0:0.0);        
         if (calcAAFrequencies) {
           computeAAFrequencies(pep,&feat[nxtFeat]);
           nxtFeat += aaAlphabet.size();
         }
         gotL = false;
       }
+      ms++;
     }
     if (line[0]=='L' && !gotL) {
       if (instr.peek() != 'L') gotL=true;
