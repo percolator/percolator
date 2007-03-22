@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.61 2007/03/22 23:23:08 lukall Exp $
+ * $Id: DataSet.cpp,v 1.62 2007/03/22 23:26:25 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -360,8 +360,7 @@ string DataSet::getFeatureNames() {
     oss << "lnrSp\tdeltLCn\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
     if (enzyme!=NO_ENZYME)
       oss << "\tenzN\tenzC\tenzInt";
-//      oss << "\tenzN\tenzC";
-    oss << "\tlnSP\tdM\tabsdM";
+    oss << "\tlnNumSP\tdM\tabsdM";
     if (calcPTMs)
       oss << "\tptm";
     if (hitsPerSpectrum>1)
