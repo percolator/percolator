@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.40 2007/03/14 20:50:22 lukall Exp $
+ * $Id: Scores.cpp,v 1.41 2007/03/23 21:09:39 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -135,7 +135,7 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   int loc = -1,set=0,ix1=0,ix2=0;
   const double * featVec;
   while((featVec=shuff.getNext(set,loc))!=NULL) {
-    if (((int)(ix1+ix2+1)*ratio)>ix1+1) {
+    if (((int)(ix1+ix2+1)*ratio)>=ix1+1) {
       train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
       ++ix1;
