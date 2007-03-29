@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.62 2007/03/22 23:26:25 lukall Exp $
+ * $Id: DataSet.cpp,v 1.63 2007/03/29 22:06:16 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -555,6 +555,11 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
     }
   }
   if (VERB>1) cerr << n << " records in file " << sqtFN << endl;
+  if (n<=0) {
+    cerr << "The file " << sqtFN << " does not contain any records" << endl;
+    sqtIn.close();
+    exit(-1);
+  }
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
   
