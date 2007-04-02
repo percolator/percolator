@@ -1,4 +1,4 @@
-PERVER = 1.00
+PERVER = 1.01
 PERLABELED = Percolator v $(PERVER)
 PERUNLABELED = Percolator unofficial version
 BUILDDIR = Release
