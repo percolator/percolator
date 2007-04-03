@@ -4,11 +4,18 @@
 # from normal and testset, sorts the scores an report a 1 if
 # the normal hit was highest -1 otherwhise.
 #
+downSample=100
+tv=5.0
+fv=1.5
+pi0=0.9
 import sys
+import os
+import random
+
 ffeatures = open(sys.argv[1],"r")
 flab = open(sys.argv[2],"r")
 fweights = open(sys.argv[3],"r")
-onlyTryp = (len(sys.argv)>4 and sys.argv[4]=="Y")
+#onlyTryp = (len(sys.argv)>4 and sys.argv[4]=="Y")
 wl=fweights.readlines()
 wei=wl[-1].split()
 weights = [float(w) for w in wei]
@@ -21,12 +28,15 @@ sdic = {}
 tryp = {}
 scores = []
 labels = [int(l.split()[1]) for l in ll[1:]]
+
 for i in range(1,len(lf)):
   label=labels[i-1]
   if label<0: ixl= -label
   else: ixl=0
   sum = 0
   wf = lf[i].split()
+  if float(wf[10]) != 1.0:
+    continue
   theId = wf[0]
   charno = theId.find('_')
   if charno >0:
@@ -38,14 +48,15 @@ for i in range(1,len(lf)):
     sum += float(wf[j+1])*weights[j]
   sdic[theId][ixl]=sum
   tryp[theId][ixl]=(float(wf[12])>0) and (float(wf[13])>0)
+decoyScores=[v[2] for k,v in sdic.items()]
+#decoyScores.sort(reverse=True)
+random.shuffle(decoyScores)
+specN,randN,ix=0,0,0
+spectra=float(len(sdic))
 for theId in sdic.keys():
-  if (sdic[theId][0]>sdic[theId][1]):
-    if tryp[theId][0] or not onlyTryp:
-      scores += [(sdic[theId][0],1)]
-  if (sdic[theId][2]>sdic[theId][1]):
-    if tryp[theId][2] or not onlyTryp:
-      scores += [(sdic[theId][2],-1)]
-scores.sort(reverse=True)
-labels = [label for (sc,label) in scores]
-for l in labels:
-  print(str(l))
+  if sdic[theId][0]>sdic[theId][2]:
+    specN += 1
+  if sdic[theId][0]>decoyScores[ix]:
+    randN += 1
+  ix+=1
+print specN,specN/spectra,randN,randN/spectra,spectra

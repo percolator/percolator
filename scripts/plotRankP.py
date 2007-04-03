@@ -45,7 +45,10 @@ for doc in glob.glob('*.res'):
       lams+=[lam]
       pvals+=[plam]
   curves += [((pvals,lams),curveName)]
-curves += [(([0,1],[0,1]),"unit")]
+curves += [(([0,1],[0,1]),"y=x")]
+curves += [(([0,0.5],[0,1]),"y=2x")]
+curves += [(([0,1],[0,0.5]),"y=0.5x")]
+curves += [(([0.195,1],[0,1]),"x=(1-0.195)y+0.195")]
 #curves += [(([0.1,1],[0,1]),"line")]
 for curve,curveName in curves:
   plot(curve[0],curve[1],label=curveName)

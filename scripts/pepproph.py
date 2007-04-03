@@ -25,7 +25,7 @@ for i in range(1,len(lf)):
     continue
   if (onlyTryp and ((wf[11]==0) or (wf[12]==0))):
     continue
-  rSp = float(wf[0])
+  rSp = math.log(float(wf[0]))
   dM = abs(float(wf[1]))
   dCn = float(wf[2])
   Xcorr = float(wf[3])
