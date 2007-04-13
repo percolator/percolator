@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-upFDR = 0.10
+upFDR = 0.10 - 1e-5
+orderFile = "order"
 from pylab import  *
 import glob
 
@@ -11,7 +12,16 @@ def countNeg(x,y):
 curves = []
 curveNames = []
 pi0 = 0.9
-for doc in glob.glob('*.res'):
+if glob.glob(orderFile):
+  f = open(orderFile,"r")
+  curveFiles = [line[:-1] for line in f.readlines()]
+  f.close()
+  preSorted=True
+else:
+  curveFiles = glob.glob('*.res')
+  preSorted=False
+
+for doc in curveFiles:
   print doc
   curveName = doc[:-4]
 #  curve = []
@@ -40,7 +50,7 @@ for doc in glob.glob('*.res'):
       fdr = 1
 #    if fdr>upFDR:
 #      continue
-    if fdr<=upFDR:
+    if fdr<upFDR:
       fdrs+=[fdr]
       tps+=[tp]
   if len(tps)==0:
@@ -55,7 +65,9 @@ for doc in glob.glob('*.res'):
       search = 0
       tpATfdr = tps[i-1]
   curves += [(tpATfdr,(fdrs, tps),curveName)]
-curves.sort(reverse=True)
+
+if not preSorted:
+  curves.sort(reverse=True)
 for tp,curve,curveName in curves:
   plot(curve[0],curve[1],label=curveName)
 style = "o^sDvx+<>"
