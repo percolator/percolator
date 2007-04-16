@@ -25,12 +25,12 @@ for doc in curveFiles:
   print doc
   curveName = doc[:-4]
 #  curve = []
-#  fps = []
+#  decoys = []
   fdrs = []
-  tps = []
+  targets = []
   fdr=.0
-  tpATfdr=0
-  tp,fp,search,firstBreach=0,0,1,1
+  targetATfdr=0
+  target,decoy,search,firstBreach=0,0,1,1
   f = open(doc,"r")
   labels = [int(line) for line in f.readlines()]
   f.close()
@@ -41,34 +41,34 @@ for doc in curveFiles:
     my_pi0=pi0
   for val in labels:
     if val != 1:
-      fp+=1
+      decoy+=1
     if val == 1:
-      tp+=1
-    if tp>0:
-      fdr = my_pi0*fp/(float(tp))
+      target+=1
+    if target>0:
+      fdr = my_pi0*decoy/(float(target))
     else:
       fdr = 1
 #    if fdr>upFDR:
 #      continue
     if fdr<upFDR:
       fdrs+=[fdr]
-      tps+=[tp]
-  if len(tps)==0:
+      targets+=[target]
+  if len(targets)==0:
     fdrs+=[0]
-    tps+=[0]
+    targets+=[0]
   fdrs+=[upFDR]
-  tps+=[tps[-1]]
+  targets+=[targets[-1]]
   for i in range(len(fdrs)-1,0,-1): # Make q-values out of the fdrs
     if fdrs[i-1]>fdrs[i]: fdrs[i-1]=fdrs[i]
     if search == 1 and fdrs[i-1] <= 0.01:
-      print curveName + ": FDR is 1% when finding " + str(tps[i-1]) + " positives"
+      print curveName + ": FDR is 1% when finding " + str(targets[i-1]) + " positives"
       search = 0
-      tpATfdr = tps[i-1]
-  curves += [(tpATfdr,(fdrs, tps),curveName)]
+      targetATfdr = targets[i-1]
+  curves += [(targetATfdr,(fdrs, targets),curveName)]
 
 if not preSorted:
   curves.sort(reverse=True)
-for tp,curve,curveName in curves:
+for target,curve,curveName in curves:
   plot(curve[0],curve[1],label=curveName)
 style = "o^sDvx+<>"
 i = 0
