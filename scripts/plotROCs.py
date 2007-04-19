@@ -18,7 +18,7 @@ if glob.glob(orderFile):
   f.close()
   preSorted=True
 else:
-  curveFiles = glob.glob('*.res')
+  curveFiles = glob.glob('*.re[qs]')
   preSorted=False
 
 for doc in curveFiles:
@@ -31,33 +31,41 @@ for doc in curveFiles:
   fdr=.0
   targetATfdr=0
   target,decoy,search,firstBreach=0,0,1,1
-  f = open(doc,"r")
-  labels = [int(line) for line in f.readlines()]
-  f.close()
-  if curveName.find("rank")>0:
-    my_pi0 = 1 - (1-pi0)/5.0
-    print "pi0 div with 5"
+  if doc[-1]=="q":
+    # req extension
+    f = open(doc,"r")
+    fdrs = [float(line) for line in f.readlines()]
+    f.close()
+    fdrs = [fdr for fdr in fdrs if fdr<upFDR]
+    fdrs.sort()
+    targets=range(1,len(fdrs)+1)
   else:
-    my_pi0=pi0
-  for val in labels:
-    if val != 1:
-      decoy+=1
-    if val == 1:
-      target+=1
-    if target>0:
-      fdr = my_pi0*decoy/(float(target))
+    # res extension
+    f = open(doc,"r")
+    labels = [int(line) for line in f.readlines()]
+    f.close()
+    if curveName.find("rank")>0:
+      my_pi0 = 1 - (1-pi0)/5.0
+      print "pi0 div with 5"
     else:
-      fdr = 1
-#    if fdr>upFDR:
-#      continue
-    if fdr<upFDR:
-      fdrs+=[fdr]
-      targets+=[target]
-  if len(targets)==0:
-    fdrs+=[0]
-    targets+=[0]
-  fdrs+=[upFDR]
-  targets+=[targets[-1]]
+      my_pi0=pi0
+    for val in labels:
+      if val != 1:
+        decoy+=1
+      if val == 1:
+        target+=1
+      if target>0:
+        fdr = my_pi0*decoy/(float(target))
+      else:
+        fdr = 1
+      if fdr<upFDR:
+        fdrs+=[fdr]
+        targets+=[target]
+    if len(targets)==0:
+      fdrs+=[0]
+      targets+=[0]
+    fdrs+=[upFDR]
+    targets+=[targets[-1]]
   for i in range(len(fdrs)-1,0,-1): # Make q-values out of the fdrs
     if fdrs[i-1]>fdrs[i]: fdrs[i-1]=fdrs[i]
     if search == 1 and fdrs[i-1] <= 0.01:
