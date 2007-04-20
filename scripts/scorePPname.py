@@ -18,6 +18,7 @@ scores=scoreDict.values()
 scores.sort(reverse=True)
 #labels = [sc[1] for sc in scores]
 targets,decoys=0.0,0.0
+print "%s\t%s\t%s\t%s\t%s" % ("name","score","q-val","pep","prot")
 for sc,l,pep,prot in scores:
   if l:
     targets+=1.0
