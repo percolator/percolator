@@ -39,7 +39,7 @@ xtext = sys.argv[5] + " scoring function"
 ytext = sys.argv[6] + " scoring function"
 
 cloud = []
-xx,yy,xxscores,yyscores = [],[],[],[],[]
+xx,yy,xxscores,yyscores = [],[],[],[]
 labels = [l.split()[1] for l in ll]
 
 for i in range(1,len(lf)):
@@ -94,7 +94,6 @@ axhline(y=yt,color='k')
 xlabel(xtext,fontsize='large')
 ylabel(ytext,fontsize='large')
 savefig("cloud.eps")
-clf()
 show()
 #
 # left, down = 0.3, 0.7
