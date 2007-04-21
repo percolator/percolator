@@ -14,10 +14,19 @@ def getWeights(fileName):
   weights = [float(w) for w in wei]
   return weights
 
+def getThreshold(scores):
+  scores.sort(reverse=True)
+  targets,decoys=0.0,0.0
+  for sc,label in scores:
+    if label>0:
+      targets+=1
+    else:
+      decoys+=1
+    if decoys/targets*0.9>0.01:
+      return sc
+
 w1 = getWeights(sys.argv[1])
 w2 = getWeights(sys.argv[2])
-
-
 
 ffeatures = open(sys.argv[3],"r")
 flab = open(sys.argv[4],"r")
@@ -30,13 +39,12 @@ xtext = sys.argv[5] + " scoring function"
 ytext = sys.argv[6] + " scoring function"
 
 cloud = []
-xx = []
-yy = []
+xx,yy,xxscores,yyscores = [],[],[],[],[]
 labels = [l.split()[1] for l in ll]
 
 for i in range(1,len(lf)):
   label = int(labels[i])
-  if (label<0): continue
+  if label==-1: continue
   sum1 = w1[-1]
   sum2 = w2[-1]
   wf = [float(w) for w in lf[i].split()[1:]]
@@ -46,7 +54,11 @@ for i in range(1,len(lf)):
   cloud +=[(sum2,sum1)]
   xx +=[sum1]
   yy +=[sum2]
+  xxscores += [(sum1,label)]
+  yyscores += [(sum2,label)]
 
+xt=getThreshold(xxscores)
+yt=getThreshold(yyscores)
 
 nX, mybinsX, patches = hist(xx, bins = 100)
 #plot(mybins)
@@ -77,7 +89,8 @@ mybinsd = array(a)
 jet()
 contourf(mybinsX,mybinsd,cnt,20)
 #colorbar()
-axvline(x=0,color='k')
+axvline(x=xt,color='k')
+axhline(y=yt,color='k')
 xlabel(xtext,fontsize='large')
 ylabel(ytext,fontsize='large')
 savefig("cloud.eps")
