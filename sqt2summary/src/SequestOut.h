@@ -1,6 +1,10 @@
 #ifndef SEQUESTOUT_H_
 #define SEQUESTOUT_H_
 
+#include <string>
+
+using namespace std;
+
 class SequestOut
 {
 public:
