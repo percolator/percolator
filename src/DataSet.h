@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.41 2007/03/15 21:07:01 lukall Exp $
+ * $Id: DataSet.h,v 1.42 2007/05/18 23:46:46 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -27,8 +27,9 @@ class DataSet
     void computeIntraSetFeatures();
     void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
     void computeAAFrequencies(const string& pep, double *feat);
-    void read_sqt(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
-    void modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
+    void readSQT(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
+    void modifySQT(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
+    void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra);
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
     static void setCalcIntraSetFeatures(bool on) { calcIntraSetFeatures=on; }
@@ -40,7 +41,7 @@ class DataSet
     static inline int rowIx(int row) { return row*numFeatures; }
     double * getFeature() {return feature;}
     const double * getFeatures(const int pos) const;
-    int inline getSize() const {return n_examples;}
+    int inline getSize() const {return numSpectra;}
     int inline const getLabel() const {return label;}
     double * getNext(int& pos);
     bool getGistDataRow(int& pos,string & out);
@@ -74,7 +75,7 @@ protected:
     vector<string> pepSeq;
     int label;
     double *feature;
-    int n_examples;
+    int numSpectra;
     string sqtFN;
     string pattern;
     bool doPattern;

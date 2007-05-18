@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.63 2007/03/29 22:06:16 lukall Exp $
+ * $Id: DataSet.cpp,v 1.64 2007/05/18 23:46:46 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -36,7 +36,7 @@ string DataSet::ptmAlphabet = "#*@";
 DataSet::DataSet()
 {
    feature = NULL;
-   n_examples=0;
+   numSpectra=0;
    sqtFN = "";
    pattern="";
    doPattern=false;
@@ -208,7 +208,7 @@ void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
 
   feature = new double[n*DataSet::getNumFeatures()];
   ids.resize(n,"");
-  n_examples=n;
+  numSpectra=n;
 
   is.clear();
   is.seekg(0,ios::beg);
@@ -291,7 +291,7 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const doubl
   return out.str();
 }
 
-void DataSet::modify_sqt(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect) {
+void DataSet::modifySQT(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect) {
   string line;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
@@ -515,13 +515,13 @@ void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &pro
 }
 
 void DataSet::computeIntraSetFeatures() {
-  for(int row=0;row<n_examples;row++) {
+  for(int row=0;row<numSpectra;row++) {
     computeIntraSetFeatures(&feature[rowIx(row)],pepSeq[row],proteinIds[row]);
   }
   return;
 }
 
-void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const string & wild, bool match) {
+void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const string & wild, bool match) {
   intra=intraRel;
   matchPattern=match;
   pattern=wild;
@@ -578,7 +578,7 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
   
   feature = new double[n*DataSet::getNumFeatures()];
   ostringstream buff,id;
-  n_examples=n;
+  numSpectra=n;
   
   int ix=0,lines=0;
   string scan;
@@ -638,4 +638,13 @@ void DataSet::read_sqt(const string fname, IntraSetRelation * intraRel,const str
 //  cout << "Read File" << endl;
 }
 
+void DataSet::filelessSetup(const unsigned int numFeat, const unsigned int numSpec) {
+  numRealFeatures= numFeat;
+  numFeatures = numFeat;
+  numSpectra = numSpec;
+  feature = new double[numFeat*numSpec];
+  ids.resize(numSpectra,"");
+  proteinIds.resize(numSpectra);
+  pepSeq.resize(numSpectra);
+}
 

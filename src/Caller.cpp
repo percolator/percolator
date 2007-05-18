@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.71 2007/03/14 22:34:36 lukall Exp $
+ * $Id: Caller.cpp,v 1.72 2007/05/18 23:46:46 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -45,6 +45,7 @@ Caller::~Caller()
     pNorm=NULL;
     if (svmInput)
       delete svmInput;
+    svmInput=NULL;
 }
 
 string Caller::extendedGreeter() {
@@ -275,6 +276,38 @@ void Caller::printWeights(ostream & weightStream, double * w) {
   weightStream << endl;
 }
 
+void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra) {
+    normal.filelessSetup(numFeatures, numSpectra,1);
+    shuffled.filelessSetup(numFeatures, numSpectra,-1);
+    if (sets>2)
+        shuffledTest.filelessSetup(numFeatures, numSpectra,-1);
+    if (sets>3)
+        shuffledThreshold.filelessSetup(numFeatures, numSpectra,-1);
+}
+
+void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
+  if (gistInput) {
+    normal.readGist(forwardFN,shuffledTrainFN,1);
+    shuffled.readGist(forwardFN,shuffledTrainFN,-1);
+    shuffledTest.readGist(forwardFN,shuffledTrainFN,-2);
+    shuffledThreshold.readGist(forwardFN,shuffledTrainFN,-3);
+    if (shuffledTest.getSize()>0)
+      separateShuffledTestSetHandler=true;
+    if (shuffledThreshold.getSize()>0)
+      separateShuffledThresholdSetHandler=true;
+  } else if (!doSingleFile) {
+    normal.readFile(forwardFN,1);
+    shuffled.readFile(shuffledTrainFN,-1);    
+    if (separateShuffledTestSetHandler)
+      shuffledTest.readFile(shuffledTestFN,-1);
+    if (separateShuffledThresholdSetHandler)
+      shuffledThreshold.readFile(shuffledThresholdFN,-1);
+  } else {
+    normal.readFile(forwardFN,shuffledWC,false);  
+    shuffled.readFile(forwardFN,shuffledWC,true);  
+  }
+}
+
 
 void Caller::step(Scores& train,Scores& thresh,double * w, double Cpos, double Cneg, double fdr) {
     train.generateNegativeTrainingSet(*svmInput,Cneg);
@@ -404,33 +437,7 @@ void Caller::xvalidate(double *w) {
   trainEm(www);
 }
 
-int Caller::run() {
-  time(&startTime);
-  startClock=clock();
-  if(VERB>0)  cerr << extendedGreeter();
-  bool doSingleFile = !shuffledWC.empty();
-  bool separateShuffledTestSetHandler = !doSingleFile && !shuffledTestFN.empty();
-  bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
-  if (gistInput) {
-    normal.readGist(forwardFN,shuffledTrainFN,1);
-    shuffled.readGist(forwardFN,shuffledTrainFN,-1);
-    shuffledTest.readGist(forwardFN,shuffledTrainFN,-2);
-    shuffledThreshold.readGist(forwardFN,shuffledTrainFN,-3);
-    if (shuffledTest.getSize()>0)
-      separateShuffledTestSetHandler=true;
-    if (shuffledThreshold.getSize()>0)
-      separateShuffledThresholdSetHandler=true;
-  } else if (!doSingleFile) {
-    normal.readFile(forwardFN,1);
-    shuffled.readFile(shuffledTrainFN,-1);    
-    if (separateShuffledTestSetHandler)
-      shuffledTest.readFile(shuffledTestFN,-1);
-    if (separateShuffledThresholdSetHandler)
-      shuffledThreshold.readFile(shuffledThresholdFN,-1);
-  } else {
-    normal.readFile(forwardFN,shuffledWC,false);  
-    shuffled.readFile(forwardFN,shuffledWC,true);  
-  }
+void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
   if (separateShuffledThresholdSetHandler) {
     trainset.fillFeatures(normal,shuffled);
     thresholdset.fillFeatures(normal,shuffledThreshold);
@@ -474,16 +481,15 @@ int Caller::run() {
   pNorm=Normalizer::getNew();
   pNorm->setSet(all);
   pNorm->normalizeSet(all);
+}
+
+void Caller::preIterationSetup() {
   
   svmInput = new AlgIn(trainset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
-  
-  // Set up a first guess of w
-  double w[DataSet::getNumFeatures()+1];
-  trainset.getInitDirection(test_fdr,w);
-  
+    
   if (selectionfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
-  	xv_train.resize(xval_fold); xv_test.resize(xval_fold);
-  	trainset.createXvalSets(xv_train,xv_test,xval_fold);
+    xv_train.resize(xval_fold); xv_test.resize(xval_fold);
+    trainset.createXvalSets(xv_train,xv_test,xval_fold);
     if (selectionfdr > 0) {
       xv_fdrs.push_back(selectionfdr);
     } else {
@@ -506,6 +512,23 @@ int Caller::run() {
   } else {
     xv_type = NO_XV;
   }
+}    
+
+int Caller::run() {
+  time(&startTime);
+  startClock=clock();
+  if(VERB>0)  cerr << extendedGreeter();
+  //File reading
+  bool doSingleFile = !shuffledWC.empty();
+  bool separateShuffledTestSetHandler = !doSingleFile && !shuffledTestFN.empty();
+  bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
+  readFiles(doSingleFile, separateShuffledTestSetHandler, separateShuffledThresholdSetHandler);
+  fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
+  preIterationSetup();
+
+  // Set up a first guess of w
+  double w[DataSet::getNumFeatures()+1];
+  trainset.getInitDirection(test_fdr,w);
 
   time_t procStart;
   clock_t procStartClock=clock();

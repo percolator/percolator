@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.32 2007/03/13 03:04:51 lukall Exp $
+ * $Id: Caller.h,v 1.33 2007/05/18 23:46:46 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -24,6 +24,10 @@ public:
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
     void printWeights(ostream & weightStream, double * weights);
+    void readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);
+    void filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra);
+    void fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);    
+    void preIterationSetup();    
     int run();
 protected:
     Normalizer * pNorm;

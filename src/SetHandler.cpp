@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.29 2007/04/23 18:25:23 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.30 2007/05/18 23:46:46 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -50,6 +50,12 @@ SetHandler::~SetHandler()
     } 
 }
     
+void SetHandler::filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra,const int label) {
+    DataSet * pSet = new DataSet();
+    pSet->setLabel(label);
+    pSet->filelessSetup(numFeatures, numSpectra);
+    subsets.push_back(pSet);
+}
 
 void SetHandler::readFile(const string & fn, const int label) {
   intra = new IntraSetRelation();
@@ -82,7 +88,7 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
     }
     DataSet * pSet = new DataSet();
     pSet->setLabel(label);
-    pSet->read_sqt(fn,intra,wild,match);
+    pSet->readSQT(fn,intra,wild,match);
     sets.push_back(pSet);
   } else {
     // we hopefully found a meta file
@@ -127,14 +133,14 @@ void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *
     fileIn.close();
   
   if (sets.size()==1 ) {
-    ((DataSet *)sets[0])->modify_sqt(fn,w,&sc,greet, dtaSelect);
+    ((DataSet *)sets[0])->modifySQT(fn,w,&sc,greet, dtaSelect);
     return;
   }
   unsigned int ix=0;
   fileIn.open(fn.c_str(),ios::in);
   while(getline(fileIn,line)) {
     if(line.size()>0 && line[0]!='#') {
-      ((DataSet *)sets[ix++])->modify_sqt(line,w,&sc,greet,dtaSelect);
+      ((DataSet *)sets[ix++])->modifySQT(line,w,&sc,greet,dtaSelect);
     }    
   }
   fileIn.close();

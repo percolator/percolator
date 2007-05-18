@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.17 2007/02/13 18:17:14 lukall Exp $
+ * $Id: SetHandler.h,v 1.18 2007/05/18 23:46:46 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
@@ -20,6 +20,7 @@ protected:
 public:
 	SetHandler();
 	virtual ~SetHandler();
+    void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra,const int label);
     void readFile(const string & p_fn, const int label);
     void readFile(const string & fn, const string & wc,const bool match);
     void static readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation * intra,const string & wild = "", const bool match=false, bool calc=true);
