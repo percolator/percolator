@@ -10,6 +10,7 @@ CPP_SRCS += \
 ../IntraSetRelation.cpp \
 ../Normalizer.cpp \
 ../Option.cpp \
+../PercolatorCInterface.cpp \
 ../Scores.cpp \
 ../SetHandler.cpp \
 ../StdvNormalizer.cpp \
@@ -23,6 +24,7 @@ OBJS += \
 ./IntraSetRelation.o \
 ./Normalizer.o \
 ./Option.o \
+./PercolatorCInterface.o \
 ./Scores.o \
 ./SetHandler.o \
 ./StdvNormalizer.o \
@@ -36,6 +38,7 @@ CPP_DEPS += \
 ./IntraSetRelation.d \
 ./Normalizer.d \
 ./Option.d \
+./PercolatorCInterface.d \
 ./Scores.d \
 ./SetHandler.d \
 ./StdvNormalizer.d \
