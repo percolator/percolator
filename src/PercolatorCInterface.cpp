@@ -42,6 +42,9 @@ void pcExecute() {
   bool separateShuffledThresholdSetHandler = nset==FOUR_SETS;
   pCaller->fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
   pCaller->preIterationSetup();
+  double w[DataSet::getNumFeatures()+1];
+  pCaller->train(w);  
+//  int overFDR = testset.calcScores(w,selectionfdr);
 } 
 
 /** Function called when retrieving target q-values after processing,

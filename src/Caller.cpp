@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.72 2007/05/18 23:46:46 lukall Exp $
+ * $Id: Caller.cpp,v 1.73 2007/05/25 00:09:52 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -437,6 +437,14 @@ void Caller::xvalidate(double *w) {
   trainEm(www);
 }
 
+void Caller::train(double *w) {
+  trainset.getInitDirection(test_fdr,w);
+  if (xv_type==WHOLE)
+    xvalidate(w);
+  else  
+    trainEm(w);
+}
+
 void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
   if (separateShuffledThresholdSetHandler) {
     trainset.fillFeatures(normal,shuffled);
@@ -527,9 +535,6 @@ int Caller::run() {
   preIterationSetup();
 
   // Set up a first guess of w
-  double w[DataSet::getNumFeatures()+1];
-  trainset.getInitDirection(test_fdr,w);
-
   time_t procStart;
   clock_t procStartClock=clock();
   time (&procStart);
@@ -541,11 +546,8 @@ int Caller::run() {
 
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
-  if (xv_type==WHOLE)
-    xvalidate(w);
-  else  
-    trainEm(w);
-
+  double w[DataSet::getNumFeatures()+1];
+  train(w);
   time_t end;
   time (&end);
   diff = difftime (end,procStart);
