@@ -57,7 +57,8 @@ sub convert {
       my $prot= (split / /,$_[3])[0];
       my $pep=$_[2];
       if ($id ne $oldId) {
-        my @of = ($id, $_[6], $_[7],$_[8],$_[5],$_[10], $_[11], $_[12],length($pep)-4 ,chargeVec($_[4]),
+#       my @of = ($id, $_[6], $_[7],$_[8],$_[5],$_[10], $_[11], $_[12],length($pep)-4 ,chargeVec($_[4]),
+        my @of = ($id, $_[5], $_[7],$_[8],$_[9],$_[10], $_[11], $_[13], $_[14], $_[15], length($pep)-4 ,chargeVec($_[4]),
           isTrypN($pep), isTrypC($pep), missedTryp($pep), $protCnt{$prot}, $pepCnt{$pep}, scalar(@{$uniqPep{$prot}}));
         print DATA join("\t",@of) . "\n";
         print LABEL "$id\t$label\n";
@@ -66,8 +67,12 @@ sub convert {
   }
 }
 
-#0            1     2          3       4      5       6        7         8         9       10      11      12           13           14        15
-#SpectrumFile Scan# Annotation Protein Charge MQScore CutScore IntenseBY BYPresent Unused  p-value DeltaCN DeltaCNOther RecordNumber DBFilePos SpecFilePos
+#0            1     2          3       4      5       6        7             8              9         10        11        12           13           14        15
+#OldSpectrumF Scan# Annotation Protein Charge MQScore CutScore IntenseBY     BYPresent      Unused    p-value   DeltaCN   DeltaCNOther RecordNumber DBFilePos SpecFilePos
+#NewSpectrumF Scan# Annotation Protein Charge MQScore Length   TotalPRMScore MedianPRMScore FractionY FractionB Intensity NTT          p-value      F-Score   DeltaScoreDeltaScoreOther 
+
+#16              17        18
+#NewRecordNumber DBFilePos SpecFilePos
 
 my $data = shift @ARGV;
 my $label = shift @ARGV;
@@ -77,7 +82,8 @@ my $s2 = shift @ARGV;
 
 print "$data $label $n $s $s2\n";
 open(*DATA,"> $data");
-print DATA "Id\tCutScore\tIntenseBY\tBYPresent\tMQScore\tp-value\tDeltaCn\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\tmissedTryp\tnumProt\tnumPep\tpepSite\n";
+ print DATA "Id\tMQScore\tTotalPRMScore\tMedianPRMScore\tFractionY\tFractionB\tIntensity\tp-value\tF-Score\tDeltaScoreDeltaScoreOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\tmissedTryp\tnumProt\tnumPep\tpepSite\n";
+#print DATA "Id\tCutScore\tIntenseBY\tBYPresent\tMQScore\tp-value\tDeltaCn\tDeltaCnOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\tmissedTryp\tnumProt\tnumPep\tpepSite\n";
 open(*LABEL,"> $label");
 print LABEL "Id\tLabel\n";
 open(*IN,"< $n");

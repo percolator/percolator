@@ -3,7 +3,7 @@
 import Numeric
 from pylab import  *
 import math
-
+step=0.0001
 matplotlib.use('PS')
 
 def getWeights(fileName):
@@ -16,14 +16,20 @@ def getWeights(fileName):
 
 def getThreshold(scores):
   scores.sort(reverse=True)
+  levels=[]
+  th=0.0
   targets,decoys=0.0,0.0
   for sc,label in scores:
     if label>0:
       targets+=1
+      if decoys/targets*0.9>=th:
+        levels+=[sc]
+        th+=step
+        if th>0.9:
+          return levels
     else:
       decoys+=1
-    if decoys/targets*0.9>0.01:
-      return sc
+  return levels
 
 w1 = getWeights(sys.argv[1])
 w2 = getWeights(sys.argv[2])
@@ -57,8 +63,8 @@ for i in range(1,len(lf)):
   xxscores += [(sum1,label)]
   yyscores += [(sum2,label)]
 
-xt=getThreshold(xxscores)
-yt=getThreshold(yyscores)
+xl=getThreshold(xxscores)
+yl=getThreshold(yyscores)
 
 nX, mybinsX, patches = hist(xx, bins = 100)
 #plot(mybins)
@@ -89,12 +95,13 @@ mybinsd = array(a)
 jet()
 contourf(mybinsX,mybinsd,cnt,20)
 #colorbar()
-axvline(x=xt,color='k')
-axhline(y=yt,color='k')
+axvline(x=xl[int(0.01/step)+1],color='k')
+axhline(y=yl[int(0.01/step)+1],color='k')
 v=axis()
 up=min(v[1],v[3])
 down=max(v[0],v[2])
-plot([down,up],[down,up],color='k')
+plot([down,up],[down,up],color='y')
+plot(xl,yl,color='r')
 xlabel(xtext,fontsize='large')
 ylabel(ytext,fontsize='large')
 savefig("cloud.eps")
@@ -110,19 +117,19 @@ show()
 # a += [0,0]
 # nX=array(a)
 # axBottom.bar(mybinsX,nX,width=.01)
-# 
+#
 # axMiddle = axes(rect2,sharex=axBottom)
 # axMiddle.contourf(mybinsX,mybinsd,cnt,20)
-# 
+#
 # a = [x for x in nd]
 # a += [0,0]
 # nd=array(a)
-# 
+#
 # axLeft       = axes(rect1,sharey=axMiddle)  #left, bottom, width, height
 # axLeft.barh(nd,mybinsd,height=.0)
-# 
+#
 # #axBottom.xlim(axMiddle.xlim())
-# 
+#
 # axLeft.set_ylabel('Trypsin')
 # axBottom.set_xlabel('Elastase')
 # setp( axLeft.get_xticklabels(), visible=False)
@@ -131,8 +138,8 @@ show()
 # setp( axMiddle.get_yticklabels(), visible=False)
 # #setp(axLeft, xticks=[])
 # #setp(axBottom, yticks=[])
-# 
+#
 # savefig("all.eps")
 # show()
-# 
-# 
+#
+#
