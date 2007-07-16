@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Option.h,v 1.4 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Option.h,v 1.5 2007/07/16 22:57:21 lukall Exp $
  *******************************************************************************/
 #ifndef OPTION_H_
 #define OPTION_H_
@@ -28,7 +28,7 @@ class Option
 class CommandLineParser
 {
   public:
-    CommandLineParser(string usage="");
+    CommandLineParser(string usage="", string tail="");
     ~CommandLineParser();
     void error(string msg);
     void defineOption(string shortOpt, string longOpt, string help="", string helpType="", OptionOption type=VALUE,string defaultVal="");
@@ -43,7 +43,7 @@ class CommandLineParser
   private:
         unsigned int optMaxLen; 
         const static unsigned int lineLen = 80;
-    string header;      
+    string header, endnote;      
     vector<Option> opts;
     void findOption (char **argv, int &index);
 };

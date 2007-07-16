@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.73 2007/05/25 00:09:52 lukall Exp $
+ * $Id: Caller.cpp,v 1.74 2007/07/16 22:57:21 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -77,15 +77,19 @@ bool Caller::parseOptions(int argc, char **argv){
   for (int i=1;i<argc;i++) callStream << " " << argv[i];
   callStream << endl;
   call = callStream.str();
-  ostringstream intro;
+  ostringstream intro,endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   percolator [options] normal shuffle [[shuffled_treshhold [shuffled_test]]" << endl;
+  intro << "   percolator [options] normal shuffle [[shuffled_treshhold] shuffled_test]" << endl;
   intro << "or percolator [options] -P pattern normal_and_shuffled.sqt" << endl;
   intro << "or percolator [options] -g gist.data gist.label" << endl << endl;
   intro << "   where normal is the normal sqt-file," << endl;
   intro << "         shuffle the shuffled sqt-file used in the training," << endl;
   intro << "         shuffle_test is an otional second shuffled sqt-file for q-value calculation" << endl;
-  intro << "         shuffle_treshhold is an otional shuffled sqt-file for determine q-value treshold" << endl;
+  intro << "         shuffle_treshhold is an otional shuffled sqt-file for determine q-value treshold" << endl << endl;
+  intro << "To be able to merge small data set one can replace the sqt-files with meta" << endl;
+  intro << "files. Meta files are text files containing the paths of sqt-files, one path" << endl;
+  intro << "per line. For successful result, the different runs should be generated under" << endl;
+  intro << "similair condition. Particulary, they need to be generated with the same protease." << endl;
   // init
   CommandLineParser cmd(intro.str());
   cmd.defineOption("o","sqt-out",
@@ -437,12 +441,13 @@ void Caller::xvalidate(double *w) {
   trainEm(www);
 }
 
-void Caller::train(double *w) {
-  trainset.getInitDirection(test_fdr,w);
+int Caller::train(double *w) {
+  int initPositives = trainset.getInitDirection(test_fdr,w);
   if (xv_type==WHOLE)
     xvalidate(w);
   else  
     trainEm(w);
+  return initPositives;
 }
 
 void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
@@ -547,7 +552,7 @@ int Caller::run() {
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
   double w[DataSet::getNumFeatures()+1];
-  train(w);
+  int initPositives = train(w);
   time_t end;
   time (&end);
   diff = difftime (end,procStart);
@@ -559,6 +564,8 @@ int Caller::run() {
   if (VERB>1) cerr << timerValues.str();
   int overFDR = testset.calcScores(w,selectionfdr);
   if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectionfdr*100 << "% FDR level on testset" << endl;
+  if (initPositives>overFDR)
+     cerr << "Less identifications after percolator processing than before processing" << endl;
   double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
   normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
@@ -577,18 +584,6 @@ int Caller::run() {
   normal.print(testset);
   return 0;
 }
-
-int main(int argc, char **argv){
-  Caller *pCaller=new Caller();
-  int retVal=-1;
-  if(pCaller->parseOptions(argc,argv))
-  {
-    retVal=pCaller->run();
-  }
-  delete pCaller;
-  return retVal;
-}	
-
 
 
 

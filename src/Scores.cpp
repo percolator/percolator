@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.42 2007/03/23 21:19:09 lukall Exp $
+ * $Id: Scores.cpp,v 1.43 2007/07/16 22:57:21 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -340,7 +340,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   data.m=ix2;
 }
 
-void Scores::getInitDirection(const double fdr, double * direction) {
+int Scores::getInitDirection(const double fdr, double * direction) {
   int bestPositives = -1;
   int bestFeature =-1;
   bool lowBest = false;
@@ -387,4 +387,5 @@ void Scores::getInitDirection(const double fdr, double * direction) {
   if (VERB>1) {
     cerr << "Selected feature number " << bestFeature +1 << " as initial search direction" << endl;
   }
+  return bestPositives;
 }

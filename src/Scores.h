@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.28 2007/03/13 03:04:51 lukall Exp $
+ * $Id: Scores.h,v 1.29 2007/07/16 22:57:21 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -43,7 +43,7 @@ public:
     void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
-    void getInitDirection(const double fdr, double * direction);
+    int getInitDirection(const double fdr, double * direction);
     double getQ(const double score);
     void printRoc(string & fn); 
     void fill(string & fn);

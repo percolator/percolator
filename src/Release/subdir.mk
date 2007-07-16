@@ -15,6 +15,7 @@ CPP_SRCS += \
 ../SetHandler.cpp \
 ../StdvNormalizer.cpp \
 ../UniNormalizer.cpp \
+../main.cpp \
 ../ssl.cpp 
 
 OBJS += \
@@ -29,6 +30,7 @@ OBJS += \
 ./SetHandler.o \
 ./StdvNormalizer.o \
 ./UniNormalizer.o \
+./main.o \
 ./ssl.o 
 
 CPP_DEPS += \
@@ -43,6 +45,7 @@ CPP_DEPS += \
 ./SetHandler.d \
 ./StdvNormalizer.d \
 ./UniNormalizer.d \
+./main.d \
 ./ssl.d 
 
 

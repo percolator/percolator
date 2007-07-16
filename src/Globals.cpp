@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Globals.cpp,v 1.4 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Globals.cpp,v 1.5 2007/07/16 22:57:21 lukall Exp $
  *******************************************************************************/
 #include "Globals.h"
 
@@ -25,4 +25,11 @@ Globals * Globals::getInstance()
 {
     if (!glob) new Globals();
     return glob;
+}
+
+void Globals::clean()
+{
+    if (glob)
+      delete glob;
+    glob = 0;
 }

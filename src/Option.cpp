@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Option.cpp,v 1.6 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Option.cpp,v 1.7 2007/07/16 22:57:21 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <string>
@@ -28,8 +28,9 @@ bool Option::operator == (const string & option) {
   return (shortOpt == option || longOpt == option);
 }
 
-CommandLineParser::CommandLineParser(string usage) {
+CommandLineParser::CommandLineParser(string usage, string tail) {
   header=usage;
+  endnote=tail;
   optMaxLen=0;
   defineOption("h","help","Display this message");
 }
@@ -105,6 +106,7 @@ void CommandLineParser::help() {
       j += l; 
     }
   }
+  cerr << endl << endnote << endl;
   exit(0);
 }
 
