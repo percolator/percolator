@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.43 2007/07/16 22:57:21 lukall Exp $
+ * $Id: Scores.cpp,v 1.44 2007/07/17 21:24:55 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -74,10 +74,10 @@ void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& 
   test.qVals.resize(n+m,-1e200); 
   thresh.scores.resize(n+l,s);
   thresh.qVals.resize(n+l,-1e200); 
-
-  int loc = -1,set=0,ix1=0,ix2=0,ix3=0;
+  SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
+  int ix1=0,ix2=0,ix3=0;
   const double * featVec;
-  while((featVec=shuff.getNext(set,loc))!=NULL) {
+  while((featVec=shuffIter.getNext())!=NULL) {
     if (((int)(ix1+ix2+ix3+1)*trainRatio)>=ix1+1) {
       train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
@@ -95,8 +95,7 @@ void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& 
   assert(ix1==k);
   assert(ix2==l);
   assert(ix3==m);
-  loc = -1,set=0;
-  while((featVec=norm.getNext(set,loc))!=NULL) {
+  while((featVec=normIter.getNext())!=NULL) {
     train.scores[ix1].label=1;
     train.scores[ix1].featVec=featVec;
     ++ix1;
@@ -132,9 +131,10 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   test.scores.resize(n+l,s);
   test.qVals.resize(n+l,-1e200); 
 
-  int loc = -1,set=0,ix1=0,ix2=0;
+  SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
+  int ix1=0,ix2=0;
   const double * featVec;
-  while((featVec=shuff.getNext(set,loc))!=NULL) {
+  while((featVec=shuffIter.getNext())!=NULL) {
     if (((int)(ix1+ix2+1)*ratio)>=ix1+1) {
       train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
@@ -147,8 +147,7 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   }
   assert(ix1==k);
   assert(ix2==l);
-  loc = -1,set=0;
-  while((featVec=norm.getNext(set,loc))!=NULL) {
+  while((featVec=normIter.getNext())!=NULL) {
     train.scores[ix1].label=1;
     train.scores[ix1].featVec=featVec;
     ++ix1;
@@ -171,16 +170,16 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
   ScoreHolder s;
   scores.resize(n,s);
   qVals.resize(n,-1e200); 
-  int loc = -1,set=0,ix=0;
+  int ix=0;
   const double * featVec;
-  while((featVec=norm.getNext(set,loc))!=NULL) {
+  SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
+  while((featVec=normIter.getNext())!=NULL) {
     scores[ix].label=1;
     scores[ix].featVec=featVec;
     ++ix;
   }
   pos=ix;
-  loc = -1,set=0;
-  while((featVec=shuff.getNext(set,loc))!=NULL) {
+  while((featVec=shuffIter.getNext())!=NULL) {
     scores[ix].label=-1;
     scores[ix].featVec=featVec;
     ++ix;

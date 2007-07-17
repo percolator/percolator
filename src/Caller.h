@@ -4,15 +4,16 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.35 2007/07/16 22:57:21 lukall Exp $
+ * $Id: Caller.h,v 1.36 2007/07/17 21:24:55 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
 
-typedef enum {NO_XV=0, EACH_STEP, WHOLE} XvType;
-
 class Caller
 {
+public:
+    enum XvType {NO_XV=0, EACH_STEP, WHOLE};
+    enum SetHandlerType {NORMAL=0,SHUFFLED,SHUFFLED_TEST,SHUFFLED_THRESHOLD};
 public:
 	Caller();
 	virtual ~Caller();
@@ -26,10 +27,20 @@ public:
     bool parseOptions(int argc, char **argv);
     void printWeights(ostream & weightStream, double * weights);
     void readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);
-    void filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra);
+    void filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
     void fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);    
-    void preIterationSetup();    
+    void preIterationSetup();
+    Scores* getTestSet() {return &testset;}    
     int run();
+    SetHandler * getSetHandler(SetHandlerType sh) {
+        switch(sh) {
+           case NORMAL: return &normal;
+           case SHUFFLED: return &shuffled;
+           case SHUFFLED_TEST: return &shuffledTest;
+           case SHUFFLED_THRESHOLD: return &shuffledThreshold;
+           default: return NULL;
+        }
+    }
 protected:
     Normalizer * pNorm;
     AlgIn *svmInput;

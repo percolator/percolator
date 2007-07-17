@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.18 2007/05/18 23:46:46 lukall Exp $
+ * $Id: SetHandler.h,v 1.19 2007/07/17 21:24:55 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
@@ -30,7 +30,7 @@ public:
 	void setSet();
 	void fillTestSet(SetHandler& trainSet,const string& shuffled2FN="");
     void createXvalSets(vector<SetHandler>& train,vector<SetHandler>& test, const unsigned int xval_fold);
-	const double * getNext(int& ,int& ) const;
+	double * getNext(int& ,int& ) const;
     const double * getFeatures(const int setPos,const int ixPos) const;
     void readGist(const string & dataFN, const string & labelFN, const int label);
     void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff,const SetHandler& shuff2);
@@ -43,7 +43,16 @@ public:
     vector<const double *> * getTrainingSet() {return & examples;}
     inline const double * getLabels() {return labels;}
     inline const double * getC() {return c_vec;}
-
+    class Iterator {
+    public:
+      Iterator(SetHandler * s) : sh(s), set(0), ix(-1) {;}
+      double * getNext() {return sh->getNext(set,ix);}
+    private:
+      SetHandler * sh;
+      int set;
+      int ix;
+    };
+    Iterator getIterator() {return Iterator(this);}
 };
 
 #endif /*SETHANDLER_H_*/

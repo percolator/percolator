@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.30 2007/05/18 23:46:46 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.31 2007/07/17 21:24:55 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -31,9 +31,6 @@ SetHandler::SetHandler() {
 
 SetHandler::~SetHandler()
 {
-//	if (norm)
-//      delete norm;
-//	norm=NULL;
     if (labels)
       delete [] labels;
     labels=NULL;
@@ -180,7 +177,7 @@ void SetHandler::generateTrainingSet(const double fdr,const double cpos, const d
 }
 
 
-const double * SetHandler::getNext(int& setPos,int& ixPos) const {
+double * SetHandler::getNext(int& setPos,int& ixPos) const {
   double * features = subsets[setPos]->getNext(ixPos);
   if (features) return features;
   if (++setPos>=((signed int)subsets.size()))

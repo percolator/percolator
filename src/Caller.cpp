@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.74 2007/07/16 22:57:21 lukall Exp $
+ * $Id: Caller.cpp,v 1.75 2007/07/17 21:24:55 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -280,13 +280,22 @@ void Caller::printWeights(ostream & weightStream, double * w) {
   weightStream << endl;
 }
 
-void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra) {
-    normal.filelessSetup(numFeatures, numSpectra,1);
-    shuffled.filelessSetup(numFeatures, numSpectra,-1);
-    if (sets>2)
-        shuffledTest.filelessSetup(numFeatures, numSpectra,-1);
-    if (sets>3)
-        shuffledThreshold.filelessSetup(numFeatures, numSpectra,-1);
+void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** featureNames, double pi0) {
+  normal.filelessSetup(numFeatures, numSpectra,1);
+  shuffled.filelessSetup(numFeatures, numSpectra,-1);
+  if (sets>2)
+    shuffledTest.filelessSetup(numFeatures, numSpectra,-1);
+  if (sets>3)
+    shuffledThreshold.filelessSetup(numFeatures, numSpectra,-1);
+  Scores::pi0 = pi0;
+  ostringstream os;
+  for (unsigned int ix=0;ix<numFeatures;ix++){
+    os << featureNames[ix];
+    if (ix<numFeatures-1) {
+      os.put('\t');    
+    }
+  }
+  DataSet::setFeatureNames(os.str());  
 }
 
 void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
