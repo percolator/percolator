@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.31 2007/07/17 21:24:55 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.32 2007/07/20 00:24:03 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -52,6 +52,7 @@ void SetHandler::filelessSetup(const unsigned int numFeatures, const unsigned in
     pSet->setLabel(label);
     pSet->filelessSetup(numFeatures, numSpectra);
     subsets.push_back(pSet);
+    n_examples = numSpectra;
 }
 
 void SetHandler::readFile(const string & fn, const int label) {
