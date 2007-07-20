@@ -43,6 +43,17 @@ void pcInitiate(NSet sets, unsigned int numFeat, unsigned int numSpectra, char *
       decoy3 = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED_THRESHOLD));
 }
 
+/** Call that sets verbosity level
+ *  0 is quiet, 2 is default, 6 is more than you want */
+void pcSetVerbosity(int verbosity) {
+  if (verbosity<0 || verbosity > 6) {
+    cerr << "Wrong value of verbosity, should be between 0 and 6, you tried " << verbosity << endl;
+    exit(-1);
+  }
+  Globals::getInstance()->setVerbose(verbosity);
+}
+
+
 /** Register a PSM */
 void pcRegisterPSM(SetType set, char * identifier, double * features) {
   if ((int)set>(int)nset) {

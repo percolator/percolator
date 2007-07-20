@@ -16,6 +16,11 @@ typedef enum {TARGET=0,DECOY1,DECOY2,DECOY3} SetType;
 /** Call that initiates percolator */
 void pcInitiate(NSet sets, unsigned int numFeatures, unsigned int numSpectra, char ** featureNames, double pi0);
 
+/** Call that sets verbosity level
+ *  0 is quiet, 2 is default, 5 is more than you want */
+void pcSetVerbosity(int verbosity);
+
+
 /** Register a PSM */
 void pcRegisterPSM(SetType set, char * identifier, double * features);
 
