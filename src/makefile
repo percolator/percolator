@@ -2,8 +2,9 @@ PERVER = 1.01
 PERLABELED = Percolator v $(PERVER)
 PERUNLABELED = Percolator unofficial version
 BUILDDIR = Release
-LIBFILE = $(BUILDDIR)/libpercolator.a
+LIBFILE = $(LIBDIR)/libpercolator.a
 LIBOBJS = $(BUILDDIR)/[^m]*.o
+LIBDIR = $(BUILDDIR)/lib
 
 all: compile library
 
@@ -15,6 +16,7 @@ $(BUILDDIR)/percolator: *.cpp *.h
 	$(MAKE) -C $(BUILDDIR)
 
 LIBFILE: compile
+	@mkdir -p ${LIBDIR}
 	${AR} r ${LIBFILE} ${LIBOBJS}
 
 mark:
