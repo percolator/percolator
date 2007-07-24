@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.64 2007/05/18 23:46:46 lukall Exp $
+ * $Id: DataSet.cpp,v 1.65 2007/07/24 23:43:53 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -32,6 +32,9 @@ bool DataSet::calcPTMs = false;
 string DataSet::featureNames = "";
 string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
+
+static char buf[4096];
+
 
 DataSet::DataSet()
 {
@@ -235,6 +238,7 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const doubl
   double feat[DataSet::numFeatures];
 //  if (mLines>3) mLines=3;
   vector<pair<double,string> > outputs;
+  outputs.clear();
   istringstream in(record);
   ostringstream out,outtmp;
   string line,tmp,lineRem;
@@ -247,10 +251,10 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const doubl
   for(it=theMs.begin();it!=theMs.end();it++) {
     proteinsTmp.clear();
     readFeatures(record,feat,*it,proteinsTmp,tmpPepSeq,true);
-    double score = 0;
-    for (int i=DataSet::numFeatures;i--;)
+    int i=DataSet::numFeatures;
+    double score = w[i];
+    for (;i--;)
       score += feat[i]*w[i];
-    score += w[DataSet::numFeatures];
     double q = pSc->getQ(score);
     in >> tmp >> tmp >> rSp >> mass;
 //    outtmp << "M\t%i\t" << rSp << "\t" << mass << "\t";
@@ -270,21 +274,20 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const doubl
     outtmp.str("");
   }
   if(dtaSelect) {
-    outputs.push_back(pair<double,string>(-10,
-      "M\t600\t600\t1\t%6.4g\t-10\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n"));
+    outputs.push_back(pair<double,string>(-1000,
+      "M\t600\t600\t1\t%6.4g\t-1000\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n"));
   }
   sort(outputs.begin(),outputs.end());
   reverse(outputs.begin(),outputs.end());
   double x0=0,delt;
-  char buf[1024];
-  for(unsigned int i=0;i<outputs.size();i++) {
-    string aStr = outputs[i].second;
-    double score = outputs[i].first;
-    if (i==0) x0=score;
+  for(unsigned int ix=0;ix<outputs.size();ix++) {
+    string aStr = outputs[ix].second;
+    double score = outputs[ix].first;
+    if (ix==0) x0=score;
     if (x0 != 0) {
       delt = (x0-score)/x0;
     } else delt = 0;
-//    sprintf(buf,outputs[i].second.c_str(),i+1,delt);
+//    sprintf(buf,outputs[ix].second.c_str(),ix+1,delt);
     sprintf(buf,aStr.c_str(),delt);
     out << buf;
   }
