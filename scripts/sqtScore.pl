@@ -9,13 +9,16 @@ sub readSQT {
   my $targetChar = $_[2];
   my @all_hits;
   my $charge = 0;
+  my $m = 0;
   while(<$fh>) {
     my @fields = split(/\s+/);
     if ($fields[0] eq 'S') {
       $charge=$fields[3];
+      $m = 0;
     }
     if ($fields[0] eq 'M') {
-      if ($targetChar==0 || $targetChar==$charge) {
+      $m++;
+      if ($m==1 && ($targetChar==0 || $targetChar==$charge)) {
         push (@all_hits,[$fields[5],$label]);
       }
     }
