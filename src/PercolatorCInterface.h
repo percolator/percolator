@@ -5,9 +5,9 @@ extern "C" {
 #endif
 
 /** Number of target and decoy sets that external program will hand over to percolator.
-  * The value should correspond to the number of sequence databases that have been searched.
-  * Percolators validation strategy will be the same as for the stand alone version given the
-  * corresponding number of sqt-files as input. */
+ * The value should correspond to the number of sequence databases that have been searched.
+ * Percolators validation strategy will be the same as for the stand alone version given the
+ * corresponding number of sqt-files as input. */
 typedef enum {TWO_SETS=2,THREE_SETS,FOUR_SETS} NSet;
 
 /** Identifying which set the PSM belongs to*/
@@ -26,6 +26,15 @@ void pcRegisterPSM(SetType set, char * identifier, double * features);
 
 /** Function called when we want to start processing */
 void pcExecute(); 
+
+/**
+ * Given the set enum and features, return the Percolator score for the PSM
+ */
+void pcScorePSM(
+  SetType set, ///< The PSM tag -in
+  double* features,  ///< the features -in
+  double* score ///< output the Percolator score -out
+  );
 
 /** Function called when retrieving target scores and q-values after processing,
   * the array should be numSpectra long and will be filled in the same order
