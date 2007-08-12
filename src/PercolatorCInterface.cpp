@@ -105,7 +105,7 @@ void pcGetScores(double *scoreArr,double *qArr) {
     double score = pCaller->getTestSet()->calcScore(feat);
     double q = pCaller->getTestSet()->getQ(score);
     scoreArr[ix] = score;
-    qArr[ix] = q;
+    qArr[ix++] = q;
   }
 } 
 
