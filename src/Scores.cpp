@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.44 2007/07/17 21:24:55 lukall Exp $
+ * $Id: Scores.cpp,v 1.45 2007/08/13 16:15:21 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -38,6 +38,9 @@ Scores::Scores()
 
 Scores::~Scores()
 {
+  if (w_vec)
+    delete w_vec;
+  w_vec = NULL;
 }
 
 double Scores::pi0 = 0.9;
@@ -221,7 +224,12 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
 }
 
 int Scores::calcScores(double *w,double fdr) {
-  w_vec=w;
+  register unsigned int ix=DataSet::getNumFeatures()+1;
+  if (!w_vec)
+    w_vec = new double[ix];
+  for(;ix--;) {
+    w_vec[ix]=w[ix];
+  }
   const double * features;
   vector<ScoreHolder>::iterator it = scores.begin();
   while(it!=scores.end()) {
@@ -244,7 +252,7 @@ int Scores::calcScores(double *w,double fdr) {
   }
   int positives=0,nulls=0;
   double efp=0.0,q;
-  register unsigned int ix=0;
+  ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
       positives++;
