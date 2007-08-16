@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.65 2007/07/24 23:43:53 lukall Exp $
+ * $Id: DataSet.cpp,v 1.66 2007/08/16 21:05:51 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -405,7 +405,12 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
       if (match==ms) {
         double rSp,cMass,sp,matched,expected;
         linestr.seekg(0, ios::beg);
-        linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep;
+        if (!(
+          linestr >> tmp >> tmp >> rSp >> cMass >> tmp >> xcorr >> sp >> matched >> expected >> pep)) {
+          cerr << "Could not parse the M line:" << endl;
+          cerr << line << endl;
+          exit(-1);
+        }
         
         feat[0]=log(rSp);                     // rank by Sp
         feat[1]=0.0;                     // delt5Cn (leave until last M line)
