@@ -5,12 +5,14 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../Caller.cpp \
+../CubicSpline.cpp \
 ../DataSet.cpp \
 ../Globals.cpp \
 ../IntraSetRelation.cpp \
 ../Normalizer.cpp \
 ../Option.cpp \
 ../PercolatorCInterface.cpp \
+../ResultHolder.cpp \
 ../Scores.cpp \
 ../SetHandler.cpp \
 ../StdvNormalizer.cpp \
@@ -20,12 +22,14 @@ CPP_SRCS += \
 
 OBJS += \
 ./Caller.o \
+./CubicSpline.o \
 ./DataSet.o \
 ./Globals.o \
 ./IntraSetRelation.o \
 ./Normalizer.o \
 ./Option.o \
 ./PercolatorCInterface.o \
+./ResultHolder.o \
 ./Scores.o \
 ./SetHandler.o \
 ./StdvNormalizer.o \
@@ -35,12 +39,14 @@ OBJS += \
 
 CPP_DEPS += \
 ./Caller.d \
+./CubicSpline.d \
 ./DataSet.d \
 ./Globals.d \
 ./IntraSetRelation.d \
 ./Normalizer.d \
 ./Option.d \
 ./PercolatorCInterface.d \
+./ResultHolder.d \
 ./Scores.d \
 ./SetHandler.d \
 ./StdvNormalizer.d \
@@ -53,7 +59,7 @@ CPP_DEPS += \
 %.o: ../%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -O3 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
+	g++ -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
