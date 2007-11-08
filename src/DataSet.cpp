@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.66 2007/08/16 21:05:51 lukall Exp $
+ * $Id: DataSet.cpp,v 1.67 2007/11/08 21:55:11 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -19,6 +19,7 @@ using namespace std;
 #include "DataSet.h"
 #include "IntraSetRelation.h"
 #include "Scores.h"
+#include "ResultHolder.h"
 #include "Globals.h"
 
 int DataSet::numFeatures = maxNumRealFeatures;
@@ -103,15 +104,12 @@ void DataSet::print_10features() {
    }
 }
 
-void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
+void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   ostringstream out;
   int ix =-1;
   while (double * features=getNext(ix)) {
     double score = test.calcScore(features);
     double q = test.getQ(score);
-    out << ids[ix] << "\t" << score << "\t" << q;
-    if ((int)pepSeq.size()>ix)
-        out << "\t" << pepSeq[ix];
     if ((int)proteinIds.size()>ix) {
       set<string> prots = proteinIds[ix];
       set<string>::const_iterator it = prots.begin();
@@ -119,8 +117,8 @@ void DataSet::print(Scores& test, vector<pair<double,string> > &outList) {
         out << "\t" << *it;
       }
     }
-    pair<double,string> op(score,out.str());    
-    outList.push_back(op);
+    ResultHolder rh(score,q,2.0,ids[ix],pepSeq[ix],out.str());    
+    outList.push_back(rh);
     out.str("");
   }
 }

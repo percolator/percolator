@@ -4,12 +4,13 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.42 2007/05/18 23:46:46 lukall Exp $
+ * $Id: DataSet.h,v 1.43 2007/11/08 21:53:07 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
 class Scores;
 class Normalizer;
+class ResultHolder;
 class IntraSetRelation;
 
 typedef enum {NO_ENZYME,TRYPSIN,CHYMOTRYPSIN,ELASTASE} Enzyme;
@@ -47,7 +48,7 @@ class DataSet
     bool getGistDataRow(int& pos,string & out);
     void print_10features();
     void print_features();
-    void print(Scores& test, vector<pair<double,string> > & outList);
+    void print(Scores& test, vector<ResultHolder> & outList);
 protected:
     void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
     string modifyRec(const string record, const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect);

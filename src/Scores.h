@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.29 2007/07/16 22:57:21 lukall Exp $
+ * $Id: Scores.h,v 1.30 2007/11/08 21:55:11 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -18,7 +18,7 @@ public:
   double score;
   const double * featVec;
   int label;
-  ScoreHolder() {score=0.0;featVec=NULL;label=0;}
+  ScoreHolder():score(0.0),featVec(NULL),label(0){;}
   virtual ~ScoreHolder() {;}
 };
 
@@ -45,6 +45,7 @@ public:
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
     int getInitDirection(const double fdr, double * direction);
     double getQ(const double score);
+    vector<double>& calcPep();
     void printRoc(string & fn); 
     void fill(string & fn);
     inline unsigned int size() {return (pos+neg);} 
@@ -59,7 +60,9 @@ protected:
     int pos;
     int posNow;
     const static int shortCutSize = 100;
+    const static int pepBins = 40;
     vector<ScoreHolder> scores;
+    vector<double> peps;
     vector<double> qVals;
     vector<unsigned int> shortCut;
     double shortStep;

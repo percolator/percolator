@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.32 2007/07/20 00:24:03 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.33 2007/11/08 21:55:11 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 using namespace std;
+#include "ResultHolder.h"
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
@@ -145,16 +146,16 @@ void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *
 }
 
 void SetHandler::print(Scores &test) {
-  vector<pair<double,string> > outList(0);
+  vector<ResultHolder > outList(0);
   for (unsigned int setPos=0;setPos<subsets.size();setPos++) {
     subsets[setPos]->print(test,outList);
   }    
   sort(outList.begin(),outList.end());
   reverse(outList.begin(),outList.end());
-  cout << "PSMId\tscore\tq-value\tpeptide\tproteinIds" << endl;  
-  vector<pair<double,string> >::const_iterator it = outList.begin();
+  cout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds" << endl;  
+  vector<ResultHolder >::const_iterator it = outList.begin();
   for(;it!=outList.end();it++) {
-    cout << it->second << endl;
+    cout << *it << endl;
   }
 }
 

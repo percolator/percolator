@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.45 2007/08/13 16:15:21 lukall Exp $
+ * $Id: Scores.cpp,v 1.46 2007/11/08 21:55:11 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -19,6 +19,7 @@ using namespace std;
 #include "Scores.h"
 #include "Globals.h"
 #include "ssl.h"
+#include "CubicSpline.h"
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score>other.score);}
@@ -276,7 +277,7 @@ int Scores::calcScores(double *w,double fdr) {
   return posNow;
 }
 
- double Scores::getQ(const double score) {
+double Scores::getQ(const double score) {
   unsigned int loIx = scores.size()-1, hiIx = 0;
   double lo = scores[loIx].score, hi = scores[hiIx].score;
   if (score<=lo) {return qVals[loIx];}
@@ -392,7 +393,49 @@ int Scores::getInitDirection(const double fdr, double * direction) {
   }
   direction[bestFeature]=(lowBest?-1:1);
   if (VERB>1) {
-    cerr << "Selected feature number " << bestFeature +1 << " as initial search direction" << endl;
+    cerr << "Selected feature number " << bestFeature +1 << " as initial search direction, could separate " << 
+            bestPositives << " positives in that direction" << endl;
   }
   return bestPositives;
 }
+
+vector<double>& Scores::calcPep() {
+   peps.assign(posSize(),-1);
+  if (negSize()<pepBins*5) {
+    cerr << "To few decoy sequences, posterior error probabilities not calculated" << endl;
+    return peps;
+  }
+  vector<double> bins(pepBins+2),centers(pepBins+1);
+  int targets=0,decoys=0;
+  int locT=0,locD=0;
+  int binNum=0;
+  double binSize = posSize()/((double)pepBins),rat=0,step=1/((double)posSize());
+  vector<ScoreHolder>::iterator it;
+
+  for(it=scores.begin();it!=scores.end();it++) {
+    if (it->label!=-1)
+      targets++;locT++;
+    if (it->label==-1) {
+      decoys++;locD++;
+    }
+    if (targets>=binSize*(binNum-1)) {
+      rat=max(rat,locD/((double)locT));
+      bins[binNum+1] = rat;
+      centers[binNum+1] = (binNum+1/2.0)*binSize*step;
+      binNum++;
+      locT=0,locD=0;
+    }
+  }
+  // renormalize so that max probability becomes 1
+  vector<double>::iterator bin;
+  for(bin=bins.begin();bin!=bins.end();bin++) {
+    *bin = *bin/rat;
+  }
+  bins[0]=0.0;bins[bins.size()-1]=1.0;
+  centers[0]=step;centers[bins.size()-1]=1.0; 
+  CubicSpline cs(centers,bins);
+  for (unsigned ix=0;ix<peps.size();ix++) {
+    peps[ix]=min(1.0,max(0.0,cs.interpolate((ix+1)*step)));
+  }
+  return peps;
+ }
