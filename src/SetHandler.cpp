@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.33 2007/11/08 21:55:11 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.34 2007/11/08 23:30:36 lukall Exp $
  *******************************************************************************/
 #include<iostream>
 #include<fstream>
@@ -152,8 +152,16 @@ void SetHandler::print(Scores &test) {
   }    
   sort(outList.begin(),outList.end());
   reverse(outList.begin(),outList.end());
+  vector<double> posteriors = test.calcPep();
+  assert(posteriors.size()==outList.size());
+
+  vector<double>::const_iterator pep = posteriors.begin(); 
+  vector<ResultHolder >::iterator it = outList.begin();
+  for(;it!=outList.end();it++,pep++) {
+    it->posterior=*pep;
+  }
   cout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds" << endl;  
-  vector<ResultHolder >::const_iterator it = outList.begin();
+  it = outList.begin();
   for(;it!=outList.end();it++) {
     cout << *it << endl;
   }

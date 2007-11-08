@@ -30,4 +30,3 @@ ostream& operator<<(ostream &out,const ResultHolder &obj)
     out << obj.posterior << "\t" << obj.pepSeq << obj.prot;
     return out;
 }
-    
