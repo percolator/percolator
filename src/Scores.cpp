@@ -4,11 +4,12 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.46 2007/11/08 21:55:11 lukall Exp $
+ * $Id: Scores.cpp,v 1.47 2007/11/09 00:59:38 lukall Exp $
  *******************************************************************************/
-#include<iostream>
-#include<fstream>
-#include<algorithm>
+#include <assert.h>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
 #include <set>
 #include <vector>
 #include <string>

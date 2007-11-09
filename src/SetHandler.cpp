@@ -4,8 +4,9 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.34 2007/11/08 23:30:36 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.35 2007/11/09 00:59:38 lukall Exp $
  *******************************************************************************/
+#include <assert.h>
 #include<iostream>
 #include<fstream>
 #include <map>

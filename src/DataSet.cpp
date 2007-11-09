@@ -4,8 +4,9 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.67 2007/11/08 21:55:11 lukall Exp $
+ * $Id: DataSet.cpp,v 1.68 2007/11/09 00:59:38 lukall Exp $
  *******************************************************************************/
+#include <assert.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>

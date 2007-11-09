@@ -4,8 +4,9 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.cpp,v 1.13 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Normalizer.cpp,v 1.14 2007/11/09 00:59:38 lukall Exp $
  *******************************************************************************/
+#include <assert.h>
 #include <iostream>
 #include <vector>
 #include <set>
