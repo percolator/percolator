@@ -34,9 +34,10 @@ void CubicSpline::setData(vector<double> &xx, vector<double> &yy, bool l) {
   removeDuplicates();
   vector<double>::iterator val=y.begin();
   while(val!=y.end()) {
-    if (*val<=0.0) *val = 1e-10;
+    if (*val<=0.0) *val = 1e-25;
     if (*val>=1.0) *val = 1-1e-10;
     *val=logit(*val);
+    val++;
   }
 }
 
@@ -95,12 +96,13 @@ void CubicSpline::calcDeriv() {
 }
 
 double CubicSpline::interpolate(double xx){
+  calcDeriv();
+
   if (xx<x[0] || xx>x[x.size()-1]){
     cerr << "x (" << xx << ") is outside the range of data points (" << x[0] << " to " << x[x.size()-1]<< endl;
     exit(-1);
   }
 
-  calcDeriv();
 
   double h=0.0,b=0.0,a=0.0, yy=0.0;
   int k=0;
@@ -132,3 +134,40 @@ double CubicSpline::interpolate(double xx){
   return yy;
 }
 
+double CubicSpline::linearInterpolate(double xx){
+//  if (xx<x[0] || xx>x[x.size()-1]){
+//    cerr << "x (" << xx << ") is outside the range of data points (" << x[0] << " to " << x[x.size()-1]<< endl;
+//    exit(-1);
+//  }
+  double yy;
+  if (xx<x[0]){
+    yy = y[0] + (y[1]-y[0])/(x[1]-x[0])*(xx-x[0]);
+  } else if (xx>x[x.size()-1]) {
+    int n = x.size()-1;
+    yy = y[n] + (y[n-1]-y[n])/(x[n-1]-x[n])*(xx-x[n]);
+  } else {
+    int k=0,klo=0,khi=x.size()-1;
+    while (khi-klo > 1){
+      k=(khi+klo) >> 1;
+      if(x[k] > xx){
+        khi=k;
+      }
+      else{
+        klo=k;
+      }
+    }
+    double h=x[khi]-x[klo];
+
+    if (h == 0.0){
+      cerr << "Two values of x are identical: point " << klo << " (" << x[klo] <<") and point " 
+           << khi << " (" << x[khi] << ")" << endl ;
+      exit(-1);
+    }
+    double a=(x[khi]-xx)/h;
+    double b=(xx-x[klo])/h;
+    yy=a*y[klo]+b*y[khi];
+  }
+  if (logged) 
+    return invlogit(yy);
+  return yy;
+}

@@ -89,8 +89,8 @@ void pcExecute() {
   bool separateShuffledTestSetHandler = nset>TWO_SETS;
   bool separateShuffledThresholdSetHandler = nset==FOUR_SETS;
   pCaller->fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-  pCaller->preIterationSetup();
   double w[DataSet::getNumFeatures()+1];
+  pCaller->preIterationSetup(w);
   pCaller->train(w);  
   pCaller->getTestSet()->calcScores(w);
 } 

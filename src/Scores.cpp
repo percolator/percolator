@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.47 2007/11/09 00:59:38 lukall Exp $
+ * $Id: Scores.cpp,v 1.48 2007/12/04 01:48:49 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -349,64 +349,72 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   data.m=ix2;
 }
 
-int Scores::getInitDirection(const double fdr, double * direction) {
+int Scores::getInitDirection(const double fdr, double * direction, bool findDirection) {
   int bestPositives = -1;
   int bestFeature =-1;
   bool lowBest = false;
   
-  for (int featNo=0;featNo<DataSet::getNumFeatures();featNo++) {
-    vector<ScoreHolder>::iterator it = scores.begin();
-    while(it!=scores.end()) {
-      it->score = it->featVec[featNo];
-      it++;
-    }
-    sort(scores.begin(),scores.end());
-    for (int i=0;i<2;i++) {
-      int positives=0,nulls=0;
-      double efp=0.0,q;
-      for(it=scores.begin();it!=scores.end();it++) {
-        if (it->label!=-1)
-          positives++;
-        if (it->label==-1) {
-          nulls++;
-          efp=pi0*nulls*factor;
-        }
-        if (positives)
-          q=efp/(double)positives;
-        else
-          q=pi0;
-        if (fdr<=q) {
-          if (positives>bestPositives && scores.begin()->score!=it->score) {
-            bestPositives=positives;
-            bestFeature = featNo;
-            lowBest = (i==0);
+  if (findDirection) { 
+    for (int featNo=0;featNo<DataSet::getNumFeatures();featNo++) {
+      vector<ScoreHolder>::iterator it = scores.begin();
+      while(it!=scores.end()) {
+        it->score = it->featVec[featNo];
+        it++;
+      }
+      sort(scores.begin(),scores.end());
+      for (int i=0;i<2;i++) {
+        int positives=0,nulls=0;
+        double efp=0.0,q;
+        for(it=scores.begin();it!=scores.end();it++) {
+          if (it->label!=-1)
+            positives++;
+          if (it->label==-1) {
+            nulls++;
+            efp=pi0*nulls*factor;
           }
-          if (i==0) {
-            reverse(scores.begin(),scores.end());
+          if (positives)
+            q=efp/(double)positives;
+          else
+            q=pi0;
+          if (fdr<=q) {
+            if (positives>bestPositives && scores.begin()->score!=it->score) {
+              bestPositives=positives;
+              bestFeature = featNo;
+              lowBest = (i==0);
+            }
+            if (i==0) {
+              reverse(scores.begin(),scores.end());
+            }
+            break;
           }
-          break;
         }
       }
     }
-  }
-  for (int ix=DataSet::getNumFeatures();ix--;) {
-    direction[ix]=0;
-  }
-  direction[bestFeature]=(lowBest?-1:1);
-  if (VERB>1) {
-    cerr << "Selected feature number " << bestFeature +1 << " as initial search direction, could separate " << 
-            bestPositives << " positives in that direction" << endl;
+    for (int ix=DataSet::getNumFeatures();ix--;) {
+      direction[ix]=0;
+    }
+    direction[bestFeature]=(lowBest?-1:1);
+    if (VERB>1) {
+      cerr << "Selected feature number " << bestFeature +1 << " as initial search direction, could separate " << 
+              bestPositives << " positives in that direction" << endl;
+    }
+  } else {
+    bestPositives = calcScores(direction,fdr);
+    if (VERB>1) {
+      cerr << "Found " << 
+              bestPositives << " positives in the initial search direction" << endl;
+    }    
   }
   return bestPositives;
 }
 
 vector<double>& Scores::calcPep() {
-   peps.assign(posSize(),-1);
+  peps.assign(posSize(),-1);
   if (negSize()<pepBins*5) {
     cerr << "To few decoy sequences, posterior error probabilities not calculated" << endl;
     return peps;
   }
-  vector<double> bins(pepBins+2),centers(pepBins+1);
+  vector<double> bins(pepBins),centers(pepBins);
   int targets=0,decoys=0;
   int locT=0,locD=0;
   int binNum=0;
@@ -419,24 +427,38 @@ vector<double>& Scores::calcPep() {
     if (it->label==-1) {
       decoys++;locD++;
     }
-    if (targets>=binSize*(binNum-1)) {
-      rat=max(rat,locD/((double)locT));
-      bins[binNum+1] = rat;
-      centers[binNum+1] = (binNum+1/2.0)*binSize*step;
+    if (targets>=binSize*(binNum+1)) {
+//      rat=max(rat,locD*pi0*factor/((double)locT));
+      rat=locD*pi0*factor/((double)locT);
+      bins[binNum] = rat;
+      centers[binNum] = (binNum+1/2.0)*binSize*step;
       binNum++;
       locT=0,locD=0;
     }
   }
-  // renormalize so that max probability becomes 1
-  vector<double>::iterator bin;
-  for(bin=bins.begin();bin!=bins.end();bin++) {
-    *bin = *bin/rat;
+//  cerr << pi0 << " " << factor << endl;
+  for(binNum=pepBins-1;binNum>=0;binNum--){
+    rat = min(bins[binNum],rat);
+    bins[binNum] = rat;
   }
-  bins[0]=0.0;bins[bins.size()-1]=1.0;
-  centers[0]=step;centers[bins.size()-1]=1.0; 
-  CubicSpline cs(centers,bins);
+  rat = bins[pepBins-1];
+  // renormalize so that max probability becomes 1
+  vector<double>::iterator cent= centers.begin();
+  vector<double>::iterator bin;
+  for(bin=bins.begin();bin!=bins.end();bin++,cent++) {
+//    cerr << *cent << " " << *bin << " ";
+    *bin = *bin/rat;
+//    cerr << *bin << endl;
+  }
+
+//  bins[0]=0.0;bins[bins.size()-1]=1.0;
+//  centers[0]=step;centers[centers.size()-1]=1.0; 
+  CubicSpline cs(centers,bins,true);
+  double yy =0.0;
   for (unsigned ix=0;ix<peps.size();ix++) {
-    peps[ix]=min(1.0,max(0.0,cs.interpolate((ix+1)*step)));
+//    peps[ix]=min(1.0,max(0.0,cs.linearInterpolate((ix+1)*step)));
+    yy=max(yy,cs.linearInterpolate((ix+1)*step));
+    peps[ix]=yy;
   }
   return peps;
- }
+}

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.36 2007/07/17 21:24:55 lukall Exp $
+ * $Id: Caller.h,v 1.37 2007/12/04 01:47:52 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -18,7 +18,7 @@ public:
 	Caller();
 	virtual ~Caller();
     void step(Scores& train,Scores& thresh,double * w, double Cpos, double Cneg, double fdr);
-    int train(double * w);
+    void train(double * w);
     void trainEm(double * w);
     void xvalidate_step(double *w);
     void xvalidate(double *w);
@@ -26,10 +26,11 @@ public:
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
     void printWeights(ostream & weightStream, double * weights);
+    void readWeights(istream & weightStream, double * weights);
     void readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);
     void filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
     void fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);    
-    void preIterationSetup();
+    int preIterationSetup(double * w);
     Scores* getTestSet() {return &testset;}    
     int run();
     SetHandler * getSetHandler(SetHandlerType sh) {
@@ -54,6 +55,7 @@ protected:
     string rocFN;
     string gistFN;
     string weightFN;
+    string initWeightFN;
     string call;
     bool gistInput;
     bool dtaSelect;

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.75 2007/07/17 21:24:55 lukall Exp $
+ * $Id: Caller.cpp,v 1.76 2007/12/04 01:48:58 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -31,7 +31,7 @@ const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() : pNorm(NULL), svmInput(NULL),
   modifiedFN(""), modifiedShuffledFN(""), forwardFN(""), shuffledTrainFN (""),shuffledThresholdFN(""), shuffledTestFN(""),
-  shuffledWC(""), rocFN(""), gistFN(""), weightFN(""),
+  shuffledWC(""), rocFN(""), gistFN(""), weightFN(""), initWeightFN(""),
   gistInput(false), dtaSelect(false), thresholdCalulationOnTrainSet(true), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.5),
   niter(10), xv_type(EACH_STEP)
@@ -93,18 +93,14 @@ bool Caller::parseOptions(int argc, char **argv){
   // init
   CommandLineParser cmd(intro.str());
   cmd.defineOption("o","sqt-out",
-    "Remake an sqt file out of the normal sqt-file with the given name, \
-in which the XCorr value has been replaced with the learned score \
-and Sp has been replaced with the negated q-value.","filename");
+    "Create an SQT file with the specified name from the given target SQT file, \
+replacing the XCorr value the learned score and Sp with the negated q-value.","filename");
   cmd.defineOption("s","shuffled",
-    "Remake an SQT file out of the test (shuffled or if present shuffled2) sqt-file \
-with the given name, \
-in which the XCorr value has been replaced with the learned score \
-and Sp has been replaced with the negated q-value.",
+    "Same as -o, but for the decoy SQT file",
     "filename");
   cmd.defineOption("P","pattern",
-    "Option for single sqt file mode defining the name pattern used for shuffled data base. Typically set to random_seq",
-    "pattern");
+    "Option for single SQT file mode defining the name pattern used for shuffled data base. \
+Typically set to random_seq","pattern");
   cmd.defineOption("p","Cpos",
     "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
     "value");
@@ -130,10 +126,14 @@ and Sp has been replaced with the negated q-value.",
     "Output the computed features to the given file in tab-delimited format. A file with the features, named <trunc name>.data, and a file with the labels named <trunc name>.label will be created",
     "trunc name");
   cmd.defineOption("g","gist-in",
-    "Input files are given as gist files, first argument should be a file name of the data file, the second the label file. \
-Labels are interpreted as 1 -- positive train and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
+    "Input files are given as gist files. In this case first argument should be a file name \
+of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
+and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
   cmd.defineOption("w","weights",
-    "Output final weights to the given filename",
+    "Output final weights to the given file",
+    "filename");
+  cmd.defineOption("W","init-weights",
+    "Read initial weights from the given file",
     "filename");
   cmd.defineOption("v","verbose",
     "Set verbosity of output: 0=no processing info, 5=all, default is 2",
@@ -193,6 +193,8 @@ Labels are interpreted as 1 -- positive train and test set, -1 -- negative train
   }
   if (cmd.optionSet("w"))
     weightFN = cmd.options["w"];
+  if (cmd.optionSet("W"))
+    initWeightFN = cmd.options["W"];
   if (cmd.optionSet("f")) {
     double frac = cmd.getDouble("f", 0.0 ,1.0);
     trainRatio=frac;
@@ -278,6 +280,19 @@ void Caller::printWeights(ostream & weightStream, double * w) {
     weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
+}
+
+void Caller::readWeights(istream & weightStream, double * w) {
+  char buffer[1024],c;
+  while (!(((c = weightStream.get())== '-') || (c >= '0' && c <= '9'))) {
+    weightStream.getline(buffer,1024);
+  }
+  weightStream.getline(buffer,1024);
+//  weightStream.unget();
+// Get second line containing raw features
+  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+    weightStream >> w[ix];
+  }
 }
 
 void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** featureNames, double pi0) {
@@ -450,13 +465,11 @@ void Caller::xvalidate(double *w) {
   trainEm(www);
 }
 
-int Caller::train(double *w) {
-  int initPositives = trainset.getInitDirection(test_fdr,w);
+void Caller::train(double *w) {
   if (xv_type==WHOLE)
     xvalidate(w);
   else  
     trainEm(w);
-  return initPositives;
 }
 
 void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
@@ -505,7 +518,7 @@ void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separat
   pNorm->normalizeSet(all);
 }
 
-void Caller::preIterationSetup() {
+int Caller::preIterationSetup(double * w) {
   
   svmInput = new AlgIn(trainset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
     
@@ -534,6 +547,15 @@ void Caller::preIterationSetup() {
   } else {
     xv_type = NO_XV;
   }
+  if (initWeightFN.size()>0) {
+     double ww[DataSet::getNumFeatures()+1];
+     ifstream weightStream(initWeightFN.data(),ios::in);
+     readWeights(weightStream,ww);
+     weightStream.close();
+     pNorm->normalizeweight(ww,w);    
+  }
+  int initPositives = trainset.getInitDirection(test_fdr,w,initWeightFN.size()==0);
+  return initPositives;
 }    
 
 int Caller::run() {
@@ -546,7 +568,8 @@ int Caller::run() {
   bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
   readFiles(doSingleFile, separateShuffledTestSetHandler, separateShuffledThresholdSetHandler);
   fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-  preIterationSetup();
+  double w[DataSet::getNumFeatures()+1],ww[DataSet::getNumFeatures()+1];
+  int initPositives = preIterationSetup(w);
 
   // Set up a first guess of w
   time_t procStart;
@@ -560,8 +583,7 @@ int Caller::run() {
 
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
-  double w[DataSet::getNumFeatures()+1];
-  int initPositives = train(w);
+  train(w);
   time_t end;
   time (&end);
   diff = difftime (end,procStart);
@@ -571,11 +593,10 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  int overFDR = testset.calcScores(w,selectionfdr);
-  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << selectionfdr*100 << "% FDR level on testset" << endl;
+  int overFDR = testset.calcScores(w,test_fdr);
+  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << test_fdr*100 << "% FDR level on testset" << endl;
   if (initPositives>overFDR)
      cerr << "Less identifications after percolator processing than before processing" << endl;
-  double ww[DataSet::getNumFeatures()+1];
   pNorm->unnormalizeweight(w,ww);    
   normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   if (separateShuffledTestSetHandler)

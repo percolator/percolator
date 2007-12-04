@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.68 2007/11/09 00:59:38 lukall Exp $
+ * $Id: DataSet.cpp,v 1.69 2007/12/04 01:48:56 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -320,7 +320,7 @@ void DataSet::modifySQT(const string & outFN, const double *w, Scores * pSc ,con
     if (line[0]=='H')
       sqtOut << line <<endl;
     if (line[0]=='S') {
-      if(lines>1 && charge<=3) {
+      if(lines>1 && charge<=5) {
         if (ms>hitsPerSpectrum)
           ms=hitsPerSpectrum;
         string record=buff.str();
@@ -348,7 +348,7 @@ void DataSet::modifySQT(const string & outFN, const double *w, Scores * pSc ,con
       }
     }
   }
-  if(lines>1 && charge<=3) {
+  if(lines>1 && charge<=5) {
     string record=buff.str();
     sqtOut << modifyRec(record,theMs, w, pSc, dtaSelect);
   }
@@ -549,7 +549,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
     if (line[0]=='S' && sqtIn.peek() != 'S') {
          lineParse.str(line);  
          lineParse >> tmp >> tmp >> tmp >> charge;       
-         if (charge <= 3) look=true;
+         if (charge <= 5) look=true;
          ms=0;
     }
     if (look & line[0]=='L' && ms < hitsPerSpectrum) {
@@ -592,7 +592,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
   set<int> theMs;
   while (getline(sqtIn,line)) {
     if (line[0]=='S') {
-      if(lines>1 && charge<=3) {
+      if(lines>1 && charge<=5) {
         string record=buff.str();
         string idstr = id.str();
         set<int>::const_iterator it;
@@ -629,7 +629,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
       }
     }
   }
-  if(lines>1 && charge<=3) {
+  if(lines>1 && charge<=5) {
     string record=buff.str();
     string idstr = id.str();
     set<int>::const_iterator it;

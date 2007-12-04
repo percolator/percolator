@@ -12,6 +12,7 @@ class CubicSpline
   void removeDuplicates();
   void calcDeriv();
   double interpolate(double xx);
+  double linearInterpolate(double xx);
   static double logit(double p) {return log(p/(1-p));}
   static double invlogit(double l) {double el=exp(l);return el/(1+el);}
  protected:
