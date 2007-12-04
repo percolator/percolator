@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.69 2007/12/04 01:48:56 lukall Exp $
+ * $Id: DataSet.cpp,v 1.70 2007/12/04 17:09:11 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -118,7 +118,10 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
         out << "\t" << *it;
       }
     }
-    ResultHolder rh(score,q,2.0,ids[ix],pepSeq[ix],out.str());    
+    string pep("");
+    if ((int)pepSeq.size()>ix)
+      pep = pepSeq[ix];
+    ResultHolder rh(score,q,2.0,ids[ix],pep,out.str());    
     outList.push_back(rh);
     out.str("");
   }
