@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.78 2007/12/05 01:47:59 lukall Exp $
+ * $Id: Caller.cpp,v 1.79 2007/12/05 17:57:44 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -200,9 +200,9 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
       exit(-1);
     }   
   }
-  if (cmd.optionSet("H"))
-    tabFN = cmd.options["H"];
-  if (cmd.optionSet("h")) {
+  if (cmd.optionSet("J"))
+    tabFN = cmd.options["J"];
+  if (cmd.optionSet("j")) {
     tabInput=true;
     if (cmd.arguments.size()!=1) {
       cerr << "Provide exactly one arguments when using tab delimetered input" << endl;

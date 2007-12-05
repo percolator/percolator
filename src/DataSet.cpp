@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.71 2007/12/05 01:24:08 lukall Exp $
+ * $Id: DataSet.cpp,v 1.72 2007/12/05 17:57:42 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -88,10 +88,11 @@ bool DataSet::getGistDataRow(int & pos,string &out){
 
 bool DataSet::writeTabData(ofstream & out, const string & lab) {
   int pos=-1;
-  while ((feature = getNext(pos)) != NULL) {
+  double * frow = NULL;
+  while ((frow = getNext(pos)) != NULL) {
     out << ids[pos] << '\t' << lab;
     for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
-      out << '\t' << feature[ix];
+      out << '\t' << frow[ix];
     }
     out << "\t";
     if ((int)pepSeq.size()>pos) {
@@ -314,11 +315,11 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
     for(register unsigned int j=0;j<m;j++) {
       buff >> featureRow[j];
     }
-    buff >> pepSeq[ix];
+    buff >> pepSeq[i];
     while(!!buff) {
       buff >> tmp;
       if (tmp.size()>0) {
-        proteinIds[ix].insert(tmp);
+        proteinIds[i].insert(tmp);
       }
     } 
   } 
