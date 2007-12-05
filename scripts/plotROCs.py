@@ -2,6 +2,7 @@
 upFDR = 0.10 - 1e-5
 orderFile = "order"
 from pylab import  *
+#from matplotlib import rc
 import glob
 
 def countNeg(x,y):
@@ -9,6 +10,8 @@ def countNeg(x,y):
     x+=1
   return x
 
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+print rc
 curves = []
 curveNames = []
 pi0 = 0.9
@@ -93,7 +96,7 @@ for doc in glob.glob('*.pnt'):
   i += 1
 
 figure(1).set_frameon(False)
-xlabel('q-value',fontsize='large')
+xlabel('q value',fontsize='large')
 ylabel('Number of peptide-spectrum matches identified',fontsize='large')
 legend(loc=4,pad=0.1,labelsep = 0.001,handlelen=0.04,handletextsep=0.02,numpoints=3)
 savefig("roc.eps")

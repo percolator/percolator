@@ -53,15 +53,17 @@ sub convert {
       chomp $line;
       next unless length($line);
       my @f = split(/\t/,$line);
-      my $prot= (split / /,$f[3])[0];
+      my @prots = split / /,$f[3];
+      my $prot= $prots[0];
       my $pep=$f[2];
       my $id =  $pep . '-' . $prot . '-' . $f[1] . '-' . $f[4];
       if ($id ne $oldId) {
-        my @of = ($id, $f[5], $f[7],$f[8],$f[9],$f[10], $f[11], $f[14], $f[15], $f[16], length($pep)-4 ,chargeVec($f[4]),
-          isTrypN($pep), isTrypC($pep), missedTryp($pep));
+        my @of = ($id, $label, $f[5], $f[7],$f[8],$f[9],$f[10], $f[11], $f[14],
+           $f[15], $f[16], length($pep)-4 ,chargeVec($f[4]),
+          isTrypN($pep), isTrypC($pep), missedTryp($pep)
 #          isTrypN($pep), isTrypC($pep), missedTryp($pep), $protCnt{$prot}, $pepCnt{$pep}, scalar(@{$uniqPep{$prot}}));
-        print DATA join("\t",@of) . "\n";
-        print LABEL "$id\t$label\n";
+          ,$pep, join("\t",@prots));
+        print join("\t",@of) . "\n";
         $oldId=$id;
       }
   }
@@ -73,17 +75,13 @@ sub convert {
 #Intensity NTT p-value F-Score DeltaScore DeltaScoreOther NewRecordNumber DBFilePos SpecFilePos
 
 
-my $data = shift @ARGV;
-my $label = shift @ARGV;
 my $n = shift @ARGV;
 my $s = shift @ARGV;
+
 my $s2 = shift @ARGV;
 
-print "$data $label $n $s $s2\n";
-open(*DATA,"> $data");
- print DATA "Id\tMQScore\tTotalPRMScore\tMedianPRMScore\tFractionY\tFractionB\tIntensity\tF-Score\tDeltaScore\tDeltaScoreOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\tmissedTryp\tnumProt\tnumPep\tpepSite\n";
-open(*LABEL,"> $label");
-print LABEL "Id\tLabel\n";
+#print "$n $s $s2\n";
+print "Id\tlabel\tMQScore\tTotalPRMScore\tMedianPRMScore\tFractionY\tFractionB\tIntensity\tF-Score\tDeltaScore\tDeltaScoreOther\tpepLen\tz1\tz2\tz3\ttrypN\ttrypC\tmissedTryp\tnumProt\tnumPep\tpepSite\tPeptide\tProtein(s)\n";
 open(*IN,"< $n");
 convert("1");
 close(*IN);
@@ -95,7 +93,5 @@ if ($s2) {
   convert("-2");
   close(*IN);
 }
-close(*LABEL);
-close(*DATA);
 
 

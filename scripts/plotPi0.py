@@ -23,8 +23,9 @@ for doc in glob.glob('*.res'):
   f = open(doc,"r")
   labels = [int(line) for line in f.readlines()]
   f.close()
-  nneg = max(float(reduce(countNeg,labels,0)),69705.0)
-  npos = max(float(len(labels) - nneg),69705.0)
+  nneg = float(reduce(countNeg,labels,0))
+  npos = float(len(labels) - nneg)
+  found = False
   for val in labels:
     if val != 1:
       fp+=1
@@ -41,15 +42,19 @@ for doc in glob.glob('*.res'):
 #      continue
     lam = fp/nneg
     plam = tp/npos
-    if lam<0.95:
+    if lam<0.99:
       fdrs+=[lam]
       pi0+=[min(1,(1-plam)/(1-lam))]
-  curves += [((fdrs, pi0),curveName)]
-for curve,curveName in curves:
+    if (not found and lam > 0.10):
+      found = True
+      level = 1 - plam
+  curves += [(level,(fdrs, pi0),curveName)]
+curves.sort(reverse=True)
+for level,curve,curveName in curves:
   plot(curve[0],curve[1],label=curveName)
 xlabel('Lambda',fontsize='large')
 ylabel('Pi0',fontsize='large')
-legend(loc=4,pad=0.1,labelsep = 0.001,handlelen=0.04,handletextsep=0.02,numpoints=3)
+legend(loc=3)
 savefig("pi0.png")
 savefig("pi0.eps")
 show()
