@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.43 2007/11/08 21:53:07 lukall Exp $
+ * $Id: DataSet.h,v 1.44 2007/12/05 01:24:11 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -23,7 +23,6 @@ class DataSet
 	virtual ~DataSet();
     static string getFeatureNames();
     static void setFeatureNames(string fn){DataSet::featureNames=fn;}
-    void readGistData(ifstream & is, vector<unsigned int> ixs);
     void inline setLabel(int l) {label=l;}
     void computeIntraSetFeatures();
     void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
@@ -45,7 +44,10 @@ class DataSet
     int inline getSize() const {return numSpectra;}
     int inline const getLabel() const {return label;}
     double * getNext(int& pos);
+    bool writeTabData(ofstream & out, const string & lab);
+    void readTabData(ifstream & dataStream, const vector<unsigned int> &ixs);
     bool getGistDataRow(int& pos,string & out);
+    void readGistData(ifstream & is, const vector<unsigned int> &ixs);
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);

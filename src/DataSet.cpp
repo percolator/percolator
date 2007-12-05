@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.70 2007/12/04 17:09:11 lukall Exp $
+ * $Id: DataSet.cpp,v 1.71 2007/12/05 01:24:08 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -85,6 +85,32 @@ bool DataSet::getGistDataRow(int & pos,string &out){
   out = s1.str();
   return true;
 }
+
+bool DataSet::writeTabData(ofstream & out, const string & lab) {
+  int pos=-1;
+  while ((feature = getNext(pos)) != NULL) {
+    out << ids[pos] << '\t' << lab;
+    for (int ix = 0;ix<DataSet::getNumFeatures();ix++) {
+      out << '\t' << feature[ix];
+    }
+    out << "\t";
+    if ((int)pepSeq.size()>pos) {
+      out << pepSeq[pos];
+    }
+    if ((int)proteinIds.size()>pos) {
+      set<string> prots = proteinIds[pos];
+      set<string>::const_iterator it = prots.begin();
+      for(;it!=prots.end();it++) {
+        out << "\t" << *it;
+      }
+    } else {
+      out << "\t";
+    }
+    out << endl;
+  }    
+  return true;
+}
+
 
 void DataSet::print_features() {
    for(int i=0;i<getSize();i++) {
@@ -187,7 +213,7 @@ unsigned int DataSet::cntEnz(const string& peptide) {
     return cnt;
 }
 
-void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
+void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   string tmp,line;
   is.clear();
   is.seekg(0,ios::beg);
@@ -235,6 +261,69 @@ void DataSet::readGistData(ifstream & is, vector<unsigned int> ixs) {
     } 
   } 
 }
+
+void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
+  string tmp,line;
+  is.clear();
+  is.seekg(0,ios::beg);
+  getline(is,line);
+  getline(is,line);
+  unsigned int m=0,n=ixs.size();
+  istringstream buff(line);
+  double a;
+  buff >> tmp >> tmp; // remove id and label
+  while(true) {
+    buff >> a;
+    if (buff.good()) {
+      m++;
+    } else {
+      buff >> tmp;
+    }
+    if (!buff) break;
+    buff.clear();
+  }
+  if (m<1) {
+    cerr << "To few features in Gist data file";
+    exit(-1);
+  }
+  DataSet::numFeatures = m;
+
+  proteinIds.resize(n);
+  pepSeq.resize(n);
+  string seq;
+
+  feature = new double[n*DataSet::getNumFeatures()];
+  ids.resize(n,"");
+  numSpectra=n;
+
+  is.clear();
+  is.seekg(0,ios::beg);
+  getline(is,line); // id line
+
+  unsigned int ix = 0;
+  getline(is,line);
+  for(unsigned int i=0;i<n;i++) {
+    while (ix<ixs[i]){
+        getline(is,line);
+        ix++;
+    }
+    buff.str(line);
+    buff.clear();
+    buff >> ids[i];
+    double *featureRow=&feature[rowIx(i)];
+    for(register unsigned int j=0;j<m;j++) {
+      buff >> featureRow[j];
+    }
+    buff >> pepSeq[ix];
+    while(!!buff) {
+      buff >> tmp;
+      if (tmp.size()>0) {
+        proteinIds[ix].insert(tmp);
+      }
+    } 
+  } 
+}
+
 
 string DataSet::modifyRec(const string record,const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect) {
   double feat[DataSet::numFeatures];

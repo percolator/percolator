@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.76 2007/12/04 01:48:58 lukall Exp $
+ * $Id: Caller.cpp,v 1.77 2007/12/05 01:24:03 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -31,8 +31,8 @@ const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() : pNorm(NULL), svmInput(NULL),
   modifiedFN(""), modifiedShuffledFN(""), forwardFN(""), shuffledTrainFN (""),shuffledThresholdFN(""), shuffledTestFN(""),
-  shuffledWC(""), rocFN(""), gistFN(""), weightFN(""), initWeightFN(""),
-  gistInput(false), dtaSelect(false), thresholdCalulationOnTrainSet(true), reportPerformanceEachIteration(false),
+  shuffledWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""), initWeightFN(""),
+  gistInput(false), tabInput(false), dtaSelect(false), thresholdCalulationOnTrainSet(true), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.5),
   niter(10), xv_type(EACH_STEP)
 {
@@ -129,6 +129,15 @@ Typically set to random_seq","pattern");
     "Input files are given as gist files. In this case first argument should be a file name \
 of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
 and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
+  cmd.defineOption("H","tab-out",
+    "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
+    "trunc name");
+  cmd.defineOption("h","tab-in",
+    "Input files are given as a tab delimetered file. In this case the only argument should be a file name\
+of the data file. The tab delimeterad fields should be id <tab> label <tab> feature1 \
+<tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
+Labels are interpreted as 1 -- positive train \
+and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
   cmd.defineOption("w","weights",
     "Output final weights to the given file",
     "filename");
@@ -188,6 +197,15 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     gistInput=true;
     if (cmd.arguments.size()!=2) {
       cerr << "Provide exactly two arguments when using gist input" << endl;
+      exit(-1);
+    }   
+  }
+  if (cmd.optionSet("H"))
+    tabFN = cmd.options["H"];
+  if (cmd.optionSet("h")) {
+    tabInput=true;
+    if (cmd.arguments.size()!=1) {
+      cerr << "Provide exactly one arguments when using tab delimetered input" << endl;
       exit(-1);
     }   
   }
@@ -319,6 +337,15 @@ void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler,
     shuffled.readGist(forwardFN,shuffledTrainFN,-1);
     shuffledTest.readGist(forwardFN,shuffledTrainFN,-2);
     shuffledThreshold.readGist(forwardFN,shuffledTrainFN,-3);
+    if (shuffledTest.getSize()>0)
+      separateShuffledTestSetHandler=true;
+    if (shuffledThreshold.getSize()>0)
+      separateShuffledThresholdSetHandler=true;
+  } else if (tabInput) {
+    normal.readTab(forwardFN,1);
+    shuffled.readTab(forwardFN,-1);
+    shuffledTest.readTab(forwardFN,-2);
+    shuffledThreshold.readTab(forwardFN,-3);
     if (shuffledTest.getSize()>0)
       separateShuffledTestSetHandler=true;
     if (shuffledThreshold.getSize()>0)
@@ -504,6 +531,9 @@ void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separat
   }
   if (gistFN.length()>0) {
     SetHandler::gistWrite(gistFN,normal,shuffled,shuffledTest);
+  }
+  if (tabFN.length()>0) {
+    SetHandler::writeTab(tabFN,normal,shuffled,shuffledTest);
   }
   //Normalize features
   set<DataSet *> all;

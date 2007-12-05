@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.35 2007/11/09 00:59:38 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.36 2007/12/05 01:24:13 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include<iostream>
@@ -225,6 +225,60 @@ void SetHandler::setSet(){
   }
 }
 
+void SetHandler::readTab(const string & dataFN, const int setLabel) {
+  intra = NULL;
+  if (VERB>1) cerr << "Reading Tab delimetered input from datafile " << dataFN << endl; 
+  ifstream labelStream(dataFN.c_str(),ios::out);
+  if (!labelStream) {
+    cerr << "Can not open file " << dataFN << endl;
+    exit(-1);
+  }
+  vector<unsigned int> ixs;
+  ixs.clear();
+  string tmp,line;
+  int label;
+  unsigned int ix=0;
+  getline(labelStream,tmp); // Id row
+  while(true) {
+    labelStream >> tmp >> label;
+    getline(labelStream,tmp); // read rest of line
+    if (!labelStream) break;
+    if (label==setLabel) {ixs.push_back(ix);}
+    ++ix;
+  }
+  labelStream.close();
+  ifstream dataStream(dataFN.c_str(),ios::out);
+  if (!dataStream) {
+    cerr << "Can not open file " << dataFN << endl;
+    exit(-1);
+  }
+  dataStream >> tmp;
+  dataStream.get();        // removed enumrator and tab 
+  getline(dataStream,line);
+  DataSet::setFeatureNames(line);
+  DataSet * theSet = new DataSet();
+  theSet->setLabel(setLabel>0?1:-1);
+  theSet->readTabData(dataStream,ixs);
+  dataStream.close();
+  subsets.push_back(theSet);
+  setSet();
+}
+    
+void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetHandler& shuff, const SetHandler& shuff2) {
+  ofstream dataStream(dataFN.data(),ios::out);
+  dataStream << "SpecId\tLabel\t" << DataSet::getFeatureNames() << "\tPeptide\tProteins" << endl;
+  string str;
+  for (int setPos=0;setPos< (signed int)norm.subsets.size();setPos++) {
+    norm.subsets[setPos]->writeTabData(dataStream,norm.subsets[setPos]->getLabel()==-1?"-1":"1");
+  }
+  for (int setPos=0;setPos< (signed int)shuff.subsets.size();setPos++) {
+    shuff.subsets[setPos]->writeTabData(dataStream,shuff.subsets[setPos]->getLabel()==-1?"-1":"1");
+  }
+  for (int setPos=0;setPos< (signed int)shuff2.subsets.size();setPos++) {
+    shuff2.subsets[setPos]->writeTabData(dataStream,shuff2.subsets[setPos]->getLabel()==-1?"-2":"1");
+  }    
+  dataStream.close();
+}
 
 
 void SetHandler::readGist(const string & dataFN, const string & labelFN, const int setLabel) {

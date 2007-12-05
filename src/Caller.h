@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.37 2007/12/04 01:47:52 lukall Exp $
+ * $Id: Caller.h,v 1.38 2007/12/05 01:24:05 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -54,10 +54,12 @@ protected:
     string shuffledWC;
     string rocFN;
     string gistFN;
+    string tabFN;
     string weightFN;
     string initWeightFN;
     string call;
     bool gistInput;
+    bool tabInput;
     bool dtaSelect;
     bool thresholdCalulationOnTrainSet;
     bool reportPerformanceEachIteration;

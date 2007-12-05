@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.19 2007/07/17 21:24:55 lukall Exp $
+ * $Id: SetHandler.h,v 1.20 2007/12/05 01:24:15 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
@@ -32,6 +32,8 @@ public:
     void createXvalSets(vector<SetHandler>& train,vector<SetHandler>& test, const unsigned int xval_fold);
 	double * getNext(int& ,int& ) const;
     const double * getFeatures(const int setPos,const int ixPos) const;
+    void readTab(const string & dataFN, const int label);
+    void static writeTab(const string &dataFN, const SetHandler& norm, const SetHandler& shuff, const SetHandler& shuff2);
     void readGist(const string & dataFN, const string & labelFN, const int label);
     void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff,const SetHandler& shuff2);
 	int const getLabel(int setPos);
