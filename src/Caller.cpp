@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.77 2007/12/05 01:24:03 lukall Exp $
+ * $Id: Caller.cpp,v 1.78 2007/12/05 01:47:59 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -129,10 +129,10 @@ Typically set to random_seq","pattern");
     "Input files are given as gist files. In this case first argument should be a file name \
 of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
 and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
-  cmd.defineOption("H","tab-out",
+  cmd.defineOption("J","tab-out",
     "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
     "trunc name");
-  cmd.defineOption("h","tab-in",
+  cmd.defineOption("j","tab-in",
     "Input files are given as a tab delimetered file. In this case the only argument should be a file name\
 of the data file. The tab delimeterad fields should be id <tab> label <tab> feature1 \
 <tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
