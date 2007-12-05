@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.72 2007/12/05 17:57:42 lukall Exp $
+ * $Id: DataSet.cpp,v 1.73 2007/12/05 18:59:35 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -284,7 +284,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
     buff.clear();
   }
   if (m<1) {
-    cerr << "To few features in Gist data file";
+    cerr << "To few features in Tab data file";
     exit(-1);
   }
   DataSet::numFeatures = m;
@@ -311,6 +311,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
     buff.str(line);
     buff.clear();
     buff >> ids[i];
+    buff >> tmp; // get rid of label
     double *featureRow=&feature[rowIx(i)];
     for(register unsigned int j=0;j<m;j++) {
       buff >> featureRow[j];

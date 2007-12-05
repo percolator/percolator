@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.36 2007/12/05 01:24:13 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.37 2007/12/05 19:00:04 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include<iostream>
@@ -252,8 +252,8 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
     cerr << "Can not open file " << dataFN << endl;
     exit(-1);
   }
-  dataStream >> tmp;
-  dataStream.get();        // removed enumrator and tab 
+  dataStream >> tmp >> tmp;
+  dataStream.get();        // removed enumrator, label and tab 
   getline(dataStream,line);
   DataSet::setFeatureNames(line);
   DataSet * theSet = new DataSet();
