@@ -3,9 +3,11 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
+C_SRCS += \
+../gcvspl.c 
+
 CPP_SRCS += \
 ../Caller.cpp \
-../CubicSpline.cpp \
 ../DataSet.cpp \
 ../Globals.cpp \
 ../IntraSetRelation.cpp \
@@ -22,7 +24,6 @@ CPP_SRCS += \
 
 OBJS += \
 ./Caller.o \
-./CubicSpline.o \
 ./DataSet.o \
 ./Globals.o \
 ./IntraSetRelation.o \
@@ -34,12 +35,15 @@ OBJS += \
 ./SetHandler.o \
 ./StdvNormalizer.o \
 ./UniNormalizer.o \
+./gcvspl.o \
 ./main.o \
 ./ssl.o 
 
+C_DEPS += \
+./gcvspl.d 
+
 CPP_DEPS += \
 ./Caller.d \
-./CubicSpline.d \
 ./DataSet.d \
 ./Globals.d \
 ./IntraSetRelation.d \
@@ -60,6 +64,13 @@ CPP_DEPS += \
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
 	g++ -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+%.o: ../%.c
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C Compiler'
+	gcc -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
