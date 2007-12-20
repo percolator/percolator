@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.48 2007/12/04 01:48:49 lukall Exp $
+ * $Id: Scores.cpp,v 1.49 2007/12/20 18:47:00 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -20,7 +20,8 @@ using namespace std;
 #include "Scores.h"
 #include "Globals.h"
 #include "ssl.h"
-#include "CubicSpline.h"
+#include "gcvspl.h"
+//#include "CubicSpline.h"
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score>other.score);}
@@ -83,11 +84,15 @@ void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& 
   int ix1=0,ix2=0,ix3=0;
   const double * featVec;
   while((featVec=shuffIter.getNext())!=NULL) {
-    if (((int)(ix1+ix2+ix3+1)*trainRatio)>=ix1+1) {
+    int remain = k+m+l - ix1 - ix2 -ix3;
+    int sel = (rand() % remain);
+    if (sel<(k-ix1)) {
+//    if (((int)(ix1+ix2+ix3+1)*trainRatio)>=ix1+1) {
       train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
       ++ix1;
-    } else if (((int)(ix1+ix2+ix3+1)*testRatio)>=ix3+1) {
+    } else if (sel<(k-ix1)+(m-ix3)) {
+//    } else if (((int)(ix1+ix2+ix3+1)*testRatio)>=ix3+1) {
       test.scores[ix3].label=-1;
       test.scores[ix3].featVec=featVec;
       ++ix3;    
@@ -140,7 +145,10 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   int ix1=0,ix2=0;
   const double * featVec;
   while((featVec=shuffIter.getNext())!=NULL) {
-    if (((int)(ix1+ix2+1)*ratio)>=ix1+1) {
+    int remain = k + l - ix1 - ix2;
+    int sel = (rand() % remain);
+//    if (((int)(ix1+ix2+1)*ratio)>=ix1+1) {
+    if (sel<(k-ix1)) {
       train.scores[ix1].label=-1;
       train.scores[ix1].featVec=featVec;
       ++ix1;
@@ -408,7 +416,8 @@ int Scores::getInitDirection(const double fdr, double * direction, bool findDire
   return bestPositives;
 }
 
-vector<double>& Scores::calcPep() {
+/*
+vector<double>& Scores::calcPepOld() {
   peps.assign(posSize(),-1);
   if (negSize()<pepBins*5) {
     cerr << "To few decoy sequences, posterior error probabilities not calculated" << endl;
@@ -462,3 +471,153 @@ vector<double>& Scores::calcPep() {
   }
   return peps;
 }
+*/
+
+vector<double>& Scores::calcPep() {
+  // Arrange scores in decending order
+  sort(scores.begin(),scores.end());
+  reverse(scores.begin(),scores.end());
+
+  int binSize = min(100,size()/10);
+
+  if (binSize<50) {
+    if (VERB>1)
+      cerr << "To few PSMs to perform logistic regression, assigning pep -1 to all PSMs" << endl;
+    peps.assign(posSize(),-1);
+    return peps;
+  }
+  if (VERB>1)
+   cerr << "Estimating PEPs, using pi0=" << pi0 << " and factor=" << factor << endl;
+  vector<double> logits,medians;
+  vector<int> first,last,decLs,nLs;
+  vector<bool> good;
+  vector<ScoreHolder>::iterator it;
+
+  // Bin together PSMs
+  
+  int tarL=0,decL=0,nL=0,nT=0,tarT=0,decT=0,firstPos=0;
+
+  for(it=scores.begin();it!=scores.end();it++){
+    if(it->label==1) {
+      tarL++;tarT++;
+    } else {
+      decL++;decT++;
+    }
+    nL++;nT++;
+    if (nL >= binSize) {
+      if (decT>0) {
+        good.push_back(decL>0 && tarL>0);
+        decLs.push_back(decL);
+        nLs.push_back(nL);
+        first.push_back(firstPos);
+        last.push_back(nT);
+      }
+      tarL=0; decL=0; nL=0; firstPos = nT + 1;
+    } 
+  }
+  
+  // Make the bins suitable for logit transmorm
+  
+  long int bad_stretch=0,n=0;
+  decL=0,nL=0;
+  for (unsigned int ix=0;ix<good.size();ix++) {
+    if (good[ix]) {
+      if (bad_stretch>0) {
+        decLs[ix-bad_stretch-1] += decL/2;
+        decLs[ix]               += decL/2;
+        nLs[ix-bad_stretch-1]   += nL/2;
+        nLs[ix]                 += nL/2;
+        int mid = first[ix-bad_stretch] + (last[ix-1]-first[ix-bad_stretch])/2;
+        last[ix-bad_stretch-1] = mid;
+        first[ix-1] = mid+1;
+      }
+      bad_stretch=0;decL=0;nL=0;
+      n++;
+    } else {
+      bad_stretch++;
+      decL += decLs[ix];
+      nL += nLs[ix];
+    }
+  }
+  double y[n];
+  double x[n];
+  double wx[n];
+
+  int i=0;
+  for (int ix=good.size()-1;ix>=0;ix--) {
+    if (good[ix]) {
+      double frac = (double)decLs[ix]/(double)nLs[ix];
+      y[i]=log(frac/(1-frac));
+      int mid = first[ix] + (last[ix]-first[ix])/2;
+      x[i]=scores[mid].score;
+      if (VERB>2) {
+         cerr << "Logit bin #" << i << " " << frac << " " << x[i] 
+              << " " << nLs[ix] << " " << y[i] << endl;  
+      }
+      wx[i]=1.0;
+      i++;
+    }  
+  }
+
+  long int m=2,k=1;
+
+  double wy = 1.0;
+
+  long int md=2,nc=n,ierr=0;
+  double val=0.0;
+  double c[n*k],wk[6*(n*m+1)+n];
+  gcvspl_(x, y, &n, wx, &wy, &m, &n, &k, 
+    &md, &val, c, &nc, 
+    wk, &ierr);
+
+  double brier=0.0,logscore=0.0;
+
+  long int ider=0,l=0;
+  double q[2*m];
+
+  // Arrange scores in acending order
+  reverse(scores.begin(),scores.end());
+
+  peps.clear();
+//  peps.assign(posSize(),-1);
+
+  double minPep = 1.0;
+    
+  for(it=scores.begin();it!=scores.end();it++){
+    double t=it->score;
+    double yt=splder_(&ider, &m, &n, &t, x, c, &l, q);
+    double pDec = 1/(1+exp(-yt));
+    double pep = min(1.0,max(0.0,pi0*factor*exp(yt)));
+    
+    
+    double observed = (it->label==1?1.0:0.0);
+    if(it->label==1) {
+      peps.push_back(pep); 
+      minPep = min(pep,minPep);
+    }
+    double delta = observed - (1.0-pDec);
+    brier -= delta*delta;
+    logscore += observed * log(1.0-pDec) + (1-observed) * log(pDec);
+  } 
+  if (VERB>3) {
+    cerr << "Logistic regresion gave ";
+    cerr << "Brier score: " << brier << ", logarithmic score: " << logscore << endl;
+  }
+  
+  // Restore scores in decending order  
+  reverse(scores.begin(),scores.end());
+  reverse(peps.begin(),peps.end());
+  vector<double>::iterator pepIt;
+  double oldPep=0.;
+  for(pepIt=peps.begin();pepIt!=peps.end();pepIt++){
+    if (*pepIt>minPep) { // take care of weird upward trend in pep
+      *pepIt = minPep;
+    } else {
+      minPep = 1.1;
+    }
+    *pepIt = max(oldPep,*pepIt);
+    oldPep = *pepIt;
+  }
+
+  return peps;
+}   

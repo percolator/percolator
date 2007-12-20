@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.38 2007/12/05 01:24:05 lukall Exp $
+ * $Id: Caller.h,v 1.39 2007/12/20 18:46:08 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -69,7 +69,8 @@ protected:
     double selectedCneg;
     double threshTestRatio;    
     double trainRatio;    
-    int niter;
+    unsigned int niter;
+    unsigned int seed;
     time_t startTime;
     clock_t startClock;
     const static unsigned int xval_fold;
