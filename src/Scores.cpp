@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.49 2007/12/20 18:47:00 lukall Exp $
+ * $Id: Scores.cpp,v 1.50 2007/12/21 21:55:14 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -13,6 +13,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <math.h>
 using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
