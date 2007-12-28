@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.80 2007/12/20 18:47:00 lukall Exp $
+ * $Id: Caller.cpp,v 1.81 2007/12/28 20:05:34 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -131,7 +131,7 @@ of the data file, the second the label file. Labels are interpreted as 1 -- posi
 and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
   cmd.defineOption("J","tab-out",
     "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
-    "trunc name");
+    "file name");
   cmd.defineOption("j","tab-in",
     "Input files are given as a tab delimetered file. In this case the only argument should be a file name\
 of the data file. The tab delimeterad fields should be id <tab> label <tab> feature1 \
