@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.50 2007/12/21 21:55:14 lukall Exp $
+ * $Id: Scores.cpp,v 1.51 2008/01/14 21:31:50 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -490,7 +490,7 @@ vector<double>& Scores::calcPep() {
   if (VERB>1)
    cerr << "Estimating PEPs, using pi0=" << pi0 << " and factor=" << factor << endl;
   vector<double> logits,medians;
-  vector<int> first,last,decLs,nLs;
+  vector<int> first,last,decLs,tarLs;
   vector<bool> good;
   vector<ScoreHolder>::iterator it;
 
@@ -507,9 +507,9 @@ vector<double>& Scores::calcPep() {
     nL++;nT++;
     if (nL >= binSize) {
       if (decT>0) {
-        good.push_back(decL>0 && tarL>0);
+        good.push_back(decL>0 && tarL>0); // && factor*pi0*decL<tarL);
         decLs.push_back(decL);
-        nLs.push_back(nL);
+        tarLs.push_back(tarL);
         first.push_back(firstPos);
         last.push_back(nT);
       }
@@ -520,24 +520,29 @@ vector<double>& Scores::calcPep() {
   // Make the bins suitable for logit transmorm
   
   long int bad_stretch=0,n=0;
-  decL=0,nL=0;
+  decL=0,tarL=0;
   for (unsigned int ix=0;ix<good.size();ix++) {
     if (good[ix]) {
-      if (bad_stretch>0) {
-        decLs[ix-bad_stretch-1] += decL/2;
-        decLs[ix]               += decL/2;
-        nLs[ix-bad_stretch-1]   += nL/2;
-        nLs[ix]                 += nL/2;
-        int mid = first[ix-bad_stretch] + (last[ix-1]-first[ix-bad_stretch])/2;
-        last[ix-bad_stretch-1] = mid;
-        first[ix-1] = mid+1;
+      if (decLs[ix]*factor*pi0>=tarLs[ix]){
+        for(;ix<good.size();ix++)
+          good[ix] = false;
+      } else {
+        if (bad_stretch>0) {
+          decLs[ix-bad_stretch-1] += decL/2;
+          decLs[ix]               += decL/2;
+          tarLs[ix-bad_stretch-1] += tarL/2;
+          tarLs[ix]               += tarL/2;
+          int mid = first[ix-bad_stretch] + (last[ix-1]-first[ix-bad_stretch])/2;
+          last[ix-bad_stretch-1] = mid;
+          first[ix-1] = mid+1;
+        }
+        bad_stretch=0;decL=0;tarL=0;
+        n++;
       }
-      bad_stretch=0;decL=0;nL=0;
-      n++;
     } else {
       bad_stretch++;
       decL += decLs[ix];
-      nL += nLs[ix];
+      tarL += tarLs[ix];
     }
   }
   double y[n];
@@ -547,13 +552,13 @@ vector<double>& Scores::calcPep() {
   int i=0;
   for (int ix=good.size()-1;ix>=0;ix--) {
     if (good[ix]) {
-      double frac = (double)decLs[ix]/(double)nLs[ix];
+      double frac = factor*pi0*(double)decLs[ix]/(double)tarLs[ix];
       y[i]=log(frac/(1-frac));
       int mid = first[ix] + (last[ix]-first[ix])/2;
       x[i]=scores[mid].score;
       if (VERB>2) {
          cerr << "Logit bin #" << i << " " << frac << " " << x[i] 
-              << " " << nLs[ix] << " " << y[i] << endl;  
+              << " " << tarLs[ix]+decLs[ix] << " " << y[i] << endl;  
       }
       wx[i]=1.0;
       i++;
@@ -585,20 +590,14 @@ vector<double>& Scores::calcPep() {
   double minPep = 1.0;
     
   for(it=scores.begin();it!=scores.end();it++){
-    double t=it->score;
-    double yt=splder_(&ider, &m, &n, &t, x, c, &l, q);
-    double pDec = 1/(1+exp(-yt));
-    double pep = min(1.0,max(0.0,pi0*factor*exp(yt)));
-    
-    
-    double observed = (it->label==1?1.0:0.0);
+            
     if(it->label==1) {
+      double t=it->score;
+      double yt=splder_(&ider, &m, &n, &t, x, c, &l, q);
+      double pep = min(1.0,max(0.0,1/(1+exp(-yt))));
       peps.push_back(pep); 
       minPep = min(pep,minPep);
     }
-    double delta = observed - (1.0-pDec);
-    brier -= delta*delta;
-    logscore += observed * log(1.0-pDec) + (1-observed) * log(pDec);
   } 
   if (VERB>3) {
     cerr << "Logistic regresion gave ";
