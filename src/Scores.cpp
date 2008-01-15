@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.51 2008/01/14 21:31:50 lukall Exp $
+ * $Id: Scores.cpp,v 1.52 2008/01/15 01:11:37 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -479,9 +479,9 @@ vector<double>& Scores::calcPep() {
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
 
-  int binSize = min(100,size()/10);
+  int binSize = min(50,size()/10);
 
-  if (binSize<50) {
+  if (binSize<30) {
     if (VERB>1)
       cerr << "To few PSMs to perform logistic regression, assigning pep -1 to all PSMs" << endl;
     peps.assign(posSize(),-1);
@@ -517,7 +517,7 @@ vector<double>& Scores::calcPep() {
     } 
   }
   
-  // Make the bins suitable for logit transmorm
+  // Make the bins suitable for logit transform
   
   long int bad_stretch=0,n=0;
   decL=0,tarL=0;
@@ -560,7 +560,7 @@ vector<double>& Scores::calcPep() {
          cerr << "Logit bin #" << i << " " << frac << " " << x[i] 
               << " " << tarLs[ix]+decLs[ix] << " " << y[i] << endl;  
       }
-      wx[i]=1.0;
+      wx[i]=1.0/(1.0+abs(y[i]));
       i++;
     }  
   }
@@ -575,8 +575,6 @@ vector<double>& Scores::calcPep() {
   gcvspl_(x, y, &n, wx, &wy, &m, &n, &k, 
     &md, &val, c, &nc, 
     wk, &ierr);
-
-  double brier=0.0,logscore=0.0;
 
   long int ider=0,l=0;
   double q[2*m];
@@ -599,10 +597,6 @@ vector<double>& Scores::calcPep() {
       minPep = min(pep,minPep);
     }
   } 
-  if (VERB>3) {
-    cerr << "Logistic regresion gave ";
-    cerr << "Brier score: " << brier << ", logarithmic score: " << logscore << endl;
-  }
   
   // Restore scores in decending order  
   reverse(scores.begin(),scores.end());
