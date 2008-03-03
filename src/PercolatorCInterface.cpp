@@ -89,10 +89,17 @@ void pcExecute() {
   bool separateShuffledTestSetHandler = nset>TWO_SETS;
   bool separateShuffledThresholdSetHandler = nset==FOUR_SETS;
   pCaller->fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
+#ifdef WIN32
+  double *w = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+#else
   double w[DataSet::getNumFeatures()+1];
+#endif
   pCaller->preIterationSetup(w);
   pCaller->train(w);  
   pCaller->getTestSet()->calcScores(w);
+#ifdef WIN32
+  _freea(w);
+#endif
 } 
 
 /** Function called when retrieving target scores and q-values after processing,

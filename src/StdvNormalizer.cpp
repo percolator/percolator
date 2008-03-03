@@ -4,10 +4,14 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.cpp,v 1.16 2007/02/13 18:17:14 lukall Exp $
+ * $Id: StdvNormalizer.cpp,v 1.17 2008/03/03 08:29:19 cegrant Exp $
  *******************************************************************************/
 #include <vector>
 #include <iostream>
+#ifdef WIN32
+#include <float.h>
+#define isfinite _finite
+#endif
 #include <math.h>
 #include <set>
 #include <vector>

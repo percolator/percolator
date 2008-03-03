@@ -4,10 +4,12 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.39 2007/12/20 18:46:08 lukall Exp $
+ * $Id: Caller.h,v 1.40 2008/03/03 08:29:19 cegrant Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
+
+#include <time.h>
 
 class Caller
 {

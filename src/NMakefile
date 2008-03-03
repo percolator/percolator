@@ -1,0 +1,23 @@
+.cpp.obj: 
+    cl /c /DWIN32 /EHsc /MT /O2 $< 
+
+source_files= \
+  Caller.cpp \
+  DataSet.cpp \
+  Globals.cpp \
+  IntraSetRelation.cpp \
+  Normalizer.cpp \
+  Option.cpp \
+  PercolatorCInterface.cpp \
+  ResultHolder.cpp \
+  Scores.cpp \
+  SetHandler.cpp \
+  StdvNormalizer.cpp \
+  UniNormalizer.cpp \
+  gcvspl.cpp \
+  ssl.cpp \
+  main.cpp
+
+percolator.exe: $(source_files:.cpp=.obj)
+  link /OUT:percolator.exe $**
+

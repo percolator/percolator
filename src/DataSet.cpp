@@ -4,13 +4,18 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.73 2007/12/05 18:59:35 lukall Exp $
+ * $Id: DataSet.cpp,v 1.74 2008/03/03 08:29:19 cegrant Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <math.h>
+#ifdef WIN32
+#include <float.h>
+#define isfinite _finite
+#include <algorithm>
+#endif
 #include <set>
 #include <map>
 #include <utility>
@@ -328,7 +333,11 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
 
 
 string DataSet::modifyRec(const string record,const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect) {
+#ifdef WIN32
+	double *feat = (double *) _alloca((DataSet::numFeatures) * sizeof(double));
+#else
   double feat[DataSet::numFeatures];
+#endif
 //  if (mLines>3) mLines=3;
   vector<pair<double,string> > outputs;
   outputs.clear();
@@ -384,6 +393,9 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const doubl
     sprintf(buf,aStr.c_str(),delt);
     out << buf;
   }
+#ifdef WIN32
+  _freea(feat);
+#endif
   return out.str();
 }
 

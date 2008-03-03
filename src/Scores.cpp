@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.52 2008/01/15 01:11:37 lukall Exp $
+ * $Id: Scores.cpp,v 1.53 2008/03/03 08:29:19 cegrant Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -545,9 +545,16 @@ vector<double>& Scores::calcPep() {
       tarL += tarLs[ix];
     }
   }
+
+#ifdef WIN32
+  double *y = (double *) _malloca(n * sizeof(double));
+  double *x = (double *) _malloca(n * sizeof(double));
+  double *wx = (double *) _malloca(n * sizeof(double));
+#else
   double y[n];
   double x[n];
   double wx[n];
+#endif
 
   int i=0;
   for (int ix=good.size()-1;ix>=0;ix--) {
@@ -571,14 +578,22 @@ vector<double>& Scores::calcPep() {
 
   long int md=2,nc=n,ierr=0;
   double val=0.0;
+#ifdef WIN32
+  double *c = (double *) _malloca((n * k) * sizeof(double));
+  double *wk = (double *) _malloca((6*(n*m+1)+n) * sizeof(double));
+#else
   double c[n*k],wk[6*(n*m+1)+n];
+#endif
   gcvspl_(x, y, &n, wx, &wy, &m, &n, &k, 
     &md, &val, c, &nc, 
     wk, &ierr);
 
   long int ider=0,l=0;
+#ifdef WIN32
+  double *q = (double *) _malloca(2 * m * sizeof(double));
+#else
   double q[2*m];
-
+#endif
   // Arrange scores in acending order
   reverse(scores.begin(),scores.end());
 
@@ -612,6 +627,14 @@ vector<double>& Scores::calcPep() {
     *pepIt = max(oldPep,*pepIt);
     oldPep = *pepIt;
   }
+#ifdef WIN32
+  _freea(y);
+  _freea(x);
+  _freea(wx);
+  _freea(c);
+  _freea(wk);
+  _freea(q);
+#endif
 
   return peps;
 }   

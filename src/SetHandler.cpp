@@ -4,11 +4,14 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.37 2007/12/05 19:00:04 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.38 2008/03/03 08:29:19 cegrant Exp $
  *******************************************************************************/
 #include <assert.h>
 #include<iostream>
 #include<fstream>
+#ifdef WIN32
+#include <algorithm>
+#endif
 #include <map>
 #include <set>
 #include <vector>

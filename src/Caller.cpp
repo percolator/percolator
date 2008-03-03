@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.81 2007/12/28 20:05:34 lukall Exp $
+ * $Id: Caller.cpp,v 1.82 2008/03/03 08:29:19 cegrant Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -297,13 +297,20 @@ void Caller::printWeights(ostream & weightStream, double * w) {
     weightStream << "\t" << w[ix];
   }
   weightStream << endl;
+#ifdef WIN32
+  double *ww = (double *) _alloca((DataSet::getNumFeatures()+1) *sizeof(double));
+#else
   double ww[DataSet::getNumFeatures()+1];
+#endif
   pNorm->unnormalizeweight(w,ww);
   weightStream << ww[0];
   for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
     weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
+#ifdef WIN32
+  _freea(ww);
+#endif
 }
 
 void Caller::readWeights(istream & weightStream, double * w) {
@@ -435,7 +442,11 @@ void Caller::xvalidate_step(double *w) {
         if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
+#ifdef WIN32
+		double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+#else
         double ww[DataSet::getNumFeatures()+1];
+#endif
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
@@ -451,7 +462,10 @@ void Caller::xvalidate_step(double *w) {
           best_cpos = *cpos;
           best_cneg = (*cpos)*(*cfrac);          
         }
-      }     
+#ifdef WIN32
+	  _freea(ww);
+#endif
+      }
     }
   }
   Globals::getInstance()->incVerbose();
@@ -463,7 +477,12 @@ void Caller::xvalidate_step(double *w) {
 void Caller::xvalidate(double *w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
+#ifdef WIN32
+  double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+  double *www = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+#else
   double ww[DataSet::getNumFeatures()+1],www[DataSet::getNumFeatures()+1];
+#endif
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
@@ -496,6 +515,11 @@ void Caller::xvalidate(double *w) {
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
                   << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;  
   trainEm(www);
+#ifdef WIN32
+  _freea(ww);
+  _freea(www);
+#endif
+
 }
 
 void Caller::train(double *w) {
@@ -584,11 +608,18 @@ int Caller::preIterationSetup(double * w) {
     xv_type = NO_XV;
   }
   if (initWeightFN.size()>0) {
+#ifdef WIN32
+	  double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+#else
      double ww[DataSet::getNumFeatures()+1];
+#endif
      ifstream weightStream(initWeightFN.data(),ios::in);
      readWeights(weightStream,ww);
      weightStream.close();
-     pNorm->normalizeweight(ww,w);    
+     pNorm->normalizeweight(ww,w); 
+#ifdef WIN32
+	 _freea(ww);
+#endif
   }
   int initPositives = trainset.getInitDirection(test_fdr,w,initWeightFN.size()==0);
   return initPositives;
@@ -605,7 +636,12 @@ int Caller::run() {
   bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
   readFiles(doSingleFile, separateShuffledTestSetHandler, separateShuffledThresholdSetHandler);
   fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
+#ifdef WIN32
+  double *w = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+  double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
+#else
   double w[DataSet::getNumFeatures()+1],ww[DataSet::getNumFeatures()+1];
+#endif
   int initPositives = preIterationSetup(w);
 
   // Set up a first guess of w
@@ -649,6 +685,10 @@ int Caller::run() {
       testset.printRoc(rocFN);
   }
   normal.print(testset);
+#ifdef WIN32
+  _freea(w);
+  _freea(ww);
+#endif
   return 0;
 }
 
