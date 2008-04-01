@@ -4,12 +4,13 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.40 2008/03/03 08:29:19 cegrant Exp $
+ * $Id: Caller.h,v 1.41 2008/04/01 19:17:48 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
 
 #include <time.h>
+#include "SanityCheck.h"
 
 class Caller
 {
@@ -46,6 +47,7 @@ public:
     }
 protected:
     Normalizer * pNorm;
+    SanityCheck * pCheck;
     AlgIn *svmInput;
     string modifiedFN;
     string modifiedShuffledFN;
@@ -58,7 +60,6 @@ protected:
     string gistFN;
     string tabFN;
     string weightFN;
-    string initWeightFN;
     string call;
     bool gistInput;
     bool tabInput;

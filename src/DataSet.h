@@ -4,10 +4,15 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.44 2007/12/05 01:24:11 lukall Exp $
+ * $Id: DataSet.h,v 1.45 2008/04/01 19:17:48 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
+#include <string>
+#include <set>
+#include <vector>
+#include <iostream>
+using namespace std;
 class Scores;
 class Normalizer;
 class ResultHolder;

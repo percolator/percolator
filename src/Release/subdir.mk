@@ -15,8 +15,10 @@ CPP_SRCS += \
 ../Option.cpp \
 ../PercolatorCInterface.cpp \
 ../ResultHolder.cpp \
+../SanityCheck.cpp \
 ../Scores.cpp \
 ../SetHandler.cpp \
+../SqtSanityCheck.cpp \
 ../StdvNormalizer.cpp \
 ../UniNormalizer.cpp \
 ../main.cpp \
@@ -31,8 +33,10 @@ OBJS += \
 ./Option.o \
 ./PercolatorCInterface.o \
 ./ResultHolder.o \
+./SanityCheck.o \
 ./Scores.o \
 ./SetHandler.o \
+./SqtSanityCheck.o \
 ./StdvNormalizer.o \
 ./UniNormalizer.o \
 ./gcvspl.o \
@@ -51,8 +55,10 @@ CPP_DEPS += \
 ./Option.d \
 ./PercolatorCInterface.d \
 ./ResultHolder.d \
+./SanityCheck.d \
 ./Scores.d \
 ./SetHandler.d \
+./SqtSanityCheck.d \
 ./StdvNormalizer.d \
 ./UniNormalizer.d \
 ./main.d \

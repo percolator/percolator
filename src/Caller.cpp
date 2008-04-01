@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.82 2008/03/03 08:29:19 cegrant Exp $
+ * $Id: Caller.cpp,v 1.83 2008/04/01 19:17:48 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -17,6 +17,8 @@
 #include <string>
 using namespace std;
 #include "Option.h"
+#include "SanityCheck.h"
+#include "SqtSanityCheck.h"
 #include "DataSet.h"
 #include "IntraSetRelation.h"
 #include "Normalizer.h"
@@ -29,9 +31,9 @@ using namespace std;
 
 const unsigned int Caller::xval_fold = 3;
 
-Caller::Caller() : pNorm(NULL), svmInput(NULL),
+Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   modifiedFN(""), modifiedShuffledFN(""), forwardFN(""), shuffledTrainFN (""),shuffledThresholdFN(""), shuffledTestFN(""),
-  shuffledWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""), initWeightFN(""),
+  shuffledWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""),
   gistInput(false), tabInput(false), dtaSelect(false), thresholdCalulationOnTrainSet(true), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
   niter(10), seed(0), xv_type(EACH_STEP)
@@ -43,6 +45,9 @@ Caller::~Caller()
     if (pNorm)
       delete pNorm;
     pNorm=NULL;
+    if (pCheck)
+      delete pCheck;
+    pCheck=NULL;
     if (svmInput)
       delete svmInput;
     svmInput=NULL;
@@ -215,7 +220,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("w"))
     weightFN = cmd.options["w"];
   if (cmd.optionSet("W"))
-    initWeightFN = cmd.options["W"];
+    SanityCheck::setInitWeightFN(cmd.options["W"]);
   if (cmd.optionSet("f")) {
     double frac = cmd.getDouble("f", 0.0 ,1.0);
     trainRatio=frac;
@@ -297,34 +302,16 @@ void Caller::printWeights(ostream & weightStream, double * w) {
     weightStream << "\t" << w[ix];
   }
   weightStream << endl;
-#ifdef WIN32
-  double *ww = (double *) _alloca((DataSet::getNumFeatures()+1) *sizeof(double));
-#else
-  double ww[DataSet::getNumFeatures()+1];
-#endif
+  C_DARRAY(ww,DataSet::getNumFeatures()+1)
   pNorm->unnormalizeweight(w,ww);
   weightStream << ww[0];
   for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
     weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
-#ifdef WIN32
-  _freea(ww);
-#endif
+  D_DARRAY(ww)
 }
 
-void Caller::readWeights(istream & weightStream, double * w) {
-  char buffer[1024],c;
-  while (!(((c = weightStream.get())== '-') || (c >= '0' && c <= '9'))) {
-    weightStream.getline(buffer,1024);
-  }
-  weightStream.getline(buffer,1024);
-//  weightStream.unget();
-// Get second line containing raw features
-  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
-    weightStream >> w[ix];
-  }
-}
 
 void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** featureNames, double pi0) {
   normal.filelessSetup(numFeatures, numSpectra,1);
@@ -346,6 +333,7 @@ void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatur
 
 void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
   if (gistInput) {
+    pCheck = new SanityCheck();
     normal.readGist(forwardFN,shuffledTrainFN,1);
     shuffled.readGist(forwardFN,shuffledTrainFN,-1);
     shuffledTest.readGist(forwardFN,shuffledTrainFN,-2);
@@ -355,6 +343,7 @@ void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler,
     if (shuffledThreshold.getSize()>0)
       separateShuffledThresholdSetHandler=true;
   } else if (tabInput) {
+    pCheck = new SanityCheck();
     normal.readTab(forwardFN,1);
     shuffled.readTab(forwardFN,-1);
     shuffledTest.readTab(forwardFN,-2);
@@ -364,6 +353,7 @@ void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler,
     if (shuffledThreshold.getSize()>0)
       separateShuffledThresholdSetHandler=true;
   } else if (!doSingleFile) {
+    pCheck = new SqtSanityCheck();
     normal.readFile(forwardFN,1);
     shuffled.readFile(shuffledTrainFN,-1);    
     if (separateShuffledTestSetHandler)
@@ -371,6 +361,7 @@ void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler,
     if (separateShuffledThresholdSetHandler)
       shuffledThreshold.readFile(shuffledThresholdFN,-1);
   } else {
+    pCheck = new SqtSanityCheck();
     normal.readFile(forwardFN,shuffledWC,false);  
     shuffled.readFile(forwardFN,shuffledWC,true);  
   }
@@ -442,11 +433,7 @@ void Caller::xvalidate_step(double *w) {
         if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
-#ifdef WIN32
-		double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
-#else
-        double ww[DataSet::getNumFeatures()+1];
-#endif
+        C_DARRAY(ww,DataSet::getNumFeatures()+1)
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
@@ -462,9 +449,7 @@ void Caller::xvalidate_step(double *w) {
           best_cpos = *cpos;
           best_cneg = (*cpos)*(*cfrac);          
         }
-#ifdef WIN32
-	  _freea(ww);
-#endif
+        D_DARRAY(ww)
       }
     }
   }
@@ -477,12 +462,9 @@ void Caller::xvalidate_step(double *w) {
 void Caller::xvalidate(double *w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
-#ifdef WIN32
-  double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
-  double *www = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
-#else
-  double ww[DataSet::getNumFeatures()+1],www[DataSet::getNumFeatures()+1];
-#endif
+  C_DARRAY(ww,DataSet::getNumFeatures()+1)
+  C_DARRAY(www,DataSet::getNumFeatures()+1)
+
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
@@ -515,11 +497,8 @@ void Caller::xvalidate(double *w) {
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
                   << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;  
   trainEm(www);
-#ifdef WIN32
-  _freea(ww);
-  _freea(www);
-#endif
-
+  D_DARRAY(ww)
+  D_DARRAY(www)
 }
 
 void Caller::train(double *w) {
@@ -607,22 +586,7 @@ int Caller::preIterationSetup(double * w) {
   } else {
     xv_type = NO_XV;
   }
-  if (initWeightFN.size()>0) {
-#ifdef WIN32
-	  double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
-#else
-     double ww[DataSet::getNumFeatures()+1];
-#endif
-     ifstream weightStream(initWeightFN.data(),ios::in);
-     readWeights(weightStream,ww);
-     weightStream.close();
-     pNorm->normalizeweight(ww,w); 
-#ifdef WIN32
-	 _freea(ww);
-#endif
-  }
-  int initPositives = trainset.getInitDirection(test_fdr,w,initWeightFN.size()==0);
-  return initPositives;
+  return pCheck->getInitDirection(&testset,&trainset,pNorm,w,test_fdr);
 }    
 
 int Caller::run() {
@@ -636,13 +600,9 @@ int Caller::run() {
   bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
   readFiles(doSingleFile, separateShuffledTestSetHandler, separateShuffledThresholdSetHandler);
   fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-#ifdef WIN32
-  double *w = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
-  double *ww = (double *) _malloca((DataSet::getNumFeatures()+1) * sizeof(double));
-#else
-  double w[DataSet::getNumFeatures()+1],ww[DataSet::getNumFeatures()+1];
-#endif
-  int initPositives = preIterationSetup(w);
+  C_DARRAY(w,DataSet::getNumFeatures()+1)
+  C_DARRAY(ww,DataSet::getNumFeatures()+1)
+  preIterationSetup(w);
 
   // Set up a first guess of w
   time_t procStart;
@@ -666,10 +626,7 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  int overFDR = testset.calcScores(w,test_fdr);
-  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << test_fdr*100 << "% FDR level on testset" << endl;
-  if (initPositives>overFDR)
-     cerr << "Less identifications after percolator processing than before processing" << endl;
+  pCheck->validateDirection(w);
   pNorm->unnormalizeweight(w,ww);    
   normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
   if (separateShuffledTestSetHandler)
@@ -685,10 +642,8 @@ int Caller::run() {
       testset.printRoc(rocFN);
   }
   normal.print(testset);
-#ifdef WIN32
-  _freea(w);
-  _freea(ww);
-#endif
+  D_DARRAY(w)
+  D_DARRAY(ww)
   return 0;
 }
 

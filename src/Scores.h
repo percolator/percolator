@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.31 2007/12/04 01:49:01 lukall Exp $
+ * $Id: Scores.h,v 1.32 2008/04/01 19:17:48 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -61,6 +61,7 @@ protected:
     int posNow;
     const static int shortCutSize = 100;
     const static int pepBins = 40;
+//    const static double lambdas[] = {0.2,0.21,0.22,0.23,0.24,1.1}; // have to end on value >1
     vector<ScoreHolder> scores;
     vector<double> peps;
     vector<double> qVals;

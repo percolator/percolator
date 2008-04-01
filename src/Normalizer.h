@@ -4,10 +4,13 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.h,v 1.10 2007/02/13 18:17:15 lukall Exp $
+ * $Id: Normalizer.h,v 1.11 2008/04/01 19:17:48 lukall Exp $
  *******************************************************************************/
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
+class DataSet;
+#include <set>
+using namespace std;
 
 class Normalizer
 {
