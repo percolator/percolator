@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.83 2008/04/01 19:17:48 lukall Exp $
+ * $Id: Caller.cpp,v 1.84 2008/04/01 21:38:55 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -164,6 +164,9 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   cmd.defineOption("R","test-each-itteration","Measure performance on test set each itteration","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
     "Calculate quadratic feature terms","",TRUE_IF_SET);
+  cmd.defineOption("O","override",
+    "Overide error check and do not fall back on default score vector in case of suspect score vector",
+    "",TRUE_IF_SET);
   cmd.defineOption("I","intra-set",
     "Turn Off calculation of intra set features","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
@@ -233,6 +236,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     dtaSelect=true;
   if (cmd.optionSet("Q"))
     DataSet::setQuadraticFeatures(true);
+  if (cmd.optionSet("O"))
+    SanityCheck::setOverrule(true);
   if (cmd.optionSet("I"))
     DataSet::setCalcIntraSetFeatures(false);
   if (cmd.optionSet("y"))

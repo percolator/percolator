@@ -15,11 +15,12 @@ public:
   void resetDirection(double* w);
 
   static void setInitWeightFN(string fn) {initWeightFN=fn;}
-  static bool overRule;
+  static void setOverrule(bool orl) {overRule=orl;}
 protected:
   virtual void getDefaultDirection(double *w);
   int initPositives;
   double fdr;
+  static bool overRule;
   static string initWeightFN;
   Scores *pTestset, *pTrainset;
 };
