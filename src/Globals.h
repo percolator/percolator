@@ -4,13 +4,13 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Globals.h,v 1.7 2008/04/01 19:17:48 lukall Exp $
+ * $Id: Globals.h,v 1.8 2008/04/02 06:36:41 cegrant Exp $
  *******************************************************************************/
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
 #ifdef WIN32
-  #define C_DARRAY(name,nelem) double *name = (double *) _malloca(nelem) * sizeof(double));
+  #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
   #define D_DARRAY(name) _freea(name);
 #else
   #define C_DARRAY(name,nelem) double name[nelem];
