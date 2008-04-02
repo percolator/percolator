@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.75 2008/04/01 19:17:48 lukall Exp $
+ * $Id: DataSet.cpp,v 1.76 2008/04/02 00:06:57 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -164,7 +164,7 @@ void DataSet::setNumFeatures() {
                  - (enzyme==NO_ENZYME?3:0) 
                  - (calcPTMs?0:1) 
                  - (hitsPerSpectrum>1?0:1) 
-                 - (calcIntraSetFeatures?0:3)
+                 - (calcIntraSetFeatures?0:2)
                  - (calcAAFrequencies?0:aaAlphabet.size());
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
 }
@@ -472,7 +472,8 @@ string DataSet::getFeatureNames() {
         oss << "\t" << *it << "Freq";
     }
     if (calcIntraSetFeatures)
-      oss << "\tnumPep\tnumProt\tpepSite";
+      oss << "\tnumPep\tpepSite";
+//      oss << "\tnumPep\tnumProt\tpepSite";
     featureNames = oss.str();
   }
   return featureNames;
@@ -594,10 +595,10 @@ unsigned int DataSet::cntPTMs(const string& pep) {
 
 void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &prots) {
   if (DataSet::calcIntraSetFeatures) {
-    feat[numRealFeatures-3]=
-      log((double)intra->getNumPep(pep));
     feat[numRealFeatures-2]=
-      log((double)intra->getNumProt(prots));
+      log((double)intra->getNumPep(pep));
+//    feat[numRealFeatures-2]=
+//      log((double)intra->getNumProt(prots));
     feat[numRealFeatures-1]=
       log((double)intra->getPepSites(prots));
   }
