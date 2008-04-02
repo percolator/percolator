@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.84 2008/04/01 21:38:55 lukall Exp $
+ * $Id: Caller.cpp,v 1.85 2008/04/02 15:57:01 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -319,6 +319,7 @@ void Caller::printWeights(ostream & weightStream, double * w) {
 
 
 void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** featureNames, double pi0) {
+  pCheck = new SanityCheck();
   normal.filelessSetup(numFeatures, numSpectra,1);
   shuffled.filelessSetup(numFeatures, numSpectra,-1);
   if (sets>2)
