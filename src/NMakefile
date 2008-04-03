@@ -10,8 +10,10 @@ source_files= \
   Option.cpp \
   PercolatorCInterface.cpp \
   ResultHolder.cpp \
+  SanityCheck.cpp \
   Scores.cpp \
   SetHandler.cpp \
+  SqtSanityCheck.cpp \
   StdvNormalizer.cpp \
   UniNormalizer.cpp \
   gcvspl.cpp \
