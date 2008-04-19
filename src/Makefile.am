@@ -2,14 +2,6 @@ distdir = $(PACKAGE)_$(VERSION)
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version
 
-#if DEBUG
-#  AM_CPPFLAGS = -DDEBUG -g -O0
-#  AM_CFLAGS = -DDEBUG -g -O0
-#else !DEBUG
-#  AM_CPPFLAGS = -O3
-#  AM_CFLAGS = -O3
-#endif !DEBUG
-
 noinst_LTLIBRARIES = libpercolator.la
 libpercolator_la_SOURCES = \
   Caller.cpp \

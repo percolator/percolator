@@ -8,9 +8,15 @@ AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE(percolator, 1.04)
 
-# Debug
+## Debug
 # add checking message
 AC_MSG_CHECKING(whether to build with debug information)
+# save $CFLAGS since AC_PROG_CC likes to insert "-g -O2"
+# if $CFLAGS is blank
+cflags_save="$CFLAGS"
+AC_PROG_CC
+AC_PROG_CPP
+CFLAGS="$cflags_save"
 
 # create configure parameter and init variable $debuger
 debuger=no
@@ -27,9 +33,12 @@ AC_MSG_RESULT($debuger)
 
 # set DEBUG flag and introduce additional compiler flags
 if test x"$debuger" = x"yes"; then
+	CXXFLAGS="-g -O0 -Wall -Werror"
+	CFLAGS="-g -O0 -Wall -Werror"
 	AC_DEFINE([DEBUG],[],[Flag indicating that debug is enabled])
-	CXXFLAGS = "-g -Wall -Werror"
-	CFLAGS   = "-g -Wall -Werror"
+else
+	CXXFLAGS="-O3"
+	CFLAGS="-O3"
 fi
 	
 # Checks for programs.
