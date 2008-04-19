@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.76 2008/04/02 00:06:57 lukall Exp $
+ * $Id: DataSet.cpp,v 1.77 2008/04/19 21:40:33 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -165,7 +165,7 @@ void DataSet::setNumFeatures() {
                  - (calcPTMs?0:1) 
                  - (hitsPerSpectrum>1?0:1) 
                  - (calcIntraSetFeatures?0:2)
-                 - (calcAAFrequencies?0:aaAlphabet.size());
+                 - (calcAAFrequencies?0:aaAlphabet.size()*3);
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
 }
 
@@ -469,7 +469,11 @@ string DataSet::getFeatureNames() {
       oss << "\trank1";
     if (calcAAFrequencies) {
       for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
-        oss << "\t" << *it << "Freq";
+        oss << "\t" << *it << "-Freq";
+      for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
+        oss << "\t" << *it << "-Nterm";
+      for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
+        oss << "\t" << *it << "-Cterm";
     }
     if (calcIntraSetFeatures)
       oss << "\tnumPep\tpepSite";
@@ -539,7 +543,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
           feat[nxtFeat++]=(ms==0?1.0:0.0);        
         if (calcAAFrequencies) {
           computeAAFrequencies(pep,&feat[nxtFeat]);
-          nxtFeat += aaAlphabet.size();
+          nxtFeat += aaAlphabet.size()*3;
         }
         gotL = false;
       }
@@ -565,6 +569,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
 }
 
 void DataSet::computeAAFrequencies(const string& pep, double *feat) {
+  // Overall amino acid composition features
   string::size_type pos = aaAlphabet.size();
   for (;pos--;) {feat[pos]=0.0;}
   int len=0;
@@ -575,6 +580,17 @@ void DataSet::computeAAFrequencies(const string& pep, double *feat) {
   }
   for (pos = aaAlphabet.size();pos--;) {feat[pos]/=len;}
 
+  // N-terminal features
+  feat += aaAlphabet.size();
+  for (pos = aaAlphabet.size();pos--;) {feat[pos]=0;}
+  pos=aaAlphabet.find(pep[0]);
+  if (pos!=string::npos) feat[pos]++;
+
+  // C-terminal features
+  feat += aaAlphabet.size();
+  for (pos = aaAlphabet.size();pos--;) {feat[pos]=0;}
+  pos=aaAlphabet.find(pep[pep.length()-1]);
+  if (pos!=string::npos) feat[pos]++;
 }
 
 unsigned int DataSet::peptideLength(const string& pep) {

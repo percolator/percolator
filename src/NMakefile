@@ -22,4 +22,3 @@ source_files= \
 
 percolator.exe: $(source_files:.cpp=.obj)
   link /OUT:percolator.exe $**
-
