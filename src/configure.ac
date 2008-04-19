@@ -30,16 +30,28 @@ AC_FUNC_ERROR_AT_LINE
 AC_CHECK_FUNCS([sqrt])
 
 # Debug
-AC_ARG_ENABLE([debug],
-     [  --enable-debug    Turn on debugging],
-     [case "${enableval}" in
-       yes) debug=true ;;
-       no)  debug=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
-     esac],[debug=false])
-AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+# add checking message
+AC_MSG_CHECKING(whether to build with debug information)
 
+# create configure parameter and init variable $debuger
+debuger=no
+AC_ARG_ENABLE(debug,
+	AC_HELP_STRING(
+	    [--enable-debug],
+	    [Turn on debuging (def=no)]
+	),
+  	debuger="$enableval"
+)
 
+# resulting value to screen (to complete checking message)
+AC_MSG_RESULT($debuger)
+
+# set DEBUG flag and introduce additional compiler flags
+if test x"$debuger" = x"yes"; then
+	AC_DEFINE(DEBUG)
+	CXXFLAGS="$CXXFLAGS -g -Wall -Werror"
+fi
+	
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
