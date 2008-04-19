@@ -1,2 +1,8 @@
 tmp
 *.res
+debug
+optim
+autom4te.cache
+config.h.in
+configure
+Makefile.in
