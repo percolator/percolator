@@ -3,10 +3,10 @@
 
 AC_PREREQ(2.59)
 AC_INIT
-AC_CONFIG_SRCDIR([src/main.cpp])
+AC_CONFIG_SRCDIR([main.cpp])
 AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(percolator, 1.0.0)
+AM_CONFIG_HEADER([config.h])
+AM_INIT_AUTOMAKE(percolator, 1.04)
 
 # Checks for programs.
 AC_PROG_CXX
@@ -30,5 +30,6 @@ AC_FUNC_ERROR_AT_LINE
 AC_CHECK_FUNCS([sqrt])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 build/Makefile])
+#                 build-debug/Makefile
 AC_OUTPUT
