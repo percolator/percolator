@@ -1,0 +1,76 @@
+#!/bin/sh
+##
+## $Id: bootstrap,v 1.1 2008/04/19 16:54:22 lukall Exp $
+## $Log: bootstrap,v $
+## Revision 1.1  2008/04/19 16:54:22  lukall
+## *** empty log message ***
+##
+## Revision 1.1  2008/04/03 08:36:04  cegrant
+## Adding files needed for autoconf/automake.
+## COVS: ----------------------------------------------------------------------
+##
+## Revision 1.1.2.1  2008/01/30 18:37:55  cegrant
+## Adding support for autotools.
+##
+## Revision 1.5  2005/10/06 20:06:00  nadya
+## add definitions for configure macros that are missing from autoconf v < 2.54
+## will need to run bootstrap on install hostbefore running configure.
+##
+## Revision 1.4  2005/10/04 23:47:01  nadya
+## add check for autoconf v 2.53 or later. If 2.53, then use macros in m4/
+## for creating aclocal.m4 file
+##
+## Revision 1.3  2005/09/15 21:36:43  nadya
+## move bootstrap to top
+##
+## Revision 1.1  2005/09/13 22:07:24  nadya
+## move gnu-related files in config/
+##
+##
+## Purpose: to generate GNU configure script. 
+## execute this file IFF:
+##
+## (1) there is no configure scirpt in the top most directory
+##
+## (2) you have edited one of 
+##         configure.ac 
+##         config.h.in  
+##         Makefile.am
+##
+## (3) autoconf/automake tools on your system are of different version then
+##     those used to create this distribution. In this case, the autoconf
+##     and automake-related files may not work and will need to be recreated
+##     This distribution was created with GNU autoconf 2.59 and automake 1.9.2
+
+/bin/rm -rf config.cache autom4te.cache
+
+# require autoconf v 2.53 or later
+acver=`autoconf --version | sed -e '1s/[^0-9]*//' -e q`
+case $acver in
+    2.[01234]*|2.5[012])
+        autoconf_version="none" ;;
+    2.53)
+        autoconf_version="add" ;;
+    2.6*|2.5[456789])
+        autoconf_version="ok" ;;
+    *)
+        autoconf_version="none" ;;
+esac
+
+if test "x${autoconf_version}" = "xnone"; then
+    echo "You need autoconf version 2.53 or later"
+    exit 1
+fi
+
+if test "x${autoconf_version}" = "xadd"; then
+    echo "using m4"
+    aclocal -I m4
+else
+    aclocal
+fi
+
+cp /usr/share/libtool/ltmain.sh config
+autoheader
+automake -a -c 
+autoconf
+
