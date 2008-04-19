@@ -1,4 +1,14 @@
 distdir = $(PACKAGE)_$(VERSION)
+PERLABELED = Percolator v $(VERSION)
+PERUNLABELED = Percolator unofficial version
+
+if DEBUG
+  AM_CPPFLAGS += -DDEBUG -g -O0
+  AM_CFLAGS += -DDEBUG -g -O0
+else !DEBUG
+  AM_CPPFLAGS += -O3
+  AM_CFLAGS += -O3
+endif !DEBUG
 
 noinst_LTLIBRARIES = libpercolator.la
 libpercolator_la_SOURCES = \
@@ -37,6 +47,14 @@ libpercolator_la_SOURCES = \
   ssl.h
 
 bin_PROGRAMS = percolator
-percolator_SOURCES = ../main.cpp
+percolator_SOURCES = main.cpp
 percolator_LDADD = libpercolator.la
 percolator_CFLAGS = $(AM_CFLAGS)
+
+mark:
+	echo $(PERUNLABELED) $(PERLABELED)
+	perl -pi -e 's/$(PERUNLABELED)/$(PERLABELED)/g' *.cpp *.h
+
+unmark:
+	echo $(PERLABELED) $(PERUNLABELED)
+	perl -pi -e 's/$(PERLABELED)/$(PERUNLABELED)/g' *.cpp *.h
