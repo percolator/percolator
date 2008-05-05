@@ -3,6 +3,7 @@
 #include<vector>
 #include<utility>
 using namespace std;
+#include "LogisticRegression.h"
 
 class PosteriorEstimator
 {
@@ -12,10 +13,11 @@ public:
   bool parseOptions(int argc, char **argv);   
   void run();
 protected:
-  void estimate(vector<double>& mixed, vector<double>& null);
+  void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
   void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
   void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);
   double estimatePi0(vector<pair<double,bool> >& combined, const unsigned int numBoot=100);
+  void finishStandalone(const vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
   void binData(const vector<pair<double,bool> >& combined, vector<double>& medians, 
                vector<unsigned int>& negatives, vector<unsigned int>& sizes);
   string targetFile,decoyFile;

@@ -48,13 +48,7 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out) {
 } 
 
 
-void PosteriorEstimator::estimate(vector<double>& mixed, vector<double>& null) {
-  // Merge a labeled version of the two lists into a combined list
-  vector<pair<double,bool> > combined;  
-  transform(mixed.begin(),mixed.end(),back_inserter(combined),
-            bind2nd(ptr_fun(make_my_pair),true)); 
-  transform(null.begin(),null.end(),back_inserter(combined),
-            bind2nd(ptr_fun(make_my_pair), false)); 
+void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) {
   // sorting in accending order
   sort(combined.begin(),combined.end());
 
@@ -63,25 +57,29 @@ void PosteriorEstimator::estimate(vector<double>& mixed, vector<double>& null) {
   
   binData(combined,medians,negatives,sizes);
 
-  LogisticRegression lr;
   lr.setData(medians,negatives,sizes);
   lr.iterativeReweightedLeastSquares();
 
   // sorting combined in score decending order
   reverse(combined.begin(),combined.end());
-  double pi0 = estimatePi0(combined);
   lr.setCutOff(pi0);
-  
+}
+
+// Estimates q-values and prints
+void PosteriorEstimator::finishStandalone(const vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) { 
   vector<double> q;
   getQValues(pi0,combined,q);
   
-  sort(mixed.begin(),mixed.end(),greater<double>());
+  sort(combined.begin(),combined.end(),greater<pair<double,bool> >());
 
-  for(size_t ix=0;ix<mixed.size();++ix) {
-    double pred = lr.predict(mixed[ix]);
-    cout << mixed[ix] << "\t" << pred << "\t" << q[ix] << endl;
+  for(size_t ix=0;ix<combined.size();++ix) {
+    if (not (combined[ix].second))
+      continue;
+    double pred = lr.predict(combined[ix].first);
+    cout << combined[ix].first << "\t" << pred << "\t" << q[ix] << endl;
   }
 }
+
 
 void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,  
   vector<double>& medians, vector<unsigned int>& negatives, vector<unsigned int>& sizes) {
@@ -193,14 +191,23 @@ double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined,
 
 void PosteriorEstimator::run() {
   ifstream target(targetFile.c_str(),ios::in),decoy(decoyFile.c_str(),ios::in);
-  vector<double> mixed, null;  
-  
   istream_iterator<double> tarIt(target),decIt(decoy);
-  copy(tarIt,istream_iterator<double>(),back_inserter(mixed));
-  copy(decIt,istream_iterator<double>(),back_inserter(null));
+
+  // Merge a labeled version of the two lists into a combined list
+  vector<pair<double,bool> > combined;  
+  transform(tarIt,istream_iterator<double>(),back_inserter(combined),
+            bind2nd(ptr_fun(make_my_pair),true)); 
+  transform(decIt,istream_iterator<double>(),back_inserter(combined),
+            bind2nd(ptr_fun(make_my_pair), false)); 
   
-  estimate(mixed,null);
+  // Estimate pi0
+  double pi0 = estimatePi0(combined);
   
+  // Logistic regression on the data
+  LogisticRegression lr;
+  estimate(combined,lr,pi0);
+
+  finishStandalone(combined,lr,pi0);  
 }
 
 bool PosteriorEstimator::parseOptions(int argc, char **argv){

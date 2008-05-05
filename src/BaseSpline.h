@@ -2,6 +2,7 @@
 #define BASESPLINE_H_
 
 #include "Transform.h"
+#include "ArrayLibrary.h"
 
 class BaseSpline
 {

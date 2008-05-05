@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.54 2008/04/01 19:17:48 lukall Exp $
+ * $Id: Scores.cpp,v 1.55 2008/05/05 20:20:33 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -21,7 +21,7 @@ using namespace std;
 #include "Scores.h"
 #include "Globals.h"
 #include "ssl.h"
-#include "gcvspl.h"
+//#include "gcvspl.h"
 //#include "CubicSpline.h"
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
@@ -475,6 +475,9 @@ vector<double>& Scores::calcPepOld() {
 */
 
 vector<double>& Scores::calcPep() {
+}
+/*
+vector<double>& Scores::calcPep() {
   // Arrange scores in decending order
   sort(scores.begin(),scores.end());
   reverse(scores.begin(),scores.end());
@@ -621,3 +624,4 @@ vector<double>& Scores::calcPep() {
 
   return peps;
 }   
+*/
