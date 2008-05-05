@@ -25,21 +25,31 @@ AC_ARG_ENABLE(debug,
 	    [--enable-debug],
 	    [Turn on debuging (def=no)]
 	),
-  	debuger="$enableval"
-)
+  	debuger="$enableval")
 
 # resulting value to screen (to complete checking message)
 AC_MSG_RESULT($debuger)
 
 # set DEBUG flag and introduce additional compiler flags
 if test x"$debuger" = x"yes"; then
-	CXXFLAGS="-g -O0 -Wall -Werror"
-	CFLAGS="-g -O0 -Wall -Werror"
-	AC_DEFINE([DEBUG],[],[Flag indicating that debug is enabled])
+    DEBUG_OPTIONS="-g -O0 -Wall -Werror"
+	AC_DEFINE([DEBUG],[],[Flag indicating that debug options are enabled])
 else
-	CXXFLAGS="-O3"
-	CFLAGS="-O3"
+    DEBUG_OPTIONS="-O3"
 fi
+AC_SUBST([DEBUG_OPTIONS])
+
+# enable percolator installation
+AC_MSG_CHECKING(whether to build percolator)
+AC_ARG_ENABLE(percolator,
+    AC_HELP_STRING(
+    [--enable-percolator],
+    [Build percolator applications. Default is enabled.]
+    ),
+    percolator="$enableval", percolator=yes)
+
+AC_MSG_RESULT($percolator)
+AM_CONDITIONAL(PERCOLATOR, test ["$percolator" != no])
 	
 # Checks for programs.
 AC_PROG_CXX

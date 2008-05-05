@@ -2,7 +2,40 @@ distdir = $(PACKAGE)_$(VERSION)
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version
 
-noinst_LTLIBRARIES = libpercolator.la
+CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+
+libqvality_la_SOURCES = \
+  BaseSpline.cpp \
+  BaseSpline.h \
+  LogisticRegression.cpp \
+  LogisticRegression.h \
+  Option.cpp \
+  Option.h \
+  PosteriorEstimator.cpp \
+  PosteriorEstimator.h \
+  Transform.h 
+
+libArrayLibrary_la_SOURCES = \
+  ArrayLibrary/ArrayLibrary.h \
+  ArrayLibrary/MatrixFunctions.cpp \
+  ArrayLibrary/MatrixFunctions.h \
+  ArrayLibrary/Numerical.cpp \
+  ArrayLibrary/Numerical.h \
+  ArrayLibrary/PackedMatrix.cpp \
+  ArrayLibrary/PackedMatrix.h \
+  ArrayLibrary/PackedSetFunctions.cpp \
+  ArrayLibrary/PackedSetFunctions.h \
+  ArrayLibrary/PackedVec.cpp \
+  ArrayLibrary/PackedVec.h \
+  ArrayLibrary/Random.cpp \
+  ArrayLibrary/Random.h \
+  ArrayLibrary/VectorFunctions.cpp \
+  ArrayLibrary/VectorFunctions.h
+
+
+if PERCOLATOR
 libpercolator_la_SOURCES = \
   Caller.cpp \
   Caller.h \
@@ -38,10 +71,20 @@ libpercolator_la_SOURCES = \
   ssl.cpp \
   ssl.h
 
-bin_PROGRAMS = percolator
 percolator_SOURCES = main.cpp
-percolator_LDADD = libpercolator.la
-#percolator_CFLAGS = $(AM_CFLAGS)
+percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la
+
+PERCOLATOR_PROGRAM = percolator
+PERCOLATOR_LIBRARY = libpercolator.la
+
+endif
+
+noinst_LTLIBRARIES = libqvality.la libArrayLibrary.la $(PERCOLATOR_LIBRARY)
+bin_PROGRAMS = qvality $(PERCOLATOR_PROGRAM)
+EXTRA_PROGRAMS = percolator
+
+qvality_SOURCES = qvality_main.cpp
+qvality_LDADD = libqvality.la libArrayLibrary.la
 
 mark:
 	echo $(PERUNLABELED) $(PERLABELED)

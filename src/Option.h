@@ -4,10 +4,14 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Option.h,v 1.5 2007/07/16 22:57:21 lukall Exp $
+ * $Id: Option.h,v 1.6 2008/05/05 02:12:28 lukall Exp $
  *******************************************************************************/
 #ifndef OPTION_H_
 #define OPTION_H_
+#include<string>
+#include<map>
+#include<vector>
+using namespace std;
 
 typedef enum {FALSE_IF_SET=0, TRUE_IF_SET, VALUE} OptionOption;
 
