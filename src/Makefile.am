@@ -6,9 +6,9 @@ endif
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version
 
-CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
-CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
-CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
 
 libqvality_la_SOURCES = \
   BaseSpline.cpp \

@@ -41,12 +41,17 @@ AC_SUBST([DEBUG_OPTIONS])
 
 # enable percolator installation
 AC_MSG_CHECKING(whether to build percolator)
-AC_ARG_ENABLE(percolator,
-    AC_HELP_STRING(
-    [--enable-percolator],
-    [Build percolator applications. Default is enabled.]
-    ),
-    percolator="$enableval", percolator=yes)
+
+percolator="no"
+if test -e "${srcdir}/Caller.cpp"
+then
+  AC_ARG_ENABLE(percolator,
+      AC_HELP_STRING(
+      [--enable-percolator],
+      [Build percolator applications. Default is enabled.]
+      ),
+      percolator="$enableval", percolator=yes)
+fi
 
 AC_MSG_RESULT($percolator)
 AM_CONDITIONAL(PERCOLATOR, test ["$percolator" != no])
