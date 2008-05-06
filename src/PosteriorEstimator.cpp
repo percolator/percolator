@@ -66,11 +66,12 @@ void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, Logisti
 }
 
 // Estimates q-values and prints
-void PosteriorEstimator::finishStandalone(const vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) { 
+void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) { 
   vector<double> q;
   getQValues(pi0,combined,q);
   
-  sort(combined.begin(),combined.end(),greater<pair<double,bool> >());
+  //  sort(combined.begin(),combined.end());
+  // reverse(combined.begin(),combined.end());
 
   for(size_t ix=0;ix<combined.size();++ix) {
     if (not (combined[ix].second))
@@ -200,6 +201,9 @@ void PosteriorEstimator::run() {
   transform(decIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair), false)); 
   
+  sort(combined.begin(),combined.end());
+  reverse(combined.begin(),combined.end());
+
   // Estimate pi0
   double pi0 = estimatePi0(combined);
   

@@ -4,11 +4,12 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.55 2008/05/05 20:20:33 lukall Exp $
+ * $Id: Scores.cpp,v 1.56 2008/05/06 00:42:57 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
 #include <fstream>
+#include <utility>
 #include <algorithm>
 #include <set>
 #include <vector>
@@ -20,9 +21,8 @@ using namespace std;
 #include "SetHandler.h"
 #include "Scores.h"
 #include "Globals.h"
+#include "PosteriorEstimator.h"
 #include "ssl.h"
-//#include "gcvspl.h"
-//#include "CubicSpline.h"
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
     {return (one.score>other.score);}
@@ -417,64 +417,27 @@ int Scores::getInitDirection(const double fdr, double * direction, bool findDire
   return bestPositives;
 }
 
-/*
-vector<double>& Scores::calcPepOld() {
-  peps.assign(posSize(),-1);
-  if (negSize()<pepBins*5) {
-    cerr << "To few decoy sequences, posterior error probabilities not calculated" << endl;
-    return peps;
-  }
-  vector<double> bins(pepBins),centers(pepBins);
-  int targets=0,decoys=0;
-  int locT=0,locD=0;
-  int binNum=0;
-  double binSize = posSize()/((double)pepBins),rat=0,step=1/((double)posSize());
-  vector<ScoreHolder>::iterator it;
-
-  for(it=scores.begin();it!=scores.end();it++) {
-    if (it->label!=-1)
-      targets++;locT++;
-    if (it->label==-1) {
-      decoys++;locD++;
-    }
-    if (targets>=binSize*(binNum+1)) {
-//      rat=max(rat,locD*pi0*factor/((double)locT));
-      rat=locD*pi0*factor/((double)locT);
-      bins[binNum] = rat;
-      centers[binNum] = (binNum+1/2.0)*binSize*step;
-      binNum++;
-      locT=0,locD=0;
-    }
-  }
-//  cerr << pi0 << " " << factor << endl;
-  for(binNum=pepBins-1;binNum>=0;binNum--){
-    rat = min(bins[binNum],rat);
-    bins[binNum] = rat;
-  }
-  rat = bins[pepBins-1];
-  // renormalize so that max probability becomes 1
-  vector<double>::iterator cent= centers.begin();
-  vector<double>::iterator bin;
-  for(bin=bins.begin();bin!=bins.end();bin++,cent++) {
-//    cerr << *cent << " " << *bin << " ";
-    *bin = *bin/rat;
-//    cerr << *bin << endl;
-  }
-
-//  bins[0]=0.0;bins[bins.size()-1]=1.0;
-//  centers[0]=step;centers[centers.size()-1]=1.0; 
-  CubicSpline cs(centers,bins,true);
-  double yy =0.0;
-  for (unsigned ix=0;ix<peps.size();ix++) {
-//    peps[ix]=min(1.0,max(0.0,cs.linearInterpolate((ix+1)*step)));
-    yy=max(yy,cs.linearInterpolate((ix+1)*step));
-    peps[ix]=yy;
-  }
-  return peps;
-}
-*/
-
 vector<double>& Scores::calcPep() {
+
+  vector<pair<double,bool> > combined;
+  transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
+
+  PosteriorEstimator pe;
+
+  // Estimate pi0
+  pi0 = pe.estimatePi0(combined);
+  
+  // Logistic regression on the data
+  LogisticRegression lr;
+  pe.estimate(combined,lr,pi0);
+
+  peps.clear();                                                                                                                  
+  for(size_t ix=0;ix<combined.size();++ix) {
+    if (not (combined[ix].second))
+      continue;
+    double pred = lr.predict(combined[ix].first);
+    peps.push_back(pred);                                                                                                          }
+  return peps;
 }
 /*
 vector<double>& Scores::calcPep() {

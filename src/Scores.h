@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.32 2008/04/01 19:17:48 lukall Exp $
+ * $Id: Scores.h,v 1.33 2008/05/06 00:42:57 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -20,6 +20,7 @@ public:
   int label;
   ScoreHolder():score(0.0),featVec(NULL),label(0){;}
   virtual ~ScoreHolder() {;}
+  pair<double,bool> toPair() {return pair<double,bool>(score,label>0);}
 };
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other); 
