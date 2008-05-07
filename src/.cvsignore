@@ -1,5 +1,7 @@
 tmp
 *.res
+debug/*
+optim/*
 debug
 optim
 autom4te.cache
@@ -7,3 +9,9 @@ config.h.in
 configure
 Makefile.in
 aclocal.m4
+*.gz
+*.Plo
+*.Po
+*.status
+libtool
+stamp-h1

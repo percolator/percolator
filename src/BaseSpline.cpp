@@ -3,6 +3,7 @@
 using namespace std;
 #include "ArrayLibrary.h"
 #include "BaseSpline.h"
+#include "Globals.h"
 
 class SplinePredictor {
   BaseSpline *bs;
@@ -48,7 +49,6 @@ void BaseSpline::iterativeReweightedLeastSquares() {
   unsigned int n = x.size();
   initiateQR();
   double alpha=1.,step,cv=1e100;
-//  Vec g(n,0.5),z(n),p(n),w(n);
   initg();
   do {
     int iter = 0;
@@ -58,31 +58,22 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       PackedMatrix aWiQ = alpha * diagonalPacked(Vec(n,1)/w)*Q;
       PackedMatrix M = R + Qt * aWiQ;
       gamma = Qt * z;
-//      cerr << "g:" << g << endl;
-//      cerr << "p:" << p << endl;
-//      cerr << "w:" << w << endl;
-//      cerr << "z:" << z << endl;
-//      cerr << "aWiQ:" << aWiQ << endl;
-//      cerr << M;
-//      cerr << "Qt*z:" << gamma << endl;
       solveEquation<double>(M,gamma);
       gnew= z - aWiQ*gamma;
-//      cerr << "gamma:" << gamma << endl;
-//      cerr << "g:" << g << endl;
       step =  norm(g-gnew)/n;
-      cerr << "step size:" << step << endl;
+      if(VERB>2) cerr << "step size:" << step << endl;
     } while (step > 1e-2 && ++iter<10);
     double p1 = exp(-1.5*alpha); 
     double p2 = exp(-0.5*alpha); 
     pair<double,double> res = alphaLinearSearch(0.0,1.0,p1,p2,
                               crossValidation(-log(p1)),
                               crossValidation(-log(p2)));
-    cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;     
+    if(VERB>3) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;     
                               
     if ((cv-res.second)/cv<convergeDelta)
       break;
     cv=res.second;alpha=res.first;
-    cerr << "Alpha selected to be " << alpha  << endl;     
+    if(VERB>2) cerr << "Alpha selected to be " << alpha  << endl;     
   } while (true);
   g=gnew;
 }
@@ -223,10 +214,10 @@ void BaseSpline::setData(const vector<double>& xx) {
   double minV = *min_element(xx.begin(),xx.end()); 
   double maxV = *max_element(xx.begin(),xx.end()); 
   if (minV>=0.0 && maxV<=1.0) {
-    cerr << "Logit transforming all x-values" << endl;
+    if(VERB>1) cerr << "Logit transforming all scores prior to PEP calculation" << endl;
     transf = Transform((minV>0.0 && maxV<1.0)?0.0:1e-5,true);
   } else if (minV>=0.0) {
-    cerr << "Log transforming all x-values" << endl;
+    if(VERB>1) cerr << "Log transforming all scores prior to PEP calculation" << endl;
     transf = Transform(minV>0.0?0.0:1e-5,false,true);  
   } 
   transform(xx.begin(),xx.end(),back_inserter(x),transf);

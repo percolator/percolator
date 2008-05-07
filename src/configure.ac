@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.59)
 AC_INIT
-AC_CONFIG_SRCDIR([main.cpp])
+AC_CONFIG_SRCDIR([qvality_main.cpp])
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE(percolator, 1.04)

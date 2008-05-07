@@ -13,6 +13,8 @@ AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
 libqvality_la_SOURCES = \
   BaseSpline.cpp \
   BaseSpline.h \
+  Globals.cpp \
+  Globals.h \
   LogisticRegression.cpp \
   LogisticRegression.h \
   Option.cpp \
@@ -21,12 +23,22 @@ libqvality_la_SOURCES = \
   PosteriorEstimator.h \
   Transform.h 
 
+EXTRA_DIST = \
+  ArrayLibrary/Array.cpp \
+  ArrayLibrary/Arithmetic.cpp \
+  ArrayLibrary/OrderedArray.cpp
+
+
 libArrayLibrary_la_SOURCES = \
+  ArrayLibrary/ArrayTypes.h \
+  ArrayLibrary/Array.h \
+  ArrayLibrary/Arithmetic.h \
   ArrayLibrary/ArrayLibrary.h \
   ArrayLibrary/MatrixFunctions.cpp \
   ArrayLibrary/MatrixFunctions.h \
   ArrayLibrary/Numerical.cpp \
   ArrayLibrary/Numerical.h \
+  ArrayLibrary/OrderedArray.h \
   ArrayLibrary/PackedMatrix.cpp \
   ArrayLibrary/PackedMatrix.h \
   ArrayLibrary/PackedSetFunctions.cpp \
@@ -45,8 +57,6 @@ libpercolator_la_SOURCES = \
   Caller.h \
   DataSet.cpp \
   DataSet.h \
-  Globals.cpp \
-  Globals.h \
   IntraSetRelation.cpp \
   IntraSetRelation.h \
   Normalizer.cpp \

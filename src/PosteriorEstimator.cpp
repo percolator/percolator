@@ -11,6 +11,7 @@ using namespace std;
 #include "ArrayLibrary.h"
 #include "LogisticRegression.h"
 #include "PosteriorEstimator.h"
+#include "Globals.h"
 
 static unsigned int noIntevals = 500;
 //static unsigned int noIntevals = 20;
@@ -184,8 +185,8 @@ double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined,
   }   
   unsigned int minIx = distance(mse.begin(),min_element(mse.begin(),mse.end()));
   double pi0 = min(pi0s[minIx],1.0); 
-  
-  cerr << "pi_0=" << pi0 << endl;
+
+  if(VERB>1) cerr << "Selecting pi_0=" << pi0 << endl;
    
   return pi0;
 }
@@ -218,7 +219,16 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
   // init
   CommandLineParser cmd("Posterior Estimation");
   // finally parse and handle return codes (display help etc...)
+
+  cmd.defineOption("v","verbose",
+    "Set verbosity of output: 0=no processing info, 5=all, default is 2",
+    "level");
+
   cmd.parseArgs(argc, argv);
+
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v",0,10));
+  }
 
   if (cmd.arguments.size()>2) {
       cerr << "Too many arguments given" << endl;
