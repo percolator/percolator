@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.5 2008/05/07 21:25:08 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.6 2008/05/08 00:22:35 lukall Exp $
  
  *******************************************************************************/
 
@@ -102,10 +102,12 @@ void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, 
   //  sort(combined.begin(),combined.end());
   // reverse(combined.begin(),combined.end());
 
+  double old_pred = -1;
   for(size_t ix=0;ix<combined.size();++ix) {
     if (not (combined[ix].second))
       continue;
-    double pred = lr.predict(combined[ix].first);
+    double pred = max(lr.predict(combined[ix].first),old_pred);
+    old_pred = pred;
     cout << combined[ix].first << "\t" << pred << "\t" << q[ix] << endl;
   }
 }
@@ -160,7 +162,6 @@ void PosteriorEstimator::getQValues(double pi0,
   return;  
 }
 
-
 void PosteriorEstimator::getPValues(
      const vector<pair<double,bool> >& combined, vector<double>& p) {
   // assuming combined sorted in decending order
@@ -185,7 +186,7 @@ double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined,
   vector<double> p,pBoot,lambdas,pi0s,mse;
   vector<double>::iterator start;
   
-  getPValues(combined,p);
+  PosteriorEstimator::getPValues(combined,p);
   
   size_t n = p.size();
   // Calculate pi0 for different values for lambda    

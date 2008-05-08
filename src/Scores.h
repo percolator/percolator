@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.33 2008/05/06 00:42:57 lukall Exp $
+ * $Id: Scores.h,v 1.34 2008/05/08 00:22:35 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -47,6 +47,7 @@ public:
     int getInitDirection(const double fdr, double * direction, bool findDirection);
     double getQ(const double score);
     vector<double>& calcPep();
+    double estimatePi0();
     void printRoc(string & fn); 
     void fill(string & fn);
     inline unsigned int size() {return (pos+neg);} 

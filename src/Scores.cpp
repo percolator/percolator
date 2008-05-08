@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.56 2008/05/06 00:42:57 lukall Exp $
+ * $Id: Scores.cpp,v 1.57 2008/05/08 00:22:35 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -417,174 +417,33 @@ int Scores::getInitDirection(const double fdr, double * direction, bool findDire
   return bestPositives;
 }
 
+double Scores::estimatePi0() {
+  vector<pair<double,bool> > combined;
+  transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
+
+  // Estimate pi0
+  pi0 = PosteriorEstimator::estimatePi0(combined);
+  return pi0;
+
+}
+
+
 vector<double>& Scores::calcPep() {
 
   vector<pair<double,bool> > combined;
   transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
-
-  PosteriorEstimator pe;
-
-  // Estimate pi0
-  pi0 = pe.estimatePi0(combined);
   
   // Logistic regression on the data
   LogisticRegression lr;
-  pe.estimate(combined,lr,pi0);
+  PosteriorEstimator::estimate(combined,lr,pi0);
 
   peps.clear();                                                                                                                  
+  double old_pred = -1;
   for(size_t ix=0;ix<combined.size();++ix) {
     if (not (combined[ix].second))
       continue;
-    double pred = lr.predict(combined[ix].first);
+    double pred = max(lr.predict(combined[ix].first),old_pred);
+    old_pred = pred;
     peps.push_back(pred);                                                                                                          }
   return peps;
 }
-/*
-vector<double>& Scores::calcPep() {
-  // Arrange scores in decending order
-  sort(scores.begin(),scores.end());
-  reverse(scores.begin(),scores.end());
-
-  int binSize = min(50,size()/10);
-
-  if (binSize<30) {
-    if (VERB>1)
-      cerr << "To few PSMs to perform logistic regression, assigning pep -1 to all PSMs" << endl;
-    peps.assign(posSize(),-1);
-    return peps;
-  }
-  if (VERB>1)
-   cerr << "Estimating PEPs, using pi0=" << pi0 << " and factor=" << factor << endl;
-  vector<double> logits,medians;
-  vector<int> first,last,decLs,tarLs;
-  vector<bool> good;
-  vector<ScoreHolder>::iterator it;
-
-  // Bin together PSMs
-  
-  int tarL=0,decL=0,nL=0,nT=0,tarT=0,decT=0,firstPos=0;
-
-  for(it=scores.begin();it!=scores.end();it++){
-    if(it->label==1) {
-      tarL++;tarT++;
-    } else {
-      decL++;decT++;
-    }
-    nL++;nT++;
-    if (nL >= binSize) {
-      if (decT>0) {
-        good.push_back(decL>0 && tarL>0); // && factor*pi0*decL<tarL);
-        decLs.push_back(decL);
-        tarLs.push_back(tarL);
-        first.push_back(firstPos);
-        last.push_back(nT);
-      }
-      tarL=0; decL=0; nL=0; firstPos = nT + 1;
-    } 
-  }
-  
-  // Make the bins suitable for logit transform
-  
-  long int bad_stretch=0,n=0;
-  decL=0,tarL=0;
-  for (unsigned int ix=0;ix<good.size();ix++) {
-    if (good[ix]) {
-      if (decLs[ix]*factor*pi0>=tarLs[ix]){
-        for(;ix<good.size();ix++)
-          good[ix] = false;
-      } else {
-        if (bad_stretch>0) {
-          decLs[ix-bad_stretch-1] += decL/2;
-          decLs[ix]               += decL/2;
-          tarLs[ix-bad_stretch-1] += tarL/2;
-          tarLs[ix]               += tarL/2;
-          int mid = first[ix-bad_stretch] + (last[ix-1]-first[ix-bad_stretch])/2;
-          last[ix-bad_stretch-1] = mid;
-          first[ix-1] = mid+1;
-        }
-        bad_stretch=0;decL=0;tarL=0;
-        n++;
-      }
-    } else {
-      bad_stretch++;
-      decL += decLs[ix];
-      tarL += tarLs[ix];
-    }
-  }
-  C_DARRAY(x,n)
-  C_DARRAY(y,n)
-  C_DARRAY(wx,n)
-
-  int i=0;
-  for (int ix=good.size()-1;ix>=0;ix--) {
-    if (good[ix]) {
-      double frac = factor*pi0*(double)decLs[ix]/(double)tarLs[ix];
-      y[i]=log(frac/(1-frac));
-      int mid = first[ix] + (last[ix]-first[ix])/2;
-      x[i]=scores[mid].score;
-      if (VERB>2) {
-         cerr << "Logit bin #" << i << " " << frac << " " << x[i] 
-              << " " << tarLs[ix]+decLs[ix] << " " << y[i] << endl;  
-      }
-      wx[i]=1.0/(1.0+abs(y[i]));
-      i++;
-    }  
-  }
-
-  long int m=2,k=1;
-
-  double wy = 1.0;
-
-  long int md=2,nc=n,ierr=0;
-  double val=0.0;
-  C_DARRAY(c,n*k)
-  C_DARRAY(wk,6*(n*m+1)+n)
-  gcvspl_(x, y, &n, wx, &wy, &m, &n, &k, 
-    &md, &val, c, &nc, 
-    wk, &ierr);
-
-  long int ider=0,l=0;
-  C_DARRAY(q,2*m)
-  // Arrange scores in acending order
-  reverse(scores.begin(),scores.end());
-
-  peps.clear();
-//  peps.assign(posSize(),-1);
-
-  double minPep = 1.0;
-    
-  for(it=scores.begin();it!=scores.end();it++){
-            
-    if(it->label==1) {
-      double t=it->score;
-      double yt=splder_(&ider, &m, &n, &t, x, c, &l, q);
-      double pep = min(1.0,max(0.0,1/(1+exp(-yt))));
-      peps.push_back(pep); 
-      minPep = min(pep,minPep);
-    }
-  } 
-  
-  // Restore scores in decending order  
-  reverse(scores.begin(),scores.end());
-  reverse(peps.begin(),peps.end());
-  vector<double>::iterator pepIt;
-  double oldPep=0.;
-  for(pepIt=peps.begin();pepIt!=peps.end();pepIt++){
-    if (*pepIt>minPep) { // take care of weird upward trend in pep
-      *pepIt = minPep;
-    } else {
-      minPep = 1.1;
-    }
-    *pepIt = max(oldPep,*pepIt);
-    oldPep = *pepIt;
-  }
-  D_DARRAY(y)
-  D_DARRAY(x)
-  D_DARRAY(wx)
-  D_DARRAY(c)
-  D_DARRAY(wk)
-  D_DARRAY(q)
-
-  return peps;
-}   
-*/

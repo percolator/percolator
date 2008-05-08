@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.85 2008/04/02 15:57:01 lukall Exp $
+ * $Id: Caller.cpp,v 1.86 2008/05/08 00:22:35 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -623,6 +623,9 @@ int Caller::run() {
   if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
   train(w);
+
+  testset.estimatePi0();
+
   time_t end;
   time (&end);
   diff = difftime (end,procStart);

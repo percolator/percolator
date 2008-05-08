@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.h,v 1.4 2008/05/07 21:25:08 lukall Exp $
+ $Id: PosteriorEstimator.h,v 1.5 2008/05/08 00:22:35 lukall Exp $
  
  *******************************************************************************/
 
@@ -40,13 +40,13 @@ public:
   virtual ~PosteriorEstimator();
   bool parseOptions(int argc, char **argv);   
   void run();
-  void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
-  void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
-  void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);
-  double estimatePi0(vector<pair<double,bool> >& combined, const unsigned int numBoot=100);
+  static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
+  static void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
+  static void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);
+  static double estimatePi0(vector<pair<double,bool> >& combined, const unsigned int numBoot=100);
 protected:
   void finishStandalone(vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
-  void binData(const vector<pair<double,bool> >& combined, vector<double>& medians, 
+  static void binData(const vector<pair<double,bool> >& combined, vector<double>& medians, 
                vector<unsigned int>& negatives, vector<unsigned int>& sizes);
   string targetFile,decoyFile;
 
