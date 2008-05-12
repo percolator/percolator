@@ -22,12 +22,13 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PackedMatrix.h,v 1.2 2008/05/07 21:25:07 lukall Exp $
+ $Id: PackedMatrix.h,v 1.3 2008/05/12 21:06:33 lukall Exp $
  
  *******************************************************************************/
 #ifndef _PackedMatrix_H
 #define _PackedMatrix_H
 
+#include <assert.h>
 #include "PackedVec.h"
 
 using namespace std;

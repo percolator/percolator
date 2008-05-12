@@ -6,7 +6,31 @@ AC_INIT
 AC_CONFIG_SRCDIR([qvality_main.cpp])
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE(percolator, 1.04)
+
+# enable percolator installation
+AC_MSG_CHECKING(whether to build percolator)
+
+percolator="no"
+if test -e "${srcdir}/Caller.cpp"
+then
+  AC_ARG_ENABLE(percolator,
+      AC_HELP_STRING(
+      [--enable-percolator],
+      [Build percolator applications. Default is enabled.]
+      ),
+      percolator="$enableval", percolator=yes)
+fi
+
+AC_MSG_RESULT($percolator)
+AM_CONDITIONAL(PERCOLATOR, test ["$percolator" != no])
+
+if test x"$percolator" = x"yes"; then
+  mypack="percolator"
+else
+  mypack="qvality"
+fi
+
+AM_INIT_AUTOMAKE($mypack, 1.04)
 
 ## Debug
 # add checking message
@@ -39,23 +63,6 @@ else
 fi
 AC_SUBST([DEBUG_OPTIONS])
 
-# enable percolator installation
-AC_MSG_CHECKING(whether to build percolator)
-
-percolator="no"
-if test -e "${srcdir}/Caller.cpp"
-then
-  AC_ARG_ENABLE(percolator,
-      AC_HELP_STRING(
-      [--enable-percolator],
-      [Build percolator applications. Default is enabled.]
-      ),
-      percolator="$enableval", percolator=yes)
-fi
-
-AC_MSG_RESULT($percolator)
-AM_CONDITIONAL(PERCOLATOR, test ["$percolator" != no])
-	
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
