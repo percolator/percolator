@@ -1,8 +1,4 @@
-#if PERCOLATOR
 distdir = $(PACKAGE)_$(VERSION)
-#else
-#distdir = qvality_$(VERSION)
-#endif
 
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version

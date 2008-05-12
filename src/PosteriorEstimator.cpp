@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.6 2008/05/08 00:22:35 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.7 2008/05/12 21:19:18 lukall Exp $
  
  *******************************************************************************/
 
@@ -97,6 +97,8 @@ void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, Logisti
 // Estimates q-values and prints
 void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) { 
   vector<double> q;
+  q.clear();
+  
   getQValues(pi0,combined,q);
   
   //  sort(combined.begin(),combined.end());
@@ -157,7 +159,8 @@ void PosteriorEstimator::getQValues(double pi0,
     }
     ++myPair;
   }
-  transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double>(), pi0*((double)nTargets/(double)nDecoys)));
+  double factor = pi0*((double)nTargets/(double)nDecoys);
+  transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double>(), factor));
   partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
   return;  
 }

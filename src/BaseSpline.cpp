@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.cpp,v 1.3 2008/05/07 21:25:08 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.4 2008/05/12 21:18:28 lukall Exp $
  
  *******************************************************************************/
 
@@ -40,7 +40,7 @@ public:
   double operator() (double x) {return bs->predict(x);}
 };
 
-double BaseSpline::convergeDelta = 1e-2;
+double BaseSpline::convergeDelta = 1e-3;
 
 double BaseSpline::splineEval(double xx) {
   xx = transf(xx);
@@ -90,7 +90,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       gnew= z - aWiQ*gamma;
       step =  norm(g-gnew)/n;
       if(VERB>2) cerr << "step size:" << step << endl;
-    } while (step > 1e-2 && ++iter<10);
+    } while (step > 1e-5 && ++iter<10);
     double p1 = exp(-1.5*alpha); 
     double p2 = exp(-0.5*alpha); 
     pair<double,double> res = alphaLinearSearch(0.0,1.0,p1,p2,

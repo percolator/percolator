@@ -34,15 +34,17 @@ AM_INIT_AUTOMAKE($mypack, 1.04)
 
 ## Debug
 # add checking message
-AC_MSG_CHECKING(whether to build with debug information)
 # save $CFLAGS since AC_PROG_CC likes to insert "-g -O2"
 # if $CFLAGS is blank
 cflags_save="$CFLAGS"
+cxxflags_save="$CXXFLAGS"
 AC_PROG_CC
 AC_PROG_CPP
 CFLAGS="$cflags_save"
+CXXFLAGS="$cxxflags_save"
 
 # create configure parameter and init variable $debuger
+AC_MSG_CHECKING(whether to build with debug information)
 debuger=no
 AC_ARG_ENABLE(debug,
 	AC_HELP_STRING(
@@ -56,7 +58,7 @@ AC_MSG_RESULT($debuger)
 
 # set DEBUG flag and introduce additional compiler flags
 if test x"$debuger" = x"yes"; then
-    DEBUG_OPTIONS="-g -O0 -Wall -Werror"
+    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror"
 	AC_DEFINE([DEBUG],[],[Flag indicating that debug options are enabled])
 else
     DEBUG_OPTIONS="-O3"
