@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.h,v 1.3 2008/05/07 21:25:08 lukall Exp $
+ $Id: BaseSpline.h,v 1.4 2008/05/14 17:06:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -40,7 +40,8 @@ public:
   BaseSpline() {;}
   virtual ~BaseSpline() {;}
   double splineEval(double xx);
-  static double convergeDelta;
+  static double convergeEpsilon;
+  static double stepEpsilon;
   void iterativeReweightedLeastSquares();
   void predict(const vector<double>& x, vector<double>& predict);
   void setData(const vector<double>& x);

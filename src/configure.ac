@@ -37,10 +37,13 @@ AM_INIT_AUTOMAKE($mypack, 1.04)
 # save $CFLAGS since AC_PROG_CC likes to insert "-g -O2"
 # if $CFLAGS is blank
 cflags_save="$CFLAGS"
+cppflags_save="$CPPFLAGS"
 cxxflags_save="$CXXFLAGS"
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_CXX
 CFLAGS="$cflags_save"
+CPPFLAGS="$cppflags_save"
 CXXFLAGS="$cxxflags_save"
 
 # create configure parameter and init variable $debuger

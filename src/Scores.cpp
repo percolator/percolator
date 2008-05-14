@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.57 2008/05/08 00:22:35 lukall Exp $
+ * $Id: Scores.cpp,v 1.58 2008/05/14 17:06:43 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -440,7 +440,7 @@ vector<double>& Scores::calcPep() {
   peps.clear();                                                                                                                  
   double old_pred = -1;
   for(size_t ix=0;ix<combined.size();++ix) {
-    if (not (combined[ix].second))
+    if (!(combined[ix].second))
       continue;
     double pred = max(lr.predict(combined[ix].first),old_pred);
     old_pred = pred;

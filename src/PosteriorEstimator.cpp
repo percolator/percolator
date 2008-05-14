@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.7 2008/05/12 21:19:18 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.8 2008/05/14 17:06:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -59,7 +59,7 @@ pair<double,bool> make_my_pair(double d,bool b) {
 }
 
 class IsDecoy {public: bool operator() (const pair<double,bool>& aPair) 
-    {return not aPair.second; }};
+    {return !aPair.second; }};
 
 bool isMixed(const pair<double,bool>& aPair) {
   return aPair.second;
@@ -96,9 +96,8 @@ void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, Logisti
 
 // Estimates q-values and prints
 void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) { 
-  vector<double> q;
-  q.clear();
-  
+  vector<double> q(0);
+   
   getQValues(pi0,combined,q);
   
   //  sort(combined.begin(),combined.end());
@@ -106,7 +105,7 @@ void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, 
 
   double old_pred = -1;
   for(size_t ix=0;ix<combined.size();++ix) {
-    if (not (combined[ix].second))
+    if (!(combined[ix].second))
       continue;
     double pred = max(lr.predict(combined[ix].first),old_pred);
     old_pred = pred;
@@ -139,7 +138,7 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
        negatives.push_back(negInBin);
     }    
   }
-  
+  if(VERB>1) cerr << "Binned data into " << medians.size() << " bins with average size of " <<  binSize << " samples" << endl;       
 }
 
 
@@ -161,7 +160,7 @@ void PosteriorEstimator::getQValues(double pi0,
   }
   double factor = pi0*((double)nTargets/(double)nDecoys);
   transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double>(), factor));
-  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+//  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
   return;  
 }
 
@@ -256,10 +255,35 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
     "Set verbosity of output: 0=no processing info, 5=all, default is 2",
     "level");
 
+  cmd.defineOption("s","epsilon-step",
+    "The relative step size used as treshhold before cross validation error is calculated",
+    "value");
+
+  cmd.defineOption("n","number-of-bins",
+    "The number of spline knots used when interpolating spline function. Default is 500.",
+    "bins");
+
+  cmd.defineOption("c","epsilon-cross-validation",
+    "The relative crossvalidation step size used as treshhold before ending the iterations",
+    "value");
+
+
   cmd.parseArgs(argc, argv);
 
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v",0,10));
+  }
+
+  if (cmd.optionSet("n")) {
+    noIntevals = cmd.getInt("n",1,INT_MAX);
+  }
+
+  if (cmd.optionSet("c")) {
+    BaseSpline::convergeEpsilon=cmd.getDouble("c",0.0,1.0);
+  }
+
+  if (cmd.optionSet("s")) {
+    BaseSpline::stepEpsilon=cmd.getDouble("s",0.0,1.0);
   }
 
   if (cmd.arguments.size()>2) {
