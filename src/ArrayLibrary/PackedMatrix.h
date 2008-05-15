@@ -22,14 +22,14 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PackedMatrix.h,v 1.3 2008/05/12 21:06:33 lukall Exp $
+ $Id: PackedMatrix.h,v 1.4 2008/05/15 21:31:51 lukall Exp $
  
  *******************************************************************************/
 #ifndef _PackedMatrix_H
 #define _PackedMatrix_H
 
 #include <assert.h>
-#include "PackedVec.h"
+#include "ArrayLibrary.h"
 
 using namespace std;
 
@@ -111,7 +111,7 @@ template<typename T> void solveEquation(PackedMatrix& mat,Array<T>& res) {
   
   for (col=mat.size(); col--;) {
     nonEmpty.clear();
-    for(row=col;row--;) {
+    for(row=0;row<col;row++) {
       for(rowPos=mat[row].packedSize();rowPos--;) {
         if (mat[row].index(rowPos)==col) {
           nonEmpty.push_back(row,mat[row][rowPos]);
