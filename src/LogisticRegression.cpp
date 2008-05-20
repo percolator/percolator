@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: LogisticRegression.cpp,v 1.2 2008/05/07 21:25:08 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.3 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -51,12 +51,6 @@ double logit(double p) {
   return log(p/(1-p));
 }
 
-double LogisticRegression::predict(const double xx) {
-  if (xx<cutOff)
-    return 1.0;
-  return min(1.0,pi0*exp(splineEval(xx)));  
-}
-
 
 void LogisticRegression::calcPZW() {
   for (int ix=z.size();ix--;) {
@@ -77,15 +71,5 @@ void LogisticRegression::initg() {
   }
 }
 
-void LogisticRegression::setCutOff(double pi_0) {
-  pi0 = pi_0;
-  int ix=g.size();
-  for (;ix--;) {
-    if (pi0*exp(g[ix])>1)
-      break; 
-  }
-  if (ix<0) ix=0;
-  cutOff = x[ix];
-}
 
 

@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: OrderedArray.cpp,v 1.2 2008/05/07 21:25:07 lukall Exp $
+ $Id: OrderedArray.cpp,v 1.3 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -38,8 +38,11 @@ template <typename T>
 void OrderedArray<T>::push_back(const T & element)
 {
 #ifdef SAFE_ARRAYS
-  if ( Array<T>::size() != 0 && !( Array<T>::back() < element ) )
+  if ( Array<T>::size() != 0 && !( Array<T>::back() < element ) ) {
+    cerr << "Trying to insert " << element << " after " << Array<T>::back() << ", that is not in order." << endl;
+    cerr.flush();
     throw OutOfOrderException();
+  }
 #endif
 
   Array<T>::push_back(element);

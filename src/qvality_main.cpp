@@ -22,10 +22,11 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: qvality_main.cpp,v 1.2 2008/05/07 21:25:08 lukall Exp $
+ $Id: qvality_main.cpp,v 1.3 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 #include "Option.h"
+#include "Globals.h"
 #include "PosteriorEstimator.h"
 
 
@@ -37,5 +38,6 @@ int main(int argc, char **argv){
     pCaller->run();
   }
   delete pCaller;
+  Globals::clean();
   return retVal;
 }   

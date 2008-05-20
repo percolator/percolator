@@ -1,6 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
+echo "Combined configure script for qvality and percolator"
+
 AC_PREREQ(2.59)
 AC_INIT
 AC_CONFIG_SRCDIR([qvality_main.cpp])
@@ -55,17 +57,35 @@ AC_ARG_ENABLE(debug,
 	    [Turn on debuging (def=no)]
 	),
   	debuger="$enableval")
-
 # resulting value to screen (to complete checking message)
 AC_MSG_RESULT($debuger)
 
+# create configure parameter and init variable $boundcheck
+AC_MSG_CHECKING(whether to build with bound checks for the gcc stl containers)
+boundcheck=no
+AC_ARG_ENABLE(boundcheck,
+	AC_HELP_STRING(
+	    [--enable-boundcheck],
+	    [Turn on boundcheck for GCC STL library (def=no)]
+	),
+  	boundcheck="$enableval")
+# resulting value to screen (to complete checking message)
+AC_MSG_RESULT($boundcheck)
+
+
 # set DEBUG flag and introduce additional compiler flags
 if test x"$debuger" = x"yes"; then
-    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror"
+    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror -DDEBUG"
 	AC_DEFINE([DEBUG],[],[Flag indicating that debug options are enabled])
 else
     DEBUG_OPTIONS="-O3"
 fi
+
+if test x"$boundcheck" = x"yes"; then
+    DEBUG_OPTIONS="$DEBUG_OPTIONS -D_GLIBCXX_DEBUG"
+	AC_DEFINE([_GLIBCXX_DEBUG],[],[Flag indicating that GCC STL container bound check is enabled])
+fi
+
 AC_SUBST([DEBUG_OPTIONS])
 
 # Checks for programs.

@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.8 2008/05/14 17:06:43 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.9 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -39,12 +39,14 @@ using namespace std;
 #include "ArrayLibrary.h"
 #include "LogisticRegression.h"
 #include "PosteriorEstimator.h"
+#include "Transform.h"
 #include "Globals.h"
 
 static unsigned int noIntevals = 500;
-//static unsigned int noIntevals = 20;
 static unsigned int numLambda = 20;
 static double maxLambda = 0.9;
+
+bool PosteriorEstimator::reversed = false;
 
 PosteriorEstimator::PosteriorEstimator()
 {
@@ -76,6 +78,38 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out) {
   sort(out.begin(),out.end());  
 } 
 
+double mymin(double a,double b) {return a>b?b:a;}
+
+void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps) {
+  // Logistic regression on the data
+  LogisticRegression lr;
+  estimate(combined,lr,pi0);
+
+  vector<double> xvals(0);
+   
+  vector<pair<double,bool> >::const_iterator elem = combined.begin();  
+  for(;elem != combined.end();++elem)
+    if (elem->second)
+      xvals.push_back(elem->first);
+    
+  lr.predict(xvals,peps);
+
+  vector<double>::iterator pep = peps.begin(); 
+  bool crap = false; 
+  for(;pep != peps.end();++pep) {
+    if (crap) {
+      *pep = 1.0;
+      continue;
+    }
+    *pep = pi0 * exp(*pep);
+    if (*pep>=1.0) {
+      *pep = 1.0;
+      crap=true;
+    }
+  }
+  partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
+  
+}
 
 void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) {
   // sorting in accending order
@@ -91,26 +125,32 @@ void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, Logisti
 
   // sorting combined in score decending order
   reverse(combined.begin(),combined.end());
-  lr.setCutOff(pi0);
 }
 
 // Estimates q-values and prints
-void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) { 
-  vector<double> q(0);
+void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, double pi0) { 
+  vector<double> q(0),xvals(0);
    
   getQValues(pi0,combined,q);
-  
-  //  sort(combined.begin(),combined.end());
-  // reverse(combined.begin(),combined.end());
 
-  double old_pred = -1;
-  for(size_t ix=0;ix<combined.size();++ix) {
-    if (!(combined[ix].second))
-      continue;
-    double pred = max(lr.predict(combined[ix].first),old_pred);
-    old_pred = pred;
-    cout << combined[ix].first << "\t" << pred << "\t" << q[ix] << endl;
+  vector<pair<double,bool> >::const_iterator elem = combined.begin();  
+  for(;elem != combined.end();++elem)
+    if (elem->second)
+      xvals.push_back(elem->first);
+      
+  vector<double>::iterator xval=xvals.begin();
+  vector<double>::const_iterator qv = q.begin(),pep = peps.begin();
+
+  if (reversed) {
+    for(;xval != xvals.end();++xval)
+      *xval = -*xval;
+    xval = xvals.begin(); 
   }
+
+  cout << "Score\tPEP\tq-value" << endl;
+  
+  for(;xval != xvals.end();++xval,++pep,++qv)
+    cout << *xval << "\t" << *pep << "\t" << *qv << endl;
 }
 
 
@@ -142,7 +182,6 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
 }
 
 
-double mymin(double a,double b) {return a>b?b:a;}
 
 void PosteriorEstimator::getQValues(double pi0,
      const vector<pair<double,bool> >& combined, vector<double>& q) {
@@ -160,7 +199,7 @@ void PosteriorEstimator::getQValues(double pi0,
   }
   double factor = pi0*((double)nTargets/(double)nDecoys);
   transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double>(), factor));
-//  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
   return;  
 }
 
@@ -215,7 +254,7 @@ double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined,
     }
   }   
   unsigned int minIx = distance(mse.begin(),min_element(mse.begin(),mse.end()));
-  double pi0 = min(pi0s[minIx],1.0); 
+  double pi0 = max(min(pi0s[minIx],1.0),0.0); 
 
   if(VERB>1) cerr << "Selecting pi_0=" << pi0 << endl;
    
@@ -232,6 +271,13 @@ void PosteriorEstimator::run() {
             bind2nd(ptr_fun(make_my_pair),true)); 
   transform(decIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair), false)); 
+
+  if (reversed) {
+    if(VERB>0) cerr << "Reversing all scores (command line option)" << endl; 
+    for(vector<pair<double,bool> >::iterator elem = combined.begin();elem != combined.end();++elem)
+      elem->first = -elem->first; 
+  }
+
   
   sort(combined.begin(),combined.end());
   reverse(combined.begin(),combined.end());
@@ -239,11 +285,11 @@ void PosteriorEstimator::run() {
   // Estimate pi0
   double pi0 = estimatePi0(combined);
   
+  vector<double> peps;
   // Logistic regression on the data
-  LogisticRegression lr;
-  estimate(combined,lr,pi0);
+  estimatePEP(combined,pi0,peps);
 
-  finishStandalone(combined,lr,pi0);  
+  finishStandalone(combined,peps,pi0);  
 }
 
 bool PosteriorEstimator::parseOptions(int argc, char **argv){
@@ -267,6 +313,9 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
     "The relative crossvalidation step size used as treshhold before ending the iterations",
     "value");
 
+  cmd.defineOption("r","reverse",
+    "Indicating that the scoring mechanism is reversed i.e. that low scores are better than higher scores",
+    "",TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
 
@@ -285,6 +334,9 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
   if (cmd.optionSet("s")) {
     BaseSpline::stepEpsilon=cmd.getDouble("s",0.0,1.0);
   }
+
+  if (cmd.optionSet("r"))
+    PosteriorEstimator::setReversed(true);
 
   if (cmd.arguments.size()>2) {
       cerr << "Too many arguments given" << endl;

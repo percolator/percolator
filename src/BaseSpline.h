@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.h,v 1.4 2008/05/14 17:06:43 lukall Exp $
+ $Id: BaseSpline.h,v 1.5 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -45,7 +45,7 @@ public:
   void iterativeReweightedLeastSquares();
   void predict(const vector<double>& x, vector<double>& predict);
   void setData(const vector<double>& x);
-  virtual double predict(double xx) {return splineEval(xx);}
+  double predict(double xx) {return splineEval(xx);}
 protected:
   virtual void calcPZW() {;}
   virtual void initg() {int n=x.size();g.resize(n);gnew.resize(n);w.resize(n);z.resize(n,0.5);gamma.resize(n-2);}

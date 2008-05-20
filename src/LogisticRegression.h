@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: LogisticRegression.h,v 1.2 2008/05/07 21:25:08 lukall Exp $
+ $Id: LogisticRegression.h,v 1.3 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -37,14 +37,12 @@ class LogisticRegression : public BaseSpline
 public:
   LogisticRegression();
   virtual ~LogisticRegression();
-  virtual double predict(const double x);
+  void predict(const vector<double>& x, vector<double>& predict) { return BaseSpline::predict(x,predict);}
   void setData(const vector<double>& xx, const vector<unsigned int>& yy, const vector<unsigned int>& mm) {BaseSpline::setData(xx);y=yy;m=mm;}
-  void setCutOff(double pi0);
 protected:
   virtual void calcPZW();
   virtual void initg();
   vector<unsigned int> y,m;
-  double cutOff,pi0;
   Vec p;
 };
 

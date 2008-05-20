@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.58 2008/05/14 17:06:43 lukall Exp $
+ * $Id: Scores.cpp,v 1.59 2008/05/20 00:24:43 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -432,18 +432,9 @@ vector<double>& Scores::calcPep() {
 
   vector<pair<double,bool> > combined;
   transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
+  peps.clear();                                                                                                                  
   
   // Logistic regression on the data
-  LogisticRegression lr;
-  PosteriorEstimator::estimate(combined,lr,pi0);
-
-  peps.clear();                                                                                                                  
-  double old_pred = -1;
-  for(size_t ix=0;ix<combined.size();++ix) {
-    if (!(combined[ix].second))
-      continue;
-    double pred = max(lr.predict(combined[ix].first),old_pred);
-    old_pred = pred;
-    peps.push_back(pred);                                                                                                          }
+  PosteriorEstimator::estimatePEP(combined,pi0,peps);
   return peps;
 }

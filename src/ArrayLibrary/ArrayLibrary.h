@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: ArrayLibrary.h,v 1.2 2008/05/07 21:25:07 lukall Exp $
+ $Id: ArrayLibrary.h,v 1.3 2008/05/20 00:24:43 lukall Exp $
  
  *******************************************************************************/
 #ifndef _ArrayLibrary_H
@@ -32,7 +32,9 @@
 #include <math.h>
 #include <vector>
 
-//#define SAFE_ARRAYS
+#ifdef DEBUG
+#define SAFE_ARRAYS
+#endif
 
 using namespace std;
 
