@@ -1,0 +1,8 @@
+This package potentially produces two different executables
+qvality and percolator.
+
+Briefly, the shell commands `./configure; make; make install' should
+configure, build, and install the executables.
+
+The commands `qvality --help' or  `percolator --help' will give full
+usage statements.

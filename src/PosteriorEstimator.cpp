@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.9 2008/05/20 00:24:43 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.10 2008/05/22 23:39:43 lukall Exp $
  
  *******************************************************************************/
 
@@ -30,6 +30,7 @@
 #include<utility>
 #include<cstdlib>
 #include<fstream>
+#include<sstream>
 #include<iterator>
 #include<algorithm>
 #include<numeric>
@@ -294,7 +295,14 @@ void PosteriorEstimator::run() {
 
 bool PosteriorEstimator::parseOptions(int argc, char **argv){
   // init
-  CommandLineParser cmd("Posterior Estimation");
+  ostringstream intro;
+  intro << "Usage:" << endl;
+  intro << "   qvality [options] target_file null_file" << endl << endl;
+  intro << "target_file and null_file are files containing scores from a mixed model" << endl;  
+  intro << "and a null model, each score separated with whitespace or line feed." << endl;
+  
+  
+  CommandLineParser cmd(intro.str());
   // finally parse and handle return codes (display help etc...)
 
   cmd.defineOption("v","verbose",

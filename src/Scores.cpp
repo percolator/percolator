@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.59 2008/05/20 00:24:43 lukall Exp $
+ * $Id: Scores.cpp,v 1.60 2008/05/22 23:39:43 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -43,7 +43,7 @@ Scores::Scores()
 Scores::~Scores()
 {
   if (w_vec)
-    delete w_vec;
+    delete [] w_vec;
   w_vec = NULL;
 }
 

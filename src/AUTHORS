@@ -1,3 +1,15 @@
+This package potentially produces two different executables
+qvality and percolator.
+
+qvality is released under MIT license, and percolator is provided free
+of charge to academic users.
+
+Copyright statement for percolator:
+
 Copyright (c) 2006-8 University of Washington. All rights reserved.
 Written by Lukas Käll (lukall@u.washington.edu) in the
 Department of Genome Science at the University of Washington.
+
+Both executables are depending on ArrayLibrary written by Oliver Serang
+in Department of Genome Science at the University of Washington, which is
+distributed under MIT license.

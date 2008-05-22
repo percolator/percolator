@@ -1,4 +1,4 @@
-distdir = $(PACKAGE)_$(VERSION)
+distdir = $(PACKAGE)_$(VERSION)_src
 
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version
