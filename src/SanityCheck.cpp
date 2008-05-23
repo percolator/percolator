@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.2 2008/04/19 21:40:33 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.3 2008/05/23 22:12:20 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -60,6 +60,11 @@ bool SanityCheck::validateDirection(double *w) {
   }
   int overFDR = pTestset -> calcScores(w,fdr);
   if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << fdr*100 << "% FDR level on testset" << endl;
+  if (overFDR<=0) {
+     cerr << "No target score better than best decoy" << endl;
+     resetDirection(w);
+     return false;
+  }
   if (initPositives>=overFDR) {
      cerr << "Less identifications after percolator processing than before processing" << endl;
      resetDirection(w);
