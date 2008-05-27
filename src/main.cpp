@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Percolator unofficial version
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
+ * Written by Lukas Käll (lukall@u.washington.edu) in the 
+ * Department of Genome Science at the University of Washington. 
+ *
+ * $Id: main.cpp,v 1.2 2008/05/27 23:09:08 lukall Exp $
+ *******************************************************************************/
 #include <vector>
 #include <set>
 #include <map>

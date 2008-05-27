@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.3 2008/05/23 22:12:20 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.4 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -30,11 +30,11 @@ SanityCheck::~SanityCheck()
 bool SanityCheck::overRule=false;
 string SanityCheck::initWeightFN="";
 
-int SanityCheck::getInitDirection(Scores * testset, Scores * trainset,Normalizer * pNorm,double *w,double test_fdr) {
+int SanityCheck::getInitDirection(Scores * testset, Scores * trainset,Normalizer * pNorm,vector<double>& w,double test_fdr) {
   pTestset = testset; pTrainset = trainset; fdr = test_fdr;
   
   if (initWeightFN.size()>0) {
-    C_DARRAY(ww,DataSet::getNumFeatures()+1)
+    vector<double> ww(DataSet::getNumFeatures()+1);
     ifstream weightStream(initWeightFN.data(),ios::in);
     readWeights(weightStream,ww);
     weightStream.close();
@@ -47,13 +47,13 @@ int SanityCheck::getInitDirection(Scores * testset, Scores * trainset,Normalizer
   return initPositives;
 }
 
-void SanityCheck::getDefaultDirection(double *w) {
+void SanityCheck::getDefaultDirection(vector<double>& w) {
   // Set init direction to be the most discriminative direction
   pTrainset->getInitDirection(fdr,w,true);
 }
 
 
-bool SanityCheck::validateDirection(double *w) {
+bool SanityCheck::validateDirection(vector<double>& w) {
   if (!pTestset) {
     cerr << "Wrongly set up of object SanityCheck" << endl;
     exit(-1);
@@ -73,7 +73,7 @@ bool SanityCheck::validateDirection(double *w) {
   return true;
 }
 
-void SanityCheck::readWeights(istream & weightStream, double * w) {
+void SanityCheck::readWeights(istream & weightStream, vector<double>& w) {
   char buffer[1024],c;
   while (!(((c = weightStream.get())== '-') || (c >= '0' && c <= '9'))) {
     weightStream.getline(buffer,1024);
@@ -85,7 +85,7 @@ void SanityCheck::readWeights(istream & weightStream, double * w) {
   }
 }
 
-void SanityCheck::resetDirection(double* w) {
+void SanityCheck::resetDirection(vector<double>& w) {
   if (!overRule) {
     cerr << "Reseting score vector, using default vector" << endl;
     getDefaultDirection(w);  

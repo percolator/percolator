@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.20 2007/12/05 01:24:15 lukall Exp $
+ * $Id: SetHandler.h,v 1.21 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
@@ -24,8 +24,8 @@ public:
     void readFile(const string & p_fn, const int label);
     void readFile(const string & fn, const string & wc,const bool match);
     void static readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation * intra,const string & wild = "", const bool match=false, bool calc=true);
-    void static modifyFile(const string& fn, vector<DataSet *> & sets, double * w, Scores& sc , const string& greet, bool dtaSelect);
-    void modifyFile(const string& fn, double * w, Scores& sc , const string& greet, bool dtaSelect);
+    void static modifyFile(const string& fn, vector<DataSet *> & sets, vector<double>& w, Scores& sc , const string& greet, bool dtaSelect);
+    void modifyFile(const string& fn, vector<double>& w, Scores& sc , const string& greet, bool dtaSelect);
     void generateTrainingSet(const double fdr,const double cpos, const double cneg, const Scores & sc);
 	void setSet();
 	void fillTestSet(SetHandler& trainSet,const string& shuffled2FN="");

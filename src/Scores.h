@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.34 2008/05/08 00:22:35 lukall Exp $
+ * $Id: Scores.h,v 1.35 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -33,10 +33,10 @@ class Scores
 public:
 	Scores();
 	~Scores();
-	double calcScore(const double *features) const;
+	double calcScore(const double * features) const;
     const vector<ScoreHolder>::const_iterator begin() const {return scores.begin();}
     const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
-	int calcScores(double *w, double fdr=0.0);
+	int calcScores(vector<double>& w, double fdr=0.0);
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
     void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
     void static fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& norm,SetHandler& shuff,
@@ -44,7 +44,7 @@ public:
     void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
-    int getInitDirection(const double fdr, double * direction, bool findDirection);
+    int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
     double getQ(const double score);
     vector<double>& calcPep();
     double estimatePi0();
@@ -57,7 +57,7 @@ public:
     static double pi0;
     double factor;
 protected:
-    double *w_vec;
+    vector<double> w_vec;
     int neg;
     int pos;
     int posNow;

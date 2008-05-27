@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.47 2008/04/19 21:40:33 lukall Exp $
+ * $Id: DataSet.h,v 1.48 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -33,7 +33,7 @@ class DataSet
     void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
     void computeAAFrequencies(const string& pep, double *feat);
     void readSQT(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
-    void modifySQT(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect);
+    void modifySQT(const string & outFN, const vector<double>& w, Scores * pSc ,const string greet, bool dtaSelect);
     void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra);
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
@@ -58,7 +58,7 @@ class DataSet
     void print(Scores& test, vector<ResultHolder> & outList);
 protected:
     void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
-    string modifyRec(const string record, const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect);
+    string modifyRec(const string record, const set<int>& theMs, const vector<double>& w, Scores * pSc, bool dtaSelect);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
     static unsigned int cntEnz(const string& peptide);

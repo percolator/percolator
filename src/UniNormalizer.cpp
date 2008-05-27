@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: UniNormalizer.cpp,v 1.12 2007/02/13 18:17:15 lukall Exp $
+ * $Id: UniNormalizer.cpp,v 1.13 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <set>
 #include <vector>
@@ -32,7 +32,7 @@ void UniNormalizer::normalize(const double *in,double* out){
   }
 }
 
-void UniNormalizer::unnormalizeweight(const double *in,double* out){
+void UniNormalizer::unnormalizeweight(const vector<double>& in,vector<double>& out){
   double sum = 0;
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
@@ -42,7 +42,7 @@ void UniNormalizer::unnormalizeweight(const double *in,double* out){
   out[i]=in[i]-sum;
 }
 
-void UniNormalizer::normalizeweight(const double *in,double* out){
+void UniNormalizer::normalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {

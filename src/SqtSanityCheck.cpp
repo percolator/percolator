@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SqtSanityCheck.cpp,v 1.2 2008/04/19 21:40:33 lukall Exp $
+ * $Id: SqtSanityCheck.cpp,v 1.3 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include "DataSet.h"
 #include "Scores.h"
@@ -20,7 +20,7 @@ SqtSanityCheck::~SqtSanityCheck()
 {
 }
 
-void SqtSanityCheck::getDefaultDirection(double *w) {
+void SqtSanityCheck::getDefaultDirection(vector<double>& w) {
   // Set init direction to be the most discriminative direction
   for (int ix=0;ix < DataSet::getNumFeatures()+1;++ix)
     w[ix]=0;
@@ -53,7 +53,7 @@ deltCn  Xcorr   PepLen  Charge1 Charge2 Charge3 m0
 }
 
 
-bool SqtSanityCheck::validateDirection(double *w) {
+bool SqtSanityCheck::validateDirection(vector<double>& w) {
   bool ok=SanityCheck::validateDirection(w);
   if (w[3]<0) {
     ok=false;

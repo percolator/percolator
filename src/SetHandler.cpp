@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.39 2008/04/01 19:17:48 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.40 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -110,13 +110,13 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
   }  
 }
 
-void SetHandler::modifyFile(const string& fn, double *w, Scores& sc , const string& greet, bool dtaSelect) {
+void SetHandler::modifyFile(const string& fn, vector<double>& w, Scores& sc , const string& greet, bool dtaSelect) {
   if (!fn.empty()) {
     modifyFile(fn,subsets,w,sc,greet, dtaSelect);
   }
 }
 
-void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, double *w, Scores& sc , const string& greet, bool dtaSelect) {
+void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, vector<double>& w, Scores& sc , const string& greet, bool dtaSelect) {
   string line;
   ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {

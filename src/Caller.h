@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.41 2008/04/01 19:17:48 lukall Exp $
+ * $Id: Caller.h,v 1.42 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -20,20 +20,20 @@ public:
 public:
 	Caller();
 	virtual ~Caller();
-    void step(Scores& train,Scores& thresh,double * w, double Cpos, double Cneg, double fdr);
-    void train(double * w);
-    void trainEm(double * w);
-    void xvalidate_step(double *w);
-    void xvalidate(double *w);
+    void step(Scores& train,Scores& thresh, vector<double>& w, double Cpos, double Cneg, double fdr);
+    void train(vector<double>& w);
+    void trainEm(vector<double>& w);
+    void xvalidate_step(vector<double>& w);
+    void xvalidate(vector<double>& w);
 	static string greeter();
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
-    void printWeights(ostream & weightStream, double * weights);
-    void readWeights(istream & weightStream, double * weights);
+    void printWeights(ostream & weightStream, vector<double>& w);
+    void readWeights(istream & weightStream, vector<double>& w);
     void readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);
     void filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
     void fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);    
-    int preIterationSetup(double * w);
+    int preIterationSetup(vector<double>& w);
     Scores* getTestSet() {return &testset;}    
     int run();
     SetHandler * getSetHandler(SetHandlerType sh) {

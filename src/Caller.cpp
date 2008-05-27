@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.87 2008/05/22 23:39:43 lukall Exp $
+ * $Id: Caller.cpp,v 1.88 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -73,7 +73,7 @@ string Caller::greeter() {
   ostringstream oss;
   oss << "Percolator unofficial version, ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Copyright (c) 2006-7 University of Washington. All rights reserved." << endl;
+  oss << "Copyright (c) 2006-8 University of Washington. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl; 
   oss << "Department of Genome Science at the University of Washington." << endl; 
   return oss.str();
@@ -301,7 +301,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   return true;
 }
 
-void Caller::printWeights(ostream & weightStream, double * w) {
+void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << "# first line contains normalized weights, second line the raw weights" << endl;  
   weightStream << DataSet::getFeatureNames() << "\tm0" << endl;
   weightStream.precision(3);
@@ -310,7 +310,7 @@ void Caller::printWeights(ostream & weightStream, double * w) {
     weightStream << "\t" << w[ix];
   }
   weightStream << endl;
-  C_DARRAY(ww,DataSet::getNumFeatures()+1)
+  vector<double> ww(DataSet::getNumFeatures()+1);
   pNorm->unnormalizeweight(w,ww);
   weightStream << ww[0];
   for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
@@ -377,7 +377,7 @@ void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler,
 }
 
 
-void Caller::step(Scores& train,Scores& thresh,double * w, double Cpos, double Cneg, double fdr) {
+void Caller::step(Scores& train,Scores& thresh,vector<double>& w, double Cpos, double Cneg, double fdr) {
     train.generateNegativeTrainingSet(*svmInput,Cneg);
   	thresh.calcScores(w,test_fdr);
     thresh.generatePositiveTrainingSet(*svmInput,fdr,Cpos);
@@ -414,7 +414,7 @@ void Caller::step(Scores& train,Scores& thresh,double * w, double Cpos, double C
     delete Options;
 }
 
-void Caller::trainEm(double * w) {
+void Caller::trainEm(vector<double>& w) {
   // iterate
   for(unsigned int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
@@ -431,7 +431,7 @@ void Caller::trainEm(double * w) {
   if(VERB==2 ) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
 }
 
-void Caller::xvalidate_step(double *w) {
+void Caller::xvalidate_step(vector<double>& w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
   double best_fdr=0.01,best_cpos=1,best_cneg=1;
@@ -442,7 +442,7 @@ void Caller::xvalidate_step(double *w) {
         if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
-        C_DARRAY(ww,DataSet::getNumFeatures()+1)
+        vector<double> ww(DataSet::getNumFeatures()+1);
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
@@ -458,7 +458,6 @@ void Caller::xvalidate_step(double *w) {
           best_cpos = *cpos;
           best_cneg = (*cpos)*(*cfrac);          
         }
-        D_DARRAY(ww)
       }
     }
   }
@@ -468,11 +467,10 @@ void Caller::xvalidate_step(double *w) {
   step(trainset,thresholdset,w,best_cpos,best_cneg,best_fdr);
 }
 
-void Caller::xvalidate(double *w) {
+void Caller::xvalidate(vector<double>& w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
-  C_DARRAY(ww,DataSet::getNumFeatures()+1)
-  C_DARRAY(www,DataSet::getNumFeatures()+1)
+  vector<double> ww(DataSet::getNumFeatures()+1),www(DataSet::getNumFeatures()+1);
 
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
@@ -506,11 +504,9 @@ void Caller::xvalidate(double *w) {
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
                   << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;  
   trainEm(www);
-  D_DARRAY(ww)
-  D_DARRAY(www)
 }
 
-void Caller::train(double *w) {
+void Caller::train(vector<double>& w) {
   if (xv_type==WHOLE)
     xvalidate(w);
   else  
@@ -566,7 +562,7 @@ void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separat
   pNorm->normalizeSet(all);
 }
 
-int Caller::preIterationSetup(double * w) {
+int Caller::preIterationSetup(vector<double>& w) {
   
   svmInput = new AlgIn(trainset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
     
@@ -609,8 +605,7 @@ int Caller::run() {
   bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
   readFiles(doSingleFile, separateShuffledTestSetHandler, separateShuffledThresholdSetHandler);
   fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-  C_DARRAY(w,DataSet::getNumFeatures()+1)
-  C_DARRAY(ww,DataSet::getNumFeatures()+1)
+  vector<double> w(DataSet::getNumFeatures()+1),ww(DataSet::getNumFeatures()+1);
   preIterationSetup(w);
 
   // Set up a first guess of w
@@ -654,8 +649,6 @@ int Caller::run() {
       testset.printRoc(rocFN);
   }
   normal.print(testset);
-  D_DARRAY(w)
-  D_DARRAY(ww)
   return 0;
 }
 

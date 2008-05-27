@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Percolator unofficial version
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
+ * Written by Lukas Käll (lukall@u.washington.edu) in the 
+ * Department of Genome Science at the University of Washington. 
+ *
+ * $Id: PercolatorCInterface.cpp,v 1.8 2008/05/27 23:09:08 lukall Exp $
+ *******************************************************************************/
 #include <iostream>
 #include <vector>
 #include <set>
@@ -89,11 +97,10 @@ void pcExecute() {
   bool separateShuffledTestSetHandler = nset>TWO_SETS;
   bool separateShuffledThresholdSetHandler = nset==FOUR_SETS;
   pCaller->fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-  C_DARRAY(w,DataSet::getNumFeatures()+1)
+  vector<double> w(DataSet::getNumFeatures()+1);
   pCaller->preIterationSetup(w);
   pCaller->train(w);  
   pCaller->getTestSet()->calcScores(w);
-  D_DARRAY(w)
 } 
 
 /** Function called when retrieving target scores and q-values after processing,

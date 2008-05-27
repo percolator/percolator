@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.77 2008/04/19 21:40:33 lukall Exp $
+ * $Id: DataSet.cpp,v 1.78 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -332,7 +332,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
 }
 
 
-string DataSet::modifyRec(const string record,const set<int>& theMs, const double *w, Scores * pSc, bool dtaSelect) {
+string DataSet::modifyRec(const string record,const set<int>& theMs, const vector<double>& w, Scores * pSc, bool dtaSelect) {
   C_DARRAY(feat,DataSet::numFeatures)
 //  if (mLines>3) mLines=3;
   vector<pair<double,string> > outputs;
@@ -393,7 +393,7 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const doubl
   return out.str();
 }
 
-void DataSet::modifySQT(const string & outFN, const double *w, Scores * pSc ,const string greet, bool dtaSelect) {
+void DataSet::modifySQT(const string & outFN, const vector<double>& w, Scores * pSc ,const string greet, bool dtaSelect) {
   string line;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);

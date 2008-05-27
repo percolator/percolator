@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.60 2008/05/22 23:39:43 lukall Exp $
+ * $Id: Scores.cpp,v 1.61 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -37,14 +37,10 @@ Scores::Scores()
     pos=0;
     posNow=0;
     shortStep=0;
-    w_vec = NULL;
 }
 
 Scores::~Scores()
 {
-  if (w_vec)
-    delete [] w_vec;
-  w_vec = NULL;
 }
 
 double Scores::pi0 = 0.9;
@@ -58,7 +54,7 @@ void Scores::printRoc(string & fn){
  rocStream.close();
 }	
 
-double Scores::calcScore(const double *feat) const{
+double Scores::calcScore(const double * feat) const{
   register int ix=DataSet::getNumFeatures();
   register double score = w_vec[ix];
   for(;ix--;) {
@@ -234,10 +230,10 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
   }
 }
 
-int Scores::calcScores(double *w,double fdr) {
+int Scores::calcScores(vector<double>& w,double fdr) {
   register unsigned int ix=DataSet::getNumFeatures()+1;
-  if (!w_vec)
-    w_vec = new double[ix];
+  if (w_vec.size()!=ix)
+    w_vec.resize(ix);
   for(;ix--;) {
     w_vec[ix]=w[ix];
   }
@@ -358,7 +354,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   data.m=ix2;
 }
 
-int Scores::getInitDirection(const double fdr, double * direction, bool findDirection) {
+int Scores::getInitDirection(const double fdr, vector<double>& direction, bool findDirection) {
   int bestPositives = -1;
   int bestFeature =-1;
   bool lowBest = false;

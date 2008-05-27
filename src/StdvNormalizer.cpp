@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-7 University of Washington. All rights reserved.
+ * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.cpp,v 1.17 2008/03/03 08:29:19 cegrant Exp $
+ * $Id: StdvNormalizer.cpp,v 1.18 2008/05/27 23:09:08 lukall Exp $
  *******************************************************************************/
 #include <vector>
 #include <iostream>
@@ -39,7 +39,7 @@ void StdvNormalizer::normalize(const double *in,double* out){
   }
 }
 
-void StdvNormalizer::unnormalizeweight(const double *in,double* out){
+void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
@@ -49,7 +49,7 @@ void StdvNormalizer::unnormalizeweight(const double *in,double* out){
   out[i]=in[i]-sum;
 }
 
-void StdvNormalizer::normalizeweight(const double *in,double* out){
+void StdvNormalizer::normalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
   int i=0;
   for (;i<DataSet::getNumFeatures();i++) {
