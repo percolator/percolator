@@ -1,24 +1,64 @@
 .cpp.obj: 
     cl /c /DWIN32 /EHsc /MT /O2 $< 
 
-source_files= \
-  Caller.cpp \
-  DataSet.cpp \
-  Globals.cpp \
-  IntraSetRelation.cpp \
-  Normalizer.cpp \
-  Option.cpp \
-  PercolatorCInterface.cpp \
-  ResultHolder.cpp \
-  SanityCheck.cpp \
-  Scores.cpp \
-  SetHandler.cpp \
-  SqtSanityCheck.cpp \
-  StdvNormalizer.cpp \
-  UniNormalizer.cpp \
-  gcvspl.cpp \
-  ssl.cpp \
-  main.cpp
+per_source_files = \
+ArrayLibrary/Arithmetic.cpp \
+ArrayLibrary/Array.cpp \
+ArrayLibrary/ArrayTypes.cpp \
+ArrayLibrary/MatrixFunctions.cpp \
+ArrayLibrary/Numerical.cpp \
+ArrayLibrary/OrderedArray.cpp \
+ArrayLibrary/PackedArray.cpp \
+ArrayLibrary/PackedMatrix.cpp \
+ArrayLibrary/PackedSetFunctions.cpp \
+ArrayLibrary/PackedVec.cpp \
+ArrayLibrary/Random.cpp \
+ArrayLibrary/SparseArray.cpp \
+ArrayLibrary/VectorFunctions.cpp \
+BaseSpline.cpp \
+Caller.cpp \
+DataSet.cpp \
+Globals.cpp \
+IntraSetRelation.cpp \
+LogisticRegression.cpp \
+main.cpp \
+Normalizer.cpp \
+Option.cpp \
+PercolatorCInterface.cpp \
+PosteriorEstimator.cpp \
+ResultHolder.cpp \
+SanityCheck.cpp \
+Scores.cpp \
+SetHandler.cpp \
+SqtSanityCheck.cpp \
+ssl.cpp \
+StdvNormalizer.cpp \
+UniNormalizer.cpp \
 
-percolator.exe: $(source_files:.cpp=.obj)
+qval_source_files = \
+ArrayLibrary/Arithmetic.cpp \
+ArrayLibrary/Array.cpp \
+ArrayLibrary/ArrayTypes.cpp \
+ArrayLibrary/MatrixFunctions.cpp \
+ArrayLibrary/Numerical.cpp \
+ArrayLibrary/OrderedArray.cpp \
+ArrayLibrary/PackedArray.cpp \
+ArrayLibrary/PackedMatrix.cpp \
+ArrayLibrary/PackedSetFunctions.cpp \
+ArrayLibrary/PackedVec.cpp \
+ArrayLibrary/Random.cpp \
+ArrayLibrary/SparseArray.cpp \
+ArrayLibrary/VectorFunctions.cpp \
+BaseSpline.cpp \
+Globals.cpp \
+IntraSetRelation.cpp \
+LogisticRegression.cpp \
+qvality_main.cpp \
+Option.cpp \
+PosteriorEstimator.cpp
+
+percolator.exe: $(per_source_files:.cpp=.obj)
   link /OUT:percolator.exe $**
+
+qvality.exe: $(qval_source_files:.cpp=.obj)
+  link /OUT:qvality.exe $**
