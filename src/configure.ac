@@ -32,7 +32,7 @@ else
   mypack="qvality"
 fi
 
-AM_INIT_AUTOMAKE($mypack, 1.04)
+AM_INIT_AUTOMAKE($mypack, 1.05)
 
 ## Debug
 # add checking message
