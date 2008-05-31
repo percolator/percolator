@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.42 2008/05/27 23:09:08 lukall Exp $
+ * $Id: Caller.h,v 1.43 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -21,27 +21,27 @@ public:
 	Caller();
 	virtual ~Caller();
     void step(Scores& train,Scores& thresh, vector<double>& w, double Cpos, double Cneg, double fdr);
-    void train(vector<double>& w);
-    void trainEm(vector<double>& w);
-    void xvalidate_step(vector<double>& w);
-    void xvalidate(vector<double>& w);
+    void train(vector<vector<double> >& w);
+    void trainEm(vector<vector<double> >& w);
+    int xvalidate_step(vector<vector<double> >& w);
+    void xvalidate(vector<vector<double> >& w);
 	static string greeter();
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
     void printWeights(ostream & weightStream, vector<double>& w);
     void readWeights(istream & weightStream, vector<double>& w);
-    void readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);
-    void filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
-    void fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler);    
-    int preIterationSetup(vector<double>& w);
+    void readFiles(bool &doSingleFile);
+    void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
+    void fillFeatureSets();    
+    int preIterationSetup(vector<vector<double> >& w);
     Scores* getTestSet() {return &testset;}    
     int run();
     SetHandler * getSetHandler(SetHandlerType sh) {
         switch(sh) {
            case NORMAL: return &normal;
            case SHUFFLED: return &shuffled;
-           case SHUFFLED_TEST: return &shuffledTest;
-           case SHUFFLED_THRESHOLD: return &shuffledThreshold;
+           case SHUFFLED_TEST: return NULL;
+           case SHUFFLED_THRESHOLD: return NULL;
            default: return NULL;
         }
     }
@@ -50,12 +50,13 @@ protected:
     SanityCheck * pCheck;
     AlgIn *svmInput;
     string modifiedFN;
-    string modifiedShuffledFN;
+    string modifiedDecoyFN;
     string forwardFN;
-    string shuffledTrainFN;
-    string shuffledThresholdFN;
-    string shuffledTestFN;
-    string shuffledWC;
+    string decoyFN;
+//    string shuffledTrainFN;
+//    string shuffledThresholdFN;
+//    string shuffledTestFN;
+    string decoyWC;
     string rocFN;
     string gistFN;
     string tabFN;
@@ -64,7 +65,6 @@ protected:
     bool gistInput;
     bool tabInput;
     bool dtaSelect;
-    bool thresholdCalulationOnTrainSet;
     bool reportPerformanceEachIteration;
     double test_fdr;
     double selectionfdr;
@@ -80,8 +80,8 @@ protected:
     XvType xv_type; 
     vector<Scores> xv_train,xv_test;
     vector<double> xv_fdrs,xv_cposs,xv_cfracs;
-    SetHandler normal,shuffled,shuffledTest,shuffledThreshold;
-    Scores trainset,testset,thresholdset;
+    SetHandler normal,shuffled; //,shuffledTest,shuffledThreshold;
+    Scores trainset,testset; //,thresholdset;
 };
 
 #endif /*CALLER_H_*/

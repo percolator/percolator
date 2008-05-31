@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.35 2008/05/27 23:09:08 lukall Exp $
+ * $Id: Scores.h,v 1.36 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -15,10 +15,11 @@ class SetHandler;
 
 class ScoreHolder{
 public:
-  double score;
+  double score,q,pep;
   const double * featVec;
   int label;
-  ScoreHolder():score(0.0),featVec(NULL),label(0){;}
+  ScoreHolder():score(0.0),q(-1.),pep(-1.),featVec(NULL),label(0){;}
+  ScoreHolder(const double &s,const int &l, const double * fv = NULL):score(s),q(-1.),pep(-1.),featVec(fv),label(l){;}
   virtual ~ScoreHolder() {;}
   pair<double,bool> toPair() {return pair<double,bool>(score,label>0);}
 };
@@ -33,20 +34,20 @@ class Scores
 public:
 	Scores();
 	~Scores();
+    void merge(const Scores& a, const Scores& b);
 	double calcScore(const double * features) const;
     const vector<ScoreHolder>::const_iterator begin() const {return scores.begin();}
     const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
 	int calcScores(vector<double>& w, double fdr=0.0);
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
     void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
-    void static fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& norm,SetHandler& shuff,
-                             const double trainRatio,const double testRatio);
     void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
-    double getQ(const double score);
-    vector<double>& calcPep();
+ //   double getQ(const double score);
+    ScoreHolder & getScoreHolder(const double *d);
+    void calcPep();
     double estimatePi0();
     void printRoc(string & fn); 
     void fill(string & fn);
@@ -62,13 +63,11 @@ protected:
     int pos;
     int posNow;
     const static int shortCutSize = 100;
-    const static int pepBins = 40;
-//    const static double lambdas[] = {0.2,0.21,0.22,0.23,0.24,1.1}; // have to end on value >1
     vector<ScoreHolder> scores;
-    vector<double> peps;
-    vector<double> qVals;
-    vector<unsigned int> shortCut;
-    double shortStep;
+//    vector<double> peps;
+//    vector<double> qVals;
+//    vector<unsigned int> shortCut;
+//    double shortStep;
 };
 
 #endif /*SCORES_H_*/

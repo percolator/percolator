@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: PercolatorCInterface.cpp,v 1.8 2008/05/27 23:09:08 lukall Exp $
+ * $Id: PercolatorCInterface.cpp,v 1.9 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <vector>
@@ -42,13 +42,11 @@ void pcInitiate(NSet sets, unsigned int numFeat, unsigned int numSpectra, char *
     pCaller=new Caller();
     nset=sets;
     numFeatures = numFeat;
-    pCaller->filelessSetup((unsigned int) sets, numFeatures, numSpectra, featureNames, pi0);
+    pCaller->filelessSetup(numFeatures, numSpectra, featureNames, pi0);
     normal = new SetHandler::Iterator(pCaller->getSetHandler(Caller::NORMAL));
     decoy1 = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED));
     if (nset>2)
-      decoy2 = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED_TEST));
-    if (nset>3)
-      decoy3 = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED_THRESHOLD));
+      cerr << "This version of percolator only suport 1 decoy set. Pecolator was called with nset=" << nset << endl;
 }
 
 /** Call that sets verbosity level
@@ -94,10 +92,8 @@ void pcRegisterPSM(SetType set, char * identifier, double * features) {
 
 /** Function called when we want to start processing */
 void pcExecute() {
-  bool separateShuffledTestSetHandler = nset>TWO_SETS;
-  bool separateShuffledThresholdSetHandler = nset==FOUR_SETS;
-  pCaller->fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-  vector<double> w(DataSet::getNumFeatures()+1);
+  pCaller->fillFeatureSets();
+  vector<vector<double> > w(1,vector<double>(DataSet::getNumFeatures()+1));
   pCaller->preIterationSetup(w);
   pCaller->train(w);  
   pCaller->getTestSet()->calcScores(w);
@@ -110,10 +106,9 @@ void pcGetScores(double *scoreArr,double *qArr) {
   int ix=0;
   SetHandler::Iterator iter(pCaller->getSetHandler(Caller::NORMAL));
   while(double * feat = iter.getNext()) {
-    double score = pCaller->getTestSet()->calcScore(feat);
-    double q = pCaller->getTestSet()->getQ(score);
-    scoreArr[ix] = score;
-    qArr[ix++] = q;
+    ScoreHolder sh = pCaller->getTestSet()->getScoreHolder(feat);
+    scoreArr[ix] = sh.score;
+    qArr[ix++] = sh.q;
   }
 } 
 

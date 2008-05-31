@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.40 2008/05/27 23:09:08 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.41 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -154,14 +154,9 @@ void SetHandler::print(Scores &test) {
   }    
   sort(outList.begin(),outList.end());
   reverse(outList.begin(),outList.end());
-  vector<double> posteriors = test.calcPep();
-  assert(posteriors.size()==outList.size());
 
-  vector<double>::const_iterator pep = posteriors.begin(); 
   vector<ResultHolder >::iterator it = outList.begin();
-  for(;it!=outList.end();it++,pep++) {
-    it->posterior=*pep;
-  }
+
   cout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds" << endl;  
   it = outList.begin();
   for(;it!=outList.end();it++) {
@@ -265,7 +260,7 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
   setSet();
 }
     
-void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetHandler& shuff, const SetHandler& shuff2) {
+void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetHandler& shuff) {
   ofstream dataStream(dataFN.data(),ios::out);
   dataStream << "SpecId\tLabel\t" << DataSet::getFeatureNames() << "\tPeptide\tProteins" << endl;
   string str;
@@ -275,9 +270,6 @@ void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetH
   for (int setPos=0;setPos< (signed int)shuff.subsets.size();setPos++) {
     shuff.subsets[setPos]->writeTabData(dataStream,shuff.subsets[setPos]->getLabel()==-1?"-1":"1");
   }
-  for (int setPos=0;setPos< (signed int)shuff2.subsets.size();setPos++) {
-    shuff2.subsets[setPos]->writeTabData(dataStream,shuff2.subsets[setPos]->getLabel()==-1?"-2":"1");
-  }    
   dataStream.close();
 }
 
@@ -321,7 +313,7 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
 
 }    
 
-void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff, const SetHandler& shuff2) {
+void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff) {
   string dataFN = fileNameTrunk + ".data";
   string labelFN = fileNameTrunk + ".label";
   ofstream dataStream(dataFN.data(),ios::out);
@@ -341,13 +333,6 @@ void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,c
     while (shuff.subsets[setPos]->getGistDataRow(ixPos,str)) {
       dataStream << str;
       labelStream << str.substr(0,str.find('\t')+1) << (shuff.subsets[setPos]->getLabel()==-1?-1:+1) << endl; 
-    }
-  }    
-  for (int setPos=0;setPos< (signed int)shuff2.subsets.size();setPos++) {
-    int ixPos=-1;
-    while (shuff2.subsets[setPos]->getGistDataRow(ixPos,str)) {
-      dataStream << str;
-      labelStream << str.substr(0,str.find('\t')+1) << (shuff2.subsets[setPos]->getLabel()==-1?-2:+1) << endl; 
     }
   }    
   dataStream.close();

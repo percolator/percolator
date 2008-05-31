@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.21 2008/05/27 23:09:08 lukall Exp $
+ * $Id: SetHandler.h,v 1.22 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
@@ -33,9 +33,9 @@ public:
 	double * getNext(int& ,int& ) const;
     const double * getFeatures(const int setPos,const int ixPos) const;
     void readTab(const string & dataFN, const int label);
-    void static writeTab(const string &dataFN, const SetHandler& norm, const SetHandler& shuff, const SetHandler& shuff2);
+    void static writeTab(const string &dataFN, const SetHandler& norm, const SetHandler& shuff);
     void readGist(const string & dataFN, const string & labelFN, const int label);
-    void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff,const SetHandler& shuff2);
+    void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff);
 	int const getLabel(int setPos);
     inline int const getTrainingSetSize() {return examples.size();}
     void print(Scores &test);    

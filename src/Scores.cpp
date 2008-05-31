@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.61 2008/05/27 23:09:08 lukall Exp $
+ * $Id: Scores.cpp,v 1.62 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -36,7 +36,6 @@ Scores::Scores()
     neg=0;
     pos=0;
     posNow=0;
-    shortStep=0;
 }
 
 Scores::~Scores()
@@ -44,6 +43,13 @@ Scores::~Scores()
 }
 
 double Scores::pi0 = 0.9;
+
+void Scores::merge(const Scores& a, const Scores& b) {
+  scores.clear();
+  copy(a.begin(),a.end(),back_inserter(scores));
+  copy(b.begin(),b.end(),back_inserter(scores));
+}
+
 
 void Scores::printRoc(string & fn){
  ofstream rocStream(fn.data(),ios::out);
@@ -62,7 +68,7 @@ double Scores::calcScore(const double * feat) const{
   }
   return score;
 }
-
+/*
 void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& norm,SetHandler& shuff,
                              const double trainRatio,const double testRatio) {
   assert(trainRatio >0 && testRatio >0 && trainRatio+testRatio < 1);
@@ -126,76 +132,44 @@ void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& 
   thresh.factor = n/(double)l;
   test.factor = n/(double)m;
 }
+*/
 
 void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
   assert(ratio>0 && ratio < 1);
   int n = norm.getSize();
-  int k = (int)(shuff.getSize()*ratio);
-  int l = shuff.getSize() - k;
-  ScoreHolder s;
-  train.scores.resize(n+k,s);
-  train.qVals.resize(n+k,-1e200); 
-  test.scores.resize(n+l,s);
-  test.qVals.resize(n+l,-1e200); 
+  int l = shuff.getSize();
+  train.scores.clear();
+  test.scores.clear();
 
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  int ix1=0,ix2=0;
   const double * featVec;
   while((featVec=shuffIter.getNext())!=NULL) {
-    int remain = k + l - ix1 - ix2;
-    int sel = (rand() % remain);
-//    if (((int)(ix1+ix2+1)*ratio)>=ix1+1) {
-    if (sel<(k-ix1)) {
-      train.scores[ix1].label=-1;
-      train.scores[ix1].featVec=featVec;
-      ++ix1;
-    } else {
-      test.scores[ix2].label=-1;
-      test.scores[ix2].featVec=featVec;
-      ++ix2;    
-    }
+    train.scores.push_back(ScoreHolder(.0,-1,featVec));
+    test.scores.push_back(ScoreHolder(.0,-1,featVec));
   }
-  assert(ix1==k);
-  assert(ix2==l);
   while((featVec=normIter.getNext())!=NULL) {
-    train.scores[ix1].label=1;
-    train.scores[ix1].featVec=featVec;
-    ++ix1;
-    test.scores[ix2].label=1;
-    test.scores[ix2].featVec=featVec;
-    ++ix2;
+    train.scores.push_back(ScoreHolder(.0,1,featVec));
+    test.scores.push_back(ScoreHolder(.0,1,featVec));
   }
-  assert(ix1==n+k);
-  assert(ix2==n+l);
   train.pos=n;
   test.pos=n;
-  train.neg=k;
+  train.neg=l;
   test.neg=l;
-  train.factor = n/(double)k;
+  train.factor = n/(double)l;
   test.factor = n/(double)l;
 }
 
 void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
-  int n = norm.getSize()+shuff.getSize();
-  ScoreHolder s;
-  scores.resize(n,s);
-  qVals.resize(n,-1e200); 
-  int ix=0;
+  scores.clear();
   const double * featVec;
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
   while((featVec=normIter.getNext())!=NULL) {
-    scores[ix].label=1;
-    scores[ix].featVec=featVec;
-    ++ix;
+    scores.push_back(ScoreHolder(.0,1,featVec));
   }
-  pos=ix;
   while((featVec=shuffIter.getNext())!=NULL) {
-    scores[ix].label=-1;
-    scores[ix].featVec=featVec;
-    ++ix;
+    scores.push_back(ScoreHolder(.0,-1,featVec));
   }
-  neg=ix-pos;
-  factor=pos/(double)neg;
+  factor=norm.getSize()/(double)shuff.getSize();
 }
 
 
@@ -213,14 +187,12 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
   }
   vector<ScoreHolder>::const_iterator it;
   for(unsigned int i=0;i<xval_fold;i++) {
-    train[i].qVals.resize(train[i].scores.size(),-1e200); 
   	train[i].pos=0;train[i].neg=0;
   	for(it=train[i].begin();it!=train[i].end();it++) {
       if (it->label==1) train[i].pos++;
       else train[i].neg++;
     }
     train[i].factor=train[i].pos/(double)train[i].neg;
-    test[i].qVals.resize(test[i].scores.size(),-1e200); 
     test[i].pos=0;test[i].neg=0;
   	for(it=test[i].begin();it!=test[i].end();it++) {
       if (it->label==1) test[i].pos++;
@@ -259,7 +231,6 @@ int Scores::calcScores(vector<double>& w,double fdr) {
   }
   int positives=0,nulls=0;
   double efp=0.0,q;
-  ix=0;
   for(it=scores.begin();it!=scores.end();it++) {
     if (it->label!=-1)
       positives++;
@@ -273,16 +244,18 @@ int Scores::calcScores(vector<double>& w,double fdr) {
       q=pi0;
     if (q>pi0)
       q=pi0;
-    qVals[ix++]=q;
+    it->q=q;
     if (fdr>=q)
       posNow = positives;
   }
-  for (;--ix;) {
-    if (qVals[ix-1]>qVals[ix]) qVals[ix-1]=qVals[ix];  
+  for (ix=scores.size();--ix;) {
+    if (scores[ix-1].q > scores[ix].q)
+      scores[ix-1].q = scores[ix].q;  
   }
   return posNow;
 }
 
+/*
 double Scores::getQ(const double score) {
   unsigned int loIx = scores.size()-1, hiIx = 0;
   double lo = scores[loIx].score, hi = scores[hiIx].score;
@@ -322,6 +295,8 @@ double Scores::getQ(const double score) {
   }
   return qVals[loIx];
 }
+*/
+
 
 void Scores::generateNegativeTrainingSet(AlgIn& data,const double cneg) {
   unsigned int ix1=0,ix2=0;
@@ -340,7 +315,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   unsigned int ix1=0,ix2=data.negatives,p=0;
   for(ix1=0;ix1<size();ix1++) {
     if (scores[ix1].label==1) {
-      if (fdr<qVals[ix1]) {
+      if (fdr<scores[ix1].q) {
         posNow=p;
         break;
       }
@@ -423,14 +398,19 @@ double Scores::estimatePi0() {
 
 }
 
-
-vector<double>& Scores::calcPep() {
+void Scores::calcPep() {
 
   vector<pair<double,bool> > combined;
   transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
-  peps.clear();                                                                                                                  
+  vector<double> peps;                                                                                                                  
   
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined,pi0,peps);
-  return peps;
+
+  size_t pix=0;
+  for(size_t ix=0; ix<scores.size(); ix++) {
+    scores[ix].pep = peps[pix];
+    if(scores[ix].label==1)
+      ++pix;
+  }
 }

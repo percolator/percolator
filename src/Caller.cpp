@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.88 2008/05/27 23:09:08 lukall Exp $
+ * $Id: Caller.cpp,v 1.89 2008/05/31 00:13:52 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -32,9 +32,9 @@ using namespace std;
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
-  modifiedFN(""), modifiedShuffledFN(""), forwardFN(""), shuffledTrainFN (""),shuffledThresholdFN(""), shuffledTestFN(""),
-  shuffledWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""),
-  gistInput(false), tabInput(false), dtaSelect(false), thresholdCalulationOnTrainSet(true), reportPerformanceEachIteration(false),
+  modifiedFN(""), modifiedDecoyFN(""), forwardFN(""), decoyFN (""), //shuffledThresholdFN(""), shuffledTestFN(""),
+  decoyWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""),
+  gistInput(false), tabInput(false), dtaSelect(false), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
   niter(10), seed(0), xv_type(EACH_STEP)
 {
@@ -196,9 +196,9 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("o"))
     modifiedFN = cmd.options["o"];
   if (cmd.optionSet("s"))
-    modifiedShuffledFN = cmd.options["s"];
+    modifiedDecoyFN = cmd.options["s"];
   if (cmd.optionSet("P"))
-    shuffledWC = cmd.options["P"];
+    decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
     selectedCpos = cmd.getDouble("p",0.0,1e127);
   }
@@ -280,7 +280,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("S")) {
     seed = cmd.getInt("S",0,20000);
   }
-  if (cmd.arguments.size()>4) {
+  if (cmd.arguments.size()>2) {
       cerr << "Too many arguments given" << endl;
       cmd.help();
   }
@@ -289,15 +289,9 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
       cmd.help();
   }
   if (cmd.arguments.size()>0)
-    forwardFN = cmd.arguments[0];
+     forwardFN = cmd.arguments[0];
   if (cmd.arguments.size()>1)
-     shuffledTrainFN = cmd.arguments[1];
-  if (cmd.arguments.size()>2)
-     shuffledTestFN = cmd.arguments[2];
-  if (cmd.arguments.size()>3) {
-     shuffledThresholdFN = cmd.arguments[2];
-     shuffledTestFN = cmd.arguments[3];
-  }
+     decoyFN = cmd.arguments[1];
   return true;
 }
 
@@ -321,14 +315,10 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
 }
 
 
-void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatures, const unsigned int numSpectra, char ** featureNames, double pi0) {
+void Caller::filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra, char ** featureNames, double pi0) {
   pCheck = new SanityCheck();
   normal.filelessSetup(numFeatures, numSpectra,1);
   shuffled.filelessSetup(numFeatures, numSpectra,-1);
-  if (sets>2)
-    shuffledTest.filelessSetup(numFeatures, numSpectra,-1);
-  if (sets>3)
-    shuffledThreshold.filelessSetup(numFeatures, numSpectra,-1);
   Scores::pi0 = pi0;
   ostringstream os;
   for (unsigned int ix=0;ix<numFeatures;ix++){
@@ -340,39 +330,23 @@ void Caller::filelessSetup(const unsigned int sets, const unsigned int numFeatur
   DataSet::setFeatureNames(os.str());  
 }
 
-void Caller::readFiles(bool &doSingleFile, bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
+void Caller::readFiles(bool &doSingleFile) {
   if (gistInput) {
     pCheck = new SanityCheck();
-    normal.readGist(forwardFN,shuffledTrainFN,1);
-    shuffled.readGist(forwardFN,shuffledTrainFN,-1);
-    shuffledTest.readGist(forwardFN,shuffledTrainFN,-2);
-    shuffledThreshold.readGist(forwardFN,shuffledTrainFN,-3);
-    if (shuffledTest.getSize()>0)
-      separateShuffledTestSetHandler=true;
-    if (shuffledThreshold.getSize()>0)
-      separateShuffledThresholdSetHandler=true;
+    normal.readGist(forwardFN,decoyFN,1);
+    shuffled.readGist(forwardFN,decoyFN,-1);
   } else if (tabInput) {
     pCheck = new SanityCheck();
     normal.readTab(forwardFN,1);
     shuffled.readTab(forwardFN,-1);
-    shuffledTest.readTab(forwardFN,-2);
-    shuffledThreshold.readTab(forwardFN,-3);
-    if (shuffledTest.getSize()>0)
-      separateShuffledTestSetHandler=true;
-    if (shuffledThreshold.getSize()>0)
-      separateShuffledThresholdSetHandler=true;
   } else if (!doSingleFile) {
     pCheck = new SqtSanityCheck();
     normal.readFile(forwardFN,1);
-    shuffled.readFile(shuffledTrainFN,-1);    
-    if (separateShuffledTestSetHandler)
-      shuffledTest.readFile(shuffledTestFN,-1);
-    if (separateShuffledThresholdSetHandler)
-      shuffledThreshold.readFile(shuffledThresholdFN,-1);
+    shuffled.readFile(decoyFN,-1);    
   } else {
     pCheck = new SqtSanityCheck();
-    normal.readFile(forwardFN,shuffledWC,false);  
-    shuffled.readFile(forwardFN,shuffledWC,true);  
+    normal.readFile(forwardFN,decoyWC,false);  
+    shuffled.readFile(forwardFN,decoyWC,true);  
   }
 }
 
@@ -414,27 +388,34 @@ void Caller::step(Scores& train,Scores& thresh,vector<double>& w, double Cpos, d
     delete Options;
 }
 
-void Caller::trainEm(vector<double>& w) {
+void Caller::trainEm(vector<vector<double> >& w) {
   // iterate
   for(unsigned int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
-    if (xv_type!=EACH_STEP)
-      step(trainset,thresholdset,w,selectedCpos,selectedCneg,selectionfdr);
-    else
-      xvalidate_step(w);
-    if(VERB>2) {cerr<<"Obtained weights" << endl; printWeights(cerr,w);}
-    if (reportPerformanceEachIteration) {
-      cerr << "After the iteration step, " << testset.calcScores(w,selectionfdr) << " positives with q<"
-           << selectionfdr << " were found when measuring on test set" << endl;
+    if (xv_type!=EACH_STEP) {
+      step(trainset,testset,w[0],selectedCpos,selectedCneg,selectionfdr);
+      if (reportPerformanceEachIteration) {
+        cerr << "After the iteration step, " << testset.calcScores(w[0],selectionfdr) << " positives with q<"
+             << selectionfdr << " were found when measuring on test set" << endl;
+      }
+    } else {
+      int tar = xvalidate_step(w);
+      if (reportPerformanceEachIteration) {
+        cerr << "After the iteration step, " << tar << " positives with q<"
+             << selectionfdr << " were found when measuring on test set" << endl;
+      }
     }
+      
+    if(VERB>2) {cerr<<"Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
   }
-  if(VERB==2 ) {cerr<<"Obtained weights" << endl;printWeights(cerr,w);}
+  if(VERB==2 ) { cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
 }
 
-void Caller::xvalidate_step(vector<double>& w) {
+int Caller::xvalidate_step(vector<vector<double> >& w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
   double best_fdr=0.01,best_cpos=1,best_cneg=1;
+  vector<vector<double> > best_w;
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
@@ -442,35 +423,36 @@ void Caller::xvalidate_step(vector<double>& w) {
         if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
         int tp=0;
-        vector<double> ww(DataSet::getNumFeatures()+1);
+        vector<vector<double> > ww = w;
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
-          for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
-          step(xv_train[i],xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
-          tp += xv_test[i].calcScores(ww,test_fdr);
-          if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
+          step(xv_train[i],xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
+          tp += xv_test[i].calcScores(ww[i],test_fdr);
+          if(VERB>2) cerr << "Cumulative # of target PSMs over treshold " << tp << endl;
         }
-        if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
-        if (tp>bestTP) {
+        if(VERB>1) cerr << "- cross validation found " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
+        if (tp>=bestTP) {
           if(VERB>1) cerr << "Better than previous result, store this" << endl;
           bestTP = tp;
-          best_fdr=*fdr;
-          best_cpos = *cpos;
-          best_cneg = (*cpos)*(*cfrac);          
+          best_w = ww;          
         }
       }
     }
   }
   Globals::getInstance()->incVerbose();
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
-                  << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;  
-  step(trainset,thresholdset,w,best_cpos,best_cneg,best_fdr);
+                  << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;
+  w = best_w;
+  return bestTP;                  
+//  for (unsigned int i=0;i<xval_fold;i++) {
+//     xv_test[i].calcScores(w[i],test_fdr);
+//  }
 }
 
-void Caller::xvalidate(vector<double>& w) {
+void Caller::xvalidate(vector<vector<double> >& w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
-  vector<double> ww(DataSet::getNumFeatures()+1),www(DataSet::getNumFeatures()+1);
+  vector<vector<double> > ww = w,www(DataSet::getNumFeatures()+1);
 
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
@@ -481,11 +463,11 @@ void Caller::xvalidate(vector<double>& w) {
         int tp=0;
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
-          for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) ww[ix]=w[ix];
+          ww = w;
           for(unsigned int k=0;k<niter;k++) {
-            step(xv_train[i],xv_train[i],ww,*cpos,(*cpos)*(*cfrac),*fdr);
+            step(xv_train[i],xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
           }
-          tp += xv_test[i].calcScores(ww,test_fdr);
+          tp += xv_test[i].calcScores(ww[i],test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
         }
         if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
@@ -494,8 +476,8 @@ void Caller::xvalidate(vector<double>& w) {
           bestTP = tp;
           selectionfdr=*fdr;
           selectedCpos = *cpos;
-          selectedCneg = (*cpos)*(*cfrac);          
-          for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) www[ix]=ww[ix];
+          selectedCneg = (*cpos)*(*cfrac);
+          www = ww;          
         }
       }     
     }
@@ -506,63 +488,38 @@ void Caller::xvalidate(vector<double>& w) {
   trainEm(www);
 }
 
-void Caller::train(vector<double>& w) {
+void Caller::train(vector<vector<double> >& w) {
   if (xv_type==WHOLE)
     xvalidate(w);
   else  
     trainEm(w);
 }
 
-void Caller::fillFeatureSets(bool &separateShuffledTestSetHandler, bool &separateShuffledThresholdSetHandler) {
-  if (separateShuffledThresholdSetHandler) {
-    trainset.fillFeatures(normal,shuffled);
-    thresholdset.fillFeatures(normal,shuffledThreshold);
-    testset.fillFeatures(normal,shuffledTest); 
-  } else if (separateShuffledTestSetHandler) {
-    if (thresholdCalulationOnTrainSet) {
-      trainset.fillFeatures(normal,shuffled);
-      thresholdset=trainset;
-      testset.fillFeatures(normal,shuffledTest);     
-    } else {
-      trainset.fillFeatures(normal,shuffled); 
-      Scores::fillFeatures(thresholdset,testset,normal,shuffledTest,threshTestRatio); 
-    } 
-  } else {
-    if (thresholdCalulationOnTrainSet) {
-      Scores::fillFeatures(trainset,testset,normal,shuffled,trainRatio);     
-      thresholdset=trainset;
-    } else {
-      Scores::fillFeatures(trainset,thresholdset,testset,normal,shuffled,trainRatio,threshTestRatio);
-    } 
-  }
+void Caller::fillFeatureSets() {
+  trainset.fillFeatures(normal,shuffled);
+  testset.fillFeatures(normal,shuffled); 
   if (VERB>1) {
     cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives, size ratio=" 
          << trainset.factor << " and pi0=" << trainset.pi0 << endl;
-    cerr << "Threshold defining set contains " << thresholdset.posSize() << " positives and " << thresholdset.negSize() << " negatives, size ratio=" 
-         << thresholdset.factor << " and pi0=" << thresholdset.pi0 << endl;
     cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives, size ratio="
          << testset.factor << " and pi0=" << testset.pi0 << endl;
   }
   if (gistFN.length()>0) {
-    SetHandler::gistWrite(gistFN,normal,shuffled,shuffledTest);
+    SetHandler::gistWrite(gistFN,normal,shuffled);
   }
   if (tabFN.length()>0) {
-    SetHandler::writeTab(tabFN,normal,shuffled,shuffledTest);
+    SetHandler::writeTab(tabFN,normal,shuffled);
   }
   //Normalize features
   set<DataSet *> all;
   all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
   all.insert(shuffled.getSubsets().begin(),shuffled.getSubsets().end());
-  if (separateShuffledTestSetHandler) 
-    all.insert(shuffledTest.getSubsets().begin(),shuffledTest.getSubsets().end());
-  if (separateShuffledThresholdSetHandler) 
-    all.insert(shuffledThreshold.getSubsets().begin(),shuffledThreshold.getSubsets().end());
   pNorm=Normalizer::getNew();
   pNorm->setSet(all);
   pNorm->normalizeSet(all);
 }
 
-int Caller::preIterationSetup(vector<double>& w) {
+int Caller::preIterationSetup(vector<vector<double> >& w) {
   
   svmInput = new AlgIn(trainset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
     
@@ -588,10 +545,15 @@ int Caller::preIterationSetup(vector<double>& w) {
       xv_cfracs.push_back(1.0*trainset.factor);xv_cfracs.push_back(3.0*trainset.factor);xv_cfracs.push_back(10.0*trainset.factor);
       if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
     }
+    int tar = 0;
+    for (unsigned int i=0;i<xval_fold;i++) {
+      tar += pCheck->getInitDirection(&(xv_test[i]),&(xv_train[i]),pNorm,w[i],test_fdr);
+    }
+    return tar;
   } else {
     xv_type = NO_XV;
+    return pCheck->getInitDirection(&testset,&trainset,pNorm,w[0],test_fdr);
   }
-  return pCheck->getInitDirection(&testset,&trainset,pNorm,w,test_fdr);
 }    
 
 int Caller::run() {
@@ -600,12 +562,10 @@ int Caller::run() {
   srand(seed);
   if(VERB>0)  cerr << extendedGreeter();
   //File reading
-  bool doSingleFile = !shuffledWC.empty();
-  bool separateShuffledTestSetHandler = !doSingleFile && !shuffledTestFN.empty();
-  bool separateShuffledThresholdSetHandler = separateShuffledTestSetHandler && !shuffledThresholdFN.empty();
-  readFiles(doSingleFile, separateShuffledTestSetHandler, separateShuffledThresholdSetHandler);
-  fillFeatureSets(separateShuffledTestSetHandler,separateShuffledThresholdSetHandler);
-  vector<double> w(DataSet::getNumFeatures()+1),ww(DataSet::getNumFeatures()+1);
+  bool doSingleFile = !decoyWC.empty();
+  readFiles(doSingleFile);
+  fillFeatureSets();
+  vector<vector<double> > w(xval_fold,vector<double>(DataSet::getNumFeatures()+1)),ww;
   preIterationSetup(w);
 
   // Set up a first guess of w
@@ -633,16 +593,16 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  pCheck->validateDirection(w);
-  pNorm->unnormalizeweight(w,ww);    
-  normal.modifyFile(modifiedFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
-  if (separateShuffledTestSetHandler)
-    shuffledTest.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
-  else
-    shuffled.modifyFile(modifiedShuffledFN,ww,testset,extendedGreeter()+timerValues.str(), dtaSelect);
+  for (unsigned int i=0;i<xval_fold;i++) {
+    pCheck->validateDirection(w[i]);
+    pNorm->unnormalizeweight(w[i],ww[i]);    
+  }
+  normal.modifyFile(modifiedFN,ww[0],testset,extendedGreeter()+timerValues.str(), dtaSelect);
+  shuffled.modifyFile(modifiedDecoyFN,ww[0],testset,extendedGreeter()+timerValues.str(), dtaSelect);
+
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
-     printWeights(weightStream,w);
+     printWeights(weightStream,w[0]);
      weightStream.close(); 
   }
   if (rocFN.size()>0) {
