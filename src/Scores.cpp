@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.63 2008/06/06 17:13:32 lukall Exp $
+ * $Id: Scores.cpp,v 1.64 2008/06/06 22:27:15 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -117,6 +117,7 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
   while((featVec=shuffIter.getNext())!=NULL) {
     scores.push_back(ScoreHolder(.0,-1,featVec));
   }
+  pos = norm.getSize(); neg = shuff.getSize();
   factor=norm.getSize()/(double)shuff.getSize();
 }
 
@@ -124,14 +125,26 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
 void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold) {
   train.resize(xval_fold);
   test.resize(xval_fold);
+  vector<size_t> remain(xval_fold);
+  size_t fold = xval_fold, ix = scores.size();
+  while (fold--) {
+    remain[fold] = ix / (fold + 1);
+    ix -= remain[fold];
+  }
+  
   for(unsigned int j=0;j<scores.size();j++) {
+    ix = rand()%(scores.size()-j);
+    fold = 0;
+    while(ix>remain[fold])
+      ix-= remain[fold++];
     for(unsigned int i=0;i<xval_fold;i++) {
-      if(j%xval_fold==i) {
+      if(i==fold) {
         test[i].scores.push_back(scores[j]);
       } else {
         train[i].scores.push_back(scores[j]);
       }
-    }  
+    }
+    --remain[fold];  
   }
   vector<ScoreHolder>::const_iterator it;
   for(unsigned int i=0;i<xval_fold;i++) {
@@ -153,7 +166,7 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
 int Scores::calcScores(vector<double>& w,double fdr) {
   register unsigned int ix=DataSet::getNumFeatures()+1;
   if (w_vec.size()!=ix)
-    w_vec.resize(ix);
+    w_vec.resize(ix,0.0);
   for(;ix--;) {
     w_vec[ix]=w[ix];
   }

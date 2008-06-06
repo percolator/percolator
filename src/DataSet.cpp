@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.79 2008/06/06 17:13:32 lukall Exp $
+ * $Id: DataSet.cpp,v 1.80 2008/06/06 22:27:15 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -141,7 +141,7 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   ostringstream out;
   int ix =-1;
   while (double * features=getNext(ix)) {
-    double score = test.calcScore(features);
+    double score = test.getScoreHolder(features)->score;
     double q = test.getScoreHolder(features)->q;
     if ((int)proteinIds.size()>ix) {
       set<string> prots = proteinIds[ix];

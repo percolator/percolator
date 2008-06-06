@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.90 2008/06/06 17:13:32 lukall Exp $
+ * $Id: Caller.cpp,v 1.91 2008/06/06 22:27:15 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -310,7 +310,6 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
     weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
-  D_DARRAY(ww)
 }
 
 
