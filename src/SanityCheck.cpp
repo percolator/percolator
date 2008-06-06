@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.4 2008/05/27 23:09:08 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.5 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -30,35 +30,41 @@ SanityCheck::~SanityCheck()
 bool SanityCheck::overRule=false;
 string SanityCheck::initWeightFN="";
 
-int SanityCheck::getInitDirection(Scores * testset, Scores * trainset,Normalizer * pNorm,vector<double>& w,double test_fdr) {
-  pTestset = testset; pTrainset = trainset; fdr = test_fdr;
+int SanityCheck::getInitDirection(vector<Scores>& testset, vector<Scores>& trainset,Normalizer * pNorm, vector<vector<double> >& w,double test_fdr) {
+  pTestset = &testset; pTrainset = &trainset; fdr = test_fdr;
   
   if (initWeightFN.size()>0) {
     vector<double> ww(DataSet::getNumFeatures()+1);
     ifstream weightStream(initWeightFN.data(),ios::in);
     readWeights(weightStream,ww);
     weightStream.close();
-    pNorm->normalizeweight(ww,w); 
-    D_DARRAY(ww)
+    pNorm->normalizeweight(ww,w[0]); 
+    for (size_t set = 1; set<w.size();++set)
+       copy(w[0].begin(),w[0].end(),w[set].begin());
   } else {
     getDefaultDirection(w);
   }
-  initPositives = pTestset->getInitDirection(fdr,w,false);
+  initPositives = 0;
+  for (size_t set = 0; set<w.size();++set)
+    initPositives += (*pTestset)[set].getInitDirection(fdr,w[set],false);
   return initPositives;
 }
 
-void SanityCheck::getDefaultDirection(vector<double>& w) {
+void SanityCheck::getDefaultDirection(vector< vector<double> >& w) {
   // Set init direction to be the most discriminative direction
-  pTrainset->getInitDirection(fdr,w,true);
+  for (size_t set = 0; set<w.size();++set)
+    (*pTrainset)[set].getInitDirection(fdr,w[set],true);
 }
 
 
-bool SanityCheck::validateDirection(vector<double>& w) {
+bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   if (!pTestset) {
     cerr << "Wrongly set up of object SanityCheck" << endl;
     exit(-1);
   }
-  int overFDR = pTestset -> calcScores(w,fdr);
+  int overFDR=0;
+  for (size_t set = 0; set<w.size();++set)
+    overFDR += (*pTestset)[set].calcScores(w[set],fdr);
   if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << fdr*100 << "% FDR level on testset" << endl;
   if (overFDR<=0) {
      cerr << "No target score better than best decoy" << endl;
@@ -85,7 +91,7 @@ void SanityCheck::readWeights(istream & weightStream, vector<double>& w) {
   }
 }
 
-void SanityCheck::resetDirection(vector<double>& w) {
+void SanityCheck::resetDirection(vector<vector<double> >& w) {
   if (!overRule) {
     cerr << "Reseting score vector, using default vector" << endl;
     getDefaultDirection(w);  

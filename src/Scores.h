@@ -4,11 +4,12 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.36 2008/05/31 00:13:52 lukall Exp $
+ * $Id: Scores.h,v 1.37 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
 #include <vector>
+#include <map>
 using namespace std;
 
 class SetHandler;
@@ -34,7 +35,7 @@ class Scores
 public:
 	Scores();
 	~Scores();
-    void merge(const Scores& a, const Scores& b);
+    void merge(vector<Scores>& sv);
 	double calcScore(const double * features) const;
     const vector<ScoreHolder>::const_iterator begin() const {return scores.begin();}
     const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
@@ -46,7 +47,7 @@ public:
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
  //   double getQ(const double score);
-    ScoreHolder & getScoreHolder(const double *d);
+    ScoreHolder * getScoreHolder(const double *d);
     void calcPep();
     double estimatePi0();
     void printRoc(string & fn); 
@@ -64,6 +65,7 @@ protected:
     int posNow;
     const static int shortCutSize = 100;
     vector<ScoreHolder> scores;
+    map<const double *,ScoreHolder *> scoreMap; 
 //    vector<double> peps;
 //    vector<double> qVals;
 //    vector<unsigned int> shortCut;

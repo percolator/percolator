@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.62 2008/05/31 00:13:52 lukall Exp $
+ * $Id: Scores.cpp,v 1.63 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -44,10 +44,12 @@ Scores::~Scores()
 
 double Scores::pi0 = 0.9;
 
-void Scores::merge(const Scores& a, const Scores& b) {
+void Scores::merge(vector<Scores>& sv) {
   scores.clear();
-  copy(a.begin(),a.end(),back_inserter(scores));
-  copy(b.begin(),b.end(),back_inserter(scores));
+  for(vector<Scores>::const_iterator a = sv.begin();a!=sv.end();a++)
+    copy(a->begin(),a->end(),back_inserter(scores));
+  sort(scores.begin(),scores.end());
+  reverse(scores.begin(),scores.end());
 }
 
 
@@ -68,71 +70,17 @@ double Scores::calcScore(const double * feat) const{
   }
   return score;
 }
-/*
-void Scores::fillFeatures(Scores& train,Scores& thresh,Scores& test,SetHandler& norm,SetHandler& shuff,
-                             const double trainRatio,const double testRatio) {
-  assert(trainRatio >0 && testRatio >0 && trainRatio+testRatio < 1);
-  int n = norm.getSize();
-  int k = (int)(shuff.getSize()*trainRatio);
-  int m = (int)(shuff.getSize()*testRatio);
-  int l = shuff.getSize() - k - m;
-  ScoreHolder s;
-  train.scores.resize(n+k,s);
-  train.qVals.resize(n+k,-1e200); 
-  test.scores.resize(n+m,s);
-  test.qVals.resize(n+m,-1e200); 
-  thresh.scores.resize(n+l,s);
-  thresh.qVals.resize(n+l,-1e200); 
-  SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  int ix1=0,ix2=0,ix3=0;
-  const double * featVec;
-  while((featVec=shuffIter.getNext())!=NULL) {
-    int remain = k+m+l - ix1 - ix2 -ix3;
-    int sel = (rand() % remain);
-    if (sel<(k-ix1)) {
-//    if (((int)(ix1+ix2+ix3+1)*trainRatio)>=ix1+1) {
-      train.scores[ix1].label=-1;
-      train.scores[ix1].featVec=featVec;
-      ++ix1;
-    } else if (sel<(k-ix1)+(m-ix3)) {
-//    } else if (((int)(ix1+ix2+ix3+1)*testRatio)>=ix3+1) {
-      test.scores[ix3].label=-1;
-      test.scores[ix3].featVec=featVec;
-      ++ix3;    
-    } else {
-      thresh.scores[ix2].label=-1;
-      thresh.scores[ix2].featVec=featVec;
-      ++ix2;    
+
+ScoreHolder* Scores::getScoreHolder(const double *d){
+  if (scoreMap.size()==0) {
+    vector<ScoreHolder>::iterator it;
+    for(it=scores.begin();it!=scores.end();it++) {
+      scoreMap[it->featVec] = &(*it);
     }
   }
-  assert(ix1==k);
-  assert(ix2==l);
-  assert(ix3==m);
-  while((featVec=normIter.getNext())!=NULL) {
-    train.scores[ix1].label=1;
-    train.scores[ix1].featVec=featVec;
-    ++ix1;
-    thresh.scores[ix2].label=1;
-    thresh.scores[ix2].featVec=featVec;
-    ++ix2;
-    test.scores[ix3].label=1;
-    test.scores[ix3].featVec=featVec;
-    ++ix3;
-  }
-  assert(ix1==n+k);
-  assert(ix2==n+l);
-  assert(ix3==n+m);
-  train.pos=n;
-  thresh.pos=n;
-  test.pos=n;
-  train.neg=k;
-  thresh.neg=l;
-  test.neg=m;
-  train.factor = n/(double)k;
-  thresh.factor = n/(double)l;
-  test.factor = n/(double)m;
+  return scoreMap[d];  
 }
-*/
+
 
 void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
   assert(ratio>0 && ratio < 1);

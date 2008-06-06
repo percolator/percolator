@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.89 2008/05/31 00:13:52 lukall Exp $
+ * $Id: Caller.cpp,v 1.90 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -56,9 +56,8 @@ Caller::~Caller()
 string Caller::extendedGreeter() {
   ostringstream oss;
   char * host = getenv("HOST");
-  if (!host) {
+  if (!host)
     host="unknown_host";
-  }
   oss << greeter();
   oss << "Issued command:" << endl << call;
   oss << "Started " << ctime(&startTime);
@@ -393,9 +392,9 @@ void Caller::trainEm(vector<vector<double> >& w) {
   for(unsigned int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
     if (xv_type!=EACH_STEP) {
-      step(trainset,testset,w[0],selectedCpos,selectedCneg,selectionfdr);
+      step(fullset,fullset,w[0],selectedCpos,selectedCneg,selectionfdr);
       if (reportPerformanceEachIteration) {
-        cerr << "After the iteration step, " << testset.calcScores(w[0],selectionfdr) << " positives with q<"
+        cerr << "After the iteration step, " << fullset.calcScores(w[0],selectionfdr) << " positives with q<"
              << selectionfdr << " were found when measuring on test set" << endl;
       }
     } else {
@@ -496,13 +495,10 @@ void Caller::train(vector<vector<double> >& w) {
 }
 
 void Caller::fillFeatureSets() {
-  trainset.fillFeatures(normal,shuffled);
-  testset.fillFeatures(normal,shuffled); 
+  fullset.fillFeatures(normal,shuffled);
   if (VERB>1) {
-    cerr << "Train set contains " << trainset.posSize() << " positives and " << trainset.negSize() << " negatives, size ratio=" 
-         << trainset.factor << " and pi0=" << trainset.pi0 << endl;
-    cerr << "Test set contains " << testset.posSize() << " positives and " << testset.negSize() << " negatives, size ratio="
-         << testset.factor << " and pi0=" << testset.pi0 << endl;
+    cerr << "Train/test set contains " << fullset.posSize() << " positives and " << fullset.negSize() << " negatives, size ratio=" 
+         << fullset.factor << " and pi0=" << fullset.pi0 << endl;
   }
   if (gistFN.length()>0) {
     SetHandler::gistWrite(gistFN,normal,shuffled);
@@ -521,11 +517,11 @@ void Caller::fillFeatureSets() {
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {
   
-  svmInput = new AlgIn(trainset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
+  svmInput = new AlgIn(fullset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
     
   if (selectionfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
     xv_train.resize(xval_fold); xv_test.resize(xval_fold);
-    trainset.createXvalSets(xv_train,xv_test,xval_fold);
+    fullset.createXvalSets(xv_train,xv_test,xval_fold);
     if (selectionfdr > 0) {
       xv_fdrs.push_back(selectionfdr);
     } else {
@@ -542,17 +538,14 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     if (selectedCpos > 0 && selectedCneg > 0) {
       xv_cfracs.push_back(selectedCneg/selectedCpos);
     } else  {
-      xv_cfracs.push_back(1.0*trainset.factor);xv_cfracs.push_back(3.0*trainset.factor);xv_cfracs.push_back(10.0*trainset.factor);
+      xv_cfracs.push_back(1.0*fullset.factor);xv_cfracs.push_back(3.0*fullset.factor);xv_cfracs.push_back(10.0*fullset.factor);
       if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
     }
-    int tar = 0;
-    for (unsigned int i=0;i<xval_fold;i++) {
-      tar += pCheck->getInitDirection(&(xv_test[i]),&(xv_train[i]),pNorm,w[i],test_fdr);
-    }
-    return tar;
-  } else {
+    return pCheck->getInitDirection(xv_test,xv_train,pNorm,w,test_fdr);
+   } else {
     xv_type = NO_XV;
-    return pCheck->getInitDirection(&testset,&trainset,pNorm,w[0],test_fdr);
+    vector<Scores> myset(1,fullset);
+    return pCheck->getInitDirection(myset,myset,pNorm,w,test_fdr);
   }
 }    
 
@@ -582,7 +575,9 @@ int Caller::run() {
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
   train(w);
 
-  testset.estimatePi0();
+  if (xv_type==EACH_STEP)
+    fullset.merge(xv_test);
+  fullset.estimatePi0();
 
   time_t end;
   time (&end);
@@ -593,25 +588,21 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  for (unsigned int i=0;i<xval_fold;i++) {
-    pCheck->validateDirection(w[i]);
-    pNorm->unnormalizeweight(w[i],ww[i]);    
-  }
-  normal.modifyFile(modifiedFN,ww[0],testset,extendedGreeter()+timerValues.str(), dtaSelect);
-  shuffled.modifyFile(modifiedDecoyFN,ww[0],testset,extendedGreeter()+timerValues.str(), dtaSelect);
+  if (!pCheck->validateDirection(w))
+    fullset.calcScores(w[0]);
+  normal.modifyFile(modifiedFN,fullset,extendedGreeter()+timerValues.str(), dtaSelect);
+  shuffled.modifyFile(modifiedDecoyFN,fullset,extendedGreeter()+timerValues.str(), dtaSelect);
 
   if (weightFN.size()>0) {
      ofstream weightStream(weightFN.data(),ios::out);
-     printWeights(weightStream,w[0]);
+     for (unsigned int ix=0;ix<xval_fold;++ix)
+       printWeights(weightStream,w[ix]);
      weightStream.close(); 
   }
   if (rocFN.size()>0) {
-      testset.printRoc(rocFN);
+    fullset.printRoc(rocFN);
   }
-  normal.print(testset);
+  normal.print(fullset);
   return 0;
 }
-
-
-
 

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.78 2008/05/27 23:09:08 lukall Exp $
+ * $Id: DataSet.cpp,v 1.79 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -142,7 +142,7 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   int ix =-1;
   while (double * features=getNext(ix)) {
     double score = test.calcScore(features);
-    double q = test.getQ(score);
+    double q = test.getScoreHolder(features)->q;
     if ((int)proteinIds.size()>ix) {
       set<string> prots = proteinIds[ix];
       set<string>::const_iterator it = prots.begin();
@@ -332,14 +332,14 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
 }
 
 
-string DataSet::modifyRec(const string record,const set<int>& theMs, const vector<double>& w, Scores * pSc, bool dtaSelect) {
+string DataSet::modifyRec(const string record, int& row, const set<int>& theMs, Scores * pSc, bool dtaSelect) {
   C_DARRAY(feat,DataSet::numFeatures)
 //  if (mLines>3) mLines=3;
   vector<pair<double,string> > outputs;
   outputs.clear();
   istringstream in(record);
   ostringstream out,outtmp;
-  string line,tmp,lineRem;
+  string line,tmp,lineRem,id;
   getline(in,line);
   out << line << endl;
   set<string> proteinsTmp;
@@ -349,17 +349,13 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const vecto
   for(it=theMs.begin();it!=theMs.end();it++) {
     proteinsTmp.clear();
     readFeatures(record,feat,*it,proteinsTmp,tmpPepSeq,true);
-    int i=DataSet::numFeatures;
-    double score = w[i];
-    for (;i--;)
-      score += feat[i]*w[i];
-    double q = pSc->getQ(score);
+    ScoreHolder sh = *(pSc->getScoreHolder(getFeatures(row++)));
     in >> tmp >> tmp >> rSp >> mass;
 //    outtmp << "M\t%i\t" << rSp << "\t" << mass << "\t";
     outtmp << "M\t" << tmp << "\t" << rSp << "\t" << mass << "\t";
     // deltCn and XCorr and Sp
     in >> tmp >> tmp >> tmp;
-    outtmp << "%6.4g\t" << score << "\t" << -q;
+    outtmp << "%6.4g\t" << 1.0-sh.pep << "\t" << -sh.q;
     getline(in,lineRem);
     outtmp << lineRem << endl;
     // L lines
@@ -367,10 +363,11 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const vecto
       assert(line[0]=='L');
       outtmp << line << endl;
     }
-    outputs.push_back(pair<double,string>(score,outtmp.str()));
+    outputs.push_back(pair<double,string>(1-sh.pep,outtmp.str()));
     outtmp.clear();
     outtmp.str("");
   }
+  D_DARRAY(feat)
   if(dtaSelect) {
     outputs.push_back(pair<double,string>(-1000,
       "M\t600\t600\t1\t%6.4g\t-1000\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n"));
@@ -389,11 +386,10 @@ string DataSet::modifyRec(const string record,const set<int>& theMs, const vecto
     sprintf(buf,aStr.c_str(),delt);
     out << buf;
   }
-  D_DARRAY(feat)
   return out.str();
 }
 
-void DataSet::modifySQT(const string & outFN, const vector<double>& w, Scores * pSc ,const string greet, bool dtaSelect) {
+void DataSet::modifySQT(const string & outFN, Scores * pSc ,const string greet, bool dtaSelect) {
   string line;
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
@@ -413,7 +409,7 @@ void DataSet::modifySQT(const string & outFN, const vector<double>& w, Scores * 
   
   ostringstream buff;
   istringstream lineParse;
-  int lines=0,ms=0,charge=0;
+  int lines=0,ms=0,charge=0,row =0;
   string tmp,lineRem;
   set<int> theMs;
   while (getline(sqtIn,line)) {
@@ -424,7 +420,7 @@ void DataSet::modifySQT(const string & outFN, const vector<double>& w, Scores * 
         if (ms>hitsPerSpectrum)
           ms=hitsPerSpectrum;
         string record=buff.str();
-        sqtOut << modifyRec(record,theMs, w, pSc, dtaSelect);
+        sqtOut << modifyRec(record,row,theMs, pSc, dtaSelect);
       }
       buff.str("");
       buff.clear();
@@ -450,7 +446,7 @@ void DataSet::modifySQT(const string & outFN, const vector<double>& w, Scores * 
   }
   if(lines>1 && charge<=5) {
     string record=buff.str();
-    sqtOut << modifyRec(record,theMs, w, pSc, dtaSelect);
+    sqtOut << modifyRec(record,row,theMs, pSc, dtaSelect);
   }
   sqtIn.close();
   sqtOut.close();
@@ -485,7 +481,8 @@ string DataSet::getFeatureNames() {
 
 void DataSet::readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep, bool getIntra) {
   istringstream instr(in),linestr;
-  string line,tmp;
+  ostringstream idbuild;
+  string line,tmp,scan;
   int charge;
   double mass,deltCn,otherXcorr=0.0,xcorr=0.0,lastXcorr=0.0, nSM=0.0;
   bool gotL=true;
@@ -495,7 +492,7 @@ void DataSet::readFeatures(const string &in,double *feat,int match,set<string> &
     if (line[0]=='S') {
       linestr.clear();
       linestr.str(line);
-      linestr >> tmp >> tmp >> tmp >> charge >> tmp >> tmp >> mass >> tmp >> tmp >> nSM;
+      linestr >> tmp >> tmp >> scan >> charge >> tmp >> tmp >> mass >> tmp >> tmp >> nSM;
     }
     if (line[0]=='M') {
       linestr.clear();
@@ -692,7 +689,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
   pepSeq.resize(n);
   string seq;
   
-  string fileId(fname);
+  fileId = fname;
   unsigned int spos = fileId.rfind('/');
   if (spos!=string::npos)
     fileId.erase(0,spos+1);

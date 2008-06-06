@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: PercolatorCInterface.cpp,v 1.9 2008/05/31 00:13:52 lukall Exp $
+ * $Id: PercolatorCInterface.cpp,v 1.10 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <vector>
@@ -96,7 +96,7 @@ void pcExecute() {
   vector<vector<double> > w(1,vector<double>(DataSet::getNumFeatures()+1));
   pCaller->preIterationSetup(w);
   pCaller->train(w);  
-  pCaller->getTestSet()->calcScores(w);
+  pCaller->getFullSet()->calcScores(w[0]);
 } 
 
 /** Function called when retrieving target scores and q-values after processing,
@@ -106,9 +106,9 @@ void pcGetScores(double *scoreArr,double *qArr) {
   int ix=0;
   SetHandler::Iterator iter(pCaller->getSetHandler(Caller::NORMAL));
   while(double * feat = iter.getNext()) {
-    ScoreHolder sh = pCaller->getTestSet()->getScoreHolder(feat);
-    scoreArr[ix] = sh.score;
-    qArr[ix++] = sh.q;
+    ScoreHolder* pSh = pCaller->getFullSet()->getScoreHolder(feat);
+    scoreArr[ix] = pSh->score;
+    qArr[ix++] =  pSh->q;
   }
 } 
 

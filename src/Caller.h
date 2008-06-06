@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.43 2008/05/31 00:13:52 lukall Exp $
+ * $Id: Caller.h,v 1.44 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -34,7 +34,7 @@ public:
     void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
     void fillFeatureSets();    
     int preIterationSetup(vector<vector<double> >& w);
-    Scores* getTestSet() {return &testset;}    
+    Scores* getFullSet() {return &fullset;}    
     int run();
     SetHandler * getSetHandler(SetHandlerType sh) {
         switch(sh) {
@@ -81,7 +81,7 @@ protected:
     vector<Scores> xv_train,xv_test;
     vector<double> xv_fdrs,xv_cposs,xv_cfracs;
     SetHandler normal,shuffled; //,shuffledTest,shuffledThreshold;
-    Scores trainset,testset; //,thresholdset;
+    Scores fullset; //,thresholdset;
 };
 
 #endif /*CALLER_H_*/

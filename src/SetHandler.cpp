@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.41 2008/05/31 00:13:52 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.42 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -110,13 +110,13 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
   }  
 }
 
-void SetHandler::modifyFile(const string& fn, vector<double>& w, Scores& sc , const string& greet, bool dtaSelect) {
+void SetHandler::modifyFile(const string& fn, Scores& sc , const string& greet, bool dtaSelect) {
   if (!fn.empty()) {
-    modifyFile(fn,subsets,w,sc,greet, dtaSelect);
+    modifyFile(fn,subsets,sc,greet, dtaSelect);
   }
 }
 
-void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, vector<double>& w, Scores& sc , const string& greet, bool dtaSelect) {
+void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, Scores& sc , const string& greet, bool dtaSelect) {
   string line;
   ifstream fileIn(fn.c_str(),ios::in);
   if (sets.size()>1 && (!fileIn)) {
@@ -134,14 +134,14 @@ void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, vector<d
     fileIn.close();
   
   if (sets.size()==1 ) {
-    ((DataSet *)sets[0])->modifySQT(fn,w,&sc,greet, dtaSelect);
+    ((DataSet *)sets[0])->modifySQT(fn,&sc,greet, dtaSelect);
     return;
   }
   unsigned int ix=0;
   fileIn.open(fn.c_str(),ios::in);
   while(getline(fileIn,line)) {
     if(line.size()>0 && line[0]!='#') {
-      ((DataSet *)sets[ix++])->modifySQT(line,w,&sc,greet,dtaSelect);
+      ((DataSet *)sets[ix++])->modifySQT(line,&sc,greet,dtaSelect);
     }    
   }
   fileIn.close();

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SqtSanityCheck.cpp,v 1.3 2008/05/27 23:09:08 lukall Exp $
+ * $Id: SqtSanityCheck.cpp,v 1.4 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #include "DataSet.h"
 #include "Scores.h"
@@ -20,16 +20,19 @@ SqtSanityCheck::~SqtSanityCheck()
 {
 }
 
-void SqtSanityCheck::getDefaultDirection(vector<double>& w) {
+void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   // Set init direction to be the most discriminative direction
-  for (int ix=0;ix < DataSet::getNumFeatures()+1;++ix)
-    w[ix]=0;
-  w[2]=1.61;    // deltCn 
-  w[3]=1.1;     // Xcorr
-  w[7]=-0.573;  // Peptide length
-  w[8]=0.0335;  // Charge 1
-  w[9]=0.149;   // Charge 2
-  w[10]=-0.156; // Charge 3
+  for (size_t set = 0; set < w.size();++set) {
+  
+    for (int ix=0;ix < DataSet::getNumFeatures()+1;++ix)
+      w[set][ix]=0;
+    w[set][2]=1.61;    // deltCn 
+    w[set][3]=1.1;     // Xcorr
+    w[set][7]=-0.573;  // Peptide length
+    w[set][8]=0.0335;  // Charge 1
+    w[set][9]=0.149;   // Charge 2
+    w[set][10]=-0.156; // Charge 3
+  }
 /*
 
 # first line contains normalized weights, second line the raw weights
@@ -53,17 +56,20 @@ deltCn  Xcorr   PepLen  Charge1 Charge2 Charge3 m0
 }
 
 
-bool SqtSanityCheck::validateDirection(vector<double>& w) {
+bool SqtSanityCheck::validateDirection(vector<vector<double> >& w) {
   bool ok=SanityCheck::validateDirection(w);
-  if (w[3]<0) {
-    ok=false;
-    if (VERB>1) cerr << "Warning weight for XCorr negative" << endl;
+  for (size_t set = 0; set < w.size();++set) {
+    if (w[set][3]<0) {
+      ok=false;
+      if (VERB>1) cerr << "Warning weight for XCorr negative" << endl;
+    }
+    if (w[set][2]<0) {
+      ok=false;
+      if (VERB>1) cerr << "Warning weight for deltaCn negative" << endl;
+    }
   }
-  if (w[2]<0) {
-    ok=false;
-    if (VERB>1) cerr << "Warning weight for deltaCn negative" << endl;
-  }
-  if (!ok) resetDirection(w);
+  if (!ok)
+    resetDirection(w);
   return ok;
 }
 

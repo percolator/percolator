@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SqtSanityCheck.h,v 1.3 2008/05/27 23:09:08 lukall Exp $
+ * $Id: SqtSanityCheck.h,v 1.4 2008/06/06 17:13:32 lukall Exp $
  *******************************************************************************/
 #ifndef SQTSANITYCHECK_H_
 #define SQTSANITYCHECK_H_
@@ -16,9 +16,9 @@ class SqtSanityCheck : public SanityCheck
 public:
   SqtSanityCheck();
   virtual ~SqtSanityCheck();
-  virtual bool validateDirection(vector<double>& w);
+  virtual bool validateDirection(vector<vector<double> >& w);
 protected:
-  virtual void getDefaultDirection(vector<double>& w);
+  virtual void getDefaultDirection(vector<vector<double> >& w);
 };
 
 #endif /*SQTSANITYCHECK_H_*/
