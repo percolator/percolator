@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.91 2008/06/06 22:27:15 lukall Exp $
+ * $Id: Caller.cpp,v 1.92 2008/06/09 16:51:45 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -425,10 +425,10 @@ int Caller::xvalidate_step(vector<vector<double> >& w) {
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           step(xv_train[i],xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
-          tp += xv_test[i].calcScores(ww[i],test_fdr);
+          tp += xv_train[i].calcScores(ww[i],test_fdr);
           if(VERB>2) cerr << "Cumulative # of target PSMs over treshold " << tp << endl;
         }
-        if(VERB>1) cerr << "- cross validation found " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
+        if(VERB>1) cerr << "- cross validation estimates " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
         if (tp>=bestTP) {
           if(VERB>1) cerr << "Better than previous result, store this" << endl;
           bestTP = tp;
@@ -438,7 +438,7 @@ int Caller::xvalidate_step(vector<vector<double> >& w) {
     }
   }
   Globals::getInstance()->incVerbose();
-  if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
+  if(VERB>0) cerr << "cross validation estimates " << bestTP/(xval_fold-1) << " target PSMs with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
                   << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;
   w = best_w;
   return bestTP;                  

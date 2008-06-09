@@ -12,7 +12,7 @@ AM_CONFIG_HEADER([config.h])
 # enable percolator installation
 AC_MSG_CHECKING(whether to build percolator)
 
-percolator="no"
+percolator=no
 if test -e "${srcdir}/Caller.cpp"
 then
   AC_ARG_ENABLE(percolator,

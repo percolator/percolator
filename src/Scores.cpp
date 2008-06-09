@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.64 2008/06/06 22:27:15 lukall Exp $
+ * $Id: Scores.cpp,v 1.65 2008/06/09 16:51:45 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -46,10 +46,11 @@ double Scores::pi0 = 0.9;
 
 void Scores::merge(vector<Scores>& sv) {
   scores.clear();
-  for(vector<Scores>::const_iterator a = sv.begin();a!=sv.end();a++)
+  for(vector<Scores>::iterator a = sv.begin();a!=sv.end();a++) {
+  	a->normalizeScores();
     copy(a->begin(),a->end(),back_inserter(scores));
-  sort(scores.begin(),scores.end());
-  reverse(scores.begin(),scores.end());
+  }
+  sort(scores.begin(),scores.end(), greater<ScoreHolder>() );
 }
 
 
@@ -163,25 +164,44 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
   }
 }
 
-int Scores::calcScores(vector<double>& w,double fdr) {
-  register unsigned int ix=DataSet::getNumFeatures()+1;
-  if (w_vec.size()!=ix)
-    w_vec.resize(ix,0.0);
-  for(;ix--;) {
-    w_vec[ix]=w[ix];
+void Scores::normalizeScores() {
+  // Normalize scores so that distance between 1st and 3rd quantile of the null scores are 1
+  unsigned int q1index = neg/4,q3index = neg*3/4,decoys=0;
+  vector<ScoreHolder>::iterator it = scores.begin();
+  double q1 = it->score;
+  double q3 = q1 + 1.0;
+  while(it!=scores.end()) {
+  	if (it->label == -1) {
+  	  if(++decoys==q1index)
+  	    q1=it->score;
+  	  else if (decoys==q3index) {
+  	    q3=it->score;
+  	    break;
+  	  }
+  	}
+    ++it;
   }
+  double diff = q1-q3;
+  assert(diff>0);
+  for(it=scores.begin();it!=scores.end();++it) { 
+    it->score -= q1;
+    it->score /= diff;
+  }
+}
+
+int Scores::calcScores(vector<double>& w,double fdr) {
+  w_vec=w;
   const double * features;
+  unsigned int ix;
   vector<ScoreHolder>::iterator it = scores.begin();
   while(it!=scores.end()) {
     features = it->featVec;
   	it->score = calcScore(features);
     it++;
   }
-  sort(scores.begin(),scores.end());
-  reverse(scores.begin(),scores.end());
+  sort(scores.begin(),scores.end(),greater<ScoreHolder>());
   if (VERB>3) {
     cerr << "10 best scores and labels" << endl;
-    unsigned int ix;
     for (ix=0;ix < 10;ix++) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
@@ -215,49 +235,6 @@ int Scores::calcScores(vector<double>& w,double fdr) {
   }
   return posNow;
 }
-
-/*
-double Scores::getQ(const double score) {
-  unsigned int loIx = scores.size()-1, hiIx = 0;
-  double lo = scores[loIx].score, hi = scores[hiIx].score;
-  if (score<=lo) {return qVals[loIx];}
-  if (score>=hi) {return qVals[hiIx];}
-  int ix = 0, pos = -1;
-  if (shortCut.empty()) {
-    shortStep = (lo - hi)/(double)shortCutSize;
-    while(++pos<shortCutSize) {
-      double val = hi + shortStep*pos;
-      while (scores[ix].score>=val)
-        ++ix;
-      shortCut.push_back(ix-1);
-    }
-    shortCut.push_back(loIx);   
-  }
-  pos = (int) ((score - hi)/shortStep);
-  hiIx = shortCut[pos];
-  if (shortCut[pos+1]==hiIx && hiIx<loIx) {
-    loIx=hiIx+1;
-  } else {
-    loIx = shortCut[pos+1];
-  }
-  hi = scores[hiIx].score;
-  lo = scores[loIx].score; 
-  while((loIx-hiIx>1) && (qVals[loIx] > qVals[hiIx])) {
-//    double d = (hiIx-loIx)/(hi-lo);
-    ix = hiIx + (loIx-hiIx)/2;
-    double sc = scores[ix].score;
-    if (sc<score) {
-      lo = sc;
-      loIx = ix;
-    } else {
-      hi = sc;
-      hiIx = ix;    
-    }
-  }
-  return qVals[loIx];
-}
-*/
-
 
 void Scores::generateNegativeTrainingSet(AlgIn& data,const double cneg) {
   unsigned int ix1=0,ix2=0;
