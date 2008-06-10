@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.cpp,v 1.6 2008/05/20 00:24:43 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.7 2008/06/10 17:07:09 lukall Exp $
  
  *******************************************************************************/
 
@@ -76,7 +76,7 @@ static double tao = 2/(1+sqrt(5));   // inverse of golden section
 
 void BaseSpline::iterativeReweightedLeastSquares() {
 
-  Numerical::epsilon = 1e-15;
+  Numerical::epsilon = 1e-17;
   unsigned int n = x.size(), wrongDirection=0;
   initiateQR();
   double alpha=1.,step,cv=1e100;
@@ -248,7 +248,7 @@ void BaseSpline::predict(const vector<double>& xx, vector<double>& predict) {
   transform(xx.begin(),xx.end(),back_inserter(predict),SplinePredictor(this));
 }
 
-void BaseSpline::setData(const vector<double>& xx) {
+void BaseSpline::setData(const vector<double>& xx, bool reversed) {
   x.clear();
   double minV = *min_element(xx.begin(),xx.end()); 
   double maxV = *max_element(xx.begin(),xx.end());
@@ -260,4 +260,6 @@ void BaseSpline::setData(const vector<double>& xx) {
     transf = Transform(minV>0.0?0.0:1e-5,false,true);  
   } 
   transform(xx.begin(),xx.end(),back_inserter(x),transf);
+  if (reversed)
+     reverse(x.begin(),x.end());
 }

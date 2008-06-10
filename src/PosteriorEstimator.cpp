@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.11 2008/06/10 00:10:08 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.12 2008/06/10 17:07:09 lukall Exp $
  
  *******************************************************************************/
 
@@ -113,18 +113,18 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
 }
 
 void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) {
-  // sorting in accending order
-  sort(combined.begin(),combined.end());
+  // switch sorting order
+  reverse(combined.begin(),combined.end());
 
   vector<double> medians;
   vector<unsigned int> negatives,sizes;
   
   binData(combined,medians,negatives,sizes);
 
-  lr.setData(medians,negatives,sizes);
+  lr.setData(medians,negatives,sizes,reversed);
   lr.iterativeReweightedLeastSquares();
 
-  // sorting combined in score decending order
+  // restore sorting order
   reverse(combined.begin(),combined.end());
 }
 
@@ -141,12 +141,6 @@ void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, 
       
   vector<double>::iterator xval=xvals.begin();
   vector<double>::const_iterator qv = q.begin(),pep = peps.begin();
-
-  if (reversed) {
-    for(;xval != xvals.end();++xval)
-      *xval = -*xval;
-    xval = xvals.begin(); 
-  }
 
   cout << "Score\tPEP\tq-value" << endl;
   
@@ -278,14 +272,15 @@ void PosteriorEstimator::run() {
   if(VERB>0) cerr << "Read " << combined.size() << " statistics" << endl; 
   if (reversed) {
     if(VERB>0) cerr << "Reversing all scores (command line option)" << endl; 
-    for(vector<pair<double,bool> >::iterator elem = combined.begin();elem != combined.end();++elem)
-      elem->first = -elem->first; 
   }
 
+  if (reversed)
+    // sorting in accending order
+    sort(combined.begin(),combined.end());
+  else
+  // sorting in decending order
+    sort(combined.begin(),combined.end(),greater<pair<double,bool> >());  
   
-  sort(combined.begin(),combined.end(),greater<pair<double,bool> >());
-
-  // Estimate pi0
   double pi0 = estimatePi0(combined);
   
   vector<double> peps;
