@@ -47,7 +47,6 @@ libArrayLibrary_la_SOURCES = \
   ArrayLibrary/VectorFunctions.cpp \
   ArrayLibrary/VectorFunctions.h
 
-
 if PERCOLATOR
 libpercolator_la_SOURCES = \
   Caller.cpp \
@@ -91,7 +90,6 @@ endif
 
 noinst_LTLIBRARIES = libqvality.la libArrayLibrary.la $(PERCOLATOR_LIBRARY)
 bin_PROGRAMS = qvality $(PERCOLATOR_PROGRAM)
-EXTRA_PROGRAMS = percolator
 
 qvality_SOURCES = qvality_main.cpp
 qvality_LDADD = libqvality.la libArrayLibrary.la

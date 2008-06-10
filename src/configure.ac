@@ -12,7 +12,7 @@ AM_CONFIG_HEADER([config.h])
 # enable percolator installation
 AC_MSG_CHECKING(whether to build percolator)
 
-percolator=no
+buildpercolator=no
 if test -e "${srcdir}/Caller.cpp"
 then
   AC_ARG_ENABLE(percolator,
@@ -20,19 +20,19 @@ then
       [--enable-percolator],
       [Build percolator applications. Default is enabled.]
       ),
-      percolator="$enableval", percolator=yes)
+      buildpercolator="$enableval", buildpercolator=yes)
 fi
 
-AC_MSG_RESULT($percolator)
-AM_CONDITIONAL(PERCOLATOR, test ["$percolator" != no])
+AC_MSG_RESULT($buildpercolator)
+AM_CONDITIONAL(PERCOLATOR, test [x"$buildpercolator" = x"yes"])
 
-if test x"$percolator" = x"yes"; then
+if test x"$buildpercolator" = x"yes"; then
   mypack="percolator"
 else
   mypack="qvality"
 fi
 
-AM_INIT_AUTOMAKE($mypack, 1.05)
+AM_INIT_AUTOMAKE($mypack, "xiaoyu2")
 
 ## Debug
 # add checking message
@@ -62,15 +62,15 @@ AC_MSG_RESULT($debuger)
 
 # create configure parameter and init variable $boundcheck
 AC_MSG_CHECKING(whether to build with bound checks for the gcc stl containers)
-boundcheck=no
-AC_ARG_ENABLE(boundcheck,
+boundscheck=no
+AC_ARG_ENABLE(boundscheck,
 	AC_HELP_STRING(
-	    [--enable-boundcheck],
-	    [Turn on boundcheck for GCC STL library (def=no)]
+	    [--enable-boundscheck],
+	    [Turn on boundscheck for GCC STL library (def=no)]
 	),
-  	boundcheck="$enableval")
+  	boundscheck="$enableval")
 # resulting value to screen (to complete checking message)
-AC_MSG_RESULT($boundcheck)
+AC_MSG_RESULT($boundscheck)
 
 
 # set DEBUG flag and introduce additional compiler flags
@@ -81,7 +81,7 @@ else
     DEBUG_OPTIONS="-O3"
 fi
 
-if test x"$boundcheck" = x"yes"; then
+if test x"$boundscheck" = x"yes"; then
     DEBUG_OPTIONS="$DEBUG_OPTIONS -D_GLIBCXX_DEBUG"
 	AC_DEFINE([_GLIBCXX_DEBUG],[],[Flag indicating that GCC STL container bound check is enabled])
 fi
