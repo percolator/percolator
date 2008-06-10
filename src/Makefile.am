@@ -54,6 +54,8 @@ libpercolator_la_SOURCES = \
   Caller.h \
   DataSet.cpp \
   DataSet.h \
+  DescriptionOfCorrect.cpp \
+  DescriptionOfCorrect.h \
   IntraSetRelation.cpp \
   IntraSetRelation.h \
   Normalizer.cpp \

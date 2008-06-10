@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.10 2008/05/22 23:39:43 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.11 2008/06/10 00:10:08 lukall Exp $
  
  *******************************************************************************/
 
@@ -44,8 +44,8 @@ using namespace std;
 #include "Globals.h"
 
 static unsigned int noIntevals = 500;
-static unsigned int numLambda = 20;
-static double maxLambda = 0.9;
+static unsigned int numLambda = 19;
+static double maxLambda = 0.95;
 
 bool PosteriorEstimator::reversed = false;
 
@@ -234,11 +234,13 @@ double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined,
   // Calculate pi0 for different values for lambda    
   for(unsigned int ix=0; ix <= numLambda; ++ix) {
     double lambda = ((ix+1)/(double)numLambda)*maxLambda;
-    lambdas.push_back(lambda);
     start = lower_bound(p.begin(),p.end(),lambda);
     double Wl = (double) distance(start,p.end());
     double pi0 = Wl/n/(1-lambda);
-    pi0s.push_back(pi0);
+    if (pi0>0.0) {
+      lambdas.push_back(lambda);
+      pi0s.push_back(pi0);
+    }
   }
      
   double minPi0 = *min_element(pi0s.begin(),pi0s.end()); 
@@ -273,6 +275,7 @@ void PosteriorEstimator::run() {
   transform(decIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair), false)); 
 
+  if(VERB>0) cerr << "Read " << combined.size() << " statistics" << endl; 
   if (reversed) {
     if(VERB>0) cerr << "Reversing all scores (command line option)" << endl; 
     for(vector<pair<double,bool> >::iterator elem = combined.begin();elem != combined.end();++elem)
@@ -280,8 +283,7 @@ void PosteriorEstimator::run() {
   }
 
   
-  sort(combined.begin(),combined.end());
-  reverse(combined.begin(),combined.end());
+  sort(combined.begin(),combined.end(),greater<pair<double,bool> >());
 
   // Estimate pi0
   double pi0 = estimatePi0(combined);
