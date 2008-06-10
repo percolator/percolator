@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.12 2008/06/10 17:07:09 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.13 2008/06/10 21:35:14 lukall Exp $
  
  *******************************************************************************/
 
@@ -68,9 +68,9 @@ bool isMixed(const pair<double,bool>& aPair) {
   return aPair.second;
 }
 
-template<class T> void bootstrap(const vector<T>& in, vector<T>& out) {
+template<class T> void bootstrap(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
   out.clear();
-  double n = in.size();
+  double n = min(in.size(),max_size);
   for (size_t ix=0;ix<n;++ix) {
     size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*n);
     out.push_back(in[draw]);
@@ -114,18 +114,20 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
 
 void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) {
   // switch sorting order
-  reverse(combined.begin(),combined.end());
+  if (!reversed)
+    reverse(combined.begin(),combined.end());
 
   vector<double> medians;
   vector<unsigned int> negatives,sizes;
   
   binData(combined,medians,negatives,sizes);
 
-  lr.setData(medians,negatives,sizes,reversed);
+  lr.setData(medians,negatives,sizes);
   lr.iterativeReweightedLeastSquares();
 
   // restore sorting order
-  reverse(combined.begin(),combined.end());
+  if (!reversed)
+    reverse(combined.begin(),combined.end());
 }
 
 // Estimates q-values and prints
@@ -243,6 +245,7 @@ double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined,
   // Examine witch lambda level that is most stable under bootstrap   
   for (unsigned int boot = 0; boot< numBoot; ++boot) {
     bootstrap<double>(p,pBoot); 
+    n=pBoot.size();
     for(unsigned int ix=0; ix < lambdas.size(); ++ix) {
       start = lower_bound(pBoot.begin(),pBoot.end(),lambdas[ix]);
       double Wl = (double) distance(start,pBoot.end());

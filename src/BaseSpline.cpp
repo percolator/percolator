@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.cpp,v 1.7 2008/06/10 17:07:09 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.8 2008/06/10 21:35:14 lukall Exp $
  
  *******************************************************************************/
 
@@ -248,18 +248,16 @@ void BaseSpline::predict(const vector<double>& xx, vector<double>& predict) {
   transform(xx.begin(),xx.end(),back_inserter(predict),SplinePredictor(this));
 }
 
-void BaseSpline::setData(const vector<double>& xx, bool reversed) {
+void BaseSpline::setData(const vector<double>& xx) {
   x.clear();
   double minV = *min_element(xx.begin(),xx.end()); 
   double maxV = *max_element(xx.begin(),xx.end());
   if (minV>=0.0 && maxV<=1.0) {
     if(VERB>1) cerr << "Logit transforming all scores prior to PEP calculation" << endl;
-    transf = Transform((minV>0.0 && maxV<1.0)?0.0:1e-5,true);
+    transf = Transform(minV>0.0?0.0:1e-20, maxV<1.0?0.0:1e-10,true);
   } else if (minV>=0.0) {
     if(VERB>1) cerr << "Log transforming all scores prior to PEP calculation" << endl;
-    transf = Transform(minV>0.0?0.0:1e-5,false,true);  
+    transf = Transform(minV>0.0?0.0:1e-20, 0.0,false,true);  
   } 
   transform(xx.begin(),xx.end(),back_inserter(x),transf);
-  if (reversed)
-     reverse(x.begin(),x.end());
 }
