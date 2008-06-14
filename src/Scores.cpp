@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.65 2008/06/09 16:51:45 lukall Exp $
+ * $Id: Scores.cpp,v 1.66 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -76,7 +76,7 @@ ScoreHolder* Scores::getScoreHolder(const double *d){
   if (scoreMap.size()==0) {
     vector<ScoreHolder>::iterator it;
     for(it=scores.begin();it!=scores.end();it++) {
-      scoreMap[it->featVec] = &(*it);
+      scoreMap[it->pPSM->features] = &(*it);
     }
   }
   return scoreMap[d];  
@@ -91,14 +91,14 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
   test.scores.clear();
 
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  const double * featVec;
-  while((featVec=shuffIter.getNext())!=NULL) {
-    train.scores.push_back(ScoreHolder(.0,-1,featVec));
-    test.scores.push_back(ScoreHolder(.0,-1,featVec));
+  PSMDescription * pPSM;
+  while((pPSM=shuffIter.getNext())!=NULL) {
+    train.scores.push_back(ScoreHolder(.0,-1,pPSM));
+    test.scores.push_back(ScoreHolder(.0,-1,pPSM));
   }
-  while((featVec=normIter.getNext())!=NULL) {
-    train.scores.push_back(ScoreHolder(.0,1,featVec));
-    test.scores.push_back(ScoreHolder(.0,1,featVec));
+  while((pPSM=normIter.getNext())!=NULL) {
+    train.scores.push_back(ScoreHolder(.0,1,pPSM));
+    test.scores.push_back(ScoreHolder(.0,1,pPSM));
   }
   train.pos=n;
   test.pos=n;
@@ -110,13 +110,13 @@ void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler
 
 void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
   scores.clear();
-  const double * featVec;
+  PSMDescription * pPSM;
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  while((featVec=normIter.getNext())!=NULL) {
-    scores.push_back(ScoreHolder(.0,1,featVec));
+  while((pPSM=normIter.getNext())!=NULL) {
+    scores.push_back(ScoreHolder(.0,1,pPSM));
   }
-  while((featVec=shuffIter.getNext())!=NULL) {
-    scores.push_back(ScoreHolder(.0,-1,featVec));
+  while((pPSM=shuffIter.getNext())!=NULL) {
+    scores.push_back(ScoreHolder(.0,-1,pPSM));
   }
   pos = norm.getSize(); neg = shuff.getSize();
   factor=norm.getSize()/(double)shuff.getSize();
@@ -195,7 +195,7 @@ int Scores::calcScores(vector<double>& w,double fdr) {
   unsigned int ix;
   vector<ScoreHolder>::iterator it = scores.begin();
   while(it!=scores.end()) {
-    features = it->featVec;
+    features = it->pPSM->features;
   	it->score = calcScore(features);
     it++;
   }
@@ -225,13 +225,13 @@ int Scores::calcScores(vector<double>& w,double fdr) {
       q=pi0;
     if (q>pi0)
       q=pi0;
-    it->q=q;
+    it->pPSM->q=q;
     if (fdr>=q)
       posNow = positives;
   }
   for (ix=scores.size();--ix;) {
-    if (scores[ix-1].q > scores[ix].q)
-      scores[ix-1].q = scores[ix].q;  
+    if (scores[ix-1].pPSM->q > scores[ix].pPSM->q)
+      scores[ix-1].pPSM->q = scores[ix].pPSM->q;  
   }
   return posNow;
 }
@@ -240,7 +240,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data,const double cneg) {
   unsigned int ix1=0,ix2=0;
   for(ix1=0;ix1<size();ix1++) {
     if (scores[ix1].label==-1) {
-      data.vals[ix2]=scores[ix1].featVec;
+      data.vals[ix2]=scores[ix1].pPSM->features;
       data.Y[ix2]=-1;
       data.C[ix2++]=cneg;
     }
@@ -253,11 +253,11 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   unsigned int ix1=0,ix2=data.negatives,p=0;
   for(ix1=0;ix1<size();ix1++) {
     if (scores[ix1].label==1) {
-      if (fdr<scores[ix1].q) {
+      if (fdr<scores[ix1].pPSM->q) {
         posNow=p;
         break;
       }
-      data.vals[ix2]=scores[ix1].featVec;
+      data.vals[ix2]=scores[ix1].pPSM->features;
       data.Y[ix2]=1;
       data.C[ix2++]=cpos;
       ++p;
@@ -276,7 +276,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
     for (int featNo=0;featNo<DataSet::getNumFeatures();featNo++) {
       vector<ScoreHolder>::iterator it = scores.begin();
       while(it!=scores.end()) {
-        it->score = it->featVec[featNo];
+        it->score = it->pPSM->features[featNo];
         it++;
       }
       sort(scores.begin(),scores.end());
@@ -347,7 +347,7 @@ void Scores::calcPep() {
 
   size_t pix=0;
   for(size_t ix=0; ix<scores.size(); ix++) {
-    scores[ix].pep = peps[pix];
+    (scores[ix]).pPSM->pep = peps[pix];
     if(scores[ix].label==1)
       ++pix;
   }

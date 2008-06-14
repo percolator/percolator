@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.44 2008/06/06 17:13:32 lukall Exp $
+ * $Id: Caller.h,v 1.45 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -20,6 +20,7 @@ public:
 public:
 	Caller();
 	virtual ~Caller();
+    void readRetentionTime(string filename);
     void step(Scores& train,Scores& thresh, vector<double>& w, double Cpos, double Cneg, double fdr);
     void train(vector<vector<double> >& w);
     void trainEm(vector<vector<double> >& w);
@@ -82,6 +83,7 @@ protected:
     vector<double> xv_fdrs,xv_cposs,xv_cfracs;
     SetHandler normal,shuffled; //,shuffledTest,shuffledThreshold;
     Scores fullset; //,thresholdset;
+    map<int,double> scan2rt; 
 };
 
 #endif /*CALLER_H_*/

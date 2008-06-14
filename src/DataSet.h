@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.49 2008/06/06 17:13:32 lukall Exp $
+ * $Id: DataSet.h,v 1.50 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -12,6 +12,7 @@
 #include <set>
 #include <vector>
 #include <iostream>
+#include "PSMDescription.h"
 using namespace std;
 class Scores;
 class Normalizer;
@@ -34,7 +35,7 @@ class DataSet
     void computeAAFrequencies(const string& pep, double *feat);
     void readSQT(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
     void modifySQT(const string & outFN, Scores * pSc ,const string greet, bool dtaSelect);
-    void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra);
+    void initFeatureTables(const unsigned int numFeatures, const unsigned int numSpectra, bool regresionTable = false);
     static inline int getNumFeatures() { return numFeatures; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
     static void setCalcIntraSetFeatures(bool on) { calcIntraSetFeatures=on; }
@@ -48,7 +49,7 @@ class DataSet
     const double * getFeatures(const int pos) const;
     int inline getSize() const {return numSpectra;}
     int inline const getLabel() const {return label;}
-    double * getNext(int& pos);
+    PSMDescription* getNext(int& pos);
     bool writeTabData(ofstream & out, const string & lab);
     void readTabData(ifstream & dataStream, const vector<unsigned int> &ixs);
     bool getGistDataRow(int& pos,string & out);
@@ -57,7 +58,7 @@ class DataSet
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
 protected:
-    void readFeatures(const string &in,double *feat,int match,set<string> & proteins, string & pep,bool getIntra);
+    void readFeatures(const string &in,PSMDescription &psm,int match,bool getIntra);
     string modifyRec(const string record, int& row, const set<int>& theMs, Scores * pSc, bool dtaSelect);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
@@ -79,10 +80,11 @@ protected:
     static string ptmAlphabet;
     static string featureNames;
     const static int maxNumRealFeatures = 16 + 3 + 20*3 + 1 + 1; // Normal + Amino acid + PTM + hitsPerSpectrum
-    vector<set<string> > proteinIds;
-    vector<string> pepSeq;
+//    vector<set<string> > proteinIds;
+//    vector<string> pepSeq;
+    vector<PSMDescription> psms;
     int label;
-    double *feature;
+    double *feature,regressionFeature;
     int numSpectra;
     string sqtFN;
     string pattern;

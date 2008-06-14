@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: UniNormalizer.cpp,v 1.13 2008/05/27 23:09:08 lukall Exp $
+ * $Id: UniNormalizer.cpp,v 1.14 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <set>
 #include <vector>
@@ -53,14 +53,16 @@ void UniNormalizer::normalizeweight(const vector<double>& in, vector<double>& ou
 }
 
 void UniNormalizer::setSet(set<DataSet *> &setVec){
-  const double * features;
+  double * features;
+  PSMDescription* pPSM;
   int ix;
   vector<double> mins(DataSet::getNumFeatures(),1e+100);
   vector<double> maxs(DataSet::getNumFeatures(),-1e+100);
   set<DataSet *>::iterator it;
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
-    while((features=(*it)->getNext(ixPos))!=NULL) {
+    while((pPSM = (*it)->getNext(ixPos))!=NULL) {
+      features = pPSM->features;
 	  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
 	    mins[ix]=min(features[ix],mins[ix]);
 	    maxs[ix]=max(features[ix],maxs[ix]);

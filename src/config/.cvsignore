@@ -5,3 +5,4 @@ install-sh
 config.sub
 mkinstalldirs
 missing
+compile

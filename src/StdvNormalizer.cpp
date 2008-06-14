@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.cpp,v 1.18 2008/05/27 23:09:08 lukall Exp $
+ * $Id: StdvNormalizer.cpp,v 1.19 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <vector>
 #include <iostream>
@@ -17,6 +17,7 @@
 #include <vector>
 #include <string>
 using namespace std;
+#include "PSMDescription.h"
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
@@ -61,7 +62,8 @@ void StdvNormalizer::normalizeweight(const vector<double>& in, vector<double>& o
 
 void StdvNormalizer::setSet(set<DataSet *> & setVec){
   double n=0.0;
-  const double * features;
+  double * features;
+  PSMDescription* pPSM;
   int ix;
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
     avg[ix]=0.0;
@@ -70,7 +72,8 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
   set<DataSet *>::iterator it;
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
-    while((features=(*it)->getNext(ixPos))!=NULL) {
+    while((pPSM=(*it)->getNext(ixPos))!=NULL) {
+      features = pPSM->features;
 	  n++;
 	  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
 	    avg[ix]+=features[ix];
@@ -89,7 +92,8 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
-    while((features=(*it)->getNext(ixPos))!=NULL) {
+    while((pPSM=(*it)->getNext(ixPos))!=NULL) {
+      features = pPSM->features;
       for (ix=0;ix<DataSet::getNumFeatures();ix++) {
         if (!isfinite(features[ix]))
           cerr << "Reached strange feature with val=" << features[ix] << " at row=" << ix << ", col=" << ixPos << endl;

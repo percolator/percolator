@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.92 2008/06/09 16:51:45 lukall Exp $
+ * $Id: Caller.cpp,v 1.93 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -28,6 +28,8 @@ using namespace std;
 #include "ssl.h"
 #include "Caller.h"
 #include "Globals.h"
+#include "MSReader.h"
+#include "Spectrum.h"
 
 const unsigned int Caller::xval_fold = 3;
 
@@ -292,6 +294,22 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.arguments.size()>1)
      decoyFN = cmd.arguments[1];
   return true;
+}
+
+void Caller::readRetentionTime(string filename) {
+  MSReader r;
+  Spectrum s;
+
+  r.setFilter(MS2);
+  
+  char* cstr = new char [filename.size()+1];
+  strcpy (cstr, filename.c_str());
+  r.readFile(cstr,s);
+
+  while (s.getScanNumber()!=0){
+    scan2rt[s.getScanNumber()] = (double) s.getRTime();
+    r.readFile(NULL,s);
+  }
 }
 
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {

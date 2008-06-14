@@ -4,23 +4,24 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.38 2008/06/09 16:51:45 lukall Exp $
+ * $Id: Scores.h,v 1.39 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
 #include <vector>
 #include <map>
 using namespace std;
-
+#include "PSMDescription.h"
 class SetHandler;
 
 class ScoreHolder{
 public:
-  double score,q,pep;
-  const double * featVec;
+  double score; // ,q,pep;
+  PSMDescription * pPSM;
+//  const double * featVec;
   int label;
-  ScoreHolder():score(0.0),q(-1.),pep(-1.),featVec(NULL),label(0){;}
-  ScoreHolder(const double &s,const int &l, const double * fv = NULL):score(s),q(-1.),pep(-1.),featVec(fv),label(l){;}
+  ScoreHolder():score(0.0),pPSM(NULL),label(0){;}
+  ScoreHolder(const double &s,const int &l, PSMDescription * psm = NULL):score(s),pPSM(psm),label(l){;}
   virtual ~ScoreHolder() {;}
   pair<double,bool> toPair() {return pair<double,bool>(score,label>0);}
 };
@@ -37,8 +38,8 @@ public:
 	~Scores();
     void merge(vector<Scores>& sv);
 	double calcScore(const double * features) const;
-    const vector<ScoreHolder>::const_iterator begin() const {return scores.begin();}
-    const vector<ScoreHolder>::const_iterator end() const {return scores.end();}    
+    vector<ScoreHolder>::iterator begin() {return scores.begin();}
+    vector<ScoreHolder>::iterator end() {return scores.end();}    
 	int calcScores(vector<double>& w, double fdr=0.0);
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
     void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
@@ -48,7 +49,7 @@ public:
     void normalizeScores();
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
  //   double getQ(const double score);
-    ScoreHolder * getScoreHolder(const double *d);
+    ScoreHolder* getScoreHolder(const double *d);
     void calcPep();
     double estimatePi0();
     void printRoc(string & fn); 

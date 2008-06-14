@@ -1,0 +1,319 @@
+/*! \file Spectrum.h
+    \brief Header file for Spectrum object.
+*/
+
+/*!
+    \class Spectrum
+    \brief Object to hold spectrum data
+ 
+    Basic object that holds spectrum data in a vector array.
+*/
+
+/*!
+\fn Spectrum::Spectrum(char *)
+\brief Placeholder operator
+
+This operator is simply a placeholder. It is non-functional and may be removed.
+*/
+
+/*!
+\fn Spectrum::Spectrum(char, unsigned int)
+\brief Placeholder operator
+
+This operator is simply a placeholder. It is non-functional and may be removed.
+*/
+
+/*!
+\fn Spectrum::Spectrum(const Spectrum& spec)
+\brief copy constructor
+\param spec : Spectrum that is duplicated
+
+The copy constructor is invoked by default when using the copy operator (operator=).
+*/
+
+/*!
+\fn Spectrum& Spectrum::operator=(const Spectrum& spec)
+\brief = operator
+\param spec : Spectrum that is duplicated
+\return Spectrum
+*/
+
+/*!
+\fn Peak_T& Spectrum::operator[](const int& index)
+\brief [] operator
+\param index : Array index
+\return Peak_T : struct containing mz and intensity at position \a index
+
+Returns spectrum data at the requested index. No bounds checking is performed. Use size() function to obtain spectrum
+array boundaries.
+
+See \ref sample1
+*/
+
+/*!
+\fn void Spectrum::add(Peak_T& peak)
+\brief Add peak data to the Spectrum
+\param peak : Peak_T struct containing data to be added
+
+Adds data to the spectrum. Data is always added to the end of the spectrum.
+*/
+
+/*!
+\fn void Spectrum::add(double mz, float intensity)
+\brief Add peak data to the Spectrum
+\param mz : m/z value to be added
+\param intensity : signal intensity value to be added
+
+Adds data to the spectrum. Data is always added to the end of the spectrum.
+*/
+
+/*!
+\fn void Spectrum::addZState(int charge, double mh)
+\brief Add charge state to the Spectrum object (MS2 or MS3)
+\param charge : charge state
+\param mh : M+H value of the ion at this charge state
+
+Adds a charge state to the Spectrum object. Charge states are stored in an array in the order they are added.
+*/
+
+/*!
+\fn void Spectrum::addZState(ZState& z)
+\brief Add charge state to the Spectrum object (MS2 or MS3)
+\param z : ZState struct containing charge state and M+H value
+
+Adds a charge state to the Spectrum object. Charge states are stored in an array in the order they are added.
+*/
+
+/*!
+\fn Peak_T& Spectrum::at(const int& index)
+\brief Returns spectrum data
+\param index : index in the spectrum array
+\return Peak_T : struct containing mz and intensity at position \a index
+
+Accessor to the spectrum vector's 'at()' function. Performs the same function as the [] operator.
+*/
+
+/*!
+\fn Peak_T& Spectrum::at(const unsigned int& index)
+\brief Returns spectrum data
+\param index : index in the spectrum array
+\return Peak_T : struct containing mz and intensity at position \a index
+
+Accessor to the spectrum vector's 'at()' function. Performs the same function as the [] operator.
+*/
+
+/*!
+\fn ZState& Spectrum::atZ(const int& index)
+\brief Returns charge state data
+\param index : index in the spectrum array
+\return ZState : struct containing charge state and M+H value at position \a index
+
+Accessor to the charge state vector's 'at()' function. 
+*/
+
+/*!
+\fn ZState& Spectrum::atZ(const unsigned int& index)
+\brief Returns charge state data
+\param index : index in the spectrum array
+\return ZState : struct containing charge state and M+H value at position \a index
+
+Accessor to the charge state vector's 'at()' function. 
+*/
+
+/*!
+\fn void Spectrum::clear()
+\brief Clears all Spectrum data
+
+This function clears all Spectrum data and resets the scan number to 0.
+*/
+
+/*!
+\fn void Spectrum::erase(unsigned int index)
+\brief Erases single spectrum point
+\param index : index in the spectrum array
+
+Erases spectrum point at \a index. The size of the spectrum is automatically adjusted to reflect this change.
+*/
+
+/*!
+\fn void Spectrum::erase(unsigned int start, unsigned int stop)
+\brief Erases range of spectrum points
+\param start : index in the spectrum array
+\param stop : index in the spectrum array
+
+Erases all spectrum datapoints from \a start to \a stop, inclusive. The size of the spectrum is automatically adjusted to reflect this change. \a stop must be larger than \a start.
+*/
+
+/*!
+\fn void Spectrum::eraseZ(unsigned int index)
+\brief Erases single charge state
+\param index : index in the charge state array
+
+Erases charge state at \a index. The size of the charge state array is automatically adjusted to reflect this change.
+*/
+
+/*!
+\fn void Spectrum::eraseZ(unsigned int start, unsigned int stop)
+\brief Erases range of charge states
+\param start : index in the charge state array
+\param stop : index in the charge state array
+
+Erases all charge states from \a start to \a stop, inclusive. The size of the charge state array is automatically adjusted to reflect this change. \a stop must be larger than \a start.
+*/
+
+/*!
+\fn MSActivation Spectrum::getActivationMethod()
+\brief Gets activation method of spectrum
+\return MSActivation enum containing activation method information.
+
+Returns activation energy method of Spectrum data.
+*/
+
+/*!
+\fn int Spectrum::getCharge()
+\brief Gets charge state of spectrum (deprecated)
+
+Function deprecated.
+*/
+
+/*!
+\fn MSSpectrumType Spectrum::getFileType()
+\brief Gets type of spectrum
+\return MSSpectrumType enum containing file type information
+
+Returns type of spectrum data stored in the Spectrum object.
+*/
+
+/*!
+\fn double Spectrum::getMZ()
+\brief Gets parental ion mass of spectrum
+\return m/z value of the parental ion
+
+Returns m/z value of the parental ion. If spectrum has no parental ion (such as an MS1 spectrum), then 0 is returned.
+
+See \ref sample4
+*/
+
+/*!
+\fn double Spectrum::getRTime()
+\brief Gets retention time of spectrum
+\return retention time of the spectrum
+
+Returns the retention time of the spectrum. If retention time was not recorded, then 0 is returned.
+
+See \ref sample3
+*/
+
+/*!
+\fn int Spectrum::getScanNumber(bool second = false)
+\brief Gets scan number of spectrum
+\param second : (optional) requests second scan number
+\return scan number of the spectrum
+
+Returns the scan number of the spectrum. If \a second is omitted or set to false then the first scan number is returned. If \a second is set to true, then the second scan number is returned. This is useful if a spectrum contains data averaged across a range of scan numbers.
+
+See \ref sample1, \ref sample2, \ref sample3, \ref sample4, \ref sample5
+*/
+
+/*!
+\fn void Spectrum::setActivationMethod(MSActivation aMeth)
+\brief Sets activation method for MS/MS data.
+\param aMeth : activation method
+
+Activation method is used for some mzXML data.
+*/
+
+/*!
+\fn void Spectrum::setCharge(int charge)
+\brief Sets charge state of spectrum (deprecated)
+\param charge : charge state
+
+Function deprecated.
+*/
+
+/*!
+\fn void Spectrum::setFileType(MSSpectrumType stype)
+\brief Sets type of spectrum
+\param stype : Type of spectrum data.
+
+Sets the type of spectrum data (MS1, MS2, etc.) contained in the Spectrum object.
+*/
+
+/*!
+\fn void Spectrum::setMZ(double mz)
+\brief Sets parental ion mass of spectrum
+\param mz : m/z value of the parental ion
+
+Sets the m/z value of the parental ion.
+*/
+
+/*!
+\fn void Spectrum::setRTime(float rt)
+\brief Sets retention time of spectrum
+\param rt: retention time of the spectrum
+
+Sets the retention time of the spectrum.
+*/
+
+/*!
+\fn void Spectrum::setScanNumber(int num, bool second = false)
+\brief Sets scan number of spectrum
+\param num : scan number
+\param second : (optional) sets second scan number
+
+Sets the scan number of the spectrum. If \a second is omitted or set to false then the first scan number is set. If \a second is set to true, then the second scan number is set. This is useful if a spectrum contains data averaged across a range of scan numbers.
+*/
+
+/*!
+\fn int Spectrum::size()
+\brief Returns number of data points in the spectrum
+\return Number of data points in the spectrum
+
+Returns number of Peak_T data points in the spectrum array.
+
+See \ref sample1
+*/
+
+/*!
+\fn int Spectrum::sizeZ()
+\brief Returns number of charge states in the spectrum
+\return Number of charge states in the spectrum
+
+Returns number of ZState data points in the Spectrum object.
+*/
+
+/*!
+\fn void Spectrum::sortIntensity()
+\brief Sorts spectrum by intensity
+
+Sorts spectrum array data points by intensity, from lowest to highest.
+*/
+
+/*!
+\fn void Spectrum::sortIntensityRev()
+\brief Sorts spectrum by intensity
+
+Sorts spectrum array data points by intensity, from highest to lowest.
+*/
+
+/*!
+\fn void Spectrum::sortMZ()
+\brief Sorts spectrum by m/z value
+
+Sorts spectrum array data points by m/z value, from lowest to highest.
+*/
+
+/*!
+\fn void Spectrum::sortMZRev()
+\brief Sorts spectrum by m/z value
+
+Sorts spectrum array data points by m/z value, from highest to lowest.
+*/
+
+/*!
+\fn vector<Peak_T>* Spectrum::getPeaks()
+\brief Access spectrum data array
+\return pointer to spectrum data array
+
+WARNING: Usage is not recommended. Allows direct access to the spectrum array. The spectrum array can be manipulated using standard vector functions.
+*/

@@ -1,0 +1,14 @@
+RAMP is a non-sequential parser for mzXML and mzDATA instance documents.  
+
+This is the more modern version of RAMP that can:
+  read the HUPO-PSI mzData XML format
+  handle 64bit peaklists
+  handle missing or broken mzXML indexes 
+it replaces http://sashimi.cvs.sourceforge.net/sashimi/RAMP/
+
+Note that this version of RAMP has a new API, which was needed to add the mzData read capability.  It's a simple change, RAMPFILE instead of FILE, rampOpenFile instead of fopen, etc.
+
+Also found in this directory is the cRAMP C++ wrapper for RAMP.
+
+
+2006/05/26: now requires zlib code for compression/uncompression for mzXML 3.0

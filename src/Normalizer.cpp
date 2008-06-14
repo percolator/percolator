@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.cpp,v 1.15 2008/05/27 23:09:08 lukall Exp $
+ * $Id: Normalizer.cpp,v 1.16 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -28,6 +28,7 @@ Normalizer::~Normalizer()
 
 void Normalizer::normalizeSet(set<DataSet *> & setVec) {
   double * features;
+  PSMDescription* pPSM;
   set<DataSet *>::iterator it;
   if (VERB>4) {
     cerr << "First 10 feature vectors before normalization" << endl;
@@ -35,7 +36,8 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     it=setVec.begin();
     int ixPos=-1;
     cerr << "Label of this set is " << (*it)->getLabel() << endl;
-    while((features=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
+    while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
+      features = pPSM->features;
       for (int a=0;a<DataSet::getNumFeatures();a++) {
         cerr << features[a] << " ";
       }
@@ -45,7 +47,8 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
       int ixPos=-1;
-      while((features=(*it)->getNext(ixPos))!=NULL) {
+      while((pPSM=(*it)->getNext(ixPos))!=NULL) {
+        features = pPSM->features;
         normalize(features,features);
       }
   }
@@ -54,7 +57,8 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     cerr.precision(3);
     it=setVec.begin();
     int ixPos=-1;
-    while((features=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
+    while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
+      features = pPSM->features;     
       for (int a=0;a<DataSet::getNumFeatures();a++) {
         cerr << features[a] << " ";
       }

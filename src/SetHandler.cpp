@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.42 2008/06/06 17:13:32 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.43 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -53,7 +53,7 @@ SetHandler::~SetHandler()
 void SetHandler::filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra,const int label) {
     DataSet * pSet = new DataSet();
     pSet->setLabel(label);
-    pSet->filelessSetup(numFeatures, numSpectra);
+    pSet->initFeatureTables(numFeatures, numSpectra);
     subsets.push_back(pSet);
     n_examples = numSpectra;
 }
@@ -165,7 +165,7 @@ void SetHandler::print(Scores &test) {
 }
 
 
-void SetHandler::generateTrainingSet(const double fdr,const double cpos, const double cneg,const Scores & sc) {
+void SetHandler::generateTrainingSet(const double fdr,const double cpos, const double cneg,Scores & sc) {
   double tp=0,fp=0;
   unsigned int ix=0;
   examples.clear();
@@ -176,7 +176,7 @@ void SetHandler::generateTrainingSet(const double fdr,const double cpos, const d
     if (underCutOff && fdr<(fp/(tp+fp)))
       underCutOff=false;
     if (it->label==-1 || underCutOff) {
-      examples.push_back(it->featVec);
+      examples.push_back(it->pPSM->features);
       labels[ix]=it->label;
       c_vec[ix++]=(it->label!=-1?cpos:cneg);
     }
@@ -184,8 +184,8 @@ void SetHandler::generateTrainingSet(const double fdr,const double cpos, const d
 }
 
 
-double * SetHandler::getNext(int& setPos,int& ixPos) const {
-  double * features = subsets[setPos]->getNext(ixPos);
+PSMDescription * SetHandler::getNext(int& setPos,int& ixPos) {
+  PSMDescription * features = subsets[setPos]->getNext(ixPos);
   if (features) return features;
   if (++setPos>=((signed int)subsets.size()))
     return NULL;

@@ -1,0 +1,96 @@
+/*! \file MSObject.h
+    \brief Object for managing multiple spectra or mass spec file information.
+*/
+
+/*!
+    \class MSObject
+    \brief Groups and organizes multiple Spectrum objects and provides placeholder for file header information.
+*/
+
+/*!
+\fn void MSObject::add(Spectrum& spec)
+\brief Add spectrum
+\param spec : Spectrum object
+Adds \a spec to the MSObject. Spectra are listed in the order they are added.
+
+See \ref sample2
+*/
+
+/*!
+\fn bool MSObject::addToHeader(char* text)
+\brief Add header text
+\param text : character array to be added to the header information
+\return Returns true on success
+Adds \a text to the file header information. Each call to addToHeader() uses another line. Only 16 total lines may be stored for any mass spec file.
+*/
+
+/*!
+\fn bool MSObject::addToHeader(string text)
+\brief Add header text
+\param text : character array to be added to the header information
+\return Returns true on success
+Adds \a text to the file header information. Each call to addToHeader() uses another line. Only 16 total lines may be stored for any mass spec file.
+*/
+
+/*!
+\fn Spectrum& MSObject::at(unsigned int index)
+\brief Get Spectrum
+\param index : index position of desired Spectrum object
+\return Returns Spectrum reference
+Gets the specified Spectrum from the MSObject. No boundary checks are peformed. size() should be called to find upper bound.
+*/
+
+/*!
+\fn Peak_T& MSObject::at(unsigned int spec, unsigned int data)
+\brief Get Spectrum data point
+\param spec : index position of desired Spectrum object
+\param data : index of the desired data point in the Spectrum specified by \a spec
+\return Returns Peak_T reference
+Gets the specified data point from the Spectrum at index \a spec in MSObject. No boundary checks are peformed. size() should be called to find upper bound for \a spec. Spectrum::size() should be called to find the upper bound of the requested Spectrum.
+*/
+
+/*!
+\fn void MSObject::clear()
+\brief Clears data
+Clears all Spectrum and header information.
+*/
+
+/*!
+\fn void MSObject::erase(unsigned int index)
+\brief Erase Spectrum
+\param index : index position of desired Spectrum object
+Removes the specified Spectrum from the MSObject. No boundary checks are peformed. size() should be called to find upper bound.
+*/
+
+/*!
+\fn void MSObject::erase(unsigned int spec, unsigned int data)
+\brief Erase Spectrum data point
+\param spec : index position of desired Spectrum object
+\param data : index of the desired data point in the Spectrum specified by \a spec
+Erases the specified data point from the Spectrum at index \a spec in MSObject. No boundary checks are peformed. size() should be called to find upper bound for \a spec. Spectrum::size() should be called to find the upper bound of the requested Spectrum.
+*/
+
+/*!
+\fn MSHeader& MSObject::getHeader()
+\brief Gets file header data
+\return Returns MSHeader reference
+Gets the MSHeader struct of the MSObject.
+*/
+
+/*!
+\fn void MSObject::setHeader(const MSHeader& hdr)
+\brief Sets file header data
+\param hdr : MSHeader struct to be stored
+Sets the MSHeader struct of the MSObject.
+
+See \ref sample5
+*/
+
+/*!
+\fn int MSObject::size()
+\brief Gets number of Spectrum objects
+\return number of Spectrum objects
+Gets the number of Spectrum objects currently stored in the MSObject.
+
+See \ref sample2
+*/

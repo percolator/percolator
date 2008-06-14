@@ -4,10 +4,12 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.23 2008/06/06 17:13:32 lukall Exp $
+ * $Id: SetHandler.h,v 1.24 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
+#include "PSMDescription.h"
+
 class SetHandler
 {
 protected:
@@ -26,11 +28,11 @@ public:
     void static readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation * intra,const string & wild = "", const bool match=false, bool calc=true);
     void static modifyFile(const string& fn, vector<DataSet *> & sets, Scores& sc , const string& greet, bool dtaSelect);
     void modifyFile(const string& fn, Scores& sc , const string& greet, bool dtaSelect);
-    void generateTrainingSet(const double fdr,const double cpos, const double cneg, const Scores & sc);
+    void generateTrainingSet(const double fdr,const double cpos, const double cneg, Scores & sc);
 	void setSet();
 	void fillTestSet(SetHandler& trainSet,const string& shuffled2FN="");
     void createXvalSets(vector<SetHandler>& train,vector<SetHandler>& test, const unsigned int xval_fold);
-	double * getNext(int& ,int& ) const;
+	PSMDescription * getNext(int& ,int& );
     const double * getFeatures(const int setPos,const int ixPos) const;
     void readTab(const string & dataFN, const int label);
     void static writeTab(const string &dataFN, const SetHandler& norm, const SetHandler& shuff);
@@ -48,7 +50,7 @@ public:
     class Iterator {
     public:
       Iterator(SetHandler * s) : sh(s), set(0), ix(-1) {;}
-      double * getNext() {return sh->getNext(set,ix);}
+      PSMDescription* getNext() {return sh->getNext(set,ix);}
     private:
       SetHandler * sh;
       int set;

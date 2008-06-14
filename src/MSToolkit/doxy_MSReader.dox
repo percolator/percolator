@@ -1,0 +1,198 @@
+/*! \file MSReader.h
+    \brief Header file for MSReader object.
+*/
+
+/*!
+    \class MSReader
+    \brief Object to control the reading and writing of spectrum data
+ 
+    Utility object for reading and writing spectrum data.
+*/
+
+/*!
+\fn void MSReader::appendFile(char* file, bool text, Spectrum& spec)
+\brief Add a spectrum to the end of a mass spec file (deprecated)
+\param file : file name of target file
+\param text : indicator for writing text or binary data
+\param spec : Spectrum object containing data to write
+
+This function appends spectrum data to the end of a mass spec file. If \a text is false, a binary spectrum will be written. If \a text is false and compression is set to true, via the setCompression() function, then a compressed spectrum will be written. Appending a file with data in the wrong format (i.e. appending a text spectrum to a .bms1 file) will result in failure of subsequent reads to the target file.
+
+This function has been deprecated. Please use appendFile(char* file, Spectrum& spec)
+*/
+
+/*!
+\fn void MSReader::appendFile(char* file, bool text, MSObject& obj)
+\brief Add spectra to the end of a mass spec file (deprecated)
+\param file : file name of target file
+\param text : indicator for writing text or binary data
+\param obj : MSObject containing spectra data to write
+
+This function appends multiple spectra data, contained in an MSObject, to the end of a mass spec file. If \a text is false, a binary spectrum will be written. If \a text is false and compression is set to true, via the setCompression() function, then a compressed spectrum will be written. Appending a file with data in the wrong format (i.e. appending a text spectrum to a .bms1 file) will result in failure of subsequent reads to the target file.
+
+This function has been deprecated. Please use appendFile(char* file, MSObject& obj)
+*/
+
+/*!
+\fn void MSReader::appendFile(char* file, Spectrum& spec)
+\brief Add a spectrum to the end of a mass spec file
+\param file : file name of target file
+\param spec : Spectrum object containing data to write
+
+This function appends spectrum data to the end of a mass spec file. The format to be written is determined from \a file. Therefore the spectrum will automatically be appended in the correct format for the file specified.
+
+See \ref sample5
+*/
+
+/*!
+\fn void MSReader::appendFile(char* file, MSObject& obj)
+\brief Add spectra to the end of a mass spec file
+\param file : file name of target file
+\param obj : MSObject containing spectra data to write
+
+This function appends multiple spectra data, contained in an MSObject, to the end of a mass spec file. The format to be written is determined from \a file. Therefore the spectra will automatically be appended in the correct format for the file specified.
+*/
+
+/*!
+\fn MSFileFormat& MSReader::checkFileFormat(char* file)
+\brief Determines file format
+\param file : file name to be checked
+\return MSFileFormat enum specifying the type of file
+
+.ms1, .ms2, .zs, .uzs, .mzXML, and .mzData formats are determined by their file extensions. Binary and compressed file formats are determined from header information stored at the start of the file and may have any extension other than .ms1, .ms2, .zs, .uzs, .mzXML, and .mzData.
+*/
+
+/*!
+\fn MSHeader& MSReader::getHeader()
+\brief Gets header information
+
+Gets the header information from the last read mass spec file. If no mass spec file was read, it returns a empty (not NULL) MSHeader struct.
+
+See \ref sample5
+*/
+
+/*!
+\fn MSSpectrumType MSReader::getFileType()
+\brief Gets spectrum type (deprecated)
+
+This function is deprecated.
+*/
+
+/*!
+\fn int MSReader::getPercent()
+\brief File position as a percent
+
+Indicates the position of the file after the last spectrum read. Position is indicated as a percentage, rounded to the nearest 1 percent.
+*/
+
+/*!
+\fn void MSReader::setPrecision(int mz, int intensity)
+\brief Sets output precision
+\param mz : precision of m/z values
+\param intensity : precision of intensity values
+
+Sets the precision for m/z and intensity values when writing spectra data to file. This only affects the output for text-based file formats (.ms1, .ms2, etc.)
+*/
+
+/*!
+\fn void MSReader::setPrecisionInt(int intensity)
+\brief Sets output precision
+\param intensity : precision of intensity values
+
+Sets the precision for intensity values when writing spectra data to file. This only affects the output for text-based file formats (.ms1, .ms2, etc.)
+*/
+
+/*!
+\fn void MSReader::setPrecisionMZ(int mz)
+\brief Sets output precision
+\param mz : precision of m/z values
+
+Sets the precision for m/z values when writing spectra data to file. This only affects the output for text-based file formats (.ms1, .ms2, etc.)
+*/
+
+/*!
+\fn void MSReader::writeFile(char* file, bool text, MSObject& obj)
+\brief Writes spectra data to file (deprecated)
+\param file : file name
+\param text : indicator for writing text or binary data
+\param obj : MSObject containing spectra data to write
+
+This function creates and writes header information and/or multiple spectra data, contained in an MSObject, to a mass spec file. If \a text is false, a binary file will be written. If \a text is false and compression is set to true, via the setCompression() function, then a compressed file will be written.
+
+This function is deprecated. Please use writeFile(char* file, MSFileFormat format, MSObject& obj)
+*/
+
+/*!
+\fn void MSReader::writeFile(char* file, MSFileFormat format, MSObject& obj)
+\brief Writes spectra data to file
+\param file : file name
+\param format : indicates type of file to output
+\param obj : MSObject containing spectra data to write
+
+This function creates and writes header information and/or multiple spectra data, contained in an MSObject, to a mass spec file. The format of the file is determined by \a format and should contain a matching extension in the file name to avoid confusion.
+
+See \ref sample5
+*/
+
+/*!
+\fn bool MSReader::readFile(char* file, bool text, Spectrum& spec, int scan=0)
+\brief Reads a single spectrum from a file (deprecated)
+\param file : file name to read
+\param text : indicator for reading text format
+\param spec : Spectrum object that will hold the data after reading
+\param scan | (optional) specific scan number to read in a file
+\return true on success
+
+This function is deprecated. Instead, use functin: readFile(char* file, Spectrum& s, int scan=0)
+*/
+
+/*!
+\fn bool MSReader::readFile(char* file, MSFileFormat format, Spectrum& spec, int scan=0)
+\brief Reads a single spectrum from a file
+\param file : file name to read
+\param format : indicats format of file being read
+\param spec : Spectrum object that will hold the data after reading
+\param scan | (optional) specific scan number to read in a file
+\return true on success
+
+This function is deprecated. Instead, use functin: readFile(char* file, Spectrum& s, int scan=0)
+*/
+
+/*!
+\fn bool MSReader::readFile(char* file, Spectrum& spec, int scan=0)
+\brief Reads a single spectrum from a file
+\param file : file name to read
+\param spec : Spectrum object that will hold the data after reading
+\param scan | (optional) specific scan number to read in a file
+\return true on success
+
+This function has two behaviors dependent on whether \a scan is specified or omitted. If \a scan is omitted, the first spectrum of \a file is read and stored in \a spec. Subsequent calls to readFile() with \a file = NULL will read the next spectrum in \a file.
+
+If \a scan is specified, the spectrum with scan number \a scan is read and stored in \a spec. Subsequent calls to readFile() with \a file = NULL and \a scan omitted will read the next spectrum in \a file.
+
+If a spectrum could not be read, or a specific scan number was not found, \a spec is set to an empty Spectrum object with its scan numbers set to 0.
+
+The format of the file is determined automatically. Be sure to conform to any file naming conventions/extensions for the format you are using.
+
+See \ref sample1, \ref sample2, \ref sample3, \ref sample4, \ref sample5
+*/
+
+/*!
+\fn void MSReader::setFilter(MSSpectrumType type)
+\brief Sets mzXML read filter
+\param type : type of spectrum to filter for
+
+This sets the type of spectra desired when reading mzXML files with mixed levels of spectrometry.
+
+See \ref sample3
+*/
+
+/*!
+\fn void MSReader::setCompression(bool compress)
+\brief Toggles compression of files
+\param compress : set to true if file compression is desired when writing files
+
+This function must be called, and set to true, if compressed file writing is desired. If set to false, binary files will be written.
+
+See \ref sample5
+*/

@@ -1,0 +1,138 @@
+/*! \file doxy_sample.dox
+    \brief Sample Code
+*/
+
+/*!
+\page page1 Code Samples
+
+\section sample1 Sample #1
+Opening a file, obtaining the first spectrum, and displaying its data to screen.
+\code
+MSReader r;
+Spectrum s;
+
+//Open the file and read the first spectrum
+r.readFile("myFile.ms1",s)
+
+//Check if spectrum was loaded
+if(s.getScanNumber()==0){
+  printf("Failure to load file or failure to obtain spectrum.\n");
+  exit(-1);
+}
+
+//Output data to screen
+for(int i=0;i<s.size();i++) {
+  printf("%lf %f\n",s[i].mz, s[i].intensity);
+}
+\endcode
+
+
+\section sample2 Sample #2
+Opening a file and store all spectra in memory.
+\code
+MSReader r;
+Spectrum s;
+MSObject o;
+
+//Open the file and read the first spectrum
+r.readFile("myFile.ms2",s)
+
+//Add spectrum to memory and iterate until all spectra are loaded
+while (s.getScanNumber()!=0){
+  o.add(s);
+  r.readFile(NULL,s);
+}
+
+//Output message to user
+printf("%d spectra were loaded!\n", o.size());
+
+\endcode
+
+
+\section sample3 Sample #3
+Read only the MS/MS scans in a mixed level (MS and MS/MS) mzXML file.
+\code
+MSReader r;
+Spectrum s;
+
+//Set the desired level
+r.setFilter(MS2);
+
+//Open the file and read the first spectrum
+r.readFile("myFile.mzXML",s)
+
+//Iterate until the end of the file
+while (s.getScanNumber()!=0){
+  printf("Scan number %d has retention time of %f\n",s.getScanNumber(),s.getRTime());
+  r.readFile(NULL,s);
+}
+
+\endcode
+
+
+\section sample4 Sample #4
+Requesting specific scan numbers
+\code
+MSReader r;
+Spectrum s;
+
+int scNum;
+
+while(true){
+
+  //Request a scan number
+  printf("Enter a scan number (0 to quit): ");
+  scanf("%d",&scNum);
+
+  //Exit if requested
+  if(scNum==0) break;
+
+  //Open the file and read requested scan
+  r.readFile("myFile.cms2",s,scNum);
+
+  //Check if spectrum was loaded
+  if(s.getScanNumber()==0){
+    printf("Scan number not in file - Try again!\n");
+  } else {
+    printf("Scan number %d has parental ion mass of %lf\n",s.getScanNumber(),s.getMZ());
+  }
+
+}
+
+\endcode
+
+
+\section sample5 Sample #5
+Converting a file from binary to compressed (without loading entire file to memory)
+\code
+MSReader rRead;  //File reader
+MSReader rWrite; //File writer
+Spectrum s;
+MSObject o;
+
+//Use the reader to open the file and read the first spectrum
+rRead.readFile("myFile.bms2",s)
+
+//Check if spectrum was loaded
+if(s.getScanNumber()==0){
+  printf("Failure to load file or failure to obtain spectrum.\n");
+  exit(-1);
+}
+
+//The reader also has header information. Capture it with our MSObject
+o.setHeader(rRead.getHeader());
+
+//Set up file writer to write compressed data
+rWrite.setCompress(true);
+
+//Create the new file - it will only have header information
+rWrite.writeFile("myFile.cms2",cms2,o);
+
+//Append spectra to the compressed file until all spectra are converted
+while (s.getScanNumber()!=0){
+  rWrite.appendFile("myFile.cms2",s);
+  rRead.readFile(NULL,s);
+}
+
+\endcode
+*/

@@ -3,9 +3,9 @@ distdir = $(PACKAGE)_$(VERSION)_src
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version
 
-AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
-AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
-AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary
+AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
+AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
+AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
 
 libqvality_la_SOURCES = \
   BaseSpline.cpp \
@@ -63,6 +63,8 @@ libpercolator_la_SOURCES = \
   Option.h \
   PercolatorCInterface.cpp \
   PercolatorCInterface.h \
+  PSMDescription.cpp \
+  PSMDescription.h \
   ResultHolder.cpp \
   ResultHolder.h \
   SanityCheck.h \
@@ -80,11 +82,51 @@ libpercolator_la_SOURCES = \
   ssl.cpp \
   ssl.h
 
+libmstoolkit_la_SOURCES = \
+  MSToolkit/MSConvertFile.cpp \
+  MSToolkit/MSObject.cpp \
+  MSToolkit/MSObject.h \
+  MSToolkit/MSReader.cpp \
+  MSToolkit/MSReader.h \
+  MSToolkit/MSSingleScan.cpp \
+  MSToolkit/MSTDemo.cpp \
+  MSToolkit/MSToolkitTypes.h \
+  MSToolkit/RAMP/ramp_base64.cpp \
+  MSToolkit/RAMP/ramp_base64.h \
+  MSToolkit/RAMP/ramp.cpp \
+  MSToolkit/RAMP/ramp.h \
+  MSToolkit/Spectrum.cpp \
+  MSToolkit/Spectrum.h \
+  MSToolkit/zLib/adler32.c \
+  MSToolkit/zLib/compress.c \
+  MSToolkit/zLib/crc32.c \
+  MSToolkit/zLib/crc32.h \
+  MSToolkit/zLib/deflate.c \
+  MSToolkit/zLib/deflate.h \
+  MSToolkit/zLib/gzio.c \
+  MSToolkit/zLib/infback.c \
+  MSToolkit/zLib/inffast.c \
+  MSToolkit/zLib/inffast.h \
+  MSToolkit/zLib/inffixed.h \
+  MSToolkit/zLib/inflate.c \
+  MSToolkit/zLib/inflate.h \
+  MSToolkit/zLib/inftrees.c \
+  MSToolkit/zLib/inftrees.h \
+  MSToolkit/zLib/trees.c \
+  MSToolkit/zLib/trees.h \
+  MSToolkit/zLib/uncompr.c \
+  MSToolkit/zLib/zconf.h \
+  MSToolkit/zLib/zlib.h \
+  MSToolkit/zLib/zutil.c \
+  MSToolkit/zLib/zutil.h
+
+libmstoolkit_la_CPPFLAGS = ${CPPFLAGS} -I./MSToolkit -I./MSToolkit/zLib -I./MSToolkit/RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+
 percolator_SOURCES = main.cpp
-percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la
+percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la libmstoolkit.la
 
 PERCOLATOR_PROGRAM = percolator
-PERCOLATOR_LIBRARY = libpercolator.la
+PERCOLATOR_LIBRARY = libpercolator.la libmstoolkit.la
 
 endif
 

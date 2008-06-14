@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: PercolatorCInterface.cpp,v 1.10 2008/06/06 17:13:32 lukall Exp $
+ * $Id: PercolatorCInterface.cpp,v 1.11 2008/06/14 01:21:44 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <vector>
@@ -69,16 +69,16 @@ void pcRegisterPSM(SetType set, char * identifier, double * features) {
   double * vec = NULL;
   switch(set) {
     case TARGET:
-      vec = normal->getNext();
+      vec = normal->getNext()->features;
       break;
     case DECOY1:
-      vec = decoy1->getNext();
+      vec = decoy1->getNext()->features;
       break;
     case DECOY2:
-      vec = decoy2->getNext();
+      vec = decoy2->getNext()->features;
       break;
     case DECOY3:
-      vec = decoy3->getNext();
+      vec = decoy3->getNext()->features;
       break;
   }
   if (vec==NULL) {
@@ -105,10 +105,10 @@ void pcExecute() {
 void pcGetScores(double *scoreArr,double *qArr) {
   int ix=0;
   SetHandler::Iterator iter(pCaller->getSetHandler(Caller::NORMAL));
-  while(double * feat = iter.getNext()) {
-    ScoreHolder* pSh = pCaller->getFullSet()->getScoreHolder(feat);
+  while(PSMDescription * pPSM = iter.getNext()) {
+    ScoreHolder* pSh = pCaller->getFullSet()->getScoreHolder(pPSM->features);
     scoreArr[ix] = pSh->score;
-    qArr[ix++] =  pSh->q;
+    qArr[ix++] =  pPSM->q;
   }
 } 
 
