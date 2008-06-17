@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.40 2008/06/17 00:29:49 lukall Exp $
+ * $Id: Scores.h,v 1.41 2008/06/17 23:21:44 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -43,7 +43,6 @@ public:
     vector<ScoreHolder>::iterator end() {return scores.end();}    
 	int calcScores(vector<double>& w, double fdr=0.0);
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
-    void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
     void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
     void recalculateDescriptionOfGood(const double fdr);
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);

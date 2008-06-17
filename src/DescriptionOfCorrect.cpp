@@ -1,5 +1,6 @@
-#include<vector>
-#include<cmath>
+#include <vector>
+#include <cmath>
+#include <assert.h>
 #include "DataSet.h"
 #include "DescriptionOfCorrect.h"
 
@@ -34,8 +35,10 @@ void DescriptionOfCorrect::trainCorrect() {
   }
 }
 void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
-  pPSM->features[DataSet::getDMFeatureNo()] = abs(pPSM->massDiff-avgDM);
-  pPSM->features[DataSet::getPIFeatureNo()] = abs(pPSM->pI-avgPI);
+  assert(DataSet::getFeatureNames().getDocFeatNum()>0);
+  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()] = abs(pPSM->pI-avgPI);
+  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()+1] = abs(pPSM->massDiff-avgDM);
+  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()+2] = 0;
 
 }
 

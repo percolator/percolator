@@ -3,7 +3,7 @@
 
 FeatureNames::FeatureNames()
 {
-  minCharge = -1;
+  minCharge = 100;
   maxCharge = -1;
   chargeFeatNum = -1;
   enzFeatNum = -1;
@@ -20,24 +20,24 @@ FeatureNames::~FeatureNames()
 {
 }
 
-string getFeatureNames() {
+string FeatureNames::getFeatureNames() {
   ostringstream oss;
   if (!featureNames.empty()) {
-    vector<string>::iterator featNam = featureNames.begin(); 
-    oss << *(featNam++);
+    vector<string>::iterator featNum = featureNames.begin(); 
+    oss << *(featNum++);
     for (; featNum!=featureNames.end(); ++featNum )
-      oss << "\t" << *(featNam++);
+      oss << "\t" << *(featNum++);
   }
   return oss.str();
 }
 
 
-string DataSet::setSQTFeatures(
+void FeatureNames::setSQTFeatures(
   int minCharge, int maxCharge, 
   bool doEnzyme, 
   bool calcPTMs, 
   bool doManyHitsPerSpectrum, 
-  bool calcAAFrequencies, 
+  const string& aaAlphabet, 
   bool calcIntraSetFeatures, 
   bool calcDOC)
 {
@@ -72,7 +72,7 @@ string DataSet::setSQTFeatures(
     rank1FeatNum = featureNames.size();
     featureNames.push_back("rank1");
   }
-  if (calcAAFrequencies) {
+  if (!aaAlphabet.empty()) {
     aaFeatNum = featureNames.size();
     for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
       featureNames.push_back(*it + "-Freq");

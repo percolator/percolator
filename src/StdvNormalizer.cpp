@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.cpp,v 1.19 2008/06/14 01:21:44 lukall Exp $
+ * $Id: StdvNormalizer.cpp,v 1.20 2008/06/17 23:21:44 lukall Exp $
  *******************************************************************************/
 #include <vector>
 #include <iostream>
@@ -83,7 +83,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
   if (VERB>2) { 
     cerr.precision(2);
     cerr << "Normalization factors" << endl
-    << "Type\t" << DataSet::getFeatureNames() << endl << "Avg ";
+    << "Type\t" << DataSet::getFeatureNames().getFeatureNames() << endl << "Avg ";
   }
   for (ix=0;ix<DataSet::getNumFeatures();ix++) {
   	if (n>0.0)

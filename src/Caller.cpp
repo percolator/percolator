@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.94 2008/06/17 00:29:49 lukall Exp $
+ * $Id: Caller.cpp,v 1.95 2008/06/17 23:21:44 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -326,11 +326,12 @@ void Caller::readRetentionTime(string filename) {
     scan2rt[s.getScanNumber()] = (double) s.getRTime();
     r.readFile(NULL,s);
   }
+  delete [] cstr;
 }
 
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << "# first line contains normalized weights, second line the raw weights" << endl;  
-  weightStream << DataSet::getFeatureNames() << "\tm0" << endl;
+  weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0" << endl;
   weightStream.precision(3);
   weightStream << w[0];
   for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
@@ -352,14 +353,10 @@ void Caller::filelessSetup(const unsigned int numFeatures, const unsigned int nu
   normal.filelessSetup(numFeatures, numSpectra,1);
   shuffled.filelessSetup(numFeatures, numSpectra,-1);
   Scores::pi0 = pi0;
-  ostringstream os;
   for (unsigned int ix=0;ix<numFeatures;ix++){
-    os << featureNames[ix];
-    if (ix<numFeatures-1) {
-      os.put('\t');    
-    }
+    string fn = featureNames[ix];
+    DataSet::getFeatureNames().insertFeature(fn);
   }
-  DataSet::setFeatureNames(os.str());  
 }
 
 void Caller::readFiles(bool &doSingleFile) {

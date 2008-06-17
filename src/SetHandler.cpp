@@ -4,11 +4,12 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.43 2008/06/14 01:21:44 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.44 2008/06/17 23:21:44 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <map>
 #include <set>
@@ -250,8 +251,11 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
   }
   dataStream >> tmp >> tmp;
   dataStream.get();        // removed enumrator, label and tab 
-  getline(dataStream,line);
-  DataSet::setFeatureNames(line);
+  istringstream iss(line);
+  while (iss.good()) {
+    iss >> tmp;
+    DataSet::getFeatureNames().insertFeature(tmp);
+  }
   DataSet * theSet = new DataSet();
   theSet->setLabel(setLabel>0?1:-1);
   theSet->readTabData(dataStream,ixs);
@@ -262,7 +266,7 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
     
 void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetHandler& shuff) {
   ofstream dataStream(dataFN.data(),ios::out);
-  dataStream << "SpecId\tLabel\t" << DataSet::getFeatureNames() << "\tPeptide\tProteins" << endl;
+  dataStream << "SpecId\tLabel\t" << DataSet::getFeatureNames().getFeatureNames() << "\tPeptide\tProteins" << endl;
   string str;
   for (int setPos=0;setPos< (signed int)norm.subsets.size();setPos++) {
     norm.subsets[setPos]->writeTabData(dataStream,norm.subsets[setPos]->getLabel()==-1?"-1":"1");
@@ -302,8 +306,11 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
   }
   dataStream >> tmp;
   dataStream.get();        // removed enumrator and tab 
-  getline(dataStream,line);
-  DataSet::setFeatureNames(line);
+  istringstream iss(line);
+  while (iss.good()) {
+    iss >> tmp;
+    DataSet::getFeatureNames().insertFeature(tmp);
+  }
   DataSet * theSet = new DataSet();
   theSet->setLabel(setLabel>0?1:-1);
   theSet->readGistData(dataStream,ixs);
@@ -319,7 +326,7 @@ void SetHandler::gistWrite(const string & fileNameTrunk,const SetHandler& norm,c
   ofstream dataStream(dataFN.data(),ios::out);
   ofstream labelStream(labelFN.data(),ios::out);
   labelStream << "SpecId\tLabel" << endl; 
-  dataStream << "SpecId\t" << DataSet::getFeatureNames() << endl;
+  dataStream << "SpecId\t" << DataSet::getFeatureNames().getFeatureNames() << endl;
   string str;
   for (int setPos=0;setPos< (signed int)norm.subsets.size();setPos++) {
     int ixPos=-1;

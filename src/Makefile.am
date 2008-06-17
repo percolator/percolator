@@ -57,6 +57,8 @@ libpercolator_la_SOURCES = \
   DescriptionOfCorrect.h \
   IntraSetRelation.cpp \
   IntraSetRelation.h \
+  FeatureNames.cpp \
+  FeatureNames.h \
   Normalizer.cpp \
   Normalizer.h \
   Option.cpp \

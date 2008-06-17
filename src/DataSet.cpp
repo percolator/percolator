@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.82 2008/06/17 00:29:49 lukall Exp $
+ * $Id: DataSet.cpp,v 1.83 2008/06/17 23:21:44 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -37,9 +37,11 @@ Enzyme DataSet::enzyme = TRYPSIN;
 bool DataSet::calcIntraSetFeatures = true;
 bool DataSet::calcPTMs = false;
 bool DataSet::isotopeMass = false;
-string DataSet::featureNames = "";
+bool DataSet::calcDOC = false;
 string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
+FeatureNames DataSet::featureNames;
+
 
 static char buf[4096];
 
@@ -121,7 +123,7 @@ void DataSet::print_features() {
 }
 
 void DataSet::print_10features() {
-   cerr << DataSet::getFeatureNames() << endl;
+   cerr << DataSet::getFeatureNames().getFeatureNames() << endl;
    for(int i=0;i<10;i++) {
        for(int j=0;j<DataSet::getNumFeatures();j++) {
           cerr << feature[DataSet::rowIx(i)+j] << "\t";
@@ -158,6 +160,7 @@ void DataSet::setNumFeatures(bool doc) {
                  - (calcAAFrequencies?0:aaAlphabet.size()*3)
                  - 3; // DOC features
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
+  calcDOC = doc;
   if (doc) {numRealFeatures+=3; numFeatures+=3; }
 }
 
@@ -447,33 +450,6 @@ void DataSet::modifySQT(const string & outFN, Scores * pSc ,const string greet, 
   sqtOut.close();
 }
    
-string DataSet::getFeatureNames() {
-  if (featureNames.empty()) {
-    ostringstream oss;
-    oss << "lnrSp\tdeltLCn\tdeltCn\tXcorr\tSp\tIonFrac\tMass\tPepLen\tCharge1\tCharge2\tCharge3";
-    if (enzyme!=NO_ENZYME)
-      oss << "\tenzN\tenzC\tenzInt";
-    oss << "\tlnNumSP\tdM\tabsdM";
-    if (calcPTMs)
-      oss << "\tptm";
-    if (hitsPerSpectrum>1)
-      oss << "\trank1";
-    if (calcAAFrequencies) {
-      for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
-        oss << "\t" << *it << "-Freq";
-      for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
-        oss << "\t" << *it << "-Nterm";
-      for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
-        oss << "\t" << *it << "-Cterm";
-    }
-    if (calcIntraSetFeatures)
-      oss << "\tnumPep\tpepSite";
-//      oss << "\tnumPep\tnumProt\tpepSite";
-    featureNames = oss.str();
-  }
-  return featureNames;
-}
-
 void DataSet::readFeatures(const string &in,PSMDescription &psm,int match, bool getIntra) {
   istringstream instr(in),linestr;
   ostringstream idbuild;
@@ -539,7 +515,7 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match, bool 
           feat[nxtFeat++]=(ms==0?1.0:0.0);        
         if (calcAAFrequencies) {
           computeAAFrequencies(psm.peptide,&feat[nxtFeat]);
-          nxtFeat += aaAlphabet.size()*3;
+          nxtFeat += aaAlphabet.size();
         }
         gotL = false;
       }
@@ -575,18 +551,6 @@ void DataSet::computeAAFrequencies(const string& pep, double *feat) {
     len++;
   }
   for (pos = aaAlphabet.size();pos--;) {feat[pos]/=len;}
-
-  // N-terminal features
-  feat += aaAlphabet.size();
-  for (pos = aaAlphabet.size();pos--;) {feat[pos]=0;}
-  pos=aaAlphabet.find(pep[0]);
-  if (pos!=string::npos) feat[pos]++;
-
-  // C-terminal features
-  feat += aaAlphabet.size();
-  for (pos = aaAlphabet.size();pos--;) {feat[pos]=0;}
-  pos=aaAlphabet.find(pep[pep.length()-1]);
-  if (pos!=string::npos) feat[pos]++;
 }
 
 unsigned int DataSet::peptideLength(const string& pep) {
@@ -661,7 +625,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
     if (line[0]=='S' && sqtIn.peek() != 'S') {
          lineParse.str(line);  
          lineParse >> tmp >> tmp >> tmp >> charge;       
-         if (charge <= 5) look=true;
+         look=true;
          if (minCharge>charge) minCharge=charge; 
          if (maxCharge<charge) maxCharge=charge; 
          ms=0;
@@ -683,7 +647,9 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
   }
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
-  
+
+  getFeatureNames().setSQTFeatures(minCharge,maxCharge,enzyme!=NO_ENZYME,calcPTMs,hitsPerSpectrum>0,
+                                   (calcAAFrequencies?aaAlphabet:""),calcIntraSetFeatures,calcDOC);  
   initFeatureTables(DataSet::getNumFeatures(),n);
 
   string seq;

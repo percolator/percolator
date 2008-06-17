@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.67 2008/06/17 00:29:49 lukall Exp $
+ * $Id: Scores.cpp,v 1.68 2008/06/17 23:21:44 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -82,31 +82,6 @@ ScoreHolder* Scores::getScoreHolder(const double *d){
   return scoreMap[d];  
 }
 
-
-void Scores::fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio) {
-  assert(ratio>0 && ratio < 1);
-  int n = norm.getSize();
-  int l = shuff.getSize();
-  train.scores.clear();
-  test.scores.clear();
-
-  SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  PSMDescription * pPSM;
-  while((pPSM=shuffIter.getNext())!=NULL) {
-    train.scores.push_back(ScoreHolder(.0,-1,pPSM));
-    test.scores.push_back(ScoreHolder(.0,-1,pPSM));
-  }
-  while((pPSM=normIter.getNext())!=NULL) {
-    train.scores.push_back(ScoreHolder(.0,1,pPSM));
-    test.scores.push_back(ScoreHolder(.0,1,pPSM));
-  }
-  train.pos=n;
-  test.pos=n;
-  train.neg=l;
-  test.neg=l;
-  train.factor = n/(double)l;
-  test.factor = n/(double)l;
-}
 
 void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
   scores.clear();

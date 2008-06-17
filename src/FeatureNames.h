@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 class FeatureNames
@@ -13,9 +14,13 @@ public:
   size_t getNumFeatures() { return featureNames.size();}
   string getFeatureNames();
   
-  int getFeatureNumber(const string& featureName) {return distance(find(featurNames.begin(),featurNames.end()),featurNames.begin());}
+  
+  void insertFeature(string& featureName) { featureNames.push_back(featureName);}
+  
+  int getFeatureNumber(const string& featureName)
+     {return distance(find(featureNames.begin(),featureNames.end(),featureName),featureNames.begin());}
   void setSQTFeatures(int minCharge, int maxCharge, bool doEnzyme, bool calcPTMs, bool doManyHitsPerSpectrum,
-                                 bool calcAAFrequencies, bool calcIntraSetFeatures, bool calcDOC);
+                                 const string& aaAlphabet, bool calcIntraSetFeatures, bool calcDOC);
   // SQT Feature Number getters, will return -1 if not defined.
   int getMinCharge() { return minCharge; } 
   int getMaxCharge() { return maxCharge; }
