@@ -1,5 +1,6 @@
 #include<vector>
 #include<cmath>
+#include "DataSet.h"
 #include "DescriptionOfCorrect.h"
 
 
@@ -17,6 +18,27 @@ string DescriptionOfCorrect::isoAlphabet = "DECYHKR";
 float DescriptionOfCorrect::pKiso[7] = {-3.86,-4.25,-8.33,-10.0,6.0,10.5,12.4}; // Lehninger
 float DescriptionOfCorrect::pKN = 9.69;
 float DescriptionOfCorrect::pKC = 2.34;
+
+
+void DescriptionOfCorrect::trainCorrect() {
+  double piSum=0.0, dMSum=0.0;
+  for(size_t ix=0; ix<psms.size(); ++ix) {
+    piSum += psms[ix]->pI;
+    dMSum += psms[ix]->massDiff;
+  }
+  if (psms.size()==0) {
+    avgPI = 0.0; avgDM = 0.0;
+  } else {
+    avgPI = piSum/psms.size();
+    avgDM = dMSum/psms.size();
+  }
+}
+void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
+  pPSM->features[DataSet::getDMFeatureNo()] = abs(pPSM->massDiff-avgDM);
+  pPSM->features[DataSet::getPIFeatureNo()] = abs(pPSM->pI-avgPI);
+
+}
+
 
 double DescriptionOfCorrect::indexSum(const float* index, const string& peptide) {
   double sum = 0.0;

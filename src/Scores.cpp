@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.66 2008/06/14 01:21:44 lukall Exp $
+ * $Id: Scores.cpp,v 1.67 2008/06/17 00:29:49 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -265,6 +265,22 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   }
   data.positives=p;
   data.m=ix2;
+}
+
+void Scores::recalculateDescriptionOfGood(const double fdr) {
+  doc.clear();
+  unsigned int ix1=0;
+  for(ix1=0;ix1<size();ix1++) {
+    if (scores[ix1].label==1) {
+      if (fdr<scores[ix1].pPSM->q) {
+        doc.registerCorrect(scores[ix1].pPSM);
+      }
+    }
+  }
+  doc.trainCorrect();
+  for(ix1=0;ix1<size();ix1++) {
+    doc.setFeatures(scores[ix1].pPSM);
+  }
 }
 
 int Scores::getInitDirection(const double fdr, vector<double>& direction, bool findDirection) {

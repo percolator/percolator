@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.93 2008/06/14 01:21:44 lukall Exp $
+ * $Id: Caller.cpp,v 1.94 2008/06/17 00:29:49 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -36,7 +36,7 @@ const unsigned int Caller::xval_fold = 3;
 Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   modifiedFN(""), modifiedDecoyFN(""), forwardFN(""), decoyFN (""), //shuffledThresholdFN(""), shuffledTestFN(""),
   decoyWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""),
-  gistInput(false), tabInput(false), dtaSelect(false), reportPerformanceEachIteration(false),
+  gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
   niter(10), seed(0), xv_type(EACH_STEP)
 {
@@ -188,6 +188,13 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   cmd.defineOption("S","seed",
     "Setting seed of the random number generator. Default value is 0"
     ,"value");
+  cmd.defineOption("2","ms2-file",
+    "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
+    "filename");
+  cmd.defineOption("M","isotope",
+    "Mass difference calculated to closest isotope mass rather than to the average mass.","",TRUE_IF_SET);
+  cmd.defineOption("D","doc",
+    "Include description of correct features.","",TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -281,6 +288,15 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("S")) {
     seed = cmd.getInt("S",0,20000);
   }
+  if (cmd.optionSet("2")) {
+    spectrumFile = cmd.options["2"];
+  }
+  if (cmd.optionSet("M"))
+    DataSet::setIsotopeMass(true);
+  if (cmd.optionSet("D"))
+    docFeatures = true;
+
+
   if (cmd.arguments.size()>2) {
       cerr << "Too many arguments given" << endl;
       cmd.help();
@@ -357,20 +373,26 @@ void Caller::readFiles(bool &doSingleFile) {
     shuffled.readTab(forwardFN,-1);
   } else if (!doSingleFile) {
     pCheck = new SqtSanityCheck();
+    DataSet::setNumFeatures(docFeatures);
     normal.readFile(forwardFN,1);
     shuffled.readFile(decoyFN,-1);    
   } else {
     pCheck = new SqtSanityCheck();
+    DataSet::setNumFeatures(docFeatures);
     normal.readFile(forwardFN,decoyWC,false);  
     shuffled.readFile(forwardFN,decoyWC,true);  
   }
+  if (spectrumFile.size()>0)
+    readRetentionTime(spectrumFile);
 }
 
 
-void Caller::step(Scores& train,Scores& thresh,vector<double>& w, double Cpos, double Cneg, double fdr) {
+void Caller::step(Scores& train,vector<double>& w, double Cpos, double Cneg, double fdr) {
+    train.calcScores(w,test_fdr);
+    if (docFeatures)
+      train.recalculateDescriptionOfGood(fdr);
     train.generateNegativeTrainingSet(*svmInput,Cneg);
-  	thresh.calcScores(w,test_fdr);
-    thresh.generatePositiveTrainingSet(*svmInput,fdr,Cpos);
+    train.generatePositiveTrainingSet(*svmInput,fdr,Cpos);
 //    int nex=train.getTrainingSetSize();
   	if (VERB>1) cerr << "Calling with " << svmInput->positives << " positives and " << svmInput->negatives << " negatives\n";
   	// Setup options
@@ -409,7 +431,7 @@ void Caller::trainEm(vector<vector<double> >& w) {
   for(unsigned int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
     if (xv_type!=EACH_STEP) {
-      step(fullset,fullset,w[0],selectedCpos,selectedCneg,selectionfdr);
+      step(fullset,w[0],selectedCpos,selectedCneg,selectionfdr);
       if (reportPerformanceEachIteration) {
         cerr << "After the iteration step, " << fullset.calcScores(w[0],selectionfdr) << " positives with q<"
              << selectionfdr << " were found when measuring on test set" << endl;
@@ -442,7 +464,7 @@ int Caller::xvalidate_step(vector<vector<double> >& w) {
         vector<vector<double> > ww = w;
         for (unsigned int i=0;i<xval_fold;i++) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
-          step(xv_train[i],xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
+          step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
           tp += xv_train[i].calcScores(ww[i],test_fdr);
           if(VERB>2) cerr << "Cumulative # of target PSMs over treshold " << tp << endl;
         }
@@ -481,7 +503,7 @@ void Caller::xvalidate(vector<vector<double> >& w) {
           if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
           ww = w;
           for(unsigned int k=0;k<niter;k++) {
-            step(xv_train[i],xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
+            step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
           }
           tp += xv_test[i].calcScores(ww[i],test_fdr);
           if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;

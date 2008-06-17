@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.81 2008/06/14 01:21:44 lukall Exp $
+ * $Id: DataSet.cpp,v 1.82 2008/06/17 00:29:49 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -36,6 +36,7 @@ bool DataSet::calcAAFrequencies = false;
 Enzyme DataSet::enzyme = TRYPSIN;
 bool DataSet::calcIntraSetFeatures = true;
 bool DataSet::calcPTMs = false;
+bool DataSet::isotopeMass = false;
 string DataSet::featureNames = "";
 string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
@@ -148,14 +149,16 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   }
 }
 
-void DataSet::setNumFeatures() {
+void DataSet::setNumFeatures(bool doc) {
   numRealFeatures= maxNumRealFeatures
                  - (enzyme==NO_ENZYME?3:0) 
                  - (calcPTMs?0:1) 
                  - (hitsPerSpectrum>1?0:1) 
                  - (calcIntraSetFeatures?0:2)
-                 - (calcAAFrequencies?0:aaAlphabet.size()*3);
+                 - (calcAAFrequencies?0:aaAlphabet.size()*3)
+                 - 3; // DOC features
   numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
+  if (doc) {numRealFeatures+=3; numFeatures+=3; }
 }
 
 
@@ -206,6 +209,21 @@ unsigned int DataSet::cntEnz(const string& peptide) {
       n=c;
     }
     return cnt;
+}
+
+void DataSet::setRetentionTime(map<int,double>& scan2rt) {    
+  vector<PSMDescription>::iterator psm = psms.begin();
+  if (scan2rt.size() == 0) {
+    if (VERB>1) cerr << "Approximating retention time with scan number." << endl;    
+    for(; psm != psms.end(); ++psm) {
+      psm->retentionTime = (double) psm->scan;
+    }
+  } else {
+    for(; psm != psms.end(); ++psm) {
+      assert(scan2rt.count(psm->scan)>0); 
+      psm->retentionTime = scan2rt[psm->scan];
+    }  
+  }
 }
 
 void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
@@ -628,7 +646,6 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
   matchPattern=match;
   pattern=wild;
   doPattern = !wild.empty();
-  setNumFeatures();
   sqtFN.assign(fname);
   int n = 0,charge=0,ms=0, minCharge=100, maxCharge=0;
   string line,tmp,prot;

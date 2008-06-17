@@ -4,13 +4,14 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.39 2008/06/14 01:21:44 lukall Exp $
+ * $Id: Scores.h,v 1.40 2008/06/17 00:29:49 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
 #include <vector>
 #include <map>
 using namespace std;
+#include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
 class SetHandler;
 
@@ -44,12 +45,12 @@ public:
     void fillFeatures(SetHandler& norm,SetHandler& shuff);
     void static fillFeatures(Scores& train,Scores& test,SetHandler& norm,SetHandler& shuff, const double ratio);
     void createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold);
+    void recalculateDescriptionOfGood(const double fdr);
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
     void normalizeScores();
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
- //   double getQ(const double score);
-    ScoreHolder* getScoreHolder(const double *d);
+     ScoreHolder* getScoreHolder(const double *d);
     void calcPep();
     double estimatePi0();
     void printRoc(string & fn); 
@@ -66,6 +67,7 @@ protected:
     double q1,q3;
     vector<ScoreHolder> scores;
     map<const double *,ScoreHolder *> scoreMap; 
+    DescriptionOfCorrect doc;
 };
 
 #endif /*SCORES_H_*/

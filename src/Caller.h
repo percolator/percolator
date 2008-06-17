@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.45 2008/06/14 01:21:44 lukall Exp $
+ * $Id: Caller.h,v 1.46 2008/06/17 00:29:49 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -21,7 +21,7 @@ public:
 	Caller();
 	virtual ~Caller();
     void readRetentionTime(string filename);
-    void step(Scores& train,Scores& thresh, vector<double>& w, double Cpos, double Cneg, double fdr);
+    void step(Scores& train, vector<double>& w, double Cpos, double Cneg, double fdr);
     void train(vector<vector<double> >& w);
     void trainEm(vector<vector<double> >& w);
     int xvalidate_step(vector<vector<double> >& w);
@@ -63,9 +63,11 @@ protected:
     string tabFN;
     string weightFN;
     string call;
+    string spectrumFile;
     bool gistInput;
     bool tabInput;
     bool dtaSelect;
+    bool docFeatures;
     bool reportPerformanceEachIteration;
     double test_fdr;
     double selectionfdr;

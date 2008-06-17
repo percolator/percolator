@@ -4,12 +4,13 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.50 2008/06/14 01:21:44 lukall Exp $
+ * $Id: DataSet.h,v 1.51 2008/06/17 00:29:49 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
 #include <string>
 #include <set>
+#include <map>
 #include <vector>
 #include <iostream>
 #include "PSMDescription.h"
@@ -42,7 +43,11 @@ class DataSet
     static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
     static void setPTMfeature(bool on) { calcPTMs=on; }      
-    static void setNumFeatures();
+    static void setIsotopeMass(bool on) { isotopeMass=on; }      
+    static int getDMFeatureNo() {if (calcIntraSetFeatures) return numRealFeatures - 2 - 3; return numRealFeatures - 3; }
+    static int getPIFeatureNo() {if (calcIntraSetFeatures) return numRealFeatures - 2 - 2; return numRealFeatures - 2; }
+    static int getRTFeatureNo() {if (calcIntraSetFeatures) return numRealFeatures - 2 - 1; return numRealFeatures - 1; }
+    static void setNumFeatures(bool doc);
     static void inline setHitsPerSpectrum(int hits) {hitsPerSpectrum=hits;}
     static inline int rowIx(int row) { return row*numFeatures; }
     double * getFeature() {return feature;}
@@ -50,6 +55,7 @@ class DataSet
     int inline getSize() const {return numSpectra;}
     int inline const getLabel() const {return label;}
     PSMDescription* getNext(int& pos);
+    void setRetentionTime(map<int,double>& scan2rt);    
     bool writeTabData(ofstream & out, const string & lab);
     void readTabData(ifstream & dataStream, const vector<unsigned int> &ixs);
     bool getGistDataRow(int& pos,string & out);
@@ -73,13 +79,14 @@ protected:
     static Enzyme enzyme;
     static bool calcIntraSetFeatures;
     static bool calcPTMs;
+    static bool isotopeMass;
     static int numFeatures;
     static int numRealFeatures;
     static int hitsPerSpectrum;
     static string aaAlphabet;
     static string ptmAlphabet;
     static string featureNames;
-    const static int maxNumRealFeatures = 16 + 3 + 20*3 + 1 + 1; // Normal + Amino acid + PTM + hitsPerSpectrum
+    const static int maxNumRealFeatures = 16 + 3 + 20*3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
 //    vector<set<string> > proteinIds;
 //    vector<string> pepSeq;
     vector<PSMDescription> psms;
