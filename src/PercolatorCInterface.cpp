@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: PercolatorCInterface.cpp,v 1.11 2008/06/14 01:21:44 lukall Exp $
+ * $Id: PercolatorCInterface.cpp,v 1.12 2008/06/20 23:55:35 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <vector>
@@ -93,7 +93,7 @@ void pcRegisterPSM(SetType set, char * identifier, double * features) {
 /** Function called when we want to start processing */
 void pcExecute() {
   pCaller->fillFeatureSets();
-  vector<vector<double> > w(1,vector<double>(DataSet::getNumFeatures()+1));
+  vector<vector<double> > w(1,vector<double>(FeatureNames::getNumFeatures()+1));
   pCaller->preIterationSetup(w);
   pCaller->train(w);  
   pCaller->getFullSet()->calcScores(w[0]);

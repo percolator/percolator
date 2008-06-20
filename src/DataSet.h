@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.52 2008/06/17 23:21:44 lukall Exp $
+ * $Id: DataSet.h,v 1.53 2008/06/20 23:55:34 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -36,9 +36,10 @@ class DataSet
     void readSQT(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
     void modifySQT(const string & outFN, Scores * pSc ,const string greet, bool dtaSelect);
     void initFeatureTables(const unsigned int numFeatures, const unsigned int numSpectra, bool regresionTable = false);
-    static inline int getNumFeatures() { return numFeatures; }
+//    static inline int getNumFeatures() { return numFeatures; }
     static FeatureNames& getFeatureNames() { return featureNames; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
+    static void setCalcDoc(bool on) { calcDOC=on; }
     static void setCalcIntraSetFeatures(bool on) { calcIntraSetFeatures=on; }
     static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
@@ -46,7 +47,7 @@ class DataSet
     static void setIsotopeMass(bool on) { isotopeMass=on; }      
     static void setNumFeatures(bool doc);
     static void inline setHitsPerSpectrum(int hits) {hitsPerSpectrum=hits;}
-    static inline int rowIx(int row) { return row*numFeatures; }
+    static inline int rowIx(int row) { return row*FeatureNames::getNumFeatures(); }
     double * getFeature() {return feature;}
     const double * getFeatures(const int pos) const;
     int inline getSize() const {return numSpectra;}
@@ -78,8 +79,8 @@ protected:
     static bool calcPTMs;
     static bool calcDOC;
     static bool isotopeMass;
-    static int numFeatures;
-    static int numRealFeatures;
+//    static int numFeatures;
+//    static int numRealFeatures;
     static int hitsPerSpectrum;
     static string aaAlphabet;
     static string ptmAlphabet;
@@ -88,7 +89,7 @@ protected:
 //    vector<string> pepSeq;
     vector<PSMDescription> psms;
     int label;
-    double *feature,regressionFeature;
+    double *feature,*regressionFeature;
     int numSpectra;
     string sqtFN;
     string pattern;

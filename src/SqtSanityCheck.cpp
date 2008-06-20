@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SqtSanityCheck.cpp,v 1.4 2008/06/06 17:13:32 lukall Exp $
+ * $Id: SqtSanityCheck.cpp,v 1.5 2008/06/20 23:55:34 lukall Exp $
  *******************************************************************************/
 #include "DataSet.h"
 #include "Scores.h"
@@ -22,9 +22,8 @@ SqtSanityCheck::~SqtSanityCheck()
 
 void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   // Set init direction to be the most discriminative direction
-  for (size_t set = 0; set < w.size();++set) {
-  
-    for (int ix=0;ix < DataSet::getNumFeatures()+1;++ix)
+  for (size_t set = 0; set < w.size();++set) {  
+    for (unsigned int ix=0;ix < FeatureNames::getNumFeatures()+1;++ix)
       w[set][ix]=0;
     w[set][2]=1.61;    // deltCn 
     w[set][3]=1.1;     // Xcorr

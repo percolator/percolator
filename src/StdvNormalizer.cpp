@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.cpp,v 1.20 2008/06/17 23:21:44 lukall Exp $
+ * $Id: StdvNormalizer.cpp,v 1.21 2008/06/20 23:55:35 lukall Exp $
  *******************************************************************************/
 #include <vector>
 #include <iostream>
@@ -26,8 +26,8 @@ using namespace std;
 
 StdvNormalizer::StdvNormalizer()
 {
-  avg.resize(DataSet::getNumFeatures(),0.0);
-  stdv.resize(DataSet::getNumFeatures(),0.0);
+  avg.resize(FeatureNames::getNumFeatures(),0.0);
+  stdv.resize(FeatureNames::getNumFeatures(),0.0);
 }
 
 StdvNormalizer::~StdvNormalizer()
@@ -35,15 +35,15 @@ StdvNormalizer::~StdvNormalizer()
 }
 
 void StdvNormalizer::normalize(const double *in,double* out){
-  for (int ix=0;ix<DataSet::getNumFeatures();ix++) {
+  for (unsigned int ix=0;ix<FeatureNames::getNumFeatures();ix++) {
   	out[ix]=(in[ix]-avg[ix])/stdv[ix];
   }
 }
 
 void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
-  int i=0;
-  for (;i<DataSet::getNumFeatures();i++) {
+  unsigned int i=0;
+  for (;i<FeatureNames::getNumFeatures();i++) {
   	out[i]=in[i]/stdv[i];
   	sum+=avg[i]*in[i]/stdv[i];
   }
@@ -52,8 +52,8 @@ void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<double>&
 
 void StdvNormalizer::normalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
-  int i=0;
-  for (;i<DataSet::getNumFeatures();i++) {
+  unsigned int i=0;
+  for (;i<FeatureNames::getNumFeatures();i++) {
   	out[i]=in[i]*stdv[i];
   	sum+=avg[i]*in[i];
   }
@@ -64,8 +64,8 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
   double n=0.0;
   double * features;
   PSMDescription* pPSM;
-  int ix;
-  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+  unsigned int ix;
+  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
     avg[ix]=0.0;
     stdv[ix]=0.0;
   }
@@ -75,7 +75,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
     while((pPSM=(*it)->getNext(ixPos))!=NULL) {
       features = pPSM->features;
 	  n++;
-	  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+	  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
 	    avg[ix]+=features[ix];
 	  }
     }
@@ -85,7 +85,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
     cerr << "Normalization factors" << endl
     << "Type\t" << DataSet::getFeatureNames().getFeatureNames() << endl << "Avg ";
   }
-  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
   	if (n>0.0)
      avg[ix]/=n;
      if (VERB>2) cerr << "\t" << avg[ix]; 
@@ -94,7 +94,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
     int ixPos=-1;
     while((pPSM=(*it)->getNext(ixPos))!=NULL) {
       features = pPSM->features;
-      for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+      for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
         if (!isfinite(features[ix]))
           cerr << "Reached strange feature with val=" << features[ix] << " at row=" << ix << ", col=" << ixPos << endl;
         double d = features[ix]-avg[ix];
@@ -103,7 +103,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
     }
   }
   if (VERB>2) cerr << endl << "Stdv"; 
-  for (ix=0;ix<DataSet::getNumFeatures();ix++) {
+  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
     if (stdv[ix]<=0 || n==0) {
       stdv[ix]=1.0;
     } else {

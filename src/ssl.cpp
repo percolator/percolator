@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago. 
  * Adapted to Percolator by Lukas Käll at the University of Washington
  *
- * $Id: ssl.cpp,v 1.14 2007/03/13 03:04:51 lukall Exp $
+ * $Id: ssl.cpp,v 1.15 2008/06/20 23:55:35 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <stdio.h>
@@ -183,7 +183,7 @@ int L2_SVM_MFN(const AlgIn & data,
   const double ** set = data.vals;
   const double * Y = data.Y;
   const double * C = data.C;
-  const int n  = DataSet::getNumFeatures()+1;
+  const int n  = Weights->d;
   const int m  = data.m;
   double lambda = Options->lambda;
   double epsilon=BIG_EPSILON;
@@ -238,67 +238,67 @@ int L2_SVM_MFN(const AlgIn & data,
     if (VERB>4) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
     for(int i=n; i-- ;) 
       w_bar[i]=w[i];
-      for(int i=m; i-- ;)  
-	    o_bar[i]=o[i];
-        opt=CGLS(data,lambda,cgitermax,epsilon,ActiveSubset,Weights_bar,Outputs_bar);
-        for(register int i=active; i < m; i++) 
-	    {
-	      ii=ActiveSubset->vec[i];
-          const double * val = set[ii];   
-          t=w_bar[n-1];
-	      for(register int j=n-1; j--;)
-	        t+=val[j]*w_bar[j];
-	      o_bar[ii]=t;
-        }
-        if(ini==0) {cgitermax=CGITERMAX; ini=1;};
-        opt2=1;
-        for(int i=0;i<m;i++)
-        { 
-          ii=ActiveSubset->vec[i];
-	      if(i<active)
-	        opt2=(opt2 && (Y[ii]*o_bar[ii]<=1+epsilon));
-	      else
-	        opt2=(opt2 && (Y[ii]*o_bar[ii]>=1-epsilon));  
-	      if(opt2==0) break;
-        }      
-        if(opt && opt2) // l
-	    {
-	      if(epsilon==BIG_EPSILON) 
-	      {
+    for(int i=m; i-- ;)  
+      o_bar[i]=o[i];
+    opt=CGLS(data,lambda,cgitermax,epsilon,ActiveSubset,Weights_bar,Outputs_bar);
+    for(register int i=active; i < m; i++) 
+    {
+        ii=ActiveSubset->vec[i];
+        const double * val = set[ii];   
+        t=w_bar[n-1];
+        for(register int j=n-1; j--;)
+          t+=val[j]*w_bar[j];
+	    o_bar[ii]=t;
+    }
+    if(ini==0) {cgitermax=CGITERMAX; ini=1;};
+    opt2=1;
+    for(int i=0;i<m;i++)
+    { 
+      ii=ActiveSubset->vec[i];
+      if(i<active)
+        opt2=(opt2 && (Y[ii]*o_bar[ii]<=1+epsilon));
+      else
+        opt2=(opt2 && (Y[ii]*o_bar[ii]>=1-epsilon));  
+      if(opt2==0) break;
+    }      
+    if(opt && opt2) // l
+    {
+      if(epsilon==BIG_EPSILON) 
+      {
             epsilon=Options->epsilon;
             if (VERB>4) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
             continue;
-	      }
-          else
-	      {
-            for(int i=n; i-- ;) 
-              w[i]=w_bar[i];      
-	        for(int i=m; i-- ;)
-              o[i]=o_bar[i]; 
-	        delete[] ActiveSubset->vec;
-	        delete[] ActiveSubset;
-	        delete[] o_bar;
-	        delete[] w_bar;
-	        delete[] Weights_bar;
-	        delete[] Outputs_bar;
-	        tictoc.stop();
-	          if (VERB>3) cerr << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
-	        return 1;      
-	      }
-        }
-//      cout << " " ;
-        delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m); 
-//      cout << "LINE_SEARCH delta = " << delta << endl;     
-      F_old=F;
-      F=0.0;
-      for(int i=n; i-- ;){ 
-	w[i]+=delta*(w_bar[i]-w[i]);
-	F+=w[i]*w[i];
       }
-      F=0.5*lambda*F;      
-      active=0;
-      inactive=m-1;  
-      for(int i=0; i<m ; i++)
+      else
+      {
+        for(int i=n; i-- ;) 
+          w[i]=w_bar[i];      
+        for(int i=m; i-- ;)
+          o[i]=o_bar[i]; 
+        delete[] ActiveSubset->vec;
+        delete[] ActiveSubset;
+        delete[] o_bar;
+        delete[] w_bar;
+        delete[] Weights_bar;
+        delete[] Outputs_bar;
+        tictoc.stop();
+        if (VERB>3) cerr << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
+	    return 1;      
+	  }
+    }
+
+    delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m); 
+
+    F_old=F;
+    F=0.0;
+    for(int i=n; i-- ;){ 
+	  w[i]+=delta*(w_bar[i]-w[i]);
+      F+=w[i]*w[i];
+    }
+    F=0.5*lambda*F;      
+    active=0;
+    inactive=m-1;  
+    for(int i=0; i<m ; i++)
 	{
 	  o[i]+=delta*(o_bar[i]-o[i]);
 	  diff=1-Y[i]*o[i];
@@ -314,13 +314,13 @@ int L2_SVM_MFN(const AlgIn & data,
 	      inactive--;
 	    }   
 	}
-      ActiveSubset->d=active;      
-      if(fabs(F-F_old)<RELATIVE_STOP_EPS*fabs(F_old))
+    ActiveSubset->d=active;      
+    if(fabs(F-F_old)<RELATIVE_STOP_EPS*fabs(F_old))
 	{
 //	  cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
 	  return 2;
 	}
-    }
+  }
   delete[] ActiveSubset->vec;
   delete[] ActiveSubset;
   delete[] o_bar;

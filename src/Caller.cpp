@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.95 2008/06/17 23:21:44 lukall Exp $
+ * $Id: Caller.cpp,v 1.96 2008/06/20 23:55:34 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -292,9 +292,11 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     spectrumFile = cmd.options["2"];
   }
   if (cmd.optionSet("M"))
-    DataSet::setIsotopeMass(true);
-  if (cmd.optionSet("D"))
+    DescriptionOfCorrect::setIsotopeMass(true);
+  if (cmd.optionSet("D")) {
     docFeatures = true;
+    DataSet::setCalcDoc(true);
+  }
 
 
   if (cmd.arguments.size()>2) {
@@ -334,14 +336,14 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0" << endl;
   weightStream.precision(3);
   weightStream << w[0];
-  for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
+  for(unsigned int ix=1;ix<FeatureNames::getNumFeatures()+1;ix++) {
     weightStream << "\t" << w[ix];
   }
   weightStream << endl;
-  vector<double> ww(DataSet::getNumFeatures()+1);
+  vector<double> ww(FeatureNames::getNumFeatures()+1);
   pNorm->unnormalizeweight(w,ww);
   weightStream << ww[0];
-  for(int ix=1;ix<DataSet::getNumFeatures()+1;ix++) {
+  for(unsigned int ix=1;ix<FeatureNames::getNumFeatures()+1;ix++) {
     weightStream << "\t" << ww[ix];
   }
   weightStream << endl;
@@ -370,12 +372,10 @@ void Caller::readFiles(bool &doSingleFile) {
     shuffled.readTab(forwardFN,-1);
   } else if (!doSingleFile) {
     pCheck = new SqtSanityCheck();
-    DataSet::setNumFeatures(docFeatures);
     normal.readFile(forwardFN,1);
     shuffled.readFile(decoyFN,-1);    
   } else {
     pCheck = new SqtSanityCheck();
-    DataSet::setNumFeatures(docFeatures);
     normal.readFile(forwardFN,decoyWC,false);  
     shuffled.readFile(forwardFN,decoyWC,true);  
   }
@@ -401,7 +401,7 @@ void Caller::step(Scores& train,vector<double>& w, double Cpos, double Cneg, dou
     Options->mfnitermax=MFNITERMAX;
     
     struct vector_double *Weights = new vector_double;
-    Weights->d = DataSet::getNumFeatures()+1;
+    Weights->d = FeatureNames::getNumFeatures()+1;
     Weights->vec = new double[Weights->d];
 //    for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=w[ix];
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
@@ -412,9 +412,9 @@ void Caller::step(Scores& train,vector<double>& w, double Cpos, double Cneg, dou
     for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
 
 //    norm->normalizeweight(w,Weights->vec);
-//    Weights->vec[DataSet::getNumFeatures()] = 0;
+//    Weights->vec[FeatureNames::getNumFeatures()] = 0;
     L2_SVM_MFN(*svmInput,Options,Weights,Outputs);
-    for(int i= DataSet::getNumFeatures()+1;i--;)
+    for(int i= FeatureNames::getNumFeatures()+1;i--;)
       w[i]=Weights->vec[i];
   	delete [] Weights->vec;
   	delete Weights;
@@ -437,13 +437,23 @@ void Caller::trainEm(vector<vector<double> >& w) {
       int tar = xvalidate_step(w);
       if (reportPerformanceEachIteration) {
         cerr << "After the iteration step, " << tar << " positives with q<"
-             << selectionfdr << " were found when measuring on test set" << endl;
+             << selectionfdr << " were found when measuring on training set" << endl;
       }
     }
       
     if(VERB>2) {cerr<<"Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
   }
   if(VERB==2 ) { cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
+  if (xv_type==EACH_STEP) {
+    int tar = 0;
+    for (size_t ix=0;ix<xval_fold;++ix) {
+      tar += xv_test[ix].calcScores(w[ix],test_fdr);
+    }
+    if(VERB>0) {
+      cerr << "After all training done, " << tar << " positives with q<"
+             << test_fdr << " were found when measuring on the test set" << endl;
+    }
+  }
 }
 
 int Caller::xvalidate_step(vector<vector<double> >& w) {
@@ -487,7 +497,7 @@ int Caller::xvalidate_step(vector<vector<double> >& w) {
 void Caller::xvalidate(vector<vector<double> >& w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
-  vector<vector<double> > ww = w,www(DataSet::getNumFeatures()+1);
+  vector<vector<double> > ww = w,www(FeatureNames::getNumFeatures()+1);
 
   vector<double>::iterator fdr,cpos,cfrac;
   for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
@@ -549,11 +559,15 @@ void Caller::fillFeatureSets() {
   pNorm=Normalizer::getNew();
   pNorm->setSet(all);
   pNorm->normalizeSet(all);
+  if (docFeatures) {
+    for (set<DataSet *>::iterator myset=all.begin();myset!=all.end();++myset)
+      (*myset)->setRetentionTime(scan2rt);
+  }
 }
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {
   
-  svmInput = new AlgIn(fullset.size(),DataSet::getNumFeatures()+1); // One input set, to be reused multiple times
+  svmInput = new AlgIn(fullset.size(),FeatureNames::getNumFeatures()+1); // One input set, to be reused multiple times
     
   if (selectionfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
     xv_train.resize(xval_fold); xv_test.resize(xval_fold);
@@ -594,7 +608,7 @@ int Caller::run() {
   bool doSingleFile = !decoyWC.empty();
   readFiles(doSingleFile);
   fillFeatureSets();
-  vector<vector<double> > w(xval_fold,vector<double>(DataSet::getNumFeatures()+1)),ww;
+  vector<vector<double> > w(xval_fold,vector<double>(FeatureNames::getNumFeatures()+1)),ww;
   preIterationSetup(w);
 
   // Set up a first guess of w

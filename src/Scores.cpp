@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.68 2008/06/17 23:21:44 lukall Exp $
+ * $Id: Scores.cpp,v 1.69 2008/06/20 23:55:35 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -64,7 +64,7 @@ void Scores::printRoc(string & fn){
 }	
 
 double Scores::calcScore(const double * feat) const{
-  register int ix=DataSet::getNumFeatures();
+  register int ix=FeatureNames::getNumFeatures();
   register double score = w_vec[ix];
   for(;ix--;) {
   	score += feat[ix]*w_vec[ix];
@@ -247,7 +247,7 @@ void Scores::recalculateDescriptionOfGood(const double fdr) {
   unsigned int ix1=0;
   for(ix1=0;ix1<size();ix1++) {
     if (scores[ix1].label==1) {
-      if (fdr<scores[ix1].pPSM->q) {
+      if (fdr>scores[ix1].pPSM->q) {
         doc.registerCorrect(scores[ix1].pPSM);
       }
     }
@@ -264,7 +264,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
   bool lowBest = false;
   
   if (findDirection) { 
-    for (int featNo=0;featNo<DataSet::getNumFeatures();featNo++) {
+    for (unsigned int featNo=0;featNo<FeatureNames::getNumFeatures();featNo++) {
       vector<ScoreHolder>::iterator it = scores.begin();
       while(it!=scores.end()) {
         it->score = it->pPSM->features[featNo];
@@ -299,7 +299,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
         }
       }
     }
-    for (int ix=DataSet::getNumFeatures();ix--;) {
+    for (int ix=FeatureNames::getNumFeatures();ix--;) {
       direction[ix]=0;
     }
     direction[bestFeature]=(lowBest?-1:1);

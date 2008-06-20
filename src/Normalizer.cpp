@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.cpp,v 1.16 2008/06/14 01:21:44 lukall Exp $
+ * $Id: Normalizer.cpp,v 1.17 2008/06/20 23:55:35 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -38,7 +38,7 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     cerr << "Label of this set is " << (*it)->getLabel() << endl;
     while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
       features = pPSM->features;
-      for (int a=0;a<DataSet::getNumFeatures();a++) {
+      for (unsigned int a=0;a<FeatureNames::getNumFeatures();a++) {
         cerr << features[a] << " ";
       }
       cerr << endl;
@@ -59,7 +59,7 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     int ixPos=-1;
     while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
       features = pPSM->features;     
-      for (int a=0;a<DataSet::getNumFeatures();a++) {
+      for (unsigned int a=0;a<FeatureNames::getNumFeatures();a++) {
         cerr << features[a] << " ";
       }
       cerr << endl;

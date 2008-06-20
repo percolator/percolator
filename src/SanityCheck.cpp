@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.5 2008/06/06 17:13:32 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.6 2008/06/20 23:55:35 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -34,7 +34,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset, vector<Scores>& train
   pTestset = &testset; pTrainset = &trainset; fdr = test_fdr;
   
   if (initWeightFN.size()>0) {
-    vector<double> ww(DataSet::getNumFeatures()+1);
+    vector<double> ww(FeatureNames::getNumFeatures()+1);
     ifstream weightStream(initWeightFN.data(),ios::in);
     readWeights(weightStream,ww);
     weightStream.close();
@@ -86,7 +86,7 @@ void SanityCheck::readWeights(istream & weightStream, vector<double>& w) {
   }
   weightStream.getline(buffer,1024);
 // Get second line containing raw features
-  for(int ix=0;ix<DataSet::getNumFeatures()+1;ix++) {
+  for(unsigned int ix=0;ix<FeatureNames::getNumFeatures()+1;ix++) {
     weightStream >> w[ix];
   }
 }
