@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.96 2008/06/20 23:55:34 lukall Exp $
+ * $Id: Caller.cpp,v 1.97 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -383,6 +383,82 @@ void Caller::readFiles(bool &doSingleFile) {
     readRetentionTime(spectrumFile);
 }
 
+int Caller::xv_step(vector<vector<double> >& w) {
+  // Setup
+  struct options *Options = new options;
+  Options->lambda=1.0;
+  Options->lambda_u=1.0;
+  Options->epsilon=EPSILON;
+  Options->cgitermax=CGITERMAX;
+  Options->mfnitermax=MFNITERMAX;
+
+  struct vector_double *Weights = new vector_double;
+  Weights->d = FeatureNames::getNumFeatures()+1;
+  Weights->vec = new double[Weights->d];
+
+  vector<vector<double> > best_w(xval_fold);
+  int estTP = 0;
+
+  for (unsigned int set=0;set<xval_fold;++set) {
+    int bestTP = 0;
+    double best_cpos=1,best_cneg=1;
+    
+    if(VERB>2) cerr << "cross calidation - fold " << set+1 << " out of " << xval_fold << endl;  
+    vector<double> ww = w[set];
+    xv_train[set].calcScores(ww,selectionfdr);
+    if (docFeatures)
+      xv_train[set].recalculateDescriptionOfGood(selectionfdr);
+    xv_train[set].generateNegativeTrainingSet(*svmInput,1.0);
+    xv_train[set].generatePositiveTrainingSet(*svmInput,selectionfdr,1.0);
+    if (VERB>2) cerr << "Calling with " << svmInput->positives << " positives and " << svmInput->negatives << " negatives\n";
+    
+    struct vector_double *Outputs = new vector_double;
+    Outputs->vec = new double[svmInput->positives+svmInput->negatives];
+    Outputs->d = svmInput->positives+svmInput->negatives;
+    
+    vector<double>::iterator cpos,cfrac;
+    for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
+      for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
+        if(VERB>2) cerr << "-cross validation with cpos=" << *cpos <<
+          ", cfrac=" << *cfrac << endl;
+        int tp=0;
+        
+        for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;    
+        for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
+        svmInput->setCost(*cpos,(*cpos)*(*cfrac));
+
+        L2_SVM_MFN(*svmInput,Options,Weights,Outputs);
+
+        for(int i= FeatureNames::getNumFeatures()+1;i--;)
+          ww[i]=Weights->vec[i];
+
+        tp = xv_train[set].calcScores(ww,test_fdr);
+        if(VERB>2) cerr << "- cross validation estimates " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
+        if (tp>=bestTP) {
+          if(VERB>2) cerr << "Better than previous result, store this" << endl;
+          bestTP = tp;
+          best_w[set] = ww;
+          best_cpos=*cpos;
+          best_cneg=(*cpos)*(*cfrac);
+        }          
+      }
+      if(VERB>2) cerr << "cross validation estimates " << bestTP/(xval_fold-1) << " target PSMs with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
+                  << ", Cneg=" << best_cneg << endl;
+    }
+    estTP += bestTP;
+    delete [] Outputs->vec;
+    delete Outputs;
+  }
+  w = best_w;
+
+  delete [] Weights->vec;
+  delete Weights;
+  delete Options;
+
+  return estTP/(xval_fold-1);                  
+}
+
+
 
 void Caller::step(Scores& train,vector<double>& w, double Cpos, double Cneg, double fdr) {
     train.calcScores(w,test_fdr);
@@ -434,10 +510,10 @@ void Caller::trainEm(vector<vector<double> >& w) {
              << selectionfdr << " were found when measuring on test set" << endl;
       }
     } else {
-      int tar = xvalidate_step(w);
-      if (reportPerformanceEachIteration) {
+      int tar = xv_step(w);
+      if (VERB>1) {
         cerr << "After the iteration step, " << tar << " positives with q<"
-             << selectionfdr << " were found when measuring on training set" << endl;
+             << selectionfdr << " were estimated with cross validation" << endl;
       }
     }
       
@@ -461,26 +537,24 @@ int Caller::xvalidate_step(vector<vector<double> >& w) {
   int bestTP = 0;
   double best_fdr=0.01,best_cpos=1,best_cneg=1;
   vector<vector<double> > best_w;
-  vector<double>::iterator fdr,cpos,cfrac;
-  for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
-    for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
-      for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
-        if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
-          ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
-        int tp=0;
-        vector<vector<double> > ww = w;
-        for (unsigned int i=0;i<xval_fold;i++) {
-          if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
-          step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
-          tp += xv_train[i].calcScores(ww[i],test_fdr);
-          if(VERB>2) cerr << "Cumulative # of target PSMs over treshold " << tp << endl;
-        }
-        if(VERB>1) cerr << "- cross validation estimates " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
-        if (tp>=bestTP) {
-          if(VERB>1) cerr << "Better than previous result, store this" << endl;
-          bestTP = tp;
-          best_w = ww;          
-        }
+  vector<double>::iterator cpos,cfrac;
+  for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
+    for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
+      if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
+        ", cfrac=" << *cfrac << endl;
+      int tp=0;
+      vector<vector<double> > ww = w;
+      for (unsigned int i=0;i<xval_fold;i++) {
+        if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
+        step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),selectionfdr);
+        tp += xv_train[i].calcScores(ww[i],test_fdr);
+        if(VERB>2) cerr << "Cumulative # of target PSMs over treshold " << tp << endl;
+      }
+      if(VERB>1) cerr << "- cross validation estimates " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
+      if (tp>=bestTP) {
+        if(VERB>1) cerr << "Better than previous result, store this" << endl;
+        bestTP = tp;
+        best_w = ww;          
       }
     }
   }
@@ -499,33 +573,30 @@ void Caller::xvalidate(vector<vector<double> >& w) {
   int bestTP = 0;
   vector<vector<double> > ww = w,www(FeatureNames::getNumFeatures()+1);
 
-  vector<double>::iterator fdr,cpos,cfrac;
-  for(fdr=xv_fdrs.begin();fdr!=xv_fdrs.end();fdr++) {
-    for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
-      for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
-        if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
-          ", cfrac=" << *cfrac << ", fdr=" << *fdr << endl;
-        int tp=0;
-        for (unsigned int i=0;i<xval_fold;i++) {
-          if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
-          ww = w;
-          for(unsigned int k=0;k<niter;k++) {
-            step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),*fdr);
-          }
-          tp += xv_test[i].calcScores(ww[i],test_fdr);
-          if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
+  vector<double>::iterator cpos,cfrac;
+  for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
+    for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
+      if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
+        ", cfrac=" << *cfrac << endl;
+      int tp=0;
+      for (unsigned int i=0;i<xval_fold;i++) {
+        if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
+        ww = w;
+        for(unsigned int k=0;k<niter;k++) {
+          step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),selectionfdr);
         }
-        if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
-        if (tp>bestTP) {
-          if(VERB>1) cerr << "Better than previous result, store this" << endl;
-          bestTP = tp;
-          selectionfdr=*fdr;
-          selectedCpos = *cpos;
-          selectedCneg = (*cpos)*(*cfrac);
-          www = ww;          
-        }
-      }     
-    }
+        tp += xv_test[i].calcScores(ww[i],test_fdr);
+        if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
+      }
+      if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
+      if (tp>bestTP) {
+        if(VERB>1) cerr << "Better than previous result, store this" << endl;
+        bestTP = tp;
+        selectedCpos = *cpos;
+        selectedCneg = (*cpos)*(*cfrac);
+        www = ww;          
+      }
+    }     
   }
   Globals::getInstance()->incVerbose();
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
@@ -557,7 +628,7 @@ void Caller::fillFeatureSets() {
   all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
   all.insert(shuffled.getSubsets().begin(),shuffled.getSubsets().end());
   pNorm=Normalizer::getNew();
-  pNorm->setSet(all);
+  pNorm->setSet(all,FeatureNames::getNumFeatures(),DescriptionOfCorrect::totalNumRTFeatures());
   pNorm->normalizeSet(all);
   if (docFeatures) {
     for (set<DataSet *>::iterator myset=all.begin();myset!=all.end();++myset)
@@ -569,16 +640,10 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   
   svmInput = new AlgIn(fullset.size(),FeatureNames::getNumFeatures()+1); // One input set, to be reused multiple times
     
-  if (selectionfdr<=0 || selectedCpos<=0 || selectedCneg <= 0) {
+  if (selectedCpos<=0 || selectedCneg <= 0) {
     xv_train.resize(xval_fold); xv_test.resize(xval_fold);
     fullset.createXvalSets(xv_train,xv_test,xval_fold);
-    if (selectionfdr > 0) {
-      xv_fdrs.push_back(selectionfdr);
-    } else {
-      xv_fdrs.push_back(0.01);xv_fdrs.push_back(0.03); xv_fdrs.push_back(0.07);
-      selectionfdr=test_fdr;
-      if(VERB>0) cerr << "selecting fdr by cross validation" << endl;
-    }
+    if (selectionfdr<=0.0) selectionfdr=test_fdr;
     if (selectedCpos > 0) {
       xv_cposs.push_back(selectedCpos);
     } else {

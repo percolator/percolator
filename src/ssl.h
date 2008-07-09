@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago. 
  * Adapted to Percolator by Lukas Käll at the University of Washington
  *
- * $Id: ssl.h,v 1.10 2007/03/13 03:04:51 lukall Exp $
+ * $Id: ssl.h,v 1.11 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #ifndef _svmlin_H
 #define _svmlin_H
@@ -32,7 +32,8 @@ public:
   int negatives;
   const double **vals;
   double *Y;   /* labels */
-  double *C;   /* cost associated with each example */  
+  double *C;   /* cost associated with each example */
+  void setCost(double pos, double neg) {int ix=0;for(;ix<negatives;++ix) C[ix]=neg;for(;ix<negatives+positives;++ix) C[ix]=pos; }  
 };
 
 /* Data: Input examples are stored in sparse (Compressed Row Storage) format */

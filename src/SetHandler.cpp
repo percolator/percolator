@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.44 2008/06/17 23:21:44 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.45 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -159,8 +159,7 @@ void SetHandler::print(Scores &test) {
   vector<ResultHolder >::iterator it = outList.begin();
 
   cout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds" << endl;  
-  it = outList.begin();
-  for(;it!=outList.end();it++) {
+  for(;it!=outList.end();++it) {
     cout << *it << endl;
   }
 }

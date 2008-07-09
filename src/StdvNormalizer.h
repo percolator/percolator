@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.h,v 1.9 2008/05/27 23:09:08 lukall Exp $
+ * $Id: StdvNormalizer.h,v 1.10 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #ifndef STDVNORMALIZER_H_
 #define STDVNORMALIZER_H_
@@ -14,13 +14,9 @@ class StdvNormalizer : public Normalizer // virtual Normalizer
 public:
 	StdvNormalizer();
 	virtual ~StdvNormalizer();
-    virtual void setSet(set<DataSet *> & setVec);
-    void normalize(const double *in,double* out);
+    virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures);
     void unnormalizeweight(const vector<double>& in,vector<double>& out);
     void normalizeweight(const vector<double>& in,vector<double>& out);
-protected:
-	vector<double> avg;
-	vector<double> stdv;
 };
 
 #endif /*STDVNORMALIZER_H_*/

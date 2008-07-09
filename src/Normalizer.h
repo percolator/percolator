@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.h,v 1.12 2008/05/27 23:09:08 lukall Exp $
+ * $Id: Normalizer.h,v 1.13 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
@@ -16,9 +16,10 @@ class Normalizer
 {
 public:
 	virtual ~Normalizer();
-    virtual void setSet(set<DataSet *> & setVec){;}
+    virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures){;}
     void normalizeSet(set<DataSet *> & setVec);
-    virtual void normalize(const double * in, double * out){;}
+    void normalize(const double * in, double * out, size_t offset, size_t numFeatures);
+    double normalize(const double in, size_t index) { return (in-sub[index])/div[index]; }
     virtual void unnormalizeweight(const vector<double>& in,vector<double>& out){;}
     virtual void normalizeweight(const vector<double>& in,vector<double>& out){;}
     static Normalizer * getNew();
@@ -28,6 +29,9 @@ public:
 protected:
 	Normalizer();
 	static int subclass_type;
+    size_t numFeatures, numRetentionFeatures;
+    vector<double> sub;
+    vector<double> div;
 };
 
 #endif /*NORMALIZER_H_*/

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.46 2008/06/17 00:29:49 lukall Exp $
+ * $Id: Caller.h,v 1.47 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -25,6 +25,7 @@ public:
     void train(vector<vector<double> >& w);
     void trainEm(vector<vector<double> >& w);
     int xvalidate_step(vector<vector<double> >& w);
+    int xv_step(vector<vector<double> >& w);
     void xvalidate(vector<vector<double> >& w);
 	static string greeter();
 	string extendedGreeter();
@@ -54,9 +55,6 @@ protected:
     string modifiedDecoyFN;
     string forwardFN;
     string decoyFN;
-//    string shuffledTrainFN;
-//    string shuffledThresholdFN;
-//    string shuffledTestFN;
     string decoyWC;
     string rocFN;
     string gistFN;
@@ -82,7 +80,7 @@ protected:
     const static unsigned int xval_fold;
     XvType xv_type; 
     vector<Scores> xv_train,xv_test;
-    vector<double> xv_fdrs,xv_cposs,xv_cfracs;
+    vector<double> xv_cposs,xv_cfracs;
     SetHandler normal,shuffled; //,shuffledTest,shuffledThreshold;
     Scores fullset; //,thresholdset;
     map<int,double> scan2rt; 

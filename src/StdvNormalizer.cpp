@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: StdvNormalizer.cpp,v 1.21 2008/06/20 23:55:35 lukall Exp $
+ * $Id: StdvNormalizer.cpp,v 1.22 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #include <vector>
 #include <iostream>
@@ -26,58 +26,52 @@ using namespace std;
 
 StdvNormalizer::StdvNormalizer()
 {
-  avg.resize(FeatureNames::getNumFeatures(),0.0);
-  stdv.resize(FeatureNames::getNumFeatures(),0.0);
 }
 
 StdvNormalizer::~StdvNormalizer()
 {
 }
 
-void StdvNormalizer::normalize(const double *in,double* out){
-  for (unsigned int ix=0;ix<FeatureNames::getNumFeatures();ix++) {
-  	out[ix]=(in[ix]-avg[ix])/stdv[ix];
-  }
-}
-
 void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
   unsigned int i=0;
   for (;i<FeatureNames::getNumFeatures();i++) {
-  	out[i]=in[i]/stdv[i];
-  	sum+=avg[i]*in[i]/stdv[i];
+  	out[i]=in[i]/div[i];
+  	sum+=sub[i]*in[i]/div[i];
   }
   out[i]=in[i]-sum;
 }
 
 void StdvNormalizer::normalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
-  unsigned int i=0;
+  size_t i=0;
   for (;i<FeatureNames::getNumFeatures();i++) {
-  	out[i]=in[i]*stdv[i];
-  	sum+=avg[i]*in[i];
+  	out[i]=in[i]*div[i];
+  	sum+=sub[i]*in[i];
   }
   out[i]=in[i]+sum;
 }
 
-void StdvNormalizer::setSet(set<DataSet *> & setVec){
+void StdvNormalizer::setSet(set<DataSet *> & setVec, size_t nf, size_t nrf){
+  numFeatures = nf; numRetentionFeatures=nrf;
+  sub.resize(nf+nrf,0.0); div.resize(nf+nrf,0.0);
   double n=0.0;
   double * features;
   PSMDescription* pPSM;
-  unsigned int ix;
-  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
-    avg[ix]=0.0;
-    stdv[ix]=0.0;
-  }
+  size_t ix;
   set<DataSet *>::iterator it;
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
     while((pPSM=(*it)->getNext(ixPos))!=NULL) {
+      n++;
       features = pPSM->features;
-	  n++;
-	  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
-	    avg[ix]+=features[ix];
+	  for (ix=0;ix<numFeatures;++ix) {
+	    sub[ix]+=features[ix];
 	  }
+      features = pPSM->retentionFeatures;
+      for (;ix<numFeatures+numRetentionFeatures;++ix) {
+        sub[ix]+=features[ix-numFeatures];
+      }
     }
   }
   if (VERB>2) { 
@@ -85,31 +79,38 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec){
     cerr << "Normalization factors" << endl
     << "Type\t" << DataSet::getFeatureNames().getFeatureNames() << endl << "Avg ";
   }
-  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
+  for (ix=0;ix<numFeatures+numRetentionFeatures;++ix) {
   	if (n>0.0)
-     avg[ix]/=n;
-     if (VERB>2) cerr << "\t" << avg[ix]; 
+     sub[ix]/=n;
+     if (VERB>2) cerr << "\t" << sub[ix]; 
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
     while((pPSM=(*it)->getNext(ixPos))!=NULL) {
       features = pPSM->features;
-      for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
+      for (ix=0;ix<numFeatures;++ix) {
         if (!isfinite(features[ix]))
           cerr << "Reached strange feature with val=" << features[ix] << " at row=" << ix << ", col=" << ixPos << endl;
-        double d = features[ix]-avg[ix];
-        stdv[ix]+=d*d;
+        double d = features[ix]-sub[ix];
+        div[ix]+=d*d;
+      }
+      features = pPSM->retentionFeatures;
+      for (;ix<numFeatures+numRetentionFeatures;++ix) {
+        if (!isfinite(features[ix-numFeatures]))
+          cerr << "Reached strange feature with val=" << features[ix-numFeatures] << " at row=" << ix << ", col=" << ixPos << endl;
+        double d = features[ix-numFeatures]-sub[ix];
+        div[ix]+=d*d;
       }
     }
   }
   if (VERB>2) cerr << endl << "Stdv"; 
-  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
-    if (stdv[ix]<=0 || n==0) {
-      stdv[ix]=1.0;
+  for (ix=0;ix<numFeatures+numRetentionFeatures;++ix) {
+    if (div[ix]<=0 || n==0) {
+      div[ix]=1.0;
     } else {
-  	  stdv[ix]=sqrt(stdv[ix]/n);
+  	  div[ix]=sqrt(div[ix]/n);
     }
-    if (VERB>2) cerr << "\t" << stdv[ix]; 
+    if (VERB>2) cerr << "\t" << div[ix]; 
   }
   if (VERB>2) cerr << endl; 
 }

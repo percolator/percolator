@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.cpp,v 1.17 2008/06/20 23:55:35 lukall Exp $
+ * $Id: Normalizer.cpp,v 1.18 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -38,7 +38,7 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     cerr << "Label of this set is " << (*it)->getLabel() << endl;
     while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
       features = pPSM->features;
-      for (unsigned int a=0;a<FeatureNames::getNumFeatures();a++) {
+      for (unsigned int a=0; a<numFeatures; ++a) {
         cerr << features[a] << " ";
       }
       cerr << endl;
@@ -49,7 +49,9 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
       int ixPos=-1;
       while((pPSM=(*it)->getNext(ixPos))!=NULL) {
         features = pPSM->features;
-        normalize(features,features);
+        normalize(features,features,0,numFeatures);
+        features = pPSM->retentionFeatures;
+        normalize(features,features,numFeatures,numRetentionFeatures);
       }
   }
   if (VERB>4) {
@@ -59,7 +61,7 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     int ixPos=-1;
     while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
       features = pPSM->features;     
-      for (unsigned int a=0;a<FeatureNames::getNumFeatures();a++) {
+      for (unsigned int a=0;a<numFeatures;++a) {
         cerr << features[a] << " ";
       }
       cerr << endl;
@@ -68,7 +70,11 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
   }
 }
 
-
+void Normalizer::normalize(const double *in,double* out, size_t offset, size_t numFeatures){
+  for (unsigned int ix=0;ix<numFeatures;++ix) {
+    out[ix]=(in[ix]-sub[offset+ix])/div[offset+ix];
+  }
+}
 
 int Normalizer::subclass_type = STDV;
 

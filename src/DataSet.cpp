@@ -4,13 +4,13 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.84 2008/06/20 23:55:34 lukall Exp $
+ * $Id: DataSet.cpp,v 1.85 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #ifdef WIN32
 #include <float.h>
@@ -525,10 +525,10 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match, bool 
         }
         if (calcDOC) {
           // These features will be set before each iteration
-          feat[nxtFeat++]=0.0;
-          feat[nxtFeat++]=0.0;              
-          feat[nxtFeat++]=0.0;
           psm.calcRegressionFeature();        
+          feat[nxtFeat++]=abs(psm.pI-6.5);
+          feat[nxtFeat++]=abs(psm.massDiff);              
+          feat[nxtFeat++]=abs(psm.retentionTime);
         }
         gotL = false;
       }

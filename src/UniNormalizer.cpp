@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: UniNormalizer.cpp,v 1.15 2008/06/20 23:55:35 lukall Exp $
+ * $Id: UniNormalizer.cpp,v 1.16 2008/07/09 00:54:19 lukall Exp $
  *******************************************************************************/
 #include <set>
 #include <vector>
@@ -18,24 +18,16 @@ using namespace std;
 
 UniNormalizer::UniNormalizer()
 {
-  sub.resize(FeatureNames::getNumFeatures(),0.0);
-  div.resize(FeatureNames::getNumFeatures(),0.0);
 }
 
 UniNormalizer::~UniNormalizer()
 {
 }
 
-void UniNormalizer::normalize(const double *in,double* out){
-  for (unsigned int ix=0;ix<FeatureNames::getNumFeatures();ix++) {
-  	out[ix]=(in[ix]-sub[ix])/div[ix];
-  }
-}
-
 void UniNormalizer::unnormalizeweight(const vector<double>& in,vector<double>& out){
   double sum = 0;
   unsigned int i=0;
-  for (;i<FeatureNames::getNumFeatures();i++) {
+  for (;i<numFeatures;i++) {
   	out[i]=in[i]/div[i];
   	sum += sub[i]*in[i]/div[i];
   }
@@ -44,32 +36,39 @@ void UniNormalizer::unnormalizeweight(const vector<double>& in,vector<double>& o
 
 void UniNormalizer::normalizeweight(const vector<double>& in, vector<double>& out){
   double sum = 0;
-  unsigned int i=0;
-  for (;i<FeatureNames::getNumFeatures();i++) {
+  size_t i=0;
+  for (;i<numFeatures;i++) {
   	out[i]=in[i]*div[i];
   	sum+=sub[i]*in[i];
   }
   out[i]=in[i]+sum;
 }
 
-void UniNormalizer::setSet(set<DataSet *> &setVec){
+void UniNormalizer::setSet(set<DataSet *> &setVec, size_t nf, size_t nrf){
+  numFeatures = nf; numRetentionFeatures=nrf;
+  sub.resize(nf+nrf,0.0); div.resize(nf+nrf,0.0);
+  vector<double> mins(nf+nrf,1e+100), maxs(nf+nrf,-1e+100);
+
   double * features;
   PSMDescription* pPSM;
-  unsigned int ix;
-  vector<double> mins(FeatureNames::getNumFeatures(),1e+100);
-  vector<double> maxs(FeatureNames::getNumFeatures(),-1e+100);
+  size_t ix;
   set<DataSet *>::iterator it;
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
     while((pPSM = (*it)->getNext(ixPos))!=NULL) {
       features = pPSM->features;
-	  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
+	  for (ix=0;ix<numFeatures;ix++) {
 	    mins[ix]=min(features[ix],mins[ix]);
 	    maxs[ix]=max(features[ix],maxs[ix]);
       }
+      features = pPSM->retentionFeatures;
+      for (;ix<numFeatures+numRetentionFeatures;++ix) {
+        mins[ix]=min(features[ix-numFeatures],mins[ix]);
+        maxs[ix]=max(features[ix-numFeatures],maxs[ix]);
+      }
 	}
   }
-  for (ix=0;ix<FeatureNames::getNumFeatures();ix++) {
+  for (ix=0;ix<numFeatures+numRetentionFeatures;++ix) {
   	sub[ix]=mins[ix];
   	div[ix]=maxs[ix]-mins[ix];
   	if (div[ix]<=0)
