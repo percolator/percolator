@@ -4,6 +4,7 @@
 #include "ssl.h"
 #include "Globals.h"
 #include "DataSet.h"
+#include "Normalizer.h"
 #include "DescriptionOfCorrect.h"
 
 DescriptionOfCorrect::DescriptionOfCorrect()
@@ -14,6 +15,8 @@ DescriptionOfCorrect::DescriptionOfCorrect()
 DescriptionOfCorrect::~DescriptionOfCorrect()
 {
 }
+
+static double REGRESSION_C = 0.1; 
 
 string DescriptionOfCorrect::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DescriptionOfCorrect::isoAlphabet = "DECYHKR";   
@@ -35,7 +38,7 @@ void DescriptionOfCorrect::trainRetention() {
   for(ix1=0;ix1<psms.size();ix1++) {
     data.vals[ix1]=psms[ix1]->retentionFeatures;
     data.Y[ix1]=psms[ix1]->retentionTime;
-    data.C[ix1]=10;
+    data.C[ix1]=REGRESSION_C;
   }
   struct options *Options = new options;
   Options->lambda=1.0;
@@ -49,17 +52,18 @@ void DescriptionOfCorrect::trainRetention() {
   Weights->vec = new double[Weights->d];
 //    for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=w[ix];
   for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
+  rtW.resize(numRTFeat+1);
     
   struct vector_double *Outputs = new vector_double;
   Outputs->vec = new double[psms.size()];
   Outputs->d = psms.size();
   for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
 
-//    norm->normalizeweight(w,Weights->vec);
-//    Weights->vec[FeatureNames::getNumFeatures()] = 0;
   L2_SVM_MFN(data,Options,Weights,Outputs);
+
   for(int i= rtW.size();i--;)
     rtW[i]=Weights->vec[i];
+
   delete [] Weights->vec;
   delete Weights;
   delete [] Outputs->vec;
@@ -86,9 +90,10 @@ void DescriptionOfCorrect::trainCorrect() {
 }
 void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
   assert(DataSet::getFeatureNames().getDocFeatNum()>0);
-  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()] = abs(pPSM->pI-avgPI);
-  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()+1] = deltadeltaMass(pPSM->massDiff);
-  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()+2] = abs(pPSM->retentionTime-estimateRT(pPSM->retentionFeatures));
+  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
+  pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
+  pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
+  pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(abs(pPSM->retentionTime-estimateRT(pPSM->retentionFeatures)),docFeatNum+2);
 //  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()+2] = 0.0;
 
 }

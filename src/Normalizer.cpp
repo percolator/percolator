@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Normalizer.cpp,v 1.18 2008/07/09 00:54:19 lukall Exp $
+ * $Id: Normalizer.cpp,v 1.19 2008/07/11 19:43:14 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -77,11 +77,16 @@ void Normalizer::normalize(const double *in,double* out, size_t offset, size_t n
 }
 
 int Normalizer::subclass_type = STDV;
+Normalizer* Normalizer::theNormalizer = NULL;
 
-Normalizer * Normalizer::getNew(){
-	if (subclass_type == UNI)
-	  return new UniNormalizer();
-	return new StdvNormalizer();
+Normalizer * Normalizer::getNormalizer() {    
+    if (theNormalizer==NULL) {
+	  if (subclass_type == UNI)
+	    theNormalizer = new UniNormalizer();
+      else
+	    theNormalizer = new StdvNormalizer();
+    }
+    return theNormalizer;
 }
 
 void Normalizer::setType(int type){
