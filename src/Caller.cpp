@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.98 2008/07/11 19:43:14 lukall Exp $
+ * $Id: Caller.cpp,v 1.99 2008/07/15 23:52:55 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -628,7 +628,7 @@ void Caller::fillFeatureSets() {
   all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
   all.insert(shuffled.getSubsets().begin(),shuffled.getSubsets().end());
   pNorm=Normalizer::getNormalizer();
-  pNorm->setSet(all,FeatureNames::getNumFeatures(),DescriptionOfCorrect::totalNumRTFeatures());
+  pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?DescriptionOfCorrect::totalNumRTFeatures():0);
   pNorm->normalizeSet(all);
   if (docFeatures) {
     for (set<DataSet *>::iterator myset=all.begin();myset!=all.end();++myset)
