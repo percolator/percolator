@@ -38,7 +38,7 @@ string FeatureNames::getFeatureNames() {
 
 
 void FeatureNames::setSQTFeatures(
-  int minCharge, int maxCharge, 
+  int minC, int maxC, 
   bool doEnzyme, 
   bool calcPTMs, 
   bool doManyHitsPerSpectrum, 
@@ -58,6 +58,7 @@ void FeatureNames::setSQTFeatures(
   featureNames.push_back("Mass");
   featureNames.push_back("PepLen");
   chargeFeatNum = featureNames.size();
+  minCharge = minC; maxCharge = maxC; 
   for(int charge=minCharge; charge <= maxCharge; ++charge) {
     ostringstream cname;
     cname << "Charge" << charge;
