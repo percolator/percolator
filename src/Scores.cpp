@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.69 2008/06/20 23:55:35 lukall Exp $
+ * $Id: Scores.cpp,v 1.70 2008/07/21 03:21:36 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -319,10 +319,12 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
 
 double Scores::estimatePi0() {
   vector<pair<double,bool> > combined;
+  vector<double> pvals;
   transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
 
   // Estimate pi0
-  pi0 = PosteriorEstimator::estimatePi0(combined);
+  PosteriorEstimator::getPValues(combined,pvals);
+  pi0 = PosteriorEstimator::estimatePi0(pvals);
   return pi0;
 
 }

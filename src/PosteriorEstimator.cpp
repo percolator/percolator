@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.13 2008/06/10 21:35:14 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.14 2008/07/21 03:21:36 lukall Exp $
  
  *******************************************************************************/
 
@@ -48,6 +48,7 @@ static unsigned int numLambda = 19;
 static double maxLambda = 0.95;
 
 bool PosteriorEstimator::reversed = false;
+bool PosteriorEstimator::pvalInput = false;
 
 PosteriorEstimator::PosteriorEstimator()
 {
@@ -202,7 +203,7 @@ void PosteriorEstimator::getQValues(double pi0,
 
 void PosteriorEstimator::getPValues(
      const vector<pair<double,bool> >& combined, vector<double>& p) {
-  // assuming combined sorted in decending order
+  // assuming combined sorted in best hit first order
   vector<pair<double,bool> >::const_iterator myPair = combined.begin();
   unsigned int nDecoys = 0;
   while(myPair != combined.end()) {
@@ -214,18 +215,15 @@ void PosteriorEstimator::getPValues(
     ++myPair;
   }
   transform(p.begin(), p.end(), p.begin(), bind2nd(divides<double>(), (double)nDecoys));
-    
+  // p sorted in acending order  
   return;  
 }
 
-double PosteriorEstimator::estimatePi0(vector<pair<double,bool> >& combined, 
-                                       const unsigned int numBoot) {
+double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int numBoot) {
   
-  vector<double> p,pBoot,lambdas,pi0s,mse;
+  vector<double> pBoot,lambdas,pi0s,mse;
   vector<double>::iterator start;
-  
-  PosteriorEstimator::getPValues(combined,p);
-  
+    
   size_t n = p.size();
   // Calculate pi0 for different values for lambda    
   for(unsigned int ix=0; ix <= numLambda; ++ix) {
@@ -267,14 +265,26 @@ void PosteriorEstimator::run() {
 
   // Merge a labeled version of the two lists into a combined list
   vector<pair<double,bool> > combined;  
-  transform(tarIt,istream_iterator<double>(),back_inserter(combined),
-            bind2nd(ptr_fun(make_my_pair),true)); 
-  transform(decIt,istream_iterator<double>(),back_inserter(combined),
+  vector<double> pvals;  
+  if (!pvalInput) {
+    transform(tarIt,istream_iterator<double>(),back_inserter(combined),
+            bind2nd(ptr_fun(make_my_pair),true));
+    transform(decIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair), false)); 
-
+  } else {
+    copy(tarIt,istream_iterator<double>(),back_inserter(pvals));
+    sort(pvals.begin(),pvals.end());
+    transform(pvals.begin(),pvals.end(),back_inserter(combined),
+            bind2nd(ptr_fun(make_my_pair),true));
+  	size_t nDec = pvals.size();
+  	double step = 1.0/2.0/(double)nDec;
+  	for (size_t ix=0; ix<nDec; ++ix)
+  	  combined.push_back(make_my_pair(step*(1+2*ix),false));
+  	reversed = true;   
+  }
   if(VERB>0) cerr << "Read " << combined.size() << " statistics" << endl; 
   if (reversed) {
-    if(VERB>0) cerr << "Reversing all scores (command line option)" << endl; 
+    if(VERB>0) cerr << "Reversing all scores" << endl; 
   }
 
   if (reversed)
@@ -284,7 +294,10 @@ void PosteriorEstimator::run() {
   // sorting in decending order
     sort(combined.begin(),combined.end(),greater<pair<double,bool> >());  
   
-  double pi0 = estimatePi0(combined);
+  if (!pvalInput)
+  	getPValues(combined,pvals);
+  	 
+  double pi0 = estimatePi0(pvals);
   
   vector<double> peps;
   // Logistic regression on the data
@@ -297,9 +310,11 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
   // init
   ostringstream intro;
   intro << "Usage:" << endl;
-  intro << "   qvality [options] target_file null_file" << endl << endl;
+  intro << "   qvality [options] target_file null_file" << endl << "or" << endl;
+  intro << "   qvality [options] pvalue_file" << endl << endl;
   intro << "target_file and null_file are files containing scores from a mixed model" << endl;  
   intro << "and a null model, each score separated with whitespace or line feed." << endl;
+  intro << "Alternatively, accuate p-value could be provided in a single file pvalue_file." << endl;
   
   
   CommandLineParser cmd(intro.str());
@@ -355,7 +370,11 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
       cmd.help();
   }
   targetFile = cmd.arguments[0];
-  decoyFile = cmd.arguments[1];
+  if (cmd.arguments.size()==2)
+    decoyFile = cmd.arguments[1];
+  else {
+    PosteriorEstimator::setReversed(true);  
+  }
   return true;
 }
 

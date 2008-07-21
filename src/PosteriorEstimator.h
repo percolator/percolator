@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.h,v 1.6 2008/05/20 00:24:43 lukall Exp $
+ $Id: PosteriorEstimator.h,v 1.7 2008/07/21 03:21:36 lukall Exp $
  
  *******************************************************************************/
 
@@ -44,14 +44,14 @@ public:
   static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
   static void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
   static void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);
-  static double estimatePi0(vector<pair<double,bool> >& combined, const unsigned int numBoot=100);
+  static double estimatePi0(vector<double>& p, const unsigned int numBoot=100);
   static void setReversed(bool status) {reversed = status;}
 protected:
   void finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, double pi0);
   static void binData(const vector<pair<double,bool> >& combined, vector<double>& medians, 
                vector<unsigned int>& negatives, vector<unsigned int>& sizes);
   string targetFile,decoyFile;
-  static bool reversed;
+  static bool reversed, pvalInput;
 };
 
 #endif /*POSTERIORESTIMATOR_H_*/

@@ -74,10 +74,10 @@ AC_MSG_RESULT($boundscheck)
 
 # set DEBUG flag and introduce additional compiler flags
 if test x"$debuger" = x"yes"; then
-    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror -DDEBUG"
+    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror -DDEBUG -D_LARGEFILE_SOURCE"
 	AC_DEFINE([DEBUG],[],[Flag indicating that debug options are enabled])
 else
-    DEBUG_OPTIONS="-O3"
+    DEBUG_OPTIONS="-O3 -D_LARGEFILE_SOURCE"
 fi
 
 if test x"$boundscheck" = x"yes"; then
