@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.14 2008/07/21 03:21:36 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.15 2008/07/24 23:19:59 lukall Exp $
  
  *******************************************************************************/
 
@@ -84,6 +84,7 @@ double mymin(double a,double b) {return a>b?b:a;}
 
 void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps) {
   // Logistic regression on the data
+  size_t nTargets=0,nDecoys=0;
   LogisticRegression lr;
   estimate(combined,lr,pi0);
 
@@ -91,21 +92,26 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
    
   vector<pair<double,bool> >::const_iterator elem = combined.begin();  
   for(;elem != combined.end();++elem)
-    if (elem->second)
+    if (elem->second) {
       xvals.push_back(elem->first);
-    
+      ++nTargets;
+    } else
+      ++nDecoys;
+      
   lr.predict(xvals,peps);
-
+  
+  double factor = pi0*((double)nTargets/(double)nDecoys);
+  double top = min(1.0,factor*exp(*max_element(peps.begin(),peps.end())));
   vector<double>::iterator pep = peps.begin(); 
   bool crap = false; 
   for(;pep != peps.end();++pep) {
     if (crap) {
-      *pep = 1.0;
+      *pep = top;
       continue;
     }
-    *pep = pi0 * exp(*pep);
-    if (*pep>=1.0) {
-      *pep = 1.0;
+    *pep = factor*exp(*pep);
+    if (*pep>=top) {
+      *pep = top;
       crap=true;
     }
   }
