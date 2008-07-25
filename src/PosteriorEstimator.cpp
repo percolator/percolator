@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.15 2008/07/24 23:19:59 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.16 2008/07/25 00:43:03 lukall Exp $
  
  *******************************************************************************/
 
@@ -44,8 +44,8 @@ using namespace std;
 #include "Globals.h"
 
 static unsigned int noIntevals = 500;
-static unsigned int numLambda = 19;
-static double maxLambda = 0.95;
+static unsigned int numLambda = 100;
+static double maxLambda = 0.99;
 
 bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
@@ -213,10 +213,10 @@ void PosteriorEstimator::getPValues(
   vector<pair<double,bool> >::const_iterator myPair = combined.begin();
   unsigned int nDecoys = 0;
   while(myPair != combined.end()) {
-    if (!(myPair->second)) {
-      ++nDecoys; 
-    } else {
+    if (myPair->second) {
       p.push_back((double)nDecoys);
+    } else {
+      ++nDecoys; 
     }
     ++myPair;
   }
@@ -379,7 +379,8 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
   if (cmd.arguments.size()==2)
     decoyFile = cmd.arguments[1];
   else {
-    PosteriorEstimator::setReversed(true);  
+    PosteriorEstimator::setReversed(true);
+    pvalInput = true;  
   }
   return true;
 }
