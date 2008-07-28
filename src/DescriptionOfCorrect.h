@@ -19,9 +19,9 @@ public:
   void setFeatures(PSMDescription* pPSM);
   static size_t totalNumRTFeatures() {return 12 + aaAlphabet.size();}
   void print_10features();
+  double estimateRT(double * features);
 protected:
   void trainRetention();
-  inline double estimateRT(double * features);
   static inline double indexSum(const float *index, const string& peptide);
   static inline double indexN(const float *index, const string& peptide);
   static inline double indexC(const float *index, const string& peptide);

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.47 2008/07/09 00:54:19 lukall Exp $
+ * $Id: Caller.h,v 1.48 2008/07/28 15:39:14 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -24,7 +24,6 @@ public:
     void step(Scores& train, vector<double>& w, double Cpos, double Cneg, double fdr);
     void train(vector<vector<double> >& w);
     void trainEm(vector<vector<double> >& w);
-    int xvalidate_step(vector<vector<double> >& w);
     int xv_step(vector<vector<double> >& w);
     void xvalidate(vector<vector<double> >& w);
 	static string greeter();

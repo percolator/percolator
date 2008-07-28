@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.99 2008/07/15 23:52:55 lukall Exp $
+ * $Id: Caller.cpp,v 1.100 2008/07/28 15:39:14 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -532,42 +532,6 @@ void Caller::trainEm(vector<vector<double> >& w) {
   }
 }
 
-int Caller::xvalidate_step(vector<vector<double> >& w) {
-  Globals::getInstance()->decVerbose();
-  int bestTP = 0;
-  double best_fdr=0.01,best_cpos=1,best_cneg=1;
-  vector<vector<double> > best_w;
-  vector<double>::iterator cpos,cfrac;
-  for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
-    for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
-      if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
-        ", cfrac=" << *cfrac << endl;
-      int tp=0;
-      vector<vector<double> > ww = w;
-      for (unsigned int i=0;i<xval_fold;i++) {
-        if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
-        step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),selectionfdr);
-        tp += xv_train[i].calcScores(ww[i],test_fdr);
-        if(VERB>2) cerr << "Cumulative # of target PSMs over treshold " << tp << endl;
-      }
-      if(VERB>1) cerr << "- cross validation estimates " << tp << " target PSMs over " << test_fdr*100 << "% FDR level" << endl;
-      if (tp>=bestTP) {
-        if(VERB>1) cerr << "Better than previous result, store this" << endl;
-        bestTP = tp;
-        best_w = ww;          
-      }
-    }
-  }
-  Globals::getInstance()->incVerbose();
-  if(VERB>0) cerr << "cross validation estimates " << bestTP/(xval_fold-1) << " target PSMs with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
-                  << ", Cneg=" << best_cneg << ", fdr=" << best_fdr << endl;
-  w = best_w;
-  return bestTP;                  
-//  for (unsigned int i=0;i<xval_fold;i++) {
-//     xv_test[i].calcScores(w[i],test_fdr);
-//  }
-}
-
 void Caller::xvalidate(vector<vector<double> >& w) {
   Globals::getInstance()->decVerbose();
   int bestTP = 0;
@@ -718,6 +682,13 @@ int Caller::run() {
     fullset.printRoc(rocFN);
   }
   normal.print(fullset);
+  if (docFeatures) {
+  	ofstream outs("retention_times.txt",ios::out);  	
+    for (unsigned int set=0;set<xval_fold;++set) {
+      xv_test[set].printRetentionTime(outs,selectionfdr);
+    }
+    outs.close();  
+  }
   return 0;
 }
 

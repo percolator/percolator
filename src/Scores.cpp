@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.70 2008/07/21 03:21:36 lukall Exp $
+ * $Id: Scores.cpp,v 1.71 2008/07/28 15:39:14 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -53,6 +53,13 @@ void Scores::merge(vector<Scores>& sv) {
   sort(scores.begin(),scores.end(), greater<ScoreHolder>() );
 }
 
+void Scores::printRetentionTime(ostream& outs, double fdr){
+  vector<ScoreHolder>::iterator it;
+  for(it=scores.begin();it!=scores.end() && it->pPSM->q <= fdr; ++it) {
+    if (it->label!=-1)
+      outs << it->pPSM->retentionTime << "\t" << doc.estimateRT(it->pPSM->retentionFeatures) << endl;
+  }
+}
 
 void Scores::printRoc(string & fn){
  ofstream rocStream(fn.data(),ios::out);

@@ -98,7 +98,7 @@ void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
 
 }
 
-inline double DescriptionOfCorrect::estimateRT(double * features) {
+double DescriptionOfCorrect::estimateRT(double * features) {
   register int ix = numRTFeat;
   double sum = rtW[ix];
   for(;ix--;) 

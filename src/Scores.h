@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.41 2008/06/17 23:21:44 lukall Exp $
+ * $Id: Scores.h,v 1.42 2008/07/28 15:39:14 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -48,6 +48,7 @@ public:
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
     void normalizeScores();
+    void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
      ScoreHolder* getScoreHolder(const double *d);
     void calcPep();
