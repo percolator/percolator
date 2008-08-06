@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.71 2008/07/28 15:39:14 lukall Exp $
+ * $Id: Scores.cpp,v 1.72 2008/08/06 12:33:43 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -57,7 +57,7 @@ void Scores::printRetentionTime(ostream& outs, double fdr){
   vector<ScoreHolder>::iterator it;
   for(it=scores.begin();it!=scores.end() && it->pPSM->q <= fdr; ++it) {
     if (it->label!=-1)
-      outs << it->pPSM->retentionTime << "\t" << doc.estimateRT(it->pPSM->retentionFeatures) << endl;
+      outs << it->pPSM->retentionTime << "\t" << doc.estimateRT(it->pPSM->retentionFeatures) << "\t" << it->pPSM->peptide << endl;
   }
 }
 
@@ -260,10 +260,15 @@ void Scores::recalculateDescriptionOfGood(const double fdr) {
     }
   }
   doc.trainCorrect();
-  for(ix1=0;ix1<size();ix1++) {
+  setDOCFeatures();
+}
+
+void Scores::setDOCFeatures() {
+  for(size_t ix1=0;ix1<size();++ix1) {
     doc.setFeatures(scores[ix1].pPSM);
   }
 }
+
 
 int Scores::getInitDirection(const double fdr, vector<double>& direction, bool findDirection) {
   int bestPositives = -1;

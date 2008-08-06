@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.100 2008/07/28 15:39:14 lukall Exp $
+ * $Id: Caller.cpp,v 1.101 2008/08/06 12:33:43 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -519,11 +519,18 @@ void Caller::trainEm(vector<vector<double> >& w) {
       
     if(VERB>2) {cerr<<"Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
   }
-  if(VERB==2 ) { cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
+  if(VERB==2 ) { 
+    cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);
+    if (docFeatures) { cerr << "retention time prediction regressor weights weights" << endl; xv_train[0].getDOC().print_RTVector();}
+  }
   if (xv_type==EACH_STEP) {
     int tar = 0;
-    for (size_t ix=0;ix<xval_fold;++ix) {
-      tar += xv_test[ix].calcScores(w[ix],test_fdr);
+    for (size_t set=0;set<xval_fold;++set) {
+      if (docFeatures) {
+         xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
+         xv_test[set].setDOCFeatures();
+      }
+      tar += xv_test[set].calcScores(w[set],test_fdr);
     }
     if(VERB>0) {
       cerr << "After all training done, " << tar << " positives with q<"

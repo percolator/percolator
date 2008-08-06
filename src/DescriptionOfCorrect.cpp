@@ -16,7 +16,7 @@ DescriptionOfCorrect::~DescriptionOfCorrect()
 {
 }
 
-static double REGRESSION_C = 0.1; 
+static double REGRESSION_C = 100; 
 
 string DescriptionOfCorrect::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DescriptionOfCorrect::isoAlphabet = "DECYHKR";   
@@ -30,7 +30,7 @@ void DescriptionOfCorrect::trainRetention() {
   if (psms.size()>500) {
     numRTFeat = totalNumRTFeatures();
   } else {
-    numRTFeat = 12;  
+    numRTFeat = 15;  
   }
   AlgIn data(psms.size(),numRTFeat);
   data.m = psms.size();
@@ -126,6 +126,15 @@ double DescriptionOfCorrect::indexSum(const float* index, const string& peptide)
   return sum;
 }
 
+double DescriptionOfCorrect::indexAvg(const float* index, const string& peptide) {
+  double sum = 0.0;
+  size_t len = 0;
+  string::const_iterator token = peptide.begin();
+  for(;token != peptide.end();++token,++len)
+    sum += index[*token-'A'];
+  return sum/(double)len;
+}
+
 inline double DescriptionOfCorrect::indexN(const float *index, const string& peptide) {
   return index[peptide[0]-'A'];
 }
@@ -142,6 +151,7 @@ inline double DescriptionOfCorrect::indexNC(const float *index, const string& pe
 
 double* DescriptionOfCorrect::fillFeaturesIndex(const string& peptide, const float *index, double *features) {
   *(features++) = indexSum(index,peptide);
+  *(features++) = indexAvg(index,peptide);
   *(features++) = indexN(index,peptide);
   *(features++) = indexC(index,peptide);
   *(features++) = indexNC(index,peptide);

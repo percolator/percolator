@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.h,v 1.42 2008/07/28 15:39:14 lukall Exp $
+ * $Id: Scores.h,v 1.43 2008/08/06 12:33:43 lukall Exp $
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
@@ -50,7 +50,9 @@ public:
     void normalizeScores();
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
-     ScoreHolder* getScoreHolder(const double *d);
+    ScoreHolder* getScoreHolder(const double *d);
+    DescriptionOfCorrect& getDOC() {return doc;}
+    void setDOCFeatures();
     void calcPep();
     double estimatePi0();
     void printRoc(string & fn); 
