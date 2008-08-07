@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.16 2008/07/25 00:43:03 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.17 2008/08/07 20:31:47 noble Exp $
  
  *******************************************************************************/
 
@@ -69,11 +69,37 @@ bool isMixed(const pair<double,bool>& aPair) {
   return aPair.second;
 }
 
-template<class T> void bootstrap(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
+// This is the slow version of the function from revision 1.12.
+template<class T> void bootstrap_old(const vector<T>& in, vector<T>& out) {
+  out.clear();
+  double n = in.size();
+  for (size_t ix=0;ix<n;++ix) {
+    size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*n);
+    out.push_back(in[draw]);
+  }
+  // sort in desending order
+  sort(out.begin(),out.end());  
+} 
+
+// This is the buggy version from revision 1.12.
+template<class T> void bootstrap_broken(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
   out.clear();
   double n = min(in.size(),max_size);
   for (size_t ix=0;ix<n;++ix) {
     size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*n);
+    out.push_back(in[draw]);
+  }
+  // sort in desending order
+  sort(out.begin(),out.end());  
+} 
+
+// This is my attempt at fixing the bug, while retaining the speedup.
+template<class T> void bootstrap(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
+  out.clear();
+  double n = min(in.size(),max_size);
+  double size = in.size();
+  for (size_t ix=0;ix<n;++ix) {
+    size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*size);
     out.push_back(in[draw]);
   }
   // sort in desending order
@@ -225,18 +251,43 @@ void PosteriorEstimator::getPValues(
   return;  
 }
 
+// Uncomment the following line to get a bunch of debugging output.
+//#define DEBUG_POSTERIOR_ESTIMATOR 1
+
+/*
+ * Described in Storey, "A direct approach to false discovery rates."
+ * JRSS 2002.
+ */
 double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int numBoot) {
   
   vector<double> pBoot,lambdas,pi0s,mse;
   vector<double>::iterator start;
     
+#ifdef DEBUG_POSTERIOR_ESTIMATOR
+  cerr << "pvalues: ";
+  for(unsigned int ix=0; ix < 10; ++ix) {
+    cerr << p[ix] << " ";
+  }
+  cerr << " ... ";
+  for(unsigned int ix=10; ix > 0; --ix) {
+    cerr << p[p.size() - ix] << " ";
+  }
+  cerr << endl;
+#endif
+
   size_t n = p.size();
   // Calculate pi0 for different values for lambda    
+  // N.B. numLambda and maxLambda are global variables.
   for(unsigned int ix=0; ix <= numLambda; ++ix) {
     double lambda = ((ix+1)/(double)numLambda)*maxLambda;
+    // Find the index of the first element in p that is < lambda.
+    // N.B. Assumes p is sorted in ascending order. 
     start = lower_bound(p.begin(),p.end(),lambda);
+    // Calculates the difference in index between start and end
     double Wl = (double) distance(start,p.end());
     double pi0 = Wl/n/(1-lambda);
+
+    // FIXME: Isn't the following line useless?
     if (pi0>0.0) {
       lambdas.push_back(lambda);
       pi0s.push_back(pi0);
@@ -244,19 +295,62 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
   }
      
   double minPi0 = *min_element(pi0s.begin(),pi0s.end()); 
+#ifdef DEBUG_POSTERIOR_ESTIMATOR
+  cerr << "minPi0 " << minPi0 << endl;
+#endif
+
+  // Initialize the vector mse with zeroes.
   fill_n(back_inserter(mse),pi0s.size(),0.0); 
 
-  // Examine witch lambda level that is most stable under bootstrap   
+  // Examine which lambda level that is most stable under bootstrap   
   for (unsigned int boot = 0; boot< numBoot; ++boot) {
+    // Create an array of bootstrapped p-values, and sort in ascending order.
     bootstrap<double>(p,pBoot); 
+
+#ifdef DEBUG_POSTERIOR_ESTIMATOR
+    cerr << "pBoot: ";
+    for(unsigned int ix=0; ix < 10; ++ix) {
+      cerr << pBoot[ix] << " ";
+    }
+    cerr << " ... ";
+    for(unsigned int ix=10; ix > 0; --ix) {
+      cerr << pBoot[pBoot.size() - ix] << " ";
+    }
+    cerr << endl;
+#endif
+
     n=pBoot.size();
     for(unsigned int ix=0; ix < lambdas.size(); ++ix) {
       start = lower_bound(pBoot.begin(),pBoot.end(),lambdas[ix]);
       double Wl = (double) distance(start,pBoot.end());
       double pi0Boot = Wl/n/(1-lambdas[ix]);
+      // Estimated mean-squared error.
       mse[ix] += (pi0Boot-minPi0)*(pi0Boot-minPi0);
+#ifdef DEBUG_POSTERIOR_ESTIMATOR
+      cerr << "Wl=" << Wl 
+	   << " lambdas[" << ix << "]=" << lambdas[ix] 
+	   << " pi0Boot=" << pi0Boot 
+	   << " minPi0=" << minPi0 
+	   << " se=" << (pi0Boot-minPi0)*(pi0Boot-minPi0) << endl;
+#endif
     }
   }   
+
+#ifdef DEBUG_POSTERIOR_ESTIMATOR
+  cerr << "MSE: ";
+  for(unsigned int ix=0; ix < mse.size(); ++ix) {
+    cerr << mse[ix] << " ";
+  }
+  cerr << endl;
+
+  cerr << "pi0: ";
+  for(unsigned int ix=0; ix < pi0s.size(); ++ix) {
+    cerr << pi0s[ix] << " ";
+  }
+  cerr << endl;
+#endif
+
+  // Which index did the iterator get?
   unsigned int minIx = distance(mse.begin(),min_element(mse.begin(),mse.end()));
   double pi0 = max(min(pi0s[minIx],1.0),0.0); 
 
@@ -294,7 +388,7 @@ void PosteriorEstimator::run() {
   }
 
   if (reversed)
-    // sorting in accending order
+    // sorting in ascending order
     sort(combined.begin(),combined.end());
   else
   // sorting in decending order
