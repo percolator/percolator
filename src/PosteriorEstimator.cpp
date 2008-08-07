@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.17 2008/08/07 20:31:47 noble Exp $
+ $Id: PosteriorEstimator.cpp,v 1.18 2008/08/07 20:34:04 noble Exp $
  
  *******************************************************************************/
 
@@ -251,9 +251,6 @@ void PosteriorEstimator::getPValues(
   return;  
 }
 
-// Uncomment the following line to get a bunch of debugging output.
-//#define DEBUG_POSTERIOR_ESTIMATOR 1
-
 /*
  * Described in Storey, "A direct approach to false discovery rates."
  * JRSS 2002.
@@ -263,18 +260,6 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
   vector<double> pBoot,lambdas,pi0s,mse;
   vector<double>::iterator start;
     
-#ifdef DEBUG_POSTERIOR_ESTIMATOR
-  cerr << "pvalues: ";
-  for(unsigned int ix=0; ix < 10; ++ix) {
-    cerr << p[ix] << " ";
-  }
-  cerr << " ... ";
-  for(unsigned int ix=10; ix > 0; --ix) {
-    cerr << p[p.size() - ix] << " ";
-  }
-  cerr << endl;
-#endif
-
   size_t n = p.size();
   // Calculate pi0 for different values for lambda    
   // N.B. numLambda and maxLambda are global variables.
@@ -295,9 +280,6 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
   }
      
   double minPi0 = *min_element(pi0s.begin(),pi0s.end()); 
-#ifdef DEBUG_POSTERIOR_ESTIMATOR
-  cerr << "minPi0 " << minPi0 << endl;
-#endif
 
   // Initialize the vector mse with zeroes.
   fill_n(back_inserter(mse),pi0s.size(),0.0); 
@@ -307,18 +289,6 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
     // Create an array of bootstrapped p-values, and sort in ascending order.
     bootstrap<double>(p,pBoot); 
 
-#ifdef DEBUG_POSTERIOR_ESTIMATOR
-    cerr << "pBoot: ";
-    for(unsigned int ix=0; ix < 10; ++ix) {
-      cerr << pBoot[ix] << " ";
-    }
-    cerr << " ... ";
-    for(unsigned int ix=10; ix > 0; --ix) {
-      cerr << pBoot[pBoot.size() - ix] << " ";
-    }
-    cerr << endl;
-#endif
-
     n=pBoot.size();
     for(unsigned int ix=0; ix < lambdas.size(); ++ix) {
       start = lower_bound(pBoot.begin(),pBoot.end(),lambdas[ix]);
@@ -326,29 +296,8 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
       double pi0Boot = Wl/n/(1-lambdas[ix]);
       // Estimated mean-squared error.
       mse[ix] += (pi0Boot-minPi0)*(pi0Boot-minPi0);
-#ifdef DEBUG_POSTERIOR_ESTIMATOR
-      cerr << "Wl=" << Wl 
-	   << " lambdas[" << ix << "]=" << lambdas[ix] 
-	   << " pi0Boot=" << pi0Boot 
-	   << " minPi0=" << minPi0 
-	   << " se=" << (pi0Boot-minPi0)*(pi0Boot-minPi0) << endl;
-#endif
     }
   }   
-
-#ifdef DEBUG_POSTERIOR_ESTIMATOR
-  cerr << "MSE: ";
-  for(unsigned int ix=0; ix < mse.size(); ++ix) {
-    cerr << mse[ix] << " ";
-  }
-  cerr << endl;
-
-  cerr << "pi0: ";
-  for(unsigned int ix=0; ix < pi0s.size(); ++ix) {
-    cerr << pi0s[ix] << " ";
-  }
-  cerr << endl;
-#endif
 
   // Which index did the iterator get?
   unsigned int minIx = distance(mse.begin(),min_element(mse.begin(),mse.end()));
