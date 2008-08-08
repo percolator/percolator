@@ -1,3 +1,5 @@
+.deps
+.libs
 tmp
 *.res
 debug/*
@@ -6,14 +8,21 @@ debug
 optim
 autom4te.cache
 config.h.in
+config.h
+config.log
 configure
 Makefile.in
+Makefile
 aclocal.m4
 *.gz
 *.Plo
 *.Po
+*.lo
+*.la
 *.status
 libtool
 stamp-h1
 qvality-optim
 debug-check
+percolator
+qvality
