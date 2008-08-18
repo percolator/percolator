@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.101 2008/08/06 12:33:43 lukall Exp $
+ * $Id: Caller.cpp,v 1.102 2008/08/18 17:29:34 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -193,6 +193,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     "filename");
   cmd.defineOption("M","isotope",
     "Mass difference calculated to closest isotope mass rather than to the average mass.","",TRUE_IF_SET);
+  cmd.defineOption("K","klammer",
+    "Retention time features calculated as in Klammer et al.","",TRUE_IF_SET);
   cmd.defineOption("D","doc",
     "Include description of correct features.","",TRUE_IF_SET);
 
@@ -293,6 +295,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   }
   if (cmd.optionSet("M"))
     DescriptionOfCorrect::setIsotopeMass(true);
+  if (cmd.optionSet("K"))
+    DescriptionOfCorrect::setKlammer(true);
   if (cmd.optionSet("D")) {
     docFeatures = true;
     DataSet::setCalcDoc(true);
@@ -521,7 +525,6 @@ void Caller::trainEm(vector<vector<double> >& w) {
   }
   if(VERB==2 ) { 
     cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);
-    if (docFeatures) { cerr << "retention time prediction regressor weights weights" << endl; xv_train[0].getDOC().print_RTVector();}
   }
   if (xv_type==EACH_STEP) {
     int tar = 0;
