@@ -6,6 +6,8 @@
 using namespace std;
 #include "PSMDescription.h"
 
+struct svm_model;
+
 class DescriptionOfCorrect
 {
 public:
@@ -14,20 +16,26 @@ public:
   static void fillFeaturesAllIndex(const string& peptide, double *features);
   static double isoElectricPoint(const string& peptide);
   static void setIsotopeMass(bool on) {doIsotopeMass=on;}
+  static void setKlammer(bool on) {doKlammer=on;}
   void clear() {psms.clear();}
   void registerCorrect(PSMDescription* pPSM) {psms.push_back(pPSM);}
   void trainCorrect();
   void setFeatures(PSMDescription* pPSM);
-  static size_t totalNumRTFeatures() {return 3*5 + aaAlphabet.size();}
+  static size_t totalNumRTFeatures() {return (doKlammer?62:minimumNumRTFeatures() + aaAlphabet.size());}
+  static size_t minimumNumRTFeatures() {return 3*8+1;}
   void print_10features();
   void print_RTVector() {
     cerr << "krokhinSum\tkrokhinAvg\tkrokhinN\tkrokhinC\tkrokhinNC\thessaSum\thessaAvg\thessaN\thessaC\thessaNC\tkdSum\tkdAvg\tkdN\tkdC\tkdNC" << endl;
     for(vector<double>::iterator f=rtW.begin();f!=rtW.end();++f) cerr << *f << "\t"; cerr << endl;
   }
   double estimateRT(double * features);
+  void copyModel(svm_model* from);
+  svm_model* getModel() {return model;}
   void copyDOCparameters(DescriptionOfCorrect& other) {
-    avgPI = other.avgPI; avgDM = other.avgDM; rtW = other.rtW; numRTFeat = other.numRTFeat;
+//    avgPI = other.avgPI; avgDM = other.avgDM; rtW = other.rtW; numRTFeat = other.numRTFeat;
+    avgPI = other.avgPI; avgDM = other.avgDM; copyModel(other.getModel()); numRTFeat = other.numRTFeat;
   }
+
 protected:
   void trainRetention();
   static inline double indexSum(const float *index, const string& peptide);
@@ -35,20 +43,21 @@ protected:
   static inline double indexN(const float *index, const string& peptide);
   static inline double indexC(const float *index, const string& peptide);
   static inline double indexNC(const float *index, const string& peptide);
+  static inline double* indexPartialSum(const float* index, const string& peptide, const size_t window, double *features);
   inline double deltadeltaMass(double dm);
   static double* fillAAFeatures(const string& pep, double *feat);
   static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
-//  double kyteDolittle(string peptide);
   double avgPI,avgDM;
   size_t numRTFeat;
   
   vector<PSMDescription *> psms; 
-  vector<double> rtW; 
+//  vector<double> rtW; 
+  svm_model *model;
   static float krokhin_index['Z'-'A'+1],hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1];
   static string aaAlphabet,isoAlphabet;
   static float pKiso[7]; 
   static float pKN,pKC;
-  static bool doIsotopeMass;
+  static bool doIsotopeMass,doKlammer;
 };
 
 #endif /*DESCRIPTIONOFCORRECT_H_*/

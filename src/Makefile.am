@@ -81,6 +81,8 @@ libpercolator_la_SOURCES = \
   StdvNormalizer.h \
   UniNormalizer.cpp \
   UniNormalizer.h \
+  svm.h \
+  svm.cpp \
   ssl.cpp \
   ssl.h
 

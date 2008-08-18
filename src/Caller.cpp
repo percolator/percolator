@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.102 2008/08/18 17:29:34 lukall Exp $
+ * $Id: Caller.cpp,v 1.103 2008/08/18 17:33:46 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -59,7 +59,7 @@ string Caller::extendedGreeter() {
   ostringstream oss;
   char * host = getenv("HOST");
   if (!host)
-    host="unknown_host";
+    host=(char *)"unknown_host";
   oss << greeter();
   oss << "Issued command:" << endl << call;
   oss << "Started " << ctime(&startTime);
