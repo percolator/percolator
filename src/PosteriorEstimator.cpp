@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.18 2008/08/07 20:34:04 noble Exp $
+ $Id: PosteriorEstimator.cpp,v 1.19 2008/08/19 10:27:14 lukall Exp $
  
  *******************************************************************************/
 
@@ -81,25 +81,13 @@ template<class T> void bootstrap_old(const vector<T>& in, vector<T>& out) {
   sort(out.begin(),out.end());  
 } 
 
-// This is the buggy version from revision 1.12.
-template<class T> void bootstrap_broken(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
-  out.clear();
-  double n = min(in.size(),max_size);
-  for (size_t ix=0;ix<n;++ix) {
-    size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*n);
-    out.push_back(in[draw]);
-  }
-  // sort in desending order
-  sort(out.begin(),out.end());  
-} 
 
-// This is my attempt at fixing the bug, while retaining the speedup.
 template<class T> void bootstrap(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
   out.clear();
-  double n = min(in.size(),max_size);
-  double size = in.size();
-  for (size_t ix=0;ix<n;++ix) {
-    size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*size);
+  double n = in.size();
+  size_t num_draw = min(in.size(),max_size);
+  for (size_t ix=0;ix<num_draw;++ix) {
+    size_t draw = (size_t)((double)rand()/((double)RAND_MAX+(double)1)*n);
     out.push_back(in[draw]);
   }
   // sort in desending order
@@ -195,6 +183,10 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
 
   while (pastIx<combined.size()) {
     firstIx = pastIx; pastIx = min(combined.size(),(size_t)((++binNo)*binSize)); 
+    // Handle ties
+    while ((pastIx<combined.size()) &&
+          (combined[pastIx-1].first==combined[pastIx].first)) 
+      ++pastIx;
     int inBin = pastIx-firstIx;
     int negInBin = count_if(combinedIter,combinedIter+inBin,IsDecoy());
     combinedIter += inBin;
@@ -237,12 +229,20 @@ void PosteriorEstimator::getPValues(
      const vector<pair<double,bool> >& combined, vector<double>& p) {
   // assuming combined sorted in best hit first order
   vector<pair<double,bool> >::const_iterator myPair = combined.begin();
-  unsigned int nDecoys = 0;
+  size_t nDecoys = 0, posSame =0, negSame =0;
+  double prevScore = - 4711.4711; // number that hopefully never turn up first in sequence
   while(myPair != combined.end()) {
+    if (myPair->first != prevScore) {
+      for (size_t ix=0;ix<posSame;++ix)
+        p.push_back((double)nDecoys+(((double)negSame)/(double)(posSame+1))*(ix+1));
+      nDecoys += negSame;
+      negSame=0; posSame=0;
+      prevScore = myPair->first;
+    }
     if (myPair->second) {
-      p.push_back((double)nDecoys);
+      ++posSame;
     } else {
-      ++nDecoys; 
+      ++negSame; 
     }
     ++myPair;
   }
@@ -272,7 +272,6 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
     double Wl = (double) distance(start,p.end());
     double pi0 = Wl/n/(1-lambda);
 
-    // FIXME: Isn't the following line useless?
     if (pi0>0.0) {
       lambdas.push_back(lambda);
       pi0s.push_back(pi0);

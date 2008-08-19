@@ -21,13 +21,9 @@ public:
   void registerCorrect(PSMDescription* pPSM) {psms.push_back(pPSM);}
   void trainCorrect();
   void setFeatures(PSMDescription* pPSM);
-  static size_t totalNumRTFeatures() {return (doKlammer?62:minimumNumRTFeatures() + aaAlphabet.size());}
+  static size_t totalNumRTFeatures() {return (doKlammer?63:minimumNumRTFeatures() + aaAlphabet.size());}
   static size_t minimumNumRTFeatures() {return 3*8+1;}
   void print_10features();
-  void print_RTVector() {
-    cerr << "krokhinSum\tkrokhinAvg\tkrokhinN\tkrokhinC\tkrokhinNC\thessaSum\thessaAvg\thessaN\thessaC\thessaNC\tkdSum\tkdAvg\tkdN\tkdC\tkdNC" << endl;
-    for(vector<double>::iterator f=rtW.begin();f!=rtW.end();++f) cerr << *f << "\t"; cerr << endl;
-  }
   double estimateRT(double * features);
   void copyModel(svm_model* from);
   svm_model* getModel() {return model;}
@@ -53,7 +49,7 @@ protected:
   vector<PSMDescription *> psms; 
 //  vector<double> rtW; 
   svm_model *model;
-  static float krokhin_index['Z'-'A'+1],hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1];
+  static float krokhin_index['Z'-'A'+1],hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1];
   static string aaAlphabet,isoAlphabet;
   static float pKiso[7]; 
   static float pKN,pKC;

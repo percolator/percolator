@@ -341,7 +341,9 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& peptide, double *f
     features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
     char Ct = peptide[peptide.size()-1];   
     *(features++) = ((Ct=='R' || Ct=='K')?1:0);    
-    *(features++) = peptide.size();    
+    *(features++) = peptide.size();
+    *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
+      
   }
 }
 
@@ -356,5 +358,5 @@ float DescriptionOfCorrect::hessa_index['Z'-'A'+1] =
 float DescriptionOfCorrect::kytedoolittle_index['Z'-'A'+1] =
          {1.80,0.0,2.50,-3.50,-3.50,2.80,-0.40,-3.20,0.0,4.50,3.90,3.80,1.90,-3.50,
           0.0,-1.60,-3.50,-4.50,-0.80,-0.70,0.0,4.20,-0.90,0.0,-1.30,0.0};
-
-
+float DescriptionOfCorrect::aa_weights['Z'-'A'+1] = {
+  71.0788,0, 103.1448,115.0886,129.1155,147.1766,57.052,137.1412,113.1595,0,128.1742,113.1595,131.1986,114.1039,0,97.1167,128.1308,156.1876,87.0782,101.1051,0,99.1326,186.2133,0,163.1760,0};

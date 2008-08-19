@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.cpp,v 1.9 2008/08/18 17:29:34 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.10 2008/08/19 10:27:14 lukall Exp $
  
  *******************************************************************************/
 
@@ -77,7 +77,7 @@ static double tao = 2/(1+sqrt(5));   // inverse of golden section
 void BaseSpline::iterativeReweightedLeastSquares() {
 
   Numerical::epsilon = 1e-17;
-  unsigned int n = x.size(), wrongDirection=0,alphaIter=0;
+  unsigned int n = x.size(), alphaIter=0;
   initiateQR();
   double alpha=1.,step,cv=1e100;
   initg();
@@ -93,7 +93,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       gnew= z - aWiQ*gamma;
       step =  norm(g-gnew)/n;
       if(VERB>2) cerr << "step size:" << step << endl;
-    } while ((step > stepEpsilon) && (++iter<10));
+    } while ((step > stepEpsilon) && (++iter<20));
     double p1 = 1-tao; 
     double p2 = tao; 
     pair<double,double> res = alphaLinearSearch(0.0,1.0,p1,p2,
@@ -102,7 +102,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
                               
     if(VERB>3) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;     
                               
-    if ((cv-res.second)/cv<convergeEpsilon || alphaIter++>100 || (res.second>cv && wrongDirection++<3))
+    if ((cv-res.second)/cv<convergeEpsilon || alphaIter++>100)
       break;
     cv=res.second;alpha=res.first;
   } while (true);
