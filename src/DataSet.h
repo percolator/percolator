@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.53 2008/06/20 23:55:34 lukall Exp $
+ * $Id: DataSet.h,v 1.54 2008/08/20 12:54:48 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -19,7 +19,6 @@ using namespace std;
 class Scores;
 class Normalizer;
 class ResultHolder;
-class IntraSetRelation;
 
 typedef enum {NO_ENZYME,TRYPSIN,CHYMOTRYPSIN,ELASTASE} Enzyme;
 
@@ -30,17 +29,14 @@ class DataSet
 	DataSet();
 	virtual ~DataSet();
     void inline setLabel(int l) {label=l;}
-    void computeIntraSetFeatures();
-    void computeIntraSetFeatures(double *feat,string &pep,set<string> &prots);
     void computeAAFrequencies(const string& pep, double *feat);
-    void readSQT(const string fname,IntraSetRelation * intrarel,const string & wild="", bool match=false);
+    void readSQT(const string fname,const string & wild="", bool match=false);
     void modifySQT(const string & outFN, Scores * pSc ,const string greet, bool dtaSelect);
     void initFeatureTables(const unsigned int numFeatures, const unsigned int numSpectra, bool regresionTable = false);
 //    static inline int getNumFeatures() { return numFeatures; }
     static FeatureNames& getFeatureNames() { return featureNames; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
     static void setCalcDoc(bool on) { calcDOC=on; }
-    static void setCalcIntraSetFeatures(bool on) { calcIntraSetFeatures=on; }
     static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
     static void setPTMfeature(bool on) { calcPTMs=on; }      
@@ -62,7 +58,7 @@ class DataSet
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
 protected:
-    void readFeatures(const string &in,PSMDescription &psm,int match,bool getIntra);
+    void readFeatures(const string &in,PSMDescription &psm,int match);
     string modifyRec(const string record, int& row, const set<int>& theMs, Scores * pSc, bool dtaSelect);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
@@ -75,7 +71,6 @@ protected:
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;
     static Enzyme enzyme;
-    static bool calcIntraSetFeatures;
     static bool calcPTMs;
     static bool calcDOC;
     static bool isotopeMass;
@@ -96,7 +91,6 @@ protected:
     string fileId;
     bool doPattern;
     bool matchPattern;
-    IntraSetRelation * intra;
     static FeatureNames featureNames;
 };
 

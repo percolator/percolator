@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.103 2008/08/18 17:33:46 lukall Exp $
+ * $Id: Caller.cpp,v 1.104 2008/08/20 12:54:47 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -20,7 +20,6 @@ using namespace std;
 #include "SanityCheck.h"
 #include "SqtSanityCheck.h"
 #include "DataSet.h"
-#include "IntraSetRelation.h"
 #include "Normalizer.h"
 #include "Scores.h"
 #include "Normalizer.h"
@@ -172,7 +171,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     "Overide error check and do not fall back on default score vector in case of suspect score vector",
     "",TRUE_IF_SET);
   cmd.defineOption("I","intra-set",
-    "Turn Off calculation of intra set features","",TRUE_IF_SET);
+    "Depricated switch --- Turn Off calculation of intra set features","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
     "Turn off calculation of tryptic/chymo-tryptic features.","",TRUE_IF_SET);
   cmd.defineOption("c","chymo",
@@ -252,7 +251,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("O"))
     SanityCheck::setOverrule(true);
   if (cmd.optionSet("I"))
-    DataSet::setCalcIntraSetFeatures(false);
+    cerr << "Intra set features are depricated, -I switch have no effect" << endl;
   if (cmd.optionSet("y"))
     DataSet::setEnzyme(NO_ENZYME);
   if (cmd.optionSet("R"))

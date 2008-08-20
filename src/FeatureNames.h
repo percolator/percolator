@@ -21,7 +21,7 @@ public:
   int getFeatureNumber(const string& featureName)
      {return distance(find(featureNames.begin(),featureNames.end(),featureName),featureNames.begin());}
   void setSQTFeatures(int minCharge, int maxCharge, bool doEnzyme, bool calcPTMs, bool doManyHitsPerSpectrum,
-                                 const string& aaAlphabet, bool calcIntraSetFeatures, bool calQuadraticFeatures, bool calcDOC);
+                                 const string& aaAlphabet, bool calQuadraticFeatures, bool calcDOC);
   // SQT Feature Number getters, will return -1 if not defined.
   int getMinCharge() { return minCharge; } 
   int getMaxCharge() { return maxCharge; }

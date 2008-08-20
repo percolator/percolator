@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.45 2008/07/09 00:54:19 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.46 2008/08/20 12:54:48 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -22,7 +22,6 @@ using namespace std;
 #include "SetHandler.h"
 #include "Scores.h"
 #include "Globals.h"
-#include "IntraSetRelation.h"
 
 SetHandler::SetHandler() {
 //	charge=c;
@@ -30,7 +29,6 @@ SetHandler::SetHandler() {
     n_examples=0;
     labels = NULL;
     c_vec = NULL;
-    intra=NULL;
 }
 
 SetHandler::~SetHandler()
@@ -41,9 +39,6 @@ SetHandler::~SetHandler()
     if (c_vec)
       delete [] c_vec;
     c_vec=NULL;
-    if (intra) 
-       delete intra;
-    intra=NULL;
     for(unsigned int ix=0;ix<subsets.size();ix++) {
       if (subsets[ix]!=NULL) 
         delete subsets[ix];
@@ -60,18 +55,16 @@ void SetHandler::filelessSetup(const unsigned int numFeatures, const unsigned in
 }
 
 void SetHandler::readFile(const string & fn, const int label) {
-  intra = new IntraSetRelation();
-  readFile(fn,label,subsets,intra);
+  readFile(fn,label,subsets);
   setSet();
 }
 
 void SetHandler::readFile(const string& fn, const string& wc, const bool match) {
-  intra = new IntraSetRelation();
-  readFile(fn,match?-1:1,subsets,intra,wc,match);
+  readFile(fn,match?-1:1,subsets,wc,match);
   setSet();
 }
 
-void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & sets, IntraSetRelation *intra, const string & wild, const bool match, bool calc) {
+void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & sets, const string & wild, const bool match) {
   ifstream fileIn(fn.c_str(),ios::in);
   if (!fileIn) {
     cerr << "Could not open file " << fn << endl;
@@ -90,7 +83,7 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
     }
     DataSet * pSet = new DataSet();
     pSet->setLabel(label);
-    pSet->readSQT(fn,intra,wild,match);
+    pSet->readSQT(fn,wild,match);
     sets.push_back(pSet);
   } else {
     // we hopefully found a meta file
@@ -99,16 +92,10 @@ void SetHandler::readFile(const string fn, const int label, vector<DataSet *> & 
     while(getline(meta,line2)) {
       if (line2.size()>0 && line2[0] != '#')
 //        cout << "0:" << line2[0] << " 1:" << line2[1] << " e:" << line2[line2.size()-1] << endl;
-        readFile(line2,label,sets,intra,wild,match,false);
+        readFile(line2,label,sets,wild,match);
     }
     meta.close();
   }
-  if (calc) {
-    vector<DataSet *>::iterator it;
-    for (it=sets.begin();it!=sets.end();it++) {
-      ((DataSet *)(*it))->computeIntraSetFeatures();
-    }
-  }  
 }
 
 void SetHandler::modifyFile(const string& fn, Scores& sc , const string& greet, bool dtaSelect) {
@@ -222,7 +209,6 @@ void SetHandler::setSet(){
 }
 
 void SetHandler::readTab(const string & dataFN, const int setLabel) {
-  intra = NULL;
   if (VERB>1) cerr << "Reading Tab delimetered input from datafile " << dataFN << endl; 
   ifstream labelStream(dataFN.c_str(),ios::out);
   if (!labelStream) {
@@ -278,7 +264,6 @@ void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetH
 
 
 void SetHandler::readGist(const string & dataFN, const string & labelFN, const int setLabel) {
-  intra = NULL;
   if (VERB>1) cerr << "Reading gist input from datafile " << dataFN << " and labels from " << labelFN << endl; 
   ifstream labelStream(labelFN.c_str(),ios::out);
   if (!labelStream) {

@@ -43,7 +43,6 @@ void FeatureNames::setSQTFeatures(
   bool calcPTMs, 
   bool doManyHitsPerSpectrum, 
   const string& aaAlphabet, 
-  bool calcIntraSetFeatures, 
   bool calcQuadratic, 
   bool calcDOC)
 {
@@ -86,11 +85,6 @@ void FeatureNames::setSQTFeatures(
     aaFeatNum = featureNames.size();
     for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
       featureNames.push_back(*it + "-Freq");
-  }
-  if (calcIntraSetFeatures) {
-    intraSetFeatNum = featureNames.size();
-    featureNames.push_back("numPep");
-    featureNames.push_back("pepSite");
   }
   if(calcQuadratic) {
     quadraticFeatNum = featureNames.size();

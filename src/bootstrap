@@ -1,7 +1,10 @@
 #!/bin/sh
 ##
-## $Id: bootstrap,v 1.1 2008/04/19 16:54:22 lukall Exp $
+## $Id: bootstrap,v 1.2 2008/08/20 12:54:48 lukall Exp $
 ## $Log: bootstrap,v $
+## Revision 1.2  2008/08/20 12:54:48  lukall
+## *** empty log message ***
+##
 ## Revision 1.1  2008/04/19 16:54:22  lukall
 ## *** empty log message ***
 ##
@@ -42,7 +45,7 @@
 ##     and automake-related files may not work and will need to be recreated
 ##     This distribution was created with GNU autoconf 2.59 and automake 1.9.2
 
-/bin/rm -rf config.cache autom4te.cache
+/bin/rm -rf config.cache autom4te.cache Makefile.in
 
 # require autoconf v 2.53 or later
 acver=`autoconf --version | sed -e '1s/[^0-9]*//' -e q`

@@ -7,56 +7,13 @@ AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(sr
 AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
 AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
 
-libqvality_la_SOURCES = \
-  BaseSpline.cpp \
-  BaseSpline.h \
-  Globals.cpp \
-  Globals.h \
-  LogisticRegression.cpp \
-  LogisticRegression.h \
-  Option.cpp \
-  Option.h \
-  PosteriorEstimator.cpp \
-  PosteriorEstimator.h \
-  Transform.h 
-
-EXTRA_DIST = \
-  ArrayLibrary/Array.cpp \
-  ArrayLibrary/Arithmetic.cpp \
-  ArrayLibrary/OrderedArray.cpp
-
-
-libArrayLibrary_la_SOURCES = \
-  ArrayLibrary/ArrayTypes.h \
-  ArrayLibrary/Array.h \
-  ArrayLibrary/Arithmetic.h \
-  ArrayLibrary/ArrayLibrary.h \
-  ArrayLibrary/MatrixFunctions.cpp \
-  ArrayLibrary/MatrixFunctions.h \
-  ArrayLibrary/Numerical.cpp \
-  ArrayLibrary/Numerical.h \
-  ArrayLibrary/OrderedArray.h \
-  ArrayLibrary/PackedMatrix.cpp \
-  ArrayLibrary/PackedMatrix.h \
-  ArrayLibrary/PackedSetFunctions.cpp \
-  ArrayLibrary/PackedSetFunctions.h \
-  ArrayLibrary/PackedVec.cpp \
-  ArrayLibrary/PackedVec.h \
-  ArrayLibrary/Random.cpp \
-  ArrayLibrary/Random.h \
-  ArrayLibrary/VectorFunctions.cpp \
-  ArrayLibrary/VectorFunctions.h
-
-if PERCOLATOR
-libpercolator_la_SOURCES = \
+perc_files = \
   Caller.cpp \
   Caller.h \
   DataSet.cpp \
   DataSet.h \
   DescriptionOfCorrect.cpp \
   DescriptionOfCorrect.h \
-  IntraSetRelation.cpp \
-  IntraSetRelation.h \
   FeatureNames.cpp \
   FeatureNames.h \
   Normalizer.cpp \
@@ -85,8 +42,9 @@ libpercolator_la_SOURCES = \
   svm.cpp \
   ssl.cpp \
   ssl.h
+ 
 
-libmstoolkit_la_SOURCES = \
+toolkit_files = \
   MSToolkit/MSConvertFile.cpp \
   MSToolkit/MSObject.cpp \
   MSToolkit/MSObject.h \
@@ -124,15 +82,66 @@ libmstoolkit_la_SOURCES = \
   MSToolkit/zLib/zutil.c \
   MSToolkit/zLib/zutil.h
 
+
+EXTRA_DIST = \
+  ArrayLibrary/Array.cpp \
+  ArrayLibrary/Arithmetic.cpp \
+  ArrayLibrary/OrderedArray.cpp
+
+
+if PERCOLATOR
+nodist_libpercolator_la_SOURCES = $(perc_files)
+
+nodist_libmstoolkit_la_SOURCES = $(toolkit_files)
+
 libmstoolkit_la_CPPFLAGS = ${CPPFLAGS} -I./MSToolkit -I./MSToolkit/zLib -I./MSToolkit/RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 
-percolator_SOURCES = main.cpp
+nodist_percolator_SOURCES = main.cpp
 percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la libmstoolkit.la
 
 PERCOLATOR_PROGRAM = percolator
 PERCOLATOR_LIBRARY = libpercolator.la libmstoolkit.la
 
+EXTRA_DIST +=  $(perc_files) $(toolkit_files) main.cpp
+
 endif
+
+libqvality_la_SOURCES = \
+  BaseSpline.cpp \
+  BaseSpline.h \
+  Globals.cpp \
+  Globals.h \
+  LogisticRegression.cpp \
+  LogisticRegression.h \
+  Option.cpp \
+  Option.h \
+  PosteriorEstimator.cpp \
+  PosteriorEstimator.h \
+  Transform.h 
+
+
+
+libArrayLibrary_la_SOURCES = \
+  ArrayLibrary/ArrayTypes.h \
+  ArrayLibrary/Array.h \
+  ArrayLibrary/Arithmetic.h \
+  ArrayLibrary/ArrayLibrary.h \
+  ArrayLibrary/MatrixFunctions.cpp \
+  ArrayLibrary/MatrixFunctions.h \
+  ArrayLibrary/Numerical.cpp \
+  ArrayLibrary/Numerical.h \
+  ArrayLibrary/OrderedArray.h \
+  ArrayLibrary/PackedMatrix.cpp \
+  ArrayLibrary/PackedMatrix.h \
+  ArrayLibrary/PackedSetFunctions.cpp \
+  ArrayLibrary/PackedSetFunctions.h \
+  ArrayLibrary/PackedVec.cpp \
+  ArrayLibrary/PackedVec.h \
+  ArrayLibrary/Random.cpp \
+  ArrayLibrary/Random.h \
+  ArrayLibrary/VectorFunctions.cpp \
+  ArrayLibrary/VectorFunctions.h
+
 
 noinst_LTLIBRARIES = libqvality.la libArrayLibrary.la $(PERCOLATOR_LIBRARY)
 bin_PROGRAMS = qvality $(PERCOLATOR_PROGRAM)

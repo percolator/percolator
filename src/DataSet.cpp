@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.85 2008/07/09 00:54:19 lukall Exp $
+ * $Id: DataSet.cpp,v 1.86 2008/08/20 12:54:47 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -23,18 +23,14 @@
 #include <string>
 using namespace std;
 #include "DataSet.h"
-#include "IntraSetRelation.h"
 #include "Scores.h"
 #include "ResultHolder.h"
 #include "Globals.h"
 
-//int DataSet::numFeatures = maxNumRealFeatures;
-//int DataSet::numRealFeatures = maxNumRealFeatures;
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcAAFrequencies = false;
 Enzyme DataSet::enzyme = TRYPSIN;
-bool DataSet::calcIntraSetFeatures = true;
 bool DataSet::calcPTMs = false;
 bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
@@ -152,21 +148,6 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
     out.str("");
   }
 }
-
-/*
-void DataSet::setNumFeatures(bool doc) {
-  numRealFeatures= maxNumRealFeatures
-                 - (enzyme==NO_ENZYME?3:0) 
-                 - (calcPTMs?0:1) 
-                 - (hitsPerSpectrum>1?0:1) 
-                 - (calcIntraSetFeatures?0:2)
-                 - (calcAAFrequencies?0:aaAlphabet.size()*3)
-                 - 3; // DOC features
-  numFeatures=(calcQuadraticFeatures?numRealFeatures*(numRealFeatures+1)/2:numRealFeatures);
-  calcDOC = doc;
-  if (doc) {numRealFeatures+=3; numFeatures+=3; }
-}
-*/
 
 double DataSet::isTryptic(const char n,const char c) {
   return (
@@ -353,7 +334,7 @@ string DataSet::modifyRec(const string record, int& row, const set<int>& theMs, 
   set<int>::const_iterator it;
   for(it=theMs.begin();it!=theMs.end();it++) {
     psmTmp.clear();
-    readFeatures(record,psmTmp,*it,true);
+    readFeatures(record,psmTmp,*it);
     PSMDescription psm = psms[row++];
     in >> tmp >> tmp >> rSp >> mass;
 //    outtmp << "M\t%i\t" << rSp << "\t" << mass << "\t";
@@ -457,7 +438,7 @@ void DataSet::modifySQT(const string & outFN, Scores * pSc ,const string greet, 
   sqtOut.close();
 }
    
-void DataSet::readFeatures(const string &in,PSMDescription &psm,int match, bool getIntra) {
+void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
   istringstream instr(in),linestr;
   ostringstream idbuild;
   string line,tmp;
@@ -549,8 +530,6 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match, bool 
     feat[2]=(xcorr-otherXcorr)/xcorr;
   }
   if (!isfinite(feat[2])) cerr << in;
-  if (getIntra)
-    computeIntraSetFeatures(feat,psm.peptide,psm.proteinIds);
 }
 
 void DataSet::computeAAFrequencies(const string& pep, double *feat) {
@@ -582,43 +561,7 @@ unsigned int DataSet::cntPTMs(const string& pep) {
   return len;
 }
 
-void DataSet::computeIntraSetFeatures(double * feat,string &pep,set<string> &prots) {
-  if (DataSet::calcIntraSetFeatures) {
-    feat[getFeatureNames().getIntraSetFeatNum()]=
-      log((double)intra->getNumPep(pep));
-//    feat[numRealFeatures-2]=
-//      log((double)intra->getNumProt(prots));
-    feat[getFeatureNames().getIntraSetFeatNum()+1]=
-      log((double)intra->getPepSites(prots));
-  }
-  if (DataSet::calcQuadraticFeatures) {
-    int ix = getFeatureNames().getQuadraticFeatNum();
-    for (int ixf1=1;ixf1<getFeatureNames().getQuadraticFeatNum();ixf1++){
-      double f1 = feat[ixf1];
-      for (int ixf2=0;ixf2<ixf1;ixf2++,ix++){
-        double f2 = feat[ixf2];
-        double fp=f1*f2;
-        double newFeature;
-        if (fp>=0.0) {
-          newFeature=sqrt(fp);
-        } else {
-          newFeature=-sqrt(-fp);
-        }
-        feat[ix]=newFeature;
-      }        
-    }
-  }
-}
-
-void DataSet::computeIntraSetFeatures() {
-  for(int row=0;row<numSpectra;row++) {
-    computeIntraSetFeatures(&feature[rowIx(row)],psms[row].peptide,psms[row].proteinIds);
-  }
-  return;
-}
-
-void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const string & wild, bool match) {
-  intra=intraRel;
+void DataSet::readSQT(const string fname,const string & wild, bool match) {
   matchPattern=match;
   pattern=wild;
   doPattern = !wild.empty();
@@ -663,13 +606,13 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
   sqtIn.seekg(0,ios::beg);
 
   getFeatureNames().setSQTFeatures(minCharge,maxCharge,enzyme!=NO_ENZYME,calcPTMs,hitsPerSpectrum>1,
-                                   (calcAAFrequencies?aaAlphabet:""),calcIntraSetFeatures,calcQuadraticFeatures,calcDOC);  
+                                   (calcAAFrequencies?aaAlphabet:""),calcQuadraticFeatures,calcDOC);  
   initFeatureTables(FeatureNames::getNumFeatures(),n, calcDOC);
 
   string seq;
   
   fileId = fname;
-  unsigned int spos = fileId.rfind('/');
+  size_t spos = fileId.rfind('/');
   if (spos!=string::npos)
     fileId.erase(0,spos+1);
   spos = fileId.find('.');
@@ -692,8 +635,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
           id.str("");id << idstr << '_' << (*it +1);
           ids[ix]=id.str();
           psms[ix].features = &feature[rowIx(ix)];
-          readFeatures(record,psms[ix],*it,false);
-          intra->registerRel(psms[ix].peptide,psms[ix].proteinIds);
+          readFeatures(record,psms[ix],*it);
           ix++;
         }
       }
@@ -729,8 +671,7 @@ void DataSet::readSQT(const string fname, IntraSetRelation * intraRel,const stri
     for(it=theMs.begin();it!=theMs.end();it++) {
       id.str("");id << idstr << '_' << *it;
       ids[ix]=id.str();
-      readFeatures(record,psms[ix],*it,false);
-      intra->registerRel(psms[ix].peptide, psms[ix].proteinIds);
+      readFeatures(record,psms[ix],*it);
       ix++;
     }
   }
