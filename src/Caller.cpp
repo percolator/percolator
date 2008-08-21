@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.105 2008/08/21 13:17:21 lukall Exp $
+ * $Id: Caller.cpp,v 1.106 2008/08/21 14:14:09 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -663,8 +663,11 @@ int Caller::run() {
           ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
   train(w);
 
+  if (!pCheck->validateDirection(w))
+    fullset.calcScores(w[0]);
   if (xv_type==EACH_STEP)
     fullset.merge(xv_test);
+  fullset.calcQ(test_fdr);
   fullset.estimatePi0();
   fullset.calcPep();
 
@@ -677,8 +680,6 @@ int Caller::run() {
   timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
   timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
   if (VERB>1) cerr << timerValues.str();
-  if (!pCheck->validateDirection(w))
-    fullset.calcScores(w[0]);
   normal.modifyFile(modifiedFN,fullset,extendedGreeter()+timerValues.str(), dtaSelect);
   shuffled.modifyFile(modifiedDecoyFN,fullset,extendedGreeter()+timerValues.str(), dtaSelect);
 
@@ -695,7 +696,7 @@ int Caller::run() {
   if (docFeatures) {
   	ofstream outs("retention_times.txt",ios::out);  	
     for (unsigned int set=0;set<xval_fold;++set) {
-      xv_test[set].printRetentionTime(outs,selectionfdr);
+      xv_test[set].printRetentionTime(outs,test_fdr);
     }
     outs.close();  
   }

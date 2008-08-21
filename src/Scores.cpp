@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.72 2008/08/06 12:33:43 lukall Exp $
+ * $Id: Scores.cpp,v 1.73 2008/08/21 14:14:10 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -192,6 +192,11 @@ int Scores::calcScores(vector<double>& w,double fdr) {
   	  cerr << scores[ix].score << " " << scores[ix].label << endl;
     }
   }
+  return calcQ(fdr);
+}
+
+int Scores::calcQ(double fdr) {
+  vector<ScoreHolder>::iterator it;
   int positives=0,nulls=0;
   double efp=0.0,q;
   for(it=scores.begin();it!=scores.end();it++) {
@@ -211,7 +216,7 @@ int Scores::calcScores(vector<double>& w,double fdr) {
     if (fdr>=q)
       posNow = positives;
   }
-  for (ix=scores.size();--ix;) {
+  for (int ix=scores.size();--ix;) {
     if (scores[ix-1].pPSM->q > scores[ix].pPSM->q)
       scores[ix-1].pPSM->q = scores[ix].pPSM->q;  
   }
