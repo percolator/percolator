@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.86 2008/08/20 12:54:47 lukall Exp $
+ * $Id: DataSet.cpp,v 1.87 2008/08/21 13:17:21 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -138,12 +138,13 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   for(;psm!=psms.end();psm++,ix++) {
     double score = test.getScoreHolder(psm->features)->score;
     double q = psm->q;
+    double pep = psm->pep;
     set<string> prots = psm->proteinIds;
     set<string>::const_iterator it = psm->proteinIds.begin();
     for(;it!=psm->proteinIds.end();it++) {
       out << "\t" << *it;
     }
-    ResultHolder rh(score,q,2.0,ids[ix],psm->peptide,out.str());    
+    ResultHolder rh(score,q,pep,ids[ix],psm->peptide,out.str());    
     outList.push_back(rh);
     out.str("");
   }

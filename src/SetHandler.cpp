@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.46 2008/08/20 12:54:48 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.47 2008/08/21 13:17:21 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -140,8 +140,7 @@ void SetHandler::print(Scores &test) {
   for (unsigned int setPos=0;setPos<subsets.size();setPos++) {
     subsets[setPos]->print(test,outList);
   }    
-  sort(outList.begin(),outList.end());
-  reverse(outList.begin(),outList.end());
+  sort(outList.begin(),outList.end(),greater<ResultHolder>());
 
   vector<ResultHolder >::iterator it = outList.begin();
 

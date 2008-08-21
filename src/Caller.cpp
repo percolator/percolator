@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.104 2008/08/20 12:54:47 lukall Exp $
+ * $Id: Caller.cpp,v 1.105 2008/08/21 13:17:21 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -666,6 +666,7 @@ int Caller::run() {
   if (xv_type==EACH_STEP)
     fullset.merge(xv_test);
   fullset.estimatePi0();
+  fullset.calcPep();
 
   time_t end;
   time (&end);
