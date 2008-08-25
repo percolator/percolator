@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.73 2008/08/21 14:14:10 lukall Exp $
+ * $Id: Scores.cpp,v 1.74 2008/08/25 14:53:52 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -353,12 +353,9 @@ void Scores::calcPep() {
   vector<double> peps;                                                                                                                  
   
   // Logistic regression on the data
-  PosteriorEstimator::estimatePEP(combined,pi0,peps);
+  PosteriorEstimator::estimatePEP(combined,pi0,peps,true);
 
-  size_t pix=0;
   for(size_t ix=0; ix<scores.size(); ix++) {
-    (scores[ix]).pPSM->pep = peps[pix];
-    if(scores[ix].label==1)
-      ++pix;
+    (scores[ix]).pPSM->pep = peps[ix];
   }
 }

@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.47 2008/08/21 13:17:21 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.48 2008/08/25 14:53:52 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -135,7 +135,7 @@ void SetHandler::modifyFile(const string& fn, vector<DataSet *> & sets, Scores& 
   fileIn.close();
 }
 
-void SetHandler::print(Scores &test) {
+void SetHandler::print(Scores &test,ostream & myout) {
   vector<ResultHolder > outList(0);
   for (unsigned int setPos=0;setPos<subsets.size();setPos++) {
     subsets[setPos]->print(test,outList);
@@ -144,9 +144,9 @@ void SetHandler::print(Scores &test) {
 
   vector<ResultHolder >::iterator it = outList.begin();
 
-  cout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds" << endl;  
+  myout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds" << endl;  
   for(;it!=outList.end();++it) {
-    cout << *it << endl;
+    myout << *it << endl;
   }
 }
 

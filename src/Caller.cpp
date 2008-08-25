@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.106 2008/08/21 14:14:09 lukall Exp $
+ * $Id: Caller.cpp,v 1.107 2008/08/25 14:53:52 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -196,6 +196,9 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     "Retention time features calculated as in Klammer et al.","",TRUE_IF_SET);
   cmd.defineOption("D","doc",
     "Include description of correct features.","",TRUE_IF_SET);
+  cmd.defineOption("B","decoy-results",
+    "Output results for decoys into a tab delimetered file",
+    "filename");
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -292,6 +295,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }
+  if (cmd.optionSet("B"))
+    decoyOut = cmd.options["B"];
   if (cmd.optionSet("M"))
     DescriptionOfCorrect::setIsotopeMass(true);
   if (cmd.optionSet("K"))
@@ -659,16 +664,29 @@ int Caller::run() {
     ((double)(procStartClock-startClock))/(double)CLOCKS_PER_SEC <<
     " cpu seconds or " << diff << " seconds wall time" << endl; 
 
-  if(VERB>0) cerr << "---Training with Cpos=" << selectedCpos <<
-          ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl;
+  if(VERB>0) { cerr << "---Training with Cpos";
+  	           if (selectedCpos>0) cerr << "=" << selectedCpos;
+  	           else cerr << " selected by cross validation";
+  	           cerr << ", Cneg";
+  	           if (selectedCneg>0) cerr << "=" << selectedCneg;
+  	           else cerr << " selected by cross validation";
+  	           cerr << ", fdr=" << selectionfdr << endl;
+  }
+  
   train(w);
 
   if (!pCheck->validateDirection(w))
     fullset.calcScores(w[0]);
-  if (xv_type==EACH_STEP)
+  if (xv_type==EACH_STEP) {
+  	if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;      	
     fullset.merge(xv_test);
-  fullset.calcQ(test_fdr);
+  }
+  if(VERB>0) cerr << "Calibrating statistics - estimating pi_0" << endl;      	
   fullset.estimatePi0();
+  if(VERB>0) cerr << "Calibrating statistics - calulating q values" << endl;      	
+  int foundPSMs = fullset.calcQ(test_fdr);
+  if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << " over q=" << test_fdr << endl;      	
+  if(VERB>0) cerr << "Calibrating statistics - calulating Posterior error probabilities (PEPs)" << endl;      	
   fullset.calcPep();
 
   time_t end;
@@ -693,6 +711,11 @@ int Caller::run() {
     fullset.printRoc(rocFN);
   }
   normal.print(fullset);
+  if (decoyOut.size()>0) {
+     ofstream decoyStream(decoyOut.data(),ios::out);
+     shuffled.print(fullset,decoyStream);
+     decoyStream.close();  
+  }
   if (docFeatures) {
   	ofstream outs("retention_times.txt",ios::out);  	
     for (unsigned int set=0;set<xval_fold;++set) {

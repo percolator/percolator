@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.h,v 1.7 2008/07/21 03:21:36 lukall Exp $
+ $Id: PosteriorEstimator.h,v 1.8 2008/08/25 14:53:52 lukall Exp $
  
  *******************************************************************************/
 
@@ -40,7 +40,7 @@ public:
   virtual ~PosteriorEstimator();
   bool parseOptions(int argc, char **argv);   
   void run();
-  static void estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps);
+  static void estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps, bool includeNegativesInResult=false);
   static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
   static void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
   static void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);

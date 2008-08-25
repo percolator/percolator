@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.19 2008/08/19 10:27:14 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.20 2008/08/25 14:53:52 lukall Exp $
  
  *******************************************************************************/
 
@@ -96,7 +96,7 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out, size_t max
 
 double mymin(double a,double b) {return a>b?b:a;}
 
-void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps) {
+void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps, bool includeNegativesInResult) {
   // Logistic regression on the data
   size_t nTargets=0,nDecoys=0;
   LogisticRegression lr;
@@ -109,9 +109,11 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
     if (elem->second) {
       xvals.push_back(elem->first);
       ++nTargets;
-    } else
+    } else {
+      if (includeNegativesInResult)
+        xvals.push_back(elem->first);
       ++nDecoys;
-      
+    }
   lr.predict(xvals,peps);
   
   double factor = pi0*((double)nTargets/(double)nDecoys);

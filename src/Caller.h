@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.h,v 1.48 2008/07/28 15:39:14 lukall Exp $
+ * $Id: Caller.h,v 1.49 2008/08/25 14:53:52 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -61,6 +61,7 @@ protected:
     string weightFN;
     string call;
     string spectrumFile;
+    string decoyOut;
     bool gistInput;
     bool tabInput;
     bool dtaSelect;

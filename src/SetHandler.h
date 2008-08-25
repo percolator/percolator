@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.h,v 1.25 2008/08/20 12:54:48 lukall Exp $
+ * $Id: SetHandler.h,v 1.26 2008/08/25 14:53:52 lukall Exp $
  *******************************************************************************/
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
@@ -39,7 +39,7 @@ public:
     void static gistWrite(const string & fileNameTrunk,const SetHandler& norm,const SetHandler& shuff);
 	int const getLabel(int setPos);
     inline int const getTrainingSetSize() {return examples.size();}
-    void print(Scores &test);    
+    void print(Scores &test, ostream& myout=cout);    
     inline int const getSize() {return n_examples;}
     inline DataSet * getSubSet(int ix) {return (subsets[ix]);}
     vector<DataSet *> & getSubsets() {return subsets;}
