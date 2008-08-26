@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.87 2008/08/21 13:17:21 lukall Exp $
+ * $Id: DataSet.cpp,v 1.88 2008/08/26 13:44:38 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -206,14 +206,14 @@ void DataSet::setRetentionTime(map<int,double>& scan2rt) {
     double minRT = (double) psm->scan, diffRT = psms.rbegin()->scan - psm->scan;
     if (diffRT==0.0) diffRT = 1.0; 
     for(; psm != psms.end(); ++psm) {
-      psm->retentionTime = 2.*((double) psm->scan - minRT)/diffRT-.5;
+      psm->retentionTime = 2.*((double) psm->scan - minRT)/diffRT-1;
     }
   } else {
     double minRT = scan2rt[0], diffRT = scan2rt[scan2rt.size()-1] - scan2rt[0];    
     if (diffRT==0.0) diffRT = 1.0;
     for(; psm != psms.end(); ++psm) {
       assert(scan2rt.count(psm->scan)>0); 
-      psm->retentionTime = 2.*(scan2rt[psm->scan] - minRT)/diffRT - .5;
+      psm->retentionTime = 2.*(scan2rt[psm->scan] - minRT)/diffRT - 1;
     }  
   }
 }
@@ -243,6 +243,8 @@ void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   is.clear();
   is.seekg(0,ios::beg);
   getline(is,line); // id line
+
+  //getFeatureNames().setFeatures(line,1,m);  
 
   unsigned int ix = 0;
   getline(is,line);
@@ -293,6 +295,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
   is.clear();
   is.seekg(0,ios::beg);
   getline(is,line); // id line
+//  getFeatureNames().setFeatures(line,2,m);  
 
   unsigned int ix = 0;
   getline(is,line);
@@ -510,7 +513,8 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
           psm.calcRegressionFeature();        
           feat[nxtFeat++]=abs(psm.pI-6.5);
           feat[nxtFeat++]=abs(psm.massDiff);              
-          feat[nxtFeat++]=abs(psm.retentionTime);
+//          feat[nxtFeat++]=abs(psm.retentionTime);
+          feat[nxtFeat++]=0;
         }
         gotL = false;
       }

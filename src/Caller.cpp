@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.107 2008/08/25 14:53:52 lukall Exp $
+ * $Id: Caller.cpp,v 1.108 2008/08/26 13:44:38 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -605,13 +605,13 @@ void Caller::fillFeatureSets() {
   set<DataSet *> all;
   all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
   all.insert(shuffled.getSubsets().begin(),shuffled.getSubsets().end());
-  pNorm=Normalizer::getNormalizer();
-  pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?DescriptionOfCorrect::totalNumRTFeatures():0);
-  pNorm->normalizeSet(all);
   if (docFeatures) {
     for (set<DataSet *>::iterator myset=all.begin();myset!=all.end();++myset)
       (*myset)->setRetentionTime(scan2rt);
   }
+  pNorm=Normalizer::getNormalizer();
+  pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?DescriptionOfCorrect::totalNumRTFeatures():0);
+  pNorm->normalizeSet(all);
 }
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {

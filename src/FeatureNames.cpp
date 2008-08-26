@@ -1,4 +1,5 @@
 #include <sstream>
+#include <assert.h>
 #include "FeatureNames.h"
 
 
@@ -36,6 +37,22 @@ string FeatureNames::getFeatureNames() {
   return oss.str();
 }
 
+void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
+  if (!featureNames.empty())
+    return;
+  istringstream iss(line);
+  string tmp;
+  while (iss.good() && skip && --skip) {
+    iss >> tmp;
+  }
+  int remain = numFields;
+  while (iss.good() && remain && --remain) {
+    iss >> tmp;
+    featureNames.push_back(tmp);
+  }
+  assert(featureNames.size()==numFields);
+  setNumFeatures(featureNames.size());    
+}
 
 void FeatureNames::setSQTFeatures(
   int minC, int maxC, 

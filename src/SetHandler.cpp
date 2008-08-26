@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.48 2008/08/25 14:53:52 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.49 2008/08/26 13:44:38 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -235,6 +235,7 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
   }
   dataStream >> tmp >> tmp;
   dataStream.get();        // removed enumrator, label and tab 
+  getline(dataStream,line);
   istringstream iss(line);
   while (iss.good()) {
     iss >> tmp;
@@ -289,6 +290,8 @@ void SetHandler::readGist(const string & dataFN, const string & labelFN, const i
   }
   dataStream >> tmp;
   dataStream.get();        // removed enumrator and tab 
+  getline(dataStream,line);
+  
   istringstream iss(line);
   while (iss.good()) {
     iss >> tmp;

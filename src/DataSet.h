@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.h,v 1.54 2008/08/20 12:54:48 lukall Exp $
+ * $Id: DataSet.h,v 1.55 2008/08/26 13:44:38 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -57,6 +57,7 @@ class DataSet
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
+    static double isEnz(const char n,const char c); 
 protected:
     void readFeatures(const string &in,PSMDescription &psm,int match);
     string modifyRec(const string record, int& row, const set<int>& theMs, Scores * pSc, bool dtaSelect);
@@ -66,7 +67,6 @@ protected:
     static double isTryptic(const char n,const char c);
     static double isChymoTryptic(const char n,const char c);
     static double isElastasic(const char n,const char c);
-    static double isEnz(const char n,const char c); 
     vector<string> ids;
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;

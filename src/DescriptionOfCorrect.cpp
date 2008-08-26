@@ -340,7 +340,7 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& peptide, double *f
     features = fillAAFeatures(peptide.substr(0,1), features);    
     features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
     char Ct = peptide[peptide.size()-1];   
-    *(features++) = ((Ct=='R' || Ct=='K')?1:0);    
+    *(features++) = DataSet::isEnz(Ct,'A');    
     *(features++) = peptide.size();
     *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
       

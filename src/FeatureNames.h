@@ -17,7 +17,8 @@ public:
   
   
   void insertFeature(string& featureName) { featureNames.push_back(featureName);}
-  
+  void setFeatures(string& line, size_t skip, size_t numFeatures);
+   
   int getFeatureNumber(const string& featureName)
      {return distance(find(featureNames.begin(),featureNames.end(),featureName),featureNames.begin());}
   void setSQTFeatures(int minCharge, int maxCharge, bool doEnzyme, bool calcPTMs, bool doManyHitsPerSpectrum,
