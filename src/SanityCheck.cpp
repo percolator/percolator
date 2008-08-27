@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.6 2008/06/20 23:55:35 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.7 2008/08/27 13:57:04 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -46,8 +46,8 @@ int SanityCheck::getInitDirection(vector<Scores>& testset, vector<Scores>& train
   }
   initPositives = 0;
   for (size_t set = 0; set<w.size();++set)
-    initPositives += (*pTestset)[set].getInitDirection(fdr,w[set],false);
-  return initPositives;
+    initPositives += (*pTrainset)[set].getInitDirection(fdr,w[set],false);
+  return (int)(initPositives/max<double>((double)(w.size()-1),1.0));
 }
 
 void SanityCheck::getDefaultDirection(vector< vector<double> >& w) {

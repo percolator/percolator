@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Scores.cpp,v 1.74 2008/08/25 14:53:52 lukall Exp $
+ * $Id: Scores.cpp,v 1.75 2008/08/27 13:57:04 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -326,10 +326,6 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
     }
   } else {
     bestPositives = calcScores(direction,fdr);
-    if (VERB>1) {
-      cerr << "Found " << 
-              bestPositives << " positives in the initial search direction" << endl;
-    }    
   }
   return bestPositives;
 }

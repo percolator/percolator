@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.88 2008/08/26 13:44:38 lukall Exp $
+ * $Id: DataSet.cpp,v 1.89 2008/08/27 13:57:04 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -209,7 +209,7 @@ void DataSet::setRetentionTime(map<int,double>& scan2rt) {
       psm->retentionTime = 2.*((double) psm->scan - minRT)/diffRT-1;
     }
   } else {
-    double minRT = scan2rt[0], diffRT = scan2rt[scan2rt.size()-1] - scan2rt[0];    
+    double minRT = scan2rt.begin()->second, diffRT = scan2rt.rbegin()->second - minRT;    
     if (diffRT==0.0) diffRT = 1.0;
     for(; psm != psms.end(); ++psm) {
       assert(scan2rt.count(psm->scan)>0); 

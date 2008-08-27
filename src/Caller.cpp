@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: Caller.cpp,v 1.108 2008/08/26 13:44:38 lukall Exp $
+ * $Id: Caller.cpp,v 1.109 2008/08/27 13:57:04 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -525,7 +525,7 @@ void Caller::trainEm(vector<vector<double> >& w) {
       }
     }
       
-    if(VERB>2) {cerr<<"Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);}
+    if(VERB>2) {cerr<<"Obtained weights" << endl; for (size_t set=0;set<xval_fold;++set) printWeights(cerr,w[set]);}
   }
   if(VERB==2 ) { 
     cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);
@@ -652,7 +652,9 @@ int Caller::run() {
   readFiles(doSingleFile);
   fillFeatureSets();
   vector<vector<double> > w(xval_fold,vector<double>(FeatureNames::getNumFeatures()+1)),ww;
-  preIterationSetup(w);
+  int firstNumberOfPositives = preIterationSetup(w);
+  if(VERB>0) cerr << "Estimating " << firstNumberOfPositives << " over q=" << test_fdr << " in intial direction" << endl;      	
+  
 
   // Set up a first guess of w
   time_t procStart;
