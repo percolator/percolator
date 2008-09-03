@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Transform.h,v 1.3 2008/06/10 21:35:14 lukall Exp $
+ $Id: Transform.h,v 1.4 2008/09/03 12:39:17 lukall Exp $
  
  *******************************************************************************/
 #ifndef TRANSFORM_H_
@@ -37,7 +37,7 @@ public:
   ~Transform() {;}
   double operator() (double xx) {
     if ((!doLogit) && (!doLog)) return xx;
-    if (deltaLow>0 && deltaHigh>0) {
+    if ((deltaLow>.0) || (deltaHigh>.0)) {
       if (doLogit) xx *= (1.-deltaHigh-deltaLow);
       xx += deltaLow;
     }
