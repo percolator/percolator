@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.20 2008/08/25 14:53:52 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.21 2008/10/28 14:41:10 lukall Exp $
  
  *******************************************************************************/
 
@@ -115,6 +115,14 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
       ++nDecoys;
     }
   lr.predict(xvals,peps);
+#define OUTPUT_DEBUG_FILES
+#ifdef OUTPUT_DEBUG_FILES
+  ofstream drFile("decoyRate.all",ios::out),xvalFile("xvals.all",ios::out);
+  ostream_iterator<double> drIt(drFile,"\n"),xvalIt(xvalFile,"\n");
+
+  copy(peps.begin(),peps.end(),drIt);  
+  copy(xvals.begin(),xvals.end(),xvalIt);  
+#endif
   
   double factor = pi0*((double)nTargets/(double)nDecoys);
   double top = min(1.0,factor*exp(*max_element(peps.begin(),peps.end())));

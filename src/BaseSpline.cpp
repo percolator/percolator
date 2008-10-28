@@ -22,12 +22,15 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.cpp,v 1.10 2008/08/19 10:27:14 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.11 2008/10/28 14:42:14 lukall Exp $
  
  *******************************************************************************/
 
 #include<iterator>
 #include<vector>
+#include<algorithm>
+#include<numeric>
+#include<functional>
 using namespace std;
 #include "ArrayLibrary.h"
 #include "BaseSpline.h"

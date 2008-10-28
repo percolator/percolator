@@ -22,9 +22,17 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: LogisticRegression.cpp,v 1.3 2008/05/20 00:24:43 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.4 2008/10/28 14:41:10 lukall Exp $
  
  *******************************************************************************/
+#include<iterator>
+#include<vector>
+#include<algorithm>
+#include<numeric>
+#include<functional>
+#include<fstream>
+#include<sstream>
+using namespace std;
 
 #include "ArrayLibrary.h"
 #include "LogisticRegression.h"
@@ -69,6 +77,18 @@ void LogisticRegression::initg() {
     double p = (y[ix]+0.1)/(m[ix]+0.1);
     gnew[ix] = log(p/(1-p));
   }
+#define OUTPUT_DEBUG_FILES
+#ifdef OUTPUT_DEBUG_FILES
+  ofstream drFile("decoyRate.bins",ios::out),xvalFile("xvals.bins",ios::out);
+  ostream_iterator<double> xvalIt(xvalFile,"\n");
+
+  copy(x.begin(),x.end(),xvalIt);
+  
+  for(size_t yix=0;yix<y.size();++yix) {
+    drFile << y[yix]/(double) m[yix] << endl;
+  }
+  drFile.close();  
+#endif
 }
 
 
