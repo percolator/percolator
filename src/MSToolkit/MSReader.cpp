@@ -33,7 +33,7 @@ MSHeader& MSReader::getHeader(){
 /* 0 = File opened correctly
    1 = Could not open file
 */
-int MSReader::openFile(char *c,bool text){
+int MSReader::openFile(const char *c,bool text){
 	int i;
 
 	if(text) fileIn=fopen(c,"rt");
@@ -112,7 +112,7 @@ Spectrum MSReader::readBinaryFile(char *c, Spectrum& s, int scNum){
 };
 */
 
-bool MSReader::readFile(char *c, bool text, Spectrum& s, int scNum){
+bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
 	MSScanInfo ms;
 	Peak_T p;
 	ZState z;
@@ -357,7 +357,7 @@ int MSReader::getPercent(){
   return -1;
 };
 
-void MSReader::writeFile(char* c, bool text, MSObject& m){
+void MSReader::writeFile(const char* c, bool text, MSObject& m){
 
   FILE* fileOut;
   int i;
@@ -406,7 +406,7 @@ void MSReader::writeFile(char* c, bool text, MSObject& m){
 	fclose(fileOut);
 };
 
-void MSReader::writeFile(char* c, MSFileFormat ff, MSObject& m){
+void MSReader::writeFile(const char* c, MSFileFormat ff, MSObject& m){
 
   int i;
 
@@ -472,7 +472,7 @@ void MSReader::writeFile(char* c, MSFileFormat ff, MSObject& m){
 
 };
 
-void MSReader::appendFile(char* c, bool text, Spectrum& s){
+void MSReader::appendFile(const char* c, bool text, Spectrum& s){
 	FILE* fileOut;
 
 	if(c == NULL) return;
@@ -497,7 +497,7 @@ void MSReader::appendFile(char* c, bool text, Spectrum& s){
 
 };
 
-void MSReader::appendFile(char* c, Spectrum& s){
+void MSReader::appendFile(const char* c, Spectrum& s){
   MSFileFormat ff;
 	FILE* fileOut;
 
@@ -558,7 +558,7 @@ void MSReader::appendFile(char* c, Spectrum& s){
 
 };
 
-void MSReader::appendFile(char* c, bool text, MSObject& m){
+void MSReader::appendFile(const char* c, bool text, MSObject& m){
 
   FILE* fileOut;
   int i;
@@ -592,7 +592,7 @@ void MSReader::appendFile(char* c, bool text, MSObject& m){
 	fclose(fileOut);
 };
 
-void MSReader::appendFile(char* c, MSObject& m){
+void MSReader::appendFile(const char* c, MSObject& m){
 
   MSFileFormat ff;
 	FILE* fileOut;
@@ -651,14 +651,14 @@ void MSReader::setPrecisionMZ(int i){
 	iMZPrecision=i;
 };
 
-bool MSReader::readFile(char* c, Spectrum& s, int scNum){
+bool MSReader::readFile(const char* c, Spectrum& s, int scNum){
 
   if(c!=NULL) lastFileFormat = checkFileFormat(c);   
   return readFile(c,lastFileFormat,s,scNum);
 
 };
 
-bool MSReader::readFile(char* c, MSFileFormat f, Spectrum& s, int scNum){
+bool MSReader::readFile(const char* c, MSFileFormat f, Spectrum& s, int scNum){
 
 	//Redirect functions to appropriate places, if possible.
 	switch(f){
@@ -1020,7 +1020,7 @@ void MSReader::readSpecHeader(FILE *fileIn, MSScanInfo &ms){
 
 };
 
-MSFileFormat MSReader::checkFileFormat(char *fn){
+MSFileFormat MSReader::checkFileFormat(const char *fn){
 
   int i,j;
 

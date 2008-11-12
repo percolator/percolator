@@ -22,10 +22,11 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Option.cpp,v 1.8 2008/05/07 21:25:08 lukall Exp $
+ $Id: Option.cpp,v 1.9 2008/11/12 11:55:35 lukall Exp $
  
  *******************************************************************************/
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <map>

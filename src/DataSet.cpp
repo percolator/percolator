@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.89 2008/08/27 13:57:04 lukall Exp $
+ * $Id: DataSet.cpp,v 1.90 2008/11/12 11:55:35 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -591,7 +591,7 @@ void DataSet::readSQT(const string fname,const string & wild, bool match) {
          if (maxCharge<charge) maxCharge=charge; 
          ms=0;
     }
-    if (look & line[0]=='L' && ms < hitsPerSpectrum) {
+    if (look && line[0]=='L' && ms < hitsPerSpectrum) {
          lineParse.clear();
          lineParse.str(line);  
          lineParse >> tmp >> prot;

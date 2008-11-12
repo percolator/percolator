@@ -1,4 +1,5 @@
 #include "Spectrum.h"
+#include <cstdlib>
 #include <iostream>
 
 Spectrum::Spectrum(){

@@ -22,9 +22,10 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Random.cpp,v 1.2 2008/05/07 21:25:08 lukall Exp $
+ $Id: Random.cpp,v 1.3 2008/11/12 11:55:35 lukall Exp $
  
  *******************************************************************************/
+#include <cstdlib>
 #include "Random.h"
 
 double Random::uniform(double a, double b)

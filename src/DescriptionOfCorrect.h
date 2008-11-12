@@ -45,9 +45,10 @@ protected:
   static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
   double avgPI,avgDM;
   size_t numRTFeat;
-  
+
   vector<PSMDescription *> psms; 
 //  vector<double> rtW; 
+  
   svm_model *model;
   static float krokhin_index['Z'-'A'+1],hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1];
   static string aaAlphabet,isoAlphabet;

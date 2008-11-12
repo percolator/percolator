@@ -22,13 +22,14 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.21 2008/10/28 14:41:10 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.22 2008/11/12 11:55:35 lukall Exp $
  
  *******************************************************************************/
 
 #include<vector>
 #include<utility>
 #include<cstdlib>
+#include<limits.h>
 #include<fstream>
 #include<sstream>
 #include<iterator>

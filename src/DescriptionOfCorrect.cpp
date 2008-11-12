@@ -1,4 +1,5 @@
 #include <vector>
+#include <cstring>
 #include <cmath>
 #include <assert.h>
 #include "svm.h"
