@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: DataSet.cpp,v 1.90 2008/11/12 11:55:35 lukall Exp $
+ * $Id: DataSet.cpp,v 1.91 2008/11/13 09:13:47 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -358,8 +358,8 @@ string DataSet::modifyRec(const string record, int& row, const set<int>& theMs, 
     outtmp.str("");
   }
   if(dtaSelect) {
-    outputs.push_back(pair<double,string>(-1000,
-      "M\t600\t600\t1\t%6.4g\t-1000\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n"));
+    outputs.push_back(pair<double,string>(-1,
+      "M\t600\t600\t1\t%6.4g\t-1\t-1\t0\t0\tI.AMINVALI.D\tU\nL\tPlaceholder satisfying DTASelect\n"));
   }
   sort(outputs.begin(),outputs.end());
   reverse(outputs.begin(),outputs.end());
