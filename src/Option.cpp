@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Option.cpp,v 1.9 2008/11/12 11:55:35 lukall Exp $
+ $Id: Option.cpp,v 1.10 2008/11/25 16:02:57 lukall Exp $
  
  *******************************************************************************/
 
@@ -33,6 +33,13 @@
 #include <vector>
 using namespace std;
 #include "Option.h"
+
+void searchandreplace( string& source, const string& find, const string& replace )
+{
+  size_t j;
+  for (;(j = source.find( find )) != string::npos;)
+    source.replace( j, find.length(), replace );
+}
 
 Option::Option (string shrt, string lng, string nm, string hlp,string hlpType, OptionOption typ) {
   type=typ;
@@ -131,7 +138,37 @@ void CommandLineParser::help() {
   exit(0);
 }
 
+
+void CommandLineParser::htmlHelp() {
+  cerr << "<html><title>Title</title><body><blockquote><code>" << endl;
+  string htmlHeader = header;
+  searchandreplace(htmlHeader,"\n","<br/>");
+  cerr << htmlHeader << endl << "Options:" << endl;
+  cerr << "<table border=0>" << endl;
+  for (unsigned int i=opts.size(); i-- ;) {
+    cerr << "<td><code>" << opts[i].shortOpt;
+    if (opts[i].helpType.length()>0)
+      cerr << " &lt;" << opts[i].helpType << "&gt;";
+    cerr << "<br/>" << endl;
+    cerr << " " + opts[i].longOpt;
+    if (opts[i].helpType.length()>0) {
+      cerr << " &lt;" << opts[i].helpType << "&gt;";
+    }
+    cerr << "</code></td>" << endl;    
+    cerr << "<td><code>" << opts[i].help << "</code></td></tr><br/>" << endl;
+  }
+  cerr << "</table>" << endl;
+  string htmlEnd = endnote;
+  searchandreplace(htmlEnd,"\n","<br>");
+  cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
+  cerr << "</code></blockquote></body></html>" << endl;
+  exit(0);
+}
+
 void CommandLineParser::findOption(char **argv, int &index) {
+  if ((string)argv[index] == "-html" || (string)argv[index] == "--html")
+    htmlHelp();
+
   if ((string)argv[index] == "-h" || (string)argv[index] == "--help")
     help();
 

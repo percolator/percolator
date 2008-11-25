@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Option.h,v 1.7 2008/05/07 21:25:08 lukall Exp $
+ $Id: Option.h,v 1.8 2008/11/25 16:02:57 lukall Exp $
  
  *******************************************************************************/
 #ifndef OPTION_H_
@@ -61,6 +61,7 @@ class CommandLineParser
     double getDouble(string dest,double lower,double upper);
     int getInt(string dest,int lower,int upper);
     void help();
+    void htmlHelp();
     map<string,string> options;
     vector<string> arguments;
   private:

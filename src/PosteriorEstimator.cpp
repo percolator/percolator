@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.22 2008/11/12 11:55:35 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.23 2008/11/25 16:02:57 lukall Exp $
  
  *******************************************************************************/
 
@@ -116,7 +116,8 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
       ++nDecoys;
     }
   lr.predict(xvals,peps);
-#define OUTPUT_DEBUG_FILES
+//#define OUTPUT_DEBUG_FILES
+#undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.all",ios::out),xvalFile("xvals.all",ios::out);
   ostream_iterator<double> drIt(drFile,"\n"),xvalIt(xvalFile,"\n");
@@ -396,7 +397,7 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
     "value");
 
   cmd.defineOption("r","reverse",
-    "Indicating that the scoring mechanism is reversed i.e. that low scores are better than higher scores",
+    "Indicating that the scoring mechanism is reversed, i.e., that low scores are better than higher scores",
     "",TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
