@@ -22,6 +22,7 @@ static double REGRESSION_C = 1.0;
 
 string DescriptionOfCorrect::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DescriptionOfCorrect::isoAlphabet = "DECYHKR";   
+string DescriptionOfCorrect::ptmAlphabet = "#*@";   
 float DescriptionOfCorrect::pKiso[7] = {-3.86,-4.25,-8.33,-10.0,6.0,10.5,12.4}; // Lehninger
 float DescriptionOfCorrect::pKN = 9.69;
 float DescriptionOfCorrect::pKC = 2.34;
@@ -328,8 +329,21 @@ double DescriptionOfCorrect::isoElectricPoint(const string& pep) {
  return pH;
 }
 
-void DescriptionOfCorrect::fillFeaturesAllIndex(const string& peptide, double *features) {
+void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *features) {
+  unsigned int ptms=0;
+  string peptide = pep;
+  string::size_type posP = 0, pos = 0;
+  while (posP < ptmAlphabet.length()) {
+    while ( (pos = peptide.find(ptmAlphabet[posP], pos)) != string::npos ) {
+      peptide.replace( pos, 1, "");
+      ++pos;
+      ++ptms;
+    }
+    ++posP;
+  }  
+
   if(!doKlammer) {
+    *(features++) = (double) ptms;    
     features = fillFeaturesIndex(peptide, krokhin_index, features);
     features = fillFeaturesIndex(peptide, hessa_index, features);
     features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
