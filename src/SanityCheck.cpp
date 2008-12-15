@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.7 2008/08/27 13:57:04 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.8 2008/12/15 15:51:46 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -72,7 +72,7 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
      return false;
   }
   if (initPositives>=overFDR) {
-     cerr << "Less identifications after percolator processing than before processing" << endl;
+     cerr << "Less identifications ("<< overFDR << " vs " << initPositives << ") after percolator processing than before processing" << endl;
      resetDirection(w);
      return false;
   }
