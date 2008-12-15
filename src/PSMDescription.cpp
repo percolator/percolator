@@ -17,5 +17,6 @@ void PSMDescription::calcRegressionFeature() {
   if (retentionFeatures) {
     DescriptionOfCorrect::fillFeaturesAllIndex(pep, retentionFeatures);
   }
+//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
 }
 

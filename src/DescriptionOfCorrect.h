@@ -22,7 +22,7 @@ public:
   void trainCorrect();
   void setFeatures(PSMDescription* pPSM);
   static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + aaAlphabet.size());}
-  static size_t minimumNumRTFeatures() {return 3*8+2;}
+  static size_t minimumNumRTFeatures() {return 3*9+2;}
   void print_10features();
   double estimateRT(double * features);
   void copyModel(svm_model* from);
@@ -40,6 +40,7 @@ protected:
   static inline double indexC(const float *index, const string& peptide);
   static inline double indexNC(const float *index, const string& peptide);
   static inline double* indexPartialSum(const float* index, const string& peptide, const size_t window, double *features);
+  static double indexNearestNeigbour(const float* index, const string& peptide);
   inline double deltadeltaMass(double dm);
   static double* fillAAFeatures(const string& pep, double *feat);
   static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);

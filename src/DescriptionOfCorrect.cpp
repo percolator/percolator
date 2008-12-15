@@ -1,6 +1,7 @@
 #include <vector>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include <assert.h>
 #include "svm.h"
 #include "Globals.h"
@@ -232,6 +233,19 @@ double DescriptionOfCorrect::indexAvg(const float* index, const string& peptide)
   return sum/(double)peptide.size();
 }
 
+double DescriptionOfCorrect::indexNearestNeigbour(const float* index, const string& peptide) {
+  double sum = 0.0;
+  for(unsigned int ix = 0; ix < peptide.size();++ix) {
+    if (peptide[ix]=='H' && peptide[ix]=='R' && peptide[ix]=='K') {
+      if (ix>0) 
+        sum += max(0.0f,index[peptide[ix-1]-'A']);
+      if (ix<peptide.size()-1) 
+        sum += max(0.0f,index[peptide[ix+1]-'A']);    
+    }
+  }
+  return sum;
+}
+
 inline double DescriptionOfCorrect::indexN(const float *index, const string& peptide) {
   return index[peptide[0]-'A'];
 }
@@ -269,7 +283,7 @@ double* DescriptionOfCorrect::fillFeaturesIndex(const string& peptide, const flo
   *(features++) = indexAvg(index,peptide);
   *(features++) = indexN(index,peptide);
   *(features++) = indexC(index,peptide);
-//  *(features++) = indexNC(index,peptide);
+  *(features++) = indexNearestNeigbour(index,peptide);
   features = indexPartialSum(index,peptide,3,features);
   features = indexPartialSum(index,peptide,5,features);
   return features;
@@ -344,11 +358,11 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *featu
   }
 
   if(!doKlammer) {
-    *(features++) = (double) ptms;
     features = fillFeaturesIndex(peptide, krokhin_index, features);
     features = fillFeaturesIndex(peptide, hessa_index, features);
     features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
     *(features++) = peptide.size();
+    *(features++) = (double) ptms;
     features = fillAAFeatures(peptide, features);
   } else {
   	// Klammer et al. features
@@ -361,12 +375,13 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *featu
     *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
 
   }
+//  cout <<  pep << " " << peptide << endl;
 }
 
 
 float DescriptionOfCorrect::krokhin_index['Z'-'A'+1] =
-         {0.8, 0.0, -0.8, -0.5, 0.0,  10.5, -0.9, -1.3, 8.4, 0.0, -1.9,9.6,5.8,
-          -1.2,0.0,0.2,-0.9,-1.3,-0.8,0.4,0.0,5.0,11.0,0.0,4.0,0.0};
+         {1.1, 0.0, 0.45, 0.15, 0.95,  10.9, -0.35, -1.45, 8.0, 0.0, -2.05,9.3,6.2,
+          -0.85,0.0,2.1,-0.4,-1.4,-0.15,0.65,0.0,5.0,12.25,0.0,4.85,0.0};
 // negated hessa scale
 float DescriptionOfCorrect::hessa_index['Z'-'A'+1] =
          {-0.11,-0.0,0.13,-3.49,-2.68,0.32,-0.74,-2.06,0.60,0.0,-2.71,0.55,0.10,-2.05,
