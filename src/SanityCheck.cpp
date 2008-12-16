@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
  * Department of Genome Science at the University of Washington. 
  *
- * $Id: SanityCheck.cpp,v 1.9 2008/12/15 17:41:22 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.10 2008/12/16 09:47:36 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -47,7 +47,8 @@ int SanityCheck::getInitDirection(vector<Scores>& testset, vector<Scores>& train
   initPositives = 0;
   for (size_t set = 0; set<w.size();++set)
     initPositives += (*pTrainset)[set].getInitDirection(fdr,w[set],false);
-  return (int)(initPositives/max<double>((double)(w.size()-1),1.0));
+  initPositives /= max<double>((double)(w.size()-1),1.0);
+  return (int)(initPositives);
 }
 
 void SanityCheck::getDefaultDirection(vector< vector<double> >& w) {
@@ -73,9 +74,8 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   }
   if (initPositives>=overFDR) {
      cerr << "Less identifications ("<< overFDR << " vs " << initPositives << ") after percolator processing than before processing" << endl;
-// Temporarly disabeling the reset
-//     resetDirection(w);
-//     return false;
+     resetDirection(w);
+     return false;
   }
   return true;
 }
