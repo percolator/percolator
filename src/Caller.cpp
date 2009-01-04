@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.cpp,v 1.109 2008/08/27 13:57:04 lukall Exp $
+ * $Id: Caller.cpp,v 1.110 2009/01/04 22:49:30 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -34,7 +34,7 @@ const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   modifiedFN(""), modifiedDecoyFN(""), forwardFN(""), decoyFN (""), //shuffledThresholdFN(""), shuffledTestFN(""),
-  decoyWC(""), rocFN(""), gistFN(""), tabFN(""), weightFN(""),
+  decoyWC(""), rocFN(""), gistFN(""), tabFN(""), xmloutFN(""), weightFN(""),
   gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
   niter(10), seed(0), xv_type(EACH_STEP)
@@ -74,8 +74,8 @@ string Caller::greeter() {
   oss << "Percolator unofficial version, ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Copyright (c) 2006-8 University of Washington. All rights reserved." << endl;
-  oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl; 
-  oss << "Department of Genome Science at the University of Washington." << endl; 
+  oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl;
+  oss << "Department of Genome Sciences at the University of Washington." << endl;
   return oss.str();
 }
 
@@ -122,7 +122,7 @@ Typically set to random_seq","pattern");
     "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
     "value");
   cmd.defineOption("i","maxiter",
-    "Maximal number of iteratins",
+    "Maximal number of iterations",
     "number");
   cmd.defineOption("m","matches",
     "Maximal number of matches to take in consideration per spectrum when using sqt-files",
@@ -141,8 +141,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
     "file name");
   cmd.defineOption("j","tab-in",
-    "Input files are given as a tab delimetered file. In this case the only argument should be a file name\
-of the data file. The tab delimeterad fields should be id <tab> label <tab> feature1 \
+    "Input files are given as a tab delimited file. In this case the only argument should be a file name\
+of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
 <tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
 Labels are interpreted as 1 -- positive train \
 and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
@@ -152,6 +152,9 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   cmd.defineOption("W","init-weights",
     "Read initial weights from the given file",
     "filename");
+  cmd.defineOption("V","default-direction",
+    "The most informative feature given as feature number, can be negated to indicate that a lower value is better.",
+    "featureNum");
   cmd.defineOption("v","verbose",
     "Set verbosity of output: 0=no processing info, 5=all, default is 2",
     "level");
@@ -164,14 +167,14 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   cmd.defineOption("b","PTM","Calculate feature for number of post-translational modifications","",TRUE_IF_SET);
   cmd.defineOption("d","DTASelect",
     "Add an extra hit to each spectra when writing sqt files","",TRUE_IF_SET);
-  cmd.defineOption("R","test-each-itteration","Measure performance on test set each itteration","",TRUE_IF_SET);
+  cmd.defineOption("R","test-each-iteration","Measure performance on test set each iteration","",TRUE_IF_SET);
   cmd.defineOption("Q","quadratic",
     "Calculate quadratic feature terms","",TRUE_IF_SET);
   cmd.defineOption("O","override",
-    "Overide error check and do not fall back on default score vector in case of suspect score vector",
+    "Override error check and do not fall back on default score vector in case of suspect score vector",
     "",TRUE_IF_SET);
   cmd.defineOption("I","intra-set",
-    "Depricated switch --- Turn Off calculation of intra set features","",TRUE_IF_SET);
+    "Depricated switch --- Turn Off calculation of intra-set features","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
     "Turn off calculation of tryptic/chymo-tryptic features.","",TRUE_IF_SET);
   cmd.defineOption("c","chymo",
@@ -179,11 +182,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   cmd.defineOption("e","elastase",
     "Replace tryptic features with elastase features.","",TRUE_IF_SET);
   cmd.defineOption("x","whole-xval",
-    "Select hyper parameter cross validation to be performed on whole itterating procedure, rather than on each iteration step."
+    "Select hyper parameter cross validation to be performed on whole iterating procedure, rather than on each iteration step."
     ,"",TRUE_IF_SET);
-  cmd.defineOption("q","pi0",
-    "Estimated proportion of PSMs generated by a random model. Default value is 1-0.1/<value of -m option>."
-    ,"value");
   cmd.defineOption("S","seed",
     "Setting seed of the random number generator. Default value is 0"
     ,"value");
@@ -197,13 +197,16 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   cmd.defineOption("D","doc",
     "Include description of correct features.","",TRUE_IF_SET);
   cmd.defineOption("B","decoy-results",
-    "Output results for decoys into a tab delimetered file",
+    "Output results for decoys into a tab delimited file",
+    "filename");
+  cmd.defineOption("X","xml-output",
+    "Output results in xml-format into a file",
     "filename");
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
 
-  
+
   // now query the parsing results
   if (cmd.optionSet("o"))
     modifiedFN = cmd.options["o"];
@@ -224,21 +227,23 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     if (cmd.arguments.size()!=2) {
       cerr << "Provide exactly two arguments when using gist input" << endl;
       exit(-1);
-    }   
+    }
   }
   if (cmd.optionSet("J"))
     tabFN = cmd.options["J"];
   if (cmd.optionSet("j")) {
     tabInput=true;
     if (cmd.arguments.size()!=1) {
-      cerr << "Provide exactly one arguments when using tab delimetered input" << endl;
+      cerr << "Provide exactly one arguments when using tab delimited input" << endl;
       exit(-1);
-    }   
+    }
   }
   if (cmd.optionSet("w"))
     weightFN = cmd.options["w"];
   if (cmd.optionSet("W"))
     SanityCheck::setInitWeightFN(cmd.options["W"]);
+  if (cmd.optionSet("V"))
+    SanityCheck::setInitDefaultDir(cmd.getInt("V",-100,100));
   if (cmd.optionSet("f")) {
     double frac = cmd.getDouble("f", 0.0 ,1.0);
     trainRatio=frac;
@@ -254,7 +259,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
   if (cmd.optionSet("O"))
     SanityCheck::setOverrule(true);
   if (cmd.optionSet("I"))
-    cerr << "Intra set features are depricated, -I switch have no effect" << endl;
+    cerr << "Intra-set features are depricated, -I switch have no effect" << endl;
   if (cmd.optionSet("y"))
     DataSet::setEnzyme(NO_ENZYME);
   if (cmd.optionSet("R"))
@@ -273,12 +278,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     niter = cmd.getInt("i",0,100000000);
   }
   if (cmd.optionSet("m")) {
-    int m = cmd.getInt("m",1,30000); 
+    int m = cmd.getInt("m",1,30000);
     DataSet::setHitsPerSpectrum(m);
-    Scores::pi0 = 1 - (1-Scores::pi0)/(double)m;
-  }
-  if (cmd.optionSet("q")) {
-    Scores::pi0 = cmd.getDouble("q",0.0,1.0);
   }
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v",0,10));
@@ -305,6 +306,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     docFeatures = true;
     DataSet::setCalcDoc(true);
   }
+  if (cmd.optionSet("X"))
+    xmloutFN = cmd.options["X"];
 
 
   if (cmd.arguments.size()>2) {
@@ -327,7 +330,7 @@ void Caller::readRetentionTime(string filename) {
   Spectrum s;
 
   r.setFilter(MS2);
-  
+
   char* cstr = new char [filename.size()+1];
   strcpy (cstr, filename.c_str());
   r.readFile(cstr,s);
@@ -340,7 +343,7 @@ void Caller::readRetentionTime(string filename) {
 }
 
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
-  weightStream << "# first line contains normalized weights, second line the raw weights" << endl;  
+  weightStream << "# first line contains normalized weights, second line the raw weights" << endl;
   weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0" << endl;
   weightStream.precision(3);
   weightStream << w[0];
@@ -362,7 +365,6 @@ void Caller::filelessSetup(const unsigned int numFeatures, const unsigned int nu
   pCheck = new SanityCheck();
   normal.filelessSetup(numFeatures, numSpectra,1);
   shuffled.filelessSetup(numFeatures, numSpectra,-1);
-  Scores::pi0 = pi0;
   for (unsigned int ix=0;ix<numFeatures;ix++){
     string fn = featureNames[ix];
     DataSet::getFeatureNames().insertFeature(fn);
@@ -381,11 +383,11 @@ void Caller::readFiles(bool &doSingleFile) {
   } else if (!doSingleFile) {
     pCheck = new SqtSanityCheck();
     normal.readFile(forwardFN,1);
-    shuffled.readFile(decoyFN,-1);    
+    shuffled.readFile(decoyFN,-1);
   } else {
     pCheck = new SqtSanityCheck();
-    normal.readFile(forwardFN,decoyWC,false);  
-    shuffled.readFile(forwardFN,decoyWC,true);  
+    normal.readFile(forwardFN,decoyWC,false);
+    shuffled.readFile(forwardFN,decoyWC,true);
   }
   if (spectrumFile.size()>0)
     readRetentionTime(spectrumFile);
@@ -410,8 +412,8 @@ int Caller::xv_step(vector<vector<double> >& w) {
   for (unsigned int set=0;set<xval_fold;++set) {
     int bestTP = 0;
     double best_cpos=1,best_cneg=1;
-    
-    if(VERB>2) cerr << "cross calidation - fold " << set+1 << " out of " << xval_fold << endl;  
+
+    if(VERB>2) cerr << "cross calidation - fold " << set+1 << " out of " << xval_fold << endl;
     vector<double> ww = w[set];
     xv_train[set].calcScores(ww,selectionfdr);
     if (docFeatures)
@@ -419,19 +421,19 @@ int Caller::xv_step(vector<vector<double> >& w) {
     xv_train[set].generateNegativeTrainingSet(*svmInput,1.0);
     xv_train[set].generatePositiveTrainingSet(*svmInput,selectionfdr,1.0);
     if (VERB>2) cerr << "Calling with " << svmInput->positives << " positives and " << svmInput->negatives << " negatives\n";
-    
+
     struct vector_double *Outputs = new vector_double;
     Outputs->vec = new double[svmInput->positives+svmInput->negatives];
     Outputs->d = svmInput->positives+svmInput->negatives;
-    
+
     vector<double>::iterator cpos,cfrac;
     for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
       for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
         if(VERB>2) cerr << "-cross validation with cpos=" << *cpos <<
           ", cfrac=" << *cfrac << endl;
         int tp=0;
-        
-        for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;    
+
+        for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
         for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
         svmInput->setCost(*cpos,(*cpos)*(*cfrac));
 
@@ -448,7 +450,7 @@ int Caller::xv_step(vector<vector<double> >& w) {
           best_w[set] = ww;
           best_cpos=*cpos;
           best_cneg=(*cpos)*(*cfrac);
-        }          
+        }
       }
       if(VERB>2) cerr << "cross validation estimates " << bestTP/(xval_fold-1) << " target PSMs with q<" << test_fdr << " for hyperparameters Cpos=" << best_cpos
                   << ", Cneg=" << best_cneg << endl;
@@ -463,7 +465,7 @@ int Caller::xv_step(vector<vector<double> >& w) {
   delete Weights;
   delete Options;
 
-  return estTP/(xval_fold-1);                  
+  return estTP/(xval_fold-1);
 }
 
 
@@ -483,13 +485,13 @@ void Caller::step(Scores& train,vector<double>& w, double Cpos, double Cneg, dou
     Options->epsilon=EPSILON;
     Options->cgitermax=CGITERMAX;
     Options->mfnitermax=MFNITERMAX;
-    
+
     struct vector_double *Weights = new vector_double;
     Weights->d = FeatureNames::getNumFeatures()+1;
     Weights->vec = new double[Weights->d];
 //    for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=w[ix];
     for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
-    
+
     struct vector_double *Outputs = new vector_double;
     Outputs->vec = new double[svmInput->positives+svmInput->negatives];
     Outputs->d = svmInput->positives+svmInput->negatives;
@@ -521,13 +523,13 @@ void Caller::trainEm(vector<vector<double> >& w) {
       int tar = xv_step(w);
       if (VERB>1) {
         cerr << "After the iteration step, " << tar << " positives with q<"
-             << selectionfdr << " were estimated with cross validation" << endl;
+             << selectionfdr << " were estimated by cross validation" << endl;
       }
     }
-      
+
     if(VERB>2) {cerr<<"Obtained weights" << endl; for (size_t set=0;set<xval_fold;++set) printWeights(cerr,w[set]);}
   }
-  if(VERB==2 ) { 
+  if(VERB==2 ) {
     cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);
   }
   if (xv_type==EACH_STEP) {
@@ -558,7 +560,7 @@ void Caller::xvalidate(vector<vector<double> >& w) {
         ", cfrac=" << *cfrac << endl;
       int tp=0;
       for (unsigned int i=0;i<xval_fold;i++) {
-        if(VERB>2) cerr << "cross calidation - fold " << i+1 << " out of " << xval_fold << endl;
+        if(VERB>2) cerr << "cross validation - fold " << i+1 << " out of " << xval_fold << endl;
         ww = w;
         for(unsigned int k=0;k<niter;k++) {
           step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),selectionfdr);
@@ -572,27 +574,27 @@ void Caller::xvalidate(vector<vector<double> >& w) {
         bestTP = tp;
         selectedCpos = *cpos;
         selectedCneg = (*cpos)*(*cfrac);
-        www = ww;          
+        www = ww;
       }
-    }     
+    }
   }
   Globals::getInstance()->incVerbose();
   if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
-                  << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;  
+                  << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;
   trainEm(www);
 }
 
 void Caller::train(vector<vector<double> >& w) {
   if (xv_type==WHOLE)
     xvalidate(w);
-  else  
+  else
     trainEm(w);
 }
 
 void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal,shuffled);
   if (VERB>1) {
-    cerr << "Train/test set contains " << fullset.posSize() << " positives and " << fullset.negSize() << " negatives, size ratio=" 
+    cerr << "Train/test set contains " << fullset.posSize() << " positives and " << fullset.negSize() << " negatives, size ratio="
          << fullset.factor << " and pi0=" << fullset.pi0 << endl;
   }
   if (gistFN.length()>0) {
@@ -615,9 +617,9 @@ void Caller::fillFeatureSets() {
 }
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {
-  
+
   svmInput = new AlgIn(fullset.size(),FeatureNames::getNumFeatures()+1); // One input set, to be reused multiple times
-    
+
   if (selectedCpos<=0 || selectedCneg <= 0) {
     xv_train.resize(xval_fold); xv_test.resize(xval_fold);
     fullset.createXvalSets(xv_train,xv_test,xval_fold);
@@ -632,7 +634,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
       xv_cfracs.push_back(selectedCneg/selectedCpos);
     } else  {
       xv_cfracs.push_back(1.0*fullset.factor);xv_cfracs.push_back(3.0*fullset.factor);xv_cfracs.push_back(10.0*fullset.factor);
-      if(VERB>0) cerr << "selecting cneg by cross validation" << endl;  
+      if(VERB>0) cerr << "selecting cneg by cross validation" << endl;
     }
     return pCheck->getInitDirection(xv_test,xv_train,pNorm,w,test_fdr);
    } else {
@@ -640,7 +642,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     vector<Scores> myset(1,fullset);
     return pCheck->getInitDirection(myset,myset,pNorm,w,test_fdr);
   }
-}    
+}
 
 int Caller::run() {
   time(&startTime);
@@ -653,18 +655,18 @@ int Caller::run() {
   fillFeatureSets();
   vector<vector<double> > w(xval_fold,vector<double>(FeatureNames::getNumFeatures()+1)),ww;
   int firstNumberOfPositives = preIterationSetup(w);
-  if(VERB>0) cerr << "Estimating " << firstNumberOfPositives << " over q=" << test_fdr << " in intial direction" << endl;      	
-  
+  if(VERB>0) cerr << "Estimating " << firstNumberOfPositives << " over q=" << test_fdr << " in initial direction" << endl;
+
 
   // Set up a first guess of w
   time_t procStart;
   clock_t procStartClock=clock();
   time (&procStart);
   double diff = difftime (procStart,startTime);
-  
-  if (VERB>1) cerr << "Reading in data and feature calculation took " << 
+
+  if (VERB>1) cerr << "Reading in data and feature calculation took " <<
     ((double)(procStartClock-startClock))/(double)CLOCKS_PER_SEC <<
-    " cpu seconds or " << diff << " seconds wall time" << endl; 
+    " cpu seconds or " << diff << " seconds wall time" << endl;
 
   if(VERB>0) { cerr << "---Training with Cpos";
   	           if (selectedCpos>0) cerr << "=" << selectedCpos;
@@ -674,31 +676,34 @@ int Caller::run() {
   	           else cerr << " selected by cross validation";
   	           cerr << ", fdr=" << selectionfdr << endl;
   }
-  
+
   train(w);
 
   if (!pCheck->validateDirection(w))
     fullset.calcScores(w[0]);
   if (xv_type==EACH_STEP) {
-  	if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;      	
+  	if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;
     fullset.merge(xv_test);
   }
-  if(VERB>0) cerr << "Calibrating statistics - estimating pi_0" << endl;      	
+  if(VERB>0) cerr << "Calibrating statistics - estimating pi_0" << endl;
   fullset.estimatePi0();
-  if(VERB>0) cerr << "Calibrating statistics - calulating q values" << endl;      	
+  if(VERB>0) cerr << "Calibrating statistics - calculating q values" << endl;
   int foundPSMs = fullset.calcQ(test_fdr);
-  if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << " over q=" << test_fdr << endl;      	
-  if(VERB>0) cerr << "Calibrating statistics - calulating Posterior error probabilities (PEPs)" << endl;      	
+  if(VERB>0 && docFeatures) {
+	cerr << "Final average deltaMass " << fullset.getDOC().getAvgDeltaMass() << " and average pI " << fullset.getDOC().getAvgPI() << endl;
+  }
+  if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << " over q=" << test_fdr << endl;
+  if(VERB>0) cerr << "Calibrating statistics - calculating Posterior error probabilities (PEPs)" << endl;
   fullset.calcPep();
 
   time_t end;
   time (&end);
   diff = difftime (end,procStart);
-  
+
   ostringstream timerValues;
   timerValues.precision(4);
   timerValues << "Processing took " << ((double)(clock()-procStartClock))/(double)CLOCKS_PER_SEC;
-  timerValues << " cpu seconds or " << diff << " seconds wall time" << endl; 
+  timerValues << " cpu seconds or " << diff << " seconds wall time" << endl;
   if (VERB>1) cerr << timerValues.str();
   normal.modifyFile(modifiedFN,fullset,extendedGreeter()+timerValues.str(), dtaSelect);
   shuffled.modifyFile(modifiedDecoyFN,fullset,extendedGreeter()+timerValues.str(), dtaSelect);
@@ -707,24 +712,53 @@ int Caller::run() {
      ofstream weightStream(weightFN.data(),ios::out);
      for (unsigned int ix=0;ix<xval_fold;++ix)
        printWeights(weightStream,w[ix]);
-     weightStream.close(); 
+     weightStream.close();
   }
   if (rocFN.size()>0) {
     fullset.printRoc(rocFN);
+  }
+  if (xmloutFN.size()>0) {
+	ofstream xmlStream(xmloutFN.data(),ios::out);
+	writeXML(xmlStream,fullset);
+	xmlStream.close();
   }
   normal.print(fullset);
   if (decoyOut.size()>0) {
      ofstream decoyStream(decoyOut.data(),ios::out);
      shuffled.print(fullset,decoyStream);
-     decoyStream.close();  
+     decoyStream.close();
   }
   if (docFeatures) {
-  	ofstream outs("retention_times.txt",ios::out);  	
+  	ofstream outs("retention_times.txt",ios::out);
     for (unsigned int set=0;set<xval_fold;++set) {
       xv_test[set].printRetentionTime(outs,test_fdr);
     }
-    outs.close();  
+    outs.close();
   }
+
   return 0;
+}
+
+void Caller::writeXML(ostream & os,Scores & fullset) {
+  os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
+  os << "<percolator_output majorVersion=\"1\" minorVersion=\"0\" percolator_version=\"" <<
+		  "Percolator unofficial version\" " <<
+		  "xsi:schemaLocation=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out percolator_out.xsd\" " <<
+		  "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" " <<
+		  "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" << endl;
+  os << "  <process_info>" << endl;
+  os << "    <command_line>" << call << "</command_line>" << endl;
+  os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
+  if (docFeatures) {
+    os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass() << "</average_deltaMass>" << endl;
+    os << "    <average_pi>" << fullset.getDOC().getAvgPI() << "</average_pi>" << endl;
+  }
+  os << "  </process_info>" << endl;
+  for(vector<ScoreHolder>::iterator psm=fullset.begin();psm!=fullset.end();++psm) {
+	os << *psm;
+  }
+  os << "</percolator_output>" << endl;
+
+
 }
 

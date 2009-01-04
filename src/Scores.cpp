@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Scores.cpp,v 1.75 2008/08/27 13:57:04 lukall Exp $
+ * $Id: Scores.cpp,v 1.76 2009/01/04 22:49:30 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -24,14 +24,40 @@ using namespace std;
 #include "PosteriorEstimator.h"
 #include "ssl.h"
 
-inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) 
+inline bool operator>(const ScoreHolder &one, const ScoreHolder &other)
     {return (one.score>other.score);}
 
-inline bool operator<(const ScoreHolder &one, const ScoreHolder &other) 
+inline bool operator<(const ScoreHolder &one, const ScoreHolder &other)
     {return (one.score<other.score);}
+
+ostream& operator<<(ostream& os, const ScoreHolder& sh) {
+  if (sh.label!=1)
+    return os;
+  os << "  <psm psm_id=\"" << sh.pPSM->id << "\">" << endl;
+  os << "    <svm_score>"<< sh.score << "</psm_id>" << endl;
+  os << "    <q_value>"<< sh.pPSM->q << "</q_value>" << endl;
+  os << "    <pep>"<< sh.pPSM->pep << "</pep>" << endl;
+  if (DataSet::getCalcDoc())
+    os << "    <retentionTime observed=\""<< PSMDescription::unnormalize(sh.pPSM->retentionTime) <<
+          "\" predicted=\"" << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>" << endl;
+  string peptide = sh.pPSM->getPeptide();
+  string::size_type pos1 = peptide.find('.');
+  string n = peptide.substr(0,pos1);
+  string::size_type pos2 = peptide.find('.',++pos1);
+  string c = peptide.substr(pos2+1,peptide.size());
+  string centpep = peptide.substr(pos1,pos2-pos1);
+  os << "    <peptide n=\""<< n << "\" c=\"" << c <<"\" seq=\"" << centpep << "\"/>" << endl;
+  for(set<string>::const_iterator pid = sh.pPSM->proteinIds.begin();pid != sh.pPSM->proteinIds.end();++pid) {
+    os << "    <protein_id>" << *pid << "</protein_id>" << endl;
+  }
+  os << "  </psm>" << endl;
+  return os;
+}
+
 
 Scores::Scores()
 {
+	pi0=1.0;
     factor=1;
     neg=0;
     pos=0;
@@ -41,8 +67,6 @@ Scores::Scores()
 Scores::~Scores()
 {
 }
-
-double Scores::pi0 = 0.9;
 
 void Scores::merge(vector<Scores>& sv) {
   scores.clear();
@@ -57,7 +81,9 @@ void Scores::printRetentionTime(ostream& outs, double fdr){
   vector<ScoreHolder>::iterator it;
   for(it=scores.begin();it!=scores.end() && it->pPSM->q <= fdr; ++it) {
     if (it->label!=-1)
-      outs << it->pPSM->retentionTime << "\t" << doc.estimateRT(it->pPSM->retentionFeatures) << "\t" << it->pPSM->peptide << endl;
+      outs << PSMDescription::unnormalize(it->pPSM->retentionTime) << "\t"
+           << PSMDescription::unnormalize(doc.estimateRT(it->pPSM->retentionFeatures)) << "\t"
+           << it->pPSM->peptide << endl;
   }
 }
 
@@ -68,7 +94,7 @@ void Scores::printRoc(string & fn){
    rocStream << (it->label==-1?-1:1) << endl;
  }
  rocStream.close();
-}	
+}
 
 double Scores::calcScore(const double * feat) const{
   register int ix=FeatureNames::getNumFeatures();
@@ -86,7 +112,7 @@ ScoreHolder* Scores::getScoreHolder(const double *d){
       scoreMap[it->pPSM->features] = &(*it);
     }
   }
-  return scoreMap[d];  
+  return scoreMap[d];
 }
 
 
@@ -114,7 +140,7 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
     remain[fold] = ix / (fold + 1);
     ix -= remain[fold];
   }
-  
+
   for(unsigned int j=0;j<scores.size();j++) {
     ix = rand()%(scores.size()-j);
     fold = 0;
@@ -127,7 +153,7 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
         train[i].scores.push_back(scores[j]);
       }
     }
-    --remain[fold];  
+    --remain[fold];
   }
   vector<ScoreHolder>::const_iterator it;
   for(unsigned int i=0;i<xval_fold;i++) {
@@ -165,7 +191,7 @@ void Scores::normalizeScores() {
   }
   double diff = q1-q3;
   assert(diff>0);
-  for(it=scores.begin();it!=scores.end();++it) { 
+  for(it=scores.begin();it!=scores.end();++it) {
     it->score -= q1;
     it->score /= diff;
   }
@@ -218,7 +244,7 @@ int Scores::calcQ(double fdr) {
   }
   for (int ix=scores.size();--ix;) {
     if (scores[ix-1].pPSM->q > scores[ix].pPSM->q)
-      scores[ix-1].pPSM->q = scores[ix].pPSM->q;  
+      scores[ix-1].pPSM->q = scores[ix].pPSM->q;
   }
   return posNow;
 }
@@ -279,8 +305,8 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
   int bestPositives = -1;
   int bestFeature =-1;
   bool lowBest = false;
-  
-  if (findDirection) { 
+
+  if (findDirection) {
     for (unsigned int featNo=0;featNo<FeatureNames::getNumFeatures();featNo++) {
       vector<ScoreHolder>::iterator it = scores.begin();
       while(it!=scores.end()) {
@@ -321,7 +347,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
     }
     direction[bestFeature]=(lowBest?-1:1);
     if (VERB>1) {
-      cerr << "Selected feature number " << bestFeature +1 << " as initial search direction, could separate " << 
+      cerr << "Selected feature number " << bestFeature +1 << " as initial search direction, could separate " <<
               bestPositives << " positives in that direction" << endl;
     }
   } else {
@@ -346,8 +372,8 @@ void Scores::calcPep() {
 
   vector<pair<double,bool> > combined;
   transform(scores.begin(),scores.end(),back_inserter(combined),  mem_fun_ref(&ScoreHolder::toPair));
-  vector<double> peps;                                                                                                                  
-  
+  vector<double> peps;
+
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined,pi0,peps,true);
 

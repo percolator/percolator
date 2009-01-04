@@ -2,9 +2,9 @@
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Department of Genome Sciences at the University of Washington. 
  *
- * $Id: UniNormalizer.cpp,v 1.16 2008/07/09 00:54:19 lukall Exp $
+ * $Id: UniNormalizer.cpp,v 1.17 2009/01/04 22:49:31 lukall Exp $
  *******************************************************************************/
 #include <set>
 #include <vector>

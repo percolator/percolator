@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Department of Genome Sciences at the University of Washington.
  *
- * $Id: SanityCheck.cpp,v 1.10 2008/12/16 09:47:36 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.11 2009/01/04 22:49:30 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -29,16 +29,17 @@ SanityCheck::~SanityCheck()
 
 bool SanityCheck::overRule=false;
 string SanityCheck::initWeightFN="";
+int SanityCheck::initDefaultDir=0;
 
 int SanityCheck::getInitDirection(vector<Scores>& testset, vector<Scores>& trainset,Normalizer * pNorm, vector<vector<double> >& w,double test_fdr) {
   pTestset = &testset; pTrainset = &trainset; fdr = test_fdr;
-  
+
   if (initWeightFN.size()>0) {
     vector<double> ww(FeatureNames::getNumFeatures()+1);
     ifstream weightStream(initWeightFN.data(),ios::in);
     readWeights(weightStream,ww);
     weightStream.close();
-    pNorm->normalizeweight(ww,w[0]); 
+    pNorm->normalizeweight(ww,w[0]);
     for (size_t set = 1; set<w.size();++set)
        copy(w[0].begin(),w[0].end(),w[set].begin());
   } else {
@@ -52,15 +53,23 @@ int SanityCheck::getInitDirection(vector<Scores>& testset, vector<Scores>& train
 }
 
 void SanityCheck::getDefaultDirection(vector< vector<double> >& w) {
-  // Set init direction to be the most discriminative direction
-  for (size_t set = 0; set<w.size();++set)
-    (*pTrainset)[set].getInitDirection(fdr,w[set],true);
+  if (!initDefaultDir) {
+    // Set init direction to be the most discriminative direction
+    for (size_t set = 0; set<w.size();++set)
+      (*pTrainset)[set].getInitDirection(fdr,w[set],true);
+  } else {
+	for (size_t set = 0; set<w.size();++set) {
+	  for (size_t ix = 0; ix < w[set].size();ix++)
+	    w[set][ix]=0;
+	  w[set][abs(initDefaultDir)-1]=(initDefaultDir<0?-1:1);
+	}
+  }
 }
 
 
 bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   if (!pTestset) {
-    cerr << "Wrongly set up of object SanityCheck" << endl;
+    cerr << "SanityCheck wrongly configured" << endl;
     exit(-1);
   }
   int overFDR=0;
@@ -76,6 +85,15 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
      cerr << "Less identifications ("<< overFDR << " vs " << initPositives << ") after percolator processing than before processing" << endl;
      resetDirection(w);
      return false;
+  }
+  if (initDefaultDir) {
+	  for (size_t set = 0; set < w.size();++set) {
+	  	if (w[set][abs(initDefaultDir)-1]*initDefaultDir<=0) {
+	    if (VERB>1) cerr << "Warning, wrong sign of the weight for main scoring direction" << endl;
+	    resetDirection(w);
+	    return false;
+	  }
+	}
   }
   return true;
 }
@@ -95,7 +113,7 @@ void SanityCheck::readWeights(istream & weightStream, vector<double>& w) {
 void SanityCheck::resetDirection(vector<vector<double> >& w) {
   if (!overRule) {
     cerr << "Reseting score vector, using default vector" << endl;
-    getDefaultDirection(w);  
+    getDefaultDirection(w);
   }
 }
 

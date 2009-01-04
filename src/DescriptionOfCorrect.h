@@ -13,6 +13,9 @@ class DescriptionOfCorrect
 public:
   DescriptionOfCorrect();
   virtual ~DescriptionOfCorrect();
+  double getAvgDeltaMass() {return avgDM;}
+  double getAvgPI() {return avgPI;}
+  static void calcRegressionFeature(PSMDescription &psm);
   static void fillFeaturesAllIndex(const string& peptide, double *features);
   static double isoElectricPoint(const string& peptide);
   static void setIsotopeMass(bool on) {doIsotopeMass=on;}
@@ -47,13 +50,13 @@ protected:
   double avgPI,avgDM;
   size_t numRTFeat;
 
-  vector<PSMDescription *> psms; 
-//  vector<double> rtW; 
-  
+  vector<PSMDescription *> psms;
+//  vector<double> rtW;
+
   svm_model *model;
   static float krokhin_index['Z'-'A'+1],hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1];
   static string aaAlphabet,isoAlphabet,ptmAlphabet;
-  static float pKiso[7]; 
+  static float pKiso[7];
   static float pKN,pKC;
   static bool doIsotopeMass,doKlammer;
 };

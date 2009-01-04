@@ -30,6 +30,18 @@ float DescriptionOfCorrect::pKC = 2.34;
 bool DescriptionOfCorrect::doIsotopeMass=false;
 bool DescriptionOfCorrect::doKlammer=false;
 
+void DescriptionOfCorrect::calcRegressionFeature(PSMDescription &psm) {
+  string peptide = psm.getPeptide();
+  string::size_type pos1 = peptide.find('.');
+  string::size_type pos2 = peptide.find('.',++pos1);
+  string pep = peptide.substr(pos1,pos2-pos1);
+  psm.pI = isoElectricPoint(pep);
+  if (psm.getRetentionFeatures()) {
+    fillFeaturesAllIndex(pep, psm.getRetentionFeatures());
+  }
+//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
+}
+
 void DescriptionOfCorrect::trainRetention() {
   if (psms.size()>500) {
     numRTFeat = totalNumRTFeatures();
@@ -130,17 +142,16 @@ void DescriptionOfCorrect::trainCorrect() {
   }
   // print_10features();
   trainRetention();
-  if (VERB>2) cerr << "Description of correct recalibrated, avg pI=" << avgPI << " amd avg dM=" << avgDM << endl;
+  if (VERB>2) cerr << "Description of correct recalibrated, avg pI=" << avgPI << " avg dM=" << avgDM << endl;
 
 }
 void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
   assert(DataSet::getFeatureNames().getDocFeatNum()>0);
+  pPSM->predictedTime=estimateRT(pPSM->retentionFeatures);
   size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
   pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
   pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
-  pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(abs(pPSM->retentionTime-estimateRT(pPSM->retentionFeatures)),docFeatNum+2);
-//  pPSM->features[DataSet::getFeatureNames().getDocFeatNum()+2] = 0.0;
-
+  pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(abs(pPSM->retentionTime-pPSM->predictedTime),docFeatNum+2);
 }
 
 void DescriptionOfCorrect::copyModel(svm_model* from) {
@@ -237,10 +248,10 @@ double DescriptionOfCorrect::indexNearestNeigbour(const float* index, const stri
   double sum = 0.0;
   for(unsigned int ix = 0; ix < peptide.size();++ix) {
     if (peptide[ix]=='H' && peptide[ix]=='R' && peptide[ix]=='K') {
-      if (ix>0) 
+      if (ix>0)
         sum += max(0.0f,index[peptide[ix-1]-'A']);
-      if (ix<peptide.size()-1) 
-        sum += max(0.0f,index[peptide[ix+1]-'A']);    
+      if (ix<peptide.size()-1)
+        sum += max(0.0f,index[peptide[ix+1]-'A']);
     }
   }
   return sum;

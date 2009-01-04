@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
- $Id: Option.cpp,v 1.10 2008/11/25 16:02:57 lukall Exp $
- 
+
+ $Id: Option.cpp,v 1.11 2009/01/04 22:49:30 lukall Exp $
+
  *******************************************************************************/
 
 #include <cstdlib>
@@ -68,8 +68,8 @@ CommandLineParser::~CommandLineParser() {}
 double CommandLineParser::getDouble(string dest,double lower,double upper){
     double val = atof(options[dest].c_str());
     if (val < lower || val > upper) {
-      cerr << "-" << dest << " option requres a float between " << lower << " and " << upper << endl;
-      exit(-1); 
+      cerr << "-" << dest << " option requires a float between " << lower << " and " << upper << endl;
+      exit(-1);
     }
     return val;
 }
@@ -77,8 +77,8 @@ double CommandLineParser::getDouble(string dest,double lower,double upper){
 int CommandLineParser::getInt(string dest,int lower,int upper) {
     int val = atoi(options[dest].c_str());
     if (val < lower || val > upper) {
-      cerr << "-" << dest << " option requres an integer between " << lower << " and " << upper << endl;
-      exit(-1); 
+      cerr << "-" << dest << " option requires an integer between " << lower << " and " << upper << endl;
+      exit(-1);
     }
     return val;
 }
@@ -122,16 +122,16 @@ void CommandLineParser::help() {
     while (j<opts[i].help.length()) {
       cerr.width(descLen);
       cerr << left << desc;
-      desc = " "; 
+      desc = " ";
       cerr.width(0);
       string::size_type l = helpLen;
       if (j+l<opts[i].help.length()) {
         string::size_type p = opts[i].help.rfind(' ',j+l);
-        if (p != string::npos && p>j) 
+        if (p != string::npos && p>j)
           l = p-j+1;
       }
       cerr << opts[i].help.substr(j,l) << endl;
-      j += l; 
+      j += l;
     }
   }
   cerr << endl << endnote << endl;
@@ -154,7 +154,7 @@ void CommandLineParser::htmlHelp() {
     if (opts[i].helpType.length()>0) {
       cerr << " &lt;" << opts[i].helpType << "&gt;";
     }
-    cerr << "</code></td>" << endl;    
+    cerr << "</code></td>" << endl;
     cerr << "<td><code>" << opts[i].help << "</code></td></tr><br/>" << endl;
   }
   cerr << "</table>" << endl;
@@ -178,7 +178,7 @@ void CommandLineParser::findOption(char **argv, int &index) {
   if (eqsign!=string::npos) {
     valstr = optstr.substr(eqsign+1);
     optstr = optstr.substr(0,eqsign);
-  }    
+  }
   for (unsigned int i = 0; i < opts.size(); i++) {
     if (opts[i] == optstr) {
       switch (opts[i].type) {
@@ -190,7 +190,7 @@ void CommandLineParser::findOption(char **argv, int &index) {
           break;
         case VALUE:
           if (valstr.length()>0) {
-            options[opts[i].name] = valstr;        
+            options[opts[i].name] = valstr;
           } else {
             options[opts[i].name] = argv[index+1];
             index++;

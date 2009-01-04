@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Department of Genome Sciences at the University of Washington.
  *
- * $Id: DataSet.h,v 1.55 2008/08/26 13:44:38 lukall Exp $
+ * $Id: DataSet.h,v 1.56 2009/01/04 22:49:30 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -33,14 +33,14 @@ class DataSet
     void readSQT(const string fname,const string & wild="", bool match=false);
     void modifySQT(const string & outFN, Scores * pSc ,const string greet, bool dtaSelect);
     void initFeatureTables(const unsigned int numFeatures, const unsigned int numSpectra, bool regresionTable = false);
-//    static inline int getNumFeatures() { return numFeatures; }
     static FeatureNames& getFeatureNames() { return featureNames; }
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
     static void setCalcDoc(bool on) { calcDOC=on; }
+    static bool getCalcDoc() { return calcDOC; }
     static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
-    static void setPTMfeature(bool on) { calcPTMs=on; }      
-    static void setIsotopeMass(bool on) { isotopeMass=on; }      
+    static void setPTMfeature(bool on) { calcPTMs=on; }
+    static void setIsotopeMass(bool on) { isotopeMass=on; }
     static void setNumFeatures(bool doc);
     static void inline setHitsPerSpectrum(int hits) {hitsPerSpectrum=hits;}
     static inline int rowIx(int row) { return row*FeatureNames::getNumFeatures(); }
@@ -49,7 +49,7 @@ class DataSet
     int inline getSize() const {return numSpectra;}
     int inline const getLabel() const {return label;}
     PSMDescription* getNext(int& pos);
-    void setRetentionTime(map<int,double>& scan2rt);    
+    void setRetentionTime(map<int,double>& scan2rt);
     bool writeTabData(ofstream & out, const string & lab);
     void readTabData(ifstream & dataStream, const vector<unsigned int> &ixs);
     bool getGistDataRow(int& pos,string & out);
@@ -57,7 +57,7 @@ class DataSet
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
-    static double isEnz(const char n,const char c); 
+    static double isEnz(const char n,const char c);
 protected:
     void readFeatures(const string &in,PSMDescription &psm,int match);
     string modifyRec(const string record, int& row, const set<int>& theMs, Scores * pSc, bool dtaSelect);
@@ -67,21 +67,16 @@ protected:
     static double isTryptic(const char n,const char c);
     static double isChymoTryptic(const char n,const char c);
     static double isElastasic(const char n,const char c);
-    vector<string> ids;
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;
     static Enzyme enzyme;
     static bool calcPTMs;
     static bool calcDOC;
     static bool isotopeMass;
-//    static int numFeatures;
-//    static int numRealFeatures;
     static int hitsPerSpectrum;
     static string aaAlphabet;
     static string ptmAlphabet;
     const static int maxNumRealFeatures = 16 + 3 + 20*3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
-//    vector<set<string> > proteinIds;
-//    vector<string> pepSeq;
     vector<PSMDescription> psms;
     int label;
     double *feature,*regressionFeature;

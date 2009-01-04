@@ -2,9 +2,9 @@
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
  * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Department of Genome Sciences at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.49 2008/08/26 13:44:38 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.50 2009/01/04 22:49:30 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>

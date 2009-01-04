@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
  * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Science at the University of Washington. 
+ * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.h,v 1.49 2008/08/25 14:53:52 lukall Exp $
+ * $Id: Caller.h,v 1.50 2009/01/04 22:49:30 lukall Exp $
  *******************************************************************************/
 #ifndef CALLER_H_
 #define CALLER_H_
@@ -33,9 +33,9 @@ public:
     void readWeights(istream & weightStream, vector<double>& w);
     void readFiles(bool &doSingleFile);
     void filelessSetup(const unsigned int numFeatures, const unsigned int numSpectra, char ** fetureNames, double pi0);
-    void fillFeatureSets();    
+    void fillFeatureSets();
     int preIterationSetup(vector<vector<double> >& w);
-    Scores* getFullSet() {return &fullset;}    
+    Scores* getFullSet() {return &fullset;}
     int run();
     SetHandler * getSetHandler(SetHandlerType sh) {
         switch(sh) {
@@ -46,6 +46,7 @@ public:
            default: return NULL;
         }
     }
+    void writeXML(ostream & os,Scores & fullset);
 protected:
     Normalizer * pNorm;
     SanityCheck * pCheck;
@@ -58,6 +59,7 @@ protected:
     string rocFN;
     string gistFN;
     string tabFN;
+    string xmloutFN;
     string weightFN;
     string call;
     string spectrumFile;
@@ -71,19 +73,19 @@ protected:
     double selectionfdr;
     double selectedCpos;
     double selectedCneg;
-    double threshTestRatio;    
-    double trainRatio;    
+    double threshTestRatio;
+    double trainRatio;
     unsigned int niter;
     unsigned int seed;
     time_t startTime;
     clock_t startClock;
     const static unsigned int xval_fold;
-    XvType xv_type; 
+    XvType xv_type;
     vector<Scores> xv_train,xv_test;
     vector<double> xv_cposs,xv_cfracs;
     SetHandler normal,shuffled; //,shuffledTest,shuffledThreshold;
     Scores fullset; //,thresholdset;
-    map<int,double> scan2rt; 
+    map<int,double> scan2rt;
 };
 
 #endif /*CALLER_H_*/
