@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "DescriptionOfCorrect.h"
