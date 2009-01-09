@@ -31,7 +31,7 @@ else
   mypack="qvality"
 fi
 
-AM_INIT_AUTOMAKE($mypack, "xiaoyu2")
+AM_INIT_AUTOMAKE($mypack, "unofficial")
 
 ## Debug
 # add checking message
@@ -74,7 +74,7 @@ AC_MSG_RESULT($boundscheck)
 
 # set DEBUG flag and introduce additional compiler flags
 if test x"$debuger" = x"yes"; then
-    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror -DDEBUG -D_LARGEFILE_SOURCE"
+    DEBUG_OPTIONS="-ggdb -O0 -Wall -Werror -D_LARGEFILE_SOURCE"
 	AC_DEFINE([DEBUG],[],[Flag indicating that debug options are enabled])
 else
     DEBUG_OPTIONS="-O3 -D_LARGEFILE_SOURCE"

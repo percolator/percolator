@@ -26,13 +26,14 @@ FeatureNames::~FeatureNames()
 {
 }
 
-string FeatureNames::getFeatureNames() {
+string FeatureNames::getFeatureNames(bool skipDOC) {
+  int n = (skipDOC&&docFeatNum>0)?docFeatNum:(int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
-    vector<string>::iterator featNum = featureNames.begin(); 
-    oss << *(featNum++);
-    for (; featNum!=featureNames.end(); ++featNum )
-      oss << "\t" << *featNum;
+    int featNum = 0; 
+    oss << featureNames[featNum++];
+    for (; featNum < n; ++featNum )
+      oss << "\t" << featureNames[featNum];
   }
   return oss.str();
 }

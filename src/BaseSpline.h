@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (c) 2008 Lukas Käll
+ Copyright (c) 2008-9 Lukas KÃ¤ll
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: BaseSpline.h,v 1.7 2008/06/10 21:35:14 lukall Exp $
+ $Id: BaseSpline.h,v 1.8 2009/01/09 14:41:00 lukall Exp $
  
  *******************************************************************************/
 

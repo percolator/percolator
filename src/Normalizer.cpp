@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
+ * Copyright (c) 2006-9 University of Washington. All rights reserved.
+ * Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the 
  * Department of Genome Sciences at the University of Washington. 
  *
- * $Id: Normalizer.cpp,v 1.20 2009/01/04 22:49:30 lukall Exp $
+ * $Id: Normalizer.cpp,v 1.21 2009/01/09 14:41:00 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>

@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (c) 2008 Lukas Käll
+ Copyright (c) 2008-9 Lukas KÃ¤ll
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Transform.h,v 1.4 2008/09/03 12:39:17 lukall Exp $
+ $Id: Transform.h,v 1.5 2009/01/09 14:40:59 lukall Exp $
  
  *******************************************************************************/
 #ifndef TRANSFORM_H_

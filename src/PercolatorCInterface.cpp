@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
+ * Copyright (c) 2006-9 University of Washington. All rights reserved.
+ * Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the 
  * Department of Genome Sciences at the University of Washington. 
  *
- * $Id: PercolatorCInterface.cpp,v 1.13 2009/01/04 22:49:30 lukall Exp $
+ * $Id: PercolatorCInterface.cpp,v 1.14 2009/01/09 14:40:59 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <vector>

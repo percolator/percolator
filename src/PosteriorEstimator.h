@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (c) 2008 Lukas Käll
+ Copyright (c) 2008-9 Lukas KÃ¤ll
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -22,13 +22,14 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.h,v 1.8 2008/08/25 14:53:52 lukall Exp $
+ $Id: PosteriorEstimator.h,v 1.9 2009/01/09 14:40:59 lukall Exp $
  
  *******************************************************************************/
 
 #ifndef POSTERIORESTIMATOR_H_
 #define POSTERIORESTIMATOR_H_
 #include<vector>
+#include<string>
 #include<utility>
 using namespace std;
 #include "LogisticRegression.h"
@@ -39,15 +40,17 @@ public:
   PosteriorEstimator();
   virtual ~PosteriorEstimator();
   bool parseOptions(int argc, char **argv);   
+  string greeter();   
   void run();
   static void estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps, bool includeNegativesInResult=false);
   static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
   static void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
   static void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);
+  static void getQValuesFromP(double pi0,const vector<double>& p, vector<double>& q);
   static double estimatePi0(vector<double>& p, const unsigned int numBoot=100);
   static void setReversed(bool status) {reversed = status;}
 protected:
-  void finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, double pi0);
+  void finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, const vector<double>& p, double pi0);
   static void binData(const vector<pair<double,bool> >& combined, vector<double>& medians, 
                vector<unsigned int>& negatives, vector<unsigned int>& sizes);
   string targetFile,decoyFile;

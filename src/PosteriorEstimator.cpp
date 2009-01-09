@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (c) 2008 Lukas K�ll
+ Copyright (c) 2008-9 Lukas Käll
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.23 2008/11/25 16:02:57 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.24 2009/01/09 14:40:59 lukall Exp $
  
  *******************************************************************************/
 
@@ -37,6 +37,11 @@
 #include<numeric>
 #include<functional>
 using namespace std;
+
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 #include "Option.h"
 #include "ArrayLibrary.h"
 #include "LogisticRegression.h"
@@ -46,7 +51,7 @@ using namespace std;
 
 static unsigned int noIntevals = 500;
 static unsigned int numLambda = 100;
-static double maxLambda = 0.99;
+static double maxLambda = 0.5;
 
 bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
@@ -164,10 +169,13 @@ void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, Logisti
 }
 
 // Estimates q-values and prints
-void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, double pi0) { 
+void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, const vector<double>& p,double pi0) { 
   vector<double> q(0),xvals(0);
-   
-  getQValues(pi0,combined,q);
+
+  if (pvalInput)   
+    getQValuesFromP(pi0,p,q);
+  else
+    getQValues(pi0,combined,q);
 
   vector<pair<double,bool> >::const_iterator elem = combined.begin();  
   for(;elem != combined.end();++elem)
@@ -236,6 +244,20 @@ void PosteriorEstimator::getQValues(double pi0,
   partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
   return;  
 }
+
+void PosteriorEstimator::getQValuesFromP(double pi0,
+  const vector<double>& p, vector<double>& q) {
+  double m = (double) p.size();
+  int nP = 1;
+  // assuming combined sorted in decending order
+  for (vector<double>::const_iterator myP = p.begin();myP != p.end();++myP,++nP) {
+    q.push_back((*myP*m*pi0)/(double)nP);
+  }
+  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+  return;  
+}
+
+
 
 void PosteriorEstimator::getPValues(
      const vector<pair<double,bool> >& combined, vector<double>& p) {
@@ -330,7 +352,8 @@ void PosteriorEstimator::run() {
     transform(tarIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair),true));
     transform(decIt,istream_iterator<double>(),back_inserter(combined),
-            bind2nd(ptr_fun(make_my_pair), false)); 
+            bind2nd(ptr_fun(make_my_pair), false));
+    if(VERB>0) cerr << "Read " << combined.size() << " statistics" << endl; 
   } else {
     copy(tarIt,istream_iterator<double>(),back_inserter(pvals));
     sort(pvals.begin(),pvals.end());
@@ -341,8 +364,8 @@ void PosteriorEstimator::run() {
   	for (size_t ix=0; ix<nDec; ++ix)
   	  combined.push_back(make_my_pair(step*(1+2*ix),false));
   	reversed = true;   
+    if(VERB>0) cerr << "Read " << pvals.size() << " statistics" << endl; 
   }
-  if(VERB>0) cerr << "Read " << combined.size() << " statistics" << endl; 
   if (reversed) {
     if(VERB>0) cerr << "Reversing all scores" << endl; 
   }
@@ -363,12 +386,24 @@ void PosteriorEstimator::run() {
   // Logistic regression on the data
   estimatePEP(combined,pi0,peps);
 
-  finishStandalone(combined,peps,pi0);  
+  finishStandalone(combined,peps,pvals,pi0);  
 }
+
+string PosteriorEstimator::greeter() {
+  ostringstream oss;
+  oss << "qvality version " << VERSION << ", ";
+  oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
+  oss << "Distributed under MIT License" << endl;
+  oss << "Written by Lukas Käll (lukas.kall@cbr.su.se) in the" << endl;
+  oss << "Department of Genome Sciences at the University of Washington." << endl;
+  return oss.str();
+}
+
 
 bool PosteriorEstimator::parseOptions(int argc, char **argv){
   // init
   ostringstream intro;
+  intro << greeter() << endl;
   intro << "Usage:" << endl;
   intro << "   qvality [options] target_file null_file" << endl << "or" << endl;
   intro << "   qvality [options] pvalue_file" << endl << endl;

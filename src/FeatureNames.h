@@ -11,7 +11,7 @@ class FeatureNames
 public:
   FeatureNames();
   virtual ~FeatureNames();
-  string getFeatureNames();
+  string getFeatureNames(bool skipDOC = false);
   static inline size_t getNumFeatures() {return numFeatures;}
   static inline void setNumFeatures(size_t nf) { if (!numFeatures) numFeatures = nf;}
 

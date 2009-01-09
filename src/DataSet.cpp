@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Copyright (c) 2006-9 University of Washington. All rights reserved.
+ * Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: DataSet.cpp,v 1.92 2009/01/04 22:49:30 lukall Exp $
+ * $Id: DataSet.cpp,v 1.93 2009/01/09 14:40:59 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -204,25 +204,6 @@ unsigned int DataSet::cntEnz(const string& peptide) {
     return cnt;
 }
 
-void DataSet::setRetentionTime(map<int,double>& scan2rt) {
-  vector<PSMDescription>::iterator psm = psms.begin();
-  if (scan2rt.size() == 0) {
-    if (VERB>1) cerr << "Approximating retention time with scan number." << endl;
-    double minRT = (double) psm->scan, diffRT = psms.rbegin()->scan - psm->scan;
-    if (diffRT==0.0) diffRT = 1.0;
-    for(; psm != psms.end(); ++psm) {
-      psm->retentionTime = 2.*((double) psm->scan - minRT)/diffRT-1;
-    }
-  } else {
-    double minRT = scan2rt.begin()->second, diffRT = scan2rt.rbegin()->second - minRT;
-    if (diffRT==0.0) diffRT = 1.0;
-    for(; psm != psms.end(); ++psm) {
-      assert(scan2rt.count(psm->scan)>0);
-      psm->retentionTime = 2.*(scan2rt[psm->scan] - minRT)/diffRT - 1;
-    }
-  }
-}
-
 void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   string tmp,line;
   is.clear();
@@ -295,7 +276,8 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
   }
   if(calcDOC) m-=2;
 
-  initFeatureTables((calcDOC?m+3:m),n);
+  initFeatureTables((calcDOC?m+3:m),n, calcDOC);
+  
   if (calcDOC) getFeatureNames().setDocFeatNum(m);
   string seq;
 

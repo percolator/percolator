@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
+ * Copyright (c) 2006-9 University of Washington. All rights reserved.
+ * Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the 
  * Department of Genome Sciences at the University of Washington. 
  *
- * $Id: SetHandler.cpp,v 1.50 2009/01/04 22:49:30 lukall Exp $
+ * $Id: SetHandler.cpp,v 1.51 2009/01/09 14:41:00 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -237,9 +237,11 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
   dataStream.get();        // removed enumrator, label and tab 
   getline(dataStream,line);
   istringstream iss(line);
+  int skip = (DataSet::getCalcDoc()?2:0);
   while (iss.good()) {
     iss >> tmp;
-    DataSet::getFeatureNames().insertFeature(tmp);
+    if (skip--<=0)
+      DataSet::getFeatureNames().insertFeature(tmp);
   }
   DataSet * theSet = new DataSet();
   theSet->setLabel(setLabel>0?1:-1);
@@ -251,7 +253,10 @@ void SetHandler::readTab(const string & dataFN, const int setLabel) {
     
 void SetHandler::writeTab(const string &dataFN,const SetHandler& norm,const SetHandler& shuff) {
   ofstream dataStream(dataFN.data(),ios::out);
-  dataStream << "SpecId\tLabel\t" << DataSet::getFeatureNames().getFeatureNames() << "\tPeptide\tProteins" << endl;
+  dataStream << "SpecId\tLabel\t";
+  if (DataSet::getCalcDoc())
+    dataStream << "RT\tdM\t";
+  dataStream << DataSet::getFeatureNames().getFeatureNames(true) << "\tPeptide\tProteins" << endl;
   string str;
   for (int setPos=0;setPos< (signed int)norm.subsets.size();setPos++) {
     norm.subsets[setPos]->writeTabData(dataStream,norm.subsets[setPos]->getLabel()==-1?"-1":"1");

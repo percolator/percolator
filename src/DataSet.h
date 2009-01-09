@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Copyright (c) 2006-9 University of Washington. All rights reserved.
+ * Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: DataSet.h,v 1.56 2009/01/04 22:49:30 lukall Exp $
+ * $Id: DataSet.h,v 1.57 2009/01/09 14:40:59 lukall Exp $
  *******************************************************************************/
 #ifndef DATASET_H_
 #define DATASET_H_
@@ -49,7 +49,7 @@ class DataSet
     int inline getSize() const {return numSpectra;}
     int inline const getLabel() const {return label;}
     PSMDescription* getNext(int& pos);
-    void setRetentionTime(map<int,double>& scan2rt);
+    void setRetentionTime(map<int,double>& scan2rt) {PSMDescription::setRetentionTime(psms,scan2rt);}
     bool writeTabData(ofstream & out, const string & lab);
     void readTabData(ifstream & dataStream, const vector<unsigned int> &ixs);
     bool getGistDataRow(int& pos,string & out);

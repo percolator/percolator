@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (c) 2008 Lukas Käll
+ Copyright (c) 2008-9 Lukas KÃ¤ll
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Option.h,v 1.8 2008/11/25 16:02:57 lukall Exp $
+ $Id: Option.h,v 1.9 2009/01/09 14:40:59 lukall Exp $
  
  *******************************************************************************/
 #ifndef OPTION_H_

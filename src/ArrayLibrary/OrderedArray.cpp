@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright (c) 2008 Oliver Serang
+ Copyright (c) 2008-9 Oliver Serang
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: OrderedArray.cpp,v 1.3 2008/05/20 00:24:43 lukall Exp $
+ $Id: OrderedArray.cpp,v 1.4 2009/01/09 14:41:00 lukall Exp $
  
  *******************************************************************************/
 

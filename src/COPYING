@@ -1,14 +1,14 @@
 Percolator is Copyright (c) 2006-8 University of Washington. All rights reserved.
-Written by Lukas Käll (lukall@u.washington.edu) in the 
+Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the 
 Department of Genome Science at the University of Washington. 
 and might not be modified, copied, published or distributed without permision
 from the copyright holder.
  
 Percolator contains the module qvality that is 
-Copyright (c) 2008 Lukas Käll, under MIT license
+Copyright (c) 2008-9 Lukas KÃ¤ll, under MIT license
  
 and the module ArrayLibrary that is
-Copyright (c) 2008 Oliver Serang, under MIT license.
+Copyright (c) 2008-9 Oliver Serang, under MIT license.
 
 the MSToolkit is developed by Michael Hoopmann, University of Washington
 an is provided under LGPL license.

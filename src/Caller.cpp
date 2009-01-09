@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Percolator unofficial version
- * Copyright (c) 2006-8 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the
+ * Copyright (c) 2006-9 University of Washington. All rights reserved.
+ * Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.cpp,v 1.110 2009/01/04 22:49:30 lukall Exp $
+ * $Id: Caller.cpp,v 1.111 2009/01/09 14:41:00 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -16,6 +16,9 @@
 #include <map>
 #include <string>
 using namespace std;
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
+#endif
 #include "Option.h"
 #include "SanityCheck.h"
 #include "SqtSanityCheck.h"
@@ -71,10 +74,10 @@ string Caller::extendedGreeter() {
 
 string Caller::greeter() {
   ostringstream oss;
-  oss << "Percolator unofficial version, ";
+  oss << "Percolator version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Copyright (c) 2006-8 University of Washington. All rights reserved." << endl;
-  oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl;
+  oss << "Copyright (c) 2006-9 University of Washington. All rights reserved." << endl;
+  oss << "Written by Lukas KÃ¤ll (lukall@u.washington.edu) in the" << endl;
   oss << "Department of Genome Sciences at the University of Washington." << endl;
   return oss.str();
 }
@@ -141,11 +144,13 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
     "file name");
   cmd.defineOption("j","tab-in",
-    "Input files are given as a tab delimited file. In this case the only argument should be a file name\
+    "Input files are given as a tab delimited file. In this case the only argument should be a file name \
 of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
 <tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
 Labels are interpreted as 1 -- positive train \
-and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_SET);
+and test set, -1 -- negative train set, -2 -- negative in test set.\
+When the --doc option the first and second feature (third and fourth column) should contain \
+the retention time and difference between observed and calculated mass","",TRUE_IF_SET);
   cmd.defineOption("w","weights",
     "Output final weights to the given file",
     "filename");
@@ -597,12 +602,6 @@ void Caller::fillFeatureSets() {
     cerr << "Train/test set contains " << fullset.posSize() << " positives and " << fullset.negSize() << " negatives, size ratio="
          << fullset.factor << " and pi0=" << fullset.pi0 << endl;
   }
-  if (gistFN.length()>0) {
-    SetHandler::gistWrite(gistFN,normal,shuffled);
-  }
-  if (tabFN.length()>0) {
-    SetHandler::writeTab(tabFN,normal,shuffled);
-  }
   //Normalize features
   set<DataSet *> all;
   all.insert(normal.getSubsets().begin(),normal.getSubsets().end());
@@ -610,6 +609,12 @@ void Caller::fillFeatureSets() {
   if (docFeatures) {
     for (set<DataSet *>::iterator myset=all.begin();myset!=all.end();++myset)
       (*myset)->setRetentionTime(scan2rt);
+  }
+  if (gistFN.length()>0) {
+    SetHandler::gistWrite(gistFN,normal,shuffled);
+  }
+  if (tabFN.length()>0) {
+    SetHandler::writeTab(tabFN,normal,shuffled);
   }
   pNorm=Normalizer::getNormalizer();
   pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?DescriptionOfCorrect::totalNumRTFeatures():0);
