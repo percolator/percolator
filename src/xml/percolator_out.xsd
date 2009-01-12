@@ -137,7 +137,7 @@
 
   <xsd:simpleType name="aa_term_t">
     <xsd:restriction base="xsd:string">
-      <xsd:pattern value="[A-Z]"/>
+      <xsd:pattern value="[A-Z\-]"/>
     </xsd:restriction>
   </xsd:simpleType>
 
