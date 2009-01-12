@@ -24,7 +24,7 @@
 			<xsd:sequence>
 				<xsd:element name="svm_score" type="xsd:double">
 					<xsd:annotation>
-						<xsd:documentation xml:lang="en">The score stemming from the SVM. Higher score is corresponds to a better PSM than a lower score.</xsd:documentation>
+						<xsd:documentation xml:lang="en">The score stemming from the SVM. Higher score corresponds to a better PSM than a lower score.</xsd:documentation>
 					</xsd:annotation>
 				</xsd:element>
 				<xsd:element name="q_value" type="probability_t">
