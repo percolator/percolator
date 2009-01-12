@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: Option.cpp,v 1.12 2009/01/09 14:41:00 lukall Exp $
+ $Id: Option.cpp,v 1.13 2009/01/12 15:34:03 lukall Exp $
 
  *******************************************************************************/
 
@@ -140,28 +140,30 @@ void CommandLineParser::help() {
 
 
 void CommandLineParser::htmlHelp() {
-  cerr << "<html><title>Title</title><body><blockquote><code>" << endl;
+  cerr << "<html><title>Title</title><body><blockquote>" << endl;
+  cerr << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />" << endl;
+  
   string htmlHeader = header;
   searchandreplace(htmlHeader,"\n","<br/>");
   cerr << htmlHeader << endl << "Options:" << endl;
   cerr << "<table border=0>" << endl;
   for (unsigned int i=opts.size(); i-- ;) {
-    cerr << "<td><code>" << opts[i].shortOpt;
+    cerr << "<tr><td><code>" << opts[i].shortOpt;
     if (opts[i].helpType.length()>0)
       cerr << " &lt;" << opts[i].helpType << "&gt;";
-    cerr << "<br/>" << endl;
+    cerr << "</code>, <code>";
     cerr << " " + opts[i].longOpt;
     if (opts[i].helpType.length()>0) {
       cerr << " &lt;" << opts[i].helpType << "&gt;";
     }
     cerr << "</code></td>" << endl;
-    cerr << "<td><code>" << opts[i].help << "</code></td></tr><br/>" << endl;
+    cerr << "<td>" << opts[i].help << "</td></tr>" << endl;
   }
   cerr << "</table>" << endl;
   string htmlEnd = endnote;
   searchandreplace(htmlEnd,"\n","<br>");
   cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
-  cerr << "</code></blockquote></body></html>" << endl;
+  cerr << "</blockquote></body></html>" << endl;
   exit(0);
 }
 
