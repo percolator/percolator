@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://noble.gs.washington.edu/proj/percolator/model/percolator_out" xmlns:xsd="http://www.w3.org/2001/XMLSchema" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://noble.gs.washington.edu/proj/percolator/model/percolator_out">
+  <xsd:element name="percolator_output">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="process_info">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="command_line" type="xsd:string"/>
+              <xsd:element name="pi_0" type="probability_t"/>
+              <xsd:element minOccurs="0" name="average_delta_mass" type="xsd:double"/>
+              <xsd:element minOccurs="0" name="average_pi" type="xsd:double"/>
+              <xsd:element maxOccurs="unbounded" minOccurs="0" name="comment">
+                <xsd:complexType>
+                  <xsd:attribute name="name" type="xsd:string" use="required"/>
+                  <xsd:attribute name="value" type="xsd:string" use="required"/>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+	<xsd:element maxOccurs="unbounded" name="psm">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="svm_score" type="xsd:double">
+					<xsd:annotation>
+						<xsd:documentation xml:lang="en">The score stemming from the SVM. Higher score is corresponds to a better PSM than a lower score.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="q_value" type="probability_t">
+					<xsd:annotation>
+						<xsd:documentation xml:lang="en">The PSMs q-value, i.e. the expected fraction of incorrect identifications up to this PSM score</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="pep" type="probability_t">
+					<xsd:annotation>
+						<xsd:documentation xml:lang="en">The PSMs posterior error probability, i.e. the probability that this PSM is incorrect.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element minOccurs="0" name="retentionTime">
+					<xsd:annotation>
+						<xsd:documentation xml:lang="en">This field contains the observed and predicted retention time in minutes</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:attribute name="predicted" type="xsd:double"/>
+						<xsd:attribute name="observed" type="xsd:double"/>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element name="peptide">
+					<xsd:annotation>
+						<xsd:documentation xml:lang="en">Peptide sequence of this PSM including 
+            the amino acids N- and C-terminal of the peptide in the proteins
+            sequence.</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:attribute name="n" type="aa_term_t" use="required"/>
+						<xsd:attribute name="c" type="aa_term_t" use="required"/>
+						<xsd:attribute name="seq" type="aa_seq_t" use="required"/>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element maxOccurs="unbounded" name="protein_id" type="xsd:string"/>
+                <xsd:element maxOccurs="unbounded" minOccurs="0" name="auxiliary">
+                <xsd:complexType>
+                  <xsd:attribute name="name" type="xsd:string" use="required"/>
+                  <xsd:attribute name="value" type="xsd:string" use="required"/>
+                </xsd:complexType>
+              </xsd:element>
+                        </xsd:sequence>
+				<xsd:attribute name="psm_id" type="xsd:string" use="required">
+					<xsd:annotation>
+						<xsd:documentation xml:lang="en">Unique PSM identifier</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+      </xsd:sequence>
+
+      <xsd:attribute name="percolator_version" type="xsd:string" use="required">    
+        <xsd:annotation>
+          <xsd:documentation>Version of percolator</xsd:documentation>
+        </xsd:annotation>
+	  </xsd:attribute>
+      <xsd:attribute fixed="1" name="majorVersion" type="xsd:unsignedShort" use="required">
+        <xsd:annotation>
+          <xsd:documentation>Major version number</xsd:documentation>
+	    </xsd:annotation>
+      </xsd:attribute>
+      <xsd:attribute name="minorVersion" type="minorVersion_t" use="required">
+        <xsd:annotation>
+          <xsd:documentation>Minor version number</xsd:documentation>
+        </xsd:annotation>
+      </xsd:attribute>
+      
+    </xsd:complexType>
+  </xsd:element>
+  
+  
+  
+  
+  <xsd:simpleType name="minorVersion_t">
+    <xsd:annotation>
+      <xsd:documentation>Schema minor version number</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:unsignedShort">
+      <xsd:maxInclusive value="0"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+
+  <xsd:simpleType name="probability_t">
+    <xsd:annotation>
+      <xsd:documentation>Probability (Double in [0-1] or NaN)</xsd:documentation>
+    </xsd:annotation>
+    <xsd:union memberTypes="xsd:double">
+      <xsd:simpleType>
+	    <xsd:restriction base="xsd:double">
+          <xsd:enumeration value="NaN"/>
+	    </xsd:restriction>
+	  </xsd:simpleType>
+      <xsd:simpleType>
+	    <xsd:restriction base="xsd:double">
+		  <xsd:maxInclusive value="1.0"/>
+		  <xsd:minInclusive value="0.0"/>
+	    </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:union>
+  </xsd:simpleType>
+
+
+
+  <xsd:simpleType name="aa_seq_t">
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="([A-Z][#*@]?)+"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="aa_term_t">
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="[A-Z]"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+</xsd:schema>
