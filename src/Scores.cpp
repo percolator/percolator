@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Scores.cpp,v 1.77 2009/01/09 14:40:59 lukall Exp $
+ * $Id: Scores.cpp,v 1.78 2009/01/12 12:09:12 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -34,7 +34,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   if (sh.label!=1)
     return os;
   os << "  <psm psm_id=\"" << sh.pPSM->id << "\">" << endl;
-  os << "    <svm_score>"<< sh.score << "</psm_id>" << endl;
+  os << "    <svm_score>"<< sh.score << "</svm_score>" << endl;
   os << "    <q_value>"<< sh.pPSM->q << "</q_value>" << endl;
   os << "    <pep>"<< sh.pPSM->pep << "</pep>" << endl;
   if (DataSet::getCalcDoc())
