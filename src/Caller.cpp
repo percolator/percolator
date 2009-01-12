@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.cpp,v 1.111 2009/01/09 14:41:00 lukall Exp $
+ * $Id: Caller.cpp,v 1.112 2009/01/12 12:59:30 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -755,7 +755,7 @@ void Caller::writeXML(ostream & os,Scores & fullset) {
   os << "    <command_line>" << call << "</command_line>" << endl;
   os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
   if (docFeatures) {
-    os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass() << "</average_deltaMass>" << endl;
+    os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass() << "</average_delta_mass>" << endl;
     os << "    <average_pi>" << fullset.getDOC().getAvgPI() << "</average_pi>" << endl;
   }
   os << "  </process_info>" << endl;
