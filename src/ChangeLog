@@ -1,0 +1,13 @@
+v 1.08
+* Retention time and callibration calculations are now available from
+tab delimited files as well.
+* Output xml-files according to the definitions in
+http://noble.gs.washington.edu/proj/percolator/model/percolator_out.xsd
+
+v 1.07
+* Command line switch to output decoy scores (-B)
+* Switch for replacing retention time features with the Klammer et al. features.
+
+v 1.06
+* Retention time calculation
+* Changed cross validation strategy so that only one target and one decoy set should be given as input.
