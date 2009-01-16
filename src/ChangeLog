@@ -10,4 +10,5 @@ v 1.07
 
 v 1.06
 * Retention time calculation
+* Added features for differenceto mean - retention time, pI and calibration
 * Changed cross validation strategy so that only one target and one decoy set should be given as input.
