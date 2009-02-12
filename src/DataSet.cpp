@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: DataSet.cpp,v 1.93 2009/01/09 14:40:59 lukall Exp $
+ * $Id: DataSet.cpp,v 1.94 2009/02/12 09:27:54 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -96,7 +96,7 @@ bool DataSet::writeTabData(ofstream & out, const string & lab) {
   int pos=-1;
   PSMDescription* pPSM = NULL;
   unsigned int nf = FeatureNames::getNumFeatures();
-  if (calcDOC) nf -= 3;
+  if (calcDOC) nf -= DescriptionOfCorrect::numDOCFeatures();
   while ((pPSM = getNext(pos)) != NULL) {
     double* frow = pPSM->features;
     out << psms[pos].id << '\t' << lab;
@@ -276,7 +276,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
   }
   if(calcDOC) m-=2;
 
-  initFeatureTables((calcDOC?m+3:m),n, calcDOC);
+  initFeatureTables((calcDOC?m+DescriptionOfCorrect::numDOCFeatures():m),n, calcDOC);
   
   if (calcDOC) getFeatureNames().setDocFeatNum(m);
   string seq;
@@ -513,6 +513,7 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
           feat[nxtFeat++]=abs(psm.pI-6.5);
           feat[nxtFeat++]=abs(psm.massDiff);
 //          feat[nxtFeat++]=abs(psm.retentionTime);
+          feat[nxtFeat++]=0;
           feat[nxtFeat++]=0;
         }
         gotL = false;

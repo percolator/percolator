@@ -119,6 +119,7 @@ void FeatureNames::setSQTFeatures(
     featureNames.push_back("docpI");
     featureNames.push_back("docdM");
     featureNames.push_back("docRT");
+    featureNames.push_back("docrelRT");
   }
   setNumFeatures(featureNames.size());  
 }

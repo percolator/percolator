@@ -26,6 +26,7 @@ public:
   void setFeatures(PSMDescription* pPSM);
   static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + aaAlphabet.size());}
   static size_t minimumNumRTFeatures() {return 3*9+2;}
+  static size_t numDOCFeatures() {return 4;}
   void print_10features();
   double estimateRT(double * features);
   void copyModel(svm_model* from);
@@ -54,7 +55,8 @@ protected:
 //  vector<double> rtW;
 
   svm_model *model;
-  static float krokhin_index['Z'-'A'+1],hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1];
+  static float krokhin_index['Z'-'A'+1],krokhin100_index['Z'-'A'+1],krokhinC2_index['Z'-'A'+1],krokhinTFA_index['Z'-'A'+1],
+               hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1];
   static string aaAlphabet,isoAlphabet,ptmAlphabet;
   static float pKiso[7];
   static float pKN,pKC;

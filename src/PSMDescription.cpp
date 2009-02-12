@@ -27,7 +27,7 @@ void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<int,doub
 	  double minRT=1e10,maxRT=-1;
       for(; psm != psms.end(); ++psm) {
         minRT=min(minRT,psm->retentionTime);
-        maxRT=min(maxRT,psm->retentionTime);
+        maxRT=max(maxRT,psm->retentionTime);
       }
       psm = psms.begin();
       normDiv=(maxRT-minRT)/2.;

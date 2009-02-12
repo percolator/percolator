@@ -149,9 +149,14 @@ void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
   assert(DataSet::getFeatureNames().getDocFeatNum()>0);
   pPSM->predictedTime=estimateRT(pPSM->retentionFeatures);
   size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
-  pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
-  pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
-  pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(abs(pPSM->retentionTime-pPSM->predictedTime),docFeatNum+2);
+  pPSM->features[docFeatNum] = 0.0;
+  pPSM->features[docFeatNum+1] = 0.0;
+//  pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
+//  pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
+  double drt=abs(pPSM->retentionTime-pPSM->predictedTime);    
+  pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
+  double ddrt=drt/max(1.0,PSMDescription::unnormalize(pPSM->retentionTime));
+  pPSM->features[docFeatNum+3] = Normalizer::getNormalizer()->normalize(ddrt,docFeatNum+3);
 }
 
 void DescriptionOfCorrect::copyModel(svm_model* from) {
@@ -370,8 +375,10 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *featu
 
   if(!doKlammer) {
     features = fillFeaturesIndex(peptide, krokhin_index, features);
-    features = fillFeaturesIndex(peptide, hessa_index, features);
-    features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
+    features = fillFeaturesIndex(peptide, krokhin100_index, features);
+    features = fillFeaturesIndex(peptide, krokhinTFA_index, features);
+//    features = fillFeaturesIndex(peptide, hessa_index, features);
+//    features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
     *(features++) = peptide.size();
     *(features++) = (double) ptms;
     features = fillAAFeatures(peptide, features);
@@ -391,8 +398,18 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *featu
 
 
 float DescriptionOfCorrect::krokhin_index['Z'-'A'+1] =
-         {1.1, 0.0, 0.45, 0.15, 0.95,  10.9, -0.35, -1.45, 8.0, 0.0, -2.05,9.3,6.2,
+         {1.1, 0.0, 0.45, 0.15, 0.95,  10.9, -0.35, -1.45, 8.0, 0.0, -2.05, 9.3, 6.2,
           -0.85,0.0,2.1,-0.4,-1.4,-0.15,0.65,0.0,5.0,12.25,0.0,4.85,0.0};
+float DescriptionOfCorrect::krokhin100_index['Z'-'A'+1] =
+         {1,0,0.1,0.15,1,11.67,-0.35,-3.0,7.95,0,-3.4,9.4,6.25,
+         -0.95,0,1.85,-0.6,-2.55,-0.15,0.65,0,4.7,13.35,0,5.35,0};
+float DescriptionOfCorrect::krokhinC2_index['Z'-'A'+1] =
+         {0.5,0.0,0.2,0.4,0,9.5,0.15,-0.2,6.6,0.0,-1.5,7.4,5.7,-0.2,0.0, 
+          2.1,-0.2,-1.1,-0.1,0.6,0.0,3.4,11.8,0.0,4.5,0.0};
+float DescriptionOfCorrect::krokhinTFA_index['Z'-'A'+1] =
+         {1.11,0.0,0.04,-0.22,1.08,11.34,-0.35,-3.04,7.86,0.0,-3.53,9.44,6.57,
+          -1.44,0.0,1.62,-0.53,-2.58,-0.33,0.48,0.0,4.86,13.12,0.0,5.4,0.0};
+
 // negated hessa scale
 float DescriptionOfCorrect::hessa_index['Z'-'A'+1] =
          {-0.11,-0.0,0.13,-3.49,-2.68,0.32,-0.74,-2.06,0.60,0.0,-2.71,0.55,0.10,-2.05,
