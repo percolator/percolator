@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
- $Id: BaseSpline.cpp,v 1.12 2009/01/09 14:40:59 lukall Exp $
- 
+
+ $Id: BaseSpline.cpp,v 1.13 2009/02/13 14:54:32 lukall Exp $
+
  *******************************************************************************/
 
 #include<iterator>
@@ -31,6 +31,7 @@
 #include<algorithm>
 #include<numeric>
 #include<functional>
+#include<cmath>
 using namespace std;
 #include "ArrayLibrary.h"
 #include "BaseSpline.h"
@@ -53,7 +54,7 @@ double BaseSpline::splineEval(double xx) {
   if (right==x.end()) {
     double derl = (g[n-1]-g[n-2])/(x[n-1]-x[n-2]) + (x[n-1]-x[n-2])/6*gamma[n-3];
     double gx = g[n-1]+(xx-x[n-1])*derl;
-    return gx;  
+    return gx;
   }
   size_t rix = right - x.begin();
   if (*right==xx)
@@ -97,40 +98,41 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       step =  norm(g-gnew)/n;
       if(VERB>2) cerr << "step size:" << step << endl;
     } while ((step > stepEpsilon) && (++iter<20));
-    double p1 = 1-tao; 
-    double p2 = tao; 
+    double p1 = 1-tao;
+    double p2 = tao;
     pair<double,double> res = alphaLinearSearch(0.0,1.0,p1,p2,
                               crossValidation(-log(p1)),
                               crossValidation(-log(p2)));
-                              
-    if(VERB>3) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;     
-                              
+
+    if(VERB>3) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;
+    assert(isfinite(res.second));
+
     if ((cv-res.second)/cv<convergeEpsilon || alphaIter++>100)
       break;
     cv=res.second;alpha=res.first;
   } while (true);
-  if(VERB>2) cerr << "Alpha selected to be " << alpha  << endl;     
+  if(VERB>2) cerr << "Alpha selected to be " << alpha  << endl;
   g=gnew;
 }
 
-
 pair<double,double> BaseSpline::alphaLinearSearch(double min_p,double max_p, double p1, double p2, double cv1, double cv2) {
-  double newPoint,newCV;
+  double oldCV;
   if (cv1>cv2) {
-    newPoint = p1 + tao*(max_p-p1);
-    newCV = crossValidation(-log(newPoint));
-    if(VERB>3) cerr << "New point with alpha=" << -log(newPoint) << ", giving cv=" << newCV << " taken in consideration" << endl;
-    if ((cv1-min(cv2,newCV))/cv1<convergeEpsilon || (newPoint-p2 < 1e-5))
-      return (cv2>newCV?make_pair(-log(newPoint),newCV):make_pair(-log(p2),cv2));
-    return alphaLinearSearch(p1,max_p,p2,newPoint,cv2,newCV);
+	min_p = p1;
+	p1=p2; oldCV=cv1; cv1=cv2;
+    p2 = min_p + tao*(max_p-min_p);
+    cv2 = crossValidation(-log(p2));
+    if(VERB>3) cerr << "New point with alpha=" << -log(p2) << ", giving cv=" << cv2 << " taken in consideration" << endl;
   } else {
-    newPoint = min_p + (1-tao)*(p2 - min_p);
-    newCV = crossValidation(-log(newPoint));
-    if(VERB>3) cerr << "New point with alpha=" << -log(newPoint) << ", giving cv=" << newCV << " taken in consideration" << endl;
-    if ((cv2-min(cv1,newCV))/cv2<convergeEpsilon || (p1-newPoint < 1e-5))
-      return (cv1>newCV?make_pair(-log(newPoint),newCV):make_pair(-log(p1),cv1));
-    return alphaLinearSearch(min_p,p2,newPoint,p1,newCV,cv1);  
+	max_p = p2;
+	p2=p1; oldCV=cv1; cv2=cv1;
+    p1 = min_p + (1-tao)*(max_p - min_p);
+    cv1 = crossValidation(-log(p1));
+    if(VERB>3) cerr << "New point with alpha=" << -log(p1) << ", giving cv=" << cv1 << " taken in consideration" << endl;
   }
+  if ((oldCV-min(cv1,cv2))/oldCV<convergeEpsilon || (abs(p2-p1) < 1e-5))
+    return (cv1>cv2?make_pair(-log(cv2),p2):make_pair(-log(cv1),cv1));
+  return alphaLinearSearch(min_p,max_p,p1,p2,cv1,cv2);
 }
 
 void BaseSpline::initiateQR() {
@@ -138,7 +140,7 @@ void BaseSpline::initiateQR() {
   dx.resize(n-1,0.0);
   for (int ix=0;ix<n-1;ix++) {
     dx[ix]=x[ix+1]-x[ix];
-    assert(dx[ix]>0); 
+    assert(dx[ix]>0);
   }
   R.resize(n-2);
   Q.resize(n);
@@ -170,7 +172,7 @@ double BaseSpline::crossValidation(double alpha) {
   int n = R.size();
 //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n),k1(n),k2(n);
-  
+
   PackedMatrix B = R + alpha*Qt*diagonalPacked(Vec(n+2,1.0)/w)*Q;
   // Get the diagonals from K
   // ka[i]=B[i,i+a]=B[i+a,i]
@@ -180,9 +182,9 @@ double BaseSpline::crossValidation(double alpha) {
       if (col==row) { k0[row]= B[row][rowPos]; }
       else if (col+1==row) {k1[row]=B[row][rowPos];}
       else if (col+2==row) {k2[row]=B[row][rowPos];}
-    }    
+    }
   }
-  
+
   // LDL decompose Page 26 Green Silverman
   // d[i]=D[i,i]
   // la[i]=L[i+a,i]
@@ -191,12 +193,12 @@ double BaseSpline::crossValidation(double alpha) {
   d[0]=k0[0];
   l1[0]=k1[0]/d[0];
   d[1]=k0[1]-l1[0]*l1[0]*d[0];
-  
+
   for (int row=2;row<n;++row) {
     l2[row-2]=k2[row-2]/d[row-2];
     l1[row-1]=(k1[row-1]-l1[row-2]*l2[row-2]*d[row-2])/d[row-1];
     d[row]=k0[row] - l1[row-1]*l1[row-1]*d[row-1] - l2[row-2]*l2[row-2]*d[row-2];
-  }  
+  }
   // Find diagonals of inverse Page 34 Green Silverman
   // ba[i]=B^{-1}[i+a,i]=B^{-1}[i,i+a]
 //  Vec b0(n),b1(n),b2(n);
@@ -204,7 +206,7 @@ double BaseSpline::crossValidation(double alpha) {
   for (int row=n;--row;) {
     if (row==n-1) { b0[n-1] = 1/d[n-1]; }
     else if (row==n-2) { b0[n-2] = 1/d[n-2]-l1[n-2]*b1[n-2]; }
-    else {    
+    else {
       b0[row] = 1/d[row] - l1[row]*b1[row] - l2[row]*b2[row];
     }
     if (row==n-1) {
@@ -217,16 +219,16 @@ double BaseSpline::crossValidation(double alpha) {
 
 
   // Calculate diagonal elemens a[i]=Aii p35 Green Silverman
-  // (expanding q acording to p12) 
+  // (expanding q acording to p12)
 //  Vec a(n+2),c(n+1);
   vector<double> a(n),c(n-1);
   for (int ix=0;ix<n-1;ix++)
     c[ix] = 1/dx[ix];
-  
+
   for (int ix=0;ix<n;ix++) {
     if (ix>0) {
       a[ix]+= b0[ix-1]*c[ix-1]*c[ix-1];
-      if (ix<n-1) {      
+      if (ix<n-1) {
         a[ix]+= b0[ix]*(-c[ix-1]-c[ix])*(-c[ix-1]-c[ix]);
         a[ix]+= 2*b1[ix]*c[ix]*(-c[ix-1]-c[ix]);
         a[ix]+= 2*b1[ix-1]*c[ix-1]*(-c[ix-1]-c[ix]);
@@ -247,20 +249,20 @@ double BaseSpline::crossValidation(double alpha) {
 }
 
 void BaseSpline::predict(const vector<double>& xx, vector<double>& predict) {
-  predict.clear();  
+  predict.clear();
   transform(xx.begin(),xx.end(),back_inserter(predict),SplinePredictor(this));
 }
 
 void BaseSpline::setData(const vector<double>& xx) {
   x.clear();
-  double minV = *min_element(xx.begin(),xx.end()); 
+  double minV = *min_element(xx.begin(),xx.end());
   double maxV = *max_element(xx.begin(),xx.end());
   if (minV>=0.0 && maxV<=1.0) {
     if(VERB>1) cerr << "Logit transforming all scores prior to PEP calculation" << endl;
     transf = Transform(minV>0.0?0.0:1e-20, maxV<1.0?0.0:1e-10,true);
   } else if (minV>=0.0) {
     if(VERB>1) cerr << "Log transforming all scores prior to PEP calculation" << endl;
-    transf = Transform(minV>0.0?0.0:1e-20, 0.0,false,true);  
-  } 
+    transf = Transform(minV>0.0?0.0:1e-20, 0.0,false,true);
+  }
   transform(xx.begin(),xx.end(),back_inserter(x),transf);
 }
