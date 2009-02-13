@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.cpp,v 1.8 2009/02/13 20:57:15 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.9 2009/02/13 22:47:55 lukall Exp $
 
  *******************************************************************************/
 #include<iterator>
@@ -36,6 +36,8 @@ using namespace std;
 
 #include "ArrayLibrary.h"
 #include "LogisticRegression.h"
+
+const double LogisticRegression::gRange=35.0;
 
 LogisticRegression::LogisticRegression()
 {
@@ -61,20 +63,20 @@ double logit(double p) {
 
 void LogisticRegression::limitg() {
   for (int ix=gnew.size();ix--;) {
-	gnew[ix] = min(35.0,max(-35.0,gnew[ix]));
+	gnew[ix] = min(gRange,max(-gRange,gnew[ix]));
   }
 }
 
 void LogisticRegression::calcPZW() {
   for (int ix=z.size();ix--;) {
+	assert(isfinite(g[ix]));
     double e = exp(g[ix]);
-    p[ix] = min(max(e/(1+e),Numerical::epsilon),1-Numerical::epsilon);
-    w[ix] = m[ix]*p[ix]*(1-p[ix]);
-    z[ix] = g[ix] + (((double)y[ix])-p[ix]*((double)m[ix]))/w[ix];
-    assert(isfinite(g[ix]));
     assert(isfinite(e));
+    p[ix] = min(max(e/(1+e),Numerical::epsilon),1-Numerical::epsilon);
     assert(isfinite(p[ix]));
+    w[ix] = m[ix]*p[ix]*(1-p[ix]);
     assert(isfinite(w[ix]));
+    z[ix] = g[ix] + min(gRange,max(-gRange,(((double)y[ix])-p[ix]*((double)m[ix]))/w[ix]));
     assert(isfinite(z[ix]));
   }
 }
