@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.cpp,v 1.14 2009/02/13 20:57:15 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.15 2009/02/13 23:44:48 lukall Exp $
 
  *******************************************************************************/
 
@@ -132,7 +132,7 @@ pair<double,double> BaseSpline::alphaLinearSearch(double min_p,double max_p, dou
     if(VERB>3) cerr << "New point with alpha=" << -log(p1) << ", giving cv=" << cv1 << " taken in consideration" << endl;
   }
   if ((oldCV-min(cv1,cv2))/oldCV<convergeEpsilon || (abs(p2-p1) < 1e-5))
-    return (cv1>cv2?make_pair(-log(cv2),p2):make_pair(-log(cv1),cv1));
+    return (cv1>cv2?make_pair(-log(p2),cv2):make_pair(-log(p1),cv1));
   return alphaLinearSearch(min_p,max_p,p1,p2,cv1,cv2);
 }
 
