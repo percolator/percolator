@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.cpp,v 1.7 2009/02/12 14:31:47 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.8 2009/02/13 20:57:15 lukall Exp $
 
  *******************************************************************************/
 #include<iterator>
@@ -59,6 +59,11 @@ double logit(double p) {
   return log(p/(1-p));
 }
 
+void LogisticRegression::limitg() {
+  for (int ix=gnew.size();ix--;) {
+	gnew[ix] = min(35.0,max(-35.0,gnew[ix]));
+  }
+}
 
 void LogisticRegression::calcPZW() {
   for (int ix=z.size();ix--;) {

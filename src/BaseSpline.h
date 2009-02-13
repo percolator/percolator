@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
- $Id: BaseSpline.h,v 1.8 2009/01/09 14:41:00 lukall Exp $
- 
+
+ $Id: BaseSpline.h,v 1.9 2009/02/13 20:57:15 lukall Exp $
+
  *******************************************************************************/
 
 #ifndef BASESPLINE_H_
@@ -49,6 +49,7 @@ public:
 protected:
   virtual void calcPZW() {;}
   virtual void initg() {int n=x.size();g.resize(n);gnew.resize(n);w.resize(n);z.resize(n,0.5);gamma.resize(n-2);}
+  virtual void limitg() {;}
   void initiateQR();
   double crossValidation(double alpha);
   pair<double,double> alphaLinearSearch(double min_p,double max_p, double p1, double p2, double cv1, double cv2);

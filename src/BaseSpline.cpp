@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.cpp,v 1.13 2009/02/13 14:54:32 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.14 2009/02/13 20:57:15 lukall Exp $
 
  *******************************************************************************/
 
@@ -95,6 +95,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       gamma = Qt * z;
       solveEquation<double>(M,gamma);
       gnew= z - aWiQ*gamma;
+      limitg();
       step =  norm(g-gnew)/n;
       if(VERB>2) cerr << "step size:" << step << endl;
     } while ((step > stepEpsilon) && (++iter<20));
