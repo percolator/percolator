@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.cpp,v 1.15 2009/02/13 23:44:48 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.16 2009/02/14 00:05:23 lukall Exp $
 
  *******************************************************************************/
 
@@ -80,7 +80,7 @@ static double tao = 2/(1+sqrt(5));   // inverse of golden section
 
 void BaseSpline::iterativeReweightedLeastSquares() {
 
-  Numerical::epsilon = 1e-17;
+  Numerical::epsilon = 1e-15;
   unsigned int n = x.size(), alphaIter=0;
   initiateQR();
   double alpha=1.,step,cv=1e100;
@@ -105,7 +105,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
                               crossValidation(-log(p1)),
                               crossValidation(-log(p2)));
 
-    if(VERB>3) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;
+    if(VERB>2) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;
     assert(isfinite(res.second));
 
     if ((cv-res.second)/cv<convergeEpsilon || alphaIter++>100)
