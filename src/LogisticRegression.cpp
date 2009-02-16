@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.cpp,v 1.9 2009/02/13 22:47:55 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.10 2009/02/16 09:55:33 lukall Exp $
 
  *******************************************************************************/
 #include<iterator>
@@ -76,7 +76,7 @@ void LogisticRegression::calcPZW() {
     assert(isfinite(p[ix]));
     w[ix] = m[ix]*p[ix]*(1-p[ix]);
     assert(isfinite(w[ix]));
-    z[ix] = g[ix] + min(gRange,max(-gRange,(((double)y[ix])-p[ix]*((double)m[ix]))/w[ix]));
+    z[ix] = min(gRange,max(-gRange,g[ix]+(((double)y[ix])-p[ix]*((double)m[ix]))/w[ix]));
     assert(isfinite(z[ix]));
   }
 }
