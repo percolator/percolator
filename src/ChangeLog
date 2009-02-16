@@ -1,3 +1,9 @@
+v1.09
+* Removed bug in the normalization of retention times when using tab
+delimited input.
+* Introduced a range limit in the iterative least square procedure used
+in the Posterior Error Probability calculations. 
+
 v 1.08
 * Retention time and callibration calculations are now available from
 tab delimited files as well.
