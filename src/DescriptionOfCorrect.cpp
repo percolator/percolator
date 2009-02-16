@@ -150,9 +150,9 @@ void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
   pPSM->predictedTime=estimateRT(pPSM->retentionFeatures);
   size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
   pPSM->features[docFeatNum] = 0.0;
-  pPSM->features[docFeatNum+1] = 0.0;
+//  pPSM->features[docFeatNum+1] = 0.0;
 //  pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
-//  pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
+  pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
   double drt=abs(pPSM->retentionTime-pPSM->predictedTime);    
   pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
   double ddrt=drt/max(1.0,PSMDescription::unnormalize(pPSM->retentionTime));
