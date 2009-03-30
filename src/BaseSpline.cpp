@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.cpp,v 1.16 2009/02/14 00:05:23 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.17 2009/03/30 03:13:31 cegrant Exp $
 
  *******************************************************************************/
 
@@ -32,7 +32,9 @@
 #include<numeric>
 #include<functional>
 #include<cmath>
+
 using namespace std;
+
 #include "ArrayLibrary.h"
 #include "BaseSpline.h"
 #include "Globals.h"
@@ -76,7 +78,7 @@ double BaseSpline::splineEval(double xx) {
   return gx;
 }
 
-static double tao = 2/(1+sqrt(5));   // inverse of golden section
+static double tao = 2/(1+sqrt(5.0));   // inverse of golden section
 
 void BaseSpline::iterativeReweightedLeastSquares() {
 

@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.cpp,v 1.10 2009/02/16 09:55:33 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.11 2009/03/30 03:13:31 cegrant Exp $
 
  *******************************************************************************/
 #include<iterator>
@@ -35,6 +35,7 @@
 using namespace std;
 
 #include "ArrayLibrary.h"
+#include "Globals.h"
 #include "LogisticRegression.h"
 
 const double LogisticRegression::gRange=35.0;
@@ -69,7 +70,7 @@ void LogisticRegression::limitg() {
 
 void LogisticRegression::calcPZW() {
   for (int ix=z.size();ix--;) {
-	assert(isfinite(g[ix]));
+    assert(isfinite(g[ix]));
     double e = exp(g[ix]);
     assert(isfinite(e));
     p[ix] = min(max(e/(1+e),Numerical::epsilon),1-Numerical::epsilon);

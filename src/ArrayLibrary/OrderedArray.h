@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: OrderedArray.h,v 1.3 2009/01/09 14:41:00 lukall Exp $
+ $Id: OrderedArray.h,v 1.4 2009/03/30 03:13:31 cegrant Exp $
  
  *******************************************************************************/
 
@@ -35,7 +35,7 @@
 #ifndef _OrderedArray_H
 #define _OrderedArray_H
 
-using namespace std;
+template <typename T> class Array;
 
 template <class T>
 class OrderedArray : public Array<T>

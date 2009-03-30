@@ -1,64 +1,81 @@
 .cpp.obj: 
-    cl /c /DWIN32 /EHsc /MT /O2 $< 
+	cl /I ArrayLibrary /I MSToolkit /I MSToolkit/RAMP /I MSToolkit/zLib /c /DWIN32 /DHAVE_CONFIG_H /EHsc /MT /O2 /Fo$@ $< 
+
+.c.obj: 
+	cl /I . /I ArrayLibrary /I MSToolkit /I MSToolkit/RAMP /I MSToolkit/zLib /c /DWIN32 /DHAVE_CONFIG_H /MT /O2 /Fo$@ $< 
+
+array_library_files = \
+	ArrayLibrary/MatrixFunctions.cpp \
+	ArrayLibrary/Numerical.cpp \
+	ArrayLibrary/OrderedArray.cpp \
+	ArrayLibrary/PackedMatrix.cpp \
+	ArrayLibrary/PackedSetFunctions.cpp \
+	ArrayLibrary/PackedVec.cpp \
+	ArrayLibrary/Random.cpp \
+	ArrayLibrary/VectorFunctions.cpp \
 
 per_source_files = \
-ArrayLibrary/Arithmetic.cpp \
-ArrayLibrary/Array.cpp \
-ArrayLibrary/ArrayTypes.cpp \
-ArrayLibrary/MatrixFunctions.cpp \
-ArrayLibrary/Numerical.cpp \
-ArrayLibrary/OrderedArray.cpp \
-ArrayLibrary/PackedArray.cpp \
-ArrayLibrary/PackedMatrix.cpp \
-ArrayLibrary/PackedSetFunctions.cpp \
-ArrayLibrary/PackedVec.cpp \
-ArrayLibrary/Random.cpp \
-ArrayLibrary/SparseArray.cpp \
-ArrayLibrary/VectorFunctions.cpp \
-BaseSpline.cpp \
-Caller.cpp \
-DataSet.cpp \
-Globals.cpp \
-IntraSetRelation.cpp \
-LogisticRegression.cpp \
-main.cpp \
-Normalizer.cpp \
-Option.cpp \
-PercolatorCInterface.cpp \
-PosteriorEstimator.cpp \
-ResultHolder.cpp \
-SanityCheck.cpp \
-Scores.cpp \
-SetHandler.cpp \
-SqtSanityCheck.cpp \
-ssl.cpp \
-StdvNormalizer.cpp \
-UniNormalizer.cpp \
+	BaseSpline.cpp \
+	Caller.cpp \
+	DataSet.cpp \
+	DescriptionOfCorrect.cpp \
+	FeatureNames.cpp \
+	Globals.cpp \
+	LogisticRegression.cpp \
+	main.cpp \
+	Normalizer.cpp \
+	Option.cpp \
+	PercolatorCInterface.cpp \
+	PosteriorEstimator.cpp \
+	PSMDescription.cpp \
+	ResultHolder.cpp \
+	SanityCheck.cpp \
+	Scores.cpp \
+	SetHandler.cpp \
+	SqtSanityCheck.cpp \
+	StdvNormalizer.cpp \
+	UniNormalizer.cpp \
+	svm.cpp \
+	ssl.cpp \
 
 qval_source_files = \
-ArrayLibrary/Arithmetic.cpp \
-ArrayLibrary/Array.cpp \
-ArrayLibrary/ArrayTypes.cpp \
-ArrayLibrary/MatrixFunctions.cpp \
-ArrayLibrary/Numerical.cpp \
-ArrayLibrary/OrderedArray.cpp \
-ArrayLibrary/PackedArray.cpp \
-ArrayLibrary/PackedMatrix.cpp \
-ArrayLibrary/PackedSetFunctions.cpp \
-ArrayLibrary/PackedVec.cpp \
-ArrayLibrary/Random.cpp \
-ArrayLibrary/SparseArray.cpp \
-ArrayLibrary/VectorFunctions.cpp \
-BaseSpline.cpp \
-Globals.cpp \
-IntraSetRelation.cpp \
-LogisticRegression.cpp \
-qvality_main.cpp \
-Option.cpp \
-PosteriorEstimator.cpp
+	BaseSpline.cpp \
+	Globals.cpp \
+	LogisticRegression.cpp \
+	Option.cpp \
+	qvality_main.cpp \
+	PosteriorEstimator.cpp
 
-percolator.exe: $(per_source_files:.cpp=.obj)
-  link /OUT:percolator.exe $**
+toolkit_cpp_files = \
+  MSToolkit/MSObject.cpp \
+  MSToolkit/MSReader.cpp \
+  MSToolkit/RAMP/ramp_base64.cpp \
+  MSToolkit/RAMP/ramp.cpp \
+  MSToolkit/Spectrum.cpp \
 
-qvality.exe: $(qval_source_files:.cpp=.obj)
-  link /OUT:qvality.exe $**
+toolkit_c_files = \
+  MSToolkit/zLib/adler32.c \
+  MSToolkit/zLib/compress.c \
+  MSToolkit/zLib/crc32.c \
+  MSToolkit/zLib/deflate.c \
+  MSToolkit/zLib/gzio.c \
+  MSToolkit/zLib/infback.c \
+  MSToolkit/zLib/inffast.c \
+  MSToolkit/zLib/inflate.c \
+  MSToolkit/zLib/inftrees.c \
+  MSToolkit/zLib/trees.c \
+  MSToolkit/zLib/uncompr.c \
+  MSToolkit/zLib/zutil.c \
+
+default: percolator.exe qvality.exe
+
+percolator.exe: $(per_source_files:.cpp=.obj) $(array_library_files:.cpp=.obj) $(toolkit_cpp_files:.cpp=.obj) $(toolkit_c_files:.c=.obj)
+	link /OUT:percolator.exe $**
+
+qvality.exe: $(qval_source_files:.cpp=.obj) $(array_library_files:.cpp=.obj) $(toolkit_files:.cpp=.obj)
+	link /OUT:qvality.exe $**
+
+clean:
+	del qvality.exe percolator.exe
+	del /S *.obj
+

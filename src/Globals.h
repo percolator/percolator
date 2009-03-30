@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Globals.h,v 1.10 2009/01/09 14:40:59 lukall Exp $
+ $Id: Globals.h,v 1.11 2009/03/30 03:13:31 cegrant Exp $
  
  *******************************************************************************/
 
@@ -32,6 +32,8 @@
 #ifdef WIN32
   #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
   #define D_DARRAY(name) _freea(name);
+  #include <float.h>
+  #define isfinite _finite
 #else
   #define C_DARRAY(name,nelem) double name[nelem];
   #define D_DARRAY(name)

@@ -22,13 +22,13 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: ArrayLibrary.h,v 1.4 2009/01/09 14:41:00 lukall Exp $
+ $Id: ArrayLibrary.h,v 1.5 2009/03/30 03:13:31 cegrant Exp $
  
  *******************************************************************************/
 #ifndef _ArrayLibrary_H
 #define _ArrayLibrary_H
 
-#include "config.h"
+#include "../config.h"
 #include <iostream>
 #include <math.h>
 #include <vector>

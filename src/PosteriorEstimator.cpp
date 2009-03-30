@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.24 2009/01/09 14:40:59 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.25 2009/03/30 03:13:31 cegrant Exp $
  
  *******************************************************************************/
 
@@ -211,7 +211,7 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
     int negInBin = count_if(combinedIter,combinedIter+inBin,IsDecoy());
     combinedIter += inBin;
     double median = combined[firstIx+inBin/2].first;
-    if (medians.size()>0 and *(medians.rbegin())==median) {
+    if (medians.size()>0 && *(medians.rbegin())==median) {
       *(sizes.rbegin()) += inBin;
       *(negatives.rbegin()) += negInBin;
     } else {
