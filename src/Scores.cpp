@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Scores.cpp,v 1.78 2009/01/12 12:09:12 lukall Exp $
+ * $Id: Scores.cpp,v 1.79 2009/05/02 12:47:17 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -173,8 +173,8 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
 }
 
 void Scores::normalizeScores() {
-  // Normalize scores so that distance between 1st and 3rd quantile of the null scores are 1
-  unsigned int q1index = neg/4,q3index = neg*3/4,decoys=0;
+  // Normalize scores so that distance between 1st and 10th percentile of the null scores are 1
+  unsigned int nn=neg,q1index = std::max(1u,nn/100u),q3index = std::max(q1index+1,nn/10u),decoys=0;
   vector<ScoreHolder>::iterator it = scores.begin();
   double q1 = it->score;
   double q3 = q1 + 1.0;
@@ -190,7 +190,8 @@ void Scores::normalizeScores() {
     ++it;
   }
   double diff = q1-q3;
-  assert(diff>0);
+  if (diff<=0)
+	  diff=1.0;
   for(it=scores.begin();it!=scores.end();++it) {
     it->score -= q1;
     it->score /= diff;

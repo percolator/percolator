@@ -25,7 +25,7 @@ public:
   void trainCorrect();
   void setFeatures(PSMDescription* pPSM);
   static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + aaAlphabet.size());}
-  static size_t minimumNumRTFeatures() {return 3*9+2;}
+  static size_t minimumNumRTFeatures() {return 3*10+2;}
   static size_t numDOCFeatures() {return 4;}
   void print_10features();
   double estimateRT(double * features);
@@ -37,18 +37,21 @@ public:
   }
 
 protected:
-  void trainRetention();
+  void trainRetention(vector<PSMDescription *>& trainset, const double C, const double gamma);
+  double testRetention(vector<PSMDescription *>& testset);
   static inline double indexSum(const float *index, const string& peptide);
   static inline double indexAvg(const float *index, const string& peptide);
   static inline double indexN(const float *index, const string& peptide);
   static inline double indexC(const float *index, const string& peptide);
   static inline double indexNC(const float *index, const string& peptide);
   static inline double* indexPartialSum(const float* index, const string& peptide, const size_t window, double *features);
-  static double indexNearestNeigbour(const float* index, const string& peptide);
+  static double indexNearestNeigbourPos(const float* index, const string& peptide);
+  static double indexNearestNeigbourNeg(const float* index, const string& peptide);
   inline double deltadeltaMass(double dm);
   static double* fillAAFeatures(const string& pep, double *feat);
   static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
   double avgPI,avgDM;
+  double c,gamma;
   size_t numRTFeat;
 
   vector<PSMDescription *> psms;

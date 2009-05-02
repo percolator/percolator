@@ -1,3 +1,8 @@
+v1.10
+* Changed merging procedure of the scores so that the decoy score between the first 
+and 10th percentile becomes unity (rather than first and third quantile as previously)
+* Added cross validation for the gamma and C parameters in the retention time calculation.
+
 v1.09
 * Removed bug in the normalization of retention times when using tab
 delimited input.
