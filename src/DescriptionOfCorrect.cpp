@@ -258,9 +258,9 @@ double DescriptionOfCorrect::indexNearestNeigbourNeg(const float* index, const s
   for(unsigned int ix = 0; ix < peptide.size();++ix) {
     if (peptide[ix]=='D' && peptide[ix]=='E') {
       if (ix>0)
-        sum += min(0.0f,index[peptide[ix-1]-'A']);
+        sum += max(0.0f,index[peptide[ix-1]-'A']);
       if (ix<peptide.size()-1)
-        sum += min(0.0f,index[peptide[ix+1]-'A']);
+        sum += max(0.0f,index[peptide[ix+1]-'A']);
     }
   }
   return sum;
