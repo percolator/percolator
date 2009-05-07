@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: DataSet.cpp,v 1.94 2009/02/12 09:27:54 lukall Exp $
+ * $Id: DataSet.cpp,v 1.95 2009/05/07 09:34:50 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -480,7 +480,7 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
         psm.scan = scan;
         psm.massDiff = dM;
 
-        feat[0]=log(rSp);                     // rank by Sp
+        feat[0]=log(max(1.0,rSp));                     // rank by Sp
         feat[1]=0.0;                     // delt5Cn (leave until last M line)
         feat[2]=0.0;                     // deltCn (leave until next M line)
         feat[3]=xcorr;                   // Xcorr
@@ -496,7 +496,7 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
           feat[nxtFeat++]=isEnz(psm.peptide.at(psm.peptide.size()-3),psm.peptide.at(psm.peptide.size()-1));
           feat[nxtFeat++]=(double)cntEnz(psm.peptide);
         }
-        feat[nxtFeat++]=log(nSM);
+        feat[nxtFeat++]=log(max(1.0,nSM));
         feat[nxtFeat++]=dM;              // obs - calc mass
         feat[nxtFeat++]=(dM<0?-dM:dM);   // abs only defined for integers on some systems
         if (calcPTMs)
