@@ -281,13 +281,14 @@ inline double DescriptionOfCorrect::indexNC(const float *index, const string& pe
   return n*c;
 }
 
-double* DescriptionOfCorrect::indexPartialSum(const float* index, const string& peptide, const size_t window, double *features) {
+double* DescriptionOfCorrect::indexPartialSum(const float* index, const string& peptide, const size_t win, double *features) {
   double sum = 0.0;
+  size_t window = max(win,peptide.size()-1);
   string::const_iterator lead = peptide.begin(), lag = peptide.begin();
   for(;lead != (peptide.begin() + window);++lead)
     sum += index[*lead-'A'];
   double minS = sum, maxS = sum;
-  for(;lead != peptide.end();++lead,lag++) {
+  for(;lead != peptide.end();++lead,++lag) {
     sum += index[*lead-'A'];
     sum -= index[*lag-'A'];
     minS = min(sum,minS);
