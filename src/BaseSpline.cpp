@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.cpp,v 1.17 2009/03/30 03:13:31 cegrant Exp $
+ $Id: BaseSpline.cpp,v 1.18 2009/05/11 14:27:35 lukall Exp $
 
  *******************************************************************************/
 
@@ -85,7 +85,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
   Numerical::epsilon = 1e-15;
   unsigned int n = x.size(), alphaIter=0;
   initiateQR();
-  double alpha=1.,step,cv=1e100;
+  double alpha=.05,step,cv=1e100;
   initg();
   do {
     int iter = 0;
@@ -95,12 +95,13 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       PackedMatrix aWiQ = alpha * diagonalPacked(Vec(n,1)/w)*Q;
       PackedMatrix M = R + Qt * aWiQ;
       gamma = Qt * z;
+      limitgamma();
       solveEquation<double>(M,gamma);
       gnew= z - aWiQ*gamma;
       limitg();
       step =  norm(g-gnew)/n;
       if(VERB>2) cerr << "step size:" << step << endl;
-    } while ((step > stepEpsilon) && (++iter<20));
+    } while ((step > stepEpsilon || step<=0.0) && (++iter<20));
     double p1 = 1-tao;
     double p2 = tao;
     pair<double,double> res = alphaLinearSearch(0.0,1.0,p1,p2,

@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PackedMatrix.h,v 1.5 2009/01/09 14:41:00 lukall Exp $
+ $Id: PackedMatrix.h,v 1.6 2009/05/11 14:27:35 lukall Exp $
  
  *******************************************************************************/
 #ifndef _PackedMatrix_H
@@ -80,6 +80,7 @@ template<typename T> void solveEquation(PackedMatrix& mat,Array<T>& res) {
     int maxRow(-1),maxRowPos(-1);
     for (rowPos=nonEmpty.packedSize();rowPos--;) {
       double val = nonEmpty[rowPos];
+      assert(isfinite(val));
       if (fabs(val)>fabs(maxVal)) {
         maxVal = val;
         maxRow = nonEmpty.index(rowPos);
@@ -87,15 +88,17 @@ template<typename T> void solveEquation(PackedMatrix& mat,Array<T>& res) {
       }    
     }
     // Put the most significant row at row "col"
-    if (maxRow!=col) {
-      swap(mat[col],mat[maxRow]);
-      swap(res[col],res[maxRow]);
-      if (pivotPos>=0)
-        swap(nonEmpty[maxRowPos],nonEmpty[pivotPos]); 
+    if (maxVal!=0.0) {
+      if (maxRow!=col) {
+        swap(mat[col],mat[maxRow]);
+        swap(res[col],res[maxRow]);
+        if (pivotPos>=0)
+          swap(nonEmpty[maxRowPos],nonEmpty[pivotPos]); 
+      }
+      // Divide the row with maxVal
+      mat[col] /= maxVal;
+      res[col] /= maxVal;
     }
-    // Divide the row with maxVal
-    mat[col] /= maxVal;
-    res[col] /= maxVal;
     // subtract the row from other rows
     for (rowPos=nonEmpty.packedSize();rowPos--;) {
       row = nonEmpty.index(rowPos);

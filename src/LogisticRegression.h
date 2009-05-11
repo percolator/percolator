@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.h,v 1.8 2009/02/13 22:47:55 lukall Exp $
+ $Id: LogisticRegression.h,v 1.9 2009/05/11 14:27:35 lukall Exp $
 
  *******************************************************************************/
 
@@ -44,6 +44,7 @@ protected:
   virtual void calcPZW();
   virtual void initg();
   virtual void limitg();
+  virtual void limitgamma();
   vector<unsigned int> y,m;
   static const double gRange;
   Vec p;

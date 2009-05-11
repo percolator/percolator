@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.h,v 1.9 2009/02/13 20:57:15 lukall Exp $
+ $Id: BaseSpline.h,v 1.10 2009/05/11 14:27:35 lukall Exp $
 
  *******************************************************************************/
 
@@ -50,6 +50,7 @@ protected:
   virtual void calcPZW() {;}
   virtual void initg() {int n=x.size();g.resize(n);gnew.resize(n);w.resize(n);z.resize(n,0.5);gamma.resize(n-2);}
   virtual void limitg() {;}
+  virtual void limitgamma() {;}
   void initiateQR();
   double crossValidation(double alpha);
   pair<double,double> alphaLinearSearch(double min_p,double max_p, double p1, double p2, double cv1, double cv2);

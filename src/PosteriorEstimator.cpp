@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.25 2009/03/30 03:13:31 cegrant Exp $
+ $Id: PosteriorEstimator.cpp,v 1.26 2009/05/11 14:27:35 lukall Exp $
  
  *******************************************************************************/
 
@@ -198,16 +198,19 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
   double binSize = max(combined.size()/(double)noIntevals,1.0); 
   vector<pair<double,bool> >::const_iterator combinedIter=combined.begin();  
 
-  unsigned int binNo =0;
   size_t firstIx, pastIx = 0; 
 
   while (pastIx<combined.size()) {
-    firstIx = pastIx; pastIx = min(combined.size(),(size_t)((++binNo)*binSize)); 
+    firstIx = pastIx; pastIx = min(combined.size(),(size_t)(firstIx+binSize));
     // Handle ties
     while ((pastIx<combined.size()) &&
           (combined[pastIx-1].first==combined[pastIx].first)) 
       ++pastIx;
+    // See to that last bin not gets too small
+    if (combined.size()-pastIx < binSize/2.0)
+      pastIx = combined.size();
     int inBin = pastIx-firstIx;
+    assert(inBin>0);
     int negInBin = count_if(combinedIter,combinedIter+inBin,IsDecoy());
     combinedIter += inBin;
     double median = combined[firstIx+inBin/2].first;

@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.cpp,v 1.11 2009/03/30 03:13:31 cegrant Exp $
+ $Id: LogisticRegression.cpp,v 1.12 2009/05/11 14:27:35 lukall Exp $
 
  *******************************************************************************/
 #include<iterator>
@@ -65,8 +65,17 @@ double logit(double p) {
 void LogisticRegression::limitg() {
   for (int ix=gnew.size();ix--;) {
 	gnew[ix] = min(gRange,max(-gRange,gnew[ix]));
+    assert(isfinite(gnew[ix]));
   }
 }
+
+void LogisticRegression::limitgamma() {
+  for (int ix=gamma.size();ix--;) {
+	gamma[ix] = min(20.,max(-20.,gamma[ix]));
+    assert(isfinite(gamma[ix]));
+  }
+}
+
 
 void LogisticRegression::calcPZW() {
   for (int ix=z.size();ix--;) {
@@ -75,7 +84,7 @@ void LogisticRegression::calcPZW() {
     assert(isfinite(e));
     p[ix] = min(max(e/(1+e),Numerical::epsilon),1-Numerical::epsilon);
     assert(isfinite(p[ix]));
-    w[ix] = m[ix]*p[ix]*(1-p[ix]);
+    w[ix] = max(m[ix]*p[ix]*(1-p[ix]),Numerical::epsilon);
     assert(isfinite(w[ix]));
     z[ix] = min(gRange,max(-gRange,g[ix]+(((double)y[ix])-p[ix]*((double)m[ix]))/w[ix]));
     assert(isfinite(z[ix]));

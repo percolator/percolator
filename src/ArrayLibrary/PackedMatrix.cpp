@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PackedMatrix.cpp,v 1.3 2009/01/09 14:41:00 lukall Exp $
+ $Id: PackedMatrix.cpp,v 1.4 2009/05/11 14:27:35 lukall Exp $
  
  *******************************************************************************/
 #include<cstdlib>
@@ -91,6 +91,9 @@ PackedMatrix matrixMult(const PackedMatrix & lhs, const PackedMatrix & rhs)
     for (col = 0; col < trhs.size(); col++)
 	{
       double prod = pDot(lhs[row],trhs[col]);
+#ifdef SAFE_ARRAYS
+      if (!isfinite(prod)) {cerr << "lhs: " << lhs[row] <<"\nrhs:" << trhs[col]<< "\n";assert(-1);}
+#endif
       if (Numerical::isNonzero(prod)) {
         res[row].push_back(col,prod);
       }
@@ -180,6 +183,7 @@ PackedMatrix diagonalPacked(const Vec & v)
   for (k=0; k<res.size(); k++)
     {
       res[k] = PackedVec();
+      assert(isfinite(v[k]));
       res[k].push_back(k,v[k]);
     }
 
