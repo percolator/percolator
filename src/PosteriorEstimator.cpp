@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.26 2009/05/11 14:27:35 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.27 2009/05/12 06:52:01 lukall Exp $
  
  *******************************************************************************/
 
@@ -195,20 +195,18 @@ void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, 
 void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,  
   vector<double>& medians, vector<unsigned int>& negatives, vector<unsigned int>& sizes) {
   // Create bins and count number of negatives in each bin
-  double binSize = max(combined.size()/(double)noIntevals,1.0); 
+  size_t binsLeft = noIntevals;
   vector<pair<double,bool> >::const_iterator combinedIter=combined.begin();  
 
   size_t firstIx, pastIx = 0; 
 
   while (pastIx<combined.size()) {
+    double binSize = max((combined.size()-pastIx)/(double)(binsLeft--),1.0); 
     firstIx = pastIx; pastIx = min(combined.size(),(size_t)(firstIx+binSize));
     // Handle ties
     while ((pastIx<combined.size()) &&
           (combined[pastIx-1].first==combined[pastIx].first)) 
       ++pastIx;
-    // See to that last bin not gets too small
-    if (combined.size()-pastIx < binSize/2.0)
-      pastIx = combined.size();
     int inBin = pastIx-firstIx;
     assert(inBin>0);
     int negInBin = count_if(combinedIter,combinedIter+inBin,IsDecoy());
@@ -223,7 +221,7 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
        negatives.push_back(negInBin);
     }    
   }
-  if(VERB>1) cerr << "Binned data into " << medians.size() << " bins with average size of " <<  binSize << " samples" << endl;       
+  if(VERB>1) cerr << "Binned data into " << medians.size() << " bins for PEP calcuation" << endl;       
 }
 
 

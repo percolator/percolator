@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: LogisticRegression.cpp,v 1.12 2009/05/11 14:27:35 lukall Exp $
+ $Id: LogisticRegression.cpp,v 1.13 2009/05/12 06:52:02 lukall Exp $
 
  *******************************************************************************/
 #include<iterator>
@@ -71,7 +71,7 @@ void LogisticRegression::limitg() {
 
 void LogisticRegression::limitgamma() {
   for (int ix=gamma.size();ix--;) {
-	gamma[ix] = min(20.,max(-20.,gamma[ix]));
+	gamma[ix] = min(gRange,max(-gRange,gamma[ix]));
     assert(isfinite(gamma[ix]));
   }
 }

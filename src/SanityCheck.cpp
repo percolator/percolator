@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: SanityCheck.cpp,v 1.13 2009/02/16 09:58:09 lukall Exp $
+ * $Id: SanityCheck.cpp,v 1.14 2009/05/12 06:52:02 lukall Exp $
  *******************************************************************************/
 #include <string>
 #include <fstream>
@@ -108,6 +108,11 @@ void SanityCheck::readWeights(istream & weightStream, vector<double>& w) {
   for(unsigned int ix=0;ix<FeatureNames::getNumFeatures()+1;ix++) {
     weightStream >> w[ix];
   }
+  cerr << "Read weights from file" << endl;
+  for(unsigned int ix=0;ix<FeatureNames::getNumFeatures()+1;ix++) {
+    cerr << w[ix] << "\t";
+  }
+  cerr << endl;
 }
 
 void SanityCheck::resetDirection(vector<vector<double> >& w) {
