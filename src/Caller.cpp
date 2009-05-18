@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.cpp,v 1.112 2009/01/12 12:59:30 lukall Exp $
+ * $Id: Caller.cpp,v 1.113 2009/05/18 16:57:04 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -200,7 +200,7 @@ the retention time and difference between observed and calculated mass","",TRUE_
   cmd.defineOption("K","klammer",
     "Retention time features calculated as in Klammer et al.","",TRUE_IF_SET);
   cmd.defineOption("D","doc",
-    "Include description of correct features.","",TRUE_IF_SET);
+    "Include description of correct features.","",MAYBE,"15");
   cmd.defineOption("B","decoy-results",
     "Output results for decoys into a tab delimited file",
     "filename");
@@ -310,6 +310,7 @@ the retention time and difference between observed and calculated mass","",TRUE_
   if (cmd.optionSet("D")) {
     docFeatures = true;
     DataSet::setCalcDoc(true);
+    DescriptionOfCorrect::setDocType(cmd.getInt("D",0,15));
   }
   if (cmd.optionSet("X"))
     xmloutFN = cmd.options["X"];
@@ -695,7 +696,13 @@ int Caller::run() {
   if(VERB>0) cerr << "Calibrating statistics - calculating q values" << endl;
   int foundPSMs = fullset.calcQ(test_fdr);
   if(VERB>0 && docFeatures) {
-	cerr << "Final average deltaMass " << fullset.getDOC().getAvgDeltaMass() << " and average pI " << fullset.getDOC().getAvgPI() << endl;
+	cerr << "For the cross vardation sets the average deltaMass are ";
+	for(size_t ix=0;ix<xv_test.size();ix++)
+      cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
+	cerr << "and average pI are ";
+	for(size_t ix=0;ix<xv_test.size();ix++)
+	    cerr << xv_test[ix].getDOC().getAvgPI() << " ";
+	cerr << endl;
   }
   if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << " over q=" << test_fdr << endl;
   if(VERB>0) cerr << "Calibrating statistics - calculating Posterior error probabilities (PEPs)" << endl;

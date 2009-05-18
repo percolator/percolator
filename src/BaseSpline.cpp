@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: BaseSpline.cpp,v 1.18 2009/05/11 14:27:35 lukall Exp $
+ $Id: BaseSpline.cpp,v 1.19 2009/05/18 16:57:04 lukall Exp $
 
  *******************************************************************************/
 
@@ -95,7 +95,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       PackedMatrix aWiQ = alpha * diagonalPacked(Vec(n,1)/w)*Q;
       PackedMatrix M = R + Qt * aWiQ;
       gamma = Qt * z;
-      limitgamma();
+//      limitgamma();
       solveEquation<double>(M,gamma);
       gnew= z - aWiQ*gamma;
       limitg();

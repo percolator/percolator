@@ -22,17 +22,27 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: Option.cpp,v 1.13 2009/01/12 15:34:03 lukall Exp $
+ $Id: Option.cpp,v 1.14 2009/05/18 16:57:04 lukall Exp $
 
  *******************************************************************************/
 
 #include <cstdlib>
-#include <iostream>
 #include <string>
+#include <sstream>
+#include <iostream>
 #include <map>
 #include <vector>
 using namespace std;
 #include "Option.h"
+
+template <class T>
+bool from_string(T& t, 
+                 const std::string& s)
+{
+  std::istringstream iss(s);
+  return !(iss >> t).fail();
+}
+
 
 void searchandreplace( string& source, const string& find, const string& replace )
 {
@@ -66,8 +76,9 @@ CommandLineParser::CommandLineParser(string usage, string tail) {
 CommandLineParser::~CommandLineParser() {}
 
 double CommandLineParser::getDouble(string dest,double lower,double upper){
-    double val = atof(options[dest].c_str());
-    if (val < lower || val > upper) {
+    double val;
+    from_string<double>(val, options[dest]);
+    if (!from_string<double>(val, options[dest]) || (val < lower || val > upper)) {
       cerr << "-" << dest << " option requires a float between " << lower << " and " << upper << endl;
       exit(-1);
     }
@@ -75,8 +86,8 @@ double CommandLineParser::getDouble(string dest,double lower,double upper){
 }
 
 int CommandLineParser::getInt(string dest,int lower,int upper) {
-    int val = atoi(options[dest].c_str());
-    if (val < lower || val > upper) {
+    int val;
+    if (!from_string<int>(val, options[dest]) || val < lower || val > upper) {
       cerr << "-" << dest << " option requires an integer between " << lower << " and " << upper << endl;
       exit(-1);
     }
@@ -194,6 +205,13 @@ void CommandLineParser::findOption(char **argv, int &index) {
           if (valstr.length()>0) {
             options[opts[i].name] = valstr;
           } else {
+            options[opts[i].name] = argv[index+1];
+            index++;
+          }
+        case MAYBE:
+          if (valstr.length()>0) {
+            options[opts[i].name] = valstr;
+          } else if (argv[index+1][0]!='-') {
             options[opts[i].name] = argv[index+1];
             index++;
           }

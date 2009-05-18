@@ -22,10 +22,11 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: PosteriorEstimator.cpp,v 1.27 2009/05/12 06:52:01 lukall Exp $
+ $Id: PosteriorEstimator.cpp,v 1.28 2009/05/18 16:57:04 lukall Exp $
  
  *******************************************************************************/
 
+#include<cmath>
 #include<vector>
 #include<utility>
 #include<cstdlib>
@@ -196,11 +197,13 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
   vector<double>& medians, vector<unsigned int>& negatives, vector<unsigned int>& sizes) {
   // Create bins and count number of negatives in each bin
   size_t binsLeft = noIntevals;
+  double targetedBinSize = max(floor(combined.size()/(double)(noIntevals)),1.0); 
   vector<pair<double,bool> >::const_iterator combinedIter=combined.begin();  
 
   size_t firstIx, pastIx = 0; 
 
   while (pastIx<combined.size()) {
+  	while (((combined.size()-pastIx)/targetedBinSize<binsLeft) && binsLeft>1) --binsLeft;
     double binSize = max((combined.size()-pastIx)/(double)(binsLeft--),1.0); 
     firstIx = pastIx; pastIx = min(combined.size(),(size_t)(firstIx+binSize));
     // Handle ties

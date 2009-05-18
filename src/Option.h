@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Option.h,v 1.9 2009/01/09 14:40:59 lukall Exp $
+ $Id: Option.h,v 1.10 2009/05/18 16:57:04 lukall Exp $
  
  *******************************************************************************/
 #ifndef OPTION_H_
@@ -32,7 +32,7 @@
 #include<vector>
 using namespace std;
 
-typedef enum {FALSE_IF_SET=0, TRUE_IF_SET, VALUE} OptionOption;
+typedef enum {FALSE_IF_SET=0, TRUE_IF_SET, VALUE, MAYBE} OptionOption;
 
 class Option
 {

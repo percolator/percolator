@@ -20,6 +20,7 @@ public:
   static double isoElectricPoint(const string& peptide);
   static void setIsotopeMass(bool on) {doIsotopeMass=on;}
   static void setKlammer(bool on) {doKlammer=on;}
+  static void setDocType(const unsigned int dt) {docFeatures=dt;}
   void clear() {psms.clear();}
   void registerCorrect(PSMDescription* pPSM) {psms.push_back(pPSM);}
   void trainCorrect();
@@ -61,6 +62,7 @@ protected:
   static float krokhin_index['Z'-'A'+1],krokhin100_index['Z'-'A'+1],krokhinC2_index['Z'-'A'+1],krokhinTFA_index['Z'-'A'+1],
                hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1];
   static string aaAlphabet,isoAlphabet,ptmAlphabet;
+  static unsigned int docFeatures;
   static float pKiso[7];
   static float pKN,pKC;
   static bool doIsotopeMass,doKlammer;

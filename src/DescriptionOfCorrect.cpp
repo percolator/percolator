@@ -32,6 +32,7 @@ float DescriptionOfCorrect::pKN = 9.69;
 float DescriptionOfCorrect::pKC = 2.34;
 bool DescriptionOfCorrect::doIsotopeMass=false;
 bool DescriptionOfCorrect::doKlammer=false;
+unsigned int DescriptionOfCorrect::docFeatures = 15;
 
 void DescriptionOfCorrect::calcRegressionFeature(PSMDescription &psm) {
   string peptide = psm.getPeptide();
@@ -139,15 +140,35 @@ void DescriptionOfCorrect::trainCorrect() {
 void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
   assert(DataSet::getFeatureNames().getDocFeatNum()>0);
   pPSM->predictedTime=estimateRT(pPSM->retentionFeatures);
-  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
-//  pPSM->features[docFeatNum] = 0.0;
-//  pPSM->features[docFeatNum+1] = 0.0;
-  pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
-  pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
+  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();  
+  
+  pPSM->features[docFeatNum+1] = 0.0;
+  // pPSM->features[docFeatNum+2] = 0.0;
+  pPSM->features[docFeatNum+3] = 0.0;
+  
+  if (docFeatures & 1) 
+    pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
+  else
+    pPSM->features[docFeatNum] = 0.0;
+  
+  if (docFeatures & 2) 
+    pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(deltadeltaMass(pPSM->massDiff),docFeatNum+1);
+  else
+    pPSM->features[docFeatNum+1] = 0.0;
+
   double drt=abs(pPSM->retentionTime-pPSM->predictedTime);
-  pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
+  
+  if (docFeatures & 4) 
+    pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
+  else
+    pPSM->features[docFeatNum+2] = 0.0;
+
   double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(pPSM->retentionTime))));
-  pPSM->features[docFeatNum+3] = Normalizer::getNormalizer()->normalize(ddrt,docFeatNum+3);
+  if (docFeatures & 8) 
+    pPSM->features[docFeatNum+3] = Normalizer::getNormalizer()->normalize(ddrt,docFeatNum+3);
+  else
+    pPSM->features[docFeatNum+3] = 0.0;
+
 }
 
 void DescriptionOfCorrect::copyModel(svm_model* from) {
