@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Scores.cpp,v 1.79 2009/05/02 12:47:17 lukall Exp $
+ * $Id: Scores.cpp,v 1.80 2009/05/19 14:31:19 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -286,7 +286,8 @@ void Scores::recalculateDescriptionOfGood(const double fdr) {
   unsigned int ix1=0;
   for(ix1=0;ix1<size();ix1++) {
     if (scores[ix1].label==1) {
-      if (fdr>scores[ix1].pPSM->q) {
+//      if (fdr>scores[ix1].pPSM->q) {
+      if (0.0>=scores[ix1].pPSM->q) {
         doc.registerCorrect(scores[ix1].pPSM);
       }
     }

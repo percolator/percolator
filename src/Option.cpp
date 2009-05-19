@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: Option.cpp,v 1.14 2009/05/18 16:57:04 lukall Exp $
+ $Id: Option.cpp,v 1.15 2009/05/19 14:31:19 lukall Exp $
 
  *******************************************************************************/
 
@@ -208,6 +208,7 @@ void CommandLineParser::findOption(char **argv, int &index) {
             options[opts[i].name] = argv[index+1];
             index++;
           }
+          break;
         case MAYBE:
           if (valstr.length()>0) {
             options[opts[i].name] = valstr;
