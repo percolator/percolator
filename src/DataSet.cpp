@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: DataSet.cpp,v 1.95 2009/05/07 09:34:50 lukall Exp $
+ * $Id: DataSet.cpp,v 1.96 2009/05/27 07:24:08 lukall Exp $
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -25,6 +25,7 @@ using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
 #include "ResultHolder.h"
+#include "MassHandler.h"
 #include "Globals.h"
 
 int DataSet::hitsPerSpectrum = 1;
@@ -341,6 +342,7 @@ string DataSet::modifyRec(const string record, int& row, const set<int>& theMs, 
     PSMDescription psm = psms[row++];
     in >> tmp >> tmp >> rSp >> mass;
 //    outtmp << "M\t%i\t" << rSp << "\t" << mass << "\t";
+    outtmp.precision(7);
     outtmp << "M\t" << tmp << "\t" << rSp << "\t" << mass << "\t";
     // deltCn and XCorr and Sp
     in >> tmp >> tmp >> tmp;
@@ -383,7 +385,7 @@ void DataSet::modifySQT(const string & outFN, Scores * pSc ,const string greet, 
   ifstream sqtIn(sqtFN.data(),ios::in);
   ofstream sqtOut(outFN.data(),ios::out);
   istringstream greetStream(greet);
-  sqtOut.precision(5);
+  sqtOut.precision(7);
   sqtOut << "H\tfile massaged by" << endl;
   while(getline(greetStream,line)) {
     sqtOut << "H\t" << line << endl;
@@ -476,7 +478,7 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
           cerr << line << endl;
           exit(-1);
         }
-        double dM = mass-cMass;
+        double dM = MassHandler::massDiff(mass,cMass,charge,psm.peptide.substr(2,psm.peptide.size()-4));
         psm.scan = scan;
         psm.massDiff = dM;
 

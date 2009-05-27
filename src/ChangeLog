@@ -1,3 +1,7 @@
+v1.11
+* Bugfix for qvality binning procedure
+* Introduced a sqrt(abs(dM)*abs(dRT)) feature for the Description of correct
+
 v1.10
 * Changed merging procedure of the scores so that the decoy score between the first 
 and 10th percentile becomes unity (rather than first and third quantile as previously)

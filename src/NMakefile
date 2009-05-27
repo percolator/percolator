@@ -23,6 +23,7 @@ per_source_files = \
 	Globals.cpp \
 	LogisticRegression.cpp \
 	main.cpp \
+	MassHandler.cpp \
 	Normalizer.cpp \
 	Option.cpp \
 	PercolatorCInterface.cpp \

@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
  
- $Id: Option.h,v 1.10 2009/05/18 16:57:04 lukall Exp $
+ $Id: Option.h,v 1.11 2009/05/27 07:24:08 lukall Exp $
  
  *******************************************************************************/
 #ifndef OPTION_H_
@@ -37,7 +37,7 @@ typedef enum {FALSE_IF_SET=0, TRUE_IF_SET, VALUE, MAYBE} OptionOption;
 class Option
 {
   public:
-    Option(string shrt, string lng, string dest,string hlp="",string hlpType="", OptionOption type=VALUE);
+    Option(string shrt, string lng, string dest,string hlp="",string hlpType="", OptionOption type=VALUE, string defau="");
     ~Option();
     bool operator == (const string & option);
     OptionOption type;
@@ -46,6 +46,7 @@ class Option
     string help;    
     string name;
     string helpType;
+    string deflt;
 };
 
 class CommandLineParser

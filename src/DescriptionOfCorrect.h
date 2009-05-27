@@ -18,7 +18,6 @@ public:
   static void calcRegressionFeature(PSMDescription &psm);
   static void fillFeaturesAllIndex(const string& peptide, double *features);
   static double isoElectricPoint(const string& peptide);
-  static void setIsotopeMass(bool on) {doIsotopeMass=on;}
   static void setKlammer(bool on) {doKlammer=on;}
   static void setDocType(const unsigned int dt) {docFeatures=dt;}
   void clear() {psms.clear();}
@@ -48,7 +47,6 @@ protected:
   static inline double* indexPartialSum(const float* index, const string& peptide, const size_t window, double *features);
   static double indexNearestNeigbourPos(const float* index, const string& peptide);
   static double indexNearestNeigbourNeg(const float* index, const string& peptide);
-  inline double deltadeltaMass(double dm);
   static double* fillAAFeatures(const string& pep, double *feat);
   static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
   double avgPI,avgDM;
@@ -65,7 +63,7 @@ protected:
   static unsigned int docFeatures;
   static float pKiso[7];
   static float pKN,pKC;
-  static bool doIsotopeMass,doKlammer;
+  static bool doKlammer;
 };
 
 #endif /*DESCRIPTIONOFCORRECT_H_*/

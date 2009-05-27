@@ -22,7 +22,7 @@
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
 
- $Id: Option.cpp,v 1.15 2009/05/19 14:31:19 lukall Exp $
+ $Id: Option.cpp,v 1.16 2009/05/27 07:24:08 lukall Exp $
 
  *******************************************************************************/
 
@@ -51,13 +51,14 @@ void searchandreplace( string& source, const string& find, const string& replace
     source.replace( j, find.length(), replace );
 }
 
-Option::Option (string shrt, string lng, string nm, string hlp,string hlpType, OptionOption typ) {
+Option::Option (string shrt, string lng, string nm, string hlp,string hlpType, OptionOption typ, string dfl) {
   type=typ;
   shortOpt=shrt;
   longOpt=lng;
   help=hlp;
   helpType=hlpType;
   name=nm;
+  deflt = dfl;
 }
 
 Option::~Option () {}
@@ -96,8 +97,7 @@ int CommandLineParser::getInt(string dest,int lower,int upper) {
 
 
 void CommandLineParser::defineOption (string shortOpt, string longOpt, string help, string helpType, OptionOption typ, string dfault) {
-  opts.insert(opts.begin(),Option("-"+shortOpt, "--" + longOpt, shortOpt, help,helpType, typ));
-  options[shortOpt] = dfault;
+  opts.insert(opts.begin(),Option("-"+shortOpt, "--" + longOpt, shortOpt, help,helpType, typ,dfault));
   if (longOpt.length()+helpType.length()> optMaxLen)
     optMaxLen=longOpt.length()+helpType.length();
 }
@@ -215,6 +215,8 @@ void CommandLineParser::findOption(char **argv, int &index) {
           } else if (argv[index+1][0]!='-') {
             options[opts[i].name] = argv[index+1];
             index++;
+          } else {
+            options[opts[i].name] = opts[i].deflt;          
           }
           break;
         default:

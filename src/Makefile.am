@@ -16,6 +16,8 @@ perc_files = \
   DescriptionOfCorrect.h \
   FeatureNames.cpp \
   FeatureNames.h \
+  MassHandler.cpp \
+  MassHandler.h \
   Normalizer.cpp \
   Normalizer.h \
   Option.cpp \

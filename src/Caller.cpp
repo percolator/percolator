@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.cpp,v 1.113 2009/05/18 16:57:04 lukall Exp $
+ * $Id: Caller.cpp,v 1.114 2009/05/27 07:24:07 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -32,6 +32,7 @@ using namespace std;
 #include "Globals.h"
 #include "MSReader.h"
 #include "Spectrum.h"
+#include "MassHandler.h"
 
 const unsigned int Caller::xval_fold = 3;
 
@@ -304,7 +305,7 @@ the retention time and difference between observed and calculated mass","",TRUE_
   if (cmd.optionSet("B"))
     decoyOut = cmd.options["B"];
   if (cmd.optionSet("M"))
-    DescriptionOfCorrect::setIsotopeMass(true);
+    MassHandler::setMonoisotopicMass(true);
   if (cmd.optionSet("K"))
     DescriptionOfCorrect::setKlammer(true);
   if (cmd.optionSet("D")) {
