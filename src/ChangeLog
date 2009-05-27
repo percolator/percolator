@@ -3,22 +3,26 @@ v1.11
 * Introduced a sqrt(abs(dM)*abs(dRT)) feature for the Description of correct
 
 v1.10
-* Changed merging procedure of the scores so that the decoy score between the first 
-and 10th percentile becomes unity (rather than first and third quantile as previously)
-* Added independent train and test set for determining the gamma and C parameters in the retention time calculation.
-* Corrected a binning procedure, whos symptom has been a "bad_alloc()" error statement.
+* Changed merging procedure of cross validation sets sio that the
+  scores so that the decoy score between the first
+  and 10th percentile becomes uniform (rather than first and third
+  quantile as previously)
+* Added independent train and test set for determining the gamma and C
+  parameters in the retention time calculation.
+* Corrected a binning procedure bug, who's symptom has been a
+  "bad_alloc()" error statement.
 
 v1.09
 * Removed bug in the normalization of retention times when using tab
-delimited input.
+  delimited input.
 * Introduced a range limit in the iterative least square procedure used
-in the Posterior Error Probability calculations. 
+  in the Posterior Error Probability calculations. 
 
 v 1.08
 * Retention time and callibration calculations are now available from
-tab delimited files as well.
+  tab delimited files as well.
 * Output xml-files according to the definitions in
-http://noble.gs.washington.edu/proj/percolator/model/percolator_out.xsd
+  http://noble.gs.washington.edu/proj/percolator/model/percolator_out.xsd
 
 v 1.07
 * Command line switch to output decoy scores (-B)
