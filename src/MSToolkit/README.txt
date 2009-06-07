@@ -21,3 +21,5 @@ Version History
 2.4  - Apr 16 2008 - Added additional changes and documentation as per lab requests.
 2.41 - Apr 18 2008 - Bugfixes for mzXML.
 2.42 - May 01 2008 - More bugfixes.
+2.5  - Jan 28 2009 - Still more bugfixes, merged Ning & Jimmy's code.
+2.6  - Apr 17 2009 - Added lots of new file and spectrum information to the files.

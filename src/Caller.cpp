@@ -4,7 +4,7 @@
  * Written by Lukas Käll (lukall@u.washington.edu) in the
  * Department of Genome Sciences at the University of Washington.
  *
- * $Id: Caller.cpp,v 1.114 2009/05/27 07:24:07 lukall Exp $
+ * $Id: Caller.cpp,v 1.115 2009/06/07 21:40:50 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <fstream>
@@ -32,6 +32,7 @@ using namespace std;
 #include "Globals.h"
 #include "MSReader.h"
 #include "Spectrum.h"
+#include "MSToolkitTypes.h"
 #include "MassHandler.h"
 
 const unsigned int Caller::xval_fold = 3;

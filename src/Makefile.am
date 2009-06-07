@@ -82,8 +82,10 @@ toolkit_files = \
   MSToolkit/zLib/zconf.h \
   MSToolkit/zLib/zlib.h \
   MSToolkit/zLib/zutil.c \
-  MSToolkit/zLib/zutil.h
-
+  MSToolkit/zLib/zutil.h \
+  MSToolkit/SQLite/sqlite3.c \
+  MSToolkit/SQLite/sqlite3ext.h \
+  MSToolkit/SQLite/sqlite3.h
 
 EXTRA_DIST = \
   ArrayLibrary/Array.cpp \
@@ -96,10 +98,10 @@ nodist_libpercolator_la_SOURCES = $(perc_files)
 
 nodist_libmstoolkit_la_SOURCES = $(toolkit_files)
 
-libmstoolkit_la_CPPFLAGS = ${CPPFLAGS} -I./MSToolkit -I./MSToolkit/zLib -I./MSToolkit/RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+libmstoolkit_la_CPPFLAGS = ${CPPFLAGS} -I./MSToolkit -I./MSToolkit/zLib -I./MSToolkit/RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -w -pthread
 
 nodist_percolator_SOURCES = main.cpp
-percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la libmstoolkit.la
+percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la libmstoolkit.la -ldl -lpthread
 
 PERCOLATOR_PROGRAM = percolator
 PERCOLATOR_LIBRARY = libpercolator.la libmstoolkit.la

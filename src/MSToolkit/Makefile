@@ -1,23 +1,40 @@
 ZLIB = adler32.o compress.o crc32.o deflate.o gzio.o inffast.o inflate.o infback.o inftrees.o trees.o uncompr.o zutil.o
 RAMP = ramp_base64.o ramp.o
-MSTOOLKIT = Spectrum.o MSReader.o MSObject.o 
-CC = g++
-GCC = gcc
-CFLAGS = -O3 -static -I./zLib -I./RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+MSTOOLKIT = Spectrum.o MSReader.o MSObject.o
+MSMAT = msmat.o msmat_base.o msmat_header_parser.o LazyMatrix.o crawutils.o
+SQLITE = sqlite3.o 
+CC = g++ -g
+GCC = gcc -g
+BOOST_LOCATION=/usr/local/include/boost
+MSMAT_FLAGS=-D_NO_CEPHES  -DOLD_BOOST
+#MSMAT_FLAGS=-D_NO_CEPHES  -DOLD_BOOST
+CFLAGS = -O3 -static -I $(BOOST_LOCATION) -I. -I./zLib -I./RAMP -I./SQLite -I./msmat -D_NOSQLITE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 $(MSMAT_FLAGS)
 
-all:  MSTDemo.cpp MSSingleScan.cpp MSConvertFile.cpp $(ZLIB) $(RAMP) $(MSTOOLKIT)
-	ar rcs libmstoolkit.a $(ZLIB) $(RAMP) $(MSTOOLKIT)
-	$(CC) $(CFLAGS) MSTDemo.cpp -L. -lmstoolkit -o MSTDemo
-	$(CC) $(CFLAGS) MSSingleScan.cpp -L. -lmstoolkit -o MSSingleScan
-	$(CC) $(CFLAGS) MSConvertFile.cpp -L. -lmstoolkit -o MSConvertFile
 
-demo:  MSTDemo.cpp MSSingleScan.cpp MSConvertFile.cpp $(ZLIB) $(RAMP) $(MSTOOLKIT) 
-	$(CC) $(CFLAGS) $(ZLIB) $(RAMP) $(MSTOOLKIT) MSTDemo.cpp -o MSTDemo
-	$(CC) $(CFLAGS) $(ZLIB) $(RAMP) $(MSTOOLKIT) MSSingleScan.cpp -o MSSingleScan
-	$(CC) $(CFLAGS) $(ZLIB) $(RAMP) $(MSTOOLKIT) MSConvertFile.cpp -o MSConvertFile
+LIBS = -lm -lpthread -ldl
 
-lib: $(ZLIB) $(RAMP) $(MSTOOLKIT)
-	ar rcs libmstoolkit.a $(ZLIB) $(RAMP) $(MSTOOLKIT)
+nosqlite: $(ZLIB) $(RAMP) $(MSTOOLKIT) $(MSMAT)
+	ar rcs libmstoolkitlite.a $(ZLIB) $(RAMP) $(MSTOOLKIT) $(MSMAT)
+	$(CC) $(CFLAGS) MSSingleScan.cpp -L. -lmstoolkitlite -o MSSingleScan
+	$(CC) $(CFLAGS) MSConvertFile.cpp -L. -lmstoolkitlite -o MSConvertFile
+
+
+all:  $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) $(MSMAT)
+	ar rcs libmstoolkit.a $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) $(MSMAT)
+	$(CC) $(CFLAGS) MSTDemo.cpp -L. -lmstoolkit $(LIBS) -o MSTDemo
+	$(CC) $(CFLAGS) MSSingleScan.cpp -L. -lmstoolkit $(LIBS) -o MSSingleScan
+	$(CC) $(CFLAGS) MSConvertFile.cpp -L. -lmstoolkit $(LIBS) -o MSConvertFile
+	$(CC) $(CFLAGS) MSWarper.cpp -L. -lmstoolkit $(LIBS) -o MSWarper
+	$(CC) $(CFLAGS) msmat_test.cpp -L. -lmstoolkit $(LIBS) -o msmat_test
+
+demo:  $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) $(MSMAT)
+	$(CC) $(CFLAGS) $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) MSTDemo.cpp $(LIBS) -o MSTDemo
+	$(CC) $(CFLAGS) $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) MSSingleScan.cpp $(LIBS) -o MSSingleScan
+	$(CC) $(CFLAGS) $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) MSConvertFile.cpp $(LIBS) -o MSConvertFile
+
+
+lib: $(ZLIB) $(RAMP) $(MSTOOLKIT) $(SQLITE) $(MSMAT)
+	ar rcs libmstoolkit.a $(ZLIB) $(RAMP) $(SQLITE) $(MSTOOLKIT) $(MSMAT)
 
 clean:
 	rm *.o MSTDemo MSSingleScan MSConvertFile libmstoolkit.a
@@ -68,6 +85,10 @@ ramp_base64.o : ./RAMP/ramp_base64.cpp
 ramp.o : ./RAMP/ramp.cpp
 	$(CC) $(CFLAGS) RAMP/ramp.cpp -c
 
+#SQLite object
+sqlite3.o : ./SQLite/sqlite3.c
+	$(GCC) $(CFLAGS) SQLite/sqlite3.c -c
+
 #MSToolkit objects
 
 Spectrum.o : Spectrum.cpp
@@ -79,3 +100,19 @@ MSReader.o : MSReader.cpp
 MSObject.o : MSObject.cpp
 	$(CC) $(CFLAGS) MSObject.cpp -c
 
+#MSMAT objects
+
+msmat.o :  ./msmat/msmat.cpp ./msmat/msmat.H
+	$(CC) -o $@ $(CFLAGS) -c $<
+
+msmat_base.o : ./msmat/msmat_base.cpp ./msmat/msmat_base.H 
+	$(CC) -o $@ $(CFLAGS) -c $<
+
+msmat_header_parser.o : ./msmat/msmat_header_parser.cpp ./msmat/msmat_header_parser.H 
+	$(CC) -o $@ $(CFLAGS) -c $<
+
+LazyMatrix.o : ./msmat/LazyMatrix.cpp ./msmat/LazyMatrix.H 
+	$(CC) -o $@ $(CFLAGS) -c $<
+
+crawutils.o : ./msmat/crawutils.cpp ./msmat/crawutils.H 
+	$(CC) -o $@ $(CFLAGS) -c $<
