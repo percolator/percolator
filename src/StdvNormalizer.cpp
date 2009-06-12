@@ -1,10 +1,18 @@
 /*******************************************************************************
- * Percolator unofficial version
- * Copyright (c) 2006-9 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Sciences at the University of Washington. 
- *
- * $Id: StdvNormalizer.cpp,v 1.24 2009/01/09 14:41:00 lukall Exp $
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
  *******************************************************************************/
 #include <vector>
 #include <iostream>
@@ -74,7 +82,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec, size_t nf, size_t nrf){
       }
     }
   }
-  if (VERB>2) { 
+  if (VERB>2) {
     cerr.precision(2);
     cerr << "Normalization factors" << endl
     << "Type\t" << DataSet::getFeatureNames().getFeatureNames() << endl << "Avg ";
@@ -82,7 +90,7 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec, size_t nf, size_t nrf){
   for (ix=0;ix<numFeatures+numRetentionFeatures;++ix) {
   	if (n>0.0)
      sub[ix]/=n;
-     if (VERB>2) cerr << "\t" << sub[ix]; 
+     if (VERB>2) cerr << "\t" << sub[ix];
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
     int ixPos=-1;
@@ -103,14 +111,14 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec, size_t nf, size_t nrf){
       }
     }
   }
-  if (VERB>2) cerr << endl << "Stdv"; 
+  if (VERB>2) cerr << endl << "Stdv";
   for (ix=0;ix<numFeatures+numRetentionFeatures;++ix) {
     if (div[ix]<=0 || n==0) {
       div[ix]=1.0;
     } else {
   	  div[ix]=sqrt(div[ix]/n);
     }
-    if (VERB>2) cerr << "\t" << div[ix]; 
+    if (VERB>2) cerr << "\t" << div[ix];
   }
-  if (VERB>2) cerr << endl; 
+  if (VERB>2) cerr << endl;
 }

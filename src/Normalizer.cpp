@@ -1,10 +1,18 @@
 /*******************************************************************************
- * Percolator unofficial version
- * Copyright (c) 2006-9 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Sciences at the University of Washington. 
- *
- * $Id: Normalizer.cpp,v 1.21 2009/01/09 14:41:00 lukall Exp $
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
@@ -43,7 +51,7 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
       }
       cerr << endl;
     }
-    
+
   }
   for (it=setVec.begin();it!=setVec.end();++it) {
       int ixPos=-1;
@@ -60,13 +68,13 @@ void Normalizer::normalizeSet(set<DataSet *> & setVec) {
     it=setVec.begin();
     int ixPos=-1;
     while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
-      features = pPSM->features;     
+      features = pPSM->features;
       for (unsigned int a=0;a<numFeatures;++a) {
         cerr << features[a] << " ";
       }
       cerr << endl;
     }
-    
+
   }
 }
 
@@ -79,7 +87,7 @@ void Normalizer::normalize(const double *in,double* out, size_t offset, size_t n
 int Normalizer::subclass_type = STDV;
 Normalizer* Normalizer::theNormalizer = NULL;
 
-Normalizer * Normalizer::getNormalizer() {    
+Normalizer * Normalizer::getNormalizer() {
     if (theNormalizer==NULL) {
 	  if (subclass_type == UNI)
 	    theNormalizer = new UniNormalizer();

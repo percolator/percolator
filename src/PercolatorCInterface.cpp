@@ -1,10 +1,18 @@
 /*******************************************************************************
- * Percolator unofficial version
- * Copyright (c) 2006-9 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Sciences at the University of Washington. 
- *
- * $Id: PercolatorCInterface.cpp,v 1.14 2009/01/09 14:40:59 lukall Exp $
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
  *******************************************************************************/
 #include <iostream>
 #include <vector>
@@ -34,7 +42,7 @@ Caller * getCaller() {
       exit(-1);
     }
     return pCaller;
-} 
+}
 
 
 /** Call that initiates percolator */
@@ -95,9 +103,9 @@ void pcExecute() {
   pCaller->fillFeatureSets();
   vector<vector<double> > w(1,vector<double>(FeatureNames::getNumFeatures()+1));
   pCaller->preIterationSetup(w);
-  pCaller->train(w);  
+  pCaller->train(w);
   pCaller->getFullSet()->calcScores(w[0]);
-} 
+}
 
 /** Function called when retrieving target scores and q-values after processing,
   * the array should be numSpectra long and will be filled in the same order
@@ -110,7 +118,7 @@ void pcGetScores(double *scoreArr,double *qArr) {
     scoreArr[ix] = pSh->score;
     qArr[ix++] =  pPSM->q;
   }
-} 
+}
 
 /** Function that should be called after processing finished */
 void pcCleanUp() {
@@ -122,6 +130,6 @@ void pcCleanUp() {
     if (decoy1) { delete decoy1; decoy1 = NULL; }
     if (decoy2) { delete decoy2; decoy2 = NULL; }
     if (decoy3) { delete decoy3; decoy3 = NULL; }
-    
+
     Globals::clean();
 }

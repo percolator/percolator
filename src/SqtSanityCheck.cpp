@@ -1,10 +1,18 @@
 /*******************************************************************************
- * Percolator unofficial version
- * Copyright (c) 2006-9 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Sciences at the University of Washington. 
- *
- * $Id: SqtSanityCheck.cpp,v 1.7 2009/01/09 14:41:00 lukall Exp $
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
  *******************************************************************************/
 #include "DataSet.h"
 #include "Scores.h"
@@ -22,10 +30,10 @@ SqtSanityCheck::~SqtSanityCheck()
 
 void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   // Set init direction to be the most discriminative direction
-  for (size_t set = 0; set < w.size();++set) {  
+  for (size_t set = 0; set < w.size();++set) {
     for (unsigned int ix=0;ix < FeatureNames::getNumFeatures()+1;++ix)
       w[set][ix]=0;
-    w[set][2]=1.61;    // deltCn 
+    w[set][2]=1.61;    // deltCn
     w[set][3]=1.1;     // Xcorr
     w[set][7]=-0.573;  // Peptide length
     w[set][8]=0.0335;  // Charge 1
@@ -49,7 +57,7 @@ deltCn  Xcorr   PepLen  Charge1 Charge2 Charge3 m0
         feat[7]=peptideLength(pep);      // Peptide length
         feat[8]=(charge==1?1.0:0.0);     // Charge
         feat[9]=(charge==2?1.0:0.0);
-        feat[10]=(charge==3?1.0:0.0); 
+        feat[10]=(charge==3?1.0:0.0);
 */
   return;
 }

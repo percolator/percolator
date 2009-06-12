@@ -1,3 +1,19 @@
+/*******************************************************************************
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+ *******************************************************************************/
 #include <vector>
 #include <cstring>
 #include <cmath>
@@ -140,17 +156,17 @@ void DescriptionOfCorrect::trainCorrect() {
 void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
   assert(DataSet::getFeatureNames().getDocFeatNum()>0);
   pPSM->predictedTime=estimateRT(pPSM->retentionFeatures);
-  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();  
+  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
   double dm = abs(pPSM->massDiff-avgDM);
   double drt=abs(pPSM->retentionTime-pPSM->predictedTime);
-    
+
   if (docFeatures & 1) pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
   else pPSM->features[docFeatNum] = 0.0;
-  
+
   if (docFeatures & 2) pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(dm,docFeatNum+1);
   else pPSM->features[docFeatNum+1] = 0.0;
 
-   
+
   if (docFeatures & 4) pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
   else pPSM->features[docFeatNum+2] = 0.0;
 

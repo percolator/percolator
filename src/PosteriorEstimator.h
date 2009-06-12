@@ -1,29 +1,18 @@
 /*******************************************************************************
- Copyright (c) 2008-9 Lukas Käll
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
- Permission is hereby granted, free of charge, to any person
- obtaining a copy of this software and associated documentation
- files (the "Software"), to deal in the Software without
- restriction, including without limitation the rights to use,
- copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the
- Software is furnished to do so, subject to the following
- conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- OTHER DEALINGS IN THE SOFTWARE.
- 
- $Id: PosteriorEstimator.h,v 1.9 2009/01/09 14:40:59 lukall Exp $
- 
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
  *******************************************************************************/
 
 #ifndef POSTERIORESTIMATOR_H_
@@ -39,8 +28,8 @@ class PosteriorEstimator
 public:
   PosteriorEstimator();
   virtual ~PosteriorEstimator();
-  bool parseOptions(int argc, char **argv);   
-  string greeter();   
+  bool parseOptions(int argc, char **argv);
+  string greeter();
   void run();
   static void estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps, bool includeNegativesInResult=false);
   static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
@@ -51,7 +40,7 @@ public:
   static void setReversed(bool status) {reversed = status;}
 protected:
   void finishStandalone(vector<pair<double,bool> >& combined, const vector<double>& peps, const vector<double>& p, double pi0);
-  static void binData(const vector<pair<double,bool> >& combined, vector<double>& medians, 
+  static void binData(const vector<pair<double,bool> >& combined, vector<double>& medians,
                vector<unsigned int>& negatives, vector<unsigned int>& sizes);
   string targetFile,decoyFile;
   static bool reversed, pvalInput;

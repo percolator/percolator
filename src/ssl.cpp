@@ -1,9 +1,8 @@
 /*******************************************************************************
  * SVMlin
- * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago. 
+ * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago.
  * Adapted to Percolator by Lukas Käll at the University of Washington
  *
- * $Id: ssl.cpp,v 1.16 2009/01/09 14:40:59 lukall Exp $
  *******************************************************************************/
 #include <iostream>
 #include <stdio.h>
@@ -21,7 +20,7 @@ using namespace std;
 #include "ssl.h"
 
 #define VERBOSE 1
-#define LOG2(x) 1.4426950408889634*log(x) 
+#define LOG2(x) 1.4426950408889634*log(x)
 // for compatibility issues, not using log2
 
 AlgIn::AlgIn(const int size,const int numFeat) {
@@ -39,11 +38,11 @@ AlgIn::~AlgIn(){
 }
 
 
-int CGLS(const AlgIn& data, 
+int CGLS(const AlgIn& data,
      const double lambda,
 	 const int cgitermax,
-     const double epsilon, 
-	 const struct vector_int *Subset, 
+     const double epsilon,
+	 const struct vector_int *Subset,
 	 struct vector_double *Weights,
 	 struct vector_double *Outputs)
 {
@@ -60,14 +59,14 @@ int CGLS(const AlgIn& data,
   const int n  = data.n;
 //  int m  = pSet->size();
   double *beta = Weights->vec;
-  double *o  = Outputs->vec; 
-  // initialize z 
+  double *o  = Outputs->vec;
+  // initialize z
   double *z = new double[active];
   double *q = new double[active];
   int ii=0;
   register int i,j;
   for(i = active ; i-- ;){
-    ii=J[i];      
+    ii=J[i];
     z[i]  = C[ii]*(Y[ii] - o[ii]);
   }
   double *r = new double[n];
@@ -75,19 +74,19 @@ int CGLS(const AlgIn& data,
     r[i] = 0.0;
   for(j=0; j < active; j++)
   {
-    const double * val = set[J[j]];   
+    const double * val = set[J[j]];
     for(i=n-1; i--;)
       r[i]+=val[i]*z[j];
     r[n-1]+=z[j];
   }
-  double *p = new double[n];   
+  double *p = new double[n];
   double omega1 = 0.0;
   for(i = n ; i-- ;)
   {
     r[i] -= lambda*beta[i];
     p[i] = r[i];
     omega1 += r[i]*r[i];
-  }   
+  }
   double omega_p = omega1;
   double omega_q = 0.0;
   double inv_omega2 = 1/omega1;
@@ -96,33 +95,33 @@ int CGLS(const AlgIn& data,
   double gamma = 0.0;
   int cgiter = 0;
   int optimality = 0;
-  double epsilon2 = epsilon*epsilon;   
+  double epsilon2 = epsilon*epsilon;
     // iterate
   while(cgiter < cgitermax)
   {
     cgiter++;
     omega_q=0.0;
     double t=0.0;
-//    register int i,j; 
+//    register int i,j;
     // #pragma omp parallel for private(i,j)
     for(i=0; i < active; i++)
     {
       ii=J[i];
       t=0.0;
-      const double * val = set[ii];   
+      const double * val = set[ii];
       for(j=0; j < n-1; j++)
         t+=val[j]*p[j];
       t+=p[n-1];
       q[i]=t;
       omega_q += C[ii]*t*t;
-    }       
-    gamma = omega1/(lambda*omega_p + omega_q);    
-    inv_omega2 = 1/omega1;     
+    }
+    gamma = omega1/(lambda*omega_p + omega_q);
+    inv_omega2 = 1/omega1;
     for(int i = n ; i-- ;)
     {
       r[i] = 0.0;
       beta[i] += gamma*p[i];
-    } 
+    }
     omega_z=0.0;
     for(int i = active ; i-- ;)
     {
@@ -130,12 +129,12 @@ int CGLS(const AlgIn& data,
       o[ii] += gamma*q[i];
       z[i] -= gamma*C[ii]*q[i];
       omega_z+=z[i]*z[i];
-    } 
+    }
     for(register int j=0; j < active; j++)
     {
       ii=J[j];
-      t=z[j];      
-      const double * val = set[ii];   
+      t=z[j];
+      const double * val = set[ii];
       for(register int i=0; i < n-1; i++)
         r[i]+=val[i]*t;
       r[n-1]+=t;
@@ -147,7 +146,7 @@ int CGLS(const AlgIn& data,
       omega1 += r[i]*r[i];
     }
     if(VERBOSE_CGLS)
-      cout << "..." << cgiter << " ( " << omega1 << " )" ; 
+      cout << "..." << cgiter << " ( " << omega1 << " )" ;
     if(omega1 < epsilon2*omega_z)
     {
       optimality=1;
@@ -158,9 +157,9 @@ int CGLS(const AlgIn& data,
     for(int i = n ; i-- ;)
     {
       p[i] = r[i] + p[i]*scale;
-      omega_p += p[i]*p[i]; 
-    } 
-  }            
+      omega_p += p[i]*p[i];
+    }
+  }
   if(VERBOSE_CGLS)
     cout << "...Done." << endl;
   tictoc.stop();
@@ -172,12 +171,12 @@ int CGLS(const AlgIn& data,
   return optimality;
 }
 
-int L2_SVM_MFN(const AlgIn & data, 
-	       struct options *Options, 
+int L2_SVM_MFN(const AlgIn & data,
+	       struct options *Options,
 	       struct vector_double *Weights,
 	       struct vector_double *Outputs)
-{ 
-  /* Disassemble the structures */  
+{
+  /* Disassemble the structures */
   timer tictoc;
   tictoc.restart();
   const double ** set = data.vals;
@@ -189,7 +188,7 @@ int L2_SVM_MFN(const AlgIn & data,
   double epsilon=BIG_EPSILON;
   int cgitermax=SMALL_CGITERMAX;
   double *w = Weights->vec;
-  double *o = Outputs->vec; 
+  double *o = Outputs->vec;
   double F_old = 0.0;
   double F = 0.0;
   double diff=0.0;
@@ -199,11 +198,11 @@ int L2_SVM_MFN(const AlgIn & data,
   ActiveSubset->d = m;
   // initialize
   for(int i=0;i<n;i++) F+=w[i]*w[i];
-  F=0.5*lambda*F;        
+  F=0.5*lambda*F;
   int active=0;
-  int inactive=m-1; // l-1      
+  int inactive=m-1; // l-1
   for(int i=0; i<m ; i++)
-    { 
+    {
       diff=1-Y[i]*o[i];
       if(diff>0)
 	{
@@ -215,9 +214,9 @@ int L2_SVM_MFN(const AlgIn & data,
 	{
 	  ActiveSubset->vec[inactive]=i;
 	  inactive--;
-	}   
+	}
     }
-  ActiveSubset->d=active;        
+  ActiveSubset->d=active;
   int iter=0;
   int opt=0;
   int opt2=0;
@@ -236,15 +235,15 @@ int L2_SVM_MFN(const AlgIn & data,
   {
     iter++;
     if (VERB>4) cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active << " active examples, " << " objective_value = " << F << ")" << endl;
-    for(int i=n; i-- ;) 
+    for(int i=n; i-- ;)
       w_bar[i]=w[i];
-    for(int i=m; i-- ;)  
+    for(int i=m; i-- ;)
       o_bar[i]=o[i];
     opt=CGLS(data,lambda,cgitermax,epsilon,ActiveSubset,Weights_bar,Outputs_bar);
-    for(register int i=active; i < m; i++) 
+    for(register int i=active; i < m; i++)
     {
         ii=ActiveSubset->vec[i];
-        const double * val = set[ii];   
+        const double * val = set[ii];
         t=w_bar[n-1];
         for(register int j=n-1; j--;)
           t+=val[j]*w_bar[j];
@@ -253,17 +252,17 @@ int L2_SVM_MFN(const AlgIn & data,
     if(ini==0) {cgitermax=CGITERMAX; ini=1;};
     opt2=1;
     for(int i=0;i<m;i++)
-    { 
+    {
       ii=ActiveSubset->vec[i];
       if(i<active)
         opt2=(opt2 && (Y[ii]*o_bar[ii]<=1+epsilon));
       else
-        opt2=(opt2 && (Y[ii]*o_bar[ii]>=1-epsilon));  
+        opt2=(opt2 && (Y[ii]*o_bar[ii]>=1-epsilon));
       if(opt2==0) break;
-    }      
+    }
     if(opt && opt2) // l
     {
-      if(epsilon==BIG_EPSILON) 
+      if(epsilon==BIG_EPSILON)
       {
             epsilon=Options->epsilon;
             if (VERB>4) cerr << "  epsilon = " << BIG_EPSILON << " case converged (speedup heuristic 2). Continuing with epsilon=" <<  EPSILON << endl;
@@ -271,10 +270,10 @@ int L2_SVM_MFN(const AlgIn & data,
       }
       else
       {
-        for(int i=n; i-- ;) 
-          w[i]=w_bar[i];      
+        for(int i=n; i-- ;)
+          w[i]=w_bar[i];
         for(int i=m; i-- ;)
-          o[i]=o_bar[i]; 
+          o[i]=o_bar[i];
         delete[] ActiveSubset->vec;
         delete[] ActiveSubset;
         delete[] o_bar;
@@ -283,21 +282,21 @@ int L2_SVM_MFN(const AlgIn & data,
         delete[] Outputs_bar;
         tictoc.stop();
         if (VERB>3) cerr << "L2_SVM_MFN converged (optimality) in " << iter << " iteration(s) and "<< tictoc.time() << " seconds. \n" << endl;
-	    return 1;      
+	    return 1;
 	  }
     }
 
-    delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m); 
+    delta=line_search(w,w_bar,lambda,o,o_bar,Y,C,n,m);
 
     F_old=F;
     F=0.0;
-    for(int i=n; i-- ;){ 
+    for(int i=n; i-- ;){
 	  w[i]+=delta*(w_bar[i]-w[i]);
       F+=w[i]*w[i];
     }
-    F=0.5*lambda*F;      
+    F=0.5*lambda*F;
     active=0;
-    inactive=m-1;  
+    inactive=m-1;
     for(int i=0; i<m ; i++)
 	{
 	  o[i]+=delta*(o_bar[i]-o[i]);
@@ -312,9 +311,9 @@ int L2_SVM_MFN(const AlgIn & data,
 	    {
 	      ActiveSubset->vec[inactive]=i;
 	      inactive--;
-	    }   
+	    }
 	}
-    ActiveSubset->d=active;      
+    ActiveSubset->d=active;
     if(fabs(F-F_old)<RELATIVE_STOP_EPS*fabs(F_old))
 	{
 //	  cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
@@ -332,22 +331,22 @@ int L2_SVM_MFN(const AlgIn & data,
   return 0;
 }
 
-double line_search(double *w, 
+double line_search(double *w,
                    double *w_bar,
                    double lambda,
-                   double *o, 
-                   double *o_bar, 
-                   const double *Y, 
+                   double *o,
+                   double *o_bar,
+                   const double *Y,
                    const double *C,
                    int d, /* data dimensionality -- 'n' */
-                   int l) /* number of examples */                  
-{                       
+                   int l) /* number of examples */
+{
    double omegaL = 0.0;
    double omegaR = 0.0;
-   double diff=0.0;   
+   double diff=0.0;
    for(int i=d; i--; )
        {
-         diff=w_bar[i]-w[i];  
+         diff=w_bar[i]-w[i];
          omegaL+=w[i]*diff;
          omegaR+=w_bar[i]*diff;
    }
@@ -360,19 +359,19 @@ double line_search(double *w,
        {
          if(Y[i]*o[i]<1)
 	   {
-	     diff=C[i]*(o_bar[i]-o[i]);  
+	     diff=C[i]*(o_bar[i]-o[i]);
 	     L+=(o[i]-Y[i])*diff;
 	     R+=(o_bar[i]-Y[i])*diff;
 	   }
        }
    L+=omegaL;
    R+=omegaR;
-   Delta* deltas=new Delta[l];    
+   Delta* deltas=new Delta[l];
    int p=0;
    for(int i=0;i<l;i++)
-     { 
+     {
        diff=Y[i]*(o_bar[i]-o[i]);
-       
+
        if(Y[i]*o[i]<1)
 	 {
 	   if(diff>0)
@@ -389,30 +388,30 @@ double line_search(double *w,
 	     {
 	       deltas[p].delta=(1-Y[i]*o[i])/diff;
 	       deltas[p].index=i;
-	       deltas[p].s=1;      
+	       deltas[p].s=1;
 	       p++;
 	     }
 	 }
      }
-   sort(deltas,deltas+p);            
-   double delta_prime=0.0;  
+   sort(deltas,deltas+p);
+   double delta_prime=0.0;
    for(int i=0;i<p;i++)
      {
-       delta_prime = L + deltas[i].delta*(R-L);       
+       delta_prime = L + deltas[i].delta*(R-L);
        if(delta_prime>=0)
 	 break;
-       ii=deltas[i].index;   
+       ii=deltas[i].index;
        diff=(deltas[i].s)*C[ii]*(o_bar[ii]-o[ii]);
        L+=diff*(o[ii]-Y[ii]);
        R+=diff*(o_bar[ii]-Y[ii]);
-     }   
+     }
    delete [] deltas;
    return (-L/(R-L));
-} 
+}
 /********************** UTILITIES ********************/
 
 void Clear(struct data *a)
-{     
+{
   delete [] a->val;
   delete [] a->rowptr;
   delete [] a->colind;

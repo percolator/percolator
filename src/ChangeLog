@@ -1,3 +1,7 @@
+v1.12
+* PNGase F feature (otion -N) introduced
+
+
 v1.11
 * Bugfix for qvality binning procedure
 * Introduced a sqrt(abs(dM)*abs(dRT)) feature for the Description of correct

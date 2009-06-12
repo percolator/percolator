@@ -1,10 +1,18 @@
 /*******************************************************************************
- * Percolator unofficial version
- * Copyright (c) 2006-9 University of Washington. All rights reserved.
- * Written by Lukas Käll (lukall@u.washington.edu) in the 
- * Department of Genome Sciences at the University of Washington. 
- *
- * $Id: PercolatorCInterface.h,v 1.7 2009/01/09 14:40:59 lukall Exp $
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
  *******************************************************************************/
 #ifndef PERCOLATOR_C_INTERFACE_H_
 #define PERCOLATOR_C_INTERFACE_H_
@@ -33,7 +41,7 @@ void pcSetVerbosity(int verbosity);
 void pcRegisterPSM(SetType set, char * identifier, double * features);
 
 /** Function called when we want to start processing */
-void pcExecute(); 
+void pcExecute();
 
 /**
  * Given the set enum and features, return the Percolator score for the PSM
@@ -47,10 +55,10 @@ void pcScorePSM(
 /** Function called when retrieving target scores and q-values after processing,
   * the array should be numSpectra long and will be filled in the same order
   * as the features were inserted */
-void pcGetScores(double *scoreArr, double *qArr); 
+void pcGetScores(double *scoreArr, double *qArr);
 
 /** Function that should be called after processing finished */
-void pcCleanUp(); 
+void pcCleanUp();
 
 #ifdef __cplusplus
 }
