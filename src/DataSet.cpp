@@ -207,16 +207,18 @@ unsigned int DataSet::cntEnz(const string& peptide) {
 }
 
 double DataSet::isPngasef(const string& peptide) {
-  size_t pos=0;
-  while ((pos=peptide.find("N*",pos))!=string::npos) {
-    if (label==1) {
-      if (peptide[pos+3]=='T' || peptide[pos+3]=='S')
-        return 1.0;
-    } else {
-      if (peptide[pos-2]=='T' || peptide[pos-2]=='S')
-        return 1.0;
-    }
-    pos+=1;
+  size_t next_pos=0,pos;
+  while ((pos=peptide.find("N*",next_pos))!=string::npos) {
+    next_pos = pos + 1;
+	if (label==1) {
+      pos += 3;
+      if (peptide[pos]=='#') pos += 1;
+	} else {
+      pos -= 2;
+      if (peptide[pos]=='#') pos -= 1;
+	}
+    if (peptide[pos]=='T' || peptide[pos]=='S')
+       return 1.0;
   }
   return 0.0;
 }
