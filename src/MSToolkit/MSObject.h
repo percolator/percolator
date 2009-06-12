@@ -13,11 +13,11 @@ class MSObject {
   //Constructors & Destructors
   MSObject();
   MSObject(const MSObject&);
-  ~MSObject(); 
+  ~MSObject();
 
   //Operator Functions
   MSObject& operator=(const MSObject&);
-  
+
   //Functions
   void add(Spectrum&);
   bool addToHeader(char*);
@@ -30,14 +30,14 @@ class MSObject {
   MSHeader& getHeader();
   void setHeader(const MSHeader& h);
   int size();
-  
+
  protected:
  private:
   vector<Spectrum> *vSpectrum;
   string fileName;
 	MSHeader header;
   MSSpectrumType fileType;
-  
+
 };
 
 #endif

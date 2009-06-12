@@ -3,9 +3,9 @@ distdir = $(PACKAGE)_$(VERSION)_src
 PERLABELED = Percolator v $(VERSION)
 PERUNLABELED = Percolator unofficial version
 
-AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
-AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
-AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP
+AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite
+AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite
+AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite
 
 perc_files = \
   Caller.cpp \
@@ -98,7 +98,7 @@ nodist_libpercolator_la_SOURCES = $(perc_files)
 
 nodist_libmstoolkit_la_SOURCES = $(toolkit_files)
 
-libmstoolkit_la_CPPFLAGS = ${CPPFLAGS} -I./MSToolkit -I./MSToolkit/zLib -I./MSToolkit/RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -w -pthread
+libmstoolkit_la_CPPFLAGS = ${CPPFLAGS} -I./MSToolkit -I./MSToolkit/zLib -I./MSToolkit/SQLite -I./MSToolkit/RAMP -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -w -pthread
 
 nodist_percolator_SOURCES = main.cpp
 percolator_LDADD = libpercolator.la libqvality.la libArrayLibrary.la libmstoolkit.la -ldl -lpthread

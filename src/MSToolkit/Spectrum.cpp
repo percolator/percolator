@@ -1,6 +1,7 @@
 #include "Spectrum.h"
 #include <iostream>
 #include <iomanip>
+#include <cstdlib>
 
 using namespace std;
 
@@ -353,7 +354,7 @@ void Spectrum::setPeaks(vector<Peak_T> peaks)
       vPeaks->push_back(peaks.at(i));
     }
 }
-  
+
 MSActivation Spectrum::getActivationMethod(){
   return actMethod;
 };
@@ -366,12 +367,12 @@ void Spectrum::printMe()
 {
   cout << "Scan Number: " << getScanNumber() << endl
        << "Mass to charge: " << getMZ()<< endl
-       << "S Charge: " << getCharge()<< endl 
+       << "S Charge: " << getCharge()<< endl
        <<"RT: "<<getRTime()<<endl;
-    
+
   cout<<fixed;
-  
-  
+
+
 
   for(unsigned int i=0; i<vPeaks->size(); i++)
     {
