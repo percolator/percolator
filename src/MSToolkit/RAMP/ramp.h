@@ -10,7 +10,7 @@ and mzML, if you have the PWIZ library from Spielberg Family Proteomics Center
     begin                : Wed Oct 10
     copyright            : (C) 2003 by Pedrioli Patrick, ISB, Proteomics
     email                : ppatrick@student.ethz.ch
-    additional work for C++, >2GB files in WIN32, and portability (C) 2004 by Brian Pratt, Insilicos LLC 
+    additional work for C++, >2GB files in WIN32, and portability (C) 2004 by Brian Pratt, Insilicos LLC
  ***************************************************************************/
 
 /***************************************************************************
@@ -27,6 +27,7 @@ and mzML, if you have the PWIZ library from Spielberg Family Proteomics Center
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 
 #ifdef TPPLIB
 #include "sysdepend.h" // tpp lib system depencies handling
@@ -68,9 +69,9 @@ typedef FILE * ramp_filehandle_t; // a real OS with real file handling
 
 // set mz and intensity precision
 #ifndef RAMPREAL_FLOAT
-typedef double RAMPREAL; 
+typedef double RAMPREAL;
 #else
-typedef float RAMPREAL; 
+typedef float RAMPREAL;
 #endif
 
 #include "ramp_base64.h"
@@ -89,7 +90,7 @@ namespace pwiz {  // forward ref
 typedef struct {
    ramp_filehandle_t fileHandle;
 #ifdef HAVE_PWIZ_MZML_LIB
-   pwiz::msdata::RAMPAdapter *mzML; // if nonNULL, then we're reading mzML 
+   pwiz::msdata::RAMPAdapter *mzML; // if nonNULL, then we're reading mzML
 #endif
    int bIsMzData; // if not mzML, then is it mzXML or mzData?
 } RAMPFILE;
@@ -239,7 +240,7 @@ enum {
   BIT_AVERAGE_SCANS = 0x0002,
   OPTION_AVERAGE_SCANS = BIT_AVERAGE_SCANS, // return scan including merged resultant scan
                                             // but exclude 'real' scan via peaksCount=0
-  OPTION_ORIGIN_SCANS = BIT_ORIGIN_SCANS,   // return 'real' scan 
+  OPTION_ORIGIN_SCANS = BIT_ORIGIN_SCANS,   // return 'real' scan
                                             // but exclude merged resultant scan via peaksCount=0
   OPTION_ALL_SCANS = BIT_ORIGIN_SCANS | BIT_AVERAGE_SCANS,
                                             // return 'real' scan + merged resultant scan
