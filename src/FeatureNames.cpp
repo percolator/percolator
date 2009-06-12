@@ -14,7 +14,7 @@ FeatureNames::FeatureNames()
   enzFeatNum = -1;
   numSPFeatNum = -1;
   ptmFeatNum = -1;
-  rank1FeatNum = -1;
+  pngFeatNum = -1;
   aaFeatNum = -1;
   intraSetFeatNum = -1;
   quadraticFeatNum = -1;
@@ -30,7 +30,7 @@ string FeatureNames::getFeatureNames(bool skipDOC) {
   int n = (skipDOC&&docFeatNum>0)?docFeatNum:(int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
-    int featNum = 0; 
+    int featNum = 0;
     oss << featureNames[featNum++];
     for (; featNum < n; ++featNum )
       oss << "\t" << featureNames[featNum];
@@ -52,16 +52,16 @@ void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
     featureNames.push_back(tmp);
   }
   assert(featureNames.size()==numFields);
-  setNumFeatures(featureNames.size());    
+  setNumFeatures(featureNames.size());
 }
 
 void FeatureNames::setSQTFeatures(
-  int minC, int maxC, 
-  bool doEnzyme, 
-  bool calcPTMs, 
-  bool doManyHitsPerSpectrum, 
-  const string& aaAlphabet, 
-  bool calcQuadratic, 
+  int minC, int maxC,
+  bool doEnzyme,
+  bool calcPTMs,
+  bool doPNGaseF,
+  const string& aaAlphabet,
+  bool calcQuadratic,
   bool calcDOC)
 {
   if (!featureNames.empty())
@@ -75,7 +75,7 @@ void FeatureNames::setSQTFeatures(
   featureNames.push_back("Mass");
   featureNames.push_back("PepLen");
   chargeFeatNum = featureNames.size();
-  minCharge = minC; maxCharge = maxC; 
+  minCharge = minC; maxCharge = maxC;
   for(int charge=minCharge; charge <= maxCharge; ++charge) {
     ostringstream cname;
     cname << "Charge" << charge;
@@ -95,9 +95,9 @@ void FeatureNames::setSQTFeatures(
     ptmFeatNum = featureNames.size();
     featureNames.push_back("ptm");
   }
-  if (doManyHitsPerSpectrum) {
-    rank1FeatNum = featureNames.size();
-    featureNames.push_back("rank1");
+  if (doPNGaseF) {
+    pngFeatNum = featureNames.size();
+    featureNames.push_back("PNGaseF");
   }
   if (!aaAlphabet.empty()) {
     aaFeatNum = featureNames.size();
@@ -111,7 +111,7 @@ void FeatureNames::setSQTFeatures(
         ostringstream feat;
         feat << "f" << f1+1 << "*" << "f" << f2+1;
         featureNames.push_back(feat.str());
-      }    
+      }
     }
   }
   if (calcDOC) {
@@ -121,5 +121,5 @@ void FeatureNames::setSQTFeatures(
     featureNames.push_back("docRT");
     featureNames.push_back("docdMdRT");
   }
-  setNumFeatures(featureNames.size());  
+  setNumFeatures(featureNames.size());
 }

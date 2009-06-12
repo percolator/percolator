@@ -35,6 +35,7 @@ Enzyme DataSet::enzyme = TRYPSIN;
 bool DataSet::calcPTMs = false;
 bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
+bool DataSet::pngasef = false;
 string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
 FeatureNames DataSet::featureNames;
@@ -205,6 +206,22 @@ unsigned int DataSet::cntEnz(const string& peptide) {
     return cnt;
 }
 
+double DataSet::isPngasef(const string& peptide) {
+  size_t pos=0;
+  while ((pos=peptide.find("N*",pos))!=string::npos) {
+    if (label==1) {
+      if (peptide[pos+3]=='T' || peptide[pos+3]=='S')
+        return 1.0;
+    } else {
+      if (peptide[pos-2]=='T' || peptide[pos-2]=='S')
+        return 1.0;
+    }
+    pos+=1;
+  }
+  return 0.0;
+}
+
+
 void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   string tmp,line;
   is.clear();
@@ -278,7 +295,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
   if(calcDOC) m-=2;
 
   initFeatureTables((calcDOC?m+DescriptionOfCorrect::numDOCFeatures():m),n, calcDOC);
-  
+
   if (calcDOC) getFeatureNames().setDocFeatNum(m);
   string seq;
 
@@ -503,8 +520,10 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
         feat[nxtFeat++]=(dM<0?-dM:dM);   // abs only defined for integers on some systems
         if (calcPTMs)
           feat[nxtFeat++]=cntPTMs(psm.peptide);
-        if (hitsPerSpectrum>1)
-          feat[nxtFeat++]=(ms==0?1.0:0.0);
+        if (pngasef)
+          feat[nxtFeat++]=isPngasef(psm.peptide);
+//      if (hitsPerSpectrum>1)
+//        feat[nxtFeat++]=(ms==0?1.0:0.0);
         if (calcAAFrequencies) {
           computeAAFrequencies(psm.peptide,&feat[nxtFeat]);
           nxtFeat += aaAlphabet.size();
@@ -612,7 +631,7 @@ void DataSet::readSQT(const string fname,const string & wild, bool match) {
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
 
-  getFeatureNames().setSQTFeatures(minCharge,maxCharge,enzyme!=NO_ENZYME,calcPTMs,hitsPerSpectrum>1,
+  getFeatureNames().setSQTFeatures(minCharge,maxCharge,enzyme!=NO_ENZYME,calcPTMs,pngasef,
                                    (calcAAFrequencies?aaAlphabet:""),calcQuadraticFeatures,calcDOC);
   initFeatureTables(FeatureNames::getNumFeatures(),n, calcDOC);
 

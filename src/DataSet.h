@@ -40,6 +40,7 @@ class DataSet
     static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
     static void setPTMfeature(bool on) { calcPTMs=on; }
+    static void setPNGaseF(bool on) { pngasef=on; }
     static void setIsotopeMass(bool on) { isotopeMass=on; }
     static void setNumFeatures(bool doc);
     static void inline setHitsPerSpectrum(int hits) {hitsPerSpectrum=hits;}
@@ -67,6 +68,7 @@ protected:
     static double isTryptic(const char n,const char c);
     static double isChymoTryptic(const char n,const char c);
     static double isElastasic(const char n,const char c);
+    double isPngasef(const string& peptide);
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;
     static Enzyme enzyme;
@@ -74,6 +76,8 @@ protected:
     static bool calcDOC;
     static bool isotopeMass;
     static int hitsPerSpectrum;
+    static bool pngasef;
+    static string reversedFeaturePattern;
     static string aaAlphabet;
     static string ptmAlphabet;
     const static int maxNumRealFeatures = 16 + 3 + 20*3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc

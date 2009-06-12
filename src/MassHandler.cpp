@@ -21,7 +21,6 @@ double MassHandler::massDiff(double observedMass, double calculatedMass, unsigne
   	  if (abs(isodm)>abs(dm+isotope))
         isodm = dm+isotope;
     }
-    calculatedMass += 1.0079*(charge-1);
     dm=isodm/calculatedMass;
     return dm;
   }

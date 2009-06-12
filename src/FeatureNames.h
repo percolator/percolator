@@ -30,7 +30,7 @@ public:
   int getEnzFeatNum() { return enzFeatNum;}
   int getNumSPFeatNum() { return numSPFeatNum;}
   int getPtmFeatNum() { return ptmFeatNum;}
-  int getRank1FeatNum() { return rank1FeatNum;}
+  int getPNGaseFFeatNum() { return pngFeatNum;}
   int getAaFeatNum() { return aaFeatNum;}
   int getIntraSetFeatNum() { return intraSetFeatNum;}
   int getQuadraticFeatNum() { return quadraticFeatNum;}
@@ -40,7 +40,7 @@ protected:
   vector<string> featureNames;
   static size_t numFeatures;
   int minCharge, maxCharge;
-  int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum, rank1FeatNum, aaFeatNum, intraSetFeatNum, quadraticFeatNum, docFeatNum;
+  int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum, pngFeatNum, aaFeatNum, intraSetFeatNum, quadraticFeatNum, docFeatNum;
 };
 
 #endif /*FEATURENAMES_H_*/

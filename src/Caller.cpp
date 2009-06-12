@@ -188,6 +188,8 @@ the retention time and difference between observed and calculated mass","",TRUE_
     "Replace tryptic features with chymo-tryptic features.","",TRUE_IF_SET);
   cmd.defineOption("e","elastase",
     "Replace tryptic features with elastase features.","",TRUE_IF_SET);
+  cmd.defineOption("N","PNGaseF",
+    "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])","",TRUE_IF_SET);
   cmd.defineOption("x","whole-xval",
     "Select hyper parameter cross validation to be performed on whole iterating procedure, rather than on each iteration step."
     ,"",TRUE_IF_SET);
@@ -275,6 +277,8 @@ the retention time and difference between observed and calculated mass","",TRUE_
     DataSet::setEnzyme(ELASTASE);
   if (cmd.optionSet("c"))
     DataSet::setEnzyme(CHYMOTRYPSIN);
+  if (cmd.optionSet("N"))
+    DataSet::setPNGaseF(true);
   if (cmd.optionSet("a"))
     DataSet::setAAFreqencies(true);
   if (cmd.optionSet("b"))
