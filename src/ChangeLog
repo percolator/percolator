@@ -1,6 +1,6 @@
 v1.12
+* Changed licensing scheme for percolator
 * PNGase F feature (otion -N) introduced
-
 
 v1.11
 * Bugfix for qvality binning procedure

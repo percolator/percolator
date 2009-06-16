@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: PackedMatrix.cpp,v 1.4 2009/05/11 14:27:35 lukall Exp $
- 
+
  *******************************************************************************/
 #include<cstdlib>
 using namespace std;
@@ -43,10 +43,10 @@ PackedMatrix identityPackedMatrix(int n)
   return result;
 }
 
-PackedMatrix makePackedMatrix(int a, int b)
-{
-  return makePackedMatrix(a);
-}
+//PackedMatrix makePackedMatrix(int a, int b)
+//{
+//  return makePackedMatrix(a);
+//}
 
 PackedMatrix makePackedMatrix(int a)
 {
@@ -74,7 +74,7 @@ ostream & operator <<(ostream & os, const PackedMatrix & rhs)
     if ( row != rhs.size() - 1 )
       os << "," << endl;
   }
-  os << "}" << endl; 
+  os << "}" << endl;
   return os;
 }
 
@@ -84,7 +84,7 @@ PackedMatrix matrixMult(const PackedMatrix & lhs, const PackedMatrix & rhs)
 {
   PackedMatrix res = makePackedMatrix(lhs.size());
   PackedMatrix trhs = transpose(rhs);
-  
+
   int row, col;
   for (row = 0; row < lhs.size(); row++)
   {
@@ -105,7 +105,7 @@ PackedMatrix matrixMult(const PackedMatrix & lhs, const PackedMatrix & rhs)
 PackedMatrix matrixAdd(const PackedMatrix & lhs, const PackedMatrix & rhs)
 {
   PackedMatrix res = makePackedMatrix(lhs.size());
-  
+
   int row;
   for (row = 0; row < lhs.size(); row++)
   {
@@ -117,7 +117,7 @@ PackedMatrix matrixAdd(const PackedMatrix & lhs, const PackedMatrix & rhs)
 PackedMatrix operator *(const double & lhs, const PackedMatrix & rhs)
 {
   PackedMatrix res = makePackedMatrix(rhs.size());
-  
+
   int row;
   for (row = 0; row < rhs.size(); row++)
   {
@@ -165,7 +165,7 @@ size_t numCol(const PackedMatrix & mat)
 PackedMatrix transpose(const PackedMatrix & mat)
 {
   PackedMatrix res =makePackedMatrix( numCol(mat) );
-  
+
   int i,j;
   for (i=0; i<mat.size();++i) {
     for (j=0;j<mat[i].packedSize();++j) {

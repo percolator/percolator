@@ -32,7 +32,7 @@ public:
   string greeter();
   void run();
   static void estimatePEP( vector<pair<double,bool> >& combined, double pi0, vector<double>& peps, bool includeNegativesInResult=false);
-  static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0);
+  static void estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr);
   static void getPValues(const vector<pair<double,bool> >& combined, vector<double>& p);
   static void getQValues(double pi0,const vector<pair<double,bool> >& combined, vector<double>& q);
   static void getQValuesFromP(double pi0,const vector<double>& p, vector<double>& q);

@@ -1,8 +1,8 @@
 .cpp.obj: 
-	cl /I ArrayLibrary /I MSToolkit /I MSToolkit/RAMP /I MSToolkit/zLib /c /DWIN32 /DHAVE_CONFIG_H /EHsc /MT /O2 /Fo$@ $< 
+	cl /I ArrayLibrary /I MSToolkit /I MSToolkit/RAMP /I MSToolkit/zLib /c /DWIN32 /DHAVE_CONFIG_H /EHsc /D_POSIX_SOURCE /D_POSIX_C_SOURCE /D_NOSQLITE /MT /O2 /Fo$@ $< 
 
 .c.obj: 
-	cl /I . /I ArrayLibrary /I MSToolkit /I MSToolkit/RAMP /I MSToolkit/zLib /c /DWIN32 /DHAVE_CONFIG_H /MT /O2 /Fo$@ $< 
+	cl /I . /I ArrayLibrary /I MSToolkit /I MSToolkit/RAMP /I MSToolkit/SQLite /I MSToolkit/zLib /c /DWIN32 /DHAVE_CONFIG_H /D_POSIX_SOURCE /D_POSIX_C_SOURCE /D_NOSQLITE /MT /O2 /Fo$@ $< 
 
 array_library_files = \
 	ArrayLibrary/MatrixFunctions.cpp \

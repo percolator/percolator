@@ -96,7 +96,7 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
   // Logistic regression on the data
   size_t nTargets=0,nDecoys=0;
   LogisticRegression lr;
-  estimate(combined,lr,pi0);
+  estimate(combined,lr);
 
   vector<double> xvals(0);
 
@@ -140,7 +140,7 @@ void PosteriorEstimator::estimatePEP( vector<pair<double,bool> >& combined, doub
 
 }
 
-void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr, double pi0) {
+void PosteriorEstimator::estimate( vector<pair<double,bool> >& combined, LogisticRegression& lr) {
   // switch sorting order
   if (!reversed)
     reverse(combined.begin(),combined.end());
