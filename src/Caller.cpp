@@ -768,7 +768,7 @@ int Caller::run() {
 void Caller::writeXML(ostream & os,Scores & fullset) {
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<percolator_output majorVersion=\"1\" minorVersion=\"0\" percolator_version=\"" <<
-		  "Percolator unofficial version\" " <<
+		  "Percolator version " << VERSION << "\" " <<
 		  "xsi:schemaLocation=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out percolator_out.xsd\" " <<
 		  "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" " <<
 		  "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" << endl;
