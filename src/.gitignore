@@ -5,3 +5,4 @@ config.h.in
 config/*
 configure
 debug/
+optim/
