@@ -27,7 +27,6 @@ and mzML, if you have the PWIZ library from Spielberg Family Proteomics Center
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
 
 #ifdef TPPLIB
 #include "sysdepend.h" // tpp lib system depencies handling
@@ -55,6 +54,7 @@ and mzML, if you have the PWIZ library from Spielberg Family Proteomics Center
 #include <sys/stat.h>
 #include <io.h>
 #else
+#include <strings.h>
 #include <stdint.h>
 #include <netinet/in.h>
 #include <sys/stat.h>
