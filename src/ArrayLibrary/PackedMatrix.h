@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,13 +21,17 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: PackedMatrix.h,v 1.6 2009/05/11 14:27:35 lukall Exp $
- 
+
  *******************************************************************************/
 #ifndef _PackedMatrix_H
 #define _PackedMatrix_H
 
+#ifdef WIN32
+#include <float.h>
+#define isfinite _finite
+#endif
 #include <assert.h>
 #include "ArrayLibrary.h"
 
@@ -85,7 +89,7 @@ template<typename T> void solveEquation(PackedMatrix& mat,Array<T>& res) {
         maxVal = val;
         maxRow = nonEmpty.index(rowPos);
         maxRowPos = rowPos;
-      }    
+      }
     }
     // Put the most significant row at row "col"
     if (maxVal!=0.0) {
@@ -93,7 +97,7 @@ template<typename T> void solveEquation(PackedMatrix& mat,Array<T>& res) {
         swap(mat[col],mat[maxRow]);
         swap(res[col],res[maxRow]);
         if (pivotPos>=0)
-          swap(nonEmpty[maxRowPos],nonEmpty[pivotPos]); 
+          swap(nonEmpty[maxRowPos],nonEmpty[pivotPos]);
       }
       // Divide the row with maxVal
       mat[col] /= maxVal;
@@ -111,7 +115,7 @@ template<typename T> void solveEquation(PackedMatrix& mat,Array<T>& res) {
     }
   }
   // Go bottom up and clear upper halfmatrix
-  
+
   for (col=mat.size(); col--;) {
     nonEmpty.clear();
     for(row=0;row<col;row++) {
