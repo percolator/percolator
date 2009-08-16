@@ -1,3 +1,5 @@
+* Filtering out redundant peptides before retention time regression training
+
 v1.12
 * Changed licensing scheme for percolator
 * PNGase F feature (otion -N) introduced

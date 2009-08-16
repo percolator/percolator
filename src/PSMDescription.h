@@ -47,4 +47,24 @@ public:
   set<string> proteinIds;
 };
 
+inline bool const operator<(PSMDescription const& one, PSMDescription const& other){
+	if (one.peptide == other.peptide)
+		return one.retentionTime<other.retentionTime;
+	return one.peptide < other.peptide;
+}
+
+inline bool operator==(PSMDescription const& one, PSMDescription const& other){
+//	return one.peptide == other.peptide;
+	if(one.peptide == other.peptide)
+		return true;
+	else
+		return false;
+}
+
+/*
+inline bool operator!=(const PSMDescription& one, const PSMDescription& other){
+	return one.peptide != other.peptide;
+}
+*/
+
 #endif /*PSMDESCRIPTION_H_*/

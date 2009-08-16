@@ -296,7 +296,7 @@ void Scores::recalculateDescriptionOfGood(const double fdr) {
     if (scores[ix1].label==1) {
 //      if (fdr>scores[ix1].pPSM->q) {
       if (0.0>=scores[ix1].pPSM->q) {
-        doc.registerCorrect(scores[ix1].pPSM);
+        doc.registerCorrect(*scores[ix1].pPSM);
       }
     }
   }
@@ -306,7 +306,7 @@ void Scores::recalculateDescriptionOfGood(const double fdr) {
 
 void Scores::setDOCFeatures() {
   for(size_t ix1=0;ix1<size();++ix1) {
-    doc.setFeatures(scores[ix1].pPSM);
+    doc.setFeatures(*scores[ix1].pPSM);
   }
 }
 

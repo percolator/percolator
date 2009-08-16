@@ -37,9 +37,9 @@ public:
   static void setKlammer(bool on) {doKlammer=on;}
   static void setDocType(const unsigned int dt) {docFeatures=dt;}
   void clear() {psms.clear();}
-  void registerCorrect(PSMDescription* pPSM) {psms.push_back(pPSM);}
+  void registerCorrect(PSMDescription& psm) {psms.push_back(psm);}
   void trainCorrect();
-  void setFeatures(PSMDescription* pPSM);
+  void setFeatures(PSMDescription& psm);
   static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + aaAlphabet.size());}
   static size_t minimumNumRTFeatures() {return 3*10+2;}
   static size_t numDOCFeatures() {return 4;}
@@ -53,8 +53,8 @@ public:
   }
 
 protected:
-  void trainRetention(vector<PSMDescription *>& trainset, const double C, const double gamma);
-  double testRetention(vector<PSMDescription *>& testset);
+  void trainRetention(vector<PSMDescription>& trainset, const double C, const double gamma, const double epsilon);
+  double testRetention(vector<PSMDescription>& testset);
   static inline double indexSum(const float *index, const string& peptide);
   static inline double indexAvg(const float *index, const string& peptide);
   static inline double indexN(const float *index, const string& peptide);
@@ -66,10 +66,10 @@ protected:
   static double* fillAAFeatures(const string& pep, double *feat);
   static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
   double avgPI,avgDM;
-  double c,gamma;
+  double c,gamma,epsilon;
   size_t numRTFeat;
 
-  vector<PSMDescription *> psms;
+  vector<PSMDescription> psms;
 //  vector<double> rtW;
 
   svm_model *model;

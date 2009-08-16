@@ -25,6 +25,7 @@
 #include "Normalizer.h"
 #include "DescriptionOfCorrect.h"
 #include "MassHandler.h"
+#include "PSMDescription.h"
 
 static double REGRESSION_C = 5.0;
 
@@ -34,6 +35,7 @@ DescriptionOfCorrect::DescriptionOfCorrect()
   model = NULL;
   c=REGRESSION_C;
   gamma = 50;
+  epsilon = 1e-3;
 }
 
 DescriptionOfCorrect::~DescriptionOfCorrect()
@@ -62,16 +64,16 @@ void DescriptionOfCorrect::calcRegressionFeature(PSMDescription &psm) {
 //  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
 }
 
-double DescriptionOfCorrect::testRetention(vector<PSMDescription *>& testset) {
+double DescriptionOfCorrect::testRetention(vector<PSMDescription>& testset) {
   double rms=0.0;
   for(size_t ix1=0;ix1<testset.size();ix1++) {
-    double diff = estimateRT(testset[ix1]->retentionFeatures)-testset[ix1]->retentionTime;
+    double diff = estimateRT(testset[ix1].retentionFeatures)-testset[ix1].retentionTime;
 	rms += diff*diff;
   }
   return rms/testset.size();
 }
 
-void DescriptionOfCorrect::trainRetention(vector<PSMDescription *>& trainset, const double C, const double gamma) {
+void DescriptionOfCorrect::trainRetention(vector<PSMDescription>& trainset, const double C, const double gamma, const double epsilon) {
   if (psms.size()>500) {
     numRTFeat = totalNumRTFeatures();
   } else {
@@ -86,7 +88,7 @@ void DescriptionOfCorrect::trainRetention(vector<PSMDescription *>& trainset, co
   param.nu = 0.5;
   param.cache_size = 100;
   param.C = C;
-  param.eps = 1e-3;
+  param.eps = epsilon; //1e-3;
   param.p = 0.1;
   param.shrinking = 1;
   param.probability = 0;
@@ -100,9 +102,9 @@ void DescriptionOfCorrect::trainRetention(vector<PSMDescription *>& trainset, co
   data.y=new double[data.l];
 
   for(size_t ix1=0;ix1<trainset.size();ix1++) {
-    data.x[ix1].values=trainset[ix1]->retentionFeatures;
+    data.x[ix1].values=trainset[ix1].retentionFeatures;
     data.x[ix1].dim=numRTFeat;
-    data.y[ix1]=trainset[ix1]->retentionTime;
+    data.y[ix1]=trainset[ix1].retentionTime;
   }
   svm_model* m = svm_train(&data, &param);
   copyModel(m);
@@ -112,10 +114,15 @@ void DescriptionOfCorrect::trainRetention(vector<PSMDescription *>& trainset, co
 }
 
 void DescriptionOfCorrect::trainCorrect() {
+  // Get rid of redundant peptides
+  sort(psms.begin(),psms.end(),less<PSMDescription>());
+  psms.resize(distance(psms.begin(),unique(psms.begin(),psms.end())));
+
+  // Get averages
   double piSum=0.0, dMSum=0.0;
   for(size_t ix=0; ix<psms.size(); ++ix) {
-    piSum += psms[ix]->pI;
-    dMSum += psms[ix]->massDiff;
+    piSum += psms[ix].pI;
+    dMSum += psms[ix].massDiff;
   }
   if (psms.size()==0) {
     avgPI = 0.0; avgDM = 0.0;
@@ -123,10 +130,12 @@ void DescriptionOfCorrect::trainCorrect() {
     avgPI = piSum/psms.size();
     avgDM = dMSum/psms.size();
   }
+
+  // Train teyrntion time regressor
   size_t test_frac = 4u;
   if (psms.size()>test_frac*10u) {
 	// If we got enough data, calibrate gamma and C by leaving out a testset
-    vector<PSMDescription *> train,test;
+    vector<PSMDescription> train,test;
     for(size_t ix=0; ix<psms.size(); ++ix) {
       if (ix%test_frac==0) {
     	  test.push_back(psms[ix]);
@@ -137,42 +146,45 @@ void DescriptionOfCorrect::trainCorrect() {
     double bestRms = 1e100;
     double gammaV[3] = {gamma/2,gamma,gamma*2};
     double cV[3] = {c/2,c,c*2};
+    double epsilonV[3] = {epsilon/2,epsilon,epsilon*2};
     for (double* gammaNow=&gammaV[0];gammaNow!=&gammaV[3];gammaNow++){
         for (double* cNow=&cV[0];cNow!=&cV[3];cNow++){
-        	  trainRetention(train,*cNow,(*gammaNow));
+            for (double* epsilonNow=&epsilonV[0];epsilonNow!=&epsilonV[3];epsilonNow++){
+        	  trainRetention(train,*cNow,(*gammaNow),*epsilonNow);
         	  double rms=testRetention(test);
         	  if (rms<bestRms) {
-        		  c=*cNow;gamma=*gammaNow;
+        		  c=*cNow;gamma=*gammaNow;epsilon=*epsilonNow;
         		  bestRms=rms;
         	  }
+            }
         }
     }
     // cerr << "CV selected gamma=" << gamma << " and C=" << c << endl;
   }
-  trainRetention(psms,c,gamma);
+  trainRetention(psms,c,gamma,epsilon);
   if (VERB>2) cerr << "Description of correct recalibrated, avg pI=" << avgPI << " avg dM=" << avgDM << endl;
 
 }
-void DescriptionOfCorrect::setFeatures(PSMDescription* pPSM) {
+void DescriptionOfCorrect::setFeatures(PSMDescription& psm) {
   assert(DataSet::getFeatureNames().getDocFeatNum()>0);
-  pPSM->predictedTime=estimateRT(pPSM->retentionFeatures);
+  psm.predictedTime=estimateRT(psm.retentionFeatures);
   size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
-  double dm = abs(pPSM->massDiff-avgDM);
-  double drt=abs(pPSM->retentionTime-pPSM->predictedTime);
+  double dm = abs(psm.massDiff-avgDM);
+  double drt=abs(psm.retentionTime-psm.predictedTime);
 
-  if (docFeatures & 1) pPSM->features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(pPSM->pI-avgPI),docFeatNum);
-  else pPSM->features[docFeatNum] = 0.0;
+  if (docFeatures & 1) psm.features[docFeatNum] = Normalizer::getNormalizer()->normalize(abs(psm.pI-avgPI),docFeatNum);
+  else psm.features[docFeatNum] = 0.0;
 
-  if (docFeatures & 2) pPSM->features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(dm,docFeatNum+1);
-  else pPSM->features[docFeatNum+1] = 0.0;
+  if (docFeatures & 2) psm.features[docFeatNum+1] = Normalizer::getNormalizer()->normalize(dm,docFeatNum+1);
+  else psm.features[docFeatNum+1] = 0.0;
 
 
-  if (docFeatures & 4) pPSM->features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
-  else pPSM->features[docFeatNum+2] = 0.0;
+  if (docFeatures & 4) psm.features[docFeatNum+2] = Normalizer::getNormalizer()->normalize(drt,docFeatNum+2);
+  else psm.features[docFeatNum+2] = 0.0;
 
-  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(pPSM->retentionTime))));
-  if (docFeatures & 8) pPSM->features[docFeatNum+3] = Normalizer::getNormalizer()->normalize(sqrt(dm*drt),docFeatNum+3);
-  else pPSM->features[docFeatNum+3] = 0.0;
+  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm.retentionTime))));
+  if (docFeatures & 8) psm.features[docFeatNum+3] = Normalizer::getNormalizer()->normalize(sqrt(dm*drt),docFeatNum+3);
+  else psm.features[docFeatNum+3] = 0.0;
 
 }
 
@@ -341,7 +353,7 @@ double* DescriptionOfCorrect::fillAAFeatures(const string& pep, double *feat) {
 void DescriptionOfCorrect::print_10features() {
    for(int i=0;i<10;i++) {
        for(size_t j=0;j<totalNumRTFeatures();j++) {
-          cerr << psms[i]->retentionFeatures[j] << "\t";
+          cerr << psms[i].retentionFeatures[j] << "\t";
        }
        cerr << endl;
    }

@@ -5,7 +5,7 @@ PERUNLABELED = Percolator unofficial version
 
 AM_CFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite
 AM_CXXFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite
-AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite
+AM_CPPFLAGS=$(DEBUG_OPTIONS) -I$(srcdir)/ArrayLibrary -I$(srcdir)/MSToolkit -I$(srcdir)/MSToolkit/zLib -I$(srcdir)/MSToolkit/RAMP -I$(srcdir)/MSToolkit/SQLite -w
 
 perc_files = \
   Caller.cpp \
