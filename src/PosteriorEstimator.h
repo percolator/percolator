@@ -44,6 +44,7 @@ protected:
                vector<unsigned int>& negatives, vector<unsigned int>& sizes);
   string targetFile,decoyFile;
   static bool reversed, pvalInput;
+  string resultFileName;
 };
 
 #endif /*POSTERIORESTIMATOR_H_*/

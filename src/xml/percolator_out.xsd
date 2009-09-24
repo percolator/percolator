@@ -67,6 +67,7 @@
               </xsd:element>
                         </xsd:sequence>
 				<xsd:attribute name="psm_id" type="xsd:string" use="required">
+				<xsd:attribute name="decoy" type="xsd:boolean">
 					<xsd:annotation>
 						<xsd:documentation xml:lang="en">Unique PSM identifier</xsd:documentation>
 					</xsd:annotation>
