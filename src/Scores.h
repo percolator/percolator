@@ -67,12 +67,13 @@ public:
     void calcPep();
     double estimatePi0();
     double getPi0() {return pi0;}
-    void printRoc(string & fn);
     void fill(string & fn);
     inline unsigned int size() {return (pos+neg);}
     inline unsigned int posSize() {return (pos);}
     inline unsigned int posNowSize() {return (posNow);}
     inline unsigned int negSize() {return (neg);}
+    inline static bool isOutXmlDecoys() {return outxmlDecoys;}
+    inline static void setOutXmlDecoys(bool decoys_out) {outxmlDecoys=decoys_out;}
     double pi0;
     double factor;
 protected:
@@ -82,6 +83,7 @@ protected:
     vector<ScoreHolder> scores;
     map<const double *,ScoreHolder *> scoreMap;
     DescriptionOfCorrect doc;
+    static bool outxmlDecoys;
 };
 
 #endif /*SCORES_H_*/

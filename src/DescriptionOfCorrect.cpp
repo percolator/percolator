@@ -270,7 +270,7 @@ double DescriptionOfCorrect::indexAvg(const float* index, const string& peptide)
 double DescriptionOfCorrect::indexNearestNeigbourPos(const float* index, const string& peptide) {
   double sum = 0.0;
   for(unsigned int ix = 0; ix < peptide.size();++ix) {
-    if (peptide[ix]=='R' && peptide[ix]=='K') {
+    if (peptide[ix]=='R' || peptide[ix]=='K') {
       if (ix>0)
         sum += max(0.0f,index[peptide[ix-1]-'A']);
       if (ix<peptide.size()-1)
@@ -283,7 +283,7 @@ double DescriptionOfCorrect::indexNearestNeigbourPos(const float* index, const s
 double DescriptionOfCorrect::indexNearestNeigbourNeg(const float* index, const string& peptide) {
   double sum = 0.0;
   for(unsigned int ix = 0; ix < peptide.size();++ix) {
-    if (peptide[ix]=='D' && peptide[ix]=='E') {
+    if (peptide[ix]=='D' || peptide[ix]=='E') {
       if (ix>0)
         sum += max(0.0f,index[peptide[ix-1]-'A']);
       if (ix<peptide.size()-1)

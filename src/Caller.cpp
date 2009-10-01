@@ -47,7 +47,7 @@ const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   modifiedFN(""), modifiedDecoyFN(""), forwardFN(""), decoyFN (""), //shuffledThresholdFN(""), shuffledTestFN(""),
-  decoyWC(""), rocFN(""), gistFN(""), tabFN(""), xmloutFN(""), weightFN(""),
+  decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), weightFN(""),
   gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
   niter(10), seed(0), xv_type(EACH_STEP)
@@ -100,17 +100,15 @@ bool Caller::parseOptions(int argc, char **argv){
   call = callStream.str();
   ostringstream intro,endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   percolator [options] normal shuffle [[shuffled_treshhold] shuffled_test]" << endl;
-  intro << "or percolator [options] -P pattern normal_and_shuffled.sqt" << endl;
+  intro << "   percolator [options] target.sqt decoy.sqt" << endl;
+  intro << "or percolator [options] -P pattern target_and_decoy.sqt" << endl;
   intro << "or percolator [options] -g gist.data gist.label" << endl << endl;
-  intro << "   where normal is the normal sqt-file," << endl;
-  intro << "         shuffle the shuffled sqt-file used in the training," << endl;
-  intro << "         shuffle_test is an otional second shuffled sqt-file for q-value calculation" << endl;
-  intro << "         shuffle_treshhold is an otional shuffled sqt-file for determine q-value treshold" << endl << endl;
-  intro << "To be able to merge small data set one can replace the sqt-files with meta" << endl;
+  intro << "   where target.sqt is the target sqt-file," << endl;
+  intro << "     and decoy.sqt is the decoy sqt-file," << endl;
+  intro << "Small data sets may be merged by replace the sqt-files with meta" << endl;
   intro << "files. Meta files are text files containing the paths of sqt-files, one path" << endl;
   intro << "per line. For successful result, the different runs should be generated under" << endl;
-  intro << "similair condition. Particulary, they need to be generated with the same protease." << endl;
+  intro << "similair condition." << endl;
   // init
   CommandLineParser cmd(intro.str());
   cmd.defineOption("o","sqt-out",
@@ -157,8 +155,8 @@ and test set, -1 -- negative train set, -2 -- negative in test set.","",TRUE_IF_
     "Input files are given as a tab delimited file. In this case the only argument should be a file name \
 of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
 <tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
-Labels are interpreted as 1 -- positive train \
-and test set, -1 -- negative train set, -2 -- negative in test set.\
+Labels are interpreted as 1 -- positive set \
+and test set, -1 -- negative set.\
 When the --doc option the first and second feature (third and fourth column) should contain \
 the retention time and difference between observed and calculated mass","",TRUE_IF_SET);
   cmd.defineOption("w","weights",
@@ -173,9 +171,6 @@ the retention time and difference between observed and calculated mass","",TRUE_
   cmd.defineOption("v","verbose",
     "Set verbosity of output: 0=no processing info, 5=all, default is 2",
     "level");
-  cmd.defineOption("r","result",
-    "Output result file (score ranked labels) to given filename",
-    "filename");
   cmd.defineOption("u","unitnorm",
     "Use unit normalization [0-1] instead of standard deviation normalization","",TRUE_IF_SET);
   cmd.defineOption("a","aa-freq","Calculate amino acid frequency features","",TRUE_IF_SET);
@@ -188,8 +183,6 @@ the retention time and difference between observed and calculated mass","",TRUE_
   cmd.defineOption("O","override",
     "Override error check and do not fall back on default score vector in case of suspect score vector",
     "",TRUE_IF_SET);
-  cmd.defineOption("I","intra-set",
-    "Depricated switch --- Turn Off calculation of intra-set features","",TRUE_IF_SET);
   cmd.defineOption("y","notryptic",
     "Turn off calculation of tryptic/chymo-tryptic features.","",TRUE_IF_SET);
   cmd.defineOption("c","chymo",
@@ -213,12 +206,18 @@ the retention time and difference between observed and calculated mass","",TRUE_
     "Retention time features calculated as in Klammer et al.","",TRUE_IF_SET);
   cmd.defineOption("D","doc",
     "Include description of correct features.","",MAYBE,"15");
+  cmd.defineOption("r","results",
+    "Output tab delimited results to a file instead of stdout",
+    "filename");
   cmd.defineOption("B","decoy-results",
-    "Output results for decoys into a tab delimited file",
+    "Output tab delimited results for decoys into a file",
     "filename");
   cmd.defineOption("X","xml-output",
     "Output results in xml-format into a file",
     "filename");
+  cmd.defineOption("Z","decoy-xml-output",
+    "Include decoys PSMs in the xml-output. Only available if -X is used."
+    ,"",TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -266,7 +265,7 @@ the retention time and difference between observed and calculated mass","",TRUE_
     trainRatio=frac;
   }
   if (cmd.optionSet("r"))
-    rocFN = cmd.options["r"];
+    resultFN = cmd.options["r"];
   if (cmd.optionSet("u"))
     Normalizer::setType(Normalizer::UNI);
   if (cmd.optionSet("d"))
@@ -275,8 +274,6 @@ the retention time and difference between observed and calculated mass","",TRUE_
     DataSet::setQuadraticFeatures(true);
   if (cmd.optionSet("O"))
     SanityCheck::setOverrule(true);
-  if (cmd.optionSet("I"))
-    cerr << "Intra-set features are depricated, -I switch have no effect" << endl;
   if (cmd.optionSet("y"))
     DataSet::setEnzyme(NO_ENZYME);
   if (cmd.optionSet("R"))
@@ -328,6 +325,13 @@ the retention time and difference between observed and calculated mass","",TRUE_
   }
   if (cmd.optionSet("X"))
     xmloutFN = cmd.options["X"];
+  if (cmd.optionSet("Z")) {
+	if (xmloutFN.empty()) {
+		cerr << "The -Z switch was set without any xml-output file specified" << stderr;
+	    exit(-1);
+	}
+    Scores::setOutXmlDecoys(true);
+  }
 
 
   if (cmd.arguments.size()>2) {
@@ -740,16 +744,20 @@ int Caller::run() {
        printWeights(weightStream,w[ix]);
      weightStream.close();
   }
-  if (rocFN.size()>0) {
-    fullset.printRoc(rocFN);
-  }
   if (xmloutFN.size()>0) {
 	ofstream xmlStream(xmloutFN.data(),ios::out);
 	writeXML(xmlStream,fullset);
 	xmlStream.close();
   }
-  normal.print(fullset);
-  if (decoyOut.size()>0) {
+
+  if (resultFN.empty()) {
+	 normal.print(fullset);
+  } else {
+     ofstream targetStream(resultFN.data(),ios::out);
+     normal.print(fullset,targetStream);
+     targetStream.close();
+  }
+  if (!decoyOut.empty()) {
      ofstream decoyStream(decoyOut.data(),ios::out);
      shuffled.print(fullset,decoyStream);
      decoyStream.close();
@@ -767,7 +775,7 @@ int Caller::run() {
 
 void Caller::writeXML(ostream & os,Scores & fullset) {
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-  os << "<percolator_output majorVersion=\"1\" minorVersion=\"0\" percolator_version=\"" <<
+  os << "<percolator_output majorVersion=\"1\" minorVersion=\"1\" percolator_version=\"" <<
 		  "Percolator version " << VERSION << "\" " <<
 		  "xsi:schemaLocation=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out percolator_out.xsd\" " <<
 		  "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" " <<

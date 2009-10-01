@@ -65,7 +65,7 @@ protected:
     string forwardFN;
     string decoyFN;
     string decoyWC;
-    string rocFN;
+    string resultFN;
     string gistFN;
     string tabFN;
     string xmloutFN;

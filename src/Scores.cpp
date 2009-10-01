@@ -39,9 +39,12 @@ inline bool operator<(const ScoreHolder &one, const ScoreHolder &other)
     {return (one.score<other.score);}
 
 ostream& operator<<(ostream& os, const ScoreHolder& sh) {
-  if (sh.label!=1)
+  if (sh.label!=1 && !Scores::isOutXmlDecoys())
     return os;
-  os << "  <psm psm_id=\"" << sh.pPSM->id << "\">" << endl;
+  os << "  <psm psm_id=\"" << sh.pPSM->id << "\"";
+  if (sh.label!=1)
+    os << " decoy=\"true\"";
+  os << ">" << endl;
   os << "    <svm_score>"<< sh.score << "</svm_score>" << endl;
   os << "    <q_value>"<< sh.pPSM->q << "</q_value>" << endl;
   os << "    <pep>"<< sh.pPSM->pep << "</pep>" << endl;
@@ -76,6 +79,8 @@ Scores::~Scores()
 {
 }
 
+bool Scores::outxmlDecoys = false;
+
 void Scores::merge(vector<Scores>& sv) {
   scores.clear();
   for(vector<Scores>::iterator a = sv.begin();a!=sv.end();a++) {
@@ -93,15 +98,6 @@ void Scores::printRetentionTime(ostream& outs, double fdr){
            << PSMDescription::unnormalize(doc.estimateRT(it->pPSM->retentionFeatures)) << "\t"
            << it->pPSM->peptide << endl;
   }
-}
-
-void Scores::printRoc(string & fn){
- ofstream rocStream(fn.data(),ios::out);
- vector<ScoreHolder>::iterator it;
- for(it=scores.begin();it!=scores.end();it++) {
-   rocStream << (it->label==-1?-1:1) << endl;
- }
- rocStream.close();
 }
 
 double Scores::calcScore(const double * feat) const{
