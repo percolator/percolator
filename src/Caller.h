@@ -78,6 +78,7 @@ protected:
     bool dtaSelect;
     bool docFeatures;
     bool reportPerformanceEachIteration;
+    bool reportUniquePeptides;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;

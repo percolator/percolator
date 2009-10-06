@@ -59,6 +59,7 @@ public:
     void generatePositiveTrainingSet(AlgIn& data,const double fdr,const double cpos);
     void generateNegativeTrainingSet(AlgIn& data,const double cneg);
     void normalizeScores();
+    void weedOutRedundant();
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction, bool findDirection);
     ScoreHolder* getScoreHolder(const double *d);

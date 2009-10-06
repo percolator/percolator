@@ -48,7 +48,7 @@ const unsigned int Caller::xval_fold = 3;
 Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   modifiedFN(""), modifiedDecoyFN(""), forwardFN(""), decoyFN (""), //shuffledThresholdFN(""), shuffledTestFN(""),
   decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), weightFN(""),
-  gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false),
+  gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false), reportUniquePeptides(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
   niter(10), seed(0), xv_type(EACH_STEP)
 {
@@ -218,6 +218,9 @@ the retention time and difference between observed and calculated mass","",TRUE_
   cmd.defineOption("Z","decoy-xml-output",
     "Include decoys PSMs in the xml-output. Only available if -X is used."
     ,"",TRUE_IF_SET);
+  cmd.defineOption("U","unique-peptides",
+    "Remove all redundant peptides and only keep the highest scoring PSM. q-values and PEPs are only calculated on peptide level in such case"
+    ,"",TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -332,7 +335,13 @@ the retention time and difference between observed and calculated mass","",TRUE_
 	}
     Scores::setOutXmlDecoys(true);
   }
-
+  if (cmd.optionSet("U")) {
+    if (!modifiedFN.empty() || !modifiedDecoyFN.empty()) {
+		cerr << "The -U switch may not be used together with the -o and -s options" << stderr;
+	    exit(-1);
+    }
+	reportUniquePeptides = true;
+  }
 
   if (cmd.arguments.size()>2) {
       cerr << "Too many arguments given" << endl;
@@ -709,6 +718,10 @@ int Caller::run() {
   	if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;
     fullset.merge(xv_test);
   }
+  if (reportUniquePeptides) {
+    fullset.weedOutRedundant();
+  }
+
   if(VERB>0) cerr << "Calibrating statistics - estimating pi_0" << endl;
   fullset.estimatePi0();
   if(VERB>0) cerr << "Calibrating statistics - calculating q values" << endl;
