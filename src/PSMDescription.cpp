@@ -25,6 +25,13 @@ PSMDescription::PSMDescription():  q(0.),pep(0.),features(NULL),retentionFeature
 {
 }
 
+PSMDescription::PSMDescription(const string pep, const double retTime):  q(0.),pep(0.),features(NULL),retentionFeatures(NULL),
+                                   retentionTime(retTime),predictedTime(0.),massDiff(0.),pI(0.),
+                                   scan(0),id(""),peptide(pep)
+{
+}
+
+
 PSMDescription::~PSMDescription()
 {
 }
@@ -74,4 +81,28 @@ void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<int,doub
   }
 }
 
+void PSMDescription::setPSMSet(vector<PSMDescription> & psms)
+{
+	double minRT = 1e10, maxRT = -1;
+	vector<PSMDescription>::iterator psm;
+
+	for(psm = psms.begin(); psm != psms.end(); ++psm)
+	{
+		minRT = min(minRT, psm->retentionTime);
+	    maxRT = max(maxRT, psm->retentionTime);
+	}
+
+	normDiv = (maxRT - minRT) / 2.;
+	normSub = minRT + normDiv;
+	if (normDiv == 0.0)
+		normDiv = 1.0;
+}
+
+void PSMDescription::normalizeRetentionTimes(vector<PSMDescription> & psms)
+{
+	vector<PSMDescription>::iterator psm;
+
+	for(psm = psms.begin(); psm != psms.end(); ++psm)
+		psm->retentionTime = (psm->retentionTime - normSub)/normDiv;
+}
 

@@ -20,12 +20,14 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iostream>
 using namespace std;
 
 class PSMDescription
 {
 public:
   PSMDescription();
+  PSMDescription(const string peptide, const double retTime);
   virtual ~PSMDescription();
   void clear() {proteinIds.clear();}
   double * getFeatures() {return features;}
@@ -34,6 +36,11 @@ public:
   double getUnnormalizedRetentionTime() { return unnormalize(retentionTime);}
   static void setRetentionTime(vector<PSMDescription>& psms, map<int,double>& scan2rt);
   static double unnormalize(double normalizedTime);
+  // set the norm and div for a set of peptides
+  static void setPSMSet(vector<PSMDescription> & psms);
+  // normalize retention times for a  set of peptides
+  static void normalizeRetentionTimes(vector<PSMDescription> & psms);
+  friend ostream& operator<<(ostream & out, PSMDescription & psm);
 
   static double normDiv,normSub;
 
@@ -61,6 +68,18 @@ inline bool operator==(PSMDescription const& one, PSMDescription const& other){
 		return false;
 }
 
+inline ostream& operator<< (ostream & out, PSMDescription & psm)
+{
+    // Since operator<< is a friend of the Point class, we can access
+    // Point's members directly.
+    out << "Peptide: " << psm.peptide << endl;
+    out << "Retention time, predicted retention time: " << psm.retentionTime << ", " << psm.predictedTime;
+    out << "Retention features: ";
+    for (int i = 0; i < 52; ++i)
+    	out << psm.retentionFeatures[i] << "  ";
+    out << endl;
+    return out;
+}
 /*
 inline bool operator!=(const PSMDescription& one, const PSMDescription& other){
 	return one.peptide != other.peptide;

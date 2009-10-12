@@ -632,7 +632,7 @@ void Caller::fillFeatureSets() {
     SetHandler::writeTab(tabFN,normal,shuffled);
   }
   pNorm=Normalizer::getNormalizer();
-  pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?DescriptionOfCorrect::totalNumRTFeatures():0);
+  pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?RTModel::totalNumRTFeatures():0);
   pNorm->normalizeSet(all);
 }
 

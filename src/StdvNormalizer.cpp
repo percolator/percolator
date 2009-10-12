@@ -14,7 +14,6 @@
    limitations under the License.
 
  *******************************************************************************/
-#include <vector>
 #include <iostream>
 #ifdef WIN32
 #include <float.h>
@@ -121,4 +120,9 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec, size_t nf, size_t nrf){
     if (VERB>2) cerr << "\t" << div[ix];
   }
   if (VERB>2) cerr << endl;
+}
+
+void StdvNormalizer::setPsmSet(vector<PSMDescription> & psms, size_t noFeat)
+{
+	// to be implemented
 }

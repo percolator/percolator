@@ -25,6 +25,8 @@ class Normalizer
 public:
 	virtual ~Normalizer();
     virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures){;}
+    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
+    void normalizeSet(vector<PSMDescription> & psms);
     void normalizeSet(set<DataSet *> & setVec);
     void normalize(const double * in, double * out, size_t offset, size_t numFeatures);
     double normalize(const double in, size_t index) { return (in-sub[index])/div[index]; }
@@ -34,6 +36,14 @@ public:
     static void setType(int type);
 	const static int UNI = 0;
 	const static int STDV = 1;
+	void resizeVecs(size_t size) {sub.resize(size); div.resize(size); }
+	void setNumberRetentionFeatures(size_t numRF) {numRetentionFeatures = numRF; }
+	double* getSub() {return &sub[0];}
+	double* getDiv() {return &div[0];}
+	size_t*  getNumRetFeatures() {return & numRetentionFeatures;}
+	void printNumRetFeatures() {cout << "There are " << numRetentionFeatures << endl; }
+	void printSub()  {for (int i = 0; i < numRetentionFeatures; i++) cout << sub[i] << " "; cout << endl;}
+	void printDiv()  {for (int i = 0; i < numRetentionFeatures; i++) cout << div[i] << " "; cout << endl;}
 protected:
     Normalizer();
     static Normalizer * theNormalizer;

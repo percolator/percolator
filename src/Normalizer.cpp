@@ -84,6 +84,21 @@ void Normalizer::normalize(const double *in,double* out, size_t offset, size_t n
   }
 }
 
+// normalize a set of PSMs
+void Normalizer::normalizeSet(vector<PSMDescription> & psms)
+{
+	vector<PSMDescription>::iterator it;
+	double * retFeatures;
+
+	cout << "Normalizing...";
+	for(it = psms.begin(); it != psms.end(); ++it)
+	{
+		  retFeatures = it->retentionFeatures;
+		  normalize(retFeatures, retFeatures, 0, numRetentionFeatures);
+	}
+	cout << "Done." << endl << endl;
+}
+
 int Normalizer::subclass_type = STDV;
 Normalizer* Normalizer::theNormalizer = NULL;
 

@@ -14,19 +14,21 @@
    limitations under the License.
 
  *******************************************************************************/
-#ifndef STDVNORMALIZER_H_
-#define STDVNORMALIZER_H_
+#include "Option.h"
+#include "Globals.h"
+#include "RTPredictor.h"
 
-class StdvNormalizer : public Normalizer // virtual Normalizer
-{
-public:
-	StdvNormalizer();
-	virtual ~StdvNormalizer();
-    virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures);
-    // to be implemented
-    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat);
-    void unnormalizeweight(const vector<double>& in,vector<double>& out);
-    void normalizeweight(const vector<double>& in,vector<double>& out);
-};
 
-#endif /*STDVNORMALIZER_H_*/
+int main(int argc, char **argv){
+  RTPredictor *pCaller = new RTPredictor();
+  int retVal = 0;
+
+  if(pCaller->parseOptions(argc,argv))
+  {
+    pCaller->run();
+  }
+
+  delete pCaller;
+  Globals::clean();
+  return retVal;
+}

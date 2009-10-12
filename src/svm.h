@@ -1,6 +1,7 @@
 #ifndef _LIBSVM_H
 #define _LIBSVM_H
 #define _DENSE_REP
+#include <vector>
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,7 +93,16 @@ struct svm_model *svm_train(const struct svm_problem *prob, const struct svm_par
 void svm_cross_validation(const struct svm_problem *prob, const struct svm_parameter *param, int nr_fold, double *target);
 
 int svm_save_model(const char *model_file_name, const struct svm_model *model);
+int svm_save_model2(const char *model_file_name, const struct svm_model *model, const double & normSub, const double & normDiv,
+					const double *sub, const double *div, const size_t *numRetFeatures, const int selected_features, const size_t numRTFeat);
+/*int svm_save_model2(const char *model_file_name, const struct svm_model *model, const double & normSub, const double & normDiv,
+					const double * sub, const double * div, const size_t *numRetFeatures);*/
+
 struct svm_model *svm_load_model(const char *model_file_name);
+struct svm_model *svm_load_model2(const char *model_file_name, double *retSub, double *retDiv,
+		double *sub, double *div, size_t *numRetFeatures, int *selected_features, size_t *numRTFeat);
+/* struct svm_model *svm_load_model2(const char *model_file_name, double * retSub, double * retDiv,
+		double * sub, double * div, size_t * numRetFeatures);*/
 
 int svm_get_svm_type(const struct svm_model *model);
 int svm_get_nr_class(const struct svm_model *model);

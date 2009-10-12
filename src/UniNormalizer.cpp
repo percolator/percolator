@@ -83,3 +83,32 @@ void UniNormalizer::setSet(set<DataSet *> &setVec, size_t nf, size_t nrf){
   	  div[ix]=1.0;
   }
 }
+
+void UniNormalizer::setPsmSet(vector<PSMDescription> & psms, size_t noFeat)
+{
+	double * retentionFeatures;
+	size_t ix;
+	vector<PSMDescription>::iterator it;
+	numRetentionFeatures = noFeat;
+	vector<double> mins(noFeat, 1e+100), maxs(noFeat, -1e+100);
+	sub.resize(noFeat,0.0);
+	div.resize(noFeat,0.0);
+
+    for(it = psms.begin(); it != psms.end(); ++it)
+    {
+    	retentionFeatures = it->retentionFeatures;
+    	for (ix = 0;ix < numRetentionFeatures; ++ix)
+    	{
+    		mins[ix] = min(retentionFeatures[ix], mins[ix]);
+    	    maxs[ix] = max(retentionFeatures[ix], maxs[ix]);
+    	}
+    }
+
+	for(ix = 0; ix < numRetentionFeatures; ++ix)
+	{
+		sub[ix] = mins[ix];
+		div[ix] = maxs[ix] - mins[ix];
+		if (div[ix] <= 0)
+			div[ix] = 1.0;
+	}
+}

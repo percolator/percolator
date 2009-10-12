@@ -23,6 +23,7 @@ public:
 	UniNormalizer();
 	virtual ~UniNormalizer();
     virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures);
+	virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat);
     void unnormalizeweight(const vector<double>& in,vector<double>& out);
     void normalizeweight(const vector<double>& in, vector<double>& out);
 };
