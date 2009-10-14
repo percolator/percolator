@@ -23,6 +23,7 @@
 #include "Globals.h"
 #include "RTModel.h"
 #include "DataSet.h"
+#include "DescriptionOfCorrect.h"
 //#include "RTPredictor.h"
 #include <sstream>
 #include <iostream>
@@ -85,17 +86,39 @@ float RTModel::kytedoolittle_index['Z'-'A'+1] =
 float RTModel::aa_weights['Z'-'A'+1] =
 		{71.0788,0, 103.1448,115.0886,129.1155,147.1766,57.052,137.1412,113.1595,0,128.1742,113.1595,131.1986,114.1039,
 		 0,97.1167,128.1308,156.1876,87.0782,101.1051,0,99.1326,186.2133,0,163.1760,0};
+float RTModel::bulkiness['Z'-'A'+1] =
+		{ 11.50, 0.0, 13.46, 11.68, 13.57, 19.80, 3.40, 13.69, 21.40, 0.0, 15.71, 21.40, 16.25,
+		  12.82, 0.0, 17.43, 14.45, 14.28, 9.47, 15.77, 0.0, 21.57, 21.67, 0.0, 18.03, 0.0};
+float RTModel::alpha_helix['Z'-'A'+1] =
+		{ 1.41, 0.0, 0.66, 0.99, 1.59, 1.16, 0.43, 1.05, 1.09, 0.0, 1.23, 1.34, 1.30, 0.76,
+		  0.0, 0.34, 1.27, 1.21, 0.57, 0.76, 0.0, 0.90, 1.02, 0.0, 0.74, 0.0};
+float RTModel::beta_sheet['Z'-'A'+1] =
+		{ 0.72, 0.0, 1.40, 0.39, 0.52, 1.33, 0.58, 0.80,  1.67,  0.0, 0.69, 1.22, 1.14, 0.48,
+		  0.0, 0.31, 0.98, 0.84, 0.96, 1.17, 0.0, 1.87, 1.35, 0.0, 1.45, 0.0 };
+
 // groups of features that can be switched on or off
 string RTModel::feature_groups[NO_FEATURE_GROUPS] =
 		{"krokhin_index", "krokhin100_index", "krokhinc2_index", "krokhintfa_index", "doolittle_index",
-		 "hessa_index", "peptide_size", "no_ptms", "ptms", "aa_features"};
+		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "aa_features", "no_consec_krdenq",
+		 "sec_conformations"};
 // how many features are in each group?
-int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {13, 13, 13, 13, 13, 13, 1, 1, 3, aaAlphabet.size()};
+int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {12, 12, 12, 12, 12, 12,  1, 1, 3, 1, aaAlphabet.size(),1, 2};
 // deafult selected feature groups is krokhin, krokhintfa, krokhin100, peptide_size, ptms, aa_features
-//static int DEFAULT_FEATURE_GROUPS = 843;
+//static int DEFAULT_FEATURE_GROUPS = ;
 // krokhin, krokhintfa, doolittle, peptide_size, ptms, aa_features
-static int DEFAULT_FEATURE_GROUPS = 857;
-
+//static int DEFAULT_FEATURE_GROUPS = ;
+// krokhin, krokhintfa, doolittle, peptide_size, ptms, aa_features
+// static int DEFAULT_FEATURE_GROUPS = 1881;
+// (krokhin, krokhintfa, doolittle = 25), peptide_size(=64), bulkiness(=2^9 = 512), aa_features (= 1024)
+//static int DEFAULT_FEATURE_GROUPS = 1625;
+// (krokhin, krokhintfa, doolittle = 25), peptide_size(=64),  bulkiness(=2^9 = 512), aa_features (= 1024), no_consec_krdenq (2048)
+// static int DEFAULT_FEATURE_GROUPS = 3673;
+//(krokhin, krokhintfa, doolittle = 25), peptide_size(=64),  bulkiness(=2^9 = 512), aa_features (= 1024), no_consec_krdenq (2048)
+// and sec_conformations (= 4096)
+static int DEFAULT_FEATURE_GROUPS = 7769;
+// (krokhin, krokhintfa, doolittle = 25), peptide_size(=64),  bulkiness(=2^9 = 512), aa_features (= 1024), no_consec_krdenq (2048)
+// sec_conformations (= 4096), pI (2^13=8192)
+//static int DEFAULT_FEATURE_GROUPS = 15961;
 
 RTModel::RTModel(): numRTFeat(0), model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON),
 					stepFineGrid(STEP_FINE_GRID), noPointsFineGrid(NO_POINTS_FINE_GRID), calibrationFile(""),
@@ -192,6 +215,58 @@ double RTModel::getNoPtms(string pep)
   	return ptms;
 }
 
+// conformational preferences
+double* RTModel::conformationalPreferences(const string& peptide, double *features)
+{
+	double sumAlpha = 0.0, sumBeta = 0.0;
+	string::const_iterator token = peptide.begin();
+
+	for(;token != peptide.end(); ++token)
+	{
+    	sumAlpha += alpha_helix[*token - 'A'];
+    	sumBeta += beta_sheet[*token - 'A'];
+	}
+
+	//cout << "Peptide: " << peptide << ", alpha, beta = " << sumAlpha << ", " << sumBeta << endl;
+  	*(features++) = sumAlpha / (double)peptide.size();
+  	*(features++) = sumBeta / (double)peptide.size();
+
+  return features;
+}
+
+// sum up bulkiness
+double RTModel::bulkinessSum(const string& peptide)
+{
+	double sum = 0.0;
+	string::const_iterator token = peptide.begin();
+
+  	for(;token != peptide.end(); ++token)
+    	sum += bulkiness[*token - 'A'];
+
+  	return sum / (double)peptide.size();
+}
+
+// calculate the number of consecutive occurences of (R,K,D,E,N,Q)
+int RTModel::noConsecKRDENQ(const string& peptide)
+{
+	double noOccurences = 0.0;
+	string AA = "RKDENQ";
+	size_t isAA1, isAA2;
+
+  	for(unsigned int ix = 0; ix < (peptide.size() - 1); ++ix)
+  	{
+  		// are the current aa and his neighbour one of RKDENQ?
+  		isAA1 = AA.find(peptide[ix]);
+  		isAA2 = AA.find(peptide[ix + 1]);
+  		if ((isAA1 != string::npos) && (isAA2 != string::npos))
+  		{
+  			noOccurences++;
+    	}
+  	}
+
+  	return (noOccurences / (double)peptide.size());
+}
+
 void RTModel::calcRetentionFeatures(PSMDescription &psm)
 {
 	string peptide = psm.getPeptide();
@@ -232,9 +307,33 @@ void RTModel::calcRetentionFeatures(PSMDescription &psm)
 		if (selected_features & 1 << 8)
 			features = fillPTMFeatures(pep, features);
 
-		// amino acids
+		// bulkiness
 		if (selected_features & 1 << 9)
+			*(features++) = bulkinessSum(pep);
+
+		// amino acids
+		if (selected_features & 1 << 10)
 			features = fillAAFeatures(pep, features);
+
+		// no of consecutive KRDENQ
+		if (selected_features & 1 << 11)
+		{
+			//cout << "Pep: " << pep << " and no consec = " << noConsecKRDENQ(pep) << endl;
+			*(features++) = noConsecKRDENQ(pep);
+		}
+
+		// conformational pereferences of aa
+		if (selected_features & 1 << 12)
+		{
+			features = conformationalPreferences(pep, features);
+		}
+
+		// pI
+		//if (selected_features & 1 << 13)
+		//{
+		//
+		//*(features++) = DescriptionOfCorrect::isoElectricPoint(pep);
+		//}
 	}
 	//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
 }
@@ -316,7 +415,7 @@ double* RTModel::fillFeaturesIndex(const string& peptide, const float *index, do
 	*(features++) = indexC(index, peptide);
 	*(features++) = indexNearestNeigbourPos(index, peptide);
 	*(features++) = indexNearestNeigbourNeg(index, peptide);
-	*(features++) = indexConsecutivePolarResidues(index, peptide);
+	//*(features++) = indexConsecutivePolarResidues(index, peptide);
 	// these are added withing the function itself (because they are 2 features added for both)
   	// they calculate the highest and lowest sum of hydrophobicities of aa in a window of 3 and 5 aa, respectively
   	features = indexPartialSum(index, peptide, 3, features);
@@ -393,26 +492,7 @@ double RTModel::indexNearestNeigbourNeg(const float* index, const string& peptid
 }
 
 
-// calculate the sum of hydrophobicities of any two consecutive occurences of (R,K,D,E,S,T,N,Q)
-double RTModel::indexConsecutivePolarResidues(const float* index, const string& peptide)
-{
-	double sum = 0.0;
-	string polarAA = "RKDESTNQ";
-	size_t isPolar1, isPolar2;
 
-  	for(unsigned int ix = 0; ix < (peptide.size() - 1); ++ix)
-  	{
-  		// are the current aa and his neighbour polar?
-  		isPolar1 = polarAA.find(peptide[ix]);
-  		isPolar2 = polarAA.find(peptide[ix + 1]);
-  		if ((isPolar1 != string::npos) && (isPolar2 != string::npos))
-  		{
-  			sum += index[peptide[ix] - 'A'] + index[peptide[ix + 1] - 'A'];
-    	}
-  	}
-
-  	return sum;
-}
 // hydrophobicity of the aa at the beginning of the peptide
 inline double RTModel::indexN(const float *index, const string& peptide)
 {
