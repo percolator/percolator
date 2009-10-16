@@ -1,8 +1,17 @@
 This package potentially produces two different executables
 qvality and percolator.
 
-Briefly, the shell commands `./configure; make; make install' should
-configure, build, and install the executables.
+The shell commands `$ ./configure; make; make install' should
+configure, build, and install the executables if you downloaded a packaged version.
 
-The commands `qvality --help' or  `percolator --help' will give full
+If you have automake istalled you may get a snapshot that you build by the command series
+$ git clone git://github.com/percolator/percolator
+$ cd percolator/src
+$ bash bootstrap
+$ mkdir debug; cd debug
+$ ../configure --enable-debug
+$ make
+
+
+The commands `$ qvality --help' or  `$ percolator --help' will give full
 usage statements.

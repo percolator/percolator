@@ -14,7 +14,8 @@
    limitations under the License.
 
  *****************************************************************************/
-
+#include <sys/types.h>
+#include <dirent.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -32,10 +33,12 @@
 
 using namespace std;
 
+// path to the library
+string RTPredictor::libPath = "../lib/";
 
 RTPredictor::RTPredictor() : trainFile(""), testFile(""),outputFile(""),
 			 saveModelFile(""), loadModelFile(""), trainRetentionFeatures(NULL), testRetentionFeatures(NULL), theNormalizer(NULL),
-			 logFile(""), removeRedundant(false)
+			 logFile(""), removeRedundant(false), autoModelSelection(false), a(1.0), b(0.0), linearAdjust(true), addLibModel(false)
 {
 	RTModel::setDoKlammer(false);
 	Normalizer::setType(Normalizer::UNI);
@@ -100,6 +103,9 @@ bool RTPredictor::parseOptions(int argc, char **argv)
   	cmd.defineOption("u", "unique", "Remove all redundant peptides from the test set", "", TRUE_IF_SET);
 	cmd.defineOption("k", "k_fold", "Specify the number of folds for cross validation", "value");
 	cmd.defineOption("r", "rt_feat", "Specify a number between 2^0 and 2^9 to select the rt feature groups to be used ", "value");
+	cmd.defineOption("a", "auto", "Specifies that the model that matches the best the training data will be used for the test set ", "", TRUE_IF_SET);
+	cmd.defineOption("d", "append", "Append model to library ", "", TRUE_IF_SET);
+	cmd.defineOption("j", "no_linear_adjust", "Specifies that the model will not be linearly adjusted ", "", TRUE_IF_SET);
 
 	// parse command line
 	cmd.parseArgs(argc, argv);
@@ -150,6 +156,17 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 
 	if (cmd.optionSet("r"))
 		model.setSelectFeatures(cmd.getInt("r",1,1000));
+
+	if (cmd.optionSet("a"))
+		autoModelSelection = true;
+
+	if (cmd.optionSet("d"))
+	{
+		addLibModel = true;
+	}
+
+	if (cmd.optionSet("j"))
+		linearAdjust = false;
 
   	return true;
 }
@@ -225,17 +242,23 @@ void RTPredictor::printRunInformation()
 	if (!saveModelFile.empty())
 		oss << " *Saving model to file: " << saveModelFile << endl;
 
+	if (autoModelSelection)
+	{
+		oss << " *The SVR model will be selected automatically" << endl;
+		if (linearAdjust)
+			oss << " *Linear fitting will be carried out " << endl;
+		else
+			oss << " *No linear fitting will be carried out " << endl;
+	}
 	if (!outputFile.empty())
 		oss << " *Output file: " << outputFile << endl;
 
 	if (removeRedundant)
-		oss << " *Redundant peptides removed from test set" << endl;
+		oss << " *Redundant peptides will be removed from the test set" << endl;
 	else
 		oss << " *Redundant peptides are allowed in the test set" << endl;
 
-	model.printFeaturesInUse(oss);
-
-	if (!trainFile.empty())
+	if (!trainFile.empty() && !autoModelSelection)
 	{
 		oss << " *Calibration of parameters: " << model.getGridType() << endl;
 		oss << " *Evaluation type: " << model.getEvaluationType() << endl;
@@ -260,11 +283,177 @@ void RTPredictor::removeRedundantPeptides(vector<PSMDescription> & psms)
 
 	cout << (initial - psms.size()) << " peptides were removed " << endl;
 	cout << "Dataset includes now " << psms.size() << " peptides." << endl;
-	cout << "Done." << endl << endl ;
+	cout << "Done." << endl<< endl;
+
+}
+
+// read all the files from the libPath
+vector<string> RTPredictor::getModelFiles()
+{
+	vector<string> modelFiles;
+	DIR *dp;
+	struct dirent *dirp;
+	string name;
+	size_t extension;
+
+	if ((dp = opendir(libPath.c_str())) == NULL)
+	{
+		cout << "Unable to open " << libPath << endl;
+		cout << "Execution aborted. " << endl;
+		exit(-1);
+	}
+
+	while ((dirp = readdir(dp)) != NULL)
+	{
+		name = string(dirp->d_name);
+		extension = name.rfind(".model");
+		if (extension == (name.length() - 6))
+			modelFiles.push_back(libPath + name);
+	}
+
+	closedir(dp);
+
+	return modelFiles;
 }
 
 
-// New version developed on 28.09.09
+// load the best model out of the library
+void RTPredictor::loadBestModel()
+{
+	// variables to store best correlation
+	double bestCorr, corr;
+	// name of the file including the best model
+	string bestModelFile;
+	vector<string> modelFiles;
+	double *retFeatures;
+
+	cout << "Checking available model files..." << endl;
+	// if no training data available, we cannot choose a model
+	if (trainPsms.empty())
+	{
+		cout << "No training data available. " << endl;
+		cout << "No model will be loaded. " << endl;
+		return;
+	}
+
+	// get all the model files from the library
+	modelFiles = getModelFiles();
+	// if no model files in the library, there is nothing to do at this step
+	if (modelFiles.empty())
+	{
+		cout << "No model file available. " << endl;
+		return;
+	}
+	else
+	{
+		cout << "The library includes " << modelFiles.size() << " models." << endl;
+		cout << "Done." << endl << endl;
+	}
+
+	bestCorr = 0.0;
+	bestModelFile ="";
+	for(int i = 0; i < modelFiles.size(); i++)
+	{
+		// load the model and information about the normalizer
+		cout << "Processing " << modelFiles[i] << "..." << endl << "-------" << endl ;
+
+		cout << "Loading model " << modelFiles[i] << " ..." << endl;
+		model.loadSVRModel(modelFiles[i], theNormalizer);
+		cout << "Done." << endl << endl;
+
+		// if the model was not loaded then just give a warning and go to the next one
+		if (model.isModelNull())
+		{
+			cout << "Warning: Model file " << modelFiles[i] << " was not loaded correctly." << endl;
+			cout << "This model will not be considered." << endl;
+		}
+		else
+		{
+			// normalize the retention times; the scaling parameters should have already been set when the model was loaded
+			PSMDescription::normalizeRetentionTimes(trainPsms);
+
+			// calculate the retention features
+			model.calcRetentionFeatures(trainPsms);
+
+			// normalize the retention features; the scaling parameters should have already been set when loading the model
+			theNormalizer->normalizeSet(trainPsms);
+
+			// estimate the retention time
+			estimateRetentionTime(trainPsms);
+
+			// compute correlation
+			corr = computeCorrelation(trainPsms);
+
+			if (corr > bestCorr)
+			{
+				bestCorr = corr;
+				bestModelFile = modelFiles[i];
+			}
+
+			// unnormalize the retention time
+			for(int i = 0; i < trainPsms.size(); i++)
+				trainPsms[i].retentionTime = PSMDescription::unnormalize(trainPsms[i].retentionTime);
+		}
+	}
+
+	if (bestModelFile != "")
+	{
+		cout << endl << "----------------------" << endl ;
+		cout << "Best model: " << bestModelFile << " with correlation " << bestCorr << endl;
+		cout << endl << "Initialize model..." << endl;
+		model.loadSVRModel(bestModelFile, theNormalizer);
+		// normalize the retention times; the scaling parameters should have already been set when the model was loaded
+		PSMDescription::normalizeRetentionTimes(trainPsms);
+		// calculate the retention features
+		model.calcRetentionFeatures(trainPsms);
+		// normalize the retention features; the scaling parameters should have already been set when loading the model
+		theNormalizer->normalizeSet(trainPsms);
+		// estimate the retention time
+		estimateRetentionTime(trainPsms);
+	}
+	else
+		cout << "No model loaded " << endl;
+}
+
+// find the best line that fits the data (basically the coefficients a, b)
+void RTPredictor::findLeastSquaresSolution(const vector<PSMDescription> & psms, double & a, double & b)
+{
+	// the x is the predicted value, while the y is the observed one
+	double avgX, avgY, sumX = 0.0, sumY = 0.0, sumXSquared = 0.0, sumXY = 0.0;
+	double ssxx, ssxy;
+	int n = psms.size();
+	double x, y;
+
+	for(int i = 0; i < n; ++i)
+	{
+		x = psms[i].predictedTime;
+		y = psms[i].retentionTime;
+		//cout << x << ", " << y << endl;
+		sumX += x;
+		sumY += y;
+		sumXSquared += x * x;
+		sumXY += x * y;
+	}
+
+	avgX = sumX / (double)n;
+	avgY = sumY / (double)n;
+	ssxx = sumXSquared - (n * avgX * avgX);
+	ssxy = sumXY - (n * avgX * avgY);
+
+	a = ssxy / ssxx;
+	b = avgY - (b * avgX);
+}
+
+// unnormalize both observed and predicted retention times for a set of peptides
+void RTPredictor::unNormalizeRetentionTimes(vector<PSMDescription> & psms)
+{
+	for(int i = 0; i < psms.size(); ++i)
+	{
+		psms[i].retentionTime = PSMDescription::unnormalize(psms[i].retentionTime);
+		psms[i].predictedTime = PSMDescription::unnormalize(psms[i].predictedTime);
+	}
+}
+
 void RTPredictor::run()
 {
 	double trainingTime = 0.0, testingTime = 0.0;
@@ -280,6 +469,294 @@ void RTPredictor::run()
 
 	// get a normalizer
 	theNormalizer = Normalizer::getNormalizer();
+	theNormalizer->resizeVecs(RTModel::totalNumRTFeatures());
+
+	// if standalone application
+	if (!autoModelSelection)
+	{
+		///////////////////////////////// GENERATE MODEL
+		// generate a model (either by training if train data given, either by loading a model)
+		// if training data is given, the model is generated by training a SVR
+		if (!trainFile.empty())
+		{
+			cout << "************* Load and Process training data ***************" << endl;
+			// read the input data
+			loadInputFile(trainFile, trainPsms, true);
+
+			// remove redundant peptides
+			removeRedundantPeptides(trainPsms);
+
+			// this has to be included here so I can remove from the training set the peptides that appear in the test set as well
+			// this will not be done in case model selection is to be performed
+			if (!testFile.empty())
+			{
+				loadInputFile(testFile, testPsms, true);
+				loadedTestPsms = true;
+
+				// remove redundant peptides if the user wanted so
+				if (removeRedundant)
+					removeRedundantPeptides(testPsms);
+
+				// remove from the train set the peptides that are in the test
+				cout << "Removing from the train set the peptides featuring in both train and test sets..." << endl;
+				vector<PSMDescription>::iterator it;
+				int initialSize = trainPsms.size();
+				for(it = testPsms.begin(); it != testPsms.end(); ++it)
+				{
+					trainPsms.erase(remove(trainPsms.begin(), trainPsms.end(), (*it)), trainPsms.end());
+				}
+
+				cout << (initialSize - trainPsms.size())<< " peptides were removed." << endl;
+				cout << "Final training set includes " << trainPsms.size() << " peptides" << endl << endl;
+			}
+
+			// normalize the retention times; since sub and div are static members, their values will be set correctly
+			// for the test set
+			PSMDescription::setPSMSet(trainPsms);
+			PSMDescription::normalizeRetentionTimes(trainPsms);
+
+			// allocate memory for the feature table
+			initFeaturesTable(trainPsms.size(), trainPsms, trainRetentionFeatures);
+
+			// compute the retention features
+			model.calcRetentionFeatures(trainPsms);
+
+			// normalize all the features; note that the same scaling parameters will be used to normalize the test data if any
+			theNormalizer->setPsmSet(trainPsms, model.getNoFeaturesToCalc());
+			theNormalizer->normalizeSet(trainPsms);
+
+			// build the model
+			cout << "************* Build the SVR model ***************" << endl;
+			clock_t start = std::clock();
+			model.trainSVM(trainPsms);
+			trainingTime = ((std::clock() - start) / (double)CLOCKS_PER_SEC);
+			cout << "Training lasted: "  << trainingTime << " seconds " << endl << endl;
+		}
+
+		// load a model
+		if (!loadModelFile.empty())
+		{
+			cout << "************* Load the SVR model ***************" << endl;
+			// if a training file was also provided and a model was already generated, this step is skipped
+			if ((!trainFile.empty()) && (!model.isModelNull()))
+			{
+				cerr << "WARNING: both options -m and -t generate a model.\nSince a model was already generated using data from "
+					 << trainFile << " option -m will be ignored" << endl << "Please use option -m alone to load an existent model\n";
+			}
+			else
+			{
+				cout << "Loading model from file " << loadModelFile << endl;
+
+				// load the svm model
+				//theNormalizer->resizeVecs(RTModel::totalNumRTFeatures());
+				//theNormalizer->setNumberRetentionFeatures(RTModel::totalNumRTFeatures());
+				///////////////////////////////////////////////////////77
+
+				model.loadSVRModel(loadModelFile, theNormalizer);
+				//model.setNumRtFeat((*theNormalizer->getNumRetFeatures()));
+
+				cout << "Done" << endl;
+			}
+		}
+	}
+	else
+	{
+		// AUTOMATIC MODEL SELECTION
+		// If no training data provided the first model available will be used
+		if (trainFile.empty())
+		{
+			// load first available model
+			// to be implemented
+		}
+		else
+		{
+			cout << "************* Load and Process training data ***************" << endl;
+			// load input data
+			loadInputFile(trainFile, trainPsms, true);
+
+			// remove redundant peptides
+			removeRedundantPeptides(trainPsms);
+
+			// initialize the table storing the retention features
+			initFeaturesTable(trainPsms.size(), trainPsms, trainRetentionFeatures, RTModel::totalNumRTFeatures());
+
+			cout << endl << "************* Load best model for your data ***************" << endl;
+			// load the model that fits best the data
+			loadBestModel();
+
+			// find the best line that fits the data
+			if (linearAdjust)
+			{
+				cout << "Compute linear fitting parameters..." << endl;
+				findLeastSquaresSolution(trainPsms, a, b);
+				cout << "prediction = " << a << " * x + " << b << endl;
+				cout << "Done." << endl;
+			}
+		}
+
+	}
+	////////////////////////// TEST OR SAVE a model
+	// TEST if testing data provided
+	if(!testFile.empty())
+	{
+		cout << endl << "************* Testing ***************" << endl;
+		// first check that a retention model was generated
+		if (model.isModelNull())
+		{
+			cout << "Error: No SVM model available " << endl;
+			cout << "Please train a model using the -t option or load an existing model from a file using the"
+					" -m option and try again" << endl;
+			cout << "Execution aborted" << endl;
+			exit(-1);
+		}
+
+		cout << endl;
+		// if the file was not already loaded
+		if (!loadedTestPsms)
+		{
+			// read the input file
+			loadInputFile(testFile, testPsms, true);
+
+			// remove redundant peptides if the user wanted so
+			if (removeRedundant)
+				removeRedundantPeptides(testPsms);
+		}
+
+		// normalize the retention times; the scaling parameters should have already been set when the model was generated or loaded
+		PSMDescription::normalizeRetentionTimes(testPsms);
+
+		// initialize the table storing the retention features
+		initFeaturesTable(testPsms.size(), testPsms, testRetentionFeatures);
+
+		// calculate the retention features
+		model.calcRetentionFeatures(testPsms);
+
+		// normalize the retention features; the scaling parameters should have already been set when generating the model
+		theNormalizer->normalizeSet(testPsms);
+
+		// predict retention time
+		//clock_t start = std::clock();
+		estimateRetentionTime(testPsms);
+		//unnormalizeRetentionTimes(testPsms);
+		// if the model was select automatically, then the prediction will be ax + b
+		if (linearAdjust)
+		{
+			double ms = computeMS(testPsms);
+			cout << "Adjusting linearly..." << endl;
+			for(int i = 0; i < testPsms.size(); i++)
+				testPsms[i].predictedTime = a * testPsms[i].predictedTime + b;
+			cout << "Done." << endl << endl;
+		}
+		//testingTime = ((std::clock() - start) / (double)CLOCKS_PER_SEC);
+		//cout << "Testing lasted: "  << testingTime << " seconds " << endl << endl;
+
+		double correlation, ms;
+		// compute correlation and ms
+		correlation = computeCorrelation(testPsms);
+		ms = computeMS(testPsms);
+		cout << "--------------------------------------\n";
+		cout << "Pearson Correlation = " << correlation << endl;
+		cout << "MS = " << ms << endl;
+		cout << "--------------------------------------\n\n";
+
+		// write the output file
+		if (!outputFile.empty())
+			writeOutputFile(testPsms);
+	}
+
+	// save the model
+	if (!saveModelFile.empty())
+	{
+		cout << "************* Save the SVR model ***************" << endl;
+		if (model.isModelNull())
+		{
+			cout << "WARNING: No model was generated; please use options -m and -t to generate a model and then save it. \n"
+				<< "Option -s has no effect;" << endl;
+		}
+		else
+		{
+			// SAVE A MODEL in the given file
+			cout << "Saving SVR model to file " << saveModelFile << endl;
+			model.saveSVRModel(saveModelFile, theNormalizer);
+
+			cout << "Done." << endl;
+		}
+	}
+
+	// adding to library
+	if (addLibModel)
+	{
+		cout << "************* Add model o library ***************" << endl;
+
+		if (model.isModelNull())
+		{
+			cout << "No model available to add to library." << endl;
+		}
+		else
+		{
+			string libModelFile;
+			if (!trainFile.empty())
+			{
+				size_t found;
+				found = trainFile.find_last_of("/");
+				if (found != string::npos)
+					libModelFile = trainFile.substr(found + 1, trainFile.length());
+				else
+				{
+					found = trainFile.find_last_of("\\");
+					if (found != string::npos)
+						libModelFile = trainFile.substr(found + 1, trainFile.length());
+					else
+						libModelFile = trainFile;
+				}
+			}
+			else
+			{
+				time_t currentTime;
+				struct tm * timeInfo;
+
+				currentTime = time(NULL);
+				timeInfo = localtime (&currentTime);
+				libModelFile = asctime(timeInfo);
+				libModelFile = libModelFile.substr(4, (libModelFile.length()-10));
+
+				size_t found = libModelFile.find_first_of(" ");
+				while(found != string::npos)
+				{
+					libModelFile.replace(found, 1 ,"_");
+					found = libModelFile.find_first_of(" ");
+				}
+			}
+
+			libModelFile = libPath + libModelFile + ".model" ;
+			cout << "Model name: " << libModelFile << endl;
+			model.saveSVRModel(libModelFile, theNormalizer);
+			cout << "Done." << endl;
+		}
+	}
+
+	if (!logFile.empty())
+		fclose(stdout);
+}
+
+
+/*
+void RTPredictor::run()
+{
+	double trainingTime = 0.0, testingTime = 0.0;
+	// it will be used to check whether the test psms were loaded
+	bool loadedTestPsms = false;
+
+	// redirect standard output to the log file (if such file was provided)
+	if (!logFile.empty())
+		freopen (logFile.c_str(), "w", stdout);
+
+	// print information about the current run
+	printRunInformation();
+
+	// get a normalizer
+	theNormalizer = Normalizer::getNormalizer();
+	theNormalizer->resizeVecs(RTModel::totalNumRTFeatures());
 
 	///////////////////////////////// GENERATE MODEL
 	// generate a model (either by training if train data given, either by loading a model)
@@ -343,7 +820,7 @@ void RTPredictor::run()
 		// if a training file was also provided and a model was already generated, this step is skipped
 		if ((!trainFile.empty()) && (!model.isModelNull()))
 		{
-			cerr << "WARNING: both options -m and -t generate a model.\nSince a model was already generated using data from "
+			cout << "WARNING: both options -m and -t generate a model.\nSince a model was already generated using data from "
 				 << trainFile << " option -m will be ignored" << endl << "Please use option -m alone to load an existent model\n";
 		}
 		else
@@ -369,10 +846,10 @@ void RTPredictor::run()
 		// first check that a retention model was generated
 		if (model.isModelNull())
 		{
-			cerr << "Error: No SVM model available " << endl;
-			cerr << "Please train a model using the -t option or load an existing model from a file using the"
+			cout << "Error: No SVM model available " << endl;
+			cout << "Please train a model using the -t option or load an existing model from a file using the"
 					" -m option and try again" << endl;
-			cerr << "Execution aborted" << endl;
+			cout << "Execution aborted" << endl;
 			exit(-1);
 		}
 
@@ -425,7 +902,7 @@ void RTPredictor::run()
 	{
 		if (model.isModelNull())
 		{
-			cerr << "WARNING: No model was generated; please use options -m and -t to generate a model and then save it. \n"
+			cout << "WARNING: No model was generated; please use options -m and -t to generate a model and then save it. \n"
 				<< "Option -s has no effect;" << endl;
 		}
 		else
@@ -440,19 +917,24 @@ void RTPredictor::run()
 
 	if (!logFile.empty())
 		fclose(stdout);
-}
+}*/
 
 // allocating memory for the feature table
-void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures)
+void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures,
+									size_t noFeatures)
 {
 	// number of rt related features
  	size_t noRTFeatures;
  	// copy of the pointer
  	double *ptr;
 
- 	cout << "Initializing features table for " << model.getNoFeaturesToCalc() << " features and " << numberRecords << " records ..." << endl;
+ 	if (noFeatures == -1)
+ 		noRTFeatures = model.getNoFeaturesToCalc();
+ 	else
+ 		noRTFeatures = noFeatures;
 
- 	noRTFeatures = model.getNoFeaturesToCalc();
+ 	cout << "Initializing features table for " << noRTFeatures << " features and " << numberRecords << " records ..." << endl;
+
  	// allocate memory to all the feature table
 	retentionFeatures = new double[noRTFeatures * numberRecords];
 	// get the beginning of the memory block
@@ -460,8 +942,8 @@ void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSM
 
 	if (!retentionFeatures)
 	{
-		cerr << "Unable to allocate memory for the features table" << endl;
-		cerr << "Execution aborted" << endl;
+		cout << "Unable to allocate memory for the features table" << endl;
+		cout << "Execution aborted" << endl;
 		exit(-1);
 	}
 
@@ -472,7 +954,7 @@ void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSM
   	for(int i = 0; i < numberRecords; i++, ptr += noRTFeatures)
       		psms[i].retentionFeatures = ptr;
 
-    cout << "Done." << endl << endl;
+	cout << "Done." << endl << endl;
 }
 
 // estimates the retention time and fills in the predicted retention time field in each PSMDescription
@@ -511,7 +993,8 @@ double RTPredictor::computeMS(vector<PSMDescription> & psms)
 
   	ms = ms / noPsms;
 
-  	cout << "Done." << endl << endl;
+	cout << "Done." << endl << endl;
+
   	return ms;
 }
 
@@ -555,6 +1038,7 @@ double RTPredictor::computeCorrelation(vector<PSMDescription> & psms)
 
 	corr = numerator / ((noPsms - 1) * stdevObserved * stdevPredicted);
 
+	cout << "r = " << corr << endl;
 	cout << "Done." << endl << endl;
 
 	return corr;

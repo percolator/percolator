@@ -39,9 +39,12 @@ inline bool operator<(const ScoreHolder &one, const ScoreHolder &other)
     {return (one.score<other.score);}
 
 ostream& operator<<(ostream& os, const ScoreHolder& sh) {
-  if (sh.label!=1)
+  if (sh.label!=1 && !Scores::isOutXmlDecoys())
     return os;
-  os << "  <psm psm_id=\"" << sh.pPSM->id << "\">" << endl;
+  os << "  <psm psm_id=\"" << sh.pPSM->id << "\"";
+  if (sh.label!=1)
+    os << " decoy=\"true\"";
+  os << ">" << endl;
   os << "    <svm_score>"<< sh.score << "</svm_score>" << endl;
   os << "    <q_value>"<< sh.pPSM->q << "</q_value>" << endl;
   os << "    <pep>"<< sh.pPSM->pep << "</pep>" << endl;
@@ -76,9 +79,13 @@ Scores::~Scores()
 {
 }
 
+bool Scores::outxmlDecoys = false;
+
 void Scores::merge(vector<Scores>& sv) {
   scores.clear();
   for(vector<Scores>::iterator a = sv.begin();a!=sv.end();a++) {
+	a->estimatePi0();
+	a->calcPep();
   	a->normalizeScores();
     copy(a->begin(),a->end(),back_inserter(scores));
   }
@@ -93,15 +100,6 @@ void Scores::printRetentionTime(ostream& outs, double fdr){
            << PSMDescription::unnormalize(doc.estimateRT(it->pPSM->retentionFeatures)) << "\t"
            << it->pPSM->peptide << endl;
   }
-}
-
-void Scores::printRoc(string & fn){
- ofstream rocStream(fn.data(),ios::out);
- vector<ScoreHolder>::iterator it;
- for(it=scores.begin();it!=scores.end();it++) {
-   rocStream << (it->label==-1?-1:1) << endl;
- }
- rocStream.close();
 }
 
 double Scores::calcScore(const double * feat) const{
@@ -182,27 +180,15 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
 
 void Scores::normalizeScores() {
   // Normalize scores so that distance between 1st and 10th percentile of the null scores are 1
-  unsigned int nn=neg,q1index = std::max(1u,nn/100u),q3index = std::max(q1index+1,nn/10u),decoys=0;
   vector<ScoreHolder>::iterator it = scores.begin();
-  double q1 = it->score;
-  double q3 = q1 + 1.0;
-  while(it!=scores.end()) {
-  	if (it->label == -1) {
-  	  if(++decoys==q1index)
-  	    q1=it->score;
-  	  else if (decoys==q3index) {
-  	    q3=it->score;
-  	    break;
-  	  }
-  	}
-    ++it;
-  }
-  double diff = q1-q3;
-  if (diff<=0)
-	  diff=1.0;
+  double breakQ=0.0;
   for(it=scores.begin();it!=scores.end();++it) {
-    it->score -= q1;
-    it->score /= diff;
+	if (it->pPSM->pep<1.0) {
+	  it->score = it->pPSM->pep;
+	  breakQ = it->pPSM->q;
+	} else {
+	  it->score = 1.0+(it->pPSM->q-breakQ);
+	}
   }
 }
 
@@ -287,6 +273,20 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
   }
   data.positives=p;
   data.m=ix2;
+}
+
+void Scores::weedOutRedundant(){
+  vector<ScoreHolder>::iterator it = scores.begin();
+  set<string> uniquePeptides;
+  pair<set<string>::iterator,bool> ret;
+  for (;it!=scores.end();) {
+    ret=uniquePeptides.insert(it->pPSM->peptide);
+    if(!ret.second) {
+      it = scores.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 void Scores::recalculateDescriptionOfGood(const double fdr) {

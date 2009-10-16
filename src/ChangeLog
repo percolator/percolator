@@ -1,8 +1,13 @@
+v1.13
 * Filtering out redundant peptides before retention time regression training
+* Bugfix for retention time feature calculation
+* Introduced a percolator -r and qvality -o option to redirect stdout to file
+  (important in the windows environment). 
+* Updated percolator xml scheme to include decoy PSMs id -Z switch set 
 
 v1.12
 * Changed licensing scheme for percolator
-* PNGase F feature (otion -N) introduced
+* PNGase F feature (option -N) introduced
 
 v1.11
 * Bugfix for qvality binning procedure

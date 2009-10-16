@@ -90,7 +90,7 @@ void Normalizer::normalizeSet(vector<PSMDescription> & psms)
 	vector<PSMDescription>::iterator it;
 	double * retFeatures;
 
-	cout << "Normalizing...";
+	cout << "Normalizing..." << endl;
 	for(it = psms.begin(); it != psms.end(); ++it)
 	{
 		  retFeatures = it->retentionFeatures;

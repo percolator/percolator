@@ -3062,9 +3062,10 @@ svm_model *svm_load_model2(const char *model_file_name, double * retSub, double 
 		printf("Unable to open file %s. ", model_file_name);
 		return NULL;
 	}
-
 	// read first the number of normalized rtFeatures
 	char cmd[81];
+	int tmp;
+	double tmp2;
 	fscanf(fp,"%80s",cmd);
 	if(strcmp(cmd,"numNormalizedFeat")==0)
 		fscanf(fp,"%d",numRetFeatures);
@@ -3098,7 +3099,7 @@ svm_model *svm_load_model2(const char *model_file_name, double * retSub, double 
 		fscanf(fp,"%lf", retDiv);
 		// read all the other subs
 		for(int i = 0; i < (*numRetFeatures); i++)
-			fscanf(fp,"%lf", (div + i));
+			 fscanf(fp,"%lf", (div + i));
 	}
 	// read parameters
 

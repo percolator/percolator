@@ -62,7 +62,7 @@ class RTModel
         static size_t totalNumRTFeatures();
         // features for the three hydrophobicity indices, 3 features for ptms, peptide size, bulkiness,
         // no of consec KRDNEQ, conformational preferences of aa (alpha helices and beta sheets)
-	    static size_t minimumNumRTFeatures() {return 3*12 + 1 + 1 + 1 + 2;}
+	    static size_t minimumNumRTFeatures() {return 3*12 + 3 + 1 + 1 + 1 + 2;}
 		size_t getRTFeat() {return numRTFeat;}
 		void setNumRtFeat(const size_t nRtFeat) {numRTFeat = nRtFeat;}
 		static void setDoKlammer(const bool switchKlammer);
@@ -76,9 +76,10 @@ class RTModel
 		void saveSVRModel(string modelFile, Normalizer * theNormalizer);
 		void setSelectFeatures(const int sf);
 		int getNoFeaturesToCalc() {return noFeaturesToCalc;}
-		int getSelectFeatures() {return select_features;}
+		int getSelectFeatures() {return selected_features;}
 		void printFeaturesInUse(ostringstream & oss);
 		int getSelect(int sel_features, int max, size_t *finalNumFeatures);
+		void destroyModel() {svm_destroy_model(model); }
 	protected:
 		// remove redundant peptides from the test set?
 		bool removeRedundant;
@@ -112,7 +113,6 @@ class RTModel
 		// features to be used (bit-wise operation are used to decode, till ex 2 means use just krokhin100_index, 3 means use
 		int selected_features;
 		// krokhin100_index and krokhin_index etc)
-		int select_features;
 		static string ptmAlphabet;
 		static bool doKlammer;
 		double stepFineGrid;

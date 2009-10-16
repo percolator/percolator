@@ -65,7 +65,7 @@ protected:
     string forwardFN;
     string decoyFN;
     string decoyWC;
-    string rocFN;
+    string resultFN;
     string gistFN;
     string tabFN;
     string xmloutFN;
@@ -78,6 +78,7 @@ protected:
     bool dtaSelect;
     bool docFeatures;
     bool reportPerformanceEachIteration;
+    bool reportUniquePeptides;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;

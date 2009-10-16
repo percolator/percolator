@@ -127,15 +127,6 @@ void DescriptionOfCorrect::setFeatures(PSMDescription& psm) {
 
 }
 
-void DescriptionOfCorrect::print_10features() {
-   for(int i=0;i<10;i++) {
-       for(size_t j=0;j<RTModel::totalNumRTFeatures();j++) {
-          cerr << psms[i].retentionFeatures[j] << "\t";
-       }
-       cerr << endl;
-   }
-}
-
 double DescriptionOfCorrect::isoElectricPoint(const string& pep) {
   // Overall amino acid composition features
   string::size_type pos = isoAlphabet.size();

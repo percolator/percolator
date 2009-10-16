@@ -175,10 +175,17 @@ void PosteriorEstimator::finishStandalone(vector<pair<double,bool> >& combined, 
   vector<double>::iterator xval=xvals.begin();
   vector<double>::const_iterator qv = q.begin(),pep = peps.begin();
 
-  cout << "Score\tPEP\tq-value" << endl;
-
-  for(;xval != xvals.end();++xval,++pep,++qv)
-    cout << *xval << "\t" << *pep << "\t" << *qv << endl;
+  if (resultFileName.empty()) {
+     cout << "Score\tPEP\tq-value" << endl;
+     for(;xval != xvals.end();++xval,++pep,++qv)
+	    cout << *xval << "\t" << *pep << "\t" << *qv << endl;
+  } else {
+	     ofstream resultstream(resultFileName.c_str());
+	     resultstream << "Score\tPEP\tq-value" << endl;
+	     for(;xval != xvals.end();++xval,++pep,++qv)
+		    resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
+         resultstream.close();
+  }
 }
 
 
@@ -428,6 +435,11 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
     "Indicating that the scoring mechanism is reversed, i.e., that low scores are better than higher scores",
     "",TRUE_IF_SET);
 
+  cmd.defineOption("o","output-file",
+    "Output results to file instead of stdout",
+    "file");
+
+
   cmd.parseArgs(argc, argv);
 
   if (cmd.optionSet("v")) {
@@ -444,6 +456,10 @@ bool PosteriorEstimator::parseOptions(int argc, char **argv){
 
   if (cmd.optionSet("s")) {
     BaseSpline::stepEpsilon=cmd.getDouble("s",0.0,1.0);
+  }
+
+  if (cmd.optionSet("o")) {
+    resultFileName = cmd.options["o"];
   }
 
   if (cmd.optionSet("r"))

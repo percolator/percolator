@@ -19,7 +19,6 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include "svm.h"
 #include "Globals.h"
 #include "RTModel.h"
 #include "DataSet.h"
@@ -99,26 +98,14 @@ float RTModel::beta_sheet['Z'-'A'+1] =
 // groups of features that can be switched on or off
 string RTModel::feature_groups[NO_FEATURE_GROUPS] =
 		{"krokhin_index", "krokhin100_index", "krokhinc2_index", "krokhintfa_index", "doolittle_index",
-		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "aa_features", "no_consec_krdenq",
-		 "sec_conformations"};
+		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "no_consec_krdenq", "sec_conformations",
+		 "aa_features"};
 // how many features are in each group?
-int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {12, 12, 12, 12, 12, 12,  1, 1, 3, 1, aaAlphabet.size(),1, 2};
-// deafult selected feature groups is krokhin, krokhintfa, krokhin100, peptide_size, ptms, aa_features
-//static int DEFAULT_FEATURE_GROUPS = ;
-// krokhin, krokhintfa, doolittle, peptide_size, ptms, aa_features
-//static int DEFAULT_FEATURE_GROUPS = ;
-// krokhin, krokhintfa, doolittle, peptide_size, ptms, aa_features
-// static int DEFAULT_FEATURE_GROUPS = 1881;
-// (krokhin, krokhintfa, doolittle = 25), peptide_size(=64), bulkiness(=2^9 = 512), aa_features (= 1024)
-//static int DEFAULT_FEATURE_GROUPS = 1625;
-// (krokhin, krokhintfa, doolittle = 25), peptide_size(=64),  bulkiness(=2^9 = 512), aa_features (= 1024), no_consec_krdenq (2048)
-// static int DEFAULT_FEATURE_GROUPS = 3673;
-//(krokhin, krokhintfa, doolittle = 25), peptide_size(=64),  bulkiness(=2^9 = 512), aa_features (= 1024), no_consec_krdenq (2048)
-// and sec_conformations (= 4096)
-static int DEFAULT_FEATURE_GROUPS = 7769;
-// (krokhin, krokhintfa, doolittle = 25), peptide_size(=64),  bulkiness(=2^9 = 512), aa_features (= 1024), no_consec_krdenq (2048)
-// sec_conformations (= 4096), pI (2^13=8192)
-//static int DEFAULT_FEATURE_GROUPS = 15961;
+int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {12, 12, 12, 12, 12, 12,  1, 1, 3, 1, 1, 2, aaAlphabet.size()};
+//(krokhin, krokhintfa, doolittle = 25), peptide_size(=64), ptms (=256),  bulkiness(=2^9 = 512), no_consec_krdenq (1024),
+// sec_conformations (= 2048) and aa features (= 4096)
+static int DEFAULT_FEATURE_GROUPS = 8025;
+
 
 RTModel::RTModel(): numRTFeat(0), model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON),
 					stepFineGrid(STEP_FINE_GRID), noPointsFineGrid(NO_POINTS_FINE_GRID), calibrationFile(""),
@@ -228,8 +215,8 @@ double* RTModel::conformationalPreferences(const string& peptide, double *featur
 	}
 
 	//cout << "Peptide: " << peptide << ", alpha, beta = " << sumAlpha << ", " << sumBeta << endl;
-  	*(features++) = sumAlpha / (double)peptide.size();
-  	*(features++) = sumBeta / (double)peptide.size();
+  	*(features++) = sumAlpha;
+  	*(features++) = sumBeta;
 
   return features;
 }
@@ -243,7 +230,7 @@ double RTModel::bulkinessSum(const string& peptide)
   	for(;token != peptide.end(); ++token)
     	sum += bulkiness[*token - 'A'];
 
-  	return sum / (double)peptide.size();
+  	return sum;
 }
 
 // calculate the number of consecutive occurences of (R,K,D,E,N,Q)
@@ -264,7 +251,7 @@ int RTModel::noConsecKRDENQ(const string& peptide)
     	}
   	}
 
-  	return (noOccurences / (double)peptide.size());
+  	return noOccurences;
 }
 
 void RTModel::calcRetentionFeatures(PSMDescription &psm)
@@ -311,29 +298,17 @@ void RTModel::calcRetentionFeatures(PSMDescription &psm)
 		if (selected_features & 1 << 9)
 			*(features++) = bulkinessSum(pep);
 
-		// amino acids
-		if (selected_features & 1 << 10)
-			features = fillAAFeatures(pep, features);
-
 		// no of consecutive KRDENQ
-		if (selected_features & 1 << 11)
-		{
-			//cout << "Pep: " << pep << " and no consec = " << noConsecKRDENQ(pep) << endl;
+		if (selected_features & 1 << 10)
 			*(features++) = noConsecKRDENQ(pep);
-		}
 
 		// conformational pereferences of aa
-		if (selected_features & 1 << 12)
-		{
+		if (selected_features & 1 << 11)
 			features = conformationalPreferences(pep, features);
-		}
 
-		// pI
-		//if (selected_features & 1 << 13)
-		//{
-		//
-		//*(features++) = DescriptionOfCorrect::isoElectricPoint(pep);
-		//}
+		// amino acids
+		if (selected_features & 1 << 12)
+			features = fillAAFeatures(pep, features);
 	}
 	//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
 }
@@ -344,7 +319,7 @@ void RTModel::calcRetentionFeatures(vector<PSMDescription> &psms)
 {
 	vector<PSMDescription>::iterator it;
 
-	cout << "Computing retention features ... ";
+	cout << "Computing retention features... " << endl;
 
 	for(it = psms.begin(); it != psms.end(); ++it)
 		calcRetentionFeatures(*it);
@@ -721,7 +696,7 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
    else
    {
     selected_features = getSelect(selected_features, minFeat, &numRTFeat);
-    cout << "Not enough data. Only a subset of features was used to train  the model" << endl;
+    cout << "Not enough data. Only a subset of features is used to train  the model" << endl;
    }
 
   //cout << "Building model..." << endl;
