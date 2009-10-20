@@ -20,11 +20,13 @@
 #include <set>
 #include <string>
 using namespace std;
-#include "DataSet.h"
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
 #include "UniNormalizer.h"
 #include "Globals.h"
+
+int Normalizer::subclass_type = STDV;
+Normalizer* Normalizer::theNormalizer = NULL;
 
 Normalizer::Normalizer()
 {
@@ -34,47 +36,17 @@ Normalizer::~Normalizer()
 {
 }
 
-void Normalizer::normalizeSet(set<DataSet *> & setVec) {
+void Normalizer::normalizeSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV) {
   double * features;
-  PSMDescription* pPSM;
-  set<DataSet *>::iterator it;
-  if (VERB>4) {
-    cerr << "First 10 feature vectors before normalization" << endl;
-    cerr.precision(3);
-    it=setVec.begin();
-    int ixPos=-1;
-    cerr << "Label of this set is " << (*it)->getLabel() << endl;
-    while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
-      features = pPSM->features;
-      for (unsigned int a=0; a<numFeatures; ++a) {
-        cerr << features[a] << " ";
-      }
-      cerr << endl;
-    }
-
+  vector<double *>::iterator it=featuresV.begin();
+  for (;it!=featuresV.end();++it) {
+    features = *it;
+    normalize(features,features,0,numFeatures);
   }
-  for (it=setVec.begin();it!=setVec.end();++it) {
-      int ixPos=-1;
-      while((pPSM=(*it)->getNext(ixPos))!=NULL) {
-        features = pPSM->features;
-        normalize(features,features,0,numFeatures);
-        features = pPSM->retentionFeatures;
-        normalize(features,features,numFeatures,numRetentionFeatures);
-      }
-  }
-  if (VERB>4) {
-    cerr << "First 10 feature vectors after normalization" << endl;
-    cerr.precision(3);
-    it=setVec.begin();
-    int ixPos=-1;
-    while((pPSM=(*it)->getNext(ixPos))!=NULL && ixPos < 10) {
-      features = pPSM->features;
-      for (unsigned int a=0;a<numFeatures;++a) {
-        cerr << features[a] << " ";
-      }
-      cerr << endl;
-    }
-
+  vector<double *>::iterator rtit=rtFeaturesV.begin();
+  for (;rtit!=rtFeaturesV.end();++rtit) {
+    features = *rtit;
+    normalize(features,features,numFeatures,numRetentionFeatures);
   }
 }
 
@@ -85,6 +57,7 @@ void Normalizer::normalize(const double *in,double* out, size_t offset, size_t n
 }
 
 // normalize a set of PSMs
+/*
 void Normalizer::normalizeSet(vector<PSMDescription> & psms)
 {
 	vector<PSMDescription>::iterator it;
@@ -98,10 +71,7 @@ void Normalizer::normalizeSet(vector<PSMDescription> & psms)
 	}
 	cout << "Done." << endl << endl;
 }
-
-int Normalizer::subclass_type = STDV;
-Normalizer* Normalizer::theNormalizer = NULL;
-
+*/
 Normalizer * Normalizer::getNormalizer() {
     if (theNormalizer==NULL) {
 	  if (subclass_type == UNI)

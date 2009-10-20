@@ -21,9 +21,6 @@
 #include <algorithm>
 #include "Globals.h"
 #include "RTModel.h"
-#include "DataSet.h"
-#include "DescriptionOfCorrect.h"
-//#include "RTPredictor.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -357,8 +354,8 @@ void RTModel::fillFeaturesAllIndex(const string& pep, double *features)
 		 features = fillAAFeatures(peptide.substr(0,1), features);
 		 features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
 		 char Ct = peptide[peptide.size()-1];
-		 // 1 if the peptides show evidence that it was cleaved by the enzyme
-		 *(features++) = DataSet::isEnz(Ct,'A');
+		 // 1 if the peptides show evidence that it was cleaved by trypsin
+		 *(features++) = ((Ct=='K' || Ct== 'R')?1.0:0.0);
 		 // size of the peptide
 		 *(features++) = peptide.size();
 		 // some other index sum
@@ -747,7 +744,7 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
   param.gamma = gamma;
   param.coef0 = 0;
   param.nu = 0.5;
-  param.cache_size = 300;
+  param.cache_size = 100;
   param.C = C;
   param.eps = epsilon; //1e-3;
   param.p = 0.1;

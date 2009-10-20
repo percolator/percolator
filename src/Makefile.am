@@ -175,14 +175,6 @@ libRtPredictor_la_SOURCES = \
   FeatureNames.h \
   FeatureNames.cpp \
   Transform.h \
-  DataSet.h \
-  DataSet.cpp \
-  BaseSpline.h \
-  BaseSpline.cpp \
-  LogisticRegression.h \
-  LogisticRegression.cpp \
-  PosteriorEstimator.h \
-  PosteriorEstimator.cpp \
   Normalizer.h \
   Normalizer.cpp 
   
@@ -194,7 +186,7 @@ qvality_SOURCES = qvality_main.cpp
 qvality_LDADD = libqvality.la libArrayLibrary.la
 
 rtPredictor_SOURCES = rtPredictor_main.cpp
-rtPredictor_LDADD = libRtPredictor.la libArrayLibrary.la
+rtPredictor_LDADD = libRtPredictor.la
 
 mark:
 	echo $(PERUNLABELED) $(PERLABELED)

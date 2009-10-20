@@ -16,18 +16,16 @@
  *******************************************************************************/
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
-class DataSet;
-#include <set>
 using namespace std;
 
 class Normalizer
 {
 public:
 	virtual ~Normalizer();
-    virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures){;}
-    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
-    void normalizeSet(vector<PSMDescription> & psms);
-    void normalizeSet(set<DataSet *> & setVec);
+    virtual void setSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV, size_t numFeatures, size_t numRetentionFeatures){;}
+//    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
+//    void normalizeSet(vector<PSMDescription> & psms);
+    void normalizeSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV);
     void normalize(const double * in, double * out, size_t offset, size_t numFeatures);
     double normalize(const double in, size_t index) { return (in-sub[index])/div[index]; }
     virtual void unnormalizeweight(const vector<double>& in,vector<double>& out){;}
