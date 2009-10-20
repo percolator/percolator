@@ -160,12 +160,6 @@ libRtPredictor_la_SOURCES = \
   UniNormalizer.cpp \
   StdvNormalizer.h \
   StdvNormalizer.cpp \
-  ResultHolder.h \
-  ResultHolder.cpp \
-  MassHandler.h \
-  MassHandler.cpp \
-  DescriptionOfCorrect.h \
-  DescriptionOfCorrect.cpp \
   Scores.h \
   Scores.cpp \
   SetHandler.h \
