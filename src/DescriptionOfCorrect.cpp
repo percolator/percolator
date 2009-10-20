@@ -69,38 +69,8 @@ void DescriptionOfCorrect::trainCorrect() {
     avgPI = piSum/psms.size();
     avgDM = dMSum/psms.size();
   }
+  rtModel.trainRetention(psms);
 
-  // Train teyrntion time regressor
-  size_t test_frac = 4u;
-  if (psms.size()>test_frac*10u) {
-	// If we got enough data, calibrate gamma and C by leaving out a testset
-    vector<PSMDescription> train,test;
-    for(size_t ix=0; ix<psms.size(); ++ix) {
-      if (ix%test_frac==0) {
-    	  test.push_back(psms[ix]);
-      } else {
-    	  train.push_back(psms[ix]);
-      }
-    }
-    double bestRms = 1e100;
-    double gammaV[3] = {gamma/2,gamma,gamma*2};
-    double cV[3] = {c/2,c,c*2};
-    double epsilonV[3] = {epsilon/2,epsilon,epsilon*2};
-    for (double* gammaNow=&gammaV[0];gammaNow!=&gammaV[3];gammaNow++){
-        for (double* cNow=&cV[0];cNow!=&cV[3];cNow++){
-            for (double* epsilonNow=&epsilonV[0];epsilonNow!=&epsilonV[3];epsilonNow++){
-        	  rtModel.trainRetention(train,*cNow,(*gammaNow),*epsilonNow,train.size());
-        	  double rms=rtModel.testRetention(test);
-        	  if (rms<bestRms) {
-        		  c=*cNow;gamma=*gammaNow;epsilon=*epsilonNow;
-        		  bestRms=rms;
-        	  }
-            }
-        }
-    }
-    // cerr << "CV selected gamma=" << gamma << " and C=" << c << endl;
-  }
-  rtModel.trainRetention(psms,c,gamma,epsilon,psms.size());
   if (VERB>2) cerr << "Description of correct recalibrated, avg pI=" << avgPI << " avg dM=" << avgDM << endl;
 
 }

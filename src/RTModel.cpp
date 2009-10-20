@@ -39,10 +39,10 @@ static double INITIAL_GAMMA  = 0.5;
 static double INITIAL_EPSILON = 1e-2;
 
 // when gType = FINE_GRID, coarse grid and default values for the fine grid
-static double COARSE_GRID_GAMMA[] =  { pow(2, -15), pow(2, -13), pow(2, -11), pow(2, -9), pow(2, -7), pow(2, -5),
-									   pow(2, -3), pow(2, -1), pow(2, 1), pow(2, 3), pow(2, 5)};
-static double COARSE_GRID_C[] = { pow(2, -5), pow(2, -3), pow(2, -1), pow(2, 1), pow(2, 3), pow(2, 5), pow(2, 7),
-								  pow(2, 9), pow(2, 11), pow(2, 13)};
+static double COARSE_GRID_GAMMA[] =  { pow(2., -15.), pow(2., -13.), pow(2., -11.), pow(2., -9.), pow(2., -7.), pow(2., -5.),
+									   pow(2., -3.), pow(2., -1.), pow(2., 1.), pow(2., 3.), pow(2., 5.)};
+static double COARSE_GRID_C[] = { pow(2., -5.), pow(2., -3.), pow(2., -1.), pow(2., 1.), pow(2., 3.), pow(2., 5.), pow(2., 7.),
+								  pow(2., 9.), pow(2., 11.), pow(2., 13.)};
 static double COARSE_GRID_EPSILON[] = {INITIAL_EPSILON/10, INITIAL_EPSILON, INITIAL_EPSILON*10};
 // no of points to the left of a parameter (the fine grid will include NO_POINTS_FINE_GRID*2 for one parameter)
 // step is give as the exponent of 2 (the actual step value is 2^(STEP_FINE_GRID))
@@ -50,10 +50,10 @@ static int NO_POINTS_FINE_GRID = 7;
 static double STEP_FINE_GRID = 0.25;
 
 // when gType = NORMAL_GRID
-static double NORMAL_GRID_GAMMA[] =  { pow(2, -8), pow(2, -7), pow(2, -6), pow(2, -5), pow(2, -4), pow(2, -3),
-									   pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1)};
-static double NORMAL_GRID_C[] = { pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1), pow(2, 2), pow(2, 3), pow(2, 4),
-								  pow(2, 5), pow(2, 6), pow(2, 7)};
+static double NORMAL_GRID_GAMMA[] =  { pow(2., -8.), pow(2., -7.), pow(2., -6.), pow(2., -5.), pow(2., -4.), pow(2., -3.),
+									   pow(2., -2.), pow(2., -1.), pow(2., 0.), pow(2., 1.)};
+static double NORMAL_GRID_C[] = { pow(2., -2.), pow(2., -1.), pow(2., 0.), pow(2., 1.), pow(2., 2.), pow(2., 3.), pow(2., 4.),
+								  pow(2., 5.), pow(2., 6.), pow(2., 7.)};
 static double NORMAL_GRID_EPSILON[] = {INITIAL_EPSILON/10, INITIAL_EPSILON, INITIAL_EPSILON*10};
 
 
@@ -676,12 +676,50 @@ int RTModel::getSelect(int sel_features, int max, size_t *finalNumFeatures)
 	// if this feature was selected and if adding it does not exceed the allowed no of features, then add it
 		if ((sel_features & 1 << i) && ((noFeat + no_features_per_group[i]) <= max))
 		{
-			retValue += (int)pow(2, i);
+			retValue += (int)pow(2., i);
 			noFeat += no_features_per_group[i];
 		}
 
 	(*finalNumFeatures) = noFeat;
 	return retValue;
+}
+
+void RTModel::trainRetention(vector<PSMDescription>& psms)
+{
+  // Train retention time regressor
+  size_t test_frac = 4u;
+  if (psms.size()>test_frac*10u) {
+    // If we got enough data, calibrate gamma and C by leaving out a testset
+	vector<PSMDescription> train,test;
+	for(size_t ix=0; ix<psms.size(); ++ix) {
+	  if (ix%test_frac==0) {
+        test.push_back(psms[ix]);
+      } else {
+        train.push_back(psms[ix]);
+      }
+    }
+	double sizeFactor=((double)train.size())/((double)psms.size());
+    double bestRms = 1e100;
+    double gammaV[3] = {gamma/2,gamma,gamma*2};
+    double cV[3] = {c/2./sizeFactor,c/sizeFactor,c*2./sizeFactor};
+    double epsilonV[3] = {epsilon/2,epsilon,epsilon*2};
+    for (double* gammaNow=&gammaV[0];gammaNow!=&gammaV[3];gammaNow++){
+        for (double* cNow=&cV[0];cNow!=&cV[3];cNow++){
+            for (double* epsilonNow=&epsilonV[0];epsilonNow!=&epsilonV[3];epsilonNow++){
+        	  trainRetention(train,*cNow,(*gammaNow)/((double)psms.size()),*epsilonNow,train.size());
+        	  double rms=testRetention(test);
+        	  if (rms<bestRms) {
+        		  c=*cNow;gamma=*gammaNow;epsilon=*epsilonNow;
+        		  bestRms=rms;
+        	  }
+            }
+        }
+    }
+    // Compensate for the difference in size of the training sets
+    c=sizeFactor*c;
+    // cerr << "CV selected gamma=" << gamma << " and C=" << c << endl;
+  }
+  trainRetention(psms,c,gamma/((double)psms.size()),epsilon,psms.size());
 }
 
 // train the SVM
@@ -704,6 +742,7 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
   svm_parameter param;
   param.svm_type = EPSILON_SVR;
   param.kernel_type = RBF;
+  param.degree = 3;
   //param.gamma = 1/(double)noPsms*gamma;
   param.gamma = gamma;
   param.coef0 = 0;
