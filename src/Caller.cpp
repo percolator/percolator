@@ -727,7 +727,7 @@ int Caller::run() {
   if(VERB>0) cerr << "Calibrating statistics - calculating q values" << endl;
   int foundPSMs = fullset.calcQ(test_fdr);
   if(VERB>0 && docFeatures) {
-	cerr << "For the cross vardation sets the average deltaMass are ";
+	cerr << "For the cross validation sets the average deltaMass are ";
 	for(size_t ix=0;ix<xv_test.size();ix++)
       cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
 	cerr << "and average pI are ";
