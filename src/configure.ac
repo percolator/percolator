@@ -31,7 +31,7 @@ else
   mypack="qvality"
 fi
 
-AM_INIT_AUTOMAKE($mypack, "1.13")
+AM_INIT_AUTOMAKE($mypack, "unknown")
 
 ## Debug
 # add checking message
