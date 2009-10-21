@@ -860,6 +860,44 @@ double RTModel::estimateRT(double * features)
 	return predicted_value;
 }
 
+void RTModel::trainRetention(vector<PSMDescription>& psms)
+{
+  // Train retention time regressor
+  size_t test_frac = 4u;
+  if (psms.size()>test_frac*10u) {
+    // If we got enough data, calibrate gamma and C by leaving out a testset
+	vector<PSMDescription> train,test;
+	for(size_t ix=0; ix<psms.size(); ++ix) {
+	  if (ix%test_frac==0) {
+        test.push_back(psms[ix]);
+      } else {
+        train.push_back(psms[ix]);
+      }
+    }
+	double sizeFactor=((double)train.size())/((double)psms.size());
+    double bestRms = 1e100;
+    double gammaV[3] = {gamma/2,gamma,gamma*2};
+    double cV[3] = {c/2./sizeFactor,c/sizeFactor,c*2./sizeFactor};
+    double epsilonV[3] = {epsilon/2,epsilon,epsilon*2};
+    for (double* gammaNow=&gammaV[0];gammaNow!=&gammaV[3];gammaNow++){
+        for (double* cNow=&cV[0];cNow!=&cV[3];cNow++){
+            for (double* epsilonNow=&epsilonV[0];epsilonNow!=&epsilonV[3];epsilonNow++){
+        	  trainRetention(train,*cNow,(*gammaNow)/((double)psms.size()),*epsilonNow,train.size());
+        	  double rms=testRetention(test);
+        	  if (rms<bestRms) {
+        		  c=*cNow;gamma=*gammaNow;epsilon=*epsilonNow;
+        		  bestRms=rms;
+        	  }
+            }
+        }
+    }
+    // Compensate for the difference in size of the training sets
+    c=sizeFactor*c;
+    // cerr << "CV selected gamma=" << gamma << " and C=" << c << endl;
+  }
+  trainRetention(psms,c,gamma/((double)psms.size()),epsilon,psms.size());
+}
+
 // train the SVM using a coarse and a fine grid
 /*
 void RTModel::trainSVMWithRefinedGrid(vector<PSMDescription> &psms)
@@ -1327,6 +1365,7 @@ void RTModel::loadSVRModel(const string modelFile, Normalizer *theNormalizer)
 	if (model != NULL)
 		svm_destroy_model(model);
 
+	theNormalizer->setNumFeatures(0);
 	model = svm_load_model2(modelFile.c_str(), &PSMDescription::normSub, &PSMDescription::normDiv, theNormalizer->getSub(),
 							theNormalizer->getDiv(), theNormalizer->getNumRetFeatures(), &selected_features, &numRTFeat);
 	noFeaturesToCalc = *(theNormalizer->getNumRetFeatures());

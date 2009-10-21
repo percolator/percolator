@@ -50,6 +50,7 @@ class RTModel
 		static int noConsecKRDENQ(const string& peptide);
 		static double getNoPtms(string pep);
 		void copyModel(svm_model* from);
+		void trainRetention(vector<PSMDescription>& trainset);
 		void trainRetention(vector<PSMDescription>& trainset, const double C, const double gamma, const double epsilon, int noPsms);
 		double testRetention(vector<PSMDescription>& testset);
 		double estimateRT(double * features);

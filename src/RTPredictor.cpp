@@ -376,8 +376,10 @@ void RTPredictor::loadBestModel()
 			model.calcRetentionFeatures(trainPsms);
 
 			// normalize the retention features; the scaling parameters should have already been set when loading the model
-	        cerr << "FIXME: Replace with new normalizer" << endl;
-			// theNormalizer->normalizeSet(trainPsms);
+	        //cerr << "FIXMET: Replace with new normalizer" << endl;
+	        vector<double*> tmp;
+	        vector<double*> tRetFeat = PSMDescription::getRetFeatures(trainPsms);
+	        theNormalizer->normalizeSet(tmp, tRetFeat);
 
 			// estimate the retention time
 			estimateRetentionTime(trainPsms);
@@ -408,8 +410,10 @@ void RTPredictor::loadBestModel()
 		// calculate the retention features
 		model.calcRetentionFeatures(trainPsms);
 		// normalize the retention features; the scaling parameters should have already been set when loading the model
-        cerr << "FIXME: Replace with new normalizer" << endl;
-//		theNormalizer->normalizeSet(trainPsms);
+        //cerr << "FIXMET: Replace with new normalizer" << endl;
+        vector<double*> tmp;
+   	    vector<double*> tRetFeat = PSMDescription::getRetFeatures(trainPsms);
+   	    theNormalizer->normalizeSet(tmp, tRetFeat);
 		// estimate the retention time
 		estimateRetentionTime(trainPsms);
 	}
@@ -524,7 +528,7 @@ void RTPredictor::run()
 			model.calcRetentionFeatures(trainPsms);
 
 			// normalize all the features; note that the same scaling parameters will be used to normalize the test data if any
-	        cerr << "FIXMET: Replace with new normalizer" << endl;
+	        //cerr << "FIXMET: Replace with new normalizer" << endl;
 	        vector<double*> tmp;
 	        vector<double*> tRetFeat = PSMDescription::getRetFeatures(trainPsms);
 	        theNormalizer->setSet(tmp, tRetFeat, (size_t)0, model.getNoFeaturesToCalc());
@@ -639,7 +643,7 @@ void RTPredictor::run()
 		model.calcRetentionFeatures(testPsms);
 
 		// normalize the retention features; the scaling parameters should have already been set when generating the model
-        cerr << "FIXMET: Replace with new normalizer" << endl;
+        //cerr << "FIXMET: Replace with new normalizer" << endl;
         vector<double*> tmp;
  	    vector<double*> tRetFeat = PSMDescription::getRetFeatures(testPsms);
 		theNormalizer->normalizeSet(tmp, tRetFeat);
