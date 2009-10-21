@@ -427,13 +427,13 @@ void RTModel::fillFeaturesAllIndex(const string& pep, double *features)
 		 features = fillAAFeatures(peptide.substr(0,1), features);
 		 features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
 		 char Ct = peptide[peptide.size()-1];
-		 // 1 if the peptides show evidence that it was cleaved by the enzyme
-		 *(features++) = DataSet::isEnz(Ct,'A');
+		 // 1 if the peptides show evidence that it was cleaved by trypsin
+		 *(features++) = ((Ct=='K' || Ct== 'R')?1.0:0.0);
 		 // size of the peptide
 		 *(features++) = peptide.size();
 		 // some other index sum
 		 *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
-  	}
+  }
   	else
   	{
   		// fill in the features characteristic to each of the three hydrophobicity indices
