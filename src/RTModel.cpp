@@ -21,10 +21,14 @@
 #include <algorithm>
 #include "Globals.h"
 #include "RTModel.h"
+#include "DataSet.h"
+#include "DescriptionOfCorrect.h"
+//#include "RTPredictor.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <assert.h>
+#include <math.h>
 
 static double DEFAULT_K = 3;
 
@@ -36,10 +40,10 @@ static double INITIAL_GAMMA  = 0.5;
 static double INITIAL_EPSILON = 1e-2;
 
 // when gType = FINE_GRID, coarse grid and default values for the fine grid
-static double COARSE_GRID_GAMMA[] =  { pow(2., -15.), pow(2., -13.), pow(2., -11.), pow(2., -9.), pow(2., -7.), pow(2., -5.),
-									   pow(2., -3.), pow(2., -1.), pow(2., 1.), pow(2., 3.), pow(2., 5.)};
-static double COARSE_GRID_C[] = { pow(2., -5.), pow(2., -3.), pow(2., -1.), pow(2., 1.), pow(2., 3.), pow(2., 5.), pow(2., 7.),
-								  pow(2., 9.), pow(2., 11.), pow(2., 13.)};
+static double COARSE_GRID_GAMMA[] =  { pow(2, -15), pow(2, -13), pow(2, -11), pow(2, -9), pow(2, -7), pow(2, -5),
+									   pow(2, -3), pow(2, -1), pow(2, 1), pow(2, 3), pow(2, 5)};
+static double COARSE_GRID_C[] = { pow(2, -5), pow(2, -3), pow(2, -1), pow(2, 1), pow(2, 3), pow(2, 5), pow(2, 7),
+								  pow(2, 9), pow(2, 11), pow(2, 13)};
 static double COARSE_GRID_EPSILON[] = {INITIAL_EPSILON/10, INITIAL_EPSILON, INITIAL_EPSILON*10};
 // no of points to the left of a parameter (the fine grid will include NO_POINTS_FINE_GRID*2 for one parameter)
 // step is give as the exponent of 2 (the actual step value is 2^(STEP_FINE_GRID))
@@ -47,10 +51,10 @@ static int NO_POINTS_FINE_GRID = 7;
 static double STEP_FINE_GRID = 0.25;
 
 // when gType = NORMAL_GRID
-static double NORMAL_GRID_GAMMA[] =  { pow(2., -8.), pow(2., -7.), pow(2., -6.), pow(2., -5.), pow(2., -4.), pow(2., -3.),
-									   pow(2., -2.), pow(2., -1.), pow(2., 0.), pow(2., 1.)};
-static double NORMAL_GRID_C[] = { pow(2., -2.), pow(2., -1.), pow(2., 0.), pow(2., 1.), pow(2., 2.), pow(2., 3.), pow(2., 4.),
-								  pow(2., 5.), pow(2., 6.), pow(2., 7.)};
+static double NORMAL_GRID_GAMMA[] =  { pow(2, -8), pow(2, -7), pow(2, -6), pow(2, -5), pow(2, -4), pow(2, -3),
+									   pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1)};
+static double NORMAL_GRID_C[] = { pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1), pow(2, 2), pow(2, 3), pow(2, 4),
+								  pow(2, 5), pow(2, 6), pow(2, 7)};
 static double NORMAL_GRID_EPSILON[] = {INITIAL_EPSILON/10, INITIAL_EPSILON, INITIAL_EPSILON*10};
 
 
@@ -85,23 +89,22 @@ float RTModel::aa_weights['Z'-'A'+1] =
 float RTModel::bulkiness['Z'-'A'+1] =
 		{ 11.50, 0.0, 13.46, 11.68, 13.57, 19.80, 3.40, 13.69, 21.40, 0.0, 15.71, 21.40, 16.25,
 		  12.82, 0.0, 17.43, 14.45, 14.28, 9.47, 15.77, 0.0, 21.57, 21.67, 0.0, 18.03, 0.0};
-float RTModel::alpha_helix['Z'-'A'+1] =
+/*float RTModel::alpha_helix['Z'-'A'+1] =
 		{ 1.41, 0.0, 0.66, 0.99, 1.59, 1.16, 0.43, 1.05, 1.09, 0.0, 1.23, 1.34, 1.30, 0.76,
 		  0.0, 0.34, 1.27, 1.21, 0.57, 0.76, 0.0, 0.90, 1.02, 0.0, 0.74, 0.0};
 float RTModel::beta_sheet['Z'-'A'+1] =
 		{ 0.72, 0.0, 1.40, 0.39, 0.52, 1.33, 0.58, 0.80,  1.67,  0.0, 0.69, 1.22, 1.14, 0.48,
-		  0.0, 0.31, 0.98, 0.84, 0.96, 1.17, 0.0, 1.87, 1.35, 0.0, 1.45, 0.0 };
+		  0.0, 0.31, 0.98, 0.84, 0.96, 1.17, 0.0, 1.87, 1.35, 0.0, 1.45, 0.0 };*/
 
 // groups of features that can be switched on or off
 string RTModel::feature_groups[NO_FEATURE_GROUPS] =
 		{"krokhin_index", "krokhin100_index", "krokhinc2_index", "krokhintfa_index", "doolittle_index",
-		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "no_consec_krdenq", "sec_conformations",
-		 "aa_features"};
+		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "no_consec_krdenq", "aa_features"};
 // how many features are in each group?
-int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {12, 12, 12, 12, 12, 12,  1, 1, 3, 1, 1, 2, aaAlphabet.size()};
+int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {14, 14, 14, 14, 14, 14, 1, 1, 3, 1, 1, aaAlphabet.size()};
 //(krokhin, krokhintfa, doolittle = 25), peptide_size(=64), ptms (=256),  bulkiness(=2^9 = 512), no_consec_krdenq (1024),
-// sec_conformations (= 2048) and aa features (= 4096)
-static int DEFAULT_FEATURE_GROUPS = 8025;
+//aa(2048)
+static int DEFAULT_FEATURE_GROUPS = 25 + 64 + 256 + 512 + 1024 + 2048;
 
 
 RTModel::RTModel(): numRTFeat(0), model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON),
@@ -200,6 +203,7 @@ double RTModel::getNoPtms(string pep)
 }
 
 // conformational preferences
+/*
 double* RTModel::conformationalPreferences(const string& peptide, double *features)
 {
 	double sumAlpha = 0.0, sumBeta = 0.0;
@@ -216,6 +220,54 @@ double* RTModel::conformationalPreferences(const string& peptide, double *featur
   	*(features++) = sumBeta;
 
   return features;
+}*/
+// amphipathicity helix
+// most and least hydrophobic patches
+double* RTModel::amphipathicityHelix(const float *index, const string& peptide, double *features)
+{
+	double min = 0.0, max = 0.0, hWindow = 0.0;
+	int n = peptide.length();
+	double cos300, cos400;
+
+
+	// ???
+	// if the peptide is too short, just put 0
+	if (n < 9)
+	{
+		*(features++) = 0.0;
+	  	*(features++) = 0.0;
+	}
+	else
+	{
+		cos300 = cos(300);
+		cos400 = cos(400);
+		// min (maximum) - initialized with the max(min) possible value
+		for(int i = 4; i <= (peptide.length()-5); ++i)
+		{
+
+			hWindow = index[peptide[i] - 'A'] +
+					  (cos300 * (index[peptide[i-3] - 'A'] + index[peptide[i+3] - 'A'])) +
+					  (cos400 * (index[peptide[i-4] - 'A'] + index[peptide[i+4] - 'A']));
+			if (i == 4)
+			{
+				min = hWindow;
+				max = hWindow;
+			}
+			else
+			{
+				if (hWindow < min)
+					min = hWindow;
+				if (hWindow > max)
+					max = hWindow;
+			}
+
+		}
+		//cout << "Peptide: " << peptide << ", min = " << min << "   max = " << max << endl;
+		*(features++) = min;
+		*(features++) = max;
+    }
+
+	return features;
 }
 
 // sum up bulkiness
@@ -229,6 +281,21 @@ double RTModel::bulkinessSum(const string& peptide)
 
   	return sum;
 }
+
+// hydrophobic moment (angle = 100 for helices, = 160 for sheets)
+/*
+double  RTModel::hydrophobicMoment(const string& peptide, const double angle)
+{
+	double sum1 = 0.0, sum2 = 0.0;
+
+	for(int i = 0; i < peptide.length(); ++i)
+	{
+		sum1 += kytedoolittle_index[peptide[i] - 'A']*sin(i * angle);
+		sum2 += kytedoolittle_index[peptide[i] - 'A']*cos(i * angle);
+	}
+
+	return sqrt((sum1 * sum1) + (sum2 * sum2));
+}*/
 
 // calculate the number of consecutive occurences of (R,K,D,E,N,Q)
 int RTModel::noConsecKRDENQ(const string& peptide)
@@ -299,12 +366,18 @@ void RTModel::calcRetentionFeatures(PSMDescription &psm)
 		if (selected_features & 1 << 10)
 			*(features++) = noConsecKRDENQ(pep);
 
-		// conformational pereferences of aa
-		if (selected_features & 1 << 11)
-			features = conformationalPreferences(pep, features);
+		// hydrophobic moments of alpha helices and beta sheets
+		/*if (selected_features & 1 << 11)
+		{
+			// alpha helix
+			*(features++) = hydrophobicMoment(pep, 100);
+			// beta sheet (angle can be between 160-180)
+			*(features++) = hydrophobicMoment(pep, 175);
+		}*/
+
 
 		// amino acids
-		if (selected_features & 1 << 12)
+		if (selected_features & 1 << 11)
 			features = fillAAFeatures(pep, features);
 	}
 	//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
@@ -354,8 +427,8 @@ void RTModel::fillFeaturesAllIndex(const string& pep, double *features)
 		 features = fillAAFeatures(peptide.substr(0,1), features);
 		 features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
 		 char Ct = peptide[peptide.size()-1];
-		 // 1 if the peptides show evidence that it was cleaved by trypsin
-		 *(features++) = ((Ct=='K' || Ct== 'R')?1.0:0.0);
+		 // 1 if the peptides show evidence that it was cleaved by the enzyme
+		 *(features++) = DataSet::isEnz(Ct,'A');
 		 // size of the peptide
 		 *(features++) = peptide.size();
 		 // some other index sum
@@ -393,6 +466,7 @@ double* RTModel::fillFeaturesIndex(const string& peptide, const float *index, do
   	features = indexPartialSum(index, peptide, 3, features);
   	features = indexPartialSum(index, peptide, 5, features);
   	features = indexPartialSum(index, peptide, 2, features);
+  	features = amphipathicityHelix(index, peptide, features);
 
   	return features;
 }
@@ -673,50 +747,12 @@ int RTModel::getSelect(int sel_features, int max, size_t *finalNumFeatures)
 	// if this feature was selected and if adding it does not exceed the allowed no of features, then add it
 		if ((sel_features & 1 << i) && ((noFeat + no_features_per_group[i]) <= max))
 		{
-			retValue += (int)pow(2., i);
+			retValue += (int)pow(2, i);
 			noFeat += no_features_per_group[i];
 		}
 
 	(*finalNumFeatures) = noFeat;
 	return retValue;
-}
-
-void RTModel::trainRetention(vector<PSMDescription>& psms)
-{
-  // Train retention time regressor
-  size_t test_frac = 4u;
-  if (psms.size()>test_frac*10u) {
-    // If we got enough data, calibrate gamma and C by leaving out a testset
-	vector<PSMDescription> train,test;
-	for(size_t ix=0; ix<psms.size(); ++ix) {
-	  if (ix%test_frac==0) {
-        test.push_back(psms[ix]);
-      } else {
-        train.push_back(psms[ix]);
-      }
-    }
-	double sizeFactor=((double)train.size())/((double)psms.size());
-    double bestRms = 1e100;
-    double gammaV[3] = {gamma/2,gamma,gamma*2};
-    double cV[3] = {c/2./sizeFactor,c/sizeFactor,c*2./sizeFactor};
-    double epsilonV[3] = {epsilon/2,epsilon,epsilon*2};
-    for (double* gammaNow=&gammaV[0];gammaNow!=&gammaV[3];gammaNow++){
-        for (double* cNow=&cV[0];cNow!=&cV[3];cNow++){
-            for (double* epsilonNow=&epsilonV[0];epsilonNow!=&epsilonV[3];epsilonNow++){
-        	  trainRetention(train,*cNow,(*gammaNow)/((double)psms.size()),*epsilonNow,train.size());
-        	  double rms=testRetention(test);
-        	  if (rms<bestRms) {
-        		  c=*cNow;gamma=*gammaNow;epsilon=*epsilonNow;
-        		  bestRms=rms;
-        	  }
-            }
-        }
-    }
-    // Compensate for the difference in size of the training sets
-    c=sizeFactor*c;
-    // cerr << "CV selected gamma=" << gamma << " and C=" << c << endl;
-  }
-  trainRetention(psms,c,gamma/((double)psms.size()),epsilon,psms.size());
 }
 
 // train the SVM
@@ -739,12 +775,11 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
   svm_parameter param;
   param.svm_type = EPSILON_SVR;
   param.kernel_type = RBF;
-  param.degree = 3;
   //param.gamma = 1/(double)noPsms*gamma;
   param.gamma = gamma;
   param.coef0 = 0;
   param.nu = 0.5;
-  param.cache_size = 100;
+  param.cache_size = 300;
   param.C = C;
   param.eps = epsilon; //1e-3;
   param.p = 0.1;

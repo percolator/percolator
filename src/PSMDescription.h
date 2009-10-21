@@ -32,6 +32,7 @@ public:
   void clear() {proteinIds.clear();}
   double * getFeatures() {return features;}
   double * getRetentionFeatures() {return retentionFeatures;}
+  static vector<double *> getRetFeatures(vector<PSMDescription> & psms);
   string& getPeptide() {return peptide;}
   double getUnnormalizedRetentionTime() { return unnormalize(retentionTime);}
   static void setRetentionTime(vector<PSMDescription>& psms, map<int,double>& scan2rt);

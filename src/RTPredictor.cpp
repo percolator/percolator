@@ -524,7 +524,11 @@ void RTPredictor::run()
 			model.calcRetentionFeatures(trainPsms);
 
 			// normalize all the features; note that the same scaling parameters will be used to normalize the test data if any
-	        cerr << "FIXME: Replace with new normalizer" << endl;
+	        cerr << "FIXMET: Replace with new normalizer" << endl;
+	        vector<double*> tmp;
+	        vector<double*> tRetFeat = PSMDescription::getRetFeatures(trainPsms);
+	        theNormalizer->setSet(tmp, tRetFeat, (size_t)0, model.getNoFeaturesToCalc());
+	        theNormalizer->normalizeSet(tmp, tRetFeat);
 //			theNormalizer->setPsmSet(trainPsms, model.getNoFeaturesToCalc());
 //			theNormalizer->normalizeSet(trainPsms);
 
@@ -635,8 +639,10 @@ void RTPredictor::run()
 		model.calcRetentionFeatures(testPsms);
 
 		// normalize the retention features; the scaling parameters should have already been set when generating the model
-        cerr << "FIXME: Replace with new normalizer" << endl;
-		// theNormalizer->normalizeSet(testPsms);
+        cerr << "FIXMET: Replace with new normalizer" << endl;
+        vector<double*> tmp;
+ 	    vector<double*> tRetFeat = PSMDescription::getRetFeatures(testPsms);
+		theNormalizer->normalizeSet(tmp, tRetFeat);
 
 		// predict retention time
 		//clock_t start = std::clock();

@@ -12,7 +12,7 @@
 #include "svm.h"
 
 using namespace std;
-#define NO_FEATURE_GROUPS 13
+#define NO_FEATURE_GROUPS 12
 
 // types of grid
 typedef enum {NO_GRID, NORMAL_GRID, FINE_GRID} GridType;
@@ -33,7 +33,8 @@ class RTModel
 		void calcRetentionFeatures(vector<PSMDescription> &psms);
 		static void fillFeaturesAllIndex(const string& pep, double *features);
 		static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
-		static double* conformationalPreferences(const string& peptide, double *features);
+		//static double* conformationalPreferences(const string& peptide, double *features);
+		static double* amphipathicityHelix(const float *index, const string& peptide, double *features);
 		static double indexSum(const float* index, const string& peptide);
 		static double indexAvg(const float* index, const string& peptide);
 		static double indexNearestNeigbourPos(const float* index, const string& peptide);
@@ -45,10 +46,10 @@ class RTModel
 		static double* fillAAFeatures(const string& pep, double *feat);
 		static double* fillPTMFeatures(const string& pep, double *feat);
 		static double  bulkinessSum(const string& peptide);
+		/*static double  hydrophobicMoment(const string& peptide, const double angle);*/
 		static int noConsecKRDENQ(const string& peptide);
 		static double getNoPtms(string pep);
 		void copyModel(svm_model* from);
-		void trainRetention(vector<PSMDescription>& trainset);
 		void trainRetention(vector<PSMDescription>& trainset, const double C, const double gamma, const double epsilon, int noPsms);
 		double testRetention(vector<PSMDescription>& testset);
 		double estimateRT(double * features);
@@ -62,8 +63,8 @@ class RTModel
 		void loadSVRModel(const char* fileName, Normalizer *p);
         static size_t totalNumRTFeatures();
         // features for the three hydrophobicity indices, 3 features for ptms, peptide size, bulkiness,
-        // no of consec KRDNEQ, conformational preferences of aa (alpha helices and beta sheets)
-	    static size_t minimumNumRTFeatures() {return 3*12 + 3 + 1 + 1 + 1 + 2;}
+        // no of consec KRDNEQ
+	    static size_t minimumNumRTFeatures() {return 3*14 + 3 + 1 + 1 + 1;}
 		size_t getRTFeat() {return numRTFeat;}
 		void setNumRtFeat(const size_t nRtFeat) {numRTFeat = nRtFeat;}
 		static void setDoKlammer(const bool switchKlammer);
@@ -106,7 +107,7 @@ class RTModel
 		static float krokhin_index['Z'-'A'+1],krokhin100_index['Z'-'A'+1],krokhinC2_index['Z'-'A'+1],krokhinTFA_index['Z'-'A'+1],
 		             hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1], bulkiness['Z'-'A' + 1];
 		// conformational preferences of aa
-		static float alpha_helix['Z'-'A'+1], beta_sheet['Z'-'A'+1];
+		//static float alpha_helix['Z'-'A'+1], beta_sheet['Z'-'A'+1];
 		// the groups of features to be used
 		static string feature_groups[NO_FEATURE_GROUPS];
 		// how many features are in each group?

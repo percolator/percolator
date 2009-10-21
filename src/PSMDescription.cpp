@@ -98,6 +98,15 @@ void PSMDescription::setPSMSet(vector<PSMDescription> & psms)
 		normDiv = 1.0;
 }
 
+vector<double *> PSMDescription::getRetFeatures(vector<PSMDescription> & psms)
+{
+	vector<double*> features;
+	for(int i = 0; i < psms.size(); ++i)
+		features.push_back(psms[i].getRetentionFeatures());
+
+	return features;
+}
+
 void PSMDescription::normalizeRetentionTimes(vector<PSMDescription> & psms)
 {
 	vector<PSMDescription>::iterator psm;

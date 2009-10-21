@@ -23,7 +23,7 @@ class Normalizer
 public:
 	virtual ~Normalizer();
     virtual void setSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV, size_t numFeatures, size_t numRetentionFeatures){;}
-//    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
+ //    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
 //    void normalizeSet(vector<PSMDescription> & psms);
     void normalizeSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV);
     void normalize(const double * in, double * out, size_t offset, size_t numFeatures);
@@ -36,6 +36,7 @@ public:
 	const static int STDV = 1;
 	void resizeVecs(size_t size) {sub.resize(size); div.resize(size); }
 	void setNumberRetentionFeatures(size_t numRF) {numRetentionFeatures = numRF; }
+	void setNumFeatures(const size_t nf) {numFeatures = nf;}
 	double* getSub() {return &sub[0];}
 	double* getDiv() {return &div[0];}
 	size_t*  getNumRetFeatures() {return & numRetentionFeatures;}
