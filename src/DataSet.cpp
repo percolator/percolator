@@ -476,11 +476,12 @@ void DataSet::modifySQT(const string & outFN, Scores * pSc ,const string greet, 
 void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
   istringstream instr(in),linestr;
   ostringstream idbuild;
+  int ourPos;
   string line,tmp;
   int charge;
   unsigned int scan;
   double * feat = psm.features;
-  double mass,deltCn,otherXcorr=0.0,xcorr=0.0,lastXcorr=0.0, nSM=0.0;
+  double mass,deltCn,tmpdbl,otherXcorr=0.0,xcorr=0.0,lastXcorr=0.0, nSM=0.0, tstSM = 0.0;
   bool gotL=true;
   int ms=0;
 
@@ -488,7 +489,27 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
     if (line[0]=='S') {
       linestr.clear();
       linestr.str(line);
-      linestr >> tmp >> tmp >> scan >> charge >> tmp >> tmp >> mass >> tmp >> tmp >> nSM;
+      if (!(linestr >> tmp >> tmpdbl >> scan >> charge >> tmpdbl)) {
+        cerr << "Could not parse the S line:" << endl;
+        cerr << line << endl;
+        exit(-1);
+      }
+      // Computer name might not be set, just skip this part of the line
+      linestr.ignore(256,'\t');
+      linestr.ignore(256,'\t');
+      // First assume a MacDonald et al definition of S (9 fields)
+      if (!(linestr >> mass >> tmpdbl >> tmpdbl >> nSM )) {
+        cerr << "Could not parse the S line:" << endl;
+        cerr << line << endl;
+        exit(-1);
+      }
+
+      // Check if the Yate's lab definition (10 fields) is valid
+      // http://fields.scripps.edu/sequest/SQTFormat.html
+      //
+      if (linestr >> tstSM) {
+    	  nSM=tstSM;
+      }
     }
     if (line[0]=='M') {
       linestr.clear();
