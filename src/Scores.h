@@ -82,7 +82,7 @@ protected:
     int neg,pos,posNow;
     double q1,q3;
     vector<ScoreHolder> scores;
-    map<const double *,ScoreHolder *> scoreMap;
+    std::map<const double *,ScoreHolder *> scoreMap;
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;
 };

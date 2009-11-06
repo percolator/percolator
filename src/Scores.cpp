@@ -20,6 +20,7 @@
 #include <utility>
 #include <algorithm>
 #include <set>
+#include <map>
 #include <vector>
 #include <string>
 #include <math.h>
@@ -37,6 +38,17 @@ inline bool operator>(const ScoreHolder &one, const ScoreHolder &other)
 
 inline bool operator<(const ScoreHolder &one, const ScoreHolder &other)
     {return (one.score<other.score);}
+
+inline string getRidOfUnprintablesAndUnicode(string inpString)  {
+  string outputs = "";
+  for ( int jj = 0; jj < inpString.size(); jj++ )  {
+    char ch = inpString[ jj ];
+    if ( ( ( int ) ch ) >= 32 && ( ( int ) ch ) <= 128 )  {
+      outputs += ch;
+    }
+  }
+  return outputs;
+}
 
 ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   if (sh.label!=1 && !Scores::isOutXmlDecoys())
@@ -59,7 +71,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   string centpep = peptide.substr(pos1,pos2-pos1);
   os << "    <peptide n=\""<< n << "\" c=\"" << c <<"\" seq=\"" << centpep << "\"/>" << endl;
   for(set<string>::const_iterator pid = sh.pPSM->proteinIds.begin();pid != sh.pPSM->proteinIds.end();++pid) {
-    os << "    <protein_id>" << *pid << "</protein_id>" << endl;
+    os << "    <protein_id>" << getRidOfUnprintablesAndUnicode(*pid) << "</protein_id>" << endl;
   }
   os << "  </psm>" << endl;
   return os;
@@ -84,12 +96,18 @@ bool Scores::outxmlDecoys = false;
 void Scores::merge(vector<Scores>& sv) {
   scores.clear();
   for(vector<Scores>::iterator a = sv.begin();a!=sv.end();a++) {
+	sort(a->begin(),a->end(), greater<ScoreHolder>());
 	a->estimatePi0();
+	a->calcQ();
 	a->calcPep();
   	a->normalizeScores();
     copy(a->begin(),a->end(),back_inserter(scores));
   }
   sort(scores.begin(),scores.end(), greater<ScoreHolder>() );
+//  int invrank = scores.size();
+//  for(vector<ScoreHolder>::iterator s = scores.begin();s!=scores.end();++s) {
+//    s->score=invrank--;
+//  }
 }
 
 void Scores::printRetentionTime(ostream& outs, double fdr){
@@ -118,7 +136,11 @@ ScoreHolder* Scores::getScoreHolder(const double *d){
       scoreMap[it->pPSM->features] = &(*it);
     }
   }
-  return scoreMap[d];
+  std::map<const double *,ScoreHolder *>::iterator res = scoreMap.find(d);
+
+  if (res != scoreMap.end())
+    return res->second;
+  return NULL;
 }
 
 
@@ -184,10 +206,10 @@ void Scores::normalizeScores() {
   double breakQ=0.0;
   for(it=scores.begin();it!=scores.end();++it) {
 	if (it->pPSM->pep<1.0) {
-	  it->score = it->pPSM->pep;
+	  it->score = -log(it->pPSM->pep);
 	  breakQ = it->pPSM->q;
 	} else {
-	  it->score = 1.0+(it->pPSM->q-breakQ);
+	  it->score = -log(1.0+(it->pPSM->q-breakQ));
 	}
   }
 }
@@ -287,6 +309,7 @@ void Scores::weedOutRedundant(){
       ++it;
     }
   }
+  sort(scores.begin(),scores.end(), greater<ScoreHolder>() ); // Is this really needed?
 }
 
 void Scores::recalculateDescriptionOfGood(const double fdr) {

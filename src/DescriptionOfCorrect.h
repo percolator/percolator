@@ -41,7 +41,7 @@ public:
   void trainCorrect();
   void setFeatures(PSMDescription& psm);
   static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + aaAlphabet.size());}
-  static size_t minimumNumRTFeatures() {return 3*10+2;}
+  static size_t minimumNumRTFeatures() {return 3*10+1+ptmAlphabet.length();}
   static size_t numDOCFeatures() {return 4;}
   void print_10features();
   double estimateRT(double * features);

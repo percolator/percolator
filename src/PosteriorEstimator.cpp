@@ -220,7 +220,7 @@ void PosteriorEstimator::binData(const vector<pair<double,bool> >& combined,
        negatives.push_back(negInBin);
     }
   }
-  if(VERB>1) cerr << "Binned data into " << medians.size() << " bins for PEP calcuation" << endl;
+  if(VERB>2) cerr << "Binned data into " << medians.size() << " bins for PEP calcuation" << endl;
 }
 
 
@@ -336,7 +336,6 @@ double PosteriorEstimator::estimatePi0(vector<double>& p, const unsigned int num
   unsigned int minIx = distance(mse.begin(),min_element(mse.begin(),mse.end()));
   double pi0 = max(min(pi0s[minIx],1.0),0.0);
 
-  if(VERB>1) cerr << "Selecting pi_0=" << pi0 << endl;
 
   return pi0;
 }
@@ -351,9 +350,10 @@ void PosteriorEstimator::run() {
   if (!pvalInput) {
     transform(tarIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair),true));
+    size_t targetSize = combined.size();
     transform(decIt,istream_iterator<double>(),back_inserter(combined),
             bind2nd(ptr_fun(make_my_pair), false));
-    if(VERB>0) cerr << "Read " << combined.size() << " statistics" << endl;
+    if(VERB>0) cerr << "Read " << targetSize << " target scores and " << (combined.size()-targetSize) << " decoy scores" << endl;
   } else {
     copy(tarIt,istream_iterator<double>(),back_inserter(pvals));
     sort(pvals.begin(),pvals.end());
@@ -381,6 +381,7 @@ void PosteriorEstimator::run() {
   	getPValues(combined,pvals);
 
   double pi0 = estimatePi0(pvals);
+  if(VERB>1) cerr << "Selecting pi_0=" << pi0 << endl;
 
   vector<double> peps;
   // Logistic regression on the data

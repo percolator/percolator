@@ -394,15 +394,16 @@ double DescriptionOfCorrect::isoElectricPoint(const string& pep) {
 }
 
 void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *features) {
-  unsigned int ptms=0;
+//  unsigned int ptms=0;
   string peptide = pep;
   string::size_type posP = 0;
+  vector<unsigned int> ptms(ptmAlphabet.length(),0u);
   while (posP < ptmAlphabet.length()) {
     string::size_type pos = 0;
     while ( (pos = peptide.find(ptmAlphabet[posP], pos)) != string::npos ) {
       peptide.replace( pos, 1, "");
       ++pos;
-      ++ptms;
+      ++ptms[posP];
     }
     ++posP;
   }
@@ -414,7 +415,8 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *featu
 //    features = fillFeaturesIndex(peptide, hessa_index, features);
 //    features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
     *(features++) = peptide.size();
-    *(features++) = (double) ptms;
+    for(vector<unsigned int>::iterator ptm=ptms.begin();ptm != ptms.end();++ptm)
+       *(features++) = (double) *ptm;
     features = fillAAFeatures(peptide, features);
   } else {
   	// Klammer et al. features

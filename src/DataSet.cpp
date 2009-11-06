@@ -151,7 +151,10 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   size_t ix = 0;
   vector<PSMDescription>::const_iterator psm = psms.begin();
   for(;psm!=psms.end();psm++,ix++) {
-    double score = test.getScoreHolder(psm->features)->score;
+	ScoreHolder *pSH = test.getScoreHolder(psm->features);
+	if (pSH==NULL)
+		continue;
+    double score = pSH->score;
     double q = psm->q;
     double pep = psm->pep;
     set<string> prots = psm->proteinIds;
