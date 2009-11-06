@@ -53,7 +53,7 @@ bool DescriptionOfCorrect::doKlammer=false;
 unsigned int DescriptionOfCorrect::docFeatures = 15;
 
 void DescriptionOfCorrect::calcRegressionFeature(PSMDescription &psm) {
-  string peptide = psm.getPeptide();
+  string peptide = psm.getFullPeptide();
   string::size_type pos1 = peptide.find('.');
   string::size_type pos2 = peptide.find('.',++pos1);
   string pep = peptide.substr(pos1,pos2-pos1);

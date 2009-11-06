@@ -31,7 +31,11 @@ public:
   double * getFeatures() {return features;}
   double * getRetentionFeatures() {return retentionFeatures;}
   string& getPeptide() {return peptide;}
+  string& getFullPeptide() {return getAParent()->peptide;}
+  PSMDescription* getAParent() {if (parentFragment) return parentFragment->getAParent(); else return this;}
   double getUnnormalizedRetentionTime() { return unnormalize(retentionTime);}
+  static bool isSubPeptide(string& child,string& parent);
+  void checkFragmentPeptides(vector<PSMDescription>::reverse_iterator  other,vector<PSMDescription>::reverse_iterator  theEnd);
   static void setRetentionTime(vector<PSMDescription>& psms, map<int,double>& scan2rt);
   static double unnormalize(double normalizedTime);
 
@@ -45,6 +49,7 @@ public:
   string id;
   string peptide;
   set<string> proteinIds;
+  PSMDescription *parentFragment;
 };
 
 inline bool const operator<(PSMDescription const& one, PSMDescription const& other){
