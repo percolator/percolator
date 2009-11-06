@@ -101,13 +101,13 @@ string RTModel::feature_groups[NO_FEATURE_GROUPS] =
 		{"krokhin_index", "krokhin100_index", "krokhinc2_index", "krokhintfa_index", "doolittle_index",
 		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "no_consec_krdenq", "aa_features"};
 // how many features are in each group?
-int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {14, 14, 14, 14, 14, 14, 1, 1, 3, 1, 1, aaAlphabet.size()};
+int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {16, 16, 16, 16, 16, 16, 1, 1, 3, 1, 1, aaAlphabet.size()};
 //(krokhin, krokhintfa, doolittle = 25), peptide_size(=64), ptms (=256),  bulkiness(=2^9 = 512), no_consec_krdenq (1024),
 //aa(2048)
 static int DEFAULT_FEATURE_GROUPS = 25 + 64 + 256 + 512 + 1024 + 2048;
+//static int DEFAULT_FEATURE_GROUPS = 1 + 64 + 2048;
 
-
-RTModel::RTModel(): numRTFeat(0), model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON),
+RTModel::RTModel(): /*numRTFeat(0),*/ model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON),
 					stepFineGrid(STEP_FINE_GRID), noPointsFineGrid(NO_POINTS_FINE_GRID), calibrationFile(""),
 					saveCalibration(false), k(DEFAULT_K), gType(NORMAL_GRID), eType(K_FOLD_CV), selected_features(DEFAULT_FEATURE_GROUPS)
 {
@@ -228,19 +228,28 @@ double* RTModel::amphipathicityHelix(const float *index, const string& peptide, 
 	double min = 0.0, max = 0.0, hWindow = 0.0;
 	int n = peptide.length();
 	double cos300, cos400;
+	// value to be added to the peptides < 9
+	double cst;
 
+	cos300 = cos(300 * M_PI / 180);
+	cos400 = cos(400 * M_PI / 180);
 
-	// ???
-	// if the peptide is too short, just put 0
+	// calculate the average of hydrophobicity of the index
+	double avgHydrophobicityIndex = 0.0;
+	for(int i = 0; i < (('Z' - 'A') + 1); ++i)
+		avgHydrophobicityIndex += index[i];
+//	cout << avgHydrophobicityIndex << endl;
+	avgHydrophobicityIndex = avgHydrophobicityIndex / aaAlphabet.size();
+	cst = avgHydrophobicityIndex * (1 + 2 * cos300 + 2 * cos400);
+
+	// if the peptide is too short, use cst
 	if (n < 9)
 	{
-		*(features++) = 0.0;
-	  	*(features++) = 0.0;
+		*(features++) = cst;
+	  	*(features++) = cst;
 	}
 	else
 	{
-		cos300 = cos(300);
-		cos400 = cos(400);
 		// min (maximum) - initialized with the max(min) possible value
 		for(int i = 4; i <= (peptide.length()-5); ++i)
 		{
@@ -282,20 +291,50 @@ double RTModel::bulkinessSum(const string& peptide)
   	return sum;
 }
 
-// hydrophobic moment (angle = 100 for helices, = 160 for sheets)
-/*
-double  RTModel::hydrophobicMoment(const string& peptide, const double angle)
+// hydrophobic moment (angle = 100 for helices, = 180 for sheets)
+double*  RTModel::hydrophobicMoment(const float *index, const string& peptide, const double angleDegrees, const int w, double * features)
 {
 	double sum1 = 0.0, sum2 = 0.0;
+	int lengthPeptide = peptide.length();
+	double minHMoment, maxHMoment, hMoment;
+	// calculate the angle in radians
+	double angle = angleDegrees * M_PI / 180;
 
-	for(int i = 0; i < peptide.length(); ++i)
+	for(int i = 0; i < min(lengthPeptide, w); ++i)
 	{
-		sum1 += kytedoolittle_index[peptide[i] - 'A']*sin(i * angle);
-		sum2 += kytedoolittle_index[peptide[i] - 'A']*cos(i * angle);
+		sum1 += index[peptide[i] - 'A']*sin((i+1) * angle);
+		sum2 += index[peptide[i] - 'A']*cos((i+1) * angle);
 	}
 
-	return sqrt((sum1 * sum1) + (sum2 * sum2));
-}*/
+	hMoment = sqrt((sum1 * sum1) + (sum2 * sum2));
+	minHMoment = hMoment;
+	maxHMoment = hMoment;
+
+	if (lengthPeptide > w)
+	{
+		for(int i = 1; i <= lengthPeptide - w; ++i)
+		{
+			sum1 = 0.0;
+			sum2 = 0.0;
+			for(int j = 0; j < w; j++)
+			{
+				sum1 += index[peptide[i+j] - 'A']*sin((j+1) * angle);
+				sum2 += index[peptide[i+j] - 'A']*cos((j+1) * angle);
+			}
+			hMoment = sqrt((sum1 * sum1) + (sum2 * sum2));
+
+			if (hMoment > maxHMoment)
+				maxHMoment = hMoment;
+			if (hMoment < minHMoment)
+				minHMoment = hMoment;
+		}
+	}
+
+	*(features++) = minHMoment;
+	*(features++) = maxHMoment;
+
+	return features;
+}
 
 // calculate the number of consecutive occurences of (R,K,D,E,N,Q)
 int RTModel::noConsecKRDENQ(const string& peptide)
@@ -463,12 +502,25 @@ double* RTModel::fillFeaturesIndex(const string& peptide, const float *index, do
 	//*(features++) = indexConsecutivePolarResidues(index, peptide);
 	// these are added withing the function itself (because they are 2 features added for both)
   	// they calculate the highest and lowest sum of hydrophobicities of aa in a window of 3 and 5 aa, respectively
-  	features = indexPartialSum(index, peptide, 3, features);
-  	features = indexPartialSum(index, peptide, 5, features);
+  	//features = indexPartialSum(index, peptide, 3, features);
+	features = indexPartialSum(index, peptide, 5, features);
   	features = indexPartialSum(index, peptide, 2, features);
   	features = amphipathicityHelix(index, peptide, features);
+  	// hydrophobic moment for for alpha helix and beta sheet
+  	features = hydrophobicMoment(index, peptide, 100, 11, features);
+  	features = hydrophobicMoment(index, peptide, 180, 11, features);
 
   	return features;
+}
+
+double RTModel::calcDiffHydrophobicities(const string & parent, const string & child)
+{
+	double sumParent, sumChild;
+
+	sumParent = indexSum(krokhin_index, parent);
+	sumChild = indexSum(krokhin_index, child);
+
+	return abs(sumParent - sumChild);
 }
 
 // DEFINE features characteristic to an arbitrary hydrophobicity index
@@ -758,7 +810,7 @@ int RTModel::getSelect(int sel_features, int max, size_t *finalNumFeatures)
 // train the SVM
 void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, const double gamma, const double epsilon, int noPsms)
 {
-   int minFeat = minimumNumRTFeatures();
+   /*int minFeat = minimumNumRTFeatures();
    //if we have in total less than 500 PSMs, we use only a subset of features
    if ((noPsms>500) || (noFeaturesToCalc <= minFeat))
    {
@@ -768,7 +820,7 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
    {
     selected_features = getSelect(selected_features, minFeat, &numRTFeat);
     cout << "Not enough data. Only a subset of features is used to train  the model" << endl;
-   }
+   }*/
 
   //cout << "Building model..." << endl;
   // initialize the parameters of the SVM
@@ -797,7 +849,7 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
 
   for(size_t ix1=0;ix1<trainset.size();ix1++) {
     data.x[ix1].values=trainset[ix1].retentionFeatures;
-    data.x[ix1].dim=numRTFeat;
+    data.x[ix1].dim=noFeaturesToCalc;
     //cout << "dim = " << data.x[ix1].dim << endl;
     data.y[ix1]=trainset[ix1].retentionTime;
   }
@@ -846,8 +898,8 @@ double RTModel::estimateRT(double * features)
 	double predicted_value;
 	svm_node node;
 	node.values = features;
-	//node.dim = numRTFeat;
-	node.dim = numRTFeat;
+	//node.dim = noFeaturesToCalc;
+	node.dim = noFeaturesToCalc;
 
 	/* cout << "retention features: ";
 		for(int i = 0; i < 52; i++)
@@ -1356,7 +1408,7 @@ void RTModel::saveSVRModel(const string modelFile, Normalizer *theNormalizer)
 	assert (model != NULL);
 
 	svm_save_model2(modelFile.c_str(), model, PSMDescription::normSub, PSMDescription::normDiv, theNormalizer->getSub(),
-			        theNormalizer->getDiv(), theNormalizer->getNumRetFeatures(), selected_features, numRTFeat);
+			        theNormalizer->getDiv(), theNormalizer->getNumRetFeatures(), selected_features);
 }
 
 
@@ -1367,7 +1419,7 @@ void RTModel::loadSVRModel(const string modelFile, Normalizer *theNormalizer)
 
 	theNormalizer->setNumFeatures(0);
 	model = svm_load_model2(modelFile.c_str(), &PSMDescription::normSub, &PSMDescription::normDiv, theNormalizer->getSub(),
-							theNormalizer->getDiv(), theNormalizer->getNumRetFeatures(), &selected_features, &numRTFeat);
+							theNormalizer->getDiv(), theNormalizer->getNumRetFeatures(), &selected_features);
 	noFeaturesToCalc = *(theNormalizer->getNumRetFeatures());
 }
 
@@ -1387,7 +1439,7 @@ void RTModel::printFeaturesInUse(ostringstream & oss)
 	oss << " *Feature groups used: ";
 	for(int i = 0; i < NO_FEATURE_GROUPS; i++)
 		if (selected_features & 1 << i)
-			oss << feature_groups[i] << " ";
+			oss << feature_groups[i] << "\t";
 	oss << endl;
 }
 

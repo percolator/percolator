@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cstring>
 #include <math.h>
+#include <cmath>
 #include <assert.h>
 #include "Option.h"
 #include "Globals.h"
@@ -31,14 +32,56 @@
 #include <sstream>
 #include <ctime>
 
+
 using namespace std;
 
 // path to the library
 string RTPredictor::libPath = "../lib/";
 
+float RTPredictor::diff_hydrophobicity = 10.0;
+
+// used to sort a vector of pairs PSMDescription, bool
+struct myPair {
+  bool operator() (pair< pair<PSMDescription, bool>, bool> psm1, pair< pair<PSMDescription, bool>, bool> psm2)
+  {
+	  return (psm1.first.first.getRetentionTime() < psm2.first.first.getRetentionTime());
+  }
+} mypair;
+
+// check if it is decay and in train
+bool decayTrain(pair< pair<PSMDescription, bool>, bool > psm)
+{
+	if (psm.second && (psm.first.second))
+		return true;
+	return false;
+}
+
+// check if it is decay
+bool decay(pair< pair<PSMDescription, bool>, bool > psm)
+{
+	if (psm.second)
+		return true;
+	return false;
+}
+
+// return true if a peptide is in the training data
+bool inTrain(pair< pair<PSMDescription, bool>, bool > psm)
+{
+	if (psm.first.second)
+		return true;
+	return false;
+}
+
+// get the psm
+PSMDescription getPSM(pair< pair<PSMDescription, bool>, bool > psm)
+{
+	return psm.first.first;
+}
+
 RTPredictor::RTPredictor() : trainFile(""), testFile(""),outputFile(""),
 			 saveModelFile(""), loadModelFile(""), trainRetentionFeatures(NULL), testRetentionFeatures(NULL), theNormalizer(NULL),
-			 logFile(""), removeRedundant(false), autoModelSelection(false), a(1.0), b(0.0), linearAdjust(true), addLibModel(false)
+			 logFile(""), decayingPeptidesFile(""), removeRedundant(false), autoModelSelection(false), a(1.0), b(0.0), linearAdjust(true), addLibModel(false),
+			 removeDecaying(false), testIncludesRT(true)
 {
 	RTModel::setDoKlammer(false);
 	Normalizer::setType(Normalizer::UNI);
@@ -106,6 +149,10 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 	cmd.defineOption("a", "auto", "Specifies that the model that matches the best the training data will be used for the test set ", "", TRUE_IF_SET);
 	cmd.defineOption("d", "append", "Append model to library ", "", TRUE_IF_SET);
 	cmd.defineOption("j", "no_linear_adjust", "Specifies that the model will not be linearly adjusted ", "", TRUE_IF_SET);
+	cmd.defineOption("y", "no_decaying_peptides", "Specifies that peptides included in larger ones with the same rt should be removed",
+			"", TRUE_IF_SET);
+	cmd.defineOption("i", "save-decay-peptides", "Specifies the file in which the decay peptides are stored", "filename");
+
 
 	// parse command line
 	cmd.parseArgs(argc, argv);
@@ -121,14 +168,10 @@ bool RTPredictor::parseOptions(int argc, char **argv)
   		Globals::getInstance()->setVerbose(cmd.getInt("v",0,10));
 
   	if (cmd.optionSet("t"))
-  	{
   		trainFile = cmd.options["t"];
-  	}
 
   	if (cmd.optionSet("e"))
-  	{
   		testFile = cmd.options["e"];
-  	}
 
   	if (cmd.optionSet("s"))
   		saveModelFile = cmd.options["s"];
@@ -161,55 +204,93 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 		autoModelSelection = true;
 
 	if (cmd.optionSet("d"))
-	{
 		addLibModel = true;
-	}
 
 	if (cmd.optionSet("j"))
 		linearAdjust = false;
 
+	if (cmd.optionSet("y"))
+		removeDecaying  = true;
+
+	if (cmd.optionSet("i"))
+		decayingPeptidesFile = cmd.options["i"];
+
   	return true;
 }
 
-// load the input file fileName and store the information in a vector of PSMs
-// if includeRT = false, then only the peptides are included in the file, otherwise both peptide and retention time are included
-void RTPredictor::loadInputFile(const string & fileName, vector<PSMDescription> & psms, bool includesRT)
+void RTPredictor::loadTrainFile()
+{
+	// retention time
+	double retTime;
+	string peptide;
+
+	cout << "Loading file " << trainFile << endl;
+
+	// opens the file for reading
+	ifstream in(trainFile.c_str(), ios::in);
+
+	cerr << "Loading " << trainFile << endl;
+
+	while (in >> peptide >> retTime)
+		trainPsms.push_back( PSMDescription(peptide, retTime) );
+
+	cout << trainPsms.size() << " peptides were loaded." << endl;
+}
+
+void RTPredictor::loadTestFile()
 {
 	// retention time
 	double retTime;
 	string peptide;
 	// opens the file for reading
-	ifstream in(fileName.c_str(), ios::in);
-	// number of peptides in the file
+	ifstream in(testFile.c_str(), ios::in);
+	string line;
+	char *tokens, *tmp;
 
-	cout << "Loading file " << fileName << endl;
+	cout << "Loading file " << testFile << endl;
 
 	// check if the file was open successfully
 	if (!in)
 	{
-		cerr << "Unable to open " << fileName << endl;
+		cerr << "Unable to open " << testFile << endl;
 		cerr << "Please check the file location and try again " << endl;
 		cerr << "Execution aborted "<< endl;
 		exit(-1);
 	}
 
-	if (includesRT)
+
+	if (getline(in, line) && !line.empty())
 	{
-		// read the observed retention time and the peptide sequence
-		while (in >> peptide >> retTime)
-			// add a new psm
-			psms.push_back( PSMDescription(peptide, retTime) );
-	}
-	else
-	{
-		// read the observed retention time and the peptide sequence
-		while (in >> peptide)
-			// add a new psm
-			psms.push_back( PSMDescription(peptide, 0.0) );
+		// read the first line and check if the observed rt is included
+		tmp = new char [line.size()+1];
+		strcpy (tmp, line.c_str());
+		tokens = strtok (tmp, " ");
+		peptide.assign(tokens);
+		tokens = strtok (NULL, " ");
+		if (tokens != NULL)
+		{
+			retTime = atof(tokens);
+			testPsms.push_back( PSMDescription(peptide, retTime) );
+		}
+		else
+		{
+			testIncludesRT = false;
+			testPsms.push_back( PSMDescription(peptide, 0) );
+		}
+
+		if (testIncludesRT)
+			// read the observed retention time and the peptide sequence
+			while (in >> peptide >> retTime)
+				testPsms.push_back( PSMDescription(peptide, retTime) );
+		else
+			// read only the peptide
+			while (in >> peptide)
+				testPsms.push_back( PSMDescription(peptide, 0) );
 	}
 
-	cout << psms.size() << " peptides were loaded." << endl;
-	cout << "Done." << endl << endl;
+
+	cout << testPsms.size() << " peptides were loaded." << endl;
+
 }
 
 // print the PSMs
@@ -460,11 +541,210 @@ void RTPredictor::unNormalizeRetentionTimes(vector<PSMDescription> & psms)
 	}
 }
 
+// get the peptide information (for A.MCD.E -> return MCD)
+string RTPredictor::getMSPeptide(string & peptide)
+{
+	int pos1, pos2;
+
+	pos1 = peptide.find('.');
+	pos2 = peptide.find('.',++pos1);
+
+	return peptide.substr(pos1, pos2-pos1);
+}
+
+// check if a peptide is tryptic
+bool RTPredictor::isTryptic(string & pep)
+{
+	// check the beginning only if the peptide is given in the format X.XXXX.X
+	if ((pep.find('.') != string::npos) && (pep[0] != 'R') && (pep[0] != 'K'))
+		return false;
+
+	string msPep = getMSPeptide(pep);
+	int pepLength = msPep.length();
+
+	if (msPep[pepLength - 1] != 'R' && msPep[pepLength - 1] != 'K')
+		return false;
+
+	return true;
+}
+
+// check if a peptides is "aberrant" (it is included in another peptide, they have similar rt and either
+// the father is triptic and the child not, either the difference in hydrophobicity is smaller than x
+bool RTPredictor::isChildOf(PSMDescription & child, PSMDescription & parent)
+{
+	string peptideP, msPeptideP, peptideC, msPeptideC;
+	double rtP, rtC, diff;
+
+	peptideP = parent.getPeptide();
+	peptideC = child.getPeptide();
+
+	msPeptideP = getMSPeptide(peptideP);
+	msPeptideC = getMSPeptide(peptideC);
+
+	// if the child is not included in parent, then child is not aberrant
+	if  ((msPeptideC.length() >= msPeptideP.length()) || (msPeptideP.find(msPeptideC) == string::npos))
+		return false;
+
+	// if the difference in observed rt is greater than 5% of the parent's rt, then the peptide is not aberrant
+	// NOT necessary because of the way we search for these peptides
+	//rtP = parent.getRetentionTime();
+	//rtC = child.getRetentionTime();
+	//if ( (abs(rtP - rtC)/rtP) > 0.05 )
+	//	return false;
+
+	// if the parent is tryptic and the child is not, then the child is aberrant
+	if (isTryptic(peptideP) && (!isTryptic(peptideC)))
+		return true;
+
+	// check the difference in hydrophobicities
+	diff = RTModel::calcDiffHydrophobicities(msPeptideP, msPeptideC);
+	if (diff >= diff_hydrophobicity)
+		return true;
+	else
+		return false;
+}
+
+void RTPredictor::addToPairVector(vector<PSMDescription> psms, bool value, vector< pair<pair<PSMDescription, bool>,bool> > & psmPairs)
+{
+	pair<PSMDescription, bool> tmp1;
+	pair<pair<PSMDescription, bool>,bool> tmp2;
+
+	for (int i = 0; i < psms.size(); ++i)
+	{
+		tmp1.first = psms[i];
+		tmp1.second = value;
+		tmp2.first = tmp1;
+		tmp2.second = false;
+		psmPairs.push_back(tmp2);
+	}
+}
+
+void RTPredictor::removeDecays(vector< pair< pair<PSMDescription, bool>, bool> > & psms)
+{
+	double rt, rtp;
+	int noPsms = psms.size(), i, j;
+	bool isDecay;
+	vector< pair< pair<PSMDescription, bool>, bool> > ::iterator it;
+
+	sort(psms.begin(), psms.end(), mypair);
+
+	for(i = 0; i < noPsms; ++i)
+	{
+		rt = psms[i].first.first.getRetentionTime();
+		j = i-1;
+		isDecay = false;
+		while( (j >= 0) && (((rtp = psms[j].first.first.getRetentionTime()) * 1.05) >= rt))
+		{
+			if (isChildOf(psms[i].first.first, psms[j].first.first))
+			{
+				psms[i].second = true;
+				isDecay = true;
+				break;
+			}
+			j--;
+		}
+
+		if (!isDecay)
+		{
+			j = i + 1;
+			while ((j < noPsms) && (((rtp = psms[j].first.first.getRetentionTime()) * 0.95) <= rt))
+			{
+				if (isChildOf(psms[i].first.first, psms[j].first.first))
+				{
+					psms[i].second = true;
+					break;
+				}
+				j++;
+			}
+		}
+	}
+
+	if (!decayingPeptidesFile.empty())
+		writeDecayToFile(psms);
+
+	int counts = (int) count_if(psms.begin(), psms.end(), decay);
+	cout << counts << " decay peptides were identified" << endl;
+
+	if (removeDecaying)
+		it = remove_if(psms.begin(), psms.end(), decay);
+	else
+		it = remove_if(psms.begin(), psms.end(), decayTrain);
+
+	psms.resize(distance(psms.begin(), it));
+}
+
+// vector of indices and a vector of PSM
+void RTPredictor::writeDecayToFile(vector< pair <pair<PSMDescription, bool>, bool> > & psms)
+{
+	ofstream outDecay;
+	PSMDescription psm;
+
+	outDecay.open(decayingPeptidesFile.c_str());
+	outDecay << "# File generated by rtPredictor; all decaying peptides are listed below " << endl;
+	outDecay << "Peptide\tobserved_retention_time\tSet" << endl;
+
+	for (int i = 0; i < psms.size(); ++i)
+		if (psms[i].second)
+		{
+			psm = psms[i].first.first;
+			outDecay << psm.getPeptide() << "\t" << psm.getRetentionTime() << "\t";
+			if (psms[i].first.second)
+				outDecay << "Train\n";
+			else
+				outDecay << "Test\n";
+		}
+
+	outDecay.close();
+}
+
+
+/*
+void RTPredictor::run()
+{
+	int k1, k2;
+	vector<PSMDescription>::iterator it;
+
+
+	loadTrainFile();
+	removeRedundantPeptides(trainPsms);
+	loadTestFile();
+	removeRedundantPeptides(testPsms);
+	for(it = testPsms.begin(); it != testPsms.end(); ++it)
+		trainPsms.erase(remove(trainPsms.begin(), trainPsms.end(), (*it)), trainPsms.end());
+
+	k1 = pushBackDecayingPeptides(trainPsms);
+	cout << "\n\n TEST \n";
+	k2 = pushBackDecayingPeptides(testPsms);
+}
+*/
+
+/*
+void RTPredictor::run()
+{
+	vector<PSMDescription>::iterator it;
+	vector< pair<PSMDescription, bool> >  psmPairs;
+	vector <int> decays;
+
+	loadTrainFile();
+	removeRedundantPeptides(trainPsms);
+	loadTestFile();
+	removeRedundantPeptides(testPsms);
+	for(it = testPsms.begin(); it != testPsms.end(); ++it)
+		trainPsms.erase(remove(trainPsms.begin(), trainPsms.end(), (*it)), trainPsms.end());
+
+	addToPairVector(trainPsms, true, psmPairs);
+	addToPairVector(testPsms, false, psmPairs);
+	cout << "Vector includes " << psmPairs.size() << endl<< endl;
+	decays = findDecays(psmPairs);
+
+	writeDecayToFile(decays, psmPairs);
+}
+*/
+
 void RTPredictor::run()
 {
 	double trainingTime = 0.0, testingTime = 0.0;
-	// it will be used to check whether the test psms were loaded
-	bool loadedTestPsms = false;
+	bool loadedTest = false;
 
 	// redirect standard output to the log file (if such file was provided)
 	if (!logFile.empty())
@@ -487,17 +767,19 @@ void RTPredictor::run()
 		{
 			cout << "************* Load and Process training data ***************" << endl;
 			// read the input data
-			loadInputFile(trainFile, trainPsms, true);
+			loadTrainFile();
 
 			// remove redundant peptides
 			removeRedundantPeptides(trainPsms);
 
+			vector< pair<pair<PSMDescription, bool>,bool> >  psmPairs;
+			addToPairVector(trainPsms, true, psmPairs);
 			// this has to be included here so I can remove from the training set the peptides that appear in the test set as well
 			// this will not be done in case model selection is to be performed
 			if (!testFile.empty())
 			{
-				loadInputFile(testFile, testPsms, true);
-				loadedTestPsms = true;
+				loadTestFile();
+				loadedTest = true;
 
 				// remove redundant peptides if the user wanted so
 				if (removeRedundant)
@@ -508,12 +790,45 @@ void RTPredictor::run()
 				vector<PSMDescription>::iterator it;
 				int initialSize = trainPsms.size();
 				for(it = testPsms.begin(); it != testPsms.end(); ++it)
-				{
 					trainPsms.erase(remove(trainPsms.begin(), trainPsms.end(), (*it)), trainPsms.end());
-				}
-
 				cout << (initialSize - trainPsms.size())<< " peptides were removed." << endl;
-				cout << "Final training set includes " << trainPsms.size() << " peptides" << endl << endl;
+				cout << "Training set includes now " << trainPsms.size() << " peptides" << endl << endl;
+
+				// for detecting decaying peptides
+				if (testIncludesRT && (removeDecaying || (!decayingPeptidesFile.empty())))
+					addToPairVector(testPsms, false, psmPairs);
+			}
+
+			int sizeTrain = trainPsms.size();
+			cout << "Identify decay peptides " << endl;
+
+			// remove decaying peptides
+			removeDecays(psmPairs);
+
+			// divide in test and train
+			if (testPsms.empty() || !testIncludesRT || (!removeDecaying && decayingPeptidesFile.empty()))
+			{
+				trainPsms.resize(psmPairs.size());
+				transform(psmPairs.begin(), psmPairs.end(), trainPsms.begin(), getPSM);
+				cout << "Training set includes now " << trainPsms.size() << " peptides " <<  endl;
+			}
+			else
+			{
+				int sizeTest = testPsms.size();
+				vector< pair<pair<PSMDescription, bool>,bool> >::iterator it;
+				it = partition(psmPairs.begin(), psmPairs.end(), inTrain);
+				trainPsms.resize(distance(psmPairs.begin(), it));
+				testPsms.resize(distance(it, psmPairs.end()));
+				transform(psmPairs.begin(), it, trainPsms.begin(), getPSM);
+				transform(it, psmPairs.end(), testPsms.begin(), getPSM);
+				cout << "Training set includes now " << trainPsms.size() << " peptides " <<  endl;
+				if (!removeDecaying)
+				{
+					cout << "WARNING: Decay peptides will NOT be removed from the test set" << endl;
+					cout << "         Use option -y to remove decay peptides from the test set" << endl;
+				}
+				else
+					cout << "Test set includes " << testPsms.size() <<  " peptides" << endl;
 			}
 
 			// normalize the retention times; since sub and div are static members, their values will be set correctly
@@ -528,13 +843,10 @@ void RTPredictor::run()
 			model.calcRetentionFeatures(trainPsms);
 
 			// normalize all the features; note that the same scaling parameters will be used to normalize the test data if any
-	        //cerr << "FIXMET: Replace with new normalizer" << endl;
 	        vector<double*> tmp;
 	        vector<double*> tRetFeat = PSMDescription::getRetFeatures(trainPsms);
 	        theNormalizer->setSet(tmp, tRetFeat, (size_t)0, model.getNoFeaturesToCalc());
 	        theNormalizer->normalizeSet(tmp, tRetFeat);
-//			theNormalizer->setPsmSet(trainPsms, model.getNoFeaturesToCalc());
-//			theNormalizer->normalizeSet(trainPsms);
 
 			// build the model
 			cout << "************* Build the SVR model ***************" << endl;
@@ -558,13 +870,7 @@ void RTPredictor::run()
 			{
 				cout << "Loading model from file " << loadModelFile << endl;
 
-				// load the svm model
-				//theNormalizer->resizeVecs(RTModel::totalNumRTFeatures());
-				//theNormalizer->setNumberRetentionFeatures(RTModel::totalNumRTFeatures());
-				///////////////////////////////////////////////////////77
-
 				model.loadSVRModel(loadModelFile, theNormalizer);
-				//model.setNumRtFeat((*theNormalizer->getNumRetFeatures()));
 
 				cout << "Done" << endl;
 			}
@@ -583,7 +889,7 @@ void RTPredictor::run()
 		{
 			cout << "************* Load and Process training data ***************" << endl;
 			// load input data
-			loadInputFile(trainFile, trainPsms, true);
+			loadTrainFile();
 
 			// remove redundant peptides
 			removeRedundantPeptides(trainPsms);
@@ -623,14 +929,24 @@ void RTPredictor::run()
 
 		cout << endl;
 		// if the file was not already loaded
-		if (!loadedTestPsms)
+		if (!loadedTest)
 		{
 			// read the input file
-			loadInputFile(testFile, testPsms, true);
+			loadTestFile();
 
 			// remove redundant peptides if the user wanted so
 			if (removeRedundant)
 				removeRedundantPeptides(testPsms);
+
+			if (testIncludesRT && (removeDecaying || (!decayingPeptidesFile.empty())))
+			{
+				vector< pair<pair<PSMDescription, bool>,bool> >  psmPairs;
+				addToPairVector(testPsms, false, psmPairs);
+				removeDecays(psmPairs);
+				testPsms.resize(psmPairs.size());
+				transform(psmPairs.begin(), psmPairs.end(), testPsms.begin(), getPSM);
+			}
+
 		}
 
 		// normalize the retention times; the scaling parameters should have already been set when the model was generated or loaded
@@ -648,12 +964,13 @@ void RTPredictor::run()
  	    vector<double*> tRetFeat = PSMDescription::getRetFeatures(testPsms);
 		theNormalizer->normalizeSet(tmp, tRetFeat);
 
+		//printPsms(testPsms);
 		// predict retention time
 		//clock_t start = std::clock();
 		estimateRetentionTime(testPsms);
 		//unnormalizeRetentionTimes(testPsms);
 		// if the model was select automatically, then the prediction will be ax + b
-		if (linearAdjust)
+		if (autoModelSelection && linearAdjust)
 		{
 			double ms = computeMS(testPsms);
 			cout << "Adjusting linearly..." << endl;
@@ -749,189 +1066,13 @@ void RTPredictor::run()
 		}
 	}
 
+	// TO BE TAKEN OUT
+	// writeFeaturesFile("../../results/191009_301009/tests/new_train.features", testPsms);
+
 	if (!logFile.empty())
 		fclose(stdout);
 }
 
-
-/*
-void RTPredictor::run()
-{
-	double trainingTime = 0.0, testingTime = 0.0;
-	// it will be used to check whether the test psms were loaded
-	bool loadedTestPsms = false;
-
-	// redirect standard output to the log file (if such file was provided)
-	if (!logFile.empty())
-		freopen (logFile.c_str(), "w", stdout);
-
-	// print information about the current run
-	printRunInformation();
-
-	// get a normalizer
-	theNormalizer = Normalizer::getNormalizer();
-	theNormalizer->resizeVecs(RTModel::totalNumRTFeatures());
-
-	///////////////////////////////// GENERATE MODEL
-	// generate a model (either by training if train data given, either by loading a model)
-	// if training data is given, the model is generated by training a SVR
-	if (!trainFile.empty())
-	{
-		// read the input data
-		loadInputFile(trainFile, trainPsms, true);
-
-		// remove redundant peptides
-		removeRedundantPeptides(trainPsms);
-
-		// this has to be included here so I can remove from the training set the peptides that appear in the test set as well
-		if (!testFile.empty())
-		{
-			loadInputFile(testFile, testPsms, true);
-			loadedTestPsms = true;
-
-			// remove redundant peptides if the user wanted so
-			if (removeRedundant)
-				removeRedundantPeptides(testPsms);
-
-			// remove from the train set the peptides that are in the test
-			cout << "Removing from the train set the peptides featuring in both train and test sets..." << endl;
-			vector<PSMDescription>::iterator it;
-			int initialSize = trainPsms.size();
-			for(it = testPsms.begin(); it != testPsms.end(); ++it)
-			{
-				trainPsms.erase(remove(trainPsms.begin(), trainPsms.end(), (*it)), trainPsms.end());
-			}
-
-			cout << (initialSize - trainPsms.size())<< " peptides were removed." << endl;
-			cout << "Final training set includes " << trainPsms.size() << " peptides" << endl << endl;
-		}
-
-		// normalize the retention times; since sub and div are static members, their values will be set correctly
-		// for the test set
-		PSMDescription::setPSMSet(trainPsms);
-		PSMDescription::normalizeRetentionTimes(trainPsms);
-
-		// allocate memory for the feature table
-		initFeaturesTable(trainPsms.size(), trainPsms, trainRetentionFeatures);
-
-		// compute the retention features
-		model.calcRetentionFeatures(trainPsms);
-
-		// normalize all the features; note that the same scaling parameters will be used to normalize the test data if any
-		theNormalizer->setPsmSet(trainPsms, model.getNoFeaturesToCalc());
-		theNormalizer->normalizeSet(trainPsms);
-
-		// build the model
-		clock_t start = std::clock();
-		model.trainSVM(trainPsms);
-		trainingTime = ((std::clock() - start) / (double)CLOCKS_PER_SEC);
-		cout << "Training lasted: "  << trainingTime << " seconds " << endl << endl;
-	}
-
-	// load a model
-	if (!loadModelFile.empty())
-	{
-		// if a training file was also provided and a model was already generated, this step is skipped
-		if ((!trainFile.empty()) && (!model.isModelNull()))
-		{
-			cout << "WARNING: both options -m and -t generate a model.\nSince a model was already generated using data from "
-				 << trainFile << " option -m will be ignored" << endl << "Please use option -m alone to load an existent model\n";
-		}
-		else
-		{
-			cout << "Loading model from file " << loadModelFile << endl;
-
-			// load the svm model
-			//theNormalizer->resizeVecs(RTModel::totalNumRTFeatures());
-			//theNormalizer->setNumberRetentionFeatures(RTModel::totalNumRTFeatures());
-			///////////////////////////////////////////////////////77
-
-			model.loadSVRModel(loadModelFile, theNormalizer);
-			//model.setNumRtFeat((*theNormalizer->getNumRetFeatures()));
-
-			cout << "Done" << endl;
-		}
-	}
-
-	////////////////////////// TEST OR SAVE a model
-	// TEST if testing data provided
-	if(!testFile.empty())
-	{
-		// first check that a retention model was generated
-		if (model.isModelNull())
-		{
-			cout << "Error: No SVM model available " << endl;
-			cout << "Please train a model using the -t option or load an existing model from a file using the"
-					" -m option and try again" << endl;
-			cout << "Execution aborted" << endl;
-			exit(-1);
-		}
-
-		cout << endl;
-		// if the file was not already loaded
-		if (!loadedTestPsms)
-		{
-			// read the input file
-			loadInputFile(testFile, testPsms, true);
-
-			// remove redundant peptides if the user wanted so
-			if (removeRedundant)
-				removeRedundantPeptides(testPsms);
-		}
-
-		// normalize the retention times; the scaling parameters should have already been set when the model was generated or loaded
-		PSMDescription::normalizeRetentionTimes(testPsms);
-
-		// initialize the table storing the retention features
-		initFeaturesTable(testPsms.size(), testPsms, testRetentionFeatures);
-
-		// calculate the retention features
-		model.calcRetentionFeatures(testPsms);
-
-		// normalize the retention features; the scaling parameters should have already been set when generating the model
-		theNormalizer->normalizeSet(testPsms);
-
-		// predict retention time
-		clock_t start = std::clock();
-		estimateRetentionTime(testPsms);
-		testingTime = ((std::clock() - start) / (double)CLOCKS_PER_SEC);
-		cout << "Testing lasted: "  << testingTime << " seconds " << endl;
-
-		double correlation, ms;
-		// compute correlation and ms
-		correlation = computeCorrelation(testPsms);
-		ms = computeMS(testPsms);
-		cout << "--------------------------------------\n";
-		cout << "Pearson Correlation = " << correlation << endl;
-		cout << "MS = " << ms << endl;
-		cout << "--------------------------------------\n\n";
-
-		// write the output file
-		if (!outputFile.empty())
-			writeOutputFile(testPsms);
-	}
-
-	// save the model
-	if (!saveModelFile.empty())
-	{
-		if (model.isModelNull())
-		{
-			cout << "WARNING: No model was generated; please use options -m and -t to generate a model and then save it. \n"
-				<< "Option -s has no effect;" << endl;
-		}
-		else
-		{
-			// SAVE A MODEL in the given file
-			cout << "Saving SVR model to file " << saveModelFile << endl;
-			model.saveSVRModel(saveModelFile, theNormalizer);
-
-			cout << "Done." << endl;
-		}
-	}
-
-	if (!logFile.empty())
-		fclose(stdout);
-}*/
 
 // allocating memory for the feature table
 void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures,
@@ -1073,6 +1214,46 @@ void RTPredictor::writeOutputFile(vector<PSMDescription> & psms)
 		predictedRT = PSMDescription::unnormalize(it->predictedTime);
 		observedRT = PSMDescription::unnormalize(it->retentionTime);
 		out << (it->peptide) << "\t" << predictedRT << "\t" << observedRT << "\n";
+	}
+
+	out.close();
+}
+
+void RTPredictor::writeRetentionTimeFile(const char* fileName, vector<PSMDescription> & psms)
+{
+	ofstream out(fileName);
+	vector<PSMDescription>::iterator it;
+
+	for(it = psms.begin(); it != psms.end(); ++it)
+		out << (it->peptide) << "\t" << (it->retentionTime) << "\n";
+
+	out.close();
+
+}
+
+void RTPredictor::writeFeaturesFile(const char* file, vector<PSMDescription> & psms, bool unnormalized)
+{
+	ofstream out(file);
+	vector<PSMDescription>::iterator it;
+	double predictedRT, observedRT;
+
+	out << "# File generated by rtPredictor " << endl;
+	out << "# " << __DATE__  << " , " << __TIME__  << endl;
+	out << "Peptide\tpredicted_retention_time\tobserved_retention_time" << endl;
+
+	if (unnormalized)
+	{
+		vector<double *> tmp = PSMDescription::getRetFeatures(psms);
+		theNormalizer->unNormalizeSet(tmp);
+	}
+	for(it = psms.begin(); it != psms.end(); ++it)
+	{
+		predictedRT = PSMDescription::unnormalize(it->predictedTime);
+		observedRT = PSMDescription::unnormalize(it->retentionTime);
+		out << (it->peptide) << "\t" << predictedRT << "\t" << observedRT;
+		for(size_t i = 0; i < *(theNormalizer->getNumRetFeatures()); ++i)
+			out << "\t" << it->retentionFeatures[i];
+		out << "\n";
 	}
 
 	out.close();

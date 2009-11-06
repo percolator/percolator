@@ -18,6 +18,8 @@
 #include "Globals.h"
 #include "RTPredictor.h"
 
+#include <math.h>
+#include <cmath>
 
 int main(int argc, char **argv){
   RTPredictor *pCaller = new RTPredictor();

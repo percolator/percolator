@@ -26,6 +26,8 @@ public:
  //    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
 //    void normalizeSet(vector<PSMDescription> & psms);
     void normalizeSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV);
+    // not tested
+    void unNormalizeSet(vector<double *> & rtFeaturesV);
     void normalize(const double * in, double * out, size_t offset, size_t numFeatures);
     double normalize(const double in, size_t index) { return (in-sub[index])/div[index]; }
     virtual void unnormalizeweight(const vector<double>& in,vector<double>& out){;}

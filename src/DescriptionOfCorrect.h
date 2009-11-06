@@ -41,7 +41,7 @@ public:
   size_t getRTFeat() { return rtModel.getRTFeat();}
   static size_t numDOCFeatures() {return 4;}
   void copyDOCparameters(DescriptionOfCorrect& other) {
-//    avgPI = other.avgPI; avgDM = other.avgDM; rtW = other.rtW; numRTFeat = other.numRTFeat;
+    //avgPI = other.avgPI; avgDM = other.avgDM; rtW = other.rtW; numRTFeat = other.numRTFeat;
     avgPI = other.avgPI; avgDM = other.avgDM; rtModel.copyModel(other.getModel()); rtModel.setNumRtFeat(other.getRTFeat());
   }
   double estimateRT(double * features) {return rtModel.estimateRT(features);}

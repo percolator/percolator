@@ -56,6 +56,17 @@ void Normalizer::normalize(const double *in,double* out, size_t offset, size_t n
   }
 }
 
+void Normalizer::unNormalizeSet(vector<double *> & rtFeaturesV)
+{
+	double *features;
+
+	for(int i = 0; i < rtFeaturesV.size(); ++i)
+	{
+		features= rtFeaturesV[i];
+		for(int j = 0; j < numRetentionFeatures; ++j)
+			features[j] = (features[j] * div[j]) + sub[j];
+	}
+}
 // normalize a set of PSMs
 /*
 void Normalizer::normalizeSet(vector<PSMDescription> & psms)

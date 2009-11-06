@@ -46,8 +46,10 @@ class RTModel
 		static double* fillAAFeatures(const string& pep, double *feat);
 		static double* fillPTMFeatures(const string& pep, double *feat);
 		static double  bulkinessSum(const string& peptide);
-		/*static double  hydrophobicMoment(const string& peptide, const double angle);*/
+		static double* hydrophobicMoment(const float *index, const string& peptide, const double angle, const int window, double * features);
 		static int noConsecKRDENQ(const string& peptide);
+		// calculate diff in hydrophobicity between 2 peptides (Second one included in the 1st one)
+		static double calcDiffHydrophobicities(const string & parent, const string & child);
 		static double getNoPtms(string pep);
 		void copyModel(svm_model* from);
 		void trainRetention(vector<PSMDescription>& trainset);
@@ -65,9 +67,9 @@ class RTModel
         static size_t totalNumRTFeatures();
         // features for the three hydrophobicity indices, 3 features for ptms, peptide size, bulkiness,
         // no of consec KRDNEQ
-	    static size_t minimumNumRTFeatures() {return 3*14 + 3 + 1 + 1 + 1;}
-		size_t getRTFeat() {return numRTFeat;}
-		void setNumRtFeat(const size_t nRtFeat) {numRTFeat = nRtFeat;}
+	    static size_t minimumNumRTFeatures() {return 3*16 + 3 + 1 + 1 + 1;}
+	    size_t getRTFeat() {return noFeaturesToCalc;}
+		void setNumRtFeat(const size_t nRtFeat) {noFeaturesToCalc = nRtFeat;}
 		static void setDoKlammer(const bool switchKlammer);
 		svm_model* getModel() {return model;}
 		static string aaAlphabet,isoAlphabet;
@@ -87,7 +89,7 @@ class RTModel
 		// remove redundant peptides from the test set?
 		bool removeRedundant;
 		// number of features used to generate the model
-		size_t numRTFeat;
+		// size_t numRTFeat;
 		// number of features to be calculated (depends on the selected features)
 		size_t noFeaturesToCalc;
 		// svm model

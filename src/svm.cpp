@@ -2696,7 +2696,7 @@ const char *kernel_type_table[]=
 
 
 int svm_save_model2(const char *model_file_name, const struct svm_model *model, const double & normSub, const double & normDiv,
-					const double * sub, const double * div, const size_t *numRetFeatures, const int selected_features, const size_t numRTFeat )
+					const double * sub, const double * div, const size_t *numRetFeatures, const int selected_features)
 {
 	FILE *fp = fopen(model_file_name,"w");
 	if(fp==NULL)
@@ -2709,7 +2709,7 @@ int svm_save_model2(const char *model_file_name, const struct svm_model *model, 
 	// write the selected features
 	fprintf(fp,"SelectedFeat %d\n", selected_features);
 	// write the number of features used to generate the model
-	fprintf(fp,"NoModelFeat %d\n", numRTFeat);
+	//fprintf(fp,"NoModelFeat %d\n", numRTFeat);
 	// write the sub for the retention time
 	fprintf(fp,"sub %lf", normSub);
 	// write all the other subs
@@ -3054,7 +3054,7 @@ int svm_save_model(const char *model_file_name, const svm_model *model)
 // 3rd line: div normDiv otherDivs
 // rest is as the package saves the model
 svm_model *svm_load_model2(const char *model_file_name, double * retSub, double * retDiv,
-		double * sub, double * div, size_t * numRetFeatures, int * selected_features, size_t * numRTFeat)
+		double * sub, double * div, size_t * numRetFeatures, int * selected_features)
 {
 	FILE *fp = fopen(model_file_name,"r");
 	if(fp==NULL)
@@ -3076,9 +3076,9 @@ svm_model *svm_load_model2(const char *model_file_name, double * retSub, double 
 		fscanf(fp,"%d",selected_features);
 
 	// finally read the number fo features used to generate the model
-	fscanf(fp,"%80s",cmd);
+	/*fscanf(fp,"%80s",cmd);
 	if(strcmp(cmd,"NoModelFeat")==0)
-		fscanf(fp,"%d",numRTFeat);
+		fscanf(fp,"%d",numRTFeat);*/
 
 	// read the subs
 	fscanf(fp,"%80s",cmd);

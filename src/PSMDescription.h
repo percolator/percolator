@@ -42,6 +42,7 @@ public:
   // normalize retention times for a  set of peptides
   static void normalizeRetentionTimes(vector<PSMDescription> & psms);
   friend ostream& operator<<(ostream & out, PSMDescription & psm);
+  double getRetentionTime() {return retentionTime;}
 
   static double normDiv,normSub;
 
@@ -75,9 +76,9 @@ inline ostream& operator<< (ostream & out, PSMDescription & psm)
     // Point's members directly.
     out << "Peptide: " << psm.peptide << endl;
     out << "Retention time, predicted retention time: " << psm.retentionTime << ", " << psm.predictedTime;
-    out << "Retention features: ";
-    for (int i = 0; i < 52; ++i)
-    	out << psm.retentionFeatures[i] << "  ";
+    //out << "Retention features: ";
+    //for (int i = 0; i < 54; ++i)
+    //	out << psm.retentionFeatures[i] << "  ";
     out << endl;
     return out;
 }

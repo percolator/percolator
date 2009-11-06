@@ -94,13 +94,13 @@ void svm_cross_validation(const struct svm_problem *prob, const struct svm_param
 
 int svm_save_model(const char *model_file_name, const struct svm_model *model);
 int svm_save_model2(const char *model_file_name, const struct svm_model *model, const double & normSub, const double & normDiv,
-					const double *sub, const double *div, const size_t *numRetFeatures, const int selected_features, const size_t numRTFeat);
+					const double *sub, const double *div, const size_t *numRetFeatures, const int selected_features);
 /*int svm_save_model2(const char *model_file_name, const struct svm_model *model, const double & normSub, const double & normDiv,
 					const double * sub, const double * div, const size_t *numRetFeatures);*/
 
 struct svm_model *svm_load_model(const char *model_file_name);
 struct svm_model *svm_load_model2(const char *model_file_name, double *retSub, double *retDiv,
-		double *sub, double *div, size_t *numRetFeatures, int *selected_features, size_t *numRTFeat);
+		double *sub, double *div, size_t *numRetFeatures, int *selected_features);
 /* struct svm_model *svm_load_model2(const char *model_file_name, double * retSub, double * retDiv,
 		double * sub, double * div, size_t * numRetFeatures);*/
 
