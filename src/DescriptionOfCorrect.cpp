@@ -119,6 +119,10 @@ void DescriptionOfCorrect::trainCorrect() {
   sort(psms.begin(),psms.end(),less<PSMDescription>());
   psms.resize(distance(psms.begin(),unique(psms.begin(),psms.end())));
 
+  // Get rid of non enzymatic peptides
+
+  remove_if(psms.begin(),psms.end(),mem_fun_ref(&PSMDescription::isNotEnzymatic));
+
   // Get averages
   double piSum=0.0, dMSum=0.0;
   for(size_t ix=0; ix<psms.size(); ++ix) {
