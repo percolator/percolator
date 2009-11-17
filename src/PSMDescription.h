@@ -28,6 +28,7 @@ class PSMDescription
 public:
   PSMDescription();
   PSMDescription(const string peptide, const double retTime);
+  PSMDescription(double ort, double prt){ retentionTime = ort; predictedTime = prt;}
   virtual ~PSMDescription();
   void clear() {proteinIds.clear();}
   double * getFeatures() {return features;}
@@ -43,6 +44,7 @@ public:
   static void normalizeRetentionTimes(vector<PSMDescription> & psms);
   friend ostream& operator<<(ostream & out, PSMDescription & psm);
   double getRetentionTime() {return retentionTime;}
+  double getPredictedRetentionTime() { return predictedTime; };
 
   static double normDiv,normSub;
 

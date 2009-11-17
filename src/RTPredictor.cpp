@@ -78,10 +78,25 @@ PSMDescription getPSM(pair< pair<PSMDescription, bool>, bool > psm)
 	return psm.first.first;
 }
 
+bool comparePsmsRT (PSMDescription psm1, PSMDescription psm2)
+{
+	return psm1.getRetentionTime() < psm2.getRetentionTime();
+}
+
+bool comparePsmsPRT (pair<PSMDescription, int> psm1, pair<PSMDescription, int> psm2)
+{
+	double prt1, prt2;
+
+	prt1 = psm1.first.getPredictedRetentionTime();
+	prt2 = psm2.first.getPredictedRetentionTime();
+
+	return prt1 < prt2;
+}
+
 RTPredictor::RTPredictor() : trainFile(""), testFile(""),outputFile(""),
 			 saveModelFile(""), loadModelFile(""), trainRetentionFeatures(NULL), testRetentionFeatures(NULL), theNormalizer(NULL),
 			 logFile(""), decayingPeptidesFile(""), removeRedundant(false), autoModelSelection(false), a(1.0), b(0.0), linearAdjust(true), addLibModel(false),
-			 removeDecaying(false), testIncludesRT(true)
+			 removeDecaying(false), testIncludesRT(true), removeNTryptic(false)
 {
 	RTModel::setDoKlammer(false);
 	Normalizer::setType(Normalizer::UNI);
@@ -152,6 +167,7 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 	cmd.defineOption("y", "no_decaying_peptides", "Specifies that peptides included in larger ones with the same rt should be removed",
 			"", TRUE_IF_SET);
 	cmd.defineOption("i", "save-decay-peptides", "Specifies the file in which the decay peptides are stored", "filename");
+	cmd.defineOption("x", "remove-non-tryptic", "All non tryptic peptides should be removed from both train and test ", "", TRUE_IF_SET);
 
 
 	// parse command line
@@ -215,6 +231,8 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 	if (cmd.optionSet("i"))
 		decayingPeptidesFile = cmd.options["i"];
 
+	if (cmd.optionSet("x"))
+		removeNTryptic = true;
   	return true;
 }
 
@@ -466,7 +484,7 @@ void RTPredictor::loadBestModel()
 			estimateRetentionTime(trainPsms);
 
 			// compute correlation
-			corr = computeCorrelation(trainPsms);
+			corr = computeSpearmanCorrelation(trainPsms);
 
 			if (corr > bestCorr)
 			{
@@ -555,17 +573,45 @@ string RTPredictor::getMSPeptide(string & peptide)
 // check if a peptide is tryptic
 bool RTPredictor::isTryptic(string & pep)
 {
+	int l = pep.length();
 	// check the beginning only if the peptide is given in the format X.XXXX.X
-	if ((pep.find('.') != string::npos) && (pep[0] != 'R') && (pep[0] != 'K'))
-		return false;
+	if (pep.find('.') != string::npos)
+	{
+		if (((pep[0] != '-') && (pep[0] != 'R') && (pep[0] != 'K')) ||
+			((pep[l-1] != '-' && pep[l-3] != 'R' && pep[l-3] != 'K')) ||
+			(pep[2] == 'P') || (pep[l - 1] == 'P'))
+			return false;
 
-	string msPep = getMSPeptide(pep);
-	int pepLength = msPep.length();
+		return true;
+	}
+	else
+	{
+		if ((pep[l - 1] != 'R' && pep[l - 1] != 'K') || (pep[0] == 'P'))
+			return false;
+		return true;
+	}
+}
 
-	if (msPep[pepLength - 1] != 'R' && msPep[pepLength - 1] != 'K')
-		return false;
+bool isTrypt(PSMDescription psm)
+{
+	return RTPredictor::isTryptic(psm.getPeptide());
+}
 
-	return true;
+void RTPredictor::removeNonTryptic(vector<PSMDescription> & psms)
+{
+	vector<PSMDescription>::iterator it1, it2;
+	int s;
+
+	s = psms.size();
+
+	cout << "\nRemove non tryptic..." << endl;
+
+	it1 = partition(psms.begin(), psms.end(), isTrypt);
+	psms.resize(distance(psms.begin(), it1));
+
+	cout << (s - psms.size()) << " non tryptic "<< endl;
+	cout << "Set includes " << psms.size() << endl;
+
 }
 
 // check if a peptides is "aberrant" (it is included in another peptide, they have similar rt and either
@@ -697,7 +743,6 @@ void RTPredictor::writeDecayToFile(vector< pair <pair<PSMDescription, bool>, boo
 	outDecay.close();
 }
 
-
 /*
 void RTPredictor::run()
 {
@@ -716,9 +761,9 @@ void RTPredictor::run()
 	cout << "\n\n TEST \n";
 	k2 = pushBackDecayingPeptides(testPsms);
 }
-*/
 
-/*
+
+
 void RTPredictor::run()
 {
 	vector<PSMDescription>::iterator it;
@@ -739,7 +784,27 @@ void RTPredictor::run()
 
 	writeDecayToFile(decays, psmPairs);
 }
-*/
+
+void RTPredictor::run()
+{
+	vector<PSMDescription> psms;
+
+	psms.push_back(PSMDescription(50.0,1.80));
+	psms.push_back(PSMDescription(175.0, 1.20));
+	psms.push_back(PSMDescription(270.0, 2.0));
+
+	psms.push_back(PSMDescription(375.0, 1.0));
+	psms.push_back(PSMDescription(425.0, 1.0));
+	psms.push_back(PSMDescription(580.0, 1.20));
+
+	psms.push_back(PSMDescription(710.0, 0.80));
+	psms.push_back(PSMDescription(790.0, 0.60));
+	psms.push_back(PSMDescription(890.0, 1.0));
+	psms.push_back(PSMDescription(980.0, 0.85));
+
+	computeSpearmanCorrelation(psms);
+}*/
+
 
 void RTPredictor::run()
 {
@@ -829,6 +894,13 @@ void RTPredictor::run()
 				}
 				else
 					cout << "Test set includes " << testPsms.size() <<  " peptides" << endl;
+			}
+
+			if (removeNTryptic)
+			{
+				removeNonTryptic(trainPsms);
+				if (!testPsms.empty())
+					removeNonTryptic(testPsms);
 			}
 
 			// normalize the retention times; since sub and div are static members, their values will be set correctly
@@ -938,6 +1010,10 @@ void RTPredictor::run()
 			if (removeRedundant)
 				removeRedundantPeptides(testPsms);
 
+			// remove non tryptic
+			if (removeNTryptic)
+				removeNonTryptic(testPsms);
+
 			if (testIncludesRT && (removeDecaying || (!decayingPeptidesFile.empty())))
 			{
 				vector< pair<pair<PSMDescription, bool>,bool> >  psmPairs;
@@ -981,12 +1057,14 @@ void RTPredictor::run()
 		//testingTime = ((std::clock() - start) / (double)CLOCKS_PER_SEC);
 		//cout << "Testing lasted: "  << testingTime << " seconds " << endl << endl;
 
-		double correlation, ms;
+		double pcorrelation, scorrelation, ms;
 		// compute correlation and ms
-		correlation = computeCorrelation(testPsms);
+		pcorrelation = computePearsonCorrelation(testPsms);
+		scorrelation = computeSpearmanCorrelation(testPsms);
 		ms = computeMS(testPsms);
 		cout << "--------------------------------------\n";
-		cout << "Pearson Correlation = " << correlation << endl;
+		cout << "Pearson Correlation = " << pcorrelation << endl;
+		cout << "Spearman Correlation = " << scorrelation << endl;
 		cout << "MS = " << ms << endl;
 		cout << "--------------------------------------\n\n";
 
@@ -1073,7 +1151,6 @@ void RTPredictor::run()
 		fclose(stdout);
 }
 
-
 // allocating memory for the feature table
 void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures,
 									size_t noFeatures)
@@ -1154,7 +1231,7 @@ double RTPredictor::computeMS(vector<PSMDescription> & psms)
 }
 
 // calculate the correlation rho
-double RTPredictor::computeCorrelation(vector<PSMDescription> & psms)
+double RTPredictor::computePearsonCorrelation(vector<PSMDescription> & psms)
 {
 	double sumObserved = 0.0, sumPredicted = 0.0;
 	double meanObserved = 0.0, meanPredicted = 0.0;
@@ -1164,7 +1241,7 @@ double RTPredictor::computeCorrelation(vector<PSMDescription> & psms)
 	double corr;
 	int noPsms = psms.size();
 
-	cout << "Computing correlation..." << endl;
+	cout << "Computing Pearson correlation..." << endl;
 
 	// calculate means
 	for(int i = 0; i < noPsms; i++)
@@ -1193,12 +1270,68 @@ double RTPredictor::computeCorrelation(vector<PSMDescription> & psms)
 
 	corr = numerator / ((noPsms - 1) * stdevObserved * stdevPredicted);
 
-	cout << "r = " << corr << endl;
+	cout << "r_pearson = " << corr << endl;
 	cout << "Done." << endl << endl;
 
 	return corr;
 }
 
+// calculate the spearman correlation
+double RTPredictor::computeSpearmanCorrelation(vector<PSMDescription> & psms)
+{
+	double corr = 0.0, d = 0.0, avgRank, rankP, rankO;
+	int i, j;
+	int n = psms.size();
+	vector< pair<PSMDescription, double> > rankedPsms;
+
+	cout << "Computing Spearman correlation..." << endl;
+
+	// sort peptides according to observed retention time
+	sort(psms.begin(), psms.end(), comparePsmsRT);
+
+	// record ranks
+	i = 0;
+	while (i < n)
+	{
+		avgRank = j = i + 1;
+		while((j < n) && (psms[i].getRetentionTime() == psms[j].getRetentionTime()))
+			avgRank += ++j;
+
+		avgRank = avgRank / (double)(j - i);
+		for(int k = i; k < j; ++k)
+			rankedPsms.push_back(make_pair(psms[k], avgRank));
+
+		i = j;
+	}
+
+	// sort peptides according to predicted rt
+	sort(rankedPsms.begin(), rankedPsms.end(), comparePsmsPRT);
+
+	// calculate sum of squared differences btw ranks
+	i = 0;
+	while (i < n)
+	{
+		// calculate rank of predicted rt
+		rankP = j = i + 1;
+		while((j < n) && (rankedPsms[i].first.getPredictedRetentionTime() == rankedPsms[j].first.getPredictedRetentionTime()))
+		    rankP += ++j;
+
+		rankP = rankP / (double) (j - i);
+
+		// calculate and add squared difference
+		for(int k = i; k < j; ++k)
+			d += pow(rankedPsms[k].second - rankP, 2);
+
+		// increase i
+		i = j;
+	}
+
+	corr = 1.0 - ((6.0 * d) / (double)(n * (pow(n,2) - 1)));
+	cout <<  "r_spearman = " << corr << endl;
+	cout << "Done." << endl << endl;
+
+	return corr;
+}
 void RTPredictor::writeOutputFile(vector<PSMDescription> & psms)
 {
 	ofstream out(outputFile.c_str());

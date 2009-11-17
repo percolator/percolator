@@ -28,7 +28,8 @@ class RTPredictor
 						    size_t noFeatures = -1);
 	void estimateRetentionTime(vector<PSMDescription> & psms);
 	double computeMS(vector<PSMDescription> & psms);
-	double computeCorrelation(vector<PSMDescription> & psms);
+	double computePearsonCorrelation(vector<PSMDescription> & psms);
+	double computeSpearmanCorrelation(vector<PSMDescription> & psms);
 	void writeOutputFile(vector<PSMDescription> & psms);
 	void writeRetentionTimeFile(const char *, vector<PSMDescription> & psms);
 	void loadBestModel();
@@ -50,12 +51,15 @@ class RTPredictor
 	void writeDecayToFile(vector< pair <pair<PSMDescription, bool>, bool> > & psms);
 	// return indices of decay peptides
 	void removeDecays(vector< pair< pair<PSMDescription, bool>, bool> > & psms);
+	void removeNonTryptic(vector<PSMDescription> & psms);
 
 	protected:
 	    // the difference inhydrophobicity used to detect aberrant peptides
 	    static float diff_hydrophobicity;
 		// path to the library
 		static string libPath;
+		// true if the non tryptic peptides are to be removed
+		bool removeNTryptic;
 		// true if the test file includes the observed rt
 		bool testIncludesRT;
 		// linearly adjustment?
