@@ -14,10 +14,12 @@
    limitations under the License.
 
  *******************************************************************************/
+#include <cmath>
 #include <assert.h>
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "DescriptionOfCorrect.h"
+#include "Enzyme.h"
 
 PSMDescription::PSMDescription():  q(0.),pep(0.),features(NULL),retentionFeatures(NULL),
                                    retentionTime(0.),predictedTime(0.),massDiff(0.),pI(0.),
@@ -29,7 +31,7 @@ PSMDescription::~PSMDescription()
 {
 }
 
-double PSMDescription::normDiv=1.0;
+double PSMDescription::normDiv=-1.0;
 double PSMDescription::normSub=0.0;
 
 double PSMDescription::unnormalize(double normalizedTime) {
@@ -37,6 +39,9 @@ double PSMDescription::unnormalize(double normalizedTime) {
 }
 
 bool PSMDescription::isSubPeptide(string& child,string& parent) {
+  size_t len = parent.length();
+  if (!(Enzyme::isEnzymatic(parent[0],parent[2]) && Enzyme::isEnzymatic(parent[len-3],parent[len-1])))
+    return false;
   string strippedChild=child.substr(2,child.length()-4);
   size_t found = parent.find(strippedChild);
   if (found==string::npos)
@@ -46,7 +51,7 @@ bool PSMDescription::isSubPeptide(string& child,string& parent) {
 
 void PSMDescription::checkFragmentPeptides(vector<PSMDescription>::reverse_iterator other,vector<PSMDescription>::reverse_iterator theEnd) {
   for (;other != theEnd;++other) {
-    if (retentionTime-other->retentionTime>0.05) return;
+    if (abs(retentionTime-other->retentionTime)>0.02) return;
     if (isSubPeptide(peptide,other->getFullPeptide())) {
       if (parentFragment==NULL || parentFragment->getFullPeptide().length() < other->getFullPeptide().length()) {
         parentFragment=other->getAParent();
@@ -66,40 +71,49 @@ void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<int,doub
   vector<PSMDescription>::iterator psm = psms.begin();
   if (scan2rt.size() == 0) {
 	if (psm->retentionTime>0) {
-	  double minRT=1e10,maxRT=-1;
-      for(; psm != psms.end(); ++psm) {
-        minRT=min(minRT,psm->retentionTime);
-        maxRT=max(maxRT,psm->retentionTime);
-      }
-      psm = psms.begin();
-      normDiv=(maxRT-minRT)/2.;
-      normSub=minRT+normDiv;
-      if (normDiv==0.0) normDiv = 1.0;
+	  if (normDiv<0) {
+	    double minRT=1e10,maxRT=-1;
+        for(; psm != psms.end(); ++psm) {
+          minRT=min(minRT,psm->retentionTime);
+          maxRT=max(maxRT,psm->retentionTime);
+        }
+        psm = psms.begin();
+        normDiv=(maxRT-minRT)/2.;
+        normSub=minRT+normDiv;
+        if (normDiv==0.0) normDiv = 1.0;
+	  }
       for(; psm != psms.end(); ++psm) {
         psm->retentionTime = (psm->retentionTime - normSub)/normDiv;
+        if (psm==psms.begin()) continue;
         vector<PSMDescription>::reverse_iterator rpsm(psm);
         psm->checkFragmentPeptides(rpsm,psms.rend());
       }
     } else {
       if (VERB>1) cerr << "Approximating retention time with scan number." << endl;
-      double minRT = (double) psm->scan, diffRT = psms.rbegin()->scan - psm->scan;
-      normDiv=diffRT/2.;
-      normSub=minRT+normDiv;
-      if (normDiv==0.0) normDiv = 1.0;
+	  if (normDiv<0) {
+        double minRT = (double) psm->scan, diffRT = psms.rbegin()->scan - psm->scan;
+        normDiv=diffRT/2.;
+        normSub=minRT+normDiv;
+        if (normDiv==0.0) normDiv = 1.0;
+	  }
       for(; psm != psms.end(); ++psm) {
         psm->retentionTime = ((double) psm->scan - normSub)/normDiv;
+        if (psm==psms.begin()) continue;
         vector<PSMDescription>::reverse_iterator rpsm(psm);
         psm->checkFragmentPeptides(rpsm,psms.rend());
       }
 	}
   } else {
-    double minRT = scan2rt.begin()->second, diffRT = scan2rt.rbegin()->second - minRT;
-    normDiv=diffRT/2.;
-    normSub=minRT+normDiv;
-    if (normDiv==0.0) normDiv = 1.0;
+    if (normDiv<0) {
+      double minRT = scan2rt.begin()->second, diffRT = scan2rt.rbegin()->second - minRT;
+      normDiv=diffRT/2.;
+      normSub=minRT+normDiv;
+      if (normDiv==0.0) normDiv = 1.0;
+    }
     for(; psm != psms.end(); ++psm) {
       assert(scan2rt.count(psm->scan)>0);
       psm->retentionTime = (scan2rt[psm->scan] - normSub)/normDiv;
+      if (psm==psms.begin()) continue;
       vector<PSMDescription>::reverse_iterator rpsm(psm);
       psm->checkFragmentPeptides(rpsm,psms.rend());
     }

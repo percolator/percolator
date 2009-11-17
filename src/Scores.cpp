@@ -92,6 +92,7 @@ Scores::~Scores()
 }
 
 bool Scores::outxmlDecoys = false;
+uint32_t Scores::seed = 1;
 
 void Scores::merge(vector<Scores>& sv) {
   scores.clear();
@@ -158,6 +159,13 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
   factor=norm.getSize()/(double)shuff.getSize();
 }
 
+// Park–Miller random number generator
+// from wikipedia
+uint32_t Scores::lcg_rand()
+{
+  seed = ((uint64_t)seed * 279470273) % 4294967291;
+  return seed;
+}
 
 void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const unsigned int xval_fold) {
   train.resize(xval_fold);
@@ -170,7 +178,7 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
   }
 
   for(unsigned int j=0;j<scores.size();j++) {
-    ix = rand()%(scores.size()-j);
+    ix = lcg_rand()%(scores.size()-j);
     fold = 0;
     while(ix>remain[fold])
       ix-= remain[fold++];

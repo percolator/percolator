@@ -42,6 +42,7 @@ using namespace std;
 #include "Spectrum.h"
 #include "MSToolkitTypes.h"
 #include "MassHandler.h"
+#include "Enzyme.h"
 
 const unsigned int Caller::xval_fold = 3;
 
@@ -50,7 +51,7 @@ Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), weightFN(""),
   gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false), reportUniquePeptides(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
-  niter(10), seed(0)
+  niter(10)
 {
 }
 
@@ -275,13 +276,13 @@ the retention time and difference between observed and calculated mass","",TRUE_
   if (cmd.optionSet("O"))
     SanityCheck::setOverrule(true);
   if (cmd.optionSet("y"))
-    DataSet::setEnzyme(NO_ENZYME);
+    Enzyme::setEnzyme(Enzyme::NO_ENZYME);
   if (cmd.optionSet("R"))
     reportPerformanceEachIteration=true;
   if (cmd.optionSet("e"))
-    DataSet::setEnzyme(ELASTASE);
+    Enzyme::setEnzyme(Enzyme::ELASTASE);
   if (cmd.optionSet("c"))
-    DataSet::setEnzyme(CHYMOTRYPSIN);
+    Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
   if (cmd.optionSet("N"))
     DataSet::setPNGaseF(true);
   if (cmd.optionSet("a"))
@@ -305,7 +306,7 @@ the retention time and difference between observed and calculated mass","",TRUE_
     test_fdr = cmd.getDouble("t",0.0,1.0);
   }
   if (cmd.optionSet("S")) {
-    seed = cmd.getInt("S",0,20000);
+    Scores::setSeed(cmd.getInt("S",0,20000));
   }
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
@@ -581,7 +582,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
 int Caller::run() {
   time(&startTime);
   startClock=clock();
-  srand(seed);
   if(VERB>0)  cerr << extendedGreeter();
   //File reading
   bool doSingleFile = !decoyWC.empty();

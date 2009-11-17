@@ -26,6 +26,7 @@
 #include "DescriptionOfCorrect.h"
 #include "MassHandler.h"
 #include "PSMDescription.h"
+#include "Enzyme.h"
 
 static double REGRESSION_C = 5.0;
 
@@ -424,7 +425,7 @@ void DescriptionOfCorrect::fillFeaturesAllIndex(const string& pep, double *featu
     features = fillAAFeatures(peptide.substr(0,1), features);
     features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
     char Ct = peptide[peptide.size()-1];
-    *(features++) = DataSet::isEnz(Ct,'A');
+    *(features++) = Enzyme::isEnzymatic(Ct,'A');
     *(features++) = peptide.size();
     *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
 

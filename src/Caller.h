@@ -82,7 +82,6 @@ protected:
     double threshTestRatio;
     double trainRatio;
     unsigned int niter;
-    unsigned int seed;
     time_t startTime;
     clock_t startClock;
     const static unsigned int xval_fold;

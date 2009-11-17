@@ -28,8 +28,6 @@ class Scores;
 class Normalizer;
 class ResultHolder;
 
-typedef enum {NO_ENZYME,TRYPSIN,CHYMOTRYPSIN,ELASTASE} Enzyme;
-
 
 class DataSet
 {
@@ -45,7 +43,6 @@ class DataSet
     static void setQuadraticFeatures(bool on) { calcQuadraticFeatures=on; }
     static void setCalcDoc(bool on) { calcDOC=on; }
     static bool getCalcDoc() { return calcDOC; }
-    static void setEnzyme(Enzyme enz) { enzyme=enz; }
     static void setAAFreqencies(bool on) { calcAAFrequencies=on; }
     static void setPTMfeature(bool on) { calcPTMs=on; }
     static void setPNGaseF(bool on) { pngasef=on; }
@@ -72,14 +69,9 @@ protected:
     string modifyRec(const string record, int& row, const set<int>& theMs, Scores * pSc, bool dtaSelect);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
-    static unsigned int cntEnz(const string& peptide);
-    static double isTryptic(const char n,const char c);
-    static double isChymoTryptic(const char n,const char c);
-    static double isElastasic(const char n,const char c);
     double isPngasef(const string& peptide);
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;
-    static Enzyme enzyme;
     static bool calcPTMs;
     static bool calcDOC;
     static bool isotopeMass;

@@ -14,6 +14,8 @@ perc_files = \
   DataSet.h \
   DescriptionOfCorrect.cpp \
   DescriptionOfCorrect.h \
+  Enzyme.cpp \
+  Enzyme.h \
   FeatureNames.cpp \
   FeatureNames.h \
   MassHandler.cpp \

@@ -34,12 +34,12 @@ using namespace std;
 #include "Scores.h"
 #include "ResultHolder.h"
 #include "MassHandler.h"
+#include "Enzyme.h"
 #include "Globals.h"
 
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcAAFrequencies = false;
-Enzyme DataSet::enzyme = TRYPSIN;
 bool DataSet::calcPTMs = false;
 bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
@@ -168,54 +168,6 @@ void DataSet::print(Scores& test, vector<ResultHolder > &outList) {
   }
 }
 
-double DataSet::isTryptic(const char n,const char c) {
-  return (
-  (((n=='K' || n=='R') && c != 'P') ||
-  n=='-' || c=='-')
-  ?1.0:0.0);
-}
-
-// [FHWYLM].[^P]
-double DataSet::isChymoTryptic(const char n,const char c) {
-  return (
-  (((n=='F' || n=='H' || n=='W' || n=='Y' || n=='L' || n=='M') && c!= 'P') ||
-  n=='-' || c=='-')
-  ?1.0:0.0);
-}
-
-// [LVAG].[^P]
-double DataSet::isElastasic(const char n,const char c) {
-  return (
-  (((n=='L' || n=='V' || n=='A' || n=='G' ) && c!= 'P') ||
-  n=='-' || c=='-')
-  ?1.0:0.0);
-}
-
-double DataSet::isEnz(const char n,const char c) {
-    switch(enzyme) {
-      case TRYPSIN:
-        return isTryptic(n,c);
-      case CHYMOTRYPSIN:
-        return isChymoTryptic(n,c);
-      case ELASTASE:
-        return isElastasic(n,c);
-      case NO_ENZYME:
-      default:
-        return 0;
-    }
-}
-
-unsigned int DataSet::cntEnz(const string& peptide) {
-    unsigned int pos=2, cnt=0;
-    char n = peptide.at(pos++);
-    while (pos<peptide.size()-2) {
-      char c = peptide.at(pos++);
-      if (isEnz(n,c))
-        cnt++;
-      n=c;
-    }
-    return cnt;
-}
 
 double DataSet::isPngasef(const string& peptide) {
   size_t next_pos=0,pos;
@@ -544,10 +496,11 @@ void DataSet::readFeatures(const string &in,PSMDescription &psm,int match) {
         int nxtFeat=8;
         for(int c=getFeatureNames().getMinCharge(); c<=getFeatureNames().getMaxCharge(); c++)
           feat[nxtFeat++]=(charge==c?1.0:0.0);     // Charge
-        if (enzyme!=NO_ENZYME) {
-          feat[nxtFeat++]=isEnz(psm.peptide.at(0),psm.peptide.at(2));
-          feat[nxtFeat++]=isEnz(psm.peptide.at(psm.peptide.size()-3),psm.peptide.at(psm.peptide.size()-1));
-          feat[nxtFeat++]=(double)cntEnz(psm.peptide);
+        if (Enzyme::getEnzymeType()!=Enzyme::NO_ENZYME) {
+          feat[nxtFeat++]=Enzyme::isEnzymatic(psm.peptide.at(0),psm.peptide.at(2))?1.0:0.0;
+          feat[nxtFeat++]=Enzyme::isEnzymatic(psm.peptide.at(psm.peptide.size()-3),psm.peptide.at(psm.peptide.size()-1))?1.0:0.0;
+          string peptid = psm.peptide.substr(2,psm.peptide.length()-4);
+          feat[nxtFeat++]=(double)Enzyme::countEnzymatic(peptid);
         }
         feat[nxtFeat++]=log(max(1.0,nSM));
         feat[nxtFeat++]=dM;              // obs - calc mass
@@ -665,7 +618,7 @@ void DataSet::readSQT(const string fname,const string & wild, bool match) {
   sqtIn.clear();
   sqtIn.seekg(0,ios::beg);
 
-  getFeatureNames().setSQTFeatures(minCharge,maxCharge,enzyme!=NO_ENZYME,calcPTMs,pngasef,
+  getFeatureNames().setSQTFeatures(minCharge,maxCharge,Enzyme::getEnzymeType()!=Enzyme::NO_ENZYME,calcPTMs,pngasef,
                                    (calcAAFrequencies?aaAlphabet:""),calcQuadraticFeatures,calcDOC);
   initFeatureTables(FeatureNames::getNumFeatures(),n, calcDOC);
 
