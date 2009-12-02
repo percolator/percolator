@@ -1,3 +1,11 @@
+v1.14
+* Added a weed out redundant PSMs and just keep unique peptides option (-U) 
+* Trimming the logistic regression conversion chriteria. Also itroduced correct 
+  weighting during rougness penalty estimation. Both edits will have influence on 
+  the PEP calculations.
+* New sqt format reade for S lines, checking for 9 or 10 fields and if computername set or not 
+* Added code dealing with in-source CID fragmentation in RT prediction.
+
 v1.13
 * Filtering out redundant peptides before retention time regression training
 * Bugfix for retention time feature calculation

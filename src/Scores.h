@@ -20,6 +20,9 @@
 #ifndef uint32_t
 #define uint32_t unsigned long
 #endif
+#ifndef uint64_t
+#define uint64_t unsigned long long
+#endif
 #endif
 #include <vector>
 #include <map>
