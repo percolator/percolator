@@ -19,6 +19,7 @@ per_source_files = \
 	Caller.cpp \
 	DataSet.cpp \
 	DescriptionOfCorrect.cpp \
+	Enzyme.cpp \
 	FeatureNames.cpp \
 	Globals.cpp \
 	LogisticRegression.cpp \

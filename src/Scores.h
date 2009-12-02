@@ -34,6 +34,8 @@ public:
   ScoreHolder(const double &s,const int &l, PSMDescription * psm = NULL):score(s),pPSM(psm),label(l){;}
   virtual ~ScoreHolder() {;}
   pair<double,bool> toPair() {return pair<double,bool>(score,label>0);}
+  bool isTarget() {return label!=-1;}
+  bool isDecoy() {return label==-1;}
 };
 
 inline bool operator>(const ScoreHolder &one, const ScoreHolder &other);
@@ -47,7 +49,7 @@ class Scores
 public:
 	Scores();
 	~Scores();
-    void merge(vector<Scores>& sv);
+    void merge(vector<Scores>& sv, bool reportUniquePeptides=false);
 	double calcScore(const double * features) const;
     vector<ScoreHolder>::iterator begin() {return scores.begin();}
     vector<ScoreHolder>::iterator end() {return scores.end();}
@@ -78,7 +80,7 @@ public:
     inline static void setSeed(uint32_t s) {seed=s;}
     uint32_t lcg_rand();
     double pi0;
-    double factor;
+    double targetDecoySizeRatio;
 protected:
     vector<double> w_vec;
     int neg,pos,posNow;

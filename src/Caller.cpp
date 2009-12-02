@@ -531,7 +531,7 @@ void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal,shuffled);
   if (VERB>1) {
     cerr << "Train/test set contains " << fullset.posSize() << " positives and " << fullset.negSize() << " negatives, size ratio="
-         << fullset.factor << " and pi0=" << fullset.pi0 << endl;
+         << fullset.targetDecoySizeRatio << " and pi0=" << fullset.pi0 << endl;
   }
   //Normalize features
   set<DataSet *> all;
@@ -569,7 +569,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     if (selectedCpos > 0 && selectedCneg > 0) {
       xv_cfracs.push_back(selectedCneg/selectedCpos);
     } else  {
-      xv_cfracs.push_back(1.0*fullset.factor);xv_cfracs.push_back(3.0*fullset.factor);xv_cfracs.push_back(10.0*fullset.factor);
+      xv_cfracs.push_back(1.0*fullset.targetDecoySizeRatio);xv_cfracs.push_back(3.0*fullset.targetDecoySizeRatio);xv_cfracs.push_back(10.0*fullset.targetDecoySizeRatio);
       if(VERB>0) cerr << "selecting cneg by cross validation" << endl;
     }
     return pCheck->getInitDirection(xv_test,xv_train,pNorm,w,test_fdr);
@@ -616,16 +616,14 @@ int Caller::run() {
   if (!pCheck->validateDirection(w))
     fullset.calcScores(w[0]);
   if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;
-  fullset.merge(xv_test);
-  if (reportUniquePeptides) {
-	if(VERB>0) cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide." << endl;
-    fullset.weedOutRedundant();
-  }
+  if (reportUniquePeptides && VERB>0)
+	  cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide." << endl;
+  fullset.merge(xv_test,reportUniquePeptides);
 
-  fullset.estimatePi0();
   if(VERB>0) cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
   if(VERB>0) cerr << "Calibrating statistics - calculating q values" << endl;
   int foundPSMs = fullset.calcQ(test_fdr);
+  fullset.calcPep();
   if(VERB>0 && docFeatures) {
 	cerr << "For the cross validation sets the average deltaMass are ";
 	for(size_t ix=0;ix<xv_test.size();ix++)
@@ -637,7 +635,6 @@ int Caller::run() {
   }
   if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << (reportUniquePeptides?" peptides":" PSMs") << " over q=" << test_fdr << endl;
   if(VERB>0) cerr << "Calibrating statistics - calculating Posterior error probabilities (PEPs)" << endl;
-  fullset.calcPep();
 
   time_t end;
   time (&end);
