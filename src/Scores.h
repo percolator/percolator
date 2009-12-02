@@ -18,7 +18,7 @@
 #define SCORES_H_
 #ifdef WIN32
 #ifndef uint32_t
-#define unsigned long uint32_t
+#define uint32_t unsigned long
 #endif
 #endif
 #include <vector>
