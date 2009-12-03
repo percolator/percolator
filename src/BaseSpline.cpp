@@ -35,8 +35,8 @@ public:
   double operator() (double x) {return bs->predict(x);}
 };
 
-double BaseSpline::convergeEpsilon = 1e-2;
-double BaseSpline::stepEpsilon = 1e-5;
+double BaseSpline::convergeEpsilon = 1e-4;
+double BaseSpline::stepEpsilon = 1e-8;
 
 double BaseSpline::splineEval(double xx) {
   xx = transf(xx);
@@ -100,8 +100,11 @@ void BaseSpline::iterativeReweightedLeastSquares() {
     if(VERB>2) cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;
     assert(isfinite(res.second));
 
-    if ((cv-res.second)/cv<convergeEpsilon || alphaIter++>100)
+    if ((cv-res.second)/cv<convergeEpsilon || alphaIter++>100) {
+      // Reject our last attempt to set alpha,
+      // Return with the alpha used when setting g
       break;
+    }
     cv=res.second;alpha=res.first;
   } while (true);
   if(VERB>2) cerr << "Alpha selected to be " << alpha  << endl;
@@ -118,12 +121,12 @@ pair<double,double> BaseSpline::alphaLinearSearch(double min_p,double max_p, dou
     if(VERB>3) cerr << "New point with alpha=" << -log(p2) << ", giving cv=" << cv2 << " taken in consideration" << endl;
   } else {
 	max_p = p2;
-	p2=p1; oldCV=cv1; cv2=cv1;
+	p2=p1; oldCV=cv2; cv2=cv1;
     p1 = min_p + (1-tao)*(max_p - min_p);
     cv1 = crossValidation(-log(p1));
     if(VERB>3) cerr << "New point with alpha=" << -log(p1) << ", giving cv=" << cv1 << " taken in consideration" << endl;
   }
-  if ((oldCV-min(cv1,cv2))/oldCV<convergeEpsilon || (abs(p2-p1) < 1e-5))
+  if ((oldCV-min(cv1,cv2))/oldCV<1e-6 || (abs(p2-p1) < 1e-10))
     return (cv1>cv2?make_pair(-log(p2),cv2):make_pair(-log(p1),cv1));
   return alphaLinearSearch(min_p,max_p,p1,p2,cv1,cv2);
 }
@@ -211,8 +214,8 @@ double BaseSpline::crossValidation(double alpha) {
   }
 
 
-  // Calculate diagonal elemens a[i]=Aii p35 Green Silverman
-  // (expanding q acording to p12)
+  // Calculate diagonal elements a[i]=Aii p35 Green Silverman
+  // (expanding q according to p12)
 //  Vec a(n+2),c(n+1);
   vector<double> a(n),c(n-1);
   for (int ix=0;ix<n-1;ix++)
@@ -232,9 +235,11 @@ double BaseSpline::crossValidation(double alpha) {
       a[ix]+= b0[ix+1]*c[ix]*c[ix];
   }
 
+  // Calculating weighted cross validation as described in p
   double cv = 0.0;
   for (int ix=0;ix<n;ix++) {
-    double f =(z[ix]-gnew[ix])/(alpha*alpha*a[ix]*a[ix]);
+    double f =(z[ix]-gnew[ix])*w[ix]/(alpha*a[ix]);
+//    double f =(z[ix]-gnew[ix])/(alpha*alpha*a[ix]*a[ix]);
     cv += f*f*w[ix];
   }
 

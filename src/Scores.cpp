@@ -81,7 +81,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
 Scores::Scores()
 {
 	pi0=1.0;
-    factor=1;
+    targetDecoySizeRatio=1;
     neg=0;
     pos=0;
     posNow=0;
@@ -94,7 +94,7 @@ Scores::~Scores()
 bool Scores::outxmlDecoys = false;
 uint32_t Scores::seed = 1;
 
-void Scores::merge(vector<Scores>& sv) {
+void Scores::merge(vector<Scores>& sv, bool reportUniquePeptides) {
   scores.clear();
   for(vector<Scores>::iterator a = sv.begin();a!=sv.end();a++) {
 	sort(a->begin(),a->end(), greater<ScoreHolder>());
@@ -104,11 +104,13 @@ void Scores::merge(vector<Scores>& sv) {
   	a->normalizeScores();
     copy(a->begin(),a->end(),back_inserter(scores));
   }
+  if (reportUniquePeptides)
+	  weedOutRedundant();
+  neg=count_if(scores.begin(),scores.end(),mem_fun_ref(&ScoreHolder::isDecoy));
+  pos=count_if(scores.begin(),scores.end(),mem_fun_ref(&ScoreHolder::isTarget));
+  targetDecoySizeRatio=pos/max(1.0,(double)neg);
   sort(scores.begin(),scores.end(), greater<ScoreHolder>() );
-//  int invrank = scores.size();
-//  for(vector<ScoreHolder>::iterator s = scores.begin();s!=scores.end();++s) {
-//    s->score=invrank--;
-//  }
+  estimatePi0();
 }
 
 void Scores::printRetentionTime(ostream& outs, double fdr){
@@ -156,7 +158,7 @@ void Scores::fillFeatures(SetHandler& norm,SetHandler& shuff) {
     scores.push_back(ScoreHolder(.0,-1,pPSM));
   }
   pos = norm.getSize(); neg = shuff.getSize();
-  factor=norm.getSize()/(double)shuff.getSize();
+  targetDecoySizeRatio=norm.getSize()/(double)shuff.getSize();
 }
 
 // Park–Miller random number generator
@@ -198,21 +200,21 @@ void Scores::createXvalSets(vector<Scores>& train,vector<Scores>& test, const un
       if (it->label==1) train[i].pos++;
       else train[i].neg++;
     }
-    train[i].factor=train[i].pos/(double)train[i].neg;
+    train[i].targetDecoySizeRatio=train[i].pos/(double)train[i].neg;
     test[i].pos=0;test[i].neg=0;
   	for(it=test[i].begin();it!=test[i].end();it++) {
       if (it->label==1) test[i].pos++;
       else test[i].neg++;
   	}
-    test[i].factor=test[i].pos/(double)test[i].neg;
+    test[i].targetDecoySizeRatio=test[i].pos/(double)test[i].neg;
   }
 }
 
 void Scores::normalizeScores() {
-  // Normalize scores so that distance between 1st and 10th percentile of the null scores are 1
   vector<ScoreHolder>::iterator it = scores.begin();
   double breakQ=0.0;
   for(it=scores.begin();it!=scores.end();++it) {
+	// Score identifications based on their -log(PEP) or if PEP >=1 -log(1+q-q_at_pep1)
 	if (it->pPSM->pep<1.0) {
 	  it->score = -log(it->pPSM->pep);
 	  breakQ = it->pPSM->q;
@@ -255,7 +257,7 @@ int Scores::calcQ(double fdr) {
       positives++;
     if (it->label==-1) {
       nulls++;
-      efp=pi0*nulls*factor;
+      efp=pi0*nulls*targetDecoySizeRatio;
     }
     if (positives)
       q=efp/(double)positives;
@@ -306,6 +308,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,const double fdr,const doub
 }
 
 void Scores::weedOutRedundant(){
+  // Routine that sees to that only unique peptides are kept
   vector<ScoreHolder>::iterator it = scores.begin();
   set<string> uniquePeptides;
   pair<set<string>::iterator,bool> ret;
@@ -363,7 +366,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
             positives++;
           if (it->label==-1) {
             nulls++;
-            efp=pi0*nulls*factor;
+            efp=pi0*nulls*targetDecoySizeRatio;
           }
           if (positives)
             q=efp/(double)positives;
