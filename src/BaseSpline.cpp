@@ -35,7 +35,7 @@ public:
   double operator() (double x) {return bs->predict(x);}
 };
 
-double BaseSpline::convergeEpsilon = 1e-5;
+double BaseSpline::convergeEpsilon = 1e-4;
 double BaseSpline::stepEpsilon = 1e-8;
 
 double BaseSpline::splineEval(double xx) {
