@@ -42,6 +42,7 @@ using namespace std;
 #include "Spectrum.h"
 #include "MSToolkitTypes.h"
 #include "MassHandler.h"
+#include "Enzyme.h"
 
 const unsigned int Caller::xval_fold = 3;
 
@@ -50,7 +51,7 @@ Caller::Caller() : pNorm(NULL), pCheck(NULL), svmInput(NULL),
   decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), weightFN(""),
   gistInput(false), tabInput(false), dtaSelect(false), docFeatures(false), reportPerformanceEachIteration(false), reportUniquePeptides(false),
   test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0), threshTestRatio(0.3), trainRatio(0.6),
-  niter(10), seed(0), xv_type(EACH_STEP)
+  niter(10)
 {
 }
 
@@ -191,9 +192,6 @@ the retention time and difference between observed and calculated mass","",TRUE_
     "Replace tryptic features with elastase features.","",TRUE_IF_SET);
   cmd.defineOption("N","PNGaseF",
     "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])","",TRUE_IF_SET);
-  cmd.defineOption("x","whole-xval",
-    "Select hyper parameter cross validation to be performed on whole iterating procedure, rather than on each iteration step."
-    ,"",TRUE_IF_SET);
   cmd.defineOption("S","seed",
     "Setting seed of the random number generator. Default value is 0"
     ,"value");
@@ -278,21 +276,19 @@ the retention time and difference between observed and calculated mass","",TRUE_
   if (cmd.optionSet("O"))
     SanityCheck::setOverrule(true);
   if (cmd.optionSet("y"))
-    DataSet::setEnzyme(NO_ENZYME);
+    Enzyme::setEnzyme(Enzyme::NO_ENZYME);
   if (cmd.optionSet("R"))
     reportPerformanceEachIteration=true;
   if (cmd.optionSet("e"))
-    DataSet::setEnzyme(ELASTASE);
+    Enzyme::setEnzyme(Enzyme::ELASTASE);
   if (cmd.optionSet("c"))
-    DataSet::setEnzyme(CHYMOTRYPSIN);
+    Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
   if (cmd.optionSet("N"))
     DataSet::setPNGaseF(true);
   if (cmd.optionSet("a"))
     DataSet::setAAFreqencies(true);
   if (cmd.optionSet("b"))
     DataSet::setPTMfeature(true);
-  if (cmd.optionSet("x"))
-    xv_type=WHOLE;
   if (cmd.optionSet("i")) {
     niter = cmd.getInt("i",0,100000000);
   }
@@ -310,7 +306,7 @@ the retention time and difference between observed and calculated mass","",TRUE_
     test_fdr = cmd.getDouble("t",0.0,1.0);
   }
   if (cmd.optionSet("S")) {
-    seed = cmd.getInt("S",0,20000);
+    Scores::setSeed(cmd.getInt("S",0,20000));
   }
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
@@ -426,7 +422,7 @@ void Caller::readFiles(bool &doSingleFile) {
     readRetentionTime(spectrumFile);
 }
 
-int Caller::xv_step(vector<vector<double> >& w) {
+int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
   // Setup
   struct options *Options = new options;
   Options->lambda=1.0;
@@ -449,7 +445,7 @@ int Caller::xv_step(vector<vector<double> >& w) {
     if(VERB>2) cerr << "cross calidation - fold " << set+1 << " out of " << xval_fold << endl;
     vector<double> ww = w[set];
     xv_train[set].calcScores(ww,selectionfdr);
-    if (docFeatures)
+    if (docFeatures && updateDOC)
       xv_train[set].recalculateDescriptionOfGood(selectionfdr);
     xv_train[set].generateNegativeTrainingSet(*svmInput,1.0);
     xv_train[set].generatePositiveTrainingSet(*svmInput,selectionfdr,1.0);
@@ -501,63 +497,14 @@ int Caller::xv_step(vector<vector<double> >& w) {
   return estTP/(xval_fold-1);
 }
 
-
-
-void Caller::step(Scores& train,vector<double>& w, double Cpos, double Cneg, double fdr) {
-    train.calcScores(w,test_fdr);
-    if (docFeatures)
-      train.recalculateDescriptionOfGood(fdr);
-    train.generateNegativeTrainingSet(*svmInput,Cneg);
-    train.generatePositiveTrainingSet(*svmInput,fdr,Cpos);
-//    int nex=train.getTrainingSetSize();
-  	if (VERB>1) cerr << "Calling with " << svmInput->positives << " positives and " << svmInput->negatives << " negatives\n";
-  	// Setup options
-    struct options *Options = new options;
-    Options->lambda=1.0;
-    Options->lambda_u=1.0;
-    Options->epsilon=EPSILON;
-    Options->cgitermax=CGITERMAX;
-    Options->mfnitermax=MFNITERMAX;
-
-    struct vector_double *Weights = new vector_double;
-    Weights->d = FeatureNames::getNumFeatures()+1;
-    Weights->vec = new double[Weights->d];
-//    for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=w[ix];
-    for(int ix=0;ix<Weights->d;ix++) Weights->vec[ix]=0;
-
-    struct vector_double *Outputs = new vector_double;
-    Outputs->vec = new double[svmInput->positives+svmInput->negatives];
-    Outputs->d = svmInput->positives+svmInput->negatives;
-    for(int ix=0;ix<Outputs->d;ix++) Outputs->vec[ix]=0;
-
-//    norm->normalizeweight(w,Weights->vec);
-//    Weights->vec[FeatureNames::getNumFeatures()] = 0;
-    L2_SVM_MFN(*svmInput,Options,Weights,Outputs);
-    for(int i= FeatureNames::getNumFeatures()+1;i--;)
-      w[i]=Weights->vec[i];
-  	delete [] Weights->vec;
-  	delete Weights;
-  	delete [] Outputs->vec;
-  	delete Outputs;
-    delete Options;
-}
-
-void Caller::trainEm(vector<vector<double> >& w) {
+void Caller::train(vector<vector<double> >& w) {
   // iterate
   for(unsigned int i=0;i<niter;i++) {
     if(VERB>1) cerr << "Iteration " << i+1 << " : ";
-    if (xv_type!=EACH_STEP) {
-      step(fullset,w[0],selectedCpos,selectedCneg,selectionfdr);
-      if (reportPerformanceEachIteration) {
-        cerr << "After the iteration step, " << fullset.calcScores(w[0],selectionfdr) << " positives with q<"
-             << selectionfdr << " were found when measuring on test set" << endl;
-      }
-    } else {
-      int tar = xv_step(w);
-      if (VERB>1) {
-        cerr << "After the iteration step, " << tar << " positives with q<"
+    int tar = xv_step(w,true);
+    if (VERB>1) {
+        cerr << "After the iteration step, " << tar << " target PSMs with q<"
              << selectionfdr << " were estimated by cross validation" << endl;
-      }
     }
 
     if(VERB>2) {cerr<<"Obtained weights" << endl; for (size_t set=0;set<xval_fold;++set) printWeights(cerr,w[set]);}
@@ -565,64 +512,20 @@ void Caller::trainEm(vector<vector<double> >& w) {
   if(VERB==2 ) {
     cerr << "Obtained weights (only showing weights of first cross validation set)" << endl; printWeights(cerr,w[0]);
   }
-  if (xv_type==EACH_STEP) {
-    int tar = 0;
-    for (size_t set=0;set<xval_fold;++set) {
-      if (docFeatures) {
-         xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
-         xv_test[set].setDOCFeatures();
-      }
-      tar += xv_test[set].calcScores(w[set],test_fdr);
+  int tar = 0;
+  for (size_t set=0;set<xval_fold;++set) {
+    if (docFeatures) {
+       xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
+       xv_test[set].setDOCFeatures();
     }
-    if(VERB>0) {
-      cerr << "After all training done, " << tar << " positives with q<"
-             << test_fdr << " were found when measuring on the test set" << endl;
-    }
+    tar += xv_test[set].calcScores(w[set],test_fdr);
+  }
+  if(VERB>0) {
+    cerr << "After all training done, " << tar << " target PSMs with q<"
+         << test_fdr << " were found when measuring on the test set" << endl;
   }
 }
 
-void Caller::xvalidate(vector<vector<double> >& w) {
-  Globals::getInstance()->decVerbose();
-  int bestTP = 0;
-  vector<vector<double> > ww = w,www(FeatureNames::getNumFeatures()+1);
-
-  vector<double>::iterator cpos,cfrac;
-  for(cpos=xv_cposs.begin();cpos!=xv_cposs.end();cpos++) {
-    for(cfrac=xv_cfracs.begin();cfrac!=xv_cfracs.end();cfrac++) {
-      if(VERB>1) cerr << "-cross validation with cpos=" << *cpos <<
-        ", cfrac=" << *cfrac << endl;
-      int tp=0;
-      for (unsigned int i=0;i<xval_fold;i++) {
-        if(VERB>2) cerr << "cross validation - fold " << i+1 << " out of " << xval_fold << endl;
-        ww = w;
-        for(unsigned int k=0;k<niter;k++) {
-          step(xv_train[i],ww[i],*cpos,(*cpos)*(*cfrac),selectionfdr);
-        }
-        tp += xv_test[i].calcScores(ww[i],test_fdr);
-        if(VERB>2) cerr << "Cumulative # of positives " << tp << endl;
-      }
-      if(VERB>1) cerr << "- cross validation found " << tp << " positives over " << test_fdr*100 << "% FDR level" << endl;
-      if (tp>bestTP) {
-        if(VERB>1) cerr << "Better than previous result, store this" << endl;
-        bestTP = tp;
-        selectedCpos = *cpos;
-        selectedCneg = (*cpos)*(*cfrac);
-        www = ww;
-      }
-    }
-  }
-  Globals::getInstance()->incVerbose();
-  if(VERB>0) cerr << "cross validation found " << bestTP << " positives with q<" << test_fdr << " for hyperparameters Cpos=" << selectedCpos
-                  << ", Cneg=" << selectedCneg << ", fdr=" << selectionfdr << endl << "Now train on all data" << endl;
-  trainEm(www);
-}
-
-void Caller::train(vector<vector<double> >& w) {
-  if (xv_type==WHOLE)
-    xvalidate(w);
-  else
-    trainEm(w);
-}
 
 void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal,shuffled);
@@ -686,7 +589,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     }
     return pCheck->getInitDirection(xv_test,xv_train,pNorm,w,test_fdr);
    } else {
-    xv_type = NO_XV;
     vector<Scores> myset(1,fullset);
     return pCheck->getInitDirection(myset,myset,pNorm,w,test_fdr);
   }
@@ -695,7 +597,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
 int Caller::run() {
   time(&startTime);
   startClock=clock();
-  srand(seed);
   if(VERB>0)  cerr << extendedGreeter();
   //File reading
   bool doSingleFile = !decoyWC.empty();
@@ -729,20 +630,19 @@ int Caller::run() {
 
   if (!pCheck->validateDirection(w))
     fullset.calcScores(w[0]);
-  if (xv_type==EACH_STEP) {
-  	if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;
-    fullset.merge(xv_test);
-  }
+  if(VERB>0) cerr << "Merging results from " << xv_test.size() << " datasets" << endl;
+  fullset.merge(xv_test);
   if (reportUniquePeptides) {
+	if(VERB>0) cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide." << endl;
     fullset.weedOutRedundant();
   }
 
-  if(VERB>0) cerr << "Calibrating statistics - estimating pi_0" << endl;
   fullset.estimatePi0();
+  if(VERB>0) cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
   if(VERB>0) cerr << "Calibrating statistics - calculating q values" << endl;
   int foundPSMs = fullset.calcQ(test_fdr);
   if(VERB>0 && docFeatures) {
-	cerr << "For the cross vardation sets the average deltaMass are ";
+	cerr << "For the cross validation sets the average deltaMass are ";
 	for(size_t ix=0;ix<xv_test.size();ix++)
       cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
 	cerr << "and average pI are ";
@@ -750,7 +650,7 @@ int Caller::run() {
 	    cerr << xv_test[ix].getDOC().getAvgPI() << " ";
 	cerr << endl;
   }
-  if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << " over q=" << test_fdr << endl;
+  if(VERB>0) cerr << "New pi_0 estimate on merged list gives " << foundPSMs << (reportUniquePeptides?" peptides":" PSMs") << " over q=" << test_fdr << endl;
   if(VERB>0) cerr << "Calibrating statistics - calculating Posterior error probabilities (PEPs)" << endl;
   fullset.calcPep();
 

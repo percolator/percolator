@@ -24,17 +24,13 @@
 class Caller
 {
 public:
-    enum XvType {NO_XV=0, EACH_STEP, WHOLE};
     enum SetHandlerType {NORMAL=0,SHUFFLED,SHUFFLED_TEST,SHUFFLED_THRESHOLD};
 public:
 	Caller();
 	virtual ~Caller();
     void readRetentionTime(string filename);
-    void step(Scores& train, vector<double>& w, double Cpos, double Cneg, double fdr);
     void train(vector<vector<double> >& w);
-    void trainEm(vector<vector<double> >& w);
-    int xv_step(vector<vector<double> >& w);
-    void xvalidate(vector<vector<double> >& w);
+    int xv_step(vector<vector<double> >& w, bool updateDOC = false);
 	static string greeter();
 	string extendedGreeter();
     bool parseOptions(int argc, char **argv);
@@ -86,11 +82,9 @@ protected:
     double threshTestRatio;
     double trainRatio;
     unsigned int niter;
-    unsigned int seed;
     time_t startTime;
     clock_t startClock;
     const static unsigned int xval_fold;
-    XvType xv_type;
     vector<Scores> xv_train,xv_test;
     vector<double> xv_cposs,xv_cfracs;
     SetHandler normal,shuffled; //,shuffledTest,shuffledThreshold;

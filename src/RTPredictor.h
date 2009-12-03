@@ -13,45 +13,45 @@
 class RTPredictor
 {
 	public:
-	RTPredictor();
-	~RTPredictor();
-	string greeter();
-	bool parseOptions(int argc, char **argv);
-	void loadTrainFile();
-	void loadTestFile();
-	void printPsms(vector<PSMDescription> & psms);
-	void printRunInformation();
-	void removeRedundantPeptides(vector<PSMDescription> & psms);
-	void removeAberrantPeptides(vector<PSMDescription> & psms);
-	void run();
-	void initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures,
-						    size_t noFeatures = -1);
-	void estimateRetentionTime(vector<PSMDescription> & psms);
-	double computeMS(vector<PSMDescription> & psms);
-	double computePearsonCorrelation(vector<PSMDescription> & psms);
-	double computeSpearmanCorrelation(vector<PSMDescription> & psms);
-	void writeOutputFile(vector<PSMDescription> & psms);
-	void writeRetentionTimeFile(const char *, vector<PSMDescription> & psms);
-	void loadBestModel();
-	static vector<string> getModelFiles();
-	// find the a and b that fit best the observed retention time using the least squared method
-	static void findLeastSquaresSolution(const vector<PSMDescription> & psms, double & a, double & b);
-	static void unNormalizeRetentionTimes(vector<PSMDescription> & psms);
-	void writeFeaturesFile(const char* file, vector<PSMDescription> & psms, bool unnormalized);
-	// check is child is a peptide included in parent and with the same rt
-	static bool isChildOf(PSMDescription & child, PSMDescription & parent);
-	// check if psm has a parent peptide in the training or test set
-	bool hasParent(PSMDescription  psm);
-	// push the decaying peptides at the end of the vector; it returns the index of the first decaying peptide
-	int pushBackDecayingPeptides(vector <PSMDescription> & psms);
-	static bool isTryptic(string & pep);
-	static string getMSPeptide(string & peptide);
-	// write decay peptides starting at index index to the outDecay
-	void addToPairVector(vector<PSMDescription> psms, bool value, vector< pair<pair<PSMDescription, bool>,bool> > & psmPairs);
-	void writeDecayToFile(vector< pair <pair<PSMDescription, bool>, bool> > & psms);
-	// return indices of decay peptides
-	void removeDecays(vector< pair< pair<PSMDescription, bool>, bool> > & psms);
-	void removeNonTryptic(vector<PSMDescription> & psms);
+		RTPredictor();
+		~RTPredictor();
+		string greeter();
+		bool parseOptions(int argc, char **argv);
+		void loadTrainFile();
+		void loadTestFile();
+		void printPsms(vector<PSMDescription> & psms);
+		void printRunInformation();
+		void removeRedundantPeptides(vector<PSMDescription> & psms);
+		void removeAberrantPeptides(vector<PSMDescription> & psms);
+		void run();
+		void initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures,
+								size_t noFeatures = -1);
+		void estimateRetentionTime(vector<PSMDescription> & psms);
+		double computeMS(vector<PSMDescription> & psms);
+		double computePearsonCorrelation(vector<PSMDescription> & psms);
+		double computeSpearmanCorrelation(vector<PSMDescription> & psms);
+		void writeOutputFile(vector<PSMDescription> & psms);
+		void writeRetentionTimeFile(const char *, vector<PSMDescription> & psms);
+		void loadBestModel();
+		static vector<string> getModelFiles();
+		// find the a and b that fit best the observed retention time using the least squared method
+		static void findLeastSquaresSolution(const vector<PSMDescription> & psms, double & a, double & b);
+		static void unNormalizeRetentionTimes(vector<PSMDescription> & psms);
+		void writeFeaturesFile(const char* file, vector<PSMDescription> & psms, bool unnormalized);
+		// check is child is a peptide included in parent and with the same rt
+		static bool isChildOf(PSMDescription & child, PSMDescription & parent);
+		// check if psm has a parent peptide in the training or test set
+		bool hasParent(PSMDescription  psm);
+		// push the decaying peptides at the end of the vector; it returns the index of the first decaying peptide
+		int pushBackDecayingPeptides(vector <PSMDescription> & psms);
+		static bool isTryptic(string & pep);
+		static string getMSPeptide(string & peptide);
+		// write decay peptides starting at index index to the outDecay
+		void addToPairVector(vector<PSMDescription> psms, bool value, vector< pair<pair<PSMDescription, bool>,bool> > & psmPairs);
+		void writeDecayToFile(vector< pair <pair<PSMDescription, bool>, bool> > & psms);
+		// return indices of decay peptides
+		void removeDecays(vector< pair< pair<PSMDescription, bool>, bool> > & psms);
+		void removeNonTryptic(vector<PSMDescription> & psms);
 
 	protected:
 	    // the difference inhydrophobicity used to detect aberrant peptides

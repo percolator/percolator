@@ -36,6 +36,8 @@ public:
   void registerCorrect(PSMDescription& psm) {psms.push_back(psm);}
   void trainCorrect();
   void setFeatures(PSMDescription& psm);
+  //static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + 20);}
+  //static size_t minimumNumRTFeatures() {return 3*10+1+3;}
   void print_10features();
   svm_model* getModel() {return rtModel.getModel();}
   size_t getRTFeat() { return rtModel.getRTFeat();}

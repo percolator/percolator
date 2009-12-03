@@ -16,6 +16,8 @@ perc_files = \
   RTModel.cpp \
   DescriptionOfCorrect.cpp \
   DescriptionOfCorrect.h \
+  Enzyme.cpp \
+  Enzyme.h \
   FeatureNames.cpp \
   FeatureNames.h \
   MassHandler.cpp \
@@ -168,7 +170,11 @@ libRtPredictor_la_SOURCES = \
   svm.cpp \
   FeatureNames.h \
   FeatureNames.cpp \
+  Enzyme.h \
+  Enzyme.cpp \
   Transform.h \
+  LTSRegression.h \
+  LTSRegression.cpp \
   Normalizer.h \
   Normalizer.cpp 
   

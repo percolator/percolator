@@ -22,6 +22,7 @@
 #include <string>
 #include <iostream>
 using namespace std;
+#include "Enzyme.h"
 
 class PSMDescription
 {
@@ -35,7 +36,14 @@ public:
   double * getRetentionFeatures() {return retentionFeatures;}
   static vector<double *> getRetFeatures(vector<PSMDescription> & psms);
   string& getPeptide() {return peptide;}
+  string& getFullPeptide() {return getAParent()->peptide;}
+  PSMDescription* getAParent() {if (parentFragment) return parentFragment->getAParent(); else return this;}
   double getUnnormalizedRetentionTime() { return unnormalize(retentionTime);}
+  static bool isSubPeptide(string& child,string& parent);
+  bool isNotEnzymatic() {return !(Enzyme::isEnzymatic(peptide[0],peptide[2]) &&
+		                      Enzyme::isEnzymatic(peptide[peptide.size()-3],peptide[peptide.size()-1]) &&
+		                      Enzyme::countEnzymatic(peptide)==0);}
+  void checkFragmentPeptides(vector<PSMDescription>::reverse_iterator  other,vector<PSMDescription>::reverse_iterator  theEnd);
   static void setRetentionTime(vector<PSMDescription>& psms, map<int,double>& scan2rt);
   static double unnormalize(double normalizedTime);
   // set the norm and div for a set of peptides
@@ -56,6 +64,7 @@ public:
   string id;
   string peptide;
   set<string> proteinIds;
+  PSMDescription *parentFragment;
 };
 
 inline bool const operator<(PSMDescription const& one, PSMDescription const& other){

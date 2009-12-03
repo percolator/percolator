@@ -83,7 +83,7 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   int overFDR=0;
   for (size_t set = 0; set<w.size();++set)
     overFDR += (*pTestset)[set].calcScores(w[set],fdr);
-  if (VERB>0) cerr << "Found " << overFDR << " peptides scoring over " << fdr*100 << "% FDR level on testset" << endl;
+  if (VERB>0) cerr << "Found " << overFDR << " target PSMs scoring over " << fdr*100 << "% FDR level on testset" << endl;
   if (overFDR<=0) {
      cerr << "No target score better than best decoy" << endl;
      resetDirection(w);

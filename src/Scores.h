@@ -75,6 +75,8 @@ public:
     inline unsigned int negSize() {return (neg);}
     inline static bool isOutXmlDecoys() {return outxmlDecoys;}
     inline static void setOutXmlDecoys(bool decoys_out) {outxmlDecoys=decoys_out;}
+    inline static void setSeed(uint32_t s) {seed=s;}
+    uint32_t lcg_rand();
     double pi0;
     double factor;
 protected:
@@ -82,9 +84,10 @@ protected:
     int neg,pos,posNow;
     double q1,q3;
     vector<ScoreHolder> scores;
-    map<const double *,ScoreHolder *> scoreMap;
+    std::map<const double *,ScoreHolder *> scoreMap;
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;
+    static uint32_t seed;
 };
 
 #endif /*SCORES_H_*/

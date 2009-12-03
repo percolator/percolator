@@ -29,6 +29,7 @@
 #include "Globals.h"
 #include "RTPredictor.h"
 #include "PSMDescription.h"
+#include "LTSRegression.h"
 #include <sstream>
 #include <ctime>
 
@@ -743,6 +744,26 @@ void RTPredictor::writeDecayToFile(vector< pair <pair<PSMDescription, bool>, boo
 	outDecay.close();
 }
 
+void RTPredictor::run()
+{
+	LTSRegression regressor;
+	double x[] = {1,2,3,4.5,5,6,20,8,9,10,11};
+	double y[] = {1.5,2.9,3,4,5,6,7,8,8,7,11};
+	//double x[] = {1,2,3,4,5,6,7,8,9,10,11};
+	//double y[] = {1,2,3,4,5,6,7,8,9,10,11};
+
+	vector<double> xx, yy;
+
+	xx.assign(x, x + 11);
+	yy.assign(y, y + 11);
+
+	regressor.setData(xx, yy);
+	//regressor.printDataPoints();
+	//regressor.getPSubset();
+	//pair<double, double> p = regressor.fitLSLine(regressor.getDataPoints());
+	//cout << "LS SOLUTION (a,b) = " << p.first << " " << p.second << endl;
+	regressor.runLTS();
+}
 /*
 void RTPredictor::run()
 {
@@ -805,7 +826,7 @@ void RTPredictor::run()
 	computeSpearmanCorrelation(psms);
 }*/
 
-
+/*
 void RTPredictor::run()
 {
 	double trainingTime = 0.0, testingTime = 0.0;
@@ -1149,7 +1170,7 @@ void RTPredictor::run()
 
 	if (!logFile.empty())
 		fclose(stdout);
-}
+}*/
 
 // allocating memory for the feature table
 void RTPredictor::initFeaturesTable(const unsigned int numberRecords, vector<PSMDescription> & psms, double * retentionFeatures,
