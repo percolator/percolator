@@ -31,6 +31,7 @@ public:
 	static EnzymeType getEnzymeType() { return getEnzyme()->getET();}
 	static size_t countEnzymatic(string& peptide);
 	static bool isEnzymatic(const char& n,const char& c) {return getEnzyme()->isEnz(n,c);}
+	static bool isEnzymatic(string& peptide) {return (getEnzyme()->isEnz(peptide[0],peptide[2]) && getEnzyme()->isEnz(peptide[peptide.length()-3],peptide[peptide.length()-1]));}
 	Enzyme() { assert(theEnzyme==NULL); theEnzyme=this;}
 protected:
 	static Enzyme * theEnzyme;
