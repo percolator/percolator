@@ -14,18 +14,23 @@
    limitations under the License.
 
  *******************************************************************************/
-#ifndef UNINORMALIZER_H_
-#define UNINORMALIZER_H_
+#include "Option.h"
+#include "Globals.h"
+#include "RTPredictor.h"
 
-class UniNormalizer : public Normalizer // virtual Normalizer
-{
-public:
-	UniNormalizer();
-	virtual ~UniNormalizer();
-    virtual void setSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV, size_t numFeatures, size_t numRetentionFeatures);
- //	virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat);
-    void unnormalizeweight(const vector<double>& in,vector<double>& out);
-    void normalizeweight(const vector<double>& in, vector<double>& out);
-};
+#include <math.h>
+#include <cmath>
 
-#endif /*UNINORMALIZER_H_*/
+int main(int argc, char **argv){
+  RTPredictor *pCaller = new RTPredictor();
+  int retVal = 0;
+
+  if(pCaller->parseOptions(argc,argv))
+  {
+    pCaller->run();
+  }
+
+  delete pCaller;
+  Globals::clean();
+  return retVal;
+}

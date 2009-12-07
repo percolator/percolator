@@ -547,9 +547,24 @@ void Caller::fillFeatureSets() {
   if (tabFN.length()>0) {
     SetHandler::writeTab(tabFN,normal,shuffled);
   }
+  // Move the features into a format suitable for the normalizer
+  vector<double *> featuresV, rtFeaturesV;
+  double * features;
+  PSMDescription* pPSM;
+  size_t ix;
+  set<DataSet *>::iterator it;
+  for (it=all.begin();it!=all.end();++it) {
+    int ixPos=-1;
+    while((pPSM=(*it)->getNext(ixPos))!=NULL) {
+      features = pPSM->features;
+      featuresV.push_back(features);
+      if (features = pPSM->retentionFeatures)
+        rtFeaturesV.push_back(features);
+    }
+  }
   pNorm=Normalizer::getNormalizer();
-  pNorm->setSet(all,FeatureNames::getNumFeatures(),docFeatures?DescriptionOfCorrect::totalNumRTFeatures():0);
-  pNorm->normalizeSet(all);
+  pNorm->setSet(featuresV,rtFeaturesV,FeatureNames::getNumFeatures(),docFeatures?RTModel::totalNumRTFeatures():0);
+  pNorm->normalizeSet(featuresV,rtFeaturesV);
 }
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {

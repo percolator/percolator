@@ -12,6 +12,8 @@ perc_files = \
   Caller.h \
   DataSet.cpp \
   DataSet.h \
+  RTModel.h \
+  RTModel.cpp \
   DescriptionOfCorrect.cpp \
   DescriptionOfCorrect.h \
   Enzyme.cpp \
@@ -145,12 +147,46 @@ libArrayLibrary_la_SOURCES = \
   ArrayLibrary/VectorFunctions.cpp \
   ArrayLibrary/VectorFunctions.h
 
-
-noinst_LTLIBRARIES = libqvality.la libArrayLibrary.la $(PERCOLATOR_LIBRARY)
-bin_PROGRAMS = qvality $(PERCOLATOR_PROGRAM)
+libRtPredictor_la_SOURCES = \
+  PSMDescription.h \
+  PSMDescription.cpp \
+  RTModel.h \
+  RTModel.cpp \
+  RTPredictor.h \
+  RTPredictor.cpp \
+  Globals.h \
+  Globals.cpp \
+  Option.h \
+  Option.cpp \
+  UniNormalizer.h \
+  UniNormalizer.cpp \
+  StdvNormalizer.h \
+  StdvNormalizer.cpp \
+  Scores.h \
+  Scores.cpp \
+  SetHandler.h \
+  SetHandler.cpp \
+  svm.h \
+  svm.cpp \
+  FeatureNames.h \
+  FeatureNames.cpp \
+  Enzyme.h \
+  Enzyme.cpp \
+  Transform.h \
+  LTSRegression.h \
+  LTSRegression.cpp \
+  Normalizer.h \
+  Normalizer.cpp 
+  
+  
+noinst_LTLIBRARIES = libRtPredictor.la libqvality.la libArrayLibrary.la $(PERCOLATOR_LIBRARY)
+bin_PROGRAMS = rtPredictor qvality $(PERCOLATOR_PROGRAM)
 
 qvality_SOURCES = qvality_main.cpp
 qvality_LDADD = libqvality.la libArrayLibrary.la
+
+rtPredictor_SOURCES = rtPredictor_main.cpp
+rtPredictor_LDADD = libRtPredictor.la
 
 mark:
 	echo $(PERUNLABELED) $(PERLABELED)

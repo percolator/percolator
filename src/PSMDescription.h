@@ -20,6 +20,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iostream>
 using namespace std;
 #include "Enzyme.h"
 
@@ -27,10 +28,13 @@ class PSMDescription
 {
 public:
   PSMDescription();
+  PSMDescription(const string peptide, const double retTime);
+  PSMDescription(double ort, double prt){ retentionTime = ort; predictedTime = prt;}
   virtual ~PSMDescription();
   void clear() {proteinIds.clear();}
   double * getFeatures() {return features;}
   double * getRetentionFeatures() {return retentionFeatures;}
+  static vector<double *> getRetFeatures(vector<PSMDescription> & psms);
   string& getPeptide() {return peptide;}
   string& getFullPeptide() {return getAParent()->peptide;}
   PSMDescription* getAParent() {if (parentFragment) return parentFragment->getAParent(); else return this;}
@@ -42,6 +46,13 @@ public:
   void checkFragmentPeptides(vector<PSMDescription>::reverse_iterator  other,vector<PSMDescription>::reverse_iterator  theEnd);
   static void setRetentionTime(vector<PSMDescription>& psms, map<int,double>& scan2rt);
   static double unnormalize(double normalizedTime);
+  // set the norm and div for a set of peptides
+  static void setPSMSet(vector<PSMDescription> & psms);
+  // normalize retention times for a  set of peptides
+  static void normalizeRetentionTimes(vector<PSMDescription> & psms);
+  friend ostream& operator<<(ostream & out, PSMDescription & psm);
+  double getRetentionTime() {return retentionTime;}
+  double getPredictedRetentionTime() { return predictedTime; };
 
   static double normDiv,normSub;
 
@@ -70,6 +81,18 @@ inline bool operator==(PSMDescription const& one, PSMDescription const& other){
 		return false;
 }
 
+inline ostream& operator<< (ostream & out, PSMDescription & psm)
+{
+    // Since operator<< is a friend of the Point class, we can access
+    // Point's members directly.
+    out << "Peptide: " << psm.peptide << endl;
+    out << "Retention time, predicted retention time: " << psm.retentionTime << ", " << psm.predictedTime;
+    //out << "Retention features: ";
+    //for (int i = 0; i < 54; ++i)
+    //	out << psm.retentionFeatures[i] << "  ";
+    out << endl;
+    return out;
+}
 /*
 inline bool operator!=(const PSMDescription& one, const PSMDescription& other){
 	return one.peptide != other.peptide;

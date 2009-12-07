@@ -699,14 +699,14 @@ void DataSet::initFeatureTables(const unsigned int numFeat, const unsigned int n
   feature = new double[numFeat*numSpec];
 
   if (regressionTable) {
-    regressionFeature = new double[DescriptionOfCorrect::totalNumRTFeatures()*numSpec];
+    regressionFeature = new double[RTModel::totalNumRTFeatures()*numSpec];
   }
   psms.resize(numSpectra);
   for(int ix = 0;ix<numSpectra;++ix)
     psms[ix].features = &feature[rowIx(ix)];
   if (regressionTable) {
     double *ptr = regressionFeature;
-    size_t nf = DescriptionOfCorrect::totalNumRTFeatures();
+    size_t nf = RTModel::totalNumRTFeatures();
     for(int ix = 0;ix<numSpectra;++ix,ptr+=nf)
       psms[ix].retentionFeatures = ptr;
   }

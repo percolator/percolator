@@ -16,16 +16,18 @@
  *******************************************************************************/
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
-class DataSet;
-#include <set>
 using namespace std;
 
 class Normalizer
 {
 public:
 	virtual ~Normalizer();
-    virtual void setSet(set<DataSet *> & setVec, size_t numFeatures, size_t numRetentionFeatures){;}
-    void normalizeSet(set<DataSet *> & setVec);
+    virtual void setSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV, size_t numFeatures, size_t numRetentionFeatures){;}
+ //    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
+//    void normalizeSet(vector<PSMDescription> & psms);
+    void normalizeSet(vector<double *> & featuresV,vector<double *> & rtFeaturesV);
+    // not tested
+    void unNormalizeSet(vector<double *> & rtFeaturesV);
     void normalize(const double * in, double * out, size_t offset, size_t numFeatures);
     double normalize(const double in, size_t index) { return (in-sub[index])/div[index]; }
     virtual void unnormalizeweight(const vector<double>& in,vector<double>& out){;}
@@ -34,6 +36,15 @@ public:
     static void setType(int type);
 	const static int UNI = 0;
 	const static int STDV = 1;
+	void resizeVecs(size_t size) {sub.resize(size); div.resize(size); }
+	void setNumberRetentionFeatures(size_t numRF) {numRetentionFeatures = numRF; }
+	void setNumFeatures(const size_t nf) {numFeatures = nf;}
+	double* getSub() {return &sub[0];}
+	double* getDiv() {return &div[0];}
+	size_t*  getNumRetFeatures() {return & numRetentionFeatures;}
+	void printNumRetFeatures() {cout << "There are " << numRetentionFeatures << endl; }
+	void printSub()  {for (int i = 0; i < numRetentionFeatures; i++) cout << sub[i] << " "; cout << endl;}
+	void printDiv()  {for (int i = 0; i < numRetentionFeatures; i++) cout << div[i] << " "; cout << endl;}
 protected:
     Normalizer();
     static Normalizer * theNormalizer;
