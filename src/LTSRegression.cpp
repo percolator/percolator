@@ -1,3 +1,19 @@
+/*******************************************************************************
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+ *****************************************************************************/
 #include <LTSRegression.h>
 #include <algorithm>
 #include <iostream>
@@ -5,14 +21,12 @@
 #include <time.h>
 #include <cmath>
 #include <float.h>
+#include "Globals.h"
 
 // initialize static variables
-int LTSRegression::noSubsets = 3;
-// maximum difference btw q2 and q1 to achieve convergence
+int LTSRegression::noSubsets = 500;
+// maximum difference between q2 and q1 to achieve convergence
 double LTSRegression::epsilon = 0.0001;
-
-// function to compare 2 data points according to r
-bool compareDataPoints (dataPoint x, dataPoint y) { return (x.absr < y.absr); }
 
 LTSRegression::LTSRegression(): h(-1), regCoefficients(make_pair(0.0, 0.0))
 {
@@ -22,6 +36,10 @@ LTSRegression::~LTSRegression()
 {
 }
 
+// function to compare 2 data points according to r
+bool compareDataPoints (dataPoint x, dataPoint y) { return (x.absr < y.absr); }
+
+// set the data points
 void LTSRegression::setData(vector<double> & x, vector<double> & y)
 {
 	dataPoint tmp;
@@ -84,12 +102,13 @@ pair<double, double> LTSRegression::fitLSLine(vector<dataPoint> hdata)
 	}
 
 	a = ((h * sumxy) - (sumx * sumy)) / ((h * sumxsq) - (pow(sumx, 2)));
-	b = (sumy / h) - (a * (sumx / h));
+	b = (sumy / (double)h) - (a * (sumx / (double)h));
 
 	//cout << "a , b = " << a << ", " << b <<  endl;
 	return make_pair(a,b);
 }
 
+// perform a C step (fit LS line, calculate residuals, return the h points with the lowest abs(residual))
 vector<dataPoint> LTSRegression::performCstep(vector<dataPoint> hOld)
 {
 	pair<double, double> par;
@@ -115,40 +134,23 @@ double LTSRegression::calculateQ()
 	return res;
 }
 
-// get the 3 subsets that have the lowest Q (sum of squared residuals)
-vector< vector<dataPoint> > LTSRegression::getBestHSubsets()
-{
-	vector< vector<dataPoint> > res;
-	partial_sort(data.begin(), data.begin() + h + 2, data.end(), compareDataPoints);
-	vector<dataPoint> v1(data.begin(), data.begin() + h);
-	vector<dataPoint> v2(data.begin(), data.begin() + h - 1);
-	vector<dataPoint> v3(data.begin(), data.begin() + h - 2);
-	v2.push_back(data[h]);
-
-	if ((pow(data[h + 1].absr,2) - pow(data[h-1].absr,2)) <= (pow(data[h].absr,2) - pow(data[h-2].absr,2)))
-	{
-		v3.push_back(data[h-2]);
-		v3.push_back(data[h+1]);
-	}
-	else
-	{
-		v3.push_back(data[h]);
-		v3.push_back(data[h-1]);
-	}
-
-	res.push_back(v1);
-	res.push_back(v2);
-	res.push_back(v3);
-
-	return res;
-}
-
 void LTSRegression::runLTS()
 {
-	double q1, q2, bestq = DBL_MAX;
+	double q1, q2, bestq = DBL_MAX, largestQ = 0.0;
 	pair<double, double> par;
 	vector<dataPoint> hold, hnew, besth(data.begin(), data.end() + h);
-	vector <vector<dataPoint> > bestSubsets;
+	vector <vector<dataPoint> > best10Subsets;
+	int noBestSubsets = 0, indexLargestQ = 0;
+	vector<double> Q;
+
+	if (VERB >= 2)
+		cerr << "Performing LTS regression..." << endl;
+
+	if (VERB > 3)
+	{
+		cerr << "Regression parameters: " << endl;
+		cerr << "   h = " << h << ", no_initial_subsets = " << noSubsets << ", epsilon = " << epsilon << endl;
+	}
 
 	srand ( time(NULL) );
 
@@ -161,66 +163,87 @@ void LTSRegression::runLTS()
 		hnew = performCstep(hold);
 		hold = performCstep(hnew);
 
-		// take the first 3 subsets with lowest Q
-		bestSubsets = getBestHSubsets();
+		// compute Q
+		par = fitLSLine(hold);
+		fillResiduals(par);
+		q1 = calculateQ();
 
-		// for each such subset perform C-steps until convergence
-		for(int j = 0; j < bestSubsets.size(); ++j)
+		// include the current subset in the list of best 10 subsets if necessary
+		if (noBestSubsets < 10)
 		{
-			hold = bestSubsets[j];
-			par = fitLSLine(hold);
-			fillResiduals(par);
-			q2 = calculateQ();
-			do
+			best10Subsets.push_back(hold);
+			Q.push_back(q1);
+			if (q1 > largestQ)
 			{
-				q1 = q2;
-				hnew = performCstep(hold);
-				par = fitLSLine(hnew);
-				fillResiduals(par);
-				q2 = calculateQ();
-				hold = hnew;
+				largestQ = q1;
+				indexLargestQ = noBestSubsets;
 			}
-			while( abs(q2 - q1) > epsilon);
+			noBestSubsets ++;
+		}
+		else
+		{
+			if (q1 < largestQ)
+			{
+				best10Subsets[indexLargestQ] = hold;
+				Q[indexLargestQ] = q1;
 
-			if (q2 < bestq)
-			{
-				regCoefficients = par;
-				bestq = q2;
-				besth = hnew;
-			}
+				largestQ = Q[0];
+				indexLargestQ = 0;
+				for(int i = 1; i < Q.size(); ++i)
+					if (Q[i] > largestQ)
+					{
+						largestQ = Q[i];
+						indexLargestQ = i;
+					}
+			 }
 		}
 	}
-	printDataPoints();
-	cout << "Final equation: y = " << regCoefficients.first << " * x + " << regCoefficients.second << endl;
-	cout << "Data points used to generate this equation: " << endl;
-	printVector(besth);
 
-	cout << "--------------------------------------\n";
-	vector<double> d;
-	for(int i = 0; i < data.size(); ++i)
-		d.push_back(data[i].x);
-	vector<double> preds;
-	preds = predict(d);
-	for(int i = 0; i < data.size(); ++i)
-		cout << data[i].x << " " << data[i].y << "    " << preds[i] << endl;
-}
+	// for the best 10 h-subset perform C-steps until convergence
+	for(int j = 0; j < best10Subsets.size(); ++j)
+	{
+		hold = best10Subsets[j];
+		par = fitLSLine(hold);
+		fillResiduals(par);
+		q2 = calculateQ();
+		do
+		{
+			q1 = q2;
+			hnew = performCstep(hold);
+			par = fitLSLine(hnew);
+			fillResiduals(par);
+			q2 = calculateQ();
+			hold = hnew;
+		}
+		while( abs(q2 - q1) > epsilon);
 
-vector<double> LTSRegression::predict(vector<double> & x)
-{
-	vector<double> predictions;
-	double a = regCoefficients.first, b = regCoefficients.second;
+		if (q2 < bestq)
+		{
+			regCoefficients = par;
+			bestq = q2;
+			besth = hnew;
+		}
+	}
 
-	for(int i = 0; i < x.size(); ++i)
-		predictions.push_back((a * x[i]) + b);
+	if (VERB > 3)
+	{
+		cerr << "Data points used to generate the regression line: " << endl;
+		printVector(besth);
+		cerr << "Q = " << bestq << endl;
+	}
 
-	return predictions;
+	if (VERB > 2)
+		cerr << "LTS equation: y = " << regCoefficients.first << " * x + " << regCoefficients.second << endl;
+
+	if (VERB >= 2)
+		cerr << "Done. " << endl << endl;
 }
 
 void LTSRegression::printVector(vector<dataPoint> v)
 {
 	for(int i = 0; i < v.size(); ++i)
-		cout << v[i].x << " " << v[i].y << " " << v[i].absr << endl;
-	cout << endl;
+		cerr << v[i].x << " " << v[i].y << endl;
+	cerr << endl;
 }
 
 

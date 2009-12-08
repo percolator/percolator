@@ -67,13 +67,15 @@ public:
   PSMDescription *parentFragment;
 };
 
-inline bool const operator<(PSMDescription const& one, PSMDescription const& other){
+inline bool const operator<(PSMDescription const& one, PSMDescription const& other)
+{
 	if (one.peptide == other.peptide)
 		return one.retentionTime<other.retentionTime;
 	return one.peptide < other.peptide;
 }
 
-inline bool operator==(PSMDescription const& one, PSMDescription const& other){
+inline bool operator==(PSMDescription const& one, PSMDescription const& other)
+{
 //	return one.peptide == other.peptide;
 	if(one.peptide == other.peptide)
 		return true;

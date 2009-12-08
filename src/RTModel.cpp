@@ -14,56 +14,56 @@
    limitations under the License.
 
  *****************************************************************************/
+
 #include <vector>
 #include <string>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include "Globals.h"
-#include "RTModel.h"
-#include "DataSet.h"
-#include "DescriptionOfCorrect.h"
-//#include "RTPredictor.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <assert.h>
 #include <math.h>
+#include "Globals.h"
+#include "RTModel.h"
+#include "DataSet.h"
+#include "DescriptionOfCorrect.h"
 
+// by default, 3-fold cross validation is used
 static double DEFAULT_K = 3;
 
 // default values for C, gamma and epsilon
 // they are used when gType = NO_GRID, except for gamma which is initialized with 1/n
 static double INITIAL_C = 5.0;
-//static double INITIAL_GAMMA  = 50;
 static double INITIAL_GAMMA  = 0.5;
 static double INITIAL_EPSILON = 1e-2;
 
-// when gType = FINE_GRID, coarse grid and default values for the fine grid
+// for gType = FINE_GRID, a coarse grid is used combined with a fine grid
 static double COARSE_GRID_GAMMA[] =  { pow(2, -15), pow(2, -13), pow(2, -11), pow(2, -9), pow(2, -7), pow(2, -5),
 									   pow(2, -3), pow(2, -1), pow(2, 1), pow(2, 3), pow(2, 5)};
 static double COARSE_GRID_C[] = { pow(2, -5), pow(2, -3), pow(2, -1), pow(2, 1), pow(2, 3), pow(2, 5), pow(2, 7),
 								  pow(2, 9), pow(2, 11), pow(2, 13)};
-static double COARSE_GRID_EPSILON[] = {INITIAL_EPSILON/10, INITIAL_EPSILON, INITIAL_EPSILON*10};
-// no of points to the left of a parameter (the fine grid will include NO_POINTS_FINE_GRID*2 for one parameter)
-// step is give as the exponent of 2 (the actual step value is 2^(STEP_FINE_GRID))
+static double COARSE_GRID_EPSILON[] = {INITIAL_EPSILON / 10, INITIAL_EPSILON, INITIAL_EPSILON * 10};
+// no of points smaller than the parameter value found using the coarse grid (the fine grid will include NO_POINTS_FINE_GRID*2 for one parameter)
 static int NO_POINTS_FINE_GRID = 7;
+// step is give as the exponent of 2 (the actual step value is 2^(STEP_FINE_GRID))
 static double STEP_FINE_GRID = 0.25;
 
-// when gType = NORMAL_GRID
+// for gType = NORMAL_GRID
 static double NORMAL_GRID_GAMMA[] =  { pow(2, -8), pow(2, -7), pow(2, -6), pow(2, -5), pow(2, -4), pow(2, -3),
 									   pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1)};
 static double NORMAL_GRID_C[] = { pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1), pow(2, 2), pow(2, 3), pow(2, 4),
 								  pow(2, 5), pow(2, 6), pow(2, 7)};
 static double NORMAL_GRID_EPSILON[] = {INITIAL_EPSILON/10, INITIAL_EPSILON, INITIAL_EPSILON*10};
 
-
-//characters indicating post translational modifications in the ms2 file
-
+// amino acids alphabet
 string RTModel::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
+//characters indicating post translational modifications in the ms2 file
 string RTModel::ptmAlphabet = "#*@";
 bool RTModel::doKlammer = false;
 
+// hydrophobicity indices
 float RTModel::krokhin_index['Z'-'A'+1] =
          {1.1, 0.0, 0.45, 0.15, 0.95,  10.9, -0.35, -1.45, 8.0, 0.0, -2.05, 9.3, 6.2,
           -0.85,0.0,2.1,-0.4,-1.4,-0.15,0.65,0.0,5.0,12.25,0.0,4.85,0.0};
@@ -89,7 +89,8 @@ float RTModel::aa_weights['Z'-'A'+1] =
 float RTModel::bulkiness['Z'-'A'+1] =
 		{ 11.50, 0.0, 13.46, 11.68, 13.57, 19.80, 3.40, 13.69, 21.40, 0.0, 15.71, 21.40, 16.25,
 		  12.82, 0.0, 17.43, 14.45, 14.28, 9.47, 15.77, 0.0, 21.57, 21.67, 0.0, 18.03, 0.0};
-/*float RTModel::alpha_helix['Z'-'A'+1] =
+/*// conformational preferences of aa
+float RTModel::alpha_helix['Z'-'A'+1] =
 		{ 1.41, 0.0, 0.66, 0.99, 1.59, 1.16, 0.43, 1.05, 1.09, 0.0, 1.23, 1.34, 1.30, 0.76,
 		  0.0, 0.34, 1.27, 1.21, 0.57, 0.76, 0.0, 0.90, 1.02, 0.0, 0.74, 0.0};
 float RTModel::beta_sheet['Z'-'A'+1] =
@@ -98,23 +99,24 @@ float RTModel::beta_sheet['Z'-'A'+1] =
 
 // groups of features that can be switched on or off
 string RTModel::feature_groups[NO_FEATURE_GROUPS] =
-		{"krokhin_index", "krokhin100_index", "krokhinc2_index", "krokhintfa_index", "doolittle_index",
-		 "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "no_consec_krdenq", "aa_features"};
-// how many features are in each group?
+		{ "krokhin_index", "krokhin100_index", "krokhinc2_index", "krokhintfa_index", "doolittle_index",
+		  "hessa_index", "peptide_size", "no_ptms", "ptms", "bulkiness", "no_consec_krdenq", "aa_features" };
+// number of features in each group
 int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {16, 16, 16, 16, 16, 16, 1, 1, 3, 1, 1, aaAlphabet.size()};
+// groups of features to be used
 //(krokhin, krokhintfa, doolittle = 25), peptide_size(=64), ptms (=256),  bulkiness(=2^9 = 512), no_consec_krdenq (1024),
 //aa(2048)
 static int DEFAULT_FEATURE_GROUPS = 25 + 64 + 256 + 512 + 1024 + 2048;
-//static int DEFAULT_FEATURE_GROUPS = 1 + 64 + 2048;
 
-RTModel::RTModel(): /*numRTFeat(0),*/ model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON),
-					stepFineGrid(STEP_FINE_GRID), noPointsFineGrid(NO_POINTS_FINE_GRID), calibrationFile(""),
-					saveCalibration(false), k(DEFAULT_K), gType(NORMAL_GRID), eType(K_FOLD_CV), selected_features(DEFAULT_FEATURE_GROUPS)
+RTModel::RTModel(): model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON), stepFineGrid(STEP_FINE_GRID),
+                    noPointsFineGrid(NO_POINTS_FINE_GRID), calibrationFile(""),	saveCalibration(false), k(DEFAULT_K),
+                    gType(NORMAL_GRID), eType(K_FOLD_CV), selected_features(DEFAULT_FEATURE_GROUPS)
 {
 	grids.gridGamma.assign(NORMAL_GRID_GAMMA, NORMAL_GRID_GAMMA + sizeof(NORMAL_GRID_GAMMA) / sizeof (NORMAL_GRID_GAMMA[0]));
 	grids.gridC.assign(NORMAL_GRID_C, NORMAL_GRID_C + sizeof(NORMAL_GRID_C) / sizeof (NORMAL_GRID_C[0]));
 	grids.gridEpsilon.assign(NORMAL_GRID_EPSILON, NORMAL_GRID_EPSILON + sizeof(NORMAL_GRID_EPSILON) / sizeof (NORMAL_GRID_EPSILON[0]));
 	noFeaturesToCalc = 0;
+	// compute the total number of features depending on the selected feature groups
 	for(int i = 0; i < NO_FEATURE_GROUPS; i++)
 			if (selected_features & 1 << i)
 				noFeaturesToCalc += no_features_per_group[i];
@@ -143,46 +145,6 @@ void RTModel::setSelectFeatures(const int sf)
 				noFeaturesToCalc += no_features_per_group[i];
 }
 
-/*
-// calculate the retention features for one PSM
-void RTModel::calcRetentionFeatures(PSMDescription &psm)
-{
-	string peptide = psm.getPeptide();
-	string::size_type pos1 = peptide.find('.');
-	string::size_type pos2 = peptide.find('.',++pos1);
-	string pep = peptide.substr(pos1,pos2-pos1);
-
-	// if there is memory allocated
-	if (psm.getRetentionFeatures())
-	{
-		fillFeaturesAllIndex(pep, psm.getRetentionFeatures());
-	}
-	//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
-}*/
-
-// adds 3 features, each including the number of a ptm in the peptide
-double* RTModel::fillPTMFeatures(const string& pep, double *feat)
-{
-	string::size_type pos = ptmAlphabet.size();
-
-  	for ( ; pos--; )
-  	{
-  		feat[pos] = 0.0;
-  	}
-
-  	for (string::const_iterator it = pep.begin(); it != pep.end(); it++)
-  	{
-    	pos = ptmAlphabet.find(*it);
-    	if (pos != string::npos)
-    	{
-    		feat[pos]++;
-    		cout << pep << " has ptm" << endl;
-    	}
-  	}
-
-  	return feat + ptmAlphabet.size();
-}
-
 double RTModel::getNoPtms(string pep)
 {
 	double ptms = 0;
@@ -202,26 +164,25 @@ double RTModel::getNoPtms(string pep)
   	return ptms;
 }
 
-// conformational preferences
-/*
-double* RTModel::conformationalPreferences(const string& peptide, double *features)
+// Functions to compute retention features
+// adds 3 features, corresponding to the number of 3 types of ptms in the peptide
+double* RTModel::fillPTMFeatures(const string& pep, double *feat)
 {
-	double sumAlpha = 0.0, sumBeta = 0.0;
-	string::const_iterator token = peptide.begin();
+	string::size_type pos = ptmAlphabet.size();
 
-	for(;token != peptide.end(); ++token)
-	{
-    	sumAlpha += alpha_helix[*token - 'A'];
-    	sumBeta += beta_sheet[*token - 'A'];
-	}
+  	for ( ; pos--; )
+  		feat[pos] = 0.0;
 
-	//cout << "Peptide: " << peptide << ", alpha, beta = " << sumAlpha << ", " << sumBeta << endl;
-  	*(features++) = sumAlpha;
-  	*(features++) = sumBeta;
+  	for (string::const_iterator it = pep.begin(); it != pep.end(); it++)
+  	{
+    	pos = ptmAlphabet.find(*it);
+    	if (pos != string::npos)
+    		feat[pos]++;
+    }
 
-  return features;
-}*/
-// amphipathicity helix
+  	return feat + ptmAlphabet.size();
+}
+
 // most and least hydrophobic patches
 double* RTModel::amphipathicityHelix(const float *index, const string& peptide, double *features)
 {
@@ -238,7 +199,6 @@ double* RTModel::amphipathicityHelix(const float *index, const string& peptide, 
 	double avgHydrophobicityIndex = 0.0;
 	for(int i = 0; i < (('Z' - 'A') + 1); ++i)
 		avgHydrophobicityIndex += index[i];
-//	cout << avgHydrophobicityIndex << endl;
 	avgHydrophobicityIndex = avgHydrophobicityIndex / aaAlphabet.size();
 	cst = avgHydrophobicityIndex * (1 + 2 * cos300 + 2 * cos400);
 
@@ -271,7 +231,6 @@ double* RTModel::amphipathicityHelix(const float *index, const string& peptide, 
 			}
 
 		}
-		//cout << "Peptide: " << peptide << ", min = " << min << "   max = " << max << endl;
 		*(features++) = min;
 		*(features++) = max;
     }
@@ -279,7 +238,7 @@ double* RTModel::amphipathicityHelix(const float *index, const string& peptide, 
 	return features;
 }
 
-// sum up bulkiness
+// bulkiness
 double RTModel::bulkinessSum(const string& peptide)
 {
 	double sum = 0.0;
@@ -357,6 +316,198 @@ int RTModel::noConsecKRDENQ(const string& peptide)
   	return noOccurences;
 }
 
+// function used by percolator
+void RTModel::fillFeaturesAllIndex(const string& pep, double *features)
+{
+	// calculate the number of posttranslational modifications
+	unsigned int ptms = 0;
+  	string peptide = pep;
+  	string::size_type posP = 0;
+
+  	while (posP < ptmAlphabet.length())
+  	{
+   		string::size_type pos = 0;
+    	while ( (pos = peptide.find(ptmAlphabet[posP], pos)) != string::npos )
+     	{
+      		peptide.replace( pos, 1, "");
+      		++pos;
+      		++ptms;
+    	}
+    	++posP;
+  	}
+
+	if(doKlammer)
+	{
+		// Klammer et al. features
+		features = fillAAFeatures(peptide, features);
+		 features = fillAAFeatures(peptide.substr(0,1), features);
+		 features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
+		 char Ct = peptide[peptide.size()-1];
+		 *(features++) = ((Ct=='K' || Ct== 'R')?1.0:0.0);
+		 *(features++) = peptide.size();
+		 *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
+    }
+  	else
+  	{
+  		// fill in the features characteristic to each of the three hydrophobicity indices
+  		features = fillFeaturesIndex(peptide, krokhin_index, features);
+  		features = fillFeaturesIndex(peptide, krokhin100_index, features);
+  		features = fillFeaturesIndex(peptide, krokhinTFA_index, features);
+  		*(features++) = peptide.size();
+  		*(features++) = (double) ptms;
+  		// fill all the aa features
+  		features = fillAAFeatures(peptide, features);
+  	}
+}
+
+// calculate the sum of hydrophobicities of all aa in the peptide
+double RTModel::indexSum(const float* index, const string& peptide)
+{
+	double sum = 0.0;
+	string::const_iterator token = peptide.begin();
+
+  	for(;token != peptide.end(); ++token)
+    	sum += index[*token - 'A'];
+
+  	return sum;
+}
+
+// calculate the average of hydrophobicities of all aa in the peptide
+double RTModel::indexAvg(const float* index, const string& peptide)
+{
+	double sum = 0.0;
+  	string::const_iterator token = peptide.begin();
+
+  	for(;token != peptide.end(); ++token)
+    	sum += index[*token - 'A'];
+
+  	return sum / (double) peptide.size();
+}
+
+
+// calculate the sum of hydrophobicities of neighbours of R(Argenine) and K (Lysine)
+double RTModel::indexNearestNeigbourPos(const float* index, const string& peptide)
+{
+	double sum = 0.0;
+
+  	for(unsigned int ix = 0; ix < peptide.size(); ++ix)
+  	{
+  		if (peptide[ix]=='R' || peptide[ix]=='K')
+  		{
+      		if (ix > 0)
+        		sum += max(0.0f, index[peptide[ix - 1] - 'A']);
+      		if (ix < peptide.size() - 1)
+        		sum += max(0.0f, index[peptide[ix + 1] - 'A']);
+    	}
+  	}
+
+	return sum;
+}
+
+// calculate the sum of hydrophobicities of neighbours of D(Aspartate) and E(Glutamate)
+double RTModel::indexNearestNeigbourNeg(const float* index, const string& peptide)
+{
+	double sum = 0.0;
+
+  	for(unsigned int ix = 0; ix < peptide.size(); ++ix)
+  	{
+  		if (peptide[ix] == 'D' || peptide[ix] == 'E')
+  		{
+      		if (ix > 0)
+        		sum += max(0.0f, index[peptide[ix - 1] - 'A']);
+      		if (ix < peptide.size() - 1)
+        		sum += max(0.0f, index[peptide[ix + 1] - 'A']);
+    	}
+  	}
+
+  	return sum;
+}
+
+// hydrophobicity of the n-terminus
+inline double RTModel::indexN(const float *index, const string& peptide)
+{
+	return index[peptide[0] - 'A'];
+}
+
+// hydrophobicity of the c-terminus
+inline double RTModel::indexC(const float *index, const string& peptide)
+{
+	return index[peptide[peptide.size() - 1] - 'A'];
+}
+
+// product between hydrophobicity of n- and c- terminus
+inline double RTModel::indexNC(const float *index, const string& peptide)
+{
+	double n = max(0.0, indexN(index, peptide));
+	double c = max(0.0, indexC(index, peptide));
+
+	return n * c;
+}
+
+// the most and least hydrophobic windows
+double* RTModel::indexPartialSum(const float* index, const string& peptide, const size_t win, double *features)
+{
+	double sum = 0.0;
+  	size_t window = min(win,peptide.size()-1);
+  	string::const_iterator lead = peptide.begin(), lag = peptide.begin();
+
+  	for( ; lead != (peptide.begin() + window); ++lead)
+    	sum += index[*lead-'A'];
+
+  	double minS = sum, maxS = sum;
+
+  	for( ; lead != peptide.end(); ++lead, ++lag)
+  	{
+    	sum += index[*lead - 'A'];
+    	sum -= index[*lag - 'A'];
+    	minS = min(sum, minS);
+    	maxS = max(sum, maxS);
+  	}
+
+  	*(features++) = maxS;
+  	*(features++) = minS;
+
+  return features;
+}
+
+// adds 20 features, each including the number of an aa in the peptide
+double* RTModel::fillAAFeatures(const string& pep, double *feat)
+{
+	// Overall amino acid composition features
+  	string::size_type pos = aaAlphabet.size();
+
+  	for ( ; pos--; )
+  		feat[pos] = 0.0;
+
+  	for (string::const_iterator it = pep.begin(); it != pep.end(); it++)
+  	{
+    	pos = aaAlphabet.find(*it);
+    	if (pos != string::npos)
+    		feat[pos]++;
+  	}
+
+  	return feat + aaAlphabet.size();
+}
+
+// features for a hydrophobicity index
+double* RTModel::fillFeaturesIndex(const string& peptide, const float *index, double *features)
+{
+	*(features++) = indexSum(index, peptide);
+	*(features++) = indexAvg(index, peptide);
+	*(features++) = indexN(index, peptide);
+	*(features++) = indexC(index, peptide);
+	*(features++) = indexNearestNeigbourPos(index, peptide);
+	*(features++) = indexNearestNeigbourNeg(index, peptide);
+	features = indexPartialSum(index, peptide, 5, features);
+  	features = indexPartialSum(index, peptide, 2, features);
+  	features = amphipathicityHelix(index, peptide, features);
+  	features = hydrophobicMoment(index, peptide, 100, 11, features);
+  	features = hydrophobicMoment(index, peptide, 180, 11, features);
+
+  	return features;
+}
+
+// calculate the retention features
 void RTModel::calcRetentionFeatures(PSMDescription &psm)
 {
 	string peptide = psm.getPeptide();
@@ -393,7 +544,7 @@ void RTModel::calcRetentionFeatures(PSMDescription &psm)
 		if (selected_features & 1 << 7)
 		  	*(features++) = getNoPtms(pep);
 
-		// number of each ptm
+		// number of each type of ptm
 		if (selected_features & 1 << 8)
 			features = fillPTMFeatures(pep, features);
 
@@ -405,261 +556,26 @@ void RTModel::calcRetentionFeatures(PSMDescription &psm)
 		if (selected_features & 1 << 10)
 			*(features++) = noConsecKRDENQ(pep);
 
-		// hydrophobic moments of alpha helices and beta sheets
-		/*if (selected_features & 1 << 11)
-		{
-			// alpha helix
-			*(features++) = hydrophobicMoment(pep, 100);
-			// beta sheet (angle can be between 160-180)
-			*(features++) = hydrophobicMoment(pep, 175);
-		}*/
-
-
 		// amino acids
 		if (selected_features & 1 << 11)
 			features = fillAAFeatures(pep, features);
 	}
-	//  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
 }
-
 
 // calculate the retention features for a vector of PSMs
 void RTModel::calcRetentionFeatures(vector<PSMDescription> &psms)
 {
 	vector<PSMDescription>::iterator it;
 
-	cout << "Computing retention features... " << endl;
+	if (VERB > 2)
+		cerr << "\nComputing retention features..." << endl;
 
 	for(it = psms.begin(); it != psms.end(); ++it)
 		calcRetentionFeatures(*it);
 
-	cout << "Done. " << endl << endl;
+	if (VERB > 2)
+		cerr << "Done. " << endl << endl;
 }
-
-// fill in the features in the features vector of a PSMDescription object
-// THIS IS an old function, it was left for compatibility
-// it will NOT be used by the rtPredictor
-void RTModel::fillFeaturesAllIndex(const string& pep, double *features)
-{
-	// calculate the number of posttranslational modifications
-	unsigned int ptms = 0;
-  	string peptide = pep;
-  	string::size_type posP = 0;
-
-  	while (posP < ptmAlphabet.length())
-  	{
-   		string::size_type pos = 0;
-    	while ( (pos = peptide.find(ptmAlphabet[posP], pos)) != string::npos )
-     	{
-      		peptide.replace( pos, 1, "");
-      		++pos;
-      		++ptms;
-    	}
-    	++posP;
-  	}
-
-	if(doKlammer)
-	{
-		// Klammer et al. features
-		features = fillAAFeatures(peptide, features);
-		// ??? what are these features exactly????????
-		 features = fillAAFeatures(peptide.substr(0,1), features);
-		 features = fillAAFeatures(peptide.substr(peptide.size()-2,1), features);
-		 char Ct = peptide[peptide.size()-1];
-		 // 1 if the peptides show evidence that it was cleaved by trypsin
-		 *(features++) = ((Ct=='K' || Ct== 'R')?1.0:0.0);
-		 // size of the peptide
-		 *(features++) = peptide.size();
-		 // some other index sum
-		 *(features++) = indexSum(aa_weights,peptide)+1.0079+17.0073; //MV
-  }
-  	else
-  	{
-  		// fill in the features characteristic to each of the three hydrophobicity indices
-  		features = fillFeaturesIndex(peptide, krokhin_index, features);
-  		features = fillFeaturesIndex(peptide, krokhin100_index, features);
-  		//features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
-  		features = fillFeaturesIndex(peptide, krokhinTFA_index, features);
-  		// features = fillFeaturesIndex(peptide, hessa_index, features);
-  		// features = fillFeaturesIndex(peptide, kytedoolittle_index, features);
-  		*(features++) = peptide.size();
-  		*(features++) = (double) ptms;
-  		// fill all the aa features
-  		features = fillAAFeatures(peptide, features);
-  	}
-	//  cout <<  pep << " " << peptide << endl;
-}
-
-// fill in the vector of features some features caracteristic to a certain index of hydrophobicity
-double* RTModel::fillFeaturesIndex(const string& peptide, const float *index, double *features)
-{
-	*(features++) = indexSum(index, peptide);
-	*(features++) = indexAvg(index, peptide);
-	*(features++) = indexN(index, peptide);
-	*(features++) = indexC(index, peptide);
-	*(features++) = indexNearestNeigbourPos(index, peptide);
-	*(features++) = indexNearestNeigbourNeg(index, peptide);
-	//*(features++) = indexConsecutivePolarResidues(index, peptide);
-	// these are added withing the function itself (because they are 2 features added for both)
-  	// they calculate the highest and lowest sum of hydrophobicities of aa in a window of 3 and 5 aa, respectively
-  	//features = indexPartialSum(index, peptide, 3, features);
-	features = indexPartialSum(index, peptide, 5, features);
-  	features = indexPartialSum(index, peptide, 2, features);
-  	features = amphipathicityHelix(index, peptide, features);
-  	// hydrophobic moment for for alpha helix and beta sheet
-  	features = hydrophobicMoment(index, peptide, 100, 11, features);
-  	features = hydrophobicMoment(index, peptide, 180, 11, features);
-
-  	return features;
-}
-
-double RTModel::calcDiffHydrophobicities(const string & parent, const string & child)
-{
-	double sumParent, sumChild;
-
-	sumParent = indexSum(krokhin_index, parent);
-	sumChild = indexSum(krokhin_index, child);
-
-	return abs(sumParent - sumChild);
-}
-
-// DEFINE features characteristic to an arbitrary hydrophobicity index
-// calculate the sum of hydrophobicities of all aa in the peptide
-double RTModel::indexSum(const float* index, const string& peptide)
-{
-	double sum = 0.0;
-	string::const_iterator token = peptide.begin();
-
-  	for(;token != peptide.end(); ++token)
-    	sum += index[*token - 'A'];
-
-  	return sum;
-}
-
-// calculate the average of hydrophobicities of all aa in the peptide
-double RTModel::indexAvg(const float* index, const string& peptide)
-{
-	double sum = 0.0;
-  	string::const_iterator token = peptide.begin();
-
-  	for(;token != peptide.end(); ++token)
-    	sum += index[*token - 'A'];
-
-  	return sum/(double)peptide.size();
-}
-
-
-// calculate the sum of hydrophobicities of neighbours of R(Argenine) and K (Lysine) in the peptide
-// (these are both positively charged)
-double RTModel::indexNearestNeigbourPos(const float* index, const string& peptide)
-{
-	double sum = 0.0;
-
-  	for(unsigned int ix = 0; ix < peptide.size(); ++ix)
-  	{
-  		if (peptide[ix]=='R' || peptide[ix]=='K')
-  		{
-      		if (ix > 0)
-        		sum += max(0.0f, index[peptide[ix - 1] - 'A']);
-      		if (ix < peptide.size() - 1)
-        		sum += max(0.0f, index[peptide[ix + 1] - 'A']);
-    	}
-  	}
-
-	return sum;
-}
-
-// calculate the sum of hydrophobicities of neighbours of D(Aspartate) and E(Glutamate) in the peptide
-// (these are both negatively charged)
-double RTModel::indexNearestNeigbourNeg(const float* index, const string& peptide)
-{
-	double sum = 0.0;
-
-  	for(unsigned int ix = 0; ix < peptide.size(); ++ix)
-  	{
-  		if (peptide[ix] == 'D' || peptide[ix] == 'E')
-  		{
-      		if (ix > 0)
-        		sum += max(0.0f, index[peptide[ix - 1] - 'A']);
-      		if (ix < peptide.size() - 1)
-        		sum += max(0.0f, index[peptide[ix + 1] - 'A']);
-    	}
-  	}
-
-  	return sum;
-}
-
-
-
-// hydrophobicity of the aa at the beginning of the peptide
-inline double RTModel::indexN(const float *index, const string& peptide)
-{
-	return index[peptide[0] - 'A'];
-}
-
-// hydrophobicity of the aa at the end of the peptide
-inline double RTModel::indexC(const float *index, const string& peptide)
-{
-	return index[peptide[peptide.size() - 1] - 'A'];
-}
-
-// product between hydrophobicity of the begining and end of the peptide
-inline double RTModel::indexNC(const float *index, const string& peptide)
-{
-	double n = max(0.0, indexN(index, peptide));
-	double c = max(0.0, indexC(index, peptide));
-
-	return n * c;
-}
-
-
-// the largest and lowest sum of hydrophobicities of win consecutive aa in the peptide
-double* RTModel::indexPartialSum(const float* index, const string& peptide, const size_t win, double *features)
-{
-	double sum = 0.0;
-  	size_t window = min(win,peptide.size()-1);
-  	string::const_iterator lead = peptide.begin(), lag = peptide.begin();
-
-  	for( ; lead != (peptide.begin() + window); ++lead)
-    	sum += index[*lead-'A'];
-
-  	double minS = sum, maxS = sum;
-
-  	for( ; lead != peptide.end(); ++lead, ++lag)
-  	{
-    	sum += index[*lead - 'A'];
-    	sum -= index[*lag - 'A'];
-    	minS = min(sum, minS);
-    	maxS = max(sum, maxS);
-  	}
-
-  	*(features++) = maxS;
-  	*(features++) = minS;
-
-  return features;
-}
-
-// adds 20 features, each including the number of an aa in the peptide (?????, check this operation)
-double* RTModel::fillAAFeatures(const string& pep, double *feat)
-{
-	// Overall amino acid composition features
-  	string::size_type pos = aaAlphabet.size();
-
-  	for ( ; pos--; )
-  	{
-  		feat[pos] = 0.0;
-  	}
-
-  	for (string::const_iterator it = pep.begin(); it != pep.end(); it++)
-  	{
-    	pos = aaAlphabet.find(*it);
-    	if (pos != string::npos)
-    		feat[pos]++;
-  	}
-
-  	return feat + aaAlphabet.size();
-}
-
 
 // save an svm model in the global variable model
 void RTModel::copyModel(svm_model* from)
@@ -728,68 +644,7 @@ void RTModel::copyModel(svm_model* from)
   	model->free_sv = 1;         // 1 if svm_model is created by svm_load_mode                        // 0 if svm_model is created by svm_train
 }
 
-
-
-
-////////////////////////////////////////
-///////////////////////////////////////
-////////////// These functions will have to be replaced
-
-// train the SVM
-// note that the parameter is actually the *
-/*void RTModel::trainSVM(vector<PSMDescription> &psms)
-{
-
-  double gamma, epsilon, c;
-  int noPsms = psms.size();
-
-  // Get rid of redundant peptides
-  sort(psms.begin(),psms.end(),less<PSMDescription>());
-  psms.resize(distance(psms.begin(),unique(psms.begin(),psms.end())));
-
-  // Train teyrntion time regressor
-  size_t test_frac = 4u;
-  if (psms.size()>test_frac*10u) {
-	// If we got enough data, calibrate gamma and C by leaving out a testset
-    vector<PSMDescription> train,test;
-    for(size_t ix=0; ix<psms.size(); ++ix) {
-      if (ix%test_frac==0) {
-    	  test.push_back(psms[ix]);
-      } else {
-    	  train.push_back(psms[ix]);
-      }
-    }
-    cout << endl << "(train, test) = " << train.size() << " , " << test.size() << endl;
-    cout << endl << "Calibrating parameters..." << endl<<endl;
-    // grid search to calibrate parameters
-    double bestRms = 1e100;
-    double gammaV[3] = {gamma/2,gamma,gamma*2};
-    double cV[3] = {c/2,c,c*2};
-    double epsilonV[3] = {epsilon/2,epsilon,epsilon*2};
-    for (double* gammaNow=&gammaV[0];gammaNow!=&gammaV[3];gammaNow++){
-        for (double* cNow=&cV[0];cNow!=&cV[3];cNow++){
-            for (double* epsilonNow=&epsilonV[0];epsilonNow!=&epsilonV[3];epsilonNow++){
-        	  trainRetention(train,*cNow,(*gammaNow),*epsilonNow);
-        	  double rms=testRetention(test);
-        	  if (rms<bestRms) {
-        		  c=*cNow;gamma=*gammaNow;epsilon=*epsilonNow;
-        		  bestRms=rms;
-        	  }
-            }
-        }
-    }
-    // cerr << "CV selected gamma=" << gamma << " and C=" << c << endl;
-  }
-  cout << endl <<"Done." << endl;
-  cout << endl << "Final step of training " << endl;
-  trainRetention(psms,c,gamma,epsilon);
-  cout << "Done.";
-}
-
-*/
-
-// select the first n features from a sel_feature
-// return the corresponding code
+// select the first n features from; return the corresponding code
 int RTModel::getSelect(int sel_features, int max, size_t *finalNumFeatures)
 {
 	int noFeat = 0;
@@ -822,7 +677,6 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
     cout << "Not enough data. Only a subset of features is used to train  the model" << endl;
    }*/
 
-  //cout << "Building model..." << endl;
   // initialize the parameters of the SVM
   svm_parameter param;
   param.svm_type = EPSILON_SVR;
@@ -847,21 +701,20 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
   data.x=new svm_node[data.l];
   data.y=new double[data.l];
 
-  for(size_t ix1=0;ix1<trainset.size();ix1++) {
-    data.x[ix1].values=trainset[ix1].retentionFeatures;
-    data.x[ix1].dim=noFeaturesToCalc;
-    //cout << "dim = " << data.x[ix1].dim << endl;
-    data.y[ix1]=trainset[ix1].retentionTime;
+  for(size_t ix1=0;ix1<trainset.size();ix1++)
+  {
+	  data.x[ix1].values=trainset[ix1].retentionFeatures;
+	  data.x[ix1].dim=noFeaturesToCalc;
+	  data.y[ix1]=trainset[ix1].retentionTime;
   }
 
   // build a model by training the SVM on the given training set
-  //cout << "Generating model for a training set of " << trainset.size() << "..." << endl;
   if (svm_check_parameter(&data, &param) != NULL)
   {
-	  cout << "!Incorrect parameters for the SVM. Execution aborted. " << endl;
+	  if (VERB >= 1)
+		  cerr << "ERROR: Incorrect parameters for the SVR. Execution aborted. " << endl;
 	  exit(-1);
   }
-
 
   svm_model* m = svm_train(&data, &param);
   // save the model in the current object
@@ -869,49 +722,10 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset, const double C, c
 
   delete[] data.x;
   delete[] data.y;
-
   svm_destroy_model(m);
-
-  //out << "Done." << endl;*/
 }
 
-
-// test the svm on the given test set
-double RTModel::testRetention(vector<PSMDescription>& testset)
-{
-  double rms=0.0;
-  double estimatedRT;
-  //cout << "Testing in total " << testset.size() << " peptides..." << endl;
-
-  for(size_t ix1=0;ix1<testset.size();ix1++) {
-	estimatedRT = estimateRT(testset[ix1].retentionFeatures);
-	double diff = estimatedRT - testset[ix1].retentionTime;
-	rms += diff*diff;
-  }
-  return rms/testset.size();
-}
-
-
-// estimate the retention time using the svm model
-double RTModel::estimateRT(double * features)
-{
-	double predicted_value;
-	svm_node node;
-	node.values = features;
-	//node.dim = noFeaturesToCalc;
-	node.dim = noFeaturesToCalc;
-
-	/* cout << "retention features: ";
-		for(int i = 0; i < 52; i++)
-			cout << node.values[i] << " ";*/
-
-	predicted_value = svm_predict(model, &node);
-
-
-	//cout << "Predicted rt = " << predicted_value << endl;
-	return predicted_value;
-}
-
+// old function to train a SVR (used by percolator)
 void RTModel::trainRetention(vector<PSMDescription>& psms)
 {
   // Train retention time regressor
@@ -950,99 +764,7 @@ void RTModel::trainRetention(vector<PSMDescription>& psms)
   trainRetention(psms,c,gamma/((double)psms.size()),epsilon,psms.size());
 }
 
-// train the SVM using a coarse and a fine grid
-/*
-void RTModel::trainSVMWithRefinedGrid(vector<PSMDescription> &psms)
-{
-
-  double gamma, epsilon, c;
-  int noPsms = psms.size();
-  double bestRms = 1e100;
-  double offset;
-  vector<double>::iterator it1, it2, it3;
-  vector<double> fGridC, fGridGamma;
-
-  // Train teyrntion time regressor
-  size_t test_frac = 4u;
-  if (psms.size() > test_frac * 10u)
-  {
-	  cout << "Calibrating parameters ..." << endl;
-	  // If we got enough data, calibrate gamma and C by leaving out a testset
-	  vector<PSMDescription> train,test;
-	  for(size_t ix=0; ix<psms.size(); ++ix)
-	  {
-		  if (ix%test_frac==0)
-			  test.push_back(psms[ix]);
-		  else
-			  train.push_back(psms[ix]);
-	  }
-
-	  // coarse grid search to calibrate parameters
-	  for(it1 = cGridGamma.begin(); it1 != cGridGamma.end(); ++it1)
-	  {
-		  for(it2 = cGridC.begin(); it2 != cGridC.end(); ++it2)
-		  {
-			  for(it3 = cGridEpsilon.begin(); it3 != cGridEpsilon.end(); ++it3)
-			  {
-				  cout << endl << "Check (gamma, c, eps) = " << (*it1) << ", " << (*it2) << ", " << (*it3) << endl;
-				  trainRetention(train, (*it2), (*it1), (*it3), noPsms);
-
-				  double rms = testRetention(test);
-				  cout << "RMS = " << rms << endl;
-				  if (rms < bestRms)
-				  {
-					  c = (*it2);
-					  gamma = (*it1);
-					  epsilon = (*it3);
-					  bestRms = rms;
-				  }
-			   }
-			}
-		}
-
-	  cout << endl << "Fine grid starts from (gamma, epsilon, c) = (" << gamma << ", " << epsilon << ", "
-		   << c << ") with RMS = " << bestRms << endl;
-	  // implement the fine grid
-	  for(int i = -noPointsFineGrid; i <= noPointsFineGrid; ++i)
-	  {
-		  offset = pow(2, stepFineGrid * i);
-		  fGridC.push_back(c * offset);
-		  fGridGamma.push_back(gamma * offset);
-	  }
-
-	  // fine grid search to calibrate parameters
-	  for(it1 = fGridGamma.begin(); it1 != fGridGamma.end(); ++it1)
-	  {
-		  for(it2 = fGridC.begin(); it2 != fGridC.end(); ++it2)
-		  {
-			  cout << endl << "Check (gamma, c, eps) = " << (*it1) << ", " << (*it2) << ", " << epsilon << endl;
-			  trainRetention(train, (*it2), (*it1), epsilon, noPsms);
-
-			  double rms = testRetention(test);
-			  cout << "RMS = " << rms << endl;
-			  if (rms < bestRms)
-			  {
-				  c = (*it2);
-				  gamma = (*it1);
-				  bestRms = rms;
-			  }
-		  }
-	  }
-
-  }
-  else
-		cout << "Too little data, parameters will not be calibrated" << endl;
-  cout << "Done." << endl << endl;
-
-  cout << "Best RMS is " << bestRms << " for (gamma, c, epsilon) = (" << gamma << ", " << c << ", " << epsilon << ")"<<endl;
-
-  cout << endl << "Final step of training " << endl;
-  trainRetention(psms,c,gamma,epsilon,noPsms);
-  cout << "Done." << endl;
-}*/
-
 // perform k-validation and return as estimate of the prediction error CV = 1/k (sum(PE(k))), where PE(k)=(sum(yi - yi_pred)^2)/size
-// see file retention_time/docs/presentations/crossvalidation06
 double RTModel::computeKfoldCV(const vector<PSMDescription> & psms, const double gamma, const double epsilon, const double c)
 {
 	vector<PSMDescription> train, test;
@@ -1053,7 +775,9 @@ double RTModel::computeKfoldCV(const vector<PSMDescription> & psms, const double
 	noPsms = psms.size();
 	sumPEs = 0;
 
-	cout << k << " fold cross validation..." << endl;
+	if (VERB > 2)
+		cerr << k << " fold cross validation..." << endl;
+
 	for(int i = 0; i < k; ++i)
 	{
 		train.clear();
@@ -1068,14 +792,15 @@ double RTModel::computeKfoldCV(const vector<PSMDescription> & psms, const double
 
 		}
 
-		//cout << "There are " << test.size() << " in test and " << train.size() << " in the training " << endl;
 		trainRetention(train, c, gamma, epsilon, noPsms);
 		PEk = testRetention(test);
 		sumPEs += PEk;
 	}
-	cout << "Done." << endl;
 
-	return (sumPEs / k);
+	if (VERB > 2)
+		cerr << "Done." << endl;
+
+	return (sumPEs / (double)k);
 }
 
 // simple evaluation; just divide the data in 4 parts, train on three of them and test on the 4th; return the ms of diff
@@ -1083,23 +808,24 @@ double RTModel::computeSimpleEvaluation(const vector<PSMDescription> & psms, con
 {
 	vector<PSMDescription> train, test;
 	int noPsms;
-	// ms
 	double ms;
-	// how many parts will the data be split
+	// how many parts will the data be split in
 	size_t test_frac;
 
 	test_frac = 4u;
 	noPsms = psms.size();
 
 	// give a warning if there is little data
-	if (noPsms < test_frac * 10u)
+	if ((VERB >= 2) && (noPsms < test_frac * 10u))
 		cerr << "Warning: very little data to calibrate parameters (just " << noPsms << "), parameter values may be unreliable" << endl;
 
-	cout << "Simple evaluation..." << endl;
+	if (VERB > 2)
+		cerr << "Simple evaluation..." << endl;
+
 	// build train and test set
 	for(size_t i = 0; i < noPsms; ++i)
 	{
-		if (i%test_frac == 0)
+		if (i % test_frac == 0)
 			test.push_back(psms[i]);
 		else
 			train.push_back(psms[i]);
@@ -1108,107 +834,29 @@ double RTModel::computeSimpleEvaluation(const vector<PSMDescription> & psms, con
 	// train the model and test it
 	trainRetention(train, c, gamma, epsilon, noPsms);
 	ms = testRetention(test);
-	cout << "Done." << endl;
+
+	if (VERB > 2)
+		cerr << "Done." << endl;
 
 	return ms;
 }
-/*
-void RTModel::trainSVMWithRefinedGrid(vector<PSMDescription> &psms)
-{
 
-  double gamma, epsilon, c;
-  int noPsms = psms.size();
-  double bestCV = 1e100, CV;
-  double offset;
-  vector<double>::iterator it1, it2, it3;
-  vector<double> fGridC, fGridGamma;
-
-  // Train teyrntion time regressor
-  size_t test_frac = 4u;
-  if (psms.size() > test_frac * 10u)
-  {
-	  // coarse grid search to calibrate parameters
-	  for(it1 = cGridGamma.begin(); it1 != cGridGamma.end(); ++it1)
-	  {
-		  for(it2 = cGridC.begin(); it2 != cGridC.end(); ++it2)
-		  {
-			  for(it3 = cGridEpsilon.begin(); it3 != cGridEpsilon.end(); ++it3)
-			  {
-				  cout << endl << "Check (gamma, c, eps) = " << (*it1) << ", " << (*it2) << ", " << (*it3) << endl;
-
-				  double CV = computeKfoldCV(psms, (*it1), (*it3), (*it2));
-				  cout << "CV = " << CV << endl;
-				  if (CV < bestCV)
-				  {
-					  c = (*it2);
-					  gamma = (*it1);
-					  epsilon = (*it3);
-					  bestCV = CV;
-				  }
-			   }
-			}
-		}
-
-	  cout << endl << "Fine grid starts from (gamma, epsilon, c) = (" << gamma << ", " << epsilon << ", "
-		   << c << ") with RMS = " << bestCV << endl;
-	  // define the fine grid
-	  for(int i = -noPointsFineGrid; i <= noPointsFineGrid; ++i)
-	  {
-		  offset = pow(2, stepFineGrid * i);
-		  fGridC.push_back(c * offset);
-		  fGridGamma.push_back(gamma * offset);
-	  }
-
-	  // fine grid search to calibrate parameters
-	  for(it1 = fGridGamma.begin(); it1 != fGridGamma.end(); ++it1)
-	  {
-		  for(it2 = fGridC.begin(); it2 != fGridC.end(); ++it2)
-		  {
-			  cout << endl << "Check (gamma, c, eps) = " << (*it1) << ", " << (*it2) << ", " << epsilon << endl;
-			  double CV = computeKfoldCV(psms, (*it1), epsilon, (*it2));
-			  cout << "CV = " << CV << endl;
-			  if (CV < bestCV)
-			  {
-				  c = (*it2);
-				  gamma = (*it1);
-				  bestCV = CV;
-			  }
-		  }
-	  }
-
-  }
-  else
-  {
-		cout << "Too little data, parameters will not be calibrated" << endl;
-		gamma = 1 / psms.size();
-		c = this.c;
-		epsilon = this.epsilon;
-  }
-  cout << "Done." << endl << endl;
-
-  cout << "Best CV is " << bestCV << " for (gamma, c, epsilon) = (" << gamma << ", " << c << ", " << epsilon << ")"<<endl;
-
-  cout << endl << "Final step of training " << endl;
-  trainRetention(psms,c,gamma,epsilon,psms.size());
-  cout << "Done." << endl;
-}
-*/
-
+// train the Support Vector Regressor
 void RTModel::trainSVM(vector<PSMDescription> & psms)
 {
+  int noPsms = psms.size();
 
-  int noPsms;
+  if (VERB >= 2)
+	  cerr << "Building the model..." << endl;
 
-  noPsms = psms.size();
-
-  cout << "Building the model..." << endl;
   // if no parameter calibration is to be performed, then just use the defaults to train the model (except for gamma = 1/n)
   if (gType == NO_GRID)
   {
 	  gamma = 1.0 / (double)noPsms;
 	  trainRetention(psms, c, gamma, epsilon, noPsms);
 
-	  cout << "Done. " << endl;
+	  if (VERB >= 2)
+		  cerr << "Done. " << endl;
 
 	  return;
   }
@@ -1227,8 +875,12 @@ void RTModel::trainSVM(vector<PSMDescription> & psms)
 	  calFile << "gamma\tC\tepsilon\terror\n";
   }
 
-  cout << "Calibrating (gamma, epsilon, c)..."<< endl;
-  cout << "------------------------------" << endl;
+  if (VERB > 2)
+  {
+	  cerr << "Calibrating (gamma, epsilon, c)..."<< endl;
+	  cerr << "------------------------------" << endl;
+  }
+
   // grid search to calibrate parameters
   for(it1 = grids.gridGamma.begin(); it1 != grids.gridGamma.end(); ++it1)
   {
@@ -1236,14 +888,20 @@ void RTModel::trainSVM(vector<PSMDescription> & psms)
 	  {
 		  for(it3 = grids.gridEpsilon.begin(); it3 != grids.gridEpsilon.end(); ++it3)
 		  {
-			  cout << "Step " << ++step << " / " << totalIterations << endl;
-			  cout << "Evaluate = (gamma, C, epsilon) = (" << (*it1) << ", " << (*it2) << ", " << (*it3) << ")" << endl;
+			  ++step;
+			  if (VERB > 2)
+			  {
+				  cerr << "Step " << step << " / " << totalIterations << endl;
+				  cerr << "Evaluate = (gamma, C, epsilon) = (" << (*it1) << ", " << (*it2) << ", " << (*it3) << ")" << endl;
+			  }
 
 			  if (eType == SIMPLE_EVAL)
 				  error = computeSimpleEvaluation(psms, (*it1), (*it3), (*it2));
 			  else
 				  error = computeKfoldCV(psms, (*it1), (*it3), (*it2));
-			  cout << "Error = " << error << endl;
+
+			  if (VERB > 2)
+				  cerr << "Error = " << error << endl;
 
 			  // save info to the calibration file
 			  if (saveCalibration)
@@ -1258,11 +916,15 @@ void RTModel::trainSVM(vector<PSMDescription> & psms)
 				  epsilon = (*it3);
 				  bestError = error;
 			  }
-			  cout << endl;
+
+			  if (VERB > 2)
+			 	cerr << endl;
 	      }
        }
   }
-  cout << "Done." << endl;
+
+  if (VERB >= 2)
+ 	cerr << "Done." << endl;
 
   // if fine grid is to be perform, then build the fine grid according to parameters and calibrate gamma and
   if (gType == FINE_GRID)
@@ -1274,7 +936,8 @@ void RTModel::trainSVM(vector<PSMDescription> & psms)
 	  {
 	  	  calFile << "--------------------------------\n";
 	  }
-  	  cout << endl << "Calibration via fine grid starting from (gamma, epsilon, c) = (" << gamma << ", " << epsilon << ", "
+	  if (VERB > 2)
+		  cerr << endl << "Calibration via fine grid starting from (gamma, epsilon, c) = (" << gamma << ", " << epsilon << ", "
 		   << c << ") with Error = " << bestError << endl;
 
   	  // define the fine grid
@@ -1293,15 +956,20 @@ void RTModel::trainSVM(vector<PSMDescription> & psms)
 	  {
 		  for(it2 = fGridC.begin(); it2 != fGridC.end(); ++it2)
 		  {
-			  cout << endl << "Step " << ++step << " / " << totalIterations << endl;
-			  cout << "Evaluate (gamma, c, epsilon) = " << (*it1) << ", " << (*it2) << ", " << epsilon << ")" << endl;
+			  ++step;
+			  if (VERB > 2)
+			  {
+				  cerr << endl << "Step " << step << " / " << totalIterations << endl;
+				  cerr << "Evaluate (gamma, c, epsilon) = " << (*it1) << ", " << (*it2) << ", " << epsilon << ")" << endl;
+			  }
 
 			  if (eType == SIMPLE_EVAL)
 				  error = computeSimpleEvaluation(psms, (*it1), epsilon, (*it2));
 			  else
 			 	  error = computeKfoldCV(psms, (*it1), epsilon, (*it2));
 
-			  cout << "Error = " << error << endl;
+			  if (VERB > 2)
+				  cerr << "Error = " << error << endl;
 
 			  // save info to the calibration file
 			  if (saveCalibration)
@@ -1319,17 +987,59 @@ void RTModel::trainSVM(vector<PSMDescription> & psms)
 	  }
   }
 
-  cout << "------------------------------" << endl;
-  cout << "Final parameters are (gamma, c, epsilon) = (" << gamma << ", " << c << ", " << epsilon << ") with error = " << bestError << endl;
+  if (VERB > 2)
+  {
+	  cerr << "------------------------------" << endl;
+	  cerr << "Final parameters are (gamma, c, epsilon) = (" << gamma << ", " << c << ", " << epsilon << ") with error = " << bestError << endl;
+  }
 
   // in the final step train the model on all available data using the best parameters found so far
-  cout << endl << "Performing final training..." << endl;
+  if (VERB > 3)
+  {
+	  cerr << endl << "Performing final training..." << endl;
+  }
+
   trainRetention(psms, c, gamma, epsilon, noPsms);
-  cout << "Done." << endl;
+
+  if (VERB > 3)
+  {
+	  cerr << "Done." << endl;
+  }
   if (saveCalibration)
+  {
  	  calFile.close();
+ 	  if (VERB > 3)
+ 		  cerr << "Calibration details were saved to " << calibrationFile << endl;
+  }
 }
 
+// test the svm on the given test set
+double RTModel::testRetention(vector<PSMDescription>& testset)
+{
+  double rms=0.0;
+  double estimatedRT;
+
+  for(size_t ix1=0;ix1<testset.size();ix1++)
+  {
+	  estimatedRT = estimateRT(testset[ix1].retentionFeatures);
+	  double diff = estimatedRT - testset[ix1].retentionTime;
+	  rms += diff*diff;
+  }
+  return rms / testset.size();
+}
+
+// estimate the retention time using the svm model
+double RTModel::estimateRT(double * features)
+{
+	double predicted_value;
+	svm_node node;
+
+	node.values = features;
+	node.dim = noFeaturesToCalc;
+	predicted_value = svm_predict(model, &node);
+
+	return predicted_value;
+}
 // set the type of grid
 void RTModel::setGridType(const GridType & g)
 {
@@ -1360,7 +1070,8 @@ void RTModel::setGridType(const GridType & g)
 	}
 	else
 	{
-		cerr << g << "is unknown. Execution aborted." << endl;
+		if (VERB >= 2)
+			cerr << g << "is unknown. Execution aborted." << endl;
 		exit(-1);
 	}
 }
@@ -1393,16 +1104,7 @@ string RTModel::getEvaluationType()
 		return "Not applicable if no calibration of parameters is carried out";
 }
 
-/*
-void RTModel::saveSVRModel(const string modelFile, Normalizer *theNormalizer)
-{
-	assert (model != NULL);
-
-	svm_save_model2(modelFile.c_str(), model, PSMDescription::normSub, PSMDescription::normDiv, theNormalizer->getSub(),
-			        theNormalizer->getDiv(), theNormalizer->getNumRetFeatures());
-}
-*/
-
+// save the current model to a file
 void RTModel::saveSVRModel(const string modelFile, Normalizer *theNormalizer)
 {
 	assert (model != NULL);
@@ -1411,7 +1113,7 @@ void RTModel::saveSVRModel(const string modelFile, Normalizer *theNormalizer)
 			        theNormalizer->getDiv(), theNormalizer->getNumRetFeatures(), selected_features);
 }
 
-
+// load a model from a file
 void RTModel::loadSVRModel(const string modelFile, Normalizer *theNormalizer)
 {
 	if (model != NULL)
@@ -1423,16 +1125,18 @@ void RTModel::loadSVRModel(const string modelFile, Normalizer *theNormalizer)
 	noFeaturesToCalc = *(theNormalizer->getNumRetFeatures());
 }
 
-/*
-void RTModel::loadSVRModel(const string modelFile, Normalizer *theNormalizer)
+// calculate the difference in hydrophobicity between 2 peptides
+double RTModel::calcDiffHydrophobicities(const string & parent, const string & child)
 {
-	if (model != NULL)
-		svm_destroy_model(model);
+	double sumParent, sumChild;
 
-	model = svm_load_model2(modelFile.c_str(), &PSMDescription::normSub, &PSMDescription::normDiv, theNormalizer->getSub(),
-							theNormalizer->getDiv(), theNormalizer->getNumRetFeatures());
+	sumParent = indexSum(krokhin_index, parent);
+	sumChild = indexSum(krokhin_index, child);
+
+	return abs(sumParent - sumChild);
 }
-*/
+
+// print the table of features
 void RTModel::printFeaturesInUse(ostringstream & oss)
 {
 	oss << " *" << noFeaturesToCalc << " features should be used to generate the model." << endl;
@@ -1442,6 +1146,4 @@ void RTModel::printFeaturesInUse(ostringstream & oss)
 			oss << feature_groups[i] << "\t";
 	oss << endl;
 }
-
-
 

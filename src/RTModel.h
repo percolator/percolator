@@ -1,7 +1,20 @@
-/*
- * RTModel.h
- *
- */
+/*******************************************************************************
+    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+ *****************************************************************************/
+
 #ifndef RTMODEL_H_
 #define RTMODEL_H_
 
@@ -12,11 +25,14 @@
 #include "svm.h"
 
 using namespace std;
-#define NO_FEATURE_GROUPS 12
 
+// number of feature groups
+#define NO_FEATURE_GROUPS 12
 // types of grid
 typedef enum {NO_GRID, NORMAL_GRID, FINE_GRID} GridType;
+// types of evaluation
 typedef enum {SIMPLE_EVAL, K_FOLD_CV} EvaluationType;
+// parameter values for a grid
 struct gridInformation
 {
 	vector<double> gridGamma;
@@ -29,11 +45,7 @@ class RTModel
 	public:
 		RTModel();
 		~RTModel();
-		void calcRetentionFeatures(PSMDescription &psm);
-		void calcRetentionFeatures(vector<PSMDescription> &psms);
-		static void fillFeaturesAllIndex(const string& pep, double *features);
-		static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
-		//static double* conformationalPreferences(const string& peptide, double *features);
+		// functions to calculate retention features
 		static double* amphipathicityHelix(const float *index, const string& peptide, double *features);
 		static double indexSum(const float* index, const string& peptide);
 		static double indexAvg(const float* index, const string& peptide);
@@ -48,51 +60,56 @@ class RTModel
 		static double  bulkinessSum(const string& peptide);
 		static double* hydrophobicMoment(const float *index, const string& peptide, const double angle, const int window, double * features);
 		static int noConsecKRDENQ(const string& peptide);
-		// calculate diff in hydrophobicity between 2 peptides (Second one included in the 1st one)
+		static void fillFeaturesAllIndex(const string& pep, double *features);
+		static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
+		void calcRetentionFeatures(PSMDescription &psm);
+		void calcRetentionFeatures(vector<PSMDescription> &psms);
+		// calculate the difference in hydrophobicity between 2 peptides
 		static double calcDiffHydrophobicities(const string & parent, const string & child);
-		static double getNoPtms(string pep);
-		void copyModel(svm_model* from);
+		// train a SVR
+		void trainSVM(vector<PSMDescription> & psms);
 		void trainRetention(vector<PSMDescription>& trainset);
 		void trainRetention(vector<PSMDescription>& trainset, const double C, const double gamma, const double epsilon, int noPsms);
+		bool isModelNull() { if (model == NULL) return true; else return false; }
+		// k-fold evaluation
+		double computeKfoldCV(const vector<PSMDescription> & psms, const double gamma, const double epsilon, const double c);
+		// use simple evaluation
+		double computeSimpleEvaluation(const vector<PSMDescription> & psms, const double gamma, const double epsilon, const double c);
+		// estima rt using a trained model
 		double testRetention(vector<PSMDescription>& testset);
 		double estimateRT(double * features);
-		double computeKfoldCV(const vector<PSMDescription> & psms, const double gamma, const double epsilon, const double c);
-		double computeSimpleEvaluation(const vector<PSMDescription> & psms, const double gamma, const double epsilon, const double c);
-		void trainSVM(vector<PSMDescription> & psms);
-		void setGridType(const GridType & g);
-		string getGridType();
-		string getEvaluationType();
-		void saveSVRModel(const char* fileName, Normalizer *p);
-		void loadSVRModel(const char* fileName, Normalizer *p);
-        static size_t totalNumRTFeatures();
-        // features for the three hydrophobicity indices, 3 features for ptms, peptide size, bulkiness,
-        // no of consec KRDNEQ
-	    static size_t minimumNumRTFeatures() {return 3*16 + 3 + 1 + 1 + 1;}
-	    size_t getRTFeat() {return noFeaturesToCalc;}
-		void setNumRtFeat(const size_t nRtFeat) {noFeaturesToCalc = nRtFeat;}
-		static void setDoKlammer(const bool switchKlammer);
-		svm_model* getModel() {return model;}
-		static string aaAlphabet,isoAlphabet;
-		bool isModelNull() {if (model == NULL) return true; else return false;}
-		void setCalibrationFile(const string calFile) {calibrationFile = calFile;}
-		void setK(const int newk) {k = newk;}
-		void setEvaluationType(const EvaluationType e) {eType = e;}
+		// load, save, copy and destroy the svr model
 		void loadSVRModel(string modelFile, Normalizer * theNormalizer);
 		void saveSVRModel(string modelFile, Normalizer * theNormalizer);
-		void setSelectFeatures(const int sf);
-		int getNoFeaturesToCalc() {return noFeaturesToCalc;}
-		int getSelectFeatures() {return selected_features;}
-		void printFeaturesInUse(ostringstream & oss);
-		int getSelect(int sel_features, int max, size_t *finalNumFeatures);
+		void copyModel(svm_model* from);
 		void destroyModel() {svm_destroy_model(model); }
+        // get functions
+		svm_model* getModel() { return model; }
+	    size_t getRTFeat() {return noFeaturesToCalc;}
+		int getNoFeaturesToCalc() { return noFeaturesToCalc; }
+		int getSelectFeatures() { return selected_features; }
+		int getSelect(int sel_features, int max, size_t *finalNumFeatures);
+		string getGridType();
+		string getEvaluationType();
+		static double getNoPtms(string pep);
+		static size_t minimumNumRTFeatures() { return 3*16 + 3 + 1 + 1 + 1; }
+		static size_t totalNumRTFeatures();
+		// set functions
+		void setNumRtFeat(const size_t nRtFeat) { noFeaturesToCalc = nRtFeat; }
+		static void setDoKlammer(const bool switchKlammer);
+		void setSelectFeatures(const int sf);
+		void setCalibrationFile(const string calFile) { calibrationFile = calFile; }
+		void setK(const int newk) { k = newk; }
+		void setEvaluationType(const EvaluationType e) { eType = e; }
+		void setGridType(const GridType & g);
+		// print functions
+		void printFeaturesInUse(ostringstream & oss);
+		static string aaAlphabet,isoAlphabet;
+
 	protected:
-		// remove redundant peptides from the test set?
-		bool removeRedundant;
-		// number of features used to generate the model
-		// size_t numRTFeat;
 		// number of features to be calculated (depends on the selected features)
 		size_t noFeaturesToCalc;
-		// svm model
+		// svr model
 		svm_model *model;
 		// parameters for the SVR
 		double c, gamma, epsilon;
@@ -107,21 +124,22 @@ class RTModel
 		// save calibration data?
 		bool saveCalibration;
 		struct gridInformation grids;
-		static float krokhin_index['Z'-'A'+1],krokhin100_index['Z'-'A'+1],krokhinC2_index['Z'-'A'+1],krokhinTFA_index['Z'-'A'+1],
-		             hessa_index['Z'-'A'+1],kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1], bulkiness['Z'-'A' + 1];
-		// conformational preferences of aa
-		//static float alpha_helix['Z'-'A'+1], beta_sheet['Z'-'A'+1];
+		// features used (bit-wise operation are used to decode, for ex 2 means krokhin100_index)
+		int selected_features;
+		// number of points and step for the fine grid
+		size_t noPointsFineGrid;
+		double stepFineGrid;
+		// symbols for post-translational modifications
+		static string ptmAlphabet;
+		// true if klammer features are to be used
+		static bool doKlammer;
+		// indices, bulkiness
+		static float krokhin_index['Z'-'A'+1], krokhin100_index['Z'-'A'+1], krokhinC2_index['Z'-'A'+1], krokhinTFA_index['Z'-'A'+1],
+		             hessa_index['Z'-'A'+1], kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1], bulkiness['Z'-'A' + 1];
 		// the groups of features to be used
 		static string feature_groups[NO_FEATURE_GROUPS];
 		// how many features are in each group?
 		static int no_features_per_group[NO_FEATURE_GROUPS];
-		// features to be used (bit-wise operation are used to decode, till ex 2 means use just krokhin100_index, 3 means use
-		int selected_features;
-		// krokhin100_index and krokhin_index etc)
-		static string ptmAlphabet;
-		static bool doKlammer;
-		double stepFineGrid;
-		size_t noPointsFineGrid;
 };
 
 #endif /* RTMODEL_H_ */
