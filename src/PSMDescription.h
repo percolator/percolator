@@ -46,6 +46,7 @@ public:
   void checkFragmentPeptides(vector<PSMDescription>::reverse_iterator  other,vector<PSMDescription>::reverse_iterator  theEnd);
   static void setRetentionTime(vector<PSMDescription>& psms, map<int,double>& scan2rt);
   static double unnormalize(double normalizedTime);
+  static void unnormalizeRetentionTimes(vector<PSMDescription> & psms);
   // set the norm and div for a set of peptides
   static void setPSMSet(vector<PSMDescription> & psms);
   // normalize retention times for a  set of peptides

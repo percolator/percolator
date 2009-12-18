@@ -161,3 +161,10 @@ void PSMDescription::normalizeRetentionTimes(vector<PSMDescription> & psms)
 		psm->retentionTime = (psm->retentionTime - normSub)/normDiv;
 }
 
+void PSMDescription::unnormalizeRetentionTimes(vector<PSMDescription> & psms)
+{
+	vector<PSMDescription>::iterator psm;
+
+	for(psm = psms.begin(); psm != psms.end(); ++psm)
+		psm->retentionTime = unnormalize(psm->retentionTime);
+}

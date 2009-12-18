@@ -105,8 +105,23 @@ class RTModel
 		// print functions
 		void printFeaturesInUse(ostringstream & oss);
 		static string aaAlphabet,isoAlphabet;
+		// EXPERIMENTAL
+		void getHydrophobicityIndex(vector<PSMDescription> &  psms);
+		void trainIndexRetention(vector<PSMDescription>& trainset, const double C, const double epsilon);
+		void copyIndexModel(svm_model* from);
+		double computeKfoldCVIndex(const vector<PSMDescription> & psms, const double epsilon, const double c);
+		void trainIndexSVR(vector<PSMDescription> & psms);
+		double estimateIndexRT(double * features);
+		double testIndexRetention(vector<PSMDescription>& testset);
+		void printOurIndex();
+
 
 	protected:
+		// EXPERIMENTAL
+		float our_index['Z'-'A'+1];
+		svm_model *index_model;
+		double c_index, eps_index;
+
 		// number of features to be calculated (depends on the selected features)
 		size_t noFeaturesToCalc;
 		// svr model

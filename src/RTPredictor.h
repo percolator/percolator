@@ -85,10 +85,11 @@ class RTPredictor
 		void predictRTs();
 		void estimateRetentionTime(vector<PSMDescription> & psms);
 		static void unNormalizeRetentionTimes(vector<PSMDescription> & psms);
-		// compute mean-squares and Pearson and Spearman correlations
+		// compute mean-squares, Pearson and Spearman correlations, window where 95% peptides are located
 		double computeMS(vector<PSMDescription> & psms);
 		double computePearsonCorrelation(vector<PSMDescription> & psms);
 		double computeSpearmanCorrelation(vector<PSMDescription> & psms);
+		double computeWindow(vector<PSMDescription> & psms);
 		// writing functions
 		void writeOutputFile(vector<PSMDescription> & psms);
 		void writeRetentionTimeFile(const char *, vector<PSMDescription> & psms);
@@ -100,8 +101,11 @@ class RTPredictor
 		bool operator() (PSMDescription& psm) {return theEnzyme->isEnzymatic(psm.getPeptide());}
 
 	protected:
+		double a, b;
 	    // the difference in hydrophobicity used to detect CID fragments
 	    static float diff_hydrophobicity;
+	    // how many peptides should be included in the time window reported (by default 95%)
+	    static float fractionPeptides;
 		// path to the library
 		static string libPath;
 		// true if the non tryptic peptides are to be removed

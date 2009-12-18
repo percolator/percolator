@@ -36,10 +36,13 @@
 using namespace std;
 
 // path to the library
-string RTPredictor::libPath = "../lib/";
+string RTPredictor::libPath = "/scratch/lumi_work/projects/retention_time/percolator/lib/";
 
 // difference in hydrophobicity between parend and child when detecting CID fragments
 float RTPredictor::diff_hydrophobicity = 10.0;
+
+// how many peptides included in the time window reported
+float RTPredictor::fractionPeptides = 0.95;
 
 // used to sort a vector of pairs PSMDescription, bool
 struct myPair {
@@ -95,6 +98,19 @@ bool comparePsmsPRT (pair<PSMDescription, int> psm1, pair<PSMDescription, int> p
 
 	return prt1 < prt2;
 }
+
+// compare psms according to absolute value of difference between predicted and observed
+// compare psms according to predicted retention time
+bool comparePsmsDeltaRT (PSMDescription psm1, PSMDescription psm2)
+{
+	double deltaRT1, deltaRT2;
+
+	deltaRT1 = PSMDescription::unnormalize(psm1.getPredictedRetentionTime()) - PSMDescription::unnormalize(psm1.getRetentionTime());
+	deltaRT2 = PSMDescription::unnormalize(psm2.getPredictedRetentionTime()) - PSMDescription::unnormalize(psm2.getRetentionTime());
+
+	return deltaRT1 < deltaRT2;
+}
+
 
 // constructor
 RTPredictor::RTPredictor() : trainFile(""), testFile(""),outputFile(""),
@@ -381,7 +397,7 @@ void RTPredictor::processTrainData()
 		}
 
 		// to detect CID fragments
-		if (testIncludesRT && (removeDecaying || (!decayingPeptidesFile.empty())))
+		if (testIncludesRT)
 			addToPairVector(testPsms, false, psmPairs);
 	}
 
@@ -391,10 +407,11 @@ void RTPredictor::processTrainData()
 	int sizeTrain = trainPsms.size();
 	if (VERB > 2)
 		cerr << "Remove CID fragments..." << endl;
+	////////////// ADD BACK
 	removeSourceCIDs(psmPairs);
 
 	// divide in test and train
-	if (testPsms.empty() || !testIncludesRT || (!removeDecaying && decayingPeptidesFile.empty()))
+	if (testPsms.empty() || !testIncludesRT)
 	{
 		trainPsms.resize(psmPairs.size());
 		transform(psmPairs.begin(), psmPairs.end(), trainPsms.begin(), getPSM);
@@ -670,6 +687,11 @@ void RTPredictor::trainSVRRegressor()
 	// memory allocation for the feature table
 	initFeaturesTable(trainPsms.size(), trainPsms, trainRetentionFeatures);
 
+	// EXPERIMENTAL
+	// calculate the regression index
+	model.getHydrophobicityIndex(trainPsms);
+	model.printOurIndex();
+
 	// compute the retention features
 	model.calcRetentionFeatures(trainPsms);
 
@@ -927,6 +949,7 @@ void RTPredictor::loadLibModel()
 	// least trimmed regression
 	if (linearAdjust && (trainPsms.size() > 0))
 	{
+		findLeastSquaresSolution(trainPsms, a, b);
 		pair< vector<double>, vector<double> > rts = getRTs(trainPsms);
 		lts.setData(rts.first, rts.second);
 		if (VERB > 2)
@@ -1147,6 +1170,7 @@ void RTPredictor::writeOutputFile(vector<PSMDescription> & psms)
  * RUN the application
  */
 // run rtPredictor
+
 void RTPredictor::run()
 {
 	// redirect standard output to the log file (if such file was provided)
@@ -1178,9 +1202,9 @@ void RTPredictor::run()
 			loadSVRModel();
 	}
 
-	if(testPsms.size() > 0)
+	if(!testFile.empty())
 	{
-		double pcorrelation, scorrelation, ms;
+		double pcorrelation, scorrelation, ms, timeWindow;
 
 		// check that a retention model was generated
 		if (model.isModelNull())
@@ -1211,8 +1235,11 @@ void RTPredictor::run()
 			if (VERB > 2)
 				cerr << "Adjusting linearly..." << endl;
 			for(int i = 0; i < testPsms.size(); i++)
-				testPsms[i].predictedTime = lts.predict(testPsms[i].predictedTime);
-				//testPsms[i].predictedTime = a * testPsms[i].predictedTime + b;
+			{
+				//testPsms[i].predictedTime = lts.predict(testPsms[i].predictedTime);
+				//cout << "a = " << a << " b = " << b << endl;
+				testPsms[i].predictedTime = a * testPsms[i].predictedTime + b;
+			}
 			if (VERB > 2)
 				cerr << "Done." << endl;
 		}
@@ -1222,6 +1249,7 @@ void RTPredictor::run()
 			// compute correlations and ms
 			pcorrelation = computePearsonCorrelation(testPsms);
 			scorrelation = computeSpearmanCorrelation(testPsms);
+			timeWindow = computeWindow(testPsms);
 			ms = computeMS(testPsms);
 			if (VERB >= 2)
 			{
@@ -1229,6 +1257,7 @@ void RTPredictor::run()
 				cerr << "Pearson Correlation = " << pcorrelation << endl;
 				cerr << "Spearman Correlation = " << scorrelation << endl;
 				cerr << "MS = " << ms << endl;
+				cerr << fractionPeptides * 100 << "% window = " << timeWindow << endl;
 				cerr << "--------------------------------------\n\n";
 			}
 		}
@@ -1263,6 +1292,15 @@ void RTPredictor::run()
 	if (!logFile.empty())
 		fclose(stdout);
 }
+
+/*
+void RTPredictor::run()
+{
+	  loadTrainFile();
+	  initFeaturesTable(trainPsms.size(), trainPsms, trainRetentionFeatures);
+      model.calcRetentionFeatures(trainPsms);
+}
+*/
 
 // unnormalize both observed and predicted retention times for a set of peptides
 void RTPredictor::unNormalizeRetentionTimes(vector<PSMDescription> & psms)
@@ -1415,6 +1453,32 @@ double RTPredictor::computeSpearmanCorrelation(vector<PSMDescription> & psms)
 }
 
 /*
+ * Calculate a window where fraction of the peptides are included
+ */
+double RTPredictor::computeWindow(vector<PSMDescription> & psms)
+{
+	double win, diff;
+	int nr = (int)round(fractionPeptides * (double)psms.size());
+	int k = psms.size() - nr, i = 1;
+
+	sort(psms.begin(), psms.end(), comparePsmsDeltaRT);
+
+	win = (PSMDescription::unnormalize(psms[nr - 1].getPredictedRetentionTime()) - PSMDescription::unnormalize(psms[nr - 1].getRetentionTime())) -
+		  (PSMDescription::unnormalize(psms[0].getPredictedRetentionTime()) - PSMDescription::unnormalize(psms[0].getRetentionTime()));
+
+	while (i <= k)
+	{
+		diff = (PSMDescription::unnormalize(psms[i + nr - 1].getPredictedRetentionTime()) - PSMDescription::unnormalize(psms[i + nr - 1].getRetentionTime())) -
+			   (PSMDescription::unnormalize(psms[i].getPredictedRetentionTime()) - PSMDescription::unnormalize(psms[i].getRetentionTime()));
+		if (diff < win)
+			win = diff;
+		i++;
+	}
+
+	return win;
+}
+
+/*
  * Printing functions
  */
 // write peptides and retention times to a file
@@ -1424,7 +1488,7 @@ void RTPredictor::writeRetentionTimeFile(const char* fileName, vector<PSMDescrip
 	vector<PSMDescription>::iterator it;
 
 	for(it = psms.begin(); it != psms.end(); ++it)
-		out << (it->peptide) << "\t" << (it->retentionTime) << "\n";
+		out << (it->peptide) << " " << (it->retentionTime) << "\n";
 
 	out.close();
 }

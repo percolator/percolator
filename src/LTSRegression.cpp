@@ -52,7 +52,7 @@ void LTSRegression::setData(vector<double> & x, vector<double> & y)
 	}
 
 	// since we definitely expect less than 25% contamination, we set h as 0.75*n
-	h = (int) round(0.75 * x.size());
+	h = (int) round(0.95 * x.size());
 }
 
 // for our case, constructing a random p-subset is equivalent to build the equation of a line through 2 randomly

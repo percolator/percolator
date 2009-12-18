@@ -108,7 +108,7 @@ int RTModel::no_features_per_group[NO_FEATURE_GROUPS] = {16, 16, 16, 16, 16, 16,
 //aa(2048)
 static int DEFAULT_FEATURE_GROUPS = 25 + 64 + 256 + 512 + 1024 + 2048;
 
-RTModel::RTModel(): model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON), stepFineGrid(STEP_FINE_GRID),
+RTModel::RTModel(): model(NULL), index_model(NULL), c(INITIAL_C), gamma(INITIAL_GAMMA), epsilon(INITIAL_EPSILON), stepFineGrid(STEP_FINE_GRID),
                     noPointsFineGrid(NO_POINTS_FINE_GRID), calibrationFile(""),	saveCalibration(false), k(DEFAULT_K),
                     gType(NORMAL_GRID), eType(K_FOLD_CV), selected_features(DEFAULT_FEATURE_GROUPS)
 {
@@ -533,7 +533,8 @@ void RTModel::calcRetentionFeatures(PSMDescription &psm)
 			features = fillFeaturesIndex(pep, krokhinTFA_index, features);
 
 		if (selected_features & 1 << 4)
-			features = fillFeaturesIndex(pep, kytedoolittle_index, features);
+			//features = fillFeaturesIndex(pep, kytedoolittle_index, features);
+			features = fillFeaturesIndex(pep, our_index, features);
 
 		if (selected_features & 1 << 5)
 			features = fillFeaturesIndex(pep, hessa_index, features);
@@ -1040,6 +1041,338 @@ double RTModel::estimateRT(double * features)
 
 	return predicted_value;
 }
+
+/*
+ * EXPERIMENTAL - try to train a hydrophobicity scale using a linear SVR; the weights will give the "hydrophobicity" of each aa
+ * Since it is just an experimental try, everything is put in just one function
+ * We return the new index
+ */
+void RTModel::copyIndexModel(svm_model* from)
+{
+	// destroy an existant model
+	if (index_model != NULL)
+    	svm_destroy_model(index_model);
+
+	index_model = (svm_model *) malloc(sizeof(svm_model));
+	index_model->param = from->param;
+	index_model->nr_class = from->nr_class;
+	index_model->l = from->l;			// total #SV
+
+  	// _DENSE_REP
+	index_model->SV = (svm_node *)malloc(sizeof(svm_node)*index_model->l);
+  	for(int i = 0;i < index_model->l; ++i)
+  	{
+  		index_model->SV[i].dim = from->SV[i].dim;
+  		index_model->SV[i].values = (double *)malloc(sizeof(double)*index_model->SV[i].dim);
+    	memcpy(index_model->SV[i].values,from->SV[i].values,sizeof(double)*index_model->SV[i].dim);
+  	}
+
+  	index_model->sv_coef = (double **) malloc(sizeof(double *)*(index_model->nr_class-1));
+  	for(int i=0;i<index_model->nr_class-1;++i)
+  	{
+  		index_model->sv_coef[i] = (double *) malloc(sizeof(double)*(index_model->l));
+    	memcpy(index_model->sv_coef[i],from->sv_coef[i],sizeof(double)*(index_model->l));
+  	}
+  	int n = index_model->nr_class * (index_model->nr_class-1)/2;
+  	if (from->rho)
+  	{
+  		index_model->rho = (double *) malloc(sizeof(double)*n);
+    	memcpy(index_model->rho,from->rho,sizeof(double)*n);
+  	}
+  	else
+  	{
+  		index_model->rho=NULL;
+  	}
+  	if (from->probA)
+  	{
+  		index_model->probA = (double *) malloc(sizeof(double)*n);
+    	memcpy(index_model->probA,from->probA,sizeof(double)*n);
+  	}
+  	else
+  	{
+  		index_model->probA=NULL;
+  	}
+  	if (from->probB)
+  	{
+  		index_model->probB = (double *) malloc(sizeof(double)*n);
+    	memcpy(index_model->probB,from->probB,sizeof(double)*n);
+    }
+    else
+    {
+    	index_model->probB = NULL;
+    }
+
+	assert(from->label == NULL);
+	assert(from->nSV == NULL);
+
+  	// for classification only
+	index_model->label=NULL;		// label of each class (label[k])
+	index_model->nSV=NULL;		// number of SVs for each class (nSV[k])
+  	// nSV[0] + nSV[1] + ... + nSV[k-1] = l
+  	// XXX
+	index_model->free_sv = 1;         // 1 if svm_model is created by svm_load_mode
+}
+
+// train a linear SVR with the given parameters
+void RTModel::trainIndexRetention(vector<PSMDescription>& trainset, const double C, const double epsilon)
+{
+	 svm_parameter param;
+	 param.svm_type = EPSILON_SVR;
+	 param.kernel_type = LINEAR;
+
+	 param.cache_size = 300;
+	 param.eps = epsilon; //1e-3;
+	 param.C = C;
+	 param.nr_weight = 0;
+	 param.weight_label = NULL;
+     param.weight = NULL;
+	 param.p = 0.1;
+	 param.shrinking = 1;
+	 param.probability = 0;
+
+     // initialize a SVM problem
+     svm_problem data;
+     data.l = trainset.size();
+     data.x = new svm_node[data.l];
+     data.y = new double[data.l];
+
+     for(size_t ix1 = 0;ix1 < trainset.size(); ++ix1)
+     {
+	    data.x[ix1].values = trainset[ix1].retentionFeatures;
+	    data.x[ix1].dim = aaAlphabet.size();
+	    data.y[ix1]= trainset[ix1].retentionTime;
+     }
+
+
+     // build a model by training the SVM on the given training set
+     if (svm_check_parameter(&data, &param) != NULL)
+     {
+	     if (VERB >= 1)
+		    cerr << "ERROR: Incorrect parameters for the SVR. Execution aborted. " << endl;
+	     exit(-1);
+      }
+
+      svm_model* m = svm_train(&data, &param);
+      // save the model in the current object
+      copyIndexModel(m);
+
+      delete[] data.x;
+      delete[] data.y;
+      svm_destroy_model(m);
+}
+
+// perform k-validation and return as estimate of the prediction error CV = 1/k (sum(PE(k))), where PE(k)=(sum(yi - yi_pred)^2)/size
+double RTModel::computeKfoldCVIndex(const vector<PSMDescription> & psms, const double epsilon, const double c)
+{
+	vector<PSMDescription> train, test;
+	int noPsms;
+	// sum of prediction errors
+	double sumPEs, PEk;
+
+	noPsms = psms.size();
+	sumPEs = 0;
+
+	if (VERB > 2)
+		cerr << k << " fold cross validation on " << noPsms << " psms..." << endl;
+
+	for(int i = 0; i < k; ++i)
+	{
+		train.clear();
+		test.clear();
+		// get training and testing sets
+		for(int j = 0; j < noPsms; ++j)
+		{
+			if ((j % k) == i)
+				test.push_back(psms[j]);
+			else
+				train.push_back(psms[j]);
+
+		}
+
+		trainIndexRetention(train, c, epsilon);
+		PEk = testIndexRetention(test);
+		sumPEs += PEk;
+	}
+
+	if (VERB > 2)
+		cerr << "Done." << endl;
+
+	return (sumPEs / (double)k);
+}
+
+// test the svr on the given test set
+double RTModel::testIndexRetention(vector<PSMDescription>& testset)
+{
+  double ms=0.0;
+  double estimatedRT;
+
+  for(size_t ix1=0;ix1<testset.size();ix1++)
+  {
+	  estimatedRT = estimateIndexRT(testset[ix1].retentionFeatures);
+	  double diff = estimatedRT - testset[ix1].retentionTime;
+	  ms += diff*diff;
+  }
+  return ms / testset.size();
+}
+
+// estimate the retention time using the svm model
+double RTModel::estimateIndexRT(double * features)
+{
+	double predicted_value;
+	svm_node node;
+
+	node.values = features;
+	node.dim = aaAlphabet.size();
+	predicted_value = svm_predict(index_model, &node);
+
+	return predicted_value;
+}
+
+
+// train the Support Vector Regressor for hydrophobicity
+void RTModel::trainIndexSVR(vector<PSMDescription> & psms)
+{
+  int noPsms = psms.size();
+  double GRID_C[13] = { pow(2,-6), pow(2,-5), pow(2,-4), pow(2, -3), pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1), pow(2, 2), pow(2, 3), pow(2, 4),
+  					  pow(2, 5), pow(2, 6)};
+  vector<double> grid_c;
+
+  grid_c.assign(GRID_C, GRID_C + sizeof(GRID_C) / sizeof (GRID_C[0]));
+
+  if (VERB >= 2)
+	  cerr << "Building the hydrophobicity model..." << endl;
+
+  // calibrate parameters using the normal grid
+  double epsilon, c;
+  double bestError = 1e100, error;
+  vector<double>::iterator it2, it3;
+  int totalIterations = grid_c.size() * grids.gridEpsilon.size();
+  int step = 0;
+
+  if (VERB > 2)
+  {
+	  cerr << "Calibrating (C, epsilon)..."<< endl;
+	  cerr << "------------------------------" << endl;
+  }
+
+  // grid search to calibrate parameters
+  for(it2 = grid_c.begin(); it2 != grid_c.end(); ++it2)
+  {
+	  for(it3 = grids.gridEpsilon.begin(); it3 != grids.gridEpsilon.end(); ++it3)
+	  {
+		  ++step;
+		  if (VERB > 2)
+		  {
+			  cerr << "Step " << step << " / " << totalIterations << endl;
+			  cerr << "Evaluate = (C, epsilon) = (" << (*it2) << ", " << (*it3) << ")" << endl;
+		  }
+
+		  error = computeKfoldCVIndex(psms, (*it3), (*it2));
+
+		  if (VERB > 2)
+			  cerr << "Error = " << error << endl;
+
+		  if (error < bestError)
+		  {
+			  c_index = (*it2);
+			  eps_index = (*it3);
+			  bestError = error;
+		   }
+
+		  if (VERB > 2)
+			  cerr << endl;
+	    }
+    }
+
+
+  if (VERB >= 2)
+ 	cerr << "Done." << endl;
+
+  if (VERB > 2)
+  {
+	  cerr << "------------------------------" << endl;
+	  cerr << "Final parameters are (c, epsilon) = (" << c_index << ", " << eps_index << ") with error = " << bestError << endl;
+  }
+
+  trainIndexRetention(psms, c_index, eps_index);
+
+  if (VERB > 3)
+  {
+	  cerr << "Done." << endl;
+  }
+}
+void RTModel::getHydrophobicityIndex(vector<PSMDescription> & psms)
+{
+	vector<PSMDescription>::iterator it;
+	Normalizer* normalizer;
+	int noFeat = aaAlphabet.length();
+
+	for(int i = 0; i < ('Z' - 'A' + 1); ++i)
+		our_index[i] = 0.0;
+
+	// calculate the aa features for all the psms
+	for(it = psms.begin(); it != psms.end(); ++it)
+	{
+		string peptide = it->getPeptide();
+		string::size_type pos1 = peptide.find('.');
+		string::size_type pos2 = peptide.find('.',++pos1);
+		string pep = peptide.substr(pos1,pos2-pos1);
+
+		double *features = it->getRetentionFeatures();
+		// amino acids
+		features = fillAAFeatures(pep, features);
+	}
+
+	// scale the rts
+	PSMDescription::setPSMSet(psms);
+	PSMDescription::normalizeRetentionTimes(psms);
+
+	normalizer = Normalizer::getNormalizer();
+	normalizer->resizeVecs(noFeat);
+	// scale the values of the features between 0 and 1
+	vector<double*> tmp;
+	vector<double*> tRetFeat = PSMDescription::getRetFeatures(psms);
+	normalizer->setSet(tmp, tRetFeat, (size_t)0, noFeat);
+	normalizer->normalizeSet(tmp, tRetFeat);
+
+	// train retention using a normal grid
+	trainIndexSVR(psms);
+
+	cout << endl;
+	double a[aaAlphabet.size()+1][aaAlphabet.size()];
+	for (int i = 0; i < aaAlphabet.size()+1; ++i)
+		for(int j = 0; j < aaAlphabet.size(); ++j)
+			if (j == (i - 1))
+				a[i][j] = 1.0;
+			else
+				a[i][j] = 0.0;
+
+	// get weights
+	double background = estimateIndexRT(a[0]);
+	for(int i = 1; i < aaAlphabet.size() + 1; ++i)
+		our_index[aaAlphabet[i - 1] - 'A'] =  estimateIndexRT(a[i]) - background;
+
+	cout << "------------------------------" << endl;
+	for (int i = 0; i < psms.size(); ++i)
+		for(int j = 0; j < aaAlphabet.size(); ++j)
+			psms[i].getRetentionFeatures()[j] = 0.0;
+
+	PSMDescription::unnormalizeRetentionTimes(psms);
+}
+
+void RTModel::printOurIndex()
+{
+	cout << "Our hydrophobicity index: " << endl;
+	for (int i = 0; i < ('Z' - 'A' + 1); ++i)
+		cout << our_index[i] << "  ";
+	cout << endl;
+	cout << "-------------------------------" << endl;
+}
+/*
+ * END
+ */
+
+
 // set the type of grid
 void RTModel::setGridType(const GridType & g)
 {
