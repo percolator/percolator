@@ -27,7 +27,7 @@
 using namespace std;
 
 // number of feature groups
-#define NO_FEATURE_GROUPS 12
+#define NO_FEATURE_GROUPS 13
 // types of grid
 typedef enum {NO_GRID, NORMAL_GRID, FINE_GRID} GridType;
 // types of evaluation
@@ -59,7 +59,7 @@ class RTModel
 		static double* fillPTMFeatures(const string& pep, double *feat);
 		static double  bulkinessSum(const string& peptide);
 		static double* hydrophobicMoment(const float *index, const string& peptide, const double angle, const int window, double * features);
-		static int noConsecKRDENQ(const string& peptide);
+		static double noConsecKRDENQ(const string& peptide);
 		static void fillFeaturesAllIndex(const string& pep, double *features);
 		static double* fillFeaturesIndex(const string& peptide, const float *index, double *features);
 		void calcRetentionFeatures(PSMDescription &psm);
@@ -92,7 +92,7 @@ class RTModel
 		string getGridType();
 		string getEvaluationType();
 		static double getNoPtms(string pep);
-		static size_t minimumNumRTFeatures() { return 3*16 + 3 + 1 + 1 + 1; }
+		static size_t minimumNumRTFeatures() { return 3*17 + 1 + 1 + 1 + 2; }
 		static size_t totalNumRTFeatures();
 		// set functions
 		void setNumRtFeat(const size_t nRtFeat) { noFeaturesToCalc = nRtFeat; }
@@ -106,7 +106,8 @@ class RTModel
 		void printFeaturesInUse(ostringstream & oss);
 		static string aaAlphabet,isoAlphabet;
 		// EXPERIMENTAL
-		void getHydrophobicityIndex(vector<PSMDescription> &  psms);
+		void trainIndexSVRNoCCalibration(vector<PSMDescription> & psms, const double C);
+		void getHydrophobicityIndex(vector<PSMDescription> &  psms, const double C);
 		void trainIndexRetention(vector<PSMDescription>& trainset, const double C, const double epsilon);
 		void copyIndexModel(svm_model* from);
 		double computeKfoldCVIndex(const vector<PSMDescription> & psms, const double epsilon, const double c);
@@ -114,11 +115,21 @@ class RTModel
 		double estimateIndexRT(double * features);
 		double testIndexRetention(vector<PSMDescription>& testset);
 		void printOurIndex();
-
+		// EXPERIMENTAL 2
+		static double noHydrophobicAA(const string& peptide);
+		static double noConsecHydrophobic(const string& peptide);
+		/*static double noSmallAA(const string& peptide);
+		static double noConsecAliphatic(const string& peptide);
+		static double noBBranchedAA(const string& peptide);
+		static double noConsecRepeats(const string& peptides, const char& letter);*/
+		double* fillHydrophobicFeatures(const string& peptide, double *features);
+		static double indexSumSquaredDiff(const float* index, const string& peptide);
 
 	protected:
 		// EXPERIMENTAL
 		float our_index['Z'-'A'+1];
+		static float Luna_120_index['Z'-'A'+1];
+		static float TFA_index['Z'-'A' + 1];
 		svm_model *index_model;
 		double c_index, eps_index;
 
@@ -150,7 +161,8 @@ class RTModel
 		static bool doKlammer;
 		// indices, bulkiness
 		static float krokhin_index['Z'-'A'+1], krokhin100_index['Z'-'A'+1], krokhinC2_index['Z'-'A'+1], krokhinTFA_index['Z'-'A'+1],
-		             hessa_index['Z'-'A'+1], kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1], bulkiness['Z'-'A' + 1];
+		             hessa_index['Z'-'A'+1], kytedoolittle_index['Z'-'A'+1], aa_weights['Z'-'A'+1], bulkiness['Z'-'A' + 1],
+		             cornette_index['Z' - 'A' + 1], eisenberg_index['Z' - 'A' + 1], meek_index['Z' - 'A' + 1];
 		// the groups of features to be used
 		static string feature_groups[NO_FEATURE_GROUPS];
 		// how many features are in each group?

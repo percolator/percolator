@@ -101,6 +101,9 @@ class RTPredictor
 		bool operator() (PSMDescription& psm) {return theEnzyme->isEnzymatic(psm.getPeptide());}
 
 	protected:
+		// EXPERIMENTAL
+		double C;
+
 		double a, b;
 	    // the difference in hydrophobicity used to detect CID fragments
 	    static float diff_hydrophobicity;

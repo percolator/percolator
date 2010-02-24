@@ -90,9 +90,9 @@ inline ostream& operator<< (ostream & out, PSMDescription & psm)
     // Point's members directly.
     out << "Peptide: " << psm.peptide << endl;
     out << "Retention time, predicted retention time: " << psm.retentionTime << ", " << psm.predictedTime;
-    //out << "Retention features: ";
-    //for (int i = 0; i < 54; ++i)
-    //	out << psm.retentionFeatures[i] << "  ";
+    out << "Retention features: ";
+    for (int i = 0; i < 76; ++i)
+    	out << psm.retentionFeatures[i] << "  ";
     out << endl;
     return out;
 }

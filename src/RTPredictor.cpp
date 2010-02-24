@@ -193,6 +193,8 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 	cmd.defineOption("i", "save-decay-peptides", "Specifies the file in which the CID fragments will be stored", "filename");
 	cmd.defineOption("z", "enzyme", "Specifies the enzyme used for digestion. Possible values {NO_ENZYME,TRYPSIN,CHYMOTRYPSIN,ELASTASE}. By default TRYPSIN", "value");
 	cmd.defineOption("x", "remove-non-enzymatic", "All non enzymatic peptides should be removed from both train and test ", "", TRUE_IF_SET);
+	// EXPERIMENTAL; specify the slack penalty that is to be used
+	cmd.defineOption("b", "slack_penalty", "Specify the slack penalty for the index SVR ", "value");
 
 
 	// parse command line
@@ -273,6 +275,11 @@ bool RTPredictor::parseOptions(int argc, char **argv)
 		else
 			theEnzyme->setEnzyme(Enzyme::NO_ENZYME);
 	}
+
+	// EXPERIMENTAL; specify the slack penalty that is to be used when generating our hydrophobicity index
+	if (cmd.optionSet("b"))
+		C = cmd.getDouble("b", -100000.0, 100000.0);
+
 
   	return true;
 }
@@ -689,8 +696,8 @@ void RTPredictor::trainSVRRegressor()
 
 	// EXPERIMENTAL
 	// calculate the regression index
-	model.getHydrophobicityIndex(trainPsms);
-	model.printOurIndex();
+	//model.getHydrophobicityIndex(trainPsms, C);
+	//model.printOurIndex();
 
 	// compute the retention features
 	model.calcRetentionFeatures(trainPsms);
