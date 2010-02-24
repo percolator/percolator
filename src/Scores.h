@@ -23,6 +23,8 @@
 #ifndef uint64_t
 #define uint64_t unsigned long long
 #endif
+#else
+#include<stdint.h>
 #endif
 #include <vector>
 #include <map>
