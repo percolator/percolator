@@ -1,29 +1,26 @@
 /*******************************************************************************
-    Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+ Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
 
  *******************************************************************************/
 #include <sstream>
 #include <assert.h>
 #include "FeatureNames.h"
 
-
 size_t FeatureNames::numFeatures = 0;
 
-
-FeatureNames::FeatureNames()
-{
+FeatureNames::FeatureNames() {
   minCharge = 100;
   maxCharge = -1;
   chargeFeatNum = -1;
@@ -38,25 +35,24 @@ FeatureNames::FeatureNames()
 
 }
 
-FeatureNames::~FeatureNames()
-{
+FeatureNames::~FeatureNames() {
 }
 
 string FeatureNames::getFeatureNames(bool skipDOC) {
-  int n = (skipDOC&&docFeatNum>0)?docFeatNum:(int)featureNames.size();
+  int n = (skipDOC && docFeatNum > 0) ? docFeatNum
+                                      : (int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
     int featNum = 0;
     oss << featureNames[featNum++];
-    for (; featNum < n; ++featNum )
+    for (; featNum < n; ++featNum)
       oss << "\t" << featureNames[featNum];
   }
   return oss.str();
 }
 
 void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
-  if (!featureNames.empty())
-    return;
+  if (!featureNames.empty()) return;
   istringstream iss(line);
   string tmp;
   while (iss.good() && skip && --skip) {
@@ -67,21 +63,15 @@ void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
     iss >> tmp;
     featureNames.push_back(tmp);
   }
-  assert(featureNames.size()==numFields);
+  assert(featureNames.size() == numFields);
   setNumFeatures(featureNames.size());
 }
 
-void FeatureNames::setSQTFeatures(
-  int minC, int maxC,
-  bool doEnzyme,
-  bool calcPTMs,
-  bool doPNGaseF,
-  const string& aaAlphabet,
-  bool calcQuadratic,
-  bool calcDOC)
-{
-  if (!featureNames.empty())
-    return;
+void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
+                                  bool calcPTMs, bool doPNGaseF,
+                                  const string& aaAlphabet,
+                                  bool calcQuadratic, bool calcDOC) {
+  if (!featureNames.empty()) return;
   featureNames.push_back("lnrSp");
   featureNames.push_back("deltLCn");
   featureNames.push_back("deltCn");
@@ -91,8 +81,9 @@ void FeatureNames::setSQTFeatures(
   featureNames.push_back("Mass");
   featureNames.push_back("PepLen");
   chargeFeatNum = featureNames.size();
-  minCharge = minC; maxCharge = maxC;
-  for(int charge=minCharge; charge <= maxCharge; ++charge) {
+  minCharge = minC;
+  maxCharge = maxC;
+  for (int charge = minCharge; charge <= maxCharge; ++charge) {
     ostringstream cname;
     cname << "Charge" << charge;
     featureNames.push_back(cname.str());
@@ -117,15 +108,16 @@ void FeatureNames::setSQTFeatures(
   }
   if (!aaAlphabet.empty()) {
     aaFeatNum = featureNames.size();
-    for (string::const_iterator it=aaAlphabet.begin();it!=aaAlphabet.end();it++)
+    for (string::const_iterator it = aaAlphabet.begin(); it
+        != aaAlphabet.end(); it++)
       featureNames.push_back(*it + "-Freq");
   }
-  if(calcQuadratic) {
+  if (calcQuadratic) {
     quadraticFeatNum = featureNames.size();
-    for(int f1=1;f1<quadraticFeatNum;++f1) {
-      for(int f2=0;f2<f1;++f2) {
+    for (int f1 = 1; f1 < quadraticFeatNum; ++f1) {
+      for (int f2 = 0; f2 < f1; ++f2) {
         ostringstream feat;
-        feat << "f" << f1+1 << "*" << "f" << f2+1;
+        feat << "f" << f1 + 1 << "*" << "f" << f2 + 1;
         featureNames.push_back(feat.str());
       }
     }

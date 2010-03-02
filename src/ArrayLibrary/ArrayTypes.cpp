@@ -25,6 +25,12 @@
  $Id: ArrayTypes.cpp,v 1.3 2009/01/09 14:41:00 lukall Exp $
  
  *******************************************************************************/
+#include <iostream>
+using namespace std;
+
+#include "OrderedArray.h"
+#include "Array.h"
+#include "ArrayTypes.h"
 
 Array<int> seq(int lowest, int highest)
 {

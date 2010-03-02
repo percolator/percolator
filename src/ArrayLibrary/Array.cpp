@@ -28,7 +28,11 @@
 
 template <typename T> class OrderedArray;
 
+#include <iostream>
+using namespace std;
+
 #include "OrderedArray.h"
+#include "Array.h"
 
 template <typename T>
 Array<T>::Array(int n) :

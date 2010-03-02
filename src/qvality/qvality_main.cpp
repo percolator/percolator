@@ -14,33 +14,17 @@
  limitations under the License.
 
  *******************************************************************************/
-#ifndef TRANSFORM_H_
-#define TRANSFORM_H_
+#include "Option.h"
+#include "Globals.h"
+#include "PosteriorEstimator.h"
 
-#include <math.h>
-
-class Transform {
-  public:
-    Transform(double deltL = 0.0, double deltH = 0.0, bool dLt = false,
-              bool dL = false) :
-      deltaLow(deltL), deltaHigh(deltH), doLogit(dLt), doLog(dL) {
-      ;
-    }
-    ~Transform() {
-      ;
-    }
-    double operator()(double xx) {
-      if ((!doLogit) && (!doLog)) return xx;
-      if ((deltaLow > .0) || (deltaHigh > .0)) {
-        if (doLogit) xx *= (1. - deltaHigh - deltaLow);
-        xx += deltaLow;
-      }
-      if (doLogit) return log(xx / (1. - xx));
-      return log(xx);
-    }
-  private:
-    double deltaLow, deltaHigh;
-    bool doLogit, doLog;
-};
-
-#endif /*TRANSFORM_H_*/
+int main(int argc, char **argv) {
+  PosteriorEstimator *pCaller = new PosteriorEstimator();
+  int retVal = -1;
+  if (pCaller->parseOptions(argc, argv)) {
+    pCaller->run();
+  }
+  delete pCaller;
+  Globals::clean();
+  return retVal;
+}

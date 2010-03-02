@@ -870,7 +870,7 @@ vector<int> MSReader::estimateCharge(Spectrum& s)
 void MSReader::createIndex()
 {
   //create index for msScan table 
-  char* stmt1 = "create index idxScanNumber on msScan(startScanNumber)";
+  char const * const stmt1 = "create index idxScanNumber on msScan(startScanNumber)";
   sql_stmt(stmt1);
 
 }
@@ -969,7 +969,7 @@ void MSReader::setPrecisionMZ(int i){
   iMZPrecision=i;
 }
 
-bool MSReader::readFile(char* c, Spectrum& s, int scNum){
+bool MSReader::readFile(char * const c, Spectrum& s, int scNum){
 
   if(c!=NULL) lastFileFormat = checkFileFormat(c);   
   return readFile(c,lastFileFormat,s,scNum);
