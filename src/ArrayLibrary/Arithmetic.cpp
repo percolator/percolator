@@ -25,6 +25,8 @@
  $Id: Arithmetic.cpp,v 1.3 2009/01/09 14:41:00 lukall Exp $
  
  *******************************************************************************/
+#include "Arithmetic.h"
+
 template <typename T>
 T Arithmetic::add(T lhs, T rhs)
 {

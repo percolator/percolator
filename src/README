@@ -1,17 +1,7 @@
-This package potentially produces two different executables
-qvality and percolator.
+This package produces two different executables Luminator and Qvalumity.
 
-The shell commands `$ ./configure; make; make install' should
-configure, build, and install the executables if you downloaded a packaged version.
+Please read INSTALL file (located in parent directory) in order
+to build the package.
 
-If you have automake istalled you may get a snapshot that you build by the command series
-$ git clone git://github.com/percolator/percolator
-$ cd percolator/src
-$ bash bootstrap
-$ mkdir debug; cd debug
-$ ../configure --enable-debug
-$ make
-
-
-The commands `$ qvality --help' or  `$ percolator --help' will give full
-usage statements.
+The commands `./qvalumity --help' or  `./luminator --help' in created 'bin'
+folder will give full usage statements.

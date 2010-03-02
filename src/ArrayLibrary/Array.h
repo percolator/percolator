@@ -33,6 +33,8 @@
 #ifndef _Array_H
 #define _Array_H
 
+#include <vector>
+
 template <typename T>
 class Array
 {

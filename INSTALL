@@ -1,0 +1,42 @@
+Luminator and Qvalumity building and installation steps.
+
+FOR LINUX USERS:
+
+This package produces two different executables: Qvalumity and Luminator.
+
+The building process requires 'cmake' utility, which can be installed by
+running command 'sudo apt-get install cmake'.
+
+In order to build Luminator and Qvalumity executables, go to folder 'build_here'
+(or create an empty one if it doesn't exist, which should be placed at the same
+level as 'src' folder).
+
+Being in 'build_here' folder run command 'cmake ..' and after it will be successfuly
+completed, run command 'make' and finally 'sudo make install' (or only 'sudo make install'
+if executables should be automatically installed after building).
+Default installation directory on the target machine is '/usr/local/bin'.
+
+After building, executable files (both for Luminator and Qvalumity) also can be found
+in created 'bin' directory (which can be found at the same level as 'build_here'
+and 'src' folders).
+
+In order to produce a debug version of the code, parameter
+'-DCMAKE_BUILD_TYPE=Debug' should be given to cmake, for example:
+'cmake -DCMAKE_BUILD_TYPE=Debug ..'
+
+By default an optimized release version of programs is produced.
+
+In order to make source and distribution packages the following commands
+should be executed after 'cmake ..': 'make package_source' and
+'make package' respectively. Created packages can be found in 'build_here' folder.
+
+NOTE: In case of generating source package, in order not to force target user to
+create external building folder(like 'build_here' in this case) - an extra folder
+with the name different from current build folder (which is 'build_here')
+should be created and left non-empty (containing, for example, just a README file like
+'build_here' does). This non-empty folder will pass through CPack ignorance filters
+and will be archived with other files/folders in source
+package (so it will simply serve as 'build_here' folder in destination package).
+
+The commands `./qvalumity --help' or  `./luminator --help' in created 'bin'
+folder will give full usage statements.
