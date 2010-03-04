@@ -16,7 +16,7 @@
  *******************************************************************************/
 #include "Option.h"
 #include "Globals.h"
-#include "RTPredictor.h"
+#include "Elude.h"
 
 #include <math.h>
 #include <cmath>
@@ -24,7 +24,7 @@
 int main(int argc, char **argv){
   RTPredictor *pCaller = new RTPredictor();
   int retVal = 0;
-
+  cout << "I work!!!" << endl;
   if(pCaller->parseOptions(argc,argv))
   {
     pCaller->run();

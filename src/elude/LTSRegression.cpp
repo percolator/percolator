@@ -14,7 +14,6 @@
    limitations under the License.
 
  *****************************************************************************/
-#include <LTSRegression.h>
 #include <algorithm>
 #include <iostream>
 #include <stdlib.h>
@@ -22,6 +21,7 @@
 #include <cmath>
 #include <float.h>
 #include "Globals.h"
+#include "LTSRegression.h"
 
 // initialize static variables
 int LTSRegression::noSubsets = 500;

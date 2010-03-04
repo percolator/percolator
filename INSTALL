@@ -25,6 +25,7 @@ In order to produce a debug version of the code, parameter
 'cmake -DCMAKE_BUILD_TYPE=Debug ..'
 
 By default an optimized release version of programs is produced.
+'build_me.sh' script in 'build_here' folder builds debug version of software.
 
 In order to make source and distribution packages the following commands
 should be executed after 'cmake ..': 'make package_source' and
@@ -37,6 +38,9 @@ should be created and left non-empty (containing, for example, just a README fil
 'build_here' does). This non-empty folder will pass through CPack ignorance filters
 and will be archived with other files/folders in source
 package (so it will simply serve as 'build_here' folder in destination package).
+
+In order to commit .gitignore file among others, instruct git to add it explicitely:
+git add -f .gitignore
 
 The commands `./qvalumity --help' or  `./luminator --help' in created 'bin'
 folder will give full usage statements.

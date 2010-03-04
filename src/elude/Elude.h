@@ -21,7 +21,7 @@
 #include <utility>
 #include "PSMDescription.h"
 #include "Normalizer.h"
-#include "RTModel.h"
+#include "EludeModel.h"
 #include "LTSRegression.h"
 #include "Enzyme.h"
 

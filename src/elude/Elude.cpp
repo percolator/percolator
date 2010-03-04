@@ -29,7 +29,7 @@
 #include <ctime>
 #include "Option.h"
 #include "Globals.h"
-#include "RTPredictor.h"
+#include "Elude.h"
 #include "PSMDescription.h"
 #include "LTSRegression.h"
 
