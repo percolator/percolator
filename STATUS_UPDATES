@@ -1,7 +1,9 @@
 --- March 23, 2010 ---
 * Installation/building procedure has been changed for both master and lumi branches.
 * Some minor changes in lumi branch (astyle coding style conversion and isolation of Elude build).
-* 
+* CTest system-level testing functionality added
+* Google C++ Testing Framework unit-level functionality added
+* Some changes in documentation
 
 --- March 3, 2010 ---
 

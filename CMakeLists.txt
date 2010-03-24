@@ -10,6 +10,12 @@ set(EXECUTABLE_OUTPUT_PATH "${PERCOLATOR_SOURCE_DIR}/bin")
 # Going down to sources directory
 add_subdirectory(src)
 
+# Enabling CTest functionality
+enable_testing()
+
+# Running system and unit level tests
+add_subdirectory(tests)
+
 # Packaging general options
 set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and Qvality proteins classification project")
