@@ -1,3 +1,8 @@
+--- March 23, 2010 ---
+* Installation/building procedure has been changed for both master and lumi branches.
+* Some minor changes in lumi branch (astyle coding style conversion and isolation of Elude build).
+* 
+
 --- March 3, 2010 ---
 
 * .gitignore is added to a commit.
