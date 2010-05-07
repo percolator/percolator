@@ -659,7 +659,9 @@ void DataSet::readFragSpectrumScans(  ::percolatorInNs::frag_spectrum_scan & fss
 	  }
 
 	  myPsm.peptide = psmIter->peptide(); 
-
+          if ( fss.observed().retention_time().present() ) {
+	    myPsm.retentionTime = fss.observed().retention_time().get();
+	  }
           myPsm.massDiff =
 	  MassHandler::massDiff(fss.observed().mass_charge() ,
 				psmIter->calculated().mass_charge(),
