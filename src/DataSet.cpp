@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
@@ -21,7 +22,7 @@
 #include <cmath>
 #include <algorithm>
 #ifdef WIN32
-#include <float.h>
+#include <double.h>
 #define isfinite _finite
 #endif
 #include <set>
@@ -37,6 +38,12 @@ using namespace std;
 #include "Enzyme.h"
 #include "Globals.h"
 
+#include <boost/foreach.hpp>
+
+
+
+
+
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcAAFrequencies = false;
@@ -44,9 +51,10 @@ bool DataSet::calcPTMs = false;
 bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
 bool DataSet::pngasef = false;
-string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
+const string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
 FeatureNames DataSet::featureNames;
+
 
 static char buf[4096];
 
@@ -58,6 +66,7 @@ DataSet::DataSet() {
   pattern = "";
   doPattern = false;
   matchPattern = true;
+  psmNum = 0;
 }
 
 DataSet::~DataSet() {
@@ -160,6 +169,7 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
     out.str("");
   }
 }
+
 
 double DataSet::isPngasef(const string& peptide) {
   size_t next_pos = 0, pos;
@@ -555,6 +565,29 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
   if (!isfinite(feat[2])) cerr << in;
 }
 
+void DataSet::computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq ) {
+  // Overall amino acid composition features
+
+  assert(pep.size() >= 5);
+  string::size_type aaSize = aaAlphabet.size();
+
+  std::vector< double > doubleV;
+  for ( int m = 0  ; m < aaSize ; m++ )  {
+    doubleV.push_back(0.0);
+  }
+  int len = 0;
+  for (string::const_iterator it = pep.begin() + 2; it != pep.end() - 2; it++) {
+    string::size_type pos = aaAlphabet.find(*it);
+    if (pos != string::npos) doubleV[pos]++;
+    len++;
+  }
+  assert(len>0);
+  for ( int m = 0  ; m < aaSize ; m++ )  {
+    doubleV[m] /= len;
+  }
+  std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
+}
+
 void DataSet::computeAAFrequencies(const string& pep, double *feat) {
   // Overall amino acid composition features
   string::size_type pos = aaAlphabet.size();
@@ -586,6 +619,67 @@ unsigned int DataSet::cntPTMs(const string& pep) {
     if (ptmAlphabet.find(pep.at(pos)) != string::npos) len++;
   }
   return len;
+}
+
+void DataSet::readFragSpectrumScans(  ::percolatorInNs::frag_spectrum_scan & fss) {
+
+
+  ::percolatorInNs::type::value myType;
+
+  switch (label) {
+  case 1: { myType = ::percolatorInNs::type::target; break; };
+      case -1: { myType = ::percolatorInNs::type::decoy; break; };
+  default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
+  }
+
+
+      const ::percolatorInNs::frag_spectrum_scan::peptide_spectrum_match_sequence & psmSeq = fss.peptide_spectrum_match();
+      for ( ::percolatorInNs::frag_spectrum_scan::peptide_spectrum_match_const_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
+
+	if ( psmIter->type() == myType ) { 
+
+          assert( psms.size() > psmNum );
+          PSMDescription & myPsm = psms[psmNum];
+
+	  // rng:oneOrMore so the assert should always be true
+          assert( psmIter->protein().size() > 0 ); 
+
+
+	  BOOST_FOREACH( percolatorInNs::protein prot,  psmIter->protein() )  {
+	    myPsm.proteinIds.insert( prot.id() );
+}
+          myPsm.id = psmIter->id();
+
+	  const ::percolatorInNs::features::feature_sequence & featureS = psmIter->features().feature();
+	  int featureNum = 0;
+
+	  for ( ::percolatorInNs::features::feature_const_iterator featureIter = featureS.begin(); featureIter != featureS.end(); featureIter++ ) {
+	    myPsm.features[featureNum]=*featureIter;
+            featureNum++;
+	  }
+
+	  myPsm.peptide = psmIter->peptide(); 
+
+          myPsm.massDiff =
+	  MassHandler::massDiff(fss.observed().mass_charge() ,
+				psmIter->calculated().mass_charge(),
+				psmIter->charge(),
+				myPsm.peptide.substr(2, myPsm.peptide.size()
+                                      - 4));
+
+          if (calcDOC) {
+          // These features will be set before each iteration
+          DescriptionOfCorrect::calcRegressionFeature(myPsm);
+          myPsm.features[featureNum++] = abs( myPsm.pI - 6.5);
+          myPsm.features[featureNum++] = abs( myPsm.massDiff);
+          // myPsm.features[featureNum++]=abs(psm.retentionTime);
+          myPsm.features[featureNum++] = 0;
+          myPsm.features[featureNum++] = 0;
+       }
+	  ++psmNum;
+	} 
+    }
+  return;
 }
 
 void DataSet::readSQT(const string fname, const string & wild, bool match) {
@@ -643,9 +737,7 @@ void DataSet::readSQT(const string fname, const string & wild, bool match) {
                                    calcQuadraticFeatures,
                                    calcDOC);
   initFeatureTables(FeatureNames::getNumFeatures(), n, calcDOC);
-
   string seq;
-
   fileId = fname;
   size_t spos = fileId.rfind('/');
   if (spos != string::npos) fileId.erase(0, spos + 1);
@@ -704,14 +796,13 @@ void DataSet::readSQT(const string fname, const string & wild, bool match) {
     set<int>::const_iterator it;
     for (it = theMs.begin(); it != theMs.end(); it++) {
       id.str("");
-      id << idstr << '_' << *it;
+      id << idstr << '_' << (*it + 1) ;
       psms[ix].id = id.str();
       readFeatures(record, psms[ix], *it);
       ix++;
     }
   }
   sqtIn.close();
-  //  cout << "Read File" << endl;
 }
 
 void DataSet::initFeatureTables(const unsigned int numFeat,
@@ -719,6 +810,7 @@ void DataSet::initFeatureTables(const unsigned int numFeat,
                                 bool regressionTable) {
   FeatureNames::setNumFeatures(numFeat);
   numSpectra = numSpec;
+
   feature = new double[numFeat * numSpec];
 
   if (regressionTable) {

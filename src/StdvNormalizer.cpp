@@ -71,8 +71,10 @@ void StdvNormalizer::setSet(set<DataSet *> & setVec, size_t nf, size_t nrf) {
   size_t ix;
   set<DataSet *>::iterator it;
   for (it = setVec.begin(); it != setVec.end(); ++it) {
+    assert(*it);
     int ixPos = -1;
     while ((pPSM = (*it)->getNext(ixPos)) != NULL) {
+      assert(pPSM);
       n++;
       features = pPSM->features;
       for (ix = 0; ix < numFeatures; ++ix) {

@@ -23,10 +23,17 @@
 #include <iostream>
 #include "PSMDescription.h"
 #include "FeatureNames.h"
+
+#include "percolator-xml.hxx"
+
 using namespace std;
 class Scores;
 class Normalizer;
 class ResultHolder;
+
+namespace percolatorInNs { 
+  class target_decoy;
+}
 
 class DataSet {
   public:
@@ -35,7 +42,10 @@ class DataSet {
     void inline setLabel(int l) {
       label = l;
     }
-    void computeAAFrequencies(const string& pep, double *feat);
+static    void computeAAFrequencies(const string& pep, double *feat);
+static void computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq );
+    void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
+
     void readSQT(const string fname, const string & wild = "", bool match =
         false);
     void modifySQT(const string & outFN, Scores * pSc, const string greet,
@@ -46,6 +56,11 @@ class DataSet {
     static FeatureNames& getFeatureNames() {
       return featureNames;
     }
+    static bool getQuadraticFeatures() {
+      return calcQuadraticFeatures;
+    }
+
+
     static void setQuadraticFeatures(bool on) {
       calcQuadraticFeatures = on;
     }
@@ -58,11 +73,20 @@ class DataSet {
     static void setAAFreqencies(bool on) {
       calcAAFrequencies = on;
     }
+    static bool getAAFreqencies() {
+      return calcAAFrequencies;
+    }
     static void setPTMfeature(bool on) {
       calcPTMs = on;
     }
+    static bool getPTMfeature() {
+      return calcPTMs;
+    }
     static void setPNGaseF(bool on) {
       pngasef = on;
+    }
+    static bool getPNGaseF() {
+      return pngasef;
     }
     static void setIsotopeMass(bool on) {
       isotopeMass = on;
@@ -70,6 +94,9 @@ class DataSet {
     static void setNumFeatures(bool doc);
     static void inline setHitsPerSpectrum(int hits) {
       hitsPerSpectrum = hits;
+    }
+    static int inline getHitsPerSpectrum() {
+      return hitsPerSpectrum;
     }
     static inline int rowIx(int row) {
       return row * FeatureNames::getNumFeatures();
@@ -97,12 +124,17 @@ class DataSet {
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
     static double isEnz(const char n, const char c);
+    void readFragSpectrumScans(  ::percolatorInNs::frag_spectrum_scan & fss);
+    static unsigned int peptideLength(const string& pep);
+    static unsigned int cntPTMs(const string& pep);
+
   protected:
+    void readPsm(const ::percolatorInNs::peptide_spectrum_match & td,  unsigned int numFeatures );
     void readFeatures(const string &in, PSMDescription &psm, int match);
     string modifyRec(const string record, int& row, const set<int>& theMs,
                      Scores * pSc, bool dtaSelect);
-    static unsigned int peptideLength(const string& pep);
-    static unsigned int cntPTMs(const string& pep);
+
+
     double isPngasef(const string& peptide);
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;
@@ -112,10 +144,12 @@ class DataSet {
     static int hitsPerSpectrum;
     static bool pngasef;
     static string reversedFeaturePattern;
-    static string aaAlphabet;
+    const static string aaAlphabet;
+
     static string ptmAlphabet;
     const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
     vector<PSMDescription> psms;
+    int psmNum;
     int label;
     double *feature, *regressionFeature;
     int numSpectra;
@@ -125,6 +159,7 @@ class DataSet {
     bool doPattern;
     bool matchPattern;
     static FeatureNames featureNames;
+
 };
 
 #endif /*DATASET_H_*/

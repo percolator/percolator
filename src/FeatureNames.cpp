@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
@@ -15,6 +16,7 @@
 
  *******************************************************************************/
 #include <sstream>
+#include <iostream>
 #include <assert.h>
 #include "FeatureNames.h"
 
@@ -36,6 +38,32 @@ FeatureNames::FeatureNames() {
 }
 
 FeatureNames::~FeatureNames() {
+}
+
+void FeatureNames::setFromXml( ::percolatorInNs::feature_descriptions & fdes, bool calcDOC ) {
+  assert(featureNames.empty());
+  /*
+  for ( ::percolatorInNs::feature_descriptions::feature_description::const_iterator iter = fdes.feature_description().begin(); iter != fdes.feature_description().end(); ++i ) {
+    featureNames.push_back( *iter );
+}
+ I think std::copy will do the same...
+  */
+
+
+  std::copy( fdes.feature_description().begin(), fdes.feature_description().end(), back_inserter( featureNames ) );
+
+  if (calcDOC) {
+    docFeatNum = featureNames.size();
+    featureNames.push_back("docpI");
+    featureNames.push_back("docdM");
+    featureNames.push_back("docRT");
+    featureNames.push_back("docdMdRT");
+  }
+  setNumFeatures(featureNames.size());
+  std::cout << "in FeatureNames::setFromXml" << std::endl;
+  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cout, " "));
+  std::cout << "end of FeatureNames::setFromXml" << std::endl;
+  return;
 }
 
 string FeatureNames::getFeatureNames(bool skipDOC) {
@@ -122,6 +150,8 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
       }
     }
   }
+
+
   if (calcDOC) {
     docFeatNum = featureNames.size();
     featureNames.push_back("docpI");
@@ -130,4 +160,8 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
     featureNames.push_back("docdMdRT");
   }
   setNumFeatures(featureNames.size());
+  std::cout << "in FeatureNames::setSQTFeatures" << std::endl;
+  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cout, " "));
+  std::cout << "end of FeatureNames::setSQTFeatures" << std::endl;
+  return;
 }

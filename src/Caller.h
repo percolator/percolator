@@ -37,7 +37,7 @@ class Caller {
     bool parseOptions(int argc, char **argv);
     void printWeights(ostream & weightStream, vector<double>& w);
     void readWeights(istream & weightStream, vector<double>& w);
-    void readFiles(bool &doSingleFile);
+    void readFiles();
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, char ** fetureNames,
                        double pi0);
@@ -63,9 +63,12 @@ class Caller {
     }
     void writeXML(ostream & os, Scores & fullset);
   protected:
+    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys );
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;
+    string xmlInputFN;
+    string xmlOutputFN;
     string modifiedFN;
     string modifiedDecoyFN;
     string forwardFN;
