@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://per-colator.com/percolator_in/10" xmlns:p="http://per-colator.com/percolator_in/10">
+  <xs:element name="experiment">
+    <xs:annotation>
+      <xs:documentation>One experiment corresponds, roughly, to one
+      LC/MS/MS experiment on a single biological sample.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element name="enzyme" type="xs:string">
+	  <xs:annotation>
+	    <xs:documentation>The enzyme used to digest proteins in
+	      the sample.</xs:documentation>
+	  </xs:annotation>
+	</xs:element>
+	<xs:element minOccurs="0" name="calibration">
+	  <xs:complexType>
+	    <xs:sequence>
+	      <xs:element maxOccurs="unbounded" name="calibration_parameter">
+		<xs:complexType>
+		  <xs:attribute name="name" use="required" type="xs:string"/>
+		  <xs:attribute name="value" use="required" type="xs:double"/>
+		</xs:complexType>
+	      </xs:element>
+	      <xs:element name="mass_type">
+		<xs:annotation>
+		  <xs:documentation>Was the search performed using monoisotopic or
+		    average mass?</xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+		  <xs:restriction base="xs:token">
+		    <xs:enumeration value="monoisotopic"/>
+		    <xs:enumeration value="average"/>
+		  </xs:restriction>
+		</xs:simpleType>
+	      </xs:element>
+	    </xs:sequence>
+	  </xs:complexType>
+	</xs:element>
+	<xs:element name="feature_descriptions">
+	  <xs:annotation>
+	    <xs:documentation>Free text descriptions of the features
+	      associated with each peptide-spectrum
+	      match.</xs:documentation>
+	  </xs:annotation>
+	  <xs:complexType>
+	    <xs:sequence>
+	      <xs:element maxOccurs="unbounded" name="feature_description" type="xs:string"/>
+	    </xs:sequence>
+	  </xs:complexType>
+	</xs:element>
+	<xs:element maxOccurs="unbounded" name="frag_spectrum_scan">
+	  <xs:complexType>
+	    <xs:sequence>
+	      <xs:element name="observed">
+		<xs:complexType>
+		  <xs:attribute name="mass_charge" use="required" type="xs:double"/>
+		  <xs:attribute name="retention_time" type="xs:double"/>
+		</xs:complexType>
+	      </xs:element>
+	      <xs:element minOccurs="0" name="ion_current">
+		<xs:complexType>
+		  <xs:attribute name="val" use="required" type="xs:double"/>
+		</xs:complexType>
+	      </xs:element>
+	      <xs:element minOccurs="0" maxOccurs="unbounded" name="peptide_spectrum_match">
+		<xs:complexType>
+		  <xs:sequence>
+		    <xs:element name="features">
+		      <xs:complexType>
+			<xs:sequence>
+			  <xs:element maxOccurs="unbounded" name="feature" type="xs:double"/>
+			</xs:sequence>
+		      </xs:complexType>
+		    </xs:element>
+		    <xs:element name="calculated">
+		      <xs:complexType>
+			<xs:attribute name="mass_charge" use="required" type="xs:double"/>
+		      </xs:complexType>
+		    </xs:element>
+		    <xs:element name="peptide" type="xs:string"/>
+		    <xs:element maxOccurs="unbounded" name="protein">
+		      <xs:complexType>
+			<xs:attribute name="id" use="required" type="xs:string"/>
+		      </xs:complexType>
+		    </xs:element>
+		  </xs:sequence>
+		  <xs:attribute name="id" use="required" type="xs:string"/>
+		  <xs:attribute name="type" use="required">
+		    <xs:simpleType>
+		      <xs:restriction base="xs:token">
+			<xs:enumeration value="decoy"/>
+			<xs:enumeration value="target"/>
+		      </xs:restriction>
+		    </xs:simpleType>
+		  </xs:attribute>
+		  <xs:attribute name="charge" use="required" type="xs:int"/>
+		</xs:complexType>
+	      </xs:element>
+	    </xs:sequence>
+	    <xs:attribute name="num" use="required" type="xs:unsignedInt"/>
+	  </xs:complexType>
+	</xs:element>
+      </xs:sequence>
+      <xs:attribute name="num_features" use="required"
+	    type="xs:unsignedInt">
+	<xs:annotation>
+	  <xs:documentation>The number of features associated with
+	  each peptide-spectrum match.</xs:documentation>
+	  </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
