@@ -103,8 +103,13 @@
                         <xs:attribute name="startPosition" type="xs:int">
                           <xs:annotation>
                             <xs:documentation> The position of the most N-terminal residue of the peptide within the amino acid sequence of the protein.
-                        </xs:documentation>
+                            </xs:documentation>
                           </xs:annotation>
+                          <xs:simpleType>
+                            <xs:restriction base="xs:int">
+                              <xs:minInclusive value="1"/>
+                            </xs:restriction>
+                          </xs:simpleType>
                         </xs:attribute>
                         <xs:attribute name="flankN" type="aa_term_t">
                           <xs:annotation>
