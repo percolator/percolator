@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://per-colator.com/percolator_in/10" elementFormDefault="qualified" targetNamespace="http://per-colator.com/percolator_in/10">
+  <xs:element name="experiment">
+    <xs:annotation>
+      <xs:documentation>One experiment corresponds, roughly, to one
+      LC/MS/MS experiment on a single biological sample.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="enzyme" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>The enzyme used to digest proteins in
+	      the sample.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" name="calibration">
+          <xs:annotation>
+            <xs:documentation>These are the instrument specific
+	    parameters that contain the current
+	    calibration</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="calibration_parameter">
+                <xs:complexType>
+                  <xs:attribute name="name" use="required" type="xs:string"/>
+                  <xs:attribute name="value" use="required" type="xs:double"/>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="mass_type">
+                <xs:annotation>
+                  <xs:documentation>Was the search performed using
+		    monoisotopic or average mass?</xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                  <xs:restriction base="xs:token">
+                    <xs:enumeration value="monoisotopic"/>
+                    <xs:enumeration value="average"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="feature_descriptions">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="feature_description" maxOccurs="unbounded"> 
+                <xs:complexType>
+                  <xs:attribute name="number"  use="required" type="xs:int">
+                    <xs:annotation>
+                       <xs:documentation>A number associated with the feature. Should be set to 1 for first feature, 2 for second etc.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="name" use="required" type="xs:string">
+                    <xs:annotation>
+                       <xs:documentation>One word name of the feature
+	      associated with each peptide-spectrum
+	      match. An example value is 'XCorr'.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="description" type="xs:string">
+                    <xs:annotation>
+                       <xs:documentation>Free text descriptions of the feature
+	      associated with each peptide-spectrum
+	      match.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element> 
+
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="frag_spectrum_scan">
+          <xs:annotation>
+            <xs:documentation>One fragmentation spectrum</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="peptide_spectrum_match">
+                <xs:annotation>
+                  <xs:documentation>A match between a charged spectrum and a peptide.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="features">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element maxOccurs="unbounded" name="feature" type="xs:double"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="peptide" type="aa_seq_t"/>
+                    <xs:element maxOccurs="unbounded" name="protein">
+                      <xs:annotation>
+                        <xs:documentation>A list of IDs of the
+			proteins in which this peptide
+			occurs.</xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:attribute name="id" use="required" type="xs:string"/>
+                        <xs:attribute name="start_pos" type="xs:int">
+                          <xs:annotation>
+                            <xs:documentation> The position of the most N-terminal residue of the peptide within the amino acid sequence of the protein.
+                        </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="N_flank" type="aa_term_t">
+                          <xs:annotation>
+                            <xs:documentation> The amino acid of the most
+			N-terminal flanking residue of the peptide.
+                        </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="C_flank" type="aa_term_t">
+                          <xs:annotation>
+                            <xs:documentation> The amino acid of the most
+			C-terminal flanking residue of the peptide.
+                        </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="id" use="required" type="xs:string"/>
+                  <xs:attribute name="is_decoy" use="required" type="xs:boolean">
+                    <xs:annotation>
+                      <xs:documentation> A boolean set to true for decoy PSMs and set to false for target PSMs.
+                        </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="calculated_mass_to_charge" use="required" type="xs:double">
+                    <xs:annotation>
+                      <xs:documentation>The precursor m/z ratio as calculated from the peptides amino acid sequence.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="charge_state" use="required" type="xs:int"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="scan_number" use="required" type="xs:unsignedInt">
+              <xs:annotation>
+                <xs:documentation>An arbitrary number associated with this
+		  fragmentation scan. The  Need not be unique.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="precision" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The precision of the mass to charge
+		determination of the current scan.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="experimental_mass_to_charge" use="required" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The measured mass to charge
+		ratio of the current scan.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="total_ion_current" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The ion current of the precursor peptide.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="observed_time" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The clock time when the scan
+		observed, i.e. the observed retention time given in
+		minutes.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="number_of_features" use="required" type="xs:unsignedInt">
+        <xs:annotation>
+          <xs:documentation>The number of features associated with
+	  each peptide-spectrum match.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="probability_t">
+    <xs:annotation>
+      <xs:documentation>Probability (Double in [0-1] or NaN)</xs:documentation>
+    </xs:annotation>
+    <xs:union memberTypes="xs:double">
+      <xs:simpleType>
+        <xs:restriction base="xs:double">
+          <xs:enumeration value="NaN"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:double">
+          <xs:maxInclusive value="1.0"/>
+          <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+  <xs:simpleType name="aa_seq_t">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([A-Z][#*@]?)+"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="aa_term_t">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Z\-]"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
