@@ -27,7 +27,7 @@ class PosteriorEstimator {
   public:
     PosteriorEstimator();
     virtual ~PosteriorEstimator();
-    bool parseOptions(int argc, char **argv);
+    bool parseOptions(int argc, char** argv);
     string greeter();
     void run();
     static void estimatePEP(vector<pair<double, bool> >& combined,
@@ -54,7 +54,7 @@ class PosteriorEstimator {
     static void binData(const vector<pair<double, bool> >& combined,
                         vector<double>& medians,
                         vector<unsigned int>& negatives, vector<
-                            unsigned int>& sizes);
+                            unsigned int> & sizes);
     string targetFile, decoyFile;
     static bool reversed, pvalInput;
     string resultFileName;

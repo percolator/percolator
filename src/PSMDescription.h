@@ -20,22 +20,29 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iostream>
 using namespace std;
 #include "Enzyme.h"
 
 class PSMDescription {
   public:
     PSMDescription();
+    PSMDescription(const string peptide, const double retTime);
+    PSMDescription(double ort, double prt) {
+      retentionTime = ort;
+      predictedTime = prt;
+    }
     virtual ~PSMDescription();
     void clear() {
       proteinIds.clear();
     }
-    double * getFeatures() {
+    double* getFeatures() {
       return features;
     }
-    double * getRetentionFeatures() {
+    double* getRetentionFeatures() {
       return retentionFeatures;
     }
+    static vector<double*> getRetFeatures(vector<PSMDescription> & psms);
     string& getPeptide() {
       return peptide;
     }
@@ -43,10 +50,11 @@ class PSMDescription {
       return getAParent()->peptide;
     }
     PSMDescription* getAParent() {
-      if (parentFragment)
+      if (parentFragment) {
         return parentFragment->getAParent();
-      else
+      } else {
         return this;
+      }
     }
     double getUnnormalizedRetentionTime() {
       return unnormalize(retentionTime);
@@ -59,41 +67,70 @@ class PSMDescription {
           && Enzyme::countEnzymatic(peptide) == 0);
     }
     void
-    checkFragmentPeptides(vector<PSMDescription>::reverse_iterator other,
-                          vector<PSMDescription>::reverse_iterator theEnd);
+        checkFragmentPeptides(
+                              vector<PSMDescription>::reverse_iterator other,
+                              vector<PSMDescription>::reverse_iterator theEnd);
     static void setRetentionTime(vector<PSMDescription>& psms, map<int,
         double>& scan2rt);
     static double unnormalize(double normalizedTime);
+    static void unnormalizeRetentionTimes(vector<PSMDescription> & psms);
+    // set the norm and div for a set of peptides
+    static void setPSMSet(vector<PSMDescription> & psms);
+    // normalize retention times for a  set of peptides
+    static void normalizeRetentionTimes(vector<PSMDescription> & psms);
+    friend ostream& operator<<(ostream& out, PSMDescription& psm);
+    double getRetentionTime() {
+      return retentionTime;
+    }
+    double getPredictedRetentionTime() {
+      return predictedTime;
+    }
+    ;
 
     static double normDiv, normSub;
 
     double q, pep;
-    double * features;
-    double * retentionFeatures;
+    double* features;
+    double* retentionFeatures;
     double retentionTime, predictedTime, massDiff, pI;
     unsigned int scan;
     string id;
     string peptide;
     set<string> proteinIds;
-    PSMDescription *parentFragment;
+    PSMDescription* parentFragment;
 };
 
 inline bool const operator<(PSMDescription const& one,
                             PSMDescription const& other) {
-  if (one.peptide == other.peptide) return one.retentionTime
-      < other.retentionTime;
+  if (one.peptide == other.peptide) {
+    return one.retentionTime < other.retentionTime;
+  }
   return one.peptide < other.peptide;
 }
 
 inline bool operator==(PSMDescription const& one,
                        PSMDescription const& other) {
-  //	return one.peptide == other.peptide;
-  if (one.peptide == other.peptide)
+  //   return one.peptide == other.peptide;
+  if (one.peptide == other.peptide) {
     return true;
-  else
+  } else {
     return false;
+  }
 }
 
+inline ostream& operator<<(ostream& out, PSMDescription& psm) {
+  // Since operator<< is a friend of the Point class, we can access
+  // Point's members directly.
+  out << "Peptide: " << psm.peptide << endl;
+  out << "Retention time, predicted retention time: " << psm.retentionTime
+      << ", " << psm.predictedTime;
+  out << "Retention features: ";
+  for (int i = 0; i < 76; ++i) {
+    out << psm.retentionFeatures[i] << "  ";
+  }
+  out << endl;
+  return out;
+}
 /*
  inline bool operator!=(const PSMDescription& one, const PSMDescription& other){
  return one.peptide != other.peptide;

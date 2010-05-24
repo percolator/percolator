@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: ArrayTypes.h,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 #ifndef _ArrayTypes_H
 #define _ArrayTypes_H

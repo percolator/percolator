@@ -34,12 +34,12 @@ class Caller {
     int xv_step(vector<vector<double> >& w, bool updateDOC = false);
     static string greeter();
     string extendedGreeter();
-    bool parseOptions(int argc, char **argv);
-    void printWeights(ostream & weightStream, vector<double>& w);
-    void readWeights(istream & weightStream, vector<double>& w);
-    void readFiles(bool &doSingleFile);
+    bool parseOptions(int argc, char** argv);
+    void printWeights(ostream& weightStream, vector<double>& w);
+    void readWeights(istream& weightStream, vector<double>& w);
+    void readFiles(bool& doSingleFile);
     void filelessSetup(const unsigned int numFeatures,
-                       const unsigned int numSpectra, char ** fetureNames,
+                       const unsigned int numSpectra, char** fetureNames,
                        double pi0);
     void fillFeatureSets();
     int preIterationSetup(vector<vector<double> >& w);
@@ -47,7 +47,7 @@ class Caller {
       return &fullset;
     }
     int run();
-    SetHandler * getSetHandler(SetHandlerType sh) {
+    SetHandler* getSetHandler(SetHandlerType sh) {
       switch (sh) {
         case NORMAL:
           return &normal;
@@ -61,11 +61,11 @@ class Caller {
           return NULL;
       }
     }
-    void writeXML(ostream & os, Scores & fullset);
+    void writeXML(ostream& os, Scores& fullset);
   protected:
-    Normalizer * pNorm;
-    SanityCheck * pCheck;
-    AlgIn *svmInput;
+    Normalizer* pNorm;
+    SanityCheck* pCheck;
+    AlgIn* svmInput;
     string modifiedFN;
     string modifiedDecoyFN;
     string forwardFN;

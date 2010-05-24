@@ -18,13 +18,13 @@
 #include "Globals.h"
 #include "PosteriorEstimator.h"
 
-int main(int argc, char **argv) {
-  PosteriorEstimator *pCaller = new PosteriorEstimator();
-  int retVal = -1;
-  if (pCaller->parseOptions(argc, argv)) {
-    pCaller->run();
-  }
-  delete pCaller;
-  Globals::clean();
-  return retVal;
+int main(int argc, char** argv) {
+     PosteriorEstimator* pCaller = new PosteriorEstimator();
+     int retVal = -1;
+     if (pCaller->parseOptions(argc, argv)) {
+          pCaller->run();
+     }
+     delete pCaller;
+     Globals::clean();
+     return retVal;
 }

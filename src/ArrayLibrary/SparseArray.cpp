@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: SparseArray.cpp,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 
 #include <iostream>
@@ -34,42 +34,41 @@ using namespace std;
 #include "SparseArray.h"
 
 template<typename T>
-void SparseArray<T>::push_back(int index, const T & element) {
-  nonNull.push_back(index);
-
-  if (Array<T>::size() <= index) Array<T>::resize(index + 1);
-
-  (*this)[index] = element;
+void SparseArray<T>::push_back(int index, const T& element) {
+     nonNull.push_back(index);
+     if (Array<T>::size() <= index) {
+          Array<T>::resize(index + 1);
+     }
+     (*this)[index] = element;
 }
 
 template<typename T> int SparseArray<T>::packedSize() const {
-  return nonNull.size();
+     return nonNull.size();
 }
 
 template<typename T> void SparseArray<T>::resize(int n) {
-  if (packedSize() == 0) return;
-
-  int k;
-  for (k = 0; k < n; k++) {
-    if (nonNull[k] >= n) break;
-  }
-
-  // remove everything in the packed vector after and at k
-  nonNull.resize(k);
-
-  Array<T>::resize(n);
+     if (packedSize() == 0) {
+          return;
+     }
+     int k;
+     for (k = 0; k < n; k++) {
+          if (nonNull[k] >= n) {
+               break;
+          }
+     }
+     // remove everything in the packed vector after and at k
+     nonNull.resize(k);
+     Array<T>::resize(n);
 }
 
 template <typename T> const SparseArray<T> & SparseArray<T>::operator +=(
-                                                   const SparseArray<T> & rhs) {
-  sizeCheck(*this, rhs);
-
-  int k;
-  nonNull = merge(nonNull, rhs.nonNull);
-  for (k = 0; k < packedSize(); k++) {
-    (*this)[nonNull[k]] += rhs[nonNull[k]];
-  }
-
-  return *this;
+     const SparseArray<T> & rhs) {
+     sizeCheck(*this, rhs);
+     int k;
+     nonNull = merge(nonNull, rhs.nonNull);
+     for (k = 0; k < packedSize(); k++) {
+          (*this)[nonNull[k]] += rhs[nonNull[k]];
+     }
+     return *this;
 }
 

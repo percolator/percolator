@@ -31,7 +31,9 @@ class FeatureNames {
       return numFeatures;
     }
     static inline void setNumFeatures(size_t nf) {
-      if (!numFeatures) numFeatures = nf;
+      if (!numFeatures) {
+        numFeatures = nf;
+      }
     }
 
     void insertFeature(string& featureName) {

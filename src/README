@@ -1,7 +1,7 @@
-This package produces two different executables Qvality and Percolator.
+This package produces several executables: Qvality, Percolator and Elude.
 
 Please read INSTALL file (located in parent directory) in order
 to build the package.
 
-The commands `./qvality --help' or  `./percolator --help' in created 'bin'
-folder will give full usage statements.
+The commands `./percolator --help', `./qvality --help' or './elude --help'
+in created 'bin' folder will display usage help.

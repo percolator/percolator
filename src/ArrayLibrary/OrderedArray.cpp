@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,30 +21,27 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: OrderedArray.cpp,v 1.4 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 
 #include "OrderedArray.h"
 
 template <typename T>
 OrderedArray<T>::OrderedArray(int n) :
-  Array<T>(n)
-{ 
+     Array<T>(n) {
 }
 
 template <typename T>
-void OrderedArray<T>::push_back(const T & element)
-{
+void OrderedArray<T>::push_back(const T& element) {
 #ifdef SAFE_ARRAYS
-  if ( Array<T>::size() != 0 && !( Array<T>::back() < element ) ) {
-    cerr << "Trying to insert " << element << " after " << Array<T>::back() << ", that is not in order." << endl;
-    cerr.flush();
-    throw OutOfOrderException();
-  }
+     if (Array<T>::size() != 0 && !(Array<T>::back() < element)) {
+          cerr << "Trying to insert " << element << " after " << Array<T>::back() << ", that is not in order." << endl;
+          cerr.flush();
+          throw OutOfOrderException();
+     }
 #endif
-
-  Array<T>::push_back(element);
+     Array<T>::push_back(element);
 }
 

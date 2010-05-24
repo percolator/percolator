@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: MatrixFunctions.h,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 #ifndef _MatrixFunctions_H
 #define _MatrixFunctions_H
@@ -40,11 +40,11 @@ class MatrixDimensionException {};
 Matrix identityMatrix(int n);
 Matrix matrixInverse(Matrix inv);
 
-Matrix diagonal(const Vec & v);
-Matrix transpose(const Matrix & mat);
+Matrix diagonal(const Vec& v);
+Matrix transpose(const Matrix& mat);
 
-Matrix matrixMult(const Matrix & lhs, const Matrix & rhs);
-Matrix operator *(const Matrix & lhs, const Matrix & rhs);
+Matrix matrixMult(const Matrix& lhs, const Matrix& rhs);
+Matrix operator *(const Matrix& lhs, const Matrix& rhs);
 Matrix makeMatrix(int a, int b);
 
 #endif

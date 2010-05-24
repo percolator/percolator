@@ -33,11 +33,11 @@ using namespace std;
 #include "PosteriorEstimator.h"
 #include "ssl.h"
 
-inline bool operator>(const ScoreHolder &one, const ScoreHolder &other) {
+inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
 }
 
-inline bool operator<(const ScoreHolder &one, const ScoreHolder &other) {
+inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score < other.score);
 }
 
@@ -53,9 +53,13 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
 }
 
 ostream& operator<<(ostream& os, const ScoreHolder& sh) {
-  if (sh.label != 1 && !Scores::isOutXmlDecoys()) return os;
+  if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
+    return os;
+  }
   os << "  <psm psm_id=\"" << sh.pPSM->id << "\"";
-  if (sh.label != 1) os << " decoy=\"true\"";
+  if (sh.label != 1) {
+    os << " decoy=\"true\"";
+  }
   os << ">" << endl;
   os << "    <svm_score>" << sh.score << "</svm_score>" << endl;
   os << "    <q_value>" << sh.pPSM->q << "</q_value>" << endl;
@@ -106,7 +110,9 @@ void Scores::merge(vector<Scores>& sv, bool reportUniquePeptides) {
     a->normalizeScores();
     copy(a->begin(), a->end(), back_inserter(scores));
   }
-  if (reportUniquePeptides) weedOutRedundant();
+  if (reportUniquePeptides) {
+    weedOutRedundant();
+  }
   neg = count_if(scores.begin(),
                  scores.end(),
                  mem_fun_ref(&ScoreHolder::isDecoy));
@@ -128,7 +134,7 @@ void Scores::printRetentionTime(ostream& outs, double fdr) {
   }
 }
 
-double Scores::calcScore(const double * feat) const {
+double Scores::calcScore(const double* feat) const {
   register int ix = FeatureNames::getNumFeatures();
   register double score = w_vec[ix];
   for (; ix--;) {
@@ -137,22 +143,23 @@ double Scores::calcScore(const double * feat) const {
   return score;
 }
 
-ScoreHolder* Scores::getScoreHolder(const double *d) {
+ScoreHolder* Scores::getScoreHolder(const double* d) {
   if (scoreMap.size() == 0) {
     vector<ScoreHolder>::iterator it;
     for (it = scores.begin(); it != scores.end(); it++) {
       scoreMap[it->pPSM->features] = &(*it);
     }
   }
-  std::map<const double *, ScoreHolder *>::iterator res = scoreMap.find(d);
-
-  if (res != scoreMap.end()) return res->second;
+  std::map<const double*, ScoreHolder*>::iterator res = scoreMap.find(d);
+  if (res != scoreMap.end()) {
+    return res->second;
+  }
   return NULL;
 }
 
 void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff) {
   scores.clear();
-  PSMDescription * pPSM;
+  PSMDescription* pPSM;
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
   while ((pPSM = normIter.getNext()) != NULL) {
     scores.push_back(ScoreHolder(.0, 1, pPSM));
@@ -182,12 +189,12 @@ void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
     remain[fold] = ix / (fold + 1);
     ix -= remain[fold];
   }
-
   for (unsigned int j = 0; j < scores.size(); j++) {
     ix = lcg_rand() % (scores.size() - j);
     fold = 0;
-    while (ix > remain[fold])
+    while (ix > remain[fold]) {
       ix -= remain[fold++];
+    }
     for (unsigned int i = 0; i < xval_fold; i++) {
       if (i == fold) {
         test[i].scores.push_back(scores[j]);
@@ -202,19 +209,21 @@ void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
     train[i].pos = 0;
     train[i].neg = 0;
     for (it = train[i].begin(); it != train[i].end(); it++) {
-      if (it->label == 1)
+      if (it->label == 1) {
         train[i].pos++;
-      else
+      } else {
         train[i].neg++;
+      }
     }
     train[i].targetDecoySizeRatio = train[i].pos / (double)train[i].neg;
     test[i].pos = 0;
     test[i].neg = 0;
     for (it = test[i].begin(); it != test[i].end(); it++) {
-      if (it->label == 1)
+      if (it->label == 1) {
         test[i].pos++;
-      else
+      } else {
         test[i].neg++;
+      }
     }
     test[i].targetDecoySizeRatio = test[i].pos / (double)test[i].neg;
   }
@@ -236,7 +245,7 @@ void Scores::normalizeScores() {
 
 int Scores::calcScores(vector<double>& w, double fdr) {
   w_vec = w;
-  const double * features;
+  const double* features;
   unsigned int ix;
   vector<ScoreHolder>::iterator it = scores.begin();
   while (it != scores.end()) {
@@ -263,22 +272,30 @@ int Scores::calcQ(double fdr) {
   int positives = 0, nulls = 0;
   double efp = 0.0, q;
   for (it = scores.begin(); it != scores.end(); it++) {
-    if (it->label != -1) positives++;
+    if (it->label != -1) {
+      positives++;
+    }
     if (it->label == -1) {
       nulls++;
       efp = pi0 * nulls * targetDecoySizeRatio;
     }
-    if (positives)
+    if (positives) {
       q = efp / (double)positives;
-    else
+    } else {
       q = pi0;
-    if (q > pi0) q = pi0;
+    }
+    if (q > pi0) {
+      q = pi0;
+    }
     it->pPSM->q = q;
-    if (fdr >= q) posNow = positives;
+    if (fdr >= q) {
+      posNow = positives;
+    }
   }
   for (int ix = scores.size(); --ix;) {
-    if (scores[ix - 1].pPSM->q > scores[ix].pPSM->q) scores[ix - 1].pPSM->q
-        = scores[ix].pPSM->q;
+    if (scores[ix - 1].pPSM->q > scores[ix].pPSM->q) {
+      scores[ix - 1].pPSM->q = scores[ix].pPSM->q;
+    }
   }
   return posNow;
 }
@@ -356,7 +373,6 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction,
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
-
   if (findDirection) {
     for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
       vector<ScoreHolder>::iterator it = scores.begin();
@@ -369,15 +385,18 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction,
         int positives = 0, nulls = 0;
         double efp = 0.0, q;
         for (it = scores.begin(); it != scores.end(); it++) {
-          if (it->label != -1) positives++;
+          if (it->label != -1) {
+            positives++;
+          }
           if (it->label == -1) {
             nulls++;
             efp = pi0 * nulls * targetDecoySizeRatio;
           }
-          if (positives)
+          if (positives) {
             q = efp / (double)positives;
-          else
+          } else {
             q = pi0;
+          }
           if (fdr <= q) {
             if (positives > bestPositives && scores.begin()->score
                 != it->score) {
@@ -415,26 +434,21 @@ double Scores::estimatePi0() {
             scores.end(),
             back_inserter(combined),
             mem_fun_ref(&ScoreHolder::toPair));
-
   // Estimate pi0
   PosteriorEstimator::getPValues(combined, pvals);
   pi0 = PosteriorEstimator::estimatePi0(pvals);
   return pi0;
-
 }
 
 void Scores::calcPep() {
-
   vector<pair<double, bool> > combined;
   transform(scores.begin(),
             scores.end(),
             back_inserter(combined),
             mem_fun_ref(&ScoreHolder::toPair));
   vector<double> peps;
-
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, pi0, peps, true);
-
   for (size_t ix = 0; ix < scores.size(); ix++) {
     (scores[ix]).pPSM->pep = peps[ix];
   }

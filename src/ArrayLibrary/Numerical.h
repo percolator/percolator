@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: Numerical.h,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 
 #ifndef _Numerical_H
@@ -37,20 +37,19 @@ using namespace std;
 
 const double Pi = 3.14159;
 
-class Numerical
-{
- public:
-  static bool isPos(double d);
-  static bool isNonpos(double d);
-  static bool isNeg(double d);
-  static bool isNonneg(double d);
-  static bool isZero(double d);
-  static bool isNonzero(double d);
-  static bool isEqual(double a, double b);
-  static bool isInequal(double a, double b);
+class Numerical {
+     public:
+          static bool isPos(double d);
+          static bool isNonpos(double d);
+          static bool isNeg(double d);
+          static bool isNonneg(double d);
+          static bool isZero(double d);
+          static bool isNonzero(double d);
+          static bool isEqual(double a, double b);
+          static bool isInequal(double a, double b);
 
-  static double epsilon;
-  static double infinity;
+          static double epsilon;
+          static double infinity;
 };
 
 #endif

@@ -1,3 +1,11 @@
+--- May 23, 2010 ---
+* Lumi branch is merged into Percolator master and deleted from the repository.
+* Installation process now supports Elude executable and supplied data folders (elude_data, elude_models).
+* Creation of Windows installation package started.
+* Elude manual and Wiki has been updated.
+* Some minor changes in Elude package (hardcoded path to models and wrong input error code are fixed).
+
+
 --- March 23, 2010 ---
 * Installation/building procedure has been changed for both master and lumi branches.
 * Some minor changes in lumi branch (astyle coding style conversion and isolation of Elude build).
@@ -6,7 +14,6 @@
 * Some changes in documentation
 
 --- March 3, 2010 ---
-
 * .gitignore is added to a commit.
 * Eclipse CDT projects are created that have 1-click build procedure and debug solution based on existing sources
 (documentation for the creation of such projects is created).
@@ -17,7 +24,6 @@
 * ChangeLog is reverted.
 
 --- March 2, 2010 ---
-
 Lumi's branch has now been updated with CMake and other stuff which is described in this mail history applicable for original percolator project.
 
 Building, installation, packaging, etc. has been tested.
@@ -53,7 +59,6 @@ sudo make install
 luminator <paramaters>
 
 --- March 1, 2010 ---
-
 1. Packaging, installation, proper building, etc.
 However, I a bit disappointed in CMake-CPack undocumented behavior - it took a lot of time digging how to make it produce what i wanted.
 
@@ -66,9 +71,7 @@ Also please look through the repository in general and point on things that shou
 4. Minor fixes like READMEs, descriptions, tests, etc.
 
 
-
 --- February 27, 2010 ---
-
 1. Autoconf/Automake source building system has been replaced by CMake.
 During the replacement process some minor code changes were made (to succeed the compilation process).
 Previous established Autoconf/Automake infrastructure has been removed completely.

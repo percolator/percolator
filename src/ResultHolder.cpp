@@ -32,15 +32,15 @@ ResultHolder::ResultHolder(const double sc, const double qq,
 ResultHolder::~ResultHolder() {
 }
 
-bool operator>(const ResultHolder &one, const ResultHolder &other) {
+bool operator>(const ResultHolder& one, const ResultHolder& other) {
   return (one.score > other.score);
 }
 
-bool operator<(const ResultHolder &one, const ResultHolder &other) {
+bool operator<(const ResultHolder& one, const ResultHolder& other) {
   return (one.score < other.score);
 }
 
-ostream& operator<<(ostream &out, const ResultHolder &obj) {
+ostream& operator<<(ostream& out, const ResultHolder& obj) {
   out << obj.id << "\t" << obj.score << "\t" << obj.q << "\t";
   out << obj.posterior << "\t" << obj.pepSeq << obj.prot;
   return out;

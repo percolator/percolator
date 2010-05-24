@@ -32,7 +32,6 @@ FeatureNames::FeatureNames() {
   intraSetFeatNum = -1;
   quadraticFeatNum = -1;
   docFeatNum = -1;
-
 }
 
 FeatureNames::~FeatureNames() {
@@ -40,19 +39,22 @@ FeatureNames::~FeatureNames() {
 
 string FeatureNames::getFeatureNames(bool skipDOC) {
   int n = (skipDOC && docFeatNum > 0) ? docFeatNum
-                                      : (int)featureNames.size();
+      : (int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
     int featNum = 0;
     oss << featureNames[featNum++];
-    for (; featNum < n; ++featNum)
+    for (; featNum < n; ++featNum) {
       oss << "\t" << featureNames[featNum];
+    }
   }
   return oss.str();
 }
 
 void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
-  if (!featureNames.empty()) return;
+  if (!featureNames.empty()) {
+    return;
+  }
   istringstream iss(line);
   string tmp;
   while (iss.good() && skip && --skip) {
@@ -71,7 +73,9 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
                                   bool calcPTMs, bool doPNGaseF,
                                   const string& aaAlphabet,
                                   bool calcQuadratic, bool calcDOC) {
-  if (!featureNames.empty()) return;
+  if (!featureNames.empty()) {
+    return;
+  }
   featureNames.push_back("lnrSp");
   featureNames.push_back("deltLCn");
   featureNames.push_back("deltCn");
@@ -109,8 +113,9 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
   if (!aaAlphabet.empty()) {
     aaFeatNum = featureNames.size();
     for (string::const_iterator it = aaAlphabet.begin(); it
-        != aaAlphabet.end(); it++)
+        != aaAlphabet.end(); it++) {
       featureNames.push_back(*it + "-Freq");
+    }
   }
   if (calcQuadratic) {
     quadraticFeatNum = featureNames.size();

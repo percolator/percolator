@@ -33,7 +33,9 @@ double MassHandler::massDiff(double observedMass, double calculatedMass,
   if (monoisotopic) {
     double isodm = dm - 1;
     for (int isotope = 0; isotope < 5; ++isotope) {
-      if (abs(isodm) > abs(dm + isotope)) isodm = dm + isotope;
+      if (abs(isodm) > abs(dm + isotope)) {
+        isodm = dm + isotope;
+      }
     }
     dm = isodm / calculatedMass;
     return dm;

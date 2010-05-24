@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: ArrayTypes.cpp,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 #include <iostream>
 using namespace std;
@@ -32,28 +32,20 @@ using namespace std;
 #include "Array.h"
 #include "ArrayTypes.h"
 
-Array<int> seq(int lowest, int highest)
-{
-  Array<int> result( highest - lowest + 1 );
-  
-  int k;
-  for (k=0; k<result.size(); k++)
-    {
-      result[k] = lowest + k;
-    }
-
-  return result;
+Array<int> seq(int lowest, int highest) {
+     Array<int> result(highest - lowest + 1);
+     int k;
+     for (k = 0; k < result.size(); k++) {
+          result[k] = lowest + k;
+     }
+     return result;
 }
 
-Vec seq(double lowest, double highest, double step)
-{
-  Array<double> result( int( (highest - lowest) / step ) + 1 );
-
-  int k;
-  for (k=0; k<result.size(); k++)
-    {
-      result[k] = lowest + step * k;
-    }
-
-  return result;
+Vec seq(double lowest, double highest, double step) {
+     Array<double> result(int((highest - lowest) / step) + 1);
+     int k;
+     for (k = 0; k < result.size(); k++) {
+          result[k] = lowest + step * k;
+     }
+     return result;
 }

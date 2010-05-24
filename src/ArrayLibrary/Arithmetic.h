@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: Arithmetic.h,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 
 #ifndef _Arithmetic_H
@@ -34,40 +34,39 @@
 using namespace std;
 
 
-class Arithmetic
-{
-public:
-  template <typename T>
-    static T add(T lhs, T rhs);
-  template <typename T>
-    static void addEq(T & lhs, T rhs);
+class Arithmetic {
+     public:
+          template <typename T>
+          static T add(T lhs, T rhs);
+          template <typename T>
+          static void addEq(T& lhs, T rhs);
 
-  template <typename T>
-    static T sub(T lhs, T rhs);
-  template <typename T>
-    static void subEq(T & lhs, T rhs);
+          template <typename T>
+          static T sub(T lhs, T rhs);
+          template <typename T>
+          static void subEq(T& lhs, T rhs);
 
-  template <typename T>
-    static T mult(T lhs, T rhs);
-  template <typename T>
-    static void multEq(T & lhs, T rhs);
+          template <typename T>
+          static T mult(T lhs, T rhs);
+          template <typename T>
+          static void multEq(T& lhs, T rhs);
 
-  template <typename T>
-    static T div(T lhs, T rhs);
-  template <typename T>
-    static void divEq(T & lhs, T rhs);
+          template <typename T>
+          static T div(T lhs, T rhs);
+          template <typename T>
+          static void divEq(T& lhs, T rhs);
 
-  template <typename T>
-    static T min(T lhs, T rhs);
-  template <typename T>
-    static void minEq(T & lhs, T rhs);
+          template <typename T>
+          static T min(T lhs, T rhs);
+          template <typename T>
+          static void minEq(T& lhs, T rhs);
 
-  template <typename T>
-    static T max(T lhs, T rhs);
-  template <typename T>
-    static void maxEq(T & lhs, T rhs);
+          template <typename T>
+          static T max(T lhs, T rhs);
+          template <typename T>
+          static void maxEq(T& lhs, T rhs);
 
-private:
+     private:
 
 };
 

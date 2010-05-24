@@ -27,15 +27,15 @@ using namespace std;
 #include "Globals.h"
 #include "PercolatorCInterface.h"
 
-static Caller *pCaller = NULL;
+static Caller* pCaller = NULL;
 static NSet nset = FOUR_SETS;
 static unsigned int numFeatures = 0;
-static SetHandler::Iterator * normal = NULL;
-static SetHandler::Iterator * decoy1 = NULL;
-static SetHandler::Iterator * decoy2 = NULL;
-static SetHandler::Iterator * decoy3 = NULL;
+static SetHandler::Iterator* normal = NULL;
+static SetHandler::Iterator* decoy1 = NULL;
+static SetHandler::Iterator* decoy2 = NULL;
+static SetHandler::Iterator* decoy3 = NULL;
 
-Caller * getCaller() {
+Caller* getCaller() {
   if (pCaller == NULL) {
     cerr << "Object pCaller not properly assigned" << endl;
     exit(-1);
@@ -45,7 +45,7 @@ Caller * getCaller() {
 
 /** Call that initiates percolator */
 void pcInitiate(NSet sets, unsigned int numFeat, unsigned int numSpectra,
-                char ** featureNames, double pi0) {
+                char** featureNames, double pi0) {
   pCaller = new Caller();
   nset = sets;
   numFeatures = numFeat;
@@ -54,9 +54,11 @@ void pcInitiate(NSet sets, unsigned int numFeat, unsigned int numSpectra,
       = new SetHandler::Iterator(pCaller->getSetHandler(Caller::NORMAL));
   decoy1
       = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED));
-  if (nset > 2) cerr
+  if (nset > 2) {
+    cerr
       << "This version of percolator only suport 1 decoy set. Pecolator was called with nset="
       << nset << endl;
+  }
 }
 
 /** Call that sets verbosity level
@@ -72,12 +74,12 @@ void pcSetVerbosity(int verbosity) {
 }
 
 /** Register a PSM */
-void pcRegisterPSM(SetType set, char * identifier, double * features) {
+void pcRegisterPSM(SetType set, char* identifier, double* features) {
   if ((int)set > (int)nset) {
     cerr << "Tried to access undefined set" << endl;
     exit(-1);
   }
-  double * vec = NULL;
+  double* vec = NULL;
   switch (set) {
     case TARGET:
       vec = normal->getNext()->features;
@@ -115,10 +117,10 @@ void pcExecute() {
 /** Function called when retrieving target scores and q-values after processing,
  * the array should be numSpectra long and will be filled in the same order
  * as the features were inserted */
-void pcGetScores(double *scoreArr, double *qArr) {
+void pcGetScores(double* scoreArr, double* qArr) {
   int ix = 0;
   SetHandler::Iterator iter(pCaller->getSetHandler(Caller::NORMAL));
-  while (PSMDescription * pPSM = iter.getNext()) {
+  while (PSMDescription* pPSM = iter.getNext()) {
     ScoreHolder* pSh =
         pCaller->getFullSet()->getScoreHolder(pPSM->features);
     scoreArr[ix] = pSh->score;
@@ -148,6 +150,5 @@ void pcCleanUp() {
     delete decoy3;
     decoy3 = NULL;
   }
-
   Globals::clean();
 }

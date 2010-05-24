@@ -27,7 +27,9 @@ Enzyme* Enzyme::getEnzyme() {
 }
 
 void Enzyme::setEnzyme(EnzymeType enz) {
-  if (theEnzyme) delete theEnzyme;
+  if (theEnzyme) {
+    delete theEnzyme;
+  }
   theEnzyme = NULL;
   switch (enz) {
     case CHYMOTRYPSIN:
@@ -49,7 +51,9 @@ void Enzyme::setEnzyme(EnzymeType enz) {
 size_t Enzyme::countEnzymatic(string& peptide) {
   size_t count = 0;
   for (size_t ix = 1; ix < peptide.size(); ++ix) {
-    if (isEnzymatic(peptide[ix - 1], peptide[ix])) ++count;
+    if (isEnzymatic(peptide[ix - 1], peptide[ix])) {
+      ++count;
+    }
   }
   return count;
 }

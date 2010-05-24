@@ -17,12 +17,12 @@
 #ifndef STDVNORMALIZER_H_
 #define STDVNORMALIZER_H_
 
-class StdvNormalizer : public Normalizer // virtual Normalizer
-{
+class StdvNormalizer : public Normalizer { // virtual Normalizer
   public:
     StdvNormalizer();
     virtual ~StdvNormalizer();
-    virtual void setSet(set<DataSet *> & setVec, size_t numFeatures,
+    virtual void setSet(vector<double*> & featuresV,
+                        vector<double*> & rtFeaturesV, size_t numFeatures,
                         size_t numRetentionFeatures);
     void unnormalizeweight(const vector<double>& in, vector<double>& out);
     void normalizeweight(const vector<double>& in, vector<double>& out);

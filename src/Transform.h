@@ -30,12 +30,18 @@ class Transform {
       ;
     }
     double operator()(double xx) {
-      if ((!doLogit) && (!doLog)) return xx;
+      if ((!doLogit) && (!doLog)) {
+        return xx;
+      }
       if ((deltaLow > .0) || (deltaHigh > .0)) {
-        if (doLogit) xx *= (1. - deltaHigh - deltaLow);
+        if (doLogit) {
+          xx *= (1. - deltaHigh - deltaLow);
+        }
         xx += deltaLow;
       }
-      if (doLogit) return log(xx / (1. - xx));
+      if (doLogit) {
+        return log(xx / (1. - xx));
+      }
       return log(xx);
     }
   private:

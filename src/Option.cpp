@@ -33,8 +33,9 @@ bool from_string(T& t, const std::string& s) {
 void searchandreplace(string& source, const string& find,
                       const string& replace) {
   size_t j;
-  for (; (j = source.find(find)) != string::npos;)
+  for (; (j = source.find(find)) != string::npos;) {
     source.replace(j, find.length(), replace);
+  }
 }
 
 Option::Option(string shrt, string lng, string nm, string hlp,
@@ -51,7 +52,7 @@ Option::Option(string shrt, string lng, string nm, string hlp,
 Option::~Option() {
 }
 
-bool Option::operator ==(const string & option) {
+bool Option::operator ==(const string& option) {
   return (shortOpt == option || longOpt == option);
 }
 
@@ -98,16 +99,18 @@ void CommandLineParser::defineOption(string shortOpt, string longOpt,
                                    helpType,
                                    typ,
                                    dfault));
-  if (longOpt.length() + helpType.length() > optMaxLen) optMaxLen
-      = longOpt.length() + helpType.length();
+  if (longOpt.length() + helpType.length() > optMaxLen) {
+    optMaxLen = longOpt.length() + helpType.length();
+  }
 }
 
-void CommandLineParser::parseArgs(int argc, char **argv) {
+void CommandLineParser::parseArgs(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
-    if (argv[i][0] == '-')
+    if (argv[i][0] == '-') {
       findOption(argv, i);
-    else
+    } else {
       arguments.insert(arguments.end(), argv[i]);
+    }
   }
 }
 
@@ -123,8 +126,9 @@ void CommandLineParser::help() {
   for (unsigned int i = opts.size(); i--;) {
     string::size_type j = 0;
     cerr << " " << opts[i].shortOpt;
-    if (opts[i].helpType.length() > 0) cerr << " <" << opts[i].helpType
-        << ">";
+    if (opts[i].helpType.length() > 0) {
+      cerr << " <" << opts[i].helpType << ">";
+    }
     cerr << endl;
     string desc = " " + opts[i].longOpt;
     if (opts[i].helpType.length() > 0) {
@@ -138,7 +142,9 @@ void CommandLineParser::help() {
       string::size_type l = helpLen;
       if (j + l < opts[i].help.length()) {
         string::size_type p = opts[i].help.rfind(' ', j + l);
-        if (p != string::npos && p > j) l = p - j + 1;
+        if (p != string::npos && p > j) {
+          l = p - j + 1;
+        }
       }
       cerr << opts[i].help.substr(j, l) << endl;
       j += l;
@@ -153,15 +159,15 @@ void CommandLineParser::htmlHelp() {
   cerr
       << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />"
       << endl;
-
   string htmlHeader = header;
   searchandreplace(htmlHeader, "\n", "<br/>");
   cerr << htmlHeader << endl << "Options:" << endl;
   cerr << "<table border=0>" << endl;
   for (unsigned int i = opts.size(); i--;) {
     cerr << "<tr><td><code>" << opts[i].shortOpt;
-    if (opts[i].helpType.length() > 0) cerr << " &lt;" << opts[i].helpType
-        << "&gt;";
+    if (opts[i].helpType.length() > 0) {
+      cerr << " &lt;" << opts[i].helpType << "&gt;";
+    }
     cerr << "</code>, <code>";
     cerr << " " + opts[i].longOpt;
     if (opts[i].helpType.length() > 0) {
@@ -178,11 +184,13 @@ void CommandLineParser::htmlHelp() {
   exit(0);
 }
 
-void CommandLineParser::findOption(char **argv, int &index) {
-  if ((string)argv[index] == "-html" || (string)argv[index] == "--html") htmlHelp();
-
-  if ((string)argv[index] == "-h" || (string)argv[index] == "--help") help();
-
+void CommandLineParser::findOption(char** argv, int& index) {
+  if ((string)argv[index] == "-html" || (string)argv[index] == "--html") {
+    htmlHelp();
+  }
+  if ((string)argv[index] == "-h" || (string)argv[index] == "--help") {
+    help();
+  }
   string optstr = (string)argv[index];
   string valstr("");
   string::size_type eqsign = optstr.find('=');

@@ -35,10 +35,10 @@ class DataSet {
     void inline setLabel(int l) {
       label = l;
     }
-    void computeAAFrequencies(const string& pep, double *feat);
-    void readSQT(const string fname, const string & wild = "", bool match =
+    void computeAAFrequencies(const string& pep, double* feat);
+    void readSQT(const string fname, const string& wild = "", bool match =
         false);
-    void modifySQT(const string & outFN, Scores * pSc, const string greet,
+    void modifySQT(const string& outFN, Scores* pSc, const string greet,
                    bool dtaSelect);
     void initFeatureTables(const unsigned int numFeatures,
                            const unsigned int numSpectra,
@@ -74,10 +74,10 @@ class DataSet {
     static inline int rowIx(int row) {
       return row * FeatureNames::getNumFeatures();
     }
-    double * getFeature() {
+    double* getFeature() {
       return feature;
     }
-    const double * getFeatures(const int pos) const;
+    const double* getFeatures(const int pos) const;
     int inline getSize() const {
       return numSpectra;
     }
@@ -88,19 +88,19 @@ class DataSet {
     void setRetentionTime(map<int, double>& scan2rt) {
       PSMDescription::setRetentionTime(psms, scan2rt);
     }
-    bool writeTabData(ofstream & out, const string & lab);
-    void readTabData(ifstream & dataStream,
-                     const vector<unsigned int> &ixs);
-    bool getGistDataRow(int& pos, string & out);
-    void readGistData(ifstream & is, const vector<unsigned int> &ixs);
+    bool writeTabData(ofstream& out, const string& lab);
+    void
+        readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
+    bool getGistDataRow(int& pos, string& out);
+    void readGistData(ifstream& is, const vector<unsigned int> &ixs);
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
     static double isEnz(const char n, const char c);
   protected:
-    void readFeatures(const string &in, PSMDescription &psm, int match);
+    void readFeatures(const string& in, PSMDescription& psm, int match);
     string modifyRec(const string record, int& row, const set<int>& theMs,
-                     Scores * pSc, bool dtaSelect);
+                     Scores* pSc, bool dtaSelect);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
     double isPngasef(const string& peptide);
@@ -117,7 +117,7 @@ class DataSet {
     const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
     vector<PSMDescription> psms;
     int label;
-    double *feature, *regressionFeature;
+    double* feature, *regressionFeature;
     int numSpectra;
     string sqtFN;
     string pattern;

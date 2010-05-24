@@ -73,19 +73,25 @@ DataSet::~DataSet() {
 
 PSMDescription* DataSet::getNext(int& pos) {
   pos++;
-  if (pos < 0) pos = 0;
-  if (pos >= getSize()) return NULL;
+  if (pos < 0) {
+    pos = 0;
+  }
+  if (pos >= getSize()) {
+    return NULL;
+  }
   return &psms[pos];
 }
 
-const double * DataSet::getFeatures(const int pos) const {
+const double* DataSet::getFeatures(const int pos) const {
   return &feature[DataSet::rowIx(pos)];
 }
 
-bool DataSet::getGistDataRow(int & pos, string &out) {
+bool DataSet::getGistDataRow(int& pos, string& out) {
   ostringstream s1;
   PSMDescription* pPSM = NULL;
-  if ((pPSM = getNext(pos)) == NULL) return false;
+  if ((pPSM = getNext(pos)) == NULL) {
+    return false;
+  }
   double* feature = pPSM->features;
   s1 << psms[pos].id;
   for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures(); ix++) {
@@ -96,11 +102,13 @@ bool DataSet::getGistDataRow(int & pos, string &out) {
   return true;
 }
 
-bool DataSet::writeTabData(ofstream & out, const string & lab) {
+bool DataSet::writeTabData(ofstream& out, const string& lab) {
   int pos = -1;
   PSMDescription* pPSM = NULL;
   unsigned int nf = FeatureNames::getNumFeatures();
-  if (calcDOC) nf -= DescriptionOfCorrect::numDOCFeatures();
+  if (calcDOC) {
+    nf -= DescriptionOfCorrect::numDOCFeatures();
+  }
   while ((pPSM = getNext(pos)) != NULL) {
     double* frow = pPSM->features;
     out << psms[pos].id << '\t' << lab;
@@ -145,8 +153,10 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
   size_t ix = 0;
   vector<PSMDescription>::const_iterator psm = psms.begin();
   for (; psm != psms.end(); psm++, ix++) {
-    ScoreHolder *pSH = test.getScoreHolder(psm->features);
-    if (pSH == NULL) continue;
+    ScoreHolder* pSH = test.getScoreHolder(psm->features);
+    if (pSH == NULL) {
+      continue;
+    }
     double score = pSH->score;
     double q = psm->q;
     double pep = psm->pep;
@@ -167,17 +177,23 @@ double DataSet::isPngasef(const string& peptide) {
     next_pos = pos + 1;
     if (label == 1) {
       pos += 3;
-      if (peptide[pos] == '#') pos += 1;
+      if (peptide[pos] == '#') {
+        pos += 1;
+      }
     } else {
       pos -= 2;
-      if (peptide[pos] == '#') pos -= 1;
+      if (peptide[pos] == '#') {
+        pos -= 1;
+      }
     }
-    if (peptide[pos] == 'T' || peptide[pos] == 'S') return 1.0;
+    if (peptide[pos] == 'T' || peptide[pos] == 'S') {
+      return 1.0;
+    }
   }
   return 0.0;
 }
 
-void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
+void DataSet::readGistData(ifstream& is, const vector<unsigned int>& ixs) {
   string tmp, line;
   is.clear();
   is.seekg(0, ios::beg);
@@ -187,7 +203,9 @@ void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   istringstream buff(line);
   while (true) {
     buff >> tmp;
-    if (!buff) break;
+    if (!buff) {
+      break;
+    }
     m++;
   }
   if (m < 3) {
@@ -195,16 +213,12 @@ void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
     exit(-1);
   }
   m--; // remove id line
-
   initFeatureTables(m, n);
   string seq;
-
   is.clear();
   is.seekg(0, ios::beg);
   getline(is, line); // id line
-
   //getFeatureNames().setFeatures(line,1,m);
-
   unsigned int ix = 0;
   getline(is, line);
   for (unsigned int i = 0; i < n; i++) {
@@ -215,7 +229,7 @@ void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
     buff.str(line);
     buff.clear();
     buff >> psms[i].id;
-    double *featureRow = &feature[rowIx(i)];
+    double* featureRow = &feature[rowIx(i)];
     psms[i].features = featureRow;
     for (register unsigned int j = 0; j < m; j++) {
       buff >> featureRow[j];
@@ -223,7 +237,7 @@ void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   }
 }
 
-void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
+void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
   string tmp, line;
   is.clear();
   is.seekg(0, ios::beg);
@@ -240,26 +254,28 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
     } else {
       buff >> tmp;
     }
-    if (!buff) break;
+    if (!buff) {
+      break;
+    }
     buff.clear();
   }
   if (m < 1) {
     cerr << "To few features in Tab data file";
     exit(-1);
   }
-  if (calcDOC) m -= 2;
-
+  if (calcDOC) {
+    m -= 2;
+  }
   initFeatureTables((calcDOC ? m + DescriptionOfCorrect::numDOCFeatures()
-                             : m), n, calcDOC);
-
-  if (calcDOC) getFeatureNames().setDocFeatNum(m);
+      : m), n, calcDOC);
+  if (calcDOC) {
+    getFeatureNames().setDocFeatNum(m);
+  }
   string seq;
-
   is.clear();
   is.seekg(0, ios::beg);
   getline(is, line); // id line
   //  getFeatureNames().setFeatures(line,2,m);
-
   unsigned int ix = 0;
   getline(is, line);
   for (unsigned int i = 0; i < n; i++) {
@@ -271,7 +287,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
     buff.clear();
     buff >> psms[i].id;
     buff >> tmp; // get rid of label
-    double *featureRow = &feature[rowIx(i)];
+    double* featureRow = &feature[rowIx(i)];
     psms[i].features = featureRow;
     if (calcDOC) {
       buff >> psms[i].retentionTime;
@@ -297,7 +313,7 @@ void DataSet::readTabData(ifstream & is, const vector<unsigned int>& ixs) {
 }
 
 string DataSet::modifyRec(const string record, int& row,
-                          const set<int>& theMs, Scores * pSc,
+                          const set<int>& theMs, Scores* pSc,
                           bool dtaSelect) {
   vector<pair<double, string> > outputs;
   outputs.clear();
@@ -342,11 +358,14 @@ string DataSet::modifyRec(const string record, int& row,
   for (unsigned int ix = 0; ix < outputs.size(); ix++) {
     string aStr = outputs[ix].second;
     double score = outputs[ix].first;
-    if (ix == 0) x0 = score;
+    if (ix == 0) {
+      x0 = score;
+    }
     if (x0 != 0) {
       delt = (x0 - score) / x0;
-    } else
+    } else {
       delt = 0;
+    }
     //    sprintf(buf,outputs[ix].second.c_str(),ix+1,delt);
     sprintf(buf, aStr.c_str(), delt);
     out << buf;
@@ -355,7 +374,7 @@ string DataSet::modifyRec(const string record, int& row,
   return out.str();
 }
 
-void DataSet::modifySQT(const string & outFN, Scores * pSc,
+void DataSet::modifySQT(const string& outFN, Scores* pSc,
                         const string greet, bool dtaSelect) {
   string line;
   ifstream sqtIn(sqtFN.data(), ios::in);
@@ -377,18 +396,23 @@ void DataSet::modifySQT(const string & outFN, Scores * pSc,
   sqtOut << "H\t"
       << "The q-value is negated to be able to set a upper limit with DTASelect"
       << endl;
-  if (VERB > 1) cerr << "Writing Output to sqt file " << outFN << endl;
-
+  if (VERB > 1) {
+    cerr << "Writing Output to sqt file " << outFN << endl;
+  }
   ostringstream buff;
   istringstream lineParse;
   int lines = 0, ms = 0, charge = 0, row = 0;
   string tmp, lineRem;
   set<int> theMs;
   while (getline(sqtIn, line)) {
-    if (line[0] == 'H') sqtOut << line << endl;
+    if (line[0] == 'H') {
+      sqtOut << line << endl;
+    }
     if (line[0] == 'S') {
       if (lines > 1) {
-        if (ms > hitsPerSpectrum) ms = hitsPerSpectrum;
+        if (ms > hitsPerSpectrum) {
+          ms = hitsPerSpectrum;
+        }
         string record = buff.str();
         sqtOut << modifyRec(record, row, theMs, pSc, dtaSelect);
       }
@@ -423,7 +447,7 @@ void DataSet::modifySQT(const string & outFN, Scores * pSc,
   sqtOut.close();
 }
 
-void DataSet::readFeatures(const string &in, PSMDescription &psm,
+void DataSet::readFeatures(const string& in, PSMDescription& psm,
                            int match) {
   istringstream instr(in), linestr;
   ostringstream idbuild;
@@ -431,12 +455,11 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
   string line, tmp;
   int charge;
   unsigned int scan;
-  double * feat = psm.features;
+  double* feat = psm.features;
   double mass, deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr =
       0.0, nSM = 0.0, tstSM = 0.0;
   bool gotL = true;
   int ms = 0;
-
   while (getline(instr, line)) {
     if (line[0] == 'S') {
       linestr.clear();
@@ -455,7 +478,6 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
         cerr << line << endl;
         exit(-1);
       }
-
       // Check if the Yate's lab definition (10 fields) is valid
       // http://fields.scripps.edu/sequest/SQTFormat.html
       //
@@ -489,7 +511,6 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
                                       - 4));
         psm.scan = scan;
         psm.massDiff = dM;
-
         feat[0] = log(max(1.0, rSp)); // rank by Sp
         feat[1] = 0.0; // delt5Cn (leave until last M line)
         feat[2] = 0.0; // deltCn (leave until next M line)
@@ -500,25 +521,29 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
         feat[7] = peptideLength(psm.peptide); // Peptide length
         int nxtFeat = 8;
         for (int c = getFeatureNames().getMinCharge(); c
-            <= getFeatureNames().getMaxCharge(); c++)
+            <= getFeatureNames().getMaxCharge(); c++) {
           feat[nxtFeat++] = (charge == c ? 1.0 : 0.0); // Charge
+        }
         if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
           feat[nxtFeat++] = Enzyme::isEnzymatic(psm.peptide.at(0),
                                                 psm.peptide.at(2)) ? 1.0
-                                                                   : 0.0;
+              : 0.0;
           feat[nxtFeat++]
               = Enzyme::isEnzymatic(psm.peptide.at(psm.peptide.size() - 3),
                                     psm.peptide.at(psm.peptide.size() - 1))
-                                                                            ? 1.0
-                                                                            : 0.0;
+                  ? 1.0 : 0.0;
           string peptid = psm.peptide.substr(2, psm.peptide.length() - 4);
           feat[nxtFeat++] = (double)Enzyme::countEnzymatic(peptid);
         }
         feat[nxtFeat++] = log(max(1.0, nSM));
         feat[nxtFeat++] = dM; // obs - calc mass
         feat[nxtFeat++] = (dM < 0 ? -dM : dM); // abs only defined for integers on some systems
-        if (calcPTMs) feat[nxtFeat++] = cntPTMs(psm.peptide);
-        if (pngasef) feat[nxtFeat++] = isPngasef(psm.peptide);
+        if (calcPTMs) {
+          feat[nxtFeat++] = cntPTMs(psm.peptide);
+        }
+        if (pngasef) {
+          feat[nxtFeat++] = isPngasef(psm.peptide);
+        }
         //      if (hitsPerSpectrum>1)
         //        feat[nxtFeat++]=(ms==0?1.0:0.0);
         if (calcAAFrequencies) {
@@ -539,7 +564,9 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
       ms++;
     }
     if (line[0] == 'L' && !gotL) {
-      if (instr.peek() != 'L') gotL = true;
+      if (instr.peek() != 'L') {
+        gotL = true;
+      }
       string p;
       linestr.clear();
       linestr.str(line);
@@ -552,10 +579,12 @@ void DataSet::readFeatures(const string &in, PSMDescription &psm,
     feat[1] = (xcorr - lastXcorr) / xcorr;
     feat[2] = (xcorr - otherXcorr) / xcorr;
   }
-  if (!isfinite(feat[2])) cerr << in;
+  if (!isfinite(feat[2])) {
+    cerr << in;
+  }
 }
 
-void DataSet::computeAAFrequencies(const string& pep, double *feat) {
+void DataSet::computeAAFrequencies(const string& pep, double* feat) {
   // Overall amino acid composition features
   string::size_type pos = aaAlphabet.size();
   for (; pos--;) {
@@ -564,7 +593,9 @@ void DataSet::computeAAFrequencies(const string& pep, double *feat) {
   int len = 0;
   for (string::const_iterator it = pep.begin() + 2; it != pep.end() - 2; it++) {
     pos = aaAlphabet.find(*it);
-    if (pos != string::npos) feat[pos]++;
+    if (pos != string::npos) {
+      feat[pos]++;
+    }
     len++;
   }
   for (pos = aaAlphabet.size(); pos--;) {
@@ -575,7 +606,9 @@ void DataSet::computeAAFrequencies(const string& pep, double *feat) {
 unsigned int DataSet::peptideLength(const string& pep) {
   unsigned int len = 0;
   for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (aaAlphabet.find(pep.at(pos)) != string::npos) len++;
+    if (aaAlphabet.find(pep.at(pos)) != string::npos) {
+      len++;
+    }
   }
   return len;
 }
@@ -583,12 +616,14 @@ unsigned int DataSet::peptideLength(const string& pep) {
 unsigned int DataSet::cntPTMs(const string& pep) {
   unsigned int len = 0;
   for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (ptmAlphabet.find(pep.at(pos)) != string::npos) len++;
+    if (ptmAlphabet.find(pep.at(pos)) != string::npos) {
+      len++;
+    }
   }
   return len;
 }
 
-void DataSet::readSQT(const string fname, const string & wild, bool match) {
+void DataSet::readSQT(const string fname, const string& wild, bool match) {
   matchPattern = match;
   pattern = wild;
   doPattern = !wild.empty();
@@ -609,8 +644,12 @@ void DataSet::readSQT(const string fname, const string & wild, bool match) {
       lineParse.str(line);
       lineParse >> tmp >> tmp >> tmp >> charge;
       look = true;
-      if (minCharge > charge) minCharge = charge;
-      if (maxCharge < charge) maxCharge = charge;
+      if (minCharge > charge) {
+        minCharge = charge;
+      }
+      if (maxCharge < charge) {
+        maxCharge = charge;
+      }
       ms = 0;
     }
     if (look && line[0] == 'L' && ms < hitsPerSpectrum) {
@@ -623,7 +662,9 @@ void DataSet::readSQT(const string fname, const string & wild, bool match) {
       }
     }
   }
-  if (VERB > 1) cerr << n << " records in file " << sqtFN << endl;
+  if (VERB > 1) {
+    cerr << n << " records in file " << sqtFN << endl;
+  }
   if (n <= 0) {
     cerr << "The file " << sqtFN << " does not contain any records"
         << endl;
@@ -632,7 +673,6 @@ void DataSet::readSQT(const string fname, const string & wild, bool match) {
   }
   sqtIn.clear();
   sqtIn.seekg(0, ios::beg);
-
   getFeatureNames().setSQTFeatures(minCharge,
                                    maxCharge,
                                    Enzyme::getEnzymeType()
@@ -643,17 +683,17 @@ void DataSet::readSQT(const string fname, const string & wild, bool match) {
                                    calcQuadraticFeatures,
                                    calcDOC);
   initFeatureTables(FeatureNames::getNumFeatures(), n, calcDOC);
-
   string seq;
-
   fileId = fname;
   size_t spos = fileId.rfind('/');
-  if (spos != string::npos) fileId.erase(0, spos + 1);
+  if (spos != string::npos) {
+    fileId.erase(0, spos + 1);
+  }
   spos = fileId.find('.');
-  if (spos != string::npos) fileId.erase(spos);
-
+  if (spos != string::npos) {
+    fileId.erase(spos);
+  }
   ostringstream buff, id;
-
   int ix = 0, lines = 0;
   string scan;
   set<int> theMs;
@@ -720,19 +760,20 @@ void DataSet::initFeatureTables(const unsigned int numFeat,
   FeatureNames::setNumFeatures(numFeat);
   numSpectra = numSpec;
   feature = new double[numFeat * numSpec];
-
   if (regressionTable) {
     regressionFeature
-        = new double[DescriptionOfCorrect::totalNumRTFeatures() * numSpec];
+        = new double[RTModel::totalNumRTFeatures() * numSpec];
   }
   psms.resize(numSpectra);
-  for (int ix = 0; ix < numSpectra; ++ix)
+  for (int ix = 0; ix < numSpectra; ++ix) {
     psms[ix].features = &feature[rowIx(ix)];
+  }
   if (regressionTable) {
-    double *ptr = regressionFeature;
-    size_t nf = DescriptionOfCorrect::totalNumRTFeatures();
-    for (int ix = 0; ix < numSpectra; ++ix, ptr += nf)
+    double* ptr = regressionFeature;
+    size_t nf = RTModel::totalNumRTFeatures();
+    for (int ix = 0; ix < numSpectra; ++ix, ptr += nf) {
       psms[ix].retentionFeatures = ptr;
+    }
   }
 }
 

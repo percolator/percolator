@@ -2,8 +2,7 @@
  * Generated automatically by crc32.c
  */
 
-local const unsigned long FAR crc_table[TBLS][256] =
-{
+local const unsigned long FAR crc_table[TBLS][256] = {
   {
     0x00000000UL, 0x77073096UL, 0xee0e612cUL, 0x990951baUL, 0x076dc419UL,
     0x706af48fUL, 0xe963a535UL, 0x9e6495a3UL, 0x0edb8832UL, 0x79dcb8a4UL,

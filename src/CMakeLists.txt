@@ -29,3 +29,4 @@ target_link_libraries(${PERC_FILE_NAME} perclibrary ArrayLibrary MSToolkit pthre
 install(TARGETS ${PERC_FILE_NAME} EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
 
 add_subdirectory(qvality)
+add_subdirectory(elude)

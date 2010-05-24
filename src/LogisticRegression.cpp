@@ -35,7 +35,7 @@ LogisticRegression::LogisticRegression() {
 LogisticRegression::~LogisticRegression() {
 }
 
-void invlogit(double & out, double in) {
+void invlogit(double& out, double in) {
   double e = exp(in);
   out = e / (1 + e);
 }
@@ -92,13 +92,11 @@ void LogisticRegression::initg() {
   //#define OUTPUT_DEBUG_FILES
 #undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
-  ofstream drFile("decoyRate.bins",ios::out),xvalFile("xvals.bins",ios::out);
-  ostream_iterator<double> xvalIt(xvalFile,"\n");
-
-  copy(x.begin(),x.end(),xvalIt);
-
-  for(size_t yix=0;yix<y.size();++yix) {
-    drFile << y[yix]/(double) m[yix] << endl;
+  ofstream drFile("decoyRate.bins", ios::out), xvalFile("xvals.bins", ios::out);
+  ostream_iterator<double> xvalIt(xvalFile, "\n");
+  copy(x.begin(), x.end(), xvalIt);
+  for (size_t yix = 0; yix < y.size(); ++yix) {
+    drFile << y[yix] / (double) m[yix] << endl;
   }
   drFile.close();
 #endif

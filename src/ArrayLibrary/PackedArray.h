@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,9 +21,9 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: PackedArray.h,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 
 #ifndef _PackedArray_H
@@ -34,32 +34,28 @@
 using namespace std;
 
 template <typename T>
-struct PackedPair
-{
-  PackedPair() {}
-  PackedPair(int i, const T & v)
-  {
-    index = i;
-    value = v;
-  }
-  int index;
-  T value;
+struct PackedPair {
+     PackedPair() {}
+     PackedPair(int i, const T& v) {
+          index = i;
+          value = v;
+     }
+     int index;
+     T value;
 };
 
-operator < (const PackedPair & lhs, const PackedPair & rhs)
-{
-  return lhs.index < rhs.index;
+operator < (const PackedPair& lhs, const PackedPair& rhs) {
+     return lhs.index < rhs.index;
 }
 
 
 template <typename T>
-class PackedArray : public OrderedArray< PackedPair<T> >
-{
-public:
-  virtual const T & operator [] (int k) const;
-  virtual T & operator [] (int k);
-  virtual void push_back(const PackedPair<T> & element);
-protected:
+class PackedArray : public OrderedArray< PackedPair<T> > {
+     public:
+          virtual const T& operator [](int k) const;
+          virtual T& operator [](int k);
+          virtual void push_back(const PackedPair<T> & element);
+     protected:
 
 };
 

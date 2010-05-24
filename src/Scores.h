@@ -24,9 +24,10 @@
 #ifndef uint64_t
 #define uint64_t unsigned long long
 #endif
-#endif
+#else
 
 #include <stdint.h>
+#endif
 #include <vector>
 #include <map>
 #include <iostream>
@@ -38,14 +39,14 @@ class SetHandler;
 class ScoreHolder {
   public:
     double score; // ,q,pep;
-    PSMDescription * pPSM;
+    PSMDescription* pPSM;
     //  const double * featVec;
     int label;
     ScoreHolder() :
       score(0.0), pPSM(NULL), label(0) {
       ;
     }
-    ScoreHolder(const double &s, const int &l, PSMDescription * psm = NULL) :
+    ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
       score(s), pPSM(psm), label(l) {
       ;
     }
@@ -63,9 +64,9 @@ class ScoreHolder {
     }
 };
 
-inline bool operator>(const ScoreHolder &one, const ScoreHolder &other);
-inline bool operator<(const ScoreHolder &one, const ScoreHolder &other);
-ostream & operator<<(ostream& os, const ScoreHolder& sh);
+inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
+inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
+ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
 class AlgIn;
 
@@ -74,7 +75,7 @@ class Scores {
     Scores();
     ~Scores();
     void merge(vector<Scores>& sv, bool reportUniquePeptides = false);
-    double calcScore(const double * features) const;
+    double calcScore(const double* features) const;
     vector<ScoreHolder>::iterator begin() {
       return scores.begin();
     }
@@ -95,7 +96,7 @@ class Scores {
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction,
                          bool findDirection);
-    ScoreHolder* getScoreHolder(const double *d);
+    ScoreHolder* getScoreHolder(const double* d);
     DescriptionOfCorrect& getDOC() {
       return doc;
     }
@@ -105,7 +106,7 @@ class Scores {
     double getPi0() {
       return pi0;
     }
-    void fill(string & fn);
+    void fill(string& fn);
     inline unsigned int size() {
       return (pos + neg);
     }
@@ -135,7 +136,7 @@ class Scores {
     int neg, pos, posNow;
     double q1, q3;
     vector<ScoreHolder> scores;
-    std::map<const double *, ScoreHolder *> scoreMap;
+    std::map<const double*, ScoreHolder*> scoreMap;
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;
     static uint32_t seed;

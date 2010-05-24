@@ -25,9 +25,9 @@ class SanityCheck {
     SanityCheck();
     virtual ~SanityCheck();
 
-    void readWeights(istream & weightStream, vector<double>& w);
+    void readWeights(istream& weightStream, vector<double>& w);
     int getInitDirection(vector<Scores>& testset,
-                         vector<Scores> &trainset, Normalizer * pNorm,
+                         vector<Scores> &trainset, Normalizer* pNorm,
                          vector<vector<double> >& w, double test_fdr);
     virtual bool validateDirection(vector<vector<double> >& w);
     void resetDirection(vector<vector<double> >& w);

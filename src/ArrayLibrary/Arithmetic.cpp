@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,80 +21,68 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: Arithmetic.cpp,v 1.3 2009/01/09 14:41:00 lukall Exp $
- 
+
  *******************************************************************************/
 #include "Arithmetic.h"
 
 template <typename T>
-T Arithmetic::add(T lhs, T rhs)
-{
-  return lhs + rhs;
+T Arithmetic::add(T lhs, T rhs) {
+     return lhs + rhs;
 }
 
 template <typename T>
-void Arithmetic::addEq(T & lhs, T rhs)
-{
-  lhs += rhs;
+void Arithmetic::addEq(T& lhs, T rhs) {
+     lhs += rhs;
 }
 
 template <typename T>
-T Arithmetic::sub(T lhs, T rhs)
-{
-  return lhs - rhs;
+T Arithmetic::sub(T lhs, T rhs) {
+     return lhs - rhs;
 }
 
 template <typename T>
-void Arithmetic::subEq(T & lhs, T rhs)
-{
-  lhs -= rhs;
+void Arithmetic::subEq(T& lhs, T rhs) {
+     lhs -= rhs;
 }
 
 template <typename T>
-T Arithmetic::mult(T lhs, T rhs)
-{
-  return lhs * rhs;
+T Arithmetic::mult(T lhs, T rhs) {
+     return lhs * rhs;
 }
 
 template <typename T>
-void Arithmetic::multEq(T & lhs, T rhs)
-{
-  lhs *= rhs;
+void Arithmetic::multEq(T& lhs, T rhs) {
+     lhs *= rhs;
 }
 
 template <typename T>
-T Arithmetic::div(T lhs, T rhs)
-{
-  return lhs / rhs;
+T Arithmetic::div(T lhs, T rhs) {
+     return lhs / rhs;
 }
 
 template <typename T>
-void Arithmetic::divEq(T & lhs, T rhs)
-{
-  lhs /= rhs;
+void Arithmetic::divEq(T& lhs, T rhs) {
+     lhs /= rhs;
 }
 
 template <typename T>
-T Arithmetic::min(T lhs, T rhs)
-{
-  return lhs < rhs ? lhs : rhs;
+T Arithmetic::min(T lhs, T rhs) {
+     return lhs < rhs ? lhs : rhs;
 }
 
 template <typename T>
-void Arithmetic::minEq(T & lhs, T rhs)
-{
-  lhs = lhs < rhs ? lhs : rhs;
+void Arithmetic::minEq(T& lhs, T rhs) {
+     lhs = lhs < rhs ? lhs : rhs;
 }
 
 template <typename T>
-T Arithmetic::max(T lhs, T rhs)
-{
-  return lhs > rhs ? lhs : rhs;
+T Arithmetic::max(T lhs, T rhs) {
+     return lhs > rhs ? lhs : rhs;
 }
 
 template <typename T>
-void Arithmetic::maxEq(T & lhs, T rhs)
-{
-  lhs = lhs > rhs ? lhs : rhs;
+void Arithmetic::maxEq(T& lhs, T rhs) {
+     lhs = lhs > rhs ? lhs : rhs;
 }

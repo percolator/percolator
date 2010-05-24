@@ -29,8 +29,9 @@ SqtSanityCheck::~SqtSanityCheck() {
 void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   // Set init direction to be the most discriminative direction
   for (size_t set = 0; set < w.size(); ++set) {
-    for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures() + 1; ++ix)
+    for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures() + 1; ++ix) {
       w[set][ix] = 0;
+    }
     w[set][2] = 1.61; // deltCn
     w[set][3] = 1.1; // Xcorr
     w[set][7] = -0.573; // Peptide length
@@ -65,14 +66,20 @@ bool SqtSanityCheck::validateDirection(vector<vector<double> >& w) {
   for (size_t set = 0; set < w.size(); ++set) {
     if (w[set][3] < 0) {
       ok = false;
-      if (VERB > 1) cerr << "Warning weight for XCorr negative" << endl;
+      if (VERB > 1) {
+        cerr << "Warning weight for XCorr negative" << endl;
+      }
     }
     if (w[set][2] < 0) {
       ok = false;
-      if (VERB > 1) cerr << "Warning weight for deltaCn negative" << endl;
+      if (VERB > 1) {
+        cerr << "Warning weight for deltaCn negative" << endl;
+      }
     }
   }
-  if (!ok) resetDirection(w);
+  if (!ok) {
+    resetDirection(w);
+  }
   return ok;
 }
 

@@ -1,3 +1,5 @@
+if (GOOGLE_TEST STREQUAL TRUE)
+
 include_directories (${PERCOLATOR_SOURCE_DIR}/src)
 
 add_executable (gtest_unit simple_tests.cpp)
@@ -11,3 +13,5 @@ add_test (SimpleQvalTest2 SimpleTest2.sh "--help")
 
 configure_file(SimpleTest1.sh ${CMAKE_BINARY_DIR}/tests/SimpleTest1.sh COPYONLY)
 configure_file(SimpleTest2.sh ${CMAKE_BINARY_DIR}/tests/SimpleTest2.sh COPYONLY)
+
+endif (GOOGLE_TEST STREQUAL TRUE)

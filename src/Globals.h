@@ -30,12 +30,12 @@
 
 #define VERB (Globals::getInstance()->getVerbose())
 
-#define PERCOLATOR_VERSION 1.00
+#define VERSION 1.14
 
 class Globals {
   public:
     virtual ~Globals();
-    static Globals * getInstance();
+    static Globals* getInstance();
     static void clean();
     int getVerbose() {
       return verbose;
@@ -52,7 +52,7 @@ class Globals {
   private:
     Globals();
     int verbose;
-    static Globals * glob;
+    static Globals* glob;
 };
 
 #endif /*GLOBALS_H_*/

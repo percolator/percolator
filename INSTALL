@@ -1,32 +1,35 @@
-Percolator and Qvality building and installation steps.
- 
+Percolator, Qvality and Elude building and installation steps.
+
 FOR LINUX USERS:
- 
-This package produces two different executables: Qvality and Percolator.
- 
+
+This package produces several executables: Qvality, Percolator and Elude.
+
 The building process requires 'cmake' utility, which can be installed by
 running command 'sudo apt-get install cmake'.
- 
+
 In order to build mentioned executables, run 'build_me.sh' building script (./build_me.sh)
-which will create 'output' folder for out-of-source build.
+which will create 'output' folder during out-of-source build.
 The default target for building(what can be changed in this script) is 'install'
-with Debug configuration.
+with 'Release' configuration.
 Default installation directory on the target machine is '/usr/local/bin'.
- 
-After building, executable files (for mentioned executables) also can be found
-in created 'bin' directory (which can be found at the same level as 'src' folder).
- 
-In order to produce release version of the code, parameter
-'-DCMAKE_BUILD_TYPE=Release' should be given to cmake in building script file,
-for example: 'cmake -DCMAKE_BUILD_TYPE=Release ..'
- 
-In order to make source and distribution packages the following commands
+
+After successfull building, executable files (for all mentioned executables) can be found
+in created 'bin' directory (at the same level as 'src' folder).
+
+In order to produce debug version of the code, parameter
+'-DCMAKE_BUILD_TYPE=Debug' should be given to cmake in building script file (build_me.sh),
+for example: 'cmake -DCMAKE_BUILD_TYPE=Debug ..'.
+
+In order to compile the Google unit testing framework, please set variable GOOGLE_TEST in the 'build_me.sh'
+to TRUE (you also need to install 'libgtest0' library).
+
+In order to create source and distribution packages the following commands
 should be executed in created 'output' folder(after running 'cmake ..' in this folder):
-'make package_source' and 'make package' respectively. Created packages can be found
+'sudo make package_source' and 'sudo make package' respectively. Created packages can be found
 in same 'output' folder.
- 
+
 In order to commit .gitignore file among others, please instruct git to add it explicitly:
 'git add -f .gitignore'
- 
-The commands `./Qvality --help' or `./Percolator --help' in created 'bin' folder
-will give full usage statements.
+
+The commands `./percolator --help', `./qvality --help' or './elude --help'
+in created 'bin' folder will display usage help.

@@ -30,7 +30,7 @@ class Enzyme {
     virtual ~Enzyme() {
       ;
     }
-    static Enzyme *getEnzyme();
+    static Enzyme* getEnzyme();
     static void setEnzyme(EnzymeType enz);
     static EnzymeType getEnzymeType() {
       return getEnzyme()->getET();
@@ -39,19 +39,25 @@ class Enzyme {
     static bool isEnzymatic(const char& n, const char& c) {
       return getEnzyme()->isEnz(n, c);
     }
-    static bool isEnzymatic(string& peptide) {
+    static bool isEnzymatic(string peptide) {
       return (getEnzyme()->isEnz(peptide[0], peptide[2])
           && getEnzyme()->isEnz(peptide[peptide.length() - 3],
                                 peptide[peptide.length() - 1]));
+    }
+    static string getStringEnzyme() {
+      return getEnzyme()->toString();
     }
     Enzyme() {
       assert(theEnzyme == NULL);
       theEnzyme = this;
     }
   protected:
-    static Enzyme * theEnzyme;
+    static Enzyme* theEnzyme;
     virtual bool isEnz(const char& n, const char& c) {
       return true;
+    }
+    virtual string toString() {
+      return "no_enzyme";
     }
     virtual EnzymeType getET() {
       return NO_ENZYME;
@@ -67,6 +73,9 @@ class Trypsin : public Enzyme {
       ;
     }
   protected:
+    virtual string toString() {
+      return "trypsin";
+    }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'K' || n == 'R') && c != 'P') || n == '-' || c == '-');
     }
@@ -84,6 +93,9 @@ class Chymotrypsin : public Enzyme {
       ;
     }
   protected:
+    virtual string toString() {
+      return "chymotrypsin";
+    }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'F' || n == 'H' || n == 'W' || n == 'Y' || n == 'L'
           || n == 'M') && c != 'P') || n == '-' || c == '-');
@@ -102,6 +114,9 @@ class Elastase : public Enzyme {
       ;
     }
   protected:
+    virtual string toString() {
+      return "elastase";
+    }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'L' || n == 'V' || n == 'A' || n == 'G') && c != 'P')
           || n == '-' || c == '-');

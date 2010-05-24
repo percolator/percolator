@@ -11,8 +11,8 @@
  conditions:
 
  The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software. 
- 
+ included in all copies or substantial portions of the Software.
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -21,15 +21,15 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
- 
+
  $Id: ArrayLibrary.h,v 1.6 2009/03/31 09:26:57 lukall Exp $
- 
+
  *******************************************************************************/
 #ifndef _ArrayLibrary_H
 #define _ArrayLibrary_H
 
 #ifdef HAVE_CONFIG_H
-  #include "config.h"
+#include "config.h"
 #endif
 #include <iostream>
 #include <math.h>

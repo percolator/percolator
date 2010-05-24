@@ -14,7 +14,6 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <set>
 #include <vector>
 #include <iostream>
 #include <math.h>
@@ -31,7 +30,7 @@ UniNormalizer::~UniNormalizer() {
 }
 
 void UniNormalizer::unnormalizeweight(const vector<double>& in, vector<
-    double>& out) {
+    double> & out) {
   double sum = 0;
   unsigned int i = 0;
   for (; i < numFeatures; i++) {
@@ -42,7 +41,7 @@ void UniNormalizer::unnormalizeweight(const vector<double>& in, vector<
 }
 
 void UniNormalizer::normalizeweight(const vector<double>& in, vector<
-    double>& out) {
+    double> & out) {
   double sum = 0;
   size_t i = 0;
   for (; i < numFeatures; i++) {
@@ -52,35 +51,36 @@ void UniNormalizer::normalizeweight(const vector<double>& in, vector<
   out[i] = in[i] + sum;
 }
 
-void UniNormalizer::setSet(set<DataSet *> &setVec, size_t nf, size_t nrf) {
+void UniNormalizer::setSet(vector<double*> & featuresV,
+                           vector<double*> & rtFeaturesV, size_t nf,
+                           size_t nrf) {
   numFeatures = nf;
   numRetentionFeatures = nrf;
   sub.resize(nf + nrf, 0.0);
   div.resize(nf + nrf, 0.0);
   vector<double> mins(nf + nrf, 1e+100), maxs(nf + nrf, -1e+100);
-
-  double * features;
-  PSMDescription* pPSM;
+  double* features;
   size_t ix;
-  set<DataSet *>::iterator it;
-  for (it = setVec.begin(); it != setVec.end(); ++it) {
-    int ixPos = -1;
-    while ((pPSM = (*it)->getNext(ixPos)) != NULL) {
-      features = pPSM->features;
+  vector<double*>::iterator it = featuresV.begin();
+  for (; it != featuresV.end(); ++it) {
+    features = *it;
       for (ix = 0; ix < numFeatures; ix++) {
         mins[ix] = min(features[ix], mins[ix]);
         maxs[ix] = max(features[ix], maxs[ix]);
       }
-      features = pPSM->retentionFeatures;
-      for (; ix < numFeatures + numRetentionFeatures; ++ix) {
+  }
+  for (it = rtFeaturesV.begin(); it != rtFeaturesV.end(); ++it) {
+    features = *it;
+    for (ix = numFeatures; ix < numFeatures + numRetentionFeatures; ++ix) {
         mins[ix] = min(features[ix - numFeatures], mins[ix]);
         maxs[ix] = max(features[ix - numFeatures], maxs[ix]);
-      }
     }
   }
   for (ix = 0; ix < numFeatures + numRetentionFeatures; ++ix) {
     sub[ix] = mins[ix];
     div[ix] = maxs[ix] - mins[ix];
-    if (div[ix] <= 0) div[ix] = 1.0;
+    if (div[ix] <= 0) {
+      div[ix] = 1.0;
+    }
   }
 }

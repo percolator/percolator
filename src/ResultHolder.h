@@ -28,8 +28,8 @@ class ResultHolder {
     string id, pepSeq, prot;
 };
 
-bool operator>(const ResultHolder &one, const ResultHolder &other);
-bool operator<(const ResultHolder &one, const ResultHolder &other);
-ostream& operator<<(ostream &out, const ResultHolder &obj);
+bool operator>(const ResultHolder& one, const ResultHolder& other);
+bool operator<(const ResultHolder& one, const ResultHolder& other);
+ostream& operator<<(ostream& out, const ResultHolder& obj);
 
 #endif /*RESULTHOLDER_H_*/

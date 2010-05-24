@@ -29,9 +29,9 @@ using namespace std;
 #include "Globals.h"
 
 class SplinePredictor {
-    BaseSpline *bs;
+    BaseSpline* bs;
   public:
-    SplinePredictor(BaseSpline *b) {
+    SplinePredictor(BaseSpline* b) {
       bs = b;
     }
     double operator()(double x) {
@@ -55,7 +55,9 @@ double BaseSpline::splineEval(double xx) {
     return gx;
   }
   size_t rix = right - x.begin();
-  if (*right == xx) return g[rix];
+  if (*right == xx) {
+    return g[rix];
+  }
   if (rix > 0) {
     left = right;
     left--;
@@ -78,7 +80,6 @@ double BaseSpline::splineEval(double xx) {
 static double tao = 2 / (1 + sqrt(5.0)); // inverse of golden section
 
 void BaseSpline::iterativeReweightedLeastSquares() {
-
   Numerical::epsilon = 1e-15;
   unsigned int n = x.size(), alphaIter = 0;
   initiateQR();
@@ -97,7 +98,9 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       gnew = z - aWiQ * gamma;
       limitg();
       step = norm(g - gnew) / n;
-      if (VERB > 2) cerr << "step size:" << step << endl;
+      if (VERB > 2) {
+        cerr << "step size:" << step << endl;
+      }
     } while ((step > stepEpsilon || step <= 0.0) && (++iter < 20));
     double p1 = 1 - tao;
     double p2 = tao;
@@ -108,11 +111,10 @@ void BaseSpline::iterativeReweightedLeastSquares() {
                           p2,
                           crossValidation(-log(p1)),
                           crossValidation(-log(p2)));
-
-    if (VERB > 2) cerr << "Alpha=" << res.first << ", cv=" << res.second
-        << endl;
+    if (VERB > 2) {
+      cerr << "Alpha=" << res.first << ", cv=" << res.second << endl;
+    }
     assert(isfinite(res.second));
-
     if ((cv - res.second) / cv < convergeEpsilon || alphaIter++ > 100) {
       // Reject our last attempt to set alpha,
       // Return with the alpha used when setting g
@@ -121,7 +123,9 @@ void BaseSpline::iterativeReweightedLeastSquares() {
     cv = res.second;
     alpha = res.first;
   } while (true);
-  if (VERB > 2) cerr << "Alpha selected to be " << alpha << endl;
+  if (VERB > 2) {
+    cerr << "Alpha selected to be " << alpha << endl;
+  }
   g = gnew;
 }
 
@@ -137,8 +141,10 @@ pair<double, double> BaseSpline::alphaLinearSearch(double min_p,
     cv1 = cv2;
     p2 = min_p + tao * (max_p - min_p);
     cv2 = crossValidation(-log(p2));
-    if (VERB > 3) cerr << "New point with alpha=" << -log(p2)
-        << ", giving cv=" << cv2 << " taken in consideration" << endl;
+    if (VERB > 3) {
+      cerr << "New point with alpha=" << -log(p2) << ", giving cv=" << cv2
+          << " taken in consideration" << endl;
+    }
   } else {
     max_p = p2;
     p2 = p1;
@@ -146,11 +152,15 @@ pair<double, double> BaseSpline::alphaLinearSearch(double min_p,
     cv2 = cv1;
     p1 = min_p + (1 - tao) * (max_p - min_p);
     cv1 = crossValidation(-log(p1));
-    if (VERB > 3) cerr << "New point with alpha=" << -log(p1)
-        << ", giving cv=" << cv1 << " taken in consideration" << endl;
+    if (VERB > 3) {
+      cerr << "New point with alpha=" << -log(p1) << ", giving cv=" << cv1
+          << " taken in consideration" << endl;
+    }
   }
-  if ((oldCV - min(cv1, cv2)) / oldCV < 1e-6 || (abs(p2 - p1) < 1e-10)) return (cv1
-      > cv2 ? make_pair(-log(p2), cv2) : make_pair(-log(p1), cv1));
+  if ((oldCV - min(cv1, cv2)) / oldCV < 1e-6 || (abs(p2 - p1) < 1e-10)) {
+    return (cv1 > cv2 ? make_pair(-log(p2), cv2)
+        : make_pair(-log(p1), cv1));
+  }
   return alphaLinearSearch(min_p, max_p, p1, p2, cv1, cv2);
 }
 
@@ -163,7 +173,6 @@ void BaseSpline::initiateQR() {
   }
   R.resize(n - 2);
   Q.resize(n);
-
   //Fill Q
   Q[0].push_back(0, 1 / dx[0]);
   Q[1].push_back(0, -1 / dx[0] - 1 / dx[1]);
@@ -187,11 +196,9 @@ void BaseSpline::initiateQR() {
 }
 
 double BaseSpline::crossValidation(double alpha) {
-
   int n = R.size();
   //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n), k1(n), k2(n);
-
   PackedMatrix B = R + alpha * Qt * diagonalPacked(Vec(n + 2, 1.0) / w)
       * Q;
   // Get the diagonals from K
@@ -208,7 +215,6 @@ double BaseSpline::crossValidation(double alpha) {
       }
     }
   }
-
   // LDL decompose Page 26 Green Silverman
   // d[i]=D[i,i]
   // la[i]=L[i+a,i]
@@ -217,7 +223,6 @@ double BaseSpline::crossValidation(double alpha) {
   d[0] = k0[0];
   l1[0] = k1[0] / d[0];
   d[1] = k0[1] - l1[0] * l1[0] * d[0];
-
   for (int row = 2; row < n; ++row) {
     l2[row - 2] = k2[row - 2] / d[row - 2];
     l1[row - 1] = (k1[row - 1] - l1[row - 2] * l2[row - 2] * d[row - 2])
@@ -239,18 +244,20 @@ double BaseSpline::crossValidation(double alpha) {
     }
     if (row == n - 1) {
       b1[n - 2] = -l1[n - 2] * b0[n - 1];
-    } else if (row >= 1) b1[row - 1] = -l1[row - 1] * b0[row] - l1[row]
-        * b1[row];
-    if (row >= 2) b2[row - 2] = -l1[row - 2] * b0[row];
+    } else if (row >= 1) {
+      b1[row - 1] = -l1[row - 1] * b0[row] - l1[row] * b1[row];
+    }
+    if (row >= 2) {
+      b2[row - 2] = -l1[row - 2] * b0[row];
+    }
   }
-
   // Calculate diagonal elements a[i]=Aii p35 Green Silverman
   // (expanding q according to p12)
   //  Vec a(n+2),c(n+1);
   vector<double> a(n), c(n - 1);
-  for (int ix = 0; ix < n - 1; ix++)
+  for (int ix = 0; ix < n - 1; ix++) {
     c[ix] = 1 / dx[ix];
-
+  }
   for (int ix = 0; ix < n; ix++) {
     if (ix > 0) {
       a[ix] += b0[ix - 1] * c[ix - 1] * c[ix - 1];
@@ -261,9 +268,10 @@ double BaseSpline::crossValidation(double alpha) {
         a[ix] += 2 * b2[ix - 1] * c[ix - 1] * c[ix];
       }
     }
-    if (ix < n - 1) a[ix] += b0[ix + 1] * c[ix] * c[ix];
+    if (ix < n - 1) {
+      a[ix] += b0[ix + 1] * c[ix] * c[ix];
+    }
   }
-
   // Calculating weighted cross validation as described in p
   double cv = 0.0;
   for (int ix = 0; ix < n; ix++) {
@@ -271,7 +279,6 @@ double BaseSpline::crossValidation(double alpha) {
     //    double f =(z[ix]-gnew[ix])/(alpha*alpha*a[ix]*a[ix]);
     cv += f * f * w[ix];
   }
-
   return cv;
 }
 
@@ -288,15 +295,18 @@ void BaseSpline::setData(const vector<double>& xx) {
   double minV = *min_element(xx.begin(), xx.end());
   double maxV = *max_element(xx.begin(), xx.end());
   if (minV >= 0.0 && maxV <= 1.0) {
-    if (VERB > 1) cerr
-        << "Logit transforming all scores prior to PEP calculation"
+    if (VERB > 1) {
+      cerr << "Logit transforming all scores prior to PEP calculation"
         << endl;
+    }
     transf = Transform(minV > 0.0 ? 0.0 : 1e-20,
                        maxV < 1.0 ? 0.0 : 1e-10,
                        true);
   } else if (minV >= 0.0) {
-    if (VERB > 1) cerr
-        << "Log transforming all scores prior to PEP calculation" << endl;
+    if (VERB > 1) {
+      cerr << "Log transforming all scores prior to PEP calculation"
+          << endl;
+    }
     transf = Transform(minV > 0.0 ? 0.0 : 1e-20, 0.0, false, true);
   }
   transform(xx.begin(), xx.end(), back_inserter(x), transf);

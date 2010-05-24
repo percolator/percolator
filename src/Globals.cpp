@@ -17,7 +17,7 @@
 
 #include "Globals.h"
 
-Globals * Globals::glob = 0;
+Globals* Globals::glob = 0;
 
 Globals::~Globals() {
 }
@@ -28,12 +28,16 @@ Globals::Globals() {
   verbose = 2;
 }
 
-Globals * Globals::getInstance() {
-  if (!glob) new Globals();
+Globals* Globals::getInstance() {
+  if (!glob) {
+    new Globals();
+  }
   return glob;
 }
 
 void Globals::clean() {
-  if (glob) delete glob;
+  if (glob) {
+    delete glob;
+  }
   glob = 0;
 }

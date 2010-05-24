@@ -29,15 +29,17 @@ class AlgIn {
     int n; /* number of features */
     int positives;
     int negatives;
-    const double **vals;
-    double *Y; /* labels */
-    double *C; /* cost associated with each example */
+    const double** vals;
+    double* Y; /* labels */
+    double* C; /* cost associated with each example */
     void setCost(double pos, double neg) {
       int ix = 0;
-      for (; ix < negatives; ++ix)
+      for (; ix < negatives; ++ix) {
         C[ix] = neg;
-      for (; ix < negatives + positives; ++ix)
+      }
+      for (; ix < negatives + positives; ++ix) {
         C[ix] = pos;
+      }
     }
 };
 
@@ -48,23 +50,21 @@ struct data {
     int u; /* number of unlabeled examples l+u = m */
     int n; /* number of features */
     int nz; /* number of non-zeros */
-    double *val; /* data values (nz elements) [CRS format] */
-    int *rowptr; /* n+1 vector [CRS format] */
-    int *colind; /* nz elements [CRS format] */
-    double *Y; /* labels */
-    double *C; /* cost associated with each example */
+    double* val; /* data values (nz elements) [CRS format] */
+    int* rowptr; /* n+1 vector [CRS format] */
+    int* colind; /* nz elements [CRS format] */
+    double* Y; /* labels */
+    double* C; /* cost associated with each example */
 };
 
-struct vector_double /* defines a vector of doubles */
-{
+struct vector_double { /* defines a vector of doubles */
     int d; /* number of elements */
-    double *vec; /* ptr to vector elements*/
+    double* vec; /* ptr to vector elements*/
 };
 
-struct vector_int /* defines a vector of ints for index subsets */
-{
+struct vector_int { /* defines a vector of ints for index subsets */
     int d; /* number of elements */
-    int *vec; /* ptr to vector elements */
+    int* vec; /* ptr to vector elements */
 };
 
 struct options {
@@ -115,10 +115,10 @@ inline bool operator<(const Delta& a, const Delta& b) {
 }
 ;
 
-void Clear(struct data *a); /* deletes a */
-void Clear(struct vector_double *a); /* deletes a */
-void Clear(struct vector_int *a); /* deletes a */
-double norm_square(const vector_double *A); /* returns squared length of A */
+void Clear(struct data* a); /* deletes a */
+void Clear(struct vector_double* a); /* deletes a */
+void Clear(struct vector_int* a); /* deletes a */
+double norm_square(const vector_double* A); /* returns squared length of A */
 
 /* svmlin algorithms and their subroutines */
 
@@ -126,16 +126,16 @@ double norm_square(const vector_double *A); /* returns squared length of A */
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_{i in Subset} Data->C[i] (Y[i]- w' x_i)^2 */
 /* over a subset of examples x_i specified by vector_int Subset */
 int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
-         const double epsilon, const struct vector_int *Subset,
-         struct vector_double *Weights, struct vector_double *Outputs);
+         const double epsilon, const struct vector_int* Subset,
+         struct vector_double* Weights, struct vector_double* Outputs);
 
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
-int L2_SVM_MFN(const AlgIn& set, struct options *Options,
-               struct vector_double *Weights,
-               struct vector_double *Outputs);
-double line_search(double *w, double *w_bar, double lambda, double *o,
-                   double *o_bar, const double *Y, const double *C, int d,
+int L2_SVM_MFN(const AlgIn& set, struct options* Options,
+               struct vector_double* Weights,
+               struct vector_double* Outputs);
+double line_search(double* w, double* w_bar, double lambda, double* o,
+                   double* o_bar, const double* Y, const double* C, int d,
                    int l);
 
 #endif

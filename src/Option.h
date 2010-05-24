@@ -31,7 +31,7 @@ class Option {
            string hlpType = "", OptionOption type = VALUE, string defau =
                "");
     ~Option();
-    bool operator ==(const string & option);
+    bool operator ==(const string& option);
     OptionOption type;
     string shortOpt;
     string longOpt;
@@ -53,7 +53,7 @@ class CommandLineParser {
                       string helpType, string defaultVal) {
       defineOption(shortOpt, longOpt, help, helpType, VALUE, defaultVal);
     }
-    void parseArgs(int argc, char **argv);
+    void parseArgs(int argc, char** argv);
     bool optionSet(string dest) {
       return (options[dest].length() > 0);
     }
@@ -68,7 +68,7 @@ class CommandLineParser {
     const static unsigned int lineLen = 80;
     string header, endnote;
     vector<Option> opts;
-    void findOption(char **argv, int &index);
+    void findOption(char** argv, int& index);
 };
 
 #endif /*OPTION_H_*/
