@@ -40,13 +40,13 @@ int main(int argc, char* argv[]) {
    r.readFile(NULL,s);
    };
    */
-  int i;
-  r.readFile("test.cms1", s, 770);
-  cout << s.getScanNumber() << "\t" << s.getRTime() << endl;
-  for (i = 0; i < s.size(); i++) {
-    cout << s[i].mz << " " << s[i].intensity << endl;
-  }
-  cout << "\n\n" << endl;
+//  int i;
+//  r.readFile(string("test.cms1"), s, 770);
+//  cout << s.getScanNumber() << "\t" << s.getRTime() << endl;
+//  for (i = 0; i < s.size(); i++) {
+//    cout << s[i].mz << " " << s[i].intensity << endl;
+//  }
+//  cout << "\n\n" << endl;
   /*
    r.readFile(argv[1],s,770);
    cout << s.getScanNumber() << "\t" << s.getRTime() << endl;
@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
    */
   exit(1);
   //read the first scan
+/*	
   cout << "Read first scan of " << argv[1] << endl;
   if (!r.readFile(argv[1], true, s)) {
     cout << "Error reading scan" << endl;
@@ -137,6 +138,7 @@ int main(int argc, char* argv[]) {
   cout << "Done!" << endl;
   cout << "This ends the tutorial. BLARG!" << endl;
   return 0;
+*/
 }
 ;
 

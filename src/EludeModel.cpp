@@ -40,14 +40,14 @@ static double INITIAL_GAMMA = 0.5;
 static double INITIAL_EPSILON = 1e-2;
 
 // for gType = FINE_GRID, a coarse grid is used combined with a fine grid
-static double COARSE_GRID_GAMMA[] = { pow(2, -15), pow(2, -13),
-                                      pow(2, -11), pow(2, -9), pow(2, -7),
-                                      pow(2, -5), pow(2, -3), pow(2, -1),
-                                      pow(2, 1), pow(2, 3), pow(2, 5) };
-static double COARSE_GRID_C[] = { pow(2, -5), pow(2, -3), pow(2, -1),
-                                  pow(2, 1), pow(2, 3), pow(2, 5), pow(2,
+static double COARSE_GRID_GAMMA[] = { pow(2., -15), pow(2., -13),
+                                      pow(2., -11), pow(2., -9), pow(2., -7),
+                                      pow(2., -5), pow(2., -3), pow(2., -1),
+                                      pow(2., 1), pow(2., 3), pow(2., 5) };
+static double COARSE_GRID_C[] = { pow(2., -5), pow(2., -3), pow(2., -1),
+                                  pow(2., 1), pow(2., 3), pow(2., 5), pow(2.,
                                                                        7),
-                                  pow(2, 9), pow(2, 11), pow(2, 13) };
+                                  pow(2., 9), pow(2., 11), pow(2., 13) };
 static double COARSE_GRID_EPSILON[] = { INITIAL_EPSILON / 10,
                                         INITIAL_EPSILON, INITIAL_EPSILON
                                             * 10 };
@@ -57,14 +57,14 @@ static int NO_POINTS_FINE_GRID = 7;
 static double STEP_FINE_GRID = 0.25;
 
 // for gType = NORMAL_GRID
-static double NORMAL_GRID_GAMMA[] = { pow(2, -8), pow(2, -7), pow(2, -6),
-                                      pow(2, -5), pow(2, -4), pow(2, -3),
-                                      pow(2, -2), pow(2, -1), pow(2, 0),
-                                      pow(2, 1) };
-static double NORMAL_GRID_C[] = { pow(2, -2), pow(2, -1), pow(2, 0),
-                                  pow(2, 1), pow(2, 2), pow(2, 3), pow(2,
+static double NORMAL_GRID_GAMMA[] = { pow(2., -8), pow(2., -7), pow(2., -6),
+                                      pow(2., -5), pow(2., -4), pow(2., -3),
+                                      pow(2., -2), pow(2., -1), pow(2., 0),
+                                      pow(2., 1) };
+static double NORMAL_GRID_C[] = { pow(2., -2), pow(2., -1), pow(2., 0),
+                                  pow(2., 1), pow(2., 2), pow(2., 3), pow(2.,
                                                                        4),
-                                  pow(2, 5), pow(2, 6), pow(2, 7) };
+                                  pow(2., 5), pow(2., 6), pow(2., 7) };
 static double NORMAL_GRID_EPSILON[] = { INITIAL_EPSILON / 10,
                                         INITIAL_EPSILON, INITIAL_EPSILON
                                             * 10 };
@@ -967,7 +967,7 @@ int RTModel::getSelect(int sel_features, int max, size_t* finalNumFeatures) {
     // if this feature was selected and if adding it does not exceed the allowed no of features, then add it
     if ((sel_features & 1 << i) && ((noFeat + no_features_per_group[i])
         <= max)) {
-      retValue += (int)pow(2, i);
+      retValue += (int)pow(2., i);
       noFeat += no_features_per_group[i];
     }
   (*finalNumFeatures) = noFeat;
@@ -1237,7 +1237,7 @@ void RTModel::trainSVM(vector<PSMDescription> & psms) {
         << bestError << endl;
     // define the fine grid
     for (int i = -noPointsFineGrid; i <= noPointsFineGrid; ++i) {
-      offset = pow(2, stepFineGrid * i);
+      offset = pow(2., stepFineGrid * i);
       fGridC.push_back(c * offset);
       fGridGamma.push_back(gamma * offset);
     }
@@ -1532,10 +1532,10 @@ void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription> & psms,
 void RTModel::trainIndexSVR(vector<PSMDescription> & psms) {
   int noPsms = psms.size();
   double
-      GRID_C[13] = { pow(2, -6), pow(2, -5), pow(2, -4), pow(2, -3),
-                     pow(2, -2), pow(2, -1), pow(2, 0), pow(2, 1), pow(2,
+      GRID_C[13] = { pow(2., -6), pow(2., -5), pow(2., -4), pow(2., -3),
+                     pow(2., -2), pow(2., -1), pow(2., 0), pow(2., 1), pow(2.,
                                                                        2),
-                     pow(2, 3), pow(2, 4), pow(2, 5), pow(2, 6) };
+                     pow(2., 3), pow(2., 4), pow(2., 5), pow(2., 6) };
   vector<double> grid_c;
   vector<double> grid_e;
   grid_c.assign(GRID_C, GRID_C + (sizeof(GRID_C) / sizeof(GRID_C[0])));
