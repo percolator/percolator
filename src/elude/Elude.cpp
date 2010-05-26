@@ -1524,7 +1524,7 @@ double RTPredictor::computeSpearmanCorrelation(
     // increase i
     i = j;
   }
-  corr = 1.0 - ((6.0 * d) / (double)(n * (pow(n, 2) - 1)));
+  corr = 1.0 - ((6.0 * d) / (double)(n * (pow(n, 2.) - 1)));
   if (VERB > 2) {
     cerr << "r_spearman = " << corr << endl;
     cerr << "Done." << endl;
