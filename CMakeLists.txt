@@ -51,8 +51,8 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libgcc1, libgtest0") # Actual dependenc
 
 # RPM package options
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
-set(CPACK_RPM_PACKAGE_VENDOR "Matrix Science Ltd.")
-set(CPACK_RPM_PACKAGE_GROUP "Lukas Käll group")
+set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
+set(CPACK_RPM_PACKAGE_GROUP "K�ll-lab")
 #set(CPACK_RPM_PACKAGE_REQUIRES "libc6, libgcc1") # Actual dependencies should be discovered later (TODO)
 
 # NSIS package options
@@ -61,7 +61,6 @@ set(CPACK_RPM_PACKAGE_GROUP "Lukas Käll group")
 # Adding data directories for installation.
 install(DIRECTORY data DESTINATION bin)
 install(DIRECTORY models DESTINATION bin)
-install(FILES elude_user_manual.pdf DESTINATION bin)
 
 # Use CPack module within CMake
 include(CPack)
