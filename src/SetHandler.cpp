@@ -33,7 +33,7 @@ using namespace std;
 
 
 
-#include "percolator-xml.hxx"
+#include "percolator_in.hxx"
 
 
 

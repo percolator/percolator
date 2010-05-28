@@ -19,6 +19,8 @@
 #include <iostream>
 #include <assert.h>
 #include "FeatureNames.h"
+#include <boost/foreach.hpp>
+
 
 size_t FeatureNames::numFeatures = 0;
 
@@ -34,13 +36,12 @@ FeatureNames::FeatureNames() {
   intraSetFeatNum = -1;
   quadraticFeatNum = -1;
   docFeatNum = -1;
-
 }
 
 FeatureNames::~FeatureNames() {
 }
 
-void FeatureNames::setFromXml( ::percolatorInNs::feature_descriptions & fdes, bool calcDOC ) {
+void FeatureNames::setFromXml( ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
   assert(featureNames.empty());
   /*
   for ( ::percolatorInNs::feature_descriptions::feature_description::const_iterator iter = fdes.feature_description().begin(); iter != fdes.feature_description().end(); ++i ) {
@@ -49,8 +50,9 @@ void FeatureNames::setFromXml( ::percolatorInNs::feature_descriptions & fdes, bo
  I think std::copy will do the same...
   */
 
-
-  std::copy( fdes.feature_description().begin(), fdes.feature_description().end(), back_inserter( featureNames ) );
+  BOOST_FOREACH(  ::percolatorInNs::featureDescription descr,  fdes.featureDescription() ) {
+    featureNames.push_back(descr.name());
+  }
 
   if (calcDOC) {
     docFeatNum = featureNames.size();

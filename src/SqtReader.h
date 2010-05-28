@@ -2,12 +2,10 @@
 #define SQTREADER_H
 
 #include <string>
-#include "percolator-xml.hxx"
-
+#include "percolator_in.hxx"
+#include "FragSpectrumScanDatabase.h"
 
 namespace SqtReader {
-
-
 
   //  enum target_decoy_type { target, decoy  };
 
@@ -15,24 +13,25 @@ namespace SqtReader {
 
   //void  TranslateSqtFileToXML(const std::string fn, const int label, ::percolatorInNs::target_decoys::target_decoy_sequence & tds , const std::string & wild, const bool match);
 
-  int getScan( unsigned int scanNr, ::percolatorInNs::experiment::frag_spectrum_scan_sequence  & fsss, double masscharge );
+  //  int getScan( unsigned int scanNr, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, double masscharge );
 
 
-  void  translateSqtFileToXML(const std::string fn,::percolatorInNs::feature_descriptions & fds, ::percolatorInNs::experiment::frag_spectrum_scan_sequence  & fsss, std::string & wild,  ::percolatorInNs::type target_decoy_type, bool calcQuadraticFeatures, bool calcAAFrequencies, bool calcPTMs, int * maxCharge,  int * minCharge, parseType t );
+  void  translateSqtFileToXML(const std::string fn,::percolatorInNs::featureDescriptions & fds, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::string & wild, bool is_decoy, bool calcQuadraticFeatures, bool calcAAFrequencies, bool calcPTMs, int * maxCharge,  int * minCharge, parseType t, FragSpectrumScanDatabase & database  );
 
-  void readSQT(const std::string fn,::percolatorInNs::feature_descriptions & fds, ::percolatorInNs::experiment::frag_spectrum_scan_sequence  & fsss, std::string & wild, ::percolatorInNs::type target_decoy_type,   bool calcQuadraticFeatures,    bool calcAAFrequencies ,     bool calcPTMs , int * maxCharge,  int * minCharge, parseType t );
+  void readSQT(const std::string fn,::percolatorInNs::featureDescriptions & fds, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::string & wild,  bool is_decoy,   bool calcQuadraticFeatures,    bool calcAAFrequencies ,     bool calcPTMs , int * maxCharge,  int * minCharge, parseType t, FragSpectrumScanDatabase & database  );
 
-void addFeatureDescriptions( percolatorInNs::feature_descriptions & fe_des, int minC, int maxC, bool doEnzyme,
+void addFeatureDescriptions( percolatorInNs::featureDescriptions & fe_des, int minC, int maxC, bool doEnzyme,
                                   bool calcPTMs, bool doPNGaseF,
 			     const std::string& aaAlphabet,
 			     bool calcQuadratic);
 
- void  readSectionS( std::string record ,  ::percolatorInNs::experiment::frag_spectrum_scan_sequence & fsss, std::set<int> & theMs, percolatorInNs::type & psmType, bool calcPTMs, bool pngasef, bool calcAAFrequencies, int minCharge, int maxCharge, std::string psmId );
+ void  readSectionS( std::string record ,  ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss, std::set<int> & theMs, bool is_decoy, bool calcPTMs, bool pngasef, bool calcAAFrequencies, int minCharge, int maxCharge, std::string psmId, FragSpectrumScanDatabase & database  );
 
- void readPSM(   percolatorInNs::type & psmType, const std::string &in  ,  int match, bool calcPTMs, bool pngasef, bool calcAAFrequencies ,  ::percolatorInNs::experiment::frag_spectrum_scan_sequence  & fsss,   int minCharge, int maxCharge,  std::string psmId );
+ void readPSM( bool is_decoy, const std::string &in  ,  int match, bool calcPTMs, bool pngasef, bool calcAAFrequencies ,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,   int minCharge, int maxCharge,  std::string psmId, FragSpectrumScanDatabase & database  );
 
 
- double isPngasef(const std::string& peptide, percolatorInNs::type & psmType );
+ double isPngasef(const std::string& peptide, bool is_decoy );
+ void push_backFeatureDescription( percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence, const char *);
 }
 
 #endif

@@ -10,6 +10,7 @@
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
 
+#include <iostream>
 #include <xercesc/dom/DOM.hpp>
 
 #if _XERCES_VERSION >= 30000
@@ -77,6 +78,7 @@ private:
   auto_ptr<xml::sax::std_input_source> isrc_;
 
   size_t depth_;
+  size_t docDepth_;
 
   // DOM document being built.
   //
@@ -154,32 +156,25 @@ start (istream& is, const string& id, bool val)
 }
 
 xml::dom::auto_ptr<DOMDocument> parser_impl::
-next ()
+next ( )
 {
-  // We should be at depth 1. If not, then we are done parsing.
-  //
-  if (depth_ != 1)
+  assert(doc_.get () == 0);
+
+  //maybe remove?
+  if (depth_ ==  0 )
     return xml::dom::auto_ptr<DOMDocument> (0);
 
   bool r (true);
 
-  // Keep calling parseNext() until we either move to a greater depth or
-  // get a document. This way we skip the text (presumably whitespaces)
-  // that may be preceding the next chunk.
-  //
-  while (r && depth_ == 1 && doc_.get () == 0)
+  while ( r && doc_.get () == 0)
   {
-    parser_->parseNext (token_);
+    r = parser_->parseNext (token_);
     error_handler_.throw_if_failed<tree::parsing<char> > ();
   }
-
   if (!r)
     return xml::dom::auto_ptr<DOMDocument> (0);
 
-  // If we are not at depth 1, keep calling parseNext() until we get
-  // there.
-  //
-  while (r && depth_ != 1)
+  while (r && depth_ !=  docDepth_ )
   {
     r = parser_->parseNext (token_);
     error_handler_.throw_if_failed<tree::parsing<char> > ();
@@ -191,19 +186,17 @@ next ()
   return doc_;
 }
 
-// DOM builder.
-//
-
 void parser_impl::
 startElement (const XMLCh* const uri,
               const XMLCh* const /*lname*/,
               const XMLCh* const qname,
               const Attributes& attr)
 {
-  if (doc_.get () == 0)
+  if ( depth_ == 0 || depth_ == 1 || ( depth_== 4 && XMLString::equals (qname, spectrumIdentificationResultStr) ))
   {
     doc_.reset (dom_impl_.createDocument (uri, qname, 0));
     cur_ = doc_->getDocumentElement ();
+    docDepth_ = depth_;
   }
   else
   {
@@ -227,12 +220,12 @@ startElement (const XMLCh* const uri,
     // the proper attribute namespace. So we have to detect and
     // handle this case.
     //
+
     if (XMLString::equals (qn, XMLUni::fgXMLNSString))
-      ns = XMLUni::fgXMLNSURIName;
+       ns = XMLUni::fgXMLNSURIName;
 
     cur_->setAttributeNS (ns, qn, attr.getValue (i));
   }
-
   depth_++;
 }
 
@@ -243,9 +236,15 @@ endElement (const XMLCh* const /*uri*/,
 {
   // We have an element parent only on depth 2 or greater.
   //
-  if (--depth_ > 1)
+
+  //  doc_.reset ();
+  --depth_;
+
+  if (doc_.get () != 0 && depth_ >= docDepth_ )
     cur_ = static_cast<DOMElement*> (cur_->getParentNode ());
 }
+
+
 
 #if _XERCES_VERSION >= 30000
 void parser_impl::

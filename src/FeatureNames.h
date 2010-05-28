@@ -21,7 +21,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "percolator-xml.hxx"
+#include "percolator_in.hxx"
 
 using namespace std;
 
@@ -38,7 +38,7 @@ class FeatureNames {
     }
 
 
-    void setFromXml( ::percolatorInNs::feature_descriptions & fdes, bool calcDOC );
+    void setFromXml( ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
 
     void insertFeature(string& featureName) {
       featureNames.push_back(featureName);

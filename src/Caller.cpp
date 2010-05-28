@@ -53,8 +53,10 @@ using namespace std;
 #include <boost/foreach.hpp>
 
 #include "SqtReader.h"
-#include "percolator-xml.hxx"
+#include "percolator_in.hxx"
 #include "parser.hxx"
+#include "FragSpectrumScanDatabase.h"
+#include "serializer.hxx"
 
 using namespace xercesc;
 
@@ -515,14 +517,14 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
 
     for (doc = p.next (); doc.get () != 0; doc = p.next ())
     {
-         percolatorInNs::frag_spectrum_scan frag_spectrum_scan(*doc->getDocumentElement ());
-         BOOST_FOREACH(  ::percolatorInNs::peptide_spectrum_match psm, frag_spectrum_scan.peptide_spectrum_match() ) 
+         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
+         BOOST_FOREACH(  ::percolatorInNs::peptideSpectrumMatch psm, fragSpectrumScan.peptideSpectrumMatch() ) 
 		{ 
-      		  switch (psm.type()) {
-		  case ::percolatorInNs::type::target : {  nrTargets++; break; }
-		  case ::percolatorInNs::type::decoy : {   nrDecoys++; break; }       
-		  default : fprintf(stderr, "programming error... target_decoy_t\n"); exit(EXIT_FAILURE);
-              	  }
+                  if ( psm.isDecoy() ) {
+                          nrDecoys++; 
+                  } else {
+                      nrTargets++; 
+                  }
 		}
 
     }
@@ -582,27 +584,20 @@ void Caller::filelessSetup(const unsigned int numFeatures,
 void Caller::readFiles( ) {
 
   if( xmlInputFN.size() != 0) {
-
     unsigned int nrTargets;
     unsigned int nrDecoys;
-
-  xercesc::XMLPlatformUtils::Initialize ();
-
+    xercesc::XMLPlatformUtils::Initialize ();
     countTargetsAndDecoys( xmlInputFN, nrTargets, nrDecoys );
-
-	int j = 0;
-
+    int j = 0;
     DataSet * targetSet = new DataSet();
     assert(targetSet);
     targetSet->setLabel(1);
     DataSet * decoySet = new DataSet();
     assert(decoySet);
     decoySet->setLabel(-1);
-
   try
   {
     namespace xml = xsd::cxx::xml;
-
     std::ifstream xmlInStream;
     xmlInStream.exceptions (ifstream::badbit | ifstream::failbit);
     xmlInStream.open(xmlInputFN.c_str());
@@ -610,15 +605,9 @@ void Caller::readFiles( ) {
       cerr << "Can not open file " <<  xmlInputFN << endl;
       exit(EXIT_FAILURE);
     }
-
     parser p;
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (xmlInStream, xmlInputFN.c_str(), true));
 
-
-    // The num_features attribute is not in one of the sub trees so it need some special treatment
-    DOMAttr* num_features_attr ( doc->getDocumentElement ()->getAttributeNode ( xml::string ("num_features").c_str ()));
-    percolatorInNs::experiment::num_features_type num_f ( percolatorInNs::experiment::num_features_traits::create (*num_features_attr, 0, 0));
-    std::cout << "num_features=" << num_f << std::endl;
 
     doc = p.next ();
 
@@ -627,7 +616,6 @@ void Caller::readFiles( ) {
     char * value = XMLString::transcode(   doc->getDocumentElement()->getTextContent()  );
     std::cout << "enzyme=" <<  value << std::endl;   
     XMLString::release(&value);
-
     doc = p.next ();
 
     static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
@@ -636,30 +624,28 @@ void Caller::readFiles( ) {
       doc = p.next ();
     };
 
-    percolatorInNs::feature_descriptions feature_descriptions(*doc->getDocumentElement ());
+    percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement ());
 
     FeatureNames& feNames = DataSet::getFeatureNames();
-    feNames.setFromXml(feature_descriptions, docFeatures );
+    feNames.setFromXml(featureDescriptions, docFeatures );
 
     targetSet->initFeatureTables( feNames.getNumFeatures(), nrTargets, docFeatures);
     decoySet->initFeatureTables( feNames.getNumFeatures(), nrDecoys, docFeatures);
 
     for (doc = p.next (); doc.get () != 0; doc = p.next ())
     {
-      percolatorInNs::frag_spectrum_scan frag_spectrum_scan(*doc->getDocumentElement ());
-      targetSet->readFragSpectrumScans( frag_spectrum_scan );
-      decoySet->readFragSpectrumScans( frag_spectrum_scan );
+      percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
+      targetSet->readFragSpectrumScans( fragSpectrumScan );
+      decoySet->readFragSpectrumScans( fragSpectrumScan );
     }
 
     pCheck = new SqtSanityCheck();
     assert(pCheck);
     normal.push_back_dataset(targetSet);
     shuffled.push_back_dataset(decoySet);
-
     normal.setSet();
     shuffled.setSet();
-      }
-
+    }
 
     catch (const xml_schema::exception& e)
       {
@@ -678,14 +664,14 @@ void Caller::readFiles( ) {
     XMLString::release(&tmpStr);
   }
 
-
   } else {
 
     if ( xmlOutputFN.size() != 0 ) {
 
-    std::auto_ptr<percolatorInNs::feature_descriptions> fdes_p ( new ::percolatorInNs::feature_descriptions());
+  xercesc::XMLPlatformUtils::Initialize ();
+    std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p ( new ::percolatorInNs::featureDescriptions());
 
-    std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p, 1  /*  The num_features will be set later, we just pass a dummy value here */  ));
+    std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p ));
 
       bool calcQuadraticFeatures = DataSet::getQuadraticFeatures();
       bool calcPTMs = DataSet::getPTMfeature();
@@ -694,40 +680,58 @@ void Caller::readFiles( ) {
       int maxCharge = -1;
       int minCharge = 100;
 
+
+      FragSpectrumScanDatabase database;
+      std::string db_file = "/tmp/eriktestar.tcb";
+      database.init(db_file);
+
     if (forwardFN != "" && decoyWC.empty() ) {
-
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->feature_descriptions(),  ex_p->frag_spectrum_scan(), decoyWC, percolatorInNs::type::target, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->feature_descriptions(),  ex_p->frag_spectrum_scan(), decoyWC,  percolatorInNs::type::decoy, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge  );
-
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC, false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->feature_descriptions(),  ex_p->frag_spectrum_scan(), decoyWC, percolatorInNs::type::target, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->feature_descriptions(),  ex_p->frag_spectrum_scan(), decoyWC,  percolatorInNs::type::decoy, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing  );
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  false /* is_decoy */ , calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
 
     } else {
 
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->feature_descriptions(),     ex_p->frag_spectrum_scan() ,decoyWC,  percolatorInNs::type::target, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge );
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->feature_descriptions(),     ex_p->frag_spectrum_scan() ,decoyWC,  percolatorInNs::type::decoy, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::fullParsing );
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::fullParsing, database );
     }
+
 
       pCheck = new SqtSanityCheck();
       assert(pCheck);
-    ex_p->num_features( ex_p->feature_descriptions().feature_description().size() );
+
 
     //    percolatorInNs::percolator percol(ex_p);
 
-    xml_schema::namespace_infomap map;
-    map[""].name = PERCOLATOR_IN_NAMESPACE;
-    map[""].schema = "file:///tmp/percolator-xml.xsd";
+    std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
+    std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
 
-    ofstream outfile;
-    outfile.open (xmlOutputFN.c_str());
-    experiment_ (outfile, *ex_p, map);
-    outfile.close();
+     
+
+
+    //    map[""].schema = "file:///tmp/percolator-xml.xsd";
+
+
+    std::string enzyme;
+    switch ( Enzyme::getEnzymeType() ) {
+    case Enzyme::NO_ENZYME : { enzyme = "NO_ENZYME"; break; }
+    case Enzyme::TRYPSIN : { enzyme = "trypsin"; break; }
+    case Enzyme::CHYMOTRYPSIN : { enzyme = "chymotrypsin"; break; }
+    case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
+	}
+    std::cout << "   <enzyme>" << enzyme << "</enzyme>" << std::endl;
+
+    serializer ser;
+    ser.start (std::cout);
+    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",  ex_p->featureDescriptions() );
+    database.print(ser);
+    std::cout << "</experiment>" << std::endl; 
+
     exit(EXIT_SUCCESS);
       }
 

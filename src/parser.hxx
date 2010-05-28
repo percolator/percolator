@@ -9,9 +9,18 @@
 #include <iosfwd>
 #include <memory> // std::auto_ptr
 
+#include <xercesc/dom/DOM.hpp>
 #include <xercesc/dom/DOMDocument.hpp>
-
+#include <xercesc/util/XMLString.hpp>
+#include <xsd/cxx/xml/string.hxx>
 #include <xsd/cxx/xml/dom/auto-ptr.hxx>
+
+using namespace xercesc;
+
+static const XMLCh spectrumIdentificationListStr[] = { chLatin_S, chLatin_p, chLatin_e, chLatin_c, chLatin_t,chLatin_r, chLatin_u, chLatin_m, chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_L, chLatin_i, chLatin_s, chLatin_t, chNull };
+static const XMLCh spectrumIdentificationResultStr[] = { chLatin_S, chLatin_p, chLatin_e, chLatin_c, chLatin_t,chLatin_r, chLatin_u, chLatin_m, chLatin_I, chLatin_d, chLatin_e, chLatin_n, chLatin_t, chLatin_i, chLatin_f, chLatin_i, chLatin_c, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chLatin_R, chLatin_e, chLatin_s, chLatin_u, chLatin_l, chLatin_t, chNull };
+
+
 
 class parser_impl;
 

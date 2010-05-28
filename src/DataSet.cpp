@@ -1,4 +1,3 @@
-
 /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
@@ -40,10 +39,6 @@ using namespace std;
 
 #include <boost/foreach.hpp>
 
-
-
-
-
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
 bool DataSet::calcAAFrequencies = false;
@@ -54,7 +49,6 @@ bool DataSet::pngasef = false;
 const string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
 FeatureNames DataSet::featureNames;
-
 
 static char buf[4096];
 
@@ -621,32 +615,32 @@ unsigned int DataSet::cntPTMs(const string& pep) {
   return len;
 }
 
-void DataSet::readFragSpectrumScans(  ::percolatorInNs::frag_spectrum_scan & fss) {
+void DataSet::readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss) {
 
 
-  ::percolatorInNs::type::value myType;
 
+  bool isDecoy;
   switch (label) {
-  case 1: { myType = ::percolatorInNs::type::target; break; };
-      case -1: { myType = ::percolatorInNs::type::decoy; break; };
+  case 1: { isDecoy = false; break; };
+      case -1: { isDecoy = true; break; };
   default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
   }
 
 
-      const ::percolatorInNs::frag_spectrum_scan::peptide_spectrum_match_sequence & psmSeq = fss.peptide_spectrum_match();
-      for ( ::percolatorInNs::frag_spectrum_scan::peptide_spectrum_match_const_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
+      const ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psmSeq = fss.peptideSpectrumMatch();
+      for ( ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
 
-	if ( psmIter->type() == myType ) { 
+	if ( psmIter->isDecoy() == isDecoy ) { 
 
           assert( psms.size() > psmNum );
           PSMDescription & myPsm = psms[psmNum];
 
 	  // rng:oneOrMore so the assert should always be true
-          assert( psmIter->protein().size() > 0 ); 
+          assert( psmIter->occurence().size() > 0 ); 
 
 
-	  BOOST_FOREACH( percolatorInNs::protein prot,  psmIter->protein() )  {
-	    myPsm.proteinIds.insert( prot.id() );
+	  BOOST_FOREACH( percolatorInNs::occurence oc,  psmIter->occurence() )  {
+	    myPsm.proteinIds.insert( oc.proteinId() );
 }
           myPsm.id = psmIter->id();
 
@@ -658,14 +652,14 @@ void DataSet::readFragSpectrumScans(  ::percolatorInNs::frag_spectrum_scan & fss
             featureNum++;
 	  }
 
-	  myPsm.peptide = psmIter->peptide(); 
-          if ( fss.observed().retention_time().present() ) {
-	    myPsm.retentionTime = fss.observed().retention_time().get();
+	  myPsm.peptide = psmIter->peptide().peptideSequence(); 
+          if ( fss.observedTime().present() ) {
+	    myPsm.retentionTime = fss.observedTime().get();
 	  }
           myPsm.massDiff =
-	  MassHandler::massDiff(fss.observed().mass_charge() ,
-				psmIter->calculated().mass_charge(),
-				psmIter->charge(),
+	  MassHandler::massDiff(fss.experimentalMassToCharge() ,
+				psmIter->calculatedMassToCharge(),
+				psmIter->chargeState(),
 				myPsm.peptide.substr(2, myPsm.peptide.size()
                                       - 4));
 
@@ -829,4 +823,3 @@ void DataSet::initFeatureTables(const unsigned int numFeat,
       psms[ix].retentionFeatures = ptr;
   }
 }
-

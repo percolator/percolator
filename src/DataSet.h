@@ -24,7 +24,7 @@
 #include "PSMDescription.h"
 #include "FeatureNames.h"
 
-#include "percolator-xml.hxx"
+#include "percolator_in.hxx"
 
 using namespace std;
 class Scores;
@@ -124,12 +124,12 @@ static void computeAAFrequencies(const string& pep,   percolatorInNs::features::
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
     static double isEnz(const char n, const char c);
-    void readFragSpectrumScans(  ::percolatorInNs::frag_spectrum_scan & fss);
+    void readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
 
   protected:
-    void readPsm(const ::percolatorInNs::peptide_spectrum_match & td,  unsigned int numFeatures );
+    void readPsm(const ::percolatorInNs::peptideSpectrumMatch & td,  unsigned int numFeatures );
     void readFeatures(const string &in, PSMDescription &psm, int match);
     string modifyRec(const string record, int& row, const set<int>& theMs,
                      Scores * pSc, bool dtaSelect);
