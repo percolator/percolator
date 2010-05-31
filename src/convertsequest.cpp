@@ -22,7 +22,6 @@
 using namespace std;
 using namespace xercesc;
 
-
 /* A sketchy overview of the conversion. ( Xpath is used in the explanation )
 
 First a hash is created with 
@@ -76,7 +75,6 @@ so we we restrict with "cvParam[ value ]"
 /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]/cvParam[ value ]/@name
 
 in other words, we just use cvParam where the attribute "value" is present. In c++ this is "if ( cv.value().present() ) {"
-
 
 ---------------------
 
