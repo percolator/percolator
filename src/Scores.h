@@ -74,7 +74,7 @@ class Scores {
   public:
     Scores();
     ~Scores();
-    void merge(vector<Scores>& sv, bool reportUniquePeptides = false);
+    void merge(vector<Scores>& sv, double fdr=0.01, bool reportUniquePeptides = false);
     double calcScore(const double* features) const;
     vector<ScoreHolder>::iterator begin() {
       return scores.begin();
@@ -82,8 +82,8 @@ class Scores {
     vector<ScoreHolder>::iterator end() {
       return scores.end();
     }
-    int calcScores(vector<double>& w, double fdr = 0.0);
-    int calcQ(double fdr = 0.0);
+    int calcScores(vector<double>& w, double fdr = 0.01);
+    int calcQ(double fdr = 0.01);
     void fillFeatures(SetHandler& norm, SetHandler& shuff);
     void createXvalSets(vector<Scores>& train, vector<Scores>& test,
                         const unsigned int xval_fold);
@@ -91,7 +91,7 @@ class Scores {
     void generatePositiveTrainingSet(AlgIn& data, const double fdr,
                                      const double cpos);
     void generateNegativeTrainingSet(AlgIn& data, const double cneg);
-    void normalizeScores();
+    void normalizeScores(double fdr=0.01);
     void weedOutRedundant();
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction,
@@ -134,7 +134,6 @@ class Scores {
   protected:
     vector<double> w_vec;
     int neg, pos, posNow;
-    double q1, q3;
     vector<ScoreHolder> scores;
     std::map<const double*, ScoreHolder*> scoreMap;
     DescriptionOfCorrect doc;

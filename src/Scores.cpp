@@ -100,14 +100,14 @@ Scores::~Scores() {
 bool Scores::outxmlDecoys = false;
 uint32_t Scores::seed = 1;
 
-void Scores::merge(vector<Scores>& sv, bool reportUniquePeptides) {
+void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
   scores.clear();
   for (vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
     a->estimatePi0();
-    a->calcQ();
-    a->calcPep();
-    a->normalizeScores();
+    a->calcQ(fdr);
+//    a->calcPep();
+    a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores));
   }
   if (reportUniquePeptides) {
@@ -229,17 +229,31 @@ void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
   }
 }
 
-void Scores::normalizeScores() {
+void Scores::normalizeScores(double fdr) {
+  // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit 
+  unsigned int medianIndex = std::max(0u,neg/2u),decoys=0u;
   vector<ScoreHolder>::iterator it = scores.begin();
+  double q1 = it->score;
+  double median = q1 + 1.0;
   double breakQ = 0.0;
-  for (it = scores.begin(); it != scores.end(); ++it) {
-    // Score identifications based on their -log(PEP) or if PEP >=1 -log(1+q-q_at_pep1)
-    if (it->pPSM->pep < 1.0) {
-      it->score = -log(it->pPSM->pep);
-      breakQ = it->pPSM->q;
-    } else {
-      it->score = -log(1.0 + (it->pPSM->q - breakQ));
+  for (; it != scores.end(); ++it) {
+    if (it->pPSM->q < fdr)
+      q1 = it->score;
+    if (it->label == -1) {
+      if(++decoys==medianIndex) {
+        median = it->score;
+		break;
+      }
     }
+  }
+  assert(q1>median);
+  double diff = q1-median;
+  if (diff<=0)
+    diff=1.0;
+	
+  for (it = scores.begin(); it != scores.end(); ++it) {
+    it->score -= q1;
+    it->score /= diff;
   }
 }
 
