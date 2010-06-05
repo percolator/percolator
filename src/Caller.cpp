@@ -814,7 +814,7 @@ int Caller::run() {
       << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide."
       << endl;
   }
-  fullset.merge(xv_test, reportUniquePeptides);
+  fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
   if (VERB > 0) {
     cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
   }
