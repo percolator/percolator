@@ -1,12 +1,3 @@
-#set(CMAKE_CXX_FLAGS "-O3 -static")
-#set(CMAKE_C_FLAGS "-O3 -static")
-#
-#set(CMAKE_CXX_FLAGS_RELEASE "-O3 -static")
-#set(CMAKE_C_FLAGS_RELEASE "-O3 -static")
-
-#set(CMAKE_CXX_FLAGS_DEBUG "-g -static")
-#set(CMAKE_C_FLAGS_DEBUG "-g -static")
-
 set(CMAKE_CXX_FLAGS "-O3")
 set(CMAKE_C_FLAGS "-O3")
 
@@ -18,10 +9,15 @@ set(CMAKE_C_FLAGS_DEBUG "-g")
 
 ADD_DEFINITIONS(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -D_NOSQLITE)
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -mmacosx-version-min=10.5")
-set(CMAKE_C_FLAGS_RELEASE "-O3 -mmacosx-version-min=10.5")
-set(LINK_FLAGS "-mmacosx-version-min=10.5")
-
+IF(APPLE)
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
+  
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mmacosx-version-min=10.5")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mmacosx-version-min=10.5")
+  
+  set(LINK_FLAGS "-mmacosx-version-min=10.5")
+ENDIF(APPLE)
 
 include_directories (/usr/local/include/boost ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit/zLib ${PERCOLATOR_SOURCE_DIR}/src/ArrayLibrary ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit/RAMP ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit/SQLite ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit)
 
