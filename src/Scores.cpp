@@ -283,18 +283,18 @@ int Scores::calcScores(vector<double>& w, double fdr) {
 
 int Scores::calcQ(double fdr) {
   vector<ScoreHolder>::iterator it;
-  int positives = 0, nulls = 0;
+  int targets = 0, decoys = 0;
   double efp = 0.0, q;
   for (it = scores.begin(); it != scores.end(); it++) {
     if (it->label != -1) {
-      positives++;
+      targets++;
     }
     if (it->label == -1) {
-      nulls++;
-      efp = pi0 * nulls * targetDecoySizeRatio;
+      decoys++;
+      efp = pi0 * decoys * targetDecoySizeRatio;
     }
-    if (positives) {
-      q = efp / (double)positives;
+    if (targets) {
+      q = efp / (double)targets;
     } else {
       q = pi0;
     }
@@ -303,7 +303,7 @@ int Scores::calcQ(double fdr) {
     }
     it->pPSM->q = q;
     if (fdr >= q) {
-      posNow = positives;
+      posNow = targets;
     }
   }
   for (int ix = scores.size(); --ix;) {
@@ -396,15 +396,15 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction,
       }
       sort(scores.begin(), scores.end());
       for (int i = 0; i < 2; i++) {
-        int positives = 0, nulls = 0;
+        int positives = 0, decoys = 0;
         double efp = 0.0, q;
         for (it = scores.begin(); it != scores.end(); it++) {
           if (it->label != -1) {
             positives++;
           }
           if (it->label == -1) {
-            nulls++;
-            efp = pi0 * nulls * targetDecoySizeRatio;
+            decoys++;
+            efp = pi0 * decoys * targetDecoySizeRatio;
           }
           if (positives) {
             q = efp / (double)positives;
