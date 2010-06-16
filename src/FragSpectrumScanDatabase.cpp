@@ -103,7 +103,7 @@ bool FragSpectrumScanDatabase::init( std::string fileName ) {
 */
   bool ret =  tcbdbsetcmpfunc(bdb, tccmpint32, NULL);
   assert(ret);
-  if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER )){
+  if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER | BDBOCREAT )){
     int errorcode = tcbdbecode(bdb);
     fprintf(stderr, "open error: %s\n", tcbdberrmsg(errorcode));
     exit(EXIT_FAILURE);
