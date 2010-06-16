@@ -111,14 +111,14 @@
                             </xs:restriction>
                           </xs:simpleType>
                         </xs:attribute>
-                        <xs:attribute name="flankN" type="aa_term_t">
+                        <xs:attribute name="flankN" use="required" type="aa_term_t">
                           <xs:annotation>
                             <xs:documentation> The amino acid of the most
 			N-terminal flanking residue of the peptide.
                         </xs:documentation>
                           </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="flankC" type="aa_term_t">
+                        <xs:attribute name="flankC" use="required" type="aa_term_t">
                           <xs:annotation>
                             <xs:documentation> The amino acid of the most
 			C-terminal flanking residue of the peptide.

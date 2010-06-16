@@ -282,34 +282,6 @@ namespace SqtReader {
     }
   }
 
-  double isPngasef(const std::string& peptide,  bool isDecoy ) {
-  size_t next_pos = 0, pos;
-  while ((pos = peptide.find("N*", next_pos)) != string::npos) {
-    next_pos = pos + 1;
-    if (  ! isDecoy ) {
-      pos += 3;
-      if (peptide[pos] == '#') pos += 1;
-    } else {
-      pos -= 2;
-      if (peptide[pos] == '#') pos -= 1;
-    }
-    if (peptide[pos] == 'T' || peptide[pos] == 'S') return 1.0;
-  }
-  return 0.0;
-}
-
-
-void savePsmInTokyoCabinet( unsigned int scanNr, double observedMassCharge, std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p, FragSpectrumScanDatabase & database ) {
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = database.getFSS( scanNr );
-  if ( ! fss.get() ) {
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge));
-    fss = fs_p;
-  }
-
-  fss->peptideSpectrumMatch().push_back( psm_p );
-  database.putFSS( *fss );
-  return;
-}
 
   static int counter = 0;
   void readPSM(    bool isDecoy, const std::string &in  ,  int match, bool calcPTMs, bool pngasef, bool calcAAFrequencies ,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase & database ) {
@@ -422,7 +394,7 @@ todo!
         f_seq.push_back( dM ); // obs - calc mass
         f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
         if (calcPTMs) f_seq.push_back(  DataSet::cntPTMs(peptide));
-        if (pngasef) f_seq.push_back( isPngasef(peptide, isDecoy));
+        if (pngasef) f_seq.push_back( DataSet::isPngasef(peptide, isDecoy));
         //      if (hitsPerSpectrum>1)
         //        feat[nxtFeat++]=(ms==0?1.0:0.0);
 
@@ -464,22 +436,17 @@ todo!
   
   if (!isfinite(f_seq[2])) std::cerr << in;
 
+  assert(peptide.size() >= 5 );
 
+  percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
+  percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1); 
 
-
-
-
-
-
-
-
-
-  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType(peptide) );
+  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptide.substr(2, peptide.size()- 4)   ) );
 
 	  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p( new percolatorInNs::peptideSpectrumMatch (features_p,  peptide_p,psmId, isDecoy, calculatedMassToCharge, charge));
 
           for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
-        	  std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i));
+	    std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
 	          psm_p->occurence().push_back(oc_p);
 	  }
 	  /*
@@ -488,7 +455,7 @@ todo!
            fsss[pos].peptide_spectrum_match().push_back(psm_p);
 	  */
 
-	  savePsmInTokyoCabinet(scan, observedMassCharge, psm_p, database);
+	  database.savePsm(scan, observedMassCharge, psm_p);
 
 
 }

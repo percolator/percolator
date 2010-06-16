@@ -24,10 +24,6 @@ using namespace std;
 #include <xsd/cxx/xml/string.hxx>
 #include <xsd/cxx/xml/dom/auto-ptr.hxx>
 
-
-
-
-
 #include <xercesc/util/XMLUni.hpp>
 #include <iostream>
 #include <xercesc/dom/DOM.hpp>
@@ -84,6 +80,18 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase() : bdb(0) {
    oxdrp=tmpPtr;
 }
 
+
+void FragSpectrumScanDatabase::savePsm( unsigned int scanNr, double observedMassCharge, std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
+  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS( scanNr );
+  if ( ! fss.get() ) {
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge));
+    fss = fs_p;
+  }
+  fss->peptideSpectrumMatch().push_back( psm_p );
+  putFSS( *fss );
+  return;
+}
+
 bool FragSpectrumScanDatabase::init( std::string fileName ) {
   bdb = tcbdbnew();
   assert(bdb);
@@ -98,7 +106,12 @@ bool FragSpectrumScanDatabase::init( std::string fileName ) {
   if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER )){
     int errorcode = tcbdbecode(bdb);
     fprintf(stderr, "open error: %s\n", tcbdberrmsg(errorcode));
+    exit(EXIT_FAILURE);
   }
+  // unlink => Potential race condition, but Unix seems to lack unlink() with an file descriptor argument.
+
+  ret = unlink( fileName.c_str() );
+  assert(ret);
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::deserializeFSSfromBinary( char * value, int valueSize ) {
@@ -125,8 +138,8 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
   int valueSize = 0;
   char * value = ( char * ) tcbdbget(bdb, ( const char* ) &scanNr, sizeof( scanNr ), &valueSize);
   if(!value) {
-    //    ecode = tcbdbecode(bdb);
-    //fprintf(stderr, "get error: %s\n", tcbdberrmsg(ecode));
+    // ecode = tcbdbecode(bdb);
+    // fprintf(stderr, "get error: %s\n", tcbdberrmsg(ecode));
     return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
   }
   std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));
@@ -148,7 +161,7 @@ void FragSpectrumScanDatabase::print( serializer & ser ) {
     char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
     if(value){
        std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
-       //              XMLCh  * strName       = xercesc::XMLString::transcode("XML 1.0 Traversal 2.0");
+       // XMLCh * strName = xercesc::XMLString::transcode("XML 1.0 Traversal 2.0");
        ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
       free(value);
     }

@@ -10,7 +10,6 @@
 class serializer;
 
 
-
 class FragSpectrumScanDatabase {
 public:
 FragSpectrumScanDatabase();
@@ -20,6 +19,7 @@ bool init( std::string filename );
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> getFSS( unsigned int scanNr ); 
  std::auto_ptr< ::percolatorInNs::fragSpectrumScan> deserializeFSSfromBinary( char * value, int valueSize );
  void putFSS( ::percolatorInNs::fragSpectrumScan & fss );
+ void savePsm( unsigned int scanNr, double observedMassCharge, std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p );
  void print( serializer & ser );
 protected:
 

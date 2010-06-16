@@ -22,15 +22,15 @@
 using namespace std;
 using namespace xercesc;
 
-void printCalibration(percolatorInNs::calibration & calibration ) {
+void printCalibration(const percolatorInNs::calibration & calibration ) {
   std::cout << "---------calibration-----------" << std::endl;
-  BOOST_FOREACH( percolatorInNs::calibrationParameter par, calibration.calibrationParameter() )  {
+  BOOST_FOREACH( const percolatorInNs::calibrationParameter & par, calibration.calibrationParameter() )  {
     std::cout << "name=" << par.name() << " value=" << par.value() << std::endl;
   }  
   std::cout << "massType=" << calibration.massType() << std::endl;
 }
 
-void exampleUsage(percolatorInNs::calibration & calibration ) {
+void exampleUsage(const percolatorInNs::calibration & calibration ) {
   if ( percolatorInNs::massType::monoisotopic == calibration.massType() ) {
     std::cout << "percolatorInNs::mass_type::monoisotopic == calibration.massType() is true" << std::endl;  
   }
@@ -39,14 +39,14 @@ void exampleUsage(percolatorInNs::calibration & calibration ) {
   }
 }
 
-void exampleUsage(percolatorInNs::peptideSpectrumMatch & psm ) {
-  percolatorInNs::features::feature_sequence & v =  psm.features().feature();
+void exampleUsage(const percolatorInNs::peptideSpectrumMatch & psm ) {
+  const percolatorInNs::features::feature_sequence & v =  psm.features().feature();
   cout << "Sum of the features=" <<  std::accumulate( v.begin(), v.end(), 0.0 )  << std::endl; 
 }
 
-void printFeatureDescriptions(percolatorInNs::featureDescriptions & feature_descriptions ) {
+void printFeatureDescriptions(const percolatorInNs::featureDescriptions & feature_descriptions ) {
   std::cout << "--------- featureDescriptions -----------" << std::endl;
-  BOOST_FOREACH( percolatorInNs::featureDescriptions::featureDescription_type fdes, feature_descriptions.featureDescription()  )  {
+  BOOST_FOREACH( const percolatorInNs::featureDescriptions::featureDescription_type & fdes, feature_descriptions.featureDescription()  )  {
      std::cout << "  feature name=" << fdes.name()  << std::endl;
   }
 }
@@ -57,13 +57,13 @@ void printFragSpectrumScan(percolatorInNs::fragSpectrumScan &fss) {
   if (fss.totalIonCurrent().present()) { 
     std::cout << " ion current=" << fss.totalIonCurrent().get() << std::endl;
   }
-  BOOST_FOREACH( percolatorInNs::peptideSpectrumMatch psm, fss.peptideSpectrumMatch() )  {
+  BOOST_FOREACH( const percolatorInNs::peptideSpectrumMatch & psm, fss.peptideSpectrumMatch() )  {
     exampleUsage(psm);
     if ( psm.isDecoy() ) {
     std::cout << " PSM is a decoy!" << std::endl;
     }
     std::cout << " charge_state=" << psm.chargeState() << " id=" << psm.id() << std::endl;
-    BOOST_FOREACH( percolatorInNs::features::feature_type feature, psm.features().feature() )  {
+    BOOST_FOREACH( const percolatorInNs::features::feature_type & feature, psm.features().feature() )  {
       std::cout << "  feature=" << feature << std::endl;
     }
     std::cout << " calculated mass to charge=" << psm.calculatedMassToCharge() << " peptide=" << psm.peptide().peptideSequence() << std::endl;

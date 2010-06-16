@@ -70,7 +70,7 @@ Caller::Caller() :
       modifiedDecoyFN(""),
       forwardFN(""),
       decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-      decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""),
+  decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
       weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
       docFeatures(false), reportPerformanceEachIteration(false),
       reportUniquePeptides(false), test_fdr(0.01), selectionfdr(0.01),
@@ -150,6 +150,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("L",
                    "xsdoutput",
                    "xml output filename (using Codesynthesis Xsd)",
+                   "filename");
+
+  cmd.defineOption("Y",
+                   "tmpfileSQTtoXML",
+                   "the SQT conversion needs a file name where to store temporary data ( in a Tokyo cabinet database ). Unexpected behaviour is expected if you run many instances of this program with the same filename.",
                    "filename");
 
 
@@ -349,6 +354,9 @@ the retention time and difference between observed and calculated mass",
 
   // now query the parsing results
 
+  if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
+  } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
+ 
   if (cmd.optionSet("L")) xmlOutputFN = cmd.options["L"];
   if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
   if (cmd.optionSet("o")) modifiedFN = cmd.options["o"];
@@ -518,7 +526,7 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
     for (doc = p.next (); doc.get () != 0; doc = p.next ())
     {
          percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
-         BOOST_FOREACH(  ::percolatorInNs::peptideSpectrumMatch psm, fragSpectrumScan.peptideSpectrumMatch() ) 
+         BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() ) 
 		{ 
                   if ( psm.isDecoy() ) {
                           nrDecoys++; 
@@ -678,12 +686,22 @@ void Caller::readFiles( ) {
       bool calcAAFrequencies = DataSet::getAAFreqencies();
 
       int maxCharge = -1;
-      int minCharge = 100;
-
+      int minCharge = 10000;
 
       FragSpectrumScanDatabase database;
-      std::string db_file = "/tmp/eriktestar.tcb";
-      database.init(db_file);
+
+   /*
+
+   The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is possible in the unix system call open (see "man 2 open").
+   This may be a security issue if the filename to the tokyo cabinet database is in a directory
+   that other users have write access to. They could add a symbolic link pointing somewhere else.  
+
+   It would be better if Tokyo Cabinet would fail if the database existed in our case when we use a tempory file.
+
+   */
+
+
+   database.init(tokyoCabinetTmpFN);
 
     if (forwardFN != "" && decoyWC.empty() ) {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge

@@ -124,9 +124,11 @@ static void computeAAFrequencies(const string& pep,   percolatorInNs::features::
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
     static double isEnz(const char n, const char c);
-    void readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss);
+    void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
+
+    static double isPngasef(const string& peptide, bool isDecoy );
 
   protected:
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch & td,  unsigned int numFeatures );

@@ -30,7 +30,7 @@ void addFeatureDescriptions( percolatorInNs::featureDescriptions & fe_des, int m
  void readPSM( bool is_decoy, const std::string &in  ,  int match, bool calcPTMs, bool pngasef, bool calcAAFrequencies ,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,   int minCharge, int maxCharge,  std::string psmId, FragSpectrumScanDatabase & database  );
 
 
- double isPngasef(const std::string& peptide, bool is_decoy );
+
  void push_backFeatureDescription( percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence, const char *);
 }
 

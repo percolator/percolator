@@ -38,9 +38,9 @@ class FeatureNames {
     }
 
 
-    void setFromXml( ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
+    void setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
 
-    void insertFeature(string& featureName) {
+    void insertFeature(const string& featureName) {
       featureNames.push_back(featureName);
     }
     void setFeatures(string& line, size_t skip, size_t numFeatures);

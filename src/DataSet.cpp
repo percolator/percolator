@@ -166,10 +166,21 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
 
 
 double DataSet::isPngasef(const string& peptide) {
+  bool isDecoy;
+  switch (label) {
+  case 1: { isDecoy = false; break; };
+      case -1: { isDecoy = true; break; };
+  default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
+  }
+  return isPngasef( peptide, isDecoy);
+}
+
+
+double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
   size_t next_pos = 0, pos;
   while ((pos = peptide.find("N*", next_pos)) != string::npos) {
     next_pos = pos + 1;
-    if (label == 1) {
+    if (! isDecoy) {
       pos += 3;
       if (peptide[pos] == '#') pos += 1;
     } else {
@@ -180,6 +191,7 @@ double DataSet::isPngasef(const string& peptide) {
   }
   return 0.0;
 }
+
 
 void DataSet::readGistData(ifstream & is, const vector<unsigned int>& ixs) {
   string tmp, line;
@@ -615,9 +627,7 @@ unsigned int DataSet::cntPTMs(const string& pep) {
   return len;
 }
 
-void DataSet::readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss) {
-
-
+void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss) {
 
   bool isDecoy;
   switch (label) {
@@ -625,8 +635,6 @@ void DataSet::readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss) 
       case -1: { isDecoy = true; break; };
   default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
   }
-
-
       const ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psmSeq = fss.peptideSpectrumMatch();
       for ( ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
 
@@ -639,9 +647,9 @@ void DataSet::readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss) 
           assert( psmIter->occurence().size() > 0 ); 
 
 
-	  BOOST_FOREACH( percolatorInNs::occurence oc,  psmIter->occurence() )  {
+	  BOOST_FOREACH( const percolatorInNs::occurence & oc,  psmIter->occurence() )  {
 	    myPsm.proteinIds.insert( oc.proteinId() );
-}
+          }
           myPsm.id = psmIter->id();
 
 	  const ::percolatorInNs::features::feature_sequence & featureS = psmIter->features().feature();
@@ -672,9 +680,9 @@ void DataSet::readFragSpectrumScans(  ::percolatorInNs::fragSpectrumScan & fss) 
           myPsm.features[featureNum++] = 0;
           myPsm.features[featureNum++] = 0;
        }
-	  ++psmNum;
-	} 
-    }
+       ++psmNum;
+    } 
+  }
   return;
 }
 

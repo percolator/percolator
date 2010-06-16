@@ -67,6 +67,7 @@ class Caller {
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;
+    string tokyoCabinetTmpFN; 
     string xmlInputFN;
     string xmlOutputFN;
     string modifiedFN;

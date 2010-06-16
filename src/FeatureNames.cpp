@@ -41,16 +41,9 @@ FeatureNames::FeatureNames() {
 FeatureNames::~FeatureNames() {
 }
 
-void FeatureNames::setFromXml( ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
+void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
   assert(featureNames.empty());
-  /*
-  for ( ::percolatorInNs::feature_descriptions::feature_description::const_iterator iter = fdes.feature_description().begin(); iter != fdes.feature_description().end(); ++i ) {
-    featureNames.push_back( *iter );
-}
- I think std::copy will do the same...
-  */
-
-  BOOST_FOREACH(  ::percolatorInNs::featureDescription descr,  fdes.featureDescription() ) {
+  BOOST_FOREACH( const ::percolatorInNs::featureDescription & descr,  fdes.featureDescription() ) {
     featureNames.push_back(descr.name());
   }
 
@@ -152,8 +145,6 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
       }
     }
   }
-
-
   if (calcDOC) {
     docFeatNum = featureNames.size();
     featureNames.push_back("docpI");
