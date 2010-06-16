@@ -32,73 +32,71 @@ typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> p
 
 typedef map<std::string, int> scanNumberMapType;
 
-  static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e,chLatin_n, chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-
-
+static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e,chLatin_n, chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
 
 /* A sketchy overview of the conversion. ( Xpath is used in the explanation )
 
- We parse the file two times. The first time ( in function getMinAndMaxCharge() ) is just for finding out the minimum and maximum chargeState. The second time is for all the rest.
+   We parse the input file(s) two times. The first time ( in function getMinAndMaxCharge() ) is just for finding out the minimum and maximum chargeState. The second time is for all the rest.
 
-First a hash is created with 
+   First a hash is created with 
 
-/mzIdentML/SequenceCollection/Peptide/@id 
+   /mzIdentML/SequenceCollection/Peptide/@id 
 
-as key and the subtree 
+   as key and the subtree 
 
-/mzIdentML/SequenceCollection/Peptide 
+   /mzIdentML/SequenceCollection/Peptide 
 
-as value.
+   as value.
 
-Then each 
+   Then each 
 
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult  
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult  
 
-will be read into memory and translated into a 
+   will be read into memory and translated into a 
 
-/experiment/fragSpectrumScan
+   /experiment/fragSpectrumScan
 
-Although a 
+   The first /experiment/fragSpectrumScan/@scan_number will be set to 0, and we increment the @scan_number with +1 for
+   the following /experiment/fragSpectrumScan
 
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/@id 
+   We also keep a std::map in memory that maps each 
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/@id 
+   to the corresponding /experiment/fragSpectrumScan/@scan_number 
 
-exists, it's a string and not a number so we can't use it. Instead we increment
+   If we find a /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/@id that is already a key in the std::map
+   we don't create a new /experiment/fragSpectrumScan/ but instead merge it into the already created /experiment/fragSpectrumScan/
 
-/experiment/fragSpectrumScan/@scan_number  
+   The memory consumption of holding all /experiment/fragSpectrumScan/ in memory can be too high so we first store them in a Tokyo Cabinet B+tree database, where we use the @scan_number as key.
 
-with +1 for each new /experiment/fragSpectrumScan/  ( starting with 0 )
+   We create our feature descriptions
+   /experiment/featureDescriptions/featureDescription 
+   by looking at the very first 
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]
+   and use the 
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]/cvParam[ value ]/@name
+   as /experiment/featureDescriptions/featureDescription
 
-Each
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/SpectrumIdentificationItem
-translates into a 
-/experiment/fragSpectrumScan/peptideSpectrumMatch
+   Note:
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/SpectrumIdentificationItem/cvParam/@value
+   is optional
 
+   so we we restrict with "cvParam[ value ]"
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]/cvParam[ value ]/@name
 
-We create our feature descriptions
-/experiment/featureDescriptions/featureDescription 
-by looking at the very first 
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]
-and use the 
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]/cvParam[ value ]/@name
-as /experiment/featureDescriptions/featureDescription
+   in other words, we just use cvParam where the attribute "value" is present. In c++ this is "if ( cv.value().present() ) {"
 
+   Each
+   /mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/SpectrumIdentificationItem
+   translates into a 
+   /experiment/fragSpectrumScan/peptideSpectrumMatch
 
-Note:
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList/SpectrumIdentificationResult/SpectrumIdentificationItem/cvParam/@value
-is optional
+   ---------------------
 
-so we we restrict with "cvParam[ value ]"
-/mzIdentML/DataCollection/AnalysisData/SpectrumIdentificationList[0]/SpectrumIdentificationResult[0]/SpectrumIdentificationItem[0]/cvParam[ value ]/@name
+   The next() method of parser p, needs an explanation:
 
-in other words, we just use cvParam where the attribute "value" is present. In c++ this is "if ( cv.value().present() ) {"
-
----------------------
-
-The next() method of parser p, needs an explanation:
-
-It returns:
-first time just the root element
-then the next subtree child of the root element or the next SpectrumIdentificationResult sub tree.
+   It returns:
+   first time just the root element
+   then the next subtree child of the root element or the next SpectrumIdentificationResult sub tree.
 */
 
 struct MinMaxStruct {
@@ -159,13 +157,13 @@ void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificat
 
   if ( ! item.calculatedMassToCharge().present() ) { std::cerr << "error: calculatedMassToCharge attribute is needed for percolator" << std::endl; exit(EXIT_FAILURE); }
   /*
-  if (xcorr > 0) {
-        f_seq[1] = (xcorr - lastXcorr) / xcorr;
-        f_seq[2] = (xcorr - otherXcorr) / xcorr;
-  }
-  if (!isfinite(f_seq[2])) std::cerr << in;
+    if (xcorr > 0) {
+    f_seq[1] = (xcorr - lastXcorr) / xcorr;
+    f_seq[2] = (xcorr - otherXcorr) / xcorr;
+    }
+    if (!isfinite(f_seq[2])) std::cerr << in;
 
-        f_seq.push_back( log(max(1.0, rSp))); // rank by Sp
+    f_seq.push_back( log(max(1.0, rSp))); // rank by Sp
   */
   f_seq.push_back( 0.0 ); // delt5Cn (leave until last M line)
   // f_seq.push_back( 0.0 ); // deltCn (leave until next M line)   ................. There is a <cvParam name="sequest:deltacn"
@@ -173,56 +171,54 @@ void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificat
   // f_seq.push_back( sp ); There is a <cvParam name="sequest:PeptideRankSp"
   // ???
   //  f_seq.push_back( matched / expected ); // Fraction matched/expected ions    "sequest:matched ions"    "sequest:total ions" 
-
-
   //  f_seq.push_back( mass ); // Observed mass
   f_seq.push_back( experimentalMassToCharge * item.chargeState() ); // Observed mass
 
   // The Sequest mzIdentML format does not have any flankN or flankC so we use "-".
-   std::string peptideSeqWithFlanks = std::string("-.") + peptideSeq + std::string(".-");
+  std::string peptideSeqWithFlanks = std::string("-.") + peptideSeq + std::string(".-");
 
   f_seq.push_back( DataSet::peptideLength(peptideSeqWithFlanks)); // Peptide length
   int charge = item.chargeState();
 
-   double dM =
-	  MassHandler::massDiff( item.experimentalMassToCharge(),
-				 item.calculatedMassToCharge().get(),
-                                charge,
-                          peptideSeq );
+  double dM =
+    MassHandler::massDiff( item.experimentalMassToCharge(),
+			   item.calculatedMassToCharge().get(),
+			   charge,
+			   peptideSeq );
 
   for (int c = minCharge; c
-      <= maxCharge; c++) {
-      f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
-   }
+	 <= maxCharge; c++) {
+    f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
+  }
  
-   assert(peptideSeq.size() >= 1 );
+  assert(peptideSeq.size() >= 1 );
 
-   if ( args_info.enzyme_type_arg != enzyme_type_arg_no_enzyme ) {
-          f_seq.push_back( Enzyme::isEnzymatic(peptideSeqWithFlanks.at(0),peptideSeqWithFlanks.at(2)) ? 1.0
-			   : 0.0);
-          f_seq.push_back( 
-               Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3),
-                                    peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1))
-                                                                            ? 1.0
-	      : 0.0);
-          f_seq.push_back( (double)Enzyme::countEnzymatic(peptideSeq) );
-        }
-   /*
-        f_seq.push_back( log(max(1.0, nSM))); Lukas Kaell told me nSM is not used with Sequest mzIdentML
-   */
-        f_seq.push_back( dM ); // obs - calc mass
-        f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
-        if (args_info.ptm_flag ) { f_seq.push_back(  DataSet::cntPTMs(peptideSeqWithFlanks)); }
-        if (args_info.pngasef_flag ) { f_seq.push_back( DataSet::isPngasef(peptideSeqWithFlanks, isDecoy)); }
-        //      if (hitsPerSpectrum>1)
-        //        feat[nxtFeat++]=(ms==0?1.0:0.0);
+  if ( args_info.enzyme_type_arg != enzyme_type_arg_no_enzyme ) {
+    f_seq.push_back( Enzyme::isEnzymatic(peptideSeqWithFlanks.at(0),peptideSeqWithFlanks.at(2)) ? 1.0
+		     : 0.0);
+    f_seq.push_back( 
+		    Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3),
+					peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1))
+		    ? 1.0
+		    : 0.0);
+    f_seq.push_back( (double)Enzyme::countEnzymatic(peptideSeq) );
+  }
+  /*
+    f_seq.push_back( log(max(1.0, nSM))); Lukas Kaell told me nSM is not used with Sequest mzIdentML
+  */
+  f_seq.push_back( dM ); // obs - calc mass
+  f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
+  if (args_info.ptm_flag ) { f_seq.push_back(  DataSet::cntPTMs(peptideSeqWithFlanks)); }
+  if (args_info.pngasef_flag ) { f_seq.push_back( DataSet::isPngasef(peptideSeqWithFlanks, isDecoy)); }
+  //      if (hitsPerSpectrum>1)
+  //        feat[nxtFeat++]=(ms==0?1.0:0.0);
 
-        if (args_info.aa_freq_flag ) {
-	  	  DataSet::computeAAFrequencies(peptideSeqWithFlanks, f_seq);
-        }
+  if (args_info.aa_freq_flag ) {
+    DataSet::computeAAFrequencies(peptideSeqWithFlanks, f_seq);
+  }
    
-     BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & cv, item.cvParam() )  {
-     if ( cv.value().present() ) {
+  BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & cv, item.cvParam() )  {
+    if ( cv.value().present() ) {
       // SpectrumIdentificationItem/cvParam/@value has the datatype string, even though the values seem to be float or double. 
       // percolator_in.xsd uses the datatype double for the features/feature, so we need to convert the string.
       // Using feature_traits for the conversion from std::string to double seems to be the right way to go. Another option would have been to use "strtod()".
@@ -256,9 +252,9 @@ void addFeatureNameWithEmptyDescription( percolatorInNs::featureDescriptions::fe
 }
 
 int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_args_info & args_info, int minCharge, int maxCharge, bool isDecoy,  percolatorInNs::featureDescriptions & fdesFirstFile, FragSpectrumScanDatabase & database,  int * scanNumber, scanNumberMapType & scanNumberMap  ) {
-      namespace xml = xsd::cxx::xml;
-      int ret=0;
- try
+  namespace xml = xsd::cxx::xml;
+  int ret=0;
+  try
     {
       percolatorInNs::featureDescriptions fdesCurrentFile;
       ifstream ifs;
@@ -310,44 +306,33 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
           addFeatureNameWithEmptyDescription( fd_sequence, param.name() );
 	}
       }
-
       // assert ( fdesFirstFile.featureDescription().size() > 0 || ( fdesFirstFile.featureDescription().size() == 0 && fdesCurrentFile.featureDescription().size() != fdes )) 
-
       if ( fdesFirstFile.featureDescription().size() == 0 ) {
 	// This is the first time this function is called. We save the current Feature descriptions
-          assert ( fdesCurrentFile.featureDescription().size() > 0 ); 
-          fdesFirstFile = fdesCurrentFile;
-       }
-
+	assert ( fdesCurrentFile.featureDescription().size() > 0 ); 
+	fdesFirstFile = fdesCurrentFile;
+      }
       // Additional files should have the same Feature descriptions as the first file
-
-          assert ( fdesCurrentFile.featureDescription().size() == fdesFirstFile.featureDescription().size() ); 
-
+      assert ( fdesCurrentFile.featureDescription().size() == fdesFirstFile.featureDescription().size() ); 
       bool differenceFound = false;
       for ( int i = 0; i < fdesFirstFile.featureDescription().size() ;  ++i ) {
 	::percolatorInNs::featureDescription & fdesc1 = fdesFirstFile.featureDescription()[i];
 	::percolatorInNs::featureDescription & fdesc2 = fdesCurrentFile.featureDescription()[i];
 
         if ( fdesc1.name() != fdesc2.name() ) { differenceFound = true; break; }  
-       }
-
-
-
+      }
       if ( differenceFound ) 
 	{
 	  // We create the feature description list for every file. This is just a check that these list look the same.
           fprintf(stderr,"error: The file: %s translates into a feature list that is different from the a previously created feature list ( from another file ).\n", fileName); exit(EXIT_FAILURE);
-         }
-
+	}
       for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
 	::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
 	assert(specIdResult.SpectrumIdentificationItem().size() > 0);
 	::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
-
 	std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss_p(0);;
 	scanNumberMapType::iterator iter = scanNumberMap.find( specIdResult.id() );
         int useScanNumber;
-
 	if ( iter == scanNumberMap.end() ) {
           scanNumberMap[ specIdResult.id() ]=*scanNumber;
 	  useScanNumber = *scanNumber;
@@ -360,23 +345,17 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
 	  assert(fss_p.get());
           assert( fss_p->experimentalMassToCharge() == experimentalMassToCharge );
         }
-        
-  //	std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p
-
-
+       	//	std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p
 	//	::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence = fss_p->peptideSpectrumMatch();
-
 	BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
 	  createPSM(item, peptideMap, minCharge, maxCharge, experimentalMassToCharge, args_info, isDecoy, fdesFirstFile , fss_p->peptideSpectrumMatch());
 	}
-
-  database.putFSS( *fss_p );
-
+	database.putFSS( *fss_p );
       }
       peptideMapType::iterator iter;
       // peptideMap not needed anymore. Let us deallocate.
       for(iter = peptideMap.begin(); iter != peptideMap.end(); ++iter) { delete iter->second; iter->second=0; }
-   }
+    }
   catch (const xercesc_3_1::DOMException& e)
     {
       char * tmpStr = XMLString::transcode(e.getMessage());
@@ -394,66 +373,64 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
       cerr << "io failure" << endl;
       ret = 1;
     }
- return ret;
+  return ret;
 }
-
-
 
 int
 main (int argc, char* argv[])
 {
   /* Initialize command options parser */
   struct gengetopt_args_info args_info;
- if(cmdline_parser(argc, argv, &args_info) != 0){
-   exit(EXIT_FAILURE);
- }
+  if(cmdline_parser(argc, argv, &args_info) != 0){
+    exit(EXIT_FAILURE);
+  }
   xercesc::XMLPlatformUtils::Initialize ();
 
- std::vector< MinMaxStruct > vec;
- for (int i = 0; i < args_info.target_file_given; ++i) {
-   getMinAndMaxCharge(args_info.target_file_arg[i],vec);
- }
- for (int i = 0; i < args_info.decoy_file_given; ++i) {
-   getMinAndMaxCharge(args_info.decoy_file_arg[i],vec);
- }
- int minCharge;
- int maxCharge;
- BOOST_FOREACH( const MinMaxStruct & minMax, vec )  {
-   minCharge = std::min(minMax.min, minCharge);
-   maxCharge = std::max(minMax.max, maxCharge);
- } 
- FragSpectrumScanDatabase database;
- database.init(args_info.tmp_file_for_indermediate_results_arg);
- int ret=0;
- int scanNumber=0;
- scanNumberMapType scanNumberMap;
+  std::vector< MinMaxStruct > vec;
+  for (int i = 0; i < args_info.target_file_given; ++i) {
+    getMinAndMaxCharge(args_info.target_file_arg[i],vec);
+  }
+  for (int i = 0; i < args_info.decoy_file_given; ++i) {
+    getMinAndMaxCharge(args_info.decoy_file_arg[i],vec);
+  }
+  int minCharge;
+  int maxCharge;
+  BOOST_FOREACH( const MinMaxStruct & minMax, vec )  {
+    minCharge = std::min(minMax.min, minCharge);
+    maxCharge = std::max(minMax.max, maxCharge);
+  } 
+  FragSpectrumScanDatabase database;
+  database.init(args_info.tmp_file_for_indermediate_results_arg);
+  int ret=0;
+  int scanNumber=0;
+  scanNumberMapType scanNumberMap;
   std::auto_ptr<percolatorInNs::featureDescriptions> fdesFirstFile_p ( new ::percolatorInNs::featureDescriptions());
- for (int i = 0; i < args_info.target_file_given; ++i) {
-   printf ("passed target file: %s\n", args_info.target_file_arg[i]);
-   ret = loadFromTargetOrDecoyFile(args_info.target_file_arg[i], args_info, minCharge, maxCharge, false /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap  );
-   if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.target_file_arg[i]); break; }
- }
- for (int i = 0; ret == 0 && i < args_info.decoy_file_given; ++i) {
-   loadFromTargetOrDecoyFile(args_info.decoy_file_arg[i], args_info, minCharge, maxCharge, true /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap   );
-  if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.decoy_file_arg[i]); }
- }
-      std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-      std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
+  for (int i = 0; i < args_info.target_file_given; ++i) {
+    printf ("passed target file: %s\n", args_info.target_file_arg[i]);
+    ret = loadFromTargetOrDecoyFile(args_info.target_file_arg[i], args_info, minCharge, maxCharge, false /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap  );
+    if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.target_file_arg[i]); break; }
+  }
+  for (int i = 0; ret == 0 && i < args_info.decoy_file_given; ++i) {
+    loadFromTargetOrDecoyFile(args_info.decoy_file_arg[i], args_info, minCharge, maxCharge, true /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap   );
+    if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.decoy_file_arg[i]); }
+  }
+  std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
+  std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
 
-      std::string enzymeStr;
-switch(args_info.enzyme_type_arg) { 
- case enzyme_type_arg_no_enzyme: enzymeStr = "no enzyme"; break;
- case enzyme_type_arg_elastase: enzymeStr = "elastase"; break;
- case enzyme_type_arg_chymotrypsin: enzymeStr = "chymotrypsin"; break;
- case enzyme_type_arg_trypsin: enzymeStr = "trypsin"; break;
- default: break;
- }
- std::cout << "   <enzyme>" << enzymeStr << "</enzyme>" << std::endl;
- serializer ser;
- ser.start (std::cout);
- ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",  *fdesFirstFile_p );
- database.print(ser);
- std::cout << std::endl << "</experiment>" << std::endl;
- xercesc::XMLPlatformUtils::Terminate ();
- return ret;
+  std::string enzymeStr;
+  switch(args_info.enzyme_type_arg) { 
+  case enzyme_type_arg_no_enzyme: enzymeStr = "no enzyme"; break;
+  case enzyme_type_arg_elastase: enzymeStr = "elastase"; break;
+  case enzyme_type_arg_chymotrypsin: enzymeStr = "chymotrypsin"; break;
+  case enzyme_type_arg_trypsin: enzymeStr = "trypsin"; break;
+  default: break;
+  }
+  std::cout << "   <enzyme>" << enzymeStr << "</enzyme>" << std::endl;
+  serializer ser;
+  ser.start (std::cout);
+  ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",  *fdesFirstFile_p );
+  database.print(ser);
+  std::cout << std::endl << "</experiment>" << std::endl;
+  xercesc::XMLPlatformUtils::Terminate ();
+  return ret;
 }
