@@ -111,7 +111,7 @@ bool FragSpectrumScanDatabase::init( std::string fileName ) {
   // unlink => Potential race condition, but Unix seems to lack unlink() with an file descriptor argument.
 
   ret = unlink( fileName.c_str() );
-  assert(ret);
+  assert(! ret);
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::deserializeFSSfromBinary( char * value, int valueSize ) {
