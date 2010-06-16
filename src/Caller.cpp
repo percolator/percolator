@@ -633,191 +633,111 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
-void Caller::readFiles( ) {
+void Caller::readFiles() {
 
-  if( xmlInputFN.size() != 0) {
-    unsigned int nrTargets;
-    unsigned int nrDecoys;
-    xercesc::XMLPlatformUtils::Initialize ();
-    countTargetsAndDecoys( xmlInputFN, nrTargets, nrDecoys );
-    int j = 0;
-    DataSet * targetSet = new DataSet();
-    assert(targetSet);
-    targetSet->setLabel(1);
-    DataSet * decoySet = new DataSet();
-    assert(decoySet);
-    decoySet->setLabel(-1);
-  try
-  {
-    namespace xml = xsd::cxx::xml;
-    std::ifstream xmlInStream;
-    xmlInStream.exceptions (ifstream::badbit | ifstream::failbit);
-    xmlInStream.open(xmlInputFN.c_str());
-    if (!xmlInStream) {
-      cerr << "Can not open file " <<  xmlInputFN << endl;
-      exit(EXIT_FAILURE);
-    }
-    parser p;
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (xmlInStream, xmlInputFN.c_str(), true));
+	if (xmlInputFN.size() != 0) {
+		unsigned int nrTargets;
+		unsigned int nrDecoys;
+		xercesc::XMLPlatformUtils::Initialize();
+		countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
+		int j = 0;
+		DataSet * targetSet = new DataSet();
+		assert(targetSet);
+		targetSet->setLabel(1);
+		DataSet * decoySet = new DataSet();
+		assert(decoySet);
+		decoySet->setLabel(-1);
+		try {
+			namespace xml = xsd::cxx::xml;
+			std::ifstream xmlInStream;
+			xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
+			xmlInStream.open(xmlInputFN.c_str());
+			if (!xmlInStream) {
+				cerr << "Can not open file " << xmlInputFN << endl;
+				exit(EXIT_FAILURE);
+			}
+			parser p;
+			xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
+					xmlInStream, xmlInputFN.c_str(), true));
 
+			doc = p.next();
 
-    doc = p.next ();
+			// The enzyme element is a subelement but CodeSynthesis Xsd does not generate a class for it. (I am trying to find a command line option that overrides this decision)
+			// As for now special treatment is needed:
+			char * value = XMLString::transcode(
+					doc->getDocumentElement()->getTextContent());
+			std::cout << "enzyme=" << value << std::endl;
+			XMLString::release(&value);
+			doc = p.next();
 
-    // The enzyme element is a subelement but CodeSynthesis Xsd does not generate a class for it. (I am trying to find a command line option that overrides this decision)
-    // As for now special treatment is needed:
-    char * value = XMLString::transcode(   doc->getDocumentElement()->getTextContent()  );
-    std::cout << "enzyme=" <<  value << std::endl;   
-    XMLString::release(&value);
-    doc = p.next ();
+			static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
+					chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
+					chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+			if (XMLString::equals(calibrationStr,
+					doc->getDocumentElement()->getTagName())) {
+				percolatorInNs::calibration calibration(
+						*doc->getDocumentElement());
+				doc = p.next();
+			};
 
-    static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-    if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {  
-      percolatorInNs::calibration calibration(*doc->getDocumentElement ());
-      doc = p.next ();
-    };
+			percolatorInNs::featureDescriptions featureDescriptions(
+					*doc->getDocumentElement());
 
-    percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement ());
+			FeatureNames& feNames = DataSet::getFeatureNames();
+			feNames.setFromXml(featureDescriptions, docFeatures);
 
-    FeatureNames& feNames = DataSet::getFeatureNames();
-    feNames.setFromXml(featureDescriptions, docFeatures );
+			targetSet->initFeatureTables(feNames.getNumFeatures(), nrTargets,
+					docFeatures);
+			decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys,
+					docFeatures);
 
-    targetSet->initFeatureTables( feNames.getNumFeatures(), nrTargets, docFeatures);
-    decoySet->initFeatureTables( feNames.getNumFeatures(), nrDecoys, docFeatures);
+			for (doc = p.next(); doc.get() != 0; doc = p.next()) {
+				percolatorInNs::fragSpectrumScan fragSpectrumScan(
+						*doc->getDocumentElement());
+				targetSet->readFragSpectrumScans(fragSpectrumScan);
+				decoySet->readFragSpectrumScans(fragSpectrumScan);
+			}
 
-    for (doc = p.next (); doc.get () != 0; doc = p.next ())
-    {
-      percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
-      targetSet->readFragSpectrumScans( fragSpectrumScan );
-      decoySet->readFragSpectrumScans( fragSpectrumScan );
-    }
+			pCheck = new SqtSanityCheck();
+			assert(pCheck);
+			normal.push_back_dataset(targetSet);
+			shuffled.push_back_dataset(decoySet);
+			normal.setSet();
+			shuffled.setSet();
+		}
 
-
-    pCheck = new SqtSanityCheck();
-    assert(pCheck);
-    normal.push_back_dataset(targetSet);
-    shuffled.push_back_dataset(decoySet);
-    normal.setSet();
-    shuffled.setSet();
-    }
-
-    catch (const xml_schema::exception& e)
-      {
-	std::cerr << e << endl;
-	exit(EXIT_FAILURE);
-      }
-    catch (const std::ios_base::failure&)
-      {
-	std::cerr << "unable to open or read failure" << std::endl;
-	exit(EXIT_FAILURE);
-      }
-  catch (const xercesc_3_1::DOMException& e)
-  {
-    char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr << std::endl;  
-    XMLString::release(&tmpStr);
-  }
-
-  } else {
-
-    if ( xmlOutputFN.size() != 0 ) {
-
-  xercesc::XMLPlatformUtils::Initialize ();
-    std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p ( new ::percolatorInNs::featureDescriptions());
-
-    std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p ));
-
-      bool calcQuadraticFeatures = DataSet::getQuadraticFeatures();
-      bool calcPTMs = DataSet::getPTMfeature();
-      bool calcAAFrequencies = DataSet::getAAFreqencies();
-
-      int maxCharge = -1;
-      int minCharge = 10000;
-
-      FragSpectrumScanDatabase database;
-
-   /*
-
-   The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is possible in the unix system call open (see "man 2 open").
-   This may be a security issue if the filename to the tokyo cabinet database is in a directory
-   that other users have write access to. They could add a symbolic link pointing somewhere else.  
-
-   It would be better if Tokyo Cabinet would fail if the database existed in our case when we use a tempory file.
-
-   */
-
-
-   database.init(tokyoCabinetTmpFN);
-
-    if (forwardFN != "" && decoyWC.empty() ) {
-      // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC, false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
-      // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  false /* is_decoy */ , calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-
-    } else {
-
-      // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
-      // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::fullParsing, database );
-    }
-
-
-      pCheck = new SqtSanityCheck();
-      assert(pCheck);
-
-
-    //    percolatorInNs::percolator percol(ex_p);
-
-    std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-    std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
-
-     
-
-
-    //    map[""].schema = "file:///tmp/percolator-xml.xsd";
-
-
-    std::string enzyme;
-    switch ( Enzyme::getEnzymeType() ) {
-    case Enzyme::NO_ENZYME : { enzyme = "NO_ENZYME"; break; }
-    case Enzyme::TRYPSIN : { enzyme = "trypsin"; break; }
-    case Enzyme::CHYMOTRYPSIN : { enzyme = "chymotrypsin"; break; }
-    case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
+		catch (const xml_schema::exception& e) {
+			std::cerr << e << endl;
+			exit(EXIT_FAILURE);
+		} catch (const std::ios_base::failure&) {
+			std::cerr << "unable to open or read failure" << std::endl;
+			exit(EXIT_FAILURE);
+		} catch (const xercesc_3_1::DOMException& e) {
+			char * tmpStr = XMLString::transcode(e.getMessage());
+			std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr
+					<< std::endl;
+			XMLString::release(&tmpStr);
+		}
+    	if (gistInput) {
+	   	pCheck = new SanityCheck();
+		normal.readGist(forwardFN, decoyFN, 1);
+		shuffled.readGist(forwardFN, decoyFN, -1);
+	} else if (tabInput) {
+		pCheck = new SanityCheck();
+		normal.readTab(forwardFN, 1);
+		shuffled.readTab(forwardFN, -1);
+	} else if (decoyWC.empty()) {
+		pCheck = new SqtSanityCheck();
+		normal.readFile(forwardFN, 1);
+		shuffled.readFile(decoyFN, -1);
+	} else {
+		pCheck = new SqtSanityCheck();
+		normal.readFile(forwardFN, decoyWC, false);
+		shuffled.readFile(forwardFN, decoyWC, true);
 	}
-    std::cout << "   <enzyme>" << enzyme << "</enzyme>" << std::endl;
-
-    serializer ser;
-    ser.start (std::cout);
-    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",  ex_p->featureDescriptions() );
-    database.print(ser);
-    std::cout << "</experiment>" << std::endl; 
-
-    exit(EXIT_SUCCESS);
-      }
-
-      if (gistInput) {
-	pCheck = new SanityCheck();
-	normal.readGist(forwardFN, decoyFN, 1);
-	shuffled.readGist(forwardFN, decoyFN, -1);
-      } else if (tabInput) {
-	pCheck = new SanityCheck();
-	normal.readTab(forwardFN, 1);
-	shuffled.readTab(forwardFN, -1);
-      } else if (decoyWC.empty()) {
-	pCheck = new SqtSanityCheck();
-	normal.readFile(forwardFN, 1);
-	shuffled.readFile(decoyFN, -1);
-      } else {
-	pCheck = new SqtSanityCheck();
-	normal.readFile(forwardFN, decoyWC, false);
-	shuffled.readFile(forwardFN, decoyWC, true);
-      }
   }
   if (spectrumFile.size() > 0) {
-    readRetentionTime(spectrumFile);
+	readRetentionTime(spectrumFile);
   }
 }
 

@@ -12,10 +12,7 @@
 #include "DataSet.h"
 #include "FeatureNames.h"
 
-
-namespace SqtReader {
-
-  void  translateSqtFileToXML(const std::string fn,::percolatorInNs::featureDescriptions & fds, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::string & wild,   bool isDecoy , bool calcQuadraticFeatures, bool calcAAFrequencies, bool calcPTMs, int * maxCharge,  int * minCharge, parseType pType, FragSpectrumScanDatabase & database  ) {
+void SqtReader::translateSqtFileToXML(const std::string fn,::percolatorInNs::featureDescriptions & fds, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::string & wild,   bool isDecoy , bool calcQuadraticFeatures, bool calcAAFrequencies, bool calcPTMs, int * maxCharge,  int * minCharge, parseType pType, FragSpectrumScanDatabase & database  ) {
     std::ifstream fileIn(fn.c_str(), std::ios::in);
     if (!fileIn) {
       std::cerr << "Could not open file " << fn << std::endl;
@@ -48,7 +45,7 @@ namespace SqtReader {
     }
   }
 
-  void readSQT(const std::string fn,::percolatorInNs::featureDescriptions & fds, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::string & wild,  bool isDecoy,     bool calcQuadraticFeatures,    bool calcAAFrequencies ,     bool calcPTMs , int * maxCharge,  int * minCharge, parseType pType, FragSpectrumScanDatabase & database  ) {
+void SqtReader::readSQT(const std::string fn,::percolatorInNs::featureDescriptions & fds, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::string & wild,  bool isDecoy,     bool calcQuadraticFeatures,    bool calcAAFrequencies ,     bool calcPTMs , int * maxCharge,  int * minCharge, parseType pType, FragSpectrumScanDatabase & database  ) {
 
 
     bool calcDOC = DataSet::getCalcDoc();
@@ -206,7 +203,7 @@ namespace SqtReader {
 }
 
 
-  void push_backFeatureDescription(     percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
+void SqtReader::push_backFeatureDescription(     percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
 
     //    int numberAlreadyAdded = fd_sequence.size();
     // std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(numberAlreadyAdded +1,str));
@@ -216,7 +213,7 @@ namespace SqtReader {
     return;
 }
 
-  void addFeatureDescriptions( percolatorInNs::featureDescriptions & fe_des, int minC, int maxC, bool doEnzyme,
+  void SqtReader::addFeatureDescriptions( percolatorInNs::featureDescriptions & fe_des, int minC, int maxC, bool doEnzyme,
 			       bool calcPTMs, bool doPNGaseF,
 			       const std::string& aaAlphabet,
 			       bool calcQuadratic) {
@@ -284,7 +281,7 @@ namespace SqtReader {
 
 
   static int counter = 0;
-  void readPSM(    bool isDecoy, const std::string &in  ,  int match, bool calcPTMs, bool pngasef, bool calcAAFrequencies ,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase & database ) {
+  void SqtReader::readPSM(    bool isDecoy, const std::string &in  ,  int match, bool calcPTMs, bool pngasef, bool calcAAFrequencies ,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase & database ) {
 
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   unsigned int scan;
@@ -399,7 +396,7 @@ todo!
         //        feat[nxtFeat++]=(ms==0?1.0:0.0);
 
         if (calcAAFrequencies) {
-	  	  DataSet::computeAAFrequencies(peptide, f_seq);
+	  	  computeAAFrequencies(peptide, f_seq);
         }
 
 	/*
@@ -459,6 +456,29 @@ todo!
 
 
 }
+
+void SqtReader::computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq ) {
+  // Overall amino acid composition features
+
+  assert(pep.size() >= 5);
+  string::size_type aaSize = aaAlphabet.size();
+
+  std::vector< double > doubleV;
+  for ( int m = 0  ; m < aaSize ; m++ )  {
+    doubleV.push_back(0.0);
+  }
+  int len = 0;
+  for (string::const_iterator it = pep.begin() + 2; it != pep.end() - 2; it++) {
+    string::size_type pos = aaAlphabet.find(*it);
+    if (pos != string::npos) doubleV[pos]++;
+    len++;
+  }
+  assert(len>0);
+  for ( int m = 0  ; m < aaSize ; m++ )  {
+    doubleV[m] /= len;
+  }
+  std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
 }
+
 
 

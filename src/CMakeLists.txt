@@ -107,3 +107,7 @@ add_executable(convertsequest  ${xsdfiles} ${mzIdentMLxsdfiles} parser.cxx conve
 target_link_libraries(convertsequest  perclibrary ArrayLibrary  ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
 install(TARGETS convertsequest DESTINATION bin)
 
+add_executable(sqt2pin  ${xsdfiles} ${mzIdentMLxsdfiles} parser.cxx Sqt2Pin.cpp serializer.cxx)
+target_link_libraries(sqt2pin  ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
+install(TARGETS sqt2pin DESTINATION bin)
+
