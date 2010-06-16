@@ -34,10 +34,10 @@ class Caller {
     int xv_step(vector<vector<double> >& w, bool updateDOC = false);
     static string greeter();
     string extendedGreeter();
-    bool parseOptions(int argc, char** argv);
-    void printWeights(ostream& weightStream, vector<double>& w);
-    void readWeights(istream& weightStream, vector<double>& w);
-    void readFiles(bool& doSingleFile);
+    bool parseOptions(int argc, char **argv);
+    void printWeights(ostream & weightStream, vector<double>& w);
+    void readWeights(istream & weightStream, vector<double>& w);
+    void readFiles();
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, char** fetureNames,
                        double pi0);
@@ -63,9 +63,13 @@ class Caller {
     }
     void writeXML(ostream& os, Scores& fullset);
   protected:
-    Normalizer* pNorm;
-    SanityCheck* pCheck;
-    AlgIn* svmInput;
+    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys );
+    Normalizer * pNorm;
+    SanityCheck * pCheck;
+    AlgIn *svmInput;
+    string tokyoCabinetTmpFN; 
+    string xmlInputFN;
+    string xmlOutputFN;
     string modifiedFN;
     string modifiedDecoyFN;
     string forwardFN;

@@ -61,6 +61,7 @@ void UniNormalizer::setSet(vector<double*> & featuresV,
   vector<double> mins(nf + nrf, 1e+100), maxs(nf + nrf, -1e+100);
   double* features;
   size_t ix;
+
   vector<double*>::iterator it = featuresV.begin();
   for (; it != featuresV.end(); ++it) {
     features = *it;

@@ -51,6 +51,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
     ifstream weightStream(initWeightFN.data(), ios::in);
     readWeights(weightStream, ww);
     weightStream.close();
+    assert(pNorm);
     pNorm->normalizeweight(ww, w[0]);
     for (size_t set = 1; set < w.size(); ++set) {
       copy(w[0].begin(), w[0].end(), w[set].begin());

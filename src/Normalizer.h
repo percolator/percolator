@@ -16,6 +16,10 @@
  *******************************************************************************/
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
+class DataSet;
+#include <set>
+#include <vector>
+
 using namespace std;
 
 class Normalizer {

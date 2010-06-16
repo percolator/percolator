@@ -23,6 +23,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 using namespace std;
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -44,6 +45,21 @@ using namespace std;
 #include "MassHandler.h"
 #include "Enzyme.h"
 
+#include "config.h"
+
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/util/XMLString.hpp>
+#include <xsd/cxx/xml/string.hxx>
+#include <boost/foreach.hpp>
+
+#include "SqtReader.h"
+#include "percolator_in.hxx"
+#include "parser.hxx"
+#include "FragSpectrumScanDatabase.h"
+#include "serializer.hxx"
+
+using namespace xercesc;
+
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
@@ -54,7 +70,7 @@ Caller::Caller() :
       modifiedDecoyFN(""),
       forwardFN(""),
       decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-      decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""),
+  decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
       weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
       docFeatures(false), reportPerformanceEachIteration(false),
       reportUniquePeptides(false), test_fdr(0.01), selectionfdr(0.01),
@@ -107,7 +123,9 @@ string Caller::greeter() {
   return oss.str();
 }
 
-bool Caller::parseOptions(int argc, char** argv) {
+bool Caller::parseOptions(int argc, char **argv) {
+  xmlInputFN="";
+  xmlOutputFN="";
   ostringstream callStream;
   callStream << argv[0];
   for (int i = 1; i < argc; i++) {
@@ -136,6 +154,24 @@ bool Caller::parseOptions(int argc, char** argv) {
   intro << "similair condition." << endl;
   // init
   CommandLineParser cmd(intro.str());
+
+
+  cmd.defineOption("L",
+                   "xsdoutput",
+                   "xml output filename (using Codesynthesis Xsd)",
+                   "filename");
+
+  cmd.defineOption("Y",
+                   "tmpfileSQTtoXML",
+                   "the SQT conversion needs a file name where to store temporary data ( in a Tokyo cabinet database ). Unexpected behaviour is expected if you run many instances of this program with the same filename.",
+                   "filename");
+
+
+  cmd.defineOption("E",
+                   "xsdinput",
+                   "xml input filename (using Codesynthesis Xsd)",
+                   "filename");
+
   cmd.defineOption("o",
                    "sqt-out",
                    "Create an SQT file with the specified name from the given target SQT file, \
@@ -324,15 +360,15 @@ the retention time and difference between observed and calculated mass",
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
-  if (cmd.optionSet("o")) {
-    modifiedFN = cmd.options["o"];
-  }
-  if (cmd.optionSet("s")) {
-    modifiedDecoyFN = cmd.options["s"];
-  }
-  if (cmd.optionSet("P")) {
-    decoyWC = cmd.options["P"];
-  }
+
+  if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
+  } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
+ 
+  if (cmd.optionSet("L")) xmlOutputFN = cmd.options["L"];
+  if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
+  if (cmd.optionSet("o")) modifiedFN = cmd.options["o"];
+  if (cmd.optionSet("s")) modifiedDecoyFN = cmd.options["s"];
+  if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
     selectedCpos = cmd.getDouble("p", 0.0, 1e127);
   }
@@ -468,20 +504,24 @@ the retention time and difference between observed and calculated mass",
     }
     reportUniquePeptides = true;
   }
-  if (cmd.arguments.size() > 2) {
-    cerr << "Too many arguments given" << endl;
-    cmd.help();
+
+  if (! cmd.optionSet("E") ) {
+    if (cmd.arguments.size() > 2) {
+      cerr << "Too many arguments given" << endl;
+      cmd.help();
+    }
+    if (cmd.arguments.size() == 0) {
+      cerr << "No arguments given" << endl;
+      cmd.help();
+    }
   }
-  if (cmd.arguments.size() == 0) {
-    cerr << "No arguments given" << endl;
-    cmd.help();
+  else if ( cmd.arguments.size() != 0 ) 
+  {  cerr << "error: -E expects just one argument" << endl;
+     cmd.help();
   }
-  if (cmd.arguments.size() > 0) {
-    forwardFN = cmd.arguments[0];
-  }
-  if (cmd.arguments.size() > 1) {
-    decoyFN = cmd.arguments[1];
-  }
+
+  if (cmd.arguments.size() > 0) forwardFN = cmd.arguments[0];
+  if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
   return true;
 }
 
@@ -499,7 +539,67 @@ void Caller::readRetentionTime(string filename) {
   delete[] cstr;
 }
 
-void Caller::printWeights(ostream& weightStream, vector<double>& w) {
+void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys ) {
+
+
+  try
+  {
+    namespace xml = xsd::cxx::xml;
+    ifstream ifs;
+    ifs.exceptions (ifstream::badbit | ifstream::failbit);
+    ifs.open (fname.c_str());
+
+    parser p;
+
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fname.c_str(), true));
+
+    doc = p.next ();
+    doc = p.next ();
+
+
+    static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+    if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {  
+      percolatorInNs::calibration calibration(*doc->getDocumentElement ());
+      doc = p.next ();
+    };
+
+
+  nrTargets=0;
+  nrDecoys=0;
+
+    for (doc = p.next (); doc.get () != 0; doc = p.next ())
+    {
+         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
+         BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() ) 
+		{ 
+                  if ( psm.isDecoy() ) {
+                          nrDecoys++; 
+                  } else {
+                      nrTargets++; 
+                  }
+		}
+
+    }
+  }
+  catch (const xercesc_3_1::DOMException& e)
+  {
+    char * tmpStr = XMLString::transcode(e.getMessage());
+    std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr << std::endl;  
+    XMLString::release(&tmpStr);
+  }
+  catch (const xml_schema::exception& e)
+  {
+    cerr << e << endl;
+  }
+  catch (const ios_base::failure&)
+  {
+    cerr << "io failure" << endl;
+  }
+
+  return;
+}
+
+void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
       << "# first line contains normalized weights, second line the raw weights"
       << endl;
@@ -524,6 +624,7 @@ void Caller::filelessSetup(const unsigned int numFeatures,
                            const unsigned int numSpectra,
                            char** featureNames, double pi0) {
   pCheck = new SanityCheck();
+  assert(pCheck);
   normal.filelessSetup(numFeatures, numSpectra, 1);
   shuffled.filelessSetup(numFeatures, numSpectra, -1);
   for (unsigned int ix = 0; ix < numFeatures; ix++) {
@@ -532,23 +633,188 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
-void Caller::readFiles(bool& doSingleFile) {
-  if (gistInput) {
-    pCheck = new SanityCheck();
-    normal.readGist(forwardFN, decoyFN, 1);
-    shuffled.readGist(forwardFN, decoyFN, -1);
-  } else if (tabInput) {
-    pCheck = new SanityCheck();
-    normal.readTab(forwardFN, 1);
-    shuffled.readTab(forwardFN, -1);
-  } else if (!doSingleFile) {
+void Caller::readFiles( ) {
+
+  if( xmlInputFN.size() != 0) {
+    unsigned int nrTargets;
+    unsigned int nrDecoys;
+    xercesc::XMLPlatformUtils::Initialize ();
+    countTargetsAndDecoys( xmlInputFN, nrTargets, nrDecoys );
+    int j = 0;
+    DataSet * targetSet = new DataSet();
+    assert(targetSet);
+    targetSet->setLabel(1);
+    DataSet * decoySet = new DataSet();
+    assert(decoySet);
+    decoySet->setLabel(-1);
+  try
+  {
+    namespace xml = xsd::cxx::xml;
+    std::ifstream xmlInStream;
+    xmlInStream.exceptions (ifstream::badbit | ifstream::failbit);
+    xmlInStream.open(xmlInputFN.c_str());
+    if (!xmlInStream) {
+      cerr << "Can not open file " <<  xmlInputFN << endl;
+      exit(EXIT_FAILURE);
+    }
+    parser p;
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (xmlInStream, xmlInputFN.c_str(), true));
+
+
+    doc = p.next ();
+
+    // The enzyme element is a subelement but CodeSynthesis Xsd does not generate a class for it. (I am trying to find a command line option that overrides this decision)
+    // As for now special treatment is needed:
+    char * value = XMLString::transcode(   doc->getDocumentElement()->getTextContent()  );
+    std::cout << "enzyme=" <<  value << std::endl;   
+    XMLString::release(&value);
+    doc = p.next ();
+
+    static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+    if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {  
+      percolatorInNs::calibration calibration(*doc->getDocumentElement ());
+      doc = p.next ();
+    };
+
+    percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement ());
+
+    FeatureNames& feNames = DataSet::getFeatureNames();
+    feNames.setFromXml(featureDescriptions, docFeatures );
+
+    targetSet->initFeatureTables( feNames.getNumFeatures(), nrTargets, docFeatures);
+    decoySet->initFeatureTables( feNames.getNumFeatures(), nrDecoys, docFeatures);
+
+    for (doc = p.next (); doc.get () != 0; doc = p.next ())
+    {
+      percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
+      targetSet->readFragSpectrumScans( fragSpectrumScan );
+      decoySet->readFragSpectrumScans( fragSpectrumScan );
+    }
+
+
     pCheck = new SqtSanityCheck();
-    normal.readFile(forwardFN, 1);
-    shuffled.readFile(decoyFN, -1);
+    assert(pCheck);
+    normal.push_back_dataset(targetSet);
+    shuffled.push_back_dataset(decoySet);
+    normal.setSet();
+    shuffled.setSet();
+    }
+
+    catch (const xml_schema::exception& e)
+      {
+	std::cerr << e << endl;
+	exit(EXIT_FAILURE);
+      }
+    catch (const std::ios_base::failure&)
+      {
+	std::cerr << "unable to open or read failure" << std::endl;
+	exit(EXIT_FAILURE);
+      }
+  catch (const xercesc_3_1::DOMException& e)
+  {
+    char * tmpStr = XMLString::transcode(e.getMessage());
+    std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr << std::endl;  
+    XMLString::release(&tmpStr);
+  }
+
   } else {
-    pCheck = new SqtSanityCheck();
-    normal.readFile(forwardFN, decoyWC, false);
-    shuffled.readFile(forwardFN, decoyWC, true);
+
+    if ( xmlOutputFN.size() != 0 ) {
+
+  xercesc::XMLPlatformUtils::Initialize ();
+    std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p ( new ::percolatorInNs::featureDescriptions());
+
+    std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p ));
+
+      bool calcQuadraticFeatures = DataSet::getQuadraticFeatures();
+      bool calcPTMs = DataSet::getPTMfeature();
+      bool calcAAFrequencies = DataSet::getAAFreqencies();
+
+      int maxCharge = -1;
+      int minCharge = 10000;
+
+      FragSpectrumScanDatabase database;
+
+   /*
+
+   The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is possible in the unix system call open (see "man 2 open").
+   This may be a security issue if the filename to the tokyo cabinet database is in a directory
+   that other users have write access to. They could add a symbolic link pointing somewhere else.  
+
+   It would be better if Tokyo Cabinet would fail if the database existed in our case when we use a tempory file.
+
+   */
+
+
+   database.init(tokyoCabinetTmpFN);
+
+    if (forwardFN != "" && decoyWC.empty() ) {
+      // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC, false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
+      // Now we do full parsing of the Sqt file, and translating it to XML
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  false /* is_decoy */ , calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+
+    } else {
+
+      // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
+      // Now we do full parsing of the Sqt file, and translating it to XML
+      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::fullParsing, database );
+    }
+
+
+      pCheck = new SqtSanityCheck();
+      assert(pCheck);
+
+
+    //    percolatorInNs::percolator percol(ex_p);
+
+    std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
+    std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
+
+     
+
+
+    //    map[""].schema = "file:///tmp/percolator-xml.xsd";
+
+
+    std::string enzyme;
+    switch ( Enzyme::getEnzymeType() ) {
+    case Enzyme::NO_ENZYME : { enzyme = "NO_ENZYME"; break; }
+    case Enzyme::TRYPSIN : { enzyme = "trypsin"; break; }
+    case Enzyme::CHYMOTRYPSIN : { enzyme = "chymotrypsin"; break; }
+    case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
+	}
+    std::cout << "   <enzyme>" << enzyme << "</enzyme>" << std::endl;
+
+    serializer ser;
+    ser.start (std::cout);
+    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",  ex_p->featureDescriptions() );
+    database.print(ser);
+    std::cout << "</experiment>" << std::endl; 
+
+    exit(EXIT_SUCCESS);
+      }
+
+      if (gistInput) {
+	pCheck = new SanityCheck();
+	normal.readGist(forwardFN, decoyFN, 1);
+	shuffled.readGist(forwardFN, decoyFN, -1);
+      } else if (tabInput) {
+	pCheck = new SanityCheck();
+	normal.readTab(forwardFN, 1);
+	shuffled.readTab(forwardFN, -1);
+      } else if (decoyWC.empty()) {
+	pCheck = new SqtSanityCheck();
+	normal.readFile(forwardFN, 1);
+	shuffled.readFile(decoyFN, -1);
+      } else {
+	pCheck = new SqtSanityCheck();
+	normal.readFile(forwardFN, decoyWC, false);
+	shuffled.readFile(forwardFN, decoyWC, true);
+      }
   }
   if (spectrumFile.size() > 0) {
     readRetentionTime(spectrumFile);
@@ -717,6 +983,7 @@ void Caller::fillFeatureSets() {
     }
   }
   pNorm = Normalizer::getNormalizer();
+
   pNorm->setSet(featuresV,
                 rtFeaturesV,
                 FeatureNames::getNumFeatures(),
@@ -726,6 +993,9 @@ void Caller::fillFeatureSets() {
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {
   svmInput = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1); // One input set, to be reused multiple times
+
+  assert( svmInput );
+
   if (selectedCpos <= 0 || selectedCneg <= 0) {
     xv_train.resize(xval_fold);
     xv_test.resize(xval_fold);
@@ -753,9 +1023,11 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
         cerr << "selecting cneg by cross validation" << endl;
       }
     }
+    cerr << "A" << endl; 
     return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, test_fdr);
   } else {
     vector<Scores> myset(1, fullset);
+    cerr << "B" << endl;
     return pCheck->getInitDirection(myset, myset, pNorm, w, test_fdr);
   }
 }
@@ -767,9 +1039,11 @@ int Caller::run() {
     cerr << extendedGreeter();
   }
   //File reading
-  bool doSingleFile = !decoyWC.empty();
-  readFiles(doSingleFile);
+
+  readFiles();
   fillFeatureSets();
+  cout << "baFeatureNames::getNumFeatures=" << FeatureNames::getNumFeatures() << endl;
+
   vector<vector<double> > w(xval_fold,
                             vector<double> (FeatureNames::getNumFeatures()
                                 + 1)), ww;

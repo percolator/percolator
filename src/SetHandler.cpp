@@ -31,6 +31,12 @@ using namespace std;
 #include "Scores.h"
 #include "Globals.h"
 
+
+
+#include "percolator_in.hxx"
+
+
+
 SetHandler::SetHandler() {
   // charge=c;
   // norm=Normalizer::getNew();
@@ -77,6 +83,12 @@ void SetHandler::readFile(const string& fn, const string& wc,
   setSet();
 }
 
+
+void SetHandler::push_back_dataset( DataSet * ds ) {
+    subsets.push_back(ds);
+}
+
+
 void SetHandler::readFile(const string fn, const int label, vector<
     DataSet*> & sets, const string& wild, const bool match) {
   ifstream fileIn(fn.c_str(), ios::in);
@@ -114,6 +126,7 @@ void SetHandler::readFile(const string fn, const int label, vector<
     meta.close();
   }
 }
+
 
 void SetHandler::modifyFile(const string& fn, Scores& sc,
                             const string& greet, bool dtaSelect) {

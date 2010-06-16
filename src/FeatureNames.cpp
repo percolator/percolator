@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
@@ -15,8 +16,11 @@
 
  *******************************************************************************/
 #include <sstream>
+#include <iostream>
 #include <assert.h>
 #include "FeatureNames.h"
+#include <boost/foreach.hpp>
+
 
 size_t FeatureNames::numFeatures = 0;
 
@@ -35,6 +39,26 @@ FeatureNames::FeatureNames() {
 }
 
 FeatureNames::~FeatureNames() {
+}
+
+void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
+  assert(featureNames.empty());
+  BOOST_FOREACH( const ::percolatorInNs::featureDescription & descr,  fdes.featureDescription() ) {
+    featureNames.push_back(descr.name());
+  }
+
+  if (calcDOC) {
+    docFeatNum = featureNames.size();
+    featureNames.push_back("docpI");
+    featureNames.push_back("docdM");
+    featureNames.push_back("docRT");
+    featureNames.push_back("docdMdRT");
+  }
+  setNumFeatures(featureNames.size());
+  std::cout << "in FeatureNames::setFromXml" << std::endl;
+  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cout, " "));
+  std::cout << "end of FeatureNames::setFromXml" << std::endl;
+  return;
 }
 
 string FeatureNames::getFeatureNames(bool skipDOC) {
@@ -135,4 +159,8 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
     featureNames.push_back("docdMdRT");
   }
   setNumFeatures(featureNames.size());
+  std::cout << "in FeatureNames::setSQTFeatures" << std::endl;
+  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cout, " "));
+  std::cout << "end of FeatureNames::setSQTFeatures" << std::endl;
+  return;
 }

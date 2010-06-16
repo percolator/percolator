@@ -18,6 +18,10 @@
 #define SETHANDLER_H_
 #include "PSMDescription.h"
 
+namespace percolatorInNs { 
+  class target_decoy;
+}
+
 class SetHandler {
   protected:
     vector<DataSet*> subsets;
@@ -30,11 +34,16 @@ class SetHandler {
     virtual ~SetHandler();
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, const int label);
+
     void readFile(const string& p_fn, const int label);
     void readFile(const string& fn, const string& wc, const bool match);
     void static readFile(const string fn, const int label,
                          vector<DataSet*> & sets, const string& wild = "",
                          const bool match = false);
+
+
+    void push_back_dataset( DataSet * ds );
+
     void static
     modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
                const string& greet, bool dtaSelect);

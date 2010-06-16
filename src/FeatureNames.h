@@ -20,6 +20,9 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+
+#include "percolator_in.hxx"
+
 using namespace std;
 
 class FeatureNames {
@@ -36,7 +39,10 @@ class FeatureNames {
       }
     }
 
-    void insertFeature(string& featureName) {
+
+    void setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
+
+    void insertFeature(const string& featureName) {
       featureNames.push_back(featureName);
     }
     void setFeatures(string& line, size_t skip, size_t numFeatures);
@@ -58,27 +64,35 @@ class FeatureNames {
       return maxCharge;
     }
     int getChargeFeatNum() {
+      assert(1==0);
       return chargeFeatNum;
     }
     int getEnzFeatNum() {
+      assert(1==0);
       return enzFeatNum;
     }
     int getNumSPFeatNum() {
+      assert(1==0);
       return numSPFeatNum;
     }
     int getPtmFeatNum() {
+      assert(1==0);
       return ptmFeatNum;
     }
     int getPNGaseFFeatNum() {
+      assert(1==0);
       return pngFeatNum;
     }
     int getAaFeatNum() {
+      assert(1==0);
       return aaFeatNum;
     }
     int getIntraSetFeatNum() {
+      assert(1==0);
       return intraSetFeatNum;
     }
     int getQuadraticFeatNum() {
+      assert(1==0);
       return quadraticFeatNum;
     }
     int getDocFeatNum() {
