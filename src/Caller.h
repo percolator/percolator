@@ -20,6 +20,7 @@
 
 #include <time.h>
 #include "SanityCheck.h"
+using namespace std;
 
 class Caller {
   public:
@@ -67,7 +68,7 @@ class Caller {
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;
-    string tokyoCabinetTmpFN; 
+    string tokyoCabinetTmpFN;
     string xmlInputFN;
     string xmlOutputFN;
     string modifiedFN;

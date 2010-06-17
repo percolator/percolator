@@ -1,12 +1,25 @@
-/*
- * Sqt2Pin.cpp
- *
- *  Created on: Jun 16, 2010
- *      Author: lukask
- */
+/*******************************************************************************
+ Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
-#include "Sqt2Pin.h"
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ *******************************************************************************/
+
+using namespace std;
+
 #include "Enzyme.h"
+#include "Option.h"
+#include "Sqt2Pin.h"
 
 Sqt2Pin::Sqt2Pin() {
 	// TODO Auto-generated constructor stub
@@ -18,7 +31,7 @@ string Sqt2Pin::greeter() {
   oss << "Sqt2Pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss
-      << "Copyright (c) 2010 Lukas Käll. All rights reserved."
+      << "Copyright (c) 2010 Lukas K�ll. All rights reserved."
       << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
   oss << "Department of Biochemistry and Biophysics at the Stockholm University."
@@ -182,8 +195,9 @@ the retention time and difference between observed and calculated mass",
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
   }
-  if (cmd.arguments.size() > 0) forwardFN = cmd.arguments[0];
+  if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
   if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  if (cmd.arguments.size() > 2) xmlOutputFN = cmd.arguments[2];
   return true;
 }
 
@@ -194,10 +208,6 @@ Sqt2Pin::run() {
     std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p ( new ::percolatorInNs::featureDescriptions());
 
     std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p ));
-
-    bool calcQuadraticFeatures = DataSet::getQuadraticFeatures();
-    bool calcPTMs = DataSet::getPTMfeature();
-    bool calcAAFrequencies = DataSet::getAAFreqencies();
 
     int maxCharge = -1;
     int minCharge = 10000;
@@ -216,22 +226,22 @@ Sqt2Pin::run() {
 
    database.init(tokyoCabinetTmpFN);
 
-    if (forwardFN != "" && decoyWC.empty() ) {
+    if (targetFN != "" && po.reversedFeaturePattern.empty() ) {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC, false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), false /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, po, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  false /* is_decoy */ , calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  false /* is_decoy */ , po, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, po, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
 
     } else {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  false /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::fullParsing, database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  true /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::fullParsing, database );
     }
-    pCheck = new SqtSanityCheck();
-    assert(pCheck);
+//    pCheck = new SqtSanityCheck();
+//    assert(pCheck);
     std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
     std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
 
@@ -260,12 +270,12 @@ Sqt2Pin::~Sqt2Pin() {
 }
 
 int main(int argc, char** argv) {
-     Sqt2Pin* pCaller = new Sqt2Pin();
+     Sqt2Pin* pSqt2Pin = new Sqt2Pin();
      int retVal = -1;
-     if (pCaller->parseOptions(argc, argv)) {
-          pCaller->run();
+     if (pSqt2Pin->parseOptions(argc, argv)) {
+    	 pSqt2Pin->run();
      }
-     delete pCaller;
+     delete pSqt2Pin;
      Globals::clean();
      return retVal;
 }
