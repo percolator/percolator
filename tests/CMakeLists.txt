@@ -1,17 +1,49 @@
-if (GOOGLE_TEST STREQUAL TRUE)
+# Adding CTest basic system-level tests here.
+# IF(SYSTEM_TESTS STREQUAL TRUE)
 
-include_directories (${PERCOLATOR_SOURCE_DIR}/src)
+  # Defining list with all tests.
+  set(system_tests_names
+      # Testing help manuals.
+      SystemTest_Percolator_Help
+      SystemTest_Qvality_Help
+      SystemTest_Elude_Help
+      
+      # Basic functionality tests.
+      SystemTest_Percolator_BasicFunc
+      SystemTest_Qvality_BasicFunc
+      SystemTest_Elude_BasicFunc
+      
+      # Correctness tests.
+      SystemTest_Percolator_Correctness
+      SystemTest_Qvality_Correctness
+      SystemTest_Elude_Correctness
+      
+      # Performance tests.
+      SystemTest_Percolator_Performance
+      SystemTest_Qvality_Performance
+      SystemTest_Elude_Performance
+      
+      # Workload and other types of tests.
+      SystemTest_Percolator_Workload
+      SystemTest_Qvality_Workload
+      SystemTest_Elude_Workload
+    )
+  # Just copying the script (permissions are preserved).
+  set(system_tests_dir "${CMAKE_BINARY_DIR}/../bin")
 
-add_executable (gtest_unit simple_tests.cpp)
+  # NOTE: To run system tests (after running build_me.sh), run 'make test' in the 'output' folder.
+  foreach(current_system_test ${system_tests_names})
+    MESSAGE ("Copying test: ${current_system_test} ...")
+    configure_file (${current_system_test}.sh ${system_tests_dir}/${current_system_test}.sh COPYONLY)
+    add_test (${current_system_test} ${system_tests_dir}/${current_system_test}.sh ${system_tests_dir})
+  endforeach(current_system_test)
 
-target_link_libraries (gtest_unit libgtest.a perclibrary ArrayLibrary MSToolkit)
+# ENDIF(SYSTEM_TESTS STREQUAL TRUE)
 
-install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
-
-add_test (SimplePercTest1 SimpleTest1.sh "--help")
-add_test (SimpleQvalTest2 SimpleTest2.sh "--help")
-
-configure_file(SimpleTest1.sh ${CMAKE_BINARY_DIR}/tests/SimpleTest1.sh COPYONLY)
-configure_file(SimpleTest2.sh ${CMAKE_BINARY_DIR}/tests/SimpleTest2.sh COPYONLY)
-
-endif (GOOGLE_TEST STREQUAL TRUE)
+# Google tests are built explicitely.
+IF (GOOGLE_TEST STREQUAL TRUE)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src)
+  add_executable (gtest_unit simple_tests.cpp)
+  target_link_libraries (gtest_unit libgtest.a perclibrary ArrayLibrary MSToolkit)
+  install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
+ENDIF (GOOGLE_TEST STREQUAL TRUE)
