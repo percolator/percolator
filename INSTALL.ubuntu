@@ -1,0 +1,22 @@
+# If you run Ubuntu 10.04 Linux on a x86_64 computer
+
+sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake
+
+# the Ubuntu package xsdcxx is as of 2010-06-16 version 3.2 and we want version 3.3
+# so we download it from the Codesynthesis home page
+
+cd /tmp
+wget http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/xsd-3.3.0-x86_64-linux-gnu.tar.bz2
+tar xfj /tmp/xsd-3.3.0-x86_64-linux-gnu.tar.bz2
+mkdir /tmp/percolatorBuild
+mkdir /tmp/percolatorInstall
+cd /tmp/percolatorBuild
+
+cmake -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=FALSE -DCMAKE_INSTALL_PREFIX=/tmp/percolatorInstall -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu /path/to/the/percolator/source
+make -j8
+make install
+
+
+
+
+
