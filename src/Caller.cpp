@@ -39,6 +39,9 @@ using namespace std;
 #include "ssl.h"
 #include "Caller.h"
 #include "Globals.h"
+#include "MSReader.h"
+#include "Spectrum.h"
+#include "MSToolkitTypes.h"
 #include "MassHandler.h"
 #include "Enzyme.h"
 
@@ -360,7 +363,7 @@ the retention time and difference between observed and calculated mass",
 
   if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
   } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
-
+ 
   if (cmd.optionSet("L")) xmlOutputFN = cmd.options["L"];
   if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
   if (cmd.optionSet("o")) modifiedFN = cmd.options["o"];
@@ -512,7 +515,7 @@ the retention time and difference between observed and calculated mass",
       cmd.help();
     }
   }
-  else if ( cmd.arguments.size() != 0 )
+  else if ( cmd.arguments.size() != 0 ) 
   {  cerr << "error: -E expects just one argument" << endl;
      cmd.help();
   }
@@ -522,6 +525,19 @@ the retention time and difference between observed and calculated mass",
   return true;
 }
 
+void Caller::readRetentionTime(string filename) {
+  MSReader r;
+  Spectrum s;
+  r.setFilter(MS2);
+  char* cstr = new char[filename.size() + 1];
+  strcpy(cstr, filename.c_str());
+  r.readFile(cstr, s);
+  while (s.getScanNumber() != 0) {
+    scan2rt[s.getScanNumber()] = (double)s.getRTime();
+    r.readFile(NULL, s);
+  }
+  delete[] cstr;
+}
 
 void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys ) {
 
@@ -542,7 +558,7 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
 
 
     static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-    if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {
+    if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {  
       percolatorInNs::calibration calibration(*doc->getDocumentElement ());
       doc = p.next ();
     };
@@ -554,12 +570,12 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
     for (doc = p.next (); doc.get () != 0; doc = p.next ())
     {
          percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
-         BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() )
-		{
+         BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() ) 
+		{ 
                   if ( psm.isDecoy() ) {
-                          nrDecoys++;
+                          nrDecoys++; 
                   } else {
-                      nrTargets++;
+                      nrTargets++; 
                   }
 		}
 
@@ -568,7 +584,7 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
   catch (const xercesc_3_1::DOMException& e)
   {
     char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr << std::endl;
+    std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr << std::endl;  
     XMLString::release(&tmpStr);
   }
   catch (const xml_schema::exception& e)
@@ -719,6 +735,9 @@ void Caller::readFiles() {
 		normal.readFile(forwardFN, decoyWC, false);
 		shuffled.readFile(forwardFN, decoyWC, true);
 	}
+  }
+  if (spectrumFile.size() > 0) {
+	readRetentionTime(spectrumFile);
   }
 }
 
@@ -924,7 +943,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
         cerr << "selecting cneg by cross validation" << endl;
       }
     }
-    cerr << "A" << endl;
+    cerr << "A" << endl; 
     return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, test_fdr);
   } else {
     vector<Scores> myset(1, fullset);
