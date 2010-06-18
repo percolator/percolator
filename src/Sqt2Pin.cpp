@@ -20,6 +20,11 @@ using namespace std;
 #include "Enzyme.h"
 #include "Option.h"
 #include "Sqt2Pin.h"
+#include "MSReader.h"
+#include "Spectrum.h"
+#include "MSToolkitTypes.h"
+
+
 
 Sqt2Pin::Sqt2Pin() {
 	// TODO Auto-generated constructor stub
@@ -260,8 +265,26 @@ Sqt2Pin::run() {
     database.print(ser);
     std::cout << "</experiment>" << std::endl;
 
-    exit(EXIT_SUCCESS);
   }
+  if (spectrumFile.size() > 0) {
+	readRetentionTime(spectrumFile);
+  }
+  exit(EXIT_SUCCESS);
+
+}
+
+void Sqt2Pin::readRetentionTime(string filename) {
+  MSReader r;
+  Spectrum s;
+  r.setFilter(MS2);
+  char* cstr = new char[filename.size() + 1];
+  strcpy(cstr, filename.c_str());
+  r.readFile(cstr, s);
+  while (s.getScanNumber() != 0) {
+    scan2rt[s.getScanNumber()] = (double)s.getRTime();
+    r.readFile(NULL, s);
+  }
+  delete[] cstr;
 }
 
 

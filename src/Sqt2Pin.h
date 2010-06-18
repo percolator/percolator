@@ -27,6 +27,7 @@ public:
 	string greeter();
 	bool parseOptions(int argc, char **argv);
 	int run();
+	void readRetentionTime(string filename) {
 
 protected:
 	ParseOptions parseOptions;
