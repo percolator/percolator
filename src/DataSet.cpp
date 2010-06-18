@@ -597,47 +597,6 @@ void DataSet::readFeatures(const string& in, PSMDescription& psm,
     cerr << in;
   }
 }
-void DataSet::computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq ) {
-  // Overall amino acid composition features
-
-  assert(pep.size() >= 5);
-  string::size_type aaSize = aaAlphabet.size();
-
-  std::vector< double > doubleV;
-  for ( int m = 0  ; m < aaSize ; m++ )  {
-    doubleV.push_back(0.0);
-  }
-  int len = 0;
-  for (string::const_iterator it = pep.begin() + 2; it != pep.end() - 2; it++) {
-    string::size_type pos = aaAlphabet.find(*it);
-    if (pos != string::npos) doubleV[pos]++;
-    len++;
-  }
-  assert(len>0);
-  for ( int m = 0  ; m < aaSize ; m++ )  {
-    doubleV[m] /= len;
-  }
-  std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
-}
-
-void DataSet::computeAAFrequencies(const string& pep, double *feat) {
-  // Overall amino acid composition features
-  string::size_type pos = aaAlphabet.size();
-  for (; pos--;) {
-    feat[pos] = 0.0;
-  }
-  int len = 0;
-  for (string::const_iterator it = pep.begin() + 2; it != pep.end() - 2; it++) {
-    pos = aaAlphabet.find(*it);
-    if (pos != string::npos) {
-      feat[pos]++;
-    }
-    len++;
-  }
-  for (pos = aaAlphabet.size(); pos--;) {
-    feat[pos] /= len;
-  }
-}
 
 unsigned int DataSet::peptideLength(const string& pep) {
   unsigned int len = 0;

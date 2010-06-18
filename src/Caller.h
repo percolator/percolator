@@ -29,7 +29,6 @@ class Caller {
   public:
     Caller();
     virtual ~Caller();
-    void readRetentionTime(string filename);
     void train(vector<vector<double> >& w);
     int xv_step(vector<vector<double> >& w, bool updateDOC = false);
     static string greeter();

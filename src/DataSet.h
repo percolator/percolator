@@ -42,8 +42,6 @@ class DataSet {
     void inline setLabel(int l) {
       label = l;
     }
-    static void computeAAFrequencies(const string& pep, double *feat);
-    static void computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq );
     void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
     void readSQT(const string fname, const string & wild = "", bool match =
         false);

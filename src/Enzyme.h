@@ -21,6 +21,7 @@
 
 #include <string>
 #include <assert.h>
+
 using namespace std;
 
 class Enzyme {
