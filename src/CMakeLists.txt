@@ -93,16 +93,18 @@ add_subdirectory(qvality)
 
 add_subdirectory(elude)
 
-
-add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/convertsequest_cmdline.c   ${CMAKE_CURRENT_BINARY_DIR}/convertsequest_cmdline.h 
-                   COMMAND ${gengetopt_EXECUTABLE} -i ${CMAKE_CURRENT_BINARY_DIR}/convertsequest.ggo --file-name=convertsequest_cmdline --output-dir=${CMAKE_CURRENT_BINARY_DIR}
-                     DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/convertsequest.ggo  
+macro(gengetoptmacro progname)
+add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c   ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h 
+                   COMMAND ${gengetopt_EXECUTABLE} -i ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo --file-name=${progname}_cmdline --output-dir=${CMAKE_CURRENT_BINARY_DIR}
+                     DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo  
                      VERBATIM)
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/convertsequest_cmdline.c PROPERTIES GENERATED true)
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/convertsequest_cmdline.h PROPERTIES GENERATED true)
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c PROPERTIES GENERATED true)
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h PROPERTIES GENERATED true)
+endmacro(my_find_program)
 
+gengetoptmacro( convertsequest )
 
-add_executable(convertsequest  ${xsdfiles} ${mzIdentMLxsdfiles} parser.cxx convertsequest.cpp serializer.cxx ${CMAKE_CURRENT_BINARY_DIR}/convertsequest_cmdline.c)
+add_executable(convertsequest ${xsdfiles} ${mzIdentMLxsdfiles} parser.cxx convertsequest.cpp serializer.cxx ${CMAKE_CURRENT_BINARY_DIR}/convertsequest_cmdline.c)
 
 target_link_libraries(convertsequest  perclibrary ArrayLibrary  ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
 install(TARGETS convertsequest DESTINATION bin)

@@ -255,124 +255,124 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
   namespace xml = xsd::cxx::xml;
   int ret=0;
   try
+  {
+    percolatorInNs::featureDescriptions fdesCurrentFile;
+    ifstream ifs;
+    ifs.exceptions (ifstream::badbit | ifstream::failbit);
+    ifs.open (fileName);
+    parser p;
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fileName, true));
+    while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) {
+      doc = p.next ();
+      // Let's skip some sub trees that we are not interested, e.g. AuditCollection
+    }
+    assert(doc.get());
+    mzIdentML_ns::SequenceCollectionType sequenceCollection(*doc->getDocumentElement ());
+    // instead of std::map it should actually be a unordered_map. Let us wait until c++0x finalize.
+
+    peptideMapType peptideMap;
+
+    BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide() )  {
+      assert( peptideMap.find( peptide.id() ) == peptideMap.end() ); // The peptide refs should be unique.
+      mzIdentML_ns::SequenceCollectionType::Peptide_type *pept = new mzIdentML_ns::SequenceCollectionType::Peptide_type( peptide);
+      assert(pept);
+      peptideMap.insert( std::make_pair(peptide.id(), pept ) ) ;
+    }
+    for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
+      // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
+    }
+    ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
+    //      percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  ex_p->featureDescriptions().featureDescription();
+    percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  fdesCurrentFile.featureDescription();
+
+
+    assert( specIdResult.SpectrumIdentificationItem().size() > 0 );
+
+    addFeatureNameWithEmptyDescription( fd_sequence,"deltLCn");
+    addFeatureNameWithEmptyDescription( fd_sequence,"deltCn");
+    //      addFeatureNameWithEmptyDescription( fd_sequence,"Xcorr" );
+    // addFeatureNameWithEmptyDescription( fd_sequence,"Sp" );
+    addFeatureNameWithEmptyDescription( fd_sequence,"IonFrac" );
+    addFeatureNameWithEmptyDescription( fd_sequence,"Mass" );
+    addFeatureNameWithEmptyDescription( fd_sequence,"PepLen" );
+
+    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & param, specIdResult.SpectrumIdentificationItem()[0].cvParam() )  {
+      if ( param.value().present() ) {
+        addFeatureNameWithEmptyDescription( fd_sequence, param.name() );
+      }
+    }
+    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, specIdResult.SpectrumIdentificationItem()[0].userParam())  {
+      if ( param.value().present() ) {
+        addFeatureNameWithEmptyDescription( fd_sequence, param.name() );
+      }
+    }
+    // assert ( fdesFirstFile.featureDescription().size() > 0 || ( fdesFirstFile.featureDescription().size() == 0 && fdesCurrentFile.featureDescription().size() != fdes )) 
+    if ( fdesFirstFile.featureDescription().size() == 0 ) {
+      // This is the first time this function is called. We save the current Feature descriptions
+      assert ( fdesCurrentFile.featureDescription().size() > 0 ); 
+      fdesFirstFile = fdesCurrentFile;
+    }
+    // Additional files should have the same Feature descriptions as the first file
+    assert ( fdesCurrentFile.featureDescription().size() == fdesFirstFile.featureDescription().size() ); 
+    bool differenceFound = false;
+    for ( int i = 0; i < fdesFirstFile.featureDescription().size() ;  ++i ) {
+      ::percolatorInNs::featureDescription & fdesc1 = fdesFirstFile.featureDescription()[i];
+      ::percolatorInNs::featureDescription & fdesc2 = fdesCurrentFile.featureDescription()[i];
+
+      if ( fdesc1.name() != fdesc2.name() ) { differenceFound = true; break; }  
+    }
+    if ( differenceFound ) 
     {
-      percolatorInNs::featureDescriptions fdesCurrentFile;
-      ifstream ifs;
-      ifs.exceptions (ifstream::badbit | ifstream::failbit);
-      ifs.open (fileName);
-      parser p;
-      xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fileName, true));
-      while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) {
-	doc = p.next ();
-	// Let's skip some sub trees that we are not interested, e.g. AuditCollection
-      }
-      assert(doc.get());
-      mzIdentML_ns::SequenceCollectionType sequenceCollection(*doc->getDocumentElement ());
-      // instead of std::map it should actually be a unordered_map. Let us wait until c++0x finalize.
-
-      peptideMapType peptideMap;
-
-      BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide() )  {
-        assert( peptideMap.find( peptide.id() ) == peptideMap.end() ); // The peptide refs should be unique.
-	mzIdentML_ns::SequenceCollectionType::Peptide_type *pept = new mzIdentML_ns::SequenceCollectionType::Peptide_type( peptide);
-        assert(pept);
-        peptideMap.insert( std::make_pair(peptide.id(), pept ) ) ;
-      }
-      for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
-	// Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
-      }
+      // We create the feature description list for every file. This is just a check that these list look the same.
+      fprintf(stderr,"error: The file: %s translates into a feature list that is different from the a previously created feature list ( from another file ).\n", fileName); exit(EXIT_FAILURE);
+    }
+    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
       ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-      //      percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  ex_p->featureDescriptions().featureDescription();
-      percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  fdesCurrentFile.featureDescription();
-
-
-      assert( specIdResult.SpectrumIdentificationItem().size() > 0 );
-
-      addFeatureNameWithEmptyDescription( fd_sequence,"deltLCn");
-      addFeatureNameWithEmptyDescription( fd_sequence,"deltCn");
-      //      addFeatureNameWithEmptyDescription( fd_sequence,"Xcorr" );
-      // addFeatureNameWithEmptyDescription( fd_sequence,"Sp" );
-      addFeatureNameWithEmptyDescription( fd_sequence,"IonFrac" );
-      addFeatureNameWithEmptyDescription( fd_sequence,"Mass" );
-      addFeatureNameWithEmptyDescription( fd_sequence,"PepLen" );
-
-      BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & param, specIdResult.SpectrumIdentificationItem()[0].cvParam() )  {
-        if ( param.value().present() ) {
-          addFeatureNameWithEmptyDescription( fd_sequence, param.name() );
-	}
+      assert(specIdResult.SpectrumIdentificationItem().size() > 0);
+      ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss_p(0);;
+      scanNumberMapType::iterator iter = scanNumberMap.find( specIdResult.id() );
+      int useScanNumber;
+      if ( iter == scanNumberMap.end() ) {
+        scanNumberMap[ specIdResult.id() ]=*scanNumber;
+        useScanNumber = *scanNumber;
+        ++scanNumber;
+        std::auto_ptr< ::percolatorInNs::fragSpectrumScan> tmp_p( new ::percolatorInNs::fragSpectrumScan( useScanNumber, experimentalMassToCharge ));  ;
+        fss_p = tmp_p;
+      } else {
+        useScanNumber = iter->second;
+        fss_p = database.getFSS( useScanNumber );
+        assert(fss_p.get());
+        assert( fss_p->experimentalMassToCharge() == experimentalMassToCharge );
       }
-      BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, specIdResult.SpectrumIdentificationItem()[0].userParam())  {
-        if ( param.value().present() ) {
-          addFeatureNameWithEmptyDescription( fd_sequence, param.name() );
-	}
+      //	std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p
+      //	::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence = fss_p->peptideSpectrumMatch();
+      BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
+        createPSM(item, peptideMap, minCharge, maxCharge, experimentalMassToCharge, args_info, isDecoy, fdesFirstFile , fss_p->peptideSpectrumMatch());
       }
-      // assert ( fdesFirstFile.featureDescription().size() > 0 || ( fdesFirstFile.featureDescription().size() == 0 && fdesCurrentFile.featureDescription().size() != fdes )) 
-      if ( fdesFirstFile.featureDescription().size() == 0 ) {
-	// This is the first time this function is called. We save the current Feature descriptions
-	assert ( fdesCurrentFile.featureDescription().size() > 0 ); 
-	fdesFirstFile = fdesCurrentFile;
-      }
-      // Additional files should have the same Feature descriptions as the first file
-      assert ( fdesCurrentFile.featureDescription().size() == fdesFirstFile.featureDescription().size() ); 
-      bool differenceFound = false;
-      for ( int i = 0; i < fdesFirstFile.featureDescription().size() ;  ++i ) {
-	::percolatorInNs::featureDescription & fdesc1 = fdesFirstFile.featureDescription()[i];
-	::percolatorInNs::featureDescription & fdesc2 = fdesCurrentFile.featureDescription()[i];
-
-        if ( fdesc1.name() != fdesc2.name() ) { differenceFound = true; break; }  
-      }
-      if ( differenceFound ) 
-	{
-	  // We create the feature description list for every file. This is just a check that these list look the same.
-          fprintf(stderr,"error: The file: %s translates into a feature list that is different from the a previously created feature list ( from another file ).\n", fileName); exit(EXIT_FAILURE);
-	}
-      for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
-	::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-	assert(specIdResult.SpectrumIdentificationItem().size() > 0);
-	::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
-	std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss_p(0);;
-	scanNumberMapType::iterator iter = scanNumberMap.find( specIdResult.id() );
-        int useScanNumber;
-	if ( iter == scanNumberMap.end() ) {
-          scanNumberMap[ specIdResult.id() ]=*scanNumber;
-	  useScanNumber = *scanNumber;
-          ++scanNumber;
-	  std::auto_ptr< ::percolatorInNs::fragSpectrumScan> tmp_p( new ::percolatorInNs::fragSpectrumScan( useScanNumber, experimentalMassToCharge ));  ;
-	  fss_p = tmp_p;
-     	} else {
-	  useScanNumber = iter->second;
-	  fss_p = database.getFSS( useScanNumber );
-	  assert(fss_p.get());
-          assert( fss_p->experimentalMassToCharge() == experimentalMassToCharge );
-        }
-       	//	std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p
-	//	::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence = fss_p->peptideSpectrumMatch();
-	BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
-	  createPSM(item, peptideMap, minCharge, maxCharge, experimentalMassToCharge, args_info, isDecoy, fdesFirstFile , fss_p->peptideSpectrumMatch());
-	}
-	database.putFSS( *fss_p );
-      }
-      peptideMapType::iterator iter;
-      // peptideMap not needed anymore. Let us deallocate.
-      for(iter = peptideMap.begin(); iter != peptideMap.end(); ++iter) { delete iter->second; iter->second=0; }
+      database.putFSS( *fss_p );
     }
+    peptideMapType::iterator iter;
+    // peptideMap not needed anymore. Let us deallocate.
+    for(iter = peptideMap.begin(); iter != peptideMap.end(); ++iter) { delete iter->second; iter->second=0; }
+  }
   catch (const xercesc_3_1::DOMException& e)
-    {
-      char * tmpStr = XMLString::transcode(e.getMessage());
-      std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  
-      XMLString::release(&tmpStr);
-      ret = 1;
-    }
+  {
+    char * tmpStr = XMLString::transcode(e.getMessage());
+    std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  
+    XMLString::release(&tmpStr);
+    ret = 1;
+  }
   catch (const xml_schema::exception& e)
-    {
-      cerr << e << endl;
-      ret = 1;
-    }
+  {
+    cerr << e << endl;
+    ret = 1;
+  }
   catch (const ios_base::failure&)
-    {
-      cerr << "io failure" << endl;
-      ret = 1;
-    }
+  {
+    cerr << "io failure" << endl;
+    ret = 1;
+  }
   return ret;
 }
 
