@@ -9,6 +9,11 @@ using namespace std;
 #include "Option.h"
 #include "Enzyme.h"
 #include "Sqt2Pin.h"
+#include "MSReader.h"
+#include "Spectrum.h"
+#include "MSToolkitTypes.h"
+
+
 
 Sqt2Pin::Sqt2Pin() {
 	// TODO Auto-generated constructor stub
@@ -184,8 +189,9 @@ the retention time and difference between observed and calculated mass",
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
   }
-  if (cmd.arguments.size() > 0) forwardFN = cmd.arguments[0];
+  if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
   if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  if (cmd.arguments.size() > 2) xmlOutputFN = cmd.arguments[2];
   return true;
 }
 
@@ -196,10 +202,6 @@ Sqt2Pin::run() {
     std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p ( new ::percolatorInNs::featureDescriptions());
 
     std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p ));
-
-    bool calcQuadraticFeatures = DataSet::getQuadraticFeatures();
-    bool calcPTMs = DataSet::getPTMfeature();
-    bool calcAAFrequencies = DataSet::getAAFreqencies();
 
     int maxCharge = -1;
     int minCharge = 10000;
@@ -218,22 +220,22 @@ Sqt2Pin::run() {
 
    database.init(tokyoCabinetTmpFN);
 
-    if (forwardFN != "" && decoyWC.empty() ) {
+    if (targetFN != "" && po.reversedFeaturePattern.empty() ) {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC, false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), false /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, po, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  false /* is_decoy */ , calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  false /* is_decoy */ , po, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, po, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
 
     } else {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  false /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  false /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( forwardFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,decoyWC,  true /* is_decoy */, calcQuadraticFeatures, calcAAFrequencies , calcPTMs, &maxCharge, &minCharge, SqtReader::fullParsing, database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  true /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::fullParsing, database );
     }
-    pCheck = new SqtSanityCheck();
-    assert(pCheck);
+//    pCheck = new SqtSanityCheck();
+//    assert(pCheck);
     std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
     std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
 
@@ -251,9 +253,26 @@ Sqt2Pin::run() {
     ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",  ex_p->featureDescriptions() );
     database.print(ser);
     std::cout << "</experiment>" << std::endl;
-
-    exit(EXIT_SUCCESS);
   }
+  if (spectrumFile.size() > 0) {
+	readRetentionTime(spectrumFile);
+  }
+  exit(EXIT_SUCCESS);
+
+}
+
+void Sqt2Pin::readRetentionTime(string filename) {
+  MSReader r;
+  Spectrum s;
+  r.setFilter(MS2);
+  char* cstr = new char[filename.size() + 1];
+  strcpy(cstr, filename.c_str());
+  r.readFile(cstr, s);
+  while (s.getScanNumber() != 0) {
+    scan2rt[s.getScanNumber()] = (double)s.getRTime();
+    r.readFile(NULL, s);
+  }
+  delete[] cstr;
 }
 
 
@@ -262,12 +281,12 @@ Sqt2Pin::~Sqt2Pin() {
 }
 
 int main(int argc, char** argv) {
-     Sqt2Pin* pCaller = new Sqt2Pin();
+     Sqt2Pin* pSqt2Pin = new Sqt2Pin();
      int retVal = -1;
-     if (pCaller->parseOpts(argc, argv)) {
-          pCaller->run();
+     if (pSqt2Pin->parseOpt(argc, argv)) {
+    	 pSqt2Pin->run();
      }
-     delete pCaller;
+     delete pSqt2Pin;
      Globals::clean();
      return retVal;
 }
