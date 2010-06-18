@@ -6,7 +6,6 @@
  */
 
 using namespace std;
-#include "Option.h"
 #include "Enzyme.h"
 #include "Sqt2Pin.h"
 #include "MSReader.h"

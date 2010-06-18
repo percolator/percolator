@@ -17,27 +17,27 @@
 
 #ifndef SQT2PIN_H_
 #define SQT2PIN_H_
-
+#include <string>
 #include "SqtReader.h"
+#include "Option.h"
 
 
 class Sqt2Pin {
 public:
 	Sqt2Pin();
 	virtual ~Sqt2Pin();
-	string greeter();
+	std::string greeter();
 	bool parseOpt(int argc, char **argv);
 	int run();
-	void readRetentionTime(string filename) {
+	void readRetentionTime(std::string filename);
 
 protected:
 	ParseOptions parseOptions;
-	string tokyoCabinetTmpFN;
-    string targetFN;
-    string decoyFN;
-    string xmlInputFN;
-	string xmlOutputFN;
-	string call;
+	std::string tokyoCabinetTmpFN;
+	std::string targetFN;
+	std::string decoyFN;
+	std::string xmlOutputFN;
+	std::string call;
 };
 
 int main(int argc, char **argv);

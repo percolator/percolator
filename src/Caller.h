@@ -20,7 +20,6 @@
 
 #include <time.h>
 #include "SanityCheck.h"
-using namespace std;
 
 class Caller {
   public:
