@@ -15,6 +15,7 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 add_subdirectory(RAMP)
 
 file(GLOB MSTOOLKIT_SOURCES *.cpp)
+include_directories(RAMP)
 add_library (MSToolkit ${MSTOOLKIT_SOURCES})
 
 target_link_libraries(MSToolkit ${ZLIB_LIBRARIES} ${SQLITE3_LIBRARIES} RAMP )

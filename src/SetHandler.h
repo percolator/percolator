@@ -35,11 +35,6 @@ class SetHandler {
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, const int label);
 
-    void readFile(const string& p_fn, const int label);
-    void readFile(const string& fn, const string& wc, const bool match);
-    void static readFile(const string fn, const int label,
-                         vector<DataSet*> & sets, const string& wild = "",
-                         const bool match = false);
 
 
     void push_back_dataset( DataSet * ds );
@@ -47,8 +42,6 @@ class SetHandler {
     void static
     modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
                const string& greet, bool dtaSelect);
-    void modifyFile(const string& fn, Scores& sc, const string& greet,
-                    bool dtaSelect);
     void generateTrainingSet(const double fdr, const double cpos,
                              const double cneg, Scores& sc);
     void setSet();

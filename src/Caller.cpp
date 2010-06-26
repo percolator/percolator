@@ -39,9 +39,9 @@ using namespace std;
 #include "ssl.h"
 #include "Caller.h"
 #include "Globals.h"
-#include "MSReader.h"
-#include "Spectrum.h"
-#include "MSToolkitTypes.h"
+
+
+
 #include "MassHandler.h"
 #include "Enzyme.h"
 
@@ -52,10 +52,9 @@ using namespace std;
 #include <xsd/cxx/xml/string.hxx>
 #include <boost/foreach.hpp>
 
-#include "SqtReader.h"
 #include "percolator_in.hxx"
 #include "parser.hxx"
-#include "FragSpectrumScanDatabase.h"
+
 #include "serializer.hxx"
 
 using namespace xercesc;
@@ -525,6 +524,7 @@ the retention time and difference between observed and calculated mass",
   return true;
 }
 
+/*
 void Caller::readRetentionTime(string filename) {
   MSReader r;
   Spectrum s;
@@ -538,6 +538,7 @@ void Caller::readRetentionTime(string filename) {
   }
   delete[] cstr;
 }
+*/
 
 void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys ) {
 
@@ -727,17 +728,32 @@ void Caller::readFiles() {
 		normal.readTab(forwardFN, 1);
 		shuffled.readTab(forwardFN, -1);
 	} else if (decoyWC.empty()) {
+
+	  assert(false); //discard code path
+	  /*
 		pCheck = new SqtSanityCheck();
 		normal.readFile(forwardFN, 1);
 		shuffled.readFile(decoyFN, -1);
+	  */
+
 	} else {
+	  assert(false); //discard code path
+	  /*
 		pCheck = new SqtSanityCheck();
 		normal.readFile(forwardFN, decoyWC, false);
 		shuffled.readFile(forwardFN, decoyWC, true);
+	  */
+
 	}
   }
+
+
+
   if (spectrumFile.size() > 0) {
-	readRetentionTime(spectrumFile);
+
+    assert(false); // we moved mstoolkit into src/converters. There should be no dependency to these functions..
+    //	readRetentionTime(spectrumFile);
+
   }
 }
 
@@ -1050,10 +1066,6 @@ int Caller::run() {
   if (VERB > 1) {
     cerr << timerValues.str();
   }
-  normal.modifyFile(modifiedFN, fullset, extendedGreeter()
-      + timerValues.str(), dtaSelect);
-  shuffled.modifyFile(modifiedDecoyFN, fullset, extendedGreeter()
-      + timerValues.str(), dtaSelect);
   if (weightFN.size() > 0) {
     ofstream weightStream(weightFN.data(), ios::out);
     for (unsigned int ix = 0; ix < xval_fold; ++ix) {

@@ -6,17 +6,20 @@
  */
 
 using namespace std;
+#include <iostream>
 #include "Enzyme.h"
 #include "Sqt2Pin.h"
+#include "config.h"
+#include "serializer.hxx"
 #include "MSReader.h"
 #include "Spectrum.h"
 #include "MSToolkitTypes.h"
-
-
+#include "MassHandler.h"
+#include "SqtReader.h"
+#include "DataSet.h"
 
 Sqt2Pin::Sqt2Pin() {
-	// TODO Auto-generated constructor stub
-
+ // TODO Auto-generated constructor stub
 }
 
 string Sqt2Pin::greeter() {
@@ -34,7 +37,6 @@ string Sqt2Pin::greeter() {
 
 
 bool Sqt2Pin::parseOpt(int argc, char **argv) {
-  xmlInputFN="";
   xmlOutputFN="";
   ostringstream callStream;
   callStream << argv[0];
@@ -71,17 +73,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
                    "Input files are given as gist files. In this case first argument should be a file name \
 of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
 and test set, -1 -- negative train set, -2 -- negative in test set.",
-                   "",
-                   TRUE_IF_SET);
-  cmd.defineOption("j",
-                   "tab-in",
-                   "Input files are given as a tab delimited file. In this case the only argument should be a file name \
-of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
-<tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
-Labels are interpreted as 1 -- positive set \
-and test set, -1 -- negative set.\
-When the --doc option the first and second feature (third and fourth column) should contain \
-the retention time and difference between observed and calculated mass",
                    "",
                    TRUE_IF_SET);
   cmd.defineOption("v",
@@ -145,18 +136,6 @@ the retention time and difference between observed and calculated mass",
   if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
   } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
 
-  if (cmd.optionSet("j")) {
-    tabInput = true;
-    if (cmd.arguments.size() != 1) {
-      cerr
-          << "Provide exactly one arguments when using tab delimited input"
-          << endl;
-      exit(-1);
-    }
-  }
-  if (cmd.optionSet("d")) {
-    dtaSelect = true;
-  }
   if (cmd.optionSet("Q")) {
 	  parseOptions.calcQuadraticFeatures=true;
   }
@@ -194,7 +173,7 @@ the retention time and difference between observed and calculated mass",
   return true;
 }
 
-Sqt2Pin::run() {
+void Sqt2Pin::run() {
 
   if ( xmlOutputFN.size() != 0 ) {
     xercesc::XMLPlatformUtils::Initialize ();
@@ -219,19 +198,20 @@ Sqt2Pin::run() {
 
    database.init(tokyoCabinetTmpFN);
 
-    if (targetFN != "" && po.reversedFeaturePattern.empty() ) {
+    if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), false /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, po, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
+
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, parseOptions, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  false /* is_decoy */ , po, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, po, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  false /* is_decoy */ , parseOptions, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
+      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, parseOptions, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
 
     } else {
       // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  false /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  false /* is_decoy */, parseOptions, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
       // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  true /* is_decoy */, po, &maxCharge, &minCharge, SqtReader::fullParsing, database );
+      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  true /* is_decoy */, parseOptions, &maxCharge, &minCharge, SqtReader::fullParsing, database );
     }
 //    pCheck = new SqtSanityCheck();
 //    assert(pCheck);
@@ -256,8 +236,7 @@ Sqt2Pin::run() {
   if (spectrumFile.size() > 0) {
 	readRetentionTime(spectrumFile);
   }
-  exit(EXIT_SUCCESS);
-
+  return;
 }
 
 void Sqt2Pin::readRetentionTime(string filename) {

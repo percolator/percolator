@@ -48,7 +48,7 @@ void Enzyme::setEnzyme(EnzymeType enz) {
   }
 }
 
-size_t Enzyme::countEnzymatic(string& peptide) {
+size_t Enzyme::countEnzymatic(std::string& peptide) {
   size_t count = 0;
   for (size_t ix = 1; ix < peptide.size(); ++ix) {
     if (isEnzymatic(peptide[ix - 1], peptide[ix])) {

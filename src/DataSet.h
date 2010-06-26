@@ -43,10 +43,7 @@ class DataSet {
       label = l;
     }
     void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
-    void readSQT(const string fname, const string & wild = "", bool match =
-        false);
-    void modifySQT(const string& outFN, Scores* pSc, const string greet,
-                   bool dtaSelect);
+
     void initFeatureTables(const unsigned int numFeatures,
                            const unsigned int numSpectra,
                            bool regresionTable = false);
@@ -127,9 +124,7 @@ class DataSet {
 
   protected:
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch & td,  unsigned int numFeatures );
-    void readFeatures(const string &in, PSMDescription &psm, int match);
-    string modifyRec(const string record, int& row, const set<int>& theMs,
-                     Scores * pSc, bool dtaSelect);
+
     double isPngasef(const string& peptide);
     static bool calcQuadraticFeatures;
     static bool calcAAFrequencies;

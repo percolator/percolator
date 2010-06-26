@@ -18,12 +18,13 @@
 #include "MassHandler.h"
 
 #include "FragSpectrumScanDatabase.h"
+#include "SqtReader.h"
 #include "parser.hxx"
 #include "config.h"
 #include "percolator_in.hxx"
 #include "mzIdentML1.0.0.hxx"
 #include "serializer.hxx"
-#include "convertsequest_cmdline.h"
+#include "mzidentml2pin_cmdline.h"
           
 using namespace std;
 using namespace xercesc;
@@ -140,6 +141,9 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
   return;
 }
 
+
+
+
 void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, peptideMapType & peptideMap, int minCharge, int maxCharge, ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge, const struct gengetopt_args_info & args_info, bool isDecoy, percolatorInNs::featureDescriptions & fdesFirstFile,  ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence ) {
 
   // It is strange but mzIdentML has "experimentalMassToCharge" on the PSM-level in the XML tree. This leads to a lot of redundant information.
@@ -214,7 +218,7 @@ void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificat
   //        feat[nxtFeat++]=(ms==0?1.0:0.0);
 
   if (args_info.aa_freq_flag ) {
-    DataSet::computeAAFrequencies(peptideSeqWithFlanks, f_seq);
+    	  	SqtReader::computeAAFrequencies(peptideSeqWithFlanks, f_seq);
   }
    
   BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & cv, item.cvParam() )  {

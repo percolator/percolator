@@ -22,7 +22,6 @@
 #include <string>
 #include <assert.h>
 
-using namespace std;
 
 class Enzyme {
   public:
@@ -37,16 +36,16 @@ class Enzyme {
     static EnzymeType getEnzymeType() {
       return getEnzyme()->getET();
     }
-    static size_t countEnzymatic(string& peptide);
+    static size_t countEnzymatic(std::string& peptide);
     static bool isEnzymatic(const char& n, const char& c) {
       return getEnzyme()->isEnz(n, c);
     }
-    static bool isEnzymatic(string peptide) {
+    static bool isEnzymatic(std::string peptide) {
       return (getEnzyme()->isEnz(peptide[0], peptide[2])
           && getEnzyme()->isEnz(peptide[peptide.length() - 3],
                                 peptide[peptide.length() - 1]));
     }
-    static string getStringEnzyme() {
+    static std::string getStringEnzyme() {
       return getEnzyme()->toString();
     }
     Enzyme() {
@@ -58,7 +57,7 @@ class Enzyme {
     virtual bool isEnz(const char& n, const char& c) {
       return true;
     }
-    virtual string toString() {
+    virtual std::string toString() {
       return "no_enzyme";
     }
     virtual EnzymeType getET() {
@@ -75,7 +74,7 @@ class Trypsin : public Enzyme {
       ;
     }
   protected:
-    virtual string toString() {
+    virtual std::string toString() {
       return "trypsin";
     }
     virtual bool isEnz(const char& n, const char& c) {
@@ -95,7 +94,7 @@ class Chymotrypsin : public Enzyme {
       ;
     }
   protected:
-    virtual string toString() {
+    virtual std::string toString() {
       return "chymotrypsin";
     }
     virtual bool isEnz(const char& n, const char& c) {
@@ -116,7 +115,7 @@ class Elastase : public Enzyme {
       ;
     }
   protected:
-    virtual string toString() {
+    virtual std::string toString() {
       return "elastase";
     }
     virtual bool isEnz(const char& n, const char& c) {

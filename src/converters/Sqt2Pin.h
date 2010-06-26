@@ -28,7 +28,7 @@ public:
 	virtual ~Sqt2Pin();
 	std::string greeter();
 	bool parseOpt(int argc, char **argv);
-	int run();
+	void run();
 	void readRetentionTime(std::string filename);
 
 protected:
@@ -38,6 +38,12 @@ protected:
 	std::string decoyFN;
 	std::string xmlOutputFN;
 	std::string call;
+
+
+	//* To make it compile Erik Sjolund added these from Caller.h
+       std::string spectrumFile;
+       map<int, double> scan2rt;
+
 };
 
 int main(int argc, char **argv);
