@@ -1,0 +1,6 @@
+I have tried this on a Fedora 13 with all of the mingw-packages installed. It does not work yet but the command to build should be something like:
+
+cmake  -DCMAKE_TOOLCHAIN_FILE=~/percolator/Toolchain-mingw32.cmake '-DCMAKE_PREFIX_PATH=/home/esjolund/xsd-3.3.0-i686-windows;/home/esjolund/xsd-3.3.0-x86_64-linux-gnu'  -DSTATIC=ON -DSTATIC=ON  -DEXCLUDE_CONVERTERS=ON ~/percolator/ && make -j 8 win32installer
+
+assuming the percolator sources are in ~/percolator
+
