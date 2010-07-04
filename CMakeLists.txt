@@ -8,9 +8,22 @@ macro(my_find_program progname)
   endif(NOT ${progname}_EXECUTABLE)
 endmacro(my_find_program)
 
+OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 
+set(CPACK_PACKAGE_VERSION_MAJOR "1")
+set(CPACK_PACKAGE_VERSION_MINOR "14b")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/10)
+
+file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
+foreach(i ${configurefiles})
+  string(REPLACE ".cmake" "" myReplFile "${i}")
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+endforeach()
+
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 
 add_subdirectory(src)
 
@@ -25,9 +38,6 @@ set(CPACK_PACKAGE_VENDOR "Matrix Science Ltd.")
 set(CPACK_PACKAGE_NAME ${PACKAGE_NICKNAME})
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${PERCOLATOR_SOURCE_DIR}/src/README")
 set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/COPYING")
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "14b")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
 set(TARGET_ARCH "i386") # Suitable platform architecture for distribution package
 set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TARGET_ARCH}")
@@ -55,6 +65,11 @@ set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
 
 # NSIS package options
 # Requires NSIS for creating the package 
+
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/script.nsi" DEPENDS percolator elude qvality ) 
+add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
+
+
 
 # Adding data directories for installation.
 install(DIRECTORY data DESTINATION bin)

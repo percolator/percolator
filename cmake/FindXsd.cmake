@@ -9,10 +9,13 @@ find_path(XSD_INCLUDE_DIR NAMES  xsd/cxx/version.hxx  PATH_SUFFIXES libxsd PATHS
   $ENV{XSDDIR}/libxsd
   /usr/include
   /usr/local/include
+  CMAKE_FIND_ROOT_PATH_BOTH
 )
 #  PATH_SUFFIXES libxsd
+
 find_program(XSD_EXECUTABLE 
-   NAMES xsd xsdcxx
+   NAMES xsd xsdcxx 
+# maybe add xsd.exe
    PATHS "[HKEY_CURRENT_USER]\\xsd\\bin"
     $ENV{XSDDIR}/bin 
    /usr/bin

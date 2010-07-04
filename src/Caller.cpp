@@ -41,7 +41,6 @@ using namespace std;
 #include "Globals.h"
 
 
-
 #include "MassHandler.h"
 #include "Enzyme.h"
 
@@ -582,10 +581,10 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
 
     }
   }
-  catch (const xercesc_3_1::DOMException& e)
+  catch (const xercesc::DOMException& e)
   {
     char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr << std::endl;  
+    std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;  
     XMLString::release(&tmpStr);
   }
   catch (const xml_schema::exception& e)
@@ -713,9 +712,9 @@ void Caller::readFiles() {
 		} catch (const std::ios_base::failure&) {
 			std::cerr << "unable to open or read failure" << std::endl;
 			exit(EXIT_FAILURE);
-		} catch (const xercesc_3_1::DOMException& e) {
+		} catch (const xercesc::DOMException& e) {
 			char * tmpStr = XMLString::transcode(e.getMessage());
-			std::cerr << "catch  xercesc_3_1::DOMException=" << tmpStr
+			std::cerr << "catch  xercesc::DOMException=" << tmpStr
 					<< std::endl;
 			XMLString::release(&tmpStr);
 		}

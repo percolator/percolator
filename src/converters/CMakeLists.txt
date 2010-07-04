@@ -24,7 +24,7 @@ foreach( i ${xsdfiles} ${mzIdentMLxsdfiles} )
 endforeach()
 
 add_subdirectory(MSToolkit)
-add_library(converters SqtReader.cpp FragSpectrumScanDatabase.cpp )
+add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 add_executable(lightparse lightparse.cpp  ${xsdfiles} ${CMAKE_SOURCE_DIR}/src/parser.cxx )
 target_link_libraries(lightparse ${XERCESC_LIBRARIES})
@@ -49,3 +49,10 @@ include_directories(. MSToolkit/zLib ArrayLibrary MSToolkit/RAMP MSToolkit)
 add_executable(sqt2pin Sqt2Pin.cpp )
 target_link_libraries(sqt2pin converters perclibrary ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP  ArrayLibrary )
 install(TARGETS sqt2pin DESTINATION bin)
+
+
+
+IF(STATIC)
+  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+ENDIF()

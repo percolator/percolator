@@ -20,8 +20,10 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+
+
 #ifdef WIN32
-#include <double.h>
+//#include <double.h>
 #define isfinite _finite
 #endif
 #include <set>

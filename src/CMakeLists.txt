@@ -1,7 +1,7 @@
 set(CMAKE_CXX_FLAGS "-O3")
 set(CMAKE_C_FLAGS "-O3 ")
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
 set(CMAKE_C_FLAGS_RELEASE "-O3 ")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -22,14 +22,9 @@ ENDIF(APPLE)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
-foreach(i ${configurefiles})
-  string(REPLACE ".cmake" "" myReplFile "${i}")
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
-endforeach()
-
 find_package(Xsd REQUIRED)
 find_package(XercesC REQUIRED)
+
 include_directories(${XERCESC_INCLUDE_DIR})
 include_directories(${XSD_INCLUDE_DIR})
 
@@ -38,34 +33,66 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 set(xsdfiles  ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 
-# --root-element experiment --root-element frag_spectrum_scan
+#set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
+set( xdr_flags  "" )
+
 add_custom_command(
   OUTPUT ${xsdfiles}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-insertion XDR --generate-extraction XDR  --generate-serialization --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/xml/percolator_in.xsd
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/xml/percolator_in.xsd
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/xml/percolator_in.xsd
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-ADD_DEFINITIONS(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -D_NOSQLITE)
+add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -D_NOSQLITE)
 add_subdirectory(ArrayLibrary)
 
 include_directories(.)
-add_subdirectory(converters)
+
+if(NOT EXCLUDE_CONVERTERS)
+  add_subdirectory(converters)
+endif()
 
 include_directories(. ArrayLibrary)
 
 # main.cpp
 
-add_library(perclibrary ${xsdfiles} parser.cxx serializer.cxx  BaseSpline.cpp DescriptionOfCorrect.cpp  MassHandler.cpp  PSMDescription.cpp   ResultHolder.cpp  SetHandler.cpp StdvNormalizer.cpp   svm.cpp   Caller.cpp Enzyme.cpp  Globals.cpp Normalizer.cpp PercolatorCInterface.cpp  SanityCheck.cpp   UniNormalizer.cpp      DataSet.cpp FeatureNames.cpp  LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp    Scores.cpp  SqtSanityCheck.cpp  ssl.cpp EludeModel.cpp )
+add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx  BaseSpline.cpp DescriptionOfCorrect.cpp  MassHandler.cpp  PSMDescription.cpp   ResultHolder.cpp  SetHandler.cpp StdvNormalizer.cpp   svm.cpp   Caller.cpp Enzyme.cpp  Globals.cpp Normalizer.cpp PercolatorCInterface.cpp  SanityCheck.cpp   UniNormalizer.cpp      DataSet.cpp FeatureNames.cpp  LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp    Scores.cpp  SqtSanityCheck.cpp  ssl.cpp EludeModel.cpp )
 
 add_executable(percolator main.cpp)
+
+IF(STATIC)
+  set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC ON)
+ENDIF()
+
+
+
+if(STATIC AND MINGW)
+  find_file(XERCESC_STATIC_LIBRARY libxerces-c.a HINTS
+     /usr/i686-pc-mingw32/sys-root/mingw/lib/
+  )
+  message("XERCESC_STATIC_LIBRARY=${XERCESC_STATIC_LIBRARY}")
+  set( XERCESC_LIBRARIES ${XERCESC_STATIC_LIBRARY} )
+  if(NOT XERCESC_STATIC_LIBRARY)
+    message(FATAL_ERROR "could not find the static library libxerces-c.a")
+  endif()
+  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+
+
+# 
+#
+#
+
+#
+#
+# 
+#
+
+endif()
+
 
 target_link_libraries(percolator perclibrary ArrayLibrary pthread dl ${XERCESC_LIBRARIES})
 
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
 
 add_subdirectory(qvality)
-
 add_subdirectory(elude)
-
-
