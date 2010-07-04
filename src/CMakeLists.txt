@@ -76,17 +76,6 @@ if(STATIC AND MINGW)
     message(FATAL_ERROR "could not find the static library libxerces-c.a")
   endif()
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-
-
-# 
-#
-#
-
-#
-#
-# 
-#
-
 endif()
 
 
