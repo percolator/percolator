@@ -33,8 +33,13 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 set(xsdfiles  ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 
-#set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
-set( xdr_flags  "" )
+if(MINGW)
+# Installing xdr on mingw is not trivial. Maybe it could be fixed.
+  set( xdr_flags  "" )
+else()
+  set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
+endif()
+
 
 add_custom_command(
   OUTPUT ${xsdfiles}   

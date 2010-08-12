@@ -1,6 +1,7 @@
 # If you run Ubuntu 10.04 Linux on a x86_64 computer
 
-sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake
+sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake libtokyocabinet-dev
+
 
 # the Ubuntu package xsdcxx is as of 2010-06-16 version 3.2 and we want version 3.3
 # so we download it from the Codesynthesis home page
@@ -13,10 +14,11 @@ mkdir /tmp/percolatorInstall
 cd /tmp/percolatorBuild
 
 cmake -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=FALSE -DCMAKE_INSTALL_PREFIX=/tmp/percolatorInstall -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu /path/to/the/percolator/source
-make -j8
+make
 make install
 
 
 
+( right now "make -j8" seems to fail ).
 
 

@@ -14,7 +14,7 @@ endforeach()
 set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.hxx )
 add_custom_command(
   OUTPUT ${mzIdentMLxsdfiles}  
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization --root-element-all --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization  --root-element-all --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -26,9 +26,9 @@ endforeach()
 add_subdirectory(MSToolkit)
 add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
-add_executable(lightparse lightparse.cpp  ${xsdfiles} ${CMAKE_SOURCE_DIR}/src/parser.cxx )
-target_link_libraries(lightparse ${XERCESC_LIBRARIES})
-install(TARGETS lightparse DESTINATION bin)
+#add_executable(lightparse lightparse.cpp  ${xsdfiles} ${CMAKE_SOURCE_DIR}/src/parser.cxx )
+#target_link_libraries(lightparse ${XERCESC_LIBRARIES})
+#install(TARGETS lightparse DESTINATION bin)
 
 macro(gengetoptmacro progname)
 add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c   ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h 
