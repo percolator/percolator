@@ -161,6 +161,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.",
     int m = cmd.getInt("m", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
   }
+
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }
@@ -174,6 +175,7 @@ and test set, -1 -- negative train set, -2 -- negative in test set.",
 }
 
 void Sqt2Pin::run() {
+
 
   if ( xmlOutputFN.size() != 0 ) {
     xercesc::XMLPlatformUtils::Initialize ();

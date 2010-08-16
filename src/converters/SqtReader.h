@@ -16,6 +16,8 @@ public:
 	                  calcPTMs(false),
 	                  isotopeMass(false),
 	                  pngasef(false),
+                          calcDOC(false),
+                          hitsPerSpectrum(1),
 	                  reversedFeaturePattern(""){};
 	  bool calcQuadraticFeatures;
 	  bool calcAAFrequencies;
