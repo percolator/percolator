@@ -28,7 +28,7 @@ if [ -d "$buildDir" ]; then
     rm -r $buildDir
 fi
 if [ -d "$installDir" ]; then
-    rm -r $buildDir
+    rm -r $installDir
 fi
 if [ -d "$home/percolator" ]; then
     rm -r -f $home/percolator
