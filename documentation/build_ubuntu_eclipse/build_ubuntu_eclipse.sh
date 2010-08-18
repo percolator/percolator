@@ -1,15 +1,15 @@
 #!/bin/sh
 # Mattia Tomasoni - Percolator Project
 # Script that builds Percolator as an Eclipse Project
+# Parameters: none
 
 ###############################
 # USER MUST SET THESE VARIABLES
 ###############################
 home=/home/mattia # location where the percolator source from the repositories will be stored
 buildDir=/home/mattia/percolatorBuild # location where it will be built
+installDir=/home/mattia/percolatorInstall # location where it will be installed
 codesynthesisDir=/home/mattia/codesynthesis # location for the cosesynthesis library
-
-
 
 # install necessary libraries
 set -e # as soon as a command fails terminate this script
@@ -25,6 +25,9 @@ if [ -d "$codesynthesisDir" ]; then
     rm -r $codesynthesisDir
 fi
 if [ -d "$buildDir" ]; then
+    rm -r $buildDir
+fi
+if [ -d "$installDir" ]; then
     rm -r $buildDir
 fi
 if [ -d "$home/percolator" ]; then
@@ -60,13 +63,12 @@ echo "**********"
 echo "STEP 4 running cmake..." # run cmake with Eclipse CDT4 option
 echo "**********"
 cd $buildDir
-cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=TRUE -DCMAKE_INSTALL_PREFIX=/home/mattia/percolatorInstall -DCMAKE_PREFIX_PATH=/home/mattia/codesynthesis/xsd-3.3.0-x86_64-linux-gnu/ /home/mattia/percolator
+cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=TRUE -DCMAKE_INSTALL_PREFIX=$installDir -DCMAKE_PREFIX_PATH=$codesynthesisDir/xsd-3.3.0-x86_64-linux-gnu/ $home/percolator
 echo "STEP 4 DONE."
 echo ""
 
 
 echo "**********"
 echo "SUCCESS!" $buildDir "contains a valid Eclipse Percolator project."
-\item \begin{verbatim} 
 echo "**********"
 echo ""
