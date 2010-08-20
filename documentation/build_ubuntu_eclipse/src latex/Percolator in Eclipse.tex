@@ -1,9 +1,8 @@
 \documentclass[11pt]{article}
 \usepackage[margin=2cm]{geometry}
-%\usepackage{verbatim}
 \usepackage{url}
-%\usepackage{graphicx}
-
+\usepackage[T1]{fontenc}
+\usepackage{courier}
 
 \title{\textbf{Percolator in Eclipse (Ubuntu)}}
 \author{
@@ -12,7 +11,7 @@
         %Arrheniuslaboratoriet, room A349\\
         %Department of Biochemistry and Biophysics,\\
         %Stockholm University\\
-        \url{Mattia.Tomasoni.8371@student.uu.se}
+        \texttt{Mattia.Tomasoni.8371@student.uu.se}
 }
 \date{\today}
 
@@ -25,23 +24,31 @@
 This tutorial will guide you through the necessary steps to get the Percolator source form the repositories, build it and import it into Eclipse. Debugging and version control (Git) will be possible from within Eclipse. I am running Ubuntu 10.04 LTS; Percolator is currently in its 1.14 version.
 Together with this tutorial:
 \begin{itemize}
-\item \url{build_ubuntu_eclipse.sh}
+\item \texttt{build\_ubuntu\_eclipse.sh}
+\item \texttt{install\_gdb\_printers.sh}
 \end{itemize}
 \end{abstract}
 
 \section*{\begin{normalsize}Get Eclipse\end{normalsize}}
-The latest to date Eclipse version for c++ developers can be downloaded at \url{http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/heliosr}. Download the appropriate version and run the executable \url{./eclipse}. No installation is needed.
+The latest to date Eclipse version for c++ developers can be downloaded at \url{http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/heliosr}. Download the appropriate version and run the executable \texttt{./eclipse}. No installation is needed.
 
 \section*{\begin{normalsize}Build Percolator as an Eclipse Project\end{normalsize}}
-We will now get Percolator from the repositories, ensure that the right libraries are installed and build it as a valid, debuggable Eclipse Project. This is done by invoking cmake with a special -G option that creates \url{.project} and \url{.cproject} files and and the ´´-D CMAKE\_BUILD\_TYPE'' option set to ``Debug''.
+We will now get Percolator from the repositories, ensure that the right libraries are installed and build it as a valid, debuggable Eclipse Project. This is done by invoking cmake with a special -G option that creates \texttt{.project} and \texttt{.cproject} files and and the ´´-D CMAKE\_BUILD\_TYPE'' option set to ``Debug''.
 \begin{itemize}
-\item customize the script \url{build_ubuntu_eclipse.sh} by assigning values to the variables under the section "USER MUST SET THESE VARIABLES".
+\item customize the script \texttt{build\_ubuntu\_eclipse.sh} by assigning values to the variables under the section "USER MUST SET THESE VARIABLES".
 \item run the script from any location. You might be asked to insert the superuser password. The script comprises of four steps and will hopefully terminate with the following message: ``SUCCESS! \url{buildDir} contains a valid Eclipse Percolator project.'', where \url{buildDir} is some legal directory in your system.
 \item In Eclipse: File $\rightarrow$ Import $\rightarrow$ General $\rightarrow$ Existing Project into Workspace. In ``Select root directory'' put \url{buildDir}. Keep ``Copy projects into workspace'' unchecked and click ``Finish''.
 \end{itemize}
-The Project will be build automatically (no manual invocation of \url{make} and \url{make install}). You can monitor the build process from Eclipse's console. When this terminates the executables will be available in the directory ``Binaries'' of the ``Project Explorer''.
+The Project will be build automatically (no manual invocation of \url{make} and \url{make install}). You can monitor the build process from Eclipse's console. When this terminates the executables will be available in the directory ``Binaries'' of the ``Project Explorer''. To run (or debug) an executable, add the appropriate command line arguments to the run configuration.
 
 For details on the creation of \url{.project} files with cmake, please refer to \url{http://www.vtk.org/Wiki/Eclipse_CDT4_Generator}.
+
+\section*{\begin{normalsize}Tweaking Eclipse for debugger (optional)\end{normalsize}}
+For better code inspection and debugging I suggest the following:
+\begin{itemize}
+\item change the source hover background (set by default to black!). Windows $\rightarrow$ Preferences $\rightarrow$ C/C++ $\rightarrow$ Editor; scroll down the meny ``Appearence color options'' and select ``Source hover background''; untick ``System Default'' and choose a more appropriate (light) color.
+\item Install STL support for GDB in order to get human readable prints (pretty-prints) of STL data structures during debugging. \url{http://sourceware.org/gdb/wiki/STLSupport}
+\end{itemize}
 
 \section*{\begin{normalsize}Version control in Eclipse\end{normalsize}}
 \begin{verbatim}
@@ -50,7 +57,8 @@ TODO
 (http://wiki.eclipse.org/EGit/User_Guide)
 
 Install EGit plugin (http://www.eclipse.org/egit/download/)
-   help -> install new software -> work with: "http://download.eclipse.org/egit/updates"
+   help -> install new software -> 
+    work with: "http://download.eclipse.org/egit/updates"
 
 Set up repository
    File -> Import -> Git -> clone

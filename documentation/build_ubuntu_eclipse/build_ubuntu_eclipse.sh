@@ -55,6 +55,7 @@ echo "**********"
 cd $home
 git clone git@github.com:percolator/percolator.git
 mkdir $buildDir
+mkdir $installDir
 echo "STEP 3 DONE."
 echo ""
 
