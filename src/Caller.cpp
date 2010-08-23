@@ -720,7 +720,7 @@ void Caller::readFiles() {
 					<< std::endl;
 			XMLString::release(&tmpStr);
 		}
-    	if (gistInput) {
+	} else if (gistInput) {
 	   	pCheck = new SanityCheck();
 		normal.readGist(forwardFN, decoyFN, 1);
 		shuffled.readGist(forwardFN, decoyFN, -1);
@@ -746,7 +746,6 @@ void Caller::readFiles() {
 	  */
 
 	}
-  }
 
 
 
