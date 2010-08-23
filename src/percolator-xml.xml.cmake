@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<experiment  xmlns="@percolator-in-namespace@" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://per-colator.com/percolator_in/10 file://@CMAKE_CURRENT_SOURCE_DIR@/percolator-xml.xsd" num_features="7" >
+<experiment  xmlns="@percolator-in-namespace@" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://github.com/percolator/percolator/raw/master/src/xml/percolator_in.xsd" num_features="7" >
 <!-- strange putting xmlns in percolator element will generate a parser error in xsde. Probably an xsde bug. /Erik Sjolund -->
 
 

@@ -219,7 +219,7 @@ void Sqt2Pin::run() {
 	//    pCheck = new SqtSanityCheck();
 	//    assert(pCheck);
 	std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-	std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;
+	std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " http://github.com/percolator/percolator/raw/master/src/xml/percolator_in.xsd\">" << std::endl;
 
 
 	std::string enzyme;
