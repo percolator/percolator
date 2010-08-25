@@ -43,11 +43,12 @@ The Project will be build automatically (no manual invocation of \url{make} and 
 
 For details on the creation of \url{.project} files with cmake, please refer to \url{http://www.vtk.org/Wiki/Eclipse_CDT4_Generator}.
 
-\section*{\begin{normalsize}Tweaking Eclipse for debugger (optional)\end{normalsize}}
-For better code inspection and debugging I suggest the following:
+\section*{\begin{normalsize}Tweaking Eclipse (optional)\end{normalsize}}
+For better code writing, inspection and debugging I suggest the following:
 \begin{itemize}
 \item change the source hover background (set by default to black!). Windows $\rightarrow$ Preferences $\rightarrow$ C/C++ $\rightarrow$ Editor; scroll down the meny ``Appearence color options'' and select ``Source hover background''; untick ``System Default'' and choose a more appropriate (light) color.
 \item Install STL support for GDB in order to get human readable prints (pretty-prints) of STL data structures during debugging by running the script \texttt{install\_gdb\_printers.sh} from any location; remember to customize the variables under the section "USER MUST SET THESE VARIABLES". For further details on STL support for GDB, please refer to \url{http://sourceware.org/gdb/wiki/STLSupport}
+\item change code auto-indentation in order to comply to Google C++ Style. Windows $\rightarrow$ Preferences $\rightarrow$ C/C++ $\rightarrow$ Code Style. Create a new profile with the ``New'' button and name it ``google''. A configuration window will open; under ``General Settings'', set ``Tab policy'' to ``Spaces only'' and ``Indentation size'' to ``2''. See \url{http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml} %in the ``Indent'' section un-tick the options ``Declaration relative to 'public', 'protected', 'private' '' and ``Statements within function body''.
 \end{itemize}
 
 \section*{\begin{normalsize}Version control in Eclipse\end{normalsize}}
