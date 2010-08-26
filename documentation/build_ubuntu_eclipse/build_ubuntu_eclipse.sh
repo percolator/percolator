@@ -8,7 +8,7 @@
 ###############################
 home=/home/mattia # location where the percolator source from the repositories will be stored
 buildDir=/home/mattia/percolatorBuild # location where it will be built
-installDir=/home/mattia/percolatorInstall # location where it will be installed
+installDir=/home/mattia/percolatorBuild # location where it will be installed
 codesynthesisDir=/home/mattia/codesynthesis # location for the cosesynthesis library
 
 # install necessary libraries
