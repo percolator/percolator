@@ -31,5 +31,7 @@ pi_0 = int(outputStr[39:42])
 # check whether pi_0 is within desired range
 if pi_0 < 590.9 or pi_0 > 653.1: 
   print "...TEST FAILED"
+  exit(1)
 else: 
   print "...TEST SUCCEEDED"
+  exit(0)
