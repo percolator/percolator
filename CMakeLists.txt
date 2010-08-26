@@ -79,10 +79,11 @@ install(DIRECTORY models DESTINATION bin)
 include(CPack)
 
 # I comment out the testing to avoid some compilation error /Erik Sjolund 2010-05-07
+# and I uncomment them because I need to run them now Mattia Aug 26 2010
 
 # Enabling CTest functionality
-#enable_testing()
+enable_testing()
 
 # Running system and unit level tests
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
