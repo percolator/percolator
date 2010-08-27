@@ -48,7 +48,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   call = callStream.str();
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   sqt2pin [options] target.sqt decoy.sqt output" << endl;
+  intro << "   sqt2pin [options] target.sqt decoy.sqt" << endl;
   intro << "   where target.sqt is the target sqt-file," << endl;
   intro << "     and decoy.sqt is the decoy sqt-file," << endl;
   intro
@@ -64,8 +64,8 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   // init
   CommandLineParser cmd(intro.str());
 
-  cmd.defineOption("x",
-      "XMLoutput",
+  cmd.defineOption("o",
+      "outputXML",
       "save output in an XML file",
       "filename");
   cmd.defineOption("m",
@@ -140,8 +140,8 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
   } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
 
-  if (cmd.optionSet("x")) {
-    xmlOutputFN = cmd.options["x"];
+  if (cmd.optionSet("o")) {
+    xmlOutputFN = cmd.options["o"];
   }
   if (cmd.optionSet("Q")) {
     parseOptions.calcQuadraticFeatures=true;
@@ -181,7 +181,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
 }
 
 void Sqt2Pin::run() {
-  if ( xmlOutputFN.size() != 0 ) {
+  //if ( xmlOutputFN.size() != 0 ) {
     // content of sqt files is merged. Results are printed on both cout and file
     ofstream xmlOutputStream; // stream for output XML file
     xmlOutputStream.open(xmlOutputFN.c_str());
@@ -256,7 +256,7 @@ void Sqt2Pin::run() {
     database.print(serXML);
     xmlOutputStream << "</experiment>" << std::endl;
     xmlOutputStream.close(); // close stream for output XML file
-  }
+  //}
   if (spectrumFile.size() > 0) {
     readRetentionTime(spectrumFile);
   }
