@@ -14,7 +14,7 @@
 #      SystemTest_Elude_BasicFunc
       
       # Correctness tests.
-#      SystemTest_Percolator_Correctness
+      SystemTest_Percolator_Correctness
 #      SystemTest_Qvality_Correctness
 #      SystemTest_Elude_Correctness
       
