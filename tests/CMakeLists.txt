@@ -14,14 +14,16 @@
 #      SystemTest_Elude_BasicFunc
       
       # Correctness tests.
-#      SystemTest_Percolator_Correctness
+      SystemTest_Percolator_Correctness
 #      SystemTest_Qvality_Correctness
 #      SystemTest_Elude_Correctness
       
       # Performance tests.
       SystemTest_Percolator_Performance
-#      SystemTest_Qvality_Performance
       SystemTest_Elude_Performance
+      SystemTest_Qvality_Performance
+#      SystemTest_Elude_Performance
+
       
       # Workload and other types of tests.
 #      SystemTest_Percolator_Workload

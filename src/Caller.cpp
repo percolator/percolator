@@ -122,9 +122,7 @@ string Caller::greeter() {
 }
 
 bool Caller::parseOptions(int argc, char **argv) {
-	// TODO: MATTIA xmlInputFN is not set for percolator. Can I set it here?
-	// was xmlInputFN=""; which gives Segmentation Fault
-  xmlInputFN=argv[1];
+  xmlInputFN="";
   xmlOutputFN="";
   ostringstream callStream;
   callStream << argv[0];
