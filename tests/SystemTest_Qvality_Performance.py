@@ -64,6 +64,6 @@ if countLines < 717 or countLines > 793:
   exit(1)
 
 # if no errors were encountered, succeed
-#os.popen("rm /tmp/percolatorPerformanceOutput.txt")
+os.popen("rm /tmp/percolatorPerformanceOutput.txt")
 print "...TEST SUCCEEDED"
 exit(0)
