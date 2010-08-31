@@ -25,7 +25,7 @@ processFile = os.popen("(" + path + "/percolator " + path +
   "/data/percolator_test/pin.xml 2>&1) > /tmp/percolatorPerformanceOutput.txt")
 exitStatus = processFile.close()
 if exitStatus is not None:
-  print "...TEST FAILED: percolator terminated with " + str(exitStatus) + "exit status"
+  print "...TEST FAILED: percolator terminated with " + str(exitStatus) + " exit status"
   exit(1)
 
 # the output line containing "New pi_0 estimate" is extracted and if its value is 
