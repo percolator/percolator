@@ -20,7 +20,7 @@
       
       # Performance tests.
       SystemTest_Percolator_Performance
-#      SystemTest_Qvality_Performance
+      SystemTest_Qvality_Performance
 #      SystemTest_Elude_Performance
       
       # Workload and other types of tests.

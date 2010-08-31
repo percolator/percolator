@@ -51,7 +51,7 @@ if extracted < 0.86 or extracted > 0.90:
 # the first line of the stdout (the one after the line beginning with "PSMId")
 # is extracted and if the value in the 4th column (posterior_error_prob) is 
 # greater than 10e-10 an error is reported
-processFile = open( "/tmp/percolatorPerformanceOutput.txt" )
+processFile = open("/tmp/percolatorPerformanceOutput.txt")
 output = ""
 line = processFile.readline()
 finished = False
@@ -74,6 +74,7 @@ if extracted > threshold:
   print "...TEST FAILED: posterior_error_prob is too high (" + str(extracted) + ")"
   exit(1)
 
+# if no errors were encountered, succeed
 os.popen("rm /tmp/percolatorPerformanceOutput.txt")
 print "...TEST SUCCEEDED"
 exit(0)
