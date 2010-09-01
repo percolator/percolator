@@ -16,7 +16,7 @@ os.popen("(" + path + "/qvality " + path +
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
-print "QVALITY PERFORMANCE (STEP 1): checking selected pi_0..."
+print "QVALITY PERFORMANCE (STEP 2): checking selected pi_0..."
 processFile = os.popen("grep \"Selecting pi_0\" " + 
   "/tmp/qvalityPerformanceOutput.txt")
 output = processFile.read()
@@ -28,7 +28,7 @@ if extracted < 0.86 or extracted > 0.90:
 # the number of lines of stdout (after the line beginning with "Score") until 
 # q-value < 0.01 are counted and an error is reported if their number is greater
 # than 755+/-5%
-print "QVALITY PERFORMANCE (STEP 1): checking values..."
+print "QVALITY PERFORMANCE (STEP 3): checking values..."
 processFile = open("/tmp/qvalityPerformanceOutput.txt")
 line = processFile.readline()
 finished = False
