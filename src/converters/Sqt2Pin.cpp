@@ -180,7 +180,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   return true;
 }
 
-void Sqt2Pin::run() {
+int Sqt2Pin::run() {
   //if ( xmlOutputFN.size() != 0 ) {
     // content of sqt files is merged. Results are printed on both cout and file
     ofstream xmlOutputStream; // stream for output XML file
@@ -260,7 +260,7 @@ void Sqt2Pin::run() {
   if (spectrumFile.size() > 0) {
     readRetentionTime(spectrumFile);
   }
-  return;
+  return 0;
 }
 
 void Sqt2Pin::readRetentionTime(string filename) {
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
   Sqt2Pin* pSqt2Pin = new Sqt2Pin();
   int retVal = -1;
   if (pSqt2Pin->parseOpt(argc, argv)) {
-    pSqt2Pin->run();
+    retVal = pSqt2Pin->run();
   }
   delete pSqt2Pin;
   Globals::clean();

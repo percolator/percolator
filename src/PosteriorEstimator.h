@@ -29,7 +29,7 @@ class PosteriorEstimator {
     virtual ~PosteriorEstimator();
     bool parseOptions(int argc, char** argv);
     string greeter();
-    void run();
+    int run();
     static void estimatePEP(vector<pair<double, bool> >& combined,
                             double pi0, vector<double>& peps,
                             bool includeNegativesInResult = false);

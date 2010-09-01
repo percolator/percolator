@@ -18,9 +18,8 @@ processFile = os.popen(os.path.join(path,"sqt2pin ") +
   os.path.join(path, "data/percolator_test/reverse.sqt"))
 exitStatus = processFile.close()
 if exitStatus is not None:
-  #print "...TEST FAILED: sqt2pin terminated with " + str(exitStatus) + " exit status"
-  #exit(1)
-  print "...WARNING: sqt2pin terminated with " + str(exitStatus) + " exit status"
+  print "...TEST FAILED: sqt2pin terminated with " + str(exitStatus) + " exit status"
+  exit(1)
 
 # running percolator on pin.xml with no options; 
 print "PERCOLATOR CORRECTNESS (STEP 2): running percolator with no options..."
