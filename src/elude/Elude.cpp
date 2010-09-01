@@ -37,7 +37,7 @@ using namespace std;
 
 // path to the library
 string RTPredictor::libPath =
-    "models";
+    "models/";
 
 // difference in hydrophobicity between parend and child when detecting CID fragments
 float RTPredictor::diff_hydrophobicity = 10.0;
