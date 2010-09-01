@@ -7,17 +7,21 @@ import sys
 
 
 path = os.path.dirname(sys.argv[0])
+if path == "":
+  path = "./"
 
 # running sqt2pin to generate pin.xml
 print "PERCOLATOR PERFORMANCE (STEP 1): running sqt2pin..." 
-os.popen(path + "/sqt2pin -o " + path + 
-  "/data/percolator_test/pin.xml " + path + "/data/percolator_test/target.sqt " 
-  + path + "/data/percolator_test/reverse.sqt")
+os.popen(os.path.join(path, "sqt2pin ") + "-o " + 
+  os.path.join(path, "data/percolator_test/pin.xml ") + 
+  os.path.join(path, "data/percolator_test/target.sqt ") + 
+  os.path.join(path, "data/percolator_test/reverse.sqt"))
 
 # running percolator on pin.xml; 
 print "PERCOLATOR PERFORMANCE (STEP 2): running percolator..."
-os.popen("(" + path + "/percolator -E " + path + 
-  "/data/percolator_test/pin.xml 2>&1) > /tmp/percolatorPerformanceOutput.txt")
+os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
+  os.path.join(path, "data/percolator_test/pin.xml") + 
+  " 2>&1) > /tmp/percolatorPerformanceOutput.txt")
 
 # the output line containing "New pi_0 estimate" is extracted and if its value is 
 # outside of 622+/-5% an error is reported

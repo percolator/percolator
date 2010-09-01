@@ -7,6 +7,8 @@ import sys
 
 
 path = os.path.dirname(sys.argv[0])
+if path == "":
+  path = "./"
 
 # running sqt2pin to generate pin.xml
 print "PERCOLATOR CORRECTNESS (STEP 1): running sqt2pin..." 

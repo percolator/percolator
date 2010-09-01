@@ -7,10 +7,15 @@ import sys
 
 
 path = os.path.dirname(sys.argv[0])
+if path == "":
+  path = "./"
 
 # running qvality
 print "QVALITY PERFORMANCE (STEP 1): running qvality..."
-os.popen("(" + os.path.join(path, "qvality ") + os.path.join(path, "data/qvality_test/target.xcorr ") + os.path.join(path, "data/qvality_test/null.xcorr ") + "2>&1) > /tmp/qvalityPerformanceOutput.txt")
+os.popen("(" + os.path.join(path, "qvality ") + 
+  os.path.join(path, "data/qvality_test/target.xcorr ") + 
+  os.path.join(path, "data/qvality_test/null.xcorr ") + 
+  "2>&1) > /tmp/qvalityPerformanceOutput.txt")
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
