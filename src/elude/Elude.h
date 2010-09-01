@@ -80,7 +80,7 @@ class RTPredictor {
     // load a model
     void loadSVRModel();
     // get all the model files from the library
-    static vector<string> getModelFiles();
+    vector<string> getModelFiles();
     // load a model from the library
     void loadLibModel();
     // load the model that best fits the training data from the library
