@@ -35,10 +35,6 @@
 
 using namespace std;
 
-// path to the library
-string RTPredictor::libPath =
-    "models/";
-
 // difference in hydrophobicity between parend and child when detecting CID fragments
 float RTPredictor::diff_hydrophobicity = 10.0;
 
@@ -257,6 +253,11 @@ bool RTPredictor::parseOptions(int argc, char** argv) {
                    "lts_coverage",
                    "Specifies the fraction of data used in calibrating a model via LTS",
                    "value");
+  cmd.defineOption("w",
+                   "lib-path",
+                   "Specifies the path to the library",
+                   "filename");
+
   // EXPERIMENTAL; specify the slack penalty that is to be used
   //cmd.defineOption("b", "slack_penalty", "Specify the slack penalty for the index SVR ", "value");
   // parse command line
@@ -273,6 +274,9 @@ bool RTPredictor::parseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("e")) {
     testFile = cmd.options["e"];
+  }
+  if (cmd.optionSet("w")) {
+    libPath = cmd.options["w"];
   }
   if (cmd.optionSet("s")) {
     saveModelFile = cmd.options["s"];
