@@ -13,7 +13,6 @@ import sys
 def testStandalone():
   print "TEST 1 (train a model)..."
   path = os.path.dirname(sys.argv[0])
-  print path
   #path = "/scratch/lumi_work/projects/elude_ptms/src/bin"
   # folder where the test data is located
   testFolder = os.path.join(path, "data/elude_test/standalone/")
@@ -22,7 +21,6 @@ def testStandalone():
   # path to elude 
   eludePath = os.path.join("./", path, "elude")
   
-  print eludePath
   # make a temporary folder to store the output files 
   if os.path.isdir(tmpFolder):
     removeDir(tmpFolder)
@@ -107,6 +105,8 @@ def testCalibration():
   path = os.path.dirname(sys.argv[0])
   # folder where the test data is located
   testFolder = os.path.join(path, "data/elude_test/calibrate_data/")
+  # path to the library
+  libPath = os.path.join(path, "models/")
   # temporary folder to store the output files 
   tmpFolder = os.path.join(path, "data/elude_test/tmp/")
   # path to elude 
@@ -118,17 +118,19 @@ def testCalibration():
   os.mkdir(tmpFolder)
  
   # run Elude  
-  os.system(eludePath + " -t " + testFolder + "calibrate.txt" +  " -e " + testFolder + "test.txt -o " + tmpFolder + "out " + "-a -u -x -v 5 2> " + tmpFolder + "log")
+  if not libPath.endswith("/"):
+    libPath = libPath + "/"
+  os.system(eludePath + " -t " + testFolder + "calibrate.txt" +  " -e " + testFolder + "test.txt -o " + tmpFolder + "out -w " + libPath +  " -a -u -x -v 5 2> " + tmpFolder + "log")
 
   # check the performance 
   f = open(tmpFolder + "log")
-  lines = f.readlines(279) 
-  if (lines[275].find("0.943") == -1) or (lines[277].find("43.17") == -1):
+  lines = f.readlines(300) 
+  if (lines[296].find("0.943") == -1) or (lines[298].find("43.11") == -1):
     removeDir(tmpFolder)
     failTest("Elude Test 2: Elude calibration: Incorrect performance measures")
 
   # check the predictions 
-  if not testFileContent(tmpFolder + "out", "1743", 1719, "K.IGDYAGIK.W\t20.8995\t22.1232"):
+  if not testFileContent(tmpFolder + "out", "1743", 1719, "K.IGDYAGIK.W\t21.1112\t22.1232"):
     removeDir(tmpFolder)
     failTest("Elude Test 2: Elude calibration: Incorrect predictions in the output file")
 
@@ -178,7 +180,7 @@ def failTest(message):
 ########################## MAIN ##########################
 print "\nELUDE PERFORMANCE" 
 
-#testStandalone()
+testStandalone()
 testCalibration()
 
 print "ALL TESTS COMPLETED SUCCESSFULLY\n"
