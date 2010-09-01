@@ -124,7 +124,7 @@ class RTPredictor {
     // how many peptides should be included in the time window reported (by default 95%)
     static float fractionPeptides;
     // path to the library
-    static string libPath;
+    string libPath;
     // true if the non tryptic peptides are to be removed
     bool removeNEnzymatic;
     // true if the test file includes the observed rt
