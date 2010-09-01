@@ -7,30 +7,36 @@ import sys
 
 
 path = os.path.dirname(sys.argv[0])
+if path == "":
+  path = "./"
 
 # running sqt2pin to generate pin.xml
 print "PERCOLATOR PERFORMANCE (STEP 1): running sqt2pin..." 
-os.popen(path + "/sqt2pin -o " + path + 
-  "/data/percolator_test/pin.xml " + path + "/data/percolator_test/target.sqt " 
-  + path + "/data/percolator_test/reverse.sqt")
+os.popen(os.path.join(path, "sqt2pin ") + "-o " + 
+  os.path.join(path, "data/percolator_test/pin.xml ") + 
+  os.path.join(path, "data/percolator_test/target.sqt ") + 
+  os.path.join(path, "data/percolator_test/reverse.sqt"))
 
 # running percolator on pin.xml; 
 print "PERCOLATOR PERFORMANCE (STEP 2): running percolator..."
-os.popen("(" + path + "/percolator " + path + 
-  "-E /data/percolator_test/pin.xml 2>&1) > /tmp/percolatorPerformanceOutput.txt")
+os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
+  os.path.join(path, "data/percolator_test/pin.xml") + 
+  " 2>&1) > /tmp/percolatorPerformanceOutput.txt")
 
 # the output line containing "New pi_0 estimate" is extracted and if its value is 
 # outside of 622+/-5% an error is reported
+print "PERCOLATOR PERFORMANCE (STEP 3): checking new pi_0 estimate..."
 processFile = os.popen("grep \"New pi_0 estimate\" " + 
   "/tmp/percolatorPerformanceOutput.txt")
 output = processFile.read()
 extracted = float(output[39:42])
 if extracted < 590.9 or extracted > 653.1: 
-  print "...TEST FAILED: pi_0 estimate on merged list outside of desired range (590.9, 653.1)"
+  print "...TEST FAILED: new pi_0 estimate on merged list outside of desired range (590.9, 653.1)"
   exit(1)
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
+print "PERCOLATOR PERFORMANCE (STEP 3): checking selected new pi_0 estimate..."
 processFile = os.popen("grep \"Selecting pi_0\" " +
   "/tmp/percolatorPerformanceOutput.txt")
 output = processFile.read()
@@ -42,6 +48,7 @@ if extracted < 0.86 or extracted > 0.90:
 # the first line of the stdout (the one after the line beginning with "PSMId")
 # is extracted and if the value in the 4th column (posterior_error_prob) is 
 # greater than 10e-10 an error is reported
+print "PERCOLATOR PERFORMANCE (STEP 3): checking posterior_error_prob..."
 processFile = open("/tmp/percolatorPerformanceOutput.txt")
 output = ""
 line = processFile.readline()

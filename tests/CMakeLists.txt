@@ -15,7 +15,7 @@
       
       # Correctness tests.
       SystemTest_Percolator_Correctness
-#      SystemTest_Qvality_Correctness
+      SystemTest_Qvality_Correctness
 #      SystemTest_Elude_Correctness
       
       # Performance tests.
