@@ -355,7 +355,7 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
   return pi0;
 }
 
-void PosteriorEstimator::run() {
+int PosteriorEstimator::run() {
   ifstream target(targetFile.c_str(), ios::in), decoy(decoyFile.c_str(),
                                                       ios::in);
   istream_iterator<double> tarIt(target), decIt(decoy);
@@ -418,6 +418,7 @@ void PosteriorEstimator::run() {
   // Logistic regression on the data
   estimatePEP(combined, pi0, peps);
   finishStandalone(combined, peps, pvals, pi0);
+  return 0;
 }
 
 string PosteriorEstimator::greeter() {

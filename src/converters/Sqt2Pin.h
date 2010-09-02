@@ -28,7 +28,7 @@ public:
 	virtual ~Sqt2Pin();
 	std::string greeter();
 	bool parseOpt(int argc, char **argv);
-	void run();
+	int run();
 	void readRetentionTime(std::string filename);
 
 protected:

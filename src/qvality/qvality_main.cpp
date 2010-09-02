@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
      PosteriorEstimator* pCaller = new PosteriorEstimator();
      int retVal = -1;
      if (pCaller->parseOptions(argc, argv)) {
-          pCaller->run();
+       retVal=pCaller->run();
      }
      delete pCaller;
      Globals::clean();

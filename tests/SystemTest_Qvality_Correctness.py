@@ -19,9 +19,8 @@ processFile = os.popen("(" + os.path.join(path, "qvality ") +
 
 exitStatus = processFile.close()
 if exitStatus is not None:
-  #print "...TEST FAILED: qvality terminated with " + str(exitStatus) + " exit status"
-  #exit(1)
-  print "...WARNING: qvality terminated with " + str(exitStatus) + " exit status"
+  print "...TEST FAILED: qvality terminated with " + str(exitStatus) + " exit status"
+  exit(1)
 
 # if no errors were encountered, succeed
 os.popen("rm /tmp/qvalityCorrectnessOutput.txt")
