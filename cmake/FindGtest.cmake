@@ -1,0 +1,4 @@
+find_library(GTEST_LIBRARIES NAMES libgtest.a)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Gtest DEFAULT_MSG GTEST_LIBRARIES)
+

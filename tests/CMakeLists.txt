@@ -44,8 +44,9 @@
 
 # Google tests are built explicitely.
 IF (GOOGLE_TEST STREQUAL TRUE)
-  include_directories (${PERCOLATOR_SOURCE_DIR}/src)
+  find_package(Gtest REQUIRED)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${GTEST_LIBRARY_DIR}) 
   add_executable (gtest_unit simple_tests.cpp)
-  target_link_libraries (gtest_unit libgtest.a perclibrary ArrayLibrary MSToolkit)
+  target_link_libraries (gtest_unit libgtest.a perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES})
   install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
 ENDIF (GOOGLE_TEST STREQUAL TRUE)
