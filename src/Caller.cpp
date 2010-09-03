@@ -933,7 +933,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   if (selectedCpos <= 0 || selectedCneg <= 0) {
     xv_train.resize(xval_fold);
     xv_test.resize(xval_fold);
-    fullset.createXvalSets(xv_train, xv_test, xval_fold);
+    fullset.createXvalSetsBySpectrum(xv_train, xv_test, xval_fold);
     if (selectionfdr <= 0.0) {
       selectionfdr = test_fdr;
     }

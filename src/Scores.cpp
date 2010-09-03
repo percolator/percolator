@@ -24,6 +24,7 @@
 #include <vector>
 #include <string>
 #include <math.h>
+#include <map>
 using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -66,9 +67,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   os << "    <pep>" << sh.pPSM->pep << "</pep>" << endl;
   if (DataSet::getCalcDoc()) os << "    <retentionTime observed=\""
       << PSMDescription::unnormalize(sh.pPSM->retentionTime)
-      << "\" predicted=\""
-      << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
-      << endl;
+  << "\" predicted=\""
+  << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
+  << endl;
   string peptide = sh.pPSM->getPeptide();
   string::size_type pos1 = peptide.find('.');
   string n = peptide.substr(0, pos1);
@@ -78,9 +79,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   os << "    <peptide n=\"" << n << "\" c=\"" << c << "\" seq=\""
       << centpep << "\"/>" << endl;
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
-      != sh.pPSM->proteinIds.end(); ++pid) {
+  != sh.pPSM->proteinIds.end(); ++pid) {
     os << "    <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-        << "</protein_id>" << endl;
+                                                            << "</protein_id>" << endl;
   }
   os << "  </psm>" << endl;
   return os;
@@ -106,7 +107,7 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
     a->estimatePi0();
     a->calcQ(fdr);
-//    a->calcPep();
+    //    a->calcPep();
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores));
   }
@@ -114,11 +115,11 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     weedOutRedundant();
   }
   neg = count_if(scores.begin(),
-                 scores.end(),
-                 mem_fun_ref(&ScoreHolder::isDecoy));
+      scores.end(),
+      mem_fun_ref(&ScoreHolder::isDecoy));
   pos = count_if(scores.begin(),
-                 scores.end(),
-                 mem_fun_ref(&ScoreHolder::isTarget));
+      scores.end(),
+      mem_fun_ref(&ScoreHolder::isTarget));
   targetDecoySizeRatio = pos / max(1.0, (double)neg);
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
   estimatePi0();
@@ -130,7 +131,7 @@ void Scores::printRetentionTime(ostream& outs, double fdr) {
     if (it->label != -1) outs
         << PSMDescription::unnormalize(it->pPSM->retentionTime) << "\t"
         << PSMDescription::unnormalize(doc.estimateRT(it->pPSM->retentionFeatures))
-        << "\t" << it->pPSM->peptide << endl;
+    << "\t" << it->pPSM->peptide << endl;
   }
 }
 
@@ -180,7 +181,7 @@ uint32_t Scores::lcg_rand() {
 }
 
 void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
-                            const unsigned int xval_fold) {
+    const unsigned int xval_fold) {
   train.resize(xval_fold);
   test.resize(xval_fold);
   vector<size_t> remain(xval_fold);
@@ -229,6 +230,116 @@ void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
   }
 }
 
+/**
+ * Divides the PSMs from pin file into xval_fold cross-validation sets based on
+ * their spectrum scan number
+ * train, test: vectors containing folders for PSMs
+ * xval_fold: number of folders in train and test
+ */
+void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
+    test, const unsigned int xval_fold) {
+  // set the number of cross validation folders for train and test to xval_fold
+  train.resize(xval_fold);
+  test.resize(xval_fold);
+  // remain keeps track of residual space available in each folder
+  vector<size_t> remain(xval_fold);
+  // set values for remain: being empty, each folder is assigned (tot number of
+  // scores / tot number of folders)
+  size_t fold = xval_fold, ix = scores.size();
+  while (fold--) {
+    remain[fold] = ix / (fold + 1);
+    ix -= remain[fold];
+  }
+
+  // store possible spectra with relative scores
+  multimap<unsigned int,ScoreHolder> spectraScores;
+  // populate spectraScores
+  for (unsigned int j = 0; j < scores.size(); j++) {
+    ScoreHolder sc = scores.at(j);
+    string spectrumStr;
+    if(sc.pPSM->id.substr(0,6)=="target")
+      spectrumStr = sc.pPSM->id.substr(7,6);
+    else
+      if(sc.pPSM->id.substr(0,7)=="reverse")
+        spectrumStr = sc.pPSM->id.substr(8,6);
+      else {
+        cerr << "unexpected format for id attribute in peptideSpectrumMatch "
+            "element in the pin input file";
+        exit(-1);
+      }
+    unsigned int spectrum = atoi(spectrumStr.c_str());
+    spectraScores.insert(pair<unsigned int,ScoreHolder>(spectrum, sc));
+  }
+
+  // put scores into the folders; choose a folder (at random) and change it only
+  // when scores from a new spectra are encountered
+  // note: this works because multimap is an ordered container!
+  unsigned int previousSpectrum = spectraScores.begin()->first;
+  size_t randIndex = lcg_rand() % xval_fold;
+  for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin();
+      it != spectraScores.end(); ++it) {
+    //TODO: decoy scoreHolders are empty?!?!
+    //cout << "  [" << (*it).first << ", " << (*it).second << "]" << endl;
+
+    // if current score is from a different spectra than tho one encountered in
+    // the previous iteration, choose new folder
+    if(previousSpectrum != (*it).first){
+      randIndex = lcg_rand() % xval_fold;
+      // allow only indexes of folders that are non-full
+      while(remain[randIndex] == 0){
+        randIndex = lcg_rand() % xval_fold;
+      }
+    }
+
+    // insert
+    for (unsigned int i = 0; i < xval_fold; i++) {
+      if (i == randIndex) {
+        test[i].scores.push_back((*it).second);
+      } else {
+        train[i].scores.push_back((*it).second);
+      }
+    }
+
+    // update number of free position for used folder
+    --remain[randIndex];
+    // set previous spectrum to current one for next iteration
+    previousSpectrum = (*it).first;
+  }
+
+  // calculate ratios of target over decoy for train and test set
+  vector<ScoreHolder>::const_iterator it;
+  for (unsigned int i = 0; i < xval_fold; i++) {
+    train[i].pos = 0;
+    train[i].neg = 0;
+//    cout << "##############################"<<endl;
+//    cout << i << " TRAIN" << endl;
+//    cout << "##############################"<<endl;
+    for (it = train[i].begin(); it != train[i].end(); it++) {
+      //cout << it->pPSM->id << endl;
+      if (it->label == 1) {
+        train[i].pos++;
+      } else {
+        train[i].neg++;
+      }
+    }
+    train[i].targetDecoySizeRatio = train[i].pos / (double)train[i].neg;
+    test[i].pos = 0;
+    test[i].neg = 0;
+//    cout << "##############################"<<endl;
+//    cout << i << " TEST" << endl;
+//    cout << "##############################"<<endl;
+    for (it = test[i].begin(); it != test[i].end(); it++) {
+      //cout << it->pPSM->id << endl;
+      if (it->label == 1) {
+        test[i].pos++;
+      } else {
+        test[i].neg++;
+      }
+    }
+    test[i].targetDecoySizeRatio = test[i].pos / (double)test[i].neg;
+  }
+}
+
 void Scores::normalizeScores(double fdr) {
   // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit 
   unsigned int medianIndex = std::max(0u,neg/2u),decoys=0u;
@@ -242,7 +353,7 @@ void Scores::normalizeScores(double fdr) {
     if (it->label == -1) {
       if(++decoys==medianIndex) {
         median = it->score;
-		break;
+        break;
       }
     }
   }
@@ -250,7 +361,7 @@ void Scores::normalizeScores(double fdr) {
   double diff = q1-median;
   if (diff<=0)
     diff=1.0;
-	
+
   for (it = scores.begin(); it != scores.end(); ++it) {
     it->score -= q1;
     it->score /= diff;
@@ -327,7 +438,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 }
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
-                                         const double cpos) {
+    const double cpos) {
   unsigned int ix1 = 0, ix2 = data.negatives, p = 0;
   for (ix1 = 0; ix1 < size(); ix1++) {
     if (scores[ix1].label == 1) {
@@ -383,7 +494,7 @@ void Scores::setDOCFeatures() {
 }
 
 int Scores::getInitDirection(const double fdr, vector<double>& direction,
-                             bool findDirection) {
+    bool findDirection) {
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
@@ -445,9 +556,9 @@ double Scores::estimatePi0() {
   vector<pair<double, bool> > combined;
   vector<double> pvals;
   transform(scores.begin(),
-            scores.end(),
-            back_inserter(combined),
-            mem_fun_ref(&ScoreHolder::toPair));
+      scores.end(),
+      back_inserter(combined),
+      mem_fun_ref(&ScoreHolder::toPair));
   // Estimate pi0
   PosteriorEstimator::getPValues(combined, pvals);
   pi0 = PosteriorEstimator::estimatePi0(pvals);
@@ -457,9 +568,9 @@ double Scores::estimatePi0() {
 void Scores::calcPep() {
   vector<pair<double, bool> > combined;
   transform(scores.begin(),
-            scores.end(),
-            back_inserter(combined),
-            mem_fun_ref(&ScoreHolder::toPair));
+      scores.end(),
+      back_inserter(combined),
+      mem_fun_ref(&ScoreHolder::toPair));
   vector<double> peps;
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, pi0, peps, true);
