@@ -10,12 +10,12 @@ installDir=$src
 
 # install necessary libraries
 set -e # as soon as a command fails terminate this script
-sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake libtokyocabinet-dev git-core zlib1g zlib1g-dev build-essential libgtest-dev
+sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake libtokyocabinet-dev git-core zlib1g zlib1g-dev build-essential #libgtest-dev
 
 
 # get codesynthesis
 echo "*******"
-echo "STEP 1: installing codesynthesis library..."
+echo "STEP 1: installing codesynthesis library and google test..."
 echo "*******"
 cd $src
 if [ ! -d "xsd-3.3.0-x86_64-linux-gnu" ]; then
@@ -23,6 +23,20 @@ wget http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/xsd-3.3.0-x86_64
     tar xfj xsd-3.3.0-x86_64-linux-gnu.tar.bz2
     rm xsd-3.3.0-x86_64-linux-gnu.tar.bz2
 fi
+
+if [ ! -d "gtest-1.5.0" ]; then
+wget http://googletest.googlecode.com/files/gtest-1.5.0.tar.gz
+    tar xzf gtest-1.5.0.tar.gz
+    rm gtest-1.5.0.tar.gz
+    cd gtest-1.5.0
+    mkdir build
+    cd build 
+    cmake ../ 
+    make 
+    cd $src 
+fi
+
+
 echo "STEP 1 DONE."
 echo ""
 
