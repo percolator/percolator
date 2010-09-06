@@ -122,6 +122,7 @@ inline ostream& operator<<(ostream& out, PSMDescription& psm) {
   // Since operator<< is a friend of the Point class, we can access
   // Point's members directly.
   out << "Peptide: " << psm.peptide << endl;
+  out << "Spectrum scan number: " << psm.scan << endl;
   out << "Retention time, predicted retention time: " << psm.retentionTime
       << ", " << psm.predictedTime;
   out << "Retention features: ";

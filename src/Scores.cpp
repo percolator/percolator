@@ -256,19 +256,7 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   // populate spectraScores
   for (unsigned int j = 0; j < scores.size(); j++) {
     ScoreHolder sc = scores.at(j);
-    string spectrumStr;
-    if(sc.pPSM->id.substr(0,6)=="target")
-      spectrumStr = sc.pPSM->id.substr(7,6);
-    else
-      if(sc.pPSM->id.substr(0,7)=="reverse")
-        spectrumStr = sc.pPSM->id.substr(8,6);
-      else {
-        cerr << "unexpected format for id attribute in peptideSpectrumMatch "
-            "element in the pin input file";
-        exit(-1);
-      }
-    unsigned int spectrum = atoi(spectrumStr.c_str());
-    spectraScores.insert(pair<unsigned int,ScoreHolder>(spectrum, sc));
+    spectraScores.insert(pair<unsigned int,ScoreHolder>(sc.pPSM->scan, sc));
   }
 
   // put scores into the folders; choose a folder (at random) and change it only
@@ -278,10 +266,11 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   size_t randIndex = lcg_rand() % xval_fold;
   for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin();
       it != spectraScores.end(); ++it) {
-    //TODO: decoy scoreHolders are empty?!?!
+    // TODO: decoy scoreHolders are empty?
+    // A bit suspicious although it seems to be the desired behavior.
     //cout << "  [" << (*it).first << ", " << (*it).second << "]" << endl;
 
-    // if current score is from a different spectra than tho one encountered in
+    // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new folder
     if(previousSpectrum != (*it).first){
       randIndex = lcg_rand() % xval_fold;
@@ -290,7 +279,6 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
         randIndex = lcg_rand() % xval_fold;
       }
     }
-
     // insert
     for (unsigned int i = 0; i < xval_fold; i++) {
       if (i == randIndex) {
@@ -299,7 +287,6 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
         train[i].scores.push_back((*it).second);
       }
     }
-
     // update number of free position for used folder
     --remain[randIndex];
     // set previous spectrum to current one for next iteration
@@ -311,9 +298,6 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   for (unsigned int i = 0; i < xval_fold; i++) {
     train[i].pos = 0;
     train[i].neg = 0;
-//    cout << "##############################"<<endl;
-//    cout << i << " TRAIN" << endl;
-//    cout << "##############################"<<endl;
     for (it = train[i].begin(); it != train[i].end(); it++) {
       //cout << it->pPSM->id << endl;
       if (it->label == 1) {
@@ -325,9 +309,6 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
     train[i].targetDecoySizeRatio = train[i].pos / (double)train[i].neg;
     test[i].pos = 0;
     test[i].neg = 0;
-//    cout << "##############################"<<endl;
-//    cout << i << " TEST" << endl;
-//    cout << "##############################"<<endl;
     for (it = test[i].begin(); it != test[i].end(); it++) {
       //cout << it->pPSM->id << endl;
       if (it->label == 1) {

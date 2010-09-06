@@ -61,14 +61,14 @@ using namespace xercesc;
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
-  pNorm(NULL),
+      pNorm(NULL),
       pCheck(NULL),
       svmInput(NULL),
       modifiedFN(""),
       modifiedDecoyFN(""),
       forwardFN(""),
       decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-  decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
+      decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
       weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
       docFeatures(false), reportPerformanceEachIteration(false),
       reportUniquePeptides(false), test_fdr(0.01), selectionfdr(0.01),
@@ -113,8 +113,8 @@ string Caller::greeter() {
   oss << "Percolator version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss
-      << "Copyright (c) 2006-9 University of Washington. All rights reserved."
-      << endl;
+  << "Copyright (c) 2006-9 University of Washington. All rights reserved."
+  << endl;
   oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl;
   oss << "Department of Genome Sciences at the University of Washington."
       << endl;
@@ -141,220 +141,220 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "   where target.sqt is the target sqt-file," << endl;
   intro << "     and decoy.sqt is the decoy sqt-file," << endl;
   intro
-      << "Small data sets may be merged by replace the sqt-files with meta"
-      << endl;
+  << "Small data sets may be merged by replace the sqt-files with meta"
+  << endl;
   intro
-      << "files. Meta files are text files containing the paths of sqt-files, one path"
-      << endl;
+  << "files. Meta files are text files containing the paths of sqt-files, one path"
+  << endl;
   intro
-      << "per line. For successful result, the different runs should be generated under"
-      << endl;
+  << "per line. For successful result, the different runs should be generated under"
+  << endl;
   intro << "similair condition." << endl;
   // init
   CommandLineParser cmd(intro.str());
 
 
   cmd.defineOption("L",
-                   "xsdoutput",
-                   "xml output filename (using Codesynthesis Xsd)",
-                   "filename");
+      "xsdoutput",
+      "xml output filename (using Codesynthesis Xsd)",
+      "filename");
 
   cmd.defineOption("Y",
-                   "tmpfileSQTtoXML",
-                   "the SQT conversion needs a file name where to store temporary data ( in a Tokyo cabinet database ). Unexpected behaviour is expected if you run many instances of this program with the same filename.",
-                   "filename");
+      "tmpfileSQTtoXML",
+      "the SQT conversion needs a file name where to store temporary data ( in a Tokyo cabinet database ). Unexpected behaviour is expected if you run many instances of this program with the same filename.",
+      "filename");
 
 
   cmd.defineOption("E",
-                   "xsdinput",
-                   "xml input filename (using Codesynthesis Xsd)",
-                   "filename");
+      "xsdinput",
+      "xml input filename (using Codesynthesis Xsd)",
+      "filename");
 
   cmd.defineOption("o",
-                   "sqt-out",
-                   "Create an SQT file with the specified name from the given target SQT file, \
-replacing the XCorr value the learned score and Sp with the negated q-value.",
-                   "filename");
+      "sqt-out",
+      "Create an SQT file with the specified name from the given target SQT file, \
+      replacing the XCorr value the learned score and Sp with the negated q-value.",
+      "filename");
   cmd.defineOption("s",
-                   "shuffled",
-                   "Same as -o, but for the decoy SQT file",
-                   "filename");
+      "shuffled",
+      "Same as -o, but for the decoy SQT file",
+      "filename");
   cmd.defineOption("P",
-                   "pattern",
-                   "Option for single SQT file mode defining the name pattern used for shuffled data base. \
-Typically set to random_seq",
-                   "pattern");
+      "pattern",
+      "Option for single SQT file mode defining the name pattern used for shuffled data base. \
+      Typically set to random_seq",
+      "pattern");
   cmd.defineOption("p",
-                   "Cpos",
-                   "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
-                   "value");
+      "Cpos",
+      "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
+      "value");
   cmd.defineOption("n",
-                   "Cneg",
-                   "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
-                   "value");
+      "Cneg",
+      "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
+      "value");
   cmd.defineOption("F",
-                   "trainFDR",
-                   "False discovery rate threshold to define positive examples in training. Set by cross validation if 0. Default is 0.01.",
-                   "value");
+      "trainFDR",
+      "False discovery rate threshold to define positive examples in training. Set by cross validation if 0. Default is 0.01.",
+      "value");
   cmd.defineOption("t",
-                   "testFDR",
-                   "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
-                   "value");
+      "testFDR",
+      "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
+      "value");
   cmd.defineOption("i",
-                   "maxiter",
-                   "Maximal number of iterations",
-                   "number");
+      "maxiter",
+      "Maximal number of iterations",
+      "number");
   cmd.defineOption("m",
-                   "matches",
-                   "Maximal number of matches to take in consideration per spectrum when using sqt-files",
-                   "number");
+      "matches",
+      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+      "number");
   cmd.defineOption("f",
-                   "train-ratio",
-                   "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.6 by default.",
-                   "value");
+      "train-ratio",
+      "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.6 by default.",
+      "value");
   cmd.defineOption("G",
-                   "gist-out",
-                   "Output the computed features to the given file in tab-delimited format. A file with the features, named <trunc name>.data, and a file with the labels named <trunc name>.label will be created",
-                   "trunc name");
+      "gist-out",
+      "Output the computed features to the given file in tab-delimited format. A file with the features, named <trunc name>.data, and a file with the labels named <trunc name>.label will be created",
+      "trunc name");
   cmd.defineOption("g",
-                   "gist-in",
-                   "Input files are given as gist files. In this case first argument should be a file name \
-of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
-and test set, -1 -- negative train set, -2 -- negative in test set.",
-                   "",
-                   TRUE_IF_SET);
+      "gist-in",
+      "Input files are given as gist files. In this case first argument should be a file name \
+      of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
+      and test set, -1 -- negative train set, -2 -- negative in test set.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("J",
-                   "tab-out",
-                   "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
-                   "file name");
+      "tab-out",
+      "Output the computed features to the given file in tab-delimited format. A file with the features with the given file name will be created",
+      "file name");
   cmd.defineOption("j",
-                   "tab-in",
-                   "Input files are given as a tab delimited file. In this case the only argument should be a file name \
-of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
-<tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
-Labels are interpreted as 1 -- positive set \
-and test set, -1 -- negative set.\
-When the --doc option the first and second feature (third and fourth column) should contain \
-the retention time and difference between observed and calculated mass",
-                   "",
-                   TRUE_IF_SET);
+      "tab-in",
+      "Input files are given as a tab delimited file. In this case the only argument should be a file name \
+      of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
+      <tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
+      Labels are interpreted as 1 -- positive set \
+      and test set, -1 -- negative set.\
+      When the --doc option the first and second feature (third and fourth column) should contain \
+      the retention time and difference between observed and calculated mass",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("w",
-                   "weights",
-                   "Output final weights to the given file",
-                   "filename");
+      "weights",
+      "Output final weights to the given file",
+      "filename");
   cmd.defineOption("W",
-                   "init-weights",
-                   "Read initial weights from the given file",
-                   "filename");
+      "init-weights",
+      "Read initial weights from the given file",
+      "filename");
   cmd.defineOption("V",
-                   "default-direction",
-                   "The most informative feature given as feature number, can be negated to indicate that a lower value is better.",
-                   "featureNum");
+      "default-direction",
+      "The most informative feature given as feature number, can be negated to indicate that a lower value is better.",
+      "featureNum");
   cmd.defineOption("v",
-                   "verbose",
-                   "Set verbosity of output: 0=no processing info, 5=all, default is 2",
-                   "level");
+      "verbose",
+      "Set verbosity of output: 0=no processing info, 5=all, default is 2",
+      "level");
   cmd.defineOption("u",
-                   "unitnorm",
-                   "Use unit normalization [0-1] instead of standard deviation normalization",
-                   "",
-                   TRUE_IF_SET);
+      "unitnorm",
+      "Use unit normalization [0-1] instead of standard deviation normalization",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("a",
-                   "aa-freq",
-                   "Calculate amino acid frequency features",
-                   "",
-                   TRUE_IF_SET);
+      "aa-freq",
+      "Calculate amino acid frequency features",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("b",
-                   "PTM",
-                   "Calculate feature for number of post-translational modifications",
-                   "",
-                   TRUE_IF_SET);
+      "PTM",
+      "Calculate feature for number of post-translational modifications",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("d",
-                   "DTASelect",
-                   "Add an extra hit to each spectra when writing sqt files",
-                   "",
-                   TRUE_IF_SET);
+      "DTASelect",
+      "Add an extra hit to each spectra when writing sqt files",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("R",
-                   "test-each-iteration",
-                   "Measure performance on test set each iteration",
-                   "",
-                   TRUE_IF_SET);
+      "test-each-iteration",
+      "Measure performance on test set each iteration",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("Q",
-                   "quadratic",
-                   "Calculate quadratic feature terms",
-                   "",
-                   TRUE_IF_SET);
+      "quadratic",
+      "Calculate quadratic feature terms",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("O",
-                   "override",
-                   "Override error check and do not fall back on default score vector in case of suspect score vector",
-                   "",
-                   TRUE_IF_SET);
+      "override",
+      "Override error check and do not fall back on default score vector in case of suspect score vector",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("y",
-                   "notryptic",
-                   "Turn off calculation of tryptic/chymo-tryptic features.",
-                   "",
-                   TRUE_IF_SET);
+      "notryptic",
+      "Turn off calculation of tryptic/chymo-tryptic features.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("c",
-                   "chymo",
-                   "Replace tryptic features with chymo-tryptic features.",
-                   "",
-                   TRUE_IF_SET);
+      "chymo",
+      "Replace tryptic features with chymo-tryptic features.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("e",
-                   "elastase",
-                   "Replace tryptic features with elastase features.",
-                   "",
-                   TRUE_IF_SET);
+      "elastase",
+      "Replace tryptic features with elastase features.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("N",
-                   "PNGaseF",
-                   "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
-                   "",
-                   TRUE_IF_SET);
+      "PNGaseF",
+      "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("S",
-                   "seed",
-                   "Setting seed of the random number generator. Default value is 0",
-                   "value");
+      "seed",
+      "Setting seed of the random number generator. Default value is 0",
+      "value");
   cmd.defineOption("2",
-                   "ms2-file",
-                   "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
-                   "filename");
+      "ms2-file",
+      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
+      "filename");
   cmd.defineOption("M",
-                   "isotope",
-                   "Mass difference calculated to closest isotope mass rather than to the average mass.",
-                   "",
-                   TRUE_IF_SET);
+      "isotope",
+      "Mass difference calculated to closest isotope mass rather than to the average mass.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("K",
-                   "klammer",
-                   "Retention time features calculated as in Klammer et al.",
-                   "",
-                   TRUE_IF_SET);
+      "klammer",
+      "Retention time features calculated as in Klammer et al.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("D",
-                   "doc",
-                   "Include description of correct features.",
-                   "",
-                   MAYBE,
-                   "15");
+      "doc",
+      "Include description of correct features.",
+      "",
+      MAYBE,
+      "15");
   cmd.defineOption("r",
-                   "results",
-                   "Output tab delimited results to a file instead of stdout",
-                   "filename");
+      "results",
+      "Output tab delimited results to a file instead of stdout",
+      "filename");
   cmd.defineOption("B",
-                   "decoy-results",
-                   "Output tab delimited results for decoys into a file",
-                   "filename");
+      "decoy-results",
+      "Output tab delimited results for decoys into a file",
+      "filename");
   cmd.defineOption("X",
-                   "xml-output",
-                   "Output results in xml-format into a file",
-                   "filename");
+      "xml-output",
+      "Output results in xml-format into a file",
+      "filename");
   cmd.defineOption("Z",
-                   "decoy-xml-output",
-                   "Include decoys PSMs in the xml-output. Only available if -X is used.",
-                   "",
-                   TRUE_IF_SET);
+      "decoy-xml-output",
+      "Include decoys PSMs in the xml-output. Only available if -X is used.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("U",
-                   "unique-peptides",
-                   "Remove all redundant peptides and only keep the highest scoring PSM. q-values and PEPs are only calculated on peptide level in such case",
-                   "",
-                   TRUE_IF_SET);
+      "unique-peptides",
+      "Remove all redundant peptides and only keep the highest scoring PSM. q-values and PEPs are only calculated on peptide level in such case",
+      "",
+      TRUE_IF_SET);
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -391,8 +391,8 @@ the retention time and difference between observed and calculated mass",
     tabInput = true;
     if (cmd.arguments.size() != 1) {
       cerr
-          << "Provide exactly one arguments when using tab delimited input"
-          << endl;
+      << "Provide exactly one arguments when using tab delimited input"
+      << endl;
       exit(-1);
     }
   }
@@ -487,8 +487,8 @@ the retention time and difference between observed and calculated mass",
   if (cmd.optionSet("Z")) {
     if (xmloutFN.empty()) {
       cerr
-          << "The -Z switch was set without any xml-output file specified"
-          << stderr;
+      << "The -Z switch was set without any xml-output file specified"
+      << stderr;
       exit(-1);
     }
     Scores::setOutXmlDecoys(true);
@@ -496,8 +496,8 @@ the retention time and difference between observed and calculated mass",
   if (cmd.optionSet("U")) {
     if (!modifiedFN.empty() || !modifiedDecoyFN.empty()) {
       cerr
-          << "The -U switch may not be used together with the -o and -s options"
-          << stderr;
+      << "The -U switch may not be used together with the -o and -s options"
+      << stderr;
       exit(-1);
     }
     reportUniquePeptides = true;
@@ -515,7 +515,7 @@ the retention time and difference between observed and calculated mass",
   }
   else if ( cmd.arguments.size() != 0 )
   {  cerr << "error: -E expects just one argument" << endl;
-     cmd.help();
+  cmd.help();
   }
 
   if (cmd.arguments.size() > 0) forwardFN = cmd.arguments[0];
@@ -537,7 +537,7 @@ void Caller::readRetentionTime(string filename) {
   }
   delete[] cstr;
 }
-*/
+ */
 
 void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys ) {
 
@@ -564,20 +564,20 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
     };
 
 
-  nrTargets=0;
-  nrDecoys=0;
+    nrTargets=0;
+    nrDecoys=0;
 
     for (doc = p.next (); doc.get () != 0; doc = p.next ())
     {
-         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
-         BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() )
-		{
-                  if ( psm.isDecoy() ) {
-                          nrDecoys++;
-                  } else {
-                      nrTargets++;
-                  }
-		}
+      percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
+      BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() )
+      {
+        if ( psm.isDecoy() ) {
+          nrDecoys++;
+        } else {
+          nrTargets++;
+        }
+      }
 
     }
   }
@@ -601,8 +601,8 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
 
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
-      << "# first line contains normalized weights, second line the raw weights"
-      << endl;
+  << "# first line contains normalized weights, second line the raw weights"
+  << endl;
   weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0"
       << endl;
   weightStream.precision(3);
@@ -621,8 +621,8 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
 }
 
 void Caller::filelessSetup(const unsigned int numFeatures,
-                           const unsigned int numSpectra,
-                           char** featureNames, double pi0) {
+    const unsigned int numSpectra,
+    char** featureNames, double pi0) {
   pCheck = new SanityCheck();
   assert(pCheck);
   normal.filelessSetup(numFeatures, numSpectra, 1);
@@ -634,116 +634,115 @@ void Caller::filelessSetup(const unsigned int numFeatures,
 }
 
 void Caller::readFiles() {
+  if (xmlInputFN.size() != 0) {
+    unsigned int nrTargets;
+    unsigned int nrDecoys;
+    xercesc::XMLPlatformUtils::Initialize();
+    countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
+    int j = 0;
+    DataSet * targetSet = new DataSet();
+    assert(targetSet);
+    targetSet->setLabel(1);
+    DataSet * decoySet = new DataSet();
+    assert(decoySet);
+    decoySet->setLabel(-1);
+    try {
+      namespace xml = xsd::cxx::xml;
+      std::ifstream xmlInStream;
+      xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
+      xmlInStream.open(xmlInputFN.c_str());
+      if (!xmlInStream) {
+        cerr << "Can not open file " << xmlInputFN << endl;
+        exit(EXIT_FAILURE);
+      }
+      parser p;
+      xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
+          xmlInStream, xmlInputFN.c_str(), true));
 
-	if (xmlInputFN.size() != 0) {
-		unsigned int nrTargets;
-		unsigned int nrDecoys;
-		xercesc::XMLPlatformUtils::Initialize();
-		countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
-		int j = 0;
-		DataSet * targetSet = new DataSet();
-		assert(targetSet);
-		targetSet->setLabel(1);
-		DataSet * decoySet = new DataSet();
-		assert(decoySet);
-		decoySet->setLabel(-1);
-		try {
-			namespace xml = xsd::cxx::xml;
-			std::ifstream xmlInStream;
-			xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
-			xmlInStream.open(xmlInputFN.c_str());
-			if (!xmlInStream) {
-				cerr << "Can not open file " << xmlInputFN << endl;
-				exit(EXIT_FAILURE);
-			}
-			parser p;
-			xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
-					xmlInStream, xmlInputFN.c_str(), true));
+      doc = p.next();
 
-			doc = p.next();
+      // The enzyme element is a subelement but CodeSynthesis Xsd does not generate a class for it. (I am trying to find a command line option that overrides this decision)
+      // As for now special treatment is needed:
+      char * value = XMLString::transcode(
+          doc->getDocumentElement()->getTextContent());
+      std::cout << "enzyme=" << value << std::endl;
+      XMLString::release(&value);
+      doc = p.next();
 
-			// The enzyme element is a subelement but CodeSynthesis Xsd does not generate a class for it. (I am trying to find a command line option that overrides this decision)
-			// As for now special treatment is needed:
-			char * value = XMLString::transcode(
-					doc->getDocumentElement()->getTextContent());
-			std::cout << "enzyme=" << value << std::endl;
-			XMLString::release(&value);
-			doc = p.next();
+      static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
+          chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
+          chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+      if (XMLString::equals(calibrationStr,
+          doc->getDocumentElement()->getTagName())) {
+        percolatorInNs::calibration calibration(
+            *doc->getDocumentElement());
+        doc = p.next();
+      };
 
-			static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
-					chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
-					chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-			if (XMLString::equals(calibrationStr,
-					doc->getDocumentElement()->getTagName())) {
-				percolatorInNs::calibration calibration(
-						*doc->getDocumentElement());
-				doc = p.next();
-			};
+      percolatorInNs::featureDescriptions featureDescriptions(
+          *doc->getDocumentElement());
 
-			percolatorInNs::featureDescriptions featureDescriptions(
-					*doc->getDocumentElement());
+      FeatureNames& feNames = DataSet::getFeatureNames();
+      feNames.setFromXml(featureDescriptions, docFeatures);
 
-			FeatureNames& feNames = DataSet::getFeatureNames();
-			feNames.setFromXml(featureDescriptions, docFeatures);
+      targetSet->initFeatureTables(feNames.getNumFeatures(), nrTargets,
+          docFeatures);
+      decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys,
+          docFeatures);
 
-			targetSet->initFeatureTables(feNames.getNumFeatures(), nrTargets,
-					docFeatures);
-			decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys,
-					docFeatures);
+      for (doc = p.next(); doc.get() != 0; doc = p.next()) {
+        percolatorInNs::fragSpectrumScan fragSpectrumScan(
+            *doc->getDocumentElement());
+        targetSet->readFragSpectrumScans(fragSpectrumScan);
+        decoySet->readFragSpectrumScans(fragSpectrumScan);
+      }
 
-			for (doc = p.next(); doc.get() != 0; doc = p.next()) {
-				percolatorInNs::fragSpectrumScan fragSpectrumScan(
-						*doc->getDocumentElement());
-				targetSet->readFragSpectrumScans(fragSpectrumScan);
-				decoySet->readFragSpectrumScans(fragSpectrumScan);
-			}
+      pCheck = new SqtSanityCheck();
+      assert(pCheck);
+      normal.push_back_dataset(targetSet);
+      shuffled.push_back_dataset(decoySet);
+      normal.setSet();
+      shuffled.setSet();
+    }
 
-			pCheck = new SqtSanityCheck();
-			assert(pCheck);
-			normal.push_back_dataset(targetSet);
-			shuffled.push_back_dataset(decoySet);
-			normal.setSet();
-			shuffled.setSet();
-		}
+    catch (const xml_schema::exception& e) {
+      std::cerr << e << endl;
+      exit(EXIT_FAILURE);
+    } catch (const std::ios_base::failure&) {
+      std::cerr << "unable to open or read failure" << std::endl;
+      exit(EXIT_FAILURE);
+    } catch (const xercesc::DOMException& e) {
+      char * tmpStr = XMLString::transcode(e.getMessage());
+      std::cerr << "catch  xercesc::DOMException=" << tmpStr
+          << std::endl;
+      XMLString::release(&tmpStr);
+    }
+  } else if (gistInput) {
+    pCheck = new SanityCheck();
+    normal.readGist(forwardFN, decoyFN, 1);
+    shuffled.readGist(forwardFN, decoyFN, -1);
+  } else if (tabInput) {
+    pCheck = new SanityCheck();
+    normal.readTab(forwardFN, 1);
+    shuffled.readTab(forwardFN, -1);
+  } else if (decoyWC.empty()) {
 
-		catch (const xml_schema::exception& e) {
-			std::cerr << e << endl;
-			exit(EXIT_FAILURE);
-		} catch (const std::ios_base::failure&) {
-			std::cerr << "unable to open or read failure" << std::endl;
-			exit(EXIT_FAILURE);
-		} catch (const xercesc::DOMException& e) {
-			char * tmpStr = XMLString::transcode(e.getMessage());
-			std::cerr << "catch  xercesc::DOMException=" << tmpStr
-					<< std::endl;
-			XMLString::release(&tmpStr);
-		}
-	} else if (gistInput) {
-	   	pCheck = new SanityCheck();
-		normal.readGist(forwardFN, decoyFN, 1);
-		shuffled.readGist(forwardFN, decoyFN, -1);
-	} else if (tabInput) {
-		pCheck = new SanityCheck();
-		normal.readTab(forwardFN, 1);
-		shuffled.readTab(forwardFN, -1);
-	} else if (decoyWC.empty()) {
-
-	  assert(false); //discard code path
-	  /*
+    assert(false); //discard code path
+    /*
 		pCheck = new SqtSanityCheck();
 		normal.readFile(forwardFN, 1);
 		shuffled.readFile(decoyFN, -1);
-	  */
+     */
 
-	} else {
-	  assert(false); //discard code path
-	  /*
+  } else {
+    assert(false); //discard code path
+    /*
 		pCheck = new SqtSanityCheck();
 		normal.readFile(forwardFN, decoyWC, false);
 		shuffled.readFile(forwardFN, decoyWC, true);
-	  */
+     */
 
-	}
+  }
 
 
 
@@ -809,8 +808,8 @@ int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
         tp = xv_train[set].calcScores(ww, test_fdr);
         if (VERB > 2) {
           cerr << "- cross validation estimates " << tp
-            << " target PSMs over " << test_fdr * 100 << "% FDR level"
-            << endl;
+              << " target PSMs over " << test_fdr * 100 << "% FDR level"
+              << endl;
         }
         if (tp >= bestTP) {
           if (VERB > 2) {
@@ -859,8 +858,8 @@ void Caller::train(vector<vector<double> >& w) {
   }
   if (VERB == 2) {
     cerr
-        << "Obtained weights (only showing weights of first cross validation set)"
-        << endl;
+    << "Obtained weights (only showing weights of first cross validation set)"
+    << endl;
     printWeights(cerr, w[0]);
   }
   int tar = 0;
@@ -882,9 +881,9 @@ void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal, shuffled);
   if (VERB > 1) {
     cerr << "Train/test set contains " << fullset.posSize()
-        << " positives and " << fullset.negSize()
-        << " negatives, size ratio=" << fullset.targetDecoySizeRatio
-        << " and pi0=" << fullset.pi0 << endl;
+            << " positives and " << fullset.negSize()
+            << " negatives, size ratio=" << fullset.targetDecoySizeRatio
+            << " and pi0=" << fullset.pi0 << endl;
   }
   //Normalize features
   set<DataSet*> all;
@@ -919,9 +918,9 @@ void Caller::fillFeatureSets() {
   pNorm = Normalizer::getNormalizer();
 
   pNorm->setSet(featuresV,
-                rtFeaturesV,
-                FeatureNames::getNumFeatures(),
-                docFeatures ? RTModel::totalNumRTFeatures() : 0);
+      rtFeaturesV,
+      FeatureNames::getNumFeatures(),
+      docFeatures ? RTModel::totalNumRTFeatures() : 0);
   pNorm->normalizeSet(featuresV, rtFeaturesV);
 }
 
@@ -979,8 +978,8 @@ int Caller::run() {
   cout << "baFeatureNames::getNumFeatures=" << FeatureNames::getNumFeatures() << endl;
 
   vector<vector<double> > w(xval_fold,
-                            vector<double> (FeatureNames::getNumFeatures()
-                                + 1)), ww;
+      vector<double> (FeatureNames::getNumFeatures()
+  + 1)), ww;
   int firstNumberOfPositives = preIterationSetup(w);
   if (VERB > 0) {
     cerr << "Estimating " << firstNumberOfPositives << " over q="
@@ -1019,8 +1018,8 @@ int Caller::run() {
   }
   if (reportUniquePeptides && VERB > 0) {
     cerr
-      << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide."
-      << endl;
+    << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide."
+    << endl;
   }
   fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
   if (VERB > 0) {
@@ -1049,8 +1048,8 @@ int Caller::run() {
   }
   if (VERB > 0) {
     cerr
-      << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
-      << endl;
+    << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
+    << endl;
   }
   time_t end;
   time(&end);
@@ -1101,24 +1100,24 @@ int Caller::run() {
 void Caller::writeXML(ostream& os, Scores& fullset) {
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os
-      << "<percolator_output majorVersion=\"1\" minorVersion=\"1\" percolator_version=\""
-      << "Percolator version " << VERSION << "\" "
-      << "xsi:schemaLocation=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out percolator_out.xsd\" "
-      << "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" "
-      << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
-      << endl;
+  << "<percolator_output majorVersion=\"1\" minorVersion=\"1\" percolator_version=\""
+  << "Percolator version " << VERSION << "\" "
+  << "xsi:schemaLocation=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out percolator_out.xsd\" "
+  << "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" "
+  << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+  << endl;
   os << "  <process_info>" << endl;
   os << "    <command_line>" << call << "</command_line>" << endl;
   os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-        << "</average_delta_mass>" << endl;
+            << "</average_delta_mass>" << endl;
     os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-        << "</average_pi>" << endl;
+            << "</average_pi>" << endl;
   }
   os << "  </process_info>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-      != fullset.end(); ++psm) {
+  != fullset.end(); ++psm) {
     os << *psm;
   }
   os << "</percolator_output>" << endl;

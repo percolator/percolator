@@ -50,7 +50,7 @@ bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
 bool DataSet::pngasef = false;
 const string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
-            
+
 string DataSet::ptmAlphabet = "#*@";
 FeatureNames DataSet::featureNames;
 
@@ -182,7 +182,7 @@ double DataSet::isPngasef(const string& peptide) {
   bool isDecoy;
   switch (label) {
   case 1: { isDecoy = false; break; };
-      case -1: { isDecoy = true; break; };
+  case -1: { isDecoy = true; break; };
   default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
   }
   return isPngasef( peptide, isDecoy);
@@ -285,7 +285,7 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     m -= 2;
   }
   initFeatureTables((calcDOC ? m + DescriptionOfCorrect::numDOCFeatures()
-      : m), n, calcDOC);
+  : m), n, calcDOC);
   if (calcDOC) {
     getFeatureNames().setDocFeatNum(m);
   }
@@ -355,55 +355,56 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
   bool isDecoy;
   switch (label) {
   case 1: { isDecoy = false; break; };
-      case -1: { isDecoy = true; break; };
+  case -1: { isDecoy = true; break; };
   default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
   }
-      const ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psmSeq = fss.peptideSpectrumMatch();
-      for ( ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
+  const ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psmSeq = fss.peptideSpectrumMatch();
+  for ( ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
 
-	if ( psmIter->isDecoy() == isDecoy ) { 
+    if ( psmIter->isDecoy() == isDecoy ) {
 
-          assert( psms.size() > psmNum );
-          PSMDescription & myPsm = psms[psmNum];
+      assert( psms.size() > psmNum );
+      PSMDescription & myPsm = psms[psmNum];
 
-	  // rng:oneOrMore so the assert should always be true
-          assert( psmIter->occurence().size() > 0 ); 
+      // rng:oneOrMore so the assert should always be true
+      assert( psmIter->occurence().size() > 0 );
 
 
-	  BOOST_FOREACH( const percolatorInNs::occurence & oc,  psmIter->occurence() )  {
-	    myPsm.proteinIds.insert( oc.proteinId() );
-          }
-          myPsm.id = psmIter->id();
+      BOOST_FOREACH( const percolatorInNs::occurence & oc,  psmIter->occurence() )  {
+        myPsm.proteinIds.insert( oc.proteinId() );
+      }
+      myPsm.id = psmIter->id();
+      myPsm.scan = fss.scanNumber();
 
-	  const ::percolatorInNs::features::feature_sequence & featureS = psmIter->features().feature();
-	  int featureNum = 0;
+      const ::percolatorInNs::features::feature_sequence & featureS = psmIter->features().feature();
+      int featureNum = 0;
 
-	  for ( ::percolatorInNs::features::feature_const_iterator featureIter = featureS.begin(); featureIter != featureS.end(); featureIter++ ) {
-	    myPsm.features[featureNum]=*featureIter;
-            featureNum++;
-	  }
+      for ( ::percolatorInNs::features::feature_const_iterator featureIter = featureS.begin(); featureIter != featureS.end(); featureIter++ ) {
+        myPsm.features[featureNum]=*featureIter;
+        featureNum++;
+      }
 
-	  myPsm.peptide = psmIter->peptide().peptideSequence(); 
-          if ( fss.observedTime().present() ) {
-	    myPsm.retentionTime = fss.observedTime().get();
-	  }
-          myPsm.massDiff =
-	  MassHandler::massDiff(fss.experimentalMassToCharge() ,
-				psmIter->calculatedMassToCharge(),
-				psmIter->chargeState(),
-				myPsm.peptide.substr(2, myPsm.peptide.size()
-                                      - 4));
+      myPsm.peptide = psmIter->peptide().peptideSequence();
+      if ( fss.observedTime().present() ) {
+        myPsm.retentionTime = fss.observedTime().get();
+      }
+      myPsm.massDiff =
+          MassHandler::massDiff(fss.experimentalMassToCharge() ,
+              psmIter->calculatedMassToCharge(),
+              psmIter->chargeState(),
+              myPsm.peptide.substr(2, myPsm.peptide.size()
+                  - 4));
 
-          if (calcDOC) {
-          // These features will be set before each iteration
-          DescriptionOfCorrect::calcRegressionFeature(myPsm);
-          myPsm.features[featureNum++] = abs( myPsm.pI - 6.5);
-          myPsm.features[featureNum++] = abs( myPsm.massDiff);
-          // myPsm.features[featureNum++]=abs(psm.retentionTime);
-          myPsm.features[featureNum++] = 0;
-          myPsm.features[featureNum++] = 0;
-       }
-       ++psmNum;
+      if (calcDOC) {
+        // These features will be set before each iteration
+        DescriptionOfCorrect::calcRegressionFeature(myPsm);
+        myPsm.features[featureNum++] = abs( myPsm.pI - 6.5);
+        myPsm.features[featureNum++] = abs( myPsm.massDiff);
+        // myPsm.features[featureNum++]=abs(psm.retentionTime);
+        myPsm.features[featureNum++] = 0;
+        myPsm.features[featureNum++] = 0;
+      }
+      ++psmNum;
     } 
   }
   return;
@@ -411,15 +412,15 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
 
 
 void DataSet::initFeatureTables(const unsigned int numFeat,
-                                const unsigned int numSpec,
-                                bool regressionTable) {
+    const unsigned int numSpec,
+    bool regressionTable) {
   FeatureNames::setNumFeatures(numFeat);
   numSpectra = numSpec;
 
   feature = new double[numFeat * numSpec];
   if (regressionTable) {
     regressionFeature
-        = new double[RTModel::totalNumRTFeatures() * numSpec];
+    = new double[RTModel::totalNumRTFeatures() * numSpec];
   }
   psms.resize(numSpectra);
   for (int ix = 0; ix < numSpectra; ++ix) {
