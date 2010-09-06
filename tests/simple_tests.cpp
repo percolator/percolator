@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "MassHandler.h"
-#include "Normalizer.h"
 
 namespace {
 
@@ -12,7 +11,9 @@ class MassHandlerTest : public ::testing::Test {
 
           virtual void TearDown() {}
 };
-/*
+
+
+
 TEST_F(MassHandlerTest, BorderTest) {
      EXPECT_EQ(0, MassHandler::massDiff(0.0, 0.0, 1, "ABCDEF"));
 }
@@ -20,7 +21,7 @@ TEST_F(MassHandlerTest, BorderTest) {
 TEST_F(MassHandlerTest, AnotherBorderTest) {
      EXPECT_EQ(1, MassHandler::massDiff(0.0, 0.0, 1, "ABCDEF"));
 }
-
+/*
 class NormalizerTest : public ::testing::Test {
      protected:
           virtual void SetUp() {
