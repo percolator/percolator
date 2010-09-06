@@ -10,19 +10,33 @@ installDir=$src
 
 # install necessary libraries
 set -e # as soon as a command fails terminate this script
-sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake libtokyocabinet-dev git-core zlib1g zlib1g-dev build-essential
+sudo apt-get install libxerces-c-dev libboost-dev gengetopt libsqlite3-dev cmake libtokyocabinet-dev git-core zlib1g zlib1g-dev build-essential #libgtest-dev
 
 
 # get codesynthesis
 echo "*******"
-echo "STEP 1: installing codesynthesis library..." 
+echo "STEP 1: installing codesynthesis library and google test..."
 echo "*******"
 cd $src
 if [ ! -d "xsd-3.3.0-x86_64-linux-gnu" ]; then
-    wget http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/xsd-3.3.0-x86_64-linux-gnu.tar.bz2
+wget http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/xsd-3.3.0-x86_64-linux-gnu.tar.bz2
     tar xfj xsd-3.3.0-x86_64-linux-gnu.tar.bz2
     rm xsd-3.3.0-x86_64-linux-gnu.tar.bz2
 fi
+
+if [ ! -d "gtest-1.5.0" ]; then
+wget http://googletest.googlecode.com/files/gtest-1.5.0.tar.gz
+    tar xzf gtest-1.5.0.tar.gz
+    rm gtest-1.5.0.tar.gz
+    cd gtest-1.5.0
+    mkdir build
+    cd build 
+    cmake ../ 
+    make 
+    cd $src 
+fi
+
+
 echo "STEP 1 DONE."
 echo ""
 
@@ -32,9 +46,9 @@ echo "STEP 2: clone/pull percolator from repositories..." # get percolator
 echo "*******"
 cd $src
 if [ ! -d "percolator" ]; then
-    git clone git@github.com:percolator/percolator.git
+git clone git@github.com:percolator/percolator.git
 else
-    cd percolator
+cd percolator
     git pull
     cd ..
 fi
@@ -48,11 +62,11 @@ echo "*******"
 cd $src
 echo $src
 if [ -d "$buildDir" ]; then
-   rm -r $buildDir
+rm -r $buildDir
 fi
 mkdir $buildDir
 cd $buildDir
-cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=FALSE -DCMAKE_INSTALL_PREFIX=$installDir -DCMAKE_PREFIX_PATH=$src/xsd-3.3.0-x86_64-linux-gnu/ $src/percolator
+cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=TRUE -DCMAKE_INSTALL_PREFIX=$installDir -DCMAKE_PREFIX_PATH=$src/xsd-3.3.0-x86_64-linux-gnu/ $src/percolator
 echo "STEP 3 DONE."
 echo ""
 
