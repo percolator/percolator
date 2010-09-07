@@ -3,7 +3,7 @@
   <xsd:element name="percolator_output">
     <xsd:complexType>
       <xsd:sequence>
-        <xsd:element name="processInfo">
+        <xsd:element name="process_info">
           <xsd:complexType>
             <xsd:sequence>
               <xsd:element name="command_line" type="xsd:string"/>
@@ -22,7 +22,7 @@
 	<xsd:element maxOccurs="unbounded" name="psm">
 		<xsd:complexType>
 			<xsd:sequence>
-				<xsd:element name="svmScore" type="xsd:double">
+				<xsd:element name="svm_score" type="xsd:double">
 					<xsd:annotation>
 						<xsd:documentation xml:lang="en">The score stemming from the SVM. Higher score corresponds to a better PSM than a lower score.</xsd:documentation>
 					</xsd:annotation>
