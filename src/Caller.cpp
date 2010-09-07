@@ -1102,7 +1102,7 @@ void Caller::writeXML(ostream& os, Scores& fullset) {
   os
   << "<percolator_output majorVersion=\"1\" minorVersion=\"1\" percolator_version=\""
   << "Percolator version " << VERSION << "\" "
-  << "xsi:schemaLocation=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out percolator_out.xsd\" "
+  << "xsi:schemaLocation=\"http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd\" "
   << "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" "
   << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
   << endl;
