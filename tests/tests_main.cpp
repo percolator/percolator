@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+ Copyright 2006-2010 Lukas Käll <lukas.kall@cbr.su.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -15,33 +15,17 @@
 
  *******************************************************************************/
 /*
-#include "Option.h"
-#include "Globals.h"
-#include "Elude.h"
-
-#include <math.h>
-#include <cmath>
-
-int main(int argc, char** argv) {
-  RTPredictor* pCaller = new RTPredictor();
-  int retVal = 0;
-  if (pCaller->parseOptions(argc, argv)) {
-    pCaller->run();
-  }
-  delete pCaller;
-  Globals::clean();
-  return retVal;
-}*/
-
-#include <iostream>
-#include "RetentionFeatures.h"
+ * @ Created by Luminita Moruz
+ * Sep, 2010
+ */
+/*
+ * Main file for Google Test
+ * Just run all tests
+ */
+#include <gtest/gtest.h>
+#include "RetentionFeaturesTest.cpp"
 
 int main(int argc, char** argv) {
-  RetentionFeatures rf;
-  bitset<8> x(string("11111111"));
-  rf.set_active_feature_groups(x);
-  cout << rf.active_feature_groups();
-  //cout << rf.k_num_feature_groups() << endl;
-
-  return 0;
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
