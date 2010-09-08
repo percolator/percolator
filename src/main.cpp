@@ -14,6 +14,7 @@
  limitations under the License.
 
  *******************************************************************************/
+#include <fstream>
 #include <vector>
 #include <set>
 #include <map>
@@ -24,14 +25,30 @@ using namespace std;
 #include "SetHandler.h"
 #include "Caller.h"
 #include "Globals.h"
+#include "Caller.h"
 
 int main(int argc, char** argv) {
-  Caller* pCaller = new Caller();
+  Caller* pCaller = new Caller(false);
+  Caller* pCallerPeptide = new Caller(true);
   int retVal = -1;
-  if (pCaller->parseOptions(argc, argv)) {
+  // reading command line arguments
+  bool validArguments = pCaller->parseOptions(argc, argv);
+  validArguments = validArguments && pCallerPeptide->parseOptions(argc, argv);
+  if (validArguments) {
+    // executing: psm
     retVal = pCaller->run();
+    Globals::clean();
+    // executing: unique peptides
+    retVal += pCallerPeptide->run();
+  }
+  // outputing results to XML file
+  if (pCallerPeptide->xmloutFN.size() > 0) {
+    ofstream xmlStream(pCallerPeptide->xmloutFN.data(), ios::out);
+    pCallerPeptide->writeXML(xmlStream, pCaller->fullset, pCallerPeptide->fullset);
+    xmlStream.close();
   }
   delete pCaller;
+  delete pCallerPeptide;
   Globals::clean();
   return retVal;
 }

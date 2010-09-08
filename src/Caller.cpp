@@ -39,41 +39,36 @@ using namespace std;
 #include "ssl.h"
 #include "Caller.h"
 #include "Globals.h"
-
-
 #include "MassHandler.h"
 #include "Enzyme.h"
-
 #include "config.h"
-
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLString.hpp>
 #include <xsd/cxx/xml/string.hxx>
 #include <boost/foreach.hpp>
-
 #include "percolator_in.hxx"
 #include "parser.hxx"
-
 #include "serializer.hxx"
 
 using namespace xercesc;
 
 const unsigned int Caller::xval_fold = 3;
 
-Caller::Caller() :
-      pNorm(NULL),
-      pCheck(NULL),
-      svmInput(NULL),
-      modifiedFN(""),
-      modifiedDecoyFN(""),
-      forwardFN(""),
-      decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-      decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
-      weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
-      docFeatures(false), reportPerformanceEachIteration(false),
-      reportUniquePeptides(false), test_fdr(0.01), selectionfdr(0.01),
-      selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
-      trainRatio(0.6), niter(10) {
+Caller::Caller(bool uniquePeptides=false) :
+              pNorm(NULL),
+              pCheck(NULL),
+              svmInput(NULL),
+              modifiedFN(""),
+              modifiedDecoyFN(""),
+              forwardFN(""),
+              decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
+              decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
+              weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
+              docFeatures(false), reportPerformanceEachIteration(false),
+              test_fdr(0.01), selectionfdr(0.01),
+              selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
+              trainRatio(0.6), niter(10) {
+  reportUniquePeptides = uniquePeptides;
 }
 
 Caller::~Caller() {
@@ -131,6 +126,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   callStream << endl;
   call = callStream.str();
+  call = call.substr(0,call.length()-1); // trim ending carriage return
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
   intro << "   percolator [options] target.sqt decoy.sqt" << endl;
@@ -726,14 +722,12 @@ void Caller::readFiles() {
     normal.readTab(forwardFN, 1);
     shuffled.readTab(forwardFN, -1);
   } else if (decoyWC.empty()) {
-
     assert(false); //discard code path
     /*
 		pCheck = new SqtSanityCheck();
 		normal.readFile(forwardFN, 1);
 		shuffled.readFile(decoyFN, -1);
      */
-
   } else {
     assert(false); //discard code path
     /*
@@ -741,16 +735,10 @@ void Caller::readFiles() {
 		normal.readFile(forwardFN, decoyWC, false);
 		shuffled.readFile(forwardFN, decoyWC, true);
      */
-
   }
-
-
-
   if (spectrumFile.size() > 0) {
-
     assert(false); // we moved mstoolkit into src/converters. There should be no dependency to these functions..
     //	readRetentionTime(spectrumFile);
-
   }
 }
 
@@ -878,12 +866,12 @@ void Caller::train(vector<vector<double> >& w) {
 }
 
 void Caller::fillFeatureSets() {
-  fullset.fillFeatures(normal, shuffled);
+  fullset.fillFeatures(normal, shuffled, reportUniquePeptides);
   if (VERB > 1) {
     cerr << "Train/test set contains " << fullset.posSize()
-            << " positives and " << fullset.negSize()
-            << " negatives, size ratio=" << fullset.targetDecoySizeRatio
-            << " and pi0=" << fullset.pi0 << endl;
+                    << " positives and " << fullset.negSize()
+                    << " negatives, size ratio=" << fullset.targetDecoySizeRatio
+                    << " and pi0=" << fullset.pi0 << endl;
   }
   //Normalize features
   set<DataSet*> all;
@@ -1070,11 +1058,6 @@ int Caller::run() {
     }
     weightStream.close();
   }
-  if (xmloutFN.size() > 0) {
-    ofstream xmlStream(xmloutFN.data(), ios::out);
-    writeXML(xmlStream, fullset);
-    xmlStream.close();
-  }
   if (resultFN.empty()) {
     normal.print(fullset);
   } else {
@@ -1097,7 +1080,7 @@ int Caller::run() {
   return 0;
 }
 
-void Caller::writeXML(ostream& os, Scores& fullset) {
+void Caller::writeXML(ostream& os, Scores& fullset, Scores& fullsetPeptide) {
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os
   << "<percolator_output majorVersion=\"1\" minorVersion=\"1\" percolator_version=\""
@@ -1111,15 +1094,27 @@ void Caller::writeXML(ostream& os, Scores& fullset) {
   os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-            << "</average_delta_mass>" << endl;
+                    << "</average_delta_mass>" << endl;
     os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-            << "</average_pi>" << endl;
+                    << "</average_pi>" << endl;
   }
   os << "  </process_info>" << endl;
+
+  // output psms
+  os << "  <psms>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
   != fullset.end(); ++psm) {
     os << *psm;
   }
+  os << "  </psms>" << endl;
+
+  // output peptides
+  os << "  <peptides>";
+  for (vector<ScoreHolder>::iterator peptide = fullsetPeptide.begin();
+      peptide != fullsetPeptide.end(); ++peptide) {
+    os << (ScoreHolderPeptide) *peptide;
+  }
+  os << "  </peptides>" << endl;
   os << "</percolator_output>" << endl;
 }
 

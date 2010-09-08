@@ -28,6 +28,7 @@ class Caller {
     };
   public:
     Caller();
+    Caller(bool uniquePeptides);
     virtual ~Caller();
     void train(vector<vector<double> >& w);
     int xv_step(vector<vector<double> >& w, bool updateDOC = false);
@@ -60,7 +61,9 @@ class Caller {
           return NULL;
       }
     }
-    void writeXML(ostream& os, Scores& fullset);
+    void writeXML(ostream& os, Scores& fullset, Scores& fullsetPeptide);
+    string xmloutFN;
+    Scores fullset; //,thresholdset;
   protected:
     void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys );
     Normalizer * pNorm;
@@ -77,7 +80,6 @@ class Caller {
     string resultFN;
     string gistFN;
     string tabFN;
-    string xmloutFN;
     string weightFN;
     string call;
     string spectrumFile;
@@ -101,7 +103,6 @@ class Caller {
     vector<Scores> xv_train, xv_test;
     vector<double> xv_cposs, xv_cfracs;
     SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
-    Scores fullset; //,thresholdset;
     map<int, double> scan2rt;
 };
 

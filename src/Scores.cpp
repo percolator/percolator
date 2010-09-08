@@ -57,15 +57,15 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
-  os << "  <psm psm_id=\"" << sh.pPSM->id << "\"";
+  os << "    <psm psm_id=\"" << sh.pPSM->id << "\"";
   if (sh.label != 1) {
     os << " decoy=\"true\"";
   }
   os << ">" << endl;
-  os << "    <svm_score>" << sh.score << "</svm_score>" << endl;
-  os << "    <q_value>" << sh.pPSM->q << "</q_value>" << endl;
-  os << "    <pep>" << sh.pPSM->pep << "</pep>" << endl;
-  if (DataSet::getCalcDoc()) os << "    <retentionTime observed=\""
+  os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
+  os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
+  os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
+  if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\""
       << PSMDescription::unnormalize(sh.pPSM->retentionTime)
   << "\" predicted=\""
   << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
@@ -76,14 +76,35 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   string::size_type pos2 = peptide.find('.', ++pos1);
   string c = peptide.substr(pos2 + 1, peptide.size());
   string centpep = peptide.substr(pos1, pos2 - pos1);
-  os << "    <peptide n=\"" << n << "\" c=\"" << c << "\" seq=\""
+  os << "      <peptide n=\"" << n << "\" c=\"" << c << "\" seq=\""
       << centpep << "\"/>" << endl;
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
-    os << "    <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
+    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
                                                             << "</protein_id>" << endl;
   }
-  os << "  </psm>" << endl;
+  os << "      <p_value>" << "TODO"<< "</p_value>" <<endl;
+  os << "    </psm>" << endl;
+  return os;
+}
+
+ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
+  if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
+    return os;
+  }
+  os << "    <peptide psm_id=\"" << sh.pPSM->id << "\"";
+  if (sh.label != 1) {
+    os << " decoy=\"true\"";
+  }
+  os << ">" << endl;
+  os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
+  os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
+  os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <p_value>" << "TODO"<< "</p_value>" << endl;
+  os << "      <psms>" << endl;
+  os << "        <psm_id>" << "TODO" << "</psm_id>" << endl;
+  os << "      </psms>" << endl;
+  os << "    </peptide>" << endl;
   return os;
 }
 
@@ -158,15 +179,21 @@ ScoreHolder* Scores::getScoreHolder(const double* d) {
   return NULL;
 }
 
-void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff) {
+void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUniquePeptides) {
   scores.clear();
   PSMDescription* pPSM;
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  while ((pPSM = normIter.getNext()) != NULL) {
-    scores.push_back(ScoreHolder(.0, 1, pPSM));
-  }
-  while ((pPSM = shuffIter.getNext()) != NULL) {
-    scores.push_back(ScoreHolder(.0, -1, pPSM));
+  // if unique peptides
+  if(reportUniquePeptides){
+    while ((pPSM = normIter.getNext()) != NULL)
+      scores.push_back(ScoreHolderPeptide(.0, 1, pPSM));
+    while ((pPSM = shuffIter.getNext()) != NULL)
+      scores.push_back(ScoreHolderPeptide(.0, -1, pPSM));
+  } else{
+    while ((pPSM = normIter.getNext()) != NULL)
+      scores.push_back(ScoreHolder(.0, 1, pPSM));
+    while ((pPSM = shuffIter.getNext()) != NULL)
+      scores.push_back(ScoreHolder(.0, -1, pPSM));
   }
   pos = norm.getSize();
   neg = shuff.getSize();
