@@ -61,7 +61,7 @@ class Caller {
           return NULL;
       }
     }
-    void writeXML(ostream& os, Scores& fullset, Scores& fullsetPeptide);
+    void writeXML(bool uniquePeptides);
     string xmloutFN;
     Scores fullset; //,thresholdset;
   protected:

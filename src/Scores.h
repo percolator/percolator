@@ -68,6 +68,34 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
+/**
+ * ScoreHolder for unique peptides.
+ */
+class ScoreHolderPeptide: public ScoreHolder {
+  public:
+    ScoreHolderPeptide() :
+      ScoreHolder(){
+      psms_list = "";
+    }
+    ScoreHolderPeptide(ScoreHolder& sh) :
+      ScoreHolder(sh){
+      psms_list = sh.pPSM->id;
+    }
+    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
+      ScoreHolder(s, l, psm) {
+      if(psm != NULL)
+        psms_list = "";
+    }
+    virtual ~ScoreHolderPeptide() {
+      ;
+    }
+    string psms_list;
+};
+
+// overloading output operator for class ScoreHolderPeptide
+ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
+
+
 class AlgIn;
 
 class Scores {
@@ -95,6 +123,7 @@ class Scores {
     void generateNegativeTrainingSet(AlgIn& data, const double cneg);
     void normalizeScores(double fdr=0.01);
     void weedOutRedundant();
+    void fillInPsmsLists();
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction,
         bool findDirection);
@@ -142,30 +171,5 @@ class Scores {
     static bool outxmlDecoys;
     static uint32_t seed;
 };
-
-/**
- * ScoreHolder for unique peptides.
- */
-class ScoreHolderPeptide: public ScoreHolder {
-  public:
-    ScoreHolderPeptide() :
-      ScoreHolder(){
-      ;
-    }
-    ScoreHolderPeptide(ScoreHolder& sh) :
-      ScoreHolder(sh){
-      ;
-    }
-    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
-      ScoreHolder(s, l, psm) {
-      ;
-    }
-    virtual ~ScoreHolderPeptide() {
-      ;
-    }
-};
-
-// overloading output operator for class ScoreHolderPeptide
-ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
 
 #endif /*SCORES_H_*/

@@ -16,6 +16,7 @@
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <utility>
 #include <algorithm>
@@ -81,9 +82,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-                                                            << "</protein_id>" << endl;
+                                << "</protein_id>" << endl;
   }
-  os << "      <p_value>" << "TODO"<< "</p_value>" <<endl;
+  os << "      <p_value>" << sh.pPSM->p << "</p_value>" <<endl;
   os << "    </psm>" << endl;
   return os;
 }
@@ -92,7 +93,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
-  os << "    <peptide psm_id=\"" << sh.pPSM->id << "\"";
+  os << "    <peptide peptide_id=\"" << sh.pPSM->getPeptide() << "\"";
   if (sh.label != 1) {
     os << " decoy=\"true\"";
   }
@@ -100,9 +101,24 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
-  os << "      <p_value>" << "TODO"<< "</p_value>" << endl;
+  for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
+  != sh.pPSM->proteinIds.end(); ++pid) {
+    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
+                                  << "</protein_id>" << endl;
+  }
+  os << "      <p_value>" << sh.pPSM->p << "</p_value>" << endl;
   os << "      <psms>" << endl;
-  os << "        <psm_id>" << "TODO" << "</psm_id>" << endl;
+  // output all psms that contain the peptide
+  string s = sh.psms_list;
+  istringstream iss(s);
+  bool finished = false;
+  while(! finished) {
+    string psm;
+    iss >> psm;
+    if(iss)
+      os << "        <psm_id>" << psm << "</psm_id>" << endl;
+    else finished = true;
+  }
   os << "      </psms>" << endl;
   os << "    </peptide>" << endl;
   return os;
@@ -133,6 +149,7 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     copy(a->begin(), a->end(), back_inserter(scores));
   }
   if (reportUniquePeptides) {
+    fillInPsmsLists();
     weedOutRedundant();
   }
   neg = count_if(scores.begin(),
@@ -407,10 +424,12 @@ int Scores::calcQ(double fdr) {
   for (it = scores.begin(); it != scores.end(); it++) {
     if (it->label != -1) {
       targets++;
+      it->pPSM->p = (decoys+(double)1)/(neg+(double)1);
     }
     if (it->label == -1) {
       decoys++;
       efp = pi0 * decoys * targetDecoySizeRatio;
+      it->pPSM->p = (decoys)/(double)(neg);
     }
     if (targets) {
       q = efp / (double)targets;
@@ -464,8 +483,10 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
   data.m = ix2;
 }
 
+/**
+ * Routine that sees to that only unique peptides are kept
+ */
 void Scores::weedOutRedundant() {
-  // Routine that sees to that only unique peptides are kept
   vector<ScoreHolder>::iterator it = scores.begin();
   set<string> uniquePeptides;
   pair<set<string>::iterator, bool> ret;
@@ -478,6 +499,27 @@ void Scores::weedOutRedundant() {
     }
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ()); // Is this really needed?
+}
+
+/**
+ * for each unique peptide p, go through the list of all unique peptides and
+ * update p's list of psms if a peptide p2 == p is found
+ */
+void Scores::fillInPsmsLists(){
+  //TODO: n^2 complexity. Use smart data structure
+  vector<ScoreHolder>::iterator i = scores.begin();
+  for (; i != scores.end(); i++) {
+    vector<ScoreHolder>::iterator j = scores.begin();
+    for (; j != scores.end(); j++) {
+      string p = i->pPSM->getPeptide();
+      string p2 = j->pPSM->getPeptide();
+      // if the same peptide is found, add psm to psm_list
+      if (p.compare(p2) == 0){
+        ((ScoreHolderPeptide)*(i)).psms_list.append(j->pPSM->id);
+        ((ScoreHolderPeptide)*(i)).psms_list.append(" ");
+      }
+    }
+  }
 }
 
 void Scores::recalculateDescriptionOfGood(const double fdr) {

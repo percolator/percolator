@@ -28,27 +28,12 @@ using namespace std;
 #include "Caller.h"
 
 int main(int argc, char** argv) {
-  Caller* pCaller = new Caller(false);
-  Caller* pCallerPeptide = new Caller(true);
+  Caller* pCaller = new Caller();
   int retVal = -1;
-  // reading command line arguments
-  bool validArguments = pCaller->parseOptions(argc, argv);
-  validArguments = validArguments && pCallerPeptide->parseOptions(argc, argv);
-  if (validArguments) {
-    // executing: psm
+  if (pCaller->parseOptions(argc, argv)) {
     retVal = pCaller->run();
-    Globals::clean();
-    // executing: unique peptides
-    retVal += pCallerPeptide->run();
-  }
-  // outputing results to XML file
-  if (pCallerPeptide->xmloutFN.size() > 0) {
-    ofstream xmlStream(pCallerPeptide->xmloutFN.data(), ios::out);
-    pCallerPeptide->writeXML(xmlStream, pCaller->fullset, pCallerPeptide->fullset);
-    xmlStream.close();
   }
   delete pCaller;
-  delete pCallerPeptide;
   Globals::clean();
   return retVal;
 }

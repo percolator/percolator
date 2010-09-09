@@ -89,7 +89,7 @@ class PSMDescription {
 
     static double normDiv, normSub;
 
-    double q, pep;
+    double q, pep, p;
     double* features;
     double* retentionFeatures;
     double retentionTime, predictedTime, massDiff, pI;
