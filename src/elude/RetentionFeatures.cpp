@@ -21,6 +21,8 @@
 /*
  * The file includes definitions of variables and methods in the class RetentionFeatures
  */
+#include <math.h>
+
 #include <iostream>
 #include <algorithm>
 
@@ -43,6 +45,8 @@ const map<string, double> RetentionFeatures::kBulkiness = map_list_of ("A", 11.5
                                                                       ("S", 9.47) ("T", 15.77) ("V", 21.57) ("W", 21.67) ("Y", 18.03);
 
 RetentionFeatures::RetentionFeatures() {
+  string aa_alphabet[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
+  amino_acids_alphabet_.assign(aa_alphabet, aa_alphabet + 20);
 }
 
 RetentionFeatures::~RetentionFeatures() {
@@ -56,8 +60,7 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
 
   if (index_value != index.end()) {
     return index_value->second;
-  }
-  else {
+  } else {
     unmodified_aa = aa[aa.size() - 1];
     index_value = index.find(unmodified_aa);
     if (index_value != index.end()) {
@@ -65,8 +68,7 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
         cerr << "Warning: Could not find the index value for " << aa << ". Use index value for " << unmodified_aa << " instead" << endl;
       }
       return index_value->second;
-    }
-    else {
+    } else {
       if (VERB > 1) {
         cerr << "Error: Could not find the index value for " << aa << endl;
         cerr << "Execution aborted" << endl;
@@ -76,50 +78,6 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
   }
 }
 
-/* calculate the sum of hydrophobicities of all aa in the peptide; if a modified aa is not in the index
- * then the value of the unmodified aa is used; is an aa is not found at all in the index, the program
- * will abort its execution */
-double RetentionFeatures::IndexSum(const string &peptide, const map<string, double> &index) {
-  double sum = 0.0;
-  string aa;
-  int end_position, i = 0, len = peptide.size();
-
-  while (i < len) {
-    aa = peptide[i];
-    if (aa == "[") {
-      end_position = peptide.find("]", i);
-      aa = peptide.substr(i, end_position - i + 2);
-    }
-    sum += GetIndexValue(aa, index);
-    i += aa.size();
-  }
-
-  return sum;
-}
-
-/* calculate the average of hydrophobicities of all aa in the peptide; if a modified aa is not in the index
- * then the value of the unmodified aa is used; is an aa is not found at all in the index, the program
- * will abort its execution */
-double RetentionFeatures::IndexAvg(const string &peptide, const map<string, double> &index) {
-  double sum = 0.0;
-  string aa;
-  int end_position, i = 0, len = peptide.size();
-  double number_aa = 0.0;
-
-  while (i < len) {
-    ++number_aa;
-    aa = peptide[i];
-    if (aa == "[") {
-      end_position = peptide.find("]", i);
-      aa = peptide.substr(i, end_position - i + 2);
-    }
-    sum += GetIndexValue(aa, index);
-    i += aa.size();
-  }
-
-  return sum / number_aa;
-}
-
 /* get the amino acids in a peptide */
 vector<string> RetentionFeatures::GetAminoAcids(const string &peptide) {
   vector<string> amino_acids;
@@ -127,7 +85,7 @@ vector<string> RetentionFeatures::GetAminoAcids(const string &peptide) {
   string aa;
 
   while (i < len) {
-     aa = peptide[i];
+     aa = peptide.at(i);
      if (aa == "[") {
        end_position = peptide.find("]", i);
        aa = peptide.substr(i, end_position - i + 2);
@@ -135,8 +93,40 @@ vector<string> RetentionFeatures::GetAminoAcids(const string &peptide) {
      amino_acids.push_back(aa);
      i += aa.size();
    }
-
   return amino_acids;
+}
+
+/* get the unmodified amino acid */
+char RetentionFeatures::GetUnmodifiedAA(const string &aa) {
+  return aa[aa.size() - 1];
+}
+
+/* calculate the average of hydrophobicities of all aa in the peptide; if a modified aa is not in the index
+ * then the value of the unmodified aa is used; is an aa is not found at all in the index, the program
+ * will abort its execution */
+double RetentionFeatures::IndexAvg(const string &peptide, const map<string, double> &index) {
+  double sum = 0.0;
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  vector<string>::iterator it = amino_acids.begin();
+
+  for( ; it != amino_acids.end(); ++it) {
+    sum += GetIndexValue(*it, index);
+  }
+  return sum / (double) amino_acids.size();
+}
+
+/* calculate the sum of hydrophobicities of all aa in the peptide; if a modified aa is not in the index
+ * then the value of the unmodified aa is used; is an aa is not found at all in the index, the program
+ * will abort its execution */
+double RetentionFeatures::IndexSum(const string &peptide, const map<string, double> &index) {
+  double sum = 0.0;
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  vector<string>::iterator it = amino_acids.begin();
+
+  for( ; it != amino_acids.end(); ++it) {
+    sum += GetIndexValue(*it, index);
+  }
+  return sum;
 }
 
 /* calculate the sum of hydrophobicities of neighbours of R(Argenine) and K (Lysine) */
@@ -149,7 +139,7 @@ double RetentionFeatures::IndexNearestNeigbourPos(const string &peptide, const m
 
   for(int i = 0; i < len; ++i) {
     aa = amino_acids[i];
-    unmodified_aa = aa[aa.size() - 1];
+    unmodified_aa = GetUnmodifiedAA(aa);
     if (unmodified_aa == 'K' || unmodified_aa == 'R') {
       if (i > 0) {
         sum += max(0.0, GetIndexValue(amino_acids[i - 1], index));
@@ -162,22 +152,316 @@ double RetentionFeatures::IndexNearestNeigbourPos(const string &peptide, const m
   return sum;
 }
 
-/* calculate the peptide length */
-double RetentionFeatures::PeptideLength(const string &peptide) {
+/* calculate the sum of hydrophobicities of neighbours of D(Aspartic Acid) and E (Glutamic acid) */
+double RetentionFeatures::IndexNearestNeigbourNeg(const string &peptide, const map<string, double> &index) {
+  double sum = 0.0;
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
   string aa;
-  int end_position, i = 0, len = peptide.size();
-  double number_aa = 0.0;
+  char unmodified_aa;
 
-  while (i < len) {
-    ++number_aa;
-    if (peptide[i] == '[') {
-      end_position = peptide.find("]", i);
-      i += end_position - i + 2;
-    }
-    else {
-      ++i;
+  for(int i = 0; i < len; ++i) {
+    aa = amino_acids[i];
+    unmodified_aa = GetUnmodifiedAA(aa);
+    if (unmodified_aa == 'D' || unmodified_aa == 'E') {
+      if (i > 0) {
+        sum += max(0.0, GetIndexValue(amino_acids[i - 1], index));
+      }
+      if (i < len - 1) {
+        sum += max(0.0, GetIndexValue(amino_acids[i + 1], index));
+      }
     }
   }
+  return sum;
+}
 
-  return number_aa;
+/* calculate the hydrophobicity of the N-terminus */
+double RetentionFeatures::IndexN(const string &peptide, const map<string, double> &index) {
+  int end_position, len = peptide.size();
+  string aa;
+
+  aa = peptide.at(0);
+  if (aa == "[") {
+    end_position = peptide.find("]", 0);
+    aa = peptide.substr(0, end_position + 2);
+  }
+  return GetIndexValue(aa, index);
+}
+
+/* calculate the hydrophobicity of the C-terminus */
+double RetentionFeatures::IndexC(const string &peptide, const map<string, double> &index) {
+  int start_position, len = peptide.size();
+  string aa;
+
+  if (peptide.at(len - 2) == ']') {
+    start_position = peptide.find_last_of("[", len - 2);
+    aa = peptide.substr(start_position);
+  } else {
+    aa = peptide.at(len - 1);
+  }
+  return GetIndexValue(aa, index);
+}
+
+/* product between hydrophobicity of n- and c- terminus */
+double RetentionFeatures::IndexNC(const string &peptide, const map<string, double> &index) {
+  double n = max(0.0, IndexN(peptide, index));
+  double c = max(0.0, IndexC(peptide, index));
+  return n * c;
+}
+
+/* the most hydrophobic window */
+double RetentionFeatures::IndexMaxPartialSum(const string &peptide, const map<string, double> &index, const int &win) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  int window_size = min(win, len - 1);
+  double max_sum, sum = 0.0;
+  vector<string>::iterator lead = amino_acids.begin();
+  vector<string>::iterator lag = amino_acids.begin();
+
+  for( ; lead !=  amino_acids.begin() + window_size; ++lead) {
+    sum += GetIndexValue(*lead, index);
+  }
+  max_sum = sum;
+  for( ; lead != amino_acids.end(); ++lead, ++lag) {
+    sum -= GetIndexValue(*lag, index);
+    sum += GetIndexValue(*lead, index);
+    max_sum = max(max_sum, sum);
+  }
+  return max_sum;
+}
+
+/* the least hydrophobic window */
+double RetentionFeatures::IndexMinPartialSum(const string &peptide, const map<string, double> &index, const int &win) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  int window_size = min(win, len - 1);
+  double min_sum, sum = 0.0;
+  vector<string>::iterator lead = amino_acids.begin();
+  vector<string>::iterator lag = lead;
+
+  for( ; lead !=  amino_acids.begin() + window_size; ++lead) {
+    sum += GetIndexValue(*lead, index);
+  }
+  min_sum = sum;
+  for( ; lead != amino_acids.end(); ++lead, ++lag) {
+    sum -= GetIndexValue(*lag, index);
+    sum += GetIndexValue(*lead, index);
+    min_sum = min(min_sum, sum);
+  }
+  return min_sum;
+}
+
+/* calculate the average hydrophobicity of an index */
+double RetentionFeatures::AvgHydrophobicityIndex(const map<string, double> &index) {
+  map<string, double>::const_iterator it = index.begin();
+  double sum = 0.0;
+
+  for ( ; it != index.end(); ++it)
+    sum += it->second;
+  return sum / (double) index.size();
+}
+
+/* calculate the most hydrophobic sides for alpha helices */
+double RetentionFeatures::IndexMaxHydrophobicSideHelix(const string &peptide,  const map<string, double> &index) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  double cos300 = cos(300 * M_PI / 180);
+  double cos400 = cos(400 * M_PI / 180);
+
+  if (len < 9) {
+    double avg_hydrophobicity_index = AvgHydrophobicityIndex(index);
+    return avg_hydrophobicity_index * (1 + 2 * cos300 + 2 * cos400);
+  } else {
+    double hydrophobicity_side = 0.0;
+    double max_hydrophobicity_side = GetIndexValue(amino_acids[4], index) +
+                 cos300 * (GetIndexValue(amino_acids[1], index) + GetIndexValue(amino_acids[7], index)) +
+                 cos400 * (GetIndexValue(amino_acids[0], index) + GetIndexValue(amino_acids[8], index));
+
+    for(int i = 5; i <= len - 5; ++i) {
+      hydrophobicity_side = GetIndexValue(amino_acids[i], index) +
+          cos300 * (GetIndexValue(amino_acids[i - 3], index) + GetIndexValue(amino_acids[i + 3], index)) +
+          cos400 * (GetIndexValue(amino_acids[i - 4], index) + GetIndexValue(amino_acids[i + 4], index));
+      max_hydrophobicity_side = max(max_hydrophobicity_side, hydrophobicity_side);
+    }
+    return max_hydrophobicity_side;
+  }
+}
+
+/* calculate the least hydrophobic sides for alpha helices */
+double RetentionFeatures::IndexMinHydrophobicSideHelix(const string &peptide,  const map<string, double> &index) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  double cos300 = cos(300 * M_PI / 180);
+  double cos400 = cos(400 * M_PI / 180);
+
+  if (len < 9) {
+    double avg_hydrophobicity_index = AvgHydrophobicityIndex(index);
+    return avg_hydrophobicity_index * (1 + 2 * cos300 + 2 * cos400);
+  } else {
+    double hydrophobicity_side = 0.0;
+    double min_hydrophobicity_side = GetIndexValue(amino_acids[4], index) +
+                 cos300 * (GetIndexValue(amino_acids[1], index) + GetIndexValue(amino_acids[7], index)) +
+                 cos400 * (GetIndexValue(amino_acids[0], index) + GetIndexValue(amino_acids[8], index));
+
+    for(int i = 5; i <= len - 5; ++i) {
+      hydrophobicity_side = GetIndexValue(amino_acids[i], index) +
+          cos300 * (GetIndexValue(amino_acids[i - 3], index) + GetIndexValue(amino_acids[i + 3], index)) +
+          cos400 * (GetIndexValue(amino_acids[i - 4], index) + GetIndexValue(amino_acids[i + 4], index));
+      min_hydrophobicity_side = min(min_hydrophobicity_side, hydrophobicity_side);
+    }
+    return min_hydrophobicity_side;
+  }
+}
+
+/* calculate the maximum value of the hydrophobic moment */
+double RetentionFeatures::IndexMaxHydrophobicMoment(const string &peptide, const map<string, double> &index, const double &angle_degrees,
+                                               const int &win) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  double sin_sum = 0.0, cos_sum = 0.0;
+  double angle_radians = angle_degrees * M_PI / 180;
+
+  if (len < win) {
+    double avg_hydrophobicity_index = AvgHydrophobicityIndex(index);
+    for(int i = 1; i <= win; ++i) {
+      cos_sum += cos(i * angle_radians);
+      sin_sum += sin(i * angle_radians);
+    }
+    cos_sum *= avg_hydrophobicity_index;
+    sin_sum *= avg_hydrophobicity_index;
+    return sqrt((cos_sum * cos_sum) + (sin_sum * sin_sum));
+  } else {
+    vector<string>::iterator lead = amino_acids.begin();
+    vector<string>::iterator lag = lead;
+    double window_hmoment = 0.0;
+    int i = 1;
+    for( ; lead != amino_acids.begin() + win; ++lead, ++i) {
+      cos_sum += GetIndexValue(*lead, index) * cos(i * angle_radians);
+      sin_sum += GetIndexValue(*lead, index) * sin(i * angle_radians);
+    }
+    double max_hmoment = sqrt((cos_sum * cos_sum) + (sin_sum * sin_sum));
+    for( ; lead != amino_acids.end(); ++lead, ++lag, ++i) {
+      cos_sum += GetIndexValue(*lead, index) * cos(i * angle_radians);
+      cos_sum -= GetIndexValue(*lag, index) * cos((i-win) * angle_radians);
+      sin_sum += GetIndexValue(*lead, index) * sin(i * angle_radians);
+      sin_sum -= GetIndexValue(*lag, index) * sin((i-win) * angle_radians);
+      window_hmoment = sqrt((cos_sum * cos_sum) + (sin_sum * sin_sum));
+      max_hmoment = max(max_hmoment, window_hmoment);
+    }
+    return max_hmoment;
+  }
+}
+
+/* calculate the minimum value of the hydrophobic moment */
+double RetentionFeatures::IndexMinHydrophobicMoment(const string &peptide, const map<string, double> &index, const double &angle_degrees,
+                                               const int &win) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  double sin_sum = 0.0, cos_sum = 0.0;
+  double angle_radians = angle_degrees * M_PI / 180;
+
+  if (len < win) {
+    double avg_hydrophobicity_index = AvgHydrophobicityIndex(index);
+    for(int i = 1; i <= win; ++i) {
+      cos_sum += cos(i * angle_radians);
+      sin_sum += sin(i * angle_radians);
+    }
+    cos_sum *= avg_hydrophobicity_index;
+    sin_sum *= avg_hydrophobicity_index;
+    return sqrt((cos_sum * cos_sum) + (sin_sum * sin_sum));
+  } else {
+    vector<string>::iterator lead = amino_acids.begin();
+    vector<string>::iterator lag = lead;
+    double window_hmoment = 0.0;
+    int i = 1;
+    for( ; lead != amino_acids.begin() + win; ++lead, ++i) {
+      cos_sum += GetIndexValue(*lead, index) * cos(i * angle_radians);
+      sin_sum += GetIndexValue(*lead, index) * sin(i * angle_radians);
+    }
+    double min_hmoment = sqrt((cos_sum * cos_sum) + (sin_sum * sin_sum));
+    for( ; lead != amino_acids.end(); ++lead, ++lag, ++i) {
+      cos_sum += GetIndexValue(*lead, index) * cos(i * angle_radians);
+      cos_sum -= GetIndexValue(*lag, index) * cos((i-win) * angle_radians);
+      sin_sum += GetIndexValue(*lead, index) * sin(i * angle_radians);
+      sin_sum -= GetIndexValue(*lag, index) * sin((i-win) * angle_radians);
+      window_hmoment = sqrt((cos_sum * cos_sum) + (sin_sum * sin_sum));
+      min_hmoment = min(min_hmoment, window_hmoment);
+    }
+    return min_hmoment;
+  }
+}
+
+/* calculate the sum of squared differences in hydrophobicities between neighbours */
+double RetentionFeatures::IndexSumSquaredDiff(const string &peptide, const map<string, double> &index) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  double squared_diff_sum = 0.0, diff;
+  vector<string>::iterator lag = amino_acids.begin();
+  vector<string>::iterator lead = lag + 1;
+
+  for( ; lead != amino_acids.end(); ++lead, ++lag) {
+    diff = GetIndexValue(*lag, index) - GetIndexValue(*lead, index);
+    squared_diff_sum += diff * diff;
+  }
+  return squared_diff_sum;
+}
+
+/* calculate the number of a certain type of aa. The set gives the type of these amino acids
+ * (for example, the type could be the list "A", "I", "L", "M", "F", "W", "Y", "V", "C" for
+ * hydrophobic aa) */
+double RetentionFeatures::NumberTypeAA(const string &peptide, const set<string> &amino_acid_type) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  vector<string>::iterator it = amino_acids.begin();
+  double occurences = 0.0;
+
+  for( ; it != amino_acids.end(); ++it)
+  {
+    if (amino_acid_type.find(*it) != amino_acid_type.end()) {
+      ++occurences;
+    }
+  }
+  return occurences;
+}
+
+/* calculate the number of a consecutibe aa of a certain type. The set gives the type of these such amino acids
+ * (for example, the type could be the list "A", "I", "L", "M", "F", "W", "Y", "V", "C" for
+ * hydrophobic aa) */
+double RetentionFeatures::NumberConsecTypeAA(const string &peptide, const set<string> &amino_acid_type) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  int len = amino_acids.size();
+  double occurences = 0.0;
+
+  for(int i = 0; i < len - 1; ++i) {
+    if ((amino_acid_type.find(amino_acids[i]) != amino_acid_type.end()) &&
+        (amino_acid_type.find(amino_acids[i+1]) != amino_acid_type.end()))
+      ++occurences;
+  }
+
+  return occurences;
+}
+
+/* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
+double* RetentionFeatures::FillAAFeatures(const string &peptide, double *retention_features) {
+  int number_aa = amino_acids_alphabet_.size();
+
+  for(int i = 0; i < number_aa; ++i) {
+    retention_features[i] = 0.0;
+  }
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  vector<string>::iterator it_peptide = amino_acids.begin();
+  int i;
+  for( ; it_peptide != amino_acids.end(); ++it_peptide) {
+    for(i = 0; i < number_aa; ++i) {
+      if (amino_acids_alphabet_[i] == (*it)) {
+        ++feat[i];
+        break;
+      }
+    }
+  }
+  return retention_features + amino_acids_alphabet_.size();
+}
+
+/* calculate the peptide length */
+double RetentionFeatures::PeptideLength(const string &peptide) {
+  vector<string> amino_acids = GetAminoAcids(peptide);
+  return amino_acids.size();
 }
