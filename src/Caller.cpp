@@ -55,19 +55,19 @@ using namespace xercesc;
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
-                                                              pNorm(NULL),
-                                                              pCheck(NULL),
-                                                              svmInput(NULL),
-                                                              modifiedFN(""),
-                                                              modifiedDecoyFN(""),
-                                                              forwardFN(""),
-                                                              decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-                                                              decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
-                                                              weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
-                                                              docFeatures(false), reportPerformanceEachIteration(false),
-                                                              test_fdr(0.01), selectionfdr(0.01),
-                                                              selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
-                                                              trainRatio(0.6), niter(10) {
+    pNorm(NULL),
+    pCheck(NULL),
+    svmInput(NULL),
+    modifiedFN(""),
+    modifiedDecoyFN(""),
+    forwardFN(""),
+    decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
+    decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
+    weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
+    docFeatures(false), reportPerformanceEachIteration(false),
+    test_fdr(0.01), selectionfdr(0.01),
+    selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
+    trainRatio(0.6), niter(10) {
 }
 
 Caller::~Caller() {
@@ -147,24 +147,18 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "similair condition." << endl;
   // init
   CommandLineParser cmd(intro.str());
-
-
   cmd.defineOption("L",
       "xsdoutput",
       "xml output filename (using Codesynthesis Xsd)",
       "filename");
-
   cmd.defineOption("Y",
       "tmpfileSQTtoXML",
       "the SQT conversion needs a file name where to store temporary data ( in a Tokyo cabinet database ). Unexpected behaviour is expected if you run many instances of this program with the same filename.",
       "filename");
-
-
   cmd.defineOption("E",
       "xsdinput",
       "xml input filename (using Codesynthesis Xsd)",
       "filename");
-
   cmd.defineOption("o",
       "sqt-out",
       "Create an SQT file with the specified name from the given target SQT file, \
@@ -535,8 +529,6 @@ void Caller::readRetentionTime(string filename) {
  */
 
 void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys ) {
-
-
   try
   {
     namespace xml = xsd::cxx::xml;
@@ -868,9 +860,9 @@ void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal, shuffled, reportUniquePeptides);
   if (VERB > 1) {
     cerr << "Train/test set contains " << fullset.posSize()
-                                                                    << " positives and " << fullset.negSize()
-                                                                    << " negatives, size ratio=" << fullset.targetDecoySizeRatio
-                                                                    << " and pi0=" << fullset.pi0 << endl;
+    << " positives and " << fullset.negSize()
+    << " negatives, size ratio=" << fullset.targetDecoySizeRatio
+    << " and pi0=" << fullset.pi0 << endl;
   }
   //Normalize features
   set<DataSet*> all;
@@ -958,12 +950,10 @@ int Caller::run() {
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
-  //File reading
-
+  // Reading input files (pin or sqt)
   readFiles();
   fillFeatureSets();
   cout << "baFeatureNames::getNumFeatures=" << FeatureNames::getNumFeatures() << endl;
-
   vector<vector<double> > w(xval_fold,
       vector<double> (FeatureNames::getNumFeatures()
   + 1)), ww;
@@ -1004,7 +994,8 @@ int Caller::run() {
         << endl;
   }
 
-  // unique peptides
+  // unique peptides? the following code will be repeated for both analysis on
+  // psm-fdr and peptide-fdr
   bool uniquePeptides[] = {false, true};
   for(int r=0; r<2; r++){
     reportUniquePeptides = uniquePeptides[r];

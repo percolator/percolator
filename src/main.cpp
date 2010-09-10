@@ -14,18 +14,13 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <fstream>
-#include <vector>
-#include <set>
-#include <map>
-#include <string>
-using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
 #include "SetHandler.h"
 #include "Caller.h"
 #include "Globals.h"
 #include "Caller.h"
+using namespace std;
 
 int main(int argc, char** argv) {
   Caller* pCaller = new Caller();

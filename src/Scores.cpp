@@ -82,7 +82,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-                                << "</protein_id>" << endl;
+                                    << "</protein_id>" << endl;
   }
   os << "      <p_value>" << sh.pPSM->p << "</p_value>" <<endl;
   os << "    </psm>" << endl;
@@ -104,7 +104,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-                                  << "</protein_id>" << endl;
+                                      << "</protein_id>" << endl;
   }
   os << "      <p_value>" << sh.pPSM->p << "</p_value>" << endl;
   os << "      <psms>" << endl;
@@ -149,7 +149,6 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     copy(a->begin(), a->end(), back_inserter(scores));
   }
   if (reportUniquePeptides) {
-    fillInPsmsLists();
     weedOutRedundant();
   }
   neg = count_if(scores.begin(),
@@ -310,10 +309,6 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   size_t randIndex = lcg_rand() % xval_fold;
   for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin();
       it != spectraScores.end(); ++it) {
-    // TODO: decoy scoreHolders are empty?
-    // A bit suspicious although it seems to be the desired behavior.
-    //cout << "  [" << (*it).first << ", " << (*it).second << "]" << endl;
-
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new folder
     if(previousSpectrum != (*it).first){
@@ -484,7 +479,29 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
 }
 
 /**
- * Routine that sees to that only unique peptides are kept
+ * for each peptide p, go through the list of all peptides and update p's list
+ * of psms if a peptide p2 == p is found (used for analysis on peptide-fdr
+ * rather than psm-fdr)
+ */
+void Scores::fillInPsmsLists(){
+  //TODO: n^2 complexity. Use smart data structure
+  for (vector<ScoreHolder>::iterator i = scores.begin(); i != scores.end(); i++) {
+    vector<ScoreHolder>::iterator j = scores.begin();
+    for (; j != scores.end(); j++) {
+      string p = i->pPSM->getPeptide();
+      string p2 = j->pPSM->getPeptide();
+      // if the same peptide is found, add psm to psm_list
+      if (p.compare(p2) == 0){
+        i->psms_list.append(j->pPSM->id);
+        i->psms_list.append(" ");
+      }
+    }
+  }
+}
+
+/**
+ * Routine that sees to that only unique peptides are kept (used for analysis
+ * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
   vector<ScoreHolder>::iterator it = scores.begin();
@@ -493,33 +510,22 @@ void Scores::weedOutRedundant() {
   for (; it != scores.end();) {
     ret = uniquePeptides.insert(it->pPSM->peptide);
     if (!ret.second) {
+      // duplicate peptide
+      vector<ScoreHolder>::iterator tmp = scores.begin();
+      for (; tmp != it;) {
+        if(tmp->pPSM->peptide.compare(it->pPSM->peptide) == 0){
+          tmp->psms_list.append(it->pPSM->id);
+          tmp->psms_list.append(" ");
+          tmp=it;
+        }
+        else ++tmp;
+      }
       it = scores.erase(it);
     } else {
       ++it;
     }
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ()); // Is this really needed?
-}
-
-/**
- * for each unique peptide p, go through the list of all unique peptides and
- * update p's list of psms if a peptide p2 == p is found
- */
-void Scores::fillInPsmsLists(){
-  //TODO: n^2 complexity. Use smart data structure
-  vector<ScoreHolder>::iterator i = scores.begin();
-  for (; i != scores.end(); i++) {
-    vector<ScoreHolder>::iterator j = scores.begin();
-    for (; j != scores.end(); j++) {
-      string p = i->pPSM->getPeptide();
-      string p2 = j->pPSM->getPeptide();
-      // if the same peptide is found, add psm to psm_list
-      if (p.compare(p2) == 0){
-        ((ScoreHolderPeptide)*(i)).psms_list.append(j->pPSM->id);
-        ((ScoreHolderPeptide)*(i)).psms_list.append(" ");
-      }
-    }
-  }
 }
 
 void Scores::recalculateDescriptionOfGood(const double fdr) {
