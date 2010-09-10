@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   RetentionFeatures rf;
-  bitset<8> x(string("11111111"));
+  bitset<6> x(string("111111"));
   rf.set_active_feature_groups(x);
   cout << rf.active_feature_groups();
   //cout << rf.k_num_feature_groups() << endl;

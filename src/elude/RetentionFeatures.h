@@ -32,6 +32,7 @@
 #include <map>
 #include <bitset>
 #include <set>
+#include <utility>
 
 using namespace std;
 
@@ -40,15 +41,13 @@ using namespace std;
 enum FeatureGroup {
   SVR_INDEX = 0,
   KYTE_DOO_LITTLE_INDEX = 1,
-  POLAR_FEATURES = 2,
-  HYDROPHOBIC_FEATURES = 3,
-  BULKINESS = 4,
-  LENGTH = 5,
-  PTM_FEATURES = 6,
-  AA_FEATURES = 7
+  BULKINESS = 2,
+  LENGTH = 3,
+  PTM_FEATURES = 4,
+  AA_FEATURES = 5
 };
 /* number of feature groups */
-#define NUM_FEATURE_GROUPS 8
+#define NUM_FEATURE_GROUPS 6
 
 /* forward declaration of PSMDescription */
 class PSMDescription;
@@ -58,52 +57,40 @@ class RetentionFeatures {
    RetentionFeatures();
    ~RetentionFeatures();
 
-   /* computes the retention features for a set of peptides; return 0 if success */
-   int ComputeRetentionFeatures(vector<PSMDescription> &psms);
-   /* computes the retention features for one psm */
-   int ComputeRetentionFeatures(PSMDescription &psm);
-   /* compute the features for a retention index; returns a pointer to the feature table */
-   double* ComputePolarFeatures(const string &peptide, double *features);
-   /* compute the features related to hydrophobic aa; returns a pointer to the feature table */
-   double* ComputeHydrophobicFeatures(const string &peptide, double *features);
-   /* compute bulkiness features; returns a pointer to the feature table */
-   double* ComputeBulkinessFeatures(const string &peptide, double *features);
-   /* compute length features; returns a pointer to the feature table */
-   double* ComputeLengthFeatures(const string &peptide, double *features);
-   /* compute ptm features; returns a pointer to the feature table */
-   double* ComputePtmFeatures(const string &peptide, double *features);
-   /* compute aa features; returns a pointer to the feature table */
-   double* ComputeAAFeatures(const string &peptide, double *features);
-
-   double* ComputeIndexFeatures(const string &peptide, const map<string, double> &index, double *features);
-   /* compute the features related to polar aa; returns a pointer to the feature table */
-
+   /************ SMALL FUNCTIONS ************/
    /* get the value in the index for aa */
    static double GetIndexValue(const string &aa, const map<string, double> &index);
-   /* get the unmodified version of an amino acid */
-   static char GetUnmodifiedAA(const string &aa);
    /* get the amino acids in a peptide (including the modified ones) */
    static vector<string> GetAminoAcids(const string &peptide);
+   /* get the unmodified version of an amino acid */
+   static char GetUnmodifiedAA(const string &aa);
+
+   /************ INDEX FUNCTIONS ************/
+   /* compute all index features for a peptide */
+   static double* ComputeIndexFeatures(const string &peptide, const map<string, double> &index, const set<string> &polar_aa,
+       const set<string> &hydrophobic_aa, double *features);
+   /* get the kPercentageAA*100% AA with the lowest retention and highest retentions*/
+   static pair< set<string>, set<string> > GetExtremeRetentionAA(const map<string, double> &index);
+   /* calculate the number of a certain type of aa The set gives the list of such amino acids */
+   static double NumberTypeAA(const string &peptide, const set<string> &amino_acid_type);
+   /* calculate the number of a consecutibe aa of a certain type. The set gives the type of these such amino acids */
+   static double NumberConsecTypeAA(const string &peptide, const set<string> &amino_acid_type);
+   /* calculate the average hydrophobicity of an index */
+   static double AvgHydrophobicityIndex(const map<string, double> &index);
    /* compute the sum of hydrophobicities of the amino acids in a peptide */
    static double IndexSum(const string &peptide, const map<string, double> &index);
    /* compute the average hydrophobicity of the aa in the peptide */
    static double IndexAvg(const string &peptide, const map<string, double> &index);
-   /* calculate the sum of hydrophobicities of neighbours of R(Argenine) and K (Lysine) */
-   static double IndexNearestNeigbourPos(const string &peptide, const map<string, double> &index);
-   /* calculate the sum of hydrophobicities of neighbours of D(Aspartic Acid) and E (Glutamic acid) */
-   static double IndexNearestNeigbourNeg(const string &peptide, const map<string, double> &index);
    /* calculate the hydrophobicity of the N-terminus */
    static double IndexN(const string &peptide, const map<string, double> &index);
    /* calculate the hydrophobicity of the C-terminus */
    static double IndexC(const string &peptide, const map<string, double> &index);
-   /* product between hydrophobicity of n- and c- terminus */
-   static double IndexNC(const string &peptide, const map<string, double> &index);
+   /* calculate the sum of hydrophobicities of polar aa */
+   static double IndexNearestNeigbour(const string &peptide, const map<string, double> &index, const set<string> &polar_aa);
    /* the most hydrophobic window */
    static double IndexMaxPartialSum(const string &peptide, const map<string, double> &index, const int &win);
    /* the least hydrophobic window */
    static double IndexMinPartialSum(const string &peptide, const map<string, double> &index, const int &win);
-   /* calculate the average hydrophobicity of an index */
-   static double AvgHydrophobicityIndex(const map<string, double> &index);
    /* calculate the most hydrophobic sides for alpha helices */
    static double IndexMaxHydrophobicSideHelix(const string &peptide,  const map<string, double> &index);
    /* calculate the least hydrophobic sides for alpha helices */
@@ -112,17 +99,40 @@ class RetentionFeatures {
    static double IndexMaxHydrophobicMoment(const string &peptide, const map<string, double> &index, const double &angle_degrees, const int &win);
    /* calculate the minimum value of the hydrophobic moment */
    static double IndexMinHydrophobicMoment(const string &peptide, const map<string, double> &index, const double &angle_degrees, const int &win);
-   /* Compute the length of a peptide */
-   static double PeptideLength(const string &peptide);
    /* Calculate the sum of squared differences in hydrophobicities between neighbours */
    static double IndexSumSquaredDiff(const string &peptide, const map<string, double> &index);
+   /* product between hydrophobicity of n- and c- terminus */
+   /* static double IndexNC(const string &peptide, const map<string, double> &index); */
+   /* calculate the sum of hydrophobicities of neighbours of D(Aspartic Acid) and E (Glutamic acid) */
+   /* static double IndexNearestNeigbourNeg(const string &peptide, const map<string, double> &index); */
 
-   /* calculate the number of a certain type of aa The set gives the list of such amino acids */
-   static double NumberTypeAA(const string &peptide, const set<string> &amino_acid_type);
-   /* calculate the number of a consecutibe aa of a certain type. The set gives the type of these such amino acids */
-   static double NumberConsecTypeAA(const string &peptide, const set<string> &amino_acid_type);
-   /* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
-   static double* FillAAFeatures(const string &peptide, double *retention_features);
+   /************ BULKINESS FUNCTIONS ************/
+   /* compute the features related to bulkiness; */
+   static double* ComputeBulkinessFeatures(const string &peptide, const map<string, double> &bulkiness, double *features);
+   /* compute bulkiness features; returns a pointer to the feature table */
+   static double ComputeBulkinessSum(const string &peptide, const map<string, double> &bulkiness);
+
+
+   /* computes the retention features for a set of peptides; return 0 if success */
+   int ComputeRetentionFeatures(vector<PSMDescription> &psms);
+   /* computes the retention features for one psm */
+   int ComputeRetentionFeatures(PSMDescription &psm);
+   /* Compute the length of a peptide */
+   static double PeptideLength(const string &peptide);
+
+   /* compute the features related to hydrophobic aa; returns a pointer to the feature table */
+   double* ComputeHydrophobicFeatures(const string &peptide, double *features);
+   /* compute length features; returns a pointer to the feature table */
+   double* ComputeLengthFeatures(const string &peptide, double *features);
+   /* compute ptm features; returns a pointer to the feature table */
+   double* ComputePtmFeatures(const string &peptide, double *features);
+
+
+
+
+  /* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
+   double* FillAAFeatures(const string &peptide, double *retention_features);
+
 
    /* accessors and mutators */
    static const map<string, double>& k_kyte_doolittle() { return kKyteDoolittle; }
@@ -143,6 +153,9 @@ class RetentionFeatures {
    static const map<string, double> kKyteDoolittle;
    /* bulkiness as defined by Zimmerman et al */
    static const map<string, double> kBulkiness;
+   /* fraction of the aa that are considered polar or hydrophobic */
+   static const double kPercentageAA;
+
    /* every bit set corresponds to an active group of features */
    bitset<NUM_FEATURE_GROUPS> active_feature_groups_;
    /* SVR trained index */

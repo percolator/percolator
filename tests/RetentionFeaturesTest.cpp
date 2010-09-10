@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <utility>
 
 #include "RetentionFeatures.h"
 #include "PSMDescription.h"
@@ -102,18 +103,39 @@ TEST_F(RetentionFeaturesTest, TestGetAminoAcids) {
     EXPECT_EQ(exp_peptides[i], res_peptides[i]);
 }
 
+TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbour) {
+  // get the polar aa
+  set<string> polar_aa = (RetentionFeatures::GetExtremeRetentionAA(RetentionFeatures::k_kyte_doolittle())).first;
+  // no modified aa
+  string peptide = "KAYYKYCNCYYYRA";
+  double sum_neighbour_pos =  RetentionFeatures::IndexNearestNeigbour(peptide, RetentionFeatures::k_kyte_doolittle(), polar_aa);
+  EXPECT_DOUBLE_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbour does not give the correct results for the entry \"KAYYKYCNCYYYRA\"" << endl;
+
+  // modified aa is in the index
+  map<string, double> idx;
+  idx["[PHOS]A"] = 1.0;
+  idx["[GLYC]C"] = -1.0;
+  idx["[PHOS]Y"] = 2.0;
+  idx["A"] = 5.0;
+  peptide = "KAA[PHOS]AA[GLYC]CA";
+  polar_aa = RetentionFeatures::GetExtremeRetentionAA(idx).first;
+  sum_neighbour_pos = RetentionFeatures::IndexNearestNeigbour(peptide, idx, polar_aa);
+  EXPECT_DOUBLE_EQ(10.0, sum_neighbour_pos) << "IndexNearestNeigbour does not give the correct results for the entry \"KAA[PHOS]AA[GLYC]CA\"" << endl;
+}
+
+/*
 TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourPos) {
-  /* no modified aa */
+  // no modified aa
   string peptide = "KAYYKYCRCYYYRA";
   double sum_neighbour_pos =  RetentionFeatures::IndexNearestNeigbourPos(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"KAYYKYCRCYYYRA\"" << endl;
 
-  /* modified aa; the index does not include the modified form */
+  // modified aa; the index does not include the modified form
   peptide = "[PHOS]K[PHOS]AYYKY[PHOS]CRCYYYR[PHOS]A";
   sum_neighbour_pos = RetentionFeatures::IndexNearestNeigbourPos(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"[PHOS]K[PHOS]AYYKY[PHOS]CRCYYYR[PHOS]A\"" << endl;
 
-  /* modified aa is in the index */
+  // modified aa is in the index
   map<string, double> idx;
   idx["[PHOS]A"] = 1.0;
   idx["[GLYC]C"] = -1.0;
@@ -125,17 +147,17 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourPos) {
 }
 
 TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourNeg) {
-  /* no modified aa */
+  // no modified aa
   string peptide = "DAYYDYCECYYYEA";
   double sum_neighbour_neg =  RetentionFeatures::IndexNearestNeigbourNeg(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(8.6, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"DAYYDYCECYYYEA\"" << endl;
 
-  /* modified aa; the index does not include the modified form */
+  // modified aa; the index does not include the modified form
   peptide = "[PHOS]D[PHOS]AYYDY[PHOS]CECYYYE[PHOS]A";
   sum_neighbour_neg = RetentionFeatures::IndexNearestNeigbourNeg(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(8.6, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"[PHOS]D[PHOS]AYYDY[PHOS]CECYYYE[PHOS]A\"" << endl;
 
-  /* modified aa is in the index */
+  // modified aa is in the index
   map<string, double> idx;
   idx["[PHOS]A"] = 1.0;
   idx["[GLYC]C"] = -1.0;
@@ -144,7 +166,7 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourNeg) {
   peptide = "DAA[PHOS]AE[GLYC]CDA";
   sum_neighbour_neg = RetentionFeatures::IndexNearestNeigbourNeg(peptide, idx);
   EXPECT_DOUBLE_EQ(11.0, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"DAA[PHOS]AE[GLYC]CDA\"" << endl;
-}
+}*/
 
 TEST_F(RetentionFeaturesTest, TestIndexN) {
   /* no modified aa */
@@ -196,30 +218,31 @@ TEST_F(RetentionFeaturesTest, TestIndexC) {
   EXPECT_DOUBLE_EQ(1.0, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"E[PHOS]A\"" << endl;
 }
 
+/*
 TEST_F(RetentionFeaturesTest, TestIndexNC) {
-  /* no modified aa */
+  // no modified aa
   string peptide = "DAYY";
   double hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(0.0, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"DAYY\"" << endl;
 
-  /* second and last aa are modified but not included in the index */
+  // second and last aa are modified but not included in the index
   peptide = "I[PHOS]DAYY[PHOS]F";
   hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(12.6, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"I[PHOS]DAYY[PHOS]F\"" << endl;
 
-  /* both c and n terminus are modified but not included in the index */
+  // both c and n terminus are modified but not included in the index
   peptide = "[PHOS]IAY[PHOS]F";
   hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, RetentionFeatures::k_kyte_doolittle());
   EXPECT_DOUBLE_EQ(12.6, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"[PHOS]IAY[PHOS]F\"" << endl;
 
-  /* C term and N term are modified and included in the index */
+  // C term and N term are modified and included in the index
   map<string, double> idx;
   idx["[PHOS]A"] = 1.0;
   idx["A"] = 5.0;
   peptide = "[PHOS]A";
   hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, idx);
   EXPECT_DOUBLE_EQ(1.0, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"[PHOS]A\"" << endl;
-}
+}*/
 
 TEST_F(RetentionFeaturesTest, TestIndexMaxPartialSum) {
   /* no modified aa */
@@ -380,5 +403,97 @@ TEST_F(RetentionFeaturesTest, TestNumberConsecTypeAA) {
   EXPECT_FLOAT_EQ(3.0, occurences) << "TestNumberConsecTypeAA does not give the correct results for the entry \"EEKR[PHOS]PADD[PHOS]DAAVVIA\", type = A, [PHOS]D, I" << endl;
 }
 
+TEST_F(RetentionFeaturesTest, TestGetExtremeRetentionAA) {
+  set<string> lowest, highest;
+  pair< set<string>, set<string> > set_pair;
+  string exp_lowest[] = {"D", "R", "Q", "N", "K", "E"};
+  string exp_highest[] = {"C", "F", "I", "L", "V"};
 
-FillAAFeatures(const string &peptide, double *retention_features)
+  set_pair = RetentionFeatures::GetExtremeRetentionAA(RetentionFeatures::k_kyte_doolittle());
+  lowest = set_pair.first;
+  EXPECT_EQ(6, lowest.size()) << "TestGetExtremeRetentionAA gives incorrect aa with lowest retention (length differs) " << endl;
+  for (int i = 0; i < 6; ++i) {
+     if (lowest.find(exp_lowest[i]) == lowest.end()) {
+       ADD_FAILURE() << "TestGetExtremeRetentionAA gives incorrect aa with lowest retention " << endl;
+     }
+  }
+  highest = set_pair.second;
+  set<string>::iterator it;
+  EXPECT_EQ(5, highest.size()) << "TestGetExtremeRetentionAA gives incorrect aa with highest retention (length differs) " << endl;
+  for (int i = 0; i < 5; ++i) {
+     if (highest.find(exp_highest[i]) == highest.end()) {
+       ADD_FAILURE() << "TestGetExtremeRetentionAA gives incorrect aa with highest retention " << endl;
+     }
+  }
+}
+
+TEST_F(RetentionFeaturesTest, TestComputeIndexFeatures) {
+  int n_features = 20;
+  map<string, double> idx;
+  idx["[PHOS]A"] = 5.0;
+  idx["A"] = 1.0;
+  idx["[PHOS]D"] = -2.0;
+  idx["D"] = 3.0;
+  pair< set<string>, set<string> > extreme_aa = RetentionFeatures::GetExtremeRetentionAA(idx);
+  set<string> polar_aa = extreme_aa.first;
+  set<string> hydrophobic_aa = extreme_aa.second;
+
+  string peptide = "AAAAA[PHOS]A[PHOS]ADDD[PHOS]DAAAAAAAADD";
+  double *features = new double[n_features];
+  double expected_values[n_features];
+  for(int i = 0; i < n_features; ++i)
+    expected_values[i] = 0.0;
+  expected_values[0] = RetentionFeatures::IndexSum(peptide, idx);
+  expected_values[1] = RetentionFeatures::IndexAvg(peptide, idx);
+  expected_values[2] = RetentionFeatures::IndexN(peptide, idx);
+  expected_values[3] = RetentionFeatures::IndexC(peptide, idx);
+  expected_values[4] = RetentionFeatures::IndexNearestNeigbour(peptide, idx, extreme_aa.first);
+  expected_values[5] = RetentionFeatures::IndexMaxPartialSum(peptide, idx, 5);
+  expected_values[8] = RetentionFeatures::IndexMinPartialSum(peptide, idx, 2);
+  expected_values[10] = RetentionFeatures::IndexMinHydrophobicSideHelix(peptide, idx);
+  expected_values[11] = RetentionFeatures::IndexMaxHydrophobicMoment(peptide, idx, 100, 11);
+  expected_values[14] = RetentionFeatures::IndexMinHydrophobicMoment(peptide, idx, 180, 11);
+  expected_values[15] = RetentionFeatures::IndexSumSquaredDiff(peptide, idx);
+  expected_values[16] = RetentionFeatures::NumberTypeAA(peptide,  polar_aa);
+  expected_values[19] = RetentionFeatures::NumberConsecTypeAA(peptide, hydrophobic_aa);
+  RetentionFeatures::ComputeIndexFeatures(peptide, idx, polar_aa, hydrophobic_aa, features);
+  for(int i = 0; i < n_features; ++i) {
+    if (expected_values[i] != 0.0) {
+     EXPECT_FLOAT_EQ(expected_values[i], *(features + i)) << "TestComputeIndexFeatures does not give the correct results for \"AAAAA[PHOS]A[PHOS]ADDD[PHOS]DAAAAAAAADD\" " << endl;
+    }
+  }
+  delete[] features;
+}
+
+TEST_F(RetentionFeaturesTest, TestComputeBulkinessSum) {
+  string peptide = "AA[PHOS]A";
+
+  double bulkiness_sum = RetentionFeatures::ComputeBulkinessSum(peptide, RetentionFeatures::k_bulkiness());
+  EXPECT_DOUBLE_EQ(34.5, bulkiness_sum) << "TestComputeBulkinessSum does not give the correct results for the entry \"AA[PHOS]A\"" << endl;
+}
+
+
+TEST_F(RetentionFeaturesTest, TestComputeBulkinessFeatures) {
+  int n_features = 1;
+  double *features = new double[n_features];
+  string peptide = "AA[PHOS]A";
+
+  RetentionFeatures::ComputeBulkinessFeatures(peptide, RetentionFeatures::k_bulkiness(), features);
+  EXPECT_DOUBLE_EQ(*features, RetentionFeatures::ComputeBulkinessSum(peptide, RetentionFeatures::k_bulkiness())) << "TestComputeBulkiness "
+      "does not give the correct results for the entry \"AA[PHOS]A\"" << endl;
+
+  delete[] features;
+}
+
+TEST_F(RetentionFeaturesTest, TestFillAAFeatures) {
+  string temp[] = {"A", "[PHOS]D", "I", "[PHOS]A"};
+  vector<string> alphabet(temp, temp + 4);
+  rf.set_amino_acids_alphabet(alphabet);
+  string peptide = "AAA[PHOS]D[PHOS]AII[PHOS]D";
+  double expected_values[4] = {1.0, 2.0, 2.0, 3.0};
+  double *aa_features = new double[4];
+  aa_features = rf.FillAAFeatures(peptide, aa_features);
+  for(int i = 1; i <= 4; ++i)
+     EXPECT_FLOAT_EQ(expected_values[i-1], *(aa_features - i)) << "TestFillAAFeatures does not give the correct results for " << temp[3 - i] << endl;
+  delete[] (aa_features - 4);
+}
