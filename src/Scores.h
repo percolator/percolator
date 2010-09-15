@@ -125,7 +125,6 @@ class Scores {
     void generateNegativeTrainingSet(AlgIn& data, const double cneg);
     void normalizeScores(double fdr=0.01);
     void weedOutRedundant();
-    void fillInPsmsLists();
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction,
         bool findDirection);

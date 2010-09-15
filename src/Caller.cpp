@@ -42,13 +42,19 @@ using namespace std;
 #include "MassHandler.h"
 #include "Enzyme.h"
 #include "config.h"
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xsd/cxx/xml/string.hxx>
 #include <boost/foreach.hpp>
 #include "percolator_in.hxx"
 #include "parser.hxx"
 #include "serializer.hxx"
+
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/util/XMLString.hpp>
+#include <xsd/cxx/xml/string.hxx>
+
+#include <xercesc/parsers/XercesDOMParser.hpp>
+#include <xercesc/sax/HandlerBase.hpp>
+#include <xercesc/util/PlatformUtils.hpp>
+
 
 using namespace xercesc;
 
@@ -1076,7 +1082,6 @@ int Caller::run() {
       writeXML(uniquePeptides[r]);
     }
   }
-
   return 0;
 }
 
@@ -1084,23 +1089,31 @@ void Caller::writeXML(bool uniquePeptides) {
   ofstream os;
   if(! uniquePeptides){
     //write to file
+    // how to reference a grammar: http://www.edankert.com/grammars/xsd.referencing.html
+    string space = "http://github.com/percolator/percolator/raw/master/src/xml/percolator_out";
+    string schema = space + " http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd";
     os.open(xmloutFN.data(), ios::out);
     os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-    os
-    << "<percolator_output majorVersion=\"1\" minorVersion=\"1\" percolator_version=\""
-    << "Percolator version " << VERSION << "\" "
-    << "xsi:schemaLocation=\"http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd\" "
-    << "xmlns=\"http://noble.gs.washington.edu/proj/percolator/model/percolator_out\" "
-    << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
-    << endl;
+
+    os << "<percolator_output "
+    // default namespace for child elements of percolator output
+    << endl << "xmlns=\""<< space << "\" "
+    // explicit namespace for attributes of percolator output (same as default)
+    // default namespaces do not apply to attributes
+    << endl << "xmlns:p=\""<< space << "\" "
+    // tell the XML parser that this document should be validated against a schema
+    << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+    // give a location for the schema
+    << endl << "xsi:schemaLocation=\""<< schema <<"\" "
+    << endl << "p:majorVersion=\"1\" p:minorVersion=\"1\" p:percolator_version=\"Percolator version " << VERSION << "\">"<< endl;
     os << "  <process_info>" << endl;
     os << "    <command_line>" << call << "</command_line>" << endl;
     os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
     if (docFeatures) {
       os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-                                                                        << "</average_delta_mass>" << endl;
+         << "</average_delta_mass>" << endl;
       os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-                                                                        << "</average_pi>" << endl;
+         << "</average_pi>" << endl;
     }
     os << "  </process_info>" << endl;
     // output psms
@@ -1110,6 +1123,7 @@ void Caller::writeXML(bool uniquePeptides) {
       os << *psm;
     }
     os << "  </psms>" << endl;
+    os.close();
   }
   else{
     // append to file
@@ -1122,7 +1136,48 @@ void Caller::writeXML(bool uniquePeptides) {
     }
     os << "  </peptides>" << endl;
     os << "</percolator_output>" << endl;
+    os.close();
+    // validate xml output against schema
+    // see http://xerces.apache.org/xerces-c/schema-3.html
+
+
+    XMLPlatformUtils::Initialize();
+    XercesDOMParser* parser = new XercesDOMParser();
+    parser->setValidationScheme(XercesDOMParser::Val_Always);
+    parser->setDoSchema(true);
+    parser->setDoNamespaces(true);
+    ErrorHandler* errHandler = (ErrorHandler*) new HandlerBase();
+    parser->setErrorHandler(errHandler);
+    const char* xmlFile = xmloutFN.c_str();
+    try{
+      parser->parse(xmloutFN.c_str());
+    }
+    catch (const XMLException& toCatch) {
+      char* message = XMLString::transcode(toCatch.getMessage());
+      cerr <<"XML parsing error in output document " << xmloutFN << "." << endl;
+      cerr << "Exception message is: \n"
+          << message << "\n";
+      XMLString::release(&message);
+      exit(-1);
+    }
+    catch (const DOMException& toCatch) {
+      char* message = XMLString::transcode(toCatch.msg);
+      cerr <<"XML parsing error in output document " << xmloutFN << "." << endl;
+      cerr << "Exception message is: \n"
+          << message << "\n";
+      XMLString::release(&message);
+      exit(-1);
+    }
+    catch (const xercesc_3_1::SAXParseException& toCatch) {
+      SAXException s = (SAXException) toCatch;
+      cerr <<"XML parsing error in output document " << xmloutFN << "." << endl;
+      cerr << "Exception message is: \n"
+          << *(s.getMessage()) << "\n";
+      exit(-1);
+    }
+    delete errHandler;
+    delete parser;
+    XMLPlatformUtils::Terminate();
   }
-  os.close();
 }
 

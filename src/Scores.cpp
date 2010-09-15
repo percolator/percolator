@@ -58,7 +58,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
-  os << "    <psm psm_id=\"" << sh.pPSM->id << "\"";
+  os << "    <psm p:psm_id=\"" << sh.pPSM->id << "\"";
   if (sh.label != 1) {
     os << " decoy=\"true\"";
   }
@@ -73,16 +73,16 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   << endl;
   string peptide = sh.pPSM->getPeptide();
   string::size_type pos1 = peptide.find('.');
-  string n = peptide.substr(0, pos1);
+  string n = "X";//peptide.substr(0, pos1);
   string::size_type pos2 = peptide.find('.', ++pos1);
-  string c = peptide.substr(pos2 + 1, peptide.size());
+  string c = "X";//peptide.substr(pos2 + 1, peptide.size());
   string centpep = peptide.substr(pos1, pos2 - pos1);
-  os << "      <peptide n=\"" << n << "\" c=\"" << c << "\" seq=\""
+  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\""
       << centpep << "\"/>" << endl;
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-                                    << "</protein_id>" << endl;
+    << "</protein_id>" << endl;
   }
   os << "      <p_value>" << sh.pPSM->p << "</p_value>" <<endl;
   os << "    </psm>" << endl;
@@ -93,7 +93,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
-  os << "    <peptide peptide_id=\"" << sh.pPSM->getPeptide() << "\"";
+  os << "    <peptide p:peptide_id=\"" << sh.pPSM->getPeptide() << "\"";
   if (sh.label != 1) {
     os << " decoy=\"true\"";
   }
@@ -104,10 +104,10 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-                                      << "</protein_id>" << endl;
+    << "</protein_id>" << endl;
   }
   os << "      <p_value>" << sh.pPSM->p << "</p_value>" << endl;
-  os << "      <psms>" << endl;
+  os << "      <psm_ids>" << endl;
   // output all psms that contain the peptide
   string s = sh.psms_list;
   istringstream iss(s);
@@ -119,7 +119,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
       os << "        <psm_id>" << psm << "</psm_id>" << endl;
     else finished = true;
   }
-  os << "      </psms>" << endl;
+  os << "      </psm_ids>" << endl;
   os << "    </peptide>" << endl;
   return os;
 }
@@ -476,27 +476,6 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
   }
   data.positives = p;
   data.m = ix2;
-}
-
-/**
- * for each peptide p, go through the list of all peptides and update p's list
- * of psms if a peptide p2 == p is found (used for analysis on peptide-fdr
- * rather than psm-fdr)
- */
-void Scores::fillInPsmsLists(){
-  //TODO: n^2 complexity. Use smart data structure
-  for (vector<ScoreHolder>::iterator i = scores.begin(); i != scores.end(); i++) {
-    vector<ScoreHolder>::iterator j = scores.begin();
-    for (; j != scores.end(); j++) {
-      string p = i->pPSM->getPeptide();
-      string p2 = j->pPSM->getPeptide();
-      // if the same peptide is found, add psm to psm_list
-      if (p.compare(p2) == 0){
-        i->psms_list.append(j->pPSM->id);
-        i->psms_list.append(" ");
-      }
-    }
-  }
 }
 
 /**
