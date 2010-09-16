@@ -27,6 +27,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <string>
 
 class PSMDescription;
 
@@ -40,16 +41,16 @@ class DataManager {
    static int LoadPeptides(const string &file_name, const bool includes_rt, vector<PSMDescription> &psms, set<string> &aa_alphabet);
 
    /************ Accessors and mutators ************/
-   inline vector<PSMDescription>& train_psms() const { return train_psms_; }
-   inline vector<PSMDescription>& test_psms() const { return test_psms_; }
-   inline set<string>& train_aa_alphabet() const { return train_aa_alphabet(); }
-   inline set<string>& test_aa_alphabet() const { return test_aa_alphabet(); }
+   inline vector<PSMDescription>& train_psms() { return train_psms_; }
+   inline vector<PSMDescription>& test_psms() { return test_psms_; }
+   inline set<string>& train_aa_alphabet() { return train_aa_alphabet_; }
+   inline set<string>& test_aa_alphabet() { return test_aa_alphabet_; }
 
  private:
    vector<PSMDescription> train_psms_;
    vector<PSMDescription> test_psms_;
-   set<string> train_aa_alphabet;
-   set<string> test_aa_alphabet;
+   set<string> train_aa_alphabet_;
+   set<string> test_aa_alphabet_;
 };
 
 #endif /* DATAMANAGER_H_ */

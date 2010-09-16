@@ -19,3 +19,5 @@
  * Sep, 2010
  */
 /* This file include test cases for the DataManager class */
+
+#include "DataManager.h"
