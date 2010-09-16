@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+ Copyright 2006-2010 Lukas Käll <lukas.kall@cbr.su.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -15,28 +15,7 @@
 
  *******************************************************************************/
 /*
-#include "Option.h"
-#include "Globals.h"
-#include "Elude.h"
-
-#include <math.h>
-#include <cmath>
-
-int main(int argc, char** argv) {
-  RTPredictor* pCaller = new RTPredictor();
-  int retVal = 0;
-  if (pCaller->parseOptions(argc, argv)) {
-    pCaller->run();
-  }
-  delete pCaller;
-  Globals::clean();
-  return retVal;
-}*/
-
-#include <iostream>
-#include "RetentionFeatures.h"
-
-int main(int argc, char** argv) {
-
-  return 0;
-}
+ * @ Created by Luminita Moruz
+ * Sep, 2010
+ */
+/* This file include test cases for the DataManager class */

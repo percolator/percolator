@@ -30,9 +30,9 @@
 #include "boost/assign.hpp"
 #include "RetentionFeatures.h"
 #include "Globals.h"
+#include "PSMDescription.h"
 
 using namespace boost::assign;
-using namespace std;
 
 /* define the Kyte Doolittle index */
 const map<string, double> RetentionFeatures::kKyteDoolittle = map_list_of ("A", 1.8) ("C", 2.5) ("D", -3.5) ("E", -3.5) ("F", 2.8)
@@ -48,9 +48,14 @@ const map<string, double> RetentionFeatures::kBulkiness = map_list_of ("A", 11.5
 /* percentage of the amino acids from an index that are polar or hydrophobic */
 const double RetentionFeatures::kPercentageAA = 0.25;
 
+/* name of each feature group */
+const string RetentionFeatures::kGroupNames[NUM_FEATURE_GROUPS] = {"No posttranslationally modified peptides", "Phosphorylations"};
+
 RetentionFeatures::RetentionFeatures() {
   string aa_alphabet[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
   amino_acids_alphabet_.assign(aa_alphabet, aa_alphabet + 20);
+  // by default we have no ptms
+  active_feature_groups_.set(INDEX_NO_PTMS_GROUP);
 }
 
 RetentionFeatures::~RetentionFeatures() {
@@ -69,12 +74,12 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
     unmodified_aa = aa[aa.size() - 1];
     index_value = index.find(unmodified_aa);
     if (index_value != index.end()) {
-      if (VERB > 4) {
+      if (VERB >= 4) {
         cerr << "Warning: Could not find the index value for " << aa << ". Use index value for " << unmodified_aa << " instead" << endl;
       }
       return index_value->second;
     } else {
-      if (VERB > 1) {
+      if (VERB >= 1) {
         cerr << "Error: Could not find the index value for " << aa << endl;
         cerr << "Execution aborted" << endl;
       }
@@ -104,6 +109,26 @@ vector<string> RetentionFeatures::GetAminoAcids(const string &peptide) {
 /* get the unmodified amino acid */
 char RetentionFeatures::GetUnmodifiedAA(const string &aa) {
   return aa[aa.size() - 1];
+}
+
+/* get the total number of features */
+int RetentionFeatures::GetTotalNumberFeatures() const {
+  int number_index_features, number_length_features, number_aa_features;
+  if (active_feature_groups_.test(INDEX_NO_PTMS_GROUP)) {
+    int number_bulkiness_features = 1;
+    number_index_features = 20;
+    number_length_features = 1;
+    number_aa_features = 20;
+    return 2 * number_index_features +  number_length_features + number_bulkiness_features +  number_aa_features;
+  } else {
+    //[TO DO: modify when more features are added]
+    number_index_features = 20;
+    number_length_features = 1;
+    number_aa_features = amino_acids_alphabet_.size();
+
+    return number_index_features +  number_length_features +  number_aa_features;
+  }
+
 }
 
 /**************************** INDEX FUNCTIONS **************************************/
@@ -525,6 +550,7 @@ double RetentionFeatures::IndexNearestNeigbourNeg(const string &peptide, const m
 /**************************** BULKINESS FUNCTIONS **************************************/
 double* RetentionFeatures::ComputeBulkinessFeatures(const string &peptide, const map<string, double> &bulkiness, double *features) {
   *(features++) = ComputeBulkinessSum(peptide, bulkiness);
+  return features;
 }
 
 /* compute the sum of bulkiness */
@@ -554,7 +580,12 @@ double* RetentionFeatures::FillAAFeatures(const string &peptide, double *retenti
   return retention_features + amino_acids_alphabet_.size();
 }
 
-
+/**************************** LENGTH FEATURES **************************************/
+/* compute the features related to length; */
+double* RetentionFeatures::ComputeLengthFeatures(const string &peptide, double *features) {
+  *(features++) = PeptideLength(peptide);
+  return features;
+}
 
 /* calculate the peptide length */
 double RetentionFeatures::PeptideLength(const string &peptide) {
@@ -562,9 +593,72 @@ double RetentionFeatures::PeptideLength(const string &peptide) {
   return amino_acids.size();
 }
 
+/************* FEATURES FOR GROUPS ***************/
+/* compute the features when no ptms are present in the data */
+double* RetentionFeatures::ComputeNoPTMFeatures(const string &peptide, double *features) {
+  // we always compute: kyte and doo little index, svr index, bulkiness, peptide length and amino acid features
+  // compute the kyte and doolittle features
+  pair< set<string>, set<string> > extreme_aa = GetExtremeRetentionAA(kKyteDoolittle);
+  set<string> polar_aa = extreme_aa.first;
+  set<string> hydrophobic_aa = extreme_aa.second;
+  features = ComputeIndexFeatures(peptide, kKyteDoolittle, polar_aa, hydrophobic_aa, features);
 
+  // compute the svr features
+  extreme_aa = GetExtremeRetentionAA(svr_index_);
+  polar_aa = extreme_aa.first;
+  hydrophobic_aa = extreme_aa.second;
+  features = ComputeIndexFeatures(peptide, svr_index_, polar_aa, hydrophobic_aa, features);
 
+  // bulkiness
+  features = ComputeBulkinessFeatures(peptide, kBulkiness, features);
 
+  // peptide length
+  features = ComputeLengthFeatures(peptide, features);
+
+  // amino acid features
+  features = FillAAFeatures(peptide, features);
+
+  return features;
+}
+
+// [TO DO: implement this]
+/* compute the features when phosphorylations are present in the data */
+double* RetentionFeatures::ComputePhosFeatures(const string &peptide, double *features) {
+  return features;
+}
+
+/************* RETENTION FEATURES FOR PSMS **************/
+/* computes the retention features for a set of peptides; return 0 if success */
+int RetentionFeatures::ComputeRetentionFeatures(vector<PSMDescription> &psms) {
+  vector<PSMDescription>::iterator it= psms.begin();
+  for( ; it != psms.end(); ++it) {
+    ComputeRetentionFeatures(*it);
+  }
+  return 0;
+}
+
+/* computes the retention features for one psm */
+int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
+  string peptide = psm.getPeptide();
+  string::size_type pos1 = peptide.find('.');
+  string::size_type pos2 = peptide.find('.', ++pos1);
+  string pep = peptide.substr(pos1, pos2 - pos1);
+  double* features = psm.getRetentionFeatures();
+
+  // if there is memory allocated
+  if (features) {
+    if (active_feature_groups_.test(INDEX_NO_PTMS_GROUP)) {
+      features = ComputeNoPTMFeatures(pep, features);
+    }
+    if (active_feature_groups_.test(INDEX_PHOS_GROUP)) {
+      features = ComputeNoPTMFeatures(pep, features);
+    }
+  } else if (VERB >= 1) {
+    cerr << "Error: Memory not allocated for the retention features. Execution aborted." << endl;
+    return 1;
+  }
+  return 0;
+}
 
 
 

@@ -36,18 +36,17 @@
 
 using namespace std;
 
-/* Th features are organized in groups. We will allow to switch off
- * and on only entire groups and not individual features */
-enum FeatureGroup {
-  SVR_INDEX = 0,
-  KYTE_DOO_LITTLE_INDEX = 1,
-  BULKINESS = 2,
-  LENGTH = 3,
-  PTM_FEATURES = 4,
-  AA_FEATURES = 5
-};
+/* The features are organized in groups. We will allow to switch off
+ * and on only entire groups and not individual features. Here we just
+ * define the index in the active_feature_groups_. As an example, if
+ * active_feature_groups_[INDEX_NO_PTMS_GROUP]=1, then the group
+ * NO_PTMS is switched on */
+/* no ptms are present in the dataset; this is equivalent to kyte doo little, svr, peptide length, bulkiness, aa features */
+#define INDEX_NO_PTMS_GROUP 0
+/* phosphorylations are present in the dataset; this is equivalent to svr, peptide length, phosphorylation features, aa features  */
+#define INDEX_PHOS_GROUP 1
 /* number of feature groups */
-#define NUM_FEATURE_GROUPS 6
+#define NUM_FEATURE_GROUPS 2
 
 /* forward declaration of PSMDescription */
 class PSMDescription;
@@ -64,6 +63,8 @@ class RetentionFeatures {
    static vector<string> GetAminoAcids(const string &peptide);
    /* get the unmodified version of an amino acid */
    static char GetUnmodifiedAA(const string &aa);
+   /* get the total number of features */
+   int GetTotalNumberFeatures() const;
 
    /************ INDEX FUNCTIONS ************/
    /* compute all index features for a peptide */
@@ -112,29 +113,29 @@ class RetentionFeatures {
    /* compute bulkiness features; returns a pointer to the feature table */
    static double ComputeBulkinessSum(const string &peptide, const map<string, double> &bulkiness);
 
+   /************ AMINO ACID FEATURES ************/
+   /* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
+   double* FillAAFeatures(const string &peptide, double *retention_features);
 
+   /************ LENGTH FEATURES ************/
+   /* compute the features related to length; */
+   static double* ComputeLengthFeatures(const string &peptide, double *features);
+   /* Compute the length of a peptide */
+   static double PeptideLength(const string &peptide);
+
+   /************* FEATURES FOR GROUPS ***************/
+   /* compute the features when no ptms are present in the data */
+   double* ComputeNoPTMFeatures(const string &peptide, double *features);
+   /* compute the features when phosphorylations are present in the data */
+   double* ComputePhosFeatures(const string &peptide, double *features);
+
+   /************* RETENTION FEATURES FOR PSMS **************/
    /* computes the retention features for a set of peptides; return 0 if success */
    int ComputeRetentionFeatures(vector<PSMDescription> &psms);
    /* computes the retention features for one psm */
    int ComputeRetentionFeatures(PSMDescription &psm);
-   /* Compute the length of a peptide */
-   static double PeptideLength(const string &peptide);
 
-   /* compute the features related to hydrophobic aa; returns a pointer to the feature table */
-   double* ComputeHydrophobicFeatures(const string &peptide, double *features);
-   /* compute length features; returns a pointer to the feature table */
-   double* ComputeLengthFeatures(const string &peptide, double *features);
-   /* compute ptm features; returns a pointer to the feature table */
-   double* ComputePtmFeatures(const string &peptide, double *features);
-
-
-
-
-  /* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
-   double* FillAAFeatures(const string &peptide, double *retention_features);
-
-
-   /* accessors and mutators */
+   /************* ACCESSORS AND MUTATORS **************/
    static const map<string, double>& k_kyte_doolittle() { return kKyteDoolittle; }
    static const map<string, double>& k_bulkiness() { return kBulkiness; }
    inline bitset<NUM_FEATURE_GROUPS> active_feature_groups() const { return active_feature_groups_; }
@@ -147,8 +148,6 @@ class RetentionFeatures {
  private:
    /* name of each feature group */
    static const string kGroupNames[NUM_FEATURE_GROUPS];
-   /* number of features in each group */
-   static const int kFeatureGroupNums[NUM_FEATURE_GROUPS];
    /* kyte and doolittle retention index */
    static const map<string, double> kKyteDoolittle;
    /* bulkiness as defined by Zimmerman et al */
@@ -156,7 +155,8 @@ class RetentionFeatures {
    /* fraction of the aa that are considered polar or hydrophobic */
    static const double kPercentageAA;
 
-   /* every bit set corresponds to an active group of features */
+   /* every bit set corresponds to an active group of features (the indices are defined at
+    * the beginning of this file) */
    bitset<NUM_FEATURE_GROUPS> active_feature_groups_;
    /* SVR trained index */
    map<string, double> svr_index_;

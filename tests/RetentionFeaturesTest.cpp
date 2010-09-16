@@ -1,9 +1,30 @@
+/*******************************************************************************
+ Copyright 2006-2010 Lukas Käll <lukas.kall@cbr.su.se>
 
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ *******************************************************************************/
+/*
+ * @ Created by Luminita Moruz
+ * Sep, 2010
+ */
+/* This file include test cases for the RetentionFeatures class */
 #include <gtest/gtest.h>
 #include <vector>
 #include <map>
 #include <set>
 #include <utility>
+#include <bitset>
 
 #include "RetentionFeatures.h"
 #include "PSMDescription.h"
@@ -52,7 +73,7 @@ TEST_F(RetentionFeaturesTest, TestIndexSum) {
   /* the index does not include the modified peptide */
   string peptide = "ASA[PHOS]AY";
   double hydrophobicity_sum = RetentionFeatures::IndexSum(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(3.3, hydrophobicity_sum) << "IndexSum does not give the correct results for the entry \"AA[PHOSPH]AY\"" << endl;
+  EXPECT_FLOAT_EQ(3.3, hydrophobicity_sum) << "IndexSum does not give the correct results for the entry \"AA[PHOSPH]AY\"" << endl;
 
   /* modified amino acid included in index */
   map<string, double> idx;
@@ -61,25 +82,25 @@ TEST_F(RetentionFeaturesTest, TestIndexSum) {
   idx["Y"] = 2.0;
   idx["S"] = 3.0;
   hydrophobicity_sum =  RetentionFeatures::IndexSum(peptide, idx);
-  EXPECT_DOUBLE_EQ(7.7, hydrophobicity_sum) << "IndexSum does not give the correct results for the entry \"AA[PHOSPH]AY\" "
+  EXPECT_FLOAT_EQ(7.7, hydrophobicity_sum) << "IndexSum does not give the correct results for the entry \"AA[PHOSPH]AY\" "
                                             << "(index includes modified peptide)" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestPeptideLength) {
   /* no modified aa */
   double val = RetentionFeatures::PeptideLength("AASSY");
-  EXPECT_DOUBLE_EQ(5.0, val) << "PeptideLength does not calculate the correct length of the peptide \"AASSY\"" << endl;
+  EXPECT_FLOAT_EQ(5.0, val) << "PeptideLength does not calculate the correct length of the peptide \"AASSY\"" << endl;
 
   /* modified aa */
   val = RetentionFeatures::PeptideLength("[PHOS]AS[GLYC]Y");
-  EXPECT_DOUBLE_EQ(3.0, val) << "PeptideLength does not calculate the correct length of the peptide \"[PHOS]A[GLYC]Y\"" << endl;
+  EXPECT_FLOAT_EQ(3.0, val) << "PeptideLength does not calculate the correct length of the peptide \"[PHOS]A[GLYC]Y\"" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestIndexAvg) {
   /* the index does not include the modified peptide */
   string peptide = "ASA[PHOS]AY";
   double hydrophobicity_avg =  RetentionFeatures::IndexAvg(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(3.3/5.0, hydrophobicity_avg) << "IndexAvg does not give the correct results for the entry \"AA[PHOSPH]AY\"" << endl;
+  EXPECT_FLOAT_EQ(3.3/5.0, hydrophobicity_avg) << "IndexAvg does not give the correct results for the entry \"AA[PHOSPH]AY\"" << endl;
 
   /* modified amino acid included in index */
   map<string, double> idx;
@@ -89,7 +110,7 @@ TEST_F(RetentionFeaturesTest, TestIndexAvg) {
   idx["S"] = 3.0;
   peptide = "A[GLYC]SA[PHOS]AY";
   hydrophobicity_avg =  RetentionFeatures::IndexAvg(peptide, idx);
-  EXPECT_DOUBLE_EQ(7.7/5.0, hydrophobicity_avg) << "IndexAvg does not give the correct results for the entry \"A[GLYC]SA[PHOS]AY\" "
+  EXPECT_FLOAT_EQ(7.7/5.0, hydrophobicity_avg) << "IndexAvg does not give the correct results for the entry \"A[GLYC]SA[PHOS]AY\" "
                                             << "(index includes modified peptide)" << endl;
 }
 
@@ -109,7 +130,7 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbour) {
   // no modified aa
   string peptide = "KAYYKYCNCYYYRA";
   double sum_neighbour_pos =  RetentionFeatures::IndexNearestNeigbour(peptide, RetentionFeatures::k_kyte_doolittle(), polar_aa);
-  EXPECT_DOUBLE_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbour does not give the correct results for the entry \"KAYYKYCNCYYYRA\"" << endl;
+  EXPECT_FLOAT_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbour does not give the correct results for the entry \"KAYYKYCNCYYYRA\"" << endl;
 
   // modified aa is in the index
   map<string, double> idx;
@@ -120,7 +141,7 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbour) {
   peptide = "KAA[PHOS]AA[GLYC]CA";
   polar_aa = RetentionFeatures::GetExtremeRetentionAA(idx).first;
   sum_neighbour_pos = RetentionFeatures::IndexNearestNeigbour(peptide, idx, polar_aa);
-  EXPECT_DOUBLE_EQ(10.0, sum_neighbour_pos) << "IndexNearestNeigbour does not give the correct results for the entry \"KAA[PHOS]AA[GLYC]CA\"" << endl;
+  EXPECT_FLOAT_EQ(10.0, sum_neighbour_pos) << "IndexNearestNeigbour does not give the correct results for the entry \"KAA[PHOS]AA[GLYC]CA\"" << endl;
 }
 
 /*
@@ -128,12 +149,12 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourPos) {
   // no modified aa
   string peptide = "KAYYKYCRCYYYRA";
   double sum_neighbour_pos =  RetentionFeatures::IndexNearestNeigbourPos(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"KAYYKYCRCYYYRA\"" << endl;
+  EXPECT_FLOAT_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"KAYYKYCRCYYYRA\"" << endl;
 
   // modified aa; the index does not include the modified form
   peptide = "[PHOS]K[PHOS]AYYKY[PHOS]CRCYYYR[PHOS]A";
   sum_neighbour_pos = RetentionFeatures::IndexNearestNeigbourPos(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"[PHOS]K[PHOS]AYYKY[PHOS]CRCYYYR[PHOS]A\"" << endl;
+  EXPECT_FLOAT_EQ(8.6, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"[PHOS]K[PHOS]AYYKY[PHOS]CRCYYYR[PHOS]A\"" << endl;
 
   // modified aa is in the index
   map<string, double> idx;
@@ -143,19 +164,19 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourPos) {
   idx["A"] = 5.0;
   peptide = "KAA[PHOS]AR[GLYC]CKA";
   sum_neighbour_pos = RetentionFeatures::IndexNearestNeigbourPos(peptide, idx);
-  EXPECT_DOUBLE_EQ(11.0, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"KAA[PHOS]AR[GLYC]CKA\"" << endl;
+  EXPECT_FLOAT_EQ(11.0, sum_neighbour_pos) << "IndexNearestNeigbourPos does not give the correct results for the entry \"KAA[PHOS]AR[GLYC]CKA\"" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourNeg) {
   // no modified aa
   string peptide = "DAYYDYCECYYYEA";
   double sum_neighbour_neg =  RetentionFeatures::IndexNearestNeigbourNeg(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(8.6, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"DAYYDYCECYYYEA\"" << endl;
+  EXPECT_FLOAT_EQ(8.6, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"DAYYDYCECYYYEA\"" << endl;
 
   // modified aa; the index does not include the modified form
   peptide = "[PHOS]D[PHOS]AYYDY[PHOS]CECYYYE[PHOS]A";
   sum_neighbour_neg = RetentionFeatures::IndexNearestNeigbourNeg(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(8.6, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"[PHOS]D[PHOS]AYYDY[PHOS]CECYYYE[PHOS]A\"" << endl;
+  EXPECT_FLOAT_EQ(8.6, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"[PHOS]D[PHOS]AYYDY[PHOS]CECYYYE[PHOS]A\"" << endl;
 
   // modified aa is in the index
   map<string, double> idx;
@@ -165,24 +186,24 @@ TEST_F(RetentionFeaturesTest, TestIndexNearestNeigbourNeg) {
   idx["A"] = 5.0;
   peptide = "DAA[PHOS]AE[GLYC]CDA";
   sum_neighbour_neg = RetentionFeatures::IndexNearestNeigbourNeg(peptide, idx);
-  EXPECT_DOUBLE_EQ(11.0, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"DAA[PHOS]AE[GLYC]CDA\"" << endl;
+  EXPECT_FLOAT_EQ(11.0, sum_neighbour_neg) << "IndexNearestNeigbourNeg does not give the correct results for the entry \"DAA[PHOS]AE[GLYC]CDA\"" << endl;
 }*/
 
 TEST_F(RetentionFeaturesTest, TestIndexN) {
   /* no modified aa */
   string peptide = "DAYY";
   double hydrophobicity_N = RetentionFeatures::IndexN(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(-3.5, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"DAYY\"" << endl;
+  EXPECT_FLOAT_EQ(-3.5, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"DAYY\"" << endl;
 
   /* second aa is modified but not included in the index */
   peptide = "Y[PHOS]DAYY";
   hydrophobicity_N = RetentionFeatures::IndexN(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(-1.3, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"Y[PHOS]DAYY\"" << endl;
+  EXPECT_FLOAT_EQ(-1.3, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"Y[PHOS]DAYY\"" << endl;
 
   /* N term is modified but not included in the index */
   peptide = "[PHOS]DAYY";
   hydrophobicity_N = RetentionFeatures::IndexN(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(-3.5, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"[PHOS]DAYY\"" << endl;
+  EXPECT_FLOAT_EQ(-3.5, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"[PHOS]DAYY\"" << endl;
 
   /* N term is modified and included in the index */
   map<string, double> idx;
@@ -190,24 +211,24 @@ TEST_F(RetentionFeaturesTest, TestIndexN) {
   idx["A"] = 5.0;
   peptide = "[PHOS]AE";
   hydrophobicity_N = RetentionFeatures::IndexN(peptide, idx);
-  EXPECT_DOUBLE_EQ(1.0, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"[PHOS]AE\"" << endl;
+  EXPECT_FLOAT_EQ(1.0, hydrophobicity_N) << "TestIndexN does not give the correct results for the entry \"[PHOS]AE\"" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestIndexC) {
   /* no modified aa */
   string peptide = "DAYY";
   double hydrophobicity_C = RetentionFeatures::IndexC(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(-1.3, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"DAYY\"" << endl;
+  EXPECT_FLOAT_EQ(-1.3, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"DAYY\"" << endl;
 
   /* one but last is modified but not included in the index */
   peptide = "Y[PHOS]DAYY[PHOS]DD";
   hydrophobicity_C = RetentionFeatures::IndexC(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(-3.5, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"Y[PHOS]DAYY[PHOS]DD\"" << endl;
+  EXPECT_FLOAT_EQ(-3.5, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"Y[PHOS]DAYY[PHOS]DD\"" << endl;
 
   /* C term is modified but not included in the index */
   peptide = "[PHOS]DAY[PHOS]D";
   hydrophobicity_C = RetentionFeatures::IndexC(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(-3.5, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"[PHOS]DAY[PHOS]D\"" << endl;
+  EXPECT_FLOAT_EQ(-3.5, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"[PHOS]DAY[PHOS]D\"" << endl;
 
   /* C term is modified and included in the index */
   map<string, double> idx;
@@ -215,7 +236,7 @@ TEST_F(RetentionFeaturesTest, TestIndexC) {
   idx["A"] = 5.0;
   peptide = "E[PHOS]A";
   hydrophobicity_C = RetentionFeatures::IndexC(peptide, idx);
-  EXPECT_DOUBLE_EQ(1.0, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"E[PHOS]A\"" << endl;
+  EXPECT_FLOAT_EQ(1.0, hydrophobicity_C) << "TestIndexC does not give the correct results for the entry \"E[PHOS]A\"" << endl;
 }
 
 /*
@@ -223,17 +244,17 @@ TEST_F(RetentionFeaturesTest, TestIndexNC) {
   // no modified aa
   string peptide = "DAYY";
   double hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(0.0, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"DAYY\"" << endl;
+  EXPECT_FLOAT_EQ(0.0, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"DAYY\"" << endl;
 
   // second and last aa are modified but not included in the index
   peptide = "I[PHOS]DAYY[PHOS]F";
   hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(12.6, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"I[PHOS]DAYY[PHOS]F\"" << endl;
+  EXPECT_FLOAT_EQ(12.6, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"I[PHOS]DAYY[PHOS]F\"" << endl;
 
   // both c and n terminus are modified but not included in the index
   peptide = "[PHOS]IAY[PHOS]F";
   hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, RetentionFeatures::k_kyte_doolittle());
-  EXPECT_DOUBLE_EQ(12.6, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"[PHOS]IAY[PHOS]F\"" << endl;
+  EXPECT_FLOAT_EQ(12.6, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"[PHOS]IAY[PHOS]F\"" << endl;
 
   // C term and N term are modified and included in the index
   map<string, double> idx;
@@ -241,19 +262,19 @@ TEST_F(RetentionFeaturesTest, TestIndexNC) {
   idx["A"] = 5.0;
   peptide = "[PHOS]A";
   hydrophobicity_NC = RetentionFeatures::IndexNC(peptide, idx);
-  EXPECT_DOUBLE_EQ(1.0, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"[PHOS]A\"" << endl;
+  EXPECT_FLOAT_EQ(1.0, hydrophobicity_NC) << "TestIndexNC does not give the correct results for the entry \"[PHOS]A\"" << endl;
 }*/
 
 TEST_F(RetentionFeaturesTest, TestIndexMaxPartialSum) {
   /* no modified aa */
   string peptide = "DDDFFFDDDIIDDD";
   double max_partial_sum = RetentionFeatures::IndexMaxPartialSum(peptide, RetentionFeatures::k_kyte_doolittle(), 2);
-  EXPECT_DOUBLE_EQ(9.0, max_partial_sum) << "TestIndexMaxPartialSum does not give the correct results for the entry \"DDDFFFDDDIIDDD\"" << endl;
+  EXPECT_FLOAT_EQ(9.0, max_partial_sum) << "TestIndexMaxPartialSum does not give the correct results for the entry \"DDDFFFDDDIIDDD\"" << endl;
 
   /* modified aa but not in the index */
   peptide = "DDDA[PHOS]AADDDI[PHOS]IWDD";
   max_partial_sum = RetentionFeatures::IndexMaxPartialSum(peptide, RetentionFeatures::k_kyte_doolittle(), 3);
-  EXPECT_DOUBLE_EQ(8.1, max_partial_sum) << "TestIndexMaxPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
+  EXPECT_FLOAT_EQ(8.1, max_partial_sum) << "TestIndexMaxPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
 
   /* modified aa that are in the index */
   map<string, double> idx;
@@ -263,19 +284,19 @@ TEST_F(RetentionFeaturesTest, TestIndexMaxPartialSum) {
   idx["D"] = 3.0;
   peptide = "[PHOS]AADD[PHOS]D";
   max_partial_sum = RetentionFeatures::IndexMaxPartialSum(peptide, idx, 3);
-  EXPECT_DOUBLE_EQ(11.0, max_partial_sum) << "TestIndexMaxPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
+  EXPECT_FLOAT_EQ(11.0, max_partial_sum) << "TestIndexMaxPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestIndexMinPartialSum) {
   /* no modified aa */
   string peptide = "DDDFFFDDDIIDDD";
   double min_partial_sum = RetentionFeatures::IndexMinPartialSum(peptide, RetentionFeatures::k_kyte_doolittle(), 2);
-  EXPECT_DOUBLE_EQ(-7.0, min_partial_sum) << "TestIndexMinPartialSum does not give the correct results for the entry \"DDDFFFDDDIIDDD\"" << endl;
+  EXPECT_FLOAT_EQ(-7.0, min_partial_sum) << "TestIndexMinPartialSum does not give the correct results for the entry \"DDDFFFDDDIIDDD\"" << endl;
 
   /* modified aa but not in the index */
   peptide = "[PHOS]D[PHOS]DDADD";
   min_partial_sum = RetentionFeatures::IndexMinPartialSum(peptide, RetentionFeatures::k_kyte_doolittle(), 3);
-  EXPECT_DOUBLE_EQ(-10.5, min_partial_sum) << "TestIndexMinPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
+  EXPECT_FLOAT_EQ(-10.5, min_partial_sum) << "TestIndexMinPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
 
   /* modified aa that are in the index */
   map<string, double> idx;
@@ -285,7 +306,7 @@ TEST_F(RetentionFeaturesTest, TestIndexMinPartialSum) {
   idx["D"] = 3.0;
   peptide = "[PHOS]AADD[PHOS]D";
   min_partial_sum = RetentionFeatures::IndexMinPartialSum(peptide, idx, 3);
-  EXPECT_DOUBLE_EQ(8.0, min_partial_sum) << "TestIndexMinPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
+  EXPECT_FLOAT_EQ(8.0, min_partial_sum) << "TestIndexMinPartialSum does not give the correct results for the entry \"DDDA[PHOS]AADDDI[PHOS]IWDD\"" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestAvgHydrophobicityIndex) {
@@ -296,7 +317,7 @@ TEST_F(RetentionFeaturesTest, TestAvgHydrophobicityIndex) {
   idx["[PHOS]D"] = 2.0;
   idx["D"] = 3.0;
   double avg_hydrophobicity = RetentionFeatures:: AvgHydrophobicityIndex(idx);
-  EXPECT_DOUBLE_EQ(2.75, avg_hydrophobicity) << "TestAvgHydrophobicityIndex does not give the correct result" << endl;
+  EXPECT_FLOAT_EQ(2.75, avg_hydrophobicity) << "TestAvgHydrophobicityIndex does not give the correct result" << endl;
 }
 
 TEST_F(RetentionFeaturesTest, TestIndexMaxHydrophobicSideHelix) {
@@ -469,7 +490,7 @@ TEST_F(RetentionFeaturesTest, TestComputeBulkinessSum) {
   string peptide = "AA[PHOS]A";
 
   double bulkiness_sum = RetentionFeatures::ComputeBulkinessSum(peptide, RetentionFeatures::k_bulkiness());
-  EXPECT_DOUBLE_EQ(34.5, bulkiness_sum) << "TestComputeBulkinessSum does not give the correct results for the entry \"AA[PHOS]A\"" << endl;
+  EXPECT_FLOAT_EQ(34.5, bulkiness_sum) << "TestComputeBulkinessSum does not give the correct results for the entry \"AA[PHOS]A\"" << endl;
 }
 
 
@@ -479,7 +500,7 @@ TEST_F(RetentionFeaturesTest, TestComputeBulkinessFeatures) {
   string peptide = "AA[PHOS]A";
 
   RetentionFeatures::ComputeBulkinessFeatures(peptide, RetentionFeatures::k_bulkiness(), features);
-  EXPECT_DOUBLE_EQ(*features, RetentionFeatures::ComputeBulkinessSum(peptide, RetentionFeatures::k_bulkiness())) << "TestComputeBulkiness "
+  EXPECT_FLOAT_EQ(*features, RetentionFeatures::ComputeBulkinessSum(peptide, RetentionFeatures::k_bulkiness())) << "TestComputeBulkiness "
       "does not give the correct results for the entry \"AA[PHOS]A\"" << endl;
 
   delete[] features;
@@ -496,4 +517,80 @@ TEST_F(RetentionFeaturesTest, TestFillAAFeatures) {
   for(int i = 1; i <= 4; ++i)
      EXPECT_FLOAT_EQ(expected_values[i-1], *(aa_features - i)) << "TestFillAAFeatures does not give the correct results for " << temp[3 - i] << endl;
   delete[] (aa_features - 4);
+}
+
+TEST_F(RetentionFeaturesTest, TestComputeLengthFeatures) {
+  int n_features = 1;
+  double *features = new double[n_features];
+  string peptide = "AA[PHOS]A";
+
+  RetentionFeatures::ComputeLengthFeatures(peptide, features);
+  EXPECT_FLOAT_EQ(*features, RetentionFeatures::PeptideLength(peptide)) << "TestComputeLengthFeatures "
+      "does not give the correct results for the entry \"AA[PHOS]A\"" << endl;
+
+  delete[] features;
+}
+
+TEST_F(RetentionFeaturesTest, TestGetTotalNumberFeatures) {
+  EXPECT_EQ(62, rf.GetTotalNumberFeatures());
+}
+TEST_F(RetentionFeaturesTest, TestComputeNoPTMFeatures) {
+  rf.set_svr_index(RetentionFeatures::k_kyte_doolittle());
+  int n_features = rf.GetTotalNumberFeatures();
+  double *features = new double[n_features];
+  string peptide = "AAAAAAAAA";
+
+  features = rf.ComputeNoPTMFeatures(peptide, features);
+  for (int i = n_features - 1; i >= 0; --i, --features) {
+   if (i == n_features - 21) {
+      EXPECT_FLOAT_EQ(9, *features) << "TestComputeNoPTMFeatures does not give the correct result" << endl;
+    }
+   if (i == n_features - 22) {
+     EXPECT_FLOAT_EQ(9, *features) << "TestComputeNoPTMFeatures does not give the correct result" << endl;
+   }
+   if (i == n_features - 22) {
+     EXPECT_FLOAT_EQ(9, *features) << "TestComputeNoPTMFeatures does not give the correct result" << endl;
+   }
+   if (i == n_features - 26) {
+     EXPECT_FLOAT_EQ(RetentionFeatures::IndexSumSquaredDiff(peptide, RetentionFeatures::k_kyte_doolittle()), *features) << "TestComputeNoPTMFeatures does not give the correct result" << endl;
+   }
+  }
+
+  delete[] features;
+}
+
+TEST_F(RetentionFeaturesTest, TestComputeRetentionFeaturesNoPtms) {
+  rf.set_svr_index(RetentionFeatures::k_kyte_doolittle());
+  PSMDescription psm1("AAAA", 10.0);
+  PSMDescription psm2("R.YYYY.R", 11.0);
+  int n_features = rf.GetTotalNumberFeatures();
+  psm1.retentionFeatures = new double[n_features];
+  psm2.retentionFeatures = new double[n_features];
+  vector<PSMDescription> psms;
+  psms.push_back(psm1);
+  psms.push_back(psm2);
+
+  rf.ComputeRetentionFeatures(psms);
+  for (int i = 0; i < n_features; ++i) {
+    if (i == 0) {
+      EXPECT_FLOAT_EQ(RetentionFeatures::IndexSum(psm1.peptide, RetentionFeatures::k_kyte_doolittle()), psms[0].retentionFeatures[i]);
+      EXPECT_FLOAT_EQ(RetentionFeatures::IndexSum(psm2.peptide.substr(2,4), RetentionFeatures::k_kyte_doolittle()), psms[1].retentionFeatures[i]);
+    } if (i == 39) {
+      set<string> hydrophobic_aa = RetentionFeatures::GetExtremeRetentionAA(RetentionFeatures::k_kyte_doolittle()).second;
+      EXPECT_FLOAT_EQ(RetentionFeatures::NumberConsecTypeAA(psm1.peptide, hydrophobic_aa), psms[0].retentionFeatures[i]);
+      EXPECT_FLOAT_EQ(RetentionFeatures::NumberConsecTypeAA(psm2.peptide.substr(2,4), hydrophobic_aa), psms[1].retentionFeatures[i]);
+    } if (i == 40) {
+      EXPECT_FLOAT_EQ(RetentionFeatures::ComputeBulkinessSum(psm1.peptide, RetentionFeatures::k_bulkiness()), psms[0].retentionFeatures[i]);
+      EXPECT_FLOAT_EQ(RetentionFeatures::ComputeBulkinessSum(psm2.peptide.substr(2,4), RetentionFeatures::k_bulkiness()), psms[1].retentionFeatures[i]);
+    } if (i == 41) {
+       EXPECT_FLOAT_EQ(RetentionFeatures::PeptideLength(psm1.peptide), psms[0].retentionFeatures[i]);
+       EXPECT_FLOAT_EQ(RetentionFeatures::PeptideLength(psm2.peptide.substr(2,4)), psms[1].retentionFeatures[i]);
+    } if (i == 42) {
+      EXPECT_FLOAT_EQ(4.0, psms[0].retentionFeatures[i]);
+      EXPECT_FLOAT_EQ(0, psms[1].retentionFeatures[i]);
+    } if (i == 61) {
+      EXPECT_FLOAT_EQ(4.0, psms[1].retentionFeatures[i]);
+      EXPECT_FLOAT_EQ(0, psms[0].retentionFeatures[i]);
+    }
+  }
 }

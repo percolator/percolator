@@ -24,6 +24,7 @@
  */
 #include <gtest/gtest.h>
 #include "RetentionFeaturesTest.cpp"
+#include "DataManagerTest.cpp"
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
