@@ -38,11 +38,8 @@ protected:
 	std::string decoyFN;
 	std::string xmlOutputFN;
 	std::string call;
-
-
-	//* To make it compile Erik Sjolund added these from Caller.h
-       std::string spectrumFile;
-       map<int, double> scan2rt;
+  std::string spectrumFile;
+  map<int, double> scan2rt;
 
 };
 

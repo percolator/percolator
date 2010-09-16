@@ -5,9 +5,9 @@
  *      Author: lukask
  */
 
-using namespace std;
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "Enzyme.h"
 #include "Sqt2Pin.h"
 #include "config.h"
@@ -18,27 +18,25 @@ using namespace std;
 #include "MassHandler.h"
 #include "SqtReader.h"
 #include "DataSet.h"
+using namespace std;
 
 Sqt2Pin::Sqt2Pin() {
-  // TODO Auto-generated constructor stub
+  // default value for xml output in case sqt2pin is invoked without -o option
+  xmlOutputFN="/tmp/sqt2pinOutput.xml";
 }
 
 string Sqt2Pin::greeter() {
   ostringstream oss;
   oss << "Sqt2Pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss
-  << "Copyright (c) 2010 Lukas Käll. All rights reserved."
-  << endl;
+  oss << "Copyright (c) 2010 Lukas Käll. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
   oss << "Department of Biochemistry and Biophysics at the Stockholm University."
       << endl;
   return oss.str();
 }
 
-
 bool Sqt2Pin::parseOpt(int argc, char **argv) {
-  xmlOutputFN="";
   ostringstream callStream;
   callStream << argv[0];
   for (int i = 1; i < argc; i++) {
@@ -48,19 +46,14 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   call = callStream.str();
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   sqt2pin [options] target.sqt decoy.sqt" << endl;
-  intro << "   where target.sqt is the target sqt-file," << endl;
-  intro << "     and decoy.sqt is the decoy sqt-file," << endl;
-  intro
-  << "Small data sets may be merged by replace the sqt-files with meta"
-  << endl;
-  intro
-  << "files. Meta files are text files containing the paths of sqt-files, one path"
-  << endl;
-  intro
-  << "per line. For successful result, the different runs should be generated under"
-  << endl;
-  intro << "similair condition." << endl;
+  intro << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt" << endl << endl;
+  intro << "Where output.xml is where the output will be written (ensure to have read and " << endl;
+  intro << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
+  intro << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
+  intro << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;
+  intro << "path per line. For successful result, the different runs should be generated" << endl;
+  intro << "under similar condition." << endl;
+
   // init
   CommandLineParser cmd(intro.str());
 
@@ -180,106 +173,123 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   return true;
 }
 
-int Sqt2Pin::run() {
-  //if ( xmlOutputFN.size() != 0 ) {
-    // content of sqt files is merged. Results are printed on both cout and file
-    ofstream xmlOutputStream; // stream for output XML file
-    xmlOutputStream.open(xmlOutputFN.c_str());
-
-    xercesc::XMLPlatformUtils::Initialize ();
-    std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p ( new ::percolatorInNs::featureDescriptions());
-    std::auto_ptr< ::percolatorInNs::experiment > ex_p ( new ::percolatorInNs::experiment( "mitt enzym" , fdes_p ));
-
-    int maxCharge = -1;
-    int minCharge = 10000;
-    FragSpectrumScanDatabase database;
-
-    /*
-	   The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is possible in the unix system call open (see "man 2 open").
-	   This may be a security issue if the filename to the tokyo cabinet database is in a directory
-	   that other users have write access to. They could add a symbolic link pointing somewhere else.
-
-	   It would be better if Tokyo Cabinet would fail if the database existed in our case when we use a tempory file.
-     */
-
-    database.init(tokyoCabinetTmpFN);
-
-    if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
-      // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge ,  database );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, parseOptions, &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge , database );
-      // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  false /* is_decoy */ , parseOptions, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-      SqtReader::translateSqtFileToXML( decoyFN, ex_p->featureDescriptions(),  ex_p->fragSpectrumScan(),  true /* is_decoy */, parseOptions, &maxCharge, &minCharge,  SqtReader::fullParsing, database  );
-
-    } else {
-      // First we only search for the maxCharge and minCharge. This done by passing the argument justSearchMaxMinCharge
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  false /* is_decoy */, parseOptions, &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database );
-      // Now we do full parsing of the Sqt file, and translating it to XML
-      SqtReader::translateSqtFileToXML( targetFN,ex_p->featureDescriptions(),     ex_p->fragSpectrumScan() ,  true /* is_decoy */, parseOptions, &maxCharge, &minCharge, SqtReader::fullParsing, database );
-    }
-    //    pCheck = new SqtSanityCheck();
-    //    assert(pCheck);
-
-    std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-    xmlOutputStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-    std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<
-        "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""
-        << PERCOLATOR_IN_NAMESPACE <<
-        " http://github.com/percolator/percolator/raw/master/src/xml/percolator_in.xsd\">"
-        << std::endl;
-    xmlOutputStream << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<
-        "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""
-        << PERCOLATOR_IN_NAMESPACE <<
-        " http://github.com/percolator/percolator/raw/master/src/xml/percolator_in.xsd\">"
-        << std::endl;
-
-    std::string enzyme;
-    switch ( Enzyme::getEnzymeType() ) {
-    case Enzyme::NO_ENZYME : { enzyme = "NO_ENZYME"; break; }
-    case Enzyme::TRYPSIN : { enzyme = "trypsin"; break; }
-    case Enzyme::CHYMOTRYPSIN : { enzyme = "chymotrypsin"; break; }
-    case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
-    }
-    std::cout << "   <enzyme>" << enzyme << "</enzyme>" << std::endl;
-    xmlOutputStream << "   <enzyme>" << enzyme << "</enzyme>" << std::endl;
-    serializer ser;
-    ser.start (std::cout);
-    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-        ex_p->featureDescriptions() );
-    database.print(ser);
-    std::cout << "</experiment>" << std::endl;
-    serializer serXML;
-    serXML.start (xmlOutputStream);
-    serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-        ex_p->featureDescriptions() );
-    database.print(serXML);
-    xmlOutputStream << "</experiment>" << std::endl;
-    xmlOutputStream.close(); // close stream for output XML file
-  //}
-  if (spectrumFile.size() > 0) {
-    readRetentionTime(spectrumFile);
-  }
-  return 0;
-}
-
 void Sqt2Pin::readRetentionTime(string filename) {
   MSReader r;
   Spectrum s;
   r.setFilter(MS2);
   char* cstr = new char[filename.size() + 1];
   strcpy(cstr, filename.c_str());
+  // read first spectrum
   r.readFile(cstr, s);
   while (s.getScanNumber() != 0) {
+    // store retention time for current spectrum
     scan2rt[s.getScanNumber()] = (double)s.getRTime();
+    // read next spectrum
     r.readFile(NULL, s);
   }
   delete[] cstr;
 }
 
+int Sqt2Pin::run() {
+  // read retention time if sqt2pin was invoked with -2 option
+  if (spectrumFile.size() > 0) readRetentionTime(spectrumFile);
+
+  // Content of sqt files is merged: preparing to write it to xml file
+  ofstream xmlOutputStream;
+  xmlOutputStream.open(xmlOutputFN.c_str());
+  xercesc::XMLPlatformUtils::Initialize ();
+
+  // initializing features and experiment
+  std::auto_ptr<percolatorInNs::featureDescriptions>
+  fdes_p (new ::percolatorInNs::featureDescriptions());
+  std::auto_ptr< ::percolatorInNs::experiment >
+  ex_p (new ::percolatorInNs::experiment("mitt enzym", fdes_p));
+
+  int maxCharge = -1;
+  int minCharge = 10000;
+  FragSpectrumScanDatabase database;
+
+  /* The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is
+	   possible in the unix system call open (see "man 2 open"). This may be a
+	   security issue if the filename to the tokyo cabinet database is in a
+	   directory that other users have write access to. They could add a symbolic
+	   link pointing somewhere else. It would be better if Tokyo Cabinet would
+	   fail if the database existed in our case when we use a tempory file.
+   */
+  database.init(tokyoCabinetTmpFN);
+
+  if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
+    // First we only search for the maxCharge and minCharge.
+    // This done by passing the argument justSearchMaxMinCharge
+    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
+        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database);
+    SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
+        &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge, database);
+    // Now we do full parsing of the Sqt file, and translating it to XML
+    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
+        &maxCharge, &minCharge,  SqtReader::fullParsing, database);
+    SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
+        &maxCharge, &minCharge, SqtReader::fullParsing, database);
+
+  } else {
+    // First we only search for the maxCharge and minCharge.
+    //This done by passing the argument justSearchMaxMinCharge
+    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
+        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database);
+    // Now we do full parsing of the Sqt file, and translating it to XML
+    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
+        &maxCharge, &minCharge, SqtReader::fullParsing, database);
+  }
+  //    pCheck = new SqtSanityCheck();
+  //    assert(pCheck);
+
+  string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
+      string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
+      " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
+      " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
+      " http://github.com/percolator/percolator/raw/master/src/xml/" +
+      "percolator_in.xsd\"> \n";
+  cout << headerStr;
+  xmlOutputStream << headerStr;
+
+  std::string enzyme;
+  switch ( Enzyme::getEnzymeType() ) {
+    case Enzyme::NO_ENZYME : { enzyme = "NO_ENZYME"; break; }
+    case Enzyme::TRYPSIN : { enzyme = "trypsin"; break; }
+    case Enzyme::CHYMOTRYPSIN : { enzyme = "chymotrypsin"; break; }
+    case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
+  }
+
+  string enzymeStr = "   <enzyme>" + enzyme + "</enzyme>\n";
+  cout << enzymeStr;
+  xmlOutputStream << enzymeStr;
+
+  // print to cout (and populate xml file with) experiment information
+  serializer ser;
+  ser.start (std::cout);
+  ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
+      ex_p->featureDescriptions());
+  database.print(ser);
+  std::cout << "</experiment>" << std::endl;
+  serializer serXML;
+  serXML.start (xmlOutputStream);
+  serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
+      ex_p->featureDescriptions() );
+  database.print(serXML);
+  xmlOutputStream << "</experiment>" << std::endl;
+  xmlOutputStream.close(); // close stream for output XML file
+
+  return 0;
+}
 
 Sqt2Pin::~Sqt2Pin() {
-  // TODO Auto-generated destructor stub
+  // Auto-generated destructor stub
 }
 
 int main(int argc, char** argv) {

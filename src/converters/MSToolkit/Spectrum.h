@@ -81,7 +81,6 @@ class Spectrum {
     void printMe();
 
   protected:
-
     //Data Members
     vector<Peak_T> *vPeaks;
     vector<ZState> *vZ;

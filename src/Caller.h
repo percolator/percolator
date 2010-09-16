@@ -84,6 +84,7 @@ class Caller {
     string call;
     string spectrumFile;
     string decoyOut;
+    bool outputAll;
     bool gistInput;
     bool tabInput;
     bool dtaSelect;

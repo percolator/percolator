@@ -147,7 +147,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
   return ret;
 }
 
-void FragSpectrumScanDatabase::print( serializer & ser ) {
+void FragSpectrumScanDatabase::print(serializer & ser) {
   BDBCUR *cursor;
   char *key;
   assert(bdb);
