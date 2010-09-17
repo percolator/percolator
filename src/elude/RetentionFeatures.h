@@ -146,6 +146,8 @@ class RetentionFeatures {
    inline void set_amino_acids_alphabet(const vector<string> alphabet) { amino_acids_alphabet_ = alphabet; }
 
  private:
+   /* maximum number of features */
+   static const int kMaxNumberFeatures;
    /* name of each feature group */
    static const string kGroupNames[NUM_FEATURE_GROUPS];
    /* kyte and doolittle retention index */

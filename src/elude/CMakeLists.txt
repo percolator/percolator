@@ -2,7 +2,7 @@ link_directories(${PERCOLATOR_BINARY_DIR}/src)
 
 file(GLOB ELUDE_SOURCES *.cpp)
 
-add_library(eludelibrary STATIC RetentionFeatures.h RetentionFeatures.cpp EludeMain.cpp)
+add_library(eludelibrary STATIC RetentionFeatures.h RetentionFeatures.cpp DataManager.h DataManager.cpp EludeMain.cpp)
 
 add_executable(elude ${ELUDE_SOURCES})
 

@@ -22,7 +22,6 @@
  * Main file for Google Test
  * Just run all tests
  */
-#include <gtest/gtest.h>
 #include "RetentionFeaturesTest.cpp"
 #include "DataManagerTest.cpp"
 

@@ -31,6 +31,7 @@ class PSMDescription {
     PSMDescription(double ort, double prt) {
       retentionTime = ort;
       predictedTime = prt;
+      retentionFeatures = NULL;
     }
     virtual ~PSMDescription();
     void clear() {

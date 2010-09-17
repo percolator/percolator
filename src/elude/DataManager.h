@@ -31,14 +31,17 @@
 
 class PSMDescription;
 
+using namespace std;
+
 class DataManager {
  public:
    DataManager();
    ~DataManager();
-   /* load a set of peptides; if the file includes retention time, then
-    * includes_rt is true; the results are a set of all amino acids present
-    * in the peptides and a vector of peptides (last two arguments) */
-   static int LoadPeptides(const string &file_name, const bool includes_rt, vector<PSMDescription> &psms, set<string> &aa_alphabet);
+   /* load a set of peptides */
+   static int LoadPeptides(const string &file_name, const bool includes_rt, const bool includes_context,
+                           vector<PSMDescription> &psms, set<string> &aa_alphabet);
+   /* memory allocation for the feature table; return a pointer to the feature table*/
+   double* InitFeatureTable(const int &no_features, vector<PSMDescription> &psms);
 
    /************ Accessors and mutators ************/
    inline vector<PSMDescription>& train_psms() { return train_psms_; }
@@ -47,10 +50,14 @@ class DataManager {
    inline set<string>& test_aa_alphabet() { return test_aa_alphabet_; }
 
  private:
+   /* train and test peptide-spectrum matches */
    vector<PSMDescription> train_psms_;
    vector<PSMDescription> test_psms_;
+   /* the amino acid alphabet in train and test, respectively */
    set<string> train_aa_alphabet_;
    set<string> test_aa_alphabet_;
+   /* pointers to the feature table of the train and test peptides */
+   double *train_features_table_, *test_feature_table_;
 };
 
 #endif /* DATAMANAGER_H_ */

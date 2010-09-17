@@ -34,6 +34,9 @@
 
 using namespace boost::assign;
 
+/* maximum number of features */
+const int kMaxNumberFeatures = 100;
+
 /* define the Kyte Doolittle index */
 const map<string, double> RetentionFeatures::kKyteDoolittle = map_list_of ("A", 1.8) ("C", 2.5) ("D", -3.5) ("E", -3.5) ("F", 2.8)
                                                                           ("G", -0.4) ("H", -3.2) ("I", 4.5) ("K", -3.9) ("L", 3.8)
@@ -99,6 +102,9 @@ vector<string> RetentionFeatures::GetAminoAcids(const string &peptide) {
      if (aa == "[") {
        end_position = peptide.find("]", i);
        aa = peptide.substr(i, end_position - i + 2);
+     } else if (aa == "-") {
+       i = i + 1;
+       continue;
      }
      amino_acids.push_back(aa);
      i += aa.size();
@@ -653,9 +659,11 @@ int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
     if (active_feature_groups_.test(INDEX_PHOS_GROUP)) {
       features = ComputeNoPTMFeatures(pep, features);
     }
-  } else if (VERB >= 1) {
-    cerr << "Error: Memory not allocated for the retention features. Execution aborted." << endl;
-    return 1;
+  } else {
+    if (VERB >= 1) {
+      cerr << "Error: Memory not allocated for the retention features. Execution aborted." << endl;
+    }
+    exit(1);
   }
   return 0;
 }

@@ -20,34 +20,16 @@
  */
 /* This file include test cases for the RetentionFeatures class */
 #include <gtest/gtest.h>
-#include <vector>
-#include <map>
-#include <set>
-#include <utility>
-#include <bitset>
 
 #include "RetentionFeatures.h"
 #include "PSMDescription.h"
 
-//using namespace std;
-
 class RetentionFeaturesTest : public ::testing::Test {
  protected:
-   virtual void SetUp() {
-     PSMDescription psm1(string("PPPP[PHOS]AAAA[GLYC]"), 10.5);
-     PSMDescription psm2(string("AA[PHOS]PP[GLYC]"), 11.5);
-     psm1.retentionFeatures = new double[60];
-     psm2.retentionFeatures = new double[60];
-     psms.push_back(psm1);
-     psms.push_back(psm2);
-   }
+   virtual void SetUp() { }
 
-   virtual void TearDown() {
-     for (int i = 0; i < psms.size(); ++i)
-       delete[] psms[i].retentionFeatures;
-   }
+   virtual void TearDown() { }
 
-   vector<PSMDescription> psms;
    RetentionFeatures rf;
 };
 
