@@ -18,16 +18,5 @@
  * @ Created by Luminita Moruz
  * Sep, 2010
  */
-/*
- * Main file for Google Test
- * Just run all tests
- */
-#include "RetentionFeaturesTest.cpp"
-#include "DataManagerTest.cpp"
-#include "LibSVRModelTest.cpp"
-#include "LibsvmWrapperTest.cpp"
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+/* This file includes the implementations for the functions defined in LibsvmWrapper.h */
+#include "LibsvmWrapper.h"

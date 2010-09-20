@@ -102,17 +102,20 @@ TEST_F(DataManagerTest, TestLoadPeptidesNoRTContext) {
   }
 }
 
-TEST_F(DataManagerTest, TestInitFeatureTable) {
+TEST_F(DataManagerTest, TestInitCleanFeatureTable) {
   vector<PSMDescription> psms;
   set<string> aa_alphabet;
   DataManager::LoadPeptides(test_file1, false, true, psms, aa_alphabet);
   double *feat = NULL;
   feat = dm.InitFeatureTable(10, psms);
-  ASSERT_TRUE(feat != NULL) << "TestInitFeatureTable error" << endl;;
+  ASSERT_TRUE(feat != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;;
   vector<PSMDescription>::iterator it = psms.begin();
   for( ; it != psms.end(); ++it) {
-    EXPECT_TRUE(it->retentionFeatures != NULL) << "TestInitFeatureTable error" << endl;
+    EXPECT_TRUE(it->retentionFeatures != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;
   }
-  delete[] feat;
+  dm.CleanUpTable(psms, feat);
+  for(it = psms.begin(); it != psms.end(); ++it) {
+    EXPECT_TRUE(it->retentionFeatures == NULL) << "TestInitCleanFeatureTable (Clean up step) error" << endl;
+  }
 }
 

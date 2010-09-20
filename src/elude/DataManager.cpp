@@ -32,27 +32,36 @@
 #include "PSMDescription.h"
 #include "Globals.h"
 
-DataManager::DataManager() : train_features_table_(NULL), test_feature_table_(NULL) {
-  string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
+DataManager::DataManager() : train_features_table_(NULL), test_features_table_(NULL) {
+  std::string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
   train_aa_alphabet_.insert(basic_aa, basic_aa + 20);
   test_aa_alphabet_.insert(basic_aa, basic_aa + 20);
 }
 
 DataManager::~DataManager() {
   if (train_features_table_) {
-    delete[] train_features_table_;
+    CleanUpTable(train_psms_, train_features_table_);
     train_features_table_ = NULL;
   }
-  if (test_feature_table_) {
-    delete[] test_feature_table_;
-    test_feature_table_ = NULL;
+  if (test_features_table_) {
+    CleanUpTable(test_psms_, test_features_table_);
+    test_features_table_ = NULL;
   }
 }
 
+/* set to null all retention feature pointers and delete memory */
+void DataManager::CleanUpTable(std::vector<PSMDescription> &psms, double *feat_table) {
+  std::vector<PSMDescription>::iterator it;
+  for(it = psms.begin(); it != psms.end(); ++it) {
+    it->retentionFeatures = NULL;
+  }
+  delete[] feat_table;
+}
+
 /* load a set of peptides; if the file includes retention time, then includes_rt is true; is the peptides is given in the
- * format A.XXX.B then includes_context is true;  the results are a vector of peptides and a set of all aa present in the peptides */
-int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, const bool includes_context,
-                              vector<PSMDescription> &psms, set<string> &aa_alphabet) {
+ * format A.XXX.B then includes_context is true;  the results are a std::vector of peptides and a set of all aa present in the peptides */
+int DataManager::LoadPeptides(const std::string &file_name, const bool includes_rt, const bool includes_context,
+                              std::vector<PSMDescription> &psms, std::set<std::string> &aa_alphabet) {
   ifstream in(file_name.c_str(), ios::in);
   if (in.fail()) {
     if (VERB >= 1) {
@@ -60,8 +69,8 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
     }
     exit(1);
   }
-  string peptide_sequence;
-  vector<string> amino_acids;
+  std::string peptide_sequence;
+  std::vector<std::string> amino_acids;
   int len;
   if (includes_rt) {
     double retention_time;
@@ -90,7 +99,7 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
 }
 
 /* memory allocation for the feature table; return a pointer to the feature table*/
-double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescription> &psms) {
+double* DataManager::InitFeatureTable(const int &no_features, std::vector<PSMDescription> &psms) {
   int no_records = psms.size();
   double *feat_pointer = new double[no_records * no_features];
 

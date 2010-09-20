@@ -18,16 +18,22 @@
  * @ Created by Luminita Moruz
  * Sep, 2010
  */
-/*
- * Main file for Google Test
- * Just run all tests
- */
-#include "RetentionFeaturesTest.cpp"
-#include "DataManagerTest.cpp"
-#include "LibSVRModelTest.cpp"
-#include "LibsvmWrapperTest.cpp"
+/* This file include test cases for the LibSVRModel.cpp class */
+#include <gtest/gtest.h>
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+#include "LibSVRModel.h"
+
+class LibSVRModelTest : public ::testing::Test {
+ protected:
+   virtual void SetUp() { }
+
+   virtual void TearDown() { }
+
+   LibSVRModel model;
+};
+
+TEST_F(LibSVRModelTest, Empty) {
+  vector<PSMDescription> vec;
+  model.TrainModel(vec, 1);
+  EXPECT_EQ(1.0, 1.0);
 }

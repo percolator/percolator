@@ -19,15 +19,21 @@
  * Sep, 2010
  */
 /*
- * Main file for Google Test
- * Just run all tests
+ * The file includes definitions of variables and methods in the class LibSVRModel
  */
-#include "RetentionFeaturesTest.cpp"
-#include "DataManagerTest.cpp"
-#include "LibSVRModelTest.cpp"
-#include "LibsvmWrapperTest.cpp"
+#include <math.h>
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+#include "LibSVRModel.h"
+
+/* grids for parameter calibration */
+const double LibSVRModel::kGridC[] = {pow(2., -2), pow(2., -1), pow(2., 0), pow(2., 1), pow(2., 2), pow(2., 3), pow(2., 4),
+                                pow(2., 5), pow(2., 6), pow(2., 7)};
+const double LibSVRModel::kGridEpsilon[] = {0.001, 0.01, 0.1};
+const double LibSVRModel::kGridGamma[] = {pow(2., -8), pow(2., -7), pow(2., -6), pow(2., -5), pow(2., -4),
+                                    pow(2., -3), pow(2., -2), pow(2., -1), pow(2., 0),  pow(2., 1)};
+
+LibSVRModel::LibSVRModel() : svr_(NULL), kernel_(RBF_SVR) {
+}
+
+LibSVRModel::~LibSVRModel() {
 }

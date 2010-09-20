@@ -31,33 +31,33 @@
 
 class PSMDescription;
 
-using namespace std;
-
 class DataManager {
  public:
    DataManager();
    ~DataManager();
+   /* set to null all retention feature pointers and delete the memory allocated for the feature table */
+   void CleanUpTable(std::vector<PSMDescription> &psms, double *feat_table);
    /* load a set of peptides */
-   static int LoadPeptides(const string &file_name, const bool includes_rt, const bool includes_context,
-                           vector<PSMDescription> &psms, set<string> &aa_alphabet);
+   static int LoadPeptides(const std::string &file_name, const bool includes_rt, const bool includes_context,
+                           std::vector<PSMDescription> &psms, std::set<std::string> &aa_alphabet);
    /* memory allocation for the feature table; return a pointer to the feature table*/
-   double* InitFeatureTable(const int &no_features, vector<PSMDescription> &psms);
+   double* InitFeatureTable(const int &no_features, std::vector<PSMDescription> &psms);
 
    /************ Accessors and mutators ************/
-   inline vector<PSMDescription>& train_psms() { return train_psms_; }
-   inline vector<PSMDescription>& test_psms() { return test_psms_; }
-   inline set<string>& train_aa_alphabet() { return train_aa_alphabet_; }
-   inline set<string>& test_aa_alphabet() { return test_aa_alphabet_; }
+   inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
+   inline std::vector<PSMDescription>& test_psms() { return test_psms_; }
+   inline std::set<std::string>& train_aa_alphabet() { return train_aa_alphabet_; }
+   inline std::set<std::string>& test_aa_alphabet() { return test_aa_alphabet_; }
 
  private:
    /* train and test peptide-spectrum matches */
-   vector<PSMDescription> train_psms_;
-   vector<PSMDescription> test_psms_;
+   std::vector<PSMDescription> train_psms_;
+   std::vector<PSMDescription> test_psms_;
    /* the amino acid alphabet in train and test, respectively */
-   set<string> train_aa_alphabet_;
-   set<string> test_aa_alphabet_;
+   std::set<std::string> train_aa_alphabet_;
+   std::set<std::string> test_aa_alphabet_;
    /* pointers to the feature table of the train and test peptides */
-   double *train_features_table_, *test_feature_table_;
+   double *train_features_table_, *test_features_table_;
 };
 
 #endif /* DATAMANAGER_H_ */
