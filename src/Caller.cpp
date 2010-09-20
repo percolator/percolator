@@ -61,19 +61,19 @@ using namespace xercesc;
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
-    pNorm(NULL),
-    pCheck(NULL),
-    svmInput(NULL),
-    modifiedFN(""),
-    modifiedDecoyFN(""),
-    forwardFN(""),
-    decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-    decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
-    weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
-    docFeatures(false), reportPerformanceEachIteration(false),
-    test_fdr(0.01), selectionfdr(0.01),
-    selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
-    trainRatio(0.6), niter(10) {
+        pNorm(NULL),
+        pCheck(NULL),
+        svmInput(NULL),
+        modifiedFN(""),
+        modifiedDecoyFN(""),
+        forwardFN(""),
+        decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
+        decoyWC(""), resultFN(""), gistFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
+        weightFN(""), gistInput(false), tabInput(false), dtaSelect(false),
+        docFeatures(false), reportPerformanceEachIteration(false),
+        test_fdr(0.01), selectionfdr(0.01),
+        selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
+        trainRatio(0.6), niter(10) {
 }
 
 Caller::~Caller() {
@@ -840,9 +840,9 @@ void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal, shuffled, reportUniquePeptides);
   if (VERB > 1) {
     cerr << "Train/test set contains " << fullset.posSize()
-    << " positives and " << fullset.negSize()
-    << " negatives, size ratio=" << fullset.targetDecoySizeRatio
-    << " and pi0=" << fullset.pi0 << endl;
+        << " positives and " << fullset.negSize()
+        << " negatives, size ratio=" << fullset.targetDecoySizeRatio
+        << " and pi0=" << fullset.pi0 << endl;
   }
   //Normalize features
   set<DataSet*> all;
@@ -976,24 +976,25 @@ int Caller::run() {
 
   // unique peptides? the following code will be repeated for both analysis on
   // psm-fdr and peptide-fdr
+  bool coutFlag = reportUniquePeptides;
   bool uniquePeptides[] = {false, true};
   for(int r=0; r<2; r++){
     reportUniquePeptides = uniquePeptides[r];
-    if (reportUniquePeptides && VERB > 0) {
-      cerr
-      << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide."
-      << endl;
+    if (reportUniquePeptides && VERB > 0 && (coutFlag == reportUniquePeptides)) {
+        cerr
+        << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide."
+        << endl;
     }
     fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
-    if (VERB > 0) {
+    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
       cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
     }
-    if (VERB > 0) {
+    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
       cerr << "Calibrating statistics - calculating q values" << endl;
     }
     int foundPSMs = fullset.calcQ(test_fdr);
     fullset.calcPep();
-    if (VERB > 0 && docFeatures) {
+    if (VERB > 0 && docFeatures && (coutFlag == reportUniquePeptides)) {
       cerr << "For the cross validation sets the average deltaMass are ";
       for (size_t ix = 0; ix < xv_test.size(); ix++) {
         cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
@@ -1004,12 +1005,12 @@ int Caller::run() {
       }
       cerr << endl;
     }
-    if (VERB > 0) {
+    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
       cerr << "New pi_0 estimate on merged list gives " << foundPSMs
           << (reportUniquePeptides ? " peptides" : " PSMs") << " over q="
           << test_fdr << endl;
     }
-    if (VERB > 0) {
+    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
       cerr
       << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
       << endl;
@@ -1023,7 +1024,7 @@ int Caller::run() {
         << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC;
     timerValues << " cpu seconds or " << diff << " seconds wall time"
         << endl;
-    if (VERB > 1) {
+    if (VERB > 1 && (coutFlag == reportUniquePeptides)) {
       cerr << timerValues.str();
     }
     if (weightFN.size() > 0) {
@@ -1033,7 +1034,7 @@ int Caller::run() {
       }
       weightStream.close();
     }
-    if (resultFN.empty()) {
+    if (resultFN.empty() && (coutFlag == reportUniquePeptides)) {
       normal.print(fullset);
     } else {
       ofstream targetStream(resultFN.data(), ios::out);
@@ -1071,24 +1072,24 @@ void Caller::writeXML(bool uniquePeptides) {
     os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
 
     os << "<percolator_output "
-    // default namespace for child elements of percolator output
-    << endl << "xmlns=\""<< space << "\" "
-    // explicit namespace for attributes of percolator output (same as default)
-    // default namespaces do not apply to attributes
-    << endl << "xmlns:p=\""<< space << "\" "
-    // tell the XML parser that this document should be validated against a schema
-    << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-    // give a location for the schema
-    << endl << "xsi:schemaLocation=\""<< schema <<"\" "
-    << endl << "p:majorVersion=\"1\" p:minorVersion=\"1\" p:percolator_version=\"Percolator version " << VERSION << "\">"<< endl;
+        // default namespace for child elements of percolator output
+        << endl << "xmlns=\""<< space << "\" "
+        // explicit namespace for attributes of percolator output (same as default)
+        // default namespaces do not apply to attributes
+        << endl << "xmlns:p=\""<< space << "\" "
+        // tell the XML parser that this document should be validated against a schema
+        << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+        // give a location for the schema
+        << endl << "xsi:schemaLocation=\""<< schema <<"\" "
+        << endl << "p:majorVersion=\"1\" p:minorVersion=\"1\" p:percolator_version=\"Percolator version " << VERSION << "\">"<< endl;
     os << "  <process_info>" << endl;
     os << "    <command_line>" << call << "</command_line>" << endl;
     os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
     if (docFeatures) {
       os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-         << "</average_delta_mass>" << endl;
+             << "</average_delta_mass>" << endl;
       os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-         << "</average_pi>" << endl;
+             << "</average_pi>" << endl;
     }
     os << "  </process_info>" << endl;
     // output psms
@@ -1112,12 +1113,11 @@ void Caller::writeXML(bool uniquePeptides) {
     os << "  </peptides>" << endl;
     os << "</percolator_output>" << endl;
     os.close();
+    /*
     // validate xml output against schema
     // see http://xerces.apache.org/xerces-c/schema-3.html
-
     XMLPlatformUtils::Initialize();
     XercesDOMParser* parser = new XercesDOMParser();
-    //parser->setEntityResolver(resolver);
     parser->setValidationScheme(XercesDOMParser::Val_Always);
     parser->setDoSchema(true);
     parser->setDoNamespaces(true);
@@ -1156,6 +1156,7 @@ void Caller::writeXML(bool uniquePeptides) {
     delete errHandler;
     delete parser;
     XMLPlatformUtils::Terminate();
+     */
   }
 }
 
