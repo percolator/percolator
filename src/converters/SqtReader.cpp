@@ -355,11 +355,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in  ,  int match, const
           exit(-1);
         }
         double dM =
-            MassHandler::massDiff(observedMassCharge,
-                calculatedMassToCharge,
-                charge,
-                peptide.substr(2, peptide.size()
-                    - 4));
+            MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
+                charge, peptide.substr(2, peptide.size()- 4));
 
 
         /*
@@ -441,7 +438,8 @@ todo!
   assert(peptide.size() >= 5 );
   percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1); 
-  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptide.substr(2, peptide.size()- 4)   ) );
+  std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
+  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p( new percolatorInNs::peptideSpectrumMatch (features_p,  peptide_p,psmId, isDecoy, calculatedMassToCharge, charge));
 
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {

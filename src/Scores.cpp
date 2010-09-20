@@ -72,11 +72,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
   << endl;
   string peptide = sh.pPSM->getPeptide();
-  string::size_type pos1 = peptide.find('.');
-  string n = "X";//peptide.substr(0, pos1);
-  string::size_type pos2 = peptide.find('.', ++pos1);
-  string c = "X";//peptide.substr(pos2 + 1, peptide.size());
-  string centpep = peptide.substr(pos1, pos2 - pos1);
+  string n = peptide.substr(0, 1);
+  string c = peptide.substr(peptide.size()-1, peptide.size());
+  string centpep = peptide.substr(2, peptide.size()-4);
   os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\""
       << centpep << "\"/>" << endl;
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
@@ -93,7 +91,9 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
-  os << "    <peptide p:peptide_id=\"" << sh.pPSM->getPeptide() << "\"";
+  string peptide_id =
+      sh.pPSM->getPeptide().substr(2, sh.pPSM->getPeptide().size()-4);
+  os << "    <peptide p:peptide_id=\"" << peptide_id << "\"";
   if (sh.label != 1) {
     os << " p:decoy=\"true\"";
   }
@@ -199,8 +199,7 @@ void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUnique
   scores.clear();
   PSMDescription* pPSM;
   SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
-  // if unique peptides
-  if(reportUniquePeptides){
+  if(reportUniquePeptides){ // if unique peptides
     while ((pPSM = normIter.getNext()) != NULL)
       scores.push_back(ScoreHolderPeptide(.0, 1, pPSM));
     while ((pPSM = shuffIter.getNext()) != NULL)

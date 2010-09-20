@@ -372,6 +372,8 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
 
       BOOST_FOREACH( const percolatorInNs::occurence & oc,  psmIter->occurence() )  {
         myPsm.proteinIds.insert( oc.proteinId() );
+        // adding n-term and c-term residues to peptide
+        myPsm.peptide = oc.flankN() + "." + psmIter->peptide().peptideSequence() + "." + oc.flankC();
       }
       myPsm.id = psmIter->id();
       myPsm.scan = fss.scanNumber();
@@ -384,7 +386,7 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
         featureNum++;
       }
 
-      myPsm.peptide = psmIter->peptide().peptideSequence();
+      // myPsm.peptide = psmIter->peptide().peptideSequence();
       if ( fss.observedTime().present() ) {
         myPsm.retentionTime = fss.observedTime().get();
       }
