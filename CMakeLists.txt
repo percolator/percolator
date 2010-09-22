@@ -55,7 +55,7 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # DEB package options
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libgcc1, libgtest0") # Actual dependencies should be discovered later (TODO)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libgcc1, libgtest0, libxerces-c-dev, libboost-dev, gengetopt, libsqlite3-dev, libtokyocabinet-dev") # Actual dependencies should be discovered later (TODO)
 
 # RPM package options
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
