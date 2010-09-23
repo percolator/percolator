@@ -84,10 +84,7 @@ class ScoreHolderPeptide: public ScoreHolder {
     }
     ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
       ScoreHolder(s, l, psm) {
-      if(psm != NULL){
-        psms_list.append(psm->id);
-        psms_list.append(" ");
-      };
+    	;
     }
     virtual ~ScoreHolderPeptide() {
       ;
