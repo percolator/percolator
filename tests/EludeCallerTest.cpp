@@ -18,17 +18,23 @@
  * @ Created by Luminita Moruz
  * Sep, 2010
  */
-/*
- * Main file for Google Test
- * Just run all tests
- */
-#include "RetentionFeaturesTest.cpp"
-#include "DataManagerTest.cpp"
-//#include "LibSVRModelTest.cpp"
-#include "EludeCallerTest.cpp"
-#include "RetentionModelTest.cpp"
+/* This file include test cases for the EludeCaller class */
+#include <gtest/gtest.h>
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+#include "EludeCaller.h"
+
+class EludeCallerTest : public ::testing::Test {
+ protected:
+   virtual void SetUp() {
+   }
+
+   virtual void TearDown() {
+   }
+
+   EludeCaller caller;
+   string train_file;
+};
+
+TEST_F(EludeCallerTest, Empty) {
+
 }

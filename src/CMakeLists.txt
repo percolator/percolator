@@ -61,7 +61,7 @@ include_directories(. ArrayLibrary)
 
 # main.cpp
 
-add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx  BaseSpline.cpp DescriptionOfCorrect.cpp  MassHandler.cpp  PSMDescription.cpp   ResultHolder.cpp  SetHandler.cpp StdvNormalizer.cpp   svm.cpp   Caller.cpp Enzyme.cpp  Globals.cpp Normalizer.cpp PercolatorCInterface.cpp  SanityCheck.cpp   UniNormalizer.cpp      DataSet.cpp FeatureNames.cpp  LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp    Scores.cpp  SqtSanityCheck.cpp  ssl.cpp EludeModel.cpp )
+add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx  BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp  PSMDescription.cpp   ResultHolder.cpp  SetHandler.cpp StdvNormalizer.cpp   svm.cpp   Caller.cpp Enzyme.cpp  Globals.cpp Normalizer.cpp PercolatorCInterface.cpp  SanityCheck.cpp   UniNormalizer.cpp      DataSet.cpp FeatureNames.cpp  LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp    Scores.cpp  SqtSanityCheck.cpp  ssl.cpp EludeModel.cpp )
 
 add_executable(percolator main.cpp)
 

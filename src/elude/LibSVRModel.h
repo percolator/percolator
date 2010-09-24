@@ -25,33 +25,63 @@
 #ifndef ELUDE_LIBSVRMODEL_H_
 #define ELUDE_LIBSVRMODEL_H_
 
+#include "Globals.h"
 #include "svm.h"
 #include "SVRModel.h"
 
 class PSMDescription;
 
-enum SVRType {LINEAR_SVR, RBF_SVR};
-
-class LibSVRModel : SVRModel {
+class LibSVRModel : public SVRModel {
  public:
+   /* grids for parameter calibration; only Epsilon and C are used for linear SVR */
+   static const double kGridC[];
+   static const double kGridEpsilon[];
+   static const double kGridGamma[];
+   /* for linear SVR a different grid can be used */
+   static const double kLinearGridC[];
+   /* k-fold validation; always k = 3 */
+   static const int k;
+   enum SVRType {LINEAR_SVR = 0, RBF_SVR = 1};
    LibSVRModel();
+   LibSVRModel(const SVRType &kernel_type);
    ~LibSVRModel();
-   /* calibrate the values of the parameters */
-   virtual int CalibrateModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features) {}
+   /* initialize the SVR parameter for a RBF kernel*/
+   int InitSVRParameters(const SVRType &kernel_type);
+   /* set the SVR type */
+   int SetSVRType(const SVRType &type);
+   /* set epsilon, C */
+   int setLinearSVRParam(const double &eps, const double &C);
+   /* set epsilon, C, gamma */
+   int setRBFSVRParam(const double &eps, const double &C, const double &gamma);
+   /* check if the model is null */
+   inline bool IsModelNull() const { svr_ == NULL ? true : false; }
    /* train a svr model */
-   virtual int TrainModel(const std::vector<PSMDescription> &train_psms, const int &number_features) {}
+   virtual int TrainModel(const std::vector<PSMDescription> &train_psms,
+                          const int &number_features);
    /* predict retention time using the trained model */
-   virtual int PredictRT(const int &number_features, PSMDescription &psm) {}
-   /* save a svr model */
+   virtual double PredictRT(const int &number_features, double *features);
+   /* predict rt for a set of peptides and return the value of the error */
+   double EstimatePredictionError(const int &number_features, const std::vector<PSMDescription> &test_psms);
+   /* perform k-fold cross validation; return error value */
+   double ComputeKFoldValidation(const std::vector<PSMDescription> &psms, const int &number_features);
+   /* calibrate the values of the parameters for a linear SVR; the values of the best parameters
+    * are stored in the svr_parameters_ member */
+   int CalibrateLinearModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features);
+   /* calibrate the values of the parameters for a SVR with RBF kernel; the values of the best parameters
+    * are stored in the svr_parameters_ member */
+   int CalibrateRBFModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features);
+   /* calibrate the values of the parameters */
+   virtual int CalibrateModel(const std::vector<PSMDescription> &calibration_psms,
+                              const int &number_features);
+  /* save a svr model */
    virtual int SaveModel(const std::ostream &out_stream) {}
    /* load a svr model */
    virtual int LoadModel(const std::istream &input_stream) {}
 
+   /* Accessors and mutators */
+   inline svm_parameter svr_parameters() { return svr_parameters_; }
+
  private:
-   /* grids for parameter calibration; only Epsilon and C are used for linear SVR */
-   static const double kGridC[10];
-   static const double kGridEpsilon[3];
-   static const double kGridGamma[10];
    /* the type of the kernel; could be linear or RBF */
    SVRType kernel_;
    /* svr structure */

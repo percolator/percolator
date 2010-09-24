@@ -25,15 +25,80 @@
 
 class LibSVRModelTest : public ::testing::Test {
  protected:
-   virtual void SetUp() { }
+   virtual void SetUp() {
+     train_file = "./../bin/data/elude_test/standalone/train.txt";
+     rf.set_svr_index(RetentionFeatures::k_kyte_doolittle());
+     DataManager::LoadPeptides(train_file, true, true, psms, aa_alphabet);
+     no_features = rf.GetTotalNumberFeatures();
+     feature_table = DataManager::InitFeatureTable(no_features, psms);
+     rf.ComputeRetentionFeatures(psms);
+   }
 
-   virtual void TearDown() { }
+   virtual void TearDown() {
+     DataManager::CleanUpTable(psms, feature_table);
+     feature_table = NULL;
+   }
 
    LibSVRModel model;
+   RetentionFeatures rf;
+   vector<PSMDescription> psms;
+   set<string> aa_alphabet;
+   string train_file;
+   double *feature_table;
+   int no_features;
 };
 
-TEST_F(LibSVRModelTest, Empty) {
-  vector<PSMDescription> vec;
-  model.TrainModel(vec, 1);
-  EXPECT_EQ(1.0, 1.0);
+TEST_F(LibSVRModelTest, TrainAndPredictBasicTest) {
+  EXPECT_TRUE(feature_table != NULL) << "TrainAndPredictBasicTest error. The feature table is not initialized." << endl;
+  model.setRBFSVRParam(0.01, 0.05, 5);
+  model.TrainModel(psms, no_features);
+  EXPECT_FALSE(model.IsModelNull()) << "TrainAndPredictBasicTest error. Null model." << endl; ;
+  int len = psms.size();
+  EXPECT_FLOAT_EQ(0.0, psms[len - 1].predictedTime);
+  psms[len - 1].predictedTime = model.PredictRT(no_features, psms[len - 1].retentionFeatures);
+  // TO DO: double check that this is correct
+  EXPECT_FLOAT_EQ(36.9154, psms[len - 1].predictedTime);
 }
+
+TEST_F(LibSVRModelTest, EstimatePredictionErrorTest) {
+  vector<PSMDescription> test_psms;
+  int len = psms.size();
+  test_psms.push_back(psms[0]);
+  test_psms.push_back(psms[len - 1]);
+
+  model.setRBFSVRParam(0.01, 0.05, 5);
+  model.TrainModel(psms, no_features);
+  double pred1 =  psms[0].retentionTime - model.PredictRT(no_features, psms[0].retentionFeatures);
+  double pred2 =  psms[len - 1].retentionTime - model.PredictRT(no_features, psms[len - 1].retentionFeatures);
+  double error = model.EstimatePredictionError(no_features, test_psms);
+  EXPECT_FLOAT_EQ((pred1*pred1 + pred2*pred2) / 2.0, error) << "EstimatePredictionErrorTest does not give the correct results" << endl;
+}
+
+TEST_F(LibSVRModelTest, ComputeKFoldValidationTest) {
+   model.setRBFSVRParam(0.01, 0.05, 5);
+  double err = model.ComputeKFoldValidation(psms, no_features);
+  //TO DO: double check that this is correct
+  EXPECT_FLOAT_EQ(184.06516, err) << "ComputeKFoldValidationTest did not provide the correct result " << endl;
+}
+
+
+/*
+// TO DO: check why this is SOOOO SLOW
+TEST_F(LibSVRModelTest, CalibrateLinearModelTest) {
+  model.SetSVRType(LINEAR_SVR);
+  model.CalibrateLinearModel(psms, no_features);
+  svm_parameter parameters = model.svr_parameters();
+  EXPECT_FLOAT_EQ(0.5,parameters.C);
+  EXPECT_FLOAT_EQ(0.001,parameters.p);
+}*/
+
+
+TEST_F(LibSVRModelTest, CalibrateRBFModelTest) {
+  model.CalibrateRBFModel(psms, no_features);
+  svm_parameter parameters = model.svr_parameters();
+  EXPECT_FLOAT_EQ(4.0,parameters.C);
+  EXPECT_FLOAT_EQ(1.0,parameters.p);
+  EXPECT_FLOAT_EQ(0.00390625,parameters.gamma);
+}
+
+

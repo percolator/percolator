@@ -51,6 +51,17 @@ class PSMDescription;
 
 class RetentionFeatures {
  public:
+   /* maximum number of features */
+   static const int kMaxNumberFeatures;
+   /* name of each feature group */
+   static const std::string kGroupNames[];
+   /* kyte and doolittle retention index */
+   static const std::map<std::string, double> kKyteDoolittle;
+   /* bulkiness as defined by Zimmerman et al */
+   static const std::map<std::string, double> kBulkiness;
+   /* fraction of the aa that are considered polar or hydrophobic */
+   static const double kPercentageAA;
+
    RetentionFeatures();
    ~RetentionFeatures();
 
@@ -144,17 +155,6 @@ class RetentionFeatures {
    inline void set_amino_acids_alphabet(const std::vector<std::string> alphabet) { amino_acids_alphabet_ = alphabet; }
 
  private:
-   /* maximum number of features */
-   static const int kMaxNumberFeatures;
-   /* name of each feature group */
-   static const std::string kGroupNames[NUM_FEATURE_GROUPS];
-   /* kyte and doolittle retention index */
-   static const std::map<std::string, double> kKyteDoolittle;
-   /* bulkiness as defined by Zimmerman et al */
-   static const std::map<std::string, double> kBulkiness;
-   /* fraction of the aa that are considered polar or hydrophobic */
-   static const double kPercentageAA;
-
    /* every bit set corresponds to an active group of features (the indices are defined at
     * the beginning of this file) */
    std::bitset<NUM_FEATURE_GROUPS> active_feature_groups_;

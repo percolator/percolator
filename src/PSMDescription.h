@@ -120,13 +120,11 @@ inline bool operator==(PSMDescription const& one,
 }
 
 inline ostream& operator<<(ostream& out, PSMDescription& psm) {
-  // Since operator<< is a friend of the Point class, we can access
-  // Point's members directly.
   out << "Peptide: " << psm.peptide << endl;
   out << "Retention time, predicted retention time: " << psm.retentionTime
       << ", " << psm.predictedTime;
   out << "Retention features: ";
-  for (int i = 0; i < 76; ++i) {
+  for (int i = 0; i < 60; ++i) {
     out << psm.retentionFeatures[i] << "  ";
   }
   out << endl;

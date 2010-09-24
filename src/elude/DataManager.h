@@ -28,6 +28,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <utility>
 
 class PSMDescription;
 
@@ -36,28 +37,32 @@ class DataManager {
    DataManager();
    ~DataManager();
    /* set to null all retention feature pointers and delete the memory allocated for the feature table */
-   void CleanUpTable(std::vector<PSMDescription> &psms, double *feat_table);
+   static void CleanUpTable(std::vector<PSMDescription> &psms, double *feat_table);
    /* load a set of peptides */
    static int LoadPeptides(const std::string &file_name, const bool includes_rt, const bool includes_context,
                            std::vector<PSMDescription> &psms, std::set<std::string> &aa_alphabet);
    /* memory allocation for the feature table; return a pointer to the feature table*/
-   double* InitFeatureTable(const int &no_features, std::vector<PSMDescription> &psms);
-
-   /************ Accessors and mutators ************/
-   inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
-   inline std::vector<PSMDescription>& test_psms() { return test_psms_; }
-   inline std::set<std::string>& train_aa_alphabet() { return train_aa_alphabet_; }
-   inline std::set<std::string>& test_aa_alphabet() { return test_aa_alphabet_; }
-
- private:
-   /* train and test peptide-spectrum matches */
-   std::vector<PSMDescription> train_psms_;
-   std::vector<PSMDescription> test_psms_;
-   /* the amino acid alphabet in train and test, respectively */
-   std::set<std::string> train_aa_alphabet_;
-   std::set<std::string> test_aa_alphabet_;
-   /* pointers to the feature table of the train and test peptides */
-   double *train_features_table_, *test_features_table_;
+   static double* InitFeatureTable(const int &no_features, std::vector<PSMDescription> &psms);
+   /* remove duplicate peptides */
+   static int RemoveDuplicates(std::vector<PSMDescription> &psms);
+   /* remove from the train set the peptides that are also in the test set */
+   static int RemoveCommonPeptides(const std::vector<PSMDescription> &test_psms,
+                            std::vector<PSMDescription> &train_psms);
+   /* get the peptide sequence from a peptide given as A.XXX.B */
+   static std::string GetMSPeptide(const std::string &peptide);
+   /* check if child is in-source fragment of parent*/
+   static bool IsFragmentOf(const PSMDescription &child, const PSMDescription &parent,
+                     const double &diff, const std::map<std::string, double> &index);
+   /* remove in source fragments from the train data; if remove_from_test is true,
+    * then we remove the fragments from the test data as well; return a list of
+    * in-source fragment, Train/Test depending where the fragment was identified */
+   static std::pair<PSMDescription, std::string> RemoveInSourceFragments(
+       const double &diff, const std::map<std::string, double> &index,
+       bool remove_from_test, std::vector<PSMDescription> &train_psms,
+       std::vector<PSMDescription> &test_psms);
+   /* combine the train and the test data */
+   static std::vector< std::pair<PSMDescription, std::string> > CombineSets(
+       std::vector<PSMDescription> &train_psms, std::vector<PSMDescription> &test_psms);
 };
 
 #endif /* DATAMANAGER_H_ */

@@ -52,7 +52,7 @@ const map<string, double> RetentionFeatures::kBulkiness = map_list_of ("A", 11.5
 const double RetentionFeatures::kPercentageAA = 0.25;
 
 /* name of each feature group */
-const string RetentionFeatures::kGroupNames[NUM_FEATURE_GROUPS] = {"No posttranslationally modified peptides", "Phosphorylations"};
+const string RetentionFeatures::kGroupNames[] = {"No posttranslationally modified peptides", "Phosphorylations"};
 
 RetentionFeatures::RetentionFeatures() {
   string aa_alphabet[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};

@@ -23,18 +23,16 @@
 #include <istream>
 #include <ostream>
 #include <iostream>
-#include "svm.h"
 
 class PSMDescription;
+struct svm_parameter;
+struct svm_model;
 
 namespace libsvm_wrapper {
-  int CalibrateLinearModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features, const double grid_c[],
-                           const double grid_epsilon[], svm_parameter *best_parameters) {}
-  int CalibrateRBFModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features, const double grid_c[],
-                           const double grid_epsilon[], const double grid_gamma[], svm_parameter *best_parameters);
-  double ComputeKFoldValidation(const std::vector<PSMDescription> &psms, const int &number_features, const svm_parameter &parameter, const int &k);
+  /* train a svr */
   svm_model* TrainModel(const std::vector<PSMDescription> &psms, const int &number_features, const svm_parameter &parameter);
-  double PredictRT(const svm_model* svr, const PSMDescription &psm);
+  /* predict the retention time of psm using the provided svr */
+  double PredictRT(const svm_model* svr, const int &number_features, double *features);
   int LoadModel(std::istream & in_stream);
   int SaveModel(std::ostream & out_stream);
 }

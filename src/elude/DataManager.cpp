@@ -26,32 +26,25 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <algorithm>
 
 #include "DataManager.h"
 #include "RetentionFeatures.h"
 #include "PSMDescription.h"
 #include "Globals.h"
+#include "Enzyme.h"
 
-DataManager::DataManager() : train_features_table_(NULL), test_features_table_(NULL) {
-  std::string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
-  train_aa_alphabet_.insert(basic_aa, basic_aa + 20);
-  test_aa_alphabet_.insert(basic_aa, basic_aa + 20);
+#define MYABS(x) x >= 0 ? x : (-1) * x
+
+DataManager::DataManager() {
 }
 
 DataManager::~DataManager() {
-  if (train_features_table_) {
-    CleanUpTable(train_psms_, train_features_table_);
-    train_features_table_ = NULL;
-  }
-  if (test_features_table_) {
-    CleanUpTable(test_psms_, test_features_table_);
-    test_features_table_ = NULL;
-  }
 }
 
 /* set to null all retention feature pointers and delete memory */
-void DataManager::CleanUpTable(std::vector<PSMDescription> &psms, double *feat_table) {
-  std::vector<PSMDescription>::iterator it;
+void DataManager::CleanUpTable(vector<PSMDescription> &psms, double *feat_table) {
+  vector<PSMDescription>::iterator it;
   for(it = psms.begin(); it != psms.end(); ++it) {
     it->retentionFeatures = NULL;
   }
@@ -59,9 +52,9 @@ void DataManager::CleanUpTable(std::vector<PSMDescription> &psms, double *feat_t
 }
 
 /* load a set of peptides; if the file includes retention time, then includes_rt is true; is the peptides is given in the
- * format A.XXX.B then includes_context is true;  the results are a std::vector of peptides and a set of all aa present in the peptides */
-int DataManager::LoadPeptides(const std::string &file_name, const bool includes_rt, const bool includes_context,
-                              std::vector<PSMDescription> &psms, std::set<std::string> &aa_alphabet) {
+ * format A.XXX.B then includes_context is true;  the results are a vector of peptides and a set of all aa present in the peptides */
+int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, const bool includes_context,
+                              vector<PSMDescription> &psms, set<string> &aa_alphabet) {
   ifstream in(file_name.c_str(), ios::in);
   if (in.fail()) {
     if (VERB >= 1) {
@@ -69,8 +62,8 @@ int DataManager::LoadPeptides(const std::string &file_name, const bool includes_
     }
     exit(1);
   }
-  std::string peptide_sequence;
-  std::vector<std::string> amino_acids;
+  string peptide_sequence;
+  vector<string> amino_acids;
   int len;
   if (includes_rt) {
     double retention_time;
@@ -99,13 +92,14 @@ int DataManager::LoadPeptides(const std::string &file_name, const bool includes_
 }
 
 /* memory allocation for the feature table; return a pointer to the feature table*/
-double* DataManager::InitFeatureTable(const int &no_features, std::vector<PSMDescription> &psms) {
+double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescription> &psms) {
   int no_records = psms.size();
   double *feat_pointer = new double[no_records * no_features];
 
   if (!feat_pointer) {
     if (VERB >= 1) {
-      cerr << "Error: Unable to allocate memory for the feature table. Execution aborted. " << endl;
+      cerr << "Error: Unable to allocate the feature table. Execution aborted."
+           << endl;
     }
     exit(1);
   } else {
@@ -116,3 +110,159 @@ double* DataManager::InitFeatureTable(const int &no_features, std::vector<PSMDes
     return feat_pointer;
   }
 }
+
+/* remove duplicate peptides */
+int DataManager::RemoveDuplicates(std::vector<PSMDescription> &psms) {
+  sort(psms.begin(), psms.end(), less<PSMDescription> ());
+  psms.resize(distance(psms.begin(), unique(psms.begin(), psms.end())));
+  return 0;
+}
+
+/* remove from the train set the peptides that are also in the test set */
+int DataManager::RemoveCommonPeptides(const vector<PSMDescription> &test_psms,
+                                      vector<PSMDescription> &train_psms) {
+  vector<PSMDescription>::const_iterator it = test_psms.begin();
+  for ( ; it != test_psms.end(); ++it) {
+    train_psms.erase(remove(train_psms.begin(), train_psms.end(), (*it)),
+                     train_psms.end());
+  }
+  return 0;
+}
+
+// get the peptide information (for A.MCD.E -> return MCD)
+string DataManager::GetMSPeptide(const string& peptide) {
+  int pos1 = peptide.find('.');
+  int pos2 = peptide.find('.', ++pos1);
+  return peptide.substr(pos1, pos2 - pos1);
+}
+
+/* check if child is in-source fragment from parent either the difference
+ * in hydrophobicity is greater than difference according to the givem index*/
+bool DataManager::IsFragmentOf(const PSMDescription &child, const PSMDescription &parent,
+                               const double &diff, const map<string, double> &index) {
+  string peptide_parent = parent.peptide;
+  string ms_peptide_parent = GetMSPeptide(peptide_parent);
+  string peptide_child = child.peptide;
+  string ms_peptide_child = GetMSPeptide(peptide_child);
+  // the peptide child has to be included in the larger peptide
+  if ((ms_peptide_child.length() >= ms_peptide_parent.length()) ||
+      (ms_peptide_parent.find(ms_peptide_child) == string::npos)) {
+    return false;
+  }
+  // parent enzymatic, child non enzymatic
+  if (Enzyme::isEnzymatic(peptide_parent) &&
+     (!Enzyme::isEnzymatic(peptide_child))) {
+    return true;
+  }
+  // difference in retention sum > diff
+  double sum_parent = RetentionFeatures::IndexSum(ms_peptide_parent, index);
+  double sum_child = RetentionFeatures::IndexSum(ms_peptide_child, index);
+  double retention_difference = sum_child - sum_parent;
+  if (MYABS(retention_difference) > diff) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+vector< pair<PSMDescription, string> > DataManager::CombineSets(vector<PSMDescription>
+       &train_psms, vector<PSMDescription> &test_psms) {
+  vector< pair<PSMDescription, string> > temp;
+  vector<PSMDescription>::iterator it = train_psms.begin();
+  pair<PSMDescription, string> psm_pair;
+
+  for( ; it != train_psms.end(); ++it) {
+    psm_pair = make_pair(*it, "train");
+    temp.push_back(psm_pair);
+  }
+  for(it = test_psms.begin() ; it != test_psms.end(); ++it) {
+     psm_pair = make_pair(*it, "test");
+     temp.push_back(psm_pair);
+   }
+  return temp;
+}
+
+pair<PSMDescription, string> DataManager::RemoveInSourceFragments(
+    const double &diff, const map<string, double> &index,
+    bool remove_from_test, vector<PSMDescription> &train_psms,
+    vector<PSMDescription> &test_psms) {
+
+ vector< pair<PSMDescription, string> > combined_psms;
+ combined_psms = CombineSets(train_psms, test_psms);
+ // sort the psms according to retention time
+ // determine the
+
+}
+
+/*
+void RTPredictor::addToPairVector(vector<PSMDescription> psms, bool value,
+                                  vector<pair<pair<PSMDescription, bool> ,
+                                      bool> > & psmPairs) {
+  pair<PSMDescription, bool> tmp1;
+  pair<pair<PSMDescription, bool> , bool> tmp2;
+  for (int i = 0; i < psms.size(); ++i) {
+    tmp1.first = psms[i];
+    tmp1.second = value;
+    tmp2.first = tmp1;
+    tmp2.second = false;
+    psmPairs.push_back(tmp2);
+  }
+}
+
+// remove in source CID peptides
+void RTPredictor::removeSourceCIDs(vector<pair<
+    pair<PSMDescription, bool> , bool> > & psms) {
+  double rt, rtp;
+  int noPsms = psms.size(), i, j;
+  bool isDecay;
+  vector<pair<pair<PSMDescription, bool> , bool> >::iterator it;
+  if (VERB > 2) {
+    if (removeDecaying) {
+      cerr << endl
+          << "Removing in source fragments from train and test sets..."
+          << endl;
+    } else {
+      cerr << endl << "Removing in source fragments from train set..."
+          << endl;
+    }
+  }
+  sort(psms.begin(), psms.end(), mypair);
+  for (i = 0; i < noPsms; ++i) {
+    rt = psms[i].first.first.getRetentionTime();
+    j = i - 1;
+    isDecay = false;
+    while ((j >= 0) && (((rtp = psms[j].first.first.getRetentionTime())
+        * 1.05) >= rt)) {
+      if (isChildOf(psms[i].first.first, psms[j].first.first)) {
+        psms[i].second = true;
+        isDecay = true;
+        break;
+      }
+      j--;
+    }
+    if (!isDecay) {
+      j = i + 1;
+      while ((j < noPsms) && (((rtp
+          = psms[j].first.first.getRetentionTime()) * 0.95) <= rt)) {
+        if (isChildOf(psms[i].first.first, psms[j].first.first)) {
+          psms[i].second = true;
+          break;
+        }
+        j++;
+      }
+    }
+  }
+  if (!decayingPeptidesFile.empty()) {
+    writeDecayToFile(psms);
+  }
+  int counts = (int)count_if(psms.begin(), psms.end(), decay);
+  if (VERB > 2) {
+    cerr << counts << " in source fragments were identified." << endl;
+  }
+  if (removeDecaying) {
+    it = remove_if(psms.begin(), psms.end(), decay);
+  } else {
+    it = remove_if(psms.begin(), psms.end(), decayTrain);
+  }
+  psms.resize(distance(psms.begin(), it));
+} */

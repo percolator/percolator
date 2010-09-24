@@ -37,7 +37,7 @@ class SVRModel {
    /* train a svr model */
    virtual int TrainModel(const std::vector<PSMDescription> &train_psms, const int &number_features) = 0;
    /* predict retention time using the trained model */
-   virtual int PredictRT(const int &number_features, PSMDescription &psm) = 0;
+   virtual double PredictRT(const int &number_features, double *features) = 0;
    /* save a svr model */
    virtual int SaveModel(const std::ostream &out_stream) = 0;
    /* load a svr model */
