@@ -78,14 +78,12 @@ class Caller {
     string decoyFN;
     string decoyWC;
     string resultFN;
-    string gistFN;
     string tabFN;
     string weightFN;
     string call;
     string spectrumFile;
     string decoyOut;
     bool outputAll;
-    bool gistInput;
     bool tabInput;
     bool dtaSelect;
     bool docFeatures;

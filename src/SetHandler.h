@@ -54,10 +54,6 @@ class SetHandler {
     void readTab(const string& dataFN, const int label);
     void static writeTab(const string& dataFN, const SetHandler& norm,
                          const SetHandler& shuff);
-    void readGist(const string& dataFN, const string& labelFN,
-                  const int label);
-    void static gistWrite(const string& fileNameTrunk,
-                          const SetHandler& norm, const SetHandler& shuff);
     int const getLabel(int setPos);
     inline int const getTrainingSetSize() {
       return examples.size();

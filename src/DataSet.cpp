@@ -93,22 +93,6 @@ const double* DataSet::getFeatures(const int pos) const {
   return &feature[DataSet::rowIx(pos)];
 }
 
-bool DataSet::getGistDataRow(int& pos, string& out) {
-  ostringstream s1;
-  PSMDescription* pPSM = NULL;
-  if ((pPSM = getNext(pos)) == NULL) {
-    return false;
-  }
-  double* feature = pPSM->features;
-  s1 << psms[pos].id;
-  for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures(); ix++) {
-    s1 << '\t' << feature[ix];
-  }
-  s1 << endl;
-  out = s1.str();
-  return true;
-}
-
 bool DataSet::writeTabData(ofstream& out, const string& lab) {
   int pos = -1;
   PSMDescription* pPSM = NULL;
@@ -208,51 +192,6 @@ double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
     }
   }
   return 0.0;
-}
-
-
-void DataSet::readGistData(ifstream& is, const vector<unsigned int>& ixs) {
-  string tmp, line;
-  is.clear();
-  is.seekg(0, ios::beg);
-  getline(is, line);
-  getline(is, line);
-  unsigned int m = 0, n = ixs.size();
-  istringstream buff(line);
-  while (true) {
-    buff >> tmp;
-    if (!buff) {
-      break;
-    }
-    m++;
-  }
-  if (m < 3) {
-    cerr << "To few features in Gist data file";
-    exit(-1);
-  }
-  m--; // remove id line
-  initFeatureTables(m, n);
-  string seq;
-  is.clear();
-  is.seekg(0, ios::beg);
-  getline(is, line); // id line
-  //getFeatureNames().setFeatures(line,1,m);
-  unsigned int ix = 0;
-  getline(is, line);
-  for (unsigned int i = 0; i < n; i++) {
-    while (ix < ixs[i]) {
-      getline(is, line);
-      ix++;
-    }
-    buff.str(line);
-    buff.clear();
-    buff >> psms[i].id;
-    double* featureRow = &feature[rowIx(i)];
-    psms[i].features = featureRow;
-    for (register unsigned int j = 0; j < m; j++) {
-      buff >> featureRow[j];
-    }
-  }
 }
 
 void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {

@@ -110,8 +110,6 @@ class DataSet {
     bool writeTabData(ofstream& out, const string& lab);
     void
         readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
-    bool getGistDataRow(int& pos, string& out);
-    void readGistData(ifstream& is, const vector<unsigned int> &ixs);
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);

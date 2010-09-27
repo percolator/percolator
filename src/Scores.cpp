@@ -72,11 +72,13 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
   << endl;
   string peptide = sh.pPSM->getPeptide();
-  string n = peptide.substr(0, 1);
-  string c = peptide.substr(peptide.size()-1, peptide.size());
-  string centpep = peptide.substr(2, peptide.size()-4);
-  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\""
-      << centpep << "\"/>" << endl;
+  if (peptide.size() > 0) {
+	  string n = peptide.substr(0, 1);
+	  string c = peptide.substr(peptide.size()-1, peptide.size());
+	  string centpep = peptide.substr(2, peptide.size()-4);
+	  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\""
+			  << centpep << "\"/>" << endl;
+  }
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
@@ -151,6 +153,7 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
   if (reportUniquePeptides) {
     weedOutRedundant();
   }
+  int ss = scores.size();
   neg = count_if(scores.begin(),
       scores.end(),
       mem_fun_ref(&ScoreHolder::isDecoy));
@@ -595,6 +598,8 @@ double Scores::estimatePi0() {
       mem_fun_ref(&ScoreHolder::toPair));
   // Estimate pi0
   PosteriorEstimator::getPValues(combined, pvals);
+  int pval_s = pvals.size();
+  int comb_s = combined.size();
   pi0 = PosteriorEstimator::estimatePi0(pvals);
   return pi0;
 }

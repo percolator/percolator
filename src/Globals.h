@@ -30,7 +30,7 @@
 
 #define VERB (Globals::getInstance()->getVerbose())
 
-#define VERSION 1.14
+#define VERSION "UNOFFICIAL"
 
 class Globals {
   public:

@@ -65,13 +65,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "matches",
       "Maximal number of matches to take in consideration per spectrum when using sqt-files",
       "number");
-  cmd.defineOption("g",
-      "gist-in",
-      "Input files are given as gist files. In this case first argument should be a file name \
-      of the data file, the second the label file. Labels are interpreted as 1 -- positive train \
-      and test set, -1 -- negative train set, -2 -- negative in test set.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("v",
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
