@@ -18,6 +18,7 @@
 #include "MassHandler.h"
 #include "SqtReader.h"
 #include "DataSet.h"
+#include "Exceptions.h"
 using namespace std;
 
 Sqt2Pin::Sqt2Pin() {
@@ -174,18 +175,38 @@ void Sqt2Pin::readRetentionTime(string filename) {
   strcpy(cstr, filename.c_str());
   // read first spectrum
   r.readFile(cstr, s);
-  while (s.getScanNumber() != 0) {
-    // store retention time for current spectrum
-    scan2rt[s.getScanNumber()] = (double)s.getRTime();
-    // read next spectrum
-    r.readFile(NULL, s);
+  // check whether EZ lines are available
+  if (s.sizeEZ() != 0) {
+    for(int i =0; i < s.sizeEZ(); i++){
+      // read retention times
+      scan2rt[s.getScanNumber()] = s.atEZ(i).pRTime;
+      // read next spectrum
+      r.readFile(NULL, s);
+    }
+  }
+  // if EZ lines are not available, check for I lines
+  else if((double)s.getRTime() != 0) {
+    while (s.getScanNumber() != 0) {
+      // read retention times
+      scan2rt[s.getScanNumber()] = (double)s.getRTime();
+      // read next spectrum
+      r.readFile(NULL, s);
+    }
+  }
+  // if neither EZ nor I lines are available
+  else{
+    cout << "The ms2 in input does not appear to contain retention time "
+        << "information. Please run without -2 option.";
+    exit(-1);
+    //throw MS2Exception();
   }
   delete[] cstr;
 }
 
 int Sqt2Pin::run() {
   // read retention time if sqt2pin was invoked with -2 option
-  if (spectrumFile.size() > 0) readRetentionTime(spectrumFile);
+  if (spectrumFile.size() > 0)
+    readRetentionTime(spectrumFile);
 
   // Content of sqt files is merged: preparing to write it to xml file
   ofstream xmlOutputStream;
