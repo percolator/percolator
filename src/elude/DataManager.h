@@ -56,13 +56,21 @@ class DataManager {
    /* remove in source fragments from the train data; if remove_from_test is true,
     * then we remove the fragments from the test data as well; return a list of
     * in-source fragment, Train/Test depending where the fragment was identified */
-   static std::pair<PSMDescription, std::string> RemoveInSourceFragments(
+   static std::vector< std::pair<PSMDescription, std::string> > RemoveInSourceFragments(
        const double &diff, const std::map<std::string, double> &index,
        bool remove_from_test, std::vector<PSMDescription> &train_psms,
        std::vector<PSMDescription> &test_psms);
    /* combine the train and the test data */
-   static std::vector< std::pair<PSMDescription, std::string> > CombineSets(
+   static std::vector< std::pair<std::pair<PSMDescription, std::string>, bool> > CombineSets(
        std::vector<PSMDescription> &train_psms, std::vector<PSMDescription> &test_psms);
+   /* remove non-enzymatic peptides*/
+   static std::vector<PSMDescription> RemoveNonEnzymatic(std::vector<PSMDescription> &psms);
+   /* write in source fragments to file */
+   static int WriteInSourceToFile(const std::string &file_name,
+       const std::vector< std::pair<PSMDescription, std::string> > &psms);
+   /* write peptides to output file */
+   static int WriteOutFile(const std::string &file_name,
+       const std::vector<PSMDescription> &psms, bool includes_rt);
 };
 
 #endif /* DATAMANAGER_H_ */

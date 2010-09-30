@@ -37,7 +37,7 @@ const double LibSVRModel::kGridEpsilon[] = {0.001, 0.01, 0.1, 1.0};
 const double LibSVRModel::kGridGamma[] = {pow(2., -8), pow(2., -7), pow(2., -6), pow(2., -5), pow(2., -4),
                                     pow(2., -3), pow(2., -2), pow(2., -1), pow(2., 0),  pow(2., 1)};
 /* for linear SVR a different grid for C can be used since it gets very slow otherwise */
-const double LibSVRModel::kLinearGridC[] = {pow(2., -2), pow(2., -1), pow(2., 0), pow(2., 1), pow(2., 2), pow(2., 3)};
+const double LibSVRModel::kLinearGridC[] = {pow(2., -3), pow(2., -2), pow(2., -1), pow(2., 0), pow(2., 1), pow(2., 2), pow(2., 3)};
 
 /* always 3-fold cross-validation */
 const int LibSVRModel::k = 3;
@@ -191,8 +191,8 @@ int LibSVRModel::CalibrateLinearModel(const std::vector<PSMDescription> &calibra
       svr_parameters_.C = kLinearGridC[i];
       svr_parameters_.p = kGridEpsilon[j];
       error = ComputeKFoldValidation(calibration_psms, number_features);
-      cout << "c, epsilon = " << kLinearGridC[i] << ", " << kGridEpsilon[j] << endl;
-      cout << "err = " << error << "\n" << endl;
+      //cout << "c, epsilon = " << kLinearGridC[i] << ", " << kGridEpsilon[j] << endl;
+      //cout << "err = " << error << "\n" << endl;
       if (error < best_error) {
         best_error = error;
         best_c = kLinearGridC[i];

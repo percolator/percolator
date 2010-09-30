@@ -43,8 +43,10 @@
 #define INDEX_NO_PTMS_GROUP 0
 /* phosphorylations are present in the dataset; this is equivalent to svr, peptide length, phosphorylation features, aa features  */
 #define INDEX_PHOS_GROUP 1
+/* only the amino acids from the alphabet are present */
+#define AA_GROUP 2
 /* number of feature groups */
-#define NUM_FEATURE_GROUPS 2
+#define NUM_FEATURE_GROUPS 3
 
 /* forward declaration of PSMDescription */
 class PSMDescription;
@@ -67,7 +69,8 @@ class RetentionFeatures {
 
    /************ SMALL FUNCTIONS ************/
    /* get the value in the index for aa */
-   static double GetIndexValue(const std::string &aa, const std::map<std::string, double> &index);
+   static double GetIndexValue(const std::string &aa,
+       const std::map<std::string, double> &index);
    /* get the amino acids in a peptide (including the modified ones) */
    static std::vector<std::string> GetAminoAcids(const std::string &peptide);
    /* get the unmodified version of an amino acid */
@@ -77,40 +80,60 @@ class RetentionFeatures {
 
    /************ INDEX FUNCTIONS ************/
    /* compute all index features for a peptide */
-   static double* ComputeIndexFeatures(const std::string &peptide, const std::map<std::string, double> &index, const std::set<std::string> &polar_aa,
+   static double* ComputeIndexFeatures(const std::string &peptide,
+       const std::map<std::string, double> &index,
+       const std::set<std::string> &polar_aa,
        const std::set<std::string> &hydrophobic_aa, double *features);
    /* get the kPercentageAA*100% AA with the lowest retention and highest retentions*/
-   static std::pair< std::set<std::string>, std::set<std::string> > GetExtremeRetentionAA(const std::map<std::string, double> &index);
+   static std::pair< std::set<std::string>, std::set<std::string> > GetExtremeRetentionAA(
+       const std::map<std::string, double> &index);
    /* calculate the number of a certain type of aa The set gives the list of such amino acids */
-   static double NumberTypeAA(const std::string &peptide, const std::set<std::string> &amino_acid_type);
+   static double NumberTypeAA(const std::string &peptide,
+       const std::set<std::string> &amino_acid_type);
    /* calculate the number of a consecutibe aa of a certain type. The set gives the type of these such amino acids */
-   static double NumberConsecTypeAA(const std::string &peptide, const std::set<std::string> &amino_acid_type);
+   static double NumberConsecTypeAA(const std::string &peptide,
+       const std::set<std::string> &amino_acid_type);
    /* calculate the average hydrophobicity of an index */
    static double AvgHydrophobicityIndex(const std::map<std::string, double> &index);
    /* compute the sum of hydrophobicities of the amino acids in a peptide */
-   static double IndexSum(const std::string &peptide, const std::map<std::string, double> &index);
+   static double IndexSum(const std::string &peptide,
+       const std::map<std::string, double> &index);
    /* compute the average hydrophobicity of the aa in the peptide */
-   static double IndexAvg(const std::string &peptide, const std::map<std::string, double> &index);
+   static double IndexAvg(const std::string &peptide,
+       const std::map<std::string, double> &index);
    /* calculate the hydrophobicity of the N-terminus */
-   static double IndexN(const std::string &peptide, const std::map<std::string, double> &index);
+   static double IndexN(const std::string &peptide, const std::map<std::string,
+       double> &index);
    /* calculate the hydrophobicity of the C-terminus */
-   static double IndexC(const std::string &peptide, const std::map<std::string, double> &index);
+   static double IndexC(const std::string &peptide, const std::map<std::string,
+       double> &index);
    /* calculate the sum of hydrophobicities of polar aa */
-   static double IndexNearestNeigbour(const std::string &peptide, const std::map<std::string, double> &index, const std::set<std::string> &polar_aa);
+   static double IndexNearestNeigbour(const std::string &peptide,
+       const std::map<std::string, double> &index,
+       const std::set<std::string> &polar_aa);
    /* the most hydrophobic window */
-   static double IndexMaxPartialSum(const std::string &peptide, const std::map<std::string, double> &index, const int &win);
+   static double IndexMaxPartialSum(const std::string &peptide,
+       const std::map<std::string, double> &index, const int &win);
    /* the least hydrophobic window */
-   static double IndexMinPartialSum(const std::string &peptide, const std::map<std::string, double> &index, const int &win);
+   static double IndexMinPartialSum(const std::string &peptide,
+       const std::map<std::string, double> &index, const int &win);
    /* calculate the most hydrophobic sides for alpha helices */
-   static double IndexMaxHydrophobicSideHelix(const std::string &peptide,  const std::map<std::string, double> &index);
+   static double IndexMaxHydrophobicSideHelix(const std::string &peptide,
+       const std::map<std::string, double> &index);
    /* calculate the least hydrophobic sides for alpha helices */
-   static double IndexMinHydrophobicSideHelix(const std::string &peptide,  const std::map<std::string, double> &index);
+   static double IndexMinHydrophobicSideHelix(const std::string &peptide,
+       const std::map<std::string, double> &index);
    /* calculate the maximum value of the hydrophobic moment */
-   static double IndexMaxHydrophobicMoment(const std::string &peptide, const std::map<std::string, double> &index, const double &angle_degrees, const int &win);
+   static double IndexMaxHydrophobicMoment(const std::string &peptide,
+       const std::map<std::string, double> &index, const double &angle_degrees,
+       const int &win);
    /* calculate the minimum value of the hydrophobic moment */
-   static double IndexMinHydrophobicMoment(const std::string &peptide, const std::map<std::string, double> &index, const double &angle_degrees, const int &win);
+   static double IndexMinHydrophobicMoment(const std::string &peptide,
+       const std::map<std::string, double> &index, const double &angle_degrees,
+       const int &win);
    /* Calculate the sum of squared differences in hydrophobicities between neighbours */
-   static double IndexSumSquaredDiff(const std::string &peptide, const std::map<std::string, double> &index);
+   static double IndexSumSquaredDiff(const std::string &peptide,
+       const std::map<std::string, double> &index);
    /* product between hydrophobicity of n- and c- terminus */
    /* static double IndexNC(const std::string &peptide, const std::map<std::string, double> &index); */
    /* calculate the sum of hydrophobicities of neighbours of D(Aspartic Acid) and E (Glutamic acid) */
@@ -118,9 +141,11 @@ class RetentionFeatures {
 
    /************ BULKINESS FUNCTIONS ************/
    /* compute the features related to bulkiness; */
-   static double* ComputeBulkinessFeatures(const std::string &peptide, const std::map<std::string, double> &bulkiness, double *features);
+   static double* ComputeBulkinessFeatures(const std::string &peptide,
+       const std::map<std::string, double> &bulkiness, double *features);
    /* compute bulkiness features; returns a pointer to the feature table */
-   static double ComputeBulkinessSum(const std::string &peptide, const std::map<std::string, double> &bulkiness);
+   static double ComputeBulkinessSum(const std::string &peptide,
+       const std::map<std::string, double> &bulkiness);
 
    /************ AMINO ACID FEATURES ************/
    /* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
@@ -145,16 +170,26 @@ class RetentionFeatures {
    int ComputeRetentionFeatures(PSMDescription &psm);
 
    /************* ACCESSORS AND MUTATORS **************/
-   static const std::map<std::string, double>& k_kyte_doolittle() { return kKyteDoolittle; }
+   static const std::map<std::string, double>& k_kyte_doolittle()
+       { return kKyteDoolittle; }
    static const std::map<std::string, double>& k_bulkiness() { return kBulkiness; }
-   inline std::bitset<NUM_FEATURE_GROUPS> active_feature_groups() const { return active_feature_groups_; }
-   inline void set_active_feature_groups(const std::bitset<NUM_FEATURE_GROUPS> active_groups) { active_feature_groups_ = active_groups; }
+   inline std::bitset<NUM_FEATURE_GROUPS> active_feature_groups() const
+       { return active_feature_groups_; }
+   inline void set_active_feature_groups(
+       const std::bitset<NUM_FEATURE_GROUPS> active_groups)
+       { active_feature_groups_ = active_groups; }
    inline std::map<std::string, double> svr_index() const { return svr_index_; }
-   inline void set_svr_index(const std::map<std::string, double> index) { svr_index_ = index; }
-   inline std::vector<std::string> amino_acids_alphabet() const { return amino_acids_alphabet_; }
-   inline void set_amino_acids_alphabet(const std::vector<std::string> alphabet) { amino_acids_alphabet_ = alphabet; }
+   inline void set_svr_index(const std::map<std::string, double> index)
+       { svr_index_ = index; }
+   inline std::vector<std::string> amino_acids_alphabet() const
+       { return amino_acids_alphabet_; }
+   inline void set_amino_acids_alphabet(const std::vector<std::string> alphabet)
+       { amino_acids_alphabet_ = alphabet; }
+   static inline void set_ignore_ptms(const bool ignore_ptms) { ignore_ptms_ = ignore_ptms; }
 
  private:
+   /* whenever a modified peptide is not identified, use the unmodified instead? */
+   static bool ignore_ptms_;
    /* every bit set corresponds to an active group of features (the indices are defined at
     * the beginning of this file) */
    std::bitset<NUM_FEATURE_GROUPS> active_feature_groups_;

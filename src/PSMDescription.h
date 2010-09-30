@@ -80,7 +80,7 @@ class PSMDescription {
     // normalize retention times for a  set of peptides
     static void normalizeRetentionTimes(vector<PSMDescription> & psms);
     friend ostream& operator<<(ostream& out, PSMDescription& psm);
-    double getRetentionTime() {
+    double getRetentionTime() const {
       return retentionTime;
     }
     double getPredictedRetentionTime() {
@@ -124,7 +124,7 @@ inline ostream& operator<<(ostream& out, PSMDescription& psm) {
   out << "Retention time, predicted retention time: " << psm.retentionTime
       << ", " << psm.predictedTime;
   out << "Retention features: ";
-  for (int i = 0; i < 60; ++i) {
+  for (int i = 0; i < 62; ++i) {
     out << psm.retentionFeatures[i] << "  ";
   }
   out << endl;

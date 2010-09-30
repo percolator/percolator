@@ -19,6 +19,8 @@
  * Sep, 2010
  */
 /* This file include test cases for the DataManager class */
+#include "stdio.h"
+#include <fstream>
 #include <gtest/gtest.h>
 
 #include "DataManager.h"
@@ -32,6 +34,7 @@ class DataManagerTest : public ::testing::Test {
      train_file1 = "./../bin/data/elude_test/standalone/train.txt";
      train_file2 = "./../bin/data/elude_test/standalone/train_1.txt";
      test_file1 = "./../bin/data/elude_test/standalone/test_2.txt";
+     tmp_file = "./../bin/data/elude_test/standalone/tmp.txt";
      string tmp[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
      basic_alphabet.insert(tmp, tmp + 20);
      Globals::getInstance()->setVerbose(5);
@@ -40,7 +43,7 @@ class DataManagerTest : public ::testing::Test {
    virtual void TearDown() { }
 
    DataManager dm;
-   string train_file1, train_file2, test_file1;
+   string train_file1, train_file2, test_file1, tmp_file;
    set<string> basic_alphabet;
 };
 
@@ -52,9 +55,9 @@ TEST_F(DataManagerTest, TestLoadPeptidesRTContext) {
   // check that the number of peptides is correct and test some of them
   EXPECT_EQ(101, psms.size()) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
   EXPECT_EQ("K.IIGPDADFFGELVVDAAEAVR.V", psms[32].peptide) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl ;
-  EXPECT_FLOAT_EQ(62.97, psms[32].retentionTime) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
+  EXPECT_NEAR(62.97, psms[32].retentionTime, 0.01) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
   EXPECT_EQ("K.QIEQGEAELEAAHTVAR.I", psms[100].peptide) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
-  EXPECT_FLOAT_EQ(21.3787, psms[100].retentionTime) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
+  EXPECT_NEAR(21.3787, psms[100].retentionTime, 0.01) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
   // check the alphabet
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
@@ -72,9 +75,9 @@ TEST_F(DataManagerTest, TestLoadPeptidesRTNoContext) {
   // check that the number of peptides is correct and test some of them
   EXPECT_EQ(139, psms.size()) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
   EXPECT_EQ("LTNPTYGDLNHLVSLTMSGVTTCLR", psms[32].peptide) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl ;
-  EXPECT_FLOAT_EQ(64.7802, psms[32].retentionTime) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
+  EXPECT_NEAR(64.7802, psms[32].retentionTime, 0.01) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
   EXPECT_EQ("EIGGIFTPASVTSEEEVR", psms[138].peptide) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
-  EXPECT_FLOAT_EQ(44.4893, psms[138].retentionTime) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
+  EXPECT_NEAR(44.4893, psms[138].retentionTime, 0.01) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
   // check the alphabet
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
@@ -92,10 +95,10 @@ TEST_F(DataManagerTest, TestLoadPeptidesNoRTContext) {
   // check that the number of peptides is correct and test some of them
   EXPECT_EQ(1251, psms.size()) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl;
   EXPECT_EQ("K.TMEGDCEVAYTIVQEGEK.T", psms[1250].peptide) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
-  EXPECT_FLOAT_EQ(-1.0, psms[1250].retentionTime) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
+  EXPECT_NEAR(-1.0, psms[1250].retentionTime, 0.001) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
   // check the alphabet
-  basic_alphabet.insert("[PHOS]S");
-  basic_alphabet.insert("[PHOS]Y");
+  basic_alphabet.insert("S[unimod:21]");
+  basic_alphabet.insert("Y[unimod:21]");
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
   for( ; it != aa_alphabet.end(); ++it) {
@@ -103,7 +106,6 @@ TEST_F(DataManagerTest, TestLoadPeptidesNoRTContext) {
       ADD_FAILURE() <<  "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
   }
 }
-
 
 TEST_F(DataManagerTest, TestInitCleanFeatureTable) {
   vector<PSMDescription> psms;
@@ -159,6 +161,7 @@ TEST_F(DataManagerTest, TestRemoveCommonPeptides) {
   EXPECT_EQ(string("PEPTIDE"), psms1[0].peptide) << "TestRemoveCommonPeptides error" << endl;
   EXPECT_EQ(20.0, psms1[0].retentionTime) << "TestRemoveCommonPeptides error (incorrect rt)" << endl;
 }
+
 TEST_F(DataManagerTest, TestIsFragmentOf) {
   map<string, double> idx;
   idx["A"] = 1.0;
@@ -186,4 +189,172 @@ TEST_F(DataManagerTest, TestIsFragmentOf) {
   // child in parent, sufficient difference in retention
   EXPECT_TRUE(DataManager::IsFragmentOf(child, parent, 0.05, idx))
     << "TestIsFragmentOf error (child included in parent, large difference)" << endl;
+}
+
+TEST_F(DataManagerTest, TestRemoveInSourceFragments) {
+  map<string, double> idx;
+  idx["A"] = 1.0;
+  idx["Y"] = 2.0;
+  idx["S"] = 3.0;
+  idx["R"] = 5.0;
+
+  vector<PSMDescription> train;
+  vector<PSMDescription> test;
+  train.push_back(PSMDescription("R.AAA.A", 10.0));
+  test.push_back(PSMDescription("R.AAAR.A", 10.1));
+  train.push_back(PSMDescription("R.YYYYYYY.A", 11.0));
+  test.push_back(PSMDescription("R.YYY.A", 11.1));
+  // Case 1: we only delete from the train data
+  vector< pair<PSMDescription, string> > fragments =
+      DataManager::RemoveInSourceFragments(1.0, idx, false, train, test);
+  EXPECT_EQ(2, test.size()) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ(1, train.size()) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ(2, fragments.size()) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("R.YYYYYYY.A", train[0].peptide) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("R.AAA.A",fragments[0].first.peptide) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("R.YYY.A",fragments[1].first.peptide) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("train",fragments[0].second) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("test",fragments[1].second) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("R.YYY.A",test[0].peptide) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+  EXPECT_EQ("R.AAAR.A", test[1].peptide) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
+
+  // Case 1: we delete from both train and test
+  train.push_back(PSMDescription("R.AAA.A", 10.0));
+  fragments = DataManager::RemoveInSourceFragments(1.0, idx, true, train, test);
+  EXPECT_EQ(1, test.size()) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ(1, train.size()) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ(2, fragments.size()) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ("R.YYYYYYY.A", train[0].peptide) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ("R.AAA.A",fragments[0].first.peptide) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ("R.YYY.A",fragments[1].first.peptide) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ("train",fragments[0].second) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ("test",fragments[1].second) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+  EXPECT_EQ("R.AAAR.A", test[0].peptide) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
+
+  // CASE 3: too large difference in rt between parent and child
+  train.push_back(PSMDescription("R.AAA.A", 30.0));
+  test.push_back(PSMDescription("R.YYY.A", 11.1));
+  test.push_back(PSMDescription("R.Y.A", 11.1));
+  fragments = DataManager::RemoveInSourceFragments(1.0, idx, true, train, test);
+  EXPECT_EQ(1, test.size()) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ(2, train.size()) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ(2, fragments.size()) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("R.YYYYYYY.A", train[0].peptide) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("R.AAA.A", train[1].peptide) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("R.Y.A",fragments[0].first.peptide) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("R.YYY.A",fragments[1].first.peptide) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("test",fragments[0].second) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("test",fragments[1].second) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  EXPECT_EQ("R.AAAR.A", test[0].peptide) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+}
+
+TEST_F(DataManagerTest, TestRemoveNonEnzymatic) {
+  vector<PSMDescription> psms;
+  psms.push_back(PSMDescription("R.AAK.A", 10.0));
+  psms.push_back(PSMDescription("R.AAA.-", 10.1));
+  psms.push_back(PSMDescription("Z.YYYYYYR.A", 11.0));
+  psms.push_back(PSMDescription("R.YYY.A", 11.1));
+  psms.push_back(PSMDescription("R.Y[unimod:21]YK.A", 11.1));
+  psms.push_back(PSMDescription("-.Y[unimod:21]YK.A", 11.1));
+
+  vector<PSMDescription> nze= DataManager::RemoveNonEnzymatic(psms);
+  EXPECT_EQ(2, nze.size()) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
+  EXPECT_EQ("R.YYY.A", nze[0].peptide) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
+  EXPECT_EQ("Z.YYYYYYR.A", nze[1].peptide) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
+  EXPECT_EQ(4, psms.size()) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
+  EXPECT_EQ("R.AAK.A", psms[0].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
+  EXPECT_EQ("R.AAA.-", psms[1].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
+  EXPECT_EQ("-.Y[unimod:21]YK.A", psms[2].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
+  EXPECT_EQ("R.Y[unimod:21]YK.A", psms[3].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
+}
+
+TEST_F(DataManagerTest, TestWriteInSourceToFile) {
+  map<string, double> idx;
+  idx["A"] = 1.0;
+  idx["Y"] = 2.0;
+  idx["S"] = 3.0;
+  idx["R"] = 5.0;
+
+  vector<PSMDescription> train;
+  vector<PSMDescription> test;
+  train.push_back(PSMDescription("R.AAA.A", 10.0));
+  test.push_back(PSMDescription("R.AAAR.A", 10.1));
+  train.push_back(PSMDescription("R.YYYYYYY.A", 11.0));
+  test.push_back(PSMDescription("R.YYY.A", 11.1));
+  // Case 1: we only delete from the train data
+  DataManager::WriteInSourceToFile(tmp_file,
+      DataManager::RemoveInSourceFragments(1.0, idx, false, train, test));
+
+  ifstream in(tmp_file.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestWriteInSourceToFile error: unable to open " << tmp_file << endl ;
+  } else {
+    char name[256];
+    string peptide, set;
+    double rt;
+    in.getline(name, 256);
+    in.getline(name, 256);
+    in.getline(name, 256);
+    in >> peptide >> rt >> set;
+    EXPECT_EQ("R.AAA.A", peptide) <<  "TestWriteInSourceToFile error (incorrect sequence)" << endl;
+    EXPECT_EQ(10.0, rt) <<  "TestWriteInSourceToFile error (incorrect rt)" << endl;
+    EXPECT_EQ("train", set) <<  "TestWriteInSourceToFile error (incorrect set)" << endl;
+    remove(tmp_file.c_str());
+  }
+}
+
+TEST_F(DataManagerTest, TestWriteOutFile) {
+  vector<PSMDescription> psms;
+  PSMDescription psm1("R.AAA.A", 10.0);
+  psm1.predictedTime = 15.0;
+  PSMDescription psm2("R.YYYYYYY.A", 11.0);
+  psm2.predictedTime = 16.0;
+  psms.push_back(psm1);
+  psms.push_back(psm2);
+
+  // no observed rt
+  DataManager::WriteOutFile(tmp_file, psms, false);
+  ifstream in(tmp_file.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestWriteOutFile error: unable to open " << tmp_file << endl ;
+  } else {
+    char name[256];
+    string peptide;
+    double prt;
+    in.getline(name, 256);
+    in.getline(name, 256);
+    in.getline(name, 256);
+    in >> peptide >> prt;
+    EXPECT_EQ("R.AAA.A", peptide) <<  "TestWriteOutFile error (incorrect sequence)" << endl;
+    EXPECT_EQ(15.0, prt) <<  "TestWriteInSourceToFile error (incorrect predicted rt)" << endl;
+    in >> peptide >> prt;
+    EXPECT_EQ("R.YYYYYYY.A", peptide) <<  "TestWriteOutFile error (incorrect sequence)" << endl;
+    EXPECT_EQ(16.0, prt) <<  "TestWriteInSourceToFile error (incorrect predicted rt)" << endl;
+    in.close();
+    remove(tmp_file.c_str());
+  }
+
+  // observed rt
+  DataManager::WriteOutFile(tmp_file, psms, true);
+  in.open(tmp_file.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestWriteOutFile error: unable to open " << tmp_file << endl ;
+  } else {
+    char name[256];
+    string peptide;
+    double rt, prt;
+    in.getline(name, 256);
+    in.getline(name, 256);
+    in.getline(name, 256);
+    in >> peptide >> prt >> rt;
+    EXPECT_EQ("R.AAA.A", peptide) <<  "TestWriteOutFile error (incorrect sequence)" << endl;
+    EXPECT_EQ(10.0, rt) <<  "TestWriteInSourceToFile error (incorrect rt)" << endl;
+    EXPECT_EQ(15.0, prt) <<  "TestWriteInSourceToFile error (incorrect predicted rt)" << endl;
+    in >> peptide >> prt >> rt;
+    EXPECT_EQ("R.YYYYYYY.A", peptide) <<  "TestWriteOutFile error (incorrect sequence)" << endl;
+    EXPECT_EQ(11.0, rt) <<  "TestWriteInSourceToFile error (incorrect rt)" << endl;
+    EXPECT_EQ(16.0, prt) <<  "TestWriteInSourceToFile error (incorrect predicted rt)" << endl;
+    in.close();
+    remove(tmp_file.c_str());
+  }
 }

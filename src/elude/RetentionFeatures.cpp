@@ -35,7 +35,7 @@
 using namespace boost::assign;
 
 /* maximum number of features */
-const int kMaxNumberFeatures = 100;
+const int RetentionFeatures::kMaxNumberFeatures = 100;
 
 /* define the Kyte Doolittle index */
 const map<string, double> RetentionFeatures::kKyteDoolittle = map_list_of ("A", 1.8) ("C", 2.5) ("D", -3.5) ("E", -3.5) ("F", 2.8)
@@ -53,6 +53,9 @@ const double RetentionFeatures::kPercentageAA = 0.25;
 
 /* name of each feature group */
 const string RetentionFeatures::kGroupNames[] = {"No posttranslationally modified peptides", "Phosphorylations"};
+
+/* whenever a modified peptide is not identified, use the unmodified instead? */
+bool RetentionFeatures::ignore_ptms_ = false;
 
 RetentionFeatures::RetentionFeatures() {
   string aa_alphabet[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
@@ -74,11 +77,17 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
   if (index_value != index.end()) {
     return index_value->second;
   } else {
-    unmodified_aa = aa[aa.size() - 1];
-    index_value = index.find(unmodified_aa);
+    if (!ignore_ptms_) {
+      if (VERB >= 1) {
+        cerr << "Error: Could not find the index value for " << aa << endl;
+        cerr << "Execution aborted" << endl;
+      }
+      exit(1);
+    }
+    index_value = index.find(aa.substr(0, 1));
     if (index_value != index.end()) {
       if (VERB >= 4) {
-        cerr << "Warning: Could not find the index value for " << aa << ". Use index value for " << unmodified_aa << " instead" << endl;
+        cerr << "Warning: Could not find the index value for " << aa << ". Use index value for " << aa[0] << " instead" << endl;
       }
       return index_value->second;
     } else {
@@ -96,45 +105,51 @@ vector<string> RetentionFeatures::GetAminoAcids(const string &peptide) {
   vector<string> amino_acids;
   int end_position, i = 0, len = peptide.size();
   string aa;
-
   while (i < len) {
      aa = peptide.at(i);
      if (aa == "[") {
+       amino_acids.pop_back();
        end_position = peptide.find("]", i);
-       aa = peptide.substr(i, end_position - i + 2);
+       aa = peptide.substr(i-1, end_position - i + 2);
+       i += aa.size() - 1;
      } else if (aa == "-") {
-       i = i + 1;
+       ++i;
        continue;
+     } else {
+       ++i;
      }
      amino_acids.push_back(aa);
-     i += aa.size();
+
    }
   return amino_acids;
 }
 
 /* get the unmodified amino acid */
 char RetentionFeatures::GetUnmodifiedAA(const string &aa) {
-  return aa[aa.size() - 1];
+  return aa[0];
 }
 
 /* get the total number of features */
 int RetentionFeatures::GetTotalNumberFeatures() const {
-  int number_index_features, number_length_features, number_aa_features;
+  int number_index_features = 20;
+  int number_length_features = 1;
+  int number_aa_features;
+  int total_number_features = 0;
+
   if (active_feature_groups_.test(INDEX_NO_PTMS_GROUP)) {
     int number_bulkiness_features = 1;
-    number_index_features = 20;
-    number_length_features = 1;
     number_aa_features = 20;
-    return 2 * number_index_features +  number_length_features + number_bulkiness_features +  number_aa_features;
-  } else {
-    //[TO DO: modify when more features are added]
-    number_index_features = 20;
-    number_length_features = 1;
-    number_aa_features = amino_acids_alphabet_.size();
-
-    return number_index_features +  number_length_features +  number_aa_features;
+    total_number_features += 2 * number_index_features +  number_length_features + number_bulkiness_features +  number_aa_features;
   }
-
+  if (active_feature_groups_.test(INDEX_PHOS_GROUP)) {
+    //[TO DO: modify when more features are added]
+    number_aa_features = amino_acids_alphabet_.size();
+    total_number_features += number_index_features +  number_length_features +  number_aa_features;
+  }
+  if (active_feature_groups_.test(AA_GROUP)) {
+    total_number_features += amino_acids_alphabet_.size();
+  }
+  return total_number_features;
 }
 
 /**************************** INDEX FUNCTIONS **************************************/
@@ -290,12 +305,13 @@ double RetentionFeatures::IndexAvg(const string &peptide, const map<string, doub
 /* calculate the hydrophobicity of the N-terminus */
 double RetentionFeatures::IndexN(const string &peptide, const map<string, double> &index) {
   int end_position, len = peptide.size();
-  string aa;
+  string aa, next_aa;
 
   aa = peptide.at(0);
-  if (aa == "[") {
+  next_aa = peptide.at(1);
+  if (next_aa == "[") {
     end_position = peptide.find("]", 0);
-    aa = peptide.substr(0, end_position + 2);
+    aa = peptide.substr(0, end_position + 1);
   }
   return GetIndexValue(aa, index);
 }
@@ -305,9 +321,9 @@ double RetentionFeatures::IndexC(const string &peptide, const map<string, double
   int start_position, len = peptide.size();
   string aa;
 
-  if (peptide.at(len - 2) == ']') {
-    start_position = peptide.find_last_of("[", len - 2);
-    aa = peptide.substr(start_position);
+  if (peptide.at(len - 1) == ']') {
+    start_position = peptide.find_last_of("[", len - 1);
+    aa = peptide.substr(start_position - 1);
   } else {
     aa = peptide.at(len - 1);
   }
@@ -568,6 +584,7 @@ double RetentionFeatures::ComputeBulkinessSum(const string &peptide, const map<s
 /* adds a feature giving the number of each of the symbols in the alphabet found in the peptide */
 double* RetentionFeatures::FillAAFeatures(const string &peptide, double *retention_features) {
   int number_aa = amino_acids_alphabet_.size();
+  bool found;
 
   for(int i = 0; i < number_aa; ++i) {
     retention_features[i] = 0.0;
@@ -576,10 +593,31 @@ double* RetentionFeatures::FillAAFeatures(const string &peptide, double *retenti
   vector<string>::iterator it_peptide = amino_acids.begin();
   int i;
   for( ; it_peptide != amino_acids.end(); ++it_peptide) {
+    found = false;
     for(i = 0; i < number_aa; ++i) {
       if (amino_acids_alphabet_[i] == (*it_peptide)) {
         ++retention_features[i];
+        found = true;
         break;
+      }
+    }
+    if (!found && ignore_ptms_) {
+      if (VERB >= 4) {
+        cerr << "Unable to find " << (*it_peptide) << " in the alphabet. We use "
+             << (*it_peptide)[0] << " instead. " << endl;
+      }
+      for(i = 0; i < number_aa; ++i) {
+        if (amino_acids_alphabet_[i] == it_peptide->substr(0,1)) {
+          ++retention_features[i];
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        if (VERB >= 2) {
+          cerr << "Unable to find " << (*it_peptide) << " and " << (*it_peptide)[0]
+               << "in the alphabet. " << endl;
+        }
       }
     }
   }
@@ -630,6 +668,17 @@ double* RetentionFeatures::ComputeNoPTMFeatures(const string &peptide, double *f
 // [TO DO: implement this]
 /* compute the features when phosphorylations are present in the data */
 double* RetentionFeatures::ComputePhosFeatures(const string &peptide, double *features) {
+  pair< set<string>, set<string> > extreme_aa = GetExtremeRetentionAA(svr_index_);
+  set<string> polar_aa = extreme_aa.first;
+  set<string> hydrophobic_aa = extreme_aa.second;
+  features = ComputeIndexFeatures(peptide, svr_index_, polar_aa, hydrophobic_aa, features);
+
+  // peptide length
+  features = ComputeLengthFeatures(peptide, features);
+
+  // amino acid features
+  features = FillAAFeatures(peptide, features);
+
   return features;
 }
 
@@ -657,7 +706,10 @@ int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
       features = ComputeNoPTMFeatures(pep, features);
     }
     if (active_feature_groups_.test(INDEX_PHOS_GROUP)) {
-      features = ComputeNoPTMFeatures(pep, features);
+      features = ComputePhosFeatures(pep, features);
+    }
+    if (active_feature_groups_.test(AA_GROUP)) {
+      features = FillAAFeatures(pep, features);
     }
   } else {
     if (VERB >= 1) {

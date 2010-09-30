@@ -42,6 +42,37 @@ DataManager::DataManager() {
 DataManager::~DataManager() {
 }
 
+/* Class that stores predicates used in different sorting/partition functions */
+class Utilities {
+public:
+ static bool ComparePairs(const pair<pair<PSMDescription, string>, bool> &psm1,
+                  const pair<pair<PSMDescription, string>, bool> &psm2) {
+  return psm1.first.first.getRetentionTime() < psm2.first.first.getRetentionTime();
+}
+ static bool IsInSource(const pair<pair<PSMDescription, string>, bool> &psm) {
+   return psm.second;
+ }
+
+ static bool IsInSourceAndTrain(const pair<pair<PSMDescription, string>, bool> &psm) {
+   return psm.second && psm.first.second == "train";
+ }
+ static bool IsInTrain(const pair<pair<PSMDescription, string>, bool> &psm) {
+   return psm.first.second == "train";
+ }
+
+ static PSMDescription GetPSM(const pair<pair<PSMDescription, string>, bool> &psm) {
+   return psm.first.first;
+ }
+
+ static pair<PSMDescription, string> GetPair(const pair<pair<PSMDescription, string>, bool> &psm) {
+   return psm.first;
+ }
+
+ static bool IsEnzymatic(const PSMDescription &psm) {
+   return Enzyme::isEnzymatic(psm.peptide);
+ }
+};
+
 /* set to null all retention feature pointers and delete memory */
 void DataManager::CleanUpTable(vector<PSMDescription> &psms, double *feat_table) {
   vector<PSMDescription>::iterator it;
@@ -150,8 +181,8 @@ bool DataManager::IsFragmentOf(const PSMDescription &child, const PSMDescription
     return false;
   }
   // parent enzymatic, child non enzymatic
-  if (Enzyme::isEnzymatic(peptide_parent) &&
-     (!Enzyme::isEnzymatic(peptide_child))) {
+  if (peptide_parent != ms_peptide_parent && peptide_child != ms_peptide_child &&
+      Enzyme::isEnzymatic(peptide_parent) && (!Enzyme::isEnzymatic(peptide_child))) {
     return true;
   }
   // difference in retention sum > diff
@@ -165,104 +196,149 @@ bool DataManager::IsFragmentOf(const PSMDescription &child, const PSMDescription
   }
 }
 
-vector< pair<PSMDescription, string> > DataManager::CombineSets(vector<PSMDescription>
+vector< pair<pair<PSMDescription, string>, bool> > DataManager::CombineSets(vector<PSMDescription>
        &train_psms, vector<PSMDescription> &test_psms) {
-  vector< pair<PSMDescription, string> > temp;
+  vector< pair<pair<PSMDescription, string> , bool> > temp;
   vector<PSMDescription>::iterator it = train_psms.begin();
   pair<PSMDescription, string> psm_pair;
 
   for( ; it != train_psms.end(); ++it) {
     psm_pair = make_pair(*it, "train");
-    temp.push_back(psm_pair);
+    temp.push_back(make_pair(psm_pair, false));
   }
   for(it = test_psms.begin() ; it != test_psms.end(); ++it) {
      psm_pair = make_pair(*it, "test");
-     temp.push_back(psm_pair);
+     temp.push_back(make_pair(psm_pair, false));
    }
   return temp;
 }
 
-pair<PSMDescription, string> DataManager::RemoveInSourceFragments(
-    const double &diff, const map<string, double> &index,
-    bool remove_from_test, vector<PSMDescription> &train_psms,
-    vector<PSMDescription> &test_psms) {
+vector< pair<PSMDescription, string> > DataManager::RemoveInSourceFragments(
+  const double &diff, const map<string, double> &index,
+  bool remove_from_test, vector<PSMDescription> &train_psms,
+  vector<PSMDescription> &test_psms) {
 
- vector< pair<PSMDescription, string> > combined_psms;
- combined_psms = CombineSets(train_psms, test_psms);
- // sort the psms according to retention time
- // determine the
+  // store information about whether the peptides is in train or test
+  vector< pair<pair<PSMDescription, string>, bool> > combined_psms =
+      CombineSets(train_psms, test_psms);
+  // sort the psms according to retention time
+  sort(combined_psms.begin(), combined_psms.end(), Utilities::ComparePairs);
+  int number_psms = combined_psms.size();
 
-}
-
-/*
-void RTPredictor::addToPairVector(vector<PSMDescription> psms, bool value,
-                                  vector<pair<pair<PSMDescription, bool> ,
-                                      bool> > & psmPairs) {
-  pair<PSMDescription, bool> tmp1;
-  pair<pair<PSMDescription, bool> , bool> tmp2;
-  for (int i = 0; i < psms.size(); ++i) {
-    tmp1.first = psms[i];
-    tmp1.second = value;
-    tmp2.first = tmp1;
-    tmp2.second = false;
-    psmPairs.push_back(tmp2);
-  }
-}
-
-// remove in source CID peptides
-void RTPredictor::removeSourceCIDs(vector<pair<
-    pair<PSMDescription, bool> , bool> > & psms) {
-  double rt, rtp;
-  int noPsms = psms.size(), i, j;
-  bool isDecay;
-  vector<pair<pair<PSMDescription, bool> , bool> >::iterator it;
-  if (VERB > 2) {
-    if (removeDecaying) {
-      cerr << endl
-          << "Removing in source fragments from train and test sets..."
-          << endl;
-    } else {
-      cerr << endl << "Removing in source fragments from train set..."
-          << endl;
-    }
-  }
-  sort(psms.begin(), psms.end(), mypair);
-  for (i = 0; i < noPsms; ++i) {
-    rt = psms[i].first.first.getRetentionTime();
+  // check in source fragmentation
+  double rt_child, rt_parent;
+  bool is_in_source;
+  int i, j;
+  for (i = 0; i < number_psms; ++i) {
+    rt_child = combined_psms[i].first.first.getRetentionTime();
     j = i - 1;
-    isDecay = false;
-    while ((j >= 0) && (((rtp = psms[j].first.first.getRetentionTime())
-        * 1.05) >= rt)) {
-      if (isChildOf(psms[i].first.first, psms[j].first.first)) {
-        psms[i].second = true;
-        isDecay = true;
+    is_in_source = false;
+    while ((j >= 0) && (((rt_parent =
+        combined_psms[j].first.first.getRetentionTime()) * 1.05) >= rt_child)) {
+      if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, diff, index)) {
+        combined_psms[i].second = true;
+        is_in_source = true;
         break;
       }
       j--;
     }
-    if (!isDecay) {
+    if (!is_in_source) {
       j = i + 1;
-      while ((j < noPsms) && (((rtp
-          = psms[j].first.first.getRetentionTime()) * 0.95) <= rt)) {
-        if (isChildOf(psms[i].first.first, psms[j].first.first)) {
-          psms[i].second = true;
+      while ((j < number_psms) && (((rt_parent =
+          combined_psms[j].first.first.getRetentionTime()) * 0.95) <= rt_child)) {
+        if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, diff, index)) {
+          combined_psms[i].second = true;
           break;
         }
         j++;
       }
     }
   }
-  if (!decayingPeptidesFile.empty()) {
-    writeDecayToFile(psms);
+  // partition the PSMs according to whether they are in source fragments or not
+  vector< pair<pair<PSMDescription, string>, bool> >::iterator it1 =
+      partition(combined_psms.begin(), combined_psms.end(), Utilities::IsInSource);
+  // save the fragments
+  vector< pair<PSMDescription, string> > fragments;
+  vector< pair<pair<PSMDescription, string>, bool> >::iterator it2 =
+      combined_psms.begin();
+  for( ; it2 != it1; ++it2) {
+    fragments.push_back(it2->first);
   }
-  int counts = (int)count_if(psms.begin(), psms.end(), decay);
-  if (VERB > 2) {
-    cerr << counts << " in source fragments were identified." << endl;
+  if (!remove_from_test) {
+    it1 = partition(combined_psms.begin(), it1, Utilities::IsInSourceAndTrain);
   }
-  if (removeDecaying) {
-    it = remove_if(psms.begin(), psms.end(), decay);
-  } else {
-    it = remove_if(psms.begin(), psms.end(), decayTrain);
-  }
+  // remove in source fragments
+  combined_psms.erase(combined_psms.begin(), it1);
+  // remove fragments from initial sets
+  it1 = partition(combined_psms.begin(), combined_psms.end(), Utilities::IsInTrain);
+  transform(combined_psms.begin(), it1, train_psms.begin(), Utilities::GetPSM);
+  train_psms.resize(distance(combined_psms.begin(), it1));
+  transform(it1, combined_psms.end(), test_psms.begin(), Utilities::GetPSM);
+  test_psms.resize(distance(it1, combined_psms.end()));
+  return fragments;
+}
+
+/* return a list of non-enzymatic peptides; this peptides are removed from the psms */
+vector<PSMDescription> DataManager::RemoveNonEnzymatic(std::vector<PSMDescription> &psms) {
+  vector<PSMDescription>::iterator it =
+      partition(psms.begin(), psms.end(), Utilities::IsEnzymatic);
+  vector<PSMDescription> non_enzymatic(it, psms.end());
   psms.resize(distance(psms.begin(), it));
-} */
+  return non_enzymatic;
+}
+
+/* write a list of in source fragmentation to a file */
+int DataManager::WriteInSourceToFile(const string &file_name,
+    const vector< pair<PSMDescription, string> > &psms) {
+  ofstream out;
+  out.open(file_name.c_str());
+  if (out.fail()) {
+    if (VERB >= 2) {
+      cerr << "Warning: Unable to open " << file_name << ". In-source fragments "
+           << "cannot be stored. " << endl;
+    }
+    return 1;
+  }
+  out<< "# File generated by Elude; In source fragments listed below. " << endl;
+  out << "# " << __DATE__ << " , " << __TIME__ << endl;
+  out<< "Peptide\tobserved_retention_time\tSet" << endl;
+  vector< pair<PSMDescription, string> >::const_iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    out << it->first.peptide << "\t" << it->first.retentionTime << "\t"
+        << it->second << endl;
+  }
+  out.close();
+  return 0;
+}
+
+/* write a set of peptides to an output file */
+int DataManager::WriteOutFile(const string &file_name,
+    const vector<PSMDescription> &psms, bool includes_rt) {
+  ofstream out;
+  out.open(file_name.c_str());
+  if (out.fail()) {
+    if (VERB >= 2) {
+      cerr << "Warning: Unable to open " << file_name << ". The output file cannot "
+           << "be generated. " << endl;
+    }
+    return 1;
+  }
+  out << "# File generated by Elude. Predicted retention times are given below. " << endl;
+  out << "# " << __DATE__ << " , " << __TIME__ << endl;
+  if (includes_rt) {
+    out<< "Peptide\tPredicted_RT\tObserved_RT" << endl;
+  } else {
+    out<< "Peptide\tPredicted_RT" << endl;
+  }
+  vector<PSMDescription>::const_iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    if (includes_rt) {
+      out << it->peptide << "\t" << it->predictedTime << "\t"
+          << it->retentionTime << endl;
+    } else {
+      out << it->peptide << "\t" << it->predictedTime << endl;
+    }
+  }
+  out.close();
+  return 0;
+}

@@ -21,6 +21,7 @@
 /* This files stores the implementations of the methods for the EludeCaller class */
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 #include "EludeCaller.h"
 #include "Normalizer.h"
@@ -31,13 +32,14 @@
 
 string EludeCaller::library_path_ = "models/";
 double EludeCaller::lts_coverage_ = 0.95;
+double EludeCaller::hydrophobicity_diff_ = 5.0;
 
 EludeCaller::EludeCaller():automatic_model_sel_(false), append_model_(false),
                            linear_calibration_(true), remove_duplicates_(false),
                            remove_in_source_(false), remove_non_enzymatic_(false),
                            context_format_(false), test_includes_rt_(false),
                            remove_common_peptides_(false), train_features_table_(NULL),
-                           test_features_table_(NULL) {
+                           test_features_table_(NULL), processed_test_(false) {
   Normalizer::setType(Normalizer::UNI);
   Enzyme::setEnzyme(Enzyme::TRYPSIN);
   string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
@@ -225,7 +227,7 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
     in_source_file_ = cmd.options["i"];
   }
   if (cmd.optionSet("z")) {
-    the_enzyme_ = cmd.options["z"];
+    SetEnzyme(cmd.options["z"]);
   }
   if (cmd.optionSet("x")) {
     remove_non_enzymatic_ = true;
@@ -242,22 +244,97 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   return true;
 }
 
-  /*
-   * if ((enzyme.compare("CHYMOTRYPSIN") == 0) ||
-        (enzyme.compare("chymotrypsin") == 0)) {
-      the_enzyme_->setEnzyme(Enzyme::CHYMOTRYPSIN);
-    } else if ((enzyme.compare("ELASTASE") == 0) ||
-               (enzyme.compare("elastase") == 0)) {
-      the_enzyme_->setEnzyme(Enzyme::ELASTASE);
-    } else if ((enzyme.compare("TRYPSIN") == 0) ||
-               (enzyme.compare("trypsin") == 0)) {
-      the_enzyme_->setEnzyme(Enzyme::TRYPSIN);
-    } else {
-      the_enzyme_->setEnzyme(Enzyme::NO_ENZYME);
+void EludeCaller::SetEnzyme(const string &enzyme) {
+  if ((enzyme.compare("CHYMOTRYPSIN") == 0) ||
+      (enzyme.compare("chymotrypsin") == 0)) {
+    Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
+  } else if ((enzyme.compare("ELASTASE") == 0) ||
+             (enzyme.compare("elastase") == 0)) {
+    Enzyme::setEnzyme(Enzyme::ELASTASE);
+  } else if ((enzyme.compare("TRYPSIN") == 0) ||
+             (enzyme.compare("trypsin") == 0)) {
+    Enzyme::setEnzyme(Enzyme::TRYPSIN);
+  } else {
+    Enzyme::setEnzyme(Enzyme::NO_ENZYME);
+    if (VERB >= 3) {
+      cerr << "Warning: Enzyme " + enzyme + " not recognized. No enzyme set. Please use"
+           << "one of the values {NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, ELASTASE}." << endl;
     }
-  } */
+  }
+}
 
-/* remove duplicates from the train, and if required by the
- * user from the test as well
-int
- */
+/* process train data when a model is trained*/
+int EludeCaller::ProcessTrainData() {
+  // load the training peptides
+  DataManager::LoadPeptides(train_file_, true, context_format_, train_psms_, train_aa_alphabet_);
+  // remove duplicates
+  DataManager::RemoveDuplicates(train_psms_);
+  // remove in source fragments
+  if (!test_file_.empty()) {
+    // load the test peptides
+    if (test_includes_rt_) {
+      DataManager::LoadPeptides(test_file_, true, context_format_, test_psms_, test_aa_alphabet_);
+    } else {
+      DataManager::LoadPeptides(test_file_, false, context_format_, test_psms_, test_aa_alphabet_);
+    }
+    if (remove_duplicates_) {
+      DataManager::RemoveDuplicates(test_psms_);
+    }
+    // remove from the train the peptides in the test
+    if (remove_common_peptides_) {
+      DataManager::RemoveCommonPeptides(test_psms_, train_psms_);
+    }
+    processed_test_= true;
+  }
+  // remove in source fragmentation
+  vector< pair<PSMDescription, string> > in_source_fragments;
+  if (test_includes_rt_) {
+    in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
+        RetentionFeatures::kKyteDoolittle, remove_in_source_, train_psms_, test_psms_);
+  } else {
+    vector<PSMDescription> tmp;
+    in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
+        RetentionFeatures::kKyteDoolittle, false, train_psms_, tmp);
+  }
+  if (!in_source_file_.empty()) {
+    DataManager::WriteInSourceToFile(in_source_file_, in_source_fragments);
+  }
+  // remove non enzymatic
+  if (remove_non_enzymatic_) {
+    if (context_format_) {
+      DataManager::RemoveNonEnzymatic(train_psms_);
+      DataManager::RemoveNonEnzymatic(test_psms_);
+    } else {
+      if (VERB >= 4) {
+        cerr << "Warning: non-enzymatic peptides cannot be detected unless the peptides"
+             << " are give in the format A.XXX.Y. All peptides will be included in the"
+             << " subsequent analyses" << endl;
+      }
+    }
+  }
+}
+
+int EludeCaller::NormalizeRetentionTimes(vector<PSMDescription> &psms) {
+  PSMDescription::setPSMSet(psms);
+  PSMDescription::normalizeRetentionTimes(psms);
+}
+
+
+/* build the retention index by training a linear model */
+/*
+int EludeCaller::BuildRetentionIndex() {
+  RetentionModel model;
+
+  // set the amino acids alphabet
+  model.SetAlphabet(train_aa_alphabet_);
+  // set the aa as the active features
+  model.SetAAFeatures();
+  // compute the aa features
+  model.ComputeAAFeatures(train_psms_);
+  // normalize the features
+
+  // initialize a linear svr
+  model.InitSVR(true);
+
+
+}*/

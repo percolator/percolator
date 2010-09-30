@@ -30,6 +30,7 @@
 #include <set>
 
 #include "PSMDescription.h"
+#include "RetentionModel.h"
 
 class EludeCaller{
  public:
@@ -39,18 +40,37 @@ class EludeCaller{
    std::string Greeter() const;
    /* parse the command line arguments */
    bool ParseOptions(int argc, char** argv);
+   /* set the enzyme type */
+   void SetEnzyme(const string &enzyme);
+   /* process the train data */
+   int ProcessTrainData();
+   /* normalize retention times for a set of peptides */
+   int NormalizeRetentionTimes(vector<PSMDescription> &psms);
+   /* build the retention index by training a linear model */
+   // int BuildRetentionIndex();
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
    inline std::vector<PSMDescription>& test_psms() { return test_psms_; }
    inline std::set<std::string>& train_aa_alphabet() { return train_aa_alphabet_; }
    inline std::set<std::string>& test_aa_alphabet() { return test_aa_alphabet_; }
+   inline void set_train_file(const string &file) { train_file_ = file; }
+   inline void set_test_file(const string &file) { test_file_ = file; }
+   inline void set_in_source_file(const string &file) { in_source_file_ = file; }
+   inline void set_context_format(bool cf) { context_format_ = cf; }
+   inline void set_test_includes_rt(bool tir) { test_includes_rt_ = tir; }
+   inline void set_remove_duplicates(bool rd) { remove_duplicates_ = rd; }
+   inline void set_remove_in_source(bool rin) { remove_in_source_ = rin; }
+   inline void set_non_enzymatic(bool rnz) { remove_non_enzymatic_ = rnz; }
+   inline void set_remove_common_peptides(bool rcp) { remove_common_peptides_ = rcp; }
 
  private:
    /* the default library path */
    static std::string library_path_;
    /* lts coverage */
    static double lts_coverage_;
+   /* difference in hydrophobicity to be called in source fragments */
+   static double hydrophobicity_diff_;
    /* the file including training data */
    std::string train_file_;
    /* the format of the peptides is A.XXX.B; note that here A and B can be '-'
@@ -74,12 +94,10 @@ class EludeCaller{
    bool linear_calibration_;
    /* remove duplicates from the test set */
    bool remove_duplicates_;
-   /* remove in source fragmentation? */
+   /* remove in source fragmentation from test? */
    bool remove_in_source_;
    /* file to save in source fragments */
    std::string in_source_file_;
-   /* enzyme */
-   std::string the_enzyme_;
    /* remove non enzymatic */
    bool remove_non_enzymatic_;
    /* file to save the retention index */
@@ -94,6 +112,10 @@ class EludeCaller{
    std::set<std::string> test_aa_alphabet_;
    /* pointers to the feature table of the train and test peptides */
    double *train_features_table_, *test_features_table_;
+   /* true if the test data was processed */
+   bool processed_test_;
+   /* the retention models */
+   vector<RetentionModel> rt_model_;
 
 };
 
