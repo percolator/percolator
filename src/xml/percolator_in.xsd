@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://per-colator.com/percolator_in/10" elementFormDefault="qualified" targetNamespace="http://per-colator.com/percolator_in/10">
   <xs:element name="experiment">
     <xs:annotation>
@@ -133,6 +133,11 @@
                     <xs:annotation>
                       <xs:documentation> A boolean set to true for decoy PSMs and set to false for target PSMs.
                         </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="experimentalMassToCharge" use="required" type="xs:double">
+                    <xs:annotation>
+                      <xs:documentation>The measured mass to charge ratio of the current scan.</xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
                   <xs:attribute name="calculatedMassToCharge" use="required" type="xs:double">

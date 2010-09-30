@@ -92,7 +92,7 @@ class PSMDescription {
     double q, pep, p;
     double* features;
     double* retentionFeatures;
-    double retentionTime, predictedTime, massDiff, pI;
+    double retentionTime, predictedTime, massDiff, pI, expMass;
     unsigned int scan;
     string id;
     string peptide;

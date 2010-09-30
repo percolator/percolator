@@ -316,6 +316,7 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       }
       myPsm.id = psmIter->id();
       myPsm.scan = fss.scanNumber();
+      //myPsm.expMass = psmIter->exp_mass();
 
       const ::percolatorInNs::features::feature_sequence & featureS = psmIter->features().feature();
       int featureNum = 0;
