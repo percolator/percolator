@@ -1010,7 +1010,7 @@ int Caller::run() {
       }
       weightStream.close();
     }
-    if (resultFN.empty()) {
+    if (resultFN.empty() && (coutFlag == reportUniquePeptides)) {
       normal.print(fullset);
     } else {
     	if(coutFlag == reportUniquePeptides){
