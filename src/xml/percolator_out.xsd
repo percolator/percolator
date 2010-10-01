@@ -81,6 +81,12 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   </xsd:annotation>
 </xsd:element>
 
+ <xsd:element name="calc_mass" type="xsd:double">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The calculated mass of the PSM</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
 <xsd:element name="retentionTime">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">This field contains the observed and predicted retention time in minutes</xsd:documentation>
@@ -152,6 +158,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
       <xsd:element ref="q_value"/>
       <xsd:element ref="pep"/>
       <xsd:element ref="exp_mass"/>
+      <xsd:element ref="calc_mass"/>
       <xsd:element ref="retentionTime" minOccurs="0"/>
       <xsd:element ref="peptide_seq"/>
       <xsd:element ref="protein_id" maxOccurs="unbounded"/>
@@ -179,6 +186,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
       <xsd:element ref="q_value"/>
       <xsd:element ref="pep"/>
       <xsd:element ref="exp_mass"/>
+      <xsd:element ref="calc_mass"/>
       <xsd:element ref="retentionTime" minOccurs="0"/>
       <xsd:element ref="protein_id" maxOccurs="unbounded"/>
       <xsd:element ref="p_value"/>
