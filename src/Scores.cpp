@@ -34,6 +34,7 @@ using namespace std;
 #include "Globals.h"
 #include "PosteriorEstimator.h"
 #include "ssl.h"
+#include "MassHandler.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
@@ -66,7 +67,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
-  os << "      <exp_mass>" << sh.pPSM->expMass << "</exp_mass>" << endl;
+  if(MassHandler::monoisotopic == true){
+    os << "      <exp_mass>" << sh.pPSM->expMass << "</exp_mass>" << endl;
+  }
   if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\""
       << PSMDescription::unnormalize(sh.pPSM->retentionTime)
   << "\" predicted=\""
@@ -104,7 +107,9 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
-  os << "      <exp_mass>" << sh.pPSM->expMass << "</exp_mass>" << endl;
+  if(MassHandler::monoisotopic == true){
+    os << "      <exp_mass>" << sh.pPSM->expMass << "</exp_mass>" << endl;
+  }
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
