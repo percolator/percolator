@@ -204,10 +204,6 @@ void Sqt2Pin::readRetentionTime(string filename) {
 }
 
 int Sqt2Pin::run() {
-  // read retention time if sqt2pin was invoked with -2 option
-  if (spectrumFile.size() > 0)
-    readRetentionTime(spectrumFile);
-
   // Content of sqt files is merged: preparing to write it to xml file
   ofstream xmlOutputStream;
   xmlOutputStream.open(xmlOutputFN.c_str());
@@ -231,6 +227,12 @@ int Sqt2Pin::run() {
 	   fail if the database existed in our case when we use a tempory file.
    */
   database.init(tokyoCabinetTmpFN);
+
+  // read retention time if sqt2pin was invoked with -2 option
+  if (spectrumFile.size() > 0) {
+    readRetentionTime(spectrumFile);
+    database.initRTime(& scan2rt);
+  }
 
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
     // First we only search for the maxCharge and minCharge.
@@ -262,6 +264,9 @@ int Sqt2Pin::run() {
   }
   //    pCheck = new SqtSanityCheck();
   //    assert(pCheck);
+
+  // store retention times in the fragment spectrum scan database
+  //database
 
   string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
       string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +

@@ -135,7 +135,7 @@
                         </xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
-                  <xs:attribute name="experimentalMassToCharge" use="required" type="xs:double">
+                  <xs:attribute name="experimentalMassToCharge" type="xs:double">
                     <xs:annotation>
                       <xs:documentation>The measured mass to charge ratio of the current scan.</xs:documentation>
                     </xs:annotation>

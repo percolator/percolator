@@ -15,7 +15,8 @@ class FragSpectrumScanDatabase {
   public:
     FragSpectrumScanDatabase();
     ~FragSpectrumScanDatabase(){}
-    bool init( std::string filename );
+    bool init(std::string filename);
+    bool initRTime(map<int, double>* scan2rt_par);
     auto_ptr<fragSpectrumScan> getFSS( unsigned int scanNr );
     auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,
         int valueSize);
@@ -27,6 +28,8 @@ class FragSpectrumScanDatabase {
     XDR xdr;
     xml_schema::buffer buf;
     TCBDB *bdb;
+    // pointer to retention times
+    map<int, double>* scan2rt;
     // is scoped_ptr possible here?
     std::auto_ptr< xml_schema::ostream<XDR> > oxdrp;
 };

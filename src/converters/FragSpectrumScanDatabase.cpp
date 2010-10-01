@@ -71,7 +71,7 @@ typedef  void (*xdrrec_create_p) (
   int (*write) (void* user_data, char* buf, int n));
 */
 
-FragSpectrumScanDatabase::FragSpectrumScanDatabase() : bdb(0) {
+FragSpectrumScanDatabase::FragSpectrumScanDatabase() : bdb(0), scan2rt(0) {
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
    xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
    xdr.x_op = XDR_ENCODE;
@@ -81,18 +81,31 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase() : bdb(0) {
 }
 
 
-void FragSpectrumScanDatabase::savePsm( unsigned int scanNr, double observedMassCharge, std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
+void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
+    double observedMassCharge,
+    std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
+
   std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS( scanNr );
+  // if FragSpectrumScan does not yet exist, create it
   if ( ! fss.get() ) {
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge));
     fss = fs_p;
+    // if a retention time has been calculated, include it in the FragSpectrumScan
+    if(scan2rt != 0){
+      // retrieve retention time
+      //double retTime = scan2rt->find(scanNr)->second;
+      // fs_p.get()->observedTime().set(retTime);
+    }
+    //fs_p->observedTime().set(1.0);
+    //fs_p.get()->observedTime().set(1);
   }
+  // add the psm to the FragSpectrumScan
   fss->peptideSpectrumMatch().push_back( psm_p );
   putFSS( *fss );
   return;
 }
 
-bool FragSpectrumScanDatabase::init( std::string fileName ) {
+bool FragSpectrumScanDatabase::init(std::string fileName) {
   bdb = tcbdbnew();
   assert(bdb);
 /*
@@ -112,6 +125,11 @@ bool FragSpectrumScanDatabase::init( std::string fileName ) {
 
   ret = unlink( fileName.c_str() );
   assert(! ret);
+}
+
+bool FragSpectrumScanDatabase::initRTime(map<int, double>* scan2rt_par) {
+  // add pointer to retention times table in sqt2pin (if any)
+  scan2rt=scan2rt_par;
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::deserializeFSSfromBinary( char * value, int valueSize ) {
