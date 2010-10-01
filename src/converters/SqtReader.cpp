@@ -440,7 +440,13 @@ todo!
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1); 
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
-  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p( new percolatorInNs::peptideSpectrumMatch (features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge));
+  // observedMassCharge: since the attribute is optional, no constructor is
+  // directly available; the peptideSpectrumMatch is created first and then
+  // augmented with the desired value
+  percolatorInNs::peptideSpectrumMatch* tmp_psm =
+      new percolatorInNs::peptideSpectrumMatch (features_p,  peptide_p,psmId, isDecoy, calculatedMassToCharge, charge);
+  tmp_psm->experimentalMassToCharge().set(observedMassCharge);
+  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
     std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );

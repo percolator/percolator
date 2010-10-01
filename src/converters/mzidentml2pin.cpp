@@ -243,7 +243,10 @@ void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificat
   assert( fdesFirstFile.featureDescription().size() == f_seq.size() );
   //is optional for mzIdentML1.0.0 but is compulsory for percolator_in ..... Is this ok?
   assert( item.calculatedMassToCharge().present() );
-  std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p( new ::percolatorInNs::peptideSpectrumMatch( features_p, peptide_p, item.id(), isDecoy, item.experimentalMassToCharge(), item.calculatedMassToCharge().get(), item.chargeState() ));
+  ::percolatorInNs::peptideSpectrumMatch* tmp_psm =
+      new ::percolatorInNs::peptideSpectrumMatch( features_p, peptide_p, item.id(), isDecoy, item.calculatedMassToCharge().get(), item.chargeState());
+  tmp_psm->experimentalMassToCharge().set(item.experimentalMassToCharge());
+  std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
   psm_sequence.push_back(psm_p);
   return;
 }
