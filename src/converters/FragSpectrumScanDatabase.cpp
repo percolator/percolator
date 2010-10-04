@@ -85,22 +85,24 @@ void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
     double observedMassCharge,
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
 
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS( scanNr );
+  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  check_fss = getFSS( scanNr );
   // if FragSpectrumScan does not yet exist, create it
-  if ( ! fss.get() ) {
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge));
-    fss = fs_p;
+  if ( ! check_fss.get() ) {
+    ::percolatorInNs::fragSpectrumScan* fss_tmp = new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge);
     // if a retention time has been calculated, include it in the FragSpectrumScan
     if(scan2rt != 0){
       // retrieve retention time
-      //double retTime = scan2rt->find(scanNr)->second;
-      // fs_p.get()->observedTime().set(retTime);
+      double retTime = scan2rt->find(scanNr)->second;
+      fss_tmp->observedTime().set(retTime);
     }
-    //fs_p->observedTime().set(1.0);
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(fss_tmp);
+    fss->peptideSpectrumMatch().push_back( psm_p );
+    putFSS( *fss );
+  } else {
+    // add the psm to the FragSpectrumScan
+    check_fss->peptideSpectrumMatch().push_back( psm_p );
+    putFSS( *check_fss );
   }
-  // add the psm to the FragSpectrumScan
-  fss->peptideSpectrumMatch().push_back( psm_p );
-  putFSS( *fss );
   return;
 }
 

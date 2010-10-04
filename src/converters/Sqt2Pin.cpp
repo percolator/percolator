@@ -175,30 +175,26 @@ void Sqt2Pin::readRetentionTime(string filename) {
   strcpy(cstr, filename.c_str());
   // read first spectrum
   r.readFile(cstr, s);
-  // check whether EZ lines are available
-  if (s.sizeEZ() != 0) {
-    for(int i =0; i < s.sizeEZ(); i++){
-      // read retention times
-      scan2rt[s.getScanNumber()] = s.atEZ(i).pRTime;
-      // read next spectrum
-      r.readFile(NULL, s);
+  unsigned int count = 0;
+  while(s.getScanNumber() != 0){
+    // check whether an EZ lines is available
+    if(s.atEZ(0).pRTime != 0){
+      double tt = (double)s.atEZ(0).pRTime;
+      scan2rt[s.getScanNumber()] = (double)s.atEZ(0).pRTime;
     }
-  }
-  // if EZ lines are not available, check for I lines
-  else if((double)s.getRTime() != 0) {
-    while (s.getScanNumber() != 0) {
-      // read retention times
+    // if no EZ line is available, check for an RTime lines
+    else if((double)s.getRTime() != 0){
+      double tt = (double)s.getRTime();
       scan2rt[s.getScanNumber()] = (double)s.getRTime();
-      // read next spectrum
-      r.readFile(NULL, s);
     }
-  }
-  // if neither EZ nor I lines are available
-  else{
-    cout << "The ms2 in input does not appear to contain retention time "
-        << "information. Please run without -2 option.";
-    exit(-1);
-    //throw MS2Exception();
+    // if neither EZ nor I lines are available
+    else{
+      cout << "The ms2 in input does not appear to contain retention time "
+          << "information. Please run without -2 option.";
+      exit(-1);
+    }
+    // read next scan
+    r.readFile(NULL, s);
   }
   delete[] cstr;
 }
