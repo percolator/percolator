@@ -96,8 +96,7 @@ void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
       //double retTime = scan2rt->find(scanNr)->second;
       // fs_p.get()->observedTime().set(retTime);
     }
-    //fs_p->observedTime().set(1.0);
-    //fs_p.get()->observedTime().set(1);
+    fs_p->observedTime().set(1.0);
   }
   // add the psm to the FragSpectrumScan
   fss->peptideSpectrumMatch().push_back( psm_p );
