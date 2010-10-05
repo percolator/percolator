@@ -18,7 +18,6 @@
 #include "MassHandler.h"
 #include "SqtReader.h"
 #include "DataSet.h"
-#include "Exceptions.h"
 using namespace std;
 
 Sqt2Pin::Sqt2Pin() {
