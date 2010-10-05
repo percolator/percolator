@@ -40,7 +40,6 @@ protected:
 	std::string call;
   std::string spectrumFile;
   map<int, double> scan2rt;
-
 };
 
 int main(int argc, char **argv);

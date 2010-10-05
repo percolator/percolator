@@ -284,6 +284,19 @@ void SqtReader::addFeatureDescriptions( percolatorInNs::featureDescriptions & fe
   }
 }
 
+/**
+ * remove non ASCII characters from a string
+ */
+string getRidOfUnprintables(string inpString) {
+  string outputs = "";
+  for (int jj = 0; jj < inpString.size(); jj++) {
+    char ch = inpString[jj];
+    if (((int)ch) >= 32 && ((int)ch) <= 128) {
+      outputs += ch;
+    }
+  }
+  return outputs;
+}
 
 static int counter = 0;
 void SqtReader::readPSM(bool isDecoy, const std::string &in  ,  int match, const ParseOptions & po,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase & database ) {
@@ -421,6 +434,8 @@ todo!
 
     if (line.at(0) == 'L' && !gotL) {
       if (instr.peek() != 'L') gotL = true;
+      // getting rid of unprintable characters in proteinId
+      line = line.substr(0, 2) + getRidOfUnprintables(line.substr(2));
       linestr.clear();
       linestr.str(line);
       linestr >> tmp >> protein;
@@ -482,5 +497,3 @@ void SqtReader::computeAAFrequencies(const string& pep,   percolatorInNs::featur
   }
   std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
 }
-
-
