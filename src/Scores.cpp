@@ -16,6 +16,7 @@
  *******************************************************************************/
 #include <assert.h>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <utility>
@@ -68,8 +69,10 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
   if(MassHandler::monoisotopic == true){
-    os << "      <exp_mass>" << sh.pPSM->expMass << "</exp_mass>" << endl;
-    os << "      <calc_mass>" << sh.pPSM->calcMass << "</calc_mass>" << endl;
+    os << "      <exp_mass>" <<
+        fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
+    os << "      <calc_mass>" <<
+        fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
   }
   if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\""
       << PSMDescription::unnormalize(sh.pPSM->retentionTime)
@@ -109,8 +112,10 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
   if(MassHandler::monoisotopic == true){
-    os << "      <exp_mass>" << sh.pPSM->expMass << "</exp_mass>" << endl;
-    os << "      <calc_mass>" << sh.pPSM->calcMass << "</calc_mass>" << endl;
+    os << "      <exp_mass>" <<
+        fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
+    os << "      <calc_mass>" <<
+        fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
   }
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
