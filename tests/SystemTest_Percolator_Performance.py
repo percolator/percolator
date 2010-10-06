@@ -10,24 +10,39 @@ path = os.path.dirname(sys.argv[0])
 if path == "":
   path = "./"
 
-# running sqt2pin to generate pin.xml
-print "PERCOLATOR PERFORMANCE (STEP 1): running sqt2pin..." 
-os.popen(os.path.join(path, "sqt2pin ") + "-o " + 
-  os.path.join(path, "data/percolator_test/pin.xml ") + 
-  os.path.join(path, "data/percolator_test/target.sqt ") + 
-  os.path.join(path, "data/percolator_test/reverse.sqt"))
+print "PERCOLATOR PERFORMANCE"
 
-# running percolator on pin.xml; 
-print "PERCOLATOR PERFORMANCE (STEP 2): running percolator..."
-os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
-  os.path.join(path, "data/percolator_test/pin.xml") + 
-  " 2>&1) > /tmp/percolatorPerformanceOutput.txt")
+# SQT2PIN
+# running sqt2pin to generate pin.xml
+# -o /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml /scratch/temp/bin/data/percolator_test/sqt2pin/target.sqt /scratch/temp/bin/data/percolator_test/sqt2pin/reverse.sqt
+print "(STEP 1): running sqt2pin to generate pin input..." 
+processFile = os.popen(os.path.join(path,"sqt2pin ") +
+  "-o " + os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + 
+  os.path.join(path, "data/percolator_test/sqt2pin/target.sqt ") + 
+  os.path.join(path, "data/percolator_test/sqt2pin/reverse.sqt"))
+exitStatus = processFile.close()
+if exitStatus is not None:
+  print "...TEST FAILED:\n" + command + "\nterminated with " + str(exitStatus) + " exit status"
+  exit(1)
+
+# PERCOLATOR_sqt2pin
+# running percolator on pin.xml with no options; 
+# -E /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml -X /scratch/temp/bin/data/percolator_test/sqt2pin/pout.xml
+print "(STEP 2): running percolator on pin input to generate pout..."
+processFile = os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
+  os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + "-X " +
+  os.path.join(path, "data/percolator_test/sqt2pin/pout.xml ") +
+  "2>&1) > /tmp/PERCOLATOR_sqt2pin.txt")
+exitStatus = processFile.close()
+if exitStatus is not None:
+  print "...TEST FAILED: percolator (no options) terminated with " + str(exitStatus) + " exit status"
+  exit(1)
 
 # the output line containing "New pi_0 estimate" is extracted and if its value is 
 # outside of 622+/-5% an error is reported
-print "PERCOLATOR PERFORMANCE (STEP 3): checking new pi_0 estimate..."
+print "(STEP 3): checking new pi_0 estimate in pout..."
 processFile = os.popen("grep \"New pi_0 estimate\" " + 
-  "/tmp/percolatorPerformanceOutput.txt")
+  "/tmp/PERCOLATOR_sqt2pin.txt")
 output = processFile.read()
 extracted = float(output[39:42])
 if extracted < 590.9 or extracted > 653.1: 
@@ -36,9 +51,9 @@ if extracted < 590.9 or extracted > 653.1:
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
-print "PERCOLATOR PERFORMANCE (STEP 3): checking selected new pi_0 estimate..."
+print "(STEP 4): checking selected new pi_0 estimate in pout..."
 processFile = os.popen("grep \"Selecting pi_0\" " +
-  "/tmp/percolatorPerformanceOutput.txt")
+  "/tmp/PERCOLATOR_sqt2pin.txt")
 output = processFile.read()
 extracted = float(output[15:20])
 if extracted < 0.86 or extracted > 0.90:
@@ -48,8 +63,8 @@ if extracted < 0.86 or extracted > 0.90:
 # the first line of the stdout (the one after the line beginning with "PSMId")
 # is extracted and if the value in the 4th column (posterior_error_prob) is 
 # greater than 10e-10 an error is reported
-print "PERCOLATOR PERFORMANCE (STEP 3): checking posterior_error_prob..."
-processFile = open("/tmp/percolatorPerformanceOutput.txt")
+print "(STEP 5): checking posterior_error_prob in pout..."
+processFile = open("/tmp/PERCOLATOR_sqt2pin.txt")
 output = ""
 line = processFile.readline()
 finished = False
@@ -72,7 +87,9 @@ if extracted > threshold:
   print "...TEST FAILED: posterior_error_prob is too high (" + str(extracted) + ")"
   exit(1)
 
+# uncomment to delete tests output files
+#os.popen("rm /tmp/PERCOLATOR_sqt2pin.txt")
+
 # if no errors were encountered, succeed
-os.popen("rm /tmp/percolatorPerformanceOutput.txt")
 print "...TEST SUCCEEDED"
 exit(0)

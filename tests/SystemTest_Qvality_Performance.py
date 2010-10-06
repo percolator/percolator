@@ -10,8 +10,10 @@ path = os.path.dirname(sys.argv[0])
 if path == "":
   path = "./"
 
+print "QVALITY PERFORMANCE
+
 # running qvality
-print "QVALITY PERFORMANCE (STEP 1): running qvality..."
+print "(STEP 1): running qvality..."
 os.popen("(" + os.path.join(path, "qvality ") + 
   os.path.join(path, "data/qvality_test/target.xcorr ") + 
   os.path.join(path, "data/qvality_test/null.xcorr ") + 
@@ -19,7 +21,7 @@ os.popen("(" + os.path.join(path, "qvality ") +
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
-print "QVALITY PERFORMANCE (STEP 2): checking selected pi_0..."
+print "(STEP 2): checking selected pi_0..."
 processFile = os.popen("grep \"Selecting pi_0\" " + 
   "/tmp/qvalityPerformanceOutput.txt")
 output = processFile.read()
@@ -31,7 +33,7 @@ if extracted < 0.86 or extracted > 0.90:
 # the number of lines of stdout (after the line beginning with "Score") until 
 # q-value < 0.01 are counted and an error is reported if their number is greater
 # than 755+/-5%
-print "QVALITY PERFORMANCE (STEP 3): checking values..."
+print "(STEP 3): checking values..."
 processFile = open("/tmp/qvalityPerformanceOutput.txt")
 line = processFile.readline()
 finished = False
@@ -62,6 +64,6 @@ if countLines < 717 or countLines > 793:
   exit(1)
 
 # if no errors were encountered, succeed
-os.popen("rm /tmp/qvalityPerformanceOutput.txt")
+#os.popen("rm /tmp/qvalityPerformanceOutput.txt")
 print "...TEST SUCCEEDED"
 exit(0)
