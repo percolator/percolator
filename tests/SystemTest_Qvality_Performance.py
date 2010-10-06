@@ -10,7 +10,7 @@ path = os.path.dirname(sys.argv[0])
 if path == "":
   path = "./"
 
-print "QVALITY PERFORMANCE
+print "QVALITY PERFORMANCE"
 
 # running qvality
 print "(STEP 1): running qvality..."
