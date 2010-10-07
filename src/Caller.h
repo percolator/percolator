@@ -81,6 +81,7 @@ class Caller {
     string tabFN;
     string weightFN;
     string call;
+    string otherCall;
     string spectrumFile;
     string decoyOut;
     bool outputAll;

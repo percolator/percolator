@@ -207,8 +207,13 @@ int Sqt2Pin::run() {
   // initializing features and experiment
   std::auto_ptr<percolatorInNs::featureDescriptions>
   fdes_p (new ::percolatorInNs::featureDescriptions());
+
+  percolatorInNs::process_info::command_line_type command_line = call;
+  std::auto_ptr<percolatorInNs::process_info>
+  proc_info (new ::percolatorInNs::process_info(command_line));
+
   std::auto_ptr< ::percolatorInNs::experiment >
-  ex_p (new ::percolatorInNs::experiment("mitt enzym", fdes_p));
+  ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
 
   int maxCharge = -1;
   int minCharge = 10000;
@@ -280,9 +285,15 @@ int Sqt2Pin::run() {
     case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
   }
 
-  string enzymeStr = "   <enzyme>" + enzyme + "</enzyme>\n";
+  string enzymeStr = "\n<enzyme>" + enzyme + "</enzyme>\n";
   cout << enzymeStr;
   xmlOutputStream << enzymeStr;
+
+  string commandLine = "\n<process_info>\n" +
+    string("  <command_line>") + call.substr(0,call.length()-1) + "</command_line>\n"+
+    "</process_info>\n";
+  cout << commandLine;
+  xmlOutputStream << commandLine;
 
   // print to cout (and populate xml file with) experiment information
   serializer ser;

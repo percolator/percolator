@@ -48,6 +48,13 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+        <xs:element name="process_info">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="command_line" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="featureDescriptions">
           <xs:complexType>
             <xs:sequence>
@@ -69,7 +76,6 @@
                   </xs:attribute>
                 </xs:complexType>
               </xs:element> 
-
             </xs:sequence>
           </xs:complexType>
         </xs:element>

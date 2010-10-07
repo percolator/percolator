@@ -42,6 +42,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   <xsd:complexType>
     <xsd:sequence>
       <xsd:element name="command_line" type="xsd:string"/>
+      <xsd:element name="other_command_line" type="xsd:string"/>
       <xsd:element name="pi_0" type="probability_t"/>
       <xsd:element minOccurs="0" name="average_delta_mass" type="xsd:double"/>
       <xsd:element minOccurs="0" name="average_pi" type="xsd:double"/>

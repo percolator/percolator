@@ -46,11 +46,9 @@ using namespace std;
 #include "percolator_in.hxx"
 #include "parser.hxx"
 #include "serializer.hxx"
-
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLString.hpp>
 #include <xsd/cxx/xml/string.hxx>
-
 #include <xercesc/parsers/XercesDOMParser.hpp>
 #include <xercesc/sax/HandlerBase.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
@@ -98,7 +96,7 @@ string Caller::extendedGreeter() {
     host = (char*)"unknown_host";
   }
   oss << greeter();
-  oss << "Issued command:" << endl << call;
+  oss << "Issued command:" << endl << call << endl;
   oss << "Started " << ctime(&startTime);
   oss.seekp(-1, ios_base::cur);
   oss << " on " << host << endl;
@@ -496,9 +494,9 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
 
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fname.c_str(), true));
 
-    doc = p.next ();
-    doc = p.next ();
-
+    doc = p.next (); // skip enzyme element
+    doc = p.next (); // skip process_info element
+    doc = p.next (); // skip featureDescriptions element
 
     static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
     if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {
@@ -604,12 +602,20 @@ void Caller::readFiles() {
 
       doc = p.next();
 
-      // The enzyme element is a subelement but CodeSynthesis Xsd does not generate a class for it. (I am trying to find a command line option that overrides this decision)
-      // As for now special treatment is needed:
+      // read enzyme element
+      // the enzyme element is a subelement but CodeSynthesis Xsd does not
+      // generate a class for it. (I am trying to find a command line option
+      // that overrides this decision). As for now special treatment is needed
       char * value = XMLString::transcode(
           doc->getDocumentElement()->getTextContent());
       std::cout << "enzyme=" << value << std::endl;
       XMLString::release(&value);
+      doc = p.next();
+
+      // read process_info element
+      percolatorInNs::process_info
+      processInfo(*doc->getDocumentElement());
+      otherCall = processInfo.command_line();
       doc = p.next();
 
       static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
@@ -1059,9 +1065,11 @@ void Caller::writeXML(bool uniquePeptides) {
         << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
         // give a location for the schema
         << endl << "xsi:schemaLocation=\""<< schema <<"\" "
-        << endl << "p:majorVersion=\"1\" p:minorVersion=\"1\" p:percolator_version=\"Percolator version " << VERSION << "\">"<< endl;
+        << endl << "p:majorVersion=\"1\" p:minorVersion=\"1\" p:percolator_version=\"Percolator version " << VERSION << "\">\n"<< endl;
     os << "  <process_info>" << endl;
     os << "    <command_line>" << call << "</command_line>" << endl;
+
+    os << "    <other_command_line>" << otherCall << "</other_command_line>" << endl;
     os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
     if (docFeatures) {
       os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
