@@ -39,20 +39,21 @@
  * define the index in the active_feature_groups_. As an example, if
  * active_feature_groups_[INDEX_NO_PTMS_GROUP]=1, then the group
  * NO_PTMS is switched on */
-/* no ptms are present in the dataset; this is equivalent to kyte doo little, svr, peptide length, bulkiness, aa features */
-#define INDEX_NO_PTMS_GROUP 0
-/* phosphorylations are present in the dataset; this is equivalent to svr, peptide length, phosphorylation features, aa features  */
-#define INDEX_PHOS_GROUP 1
-/* only the amino acids from the alphabet are present */
-#define AA_GROUP 2
-/* number of feature groups */
-#define NUM_FEATURE_GROUPS 3
+
 
 /* forward declaration of PSMDescription */
 class PSMDescription;
 
 class RetentionFeatures {
  public:
+   /* no ptms are present in the dataset; this is equivalent to kyte doo little, svr, peptide length, bulkiness, aa features */
+   static const int INDEX_NO_PTMS_GROUP = 0;
+   /* phosphorylations are present in the dataset; this is equivalent to svr, peptide length, phosphorylation features, aa features  */
+   static const int INDEX_PHOS_GROUP = 1;
+    /* only the amino acids from the alphabet are present */
+   static const int AA_GROUP = 2;
+    /* number of feature groups */
+   static const int NUM_FEATURE_GROUPS = 3;
    /* maximum number of features */
    static const int kMaxNumberFeatures;
    /* name of each feature group */

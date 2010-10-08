@@ -254,3 +254,29 @@ int LibSVRModel::CalibrateModel(const std::vector<PSMDescription> &calibration_p
     return CalibrateRBFModel(calibration_psms, number_features);
   }
 }
+
+// save a model
+int LibSVRModel::SaveModel(FILE *fp) {
+  libsvm_wrapper::SaveModel(fp, svr_);
+}
+
+// load a model
+int LibSVRModel::LoadModel(FILE *fp) {
+  if (svr_ != NULL) {
+    svm_destroy_model(svr_);
+  }
+  svr_ = libsvm_wrapper::LoadModel(fp);
+  svr_parameters_ = svr_->param;
+  int type = svr_parameters_.kernel_type;
+  if (type == 0) {
+    kernel_ = LINEAR_SVR;
+  } else if (type == 2) {
+    kernel_ = RBF_SVR;
+  } else {
+    if (VERB >= 2) {
+      cerr << "Error: Kernel type " << type << " is not supported. "
+           << "Execution aborted." << endl;
+    }
+    exit(1);
+  }
+}

@@ -88,6 +88,12 @@ class Normalizer {
       }
       cout << endl;
     }
+    void SetSubDiv(const vector<double> s, const vector<double> d) {
+      sub = s;
+      div = d;
+    }
+    vector<double> GetVSub() const { return sub; }
+    vector<double> GetVDiv() const { return div; }
   protected:
     Normalizer();
     static Normalizer* theNormalizer;

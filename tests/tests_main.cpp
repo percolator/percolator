@@ -24,7 +24,7 @@
  */
 #include "RetentionFeaturesTest.cpp"
 #include "DataManagerTest.cpp"
-//#include "LibSVRModelTest.cpp"
+#include "LibSVRModelTest.cpp"
 #include "EludeCallerTest.cpp"
 #include "RetentionModelTest.cpp"
 

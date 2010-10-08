@@ -19,10 +19,10 @@
  * Sep, 2010
  */
 /* This file defines a number of functions interfacing libsvm */
+#include "stdio.h"
+
 #include <vector>
-#include <istream>
-#include <ostream>
-#include <iostream>
+#include <string>
 
 class PSMDescription;
 struct svm_parameter;
@@ -33,7 +33,8 @@ namespace libsvm_wrapper {
   svm_model* TrainModel(const std::vector<PSMDescription> &psms, const int &number_features, const svm_parameter &parameter);
   /* predict the retention time of psm using the provided svr */
   double PredictRT(const svm_model* svr, const int &number_features, double *features);
-  int LoadModel(std::istream & in_stream);
-  int SaveModel(std::ostream & out_stream);
+  /* save/load a model to/from a file*/
+  int SaveModel(FILE* fp, const svm_model* model);
+  svm_model* LoadModel(FILE* fp);
 }
 

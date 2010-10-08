@@ -133,21 +133,19 @@ char RetentionFeatures::GetUnmodifiedAA(const string &aa) {
 int RetentionFeatures::GetTotalNumberFeatures() const {
   int number_index_features = 20;
   int number_length_features = 1;
-  int number_aa_features;
+  int number_aa_features = amino_acids_alphabet_.size();
   int total_number_features = 0;
 
   if (active_feature_groups_.test(INDEX_NO_PTMS_GROUP)) {
     int number_bulkiness_features = 1;
-    number_aa_features = 20;
     total_number_features += 2 * number_index_features +  number_length_features + number_bulkiness_features +  number_aa_features;
   }
   if (active_feature_groups_.test(INDEX_PHOS_GROUP)) {
     //[TO DO: modify when more features are added]
-    number_aa_features = amino_acids_alphabet_.size();
     total_number_features += number_index_features +  number_length_features +  number_aa_features;
   }
   if (active_feature_groups_.test(AA_GROUP)) {
-    total_number_features += amino_acids_alphabet_.size();
+    total_number_features += number_aa_features;
   }
   return total_number_features;
 }

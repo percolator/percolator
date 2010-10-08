@@ -21,6 +21,7 @@
 /*
  * This file implements the methods of the class RTModel
  */
+#include "stdio.h"
 #include <algorithm>
 
 #include "RetentionModel.h"
@@ -40,12 +41,19 @@ RetentionModel::~RetentionModel() {
 }
 
 /* normalize the features of a set of peptides */
-int RetentionModel::NormalizeFeatures(std::vector<PSMDescription> &psms) {
-  int number_active_features = retention_features_.GetTotalNumberFeatures();
-  the_normalizer_->resizeVecs(number_active_features);
+int RetentionModel::NormalizeFeatures(const bool set_set,
+    std::vector<PSMDescription> &psms) {
   vector<double*> tmp;
   vector<double*> tmp_ret_feat = PSMDescription::getRetFeatures(psms);
-  the_normalizer_->setSet(tmp, tmp_ret_feat, 0, number_active_features);
+  int number_active_features = retention_features_.GetTotalNumberFeatures();
+  the_normalizer_->resizeVecs(number_active_features);
+  if (set_set) {
+    the_normalizer_->setSet(tmp, tmp_ret_feat, 0, number_active_features);
+    vsub_ = the_normalizer_->GetVSub();
+    vdiv_ = the_normalizer_->GetVDiv();
+  } else {
+    the_normalizer_->SetSubDiv(vsub_, vdiv_);
+  }
   the_normalizer_->normalizeSet(tmp, tmp_ret_feat);
   return 0;
 }
@@ -91,20 +99,20 @@ map<string, double> RetentionModel::BuildRetentionIndex(const set<string> &aa_al
     const bool normalized_rts, vector<PSMDescription> &psms) {
   if (!normalized_rts) {
     PSMDescription::setPSMSet(psms);
-    sub = PSMDescription::normSub;
-    div = PSMDescription::normDiv;
+    sub_ = PSMDescription::normSub;
+    div_ = PSMDescription::normDiv;
     PSMDescription::normalizeRetentionTimes(psms);
   }
   // set the amino acids alphabet
   vector<string> alphabet(aa_alphabet.begin(), aa_alphabet.end());
   retention_features_.set_amino_acids_alphabet(alphabet);
   // set the aa as the active features
-  bitset<NUM_FEATURE_GROUPS> tmp;
-  retention_features_.set_active_feature_groups(tmp.set(AA_GROUP));
+  bitset<RetentionFeatures::NUM_FEATURE_GROUPS> tmp;
+  retention_features_.set_active_feature_groups(tmp.set(RetentionFeatures::AA_GROUP));
   // compute the amino acid features
   retention_features_.ComputeRetentionFeatures(psms);
   // normalize the features
-  NormalizeFeatures(psms);
+  NormalizeFeatures(true, psms);
   // initialize a linear svr
   InitSVR(true);
   // calibrate the model
@@ -122,8 +130,8 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
   // normalize
   if (!normalized_rts) {
     PSMDescription::setPSMSet(psms);
-    sub = PSMDescription::normSub;
-    div = PSMDescription::normDiv;
+    sub_ = PSMDescription::normSub;
+    div_ = PSMDescription::normDiv;
     PSMDescription::normalizeRetentionTimes(psms);
   }
   // set the amino acids alphabet and the index
@@ -131,16 +139,22 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
   retention_features_.set_amino_acids_alphabet(alphabet);
   retention_features_.set_svr_index(index);
   // set the active features; this should be modified as we add more feature groups
-  bitset<NUM_FEATURE_GROUPS> tmp;
+  bitset<RetentionFeatures::NUM_FEATURE_GROUPS> tmp;
   if (index.size() <= 20) {
-    retention_features_.set_active_feature_groups(tmp.set(INDEX_NO_PTMS_GROUP));
+    retention_features_.set_active_feature_groups(
+        tmp.set(RetentionFeatures::INDEX_NO_PTMS_GROUP));
   } else {
-    retention_features_.set_active_feature_groups(tmp.set(INDEX_PHOS_GROUP));
+    retention_features_.set_active_feature_groups(
+        tmp.set(RetentionFeatures::INDEX_PHOS_GROUP));
   }
   // compute the amino acid features
   retention_features_.ComputeRetentionFeatures(psms);
   // normalize the features
-  NormalizeFeatures(psms);
+  NormalizeFeatures(true, psms);
+  // save the sub and the div
+  vsub_ = the_normalizer_->GetVSub();
+  vdiv_ = the_normalizer_->GetVDiv();
+
   // initialize a RBF SVR
   if (svr_model_) {
     delete svr_model_;
@@ -159,11 +173,19 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
 
 /* check if the first set is included in the second vector */
 bool RetentionModel::IsSetIncluded(const set<string> &alphabet1,
-    const vector<string> &alphabet2) {
+    const vector<string> &alphabet2, const bool ignore_ptms) {
   set<string>::const_iterator it = alphabet1.begin();
+  string aa;
   for( ; it!= alphabet1.end(); ++it) {
     if (find(alphabet2.begin(), alphabet2.end(), (*it)) == alphabet2.end()) {
-      return false;
+      if (ignore_ptms) {
+        if (find(alphabet2.begin(), alphabet2.end(), (*it).substr(0,1))
+            == alphabet2.end()) {
+          return false;
+        }
+      } else {
+        return false;
+      }
     }
   }
   return true;
@@ -172,10 +194,12 @@ bool RetentionModel::IsSetIncluded(const set<string> &alphabet1,
 /* predict rt for a vector of psms; it includes calculation of retention features
 * but it assumes that the feature table is initialized.
 * Note that we cannot predict rt if the model was not trained on same alphabet */
-int RetentionModel::PredictRT(const set<string> &aa_alphabet, vector <PSMDescription> &psms) {
+int RetentionModel::PredictRT(const set<string> &aa_alphabet, const bool ignore_ptms,
+    vector<PSMDescription> &psms) {
   // check if the alphabet of the test psms is in included in the alphabet for which
   // the model was built
-  if (!IsSetIncluded(aa_alphabet, retention_features_.amino_acids_alphabet())) {
+  if (!IsSetIncluded(aa_alphabet, retention_features_.amino_acids_alphabet(),
+      ignore_ptms)) {
     if (VERB >= 2) {
       cerr << "Warning: the current model cannot be used to predict retention "
            << "time for the test peptdides. " << endl;
@@ -189,15 +213,14 @@ int RetentionModel::PredictRT(const set<string> &aa_alphabet, vector <PSMDescrip
     }
     return 1;
   }
-  // normalize retention times
+  // compute the retention features
+  retention_features_.set_ignore_ptms(ignore_ptms);
   retention_features_.ComputeRetentionFeatures(psms);
   // normalize the features
-  vector<double*> tmp;
-  vector<double*> tmp_ret_feat = PSMDescription::getRetFeatures(psms);
-  the_normalizer_->normalizeSet(tmp, tmp_ret_feat);
+  NormalizeFeatures(false, psms);
   double predicted_rt;
-  PSMDescription::normDiv = div;
-  PSMDescription::normSub = sub;
+  PSMDescription::normDiv = div_;
+  PSMDescription::normSub = sub_;
   int number_features = retention_features_.GetTotalNumberFeatures();
   vector<PSMDescription>::iterator it = psms.begin();
   for( ; it != psms.end(); ++it) {
@@ -205,4 +228,134 @@ int RetentionModel::PredictRT(const set<string> &aa_alphabet, vector <PSMDescrip
     it->predictedTime = PSMDescription::unnormalize(predicted_rt);
   }
   return 0;
+}
+
+int RetentionModel::SaveModelToFile(const string &file_name) {
+  FILE* fp = fopen(file_name.c_str(), "w");
+  if (fp == NULL) {
+    if (VERB >= 2) {
+      cerr << "Warning: Unable to open " << file_name << ". The model "
+           <<"will not be saved. " << endl;
+    }
+    return 1;
+  }
+  svr_model_->SaveModel(fp);
+  // number of features
+  int number_features = retention_features_.GetTotalNumberFeatures();
+  if (vsub_.size() !=  number_features) {
+    if (VERB >= 2) {
+      cerr << "Warning: Incorrect model. Number of normalized features is different "
+           << "from the number of active features. No model file saved. " << endl;
+    }
+    fclose(fp);
+    remove(file_name.c_str());
+    return 1;
+  }
+  fprintf(fp, "Number_features %d\n", number_features);
+  // active features groups
+  string tmp = retention_features_.active_feature_groups().
+      to_string<char,char_traits<char>,allocator<char> >();
+  fprintf(fp, "Active_groups %s\n", tmp.c_str());
+  // sub and div to scale retention times
+  fprintf(fp, "Sub %lf\n", sub_);
+  fprintf(fp, "Div %lf\n", div_);
+  // sub and div for the normalizer
+  fprintf(fp, "VSub");
+  vector<double>::iterator it = vsub_.begin();
+  for( ; it != vsub_.end(); ++it) {
+    fprintf(fp, " %lf", (*it));
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, "VDiv");
+  for(it = vdiv_.begin(); it != vdiv_.end(); ++it) {
+    fprintf(fp, " %lf", (*it));
+  }
+  fprintf(fp, "\n");
+  // the svr index
+  map<string, double> index = retention_features_.svr_index();
+  if (index.size() > 0) {
+    map<string, double>::iterator it_map = index.begin();
+    fprintf(fp, "Index %d", (int) index.size());
+    for( ; it_map != index.end(); ++it_map) {
+      fprintf(fp, " %s %lf", it_map->first.c_str(), it_map->second);
+    }
+    fprintf(fp, "\n");
+  }
+  // the alphabet
+  vector<string> alphabet = retention_features_.amino_acids_alphabet();
+  vector<string>::iterator it_vec = alphabet.begin();
+  fprintf(fp, "AA_alphabet %d", (int) alphabet.size());
+  for( ; it_vec != alphabet.end(); ++it_vec) {
+    fprintf(fp, " %s", it_vec->c_str());
+  }
+  fclose(fp);
+}
+
+/* load the model from a file */
+int RetentionModel::LoadModelFromFile(const std::string &file_name) {
+  FILE* fp = fopen(file_name.c_str(), "r");
+  if (fp == NULL) {
+    if (VERB >= 2) {
+      cerr << "Error: Unable to open " << file_name << ". Execution aborted" << endl;
+    }
+    exit(1);
+  }
+  if (svr_model_) {
+    delete svr_model_;
+  }
+  svr_model_ = new LibSVRModel();
+  svr_model_->LoadModel(fp);
+  // load the number of features
+
+  char dummy[50];
+  int number_features, ret;
+  ret = fscanf(fp, "%s %d", dummy, &number_features);
+  // active features groups
+  char active_groups[RetentionFeatures::NUM_FEATURE_GROUPS];
+  ret = fscanf(fp, "%s %s", dummy, active_groups);
+  retention_features_.set_active_feature_groups(
+      bitset<RetentionFeatures::NUM_FEATURE_GROUPS>(string(active_groups)));
+  // load sub and div to scale retention times
+  ret = fscanf(fp, "%s %lf", dummy, &sub_);
+  ret = fscanf(fp, "%s %lf", dummy, &div_);
+  // load vsub and vdiv to scale the features
+  ret = fscanf(fp, "%s", dummy);
+  vsub_.resize(number_features);
+  for(int i = 0; i < number_features; ++i) {
+    ret = fscanf(fp, "%lf", &vsub_[i]);
+  }
+  ret = fscanf(fp, "%s", dummy);
+  vdiv_.resize(number_features);
+  for(int i = 0; i < number_features; ++i) {
+   ret =  fscanf(fp, "%lf", &vdiv_[i]);
+  }
+  // the retention index
+  map<string, double> index;
+  int size;
+  double val;
+  char aa[50];
+  ret = fscanf(fp, "%s %d", dummy, &size);
+  for(int i = 0; i < size; ++i) {
+    ret = fscanf(fp, "%s %lf", aa, &val);
+    index[aa] = val;
+  }
+  retention_features_.set_svr_index(index);
+  // the aa alphabet
+  vector<string> alphabet;
+  ret = fscanf(fp, "%s %d", dummy, &size);
+  alphabet.reserve(size);
+  for(int i = 0; i < size; ++i) {
+    ret = fscanf(fp, "%s", aa);
+    alphabet.push_back(aa);
+  }
+  retention_features_.set_amino_acids_alphabet(alphabet);
+  if (number_features != retention_features_.GetTotalNumberFeatures()) {
+    if (VERB >= 2) {
+      cerr << "Error: The number of features used to train the model does not match "
+           << "with the current settings. Execution aborted." << endl;
+    }
+    fclose(fp);
+    exit(1);
+  }
+  fclose(fp);
 }

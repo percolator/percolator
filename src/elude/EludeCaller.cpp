@@ -19,6 +19,7 @@
  * Sep, 2010
  */
 /* This files stores the implementations of the methods for the EludeCaller class */
+#include <math.h>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -30,6 +31,7 @@
 #include "Globals.h"
 #include "DataManager.h"
 
+const double EludeCaller::kFractionPeptides = 0.95;
 string EludeCaller::library_path_ = "models/";
 double EludeCaller::lts_coverage_ = 0.95;
 double EludeCaller::hydrophobicity_diff_ = 5.0;
@@ -39,9 +41,12 @@ EludeCaller::EludeCaller():automatic_model_sel_(false), append_model_(false),
                            remove_in_source_(false), remove_non_enzymatic_(false),
                            context_format_(false), test_includes_rt_(false),
                            remove_common_peptides_(false), train_features_table_(NULL),
-                           test_features_table_(NULL), processed_test_(false) {
+                           test_features_table_(NULL), processed_test_(false),
+                           rt_model_(NULL), ignore_ptms_(false) {
   Normalizer::setType(Normalizer::UNI);
   Enzyme::setEnzyme(Enzyme::TRYPSIN);
+  RetentionFeatures::set_ignore_ptms(false);
+  the_normalizer_ = Normalizer::getNormalizer();
   string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
   train_aa_alphabet_.insert(basic_aa, basic_aa + 20);
   test_aa_alphabet_.insert(basic_aa, basic_aa + 20);
@@ -55,6 +60,10 @@ EludeCaller::~EludeCaller() {
   if (test_features_table_) {
     DataManager::CleanUpTable(test_psms_, test_features_table_);
     test_features_table_ = NULL;
+  }
+  if (rt_model_) {
+    delete rt_model_;
+    rt_model_ = NULL;
   }
 }
 
@@ -177,6 +186,13 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
                    "the test data will be displayed.",
                    "",
                    TRUE_IF_SET);
+  cmd.defineOption("p",
+                   "ignore-ptms",
+                   "If there are ptms in the test set that were not present when "
+                   "training the model, they will be ignored and the index value of "
+                   "the unmodified amino acid is used ",
+                   "",
+                   TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
 
@@ -241,6 +257,10 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   if (cmd.optionSet("g")) {
     test_includes_rt_ = true;
   }
+  if (cmd.optionSet("p")) {
+    RetentionFeatures::set_ignore_ptms(true);
+    ignore_ptms_ = true;
+  }
   return true;
 }
 
@@ -266,17 +286,16 @@ void EludeCaller::SetEnzyme(const string &enzyme) {
 /* process train data when a model is trained*/
 int EludeCaller::ProcessTrainData() {
   // load the training peptides
-  DataManager::LoadPeptides(train_file_, true, context_format_, train_psms_, train_aa_alphabet_);
+  DataManager::LoadPeptides(train_file_, true, context_format_,
+      train_psms_, train_aa_alphabet_);
   // remove duplicates
   DataManager::RemoveDuplicates(train_psms_);
   // remove in source fragments
   if (!test_file_.empty()) {
     // load the test peptides
-    if (test_includes_rt_) {
-      DataManager::LoadPeptides(test_file_, true, context_format_, test_psms_, test_aa_alphabet_);
-    } else {
-      DataManager::LoadPeptides(test_file_, false, context_format_, test_psms_, test_aa_alphabet_);
-    }
+    DataManager::LoadPeptides(test_file_, test_includes_rt_, context_format_,
+        test_psms_, test_aa_alphabet_);
+    // remove duplicates
     if (remove_duplicates_) {
       DataManager::RemoveDuplicates(test_psms_);
     }
@@ -319,22 +338,238 @@ int EludeCaller::NormalizeRetentionTimes(vector<PSMDescription> &psms) {
   PSMDescription::normalizeRetentionTimes(psms);
 }
 
+/* train model */
+int EludeCaller::TrainRetentionModel() {
+  /* initialize model */
+  rt_model_ = new RetentionModel(the_normalizer_);
+  /* build the retention index */
+  retention_index_ = rt_model_->BuildRetentionIndex(train_aa_alphabet_, false, train_psms_);
+  /* train the model */
+  rt_model_->TrainRetentionModel(train_aa_alphabet_, retention_index_, true, train_psms_);
+}
 
-/* build the retention index by training a linear model */
-/*
-int EludeCaller::BuildRetentionIndex() {
-  RetentionModel model;
+/* process test data */
+int EludeCaller::ProcessTestData() {
+  // load the peptides
+  DataManager::LoadPeptides(test_file_, test_includes_rt_, context_format_, test_psms_, test_aa_alphabet_);
+  // remove duplicates
+  if (remove_duplicates_) {
+    DataManager::RemoveDuplicates(test_psms_);
+  }
+  if (remove_common_peptides_)  {
+    DataManager::RemoveCommonPeptides(test_psms_, train_psms_);
+  }
+  // remove in source
+  if (!in_source_file_.empty() || remove_in_source_) {
+    if (test_includes_rt_) {
+      vector< pair<PSMDescription, string> > in_source_fragments;
+      in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
+          RetentionFeatures::kKyteDoolittle, remove_in_source_, train_psms_, test_psms_);
+      if (!in_source_file_.empty()) {
+        DataManager::WriteInSourceToFile(in_source_file_, in_source_fragments);
+      }
+    } else {
+      if (VERB >= 4) {
+        cerr << "Warning: in-source fragments in the test data cannot be identified "
+             << "since the retention time is not included. All peptides are included "
+             << "in the subsequent analyses" << endl;
+      }
+    }
+  }
+  // remove non enzymatic
+  if (remove_non_enzymatic_) {
+    if (context_format_) {
+      DataManager::RemoveNonEnzymatic(test_psms_);
+    } else {
+      if (VERB >= 4) {
+        cerr << "Warning: non-enzymatic peptides cannot be detected unless the peptides"
+             << " are give in the format A.XXX.Y. All peptides are included in the"
+             << " subsequent analyses" << endl;
+      }
+    }
+  }
+  processed_test_ = true;
+  return 0;
+}
 
-  // set the amino acids alphabet
-  model.SetAlphabet(train_aa_alphabet_);
-  // set the aa as the active features
-  model.SetAAFeatures();
-  // compute the aa features
-  model.ComputeAAFeatures(train_psms_);
-  // normalize the features
+/* main function in Elude */
+int EludeCaller::Run() {
+  // build a rt model, either by training one or by loading one
+  if (!train_file_.empty() && !load_model_file_.empty() && VERB >= 4) {
+    cerr << "Warning: a model can be either trained or loaded from a file. "
+         << "The two options should not be used together. The model will"
+         << " be trained using the peptides in the " << train_file_ << endl;
+  }
+  if (!train_file_.empty()) {
+    ProcessTrainData();
+    // initialize the feature table
+    train_features_table_ = DataManager::InitFeatureTable(
+         RetentionFeatures::kMaxNumberFeatures, train_psms_);
+    if (automatic_model_sel_) {
+      // TO DO: automatic model selection
+    } else {
+      TrainRetentionModel();
+    }
+  } else if (!load_model_file_.empty()) {
+    // TO DO: load the model from a file
+  }
 
-  // initialize a linear svr
-  model.InitSVR(true);
+  // test a model
+  if (!test_file_.empty()) {
+    // process the test data
+    if (!processed_test_) {
+      ProcessTestData();
+    }
+    // initialize the feature table
+    test_features_table_ = DataManager::InitFeatureTable(
+            RetentionFeatures::kMaxNumberFeatures, test_psms_);
+    rt_model_->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
+    // compute performance measures
+    if (test_includes_rt_) {
+      // TO DO: compute performance measures
+    }
+    // write the predictions to file
+    if (!output_file_.empty()) {
+      DataManager::WriteOutFile(output_file_, test_psms_, test_includes_rt_);
+    }
+  }
+}
 
+/* Load the best model from the library; the fuction returns
+ * the index of this model in the vector of models or -1 if
+ * no model is available in the library */
+int EludeCaller::AutomaticModelSelection() {
 
+}
+/* predict rt for test peptides */
+/*int EludeCaller::PredictRT() {
+  // process the test data
+  if (!processed_test_) {
+    ProcessTestData();
+  }
+  // initialize the feature table
+  test_features_table_ = DataManager::InitFeatureTable(
+        RetentionFeatures::kMaxNumberFeatures, test_psms_);
+
+  rt_model_->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
 }*/
+
+// compare two psms according to the difference between predicted and observed
+bool ComparePsmsDeltaRT(PSMDescription psm1, PSMDescription psm2) {
+  double delta_rt1, delta_rt2;
+  delta_rt1 = psm1.getPredictedRetentionTime() - psm1.getRetentionTime();
+  delta_rt2 = psm2.getPredictedRetentionTime() - psm2.getRetentionTime();
+  return delta_rt1 < delta_rt2;
+}
+
+/*compute Delta t(95%) window */
+double EludeCaller::ComputeWindow(vector<PSMDescription> &psms) {
+  double win, diff;
+  int nr = (int) round(kFractionPeptides * (double) psms.size());
+  int k = psms.size() - nr, i = 1;
+
+  sort(psms.begin(), psms.end(), ComparePsmsDeltaRT);
+  win = (psms[nr - 1].getPredictedRetentionTime() - psms[nr - 1].getRetentionTime())
+      - (psms[0].getPredictedRetentionTime() - psms[0].getRetentionTime());
+  while (i <= k) {
+    diff = (psms[i + nr - 1].getPredictedRetentionTime()
+        - psms[i + nr - 1].getRetentionTime()) - (psms[i].getPredictedRetentionTime()
+        - psms[i].getRetentionTime());
+    if (diff < win) {
+      win = diff;
+    }
+    i++;
+  }
+
+  return win;
+}
+
+/* Compare 2 psms according to retention time */
+bool ComparePsmsRT(PSMDescription psm1, PSMDescription psm2) {
+  return psm1.getRetentionTime() < psm2.getRetentionTime();
+}
+
+/* Compare 2 psms according to predicted retention time */
+bool ComparePsmsPRT(pair<PSMDescription, int> psm1, pair<PSMDescription,
+    int> psm2) {
+  double prt1, prt2;
+  prt1 = psm1.first.getPredictedRetentionTime();
+  prt2 = psm2.first.getPredictedRetentionTime();
+  return prt1 < prt2;
+}
+
+/* calculate Spearman's rank correlation */
+double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
+  double corr = 0.0, d = 0.0, avg_rank, rank_p, rank_o;
+  int i, j;
+  int n = psms.size();
+  vector<pair<PSMDescription, double> > rankedPsms;
+
+  // sort peptides according to observed retention time
+  sort(psms.begin(), psms.end(), ComparePsmsRT);
+  // record ranks
+  i = 0;
+  while (i < n) {
+    avg_rank = j = i + 1;
+    while ((j < n) && (psms[i].getRetentionTime()
+        == psms[j].getRetentionTime())) {
+      avg_rank += ++j;
+    }
+    avg_rank = avg_rank / (double)(j - i);
+    for (int k = i; k < j; ++k) {
+      rankedPsms.push_back(make_pair(psms[k], avg_rank));
+    }
+    i = j;
+  }
+  // sort peptides according to predicted rt
+  sort(rankedPsms.begin(), rankedPsms.end(), ComparePsmsPRT);
+  // calculate sum of squared differences btw ranks
+  i = 0;
+  while (i < n) {
+    // calculate rank of predicted rt
+    rank_p = j = i + 1;
+    while ((j < n) && (rankedPsms[i].first.getPredictedRetentionTime()
+        == rankedPsms[j].first.getPredictedRetentionTime())) {
+      rank_p += ++j;
+    }
+    rank_p = rank_p / (double)(j - i);
+    // calculate and add squared difference
+    for (int k = i; k < j; ++k) {
+      d += pow(rankedPsms[k].second - rank_p, 2);
+    }
+    // increase i
+    i = j;
+  }
+
+  return 1.0 - ((6.0 * d) / (double)(n * (pow(n, 2.) - 1)));
+}
+
+/* Compute Pearson's correlation coefficient */
+double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription> & psms) {
+  int no_psms = psms.size();
+  // calculate means
+  double sum_obs = 0.0, sum_pred = 0.0;
+  for (int i = 0; i < no_psms; i++) {
+    sum_obs += psms[i].retentionTime;
+    sum_pred += psms[i].predictedTime;
+  }
+  double avg_obs = sum_obs / no_psms;
+  double avg_pred = sum_pred / no_psms;
+  // calculate stdevs
+  sum_obs = 0.0;
+  sum_pred = 0.0;
+  double dev_obs, dev_pred;
+  double numerator = 0.0;
+  for (int i = 0; i < no_psms; i++) {
+    dev_obs = psms[i].retentionTime - avg_obs;
+    dev_pred = psms[i].predictedTime - avg_pred;
+    numerator += dev_obs * dev_pred;
+    sum_obs += pow(dev_obs, 2);
+    sum_pred += pow(dev_pred, 2);
+  }
+  double sd_obs = 1, sd_pred = 1;
+  sd_obs = sqrt(sum_obs / (no_psms - 1));
+  sd_pred = sqrt(sum_pred / (no_psms - 1));
+
+  return numerator / ((no_psms - 1) * sd_obs * sd_pred);
+}

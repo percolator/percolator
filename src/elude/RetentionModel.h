@@ -39,7 +39,7 @@ class RetentionModel {
     RetentionModel(Normalizer *normalizer);
    ~RetentionModel();
    /* normalize the features of a set of peptides */
-   int NormalizeFeatures(std::vector<PSMDescription> &psms);
+   int NormalizeFeatures(const bool set_set, std::vector<PSMDescription> &psms);
    /* init a libSVM model; if linear, then a linear kernel is used; else RBF */
    int InitSVR(const bool linear_svr);
    /* set the alphabet */
@@ -60,18 +60,27 @@ class RetentionModel {
    bool IsModelNull() const { return svr_model_ == NULL; }
    /* check if the first set is included in the second vector */
    bool IsSetIncluded(const std::set<std::string> &alphabet1,
-       const std::vector<std::string> &alphabet2);
-
+       const std::vector<std::string> &alphabet2, const bool ignore_ptms);
    /* predict rt for a vector of psms; it includes calculation of retention features
     * but it assumes that the feature table is initialized */
-   int PredictRT(const std::set<std::string> &aa_alphabet,
-       std::vector <PSMDescription> &psms);
+   int PredictRT(const std::set<std::string> &aa_alphabet, const bool ignore_ptms,
+       std::vector<PSMDescription> &psms);
+   /* save the model to a file */
+   int SaveModelToFile(const std::string &file_name);
+   /* load the model from a file */
+   int LoadModelFromFile(const std::string &file_name);
 
    /* Accessors and mutators */
    inline RetentionFeatures& retention_features() { return retention_features_; }
+   inline double sub() const { return sub_; }
+   inline double div() const { return div_; }
+   inline void set_sub(const double &s) { sub_ = s; }
+   inline void set_div(const double &d) { div_ = d; }
+
  private:
-   /* used to normalize retention times */
-   double sub, div;
+   /* used to normalize retention times and features*/
+   double sub_, div_;
+   std::vector<double> vsub_, vdiv_;
    /* the SVR model */
    SVRModel *svr_model_;
    /* is the SVR linear? */

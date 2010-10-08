@@ -24,6 +24,7 @@
 #ifndef ELUDE_SVRMODEL_H_
 #define ELUDE_SVRMODEL_H_
 
+#include "stdio.h"
 #include <vector>
 #include <ostream>
 #include <istream>
@@ -39,9 +40,9 @@ class SVRModel {
    /* predict retention time using the trained model */
    virtual double PredictRT(const int &number_features, double *features) = 0;
    /* save a svr model */
-   virtual int SaveModel(const std::ostream &out_stream) = 0;
+   virtual int SaveModel(FILE *fp) = 0;
    /* load a svr model */
-   virtual int LoadModel(const std::istream &input_stream) = 0;
+   virtual int LoadModel(FILE *fp) = 0;
 };
 
 #endif /* ELUDE_SVRMODEL_H_ */

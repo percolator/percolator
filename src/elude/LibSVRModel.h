@@ -74,9 +74,9 @@ class LibSVRModel : public SVRModel {
    virtual int CalibrateModel(const std::vector<PSMDescription> &calibration_psms,
                               const int &number_features);
   /* save a svr model */
-   virtual int SaveModel(const std::ostream &out_stream) {}
+   virtual int SaveModel(FILE *fp);
    /* load a svr model */
-   virtual int LoadModel(const std::istream &input_stream) {}
+   virtual int LoadModel(FILE *fp);
 
    /* Accessors and mutators */
    inline svm_parameter svr_parameters() { return svr_parameters_; }

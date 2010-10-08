@@ -32,10 +32,14 @@
 #include "PSMDescription.h"
 #include "RetentionModel.h"
 
+class Normalizer;
+
 class EludeCaller{
  public:
    EludeCaller();
    ~EludeCaller();
+   /* fraction of the peptides wwhen computing the window */
+   static const double kFractionPeptides;
    /* introductory message */
    std::string Greeter() const;
    /* parse the command line arguments */
@@ -46,8 +50,22 @@ class EludeCaller{
    int ProcessTrainData();
    /* normalize retention times for a set of peptides */
    int NormalizeRetentionTimes(vector<PSMDescription> &psms);
-   /* build the retention index by training a linear model */
-   // int BuildRetentionIndex();
+   /* train a retention model */
+   int TrainRetentionModel();
+   /* process the test data */
+   int ProcessTestData();
+   /* Load the best model from the library; the fuction returns
+    * the index of this model in the vector of models or -1 if
+    * no model is available in the library */
+   int AutomaticModelSelection();
+   /* main function of Elude */
+   int Run();
+   /*compute Delta t(95%) window */
+   static double ComputeWindow(vector<PSMDescription> &psms);
+   /* calculate Spearman's rank correlation */
+   static double ComputeRankCorrelation(vector<PSMDescription> &psms);
+   /* Compute Pearson's correlation coefficient */
+   static double ComputePearsonCorrelation(vector<PSMDescription> & psms);
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
@@ -104,6 +122,8 @@ class EludeCaller{
    std::string index_file_;
    /* remove the peptides from the train set that are also in the test set */
    bool remove_common_peptides_;
+   /* ignore the ptms */
+   bool ignore_ptms_;
    /* train and test peptide-spectrum matches */
    std::vector<PSMDescription> train_psms_;
    std::vector<PSMDescription> test_psms_;
@@ -115,8 +135,12 @@ class EludeCaller{
    /* true if the test data was processed */
    bool processed_test_;
    /* the retention models */
-   vector<RetentionModel> rt_model_;
-
+   vector<RetentionModel> rt_models_;
+   /* the retention model */
+   RetentionModel *rt_model_;
+   std::map<std::string, double> retention_index_;
+   /* the normalizer */
+   Normalizer *the_normalizer_;
 };
 
 #endif /* ELUDE_ELUDECALLER_H_ */

@@ -124,7 +124,7 @@ inline ostream& operator<<(ostream& out, PSMDescription& psm) {
   out << "Retention time, predicted retention time: " << psm.retentionTime
       << ", " << psm.predictedTime;
   out << "Retention features: ";
-  for (int i = 0; i < 62; ++i) {
+  for (int i = 0; i < 44; ++i) {
     out << psm.retentionFeatures[i] << "  ";
   }
   out << endl;

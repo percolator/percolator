@@ -32,6 +32,17 @@ class EludeCallerTest : public ::testing::Test {
      train_file2 = "./../bin/data/elude_test/standalone/train_1.txt";
      test_file2 = "./../bin/data/elude_test/standalone/test_1.txt";
      tmp = "./../bin/data/elude_test/standalone/tmp.txt";
+     psms_.push_back(PSMDescription(10, 1));
+     psms_.push_back(PSMDescription(10, 3));
+     psms_.push_back(PSMDescription(10, 12));
+     psms_.push_back(PSMDescription(10, 15));
+     psms_.push_back(PSMDescription(8, 10));
+     psms_.push_back(PSMDescription(6, 7));
+     psms_.push_back(PSMDescription(10, 30));
+     psms_.push_back(PSMDescription(10, 8));
+     psms_.push_back(PSMDescription(10, 17));
+     psms_.push_back(PSMDescription(10, 20));
+     psms_.push_back(PSMDescription(10, 21));
    }
 
    virtual void TearDown() {
@@ -41,6 +52,7 @@ class EludeCallerTest : public ::testing::Test {
    string train_file1, train_file2;
    string test_file1, test_file2;
    string tmp;
+   vector<PSMDescription> psms_;
 };
 
 TEST_F(EludeCallerTest, TestProcessTrainDataContext) {
@@ -102,7 +114,6 @@ TEST_F(EludeCallerTest, TestProcessTrainDataContext) {
    remove(tmp.c_str());
 }
 
-
 TEST_F(EludeCallerTest, TestProcessTrainDataNoContext) {
   caller.set_train_file(train_file2);
   caller.set_test_file(test_file2);
@@ -126,4 +137,48 @@ TEST_F(EludeCallerTest, TestProcessTrainDataNoContext) {
   }
   EXPECT_EQ(1, count);
   remove(tmp.c_str());
+}
+
+TEST_F(EludeCallerTest, TestProcessTestDataNoTrain) {
+  Globals::getInstance()->setVerbose(1);
+  caller.set_test_file(test_file1);
+  caller.set_in_source_file(tmp);
+  caller.set_remove_common_peptides(true);
+  caller.set_remove_in_source(true);
+  caller.set_remove_duplicates(true);
+  caller.set_non_enzymatic(true);
+  caller.set_test_includes_rt(false);
+  caller.set_context_format(true);
+  caller.ProcessTestData();
+  EXPECT_EQ(1188, caller.test_psms().size());
+}
+
+TEST_F(EludeCallerTest, TestTrainTestModel) {
+  caller.set_train_file(train_file1);
+  caller.set_test_file(test_file1);
+  caller.set_remove_common_peptides(false);
+  caller.set_remove_in_source(false);
+  caller.set_remove_duplicates(false);
+  caller.set_non_enzymatic(false);
+  caller.set_test_includes_rt(false);
+  caller.set_context_format(true);
+
+  Globals::getInstance()->setVerbose(1);
+  caller.Run();
+  EXPECT_EQ(99, caller.train_psms().size());
+  vector<PSMDescription> test_psms = caller.test_psms();
+  EXPECT_EQ(1252, test_psms.size());
+  EXPECT_NEAR(22.496, test_psms[9].predictedTime, 0.01);
+}
+
+TEST_F(EludeCallerTest, TestComputeWindow) {
+  EXPECT_NEAR(20.0, EludeCaller::ComputeWindow(psms_), 0.01);
+}
+
+TEST_F(EludeCallerTest, TestComputeRankCorrelation) {
+  EXPECT_NEAR(0.4818, EludeCaller::ComputeRankCorrelation(psms_), 0.01);
+}
+
+TEST_F(EludeCallerTest, TestComputePearsonCorrelation) {
+  EXPECT_NEAR(0.275, EludeCaller::ComputePearsonCorrelation(psms_), 0.01);
 }

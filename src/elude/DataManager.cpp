@@ -152,6 +152,13 @@ int DataManager::RemoveDuplicates(std::vector<PSMDescription> &psms) {
 /* remove from the train set the peptides that are also in the test set */
 int DataManager::RemoveCommonPeptides(const vector<PSMDescription> &test_psms,
                                       vector<PSMDescription> &train_psms) {
+  if (train_psms.empty()) {
+    if (VERB >= 4) {
+      cerr << "Warning: no train data available, thus no common peptides "
+           <<"between train and test sets." << endl;
+    }
+    return 0;
+  }
   vector<PSMDescription>::const_iterator it = test_psms.begin();
   for ( ; it != test_psms.end(); ++it) {
     train_psms.erase(remove(train_psms.begin(), train_psms.end(), (*it)),
@@ -283,6 +290,8 @@ vector<PSMDescription> DataManager::RemoveNonEnzymatic(std::vector<PSMDescriptio
   vector<PSMDescription>::iterator it =
       partition(psms.begin(), psms.end(), Utilities::IsEnzymatic);
   vector<PSMDescription> non_enzymatic(it, psms.end());
+  //for(int i = 0; i < non_enzymatic.size(); ++i)
+  //   cout << non_enzymatic[i].peptide << endl;
   psms.resize(distance(psms.begin(), it));
   return non_enzymatic;
 }
