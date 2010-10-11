@@ -31,12 +31,12 @@
 #      SystemTest_Elude_Workload
     )
   # Just copying the script (permissions are preserved).
-  set(system_tests_dir "${CMAKE_BINARY_DIR}/../bin")
+  set(system_tests_dir "${CMAKE_BINARY_DIR}/../bin/data/tests")
 
-  # NOTE: To run system tests (after running build_me.sh), run 'make test' in the 'output' folder.
+  # NOTE: To run system tests (after building), run 'make test' in the 'output' folder.
   foreach(current_system_test ${system_tests_names})
-    MESSAGE ("Copying test: ${current_system_test} ...")
-    configure_file (${current_system_test}.py ${system_tests_dir}/${current_system_test}.py COPYONLY)
+    #MESSAGE ("Copying test: ${current_system_test} ...")
+    #configure_file (${current_system_test}.py ${system_tests_dir}/${current_system_test}.py COPYONLY)
     add_test(${current_system_test} python ${system_tests_dir}/${current_system_test}.py)
   endforeach(current_system_test)
 
