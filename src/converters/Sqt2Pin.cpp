@@ -18,6 +18,10 @@
 #include "MassHandler.h"
 #include "SqtReader.h"
 #include "DataSet.h"
+#include <boost/foreach.hpp>
+#include <limits>
+#include <cmath>
+
 using namespace std;
 
 Sqt2Pin::Sqt2Pin() {
@@ -174,17 +178,19 @@ void Sqt2Pin::readRetentionTime(string filename) {
   strcpy(cstr, filename.c_str());
   // read first spectrum
   r.readFile(cstr, s);
-  unsigned int count = 0;
   while(s.getScanNumber() != 0){
     // check whether an EZ lines is available
     if(s.atEZ(0).pRTime != 0){
-      double tt = (double)s.atEZ(0).pRTime;
-      scan2rt[s.getScanNumber()] = (double)s.atEZ(0).pRTime;
+      // for each EZ line (each psm)
+      for(int i = 0; i<s.sizeEZ(); i++){
+        // save experimental mass and retention time
+        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).mh);
+        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).pRTime);
+      }
     }
     // if no EZ line is available, check for an RTime lines
     else if((double)s.getRTime() != 0){
-      double tt = (double)s.getRTime();
-      scan2rt[s.getScanNumber()] = (double)s.getRTime();
+      scan2rt[s.getScanNumber()].push_back(s.getRTime());
     }
     // if neither EZ nor I lines are available
     else{
@@ -196,6 +202,63 @@ void Sqt2Pin::readRetentionTime(string filename) {
     r.readFile(NULL, s);
   }
   delete[] cstr;
+}
+
+void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase& database){
+  // for each spectra from the ms2 file
+  typedef std::map<int, vector<double> > map_t;
+  BOOST_FOREACH(map_t::value_type& i, scan2rt){
+    // scan number
+    int scanNr = i.first;
+    // related retention times
+    vector<double>* rTimes = &(i.second);
+    if(database.getFSS(scanNr).get()!=0){
+      fragSpectrumScan fss = *(database.getFSS(scanNr));
+      fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq =
+          fss.peptideSpectrumMatch();
+      // retention time to be stored
+      double storeMe = 0;
+      // if rTimes only contains one element
+      if(rTimes->size()==1){
+        // take that as retention time
+        storeMe = rTimes->at(0);
+      }
+      else{
+        // else, take retention time of psm that has observed mass closest to
+        // theoretical mass (smallest massDiff)
+        double massDiff = std::numeric_limits<double>::max(); // + infinity
+        for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i =
+            psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i) {
+          // skip decoy
+          if(psmIter_i->isDecoy() != true){
+            double cm = psmIter_i->calculatedMassToCharge();
+            double em = psmIter_i->experimentalMassToCharge().get();
+            // if a psm with observed mass closer to theoretical mass is found
+            if(abs(cm-em) < massDiff){
+              // update massDiff
+              massDiff = abs(cm-em);
+              // get corresponding retention time
+              vector<double>::const_iterator r = rTimes->begin();
+              for(; r<rTimes->end(); r=r+2){
+                double rrr = *r;
+                double exm = psmIter_i->experimentalMassToCharge().get();
+                if(*r==psmIter_i->experimentalMassToCharge().get()){
+                  storeMe = *(r+1);
+                  r = rTimes->end();
+                }
+              }
+            }
+          }
+        }
+      }
+      // store retention time for all psms in fss
+      for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter =
+          psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
+        psmIter->observedTime().set(storeMe);
+      }
+      database.putFSS(fss);
+    }
+  }
 }
 
 int Sqt2Pin::run() {
@@ -228,12 +291,6 @@ int Sqt2Pin::run() {
    */
   database.init(tokyoCabinetTmpFN);
 
-  // read retention time if sqt2pin was invoked with -2 option
-  if (spectrumFile.size() > 0) {
-    readRetentionTime(spectrumFile);
-    database.initRTime(& scan2rt);
-  }
-
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
     // First we only search for the maxCharge and minCharge.
     // This done by passing the argument justSearchMaxMinCharge
@@ -265,8 +322,12 @@ int Sqt2Pin::run() {
   //    pCheck = new SqtSanityCheck();
   //    assert(pCheck);
 
-  // store retention times in the fragment spectrum scan database
-  //database
+  // read retention time if sqt2pin was invoked with -2 option
+  if (spectrumFile.size() > 0) {
+    readRetentionTime(spectrumFile);
+    database.initRTime(&scan2rt);
+    storeRetentionTime(database);
+  }
 
   string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
       string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +

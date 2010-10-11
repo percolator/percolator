@@ -1,4 +1,0 @@
-This folder should be used for testing, i.e. place input files and execute testing scripts here.
-
-Tests are using Google C++ Testing Framework (http://code.google.com/p/googletest/)
-which should be pre-installed to be able to use unit-level tests ('tests' folder).

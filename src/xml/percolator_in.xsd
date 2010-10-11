@@ -141,6 +141,11 @@
                         </xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
+                  <xs:attribute name="observedTime" type="xs:double">
+                    <xs:annotation>
+                      <xs:documentation>The clock time when the scan observed, i.e. the observed retention time given in minutes.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
                   <xs:attribute name="experimentalMassToCharge" type="xs:double">
                     <xs:annotation>
                       <xs:documentation>The measured mass to charge ratio of the current scan.</xs:documentation>
@@ -178,13 +183,13 @@
                 <xs:documentation>The ion current of the precursor peptide.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
+            <!--
             <xs:attribute name="observedTime" type="xs:double">
               <xs:annotation>
-                <xs:documentation>The clock time when the scan
-		observed, i.e. the observed retention time given in
-		minutes.</xs:documentation>
+                <xs:documentation>The clock time when the scan observed, i.e. the observed retention time given in minutes.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
+            -->
           </xs:complexType>
         </xs:element>
       </xs:sequence>

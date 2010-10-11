@@ -326,6 +326,9 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
         myPsm.expMass = psmIter->experimentalMassToCharge().get();
       }
       myPsm.calcMass = psmIter->calculatedMassToCharge();
+      if ( psmIter->observedTime().present() ) {
+        myPsm.retentionTime = psmIter->observedTime().get();
+      }
 
       const ::percolatorInNs::features::feature_sequence & featureS = psmIter->features().feature();
       int featureNum = 0;
@@ -336,9 +339,7 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       }
 
       // myPsm.peptide = psmIter->peptide().peptideSequence();
-      if ( fss.observedTime().present() ) {
-        myPsm.retentionTime = fss.observedTime().get();
-      }
+
       myPsm.massDiff =
           MassHandler::massDiff(fss.experimentalMassToCharge() ,
               psmIter->calculatedMassToCharge(),

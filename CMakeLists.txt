@@ -85,5 +85,5 @@ include(CPack)
 enable_testing()
 
 # Running system and unit level tests
-add_subdirectory(tests)
+add_subdirectory(data/tests)
 

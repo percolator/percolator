@@ -85,24 +85,16 @@ void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
     double observedMassCharge,
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
 
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  check_fss = getFSS( scanNr );
+  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS( scanNr );
   // if FragSpectrumScan does not yet exist, create it
-  if ( ! check_fss.get() ) {
-    ::percolatorInNs::fragSpectrumScan* fss_tmp = new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge);
-    // if a retention time has been calculated, include it in the FragSpectrumScan
-    if(scan2rt != 0){
-      // retrieve retention time
-      double retTime = scan2rt->find(scanNr)->second;
-      fss_tmp->observedTime().set(retTime);
-    }
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(fss_tmp);
-    fss->peptideSpectrumMatch().push_back( psm_p );
-    putFSS( *fss );
-  } else {
-    // add the psm to the FragSpectrumScan
-    check_fss->peptideSpectrumMatch().push_back( psm_p );
-    putFSS( *check_fss );
+  if ( ! fss.get() ) {
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan>
+    fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge));
+    fss = fs_p;
   }
+  // add the psm to the FragSpectrumScan
+  fss->peptideSpectrumMatch().push_back(psm_p);
+  putFSS( *fss );
   return;
 }
 
@@ -128,7 +120,7 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
   assert(! ret);
 }
 
-bool FragSpectrumScanDatabase::initRTime(map<int, double>* scan2rt_par) {
+bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par) {
   // add pointer to retention times table in sqt2pin (if any)
   scan2rt=scan2rt_par;
 }
@@ -150,6 +142,11 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
   std::auto_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
   xdr_destroy (&xdr2);
   return fss;
+}
+
+bool FragSpectrumScanDatabase::isTCBDB(){
+  if(bdb) return true;
+  else return false;
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {

@@ -30,6 +30,7 @@ public:
 	bool parseOpt(int argc, char **argv);
 	int run();
 	void readRetentionTime(std::string filename);
+	void storeRetentionTime(FragSpectrumScanDatabase& database);
 
 protected:
 	ParseOptions parseOptions;
@@ -39,7 +40,7 @@ protected:
 	std::string xmlOutputFN;
 	std::string call;
   std::string spectrumFile;
-  map<int, double> scan2rt;
+  map<int, vector<double> > scan2rt;
 };
 
 int main(int argc, char **argv);

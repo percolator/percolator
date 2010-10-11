@@ -299,7 +299,7 @@ string getRidOfUnprintables(string inpString) {
 }
 
 static int counter = 0;
-void SqtReader::readPSM(bool isDecoy, const std::string &in  ,  int match, const ParseOptions & po,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase & database ) {
+void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const ParseOptions & po,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase & database ) {
 
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   unsigned int scan;
