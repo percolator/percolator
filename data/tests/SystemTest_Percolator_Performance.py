@@ -6,9 +6,7 @@ import os
 import sys
 
 
-path = os.path.dirname(sys.argv[0])
-if path == "":
-  path = "./"
+path = os.path.join(os.path.dirname(sys.argv[0]), "../../")
 
 print "PERCOLATOR PERFORMANCE"
 

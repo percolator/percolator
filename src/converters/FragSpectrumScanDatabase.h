@@ -24,7 +24,6 @@ class FragSpectrumScanDatabase {
     void savePsm(unsigned int scanNr, double observedMassCharge,
         auto_ptr<peptideSpectrumMatch> psm_p );
     void print(serializer & ser );
-    bool isTCBDB();
   protected:
     XDR xdr;
     xml_schema::buffer buf;

@@ -12,7 +12,7 @@ import sys
 # this test are performed using various formats of the input files
 def testStandalone():
   print "TEST 1 (train a model)..."
-  path = os.path.dirname(sys.argv[0])
+  path = os.path.join(os.path.dirname(sys.argv[0]), "../../")
   #path = "/scratch/lumi_work/projects/elude_ptms/src/bin"
   # folder where the test data is located
   testFolder = os.path.join(path, "data/elude_test/standalone/")
@@ -102,7 +102,7 @@ def testStandalone():
 ########################## TEST 2: calibrate a model from the library ##########################
 def testCalibration():
   print "TEST 2 (calibrate a model)..."
-  path = os.path.dirname(sys.argv[0])
+  path = os.path.join(os.path.dirname(sys.argv[0]), "../../")
   # folder where the test data is located
   testFolder = os.path.join(path, "data/elude_test/calibrate_data/")
   # path to the library

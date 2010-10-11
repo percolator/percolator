@@ -18,7 +18,6 @@ using namespace std;
 #include "config.h"
 #include "serializer.hxx"
 
-
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/dom/DOM.hpp>
 #include <xsd/cxx/xml/string.hxx>
@@ -142,11 +141,6 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
   std::auto_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
   xdr_destroy (&xdr2);
   return fss;
-}
-
-bool FragSpectrumScanDatabase::isTCBDB(){
-  if(bdb) return true;
-  else return false;
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {
