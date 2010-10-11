@@ -21,7 +21,7 @@
 #include "SqtReader.h"
 #include "parser.hxx"
 #include "config.h"
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 #include "mzIdentML1.0.0.hxx"
 #include "serializer.hxx"
 #include "mzidentml2pin_cmdline.h"

@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?> 
-<experiment xmlns="http://per-colator.com/percolator_in/10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://per-colator.com/percolator_in/10 http://github.com/percolator/percolator/raw/master/src/xml/percolator_in.xsd"> 
+﻿<?xml version="1.0" encoding="UTF-8"?> 
+<experiment xmlns="http://per-colator.com/percolator_in/11" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://per-colator.com/percolator_in/11 http://github.com/percolator/percolator/raw/master/src/xml/percolator_in-1-1.xsd"> 
 
 <enzyme>trypsin</enzyme>
 
@@ -7,7 +7,7 @@
   <command_line>/scratch/temp/percolatorBuild/src/converters/sqt2pin -o /scratch/temp/bin/data/percolator_test/retention/pin.xml -2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.ms2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.sqt /scratch/behemot_public/ms2/elude_apex_data/xml/decoy/Celegans_Jupter_C12_60min_grad.sqt</command_line>
 </process_info>
 
-<featureDescriptions xmlns="http://per-colator.com/percolator_in/10">
+<featureDescriptions xmlns="http://per-colator.com/percolator_in/11">
 
   <featureDescription name="lnrSp"/>
 
@@ -48,7 +48,7 @@
   <featureDescription name="absdM"/>
 
 </featureDescriptions>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1133.5383" scanNumber="888">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1133.5383" scanNumber="888">
 
   <peptideSpectrumMatch calculatedMassToCharge="1133.537" chargeState="2" experimentalMassToCharge="1133.5383" id="Celegans_Jupter_C12_60min_grad_888_2_1" isDecoy="false" observedTime="10.0921001434326">
     <features>
@@ -165,7 +165,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1014.5236" scanNumber="890">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1014.5236" scanNumber="890">
 
   <peptideSpectrumMatch calculatedMassToCharge="1014.525" chargeState="2" experimentalMassToCharge="1014.5236" id="Celegans_Jupter_C12_60min_grad_890_2_1" isDecoy="false" observedTime="10.8540000915527">
     <features>
@@ -226,7 +226,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1263.6426" scanNumber="892">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1263.6426" scanNumber="892">
 
   <peptideSpectrumMatch calculatedMassToCharge="1263.633" chargeState="2" experimentalMassToCharge="1263.6426" id="Celegans_Jupter_C12_60min_grad_892_2_1" isDecoy="false" observedTime="10.4176998138428">
     <features>
@@ -285,7 +285,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="684.4049" scanNumber="894">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="684.4049" scanNumber="894">
 
   <peptideSpectrumMatch calculatedMassToCharge="684.404" chargeState="1" experimentalMassToCharge="684.4049" id="Celegans_Jupter_C12_60min_grad_894_1_1" isDecoy="false" observedTime="10.1538000106812">
     <features>
@@ -344,7 +344,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1263.6426" scanNumber="903">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1263.6426" scanNumber="903">
 
   <peptideSpectrumMatch calculatedMassToCharge="1263.654" chargeState="2" experimentalMassToCharge="1263.6426" id="Celegans_Jupter_C12_60min_grad_903_2_1" isDecoy="false" observedTime="11.0254001617432">
     <features>
@@ -461,7 +461,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1579.0195" scanNumber="907">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1579.0195" scanNumber="907">
 
   <peptideSpectrumMatch calculatedMassToCharge="1579.027" chargeState="3" experimentalMassToCharge="1579.0195" id="Celegans_Jupter_C12_60min_grad_907_3_1" isDecoy="false" observedTime="10.3520002365112">
     <features>
@@ -521,7 +521,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1198.5242" scanNumber="916">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1198.5242" scanNumber="916">
 
   <peptideSpectrumMatch calculatedMassToCharge="1198.512" chargeState="2" experimentalMassToCharge="1198.5242" id="Celegans_Jupter_C12_60min_grad_916_2_1" isDecoy="false" observedTime="11.1426000595093">
     <features>
@@ -581,7 +581,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1559.8422" scanNumber="918">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1559.8422" scanNumber="918">
 
   <peptideSpectrumMatch calculatedMassToCharge="1559.839" chargeState="2" experimentalMassToCharge="1559.8422" id="Celegans_Jupter_C12_60min_grad_918_2_1" isDecoy="false" observedTime="11.4153003692627">
     <features>
@@ -645,7 +645,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="2074.8243" scanNumber="919">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="2074.8243" scanNumber="919">
 
   <peptideSpectrumMatch calculatedMassToCharge="2074.821" chargeState="3" experimentalMassToCharge="2074.8243" id="Celegans_Jupter_C12_60min_grad_919_3_1" isDecoy="false" observedTime="10.4801998138428">
     <features>
@@ -704,7 +704,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1242.6338" scanNumber="921">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1242.6338" scanNumber="921">
 
   <peptideSpectrumMatch calculatedMassToCharge="1242.632" chargeState="2" experimentalMassToCharge="1242.6338" id="Celegans_Jupter_C12_60min_grad_921_2_1" isDecoy="false" observedTime="10.8540000915527">
     <features>
@@ -765,7 +765,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="1242.6338" scanNumber="924">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="1242.6338" scanNumber="924">
 
   <peptideSpectrumMatch calculatedMassToCharge="1242.632" chargeState="2" experimentalMassToCharge="1242.6338" id="Celegans_Jupter_C12_60min_grad_924_2_1" isDecoy="false" observedTime="10.8540000915527">
     <features>
@@ -883,7 +883,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="982.5332" scanNumber="925">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="982.5332" scanNumber="925">
 
   <peptideSpectrumMatch calculatedMassToCharge="982.532" chargeState="2" experimentalMassToCharge="982.5332" id="Celegans_Jupter_C12_60min_grad_925_2_1" isDecoy="false" observedTime="10.9687995910645">
     <features>
@@ -942,7 +942,7 @@
   </peptideSpectrumMatch>
 
 </fragSpectrumScan>
-<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/10" experimentalMassToCharge="743.3694" scanNumber="926">
+<fragSpectrumScan xmlns="http://per-colator.com/percolator_in/11" experimentalMassToCharge="743.3694" scanNumber="926">
 
   <peptideSpectrumMatch calculatedMassToCharge="743.368" chargeState="1" experimentalMassToCharge="743.3694" id="Celegans_Jupter_C12_60min_grad_926_1_1" isDecoy="false" observedTime="10.9154996871948">
     <features>

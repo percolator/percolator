@@ -5,7 +5,7 @@
 #include <tcbdb.h>
 #include <rpc/xdr.h>
 #include <rpc/types.h>
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 using namespace std;
 using namespace percolatorInNs;
 

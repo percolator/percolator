@@ -3,7 +3,7 @@
 
 #include <string>
 #include <set>
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 #include "FragSpectrumScanDatabase.h"
 #include "Globals.h"
 #include "SqtReader.h"

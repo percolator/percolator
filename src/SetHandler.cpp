@@ -30,10 +30,7 @@ using namespace std;
 #include "SetHandler.h"
 #include "Scores.h"
 #include "Globals.h"
-
-
-
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 
 
 

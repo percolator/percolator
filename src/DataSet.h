@@ -24,7 +24,7 @@
 #include "PSMDescription.h"
 #include "FeatureNames.h"
 
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 
 using namespace std;
 class Scores;

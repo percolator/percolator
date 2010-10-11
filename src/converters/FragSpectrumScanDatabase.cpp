@@ -1,7 +1,6 @@
 #include <memory>   // std::auto_ptr
 #include <iostream>
-
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 
 using namespace std;
 

@@ -43,7 +43,7 @@ using namespace std;
 #include "Enzyme.h"
 #include "config.h"
 #include <boost/foreach.hpp>
-#include "percolator_in.hxx"
+#include "percolator_in-1-1.hxx"
 #include "parser.hxx"
 #include "serializer.hxx"
 #include <xercesc/dom/DOM.hpp>
