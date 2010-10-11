@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://per-colator.com/percolator_in/10" elementFormDefault="qualified" targetNamespace="http://per-colator.com/percolator_in/10">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://per-colator.com/percolator_in/11" elementFormDefault="qualified" targetNamespace="http://per-colator.com/percolator_in/10">
   <xs:element name="experiment">
     <xs:annotation>
       <xs:documentation>One experiment corresponds, roughly, to one

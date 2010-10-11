@@ -32,6 +32,7 @@ find_package( Boost 1.36.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 set(xsdfiles  ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
+set(percolator_in xml/percolator_in-1-1.xsd)
 
 if(MINGW)
 # Installing xdr on mingw is not trivial. Maybe it could be fixed.
@@ -43,8 +44,8 @@ endif()
 
 add_custom_command(
   OUTPUT ${xsdfiles}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/xml/percolator_in.xsd
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/xml/percolator_in.xsd
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
