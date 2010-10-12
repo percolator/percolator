@@ -106,7 +106,7 @@ def testCalibration():
   # folder where the test data is located
   testFolder = os.path.join(path, "data/elude_test/calibrate_data/")
   # path to the library
-  libPath = os.path.join(path, "models/")
+  libPath = os.path.join(path, "data/elude_lib/")
   # temporary folder to store the output files 
   tmpFolder = os.path.join(path, "data/elude_test/tmp/")
   # path to elude 

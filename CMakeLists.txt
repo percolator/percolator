@@ -74,7 +74,6 @@ add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolato
 
 # Adding data directories for installation.
 install(DIRECTORY data DESTINATION bin)
-install(DIRECTORY models DESTINATION bin)
 
 # Use CPack module within CMake
 include(CPack)
