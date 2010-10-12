@@ -25,8 +25,8 @@
 #include "RetentionFeaturesTest.cpp"
 #include "DataManagerTest.cpp"
 #include "LibSVRModelTest.cpp"
-#include "EludeCallerTest.cpp"
 #include "RetentionModelTest.cpp"
+#include "EludeCallerTest.cpp"
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

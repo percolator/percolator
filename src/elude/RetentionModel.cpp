@@ -43,6 +43,7 @@ RetentionModel::~RetentionModel() {
 /* normalize the features of a set of peptides */
 int RetentionModel::NormalizeFeatures(const bool set_set,
     std::vector<PSMDescription> &psms) {
+  //cout << psms[0] << endl;
   vector<double*> tmp;
   vector<double*> tmp_ret_feat = PSMDescription::getRetFeatures(psms);
   int number_active_features = retention_features_.GetTotalNumberFeatures();
@@ -55,7 +56,13 @@ int RetentionModel::NormalizeFeatures(const bool set_set,
     the_normalizer_->SetSubDiv(vsub_, vdiv_);
   }
   the_normalizer_->normalizeSet(tmp, tmp_ret_feat);
+  //cout << psms[0] << endl;
   return 0;
+}
+
+void RetentionModel::PrintSub() {
+  for(int i = 0; i < vsub_.size(); ++i)
+     cout << vsub_[i] << " ";
 }
 
 /* init a libSVM model; if linear, then a linear kernel is used; else RBF */
@@ -202,7 +209,7 @@ int RetentionModel::PredictRT(const set<string> &aa_alphabet, const bool ignore_
       ignore_ptms)) {
     if (VERB >= 2) {
       cerr << "Warning: the current model cannot be used to predict retention "
-           << "time for the test peptdides. " << endl;
+           << "time for the test peptides. " << endl;
     }
     return 1;
   }
@@ -216,7 +223,7 @@ int RetentionModel::PredictRT(const set<string> &aa_alphabet, const bool ignore_
   // compute the retention features
   retention_features_.set_ignore_ptms(ignore_ptms);
   retention_features_.ComputeRetentionFeatures(psms);
-  // normalize the features
+    // normalize the features
   NormalizeFeatures(false, psms);
   double predicted_rt;
   PSMDescription::normDiv = div_;

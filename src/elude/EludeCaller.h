@@ -54,10 +54,10 @@ class EludeCaller{
    int TrainRetentionModel();
    /* process the test data */
    int ProcessTestData();
-   /* Load the best model from the library; the fuction returns
-    * the index of this model in the vector of models or -1 if
-    * no model is available in the library */
-   int AutomaticModelSelection();
+   /* Load the best model from the library; the function returns a pair consisting of
+    * the index of this model in the vector of models and the rank correlation
+    * obtained on the calibration peptides using this model */
+   std::pair<int, double> AutomaticModelSelection();
    /* main function of Elude */
    int Run();
    /*compute Delta t(95%) window */
@@ -66,12 +66,20 @@ class EludeCaller{
    static double ComputeRankCorrelation(vector<PSMDescription> &psms);
    /* Compute Pearson's correlation coefficient */
    static double ComputePearsonCorrelation(vector<PSMDescription> & psms);
+   /* Delete all the RT model */
+   void DeleteRTModels();
+   /* Return a list of files in a directory */
+   static std::vector<std::string> ListDirFiles(const std::string &dir_name);
+   /* Check if a file exists */
+   static bool FileExists(const string &file);
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
    inline std::vector<PSMDescription>& test_psms() { return test_psms_; }
    inline std::set<std::string>& train_aa_alphabet() { return train_aa_alphabet_; }
    inline std::set<std::string>& test_aa_alphabet() { return test_aa_alphabet_; }
+   inline void set_save_model_file(const string &file) { save_model_file_ = file; }
+   inline void set_load_model_file(const string &file) { load_model_file_ = file; }
    inline void set_train_file(const string &file) { train_file_ = file; }
    inline void set_test_file(const string &file) { test_file_ = file; }
    inline void set_in_source_file(const string &file) { in_source_file_ = file; }
@@ -81,6 +89,8 @@ class EludeCaller{
    inline void set_remove_in_source(bool rin) { remove_in_source_ = rin; }
    inline void set_non_enzymatic(bool rnz) { remove_non_enzymatic_ = rnz; }
    inline void set_remove_common_peptides(bool rcp) { remove_common_peptides_ = rcp; }
+   inline static void set_lib_path(const string &path) { library_path_ = path; }
+   inline void set_automatic_model_sel(const bool ams) { automatic_model_sel_ = ams; }
 
  private:
    /* the default library path */
@@ -135,7 +145,7 @@ class EludeCaller{
    /* true if the test data was processed */
    bool processed_test_;
    /* the retention models */
-   vector<RetentionModel> rt_models_;
+   vector<RetentionModel*> rt_models_;
    /* the retention model */
    RetentionModel *rt_model_;
    std::map<std::string, double> retention_index_;

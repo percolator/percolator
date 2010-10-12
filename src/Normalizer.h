@@ -91,6 +91,8 @@ class Normalizer {
     void SetSubDiv(const vector<double> s, const vector<double> d) {
       sub = s;
       div = d;
+      numFeatures = 0;
+      numRetentionFeatures = s.size();
     }
     vector<double> GetVSub() const { return sub; }
     vector<double> GetVDiv() const { return div; }
