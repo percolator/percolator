@@ -1065,7 +1065,8 @@ void Caller::writeXML(bool uniquePeptides) {
         << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
         // give a location for the schema
         << endl << "xsi:schemaLocation=\""<< schema <<"\" "
-        << endl << "p:majorVersion=\"1\" p:minorVersion=\"1\" p:percolator_version=\"Percolator version " << VERSION << "\">\n"<< endl;
+        << endl << "p:majorVersion=\"" << VERSION_MAJOR << "\" p:minorVersion=\""
+        << VERSION_MINOR << "\" p:percolator_version=\"Percolator version " << VERSION << "\">\n"<< endl;
     os << "  <process_info>" << endl;
     os << "    <command_line>" << call << "</command_line>" << endl;
 

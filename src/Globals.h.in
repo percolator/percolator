@@ -18,9 +18,11 @@ limitations under the License.
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-#define VERSION_MAJOR "UNOFFICIAL"
-#define VERSION_MINOR "0"
-#define VERSION "UNOFFICIAL.0"
+#define VERSION_MAJOR "@CPACK_PACKAGE_VERSION_MAJOR@"
+#define VERSION_MINOR "@CPACK_PACKAGE_VERSION_MINOR@"
+#define VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
+#define SCHEMA_VERSION_MAJOR @SCHEMA_VERSION_MAJOR@
+#define SCHEMA_VERSION_MINOR @SCHEMA_VERSION_MINOR@
 
 #ifdef WIN32
 #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
