@@ -1,13 +1,13 @@
+###############################################################################
+# SET COMPILER OPTIONS
+###############################################################################
+
 set(CMAKE_CXX_FLAGS "-O3")
 set(CMAKE_C_FLAGS "-O3 ")
-
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
 set(CMAKE_C_FLAGS_RELEASE "-O3 ")
-
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-
-
 IF(APPLE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
@@ -18,30 +18,39 @@ IF(APPLE)
   set(LINK_FLAGS "-mmacosx-version-min=10.5")
 ENDIF(APPLE)
 
-#include_directories (/usr/local/include/boost ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit/zLib ${PERCOLATOR_SOURCE_DIR}/src/ArrayLibrary ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit/RAMP ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit/SQLite ${PERCOLATOR_SOURCE_DIR}/src/MSToolkit)
 
+###############################################################################
+# FIND EXTERNAL LIBRARIES (REQUIRED BY PERCOLATOR, CONVERTERS AND ELUDE)
+###############################################################################
+
+# INCLUDE HEADER FILES IN SRC DIRECTORY
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-find_package(Xsd REQUIRED)
-find_package(XercesC REQUIRED)
-
+# (FIND AND) INCLUDE HEADERS OF LIBRARIES
+find_package(XercesC REQUIRED) # XSD DEPENDS ON XERCESC
 include_directories(${XERCESC_INCLUDE_DIR})
+find_package(Xsd REQUIRED) # CODESYNTHESIS
 include_directories(${XSD_INCLUDE_DIR})
-
-find_package( Boost 1.36.0 REQUIRED)
+find_package(Boost 1.36.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(xsdfiles  ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.hxx )
-set(percolator_in xml/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.xsd)
+
+###############################################################################
+# RUN CODESYNTHESIS
+###############################################################################
 
 if(MINGW)
-# Installing xdr on mingw is not trivial. Maybe it could be fixed.
+ #Installing xdr on mingw is not trivial. Maybe it could be fixed.
   set( xdr_flags  "" )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
 
+set(xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.hxx )
+set(percolator_in xml/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.xsd)
+set(percolator_out xml/percolator_out-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.xsd)
 
+# RUN CODESYNTHESIS TO GENERATE xsdfiles
 add_custom_command(
   OUTPUT ${xsdfiles}   
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
@@ -50,27 +59,43 @@ add_custom_command(
 )
 
 add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -D_NOSQLITE)
+
+
+###############################################################################
+# COMPILE INTERNAL LIBRARIES
+###############################################################################
+
+# COMPILE ARRAYLIBRARY
 add_subdirectory(ArrayLibrary)
 
-include_directories(.)
 
+# INCLUDE PERCOLATOR HEADERS FOR CONVERTERS
+include_directories(.) 
+
+# COMPILE CONVERTERS
 if(NOT EXCLUDE_CONVERTERS)
   add_subdirectory(converters)
 endif()
 
+
+
+# INCLUDE ARRAYLIBRARY HEADERS FOR PERCLIBRARY 
 include_directories(. ArrayLibrary)
 
-# main.cpp
+# DECLARE LIBRARY PERCLIBRARY
+add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
 
-add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx  BaseSpline.cpp DescriptionOfCorrect.cpp  MassHandler.cpp  PSMDescription.cpp   ResultHolder.cpp  SetHandler.cpp StdvNormalizer.cpp   svm.cpp   Caller.cpp Enzyme.cpp  Globals.cpp Normalizer.cpp PercolatorCInterface.cpp  SanityCheck.cpp   UniNormalizer.cpp      DataSet.cpp FeatureNames.cpp  LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp    Scores.cpp  SqtSanityCheck.cpp  ssl.cpp EludeModel.cpp )
 
+###############################################################################
+# PERCOLATOR
+###############################################################################
+
+# COMPILE PERCOLATOR
 add_executable(percolator main.cpp)
 
 IF(STATIC)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC ON)
 ENDIF()
-
-
 
 if(STATIC AND MINGW)
   find_file(XERCESC_STATIC_LIBRARY libxerces-c.a HINTS
@@ -85,9 +110,17 @@ if(STATIC AND MINGW)
 endif()
 
 
+
+# SET LIBRARIES FOR PERCOLATOR
 target_link_libraries(percolator perclibrary ArrayLibrary pthread dl ${XERCESC_LIBRARIES})
 
+# INSTALL PERCOLATOR
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
+
+
+###############################################################################
+# COMPILE QUALITY AND ELUDE
+###############################################################################
 
 add_subdirectory(qvality)
 add_subdirectory(elude)

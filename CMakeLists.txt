@@ -1,5 +1,5 @@
 ###############################################################################
-# NAME AND VERSIONING
+# NAME AND VERSION
 ###############################################################################
 
 cmake_minimum_required(VERSION 2.8)
@@ -24,13 +24,13 @@ endforeach()
 
 
 ###############################################################################
-# INSTALLING AND TESTING
+# COMPILING, INSTALLING AND TESTING
 ###############################################################################
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
 OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 
-# USEFUL MACRO
+# useful macro
 macro(my_find_program progname)
   find_program(${progname}_EXECUTABLE ${progname})
   if(NOT ${progname}_EXECUTABLE)
@@ -38,15 +38,16 @@ macro(my_find_program progname)
   endif(NOT ${progname}_EXECUTABLE)
 endmacro(my_find_program)
 
-# INSTALL
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+# COMPILE
 add_subdirectory(src)
 
-# Adding data directories for installation.
+# INSTALL: adding data folder to installation folder (bin).
 install(DIRECTORY data DESTINATION bin)
-# Enabling CTest functionality
+# Enabling unit level tests (Ctest)
 enable_testing()
-# Running system and unit level tests
+# Compiling unit level tests
 add_subdirectory(data/tests)
 
 
@@ -77,21 +78,25 @@ set(CPACK_STRIP_FILES TRUE)
 
 file(GLOB_RECURSE DOT_FILES_BEGIN ".*") # To be ignored by Cpack
 file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
-message("${DOT_FILES_BEGIN}")
-message("${TILD_FILES}")
+# uncomment to print list of files ignored by Cpack
+#message("ignoring the following:")
+#message("${DOT_FILES_BEGIN}")
+#message("${TILD_FILES}")
 
 set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURRENT_BINARY_DIR}/;/.bzr/;/.settings/;${DOT_FILES_BEGIN};${TILD_FILES}")
 
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ¤ll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libgcc1, libgtest0, libxerces-c-dev, libboost-dev, gengetopt, libsqlite3-dev, libtokyocabinet-dev") # Actual dependencies should be discovered later (TODO)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libgcc1, libgtest0, libxerces-c-dev, libboost-dev, gengetopt, libsqlite3-dev, libtokyocabinet-dev") 
+# (TODO) Actual dependencies should be discovered later: add them only if converters is being compiled
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
-#set(CPACK_RPM_PACKAGE_REQUIRES "libc6, libgcc1") # Actual dependencies should be discovered later (TODO)
+set(CPACK_RPM_PACKAGE_REQUIRES "libc6, libgcc1") 
+# (TODO) Actual dependencies should be discovered later: add them only if converters is being compiled
 
 # NSIS package options
 # Requires NSIS for creating the package 
