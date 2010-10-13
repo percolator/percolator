@@ -5,24 +5,7 @@
  *      Author: lukask
  */
 
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "Enzyme.h"
 #include "Sqt2Pin.h"
-#include "config.h"
-#include "serializer.hxx"
-#include "MSReader.h"
-#include "Spectrum.h"
-#include "MSToolkitTypes.h"
-#include "MassHandler.h"
-#include "SqtReader.h"
-#include "DataSet.h"
-#include <boost/foreach.hpp>
-#include <limits>
-#include <cmath>
-
-using namespace std;
 
 Sqt2Pin::Sqt2Pin() {
   // default value for xml output in case sqt2pin is invoked without -o option
@@ -329,12 +312,14 @@ int Sqt2Pin::run() {
     storeRetentionTime(database);
   }
 
+  string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
   string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
       string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
       " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
       " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
       " http://github.com/percolator/percolator/raw/master/src/xml/" +
-      "percolator_in-1-1.xsd\"> \n";
+      "percolator_in-" + schema_major + "-" + schema_minor + ".xsd\"> \n";
   cout << headerStr;
   xmlOutputStream << headerStr;
 

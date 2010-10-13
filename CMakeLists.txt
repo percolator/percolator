@@ -15,18 +15,12 @@ set(SCHEMA_VERSION_MINOR "1")
 set(percolator-in-namespace http://per-colator.com/percolator_in/11)
 set(percolator-out-namespace http://per-colator.com/percolator_out/11)
 
-# STORE SETTINGS IN .cmake FILES
+# STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
 foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
-
-# STORE SETTINGS IN .h FILES
-configure_file(
-  "${PROJECT_SOURCE_DIR}/src/Globals.h.in"
-  "${PROJECT_SOURCE_DIR}/src/Globals.h"
-)
 
 
 ###############################################################################

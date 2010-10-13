@@ -15,12 +15,8 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <sstream>
-#include <iostream>
-#include <assert.h>
-#include "FeatureNames.h"
-#include <boost/foreach.hpp>
 
+#include "FeatureNames.h"
 
 size_t FeatureNames::numFeatures = 0;
 

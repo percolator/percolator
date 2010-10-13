@@ -16,6 +16,7 @@
  *******************************************************************************/
 #ifndef RESULTHOLDER_H_
 #define RESULTHOLDER_H_
+using namespace std;
 
 class ResultHolder {
   public:

@@ -4,30 +4,8 @@
 // original file      : examples/cxx/tree/streaming/driver.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 
-#include <iostream>
-#include <fstream>
-#include <numeric>
-#include <map>
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xsd/cxx/xml/string.hxx>
-#include <boost/foreach.hpp>
-#include <algorithm> 
-#include "Enzyme.h"
-#include "DataSet.h"
-#include "MassHandler.h"
+#include "mzidentml2pin.h"
 
-#include "FragSpectrumScanDatabase.h"
-#include "SqtReader.h"
-#include "parser.hxx"
-#include "config.h"
-#include "percolator_in-1-1.hxx"
-#include "mzIdentML1.0.0.hxx"
-#include "serializer.hxx"
-#include "mzidentml2pin_cmdline.h"
-          
-using namespace std;
-using namespace xercesc;
 
 typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> peptideMapType;
 

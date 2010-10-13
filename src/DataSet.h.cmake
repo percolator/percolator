@@ -1,0 +1,168 @@
+/*******************************************************************************
+ Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ *******************************************************************************/
+#ifndef DATASET_H_
+#define DATASET_H_
+
+#ifdef WIN32
+#define isfinite _finite
+#endif
+#include <string>
+#include <assert.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cmath>
+#include <algorithm>
+#include <set>
+#include <map>
+#include <utility>
+#include <vector>
+#include <string>
+#include "Scores.h"
+#include "ResultHolder.h"
+#include "MassHandler.h"
+#include "Enzyme.h"
+#include "Globals.h"
+#include "PSMDescription.h"
+#include "FeatureNames.h"
+#include <boost/foreach.hpp>
+#include "percolator_in-@SCHEMA_VERSION_MAJOR@-@SCHEMA_VERSION_MINOR@.hxx"
+using namespace std;
+
+using namespace std;
+class Scores;
+class Normalizer;
+class ResultHolder;
+
+namespace percolatorInNs { 
+  class target_decoy;
+}
+
+class DataSet {
+  public:
+    DataSet();
+    virtual ~DataSet();
+    void inline setLabel(int l) {
+      label = l;
+    }
+    void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
+
+    void initFeatureTables(const unsigned int numFeatures,
+                           const unsigned int numSpectra,
+                           bool regresionTable = false);
+    static FeatureNames& getFeatureNames() {
+      return featureNames;
+    }
+    static bool getQuadraticFeatures() {
+      return calcQuadraticFeatures;
+    }
+    static void setQuadraticFeatures(bool on) {
+      calcQuadraticFeatures = on;
+    }
+    static void setCalcDoc(bool on) {
+      calcDOC = on;
+    }
+    static bool getCalcDoc() {
+      return calcDOC;
+    }
+    static void setAAFreqencies(bool on) {
+      calcAAFrequencies = on;
+    }
+    static bool getAAFreqencies() {
+      return calcAAFrequencies;
+    }
+    static void setPTMfeature(bool on) {
+      calcPTMs = on;
+    }
+    static bool getPTMfeature() {
+      return calcPTMs;
+    }
+    static void setPNGaseF(bool on) {
+      pngasef = on;
+    }
+    static bool getPNGaseF() {
+      return pngasef;
+    }
+    static void setIsotopeMass(bool on) {
+      isotopeMass = on;
+    }
+    static void setNumFeatures(bool doc);
+    static void inline setHitsPerSpectrum(int hits) {
+      hitsPerSpectrum = hits;
+    }
+    static int inline getHitsPerSpectrum() {
+      return hitsPerSpectrum;
+    }
+    static inline int rowIx(int row) {
+      return row * FeatureNames::getNumFeatures();
+    }
+    double* getFeature() {
+      return feature;
+    }
+    const double* getFeatures(const int pos) const;
+    int inline getSize() const {
+      return numSpectra;
+    }
+    int inline const getLabel() const {
+      return label;
+    }
+    PSMDescription* getNext(int& pos);
+    void setRetentionTime(map<int, double>& scan2rt) {
+      PSMDescription::setRetentionTime(psms, scan2rt);
+    }
+    bool writeTabData(ofstream& out, const string& lab);
+    void
+        readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
+    void print_10features();
+    void print_features();
+    void print(Scores& test, vector<ResultHolder> & outList);
+    static double isEnz(const char n, const char c);
+    void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
+    static unsigned int peptideLength(const string& pep);
+    static unsigned int cntPTMs(const string& pep);
+
+    static double isPngasef(const string& peptide, bool isDecoy );
+
+  protected:
+    void readPsm(const ::percolatorInNs::peptideSpectrumMatch & td,  unsigned int numFeatures );
+
+    double isPngasef(const string& peptide);
+    static bool calcQuadraticFeatures;
+    static bool calcAAFrequencies;
+    static bool calcPTMs;
+    static bool calcDOC;
+    static bool isotopeMass;
+    static int hitsPerSpectrum;
+    static bool pngasef;
+    static string reversedFeaturePattern;
+    const static string aaAlphabet;
+    static string ptmAlphabet;
+    const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
+    vector<PSMDescription> psms;
+    int psmNum;
+    int label;
+    double* feature, *regressionFeature;
+    int numSpectra;
+    string sqtFN;
+    string pattern;
+    string fileId;
+    bool doPattern;
+    bool matchPattern;
+    static FeatureNames featureNames;
+};
+
+#endif /*DATASET_H_*/

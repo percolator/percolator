@@ -14,25 +14,8 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <assert.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <map>
-#include <set>
-#include <vector>
-#include <string>
-using namespace std;
-#include "ResultHolder.h"
-#include "DataSet.h"
-#include "Normalizer.h"
+
 #include "SetHandler.h"
-#include "Scores.h"
-#include "Globals.h"
-#include "percolator_in-1-1.hxx"
-
-
 
 SetHandler::SetHandler() {
   // charge=c;

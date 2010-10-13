@@ -1,14 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <set>
-#include <cmath>
-#include <algorithm>
-#include <vector>
 #include "SqtReader.h"
-#include "Enzyme.h"
-#include "MassHandler.h"
-#include "DataSet.h"
-#include "FeatureNames.h"
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 

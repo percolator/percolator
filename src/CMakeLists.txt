@@ -31,8 +31,8 @@ include_directories(${XSD_INCLUDE_DIR})
 find_package( Boost 1.36.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(xsdfiles  ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-1-1.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-1-1.hxx )
-set(percolator_in xml/percolator_in-1-1.xsd)
+set(xsdfiles  ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.hxx )
+set(percolator_in xml/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.xsd)
 
 if(MINGW)
 # Installing xdr on mingw is not trivial. Maybe it could be fixed.

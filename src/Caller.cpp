@@ -14,46 +14,9 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <time.h>
-#include <cstdlib>
-#include <vector>
-#include <set>
-#include <map>
-#include <string>
-#include <memory>
-using namespace std;
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include "Option.h"
-#include "SanityCheck.h"
-#include "SqtSanityCheck.h"
-#include "DataSet.h"
-#include "Normalizer.h"
-#include "Scores.h"
-#include "Normalizer.h"
-#include "SetHandler.h"
-#include "ssl.h"
+
 #include "Caller.h"
-#include "Globals.h"
-#include "MassHandler.h"
-#include "Enzyme.h"
-#include "config.h"
-#include <boost/foreach.hpp>
-#include "percolator_in-1-1.hxx"
-#include "parser.hxx"
-#include "serializer.hxx"
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xsd/cxx/xml/string.hxx>
-#include <xercesc/parsers/XercesDOMParser.hpp>
-#include <xercesc/sax/HandlerBase.hpp>
-#include <xercesc/util/PlatformUtils.hpp>
-
-
+using namespace std;
 using namespace xercesc;
 
 const unsigned int Caller::xval_fold = 3;
@@ -107,6 +70,7 @@ string Caller::extendedGreeter() {
 }
 
 string Caller::greeter() {
+  int d = SCHEMA_VERSION_MAJOR;
   ostringstream oss;
   oss << "Percolator version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;

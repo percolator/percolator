@@ -14,33 +14,8 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <assert.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cmath>
-#include <algorithm>
 
-
-#ifdef WIN32
-//#include <double.h>
-#define isfinite _finite
-#endif
-#include <set>
-#include <map>
-#include <utility>
-#include <vector>
-#include <string>
-using namespace std;
 #include "DataSet.h"
-#include "Scores.h"
-#include "ResultHolder.h"
-#include "MassHandler.h"
-#include "Enzyme.h"
-#include "Globals.h"
-
-
-#include <boost/foreach.hpp>
 
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
