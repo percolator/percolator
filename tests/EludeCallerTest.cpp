@@ -174,7 +174,8 @@ TEST_F(EludeCallerTest, TestTrainTestModel) {
   EXPECT_EQ(99, caller.train_psms().size());
   vector<PSMDescription> test_psms = caller.test_psms();
   EXPECT_EQ(1252, test_psms.size());
-  EXPECT_NEAR(22.496, test_psms[9].predictedTime, 0.01);
+  sort(test_psms.begin(), test_psms.end());
+  EXPECT_NEAR(28.3021, test_psms[9].predictedTime, 2.0);
 }
 
 TEST_F(EludeCallerTest, TestComputeWindow) {
@@ -211,7 +212,8 @@ TEST_F(EludeCallerTest, TestSaveLoadModel) {
   caller2.Run();
   vector<PSMDescription> test_psms = caller2.test_psms();
   EXPECT_EQ(1252, test_psms.size());
-  EXPECT_NEAR(22.496, test_psms[9].predictedTime, 0.01);
+  sort(test_psms.begin(), test_psms.end());
+  EXPECT_NEAR(29.6867, test_psms[9].predictedTime, 2.0);
   remove(tmp.c_str());
 }
 
@@ -240,6 +242,7 @@ TEST_F(EludeCallerTest, TestAutomaticModelSelection) {
   caller.set_non_enzymatic(false);
   caller.set_test_includes_rt(true);
   EludeCaller::set_lib_path(lib_path);
+  caller.set_linear_calibration(false);
   caller.Run();
 
   vector<PSMDescription> test_psms = caller.test_psms();
@@ -250,7 +253,79 @@ TEST_F(EludeCallerTest, TestAutomaticModelSelection) {
   EXPECT_NEAR(39.1311, test_psms[1739].predictedTime, 0.01);
 }
 
+TEST_F(EludeCallerTest, TestFindLeastSquaresSolution) {
+  vector<PSMDescription> psms2;
+  psms2.push_back(PSMDescription(3, 1));
+  psms2.push_back(PSMDescription(5, 2));
+  psms2.push_back(PSMDescription(7, 3));
+  double a = 0.0, b = 0.0;
+  EludeCaller::FindLeastSquaresSolution(psms2, a, b);
+  EXPECT_NEAR(2.0, a, 0.01);
+  EXPECT_NEAR(1.0, b, 0.01);
+}
+
+TEST_F(EludeCallerTest, TestAutomaticModelSelectionWithCalibration) {
+  caller.set_train_file(calibration_file);
+  caller.set_test_file(test_calibration);
+  caller.set_automatic_model_sel(true);
+  caller.set_context_format(true);
+  caller.set_remove_common_peptides(false);
+  caller.set_remove_in_source(false);
+  caller.set_remove_duplicates(false);
+  caller.set_non_enzymatic(false);
+  caller.set_test_includes_rt(true);
+  EludeCaller::set_lib_path(lib_path);
+  double cov = 1.0;
+  LTSRegression::setCoverage(cov);
+  caller.Run();
+  pair<double, double> coeff = caller.lts_coefficients();
+  vector<PSMDescription> train_psms = caller.train_psms();
+  double a = 0.0, b = 0.0;
+  EludeCaller::FindLeastSquaresSolution(train_psms, a, b);
+  EXPECT_NEAR(a, coeff.first, 0.01);
+  EXPECT_NEAR(b, coeff.second, 0.01);
+  vector<PSMDescription> test_psms = caller.test_psms();
+  EXPECT_EQ(1740, test_psms.size());
+  sort(test_psms.begin(), test_psms.end());
+  EXPECT_NEAR(51.6007 * a + b, test_psms[0].predictedTime, 0.01);
+  EXPECT_NEAR(27.528 * a + b, test_psms[1000].predictedTime, 0.01);
+  EXPECT_NEAR(39.1311 * a + b , test_psms[1739].predictedTime, 0.01);
+}
+
+TEST_F(EludeCallerTest, TestGetFileName) {
+  string path = "D:/dir/file.txt";
+  EXPECT_TRUE("file" == EludeCaller::GetFileName(path));
+  path = "D:\\dir\\file";
+  EXPECT_TRUE("file" == EludeCaller::GetFileName(path));
+  path = "file.txt";
+  EXPECT_TRUE("file" == EludeCaller::GetFileName(path));
+  path = "file";
+  EXPECT_TRUE("file" == EludeCaller::GetFileName(path));
+}
 /****************** TO BE REMOVED *******************/
+
+/* Real experiment */
+/*
+TEST_F(EludeCallerTest, TestAUtomaticSelectioNSystem) {
+  Globals::getInstance()->setVerbose(5);
+  caller.set_train_file("/scratch/lumi_work/projects/retention_time/results/article_revised_results/data/txt_pep_0_01/clean_train/Jupiter_120_clean_train.txt");
+  caller.set_test_file("/scratch/lumi_work/projects/retention_time/results/article_revised_results/data/txt_pep_0_01/clean_test/Jupiter_120_clean_test.txt");
+  caller.set_remove_common_peptides(false);
+  caller.set_remove_in_source(false);
+  caller.set_remove_duplicates(false);
+  caller.set_non_enzymatic(false);
+  caller.set_context_format(true);
+  caller.set_test_includes_rt(true);
+
+  caller.set_automatic_model_sel(true);
+  caller.set_linear_calibration(true);
+  double cov = 0.95;
+  LTSRegression::setCoverage(cov);
+  caller.set_lib_path("/scratch/lumi_work/projects/elude_ptms/src/bin/data/elude_test/calibrate_data/test_lib");
+  //caller.set_lib_path("/scratch/lumi_work/projects/elude_ptms/src/bin/data/elude_lib");
+  caller.Run();
+}*/
+
 /*
 TEST_F(EludeCallerTest, TestLoadModel) {
   Globals::getInstance()->setVerbose(1);
@@ -278,11 +353,11 @@ Performance measures for the test data:
   Pearson's correlation r = 0.955049
   Spearman's rank correlation rho = 0.962522
   Delta_t 95% = 23.7204 */
-
+/*
 TEST_F(EludeCallerTest, TestRunTrainTest) {
-  caller.set_train_file("/scratch/lumi_work/projects/retention_time/results/article_revised_results/data/txt_pep_0_01/clean_train/Luna_90_clean_train.txt");
-  caller.set_save_model_file("/scratch/lumi_work/projects/elude_ptms/src/bin/data/elude_lib/Luna_90.model");
-  caller.set_test_file("/scratch/lumi_work/projects/retention_time/results/article_revised_results/data/txt_pep_0_01/clean_test/Luna_90_clean_test.txt");
+  caller.set_train_file("/scratch/lumi_work/projects/retention_time/results/article_revised_results/data/txt_pep_0_01/clean_train/Luna_240_clean_train.txt");
+  caller.set_save_model_file("/scratch/lumi_work/projects/elude_ptms/src/bin/data/elude_lib/Luna_240.model");
+  caller.set_test_file("/scratch/lumi_work/projects/retention_time/results/article_revised_results/data/txt_pep_0_01/clean_test/Luna_240_clean_test.txt");
   caller.set_remove_common_peptides(true);
   caller.set_remove_in_source(true);
   caller.set_remove_duplicates(true);
@@ -293,4 +368,4 @@ TEST_F(EludeCallerTest, TestRunTrainTest) {
   Globals::getInstance()->setVerbose(5);
   caller.Run();
 }
-
+*/

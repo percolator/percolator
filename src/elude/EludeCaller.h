@@ -31,6 +31,7 @@
 
 #include "PSMDescription.h"
 #include "RetentionModel.h"
+#include "LTSRegression.h"
 
 class Normalizer;
 
@@ -72,6 +73,13 @@ class EludeCaller{
    static std::vector<std::string> ListDirFiles(const std::string &dir_name);
    /* Check if a file exists */
    static bool FileExists(const string &file);
+   /* find the best line that fits the data (basically the coefficients a, b) */
+   static void FindLeastSquaresSolution(const std::vector<PSMDescription> &psms,
+       double& a, double& b);
+   /* get a filename from a path excluding the extension (if there is one) */
+   static std::string GetFileName(const std::string &path);
+   /* linear adjustment via lts*/
+   int AdjustLinearly(vector<PSMDescription> &psms);
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
@@ -91,6 +99,8 @@ class EludeCaller{
    inline void set_remove_common_peptides(bool rcp) { remove_common_peptides_ = rcp; }
    inline static void set_lib_path(const string &path) { library_path_ = path; }
    inline void set_automatic_model_sel(const bool ams) { automatic_model_sel_ = ams; }
+   inline void set_linear_calibration(const bool cal) { linear_calibration_ = cal; }
+   inline std::pair<double, double> lts_coefficients() { return lts->getRegCoefficients(); }
 
  private:
    /* the default library path */
@@ -151,6 +161,8 @@ class EludeCaller{
    std::map<std::string, double> retention_index_;
    /* the normalizer */
    Normalizer *the_normalizer_;
+   /* used for perorming lts regression */
+   LTSRegression *lts;
 };
 
 #endif /* ELUDE_ELUDECALLER_H_ */

@@ -44,7 +44,7 @@ EludeCaller::EludeCaller():automatic_model_sel_(false), append_model_(false),
                            context_format_(false), test_includes_rt_(false),
                            remove_common_peptides_(false), train_features_table_(NULL),
                            test_features_table_(NULL), processed_test_(false),
-                           rt_model_(NULL), ignore_ptms_(false) {
+                           rt_model_(NULL), ignore_ptms_(false), lts(NULL) {
   Normalizer::setType(Normalizer::UNI);
   Enzyme::setEnzyme(Enzyme::TRYPSIN);
   RetentionFeatures::set_ignore_ptms(false);
@@ -66,6 +66,9 @@ EludeCaller::~EludeCaller() {
   if (rt_model_) {
     delete rt_model_;
     rt_model_ = NULL;
+  }
+  if (lts != NULL) {
+    delete lts;
   }
   DeleteRTModels();
 }
@@ -124,7 +127,7 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
                    "filename");
   cmd.defineOption("o",
                    "out",
-                   "File to save the predictions.",
+                   "File to save the ions.",
                    "filename");
   cmd.defineOption("a",
                    "auto",
@@ -142,7 +145,7 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
                    TRUE_IF_SET);
   cmd.defineOption("j",
                    "no_linear_adjust",
-                   "The model will not be linearly adjusted.",
+                   "The model will NOT be linearly adjusted.",
                    "",
                    TRUE_IF_SET);
   cmd.defineOption("c",
@@ -242,7 +245,8 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
     linear_calibration_ = false;
   }
   if (cmd.optionSet("c")) {
-    lts_coverage_ = cmd.getDouble("r", 0.0, 1.0);
+    double coverage = cmd.getDouble("r", 0.0, 1.0);
+    LTSRegression::setCoverage(coverage);
   }
   if (cmd.optionSet("u")) {
     remove_duplicates_ = true;
@@ -345,6 +349,9 @@ int EludeCaller::ProcessTrainData() {
       }
     }
   }
+
+  // shuffle the training data
+  random_shuffle(train_psms_.begin(), train_psms_.end());
 }
 
 int EludeCaller::NormalizeRetentionTimes(vector<PSMDescription> &psms) {
@@ -406,14 +413,27 @@ int EludeCaller::ProcessTestData() {
   return 0;
 }
 
+// get retention times as vectors
+pair<vector<double> , vector<double> > GetRTs(const vector<PSMDescription> &psms) {
+  vector<double> rts, prts;
+  vector<PSMDescription>::const_iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    rts.push_back(it->retentionTime);
+    prts.push_back(it->predictedTime);
+  }
+  return make_pair(prts, rts);
+}
+
 /* main function in Elude */
 int EludeCaller::Run() {
   pair<int, double> best_model(-1, -1.0);
   // build a rt model, either by training one or by loading one
-  if (!train_file_.empty() && !load_model_file_.empty() && VERB >= 4) {
+  if (!train_file_.empty() && !load_model_file_.empty() && VERB >= 4
+      && !linear_calibration_) {
     cerr << "Warning: a model can be either trained or loaded from a file. "
-         << "The two options should not be used together. The model will"
-         << " be trained using the peptides in the " << train_file_ << endl;
+         << "The two options should not be used together, unless linear calibration "
+         << "should be carried out. In such a case please use the -j option. "
+         << "The model will be trained using the peptides in " << train_file_ << endl;
   }
   if (!train_file_.empty()) {
     ProcessTrainData();
@@ -422,25 +442,24 @@ int EludeCaller::Run() {
          RetentionFeatures::kMaxNumberFeatures, train_psms_);
     if (automatic_model_sel_) {
       best_model = AutomaticModelSelection();
-
-    } else {
+    } else if (load_model_file_.empty()){
       TrainRetentionModel();
     }
-  } else if (!load_model_file_.empty()) {
+  }
+  // load a model from a file
+  if (!load_model_file_.empty() && !automatic_model_sel_) {
     rt_model_ = new RetentionModel(the_normalizer_);
     rt_model_->LoadModelFromFile(load_model_file_);
   }
-
   // save the model
   if (!save_model_file_.empty()) {
     if (rt_model_ != NULL && !rt_model_->IsModelNull()) {
       rt_model_->SaveModelToFile(save_model_file_);
     } else if (VERB >= 2) {
-      cerr << "Warning: No model available. Nothing to save to "
+      cerr << "Warning: No trained model available. Nothing to save to "
            << save_model_file_ << endl;
     }
   }
-
   // test a model
   if (!test_file_.empty()) {
     // process the test data
@@ -458,9 +477,32 @@ int EludeCaller::Run() {
         }
         exit(1);
       }
-       rt_models_[index]->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
+      rt_models_[index]->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
+      if (linear_calibration_ && train_psms_.size() > 1) {
+        rt_models_[index]->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
+      }
     } else {
       rt_model_->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
+      if (linear_calibration_ && train_psms_.size() > 1) {
+        rt_model_->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
+      }
+    }
+    // linear calibration is performed only for automatic model selection or when
+    // loading a model from a file
+    if (linear_calibration_ && (automatic_model_sel_ || !load_model_file_.empty())) {
+      if (train_psms_.size() <= 1) {
+        if (VERB >= 3) {
+          cerr << "Warning: at least 2 training psms are needed to calibrate the model. "
+               << "No calibration performed. " << endl;
+         }
+       } else {
+         // get the a and b coefficients
+         pair<vector<double> , vector<double> > rts = GetRTs(train_psms_);
+         lts = new LTSRegression();
+         lts->setData(rts.first, rts.second);
+         lts->runLTS();
+         AdjustLinearly(test_psms_);
+       }
     }
     // compute performance measures
     if (test_includes_rt_) {
@@ -478,6 +520,13 @@ int EludeCaller::Run() {
     if (!output_file_.empty()) {
       DataManager::WriteOutFile(output_file_, test_psms_, test_includes_rt_);
     }
+  }
+}
+
+int EludeCaller::AdjustLinearly(vector<PSMDescription> &psms) {
+  vector<PSMDescription>::iterator it = psms.begin();
+  for( ; it != psms.end(); ++it) {
+    it->predictedTime = lts->predict(it->predictedTime);
   }
 }
 
@@ -568,181 +617,34 @@ bool EludeCaller::FileExists(const string &file) {
     return true;
   }
 }
+
+/* find the best line that fits the data (basically the coefficients a, b)
+ * The predicted time is the explanatory variable */
+void EludeCaller::FindLeastSquaresSolution(const vector<PSMDescription> &psms,
+    double& a, double& b) {
+  double sum_x = 0.0, sum_y = 0.0;
+  double sum_x_squared = 0.0, sum_xy = 0.0;
+  double x, y;
+  vector<PSMDescription>::const_iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    y = it->retentionTime;
+    x = it->predictedTime;
+    sum_x += x;
+    sum_y += y;
+    sum_x_squared += x * x;
+    sum_xy += x * y;
+  }
+  double n = (double)psms.size();
+  double avg_x = sum_x / n;
+  double avg_y = sum_y / n;
+  double ssxx = sum_x_squared - (n * avg_x * avg_x);
+  double ssxy = sum_xy - (n * avg_x * avg_y);
+  a = ssxy / ssxx;
+  b = avg_y - (a * avg_x);
+}
+
 /*
  * // calculate ms between observed and predicted retention times
-
-// load the model that fits best the training data
-void RTPredictor::loadBestModel() {
-  // variables to store best correlation
-  double bestCorr = 0.0, corr;
-  // name of the file including the best model
-  string bestModelFile;
-  vector<string> modelFiles;
-  double* retFeatures;
-  bool firstModel = false;
-  if (VERB > 2) {
-    cerr << "Checking available model files..." << endl;
-  }
-  // get all the model files from the library
-  modelFiles = getModelFiles();
-  // if no model files in the library, there is nothing to do at this step
-  if (modelFiles.empty()) {
-    if (VERB > 1) {
-      cerr << "No model file available. " << endl;
-    }
-    return;
-  } else if (VERB > 2) {
-    cerr << "The library includes " << modelFiles.size() << " models."
-        << endl;
-  }
-  // if no training data available, we cannot choose a model
-  if (trainPsms.empty()) {
-    if (VERB > 2) {
-      cerr << "Warning: No training data available to select model. "
-          << endl;
-      cerr << "         The first available model will be selected - "
-          << modelFiles[0] << endl;
-    }
-    bestModelFile = modelFiles[0];
-    firstModel = true;
-  } else if (modelFiles.size() == 1) {
-    bestModelFile = modelFiles[0];
-    firstModel = true;
-  } else {
-    bestModelFile = "";
-    for (int i = 0; i < modelFiles.size(); i++) {
-      // load the model and information about the normalizer
-      if (VERB > 3) {
-        cerr << "Processing " << modelFiles[i] << "..." << endl
-            << "-------" << endl;
-        cerr << "Loading model " << modelFiles[i] << " ..." << endl;
-      }
-      model.loadSVRModel(modelFiles[i], theNormalizer);
-      if (VERB > 3) {
-        cerr << "Done." << endl << endl;
-      }
-      // if the model was not loaded then just give a warning and go to the next one
-      if (model.isModelNull()) {
-        if (VERB >= 2) {
-          cerr << "Warning: Model file " << modelFiles[i]
-              << " was not loaded correctly." << endl;
-          cerr << "This model will not be considered." << endl;
-        }
-      } else {
-        // normalize the retention times; the scaling parameters should have already been set when the model was loaded
-        PSMDescription::normalizeRetentionTimes(trainPsms);
-        // calculate the retention features
-        model.calcRetentionFeatures(trainPsms);
-        // normalize the retention features; the scaling parameters should have already been set when loading the model
-        //cerr << "FIXMET: Replace with new normalizer" << endl;
-        vector<double*> tmp;
-        vector<double*> tRetFeat =
-            PSMDescription::getRetFeatures(trainPsms);
-        theNormalizer->normalizeSet(tmp, tRetFeat);
-        // estimate the retention time
-        estimateRetentionTime(trainPsms);
-        // compute correlation
-        corr = computeSpearmanCorrelation(trainPsms);
-        if (corr > bestCorr) {
-          bestCorr = corr;
-          bestModelFile = modelFiles[i];
-        }
-        // unnormalize the retention time
-        for (int i = 0; i < trainPsms.size(); i++) {
-          trainPsms[i].retentionTime
-              = PSMDescription::unnormalize(trainPsms[i].retentionTime);
-        }
-      }
-    }
-  }
-  if (bestModelFile != "") {
-    if (VERB > 2) {
-      cerr << "----------------------" << endl;
-    }
-    if (VERB >= 2) {
-      cerr << "Model employed " << bestModelFile << endl;
-    }
-    model.loadSVRModel(bestModelFile, theNormalizer);
-    // normalize the retention times; the scaling parameters should have already been set when the model was loaded
-    PSMDescription::normalizeRetentionTimes(trainPsms);
-    // calculate the retention features
-    model.calcRetentionFeatures(trainPsms);
-    // normalize the retention features; the scaling parameters should have already been set when loading the model
-    //cerr << "FIXMET: Replace with new normalizer" << endl;
-    vector<double*> tmp;
-    vector<double*> tRetFeat = PSMDescription::getRetFeatures(trainPsms);
-    theNormalizer->normalizeSet(tmp, tRetFeat);
-    // estimate the retention time
-    estimateRetentionTime(trainPsms);
-  } else if (VERB >= 2) {
-    cerr << "No model loaded " << endl;
-  }
-}
-
-// find the best line that fits the data (basically the coefficients a, b)
-void RTPredictor::findLeastSquaresSolution(
-                                           const vector<PSMDescription> & psms,
-                                           double& a, double& b) {
-  double avgX, avgY, sumX = 0.0, sumY = 0.0, sumXSquared = 0.0, sumXY =
-      0.0;
-  double ssxx, ssxy;
-  int n = psms.size();
-  double x, y;
-  for (int i = 0; i < n; ++i) {
-    y = psms[i].retentionTime;
-    x = psms[i].predictedTime;
-    //cout << x << ", " << y << endl;
-    sumX += x;
-    sumY += y;
-    sumXSquared += x * x;
-    sumXY += x * y;
-  }
-  avgX = sumX / (double)n;
-  avgY = sumY / (double)n;
-  ssxx = sumXSquared - (n * avgX * avgX);
-  ssxy = sumXY - (n * avgX * avgY);
-  a = ssxy / ssxx;
-  b = avgY - (a * avgX);
-}
-
-// get retention times as vectors
-pair<vector<double> , vector<double> > RTPredictor::getRTs(vector<
-    PSMDescription> & psms) {
-  vector<double> rts, prts;
-  for (int i = 0; i < psms.size(); ++i) {
-    rts.push_back(psms[i].getRetentionTime());
-    prts.push_back(psms[i].getPredictedRetentionTime());
-  }
-  return make_pair(prts, rts);
-}
-
-// load a model from the library
-void RTPredictor::loadLibModel() {
-  if (!trainFile.empty()) {
-    processTrainData();
-    // initialize the table storing the retention features
-    initFeaturesTable(trainPsms.size(),
-                      trainPsms,
-                      trainRetentionFeatures,
-                      RTModel::totalNumRTFeatures());
-  }
-  if (VERB > 2) {
-    cerr << endl << "--- Load best model for your data ---" << endl;
-  }
-  // load the model that fits best the data
-  loadBestModel();
-  // least trimmed regression
-  if (linearAdjust && (trainPsms.size() > 0)) {
-    unNormalizeRetentionTimes(trainPsms);
-    //findLeastSquaresSolution(trainPsms, a, b);
-    pair<vector<double> , vector<double> > rts = getRTs(trainPsms);
-    lts.setData(rts.first, rts.second);
-    if (VERB > 2) {
-      cerr << endl << "Compute linear fitting parameters..." << endl;
-    }
-    lts.runLTS();
-  }
-}
 
 // add the current model to the library
 void RTPredictor::addModelLibrary() {
@@ -786,18 +688,6 @@ void RTPredictor::addModelLibrary() {
 }
  * */
 
-/* predict rt for test peptides */
-/*int EludeCaller::PredictRT() {
-  // process the test data
-  if (!processed_test_) {
-    ProcessTestData();
-  }
-  // initialize the feature table
-  test_features_table_ = DataManager::InitFeatureTable(
-        RetentionFeatures::kMaxNumberFeatures, test_psms_);
-
-  rt_model_->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
-}*/
 
 // compare two psms according to the difference between predicted and observed
 bool ComparePsmsDeltaRT(PSMDescription psm1, PSMDescription psm2) {
@@ -919,6 +809,68 @@ double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription> & psms) {
   return numerator / ((no_psms - 1) * sd_obs * sd_pred);
 }
 
+/* get the filename from a path (excluding the extension) */
+string EludeCaller::GetFileName(const string &path) {
+  int pos1, pos2;
+  if ((pos1 = path.find_last_of("/")) == string::npos) {
+    if ((pos1 = path.find_last_of("\\"))== string::npos) {
+      pos1 = -1;
+    }
+  }
+  string file_name = path.substr(pos1 + 1, path.length());
+  if ((pos2 = file_name.find_last_of(".")) != string::npos);
+    file_name = file_name.substr(0, file_name.length() - pos2);
+  return file_name;
+}
+
+/* add a model to the library */
+/*
+void EludeCaller::AddModelLibrary(RetentionModel *model) {
+  string file_name;
+  if (!train_file_.empty()) {
+    int pos1, pos2;
+    if ((pos1 = train_file_.find_last_of("/")) == string::npos) {
+      if ((pos1 = train_file_.find_last_of("\\"))== string::npos) {
+        pos1 = 0;
+      }
+    }
+    if ((pos2 = train_file_.find_last_of(".")) == string::npos);
+      pos2 = 0;
+
+    file_name = train_file_.substr(pos1, train_file_length() - )
+
+    int found = train_file_.find_last_of("/");
+    if (found != string::npos) {
+      file_name = train_file_.substr(found + 1, train_file_.length());
+    } else {
+      found = trainFile.find_last_of("\\");
+      if (found != string::npos) {
+        file_name = train_file_.substr(found + 1, train_file_.length());
+      } else {
+        file_name = trainFile;
+      }
+    }
+  } else {
+    time_t ;
+      struct tm* timeInfo;
+      currentTime = time(NULL);
+      timeInfo = localtime(&currentTime);
+      libModelFile = asctime(timeInfo);
+      libModelFile = libModelFile.substr(4, (libModelFile.length() - 10));
+      size_t found = libModelFile.find_first_of(" ");
+      while (found != string::npos) {
+        libModelFile.replace(found, 1, "_");
+        found = libModelFile.find_first_of(" ");
+      }
+    }
+    libModelFile = libPath + libModelFile + ".model";
+    if (VERB > 2) {
+      cerr << endl << "Add current model to library..." << endl;
+      cerr << "Model name: " << libModelFile << "." << endl;
+    }
+    model.saveSVRModel(libModelFile, theNormalizer);
+  }
+}*/
 
 /**********************************************************************/
 /*** Additional functions from the provious implementation of Elude ***/
