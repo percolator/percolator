@@ -429,6 +429,8 @@ int Scores::calcScores(vector<double>& w, double fdr) {
 }
 
 int Scores::calcQ(double fdr) {
+  assert(neg+pos==size());
+
   vector<ScoreHolder>::iterator it;
   int targets = 0, decoys = 0;
   double efp = 0.0, q;
