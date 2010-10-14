@@ -25,6 +25,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <ctime>
 
 #include "EludeCaller.h"
 #include "Normalizer.h"
@@ -237,6 +238,10 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("b")) {
     library_path_ = cmd.options["b"];
+    int n = library_path_.length();
+    if (library_path_[n - 1] != '\\' && library_path_[n - 1] != '/') {
+      library_path_ += "/";
+    }
   }
   if (cmd.optionSet("d")) {
     append_model_ = true;
@@ -424,6 +429,31 @@ pair<vector<double> , vector<double> > GetRTs(const vector<PSMDescription> &psms
   return make_pair(prts, rts);
 }
 
+/* add a model to the library */
+int EludeCaller::AddModelLibrary() const {
+  string file_name;
+  if (!load_model_file_.empty()) {
+    file_name = load_model_file_;
+  } else if (!save_model_file_.empty()) {
+    file_name = save_model_file_;
+  } else if (!train_file_.empty()) {
+    file_name = GetFileName(train_file_);
+  } else {
+    time_t current_time = time(NULL);
+    struct tm* time_info = localtime(&current_time);
+    file_name = asctime(time_info);
+    file_name = file_name.substr(4, (file_name.length() - 10));
+    int found = file_name.find_first_of(" ");
+      while (found != string::npos) {
+        file_name.replace(found, 1, "_");
+        found = file_name.find_first_of(" ");
+      }
+  }
+  file_name = library_path_ + file_name;
+  rt_model_->SaveModelToFile(file_name);
+  return 0;
+}
+
 /* main function in Elude */
 int EludeCaller::Run() {
   pair<int, double> best_model(-1, -1.0);
@@ -460,6 +490,24 @@ int EludeCaller::Run() {
            << save_model_file_ << endl;
     }
   }
+  // append a file to the library
+  if (append_model_) {
+    if (automatic_model_sel_) {
+      if (VERB >= 3) {
+        cerr << "Warning: The model should already be in the library if "
+             << "the automatic model selection option is employed. No model "
+             << "will be added to the library"<< endl;
+      }
+    } else if (rt_model_ == NULL) {
+      if (VERB >= 3) {
+        cerr << "Warning: No model available, nothing to append to the library."
+             << endl;
+      }
+    } else {
+      AddModelLibrary();
+    }
+  }
+
   // test a model
   if (!test_file_.empty()) {
     // process the test data
@@ -643,57 +691,9 @@ void EludeCaller::FindLeastSquaresSolution(const vector<PSMDescription> &psms,
   b = avg_y - (a * avg_x);
 }
 
-/*
- * // calculate ms between observed and predicted retention times
-
-// add the current model to the library
-void RTPredictor::addModelLibrary() {
-  if (model.isModelNull()) {
-    cerr << endl << "No model available to add to library." << endl;
-  } else {
-    string libModelFile;
-    if (!trainFile.empty()) {
-      size_t found;
-      found = trainFile.find_last_of("/");
-      if (found != string::npos) {
-        libModelFile = trainFile.substr(found + 1, trainFile.length());
-      } else {
-        found = trainFile.find_last_of("\\");
-        if (found != string::npos) {
-          libModelFile = trainFile.substr(found + 1, trainFile.length());
-        } else {
-          libModelFile = trainFile;
-        }
-      }
-    } else {
-      time_t currentTime;
-      struct tm* timeInfo;
-      currentTime = time(NULL);
-      timeInfo = localtime(&currentTime);
-      libModelFile = asctime(timeInfo);
-      libModelFile = libModelFile.substr(4, (libModelFile.length() - 10));
-      size_t found = libModelFile.find_first_of(" ");
-      while (found != string::npos) {
-        libModelFile.replace(found, 1, "_");
-        found = libModelFile.find_first_of(" ");
-      }
-    }
-    libModelFile = libPath + libModelFile + ".model";
-    if (VERB > 2) {
-      cerr << endl << "Add current model to library..." << endl;
-      cerr << "Model name: " << libModelFile << "." << endl;
-    }
-    model.saveSVRModel(libModelFile, theNormalizer);
-  }
-}
- * */
-
-
-// compare two psms according to the difference between predicted and observed
 bool ComparePsmsDeltaRT(PSMDescription psm1, PSMDescription psm2) {
-  double delta_rt1, delta_rt2;
-  delta_rt1 = psm1.getPredictedRetentionTime() - psm1.getRetentionTime();
-  delta_rt2 = psm2.getPredictedRetentionTime() - psm2.getRetentionTime();
+  double delta_rt1 = psm1.getPredictedRetentionTime() - psm1.getRetentionTime();
+  double delta_rt2 = psm2.getPredictedRetentionTime() - psm2.getRetentionTime();
   return delta_rt1 < delta_rt2;
 }
 
@@ -822,55 +822,6 @@ string EludeCaller::GetFileName(const string &path) {
     file_name = file_name.substr(0, file_name.length() - pos2);
   return file_name;
 }
-
-/* add a model to the library */
-/*
-void EludeCaller::AddModelLibrary(RetentionModel *model) {
-  string file_name;
-  if (!train_file_.empty()) {
-    int pos1, pos2;
-    if ((pos1 = train_file_.find_last_of("/")) == string::npos) {
-      if ((pos1 = train_file_.find_last_of("\\"))== string::npos) {
-        pos1 = 0;
-      }
-    }
-    if ((pos2 = train_file_.find_last_of(".")) == string::npos);
-      pos2 = 0;
-
-    file_name = train_file_.substr(pos1, train_file_length() - )
-
-    int found = train_file_.find_last_of("/");
-    if (found != string::npos) {
-      file_name = train_file_.substr(found + 1, train_file_.length());
-    } else {
-      found = trainFile.find_last_of("\\");
-      if (found != string::npos) {
-        file_name = train_file_.substr(found + 1, train_file_.length());
-      } else {
-        file_name = trainFile;
-      }
-    }
-  } else {
-    time_t ;
-      struct tm* timeInfo;
-      currentTime = time(NULL);
-      timeInfo = localtime(&currentTime);
-      libModelFile = asctime(timeInfo);
-      libModelFile = libModelFile.substr(4, (libModelFile.length() - 10));
-      size_t found = libModelFile.find_first_of(" ");
-      while (found != string::npos) {
-        libModelFile.replace(found, 1, "_");
-        found = libModelFile.find_first_of(" ");
-      }
-    }
-    libModelFile = libPath + libModelFile + ".model";
-    if (VERB > 2) {
-      cerr << endl << "Add current model to library..." << endl;
-      cerr << "Model name: " << libModelFile << "." << endl;
-    }
-    model.saveSVRModel(libModelFile, theNormalizer);
-  }
-}*/
 
 /**********************************************************************/
 /*** Additional functions from the provious implementation of Elude ***/

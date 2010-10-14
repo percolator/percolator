@@ -80,6 +80,8 @@ class EludeCaller{
    static std::string GetFileName(const std::string &path);
    /* linear adjustment via lts*/
    int AdjustLinearly(vector<PSMDescription> &psms);
+   /* add a model to the library */
+   int AddModelLibrary() const;
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
