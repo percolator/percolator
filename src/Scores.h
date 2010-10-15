@@ -47,7 +47,6 @@
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
-#include "Scores.h"
 #include "Globals.h"
 #include "PosteriorEstimator.h"
 #include "ssl.h"
