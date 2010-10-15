@@ -123,4 +123,6 @@ install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use
 ###############################################################################
 
 add_subdirectory(qvality)
-add_subdirectory(elude)
+if(NOT EXCLUDE_ELUDE)
+  add_subdirectory(elude)
+endif()

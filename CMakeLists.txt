@@ -44,7 +44,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 add_subdirectory(src)
 
 # INSTALL: adding data folder to installation folder (bin).
-install(DIRECTORY data DESTINATION bin)
+install(DIRECTORY data/tests DESTINATION bin/data)
+install(DIRECTORY data/percolator_test DESTINATION bin/data)
+install(DIRECTORY data/qvality_test DESTINATION bin/data)
+if(NOT EXCLUDE_ELUDE)
+  install(DIRECTORY data/elude_test DESTINATION bin/data)
+  install(DIRECTORY data/elude_lib DESTINATION bin/data)
+endif()
+
 # Enabling unit level tests (Ctest)
 enable_testing()
 # Compiling unit level tests
@@ -62,7 +69,7 @@ include(CPack)
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator, Elude and Qvality software package for protein classification using unique algorithms.")
-set(CPACK_GENERATOR "TGZ;DEB") # Distribution packaging formats ("make package"); RPM packaging can also be included later
+set(CPACK_GENERATOR "DEB") # Distribution packaging formats ("make package"); RPM packaging can also be included later
 set(CPACK_SOURCE_GENERATOR "TGZ") # This file format is used to package source code ("make package_source")
 set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_PROJECT_NAME};ALL;/")
 set(CPACK_PACKAGE_VENDOR "Matrix Science Ltd.")
@@ -75,9 +82,9 @@ set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TA
 set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-src")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")
 set(CPACK_STRIP_FILES TRUE)
-set(CPACK_PACKAGE_DEPENDS "libc6, libgcc1, libxerces-c-dev, libboost-dev")
+set(CPACK_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
 if(NOT EXCLUDE_CONVERTERS)
-  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, gengetopt, libsqlite3-dev, libtokyocabinet-dev")
+  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev")
 endif()
 if(GOOGLE_TEST)
   set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libgtest0")
@@ -101,7 +108,7 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_PACKAGE_DEPENDS})
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
-set(CPACK_RPM_PACKAGE_DEPENDS ${CPACK_PACKAGE_DEPENDS})
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libc6, libgcc1")
 
 # NSIS package options
 # Requires NSIS for creating the package 

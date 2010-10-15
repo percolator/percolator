@@ -51,7 +51,6 @@ target_link_libraries(sqt2pin converters perclibrary ${XERCESC_LIBRARIES} ${TOKY
 install(TARGETS sqt2pin DESTINATION bin)
 
 
-
 IF(STATIC)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
