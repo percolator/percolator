@@ -25,33 +25,15 @@
 #define uint64_t unsigned long long
 #endif
 #else
+
 #include <stdint.h>
 #endif
-
 #include <vector>
 #include <map>
 #include <iostream>
-#include <assert.h>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <utility>
-#include <algorithm>
-#include <set>
-#include <vector>
-#include <string>
-#include <math.h>
+using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
-#include "DataSet.h"
-#include "Normalizer.h"
-#include "SetHandler.h"
-#include "Globals.h"
-#include "PosteriorEstimator.h"
-#include "ssl.h"
-#include "MassHandler.h"
-using namespace std;
 
 class SetHandler;
 

@@ -15,7 +15,28 @@
 
  *******************************************************************************/
 
+#include <assert.h>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
+#include <utility>
+#include <algorithm>
+#include <set>
+#include <map>
+#include <vector>
+#include <string>
+#include <math.h>
+#include <map>
+using namespace std;
+#include "DataSet.h"
+#include "Normalizer.h"
+#include "SetHandler.h"
 #include "Scores.h"
+#include "Globals.h"
+#include "PosteriorEstimator.h"
+#include "ssl.h"
+#include "MassHandler.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
