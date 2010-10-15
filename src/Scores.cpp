@@ -1,4 +1,3 @@
-
 /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
@@ -15,6 +14,8 @@
  limitations under the License.
 
  *******************************************************************************/
+
+#include "Scores.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
