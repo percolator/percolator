@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
@@ -430,7 +431,6 @@ int Scores::calcScores(vector<double>& w, double fdr) {
 
 int Scores::calcQ(double fdr) {
   assert(neg+pos==size());
-
   vector<ScoreHolder>::iterator it;
   int targets = 0, decoys = 0;
   double efp = 0.0, q;

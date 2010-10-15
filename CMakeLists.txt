@@ -52,10 +52,10 @@ add_subdirectory(data/tests)
 
 
 ###############################################################################
-# PACKING
+# PACKAGING
 ###############################################################################
 
-# Use CPack module within CMake
+# Use CPack
 include(CPack)
 
 # PACKAGING OPTIONS: GENERAL
@@ -75,6 +75,13 @@ set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TA
 set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-src")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")
 set(CPACK_STRIP_FILES TRUE)
+set(CPACK_PACKAGE_DEPENDS "libc6, libgcc1, libxerces-c-dev, libboost-dev")
+if(NOT EXCLUDE_CONVERTERS)
+  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, gengetopt, libsqlite3-dev, libtokyocabinet-dev")
+endif()
+if(GOOGLE_TEST)
+  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libgtest0")
+endif()
 
 file(GLOB_RECURSE DOT_FILES_BEGIN ".*") # To be ignored by Cpack
 file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
@@ -82,21 +89,19 @@ file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
 #message("ignoring the following:")
 #message("${DOT_FILES_BEGIN}")
 #message("${TILD_FILES}")
-
 set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURRENT_BINARY_DIR}/;/.bzr/;/.settings/;${DOT_FILES_BEGIN};${TILD_FILES}")
 
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ¤ll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libgcc1, libgtest0, libxerces-c-dev, libboost-dev, gengetopt, libsqlite3-dev, libtokyocabinet-dev") 
-# (TODO) Actual dependencies should be discovered later: add them only if converters is being compiled
+set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_PACKAGE_DEPENDS})
+
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
-set(CPACK_RPM_PACKAGE_REQUIRES "libc6, libgcc1") 
-# (TODO) Actual dependencies should be discovered later: add them only if converters is being compiled
+set(CPACK_RPM_PACKAGE_DEPENDS ${CPACK_PACKAGE_DEPENDS})
 
 # NSIS package options
 # Requires NSIS for creating the package 
