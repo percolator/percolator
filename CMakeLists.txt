@@ -62,9 +62,6 @@ add_subdirectory(data/tests)
 # PACKAGING
 ###############################################################################
 
-# Use CPack
-include(CPack)
-
 # PACKAGING OPTIONS: GENERAL
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
@@ -114,4 +111,8 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libc6, libgcc1")
 # Requires NSIS for creating the package 
 add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/script.nsi" DEPENDS percolator elude qvality ) 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
+
+# Use CPack
+# the following MUST appear AFTER CPACK variables have been set
+include(CPack)
 
