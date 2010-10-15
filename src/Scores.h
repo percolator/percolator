@@ -25,15 +25,35 @@
 #define uint64_t unsigned long long
 #endif
 #else
-
 #include <stdint.h>
 #endif
+
 #include <vector>
 #include <map>
 #include <iostream>
-using namespace std;
+#include <assert.h>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <fstream>
+#include <utility>
+#include <algorithm>
+#include <set>
+#include <vector>
+#include <string>
+#include <math.h>
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
+#include "DataSet.h"
+#include "Normalizer.h"
+#include "SetHandler.h"
+#include "Scores.h"
+#include "Globals.h"
+#include "PosteriorEstimator.h"
+#include "ssl.h"
+#include "MassHandler.h"
+using namespace std;
+
 class SetHandler;
 
 class ScoreHolder {
@@ -137,16 +157,16 @@ class Scores {
     }
     void fill(string& fn);
     inline unsigned int size() {
-      return (pos + neg);
+      return (totalNumberOfTargets + totalNumberOfDecoys);
     }
     inline unsigned int posSize() {
-      return (pos);
+      return (totalNumberOfTargets);
     }
     inline unsigned int posNowSize() {
       return (posNow);
     }
     inline unsigned int negSize() {
-      return (neg);
+      return (totalNumberOfDecoys);
     }
     inline static bool isOutXmlDecoys() {
       return outxmlDecoys;
@@ -162,7 +182,7 @@ class Scores {
     double targetDecoySizeRatio;
   protected:
     vector<double> w_vec;
-    int neg, pos, posNow;
+    int totalNumberOfDecoys, totalNumberOfTargets, posNow;
     vector<ScoreHolder> scores;
     std::map<const double*, ScoreHolder*> scoreMap;
     DescriptionOfCorrect doc;

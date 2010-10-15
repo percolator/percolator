@@ -15,28 +15,6 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <assert.h>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <utility>
-#include <algorithm>
-#include <set>
-#include <map>
-#include <vector>
-#include <string>
-#include <math.h>
-#include <map>
-using namespace std;
-#include "DataSet.h"
-#include "Normalizer.h"
-#include "SetHandler.h"
-#include "Scores.h"
-#include "Globals.h"
-#include "PosteriorEstimator.h"
-#include "ssl.h"
-#include "MassHandler.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
@@ -144,8 +122,8 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
 Scores::Scores() {
   pi0 = 1.0;
   targetDecoySizeRatio = 1;
-  neg = 0;
-  pos = 0;
+  totalNumberOfDecoys = 0;
+  totalNumberOfTargets = 0;
   posNow = 0;
 }
 
@@ -169,13 +147,13 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     weedOutRedundant();
   }
   int ss = scores.size();
-  neg = count_if(scores.begin(),
+  totalNumberOfDecoys = count_if(scores.begin(),
       scores.end(),
       mem_fun_ref(&ScoreHolder::isDecoy));
-  pos = count_if(scores.begin(),
+  totalNumberOfTargets = count_if(scores.begin(),
       scores.end(),
       mem_fun_ref(&ScoreHolder::isTarget));
-  targetDecoySizeRatio = pos / max(1.0, (double)neg);
+  targetDecoySizeRatio = totalNumberOfTargets / max(1.0, (double)totalNumberOfDecoys);
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
   estimatePi0();
 }
@@ -228,8 +206,8 @@ void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUnique
     while ((pPSM = shuffIter.getNext()) != NULL)
       scores.push_back(ScoreHolder(.0, -1, pPSM));
   }
-  pos = norm.getSize();
-  neg = shuff.getSize();
+  totalNumberOfTargets = norm.getSize();
+  totalNumberOfDecoys = shuff.getSize();
   targetDecoySizeRatio = norm.getSize() / (double)shuff.getSize();
 }
 
@@ -267,26 +245,26 @@ void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
   }
   vector<ScoreHolder>::const_iterator it;
   for (unsigned int i = 0; i < xval_fold; i++) {
-    train[i].pos = 0;
-    train[i].neg = 0;
+    train[i].totalNumberOfTargets = 0;
+    train[i].totalNumberOfDecoys = 0;
     for (it = train[i].begin(); it != train[i].end(); it++) {
       if (it->label == 1) {
-        train[i].pos++;
+        train[i].totalNumberOfTargets++;
       } else {
-        train[i].neg++;
+        train[i].totalNumberOfDecoys++;
       }
     }
-    train[i].targetDecoySizeRatio = train[i].pos / (double)train[i].neg;
-    test[i].pos = 0;
-    test[i].neg = 0;
+    train[i].targetDecoySizeRatio = train[i].totalNumberOfTargets / (double)train[i].totalNumberOfDecoys;
+    test[i].totalNumberOfTargets = 0;
+    test[i].totalNumberOfDecoys = 0;
     for (it = test[i].begin(); it != test[i].end(); it++) {
       if (it->label == 1) {
-        test[i].pos++;
+        test[i].totalNumberOfTargets++;
       } else {
-        test[i].neg++;
+        test[i].totalNumberOfDecoys++;
       }
     }
-    test[i].targetDecoySizeRatio = test[i].pos / (double)test[i].neg;
+    test[i].targetDecoySizeRatio = test[i].totalNumberOfTargets / (double)test[i].totalNumberOfDecoys;
   }
 }
 
@@ -352,34 +330,34 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   // calculate ratios of target over decoy for train and test set
   vector<ScoreHolder>::const_iterator it;
   for (unsigned int i = 0; i < xval_fold; i++) {
-    train[i].pos = 0;
-    train[i].neg = 0;
+    train[i].totalNumberOfTargets = 0;
+    train[i].totalNumberOfDecoys = 0;
     for (it = train[i].begin(); it != train[i].end(); it++) {
       //cout << it->pPSM->id << endl;
       if (it->label == 1) {
-        train[i].pos++;
+        train[i].totalNumberOfTargets++;
       } else {
-        train[i].neg++;
+        train[i].totalNumberOfDecoys++;
       }
     }
-    train[i].targetDecoySizeRatio = train[i].pos / (double)train[i].neg;
-    test[i].pos = 0;
-    test[i].neg = 0;
+    train[i].targetDecoySizeRatio = train[i].totalNumberOfTargets / (double)train[i].totalNumberOfDecoys;
+    test[i].totalNumberOfTargets = 0;
+    test[i].totalNumberOfDecoys = 0;
     for (it = test[i].begin(); it != test[i].end(); it++) {
       //cout << it->pPSM->id << endl;
       if (it->label == 1) {
-        test[i].pos++;
+        test[i].totalNumberOfTargets++;
       } else {
-        test[i].neg++;
+        test[i].totalNumberOfDecoys++;
       }
     }
-    test[i].targetDecoySizeRatio = test[i].pos / (double)test[i].neg;
+    test[i].targetDecoySizeRatio = test[i].totalNumberOfTargets / (double)test[i].totalNumberOfDecoys;
   }
 }
 
 void Scores::normalizeScores(double fdr) {
   // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit 
-  unsigned int medianIndex = std::max(0u,neg/2u),decoys=0u;
+  unsigned int medianIndex = std::max(0u,totalNumberOfDecoys/2u),decoys=0u;
   vector<ScoreHolder>::iterator it = scores.begin();
   double q1 = it->score;
   double median = q1 + 1.0;
@@ -430,19 +408,19 @@ int Scores::calcScores(vector<double>& w, double fdr) {
 }
 
 int Scores::calcQ(double fdr) {
-  assert(neg+pos==size());
+  assert(totalNumberOfDecoys+totalNumberOfTargets==size());
   vector<ScoreHolder>::iterator it;
   int targets = 0, decoys = 0;
   double efp = 0.0, q;
   for (it = scores.begin(); it != scores.end(); it++) {
     if (it->label != -1) {
       targets++;
-      it->pPSM->p = (decoys+(double)1)/(neg+(double)1);
+      it->pPSM->p = (decoys+(double)1)/(totalNumberOfDecoys+(double)1);
     }
     if (it->label == -1) {
       decoys++;
       efp = pi0 * decoys * targetDecoySizeRatio;
-      it->pPSM->p = (decoys)/(double)(neg);
+      it->pPSM->p = (decoys)/(double)(totalNumberOfDecoys);
     }
     if (targets) {
       q = efp / (double)targets;
