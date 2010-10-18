@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8)
 project(PERCOLATOR)
 
 #VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "UNOFFICIAL")
+set(CPACK_PACKAGE_VERSION_MAJOR "U")
 set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
@@ -43,7 +43,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # COMPILE
 add_subdirectory(src)
 
-# INSTALL: adding data folder to installation folder (bin).
+# INSTALL: adding data folder to installation folder. Important to use relative path here (used by CPack)!
 install(DIRECTORY data/tests DESTINATION bin/data)
 install(DIRECTORY data/percolator_test DESTINATION bin/data)
 install(DIRECTORY data/qvality_test DESTINATION bin/data)
@@ -83,9 +83,9 @@ set(CPACK_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
 if(NOT EXCLUDE_CONVERTERS)
   set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev")
 endif()
-if(GOOGLE_TEST)
-  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libgtest0")
-endif()
+#if(GOOGLE_TEST)
+#  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libgtest0")
+#endif()
 
 file(GLOB_RECURSE DOT_FILES_BEGIN ".*") # To be ignored by Cpack
 file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
