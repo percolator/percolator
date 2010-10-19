@@ -38,7 +38,7 @@ macro(my_find_program progname)
   endif(NOT ${progname}_EXECUTABLE)
 endmacro(my_find_program)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/install/cmake)
 
 # COMPILE
 add_subdirectory(src)
@@ -102,7 +102,7 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libc6, libgcc1")
 
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/script.nsi" DEPENDS percolator elude qvality ) 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/install/cmake/script.nsi" DEPENDS percolator elude qvality ) 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
 
 # Use CPack
