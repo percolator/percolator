@@ -6,4 +6,4 @@ add_executable(qvality ${QVALITY_SOURCES})
 
 target_link_libraries(qvality perclibrary ArrayLibrary)
 
-install(TARGETS qvality EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
+install(TARGETS qvality EXPORT PERCOLATOR DESTINATION .) # Important to use relative path here (used by CPack)!

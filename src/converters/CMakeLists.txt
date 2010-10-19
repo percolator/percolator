@@ -42,13 +42,13 @@ endmacro()
 gengetoptmacro( mzidentml2pin )
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp ${CMAKE_CURRENT_BINARY_DIR}/mzidentml2pin_cmdline.c)
 target_link_libraries(mzidentml2pin converters perclibrary ArrayLibrary ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
-install(TARGETS mzidentml2pin DESTINATION bin)
+install(TARGETS mzidentml2pin DESTINATION .)
 
 # ${mzIdentMLxsdfiles} 
 include_directories(. MSToolkit/zLib ArrayLibrary MSToolkit/RAMP MSToolkit)
 add_executable(sqt2pin Sqt2Pin.cpp )
 target_link_libraries(sqt2pin converters perclibrary ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP  ArrayLibrary )
-install(TARGETS sqt2pin DESTINATION bin)
+install(TARGETS sqt2pin DESTINATION .)
 
 
 IF(STATIC)

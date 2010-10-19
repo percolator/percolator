@@ -9,11 +9,11 @@ set(system_tests_names
 )
 
 IF(NOT EXCLUDE_ELUDE)
-#set(system_tests_names "${system_tests_names}, SystemTest_Elude_Performance")
+  set(system_tests_names "${system_tests_names}, SystemTest_Elude_Performance")
 ENDIF()
 
-# Just copying the script (permissions are preserved).
-set(system_tests_dir "${CMAKE_BINARY_DIR}/../bin/data/tests")
+#set(system_tests_dir "${CMAKE_BINARY_DIR}/../bin/data/tests")
+set(system_tests_dir "${CMAKE_SOURCE_DIR}/data/tests")
 
 # NOTE: To run system tests (after building), run 'make test' in the 'output' folder.
 foreach(current_system_test ${system_tests_names})
@@ -31,5 +31,5 @@ IF (GOOGLE_TEST)
   IF (NOT EXCLUDE_CONVERTERS)
     target_link_libraries (gtest_unit perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES} ${CMAKE_BINARY_DIR}/../gtest-1.5.0/build/libgtest.a -pthread)
   ENDIF ()
-  install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
+  install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION .) # Important to use relative path here (used by CPack)!
 ENDIF(GOOGLE_TEST)

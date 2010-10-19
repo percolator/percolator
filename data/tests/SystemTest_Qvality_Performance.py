@@ -12,7 +12,7 @@ print "QVALITY PERFORMANCE"
 
 # running qvality
 print "(STEP 1): running qvality..."
-os.popen("(" + os.path.join(path, "qvality ") + 
+os.popen("(" + "qvality " + 
   os.path.join(path, "data/qvality_test/target.xcorr ") + 
   os.path.join(path, "data/qvality_test/null.xcorr ") + 
   "2>&1) > /tmp/qvalityPerformanceOutput.txt")

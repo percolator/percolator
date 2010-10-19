@@ -14,7 +14,7 @@ print "PERCOLATOR PERFORMANCE"
 # running sqt2pin to generate pin.xml
 # -o /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml /scratch/temp/bin/data/percolator_test/sqt2pin/target.sqt /scratch/temp/bin/data/percolator_test/sqt2pin/reverse.sqt
 print "(STEP 1): running sqt2pin to generate pin input..." 
-processFile = os.popen(os.path.join(path,"sqt2pin ") +
+processFile = os.popen("sqt2pin " +
   "-o " + os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + 
   os.path.join(path, "data/percolator_test/sqt2pin/target.sqt ") + 
   os.path.join(path, "data/percolator_test/sqt2pin/reverse.sqt"))
@@ -27,7 +27,7 @@ if exitStatus is not None:
 # running percolator on pin.xml with no options; 
 # -E /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml -X /scratch/temp/bin/data/percolator_test/sqt2pin/pout.xml
 print "(STEP 2): running percolator on pin input to generate pout..."
-processFile = os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
+processFile = os.popen("(" + "percolator " + "-E " + 
   os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + "-X " +
   os.path.join(path, "data/percolator_test/sqt2pin/pout.xml ") +
   "2>&1) > /tmp/PERCOLATOR_sqt2pin.txt")

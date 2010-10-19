@@ -14,7 +14,7 @@ print "PERCOLATOR CORRECTNESS"
 # running sqt2pin to generate pin.xml
 # -o /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml /scratch/temp/bin/data/percolator_test/sqt2pin/target.sqt /scratch/temp/bin/data/percolator_test/sqt2pin/reverse.sqt
 print "(STEP 1): running sqt2pin to generate pin input..." 
-processFile = os.popen(os.path.join(path,"sqt2pin ") +
+processFile = os.popen("sqt2pin " +
   "-o " + os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + 
   os.path.join(path, "data/percolator_test/sqt2pin/target.sqt ") + 
   os.path.join(path, "data/percolator_test/sqt2pin/reverse.sqt"))
@@ -27,7 +27,7 @@ if exitStatus is not None:
 # running percolator on pin.xml with no options; 
 # -E /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml -X /scratch/temp/bin/data/percolator_test/sqt2pin/pout.xml
 print "(STEP 2): running percolator on pin input with no options..."
-processFile = os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
+processFile = os.popen("(" +"percolator " + "-E " + 
   os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + "-X " +
   os.path.join(path, "data/percolator_test/sqt2pin/pout.xml ") +
   "2>&1) > /tmp/PERCOLATOR_sqt2pin.txt")
@@ -40,7 +40,7 @@ if exitStatus is not None:
 # running percolator on pin.xml with -m option;
 # -m 2 -E /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml -X /scratch/temp/bin/data/percolator_test/m/pout.xml
 print "(STEP 3): running percolator on pin input with -m option..."
-processFile = os.popen("(" + os.path.join(path, "percolator ") + "-m 2 -E " + 
+processFile = os.popen("(" + "percolator " + "-m 2 -E " + 
   os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") + "-X " +
   os.path.join(path, "data/percolator_test/m/pout.xml ") +
   "2>&1) > /tmp/PERCOLATOR_m.txt")
@@ -53,7 +53,7 @@ if exitStatus is not None:
 # running percolator with option to generate tab-delimited input
 # -E /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml -J /scratch/temp/bin/data/percolator_test/tab-delimited/percolatorTab
 print "(STEP 4): running percolator to generate tab-delimited input..."
-processFile = os.popen("(" + os.path.join(path, "percolator ") +  "-E " + 
+processFile = os.popen("(" + "percolator " +  "-E " + 
   os.path.join(path, "data/percolator_test/sqt2pin/pin.xml ") +   "-J " +
   os.path.join(path, "data/percolator_test/tab-delimited/percolatorTab ") + 
   "2>&1) > /tmp/PERCOLATOR_tab-delimited_generate.txt")
@@ -66,7 +66,7 @@ if exitStatus is not None:
 # running percolator with option to process tab-delimited input
 # -j /scratch/temp/bin/data/percolator_test/tab-delimited/percolatorTab -X /scratch/temp/bin/data/percolator_test/tab-delimited/pout.xml
 print "(STEP 5): running percolator on tab-delimited input..."
-processFile = os.popen("(" + os.path.join(path, "percolator ") +  "-j " + 
+processFile = os.popen("(" + "percolator " +  "-j " + 
   os.path.join(path, "data/percolator_test/tab-delimited/percolatorTab ") + "-X " +
   os.path.join(path, "data/percolator_test/tab-delimited/pout.xml ") + 
   "2>&1) > /tmp/PERCOLATOR_tab-delimited.txt")
@@ -83,12 +83,12 @@ if exitStatus is not None:
 # -E /scratch/temp/bin/data/percolator_test/retention_truncated/pin.xml -X /scratch/temp/bin/data/percolator_test/retention_truncated/pout_D4off.xml
 # -D 4 -E /scratch/temp/bin/data/percolator_test/retention_truncated/pin.xml -X /scratch/temp/bin/data/percolator_test/retention_truncated/pout_D4on.xml
 print "(STEP 6): running percolator with -D 4 option (retention times)..."
-processFile = os.popen("(" + os.path.join(path, "percolator ") +  "-D 4 -E " + 
+processFile = os.popen("(" + "percolator " +  "-D 4 -E " + 
   os.path.join(path, "data/percolator_test/retention_truncated/pin.xml ") +  "-X " +
   os.path.join(path, "data/percolator_test/retention_truncated/pout_D4on.xml ") +
   "2>&1) > /tmp/PERCOLATOR_retention_truncated_D4on.txt")
 exitStatus = processFile.close()
-processFile = os.popen("(" + os.path.join(path, "percolator ") + "-E " + 
+processFile = os.popen("(" + "percolator " + "-E " + 
   os.path.join(path, "data/percolator_test/retention_truncated/pin.xml ") + "-X " +
   os.path.join(path, "data/percolator_test/retention_truncated/pout_D4off.xml ") + 
   "2>&1) > /tmp/PERCOLATOR_retention_truncated_D4off.txt")
