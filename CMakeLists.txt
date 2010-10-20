@@ -73,13 +73,6 @@ set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TA
 set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-src")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")
 set(CPACK_STRIP_FILES TRUE)
-set(CPACK_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
-if(NOT EXCLUDE_CONVERTERS)
-  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev")
-endif()
-#if(GOOGLE_TEST)
-#  set(CPACK_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libgtest0")
-#endif()
 
 file(GLOB_RECURSE DOT_FILES_BEGIN ".*") # To be ignored by Cpack
 file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
@@ -92,13 +85,20 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ¤ll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_PACKAGE_DEPENDS})
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
+if(NOT EXCLUDE_CONVERTERS)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev, zlib1g-dev")
+endif()
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_PACKAGE_DEPENDS}, libc6, libgcc1")
+set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
+if(NOT EXCLUDE_CONVERTERS)
+  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, gengetopt, tokyocabinet-devel, zlib-devel")
+endif()
 
 # NSIS package options
 # Requires NSIS for creating the package 
