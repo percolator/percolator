@@ -17,7 +17,7 @@ installDir $PROGRAMFILES\percolator
 
 Section "Dummy Section" SecDummy
   SetOutPath "$INSTDIR"
-  file tmp/percolatorInstall/percolator.exe
+  file tmp/percolatorBuild/src/percolator.exe
 # I had problems installing Tokyo Cabinet and XDR on Windows /Erik
 #  file src/converters/sqt2pin.exe
 #  file src/converters/mzidentml2pin.exe
