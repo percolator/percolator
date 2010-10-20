@@ -12,7 +12,8 @@ Linux
 Download the appropariate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS). For Debian distributions (e.g. Ubuntu)), issue the following command in the directory where the package has been downloaded:
 $ sudo dpkg -i percolator-v[X]-linux-[ARCH].deb
 For Red Hat (e.g. CentOS), issue:
-$ yum install percolator-v[X]-linux-[ARCH].rpm
+$ su
+$ rpm -ivh percolator-v[X]-linux-[ARCH].rpm
 
 Windows
 Download the window installer, double click and follow the installation procedure. Once completed open a DOS prompt and invoke Percolator from the directory where it was installed.
