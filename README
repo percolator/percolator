@@ -1,8 +1,42 @@
-Percolator, Elude and Qvality software package for protein classification.
-
-Please read supplied INSTALL and src/README files.
-
-May 2010
+Percolator and Qvality software package for protein classification.
+October 2010
 Lukas Käll <lukas.kall@cbr.su.se>
-Luminita Moruz <lumi.moruz@gmail.com>
+
+DOWNLOAD AND INSTALL
+The latest releases of percolator can be found at among the downloads. There you may find package for Linux and compiled executables for Win32. Source   bundles are available to build Percolator from scratch if you are running a different system or if you do not have superuser priviledges.
+
+***
+
+INSTALLING PERCOLATOR (from packages or installer)
+Linux
+Download the appropariate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS). For Debian distributions (e.g. Ubuntu)), issue the following command in the directory where the package has been downloaded:
+$ sudo dpkg -i percolator-v[X]-linux-[ARCH].deb
+For Red Hat (e.g. CentOS), issue:
+$ yum install percolator-v[X]-linux-[ARCH].rpm
+
+Windows
+Download the window installer, double click and follow the installation procedure. Once completed open a DOS prompt and invoke Percolator from the directory where it was installed.
+
+***
+
+BUILDING PERCOLATOR (from the latest snapshot or the repository)
+The following instructions are for Linux Ubuntu.
+
+Make, Cmake and a c++ compiler are required; the following libraries are also needed to build Percolator: libxerces-c-dev libboost-dev. The laterst version of Percolator includes a file type converter called Sqt2pin which requires: gengetopt libtokyocabinet-dev zlib1g-dev.
+If you have sudo priviledges,issue the following command:
+$ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake [gengetopt libtokyocabinet-dev zlib1g-dev]
+If this is not the case, you will have to manually install programs and libraries.
+
+Download the latest percolator_X_XX_src.tar.gz tar-ball. Issue the following command in the directory where the source bundle has been downloaded:
+$ tar -zxvf percolator_[X]_src.tar.gz
+Enter the unpacked directory and issue:
+$ ./install/ubuntu_percolator[_converters].sh
+The script will install the Percolator (and optionally the converters) binaries in the directory /tmp/percolatorInstall and run system tests.
+
+Advanced users (and developers) may clone the project with Git by issuing:
+$ git clone git://github.com/percolator/percolator
+This will create a directory called "percolator"; Enter it and install as explained above.
+
+
+
 
