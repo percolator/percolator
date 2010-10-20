@@ -17,7 +17,7 @@ mkdir $percolatorBuild
 mkdir $percolatorInstall
 cd $percolatorBuild
 
-cmake -G"Eclipse CDT4 - Unix Makefiles" -DSTATIC=off -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=FALSE -DEXCLUDE_CONVERTERS=FALSE -DEXCLUDE_ELUDE=TRUE -DCMAKE_INSTALL_PREFIX=$percolatorInstall -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ $percolatorSource
+cmake -G"Eclipse CDT4 - Unix Makefiles" -DSTATIC=off -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=FALSE -DEXCLUDE_CONVERTERS=TRUE -DEXCLUDE_ELUDE=TRUE -DCMAKE_INSTALL_PREFIX=$percolatorInstall -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ $percolatorSource
 
 make -j 8
 make install
