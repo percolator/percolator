@@ -59,10 +59,11 @@ And, optionally, if interested in building the Sqt2pin (converters) as well:
 If this is not the case, you will have to manually install programs and 
 libraries. The same goes for older versions of Ubuntu as explained above.
 
-Download the latest percolator_X_XX_src.tar.gz tar-ball. Issue the following 
-command in the directory where the source bundle has been downloaded:
-  $ tar -zxvf percolator_[X]_src.tar.gz
-Enter the unpacked directory and issue:
+Download the latest percolator[_converters]-v[X]-linux-[ARCH].tar.gz tar-ball.
+Issue the following command in the directory where the source bundle has been 
+downloaded:
+  $ tar -zxvf percolator[_converters]-v[X]-linux-[ARCH].tar.gz
+  $ cd percolator-v[X]-linux-[ARCH]
   $ ./install/ubuntu_percolator[_converters].sh
 The script will install the Percolator (and optionally the converters) binaries
 in the directory /tmp/percolatorInstall and run system tests (if you are 
