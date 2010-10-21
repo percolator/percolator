@@ -7,23 +7,32 @@ The latest releases of percolator can be found at among the downloads. There you
 
 ***
 
+
 INSTALLING PERCOLATOR (from packages or installer)
+
 Linux
-Download the appropariate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS). For Debian distributions (e.g. Ubuntu)), issue the following command in the directory where the package has been downloaded:
-$ sudo dpkg -i percolator-v[X]-linux-[ARCH].deb
+Download the appropariate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS).
+The laterst version of Percolator includes a file type converter called Sqt2pin (percolator_converters_* package).
+For Debian distributions (e.g. Ubuntu)), issue the following command in the directory where the package has been downloaded:
+$ sudo dpkg -i percolator[_converters]-v[X]-linux-[ARCH].deb
 For Red Hat (e.g. CentOS), issue:
 $ su
-$ rpm -ivh percolator-v[X]-linux-[ARCH].rpm
+$ rpm -ivh percolator[_converters]-v[X]-linux-[ARCH].rpm
+
+If dependency problems arise, you might have to manually some of the libraries on your system to match the version required (your package manager might be providing an old version); this depends on what installation you are using. 
+The debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though, will require you to manually install libxerces-c3.1.so. Similarly, under CentOS5.5, you'll need libxerces-c3.1.so, libstdc++.so.6 and libtokyocabinet.so.8.
+
 
 Windows
 Download the window installer, double click and follow the installation procedure. Once completed open a DOS prompt and invoke Percolator from the directory where it was installed.
 
 ***
 
+
 BUILDING PERCOLATOR (from the latest snapshot or the repository)
 The following instructions are for Linux Ubuntu.
 
-Make, Cmake and a c++ compiler are required; the following libraries are also needed to build Percolator: libxerces-c-dev libboost-dev. The laterst version of Percolator includes a file type converter called Sqt2pin which requires: gengetopt libtokyocabinet-dev zlib1g-dev.
+Make, Cmake and a c++ compiler are required; the following libraries are also needed to build Percolator: libxerces-c-dev libboost-dev. If you intend to build Sqt2pin too (ubuntu_percolator_converters.sh) you will also need: gengetopt libtokyocabinet-dev zlib1g-dev.
 If you have sudo priviledges,issue the following command:
 $ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake [gengetopt libtokyocabinet-dev zlib1g-dev]
 If this is not the case, you will have to manually install programs and libraries.

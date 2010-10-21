@@ -4,7 +4,7 @@ xmlns="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out
 xmlns:p="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out" 
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 xsi:schemaLocation="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd" 
-p:majorVersion="U" p:minorVersion="0" p:percolator_version="Percolator version U.0">
+p:majorVersion="1" p:minorVersion="15" p:percolator_version="Percolator version 1.15">
 
   <process_info>
     <command_line>percolator -D 4 -E /scratch/temp/percolator/data/tests/../../data/percolator_test/retention_truncated/pin.xml -X /scratch/temp/percolator/data/tests/../../data/percolator_test/retention_truncated/pout_D4on.xml</command_line>
