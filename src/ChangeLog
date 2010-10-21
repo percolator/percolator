@@ -1,6 +1,7 @@
 v1.15
-* Added input format "pin" and output format "pout" for percolator.
-* Added Unique peptides option. 
+* New XML input format ("pin") and output format ("pout") for percolator. 
+  Schemas are available in src/xml.
+* Unique peptide level q-values are reported alongside PSM level q-values.
 
 v1.14
 * Added a weed out redundant PSMs and just keep unique peptides option (-U) 
