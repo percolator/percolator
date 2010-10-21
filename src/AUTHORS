@@ -5,5 +5,6 @@ Both executables are depending on ArrayLibrary written by Oliver Serang
 in Department of Genome Science at the University of Washington, which is
 distributed under MIT license.
 
-Percolator is also dependent on libSVM Copyright (c) 2000-2008 Chih-Chung Chang and Chih-Jen Lin
-and MSToolkit written by Michael Hoopman, University of Washington.
+Percolator is also dependent on libSVM Copyright (c) 2000-2008 Chih-Chung Chang 
+and Chih-Jen Lin and MSToolkit written by Michael Hoopman, University of 
+Washington.
