@@ -26,7 +26,7 @@ def testStandalone():
     removeDir(tmpFolder)
   os.mkdir(tmpFolder)
 
-  ############# Test 1.1 - the format of the ppetide sequence in train and test files is X.A.Y, test file does not include rt
+  ############# Test 1.1 - the format of the petide sequence in train and test files is X.A.Y, test file does not include rt
   # run Elude  
   os.system(eludePath + " -t " + testFolder + "train.txt -e " + testFolder + "test.txt -o " + tmpFolder + "out -s " +  tmpFolder + "model -i " + tmpFolder + "insource -g " + tmpFolder + "index -y -u -x -v 5 2> " + tmpFolder + "log")
  

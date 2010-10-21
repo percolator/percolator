@@ -5,32 +5,16 @@
 # ${CMAKE_PROJECT_DIR}/cmake/FindSqlite3.cmake
 # was added
 
+find_package( Sqlite3 REQUIRED )
+include_directories(${SQLITE3_INCLUDE_DIR})
 
-add_subdirectory(SQLite)
-add_subdirectory(zLib)
+find_package( ZLIB REQUIRED )
+include_directories(${ZLIB_INCLUDE_DIRS})
+
 add_subdirectory(RAMP)
 
 file(GLOB MSTOOLKIT_SOURCES *.cpp)
 include_directories(RAMP)
-include_directories(Sqlite)
-include_directories(zLib)
-
 add_library (MSToolkit ${MSTOOLKIT_SOURCES})
 
-target_link_libraries(MSToolkit zLib SQLite RAMP)
-
-
-
-#find_package( Sqlite3 REQUIRED )
-#include_directories(${SQLITE3_INCLUDE_DIR})
-#
-#find_package( ZLIB REQUIRED )
-#include_directories(${ZLIB_INCLUDE_DIRS})
-#
-#add_subdirectory(RAMP)
-#
-#file(GLOB MSTOOLKIT_SOURCES *.cpp)
-#include_directories(RAMP)
-#add_library (MSToolkit ${MSTOOLKIT_SOURCES})
-#
-#target_link_libraries(MSToolkit ${ZLIB_LIBRARIES} ${SQLITE3_LIBRARIES} RAMP )
+target_link_libraries(MSToolkit ${ZLIB_LIBRARIES} ${SQLITE3_LIBRARIES} RAMP)

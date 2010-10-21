@@ -56,14 +56,11 @@ add_subdirectory(data/tests)
 # PACKAGING OPTIONS: GENERAL
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and Qvality software package for protein classification using unique algorithms.")
-if(NOT EXCLUDE_ELUDE)
-  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator, Elude and Qvality software package for protein classification using unique algorithms.")
-endif()
-set(CPACK_GENERATOR "DEB;RPM;TGZ") # Distribution packaging formats ("make package"); RPM packaging can also be included later
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator, Elude and Qvality software package for protein classification using unique algorithms.")
+set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
 set(CPACK_SOURCE_GENERATOR "TGZ") # This file format is used to package source code ("make package_source")
 set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_PROJECT_NAME};ALL;/")
-set(CPACK_PACKAGE_VENDOR "Matrix Science Ltd.")
+set(CPACK_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_PACKAGE_NAME ${PACKAGE_NICKNAME})
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${PERCOLATOR_SOURCE_DIR}/src/README")
 set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/COPYING")
@@ -87,7 +84,7 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ¤ll <lukas.kall@cbr.su.se>, Luminit
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
 if(NOT EXCLUDE_CONVERTERS)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev, zlib1g-dev")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev, zlib1g-dev, libsqlite3-dev")
 endif()
 
 # PACKAGING OPTIONS: RPM
@@ -95,9 +92,9 @@ set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-#set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
 if(NOT EXCLUDE_CONVERTERS)
-  #set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, gengetopt, tokyocabinet-devel, zlib-devel")
+  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, gengetopt, tokyocabinet-devel, zlib-devel, sqlite3-devel")
 endif()
 
 # NSIS package options
