@@ -1,5 +1,5 @@
 v1.15
-* New XML input format ("pin") and output format ("pout") for percolator. 
+* New XML input format ("pin") and revised output format ("pout") for percolator. 
   Schemas are available in src/xml.
 * Unique peptide level q-values are reported alongside PSM level q-values.
 
