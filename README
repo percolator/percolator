@@ -3,7 +3,7 @@ October 2010
 Lukas Käll <lukas.kall@cbr.su.se>
 
 DOWNLOAD AND INSTALL
-The latest releases of percolator can be found at among the downloads. There you may find package for Linux and compiled executables for Win32. Source   bundles are available to build Percolator from scratch if you are running a different system or if you do not have superuser priviledges. The laterst version of Percolator includes a file type converter called Sqt2pin (run scripts and install packages named percolator_converters_* to install it).
+The latest releases of Percolator can be found at among the downloads. There you may find package for Linux and compiled executables for Win32. Source bundles are available to build Percolator from scratch if you are running a different system or if you do not have superuser privileges. Percolator now includes a file type converter called Sqt2pin (run scripts and install packages named percolator_converters_* to install it).
 
 ***
 
@@ -11,7 +11,7 @@ The latest releases of percolator can be found at among the downloads. There you
 INSTALLING PERCOLATOR (from packages or installer)
 
 Linux
-Download the appropariate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS).
+Download the appropriate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS).
 For Debian distributions (e.g. Ubuntu)), issue the following command in the directory where the package has been downloaded:
 $ sudo dpkg -i percolator[_converters]-v[X]-linux-[ARCH].deb
 For Red Hat (e.g. CentOS), issue:
@@ -19,7 +19,7 @@ $ su
 $ rpm -ivh percolator[_converters]-v[X]-linux-[ARCH].rpm
 
 If dependency problems arise, you might have to manually some of the libraries on your system to match the version required (your package manager might be providing an old version); this depends on what installation you are using. 
-The debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though, will require you to manually install libxerces-c3.1.so. Similarly, under CentOS5.5, you'll need libxerces-c3.1.so, libstdc++.so.6 and libtokyocabinet.so.8.
+The Debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though, will require you to manually install libxerces-c3.1.so. Similarly, under CentOS5.5, you'll need libxerces-c3.1.so, libstdc++.so.6 and libtokyocabinet.so.8.
 
 
 Windows
@@ -45,8 +45,4 @@ The script will install the Percolator (and optionally the converters) binaries 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
 This will create a directory called "percolator"; Enter it and install as explained above.
-
-
-
-
 
