@@ -3,7 +3,12 @@ October 2010
 Lukas Käll <lukas.kall@cbr.su.se>
 
 DOWNLOAD AND INSTALL
-The latest releases of Percolator can be found at among the downloads. There you may find package for Linux and compiled executables for Win32. Source bundles are available to build Percolator from scratch if you are running a different system or if you do not have superuser privileges. Percolator now includes a file type converter called Sqt2pin (run scripts and install packages named percolator_converters_* to install it).
+The latest releases of Percolator can be found at among the downloads. There 
+you may find package for Linux and compiled executables for Win32. Source 
+bundles are available to build Percolator from scratch if you are running a
+different system or if you do not have superuser privileges. Percolator now 
+includes a file type converter called Sqt2pin (run scripts and install packages
+named percolator_converters_* to install it).
 
 ***
 
@@ -11,19 +16,31 @@ The latest releases of Percolator can be found at among the downloads. There you
 INSTALLING PERCOLATOR (from packages or installer)
 
 Linux
-Download the appropriate package from the downloads: "DEB" is available for Debian distributions (such as Ubuntu) and "RPM" for RedHat (such as CentOS).
-For Debian distributions (e.g. Ubuntu)), issue the following command in the directory where the package has been downloaded:
-$ sudo dpkg -i percolator[_converters]-v[X]-linux-[ARCH].deb
+Download the appropriate package from the downloads: 
+  "DEB" is available for Debian distributions (such as Ubuntu)
+  "RPM" for RedHat (such as CentOS).
+For Debian distributions (e.g. Ubuntu)), issue the following command in the 
+directory where the package has been downloaded:
+  $ sudo dpkg -i percolator[_converters]-v[X]-linux-[ARCH].deb
 For Red Hat (e.g. CentOS), issue:
-$ su
-$ rpm -ivh percolator[_converters]-v[X]-linux-[ARCH].rpm
+  $ su
+  $ rpm -ivh percolator[_converters]-v[X]-linux-[ARCH].rpm
 
-If dependency problems arise, you might have to manually some of the libraries on your system to match the version required (your package manager might be providing an old version); this depends on what installation you are using. 
-The Debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though, will require you to manually install libxerces-c3.1.so. Similarly, under CentOS5.5, you'll need libxerces-c3.1.so, libstdc++.so.6 and libtokyocabinet.so.8.
+If dependency problems arise, you might have to manually some of the libraries
+on your system to match the version required (your package manager might be 
+providing an old version); this depends on what installation you are using. The
+Debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though,
+will require you to manually install libxerces-c3.1.so. Similarly, under 
+CentOS5.5, you'll need libxerces-c3.1.so, libstdc++.so.6 and 
+libtokyocabinet.so.8.
 
 
 Windows
-Download the window installer, double click and follow the installation procedure. Once completed open a DOS prompt and invoke Percolator from the directory where it was installed. Although Percolator will work properly on the new "pin" input format, the Windows installed does not currently contain the Sqt2pin converter.
+Download the window installer, double click and follow the installation 
+procedure. Once completed open a DOS prompt and invoke Percolator from the 
+directory where it was installed. Although Percolator will work properly on the
+new "pin" input format, the Windows installed does not currently contain the 
+Sqt2pin converter.
 
 ***
 
@@ -31,18 +48,29 @@ Download the window installer, double click and follow the installation procedur
 BUILDING PERCOLATOR (from the latest snapshot or the repository)
 
 The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
-Make, Cmake and a c++ compiler are required; the following libraries are also needed to build Percolator: libxerces-c-dev libboost-dev. If you intend to build Sqt2pin too (ubuntu_percolator_converters.sh) you will also need: gengetopt libtokyocabinet-dev zlib1g-dev.
+Make, Cmake and a c++ compiler are required; the following libraries are also
+needed to build Percolator: libxerces-c-dev libboost-dev. If you intend to 
+build Sqt2pin too (ubuntu_percolator_converters.sh) you will also need: 
+gengetopt libtokyocabinet-dev zlib1g-dev.
 If you have sudo priviledges, issue the following command:
-$ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake [gengetopt libtokyocabinet-dev zlib1g-dev]
-If this is not the case, you will have to manually install programs and libraries. The same goes for older versions of Ubuntu as explained above.
+  $ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake 
+And, optionally, if interested in building the Sqt2pin (converters) as well:
+  $ sudo apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
+If this is not the case, you will have to manually install programs and 
+libraries. The same goes for older versions of Ubuntu as explained above.
 
-Download the latest percolator_X_XX_src.tar.gz tar-ball. Issue the following command in the directory where the source bundle has been downloaded:
-$ tar -zxvf percolator_[X]_src.tar.gz
+Download the latest percolator_X_XX_src.tar.gz tar-ball. Issue the following 
+command in the directory where the source bundle has been downloaded:
+  $ tar -zxvf percolator_[X]_src.tar.gz
 Enter the unpacked directory and issue:
-$ ./install/ubuntu_percolator[_converters].sh
-The script will install the Percolator (and optionally the converters) binaries in the directory /tmp/percolatorInstall and run system tests (if you are installing the version without converters, ubuntu_percolator.sh, some of the tests will not succeed).
+  $ ./install/ubuntu_percolator[_converters].sh
+The script will install the Percolator (and optionally the converters) binaries
+in the directory /tmp/percolatorInstall and run system tests (if you are 
+installing the version without converters, ubuntu_percolator.sh, some of the 
+tests will not succeed).
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
-This will create a directory called "percolator"; Enter it and install as explained above.
+This will create a directory called "percolator"; Enter it and install as 
+explained above.
 
