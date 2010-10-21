@@ -60,7 +60,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and Qvality software package f
 if(NOT EXCLUDE_ELUDE)
   set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator, Elude and Qvality software package for protein classification using unique algorithms.")
 endif()
-set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
+set(CPACK_GENERATOR "DEB;RPM;TGZ") # Distribution packaging formats ("make package"); RPM packaging can also be included later
 set(CPACK_SOURCE_GENERATOR "TGZ") # This file format is used to package source code ("make package_source")
 set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_PROJECT_NAME};ALL;/")
 set(CPACK_PACKAGE_VENDOR "Matrix Science Ltd.")
