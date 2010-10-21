@@ -10,6 +10,7 @@ different system or if you do not have superuser privileges. Percolator now
 includes a file type converter called Sqt2pin (run scripts and install packages
 named percolator_converters_* to install it).
 
+
 ***
 
 
@@ -41,6 +42,7 @@ procedure. Once completed open a DOS prompt and invoke Percolator from the
 directory where it was installed. Although Percolator will work properly on the
 new "pin" input format, the Windows installed does not currently contain the 
 Sqt2pin converter.
+
 
 ***
 
