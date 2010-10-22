@@ -19,9 +19,9 @@ Section "Dummy Section" SecDummy
   SetOutPath "$INSTDIR"
   file /tmp/percolatorBuild/src/percolator.exe
 # I had problems installing Tokyo Cabinet and XDR on Windows /Erik
-#  file src/converters/sqt2pin.exe
-#  file src/converters/mzidentml2pin.exe
-  file src/elude/elude.exe
+#  file /tmp/percolatorBuild/src/converters/sqt2pin.exe
+#  file /tmp/percolatorBuild/src/converters/mzidentml2pin.exe
+  file /tmp/percolatorBuild/src/elude/elude.exe
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 

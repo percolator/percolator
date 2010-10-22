@@ -1,11 +1,12 @@
 # Defining list with all tests.
+IF(EXCLUDE_ELUDE AND EXCLUDE_CONVERTERS)
 set(tests
   SystemTest_Percolator_Correctness
   SystemTest_Qvality_Correctness
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
 )
-IF(NOT EXCLUDE_ELUDE)
+ELSEIF((NOT EXCLUDE_ELUDE) AND EXCLUDE_CONVERTERS)
 set(tests
   SystemTest_Percolator_Correctness
   SystemTest_Qvality_Correctness
@@ -13,7 +14,25 @@ set(tests
   SystemTest_Qvality_Performance
   SystemTest_Elude_Performance
 )
+ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
+set(tests
+  SystemTest_Percolator_Correctness
+  SystemTest_Qvality_Correctness
+  SystemTest_Percolator_Performance
+  SystemTest_Qvality_Performance
+  SystemTest_Sqt2pin_Correctness
+)
+ELSE()
+set(tests
+  SystemTest_Percolator_Correctness
+  SystemTest_Qvality_Correctness
+  SystemTest_Percolator_Performance
+  SystemTest_Qvality_Performance
+  SystemTest_Elude_Performance
+  SystemTest_Sqt2pin_Correctness
+)
 ENDIF()
+
 
 set(system_tests_names ${tests})
 set(system_tests_dir "${CMAKE_SOURCE_DIR}/data/tests")
