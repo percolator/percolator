@@ -17,11 +17,11 @@ installDir $PROGRAMFILES\percolator
 
 Section "Dummy Section" SecDummy
   SetOutPath "$INSTDIR"
-  file tmp/percolatorBuild/src/percolator.exe
+  file /tmp/percolatorBuild/src/percolator.exe
 # I had problems installing Tokyo Cabinet and XDR on Windows /Erik
 #  file src/converters/sqt2pin.exe
 #  file src/converters/mzidentml2pin.exe
-#  file src/elude/elude.exe
+  file src/elude/elude.exe
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
@@ -30,6 +30,6 @@ Section "Uninstall"
   Delete "$INSTDIR\percolator.exe"
 #  Delete "$INSTDIR\sqt2pin.exe"
 #  Delete "$INSTDIR\mzidentml2pin.exe"
-#  Delete "$INSTDIR\elude.exe"
+  Delete "$INSTDIR\elude.exe"
   RMDir "$INSTDIR"
 SectionEnd
