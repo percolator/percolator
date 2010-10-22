@@ -18,9 +18,10 @@ def testStandalone():
   testFolder = os.path.join(path, "data/elude_test/standalone/")
   # temporary folder to store the output files 
   tmpFolder = os.path.join(path, "data/elude_test/tmp/")
-  # path to elude 
-  eludePath = os.path.join("./", path, "elude")
-  
+  # path to elude
+  # eludePath = os.path.join("./", path, "elude") now being installed
+  eludePath = "elude"
+
   # make a temporary folder to store the output files 
   if os.path.isdir(tmpFolder):
     removeDir(tmpFolder)
@@ -106,12 +107,13 @@ def testCalibration():
   # folder where the test data is located
   testFolder = os.path.join(path, "data/elude_test/calibrate_data/")
   # path to the library
-  libPath = os.path.join(path, "data/elude_lib/")
+  libPath = os.path.join(path, "data/elude_model_lib/")
   # temporary folder to store the output files 
   tmpFolder = os.path.join(path, "data/elude_test/tmp/")
   # path to elude 
-  eludePath = os.path.join("./", path, "elude")
-  
+  #eludePath = os.path.join("./", path, "elude")
+  eludePath = "elude"
+
   # make a temporary folder to store the output files 
   if os.path.isdir(tmpFolder):
     removeDir(tmpFolder)

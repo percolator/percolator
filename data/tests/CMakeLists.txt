@@ -9,7 +9,7 @@ set(system_tests_names
 )
 
 IF(NOT EXCLUDE_ELUDE)
-  #set(system_tests_names "${system_tests_names}, SystemTest_Elude_Performance")
+  set(system_tests_names "${system_tests_names}, SystemTest_Elude_Performance")
 ENDIF()
 
 set(system_tests_dir "${CMAKE_SOURCE_DIR}/data/tests")
