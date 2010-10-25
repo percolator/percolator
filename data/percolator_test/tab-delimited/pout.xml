@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <percolator_output 
-xmlns="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out" 
-xmlns:p="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out" 
+xmlns="http://per-colator.com/percolator_out/11" 
+xmlns:p="http://per-colator.com/percolator_out/11" 
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-xsi:schemaLocation="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd" 
+xsi:schemaLocation="http://per-colator.com/percolator_out/11 http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd" 
 p:majorVersion="1" p:minorVersion="15" p:percolator_version="Percolator version 1.15">
 
   <process_info>
-    <command_line>percolator -j /scratch/temp/percolator/data/tests/../../data/percolator_test/tab-delimited/percolatorTab -X /scratch/temp/percolator/data/tests/../../data/percolator_test/tab-delimited/pout.xml</command_line>
+    <command_line>percolator -j data/tests/../../data/percolator_test/tab-delimited/percolatorTab -X data/tests/../../data/percolator_test/tab-delimited/pout.xml</command_line>
     <other_command_line></other_command_line>
     <pi_0>0.879111</pi_0>
   </process_info>

@@ -1011,7 +1011,7 @@ int Caller::run() {
 void Caller::writeXML(bool uniquePeptides) {
   ofstream os;
   // http://www.edankert.com/grammars/xsd.referencing.html
-  const string space = "http://github.com/percolator/percolator/raw/master/src/xml/percolator_out";
+  const string space = PERCOLATOR_OUT_NAMESPACE;
   const string schema = space + " http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd";
   if(! uniquePeptides){
     //write to file
