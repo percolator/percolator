@@ -69,6 +69,8 @@ class RetentionModel {
    int SaveModelToFile(const std::string &file_name);
    /* load the model from a file */
    int LoadModelFromFile(const std::string &file_name);
+   /* save the retention index to a file */
+   int SaveRetentionIndexToFile(const std::string &file_name);
    /* print vsub_ */
    void PrintSub();
 

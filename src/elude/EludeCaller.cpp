@@ -344,8 +344,8 @@ int EludeCaller::ProcessTrainData() {
   // remove non enzymatic
   if (remove_non_enzymatic_) {
     if (context_format_) {
-      DataManager::RemoveNonEnzymatic(train_psms_);
-      DataManager::RemoveNonEnzymatic(test_psms_);
+      DataManager::RemoveNonEnzymatic(train_psms_, "train data");
+      DataManager::RemoveNonEnzymatic(test_psms_, "test data");
     } else {
       if (VERB >= 4) {
         cerr << "Warning: non-enzymatic peptides cannot be detected unless the peptides"
@@ -405,7 +405,7 @@ int EludeCaller::ProcessTestData() {
   // remove non enzymatic
   if (remove_non_enzymatic_) {
     if (context_format_) {
-      DataManager::RemoveNonEnzymatic(test_psms_);
+      DataManager::RemoveNonEnzymatic(test_psms_, "test data");
     } else {
       if (VERB >= 4) {
         cerr << "Warning: non-enzymatic peptides cannot be detected unless the peptides"
@@ -437,7 +437,7 @@ int EludeCaller::AddModelLibrary() const {
   } else if (!save_model_file_.empty()) {
     file_name = save_model_file_;
   } else if (!train_file_.empty()) {
-    file_name = GetFileName(train_file_);
+    file_name = GetFileName(train_file_) + ".model";
   } else {
     time_t current_time = time(NULL);
     struct tm* time_info = localtime(&current_time);
@@ -449,15 +449,35 @@ int EludeCaller::AddModelLibrary() const {
         found = file_name.find_first_of(" ");
       }
   }
+  int last_char = library_path_.length() - 1;
+  if (last_char >= 0 && library_path_[last_char] != '/'
+      && library_path_[last_char] != '\\') {
+    library_path_ += "/";
+  }
   file_name = library_path_ + file_name;
   rt_model_->SaveModelToFile(file_name);
+  return 0;
+}
+
+/* save the retention index to a file */
+int EludeCaller::SaveIndexToFile(const int &best_model_index) const {
+  if (automatic_model_sel_ && best_model_index >= 0) {
+    rt_models_[best_model_index]->SaveRetentionIndexToFile(index_file_);
+  } else if (rt_model_ != NULL) {
+    rt_model_->SaveRetentionIndexToFile(index_file_);
+  } else {
+    if (VERB >= 3) {
+      cerr << "Warning: no model available. The retention index cannot be stored"
+           << endl;
+      return 1;
+    }
+  }
   return 0;
 }
 
 /* main function in Elude */
 int EludeCaller::Run() {
   pair<int, double> best_model(-1, -1.0);
-  // build a rt model, either by training one or by loading one
   if (!train_file_.empty() && !load_model_file_.empty() && VERB >= 4
       && !linear_calibration_) {
     cerr << "Warning: a model can be either trained or loaded from a file. "
@@ -465,6 +485,7 @@ int EludeCaller::Run() {
          << "should be carried out. In such a case please use the -j option. "
          << "The model will be trained using the peptides in " << train_file_ << endl;
   }
+  // train a retention model
   if (!train_file_.empty()) {
     ProcessTrainData();
     // initialize the feature table
@@ -496,7 +517,7 @@ int EludeCaller::Run() {
       if (VERB >= 3) {
         cerr << "Warning: The model should already be in the library if "
              << "the automatic model selection option is employed. No model "
-             << "will be added to the library"<< endl;
+             << "will be appended to the library"<< endl;
       }
     } else if (rt_model_ == NULL) {
       if (VERB >= 3) {
@@ -507,7 +528,10 @@ int EludeCaller::Run() {
       AddModelLibrary();
     }
   }
-
+  // save the retention index to a file
+  if (!index_file_.empty()) {
+    SaveIndexToFile(best_model.first);
+  }
   // test a model
   if (!test_file_.empty()) {
     // process the test data
@@ -538,7 +562,7 @@ int EludeCaller::Run() {
     // linear calibration is performed only for automatic model selection or when
     // loading a model from a file
     if (linear_calibration_ && (automatic_model_sel_ || !load_model_file_.empty())) {
-      if (train_psms_.size() <= 1) {
+      if (train_psms_.size() <= 1 && !automatic_model_sel_) {
         if (VERB >= 3) {
           cerr << "Warning: at least 2 training psms are needed to calibrate the model. "
                << "No calibration performed. " << endl;
@@ -583,6 +607,10 @@ int EludeCaller::AdjustLinearly(vector<PSMDescription> &psms) {
  * obtained on the calibration peptides using this model */
 pair<int, double> EludeCaller::AutomaticModelSelection() {
   vector<string> model_files = ListDirFiles(library_path_);
+  if (VERB >= 4) {
+    cerr << "Loading the most suitable model from the library..." << endl;
+    cerr << "-------------------------" << endl;
+  }
   if (model_files.size() == 0) {
     if (VERB >= 2) {
       cerr << "Error: No model available in " << library_path_ << endl;
@@ -611,13 +639,15 @@ pair<int, double> EludeCaller::AutomaticModelSelection() {
         rt_models_.push_back(m);
         m->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
         rank_correl = ComputeRankCorrelation(train_psms_);
-        //cout << model_files[i] << ", correl = " << rank_correl << endl;
         if (rank_correl > best_correl) {
           best_correl = rank_correl;
           best_index = i;
         }
       }
-      //cout << "Select model: " << model_files[best_index] << endl;
+      if (VERB >= 4) {
+        cerr << "-------------------------" << endl;
+        cerr << "Best model: " << model_files[best_index] << endl << endl;
+      }
       return make_pair(best_index, best_correl);
     }
   }
@@ -740,6 +770,11 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
   int n = psms.size();
   vector<pair<PSMDescription, double> > rankedPsms;
 
+  if (VERB >= 4) {
+    cerr << "Computing rank correlation between predicted and observed retebntion times"
+         << "..." << endl;
+  }
+
   // sort peptides according to observed retention time
   sort(psms.begin(), psms.end(), ComparePsmsRT);
   // record ranks
@@ -776,7 +811,11 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
     i = j;
   }
 
-  return 1.0 - ((6.0 * d) / (double)(n * (pow(n, 2.) - 1)));
+  double rho = 1.0 - ((6.0 * d) / (double)(n * (pow(n, 2.) - 1)));
+  if (VERB >= 4) {
+    cerr << "rho = " << rho << endl << endl;
+  }
+  return rho;
 }
 
 /* Compute Pearson's correlation coefficient */
@@ -817,9 +856,10 @@ string EludeCaller::GetFileName(const string &path) {
       pos1 = -1;
     }
   }
-  string file_name = path.substr(pos1 + 1, path.length());
-  if ((pos2 = file_name.find_last_of(".")) != string::npos);
-    file_name = file_name.substr(0, file_name.length() - pos2);
+  string file_name = path.substr(pos1 + 1, string::npos);
+  if ((pos2 = file_name.find_last_of(".")) != string::npos) {
+    file_name = file_name.substr(0, pos2);
+  }
   return file_name;
 }
 

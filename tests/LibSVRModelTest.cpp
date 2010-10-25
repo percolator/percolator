@@ -32,6 +32,7 @@ class LibSVRModelTest : public ::testing::Test {
      no_features = rf.GetTotalNumberFeatures();
      feature_table = DataManager::InitFeatureTable(no_features, psms);
      rf.ComputeRetentionFeatures(psms);
+     Globals::getInstance()->setVerbose(1);
    }
 
    virtual void TearDown() {

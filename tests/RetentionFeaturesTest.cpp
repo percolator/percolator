@@ -23,11 +23,13 @@
 
 #include "RetentionFeatures.h"
 #include "PSMDescription.h"
+#include "Globals.h"
 
 class RetentionFeaturesTest: public ::testing::Test {
   protected:
     virtual void SetUp() {
       rf.set_ignore_ptms(true);
+      Globals::getInstance()->setVerbose(1);
     }
 
     virtual void TearDown() {

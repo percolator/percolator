@@ -86,6 +86,9 @@ void DataManager::CleanUpTable(vector<PSMDescription> &psms, double *feat_table)
  * format A.XXX.B then includes_context is true;  the results are a vector of peptides and a set of all aa present in the peptides */
 int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, const bool includes_context,
                               vector<PSMDescription> &psms, set<string> &aa_alphabet) {
+  if (VERB >= 4) {
+    cerr << "Loading file " << file_name << "..." << endl;
+  }
   ifstream in(file_name.c_str(), ios::in);
   if (in.fail()) {
     if (VERB >= 1) {
@@ -119,14 +122,20 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
    }
   }
   in.close();
+  if (VERB >= 4) {
+    cerr << psms.size() << " peptides loaded." << endl << endl;
+  }
   return 0;
 }
 
 /* memory allocation for the feature table; return a pointer to the feature table*/
 double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescription> &psms) {
   int no_records = psms.size();
+  if (VERB >= 4) {
+    cerr << "Initializing feature table for " << no_records << "records and "
+         << no_features << " features..." << endl;
+  }
   double *feat_pointer = new double[no_records * no_features];
-
   if (!feat_pointer) {
     if (VERB >= 1) {
       cerr << "Error: Unable to allocate the feature table. Execution aborted."
@@ -137,6 +146,9 @@ double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescript
     double *ptr = feat_pointer;
     for (int i = 0; i < no_records; i++, ptr += no_features) {
       psms[i].retentionFeatures = ptr;
+    }
+    if (VERB >= 4) {
+      cerr << "Done." << endl << endl;
     }
     return feat_pointer;
   }
@@ -152,6 +164,10 @@ int DataManager::RemoveDuplicates(std::vector<PSMDescription> &psms) {
 /* remove from the train set the peptides that are also in the test set */
 int DataManager::RemoveCommonPeptides(const vector<PSMDescription> &test_psms,
                                       vector<PSMDescription> &train_psms) {
+  if (VERB >= 4) {
+    cerr << "Removing from the train set the peptides featuring in the test set..." << endl;
+  }
+  int initial_number = train_psms.size();
   if (train_psms.empty()) {
     if (VERB >= 4) {
       cerr << "Warning: no train data available, thus no common peptides "
@@ -163,6 +179,10 @@ int DataManager::RemoveCommonPeptides(const vector<PSMDescription> &test_psms,
   for ( ; it != test_psms.end(); ++it) {
     train_psms.erase(remove(train_psms.begin(), train_psms.end(), (*it)),
                      train_psms.end());
+  }
+  if (VERB >= 4) {
+    cerr << (train_psms.size() - initial_number) << " peptides were removed."
+         << endl << endl;
   }
   return 0;
 }
@@ -224,7 +244,13 @@ vector< pair<PSMDescription, string> > DataManager::RemoveInSourceFragments(
   const double &diff, const map<string, double> &index,
   bool remove_from_test, vector<PSMDescription> &train_psms,
   vector<PSMDescription> &test_psms) {
-
+  if (VERB >= 4) {
+    if (remove_from_test) {
+      cerr << "Removing in-source fragments from test and train data..." << endl;
+    } else {
+      cerr << "Removing in-source fragments from the train data..." << endl;
+    }
+  }
   // store information about whether the peptides is in train or test
   vector< pair<pair<PSMDescription, string>, bool> > combined_psms =
       CombineSets(train_psms, test_psms);
@@ -282,25 +308,45 @@ vector< pair<PSMDescription, string> > DataManager::RemoveInSourceFragments(
   train_psms.resize(distance(combined_psms.begin(), it1));
   transform(it1, combined_psms.end(), test_psms.begin(), Utilities::GetPSM);
   test_psms.resize(distance(it1, combined_psms.end()));
+  if (VERB >= 4) {
+    cerr << fragments.size() << " in-source fragments were identified." << endl;
+    if (remove_from_test) {
+      cerr << "The train set includes now " << train_psms.size() << " peptides." << endl;
+      cerr << "The test set includes now " << test_psms.size() << " peptides." << endl << endl;
+    } else {
+      cerr << "The train set includes now " << train_psms.size() << " peptides." << endl << endl;
+    }
+  }
   return fragments;
 }
 
 /* return a list of non-enzymatic peptides; this peptides are removed from the psms */
-vector<PSMDescription> DataManager::RemoveNonEnzymatic(std::vector<PSMDescription> &psms) {
+vector<PSMDescription> DataManager::RemoveNonEnzymatic(vector<PSMDescription> &psms,
+    const string &mesg) {
+  if (VERB >= 4) {
+    cerr << "Removing non enzymatic peptides from the " << mesg << "..." << endl;
+  }
+  int initial_size = psms.size();
   vector<PSMDescription>::iterator it =
       partition(psms.begin(), psms.end(), Utilities::IsEnzymatic);
   vector<PSMDescription> non_enzymatic(it, psms.end());
   //for(int i = 0; i < non_enzymatic.size(); ++i)
   //   cout << non_enzymatic[i].peptide << endl;
   psms.resize(distance(psms.begin(), it));
+  if (VERB >= 4) {
+    cerr << non_enzymatic.size() << " non-enzymatic peptides were identified " << endl;
+    cerr << "The " << mesg << " includes now " << psms.size() << " peptides." << endl << endl;
+  }
   return non_enzymatic;
 }
 
 /* write a list of in source fragmentation to a file */
 int DataManager::WriteInSourceToFile(const string &file_name,
     const vector< pair<PSMDescription, string> > &psms) {
-  ofstream out;
-  out.open(file_name.c_str());
+  if (VERB >= 4) {
+    cerr << "Writing in-source fragments to " << file_name << "..." << endl;
+  }
+  ofstream out(file_name.c_str());
   if (out.fail()) {
     if (VERB >= 2) {
       cerr << "Warning: Unable to open " << file_name << ". In-source fragments "
@@ -317,12 +363,18 @@ int DataManager::WriteInSourceToFile(const string &file_name,
         << it->second << endl;
   }
   out.close();
+  if (VERB >= 4) {
+    cerr << "Done." << endl << endl;
+  }
   return 0;
 }
 
 /* write a set of peptides to an output file */
 int DataManager::WriteOutFile(const string &file_name,
     const vector<PSMDescription> &psms, bool includes_rt) {
+  if (VERB >= 4) {
+    cerr << "Writing predictions to file " << file_name << "..." << endl;
+  }
   ofstream out;
   out.open(file_name.c_str());
   if (out.fail()) {
@@ -349,5 +401,8 @@ int DataManager::WriteOutFile(const string &file_name,
     }
   }
   out.close();
+  if (VERB >= 4) {
+    cerr << "Done." << endl << endl;
+  }
   return 0;
 }

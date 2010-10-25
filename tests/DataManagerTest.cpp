@@ -37,7 +37,7 @@ class DataManagerTest : public ::testing::Test {
      tmp_file = "./../bin/data/elude_test/standalone/tmp.txt";
      string tmp[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
      basic_alphabet.insert(tmp, tmp + 20);
-     Globals::getInstance()->setVerbose(5);
+     Globals::getInstance()->setVerbose(1);
      Enzyme::setEnzyme(Enzyme::TRYPSIN);
    }
    virtual void TearDown() { }
@@ -257,7 +257,7 @@ TEST_F(DataManagerTest, TestRemoveNonEnzymatic) {
   psms.push_back(PSMDescription("R.Y[unimod:21]YK.A", 11.1));
   psms.push_back(PSMDescription("-.Y[unimod:21]YK.A", 11.1));
 
-  vector<PSMDescription> nze= DataManager::RemoveNonEnzymatic(psms);
+  vector<PSMDescription> nze= DataManager::RemoveNonEnzymatic(psms, "test");
   EXPECT_EQ(2, nze.size()) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
   EXPECT_EQ("R.YYY.A", nze[0].peptide) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
   EXPECT_EQ("Z.YYYYYYR.A", nze[1].peptide) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;

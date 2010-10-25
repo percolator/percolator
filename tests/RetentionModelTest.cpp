@@ -45,6 +45,7 @@ class RetentionModelTest : public ::testing::Test {
 
      Normalizer::setType(Normalizer::UNI);
      rtmodel = new RetentionModel(Normalizer::getNormalizer());
+     Globals::getInstance()->setVerbose(1);
    }
 
    virtual void TearDown() {

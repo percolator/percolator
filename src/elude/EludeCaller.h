@@ -82,6 +82,8 @@ class EludeCaller{
    int AdjustLinearly(vector<PSMDescription> &psms);
    /* add a model to the library */
    int AddModelLibrary() const;
+   /* save the retention index to a file */
+   int SaveIndexToFile(const int &best_model_index) const;
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
@@ -103,6 +105,8 @@ class EludeCaller{
    inline void set_automatic_model_sel(const bool ams) { automatic_model_sel_ = ams; }
    inline void set_linear_calibration(const bool cal) { linear_calibration_ = cal; }
    inline std::pair<double, double> lts_coefficients() { return lts->getRegCoefficients(); }
+   inline void set_append_model(const bool am) { append_model_ = am; }
+   inline void set_index_file(const string &file) { index_file_ = file; }
 
  private:
    /* the default library path */

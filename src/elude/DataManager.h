@@ -64,7 +64,8 @@ class DataManager {
    static std::vector< std::pair<std::pair<PSMDescription, std::string>, bool> > CombineSets(
        std::vector<PSMDescription> &train_psms, std::vector<PSMDescription> &test_psms);
    /* remove non-enzymatic peptides*/
-   static std::vector<PSMDescription> RemoveNonEnzymatic(std::vector<PSMDescription> &psms);
+   static std::vector<PSMDescription> RemoveNonEnzymatic(std::vector<PSMDescription> &psms,
+       const std::string &mesg);
    /* write in source fragments to file */
    static int WriteInSourceToFile(const std::string &file_name,
        const std::vector< std::pair<PSMDescription, std::string> > &psms);

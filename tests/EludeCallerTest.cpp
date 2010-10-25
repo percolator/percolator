@@ -301,7 +301,101 @@ TEST_F(EludeCallerTest, TestGetFileName) {
   EXPECT_TRUE("file" == EludeCaller::GetFileName(path));
   path = "file";
   EXPECT_TRUE("file" == EludeCaller::GetFileName(path));
+  EXPECT_TRUE("train" == EludeCaller::GetFileName(train_file1));
 }
+
+TEST_F(EludeCallerTest, TestAddModelLibraryTrain) {
+  caller.set_train_file(train_file1);
+  caller.set_non_enzymatic(false);
+  caller.set_context_format(true);
+  caller.set_lib_path("./../bin/data/elude_test/calibrate_data/test_lib");
+  caller.set_append_model(true);
+  caller.Run();
+
+  // check that the file exists
+  string file_name = "./../bin/data/elude_test/calibrate_data/test_lib/train.model";
+  ifstream in(file_name.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestAddModelLibrary error: unable to open " << file_name << endl;
+  }
+  in.close();
+  remove(file_name.c_str());
+}
+
+TEST_F(EludeCallerTest, TestAddModelLibrarySave) {
+  caller.set_train_file(train_file1);
+  caller.set_non_enzymatic(false);
+  caller.set_context_format(true);
+  string model_file = "./../bin/data/elude_test/calibrate_data/test_lib/test.model";
+  caller.set_save_model_file(model_file);
+  caller.set_lib_path("./../bin/data/elude_test/calibrate_data/test_lib");
+  caller.set_append_model(true);
+  caller.Run();
+
+  // check that the file exists
+  ifstream in(model_file.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestAddModelLibrarySave error: unable to open " << model_file << endl;
+  }
+  in.close();
+  remove(model_file.c_str());
+}
+
+TEST_F(EludeCallerTest, TestSaveIndexToFileTrain) {
+  caller.set_train_file(train_file1);
+  caller.set_non_enzymatic(false);
+  caller.set_context_format(true);
+  string tmp_file = "./../bin/data/elude_test/standalone/tmp";
+  caller.set_index_file(tmp_file);
+  caller.Run();
+  ifstream in(tmp_file.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestSaveIndexToFileTrain error: unable to open " <<tmp_file << endl;
+  }
+  string tmp;
+  getline(in, tmp);
+  getline(in, tmp);
+  string aa;
+  double val;
+  for(int i = 0; i < 10; ++i) {
+    in >> aa >> tmp >> val;
+  }
+  EXPECT_TRUE(aa == "L");
+  EXPECT_NEAR(val, 0.928439, 0.5);
+
+  in.close();
+  remove(tmp_file.c_str());
+}
+
+TEST_F(EludeCallerTest, TestSaveIndexToFileAutSel) {
+  caller.set_train_file(calibration_file);
+  caller.set_test_file(test_calibration);
+  caller.set_automatic_model_sel(true);
+  caller.set_context_format(true);
+  caller.set_remove_common_peptides(false);
+  caller.set_remove_in_source(false);
+  caller.set_remove_duplicates(false);
+  caller.set_non_enzymatic(false);
+  caller.set_test_includes_rt(true);
+  EludeCaller::set_lib_path(lib_path);
+  string tmp_file = "./../bin/data/elude_test/calibrate_data/tmp";
+  caller.set_index_file(tmp_file);
+  double cov = 1.0;
+  LTSRegression::setCoverage(cov);
+  caller.Run();
+  ifstream in(tmp_file.c_str(), ios::in);
+  if (in.fail()) {
+    ADD_FAILURE() <<  "TestSaveIndexToFileAutSel error: unable to open " <<tmp_file << endl;
+  }
+  string tmp;
+  for(int i = 0; i < 12; ++i) {
+    getline(in, tmp);
+  }
+  in.close();
+  EXPECT_TRUE("L : 1.49573" == tmp);
+  remove(tmp_file.c_str());
+}
+
 /****************** TO BE REMOVED *******************/
 
 /* Real experiment */
