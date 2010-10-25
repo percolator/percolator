@@ -7,7 +7,7 @@ xsi:schemaLocation="http://per-colator.com/percolator_out/11 http://github.com/p
 p:majorVersion="1" p:minorVersion="15" p:percolator_version="Percolator version 1.15">
 
   <process_info>
-    <command_line>percolator -j data/tests/../../data/percolator_test/tab-delimited/percolatorTab -X data/tests/../../data/percolator_test/tab-delimited/pout.xml</command_line>
+    <command_line>percolator -j /scratch/temp/percolator/data/tests/../../data/percolator_test/tab-delimited/percolatorTab -X /scratch/temp/percolator/data/tests/../../data/percolator_test/tab-delimited/pout.xml</command_line>
     <other_command_line></other_command_line>
     <pi_0>0.879111</pi_0>
   </process_info>

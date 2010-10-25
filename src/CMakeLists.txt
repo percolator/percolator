@@ -46,9 +46,9 @@ else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
 
-set(xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.hxx )
-set(percolator_in xml/percolator_in-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.xsd)
-set(percolator_out xml/percolator_out-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}.xsd)
+set(xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
+set(percolator_in xml/percolator_in.xsd)
+set(percolator_out xml/percolator_out.xsd)
 
 # RUN CODESYNTHESIS TO GENERATE xsdfiles
 add_custom_command(
