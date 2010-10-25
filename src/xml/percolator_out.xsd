@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema xmlns="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out"
-xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-targetNamespace="http://github.com/percolator/percolator/raw/master/src/xml/percolator_out"
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+xmlns="http://per-colator.com/percolator_out/11" 
+targetNamespace="http://per-colator.com/percolator_out/11"
 elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 <!-- defin some general types -->
