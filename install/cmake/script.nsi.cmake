@@ -5,7 +5,7 @@ installDir $PROGRAMFILES\percolator
 
 !define MUI_ABORTWARNING
 
-!insertmacro MUI_PAGE_LICENSE "@CMAKE_SOURCE_DIR@/install/cmake/license-win32-statically-built"
+!insertmacro MUI_PAGE_LICENSE "@CMAKE_SOURCE_DIR@/src/COPYING"
 ; !insertmacro MUI_PAGE_COMPONENTS 
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
