@@ -318,8 +318,8 @@ int Sqt2Pin::run() {
       string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
       " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
       " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
-      " http://github.com/percolator/percolator/raw/master/src/xml/" +
-      "percolator_in-" + schema_major + "-" + schema_minor + ".xsd\"> \n";
+      "http://github.com/percolator/percolator/raw/xml-" + schema_major +
+      "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
   cout << headerStr;
   xmlOutputStream << headerStr;
 

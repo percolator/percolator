@@ -46,6 +46,7 @@
 #include "Enzyme.h"
 #include "config.h"
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 #include "parser.hxx"
 #include "serializer.hxx"
 #include <xercesc/dom/DOM.hpp>

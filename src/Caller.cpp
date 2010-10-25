@@ -1012,7 +1012,11 @@ void Caller::writeXML(bool uniquePeptides) {
   ofstream os;
   // http://www.edankert.com/grammars/xsd.referencing.html
   const string space = PERCOLATOR_OUT_NAMESPACE;
-  const string schema = space + " http://github.com/percolator/percolator/raw/master/src/xml/percolator_out.xsd";
+  string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
+  const string schema = space +
+    " http://github.com/percolator/percolator/raw/xml-" + schema_major +
+    "-" + schema_minor + "/src/xml/percolator_out.xsd";
   if(! uniquePeptides){
     //write to file
     os.open(xmloutFN.data(), ios::out);
