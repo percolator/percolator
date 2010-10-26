@@ -1,7 +1,4 @@
-This package produces several executables: Qvality, Percolator and Sqt2Pin.
+This package produces several executables: Qvality, Elude, Percolator and Sqt2Pin.
 
 Please read README file (located in parent directory) in order
 to build the package.
-
-The commands `./percolator --help', `./qvality --help' or './sqt2pin --help'
-will display usage help.
