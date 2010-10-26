@@ -24,12 +24,12 @@ set(tests
 )
 ELSE()
 set(tests
+  SystemTest_Sqt2pin_Correctness
   SystemTest_Percolator_Correctness
   SystemTest_Qvality_Correctness
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
   SystemTest_Elude_Performance
-  SystemTest_Sqt2pin_Correctness
 )
 ENDIF()
 
