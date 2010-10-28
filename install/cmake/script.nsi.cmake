@@ -21,7 +21,7 @@ Section "Dummy Section" SecDummy
 # I had problems installing Tokyo Cabinet and XDR on Windows /Erik
 #  file /tmp/percolatorBuild/src/converters/sqt2pin.exe
 #  file /tmp/percolatorBuild/src/converters/mzidentml2pin.exe
-#  file /tmp/percolatorBuild/src/elude/elude.exe
+  file /tmp/percolatorBuild/src/elude/elude.exe
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
@@ -30,6 +30,6 @@ Section "Uninstall"
   Delete "$INSTDIR\percolator.exe"
 #  Delete "$INSTDIR\sqt2pin.exe"
 #  Delete "$INSTDIR\mzidentml2pin.exe"
-#  Delete "$INSTDIR\elude.exe"
+  Delete "$INSTDIR\elude.exe"
   RMDir "$INSTDIR"
 SectionEnd
