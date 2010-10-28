@@ -106,7 +106,7 @@ map<string, double> RetentionModel::GetRetentionIndex() {
 map<string, double> RetentionModel::BuildRetentionIndex(const set<string> &aa_alphabet,
     const bool normalized_rts, vector<PSMDescription> &psms) {
   if (VERB >= 4) {
-    cerr << "Train retention index..." << endl;
+    cerr << "Training retention index..." << endl;
   }
   if (!normalized_rts) {
     PSMDescription::setPSMSet(psms);
@@ -142,7 +142,7 @@ map<string, double> RetentionModel::BuildRetentionIndex(const set<string> &aa_al
 int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const map<string, double> &index,
     const bool normalized_rts, vector<PSMDescription> &psms) {
   if (VERB >= 4) {
-    cerr << "Train retention model..." << endl;
+    cerr << "Training retention model..." << endl;
   }
   // normalize
   if (!normalized_rts) {
@@ -210,22 +210,28 @@ bool RetentionModel::IsSetIncluded(const set<string> &alphabet1,
   return true;
 }
 
+/* return true if the given set is included in the alphabet used in the retention features */
+bool RetentionModel::IsIncludedInAlphabet(const set<string> &alphabet,
+    const bool ignore_ptms) {
+  return  IsSetIncluded(alphabet, retention_features_.amino_acids_alphabet(),
+      ignore_ptms);
+}
+
 /* predict rt for a vector of psms; it includes calculation of retention features
 * but it assumes that the feature table is initialized.
 * Note that we cannot predict rt if the model was not trained on same alphabet */
 int RetentionModel::PredictRT(const set<string> &aa_alphabet, const bool ignore_ptms,
-    vector<PSMDescription> &psms) {
+    const string &text, vector<PSMDescription> &psms) {
   if (VERB >= 4) {
-    cerr << "Predict retention time..." << endl;
+    cerr << "Predicting retention time for the " << text << " ..." << endl;
   }
   // check if the alphabet of the test psms is in included in the alphabet for which
   // the model was built
+  //set<string>::const_iterator it1 = aa_alphabet.begin();
+  //for( ; it1 != aa_alphabet.end(); ++it1)
+  //  cout << *it1 << " ";
   if (!IsSetIncluded(aa_alphabet, retention_features_.amino_acids_alphabet(),
       ignore_ptms)) {
-    if (VERB >= 2) {
-      cerr << "Warning: the current model cannot be used to predict retention "
-           << "time for the test peptides. " << endl;
-    }
     return 1;
   }
   // if no SVR available, we cannot predict retention time

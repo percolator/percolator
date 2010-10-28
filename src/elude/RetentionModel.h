@@ -59,12 +59,12 @@ class RetentionModel {
    /* return true if the model is null */
    bool IsModelNull() const { return svr_model_ == NULL; }
    /* check if the first set is included in the second vector */
-   bool IsSetIncluded(const std::set<std::string> &alphabet1,
+   static bool IsSetIncluded(const std::set<std::string> &alphabet1,
        const std::vector<std::string> &alphabet2, const bool ignore_ptms);
    /* predict rt for a vector of psms; it includes calculation of retention features
     * but it assumes that the feature table is initialized */
    int PredictRT(const std::set<std::string> &aa_alphabet, const bool ignore_ptms,
-       std::vector<PSMDescription> &psms);
+       const std::string &text, std::vector<PSMDescription> &psms);
    /* save the model to a file */
    int SaveModelToFile(const std::string &file_name);
    /* load the model from a file */
@@ -73,6 +73,10 @@ class RetentionModel {
    int SaveRetentionIndexToFile(const std::string &file_name);
    /* print vsub_ */
    void PrintSub();
+   /* return true if the given set is included in the alphabet used in
+    * the retention features */
+   bool IsIncludedInAlphabet(const std::set<std::string> &alphabet,
+       const bool ignore_ptms);
 
    /* Accessors and mutators */
    inline RetentionFeatures& retention_features() { return retention_features_; }

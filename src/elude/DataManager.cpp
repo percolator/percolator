@@ -132,7 +132,7 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
 double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescription> &psms) {
   int no_records = psms.size();
   if (VERB >= 4) {
-    cerr << "Initializing feature table for " << no_records << "records and "
+    cerr << "Initializing feature table for " << no_records << " records and "
          << no_features << " features..." << endl;
   }
   double *feat_pointer = new double[no_records * no_features];
@@ -202,6 +202,13 @@ bool DataManager::IsFragmentOf(const PSMDescription &child, const PSMDescription
   string ms_peptide_parent = GetMSPeptide(peptide_parent);
   string peptide_child = child.peptide;
   string ms_peptide_child = GetMSPeptide(peptide_child);
+
+  // if any of the child of parent include ptms, we dont look at them
+  if (ms_peptide_child.find("[unimod:") != string::npos
+      || ms_peptide_parent.find("[unimod:") != string::npos) {
+    return false;
+  }
+
   // the peptide child has to be included in the larger peptide
   if ((ms_peptide_child.length() >= ms_peptide_parent.length()) ||
       (ms_peptide_parent.find(ms_peptide_child) == string::npos)) {
@@ -216,7 +223,8 @@ bool DataManager::IsFragmentOf(const PSMDescription &child, const PSMDescription
   double sum_parent = RetentionFeatures::IndexSum(ms_peptide_parent, index);
   double sum_child = RetentionFeatures::IndexSum(ms_peptide_child, index);
   double retention_difference = sum_child - sum_parent;
-  if (MYABS(retention_difference) > diff) {
+  double my_diff = MYABS(retention_difference);
+  if (my_diff > diff) {
     return true;
   } else {
     return false;
@@ -300,6 +308,7 @@ vector< pair<PSMDescription, string> > DataManager::RemoveInSourceFragments(
   if (!remove_from_test) {
     it1 = partition(combined_psms.begin(), it1, Utilities::IsInSourceAndTrain);
   }
+  int initial_train_size = train_psms.size();
   // remove in source fragments
   combined_psms.erase(combined_psms.begin(), it1);
   // remove fragments from initial sets
@@ -309,7 +318,10 @@ vector< pair<PSMDescription, string> > DataManager::RemoveInSourceFragments(
   transform(it1, combined_psms.end(), test_psms.begin(), Utilities::GetPSM);
   test_psms.resize(distance(it1, combined_psms.end()));
   if (VERB >= 4) {
-    cerr << fragments.size() << " in-source fragments were identified." << endl;
+    if (!remove_from_test && (initial_train_size != train_psms.size())) {
+      cerr << fragments.size() << " in-source fragments were identified in both training and "
+           << "test set." << endl;
+    }
     if (remove_from_test) {
       cerr << "The train set includes now " << train_psms.size() << " peptides." << endl;
       cerr << "The test set includes now " << test_psms.size() << " peptides." << endl << endl;

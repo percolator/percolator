@@ -82,12 +82,12 @@ TEST_F(DataManagerTest, TestLoadPeptidesRTNoContext) {
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
   for( ; it != aa_alphabet.end(); ++it) {
-    if (basic_alphabet.find(*it) == basic_alphabet.end())
+     if (basic_alphabet.find(*it) == basic_alphabet.end())
       ADD_FAILURE() << "TestLoadPeptidesRTNoContext does not give the correct results for " << (*it) << endl;
   }
 }
 
-TEST_F(DataManagerTest, TestLoadPeptidesNoRTContext) {
+TEST_F(DataManagerTest, TestLoadPeptidesPtmsNoRTContext) {
   vector<PSMDescription> psms;
   set<string> aa_alphabet;
   // case 3: no rt, with context, with ptms; the alphabet should be the 20 aa + [PHOS]
@@ -99,6 +99,7 @@ TEST_F(DataManagerTest, TestLoadPeptidesNoRTContext) {
   // check the alphabet
   basic_alphabet.insert("S[unimod:21]");
   basic_alphabet.insert("Y[unimod:21]");
+  basic_alphabet.insert("E[unimod:25]");
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
   for( ; it != aa_alphabet.end(); ++it) {

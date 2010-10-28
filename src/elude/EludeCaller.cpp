@@ -45,7 +45,7 @@ EludeCaller::EludeCaller():automatic_model_sel_(false), append_model_(false),
                            context_format_(false), test_includes_rt_(false),
                            remove_common_peptides_(false), train_features_table_(NULL),
                            test_features_table_(NULL), processed_test_(false),
-                           rt_model_(NULL), ignore_ptms_(false), lts(NULL) {
+                           rt_model_(NULL), ignore_ptms_(false), lts(NULL), supress_print_(false) {
   Normalizer::setType(Normalizer::UNI);
   Enzyme::setEnzyme(Enzyme::TRYPSIN);
   RetentionFeatures::set_ignore_ptms(false);
@@ -211,6 +211,11 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
                    "the unmodified amino acid is used ",
                    "",
                    TRUE_IF_SET);
+  cmd.defineOption("w",
+                   "supress-print",
+                   "Supress the final printing of the predictions ",
+                   "",
+                   TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
 
@@ -283,6 +288,9 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   if (cmd.optionSet("p")) {
     RetentionFeatures::set_ignore_ptms(true);
     ignore_ptms_ = true;
+  }
+  if (cmd.optionSet("w")) {
+     supress_print_ = true;
   }
   return true;
 }
@@ -496,7 +504,14 @@ int EludeCaller::Run() {
     } else if (load_model_file_.empty()){
       TrainRetentionModel();
     }
+  } else if (automatic_model_sel_) {
+    if (!test_file_.empty()) {
+      ProcessTestData();
+      processed_test_ = true;
+    }
+    best_model = AutomaticModelSelection();
   }
+
   // load a model from a file
   if (!load_model_file_.empty() && !automatic_model_sel_) {
     rt_model_ = new RetentionModel(the_normalizer_);
@@ -538,9 +553,16 @@ int EludeCaller::Run() {
     if (!processed_test_) {
       ProcessTestData();
     }
+    if (test_psms_.size() <= 0) {
+      if (VERB >= 3) {
+        cerr << "Warning: no test psms available, nothing to do. " << endl;
+        return 0;
+      }
+    }
     // initialize the feature table
     test_features_table_ = DataManager::InitFeatureTable(
             RetentionFeatures::kMaxNumberFeatures, test_psms_);
+    int ret = 1;
     if (automatic_model_sel_) {
       int index = best_model.first;
       if (index < 0) {
@@ -549,19 +571,40 @@ int EludeCaller::Run() {
         }
         exit(1);
       }
-      rt_models_[index]->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
+      rt_models_[index]->PredictRT(test_aa_alphabet_, ignore_ptms_, "test psms",
+          test_psms_);
       if (linear_calibration_ && train_psms_.size() > 1) {
-        rt_models_[index]->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
+        rt_models_[index]->PredictRT(train_aa_alphabet_, ignore_ptms_, "calibration psms",
+            train_psms_);
       }
     } else {
-      rt_model_->PredictRT(test_aa_alphabet_, ignore_ptms_, test_psms_);
+      int ret = rt_model_->PredictRT(test_aa_alphabet_, ignore_ptms_, "test psms",
+          test_psms_);
+      if (ret != 0) {
+        if (VERB >= 2) {
+          cerr << "Error: the amino acids alphabet in the test data does not match "
+               <<"the ones used to train the model. Please use the -p option to ignore the ptms "
+               <<"in the test data data are were not present in the training set " << endl;
+        }
+        exit(1);
+      }
       if (linear_calibration_ && train_psms_.size() > 1) {
-        rt_model_->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
+        ret = rt_model_->PredictRT(train_aa_alphabet_, ignore_ptms_, "training psms",
+            train_psms_);
+        if (ret != 0) {
+          if (VERB >= 2) {
+          cerr << "Error: the amino acids alphabet in training data does not match "
+               <<"the one used to train the model. Please use the -p option to ignore the ptms "
+               <<"that were not present in the set used to train the model " << endl;
+          }
+          exit(1);
+        }
       }
     }
     // linear calibration is performed only for automatic model selection or when
     // loading a model from a file
-    if (linear_calibration_ && (automatic_model_sel_ || !load_model_file_.empty())) {
+    if (linear_calibration_ && (automatic_model_sel_ || (!load_model_file_.empty() &&
+        train_psms_.size() >= 2))) {
       if (train_psms_.size() <= 1 && !automatic_model_sel_) {
         if (VERB >= 3) {
           cerr << "Warning: at least 2 training psms are needed to calibrate the model. "
@@ -569,11 +612,18 @@ int EludeCaller::Run() {
          }
        } else {
          // get the a and b coefficients
-         pair<vector<double> , vector<double> > rts = GetRTs(train_psms_);
-         lts = new LTSRegression();
-         lts->setData(rts.first, rts.second);
-         lts->runLTS();
-         AdjustLinearly(test_psms_);
+         if (linear_calibration_ && train_psms_.size() < 2) {
+           if (VERB >= 4) {
+             cerr << "Warning: No (enough) calibration peptides. Linear calibration "
+                  << "cannot be performed " << endl;
+           }
+         } else {
+           pair<vector<double> , vector<double> > rts = GetRTs(train_psms_);
+           lts = new LTSRegression();
+           lts->setData(rts.first, rts.second);
+           lts->runLTS();
+           AdjustLinearly(test_psms_);
+         }
        }
     }
     // compute performance measures
@@ -591,8 +641,18 @@ int EludeCaller::Run() {
     // write the predictions to file
     if (!output_file_.empty()) {
       DataManager::WriteOutFile(output_file_, test_psms_, test_includes_rt_);
+    } else {
+      if (VERB >= 2 && !supress_print_) {
+        PrintPredictions(test_psms_);
+      }
     }
   }
+}
+
+void EludeCaller::PrintPredictions(const vector<PSMDescription> &psms) const {
+  vector<PSMDescription>::const_iterator it = psms.begin();
+  for( ; it != psms.end(); ++it)
+    cout << it->peptide << "\t" << it->predictedTime << endl;
 }
 
 int EludeCaller::AdjustLinearly(vector<PSMDescription> &psms) {
@@ -616,41 +676,71 @@ pair<int, double> EludeCaller::AutomaticModelSelection() {
       cerr << "Error: No model available in " << library_path_ << endl;
     }
     return make_pair(-1, -1.0);
-  } else {
-    RetentionModel *m = new RetentionModel(the_normalizer_);
-    m->LoadModelFromFile(model_files[0]);
-    rt_models_.push_back(m);
-    // no calibration psms available
-    if (!train_psms_.size() > 0) {
-      if (VERB >= 3) {
-        cerr << "Warning: no calibration psms available. First model available "
-             << "in the library is selected (" << model_files[0] << ")." << endl;
-      }
-      return make_pair(0, -1.0);
-    } else {
-      m->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
-      double rank_correl = ComputeRankCorrelation(train_psms_);
-      double best_correl = rank_correl;
-      int best_index = 0;
-      //cout << model_files[0] << ", correl = " << rank_correl << endl;
-      for(int i = 1; i < model_files.size(); ++i) {
-        m = new RetentionModel(the_normalizer_);
-        m->LoadModelFromFile(model_files[i]);
-        rt_models_.push_back(m);
-        m->PredictRT(train_aa_alphabet_, ignore_ptms_, train_psms_);
-        rank_correl = ComputeRankCorrelation(train_psms_);
-        if (rank_correl > best_correl) {
-          best_correl = rank_correl;
-          best_index = i;
-        }
-      }
-      if (VERB >= 4) {
-        cerr << "-------------------------" << endl;
-        cerr << "Best model: " << model_files[best_index] << endl << endl;
-      }
-      return make_pair(best_index, best_correl);
+  }
+
+  double rank_correl = -1.0, best_correl = -1.0;
+  int best_index = -1, index = -1, original_index = -1;
+  if (train_psms_.size() <= 2) {
+    if (VERB >= 3) {
+      cerr << "Warning: not enough calibration psms available. First suitable"
+           << " model available in the library will be selected. "<< endl << endl;
     }
   }
+  RetentionModel *m = new RetentionModel(the_normalizer_);
+  m->LoadModelFromFile(model_files[0]);
+  if (!m->IsIncludedInAlphabet(train_aa_alphabet_, ignore_ptms_) ||
+      !m->IsIncludedInAlphabet(test_aa_alphabet_, ignore_ptms_)) {
+    if (VERB >= 4) {
+      cerr << "Warning: inconsistent alphabet between model and data. "
+           << "Model discarded" << endl << endl;
+    }
+  } else if (train_psms_.size() <= 2) {
+    rt_models_.push_back(m);
+    return make_pair(0, -1.0);
+  } else {
+    m->PredictRT(train_aa_alphabet_, ignore_ptms_, "calibration psms", train_psms_);
+    rt_models_.push_back(m);
+    rank_correl = ComputeRankCorrelation(train_psms_);
+    best_correl = rank_correl;
+    best_index = 0;
+    index = 0;
+    original_index = 0;
+  }
+  if (VERB >= 4) {
+    cerr << "-------------" << endl;
+  }
+  for(int i = 1; i < model_files.size(); ++i) {
+    m = new RetentionModel(the_normalizer_);
+    m->LoadModelFromFile(model_files[i]);
+    if (m->IsIncludedInAlphabet(train_aa_alphabet_, ignore_ptms_) &&
+        m->IsIncludedInAlphabet(test_aa_alphabet_, ignore_ptms_)) {
+      rt_models_.push_back(m);
+      ++index;
+      if (train_psms_.size() <= 2) {
+        return make_pair(0, -1.0);
+      }
+      m->PredictRT(train_aa_alphabet_, ignore_ptms_, "calibration psms", train_psms_);
+      rank_correl = ComputeRankCorrelation(train_psms_);
+      if (rank_correl > best_correl) {
+        best_correl = rank_correl;
+        best_index = index;
+        original_index = i;
+      }
+    } else if (VERB >= 4) {
+        cerr << "Warning: inconsistent alphabet between model and data. "
+             << "Model discarded" << endl << endl;
+    }
+    if (VERB >= 4 &&  i != model_files.size() - 1) {
+       cerr << "-------------" << endl;
+    }
+  }
+
+  if (VERB >= 4 && best_index != -1.0) {
+    cerr << "-------------------------" << endl;
+    cerr << "Best model: " << model_files[original_index] << endl << endl;
+  }
+
+  return make_pair(best_index, best_correl);
 }
 
 /* Return a list of files in a directory dir_name*/
@@ -771,7 +861,7 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
   vector<pair<PSMDescription, double> > rankedPsms;
 
   if (VERB >= 4) {
-    cerr << "Computing rank correlation between predicted and observed retebntion times"
+    cerr << "Computing rank correlation between predicted and observed retention times"
          << "..." << endl;
   }
 

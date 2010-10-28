@@ -86,7 +86,7 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
     }
     index_value = index.find(aa.substr(0, 1));
     if (index_value != index.end()) {
-      if (VERB >= 4) {
+      if (VERB >= 5) {
         cerr << "Warning: Could not find the index value for " << aa << ". Use index value for " << aa[0] << " instead" << endl;
       }
       return index_value->second;

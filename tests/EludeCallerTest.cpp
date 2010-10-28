@@ -132,7 +132,7 @@ TEST_F(EludeCallerTest, TestProcessTrainDataNoContext) {
   caller.set_test_includes_rt(true);
   caller.ProcessTrainData();
   EXPECT_EQ(135, caller.train_psms().size());
-  EXPECT_EQ(52, caller.test_psms().size());
+  EXPECT_EQ(53, caller.test_psms().size());
   vector<PSMDescription> psms = caller.train_psms();
   vector<PSMDescription>::iterator it = psms.begin();
   int count = 0;
@@ -221,14 +221,14 @@ TEST_F(EludeCallerTest, TestListDirFiles) {
   string dir = "./../bin/data/elude_test/standalone/";
   vector<string> files = EludeCaller::ListDirFiles(dir);
 
-  EXPECT_EQ(6.0, files.size());
+  EXPECT_EQ(8.0, files.size());
   sort(files.begin(), files.end());
   int pos = files[0].rfind("/");
   string f = files[0].substr(pos+1, files[0].length() - pos);
   EXPECT_TRUE("test.txt" == f);
   pos = files[files.size() - 1].rfind("/");
   f = files[files.size() - 1].substr(pos+1, files[files.size() - 1].length() - pos);
-  EXPECT_TRUE("train_2.txt" == f);
+  EXPECT_TRUE("train_3.txt" == f);
 }
 
 TEST_F(EludeCallerTest, TestAutomaticModelSelection) {

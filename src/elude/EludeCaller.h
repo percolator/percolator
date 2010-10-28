@@ -84,6 +84,8 @@ class EludeCaller{
    int AddModelLibrary() const;
    /* save the retention index to a file */
    int SaveIndexToFile(const int &best_model_index) const;
+   /* print the predicted retention times for a set of peptides */
+   void PrintPredictions(const std::vector<PSMDescription> &psms) const;
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
@@ -169,6 +171,8 @@ class EludeCaller{
    Normalizer *the_normalizer_;
    /* used for perorming lts regression */
    LTSRegression *lts;
+   /* supress final print */
+   bool supress_print_;
 };
 
 #endif /* ELUDE_ELUDECALLER_H_ */
