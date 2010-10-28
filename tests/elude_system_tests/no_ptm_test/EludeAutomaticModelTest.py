@@ -26,7 +26,7 @@ def AutomaticModelLinearAdjust():
   
   # train and save the model
   os.system(elude_path + " -t " + calibration_file + " -e " + test_file + " -b " 
-            + lib_path + " -g -f -a -v 5 2> " + log_file1)
+            + lib_path + " -w -g -f -a -v 5 2> " + log_file1)
   
   # check existence of output files 
   utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearAdjust", 
@@ -34,7 +34,7 @@ def AutomaticModelLinearAdjust():
 
   # run elude but load the best model this time 
   os.system(elude_path + " -l " + best_model + " -e " + test_file + " -g -f " 
-            + "-v 5 2> " + log_file2)
+            + "-w -v 5 2> " + log_file2)
 
   # check existence of the second output file
   utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearAdjust", 
@@ -70,7 +70,7 @@ def AutomaticModelNoLinearAdjust():
   
   # train and save the model
   os.system(elude_path + " -t " + calibration_file + " -e " + test_file + " -b " 
-            + lib_path + " -x -y -j -g -f -a -v 5 2> " + log_file1)
+            + lib_path + " -w -x -y -j -g -f -a -v 5 2> " + log_file1)
   
   # check existence of output files 
   utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearNoAdjust", 
@@ -78,7 +78,7 @@ def AutomaticModelNoLinearAdjust():
 
   # run elude but load the best model this time 
   os.system(elude_path + " -l " + best_model + " -e " + test_file + " -g -f " 
-            + "-v 5 2> " + log_file2)
+            + "-w -v 5 2> " + log_file2)
 
   # check existence of the second output file
   utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelNoLinearAdjust", 

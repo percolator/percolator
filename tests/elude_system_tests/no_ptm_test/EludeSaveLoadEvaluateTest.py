@@ -25,7 +25,7 @@ def SaveLoadContextData():
   
   # train and save the model
   os.system(elude_path + " -t " + train_file + " -e " + test_file + " -o " + out_file1
-            + " -s " + model_file + " -f -v 5 2> " + log_file)
+            + " -s " + model_file + " -f -w -v 5 2> " + log_file)
   
   # check existence of output files 
   utility.checkFilesExistence("EludeSaveLoadEvaluateTest::SaveLoadContextData", 
@@ -90,7 +90,7 @@ def SaveLoadNoContextData():
   
   # train and save the model
   os.system(elude_path + " -t " + train_file + " -e " + test_file
-            + " -s " + model_file + " -g -v 5 2> " + log_file1)
+            + " -s " + model_file + " -w -g -v 5 2> " + log_file1)
   
   # check existence of output files 
   utility.checkFilesExistence("EludeSaveLoadEvaluateTest::SaveLoadNoContextData", 
@@ -98,7 +98,7 @@ def SaveLoadNoContextData():
 
   # run elude but load the model this time 
   os.system(elude_path + " -l " + model_file + " -e " + test_file 
-            + " -g -v 5 2> " + log_file2)
+            + " -w -g -v 5 2> " + log_file2)
   
   # check that the performance measures match 
   p1, s1, delta1 = utility.checkPerformance("", log_file1)

@@ -19,7 +19,6 @@ def TrainTestContextData():
   train_file = os.path.join(data_folder, "train.txt")
   test_file = os.path.join(data_folder, "test.txt")
   out_file = os.path.join(path, "tmp.out")
-  model_file = os.path.join(path, "tmp.model")
   log_file = os.path.join(path, "tmp.log")
   # run Elude  
   os.system(elude_path + " -t " + train_file + " -e " + test_file + " -o " + out_file
