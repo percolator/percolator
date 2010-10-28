@@ -12,3 +12,9 @@ install(TARGETS elude EXPORT PERCOLATOR DESTINATION .) # Important to use relati
 IF(STATIC)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
 ENDIF()
+
+# statically include libgcc in ELUDE when cross compiling for Windows
+if(STATIC AND MINGW)
+  set_target_properties(elude PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+endif()
+
