@@ -20,12 +20,20 @@
       
       # Performance tests.
       SystemTest_Percolator_Performance
-      SystemTest_Elude_Performance
+#      SystemTest_Elude_Performance
       SystemTest_Qvality_Performance
 #      SystemTest_Elude_Performance
 
-      
-      # Workload and other types of tests.
+ EludeAutomaticModelTest.py
+      # Elude tests
+      elude_system_tests/EludeUtilities
+      elude_system_tests/no_ptm_test/EludeAutomaticModelTest
+      elude_system_tests/no_ptm_test/EludeSaveLoadEvaluateTest
+      elude_system_tests/no_ptm_test/EludeTrainEvaluateTest
+      elude_system_tests/ptm_test/EludePtmsAutomaticModelTest
+      elude_system_tests/ptm_test/EludePtmsSaveLoadTest
+      elude_system_tests/ptm_test/EludePtmsTrainEvaluateTest
+      # Workload and other types of tests
 #      SystemTest_Percolator_Workload
 #      SystemTest_Qvality_Workload
 #      SystemTest_Elude_Workload

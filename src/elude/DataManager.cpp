@@ -102,6 +102,7 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
   if (includes_rt) {
     double retention_time;
     while (in >> peptide_sequence >> retention_time) {
+      //cout << peptide_sequence << " " << retention_time << endl;
       psms.push_back(PSMDescription(peptide_sequence, retention_time));
       if (includes_context) {
         len = peptide_sequence.length();
@@ -204,8 +205,8 @@ bool DataManager::IsFragmentOf(const PSMDescription &child, const PSMDescription
   string ms_peptide_child = GetMSPeptide(peptide_child);
 
   // if any of the child of parent include ptms, we dont look at them
-  if (ms_peptide_child.find("[unimod:") != string::npos
-      || ms_peptide_parent.find("[unimod:") != string::npos) {
+  if (ms_peptide_child.find("[") != string::npos
+      || ms_peptide_parent.find("[") != string::npos) {
     return false;
   }
 
