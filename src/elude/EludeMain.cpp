@@ -14,20 +14,27 @@
  limitations under the License.
 
  *******************************************************************************/
+
 #include "Option.h"
 #include "Globals.h"
-#include "Elude.h"
-
-#include <math.h>
-#include <cmath>
+#include "EludeCaller.h"
 
 int main(int argc, char** argv) {
-  RTPredictor* pCaller = new RTPredictor();
+  EludeCaller* eCaller = new EludeCaller();
   int retVal = 0;
-  if (pCaller->parseOptions(argc, argv)) {
-    pCaller->run();
+  if (eCaller->ParseOptions(argc, argv)) {
+    eCaller->Run();
   }
-  delete pCaller;
+  delete eCaller;
   Globals::clean();
   return retVal;
 }
+
+/*
+#include <iostream>
+#include "RetentionFeatures.h"
+
+int main(int argc, char** argv) {
+
+  return 0;
+}*/

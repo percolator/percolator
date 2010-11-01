@@ -28,7 +28,7 @@ int LTSRegression::noSubsets = 500;
 // maximum difference between q2 and q1 to achieve convergence
 double LTSRegression::epsilon = 0.0001;
 // cardinal of |H|(percentage of the total number of points used to build the regression line)
-double LTSRegression::percentageH = 0.9;
+double LTSRegression::percentageH = 0.95;
 
 LTSRegression::LTSRegression() :
   h(-1), regCoefficients(make_pair(0.0, 0.0)) {
