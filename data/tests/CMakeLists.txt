@@ -57,7 +57,7 @@ endforeach(current_system_test)
 # Google tests are built explicitely.
 IF (GOOGLE_TEST AND (NOT EXCLUDE_ELUDE))
   # find_package(GTest REQUIRED)
-  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/../../src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
   add_executable (gtest_unit Unit_tests_main.cpp)
   IF (NOT EXCLUDE_CONVERTERS)
     target_link_libraries (gtest_unit eludelibrary perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES} ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
