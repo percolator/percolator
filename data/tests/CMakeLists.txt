@@ -12,12 +12,12 @@ set(tests
   SystemTest_Qvality_Correctness
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
-  SystemTest_Elude_AutomaticModel.py
-  SystemTest_Elude_PtmsAutomaticModel.py
-  SystemTest_Elude_PtmsSaveLoad.py
-  SystemTest_Elude_PtmsTrainEvaluate.py
-  SystemTest_Elude_SaveLoadEvaluate.py
-  SystemTest_Elude_TrainEvaluate.py
+  SystemTest_Elude_AutomaticModel
+  SystemTest_Elude_PtmsAutomaticModel
+  SystemTest_Elude_PtmsSaveLoad
+  SystemTest_Elude_PtmsTrainEvaluate
+  SystemTest_Elude_SaveLoadEvaluate
+  SystemTest_Elude_TrainEvaluate
 )
 ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
 set(tests
@@ -34,12 +34,12 @@ set(tests
   SystemTest_Qvality_Correctness
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
-  SystemTest_Elude_AutomaticModel.py
-  SystemTest_Elude_PtmsAutomaticModel.py
-  SystemTest_Elude_PtmsSaveLoad.py
-  SystemTest_Elude_PtmsTrainEvaluate.py
-  SystemTest_Elude_SaveLoadEvaluate.py
-  SystemTest_Elude_TrainEvaluate.py
+  SystemTest_Elude_AutomaticModel
+  SystemTest_Elude_PtmsAutomaticModel
+  SystemTest_Elude_PtmsSaveLoad
+  SystemTest_Elude_PtmsTrainEvaluate
+  SystemTest_Elude_SaveLoadEvaluate
+  SystemTest_Elude_TrainEvaluate
 )
 ENDIF()
 
