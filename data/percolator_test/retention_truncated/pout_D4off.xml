@@ -7,7 +7,7 @@ xsi:schemaLocation="http://per-colator.com/percolator_out/11 http://github.com/p
 p:majorVersion="1" p:minorVersion="15" p:percolator_version="Percolator version 1.15">
 
   <process_info>
-    <command_line>percolator -E /scratch/temp/percolator/data/tests/../../data/percolator_test/retention_truncated/pin.xml -X /scratch/temp/percolator/data/tests/../../data/percolator_test/retention_truncated/pout_D4off.xml</command_line>
+    <command_line>percolator -E data/tests/../../data/percolator_test/retention_truncated/pin.xml -X data/tests/../../data/percolator_test/retention_truncated/pout_D4off.xml</command_line>
     <other_command_line>/scratch/temp/percolatorBuild/src/converters/sqt2pin -o /scratch/temp/bin/data/percolator_test/retention/pin.xml -2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.ms2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.sqt /scratch/behemot_public/ms2/elude_apex_data/xml/decoy/Celegans_Jupter_C12_60min_grad.sqt</other_command_line>
     <pi_0>0.650289</pi_0>
   </process_info>

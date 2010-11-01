@@ -23,6 +23,13 @@ if exitStatus is not None:
   print "...TEST FAILED: percolator (no options) terminated with " + str(exitStatus) + " exit status"
   exit(1)
 
+processFile = os.popen("xmllint --noout --schema http://github.com/percolator/percolator/raw/xml-1-1/src/xml/percolator_out.xsd " +
+  os.path.join(path, "data/percolator_test/sqt2pin/pout.xml"))
+exitStatus = processFile.close()
+if exitStatus is not None:
+  print "...TEST FAILED: percolator (no options) produced an invalid/ill-formed output: " + os.path.join(path, "data/percolator_test/sqt2pin/pout.xml")
+  exit(1)
+
 # PERCOLATOR_m
 # running percolator on pin.xml with -m option;
 # -m 2 -E /scratch/temp/bin/data/percolator_test/sqt2pin/pin.xml -X /scratch/temp/bin/data/percolator_test/m/pout.xml
