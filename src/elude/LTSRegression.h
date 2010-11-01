@@ -83,7 +83,7 @@ class LTSRegression {
     static double epsilon;
     // cardinal of H (percentage of the total number of points used to build the regression line)
     static double percentageH;
-    // coverage (number of points used to generate the regression line); the default value will be 0.75*n
+    // coverage (number of points used to generate the regression line); the default value will be 0.95*n
     int h;
     // data points
     vector<dataPoint> data;

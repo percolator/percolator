@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+ Copyright 2006-2010 Lukas Käll <lukas.kall@cbr.su.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -14,27 +14,21 @@
  limitations under the License.
 
  *******************************************************************************/
-
-#include "Option.h"
-#include "Globals.h"
-#include "EludeCaller.h"
-
-int main(int argc, char** argv) {
-  EludeCaller* eCaller = new EludeCaller();
-  int retVal = 0;
-  if (eCaller->ParseOptions(argc, argv)) {
-    eCaller->Run();
-  }
-  delete eCaller;
-  Globals::clean();
-  return retVal;
-}
-
 /*
-#include <iostream>
-#include "RetentionFeatures.h"
+ * @ Created by Luminita Moruz
+ * Sep, 2010
+ */
+/*
+ * Main file for Google Test
+ * Just run all tests
+ */
+#include "RetentionFeaturesTest.cpp"
+#include "DataManagerTest.cpp"
+#include "LibSVRModelTest.cpp"
+#include "RetentionModelTest.cpp"
+#include "EludeCallerTest.cpp"
 
 int main(int argc, char** argv) {
-
-  return 0;
-}*/
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

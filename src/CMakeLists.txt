@@ -77,18 +77,15 @@ if(NOT EXCLUDE_CONVERTERS)
   add_subdirectory(converters)
 endif()
 
-
-
 # INCLUDE ARRAYLIBRARY HEADERS FOR PERCLIBRARY 
 include_directories(. ArrayLibrary)
 
-# DECLARE LIBRARY PERCLIBRARY
-add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
 
-
-###############################################################################
+#############################################################################
 # PERCOLATOR
 ###############################################################################
+
+add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
 
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)

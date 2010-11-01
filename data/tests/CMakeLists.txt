@@ -12,7 +12,14 @@ set(tests
   SystemTest_Qvality_Correctness
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
-  SystemTest_Elude_Performance
+  SystemTest_Elude_AutomaticModel.py
+  SystemTest_Elude_PtmsAutomaticModel.py
+  SystemTest_Elude_PtmsSaveLoad.py
+  SystemTest_Elude_PtmsTrainEvaluate.py
+  SystemTest_Elude_SaveLoadEvaluate.py
+  SystemTest_Elude_TrainEvaluate.py
+  SystemTest_Elude_Utilities.py
+
 )
 ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
 set(tests
@@ -47,8 +54,8 @@ endforeach(current_system_test)
 # Google tests are built explicitely.
 IF (GOOGLE_TEST)
   # find_package(GTest REQUIRED)
-  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/../gtest-1.5.0/include/)
-  add_executable (gtest_unit simple_tests.cpp)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/../gtest-1.5.0/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/)
+  add_executable (gtest_unit Unit_tests_main.cpp)
   target_link_libraries (gtest_unit perclibrary ArrayLibrary ${XERCESC_LIBRARIES} ${CMAKE_BINARY_DIR}/../gtest-1.5.0/build/libgtest.a -pthread)
   IF (NOT EXCLUDE_CONVERTERS)
     target_link_libraries (gtest_unit perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES} ${CMAKE_BINARY_DIR}/../gtest-1.5.0/build/libgtest.a -pthread)

@@ -878,7 +878,7 @@ void RTModel::calcRetentionFeatures(PSMDescription& psm) {
 
  // bulkiness
  if (selected_features & 1 << 9)
- *(features++) = bulkinessSum(pep);
+ *(features++) = (pep);
 
  // no of consecutive KRDENQ
  if (selected_features & 1 << 10)

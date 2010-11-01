@@ -23,10 +23,11 @@
 #include <vector>
 #include <string>
 using namespace std;
-#include "FeatureNames.h"
+//#include "FeatureNames.h"
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
 #include "Globals.h"
+
 
 StdvNormalizer::StdvNormalizer() {
 }
@@ -35,10 +36,10 @@ StdvNormalizer::~StdvNormalizer() {
 }
 
 void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<
-    double>& out) {
+    double>& out, int num_feat) {
   double sum = 0;
   unsigned int i = 0;
-  for (; i < FeatureNames::getNumFeatures(); i++) {
+  for (; i < num_feat; i++) {
     out[i] = in[i] / div[i];
     sum += sub[i] * in[i] / div[i];
   }
@@ -46,10 +47,10 @@ void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<
 }
 
 void StdvNormalizer::normalizeweight(const vector<double>& in, vector<
-    double>& out) {
+    double>& out, int num_feat) {
   double sum = 0;
   size_t i = 0;
-  for (; i < FeatureNames::getNumFeatures(); i++) {
+  for (; i < num_feat; i++) {
     out[i] = in[i] * div[i];
     sum += sub[i] * in[i];
   }
