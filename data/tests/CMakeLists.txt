@@ -18,8 +18,6 @@ set(tests
   SystemTest_Elude_PtmsTrainEvaluate.py
   SystemTest_Elude_SaveLoadEvaluate.py
   SystemTest_Elude_TrainEvaluate.py
-  SystemTest_Elude_Utilities.py
-
 )
 ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
 set(tests
@@ -42,7 +40,6 @@ set(tests
   SystemTest_Elude_PtmsTrainEvaluate.py
   SystemTest_Elude_SaveLoadEvaluate.py
   SystemTest_Elude_TrainEvaluate.py
-  SystemTest_Elude_Utilities.py
 )
 ENDIF()
 
