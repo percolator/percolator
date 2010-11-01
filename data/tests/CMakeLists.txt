@@ -55,13 +55,14 @@ endforeach(current_system_test)
 
 
 # Google tests are built explicitely.
-IF (GOOGLE_TEST)
+IF (GOOGLE_TEST AND (NOT EXCLUDE_ELUDE))
   # find_package(GTest REQUIRED)
-  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/../gtest-1.5.0/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
   add_executable (gtest_unit Unit_tests_main.cpp)
-  target_link_libraries (gtest_unit perclibrary ArrayLibrary ${XERCESC_LIBRARIES} ${CMAKE_BINARY_DIR}/../gtest-1.5.0/build/libgtest.a -pthread)
   IF (NOT EXCLUDE_CONVERTERS)
-    target_link_libraries (gtest_unit perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES} ${CMAKE_BINARY_DIR}/../gtest-1.5.0/build/libgtest.a -pthread)
+    target_link_libraries (gtest_unit eludelibrary perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES} ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
+  ELSE()
+    target_link_libraries (gtest_unit eludelibrary perclibrary ArrayLibrary ${XERCESC_LIBRARIES} ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
   ENDIF ()
   install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION .) # Important to use relative path here (used by CPack)!
-ENDIF(GOOGLE_TEST)
+ENDIF()

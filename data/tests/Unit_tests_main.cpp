@@ -22,11 +22,11 @@
  * Main file for Google Test
  * Just run all tests
  */
-#include "RetentionFeaturesTest.cpp"
-#include "DataManagerTest.cpp"
-#include "LibSVRModelTest.cpp"
-#include "RetentionModelTest.cpp"
-#include "EludeCallerTest.cpp"
+#include "UnitTest_Elude_RetentionFeatures.cpp"
+#include "UnitTest_Elude_DataManager.cpp"
+#include "UnitTest_Elude_LibSVRModel.cpp"
+#include "UnitTest_Elude_RetentionModel.cpp"
+#include "UnitTest_Elude_EludeCaller.cpp"
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
