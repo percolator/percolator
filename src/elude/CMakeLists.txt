@@ -6,7 +6,7 @@ add_library(eludelibrary RetentionFeatures.cpp DataManager.cpp EludeMain.cpp Lib
 
 add_executable(elude ${ELUDE_SOURCES})
 
-target_link_libraries(elude perclibrary ArrayLibrary  ${XERCESC_LIBRARIES} )
+target_link_libraries(elude eludelibrary ArrayLibrary  ${XERCESC_LIBRARIES} )
 
 install(TARGETS elude EXPORT PERCOLATOR DESTINATION .) # Important to use relative path here (used by CPack)!
 
