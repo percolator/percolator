@@ -5,47 +5,49 @@
 
 import os
 import sys
-sys.path.append('..')
-import EludeUtilities as utility
+import SystemTest_Elude_Utilities as utility
+
+path = os.path.join(os.path.dirname(sys.argv[0]), "../../")
+out_path = "/tmp/"
 
 # case 1: linear adjustment performed; the performances are compared to 
 # when explicitly loading the best model 
 # context data, rt in the test 
 def AutomaticModelLinearAdjust():
   print "Running EludeAutomaticModelTest::AutomaticModelLinearAdjust..."
-  path = os.path.dirname(sys.argv[0])
-  
-  elude_path = os.path.join(path, "./../../", "elude")
-  data_folder = os.path.join(path, "./../../", "data/elude_test/calibrate_data/")  
-  lib_path = os.path.join(path, "./../../", "data/elude_test/calibrate_data/test_lib")  
-  best_model = os.path.join(path, "./../../", "data/elude_test/calibrate_data/test_lib/Jupiter_60.model")  
+  #elude_path = os.path.join(path, "./../../", "elude")
+  data_folder = os.path.join(path, "data/elude_test/calibrate_data/")  
+  lib_path = os.path.join(path, "data/elude_test/calibrate_data/test_lib")  
+  best_model = os.path.join(path, "data/elude_test/calibrate_data/test_lib/Jupiter_60.model")  
   calibration_file = os.path.join(data_folder, "calibrate.txt")
   test_file = os.path.join(data_folder, "test.txt")
-  log_file1 = os.path.join(path, "tmp1.log")
-  log_file2 = os.path.join(path, "tmp2.log")
+  log_file1 = os.path.join(out_path, "tmp1.log")
+  log_file2 = os.path.join(out_path, "tmp2.log")
   
-  # train and save the model
-  os.system(elude_path + " -t " + calibration_file + " -e " + test_file + " -b " 
+  # automatic model selection
+  os.system("elude" + " -t " + calibration_file + " -e " + test_file + " -b " 
             + lib_path + " -w -g -f -a -v 5 2> " + log_file1)
   
   # check existence of output files 
-  utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearAdjust", 
-                              [log_file1])
-
+  if not utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearAdjust", [log_file1]):
+    exit(1)
+  
   # run elude but load the best model this time 
-  os.system(elude_path + " -l " + best_model + " -e " + test_file + " -g -f " 
+  os.system("elude" + " -l " + best_model + " -e " + test_file + " -g -f " 
             + "-w -v 5 2> " + log_file2)
 
   # check existence of the second output file
-  utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearAdjust", 
-                              [log_file2])
+  if not utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearAdjust", [log_file2]):
+    utility.cleanUp([log_file1]) 
+    exit(1)
 
   p1, s1, delta1 = utility.checkPerformance("", log_file1)
   p2, s2, delta2 = utility.checkPerformance("", log_file2)
   if abs(p1 - p2) > 0.1 or abs(s1 - s2) > 0.1: 
     utility.failTest("EludeAutomaticModelTest::AutomaticModelLinearAdjust, incorrect \
     performance figures")
-    return 
+    utility.cleanUp([log_file1, log_file2])
+    exit(1)
   
   # clean-up 
   utility.cleanUp([log_file1, log_file2])
@@ -59,37 +61,40 @@ def AutomaticModelNoLinearAdjust():
   print "Running EludeAutomaticModelTest::AutomaticModelNoLinearAdjust..."
   path = os.path.dirname(sys.argv[0])
   
-  elude_path = os.path.join(path, "./../../", "elude")
-  data_folder = os.path.join(path, "./../../", "data/elude_test/calibrate_data/")  
-  lib_path = os.path.join(path, "./../../", "data/elude_test/calibrate_data/test_lib")  
-  best_model = os.path.join(path, "./../../", "data/elude_test/calibrate_data/test_lib/yeast_20.model")  
+  data_folder = os.path.join(path, "data/elude_test/calibrate_data/")  
+  lib_path = os.path.join(path, "data/elude_test/calibrate_data/test_lib")  
+  best_model = os.path.join(path, "data/elude_test/calibrate_data/test_lib/yeast_20.model")  
   calibration_file = os.path.join(data_folder, "calibrate_1.txt")
   test_file = os.path.join(data_folder, "test_1.txt")
   log_file1 = os.path.join(path, "tmp1.log")
   log_file2 = os.path.join(path, "tmp2.log")
   
-  # train and save the model
-  os.system(elude_path + " -t " + calibration_file + " -e " + test_file + " -b " 
+  # automatic model selection
+  os.system("elude" + " -t " + calibration_file + " -e " + test_file + " -b " 
             + lib_path + " -w -x -y -j -g -f -a -v 5 2> " + log_file1)
   
   # check existence of output files 
-  utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearNoAdjust", 
-                              [log_file1])
+  if not utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelLinearNoAdjust", 
+                              [log_file1]):
+    exit(1)
 
   # run elude but load the best model this time 
-  os.system(elude_path + " -l " + best_model + " -e " + test_file + " -g -f " 
+  os.system("elude" + " -l " + best_model + " -e " + test_file + " -g -f " 
             + "-w -v 5 2> " + log_file2)
 
   # check existence of the second output file
-  utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelNoLinearAdjust", 
-                              [log_file2])
+  if not utility.checkFilesExistence("EludeAutomaticModelTest::AutomaticModelNoLinearAdjust", 
+                              [log_file2]):
+    utility.cleanUp([log_file1])
+    exit(1)
 
   p1, s1, delta1 = utility.checkPerformance("", log_file1)
   p2, s2, delta2 = utility.checkPerformance("", log_file2)
   if abs(p1 - p2) > 0.1 or abs(s1 - s2) > 0.1 or abs(delta1 - delta2) > 1.0: 
     utility.failTest("EludeAutomaticModelTest::AutomaticModelNoLinearAdjust, incorrect \
     performance figures")
-    return 
+    utility.cleanUp([log_file1, log_file2])
+    exit(1)
   
   # clean-up 
   utility.cleanUp([log_file1, log_file2])
