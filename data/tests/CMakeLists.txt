@@ -18,6 +18,7 @@ set(tests
   SystemTest_Elude_PtmsTrainEvaluate
   SystemTest_Elude_SaveLoadEvaluate
   SystemTest_Elude_TrainEvaluate
+  UnitTest_Elude_RunAllTests
 )
 ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
 set(tests
@@ -40,6 +41,7 @@ set(tests
   SystemTest_Elude_PtmsTrainEvaluate
   SystemTest_Elude_SaveLoadEvaluate
   SystemTest_Elude_TrainEvaluate
+  UnitTest_Elude_RunAllTests
 )
 ENDIF()
 

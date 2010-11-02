@@ -79,17 +79,18 @@ def TrainTestNoContextData():
                               [insource_file, out_file, log_file]):
     utility.cleanUp([insource_file, out_file, log_file])
     exit(1)
-
+  
   # check in source fragmentation
-  if not utility.testFileContent(insource_file, 6, [3,4,5], 
-                          ["YGASAGNVGDEGGVAPNIQTAEEALDLIVDAIK	105.947	test\n",
-                           "IQFPHVADLLTSIQPPLTL	75.6913	train\n", 
+  if not utility.testFileContent(insource_file, 5, [3,4], 
+                          ["IQFPHVADLLTSIQPPLTL	75.6913	train\n", 
                            "YQGYAEDVR	20.4553	test\n"]):
+    utility.failTest("Incorrect content of the in-source fragmentation file")
     utility.cleanUp([insource_file, out_file, log_file])
     exit(1)
   
   # check the number of lines in the output file   
   if not utility.testFileContent(out_file, 56, [], []):
+    utility.failTest("Incorrect number of lines in the output file")
     utility.cleanUp([insource_file, out_file, log_file])
     exit(1)
     
@@ -98,7 +99,7 @@ def TrainTestNoContextData():
                            log_file, (0.87, 0.77, 73)) == (None, None, None):
     utility.cleanUp([insource_file, out_file, log_file])
     exit(1)
- 
+
   # clean-up 
   utility.cleanUp([out_file, log_file, insource_file])
   
