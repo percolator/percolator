@@ -70,7 +70,6 @@ string Caller::extendedGreeter() {
 }
 
 string Caller::greeter() {
-  int d = SCHEMA_VERSION_MAJOR;
   ostringstream oss;
   oss << "Percolator version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;

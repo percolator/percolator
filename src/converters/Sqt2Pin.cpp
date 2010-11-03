@@ -8,8 +8,6 @@
 #include "Sqt2Pin.h"
 
 Sqt2Pin::Sqt2Pin() {
-  // default value for xml output in case sqt2pin is invoked without -o option
-  xmlOutputFN="/tmp/sqt2pinOutput.xml";
 }
 
 string Sqt2Pin::greeter() {
@@ -246,9 +244,14 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase& database){
 
 int Sqt2Pin::run() {
   // Content of sqt files is merged: preparing to write it to xml file
-  ofstream xmlOutputStream;
-  xmlOutputStream.open(xmlOutputFN.c_str());
-  xercesc::XMLPlatformUtils::Initialize ();
+	ofstream xmlOutputStream;
+	xmlOutputStream.open(xmlOutputFN.c_str());
+	if(!xmlOutputStream){
+		cout << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
+		cout << "Please invoke sqt2pin with a valid -o option" << endl;
+		exit(-1);
+	}
+	xercesc::XMLPlatformUtils::Initialize ();
 
   // initializing features and experiment
   std::auto_ptr<percolatorInNs::featureDescriptions>
@@ -320,8 +323,13 @@ int Sqt2Pin::run() {
       " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
       " http://github.com/percolator/percolator/raw/xml-" + schema_major +
       "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
-  cout << headerStr;
-  xmlOutputStream << headerStr;
+  cout << "Sqt2pin" << endl;
+  cout << "Written by Lukas Käll (lukall@u.washington.edu)" << endl << endl;
+  if (xmlOutputFN == "") cout << headerStr;
+  else {
+	  xmlOutputStream << headerStr;
+	  cout <<  "The output will be written to " << xmlOutputFN << endl;
+  }
 
   std::string enzyme;
   switch ( Enzyme::getEnzymeType() ) {
@@ -332,29 +340,33 @@ int Sqt2Pin::run() {
   }
 
   string enzymeStr = "\n<enzyme>" + enzyme + "</enzyme>\n";
-  cout << enzymeStr;
-  xmlOutputStream << enzymeStr;
+  if (xmlOutputFN == "") cout << enzymeStr;
+  else xmlOutputStream << enzymeStr;
 
   string commandLine = "\n<process_info>\n" +
     string("  <command_line>") + call.substr(0,call.length()-1) + "</command_line>\n"+
     "</process_info>\n";
-  cout << commandLine;
-  xmlOutputStream << commandLine;
+  if (xmlOutputFN == "") cout << commandLine;
+  else xmlOutputStream << commandLine;
 
-  // print to cout (and populate xml file with) experiment information
-  serializer ser;
-  ser.start (std::cout);
-  ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-      ex_p->featureDescriptions());
-  database.print(ser);
-  std::cout << "</experiment>" << std::endl;
-  serializer serXML;
-  serXML.start (xmlOutputStream);
-  serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-      ex_p->featureDescriptions() );
-  database.print(serXML);
-  xmlOutputStream << "</experiment>" << std::endl;
-  xmlOutputStream.close(); // close stream for output XML file
+  // print to cout (or populate xml file with) experiment information
+  if (xmlOutputFN == "") {
+	  serializer ser;
+	  ser.start (std::cout);
+	  ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
+			  ex_p->featureDescriptions());
+	  database.print(ser);
+	  std::cout << "</experiment>" << std::endl;
+  } else {
+	  serializer serXML;
+	  serXML.start (xmlOutputStream);
+	  serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
+			  ex_p->featureDescriptions() );
+	  database.print(serXML);
+	  xmlOutputStream << "</experiment>" << std::endl;
+	  xmlOutputStream.close(); // close stream for output XML file
+	  cout << "Termination successful."<< endl;
+  }
 
   return 0;
 }
