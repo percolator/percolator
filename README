@@ -2,7 +2,7 @@ Percolator, Elude and Qvality software package for protein classification.
 October 2010
 Lukas Käll <lukas.kall@cbr.su.se>
 
-DOWNLOAD AND INSTALL
+DOWNLOAD, INSTALL AND TEST
 The latest releases of Percolator can be found at among the downloads. There 
 you may find package for Linux and compiled executables for Win32. Source 
 bundles are available to build Percolator from scratch if you are running a
@@ -19,7 +19,7 @@ INSTALLING PERCOLATOR (from packages or installer)
 Linux
 Download the appropriate package from the downloads: 
   "DEB" is available for Debian distributions (such as Ubuntu)
-  "RPM" for RedHat (such as CentOS).
+  "RPM" for Red Hat (such as CentOS).
 For Debian distributions (e.g. Ubuntu)), issue the following command in the 
 directory where the package has been downloaded:
   $ sudo dpkg -i percolator[_converters]-v[X]-linux-[ARCH].deb
@@ -50,16 +50,17 @@ Sqt2pin converter.
 BUILDING PERCOLATOR (from the latest snapshot or the repository)
 
 The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
-Make, Cmake and a c++ compiler are required; the following libraries are also
-needed to build Percolator: libxerces-c-dev libboost-dev. If you intend to 
+Make, Cmake and a C++ compiler are required; the following libraries are also
+needed to build Percolator: libxerces-c-dev, libboost-dev. If you intend to 
 build Sqt2pin too (ubuntu_percolator_converters.sh) you will also need: 
-gengetopt libtokyocabinet-dev zlib1g-dev.
+gengetopt, libtokyocabinet-dev, zlib1g-dev.
 If you have sudo priviledges, issue the following command:
   $ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake 
 And, optionally, if interested in building the Sqt2pin (converters) as well:
   $ sudo apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
 If this is not the case, you will have to manually install programs and 
-libraries. The same goes for older versions of Ubuntu as explained above.
+libraries. The same goes for older versions of Ubuntu as explained above
+in the section "INSTALLING PERCOLATOR" under "Linux".
 
 Download the latest percolator[_converters]-v[X]-linux-[ARCH].tar.gz tar-ball.
 Issue the following command in the directory where the source bundle has been 
@@ -68,13 +69,41 @@ downloaded:
   $ cd percolator-v[X]-linux-[ARCH]
   $ ./install/ubuntu_percolator[_converters].sh
 The script will install the Percolator (and optionally the converters) binaries
-in the directory /tmp/percolatorInstall and run system tests (if you are 
-installing the version without converters (ubuntu_percolator.sh) some of the 
-tests will not succeed). The tests regenerate most of the files in the data
-directory.
+in the directory /tmp/percolatorInstall and run system tests. In case of 
+unsuccessful execution, please refer to the next session, "TESTING PERCOLATOR".
+Log files are stored in /tmp/percolatorBuild/Testing/.
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
 This will create a directory called "percolator"; Enter it and install as 
 explained above.
+
+
+***
+
+
+TESTING PERCOLATOR
+
+
+A series of scripts that execute system tests are shipped with the source code; 
+as explained above under "BUILDING PERCOLATOR", those are run automatically 
+during the build process. 
+In order to be able to properly execute the scripts, the following are require:
+_python 2.6 interpreter 
+_xmllint. 
+Those are not stated among the requirements in "BUILDING PERCOLATOR" since a 
+working version of the software can be compiled without them, but they need to
+be installed in order for the tests to succeed.
+To run tests manually, install Percolator and download the latest source tar-ball 
+from the downloads; then issue the following commands:
+
+  $ tar -zxvf percolator[_converters]-v[X]-linux-[ARCH].tar.gz
+  $ cd percolator[_converters]-v[X]-linux-[ARCH]
+  $ python ./data/tests/System_test_[T]
+
+For any test T in the tests subdirectory (some require Sqt2pin to succeed).
+
+Once you have downloaded and extracted the contents of the Percolator tar-ball
+as explained above, you can also run Percolator manually on the data contained
+in the data/percolator_test/*.
 
