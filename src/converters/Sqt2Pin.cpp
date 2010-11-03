@@ -163,7 +163,7 @@ void Sqt2Pin::readRetentionTime(string filename) {
   r.readFile(cstr, s);
   while(s.getScanNumber() != 0){
     // check whether an EZ lines is available
-    if(s.atEZ(0).pRTime != 0){
+    if(s.sizeEZ() != 0){
       // for each EZ line (each psm)
       for(int i = 0; i<s.sizeEZ(); i++){
         // save experimental mass and retention time
