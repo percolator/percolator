@@ -19,10 +19,9 @@
  * Sep, 2010
  */
 /* This file include test cases for the DataManager class */
-#include "stdio.h"
 #include <fstream>
 #include <gtest/gtest.h>
-
+#include <stdio.h>  /* defines FILENAME_MAX */
 #include "DataManager.h"
 #include "PSMDescription.h"
 #include "Globals.h"
@@ -31,10 +30,10 @@
 class DataManagerTest : public ::testing::Test {
  protected:
    virtual void SetUp() {
-     train_file1 = "./../bin/data/elude_test/standalone/train.txt";
-     train_file2 = "./../bin/data/elude_test/standalone/train_1.txt";
-     test_file1 = "./../bin/data/elude_test/standalone/test_2.txt";
-     tmp_file = "./../bin/data/elude_test/standalone/tmp.txt";
+     train_file1 = "data/elude_test/standalone/train.txt";
+     train_file2 = "data/elude_test/standalone/train_1.txt";
+     test_file1 = "data/elude_test/standalone/test_2.txt";
+     tmp_file = "/tmp/tmp.txt";
      string tmp[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
      basic_alphabet.insert(tmp, tmp + 20);
      Globals::getInstance()->setVerbose(1);

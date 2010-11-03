@@ -30,14 +30,14 @@
 class EludeCallerTest : public ::testing::Test {
  protected:
    virtual void SetUp() {
-     train_file1 = "./../bin/data/elude_test/standalone/train.txt";
-     test_file1 =  "./../bin/data/elude_test/standalone/test.txt";
-     train_file2 = "./../bin/data/elude_test/standalone/train_1.txt";
-     test_file2 = "./../bin/data/elude_test/standalone/test_1.txt";
-     tmp = "./../bin/data/elude_test/standalone/tmp.txt";
-     calibration_file = "./../bin/data/elude_test/calibrate_data/calibrate.txt";
-     lib_path = "./../bin/data/elude_test/calibrate_data/test_lib";
-     test_calibration = "./../bin/data/elude_test/calibrate_data/test.txt";
+     train_file1 = "data/elude_test/standalone/train.txt";
+     test_file1 =  "data/elude_test/standalone/test.txt";
+     train_file2 = "data/elude_test/standalone/train_1.txt";
+     test_file2 = "data/elude_test/standalone/test_1.txt";
+     tmp = "/tmp/tmp.txt";
+     calibration_file = "data/elude_test/calibrate_data/calibrate.txt";
+     lib_path = "data/elude_test/calibrate_data/test_lib";
+     test_calibration = "data/elude_test/calibrate_data/test.txt";
      psms_.push_back(PSMDescription(10, 1));
      psms_.push_back(PSMDescription(10, 3));
      psms_.push_back(PSMDescription(10, 12));
@@ -218,7 +218,7 @@ TEST_F(EludeCallerTest, TestSaveLoadModel) {
 }
 
 TEST_F(EludeCallerTest, TestListDirFiles) {
-  string dir = "./../bin/data/elude_test/standalone/";
+  string dir = "data/elude_test/standalone/";
   vector<string> files = EludeCaller::ListDirFiles(dir);
 
   EXPECT_EQ(8.0, files.size());
@@ -308,12 +308,12 @@ TEST_F(EludeCallerTest, TestAddModelLibraryTrain) {
   caller.set_train_file(train_file1);
   caller.set_non_enzymatic(false);
   caller.set_context_format(true);
-  caller.set_lib_path("./../bin/data/elude_test/calibrate_data/test_lib");
+  caller.set_lib_path("data/elude_test/calibrate_data/test_lib");
   caller.set_append_model(true);
   caller.Run();
 
   // check that the file exists
-  string file_name = "./../bin/data/elude_test/calibrate_data/test_lib/train.model";
+  string file_name = "data/elude_test/calibrate_data/test_lib/train.model";
   ifstream in(file_name.c_str(), ios::in);
   if (in.fail()) {
     ADD_FAILURE() <<  "TestAddModelLibrary error: unable to open " << file_name << endl;
@@ -326,9 +326,9 @@ TEST_F(EludeCallerTest, TestAddModelLibrarySave) {
   caller.set_train_file(train_file1);
   caller.set_non_enzymatic(false);
   caller.set_context_format(true);
-  string model_file = "./../bin/data/elude_test/calibrate_data/test_lib/test.model";
+  string model_file = "data/elude_test/calibrate_data/test_lib/test.model";
   caller.set_save_model_file(model_file);
-  caller.set_lib_path("./../bin/data/elude_test/calibrate_data/test_lib");
+  caller.set_lib_path("data/elude_test/calibrate_data/test_lib");
   caller.set_append_model(true);
   caller.Run();
 
@@ -345,7 +345,7 @@ TEST_F(EludeCallerTest, TestSaveIndexToFileTrain) {
   caller.set_train_file(train_file1);
   caller.set_non_enzymatic(false);
   caller.set_context_format(true);
-  string tmp_file = "./../bin/data/elude_test/standalone/tmp";
+  string tmp_file = "/tmp/tmp";
   caller.set_index_file(tmp_file);
   caller.Run();
   ifstream in(tmp_file.c_str(), ios::in);
@@ -378,7 +378,7 @@ TEST_F(EludeCallerTest, TestSaveIndexToFileAutSel) {
   caller.set_non_enzymatic(false);
   caller.set_test_includes_rt(true);
   EludeCaller::set_lib_path(lib_path);
-  string tmp_file = "./../bin/data/elude_test/calibrate_data/tmp";
+  string tmp_file = "/tmp/tmp";
   caller.set_index_file(tmp_file);
   double cov = 1.0;
   LTSRegression::setCoverage(cov);

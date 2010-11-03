@@ -18,6 +18,7 @@ set(tests
   SystemTest_Elude_PtmsTrainEvaluate
   SystemTest_Elude_SaveLoadEvaluate
   SystemTest_Elude_TrainEvaluate
+  UnitTest_Elude_RunAllTests
 )
 ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
 set(tests
@@ -40,6 +41,7 @@ set(tests
   SystemTest_Elude_PtmsTrainEvaluate
   SystemTest_Elude_SaveLoadEvaluate
   SystemTest_Elude_TrainEvaluate
+  UnitTest_Elude_RunAllTests
 )
 ENDIF()
 
@@ -59,10 +61,6 @@ IF (GOOGLE_TEST AND (NOT EXCLUDE_ELUDE))
   # find_package(GTest REQUIRED)
   include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/../../src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
   add_executable (gtest_unit Unit_tests_main.cpp)
-  IF (NOT EXCLUDE_CONVERTERS)
-    target_link_libraries (gtest_unit eludelibrary perclibrary ArrayLibrary MSToolkit ${XERCESC_LIBRARIES} ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
-  ELSE()
-    target_link_libraries (gtest_unit eludelibrary perclibrary ArrayLibrary ${XERCESC_LIBRARIES} ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
-  ENDIF ()
+  target_link_libraries (gtest_unit eludelibrary ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
   install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION .) # Important to use relative path here (used by CPack)!
 ENDIF()

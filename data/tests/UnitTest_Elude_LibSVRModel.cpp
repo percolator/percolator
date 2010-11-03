@@ -26,7 +26,7 @@
 class LibSVRModelTest : public ::testing::Test {
  protected:
    virtual void SetUp() {
-     train_file = "./../bin/data/elude_test/standalone/train.txt";
+     train_file = "data/elude_test/standalone/train.txt";
      rf.set_svr_index(RetentionFeatures::k_kyte_doolittle());
      DataManager::LoadPeptides(train_file, true, true, psms, aa_alphabet);
      no_features = rf.GetTotalNumberFeatures();

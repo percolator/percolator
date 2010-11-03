@@ -38,7 +38,6 @@ def testFileContent(filename, no_lines, line_numbers, line_contents):
 def failTest(message):
   print message 
   print "...TEST FAILED"
-  exit(1)
   
 # check the existence of a list of files 
 # the test_name is used for printing 
@@ -46,11 +45,16 @@ def checkFilesExistence(test_name, files):
   for f in files:
     if not os.path.isfile(f) :
       failTest("{0}, unable to locate file {1}".format(test_name, f))
-      exit(1) 
+      return False
+  return True  
       
 # clea up by deleting a list of files 
 def cleanUp(files): 
-  map(os.remove, files) 
+  for f in files: 
+    try:
+      os.remove(f) 
+    except:
+      pass
 
 # check the performance measures from a log file
 # values includes the expected pcorr, scorr and delta
@@ -72,6 +76,7 @@ def checkPerformance(test_name, filename, values = None):
   (p, s, d) = values 
   if pcorr < p - 0.15 or scorr < s - 0.15 or delta > d + (d * 0.15): 
     failTest(test_name + ", incorrect performance figures")
+    return (None, None, None)
      
 # check that the index file includes the given symbols at the given lines 
 def checkIndex(test_name, index_file, indices, values):
@@ -80,7 +85,8 @@ def checkIndex(test_name, index_file, indices, values):
   for index, val in zip(indices, values):
     if (idx[index] != val):    
       failTest(test_name + ", incorrect symbols in the index")
-      return 
+      return False 
+  return True
     
 # check content of the output file 
 def checkOutputFile(test_name, out_file, no_lines = -1, indices = None, 
@@ -89,7 +95,7 @@ def checkOutputFile(test_name, out_file, no_lines = -1, indices = None,
   sorted(lines)
   if (no_lines != -1 and len(lines) != no_lines): 
     utility.failTest(test_name + ", incorrect number of peptides in the output file")
-    return 
+    return False
   
   if (indices != None):
     peps = map(lambda i: lines[i].split("\t")[0], indices)
@@ -100,10 +106,11 @@ def checkOutputFile(test_name, out_file, no_lines = -1, indices = None,
     for i in range(len(indices)):
       if peps[i] != epeps[i]:     
         utility.failTest(test_name + ", incorrect peptides in the output file")
-        return 
+        return False
       if (abs(prts[i] - eprts[i] > eprts[i]*0.15)):       
         utility.failTest(test_name + ", incorrect predictions in the output file")
-        return 
+        return False
       if (eorts != None) and (abs(orts[i] - eorts[i] > 0.1)):               
         utility.failTest(test_name + ", incorrect observed rts in the output file")
-        return 
+        return False
+  return True

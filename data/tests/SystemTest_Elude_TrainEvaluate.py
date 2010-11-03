@@ -5,28 +5,30 @@
 
 import os
 import sys
-sys.path.append('..')
-import EludeUtilities as utility
+import SystemTest_Elude_Utilities as utility
+
+path = os.path.join(os.path.dirname(sys.argv[0]), "../../")
+out_path = "/tmp/"
 
 # context data, test does not include rt
 # the predictions are checked
 def TrainTestContextData():
   print "Running EludeTrainEvaluateTest::TrainTestContextData..."
-  path = os.path.dirname(sys.argv[0])
   
-  elude_path = os.path.join(path, "./../../", "elude")
-  data_folder = os.path.join(path, "./../../", "data/elude_test/standalone/")  
+  data_folder = os.path.join(path, "data/elude_test/standalone/")  
   train_file = os.path.join(data_folder, "train.txt")
   test_file = os.path.join(data_folder, "test.txt")
-  out_file = os.path.join(path, "tmp.out")
-  log_file = os.path.join(path, "tmp.log")
+  out_file = os.path.join(out_path, "tmp.out")
+  log_file = os.path.join(out_path, "tmp.log")
   # run Elude  
-  os.system(elude_path + " -t " + train_file + " -e " + test_file + " -o " + out_file
+  os.system("elude" + " -t " + train_file + " -e " + test_file + " -o " + out_file
             + " -f -v 5 2> " + log_file)
   
   # check existence of output files 
-  utility.checkFilesExistence("EludeTrainEvaluateTest::TrainTestContextData", 
-                              [out_file, log_file])
+  if not utility.checkFilesExistence("EludeTrainEvaluateTest::TrainTestContextData", 
+                              [out_file, log_file]):
+    utility.cleanUp([out_file, log_file])
+    exit(1)
 
   # check content of the output file 
   lines = utility.loadFile(out_file)
@@ -34,19 +36,21 @@ def TrainTestContextData():
   if len(lines) != 1255: 
     utility.failTest("EludeTrainEvaluateTest::TrainTestContextData, incorrect number of \
     peptides in the output file")
-    return   
+    utility.cleanUp([out_file, log_file])
+    exit(1)
   
   if lines[1093].split("\t")[0] != "K.IEGDVVVASAYSHELPR.Y":
     utility.failTest("EludeTrainEvaluateTest::TrainTestContextData, incorrect peptide \
     in the output file")
-    return 
+    utility.cleanUp([out_file, log_file])
+    exit(1) 
   
   rt = float(lines[1093].split("\t")[1])
   if rt > 32 or rt < 22:
     utility.failTest("EludeTrainEvaluateTest::TrainTestContextData, incorrect predicted \
     rt in the output file")
-    return   
-
+    utility.cleanUp([out_file, log_file])
+    exit(1)
   
   # clean-up 
   utility.cleanUp([out_file, log_file])
@@ -58,37 +62,44 @@ def TrainTestContextData():
 # also, check non enzymatic and in source 
 def TrainTestNoContextData():
   print "Running EludeTrainEvaluateTest::TrainTestNoContextData..."
-  path = os.path.dirname(sys.argv[0])
   
-  elude_path = os.path.join(path, "./../../", "elude")
-  data_folder = os.path.join(path, "./../../", "data/elude_test/standalone/")  
+  data_folder = os.path.join(path, "data/elude_test/standalone/")  
   train_file = os.path.join(data_folder, "train_1.txt")
   test_file = os.path.join(data_folder, "test_1.txt")
-  log_file = os.path.join(path, "tmp.log")
-  out_file = os.path.join(path, "tmp.out")
-  insource_file = os.path.join(path, "in_source.txt")
+  log_file = os.path.join(out_path, "tmp.log")
+  out_file = os.path.join(out_path, "tmp.out")
+  insource_file = os.path.join(out_path, "in_source.txt")
   
   # run Elude  
-  os.system(elude_path + " -t " + train_file + " -e " + test_file + " -o " 
+  os.system("elude" + " -t " + train_file + " -e " + test_file + " -o " 
             + out_file + " -i " + insource_file + " -g -x -u -y -v 5 2> " + log_file)
   
   # check existence of output files 
-  utility.checkFilesExistence("EludeTrainEvaluateTest::TrainTestNoContextData", 
-                              [insource_file, out_file, log_file])
-
+  if not utility.checkFilesExistence("EludeTrainEvaluateTest::TrainTestNoContextData", 
+                              [insource_file, out_file, log_file]):
+    utility.cleanUp([insource_file, out_file, log_file])
+    exit(1)
+  
   # check in source fragmentation
-  utility.testFileContent(insource_file, 6, [3,4,5], 
-                          ["YGASAGNVGDEGGVAPNIQTAEEALDLIVDAIK	105.947	test\n",
-                           "IQFPHVADLLTSIQPPLTL	75.6913	train\n", 
-                           "YQGYAEDVR	20.4553	test\n"])
+  if not utility.testFileContent(insource_file, 5, [3,4], 
+                          ["IQFPHVADLLTSIQPPLTL	75.6913	train\n", 
+                           "YQGYAEDVR	20.4553	test\n"]):
+    utility.failTest("Incorrect content of the in-source fragmentation file")
+    utility.cleanUp([insource_file, out_file, log_file])
+    exit(1)
   
   # check the number of lines in the output file   
-  utility.testFileContent(out_file, 56, [], [])
-  
+  if not utility.testFileContent(out_file, 56, [], []):
+    utility.failTest("Incorrect number of lines in the output file")
+    utility.cleanUp([insource_file, out_file, log_file])
+    exit(1)
+    
   # check performance figures 
-  utility.checkPerformance("EludeTrainEvaluateTest::TrainTestNoContextData", 
-                           log_file, (0.87, 0.77, 73))
- 
+  if utility.checkPerformance("EludeTrainEvaluateTest::TrainTestNoContextData", 
+                           log_file, (0.87, 0.77, 73)) == (None, None, None):
+    utility.cleanUp([insource_file, out_file, log_file])
+    exit(1)
+
   # clean-up 
   utility.cleanUp([out_file, log_file, insource_file])
   
