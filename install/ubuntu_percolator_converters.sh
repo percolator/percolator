@@ -2,7 +2,7 @@
 # as soon as a command fails terminate this script
 set -e
 
-base=/scratch/lumi_work/projects/elude_ptms/src
+base=/tmp
 percolatorSource=`/bin/pwd`
 percolatorBuild=$base/percolatorBuild
 percolatorInstall=$base/percolatorInstall
