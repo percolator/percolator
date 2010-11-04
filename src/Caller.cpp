@@ -22,13 +22,10 @@ using namespace xercesc;
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
-        pNorm(NULL),
-        pCheck(NULL),
-        svmInput(NULL),
-        forwardFN(""),
-        decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-        decoyWC(""), resultFN(""), tabFN(""), xmloutFN(""),
-        weightFN(""), tabInput(false), dtaSelect(false),
+        pNorm(NULL), pCheck(NULL), svmInput(NULL),
+        forwardFN(""), decoyFN(""),
+        decoyWC(""), resultFN(""), tabFN(""), xmlInputFN(""), xmlOutputFN(""),
+        weightFN(""), tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         test_fdr(0.01), selectionfdr(0.01),
         selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
@@ -81,8 +78,6 @@ string Caller::greeter() {
 }
 
 bool Caller::parseOptions(int argc, char **argv) {
-  xmlInputFN="";
-  xmlOutputFN="";
   ostringstream callStream;
   callStream << argv[0];
   for (int i = 1; i < argc; i++) {
@@ -107,12 +102,17 @@ bool Caller::parseOptions(int argc, char **argv) {
   CommandLineParser cmd(intro.str());
   cmd.defineOption("E",
       "xmlinput",
-      "xml input filename (using Codesynthesis Xsd)",
+      "path to file in xml-input format (pin)",
       "filename");
   cmd.defineOption("X",
-      "xml-output",
-      "Output results in xml-format into a file",
+      "xmloutput",
+      "path to file in xml-output format (pout)",
       "filename");
+  cmd.defineOption("e",
+      "stdinput",
+      "read xml-input format (pin) from standard input",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("Z",
       "decoy-xml-output",
       "Include decoys PSMs in the xml-output. Only available if -X is used.",
@@ -255,11 +255,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Remove all redundant peptides and only keep the highest scoring PSM. q-values and PEPs are only calculated on peptide level in such case",
       "",
       TRUE_IF_SET);
+
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
-
   if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
+  if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
+  if (cmd.optionSet("e")) readStdIn = true;
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
     selectedCpos = cmd.getDouble("p", 0.0, 1e127);
@@ -352,11 +354,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     DataSet::setCalcDoc(true);
     DescriptionOfCorrect::setDocType(cmd.getInt("D", 0, 15));
   }
-  if (cmd.optionSet("X")) {
-    xmloutFN = cmd.options["X"];
-  }
   if (cmd.optionSet("Z")) {
-    if (xmloutFN.empty()) {
+    if (xmlOutputFN.empty()) {
       cerr
       << "The -Z switch was set without any xml-output file specified"
       << stderr;
@@ -368,18 +367,19 @@ bool Caller::parseOptions(int argc, char **argv) {
     reportUniquePeptides = true;
   }
 
-  if (! cmd.optionSet("E") ) {
+  if (! cmd.optionSet("E") && ! cmd.optionSet("e")) {
     if (cmd.arguments.size() > 2) {
       cerr << "Too many arguments given" << endl;
       cmd.help();
     }
     if (cmd.arguments.size() == 0) {
-      cerr << "No arguments given" << endl;
+      cerr << "Error: No arguments were given.\n" << endl;
       cmd.help();
+      exit(-1);
     }
   }
   else if ( cmd.arguments.size() != 0 )
-  {  cerr << "error: -E expects just one argument" << endl;
+  {  cerr << "Error: -E expects just one argument.\n" << endl;
   cmd.help();
   }
 
@@ -409,7 +409,6 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
       percolatorInNs::calibration calibration(*doc->getDocumentElement ());
       doc = p.next ();
     };
-
 
     nrTargets=0;
     nrDecoys=0;
@@ -481,11 +480,14 @@ void Caller::filelessSetup(const unsigned int numFeatures,
 }
 
 void Caller::readFiles() {
-  if (xmlInputFN.size() != 0) {
+  string inputFile = "";
+  if(xmlInputFN.size() != 0) inputFile = xmlInputFN;
+  if(readStdIn == true) inputFile = "./tmpXmlInput.xml";
+  if (inputFile.size() != 0) {
     unsigned int nrTargets;
     unsigned int nrDecoys;
     xercesc::XMLPlatformUtils::Initialize();
-    countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
+    countTargetsAndDecoys(inputFile, nrTargets, nrDecoys);
     int j = 0;
     DataSet * targetSet = new DataSet();
     assert(targetSet);
@@ -497,14 +499,14 @@ void Caller::readFiles() {
       namespace xml = xsd::cxx::xml;
       std::ifstream xmlInStream;
       xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
-      xmlInStream.open(xmlInputFN.c_str());
+      xmlInStream.open(inputFile.c_str());
       if (!xmlInStream) {
-        cerr << "Can not open file " << xmlInputFN << endl;
+        cerr << "Can not open file " << inputFile << endl;
         exit(EXIT_FAILURE);
       }
       parser p;
       xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
-          xmlInStream, xmlInputFN.c_str(), true));
+          xmlInStream, inputFile.c_str(), true));
 
       doc = p.next();
 
@@ -814,9 +816,26 @@ int Caller::run() {
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
+
+  // populate tmp input file with cin information if option is enabled
+  if(readStdIn){
+    ofstream tmpInputFile;
+    tmpInputFile.open("./tmpXmlInput.xml");
+    while(cin) {
+      char buffer[1000];
+      cin.getline(buffer, 1000);
+      tmpInputFile << buffer << endl;
+    }
+    tmpInputFile.close();
+  }
   // Reading input files (pin or sqt)
   readFiles();
   fillFeatureSets();
+  if(readStdIn){
+    // erase tmp input file
+    //remove("./tmpXmlInput.xml");
+  }
+
   cout << "baFeatureNames::getNumFeatures=" << FeatureNames::getNumFeatures() << endl;
   vector<vector<double> > w(xval_fold,
       vector<double> (FeatureNames::getNumFeatures()
@@ -939,7 +958,7 @@ int Caller::run() {
       }
       outs.close();
     }
-    if (xmloutFN.size() > 0){
+    if (xmlOutputFN.size() > 0){
       writeXML(uniquePeptides[r]);
     }
   }
@@ -957,7 +976,7 @@ void Caller::writeXML(bool uniquePeptides) {
     "-" + schema_minor + "/src/xml/percolator_out.xsd";
   if(! uniquePeptides){
     //write to file
-    os.open(xmloutFN.data(), ios::out);
+    os.open(xmlOutputFN.data(), ios::out);
     os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
 
     os << "<percolator_output "
@@ -972,11 +991,12 @@ void Caller::writeXML(bool uniquePeptides) {
         // give a location for the schema
         << endl << "xsi:schemaLocation=\""<< schema <<"\" "
         << endl << "p:majorVersion=\"" << VERSION_MAJOR << "\" p:minorVersion=\""
-        << VERSION_MINOR << "\" p:percolator_version=\"Percolator version " << VERSION << "\">\n"<< endl;
+        << VERSION_MINOR << "\" p:percolator_version=\"Percolator version "
+        << VERSION << "\">\n"<< endl;
     os << "  <process_info>" << endl;
     os << "    <command_line>" << call << "</command_line>" << endl;
 
-    os << "    <other_command_line>" << otherCall << "</other_command_line>" << endl;
+    os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
     os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
     if (docFeatures) {
       os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
@@ -996,7 +1016,7 @@ void Caller::writeXML(bool uniquePeptides) {
   }
   else{
     // append to file
-    os.open(xmloutFN.data(), ios::app);
+    os.open(xmlOutputFN.data(), ios::app);
     // output peptides
     os << "  <peptides>" << endl;
     for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
@@ -1006,50 +1026,6 @@ void Caller::writeXML(bool uniquePeptides) {
     os << "  </peptides>" << endl;
     os << "</percolator_output>" << endl;
     os.close();
-    /*
-    // validate xml output against schema
-    // see http://xerces.apache.org/xerces-c/schema-3.html
-    XMLPlatformUtils::Initialize();
-    XercesDOMParser* parser = new XercesDOMParser();
-    parser->setValidationScheme(XercesDOMParser::Val_Always);
-    parser->setDoSchema(true);
-    parser->setDoNamespaces(true);
-    parser->setExternalSchemaLocation(schema.c_str());
-    parser->loadGrammar(schema.c_str(), Grammar::SchemaGrammarType, true);
-    parser->setSkipDTDValidation(false);
-    ErrorHandler* errHandler = (ErrorHandler*) new HandlerBase();
-    parser->setErrorHandler(errHandler);
-    const char* xmlFile = xmloutFN.c_str();
-    try{
-      parser->parse(xmloutFN.c_str());
-    }
-    catch (const XMLException& toCatch) {
-      char* message = XMLString::transcode(toCatch.getMessage());
-      cerr <<"XML parsing error in output document " << xmloutFN << "." << endl;
-      cerr << "Exception message is: \n"
-          << message << "\n";
-      XMLString::release(&message);
-      exit(-1);
-    }
-    catch (const DOMException& toCatch) {
-      char* message = XMLString::transcode(toCatch.msg);
-      cerr <<"XML parsing error in output document " << xmloutFN << "." << endl;
-      cerr << "Exception message is: \n"
-          << message << "\n";
-      XMLString::release(&message);
-      exit(-1);
-    }
-    catch (const xercesc_3_1::SAXParseException& toCatch) {
-      SAXException s = (SAXException) toCatch;
-      cerr <<"XML parsing error in output document " << xmloutFN << "." << endl;
-      cerr << "Exception message is: \n"
-          << *(s.getMessage()) << "\n";
-      exit(-1);
-    }
-    delete errHandler;
-    delete parser;
-    XMLPlatformUtils::Terminate();
-     */
   }
 }
 

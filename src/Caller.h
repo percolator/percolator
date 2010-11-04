@@ -98,7 +98,7 @@ class Caller {
       }
     }
     void writeXML(bool uniquePeptides);
-    string xmloutFN;
+    string xmlOutputFN;
     Scores fullset; //,thresholdset;
   protected:
     void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys );
@@ -106,7 +106,7 @@ class Caller {
     SanityCheck * pCheck;
     AlgIn *svmInput;
     string xmlInputFN;
-    string xmlOutputFN;
+    bool readStdIn;
     string forwardFN;
     string decoyFN;
     string decoyWC;

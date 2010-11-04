@@ -246,10 +246,10 @@ int Sqt2Pin::run() {
   // Content of sqt files is merged: preparing to write it to xml file
 	ofstream xmlOutputStream;
 	xmlOutputStream.open(xmlOutputFN.c_str());
-	if(!xmlOutputStream){
-		cout << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
-		cout << "Please invoke sqt2pin with a valid -o option" << endl;
-		exit(-1);
+	if(!xmlOutputStream && xmlOutputFN != ""){
+	  cout << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
+	  cout << "Please invoke sqt2pin with a valid -o option" << endl;
+	  exit(-1);
 	}
 	xercesc::XMLPlatformUtils::Initialize ();
 
@@ -323,8 +323,6 @@ int Sqt2Pin::run() {
       " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
       " http://github.com/percolator/percolator/raw/xml-" + schema_major +
       "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
-  cout << "Sqt2pin" << endl;
-  cout << "Written by Lukas Käll (lukall@u.washington.edu)" << endl << endl;
   if (xmlOutputFN == "") cout << headerStr;
   else {
 	  xmlOutputStream << headerStr;
