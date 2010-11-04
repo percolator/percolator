@@ -25,11 +25,9 @@ Caller::Caller() :
         pNorm(NULL),
         pCheck(NULL),
         svmInput(NULL),
-        modifiedFN(""),
-        modifiedDecoyFN(""),
         forwardFN(""),
         decoyFN(""), //shuffledThresholdFN(""), shuffledTestFN(""),
-        decoyWC(""), resultFN(""), tabFN(""), xmloutFN(""), tokyoCabinetTmpFN(""),
+        decoyWC(""), resultFN(""), tabFN(""), xmloutFN(""),
         weightFN(""), tabInput(false), dtaSelect(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         test_fdr(0.01), selectionfdr(0.01),
@@ -120,19 +118,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Include decoys PSMs in the xml-output. Only available if -X is used.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("Y",
-      "tmpfileSQTtoXML",
-      "the SQT conversion needs a file name where to store temporary data ( in a Tokyo cabinet database ). Unexpected behaviour is expected if you run many instances of this program with the same filename.",
-      "filename");
-  cmd.defineOption("o",
-      "sqt-out",
-      "Create an SQT file with the specified name from the given target SQT file, \
-      replacing the XCorr value the learned score and Sp with the negated q-value.",
-      "filename");
-  cmd.defineOption("s",
-      "shuffled",
-      "Same as -o, but for the decoy SQT file",
-      "filename");
   cmd.defineOption("P",
       "pattern",
       "Option for single SQT file mode defining the name pattern used for shuffled data base. \
@@ -232,21 +217,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Override error check and do not fall back on default score vector in case of suspect score vector",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("y",
-      "notryptic",
-      "Turn off calculation of tryptic/chymo-tryptic features.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("c",
-      "chymo",
-      "Replace tryptic features with chymo-tryptic features.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("e",
-      "elastase",
-      "Replace tryptic features with elastase features.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("N",
       "PNGaseF",
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
@@ -256,10 +226,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "seed",
       "Setting seed of the random number generator. Default value is 0",
       "value");
-  cmd.defineOption("2",
-      "ms2-file",
-      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
-      "filename");
   cmd.defineOption("M",
       "isotope",
       "Mass difference calculated to closest isotope mass rather than to the average mass.",
@@ -293,12 +259,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.parseArgs(argc, argv);
   // now query the parsing results
 
-  if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
-  } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
-
   if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
-  if (cmd.optionSet("o")) modifiedFN = cmd.options["o"];
-  if (cmd.optionSet("s")) modifiedDecoyFN = cmd.options["s"];
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
     selectedCpos = cmd.getDouble("p", 0.0, 1e127);
@@ -346,17 +307,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("O")) {
     SanityCheck::setOverrule(true);
   }
-  if (cmd.optionSet("y")) {
-    Enzyme::setEnzyme(Enzyme::NO_ENZYME);
-  }
   if (cmd.optionSet("R")) {
     reportPerformanceEachIteration = true;
-  }
-  if (cmd.optionSet("e")) {
-    Enzyme::setEnzyme(Enzyme::ELASTASE);
-  }
-  if (cmd.optionSet("c")) {
-    Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
   }
   if (cmd.optionSet("N")) {
     DataSet::setPNGaseF(true);
@@ -386,9 +338,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("S")) {
     Scores::setSeed(cmd.getInt("S", 0, 20000));
   }
-  if (cmd.optionSet("2")) {
-    spectrumFile = cmd.options["2"];
-  }
   if (cmd.optionSet("B")) {
     decoyOut = cmd.options["B"];
   }
@@ -416,12 +365,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     Scores::setOutXmlDecoys(true);
   }
   if (cmd.optionSet("U")) {
-    if (!modifiedFN.empty() || !modifiedDecoyFN.empty()) {
-      cerr
-      << "The -U switch may not be used together with the -o and -s options"
-      << stderr;
-      exit(-1);
-    }
     reportUniquePeptides = true;
   }
 
@@ -648,10 +591,6 @@ void Caller::readFiles() {
 		normal.readFile(forwardFN, decoyWC, false);
 		shuffled.readFile(forwardFN, decoyWC, true);
      */
-  }
-  if (spectrumFile.size() > 0) {
-    assert(false); // we moved mstoolkit into src/converters. There should be no dependency to these functions..
-    //	readRetentionTime(spectrumFile);
   }
 }
 

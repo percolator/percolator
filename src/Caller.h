@@ -105,11 +105,8 @@ class Caller {
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;
-    string tokyoCabinetTmpFN; 
     string xmlInputFN;
     string xmlOutputFN;
-    string modifiedFN;
-    string modifiedDecoyFN;
     string forwardFN;
     string decoyFN;
     string decoyWC;
@@ -118,7 +115,6 @@ class Caller {
     string weightFN;
     string call;
     string otherCall;
-    string spectrumFile;
     string decoyOut;
     bool outputAll;
     bool tabInput;
