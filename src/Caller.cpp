@@ -972,8 +972,8 @@ void Caller::writeXML(bool uniquePeptides) {
   string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
   const string schema = space +
-    " http://github.com/percolator/percolator/raw/xml-" + schema_major +
-    "-" + schema_minor + "/src/xml/percolator_out.xsd";
+    " http://per-colator.com/xml/xml-" + schema_major +
+    "-" + schema_minor + "/percolator_out.xsd";
   if(! uniquePeptides){
     //write to file
     os.open(xmlOutputFN.data(), ios::out);
