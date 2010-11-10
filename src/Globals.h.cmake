@@ -34,6 +34,10 @@ limitations under the License.
 #define SCHEMA_VERSION_MINOR @SCHEMA_VERSION_MINOR@
 #endif
 
+#ifndef SCHEMA
+#define SCHEMA "@SCHEMA@"
+#endif
+
 #ifdef WIN32
 #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
 #define D_DARRAY(name) _freea(name);

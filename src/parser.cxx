@@ -135,6 +135,18 @@ start (istream& is, const string& id, bool val)
 
   parser_->setFeature (XMLUni::fgSAX2CoreValidation, val);
   parser_->setFeature (XMLUni::fgXercesSchema, val);
+  // if local copy of the schema is available, use it for validation
+  string schemaDefinition = SCHEMA + string("/percolator_in.xsd");
+  ifstream inp; inp.open(schemaDefinition.c_str(), ifstream::in); inp.close();
+  if(!inp.fail()){
+    string schemaNamespace = "http://per-colator.com/percolator_in/11";
+    schemaNamespace.append(" ");
+    string schemaLocation = schemaNamespace.append(schemaDefinition);
+    XMLCh* propertyValue = XMLString::transcode(schemaLocation.c_str());
+    ArrayJanitor<XMLCh> janValue(propertyValue);
+    parser_->
+    setProperty(XMLUni::fgXercesSchemaExternalSchemaLocation, propertyValue);
+  }
 
   // Start parsing. The first document that we return is a "carcase"
   // of the complete document. That is, the root element with all the

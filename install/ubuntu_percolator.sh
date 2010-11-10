@@ -6,6 +6,15 @@ base=/tmp
 percolatorSource=`/bin/pwd`
 percolatorBuild=$base/percolatorBuild
 percolatorInstall=$base/percolatorInstall
+schemaLocation=/usr/share/percolator/xml-1-1
+
+# storing local copies of xml schemas
+if [ ! -d "$schemaLocation" ]; then
+  sudo mkdir -p $schemaLocation
+  cd $schemaLocation
+  sudo wget http://per-colator.com/xml/xml-1-1/percolator_out.xsd
+  sudo wget http://per-colator.com/xml/xml-1-1/percolator_in.xsd
+fi
 
 # the Ubuntu package xsdcxx is as of 2010-10-21 version 3.2 and we want version 3.3
 # so we download it from the Codesynthesis home page
@@ -37,7 +46,7 @@ fi
 mkdir $percolatorInstall
 cd $percolatorBuild
 
-cmake -G"Eclipse CDT4 - Unix Makefiles" -DSTATIC=off -DCMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=TRUE -DEXCLUDE_CONVERTERS=TRUE -DEXCLUDE_ELUDE=FALSE -DCMAKE_INSTALL_PREFIX=$percolatorInstall -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ $percolatorSource
+cmake -G"Eclipse CDT4 - Unix Makefiles" -DSTATIC=off -DCMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=TRUE -DEXCLUDE_CONVERTERS=TRUE -DEXCLUDE_ELUDE=FALSE -DCMAKE_INSTALL_PREFIX=$percolatorInstall -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ -DSCHEMA_LOCATION=$schemaLocation $percolatorSource
 
 make -j 8
 make install

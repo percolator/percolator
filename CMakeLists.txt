@@ -13,6 +13,7 @@ set(SCHEMA_VERSION_MAJOR "1")
 set(SCHEMA_VERSION_MINOR "1")
 set(percolator-in-namespace http://per-colator.com/percolator_in/11)
 set(percolator-out-namespace http://per-colator.com/percolator_out/11)
+set(SCHEMA ${SCHEMA_LOCATION})
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
