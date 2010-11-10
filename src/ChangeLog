@@ -1,3 +1,8 @@
+v1.16
+* Elude stuff here
+* Validation of Percolator's input against local copy of xml schema
+* Bugfix for Sqt2pin when invoked with -2 option
+
 v1.15
 * New XML input format ("pin") and revised output format ("pout") for percolator. 
   Schemas are available in src/xml.
