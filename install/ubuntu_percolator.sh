@@ -3,18 +3,10 @@
 set -e
 
 base=/tmp
-percolatorSource=`/bin/pwd`
+percolatorInstall=$base/bin
+schemaLocation=$base/share/percolator/xml-1-1
 percolatorBuild=$base/percolatorBuild
-percolatorInstall=$base/percolatorInstall
-schemaLocation=/usr/share/percolator/xml-1-1
-
-# storing local copies of xml schemas
-if [ ! -d "$schemaLocation" ]; then
-  sudo mkdir -p $schemaLocation
-  cd $schemaLocation
-  sudo wget http://per-colator.com/xml/xml-1-1/percolator_out.xsd
-  sudo wget http://per-colator.com/xml/xml-1-1/percolator_in.xsd
-fi
+percolatorSource=`/bin/pwd`
 
 # the Ubuntu package xsdcxx is as of 2010-10-21 version 3.2 and we want version 3.3
 # so we download it from the Codesynthesis home page

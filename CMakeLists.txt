@@ -48,6 +48,10 @@ enable_testing()
 # Compiling unit level tests
 add_subdirectory(data/tests)
 
+#INSTALL 
+install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ OWNER_WRITE)
+install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ OWNER_WRITE)
+install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}/../ FILE_PERMISSIONS OWNER_READ OWNER_WRITE)
 
 ###############################################################################
 # PACKAGING

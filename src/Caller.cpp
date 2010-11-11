@@ -514,9 +514,13 @@ void Caller::readFiles() {
       // the enzyme element is a subelement but CodeSynthesis Xsd does not
       // generate a class for it. (I am trying to find a command line option
       // that overrides this decision). As for now special treatment is needed
-      char * value = XMLString::transcode(
+      char* value = XMLString::transcode(
           doc->getDocumentElement()->getTextContent());
       std::cout << "enzyme=" << value << std::endl;
+      if (strcmp(value, "chymotrypsin")) Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
+      else if (strcmp(value, "elastase")) Enzyme::setEnzyme(Enzyme::ELASTASE);
+      else if (strcmp(value, "no_enzyme")) Enzyme::setEnzyme(Enzyme::NO_ENZYME);
+
       XMLString::release(&value);
       doc = p.next();
 

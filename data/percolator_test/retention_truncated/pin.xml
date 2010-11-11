@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?> 
-<experiment xmlns="http://per-colator.com/percolator_in/11" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://per-colator.com/percolator_in/11 http://github.com/percolator/percolator/raw/xml-1-1/src/xml/percolator_in.xsd"> 
+<experiment xmlns="http://per-colator.com/percolator_in/11" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://per-colator.com/percolator_in/11 http://per-colator.com/xml/xml-1-1/percolator_in.xsd"> 
 
 <enzyme>trypsin</enzyme>
 

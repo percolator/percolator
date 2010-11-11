@@ -2,34 +2,26 @@
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : not copyrighted - public domain
 
+#include <iostream>
 #include <xercesc/util/XMLUni.hpp>
 #include <xercesc/util/XMLString.hpp>
-
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
-
-#include <iostream>
 #include <xercesc/dom/DOM.hpp>
-
 #if _XERCES_VERSION >= 30000
 #  include <xercesc/dom/impl/DOMTextImpl.hpp>
 #endif
-
 #include <xsd/cxx/auto-array.hxx>
-
 #include <xsd/cxx/xml/sax/std-input-source.hxx>
 #include <xsd/cxx/xml/sax/bits/error-handler-proxy.hxx>
-
 #include <xsd/cxx/tree/exceptions.hxx>
 #include <xsd/cxx/tree/error-handler.hxx>
-
 #include "parser.hxx"
 
 using namespace std;
 using namespace xercesc;
-
 namespace xml = xsd::cxx::xml;
 namespace tree = xsd::cxx::tree;
 
