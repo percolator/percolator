@@ -7,8 +7,8 @@ The latest releases of Percolator can be found at among the downloads. There
 you may find package for Linux and compiled executables for Win32. Source 
 bundles are available to build Percolator from scratch if you are running a
 different system or if you do not have superuser privileges. Percolator now 
-includes a file type converter called Sqt2pin (run scripts and install packages
-named percolator_converters_* to install it).
+includes a file type converter called Sqt2pin (install packages named 
+percolator_converters_* to install it).
 
 
 ***
@@ -53,15 +53,16 @@ BUILDING PERCOLATOR (from the latest snapshot or the repository)
 
 The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
 Make, Cmake and a C++ compiler are required; the following libraries are also
-needed to build Percolator: libxerces-c-dev, libboost-dev. If you intend to 
-build Sqt2pin too (ubuntu_percolator_converters.sh) you will also need: 
-gengetopt, libtokyocabinet-dev, zlib1g-dev.
-If you have sudo priviledges, issue the following command:
+needed to build Percolator: libxerces-c-dev, libboost-dev. Sqt2pin, which is 
+build together with Percolator by default, also requires: gengetopt, 
+libtokyocabinet-dev, zlib1g-dev. If you are not interested in Sqt2pin, set 
+-DEXCLUDE_CONVERTERS=TRUE option int the ubuntu_percolator_converters.sh.
+To install the above, issue the following command:
   $ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake 
 And, optionally, if interested in building the Sqt2pin (converters) as well:
   $ sudo apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
-If this is not the case, you will have to manually install programs and 
-libraries. The same goes for older versions of Ubuntu as explained above
+If you do not have sudo permissions, you will have to manually install programs
+and libraries. The same goes for older versions of Ubuntu as explained above
 in the section "INSTALLING PERCOLATOR" under "Linux".
 
 Download the latest percolator[_converters]-v[X]-linux-[ARCH].tar.gz tar-ball.
