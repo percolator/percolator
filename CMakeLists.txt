@@ -12,9 +12,9 @@ set(SCHEMA_VERSION_MAJOR "1")
 set(SCHEMA_VERSION_MINOR "1")
 
 if(STATIC AND MINGW) # windows
-set(SCHEMA ${CMAKE_INSTALL_PREFIX}/share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
+  set(SCHEMA "C:\\Program Files\\percolator\\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}")
 else() # linux
-set(SCHEMA C:\ProgramFiles\percolator\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
+  set(SCHEMA ${CMAKE_INSTALL_PREFIX}/../share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
