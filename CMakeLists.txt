@@ -13,6 +13,8 @@ set(SCHEMA_VERSION_MAJOR "1")
 set(SCHEMA_VERSION_MINOR "1")
 set(percolator-in-namespace http://per-colator.com/percolator_in/11)
 set(percolator-out-namespace http://per-colator.com/percolator_out/11)
+
+set(SCHEMA_LOCATION ${CMAKE_INSTALL_PREFIX}/share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
 set(SCHEMA ${SCHEMA_LOCATION})
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
