@@ -54,8 +54,8 @@ enable_testing()
 add_subdirectory(data/tests)
 
 #INSTALL 
-install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
-install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
+install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
 install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}/../ FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
 
 ###############################################################################
