@@ -4,18 +4,21 @@
 cmake_minimum_required(VERSION 2.8)
 project(PERCOLATOR)
 
-#VERSION AND NAMESPACES
+# VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "16")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(SCHEMA_VERSION_MAJOR "1")
 set(SCHEMA_VERSION_MINOR "1")
-set(percolator-in-namespace http://per-colator.com/percolator_in/11)
-set(percolator-out-namespace http://per-colator.com/percolator_out/11)
 
-set(SCHEMA_LOCATION ${CMAKE_INSTALL_PREFIX}/share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
-set(SCHEMA ${SCHEMA_LOCATION})
+if(STATIC AND MINGW) # windows
+set(SCHEMA ${CMAKE_INSTALL_PREFIX}/share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
+else() # linux
+set(SCHEMA C:\ProgramFiles\percolator\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
+endif()
+set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
+set(percolator-out-namespace http://per-colator.com/percolator_out/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
