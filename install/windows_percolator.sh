@@ -5,7 +5,6 @@ set -e
 base=/tmp
 percolatorSource=`/bin/pwd`
 percolatorBuild=$base/percolatorBuild
-percolatorInstall=$base/percolatorInstall
 
 # the Ubuntu package xsdcxx is as of 2010-10-21 version 3.2 and we want version 3.3
 # so we download it from the Codesynthesis home page
@@ -37,10 +36,6 @@ if [ -d "$percolatorBuild" ]; then
   rm -r $percolatorBuild
 fi
 mkdir $percolatorBuild
-if [ -d "$percolatorInstall" ]; then
-rm -r $percolatorInstall
-fi
-mkdir $percolatorInstall
 cd $percolatorBuild
 
 
