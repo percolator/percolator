@@ -35,7 +35,7 @@
 #include "DataManager.h"
 
 const double EludeCaller::kFractionPeptides = 0.95;
-string EludeCaller::library_path_ = "models/";
+string EludeCaller::library_path_ = ELUDE_MODELS_PATH;
 double EludeCaller::lts_coverage_ = 0.95;
 double EludeCaller::hydrophobicity_diff_ = 5.0;
 

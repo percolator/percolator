@@ -13,8 +13,10 @@ set(SCHEMA_VERSION_MINOR "1")
 
 if(STATIC AND MINGW) # windows
   set(SCHEMA "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
+  set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\elude_model\\\\")
 else() # linux
   set(SCHEMA ${CMAKE_INSTALL_PREFIX}/../share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
+  set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/../share/percolator/elude_model/)
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
