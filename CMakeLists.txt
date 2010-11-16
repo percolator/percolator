@@ -12,7 +12,7 @@ set(SCHEMA_VERSION_MAJOR "1")
 set(SCHEMA_VERSION_MINOR "1")
 
 if(STATIC AND MINGW) # windows
-  set(SCHEMA "C:\\Program Files\\percolator\\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}")
+  set(SCHEMA "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
 else() # linux
   set(SCHEMA ${CMAKE_INSTALL_PREFIX}/../share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
 endif()
@@ -26,7 +26,6 @@ foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
-
 
 ###############################################################################
 # COMPILING, INSTALLING AND TESTING
@@ -53,10 +52,12 @@ enable_testing()
 # Compiling unit level tests
 add_subdirectory(data/tests)
 
-#INSTALL 
-install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
-install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
-install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}/../ FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+#INSTALL
+if(NOT MINGW)
+  install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
+  install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
+  install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}../ FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+endif()
 
 ###############################################################################
 # PACKAGING

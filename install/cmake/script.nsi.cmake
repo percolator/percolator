@@ -17,12 +17,23 @@ installDir $PROGRAMFILES\percolator
 
 Section "Dummy Section" SecDummy
   SetOutPath "$INSTDIR"
-  file /tmp/percolatorBuild/src/percolator.exe
+  file @CMAKE_BINARY_DIR@/src/percolator.exe
 # I had problems installing Tokyo Cabinet and XDR on Windows /Erik
 #  file /tmp/percolatorBuild/src/converters/sqt2pin.exe
-#  file /tmp/percolatorBuild/src/converters/mzidentml2pin.exe
-  file /tmp/percolatorBuild/src/elude/elude.exe
+#  file @CMAKE_BINARY_DIR@/src/converters/mzidentml2pin.exe
+  file @CMAKE_BINARY_DIR@/src/elude/elude.exe
   WriteUninstaller "$INSTDIR\Uninstall.exe"
+SectionEnd
+
+Section "Xml Schema" SecXml
+  SetOutPath "@SCHEMA@"
+  file @CMAKE_SOURCE_DIR@/src/xml/percolator_in.xsd
+  file @CMAKE_SOURCE_DIR@/src/xml/percolator_out.xsd
+SectionEnd
+
+Section "Elude Models" SecElude
+  SetOutPath "@SCHEMA@..\elude_model"
+  file @CMAKE_SOURCE_DIR@/data/elude_model/
 SectionEnd
 
 Section "Uninstall"
