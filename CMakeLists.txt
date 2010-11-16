@@ -14,7 +14,7 @@ set(SCHEMA_VERSION_MINOR "1")
 if(STATIC AND MINGW) # windows
   set(SCHEMA "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
 else() # linux
-  set(SCHEMA ${CMAKE_INSTALL_PREFIX}/../share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
+  set(SCHEMA ${CMAKE_INSTALL_PREFIX}/share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
@@ -56,7 +56,7 @@ add_subdirectory(data/tests)
 if(NOT MINGW)
   install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
   install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
-  install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}../ FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+  install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
 endif()
 
 ###############################################################################

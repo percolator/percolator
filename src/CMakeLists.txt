@@ -112,7 +112,7 @@ endif()
 target_link_libraries(percolator perclibrary ArrayLibrary pthread dl ${XERCESC_LIBRARIES})
 
 # INSTALL PERCOLATOR
-install(TARGETS percolator EXPORT PERCOLATOR DESTINATION .) # Important to use relative path here (used by CPack)!
+install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
 
 
 ###############################################################################
