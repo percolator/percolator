@@ -84,6 +84,8 @@ class RetentionModel {
    inline double div() const { return div_; }
    inline void set_sub(const double &s) { sub_ = s; }
    inline void set_div(const double &d) { div_ = d; }
+   inline void set_index(const std::map<std::string, double> &index) {
+	   retention_features_.set_svr_index(index); }
 
  private:
    /* used to normalize retention times and features*/
