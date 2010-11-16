@@ -15,8 +15,8 @@ if(STATIC AND MINGW) # windows
   set(SCHEMA "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\elude_model\\\\")
 else() # linux
-  set(SCHEMA ${CMAKE_INSTALL_PREFIX}/../share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
-  set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/../share/percolator/elude_model/)
+  set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/share/percolator/elude_model/)
+  set(SCHEMA ${CMAKE_INSTALL_PREFIX}/share/percolator/xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/)
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
@@ -44,7 +44,7 @@ macro(my_find_program progname)
   endif(NOT ${progname}_EXECUTABLE)
 endmacro(my_find_program)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/install/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 # COMPILE
 add_subdirectory(src)
@@ -58,7 +58,7 @@ add_subdirectory(data/tests)
 if(NOT MINGW)
   install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
   install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
-  install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}../ FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+  install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
 endif()
 
 ###############################################################################
@@ -111,7 +111,7 @@ endif()
 
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/install/cmake/script.nsi" DEPENDS percolator elude qvality ) 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/script.nsi" DEPENDS percolator elude qvality ) 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
 
 # Use CPack
