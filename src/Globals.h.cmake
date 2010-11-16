@@ -38,6 +38,10 @@ limitations under the License.
 #define SCHEMA "@SCHEMA@"
 #endif
 
+#ifndef ELUDE_MODELS_PATH
+#define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
+#endif
+
 #ifdef WIN32
 #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
 #define D_DARRAY(name) _freea(name);
