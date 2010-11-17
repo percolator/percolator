@@ -1,5 +1,5 @@
 v1.16
-* Elude stuff here
+* Elude handles both non-modified and posttranslationally modified peptides
 * Validation of Percolator's input against local copy of xml schema
 * Bugfix for Sqt2pin when invoked with -2 option
 
