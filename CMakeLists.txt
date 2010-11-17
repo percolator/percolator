@@ -1,8 +1,26 @@
+# PRINT VARIBALES TO STDOUT
+MESSAGE( STATUS )
+MESSAGE( STATUS
+"-------------------------------------------------------------------------------"
+)
+MESSAGE( STATUS "Building PERCOLATOR:" )
+MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
+MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
+MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
+MESSAGE( STATUS "EXCLUDE_CONVERTERS = ${EXCLUDE_CONVERTERS}" )
+MESSAGE( STATUS "EXCLUDE_ELUDE = ${EXCLUDE_ELUDE}" )
+MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
+MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
+MESSAGE( STATUS
+"-------------------------------------------------------------------------------"
+)
+MESSAGE( STATUS )
+cmake_minimum_required(VERSION 2.8)
+project(PERCOLATOR)
+
 ###############################################################################
 # NAME AND VERSION
 ###############################################################################
-cmake_minimum_required(VERSION 2.8)
-project(PERCOLATOR)
 
 # VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
@@ -28,23 +46,6 @@ foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
-
-# PRINT VARIBALES TO STDOUT
-MESSAGE( STATUS )
-MESSAGE( STATUS
-"-------------------------------------------------------------------------------"
-)
-MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
-MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
-MESSAGE( STATUS "EXCLUDE_CONVERTERS = ${EXCLUDE_CONVERTERS}" )
-MESSAGE( STATUS "EXCLUDE_ELUDE = ${EXCLUDE_ELUDE}" )
-MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
-MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
-MESSAGE( STATUS "Change a value with: cmake -D<Variable>=<Value>" )
-MESSAGE( STATUS
-"-------------------------------------------------------------------------------"
-)
-MESSAGE( STATUS )
 
 ###############################################################################
 # COMPILING, INSTALLING AND TESTING
