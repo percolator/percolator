@@ -16,7 +16,6 @@
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
-
 #ifdef WIN32
 #ifndef uint32_t
 #define uint32_t unsigned long
@@ -43,14 +42,14 @@ class ScoreHolder {
     PSMDescription* pPSM;
     //  const double * featVec;
     int label;
-    string psms_list;
+    vector<string> psms_list;
     ScoreHolder() :
-      score(0.0), label(0), pPSM(NULL) {
-      psms_list = "";
+      score(0.0), label(0), pPSM(NULL), psms_list (NULL) {
+      ;
     }
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), label(l), pPSM(psm) {
-      psms_list = "";
+      score(s), label(l), pPSM(psm), psms_list (NULL) {
+      ;
     }
     virtual ~ScoreHolder() {
       ;
@@ -77,11 +76,11 @@ class ScoreHolderPeptide: public ScoreHolder {
   public:
     ScoreHolderPeptide() :
       ScoreHolder(){
+      ;
     }
     ScoreHolderPeptide(ScoreHolder& sh) :
       ScoreHolder(sh){
-      psms_list.append(sh.pPSM->id);
-      psms_list.append(" ");
+      ;
     }
     ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
       ScoreHolder(s, l, psm) {

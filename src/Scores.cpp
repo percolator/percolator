@@ -38,6 +38,7 @@ using namespace std;
 #include "ssl.h"
 #include "MassHandler.h"
 
+
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
 }
@@ -66,14 +67,14 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
     os << " p:decoy=\"true\"";
   }
   os << ">" << endl;
-  os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
+  os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
-  os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <pep>" << scientific << sh.pPSM->pep << "</pep>" << endl;
   if(MassHandler::monoisotopic == true){
-    os << "      <exp_mass>" <<
-        fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
-    os << "      <calc_mass>" <<
-        fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
+    os << "      <exp_mass>" << fixed << setprecision (4)
+        << sh.pPSM->expMass << "</exp_mass>" << endl;
+    os << "      <calc_mass>" << fixed << setprecision (3)
+        << sh.pPSM->calcMass << "</calc_mass>" << endl;
   }
   if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\""
       << PSMDescription::unnormalize(sh.pPSM->retentionTime)
@@ -93,7 +94,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
     << "</protein_id>" << endl;
   }
-  os << "      <p_value>" << sh.pPSM->p << "</p_value>" <<endl;
+  os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
   os << "    </psm>" << endl;
   return os;
 }
@@ -109,24 +110,31 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
     os << " p:decoy=\"true\"";
   }
   os << ">" << endl;
-  os << "      <svm_score>" << sh.score << "</svm_score>" << endl;
+  os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
-  os << "      <pep>" << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <pep>" << scientific << sh.pPSM->pep << "</pep>" << endl;
   if(MassHandler::monoisotopic == true){
-    os << "      <exp_mass>" <<
-        fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
-    os << "      <calc_mass>" <<
-        fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
+    os << "      <exp_mass>" << fixed << setprecision (4)
+        << sh.pPSM->expMass << "</exp_mass>" << endl;
+    os << "      <calc_mass>" << fixed << setprecision (3)
+        << sh.pPSM->calcMass << "</calc_mass>" << endl;
   }
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
   != sh.pPSM->proteinIds.end(); ++pid) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
     << "</protein_id>" << endl;
   }
-  os << "      <p_value>" << sh.pPSM->p << "</p_value>" << endl;
+  os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
   os << "      <psm_ids>" << endl;
   // output all psms that contain the peptide
-  string s = sh.psms_list;
+  vector<string> s = sh.psms_list;
+  BOOST_FOREACH(string psm, sh.psms_list){
+    os << "        <psm_id>" << psm << "</psm_id>" << endl;
+  }
+  os << "      </psm_ids>" << endl;
+  os << "    </peptide>" << endl;
+
+  /*
   istringstream iss(s);
   bool finished = false;
   while(! finished) {
@@ -138,6 +146,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   }
   os << "      </psm_ids>" << endl;
   os << "    </peptide>" << endl;
+  */
   return os;
 }
 
@@ -501,26 +510,32 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
-  vector<ScoreHolder>::iterator it = scores.begin();
-  set<string> uniquePeptides;
-  pair<set<string>::iterator, bool> ret;
-  for (; it != scores.end();) {
-    ret = uniquePeptides.insert(it->pPSM->peptide);
-    if (!ret.second) {
-      // duplicate peptide
-      vector<ScoreHolder>::iterator duplicate = scores.begin();
-      for (; duplicate != it;) {
-        if((duplicate->pPSM->peptide.compare(it->pPSM->peptide) == 0) && // duplicate
-            (it->label ==duplicate->label)){ // non-decoy
-          duplicate->psms_list.append(it->pPSM->id);
-          duplicate->psms_list.append(" ");
-          duplicate=it;
+  // set of peptides encountered so far
+  set<string> encounteredPeptides;
+  pair<set<string>::iterator, bool> wasUnique;
+  // iterating over scores looking for duplicates
+  vector<ScoreHolder>::iterator duplicated = scores.begin();
+  for (; duplicated != scores.end();) {
+    // trying to insert into set of peptides encountered
+    wasUnique = encounteredPeptides.insert(duplicated->pPSM->peptide);
+    // if peptide had been seen already
+    if (!wasUnique.second) {
+      // start from the beginning and look for original peptide
+      vector<ScoreHolder>::iterator original = scores.begin();
+      for (; original != duplicated;) {
+        if((original->pPSM->peptide.compare(duplicated->pPSM->peptide) == 0) && // duplicate
+            (duplicated->label ==original->label)){ // non-decoy
+          // when you found it add the deplicated psm_id
+          original->psms_list.push_back(duplicated->pPSM->id);
+          original=duplicated;
         }
-        else ++duplicate;
+        else ++original;
       }
-      it = scores.erase(it);
+      duplicated = scores.erase(duplicated);
     } else {
-      ++it;
+      // if peptide had not been seen already
+      duplicated->psms_list.push_back(duplicated->pPSM->id);
+      ++duplicated;
     }
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ()); // Is this really needed?

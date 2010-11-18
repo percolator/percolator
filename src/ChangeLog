@@ -1,3 +1,6 @@
+v1.17
+* Bugfix for cases where the same peptide occurres both among the target and decoy PSMs
+
 v1.16
 * Elude handles both non-modified and posttranslationally modified peptides
 * Validation of Percolator's input against local copy of xml schema
