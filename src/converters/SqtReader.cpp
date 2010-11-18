@@ -403,7 +403,6 @@ todo!
         if (po.calcAAFrequencies) {
           computeAAFrequencies(peptide, f_seq);
         }
-
         /*
         if (calcDOC) {
           // These features will be set before each iteration
@@ -415,7 +414,6 @@ todo!
           f_seq.push_back( 0 );
         }
          */
-
         gotL = false;
       }
       ms++;

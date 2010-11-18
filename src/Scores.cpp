@@ -508,14 +508,15 @@ void Scores::weedOutRedundant() {
     ret = uniquePeptides.insert(it->pPSM->peptide);
     if (!ret.second) {
       // duplicate peptide
-      vector<ScoreHolder>::iterator tmp = scores.begin();
-      for (; tmp != it;) {
-        if(tmp->pPSM->peptide.compare(it->pPSM->peptide) == 0){
-          tmp->psms_list.append(it->pPSM->id);
-          tmp->psms_list.append(" ");
-          tmp=it;
+      vector<ScoreHolder>::iterator duplicate = scores.begin();
+      for (; duplicate != it;) {
+        if((duplicate->pPSM->peptide.compare(it->pPSM->peptide) == 0) && // duplicate
+            (it->label ==duplicate->label)){ // non-decoy
+          duplicate->psms_list.append(it->pPSM->id);
+          duplicate->psms_list.append(" ");
+          duplicate=it;
         }
-        else ++tmp;
+        else ++duplicate;
       }
       it = scores.erase(it);
     } else {
