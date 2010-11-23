@@ -4,7 +4,7 @@
 
 set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
-# this is ignored during make install! must be set from command line with -D
+# CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 
 set(CMAKE_BUILD_TYPE "Debug")
 set(GOOGLE_TEST "TRUE") 
