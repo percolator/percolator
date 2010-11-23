@@ -484,6 +484,7 @@ int EludeCaller::SaveIndexToFile(const int &best_model_index) const {
 }
 
 /* main function in Elude */
+
 int EludeCaller::Run() {
   pair<int, double> best_model(-1, -1.0);
   if (!train_file_.empty() && !load_model_file_.empty() && VERB >= 4
@@ -952,6 +953,132 @@ string EludeCaller::GetFileName(const string &path) {
   }
   return file_name;
 }
+
+/* Percolator calls */
+set<string> EludeCaller::GetAAAlphabet(const vector<PSMDescription> &psms) const {
+  set<string> aa_alphabet;
+  vector<PSMDescription>::const_iterator it = psms.begin();
+  string peptide = "", peptide_sequence = "";
+  vector<string> amino_acids;
+  int pos1, pos2;
+  for ( ; it != psms.end(); ++it) {
+    peptide = it->peptide;
+	  pos1 = peptide.find('.');
+	  pos2 = peptide.find('.', ++pos1);
+	  peptide_sequence = peptide.substr(pos1, pos2 - pos1);
+    amino_acids = RetentionFeatures::GetAminoAcids(peptide_sequence);
+    aa_alphabet.insert(amino_acids.begin(), amino_acids.end());
+  }
+  return aa_alphabet;
+}
+
+/* select a model using train_psms, then use this model to predict rt for the test */
+/*
+int EludeCaller::TrainTestModel(vector<PSMDescription> &train_psms,
+    vector<PSMDescription> &test_psms) {
+  // make sure that all symbols from the test are also in the train
+  set<string> train_alphabet = GetAAAlphabet(train_psms);
+  set<string> test_alphabet = GetAAAlphabet(test_psms);
+  if (!includes(train_alphabet.begin(), train_alphabet.end(),
+      test_alphabet.begin(), test_alphabet.end())) {
+      cerr << "Elude Error: Test set includes symbols not present in the train " << endl;
+      return 1;
+  }
+  if (rt_model_ != NULL) {
+    delete rt_model_;
+    rt_model_ = NULL;
+  }
+  // build a retention model
+  rt_model_ = new RetentionModel(the_normalizer_);
+  map<string, double> index = rt_model_->BuildRetentionIndex(train_alphabet, false, train_psms);
+  rt_model_->TrainRetentionModel(train_alphabet, index, true, train_psms);
+  // predict retention time
+  rt_model_->PredictRT(test_alphabet, false, "test", test_psms);
+} */
+
+int EludeCaller::SelectTestModel(std::vector<PSMDescription> &calibration_psms,
+         std::vector<PSMDescription> &test_psms) {
+
+  train_psms_ = calibration_psms;
+  test_psms_ = test_psms;
+  train_aa_alphabet_ = GetAAAlphabet(calibration_psms);
+  test_aa_alphabet_ = GetAAAlphabet(test_psms);
+
+  AllocateRTFeatures(train_psms_);
+  AllocateRTFeatures(test_psms_);
+
+  pair<int, double> best_model = AutomaticModelSelection();
+  int index = best_model.first;
+
+  if (index < 0) {
+    cerr << "Error: No model available to predict rt. " << endl;
+    return 1;
+  }
+
+  rt_models_[index]->PredictRT(test_aa_alphabet_, false, "test psms", test_psms_);
+  rt_models_[index]->PredictRT(train_aa_alphabet_, false, "calibration psms",
+      train_psms_);
+  pair<vector<double> , vector<double> > rts = GetRTs(train_psms_);
+  lts = new LTSRegression();
+  lts->setData(rts.first, rts.second);
+  lts->runLTS();
+  AdjustLinearly(test_psms_);
+
+  calibration_psms = train_psms_;
+  test_psms = test_psms_;
+
+  // clean up the models
+  delete lts;
+  lts = NULL;
+  DeleteRTModels();
+
+  return 0;
+}
+
+int EludeCaller::AllocateRTFeatures(vector<PSMDescription> &psms) {
+  vector<PSMDescription>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    if (it->retentionFeatures == NULL) {
+       it->retentionFeatures = new double[RetentionFeatures::kMaxNumberFeatures];
+    }
+  }
+}
+
+/*
+int EludeCaller::Run() {
+  vector<PSMDescription> tpsms, tepsms;
+  set<string> alphabet;
+  Globals::getInstance()->setVerbose(5);
+  library_path_ = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test_lib/";
+  string train_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/calibrate.txt";
+  string test_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test.txt";
+  DataManager::LoadPeptides(train_file, true, true, tpsms, alphabet);
+  DataManager::LoadPeptides(test_file, true, true, tepsms, alphabet);
+  SelectTestModel(tpsms, tepsms);
+  for(int i = 0; i < tepsms.size(); ++i) {
+     cout << tepsms[i].peptide << " " << tepsms[i].retentionTime << " " << tepsms[i].predictedTime << endl;
+    }
+  cout << "#####################################" << endl;
+  for(int i = 0; i < tpsms.size(); ++i) {
+    cout << tpsms[i].peptide << " " << tpsms[i].retentionTime << " " << tpsms[i].predictedTime << endl;
+   }
+  cout << "#####################################" << endl;
+/*  train_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/calibrate_1.txt";
+  test_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test_1.txt";
+  tpsms.clear();
+  tepsms.clear();
+  DataManager::LoadPeptides(train_file, true, true, tpsms, alphabet);
+  DataManager::LoadPeptides(test_file, true, true, tepsms, alphabet);
+  SelectTestModel(tpsms, tepsms);
+  for(int i = 0; i < tpsms.size(); ++i) {
+   cout << tpsms[i].peptide << " " << tpsms[i].retentionTime << " " << tpsms[i].predictedTime << endl;
+  }
+  cout << "#####################################" << endl;
+  for(int i = 0; i < tepsms.size(); ++i) {
+     cout << tepsms[i].peptide << " " << tepsms[i].retentionTime << " " << tepsms[i].predictedTime << endl;
+    }
+  cout << "#####################################" << endl;
+}*/
 
 /**********************************************************************/
 /*** Additional functions from the provious implementation of Elude ***/

@@ -63,6 +63,19 @@ class EludeCallerTest : public ::testing::Test {
    vector<PSMDescription> psms_;
 };
 
+TEST_F(EludeCallerTest, TestGetAAAlphabet) {
+  vector<PSMDescription> psms;
+  psms.push_back(PSMDescription("A.VSVVCS[unimod:21]C.D", 2));
+  psms.push_back(PSMDescription("YYT", 2));
+
+  set<string> alphabet = caller.GetAAAlphabet(psms);
+  EXPECT_EQ(6, alphabet.size());
+  string aas[] = {"C", "S", "S[unimod:21]", "T", "V", "Y"};
+  for(int i = 0; i < 5; ++i) {
+    EXPECT_TRUE(alphabet.end() != alphabet.find(aas[i]));
+  }
+}
+
 TEST_F(EludeCallerTest, TestProcessTrainDataContext) {
   caller.set_train_file(train_file1);
   caller.set_test_file(test_file1);

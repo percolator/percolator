@@ -86,6 +86,16 @@ class EludeCaller{
    int SaveIndexToFile(const int &best_model_index) const;
    /* print the predicted retention times for a set of peptides */
    void PrintPredictions(const std::vector<PSMDescription> &psms) const;
+   /* calls for percolator */
+   /* train a model using train_psms, then use this model to predict rt for the test */
+   /* int TrainTestModel(std::vector<PSMDescription> &train_psms,
+		   std::vector<PSMDescription> &test_psms); */
+   /* select a model using train_psms, then use this model to predict rt for the test */
+   int SelectTestModel(std::vector<PSMDescription> &calibration_psms,
+   		   std::vector<PSMDescription> &test_psms);
+   /* given a list of ptms, build a set with all the amino acids present */
+   std::set<std::string> GetAAAlphabet(const vector<PSMDescription> &psms) const;
+   int AllocateRTFeatures(std::vector<PSMDescription> &psms);
 
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
