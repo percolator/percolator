@@ -1,3 +1,39 @@
+###############################################################################
+# PREPARING TO INSTALL
+###############################################################################
+
+set(base "/tmp")
+set(percolatorBuild "${base}/percolatorBuild")
+# CMAKE_INSTALL_PREFIX must be set from command line with -D
+# set(CMAKE_INSTALL_PREFIX "${base}") 
+set(CMAKE_BUILD_TYPE "Debug")
+set(GOOGLE_TEST "TRUE") 
+set(EXCLUDE_CONVERTERS "FALSE")
+set(EXCLUDE_ELUDE "FALSE")
+set(CMAKE_PREFIX_PATH "${base}/xsd-3.3.0-x86_64-linux-gnu/")
+set(GOOGLE_TEST_PATH "${base}/gtest-1.5.0")
+
+
+# the Ubuntu package xsdcxx is as of 2010-10-21 version 3.2 and we want version 3.3
+# so we download it from the Codesynthesis home page
+execute_process(COMMAND file xsd-3.3.0-x86_64-linux-gnu WORKING_DIRECTORY ${base} RESULT_VARIABLE notExists OUTPUT_QUIET ERROR_QUIET)
+if(notExists)
+  execute_process(COMMAND wget http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/xsd-3.3.0-x86_64-linux-gnu.tar.bz2 WORKING_DIRECTORY ${base})
+  execute_process(COMMAND tar xfj xsd-3.3.0-x86_64-linux-gnu.tar.bz2 WORKING_DIRECTORY ${base})
+  execute_process(COMMAND rm xsd-3.3.0-x86_64-linux-gnu.tar.bz2 WORKING_DIRECTORY ${base})
+endif()
+# the Ubuntu package xsdcxx is as of 2010-10-21 version 1.3 and we want version 1.5
+# so we download it from the Googletest home page
+execute_process(COMMAND file gtest-1.5.0 WORKING_DIRECTORY ${base} RESULT_VARIABLE notExists OUTPUT_QUIET ERROR_QUIET)
+if(notExists)
+  execute_process(COMMAND wget http://googletest.googlecode.com/files/gtest-1.5.0.tar.gz WORKING_DIRECTORY ${base})
+  execute_process(COMMAND tar xzf gtest-1.5.0.tar.gz WORKING_DIRECTORY ${base})
+  execute_process(COMMAND rm gtest-1.5.0.tar.gz WORKING_DIRECTORY ${base})
+  execute_process(COMMAND mkdir build WORKING_DIRECTORY ${base}/gtest-1.5.0)
+  execute_process(COMMAND cmake ../ WORKING_DIRECTORY ${base}/gtest-1.5.0/build)
+  execute_process(COMMAND make WORKING_DIRECTORY ${base}/gtest-1.5.0/build)
+endif()
+
 # PRINT VARIBALES TO STDOUT
 MESSAGE( STATUS )
 MESSAGE( STATUS
@@ -15,16 +51,18 @@ MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
 MESSAGE( STATUS )
-cmake_minimum_required(VERSION 2.8)
-project(PERCOLATOR)
+
 
 ###############################################################################
 # NAME AND VERSION
 ###############################################################################
 
+cmake_minimum_required(VERSION 2.8)
+project(PERCOLATOR)
+
 # VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "16")
+set(CPACK_PACKAGE_VERSION_MINOR "17")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(SCHEMA_VERSION_MAJOR "1")
 set(SCHEMA_VERSION_MINOR "1")

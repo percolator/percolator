@@ -305,8 +305,6 @@ int Sqt2Pin::run() {
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::fullParsing, database);
   }
-  //    pCheck = new SqtSanityCheck();
-  //    assert(pCheck);
 
   // read retention time if sqt2pin was invoked with -2 option
   if (spectrumFile.size() > 0) {

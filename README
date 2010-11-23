@@ -65,21 +65,32 @@ If you do not have sudo permissions, you will have to manually install programs
 and libraries. The same goes for older versions of Ubuntu as explained above
 in the section "INSTALLING PERCOLATOR" under "Linux".
 
-Download the latest percolator[_converters]-v[X]-linux-[ARCH].tar.gz tar-ball.
-Issue the following command in the directory where the source bundle has been 
-downloaded:
-  $ tar -zxvf percolator[_converters]-v[X]-linux-[ARCH].tar.gz
-  $ cd percolator-v[X]-linux-[ARCH]
-  $ ./install/ubuntu_percolator[_converters].sh
-The script will install the Percolator (and optionally the converters) binaries
-in the directory /tmp/percolatorInstall and run system tests. In case of 
-unsuccessful execution, please refer to the next session, "TESTING PERCOLATOR".
-Log files are stored in /tmp/percolatorBuild/Testing/.
+Download the latest percolator[_converters]-v[X]-linux-[ARCH].tar.gz tar-ball
+and decompress it; we will refer to the generated directory as 
+"/path/to/source". We will now build percolator in the /tmp, but any directory
+where the user has read/write priviledges can be chosen. Issue the following 
+commands:
+  $ mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
+  $ cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_INSTALL_PREFIX=
+      "/tmp" /path/to/source
+The directory /tmp/percolatorBuild can now be imported into Eclipse as an 
+external, debuggable Project. Alternatively, Percolator (and optionally the 
+converters) can be installed by issuing the following:
+  $ cd /tmp/percolatorBuild
+  $ make -j8
+  $ make install
+Percolator can be automatically tested by issuing:
+  $ cd /tmp/percolatorBuild
+  $ PATH=$PATH:/tmp/bin; export PATH
+  $ make test
+In case of unsuccessful execution, please refer to 
+the next session, "TESTING PERCOLATOR". Log files are stored in 
+/tmp/percolatorBuild/Testing/.
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
-This will create a directory called "percolator"; Enter it and install as 
-explained above.
+This will create a directory called "percolator" that is to be used as 
+/path/to/source in the instructions above
 
 
 ***
