@@ -67,22 +67,21 @@ in the section "INSTALLING PERCOLATOR" under "Linux".
 
 Download the latest percolator[_converters]-v[X]-linux-[ARCH].tar.gz tar-ball
 and decompress it; we will refer to the generated directory as 
-[percolatorSource]. We will now build percolator in the /tmp, but any directory
+"/path/to/source". We will now build percolator in the /tmp, but any directory
 where the user has read/write priviledges can be chosen. Issue the following 
 commands:
-  $ mkdir /tmp/percolatorBuild
-  $ cd /tmp/percolatorBuild
-  $ cmake [percolatorSource]
+  $ mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
+  $ cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_INSTALL_PREFIX=
+      "/tmp" /path/to/source
 The directory /tmp/percolatorBuild can now be imported into Eclipse as an 
 external, debuggable Project. Alternatively, Percolator (and optionally the 
-converters) can be build and installed by issuing the following:
+converters) can be installed by issuing the following:
   $ cd /tmp/percolatorBuild
-  $ make -j 8
+  $ make -j8
   $ make install
 Percolator can be automatically tested by issuing:
   $ cd /tmp/percolatorBuild
-  $ PATH=$PATH:/tmp/bin
-  $ export PATH
+  $ PATH=$PATH:/tmp/bin; export PATH
   $ make test
 In case of unsuccessful execution, please refer to 
 the next session, "TESTING PERCOLATOR". Log files are stored in 
@@ -91,7 +90,7 @@ the next session, "TESTING PERCOLATOR". Log files are stored in
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
 This will create a directory called "percolator" that is to be used as 
-[percolatorSource] in the instructions above
+/path/to/source in the instructions above
 
 
 ***

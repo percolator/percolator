@@ -4,9 +4,9 @@
 
 set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
-set(CMAKE_INSTALL_PREFIX ${base})
+# this is ignored during make install! must be set from command line with -D
+# set(CMAKE_INSTALL_PREFIX "${base}") 
 set(CMAKE_BUILD_TYPE "Debug")
-set(TARGET_ENV "Eclipse CDT4 - Unix Makefiles")
 set(GOOGLE_TEST "TRUE") 
 set(EXCLUDE_CONVERTERS "FALSE")
 set(EXCLUDE_ELUDE "FALSE")
