@@ -514,28 +514,36 @@ void Scores::weedOutRedundant() {
   set<string> encounteredPeptides;
   pair<set<string>::iterator, bool> wasUnique;
   // iterating over scores looking for duplicates
-  vector<ScoreHolder>::iterator duplicated = scores.begin();
-  for (; duplicated != scores.end();) {
+  vector<ScoreHolder>::iterator duplicate = scores.begin();
+  for (; duplicate != scores.end();) {
     // trying to insert into set of peptides encountered
-    wasUnique = encounteredPeptides.insert(duplicated->pPSM->peptide);
+    wasUnique = encounteredPeptides.insert(duplicate->pPSM->peptide);
     // if peptide had been seen already
     if (!wasUnique.second) {
       // start from the beginning and look for original peptide
       vector<ScoreHolder>::iterator original = scores.begin();
-      for (; original != duplicated;) {
-        if((original->pPSM->peptide.compare(duplicated->pPSM->peptide) == 0) && // duplicate
-            (duplicated->label ==original->label)){ // non-decoy
-          // when you found it add the deplicated psm_id
-          original->psms_list.push_back(duplicated->pPSM->id);
-          original=duplicated;
+      for (; original != duplicate;) {
+        string originalPeptide = original->pPSM->peptide.substr
+            (2, original->pPSM->peptide.size()-4);
+        string duplicatePeptide = duplicate->pPSM->peptide.substr
+            (2, duplicate->pPSM->peptide.size()-4);
+        if((originalPeptide.compare(duplicatePeptide) == 0) && // duplicate
+            (duplicate->label ==original->label)){ // non-decoy
+          // when you find it, add the duplicate psm_id...
+          original->psms_list.push_back(duplicate->pPSM->id);
+          // ... and all its proteins
+          BOOST_FOREACH(string pId, duplicate->pPSM->proteinIds){
+            original->pPSM->proteinIds.insert(pId);
+          }
+          original=duplicate;
         }
         else ++original;
       }
-      duplicated = scores.erase(duplicated);
+      duplicate = scores.erase(duplicate);
     } else {
       // if peptide had not been seen already
-      duplicated->psms_list.push_back(duplicated->pPSM->id);
-      ++duplicated;
+      duplicate->psms_list.push_back(duplicate->pPSM->id);
+      ++duplicate;
     }
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ()); // Is this really needed?
