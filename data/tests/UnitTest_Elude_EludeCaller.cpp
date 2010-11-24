@@ -266,6 +266,77 @@ TEST_F(EludeCallerTest, TestAutomaticModelSelection) {
   EXPECT_NEAR(39.1311, test_psms[1739].predictedTime, 0.01);
 }
 
+TEST_F(EludeCallerTest, TestSelectTestModel) {
+  vector<PSMDescription> calibration_psms, test_psms;
+  set<string> calibration_alphabet, test_alphabet;
+
+  //calibration_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/calibrate.txt";
+  //test_calibration = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test.txt";
+  EludeCaller::set_lib_path(lib_path);
+  DataManager::LoadPeptides(calibration_file, true, true, calibration_psms,
+		  calibration_alphabet);
+  DataManager::LoadPeptides(test_calibration, true, true, test_psms,
+  		  test_alphabet);
+
+  sort(calibration_psms.begin(), calibration_psms.end());
+
+  EXPECT_EQ(85, calibration_psms.size());
+  EXPECT_EQ(1740, test_psms.size());
+
+  EXPECT_EQ("K.EEMTAAGLSPESIEGILK.I", calibration_psms[5].peptide);
+  EXPECT_NEAR(42.6745, calibration_psms[5].retentionTime, 0.01);
+  EXPECT_NEAR(0.0, calibration_psms[5].predictedTime, 0.01);
+
+  EXPECT_EQ("R.YYLASVRPESSDSHFSWDDFVAR.N", test_psms[1739].peptide);
+  EXPECT_NEAR(58.1633, test_psms[1739].retentionTime, 0.01);
+  EXPECT_NEAR(0.0, test_psms[1739].predictedTime, 0.01);
+
+  caller.SelectTestModel(calibration_psms, test_psms);
+
+  EXPECT_EQ(85, calibration_psms.size());
+  EXPECT_EQ(1740, test_psms.size());
+
+  sort(calibration_psms.begin(), calibration_psms.end());
+
+  EXPECT_EQ("K.EEMTAAGLSPESIEGILK.I", calibration_psms[5].peptide);
+  EXPECT_NEAR(42.6745, calibration_psms[5].retentionTime, 0.01);
+  EXPECT_NEAR(42.0099, calibration_psms[5].predictedTime, 1.0);
+
+  EXPECT_EQ("R.YYLASVRPESSDSHFSWDDFVAR.N", test_psms[1739].peptide);
+  EXPECT_NEAR(58.1633, test_psms[1739].retentionTime, 0.01);
+  EXPECT_NEAR(37.35, test_psms[1739].predictedTime, 1.0);
+
+  vector<PSMDescription>::iterator it = calibration_psms.begin();
+  for( ; it != calibration_psms.end(); ++it) {
+    it->predictedTime = 0.0;
+  }
+  for(it = test_psms.begin() ; it != test_psms.end(); ++it) {
+    it->predictedTime = 0.0;
+  }
+
+  caller.SelectTestModel(calibration_psms, test_psms);
+
+  EXPECT_EQ(85, calibration_psms.size());
+  EXPECT_EQ(1740, test_psms.size());
+
+  sort(calibration_psms.begin(), calibration_psms.end());
+
+  EXPECT_EQ("K.EEMTAAGLSPESIEGILK.I", calibration_psms[5].peptide);
+  EXPECT_NEAR(42.6745, calibration_psms[5].retentionTime, 0.01);
+  EXPECT_NEAR(42.0099, calibration_psms[5].predictedTime, 1.0);
+
+  EXPECT_EQ("R.YYLASVRPESSDSHFSWDDFVAR.N", test_psms[1739].peptide);
+  EXPECT_NEAR(58.1633, test_psms[1739].retentionTime, 0.01);
+  EXPECT_NEAR(37.35, test_psms[1739].predictedTime, 1.0);
+
+//EludeCaller::SelectTestModel(std::vector<PSMDescription> &calibration_psms,
+//	         std::vector<PSMDescription> &test_psms)
+//    calibration_file = "data/elude_test/calibrate_data/calibrate.txt";
+//     lib_path = "data/elude_test/calibrate_data/test_lib";
+//     test_calibration = "data/elude_test/calibrate_data/test.txt";
+
+}
+
 TEST_F(EludeCallerTest, TestFindLeastSquaresSolution) {
   vector<PSMDescription> psms2;
   psms2.push_back(PSMDescription(3, 1));
