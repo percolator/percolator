@@ -26,7 +26,7 @@
 class Enzyme {
   public:
     enum EnzymeType {
-      NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, ELASTASE
+      NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, ELASTASE, LYSN
     };
     virtual ~Enzyme() {
       ;
@@ -127,4 +127,24 @@ class Elastase : public Enzyme {
     }
 };
 
+class LysN : public Enzyme {
+  public:
+    virtual ~LysN() {
+      ;
+    }
+    LysN() {
+      ;
+    }
+  protected:
+    virtual std::string toString() {
+      return "lys-N";
+    }
+    virtual bool isEnz(const char& n, const char& c) {
+      return (((n == 'K') && c != 'P')
+          || n == '-' || c == '-');
+    }
+    virtual EnzymeType getET() {
+      return LYSN;
+    }
+};
 #endif /* ENZYME_H_ */
