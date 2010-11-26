@@ -24,6 +24,8 @@
 
 using namespace std;
 
+// GET RID OF ARRAY LIBRARY HERE
+// REPLACE W/ boost::numeric::ublas::banded_matrix and ublas::vector
 #include "ArrayLibrary.h"
 #include "BaseSpline.h"
 #include "Globals.h"
@@ -90,6 +92,8 @@ void BaseSpline::iterativeReweightedLeastSquares() {
     do {
       g = gnew;
       calcPZW();
+      // PROBLEMS HERE WITH BANDED MATRIX
+      // OVERLOAD OF * OPERATOR??
       PackedMatrix aWiQ = alpha * diagonalPacked(Vec(n, 1) / w) * Q;
       PackedMatrix M = R + Qt * aWiQ;
       gamma = Qt * z;
@@ -129,6 +133,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
   g = gnew;
 }
 
+// SMOOTHING PARAMETER ALPHA
 pair<double, double> BaseSpline::alphaLinearSearch(double min_p,
                                                    double max_p,
                                                    double p1, double p2,
@@ -164,6 +169,7 @@ pair<double, double> BaseSpline::alphaLinearSearch(double min_p,
   return alphaLinearSearch(min_p, max_p, p1, p2, cv1, cv2);
 }
 
+// CHOMSKY DECOMPOSITION PAGE 25
 void BaseSpline::initiateQR() {
   int n = x.size();
   dx.resize(n - 1, 0.0);
