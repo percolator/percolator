@@ -6,6 +6,10 @@ add_library(eludelibrary RetentionFeatures.cpp DataManager.cpp EludeMain.cpp Lib
 
 add_executable(elude ${ELUDE_SOURCES})
 
+if(STATIC AND MINGW)
+  set_target_properties(elude PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+endif()
+
 target_link_libraries(elude eludelibrary)
 
 install(TARGETS elude EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
