@@ -9,6 +9,7 @@ find_path(XSD_INCLUDE_DIR NAMES  xsd/cxx/version.hxx  PATH_SUFFIXES libxsd PATHS
   $ENV{XSDDIR}/libxsd
   /usr/include
   /usr/local/include
+  /Users/luminitamoruz/install/xsd-3.3.0-i686-macosx
   CMAKE_FIND_ROOT_PATH_BOTH
 )
 #  PATH_SUFFIXES libxsd
@@ -20,6 +21,7 @@ find_program(XSD_EXECUTABLE
     $ENV{XSDDIR}/bin 
    /usr/bin
    /usr/local/bin
+  /Users/luminitamoruz/install/xsd-3.3.0-i686-macosx/bin 
 )
 
 #find_library(XSD_LIBRARIES NAMES libxsd.a PATH_SUFFIXES libxsd/xsd )

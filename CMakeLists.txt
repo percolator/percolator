@@ -8,9 +8,9 @@ set(percolatorBuild "${base}/percolatorBuild")
 # set(CMAKE_INSTALL_PREFIX "${base}") 
 set(CMAKE_BUILD_TYPE "Debug")
 set(GOOGLE_TEST "TRUE") 
-set(EXCLUDE_CONVERTERS "FALSE")
+set(EXCLUDE_CONVERTERS "TRUE")
 set(EXCLUDE_ELUDE "FALSE")
-set(CMAKE_PREFIX_PATH "${base}/xsd-3.3.0-x86_64-linux-gnu/")
+set(CMAKE_PREFIX_PATH "${base}/xsd-3.3.0-i686-macosx")
 set(GOOGLE_TEST_PATH "${base}/gtest-1.5.0")
 
 
