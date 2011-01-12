@@ -31,11 +31,13 @@ If dependency problems arise, you might have to manually some of the libraries
 on your system to match the version required (your package manager might be 
 providing an old version); this depends on what installation you are using. The
 Debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though,
-will require you to manually install libxerces-c3.1.so. Similarly, under 
-CentOS5.5, you'll need:
+will require you to manually install:
+_libxerces-c3.1.so
+Similarly, under CentOS5.5, you'll need:
 _libxerces-c3.1.so
 _libstdc++.so.6
-_libtokyocabinet.so.8.
+_libtokyocabinet.so.8
+_libsqlite3-devel.so
 
 
 Windows
