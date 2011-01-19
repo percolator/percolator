@@ -65,8 +65,7 @@ add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS
 # COMPILE INTERNAL LIBRARIES
 ###############################################################################
 
-#COMPILE ARRAYLIBRARY
-#add_subdirectory(ArrayLibrary)
+#COMPILE FIDO
 add_subdirectory(fido)
 
 
@@ -110,7 +109,6 @@ endif()
 
 
 # SET LIBRARIES FOR PERCOLATOR
-#target_link_libraries(percolator perclibrary ArrayLibrary pthread dl ${XERCESC_LIBRARIES})
 target_link_libraries(percolator perclibrary fido pthread dl ${XERCESC_LIBRARIES})
 
 # INSTALL PERCOLATOR
