@@ -699,7 +699,7 @@ int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
   double* features = psm.getRetentionFeatures();
 
   // if there is memory allocated
-  if (features) {
+  if (features != NULL) {
     if (active_feature_groups_.test(INDEX_NO_PTMS_GROUP)) {
       features = ComputeNoPTMFeatures(pep, features);
     }

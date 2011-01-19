@@ -520,6 +520,7 @@ void Caller::readFiles() {
       if (strcmp(value, "chymotrypsin")) Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
       else if (strcmp(value, "elastase")) Enzyme::setEnzyme(Enzyme::ELASTASE);
       else if (strcmp(value, "no_enzyme")) Enzyme::setEnzyme(Enzyme::NO_ENZYME);
+      else if (strcmp(value, "lys-N")) Enzyme::setEnzyme(Enzyme::LYSN);
 
       XMLString::release(&value);
       doc = p.next();

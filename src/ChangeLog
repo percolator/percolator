@@ -1,3 +1,6 @@
+v1.18
+* Added a option for Lys-N Processing capability
+
 v1.17
 * Bugfix for cases where the same peptide occurres both among the target and decoy PSMs
 
@@ -7,29 +10,26 @@ v1.16
 * Bugfix for Sqt2pin when invoked with -2 option
 
 v1.15
-* New XML input format ("pin") and revised output format ("pout") for percolator. 
+* New XML input format ("pin") and revised output format ("pout") for percolator.
   Schemas are available in src/xml.
 * Unique peptide level q-values are reported alongside PSM level q-values.
-* All PSMs from the same fragmentation spectrum end up in the the same cross 
-  validation bin
-* Output of observed mass for PSMs rather than fragmentation spectrum, to aid 
+* All PSMs from the same fragmentation spectrum end up in the the same cross validation bin
+* Output of observed mass for PSMs rather than fragmentation spectrum, to aid
   the processing of FT-ICR data.
 
 v1.14
-* Added a weed out redundant PSMs and just keep unique peptides option (-U) 
-* Trimming the logistic regression conversion chriteria. Also itroduced correct 
-  weighting during rougness penalty estimation. Both edits will have influence on 
+* Added a weed out redundant PSMs and just keep unique peptides option (-U)
+* Trimming the logistic regression conversion chriteria. Also itroduced correct weighting during rougness penalty estimation. Both edits will have influence on
   the PEP calculations.
-* New sqt format reade for S lines, checking for 9 or 10 fields and if computername set or not 
+* New sqt format reade for S lines, checking for 9 or 10 fields and if computername set or not
 * Added code dealing with in-source CID fragmentation in RT prediction.
 
 v1.13
 * Filtering out redundant peptides before retention time regression training
 * Bugfix for retention time feature calculation
 * Introduced a percolator -r and qvality -o option to redirect stdout to file
-  (important in the windows environment). 
-* Updated percolator xml scheme to include decoy PSMs id -Z switch set 
-
+  (important in the windows environment).
+* Updated percolator xml scheme to include decoy PSMs id -Z switch set
 v1.12
 * Changed licensing scheme for percolator
 * PNGase F feature (option -N) introduced
@@ -52,8 +52,7 @@ v1.09
 * Removed bug in the normalization of retention times when using tab
   delimited input.
 * Introduced a range limit in the iterative least square procedure used
-  in the Posterior Error Probability calculations. 
-
+  in the Posterior Error Probability calculations.
 v 1.08
 * Retention time and callibration calculations are now available from
   tab delimited files as well.

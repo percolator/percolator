@@ -184,6 +184,8 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
   svr_model_->CalibrateModel(psms, number_features);
   // train the model
   svr_model_->TrainModel(psms, number_features);
+  // unnormalize the retention time
+  PSMDescription::unnormalizeRetentionTimes(psms);
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;
   }

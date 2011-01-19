@@ -18,10 +18,8 @@
 #include <iostream>
 #include <math.h>
 using namespace std;
-#include "DataSet.h"
 #include "Normalizer.h"
 #include "UniNormalizer.h"
-#include "SetHandler.h"
 
 UniNormalizer::UniNormalizer() {
 }

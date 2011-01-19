@@ -89,6 +89,11 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "Replace tryptic features with elastase features.",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("l",
+      "lys-n",
+      "Replace tryptic features with Lys-N features.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("N",
       "PNGaseF",
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
@@ -125,6 +130,9 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   }
   if (cmd.optionSet("c")) {
     Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
+  }
+  if (cmd.optionSet("l")) {
+    Enzyme::setEnzyme(Enzyme::LYSN);
   }
   if (cmd.optionSet("N")) {
     parseOptions.pngasef=true;
