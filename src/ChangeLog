@@ -13,13 +13,15 @@ v1.15
 * New XML input format ("pin") and revised output format ("pout") for percolator.
   Schemas are available in src/xml.
 * Unique peptide level q-values are reported alongside PSM level q-values.
-* All PSMs from the same fragmentation spectrum end up in the the same cross validation bin
+* All PSMs from the same fragmentation spectrum end up in the the same cross 
+  validation bin
 * Output of observed mass for PSMs rather than fragmentation spectrum, to aid
   the processing of FT-ICR data.
 
 v1.14
 * Added a weed out redundant PSMs and just keep unique peptides option (-U)
-* Trimming the logistic regression conversion chriteria. Also itroduced correct weighting during rougness penalty estimation. Both edits will have influence on
+* Trimming the logistic regression conversion chriteria. Also itroduced correct 
+weighting during rougness penalty estimation. Both edits will have influence on
   the PEP calculations.
 * New sqt format reade for S lines, checking for 9 or 10 fields and if computername set or not
 * Added code dealing with in-source CID fragmentation in RT prediction.
@@ -30,6 +32,7 @@ v1.13
 * Introduced a percolator -r and qvality -o option to redirect stdout to file
   (important in the windows environment).
 * Updated percolator xml scheme to include decoy PSMs id -Z switch set
+
 v1.12
 * Changed licensing scheme for percolator
 * PNGase F feature (option -N) introduced
