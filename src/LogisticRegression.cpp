@@ -23,17 +23,10 @@
 #include<sstream>
 using namespace std;
 
-#include "ArrayLibrary.h"
 #include "Globals.h"
 #include "LogisticRegression.h"
-
+#include "Numerical.h"
 const double LogisticRegression::gRange = 35.0;
-
-LogisticRegression::LogisticRegression() {
-}
-
-LogisticRegression::~LogisticRegression() {
-}
 
 void invlogit(double& out, double in) {
   double e = exp(in);
@@ -50,31 +43,32 @@ double logit(double p) {
 }
 
 void LogisticRegression::limitg() {
-  for (int ix = gnew.size(); ix--;) {
-    gnew[ix] = min(gRange, max(-gRange, gnew[ix]));
+  for (int ix = gnew.numberEntries(); ix--;) {
+    gnew.replaceElement(ix, min(gRange, max(-gRange, gnew[ix])));
     assert(isfinite(gnew[ix]));
   }
 }
 
 void LogisticRegression::limitgamma() {
-  for (int ix = gamma.size(); ix--;) {
-    gamma[ix] = min(gRange, max(-gRange, gamma[ix]));
+  for (int ix = gamma.numberEntries(); ix--;) {
+    gamma.replaceElement(ix, min(gRange, max(-gRange, gamma[ix])));
     assert(isfinite(gamma[ix]));
   }
 }
 
 void LogisticRegression::calcPZW() {
-  for (int ix = z.size(); ix--;) {
+  for (int ix = z.numberEntries(); ix--;) {
     assert(isfinite(g[ix]));
     double e = exp(g[ix]);
     assert(isfinite(e));
-    p[ix] = min(max(e / (1 + e), Numerical::epsilon), 1
-        - Numerical::epsilon);
+    Numerical num(1e-15);
+    p[ix] = min(max(e / (1 + e), num.epsilon), 1
+        - num.epsilon);
     assert(isfinite(p[ix]));
-    w[ix] = max(m[ix] * p[ix] * (1 - p[ix]), Numerical::epsilon);
+    w.replaceElement(ix, max(m[ix] * p[ix] * (1 - p[ix]), num.epsilon));
     assert(isfinite(w[ix]));
-    z[ix] = min(gRange, max(-gRange, g[ix] + (((double)y[ix]) - p[ix]
-        * ((double)m[ix])) / w[ix]));
+    z.replaceElement(ix, min(gRange, max(-gRange, g[ix] + (((double)y[ix]) - p[ix]
+        * ((double)m[ix])) / w[ix])));
     assert(isfinite(z[ix]));
   }
 }
@@ -83,9 +77,10 @@ void LogisticRegression::initg() {
   BaseSpline::initg();
   int n = x.size();
   p.resize(n);
+  gnew = Vector(n);
   for (int ix = g.size(); ix--;) {
     double p = (y[ix] + 0.05) / (m[ix] + 0.1);
-    gnew[ix] = log(p / (1 - p));
+    gnew.replaceElement(ix, log(p / (1 - p)));
     assert(isfinite(p));
     assert(isfinite(g[ix]));
   }

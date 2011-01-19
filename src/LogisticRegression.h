@@ -23,8 +23,8 @@ using namespace std;
 
 class LogisticRegression : public BaseSpline {
   public:
-    LogisticRegression();
-    virtual ~LogisticRegression();
+    LogisticRegression(){};
+    virtual ~LogisticRegression(){};
     void predict(const vector<double>& x, vector<double>& predict) {
       return BaseSpline::predict(x, predict);
     }
@@ -41,7 +41,7 @@ class LogisticRegression : public BaseSpline {
     virtual void limitgamma();
     vector<unsigned int> y, m;
     static const double gRange;
-    Vec p;
+    Array<double> p;
 };
 
 #endif /*LOGISTICREGRESSION_H_*/

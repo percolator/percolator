@@ -516,7 +516,7 @@ void Caller::readFiles() {
       // that overrides this decision). As for now special treatment is needed
       char* value = XMLString::transcode(
           doc->getDocumentElement()->getTextContent());
-      std::cout << "enzyme=" << value << std::endl;
+      if(VERB > 1) std::cerr << "enzyme=" << value << std::endl;
       if (strcmp(value, "chymotrypsin")) Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
       else if (strcmp(value, "elastase")) Enzyme::setEnzyme(Enzyme::ELASTASE);
       else if (strcmp(value, "no_enzyme")) Enzyme::setEnzyme(Enzyme::NO_ENZYME);
@@ -840,7 +840,10 @@ int Caller::run() {
     //remove("./tmpXmlInput.xml");
   }
 
-  cout << "baFeatureNames::getNumFeatures=" << FeatureNames::getNumFeatures() << endl;
+  if(VERB > 1){
+    std::cerr << "baFeatureNames::getNumFeatures="
+        << FeatureNames::getNumFeatures() << endl;
+  }
   vector<vector<double> > w(xval_fold,
       vector<double> (FeatureNames::getNumFeatures()
   + 1)), ww;

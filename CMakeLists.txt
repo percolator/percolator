@@ -2,7 +2,7 @@
 # PREPARING TO INSTALL
 ###############################################################################
 
-set(base "/tmp")
+set(base "/scratch")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 

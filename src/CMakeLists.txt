@@ -65,11 +65,12 @@ add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS
 # COMPILE INTERNAL LIBRARIES
 ###############################################################################
 
-# COMPILE ARRAYLIBRARY
-add_subdirectory(ArrayLibrary)
+#COMPILE ARRAYLIBRARY
+#add_subdirectory(ArrayLibrary)
+add_subdirectory(fido)
 
 
-# INCLUDE PERCOLATOR HEADERS FOR CONVERTERS
+#INCLUDE PERCOLATOR HEADERS FOR CONVERTERS
 include_directories(.) 
 
 # COMPILE CONVERTERS
@@ -77,8 +78,8 @@ if(NOT EXCLUDE_CONVERTERS)
   add_subdirectory(converters)
 endif()
 
-# INCLUDE ARRAYLIBRARY HEADERS FOR PERCLIBRARY 
-include_directories(. ArrayLibrary)
+#INCLUDE FIDO HEADERS FOR PERCLIBRARY 
+include_directories(. fido)
 
 
 #############################################################################
@@ -109,7 +110,8 @@ endif()
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary ArrayLibrary pthread dl ${XERCESC_LIBRARIES})
+#target_link_libraries(percolator perclibrary ArrayLibrary pthread dl ${XERCESC_LIBRARIES})
+target_link_libraries(percolator perclibrary fido pthread dl ${XERCESC_LIBRARIES})
 
 # INSTALL PERCOLATOR
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!

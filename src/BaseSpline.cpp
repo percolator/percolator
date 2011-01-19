@@ -21,12 +21,17 @@
 #include<numeric>
 #include<functional>
 #include<cmath>
+#include "BaseSpline.h"
+#include "Globals.h"
 
 using namespace std;
 
-#include "ArrayLibrary.h"
-#include "BaseSpline.h"
-#include "Globals.h"
+#ifndef PERFORMANCE
+//#define PERFORMANCE
+clock_t start, finish;
+#define START start=clock();
+#define STOP(what) {finish=clock(); cout<< (finish - start) / 1000 << " ms: " << what <<  endl;}
+#endif
 
 class SplinePredictor {
     BaseSpline* bs;
@@ -80,7 +85,10 @@ double BaseSpline::splineEval(double xx) {
 static double tao = 2 / (1 + sqrt(5.0)); // inverse of golden section
 
 void BaseSpline::iterativeReweightedLeastSquares() {
-  Numerical::epsilon = 1e-15;
+#ifdef PERFORMANCE
+  testPerformance();
+#endif
+  Numerical epsilon = Numerical(1e-15);
   unsigned int n = x.size(), alphaIter = 0;
   initiateQR();
   double alpha = .05, step, cv = 1e100;
@@ -90,14 +98,26 @@ void BaseSpline::iterativeReweightedLeastSquares() {
     do {
       g = gnew;
       calcPZW();
-      PackedMatrix aWiQ = alpha * diagonalPacked(Vec(n, 1) / w) * Q;
-      PackedMatrix M = R + Qt * aWiQ;
-      gamma = Qt * z;
-      //      limitgamma();
-      solveEquation<double> (M, gamma);
-      gnew = z - aWiQ * gamma;
+      Matrix aWiQ = (Matrix::packedDiagonalMatrix(Vector(n, 1) / w)* alpha).packedMultiply(Q);
+      Matrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
+#ifdef PERFORMANCE
+      START
+#endif
+      gamma = Qt.packedMultiply(z);
+#ifdef PERFORMANCE
+      STOP("matrix-vector multiplication")
+#endif
+#ifdef PERFORMANCE
+      START
+#endif
+      solveInPlace(M,gamma);
+#ifdef PERFORMANCE
+      STOP("solving system")
+#endif
+      gnew = z.packedSubtract(aWiQ.packedMultiply(gamma));
       limitg();
-      step = norm(g - gnew) / n;
+      Vector difference = g.packedSubtract(gnew);
+      step = norm(difference) / n;
       if (VERB > 2) {
         cerr << "step size:" << step << endl;
       }
@@ -166,45 +186,46 @@ pair<double, double> BaseSpline::alphaLinearSearch(double min_p,
 
 void BaseSpline::initiateQR() {
   int n = x.size();
-  dx.resize(n - 1, 0.0);
+  dx.resize(n-1);
   for (int ix = 0; ix < n - 1; ix++) {
-    dx[ix] = x[ix + 1] - x[ix];
+    dx.addElement(ix, x[ix + 1] - x[ix]);
     assert(dx[ix] > 0);
   }
-  R.resize(n - 2);
-  Q.resize(n);
+  Q = Matrix(n,n-2,false);
+  R = Matrix(n-2, n-2,false);
   //Fill Q
-  Q[0].push_back(0, 1 / dx[0]);
-  Q[1].push_back(0, -1 / dx[0] - 1 / dx[1]);
-  Q[1].push_back(1, 1 / dx[1]);
+  Q[0].appendElement(0, 1 / dx[0]);
+  Q[1].appendElement(0, -1 / dx[0] - 1 / dx[1]);
+  Q[1].appendElement(1, 1 / dx[1]);
   for (int j = 2; j < n - 2; j++) {
-    Q[j].push_back(j - 2, 1 / dx[j - 1]);
-    Q[j].push_back(j - 1, -1 / dx[j - 1] - 1 / dx[j]);
-    Q[j].push_back(j, 1 / dx[j]);
+    Q[j].appendElement(j-2, 1 / dx[j - 1]);
+    Q[j].appendElement(j-1, -1 / dx[j - 1] - 1 / dx[j]);
+    Q[j].appendElement(j, 1 / dx[j]);
   }
-  Q[n - 2].push_back(n - 4, 1 / dx[n - 3]);
-  Q[n - 2].push_back(n - 3, -1 / dx[n - 3] - 1 / dx[n - 2]);
-  Q[n - 1].push_back(n - 3, 1 / dx[n - 2]);
+  Q[n - 2].appendElement(n-4, 1 / dx[n - 3]);
+  Q[n - 2].appendElement(n - 3, -1 / dx[n - 3] - 1 / dx[n - 2]);
+  Q[n - 1].appendElement(n - 3,  1 / dx[n - 2]);
   //Fill R
   for (int i = 0; i < n - 3; i++) {
-    R[i].push_back(i, (dx[i] + dx[i + 1]) / 3);
-    R[i].push_back(i + 1, dx[i + 1] / 6);
-    R[i + 1].push_back(i, dx[i + 1] / 6);
+    R[i].appendElement(i, (dx[i] + dx[i + 1]) / 3);
+    R[i].appendElement(i + 1, dx[i + 1] / 6);
+    R[i + 1].appendElement(i, dx[i + 1] / 6);
   }
-  R[n - 3].push_back(n - 3, (dx[n - 3] + dx[n - 2]) / 3);
-  Qt = transpose(Q);
+  R[n - 3].appendElement(n - 3, (dx[n - 3] + dx[n - 2]) / 3);
+  Qt = Matrix(n-2,n,false);
+  Qt = Qt.packedTranspose(Q);
 }
 
 double BaseSpline::crossValidation(double alpha) {
-  int n = R.size();
+  int n = R.numRows();
   //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n), k1(n), k2(n);
-  PackedMatrix B = R + alpha * Qt * diagonalPacked(Vec(n + 2, 1.0) / w)
-      * Q;
+  Matrix B = R.packedAdd( ((Qt * alpha).packedMultiply(
+      Matrix::packedDiagonalMatrix(Vector(n+2, 1.0) / w)).packedMultiply(Q)));
   // Get the diagonals from K
   // ka[i]=B[i,i+a]=B[i+a,i]
   for (int row = 0; row < n; ++row) {
-    for (int rowPos = B[row].packedSize(); rowPos--;) {
+    for (int rowPos = B[row].numberEntries(); rowPos--;) {
       int col = B[row].index(rowPos);
       if (col == row) {
         k0[row] = B[row][rowPos];
@@ -310,4 +331,173 @@ void BaseSpline::setData(const vector<double>& xx) {
     transf = Transform(minV > 0.0 ? 0.0 : 1e-20, 0.0, false, true);
   }
   transform(xx.begin(), xx.end(), back_inserter(x), transf);
+}
+
+void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
+  res = res.makeSparse();
+  // Current implementation requires a quadratic mat
+  int nCol = mat.numCols();
+  Vector nonEmpty;
+  int col, row, rowPos;
+  for (col = 0; col < nCol; col++) {
+//    int stop = 1;
+//    if(col==stop-1){
+//      cout << "*********************"<<endl;
+//      cout << col << endl;
+//      cout << "*********************"<<endl;
+//      mat.displayMatrix();
+//      cout << "RES: " <<res.values<<endl;
+//    }
+
+    // find the non-null elements in this column (below row "col")
+    nonEmpty = Vector();
+    int pivotPos(-1);
+    for (row = col; row < mat.numRows(); row++) {
+      int rowEntries = mat[row].numberEntries();
+      for (rowPos = rowEntries; rowPos--;) {
+        int entryIndex = mat[row].index(rowPos);
+        if (entryIndex == col) {
+          nonEmpty.appendElement(row, mat[row][rowPos]);
+          if (row == col) {
+            pivotPos = nonEmpty.numberEntries()-1;
+          }
+        }
+      }
+    }
+//    if(col==stop-1){
+//      cout<<"nonEmpty " << nonEmpty.values<< endl;
+//      cout<<"pivot " << pivotPos<< endl<<endl;
+//    }
+
+    //find most significant row
+    double maxVal(0.0);
+    int maxRow(-1), maxRowPos(-1);
+    for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
+      double val = nonEmpty[rowPos];
+      assert(isfinite(val));
+      if (fabs(val) > fabs(maxVal)) {
+        maxVal = val;
+        maxRow = nonEmpty.index(rowPos);
+        maxRowPos = rowPos;
+      }
+    }
+    int imaxRow = maxRow;
+    int imaxRowPos = maxRowPos;
+//    if(col==stop-1){
+//      cout << "imaxRow " << imaxRow << endl;
+//      cout << "imaxRowPos " << imaxRowPos << endl<<endl;
+//    }
+
+    // Put the most significant row at row "col"
+    if (maxVal != 0.0) {
+      if (maxRow != col) {
+        swap(mat[col], mat[maxRow]);
+        res.swapElements(col, maxRow);
+
+        if (pivotPos >= 0) {
+          nonEmpty.swapElements(maxRowPos, pivotPos);
+        }
+      }
+//      if(col==stop-1){
+//        cout << "SWAP\n";
+//        mat.displayMatrix();
+//      }
+
+      // Divide the row with maxVal
+      mat[col] /= maxVal;
+      double value = res[col] / maxVal;
+      res.replaceElement(col,value);
+//      if(col==stop-1){
+//        cout << "\nDIVIDE ROW\n";
+//        mat.displayMatrix();
+//        cout << "res " << res.values<<endl;
+//        cout << "nonEmpty " << nonEmpty.values<<endl;
+//        cout << "\n\n";
+//      }
+    }
+    // subtract the row from other rows
+    for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
+      row = nonEmpty.index(rowPos);
+      if (row == col) {
+        continue;
+      }
+      // If the pivotRow was empty (prior to swap) at col=row do not process this row
+      if (pivotPos < 0 && row == maxRow) {
+        continue;
+      }
+      double val = nonEmpty[rowPos];
+      mat[row] = mat[row].packedSubtract(val * mat[col]);
+      double value = res[row] - (val * res[col]);
+      res.replaceElement(row, value);
+
+//      if(col==stop-1){
+//        cout << "SUBTRACT ROW\n";
+//        mat.displayMatrix();
+//        cout << "res " << res.values<<endl;
+//        cout << "nonEmpty " << nonEmpty.values<<endl;
+//        cout << "\n\n";
+//      }
+    }
+  }
+  // Go bottom up and clear upper halfmatrix
+//  mat.displayMatrix();
+//  res.displayVector();
+//  nonEmpty.displayVector();
+//  cout << "\n\n\n\n";
+  for (col = mat.numCols(); col--;) {
+    nonEmpty = Vector();
+    for (row = 0; row < col; row++) {
+      for (rowPos = mat[row].numberEntries(); rowPos--;) {
+        if (mat[row].index(rowPos) == col) {
+          nonEmpty.appendElement(row, mat[row][rowPos]);
+        }
+      }
+    }
+//    cout << nonEmpty.values<<endl;
+    // subtract the row from other rows
+    for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
+      row = nonEmpty.index(rowPos);
+      double val = nonEmpty[rowPos];
+      mat[row] = mat[row].packedSubtract(val * mat[col]);
+      double value = res[row] - (val * res[col]);
+      res.replaceElement(row, value);
+    }
+//    cout << res.values<<endl;
+  }
+  return;
+}
+
+void BaseSpline::testPerformance(){
+  cout << "\nTesting performance for fido:\n";
+  Vector v;
+  Matrix M1;
+  Matrix M2;
+  for (int n= 500; n <= 1000; n+=100){
+    cout << "********** " << "\n";
+    cout << "MATRIX DIM: " << n << "\n";
+    cout << "********** "<< "\n";
+    double s = 2.0;
+    v = Vector(n,3.0);
+    M1 = Matrix(n,n,false);
+    M2 = Matrix(n,n,false);
+    for (signed i = 0; i < signed (n); ++ i){
+      for (signed j = max (i-1, 0); j < min (i+2, signed (n)); ++ j){
+        M1[i].appendElement(j, 3 * i + j);
+        M2[i].appendElement(j, 2 * i + j);
+      }
+    }
+    START
+    M1 * s;
+    STOP("matrix-constant multiplication")
+    START
+    M1.packedMultiply(v);
+    STOP("matrix-vector multiplication")
+    START
+    M1.packedAdd(M2);
+    STOP("matrix-matrix addition")
+    START
+    M1.packedMultiply(M2);
+    STOP("matrix-matrix multiplication")
+    cout << endl;
+  }
 }

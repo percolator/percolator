@@ -17,6 +17,7 @@
  *******************************************************************************/
 
 #include "FeatureNames.h"
+#include "Globals.h"
 
 size_t FeatureNames::numFeatures = 0;
 
@@ -51,9 +52,11 @@ void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fde
     featureNames.push_back("docdMdRT");
   }
   setNumFeatures(featureNames.size());
-  std::cout << "in FeatureNames::setFromXml" << std::endl;
-  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cout, " "));
-  std::cout << "end of FeatureNames::setFromXml" << std::endl;
+  if (VERB>1) {
+    std::cerr << "in FeatureNames::setFromXml" << std::endl;
+    std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cerr, " "));
+    std::cerr << "end of FeatureNames::setFromXml" << std::endl;
+  }
   return;
 }
 
@@ -155,8 +158,8 @@ void FeatureNames::setSQTFeatures(int minC, int maxC, bool doEnzyme,
     featureNames.push_back("docdMdRT");
   }
   setNumFeatures(featureNames.size());
-  std::cout << "in FeatureNames::setSQTFeatures" << std::endl;
-  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cout, " "));
-  std::cout << "end of FeatureNames::setSQTFeatures" << std::endl;
+  std::cerr << "in FeatureNames::setSQTFeatures" << std::endl;
+  std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cerr, " "));
+  std::cerr << "end of FeatureNames::setSQTFeatures" << std::endl;
   return;
 }

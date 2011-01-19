@@ -33,8 +33,6 @@ using namespace std;
 #endif
 
 #include "Option.h"
-#include "ArrayLibrary.h"
-#include "LogisticRegression.h"
 #include "PosteriorEstimator.h"
 #include "Transform.h"
 #include "Globals.h"
@@ -45,12 +43,6 @@ static double maxLambda = 0.5;
 
 bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
-
-PosteriorEstimator::PosteriorEstimator() {
-}
-
-PosteriorEstimator::~PosteriorEstimator() {
-}
 
 pair<double, bool> make_my_pair(double d, bool b) {
   return make_pair(d, b);

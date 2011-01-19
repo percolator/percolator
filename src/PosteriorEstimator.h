@@ -20,13 +20,14 @@
 #include<vector>
 #include<string>
 #include<utility>
-using namespace std;
 #include "LogisticRegression.h"
+using namespace std;
+
 
 class PosteriorEstimator {
   public:
-    PosteriorEstimator();
-    virtual ~PosteriorEstimator();
+    PosteriorEstimator(){};
+    virtual ~PosteriorEstimator(){};
     bool parseOptions(int argc, char** argv);
     string greeter();
     int run();

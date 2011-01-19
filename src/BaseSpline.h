@@ -18,19 +18,18 @@
 #ifndef BASESPLINE_H_
 #define BASESPLINE_H_
 
+#include <assert.h>
 #include "Transform.h"
-#include "ArrayLibrary.h"
+#include "Numerical.h"
+#include "Vector.h"
+#include "Matrix.h"
 
 class BaseSpline {
   public:
     //  BaseSpline() : pTransf(NULL) {;}
     //  virtual ~BaseSpline() {if (pTransf) delete pTransf;}
-    BaseSpline() {
-      ;
-    }
-    virtual ~BaseSpline() {
-      ;
-    }
+    BaseSpline(){};
+    virtual ~BaseSpline(){};
     double splineEval(double xx);
     static double convergeEpsilon;
     static double stepEpsilon;
@@ -40,17 +39,18 @@ class BaseSpline {
     double predict(double xx) {
       return splineEval(xx);
     }
+    static void solveInPlace(Matrix& mat, Vector& res);
   protected:
     virtual void calcPZW() {
       ;
     }
     virtual void initg() {
       int n = x.size();
-      g.resize(n);
-      gnew.resize(n);
-      w.resize(n);
-      z.resize(n, 0.5);
-      gamma.resize(n - 2);
+      g = Vector(n,0);
+      gnew = Vector(n,0);
+      w = Vector(n,0);
+      z = Vector(n,0.5);
+      gamma = Vector(n-2,0);
     }
     virtual void limitg() {
       ;
@@ -63,12 +63,12 @@ class BaseSpline {
     pair<double, double> alphaLinearSearch(double min_p, double max_p,
                                            double p1, double p2,
                                            double cv1, double cv2);
-
+    void testPerformance();
     Transform transf;
 
-    PackedMatrix Q, Qt, R;
-    Vec gnew, w, z, dx;
-    Vec g, gamma;
+    Matrix Q, Qt, R;
+    Vector gnew, w, z, dx;
+    Vector g, gamma;
     vector<double> x;
 };
 
