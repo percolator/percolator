@@ -2,14 +2,14 @@
 # PREPARING TO INSTALL
 ###############################################################################
 
-set(base "/scratch")
+set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 
 set(CMAKE_BUILD_TYPE "Debug")
 set(GOOGLE_TEST "TRUE") 
-set(EXCLUDE_CONVERTERS "TRUE")
-set(EXCLUDE_ELUDE "FALSE")
+set(EXCLUDE_CONVERTERS "FALSE")
+set(EXCLUDE_ELUDE "TRUE")
 set(CMAKE_PREFIX_PATH "${base}/xsd-3.3.0-x86_64-linux-gnu/")
 set(GOOGLE_TEST_PATH "${base}/gtest-1.5.0")
 
@@ -158,7 +158,7 @@ endif()
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
-set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
+set(CPACK_RPM_PACKAGE_GROUP "Kï¿½ll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
 if(NOT EXCLUDE_CONVERTERS)
