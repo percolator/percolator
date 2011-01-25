@@ -30,11 +30,12 @@ This are the steps I followed to output Percolator release 1.16
 
 4. WIN EXECUTABLE
   to be run from appropriately configured machine: 
-  $ ssh tomasoni@dirac.dbb.su.se
+  $ ssh [someuser]@dirac.dbb.su.se
   $ ssh -l root -p 2222 localhost
-  $ git clone git@github.com:percolator/percolator.git
+  $ git clone git://github.com/percolator/percolator.git
   $ cd percolator
-  $ run ./install/windows.sh
+  $ git checkout rel-1-16
+  $ ./install/windows.sh
   to get it out of the virtual machine:
   $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-1.16.0-win32.exe ~/Desktop/
 

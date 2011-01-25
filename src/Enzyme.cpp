@@ -38,6 +38,9 @@ void Enzyme::setEnzyme(EnzymeType enz) {
     case ELASTASE:
       theEnzyme = new Elastase();
       return;
+    case LYSN:
+      theEnzyme = new LysN();
+      return;
     case NO_ENZYME:
       theEnzyme = new Enzyme();
       return;
@@ -45,6 +48,25 @@ void Enzyme::setEnzyme(EnzymeType enz) {
     default:
       theEnzyme = new Trypsin;
       return;
+  }
+}
+
+void Enzyme::setEnzyme(std::string enzyme) {
+  if (theEnzyme) {
+    delete theEnzyme;
+  }
+  theEnzyme = NULL;
+  if (enzyme==Chymotrypsin::getString()) { 
+      theEnzyme = new Chymotrypsin();
+  } else if (enzyme==Elastase::getString()) {
+      theEnzyme = new Elastase();
+  } else if (enzyme==Enzyme::getString()) {
+      theEnzyme = new Enzyme();
+  } else if (enzyme==Trypsin::getString()) {
+      theEnzyme = new Trypsin();
+  } else {
+    std::cerr << "The selected enzyme have no corresponding class" << std::endl;
+    std::exit(-1);
   }
 }
 

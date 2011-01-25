@@ -19,6 +19,8 @@
 #ifndef ENZYME_H_
 #define ENZYME_H_
 
+#include <cstdlib>
+#include <iostream>
 #include <string>
 #include <assert.h>
 
@@ -33,6 +35,7 @@ class Enzyme {
     }
     static Enzyme* getEnzyme();
     static void setEnzyme(EnzymeType enz);
+    static void setEnzyme(std::string enzyme);
     static EnzymeType getEnzymeType() {
       return getEnzyme()->getET();
     }
@@ -52,13 +55,16 @@ class Enzyme {
       assert(theEnzyme == NULL);
       theEnzyme = this;
     }
+    static std::string getString() {
+      return "no_enzyme";
+    }
   protected:
     static Enzyme* theEnzyme;
     virtual bool isEnz(const char& n, const char& c) {
       return true;
     }
     virtual std::string toString() {
-      return "no_enzyme";
+      return getString();
     }
     virtual EnzymeType getET() {
       return NO_ENZYME;
@@ -73,9 +79,12 @@ class Trypsin : public Enzyme {
     Trypsin() {
       ;
     }
+    static std::string getString() {
+      return "trypsin";
+    }
   protected:
     virtual std::string toString() {
-      return "trypsin";
+      return getString();
     }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'K' || n == 'R') && c != 'P') || n == '-' || c == '-');
@@ -93,9 +102,12 @@ class Chymotrypsin : public Enzyme {
     Chymotrypsin() {
       ;
     }
+    static std::string getString() {
+      return "chymotrypsin";
+    }
   protected:
     virtual std::string toString() {
-      return "chymotrypsin";
+      return getString();
     }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'F' || n == 'H' || n == 'W' || n == 'Y' || n == 'L'
@@ -114,9 +126,12 @@ class Elastase : public Enzyme {
     Elastase() {
       ;
     }
+    static std::string getString() {
+      return "elastase";
+    }
   protected:
     virtual std::string toString() {
-      return "elastase";
+      return getString();
     }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'L' || n == 'V' || n == 'A' || n == 'G') && c != 'P')
@@ -135,9 +150,12 @@ class LysN : public Enzyme {
     LysN() {
       ;
     }
+    static std::string getString() {
+      return "lys-N";
+    }
   protected:
     virtual std::string toString() {
-      return "lys-N";
+      return getString();
     }
     virtual bool isEnz(const char& n, const char& c) {
       return (((n == 'K') && c != 'P')

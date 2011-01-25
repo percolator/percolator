@@ -2,7 +2,7 @@
 # PREPARING TO INSTALL
 ###############################################################################
 
-set(base "/scratch")
+set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 
@@ -158,7 +158,7 @@ endif()
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
-set(CPACK_RPM_PACKAGE_GROUP "KŠll-lab")
+set(CPACK_RPM_PACKAGE_GROUP "Kï¿½ll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
 if(NOT EXCLUDE_CONVERTERS)
