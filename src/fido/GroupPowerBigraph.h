@@ -7,6 +7,7 @@
 #include "ProteinIdentifier.h"
 #include "BasicGroupBigraph.h"
 #include "PivdoSplitter.h"
+#include "Scores.h" // from Percolator
 
 using namespace std;
 
@@ -54,6 +55,10 @@ public:
   void readFromMCMC(istream & graph, istream & pepProph);
 
   void outputPivdo(ostream & os) const;
+
+  //Mattia Tomasoni
+  void read(Scores& fullset);
+
 protected:
 
   Array<string> severedProteins;
@@ -69,6 +74,9 @@ protected:
   Array<Array<string> > groupProtNames;
 
   void read(istream & is);
+  //Mattia Tomasoni
+  void speedUp(BasicBigraph& bb);
+
   GridModel gm;
 
   Array<BasicGroupBigraph> subgraphs;

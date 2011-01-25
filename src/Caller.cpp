@@ -815,6 +815,28 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   }
 }
 
+/**
+ * calculate protein level probabilities with fido
+ */
+int Caller::proteinLevelProbabilities(Scores& fullset){
+	srand(time(NULL));
+	cout.precision(8);
+	cerr.precision(8);
+
+	double gamma = 0.5; //gridSearchGamma();
+	double alpha = 0.1; //gridSearchAlpha();
+	double beta = 0.01; //gridSearchBeta();
+
+	//GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = ;
+	GroupPowerBigraph gpb( RealRange(alpha, 1, alpha), RealRange(beta, 1, beta), gamma );
+
+	gpb.read(fullset);
+
+	gpb.getProteinProbs();
+	gpb.printProteinWeights();
+	return 0;
+}
+
 int Caller::run() {
   time(&startTime);
   startClock = clock();
@@ -969,6 +991,9 @@ int Caller::run() {
     if (xmlOutputFN.size() > 0){
       writeXML(uniquePeptides[r]);
     }
+
+    // protein level probabilities
+    proteinLevelProbabilities(fullset);
   }
   return 0;
 }
