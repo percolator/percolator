@@ -989,7 +989,9 @@ int Caller::run() {
     }
 
     // protein level probabilities
-    proteinLevelProbabilities(fullset);
+    if(reportUniquePeptides){
+      proteinLevelProbabilities(fullset);
+    }
   }
   return 0;
 }
