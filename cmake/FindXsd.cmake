@@ -1,40 +1,34 @@
+FILE(GLOB my_local "$ENV{HOME}/src/xsd*")
+FILE(GLOB my_tmp "/tmp/xsd*")
 
-
- #              libxsd/xsd/cxx/version.hxx
-find_path(XSD_INCLUDE_DIR NAMES  xsd/cxx/version.hxx  PATH_SUFFIXES libxsd PATHS 
-  "[HKEY_CURRENT_USER]\\software\\xsd\\include]"
+FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd  PATHS
+  "[HKEY_CURRENT_USER\\software\\xsd\\include]"
   "[HKEY_CURRENT_USER]\\xsd\\include]"
-  $ENV{XSDDIR}/include
-  $ENV{XSDDIR}
-  $ENV{XSDDIR}/libxsd
-  /usr/include
-  /usr/local/include
-  /Users/luminitamoruz/install/xsd-3.3.0-i686-macosx
-  CMAKE_FIND_ROOT_PATH_BOTH
-)
-#  PATH_SUFFIXES libxsd
-
-find_program(XSD_EXECUTABLE 
-   NAMES xsd xsdcxx 
-# maybe add xsd.exe
-   PATHS "[HKEY_CURRENT_USER]\\xsd\\bin"
-    $ENV{XSDDIR}/bin 
-   /usr/bin
-   /usr/local/bin
-  /Users/luminitamoruz/install/xsd-3.3.0-i686-macosx/bin 
+  ${my_local}/include
+  ${my_tmp}/include
+  /usr/local/include/xsd
+  /usr/include/xsd
 )
 
-#find_library(XSD_LIBRARIES NAMES libxsd.a PATH_SUFFIXES libxsd/xsd )
+FIND_PROGRAM(XSD_EXECUTABLE 
+  NAMES 
+    xsd xsdcxx
+  PATHS
+    "[HKEY_CURRENT_USER\\xsd\\bin"
+    ${my_local}/bin
+    ${my_tmp}/bin
+    /usr/local/bin
+    /usr/bin
+)
 
-if(NOT XSD_INCLUDE_DIR )
-    message(FATAL_ERROR  "xsd include dir not found" )  
-endif()
+# if the include and the program are found then we have it
+IF(XSD_INCLUDE_DIR)
+  IF(XSD_EXECUTABLE)
+    SET( XSD_FOUND "YES" )
+  ENDIF(XSD_EXECUTABLE)
+ENDIF(XSD_INCLUDE_DIR)
 
-# if(NOT XSD_LIBRARIES )
-#    message(FATAL_ERROR  "libxsd not found" )  
-# endif()
-
-if( NOT XSD_EXECUTABLE)
-    message(FATAL_ERROR  "xsd binary not found" )  
-endif()
-include_directories(${XSD_INCLUDE_DIR})
+MARK_AS_ADVANCED(
+  XSD_INCLUDE_DIR
+  XSD_EXECUTABLE
+) 
