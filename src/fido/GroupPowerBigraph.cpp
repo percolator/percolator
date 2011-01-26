@@ -136,13 +136,13 @@ void GroupPowerBigraph::printProteinWeights() const
 {
   Array<double> sorted = probabilityR;
   Array<int> indices = sorted.sort();
-
+  cerr << "\nProtein level probabilities:\n";
   for (int k=0; k<sorted.size(); k++)
-    {
-      cout << sorted[k] << " " << groupProtNames[ indices[k] ] << endl;
-    }
-
-  cout << "0.0 " << severedProteins << endl;
+  {
+    cerr << sorted[k] << " " << groupProtNames[ indices[k] ] << endl;
+  }
+  if(severedProteins.size()!=0)
+    cerr << "0.0 " << severedProteins << endl;
 }
 
 void GroupPowerBigraph::readFromMCMC(istream & graph, istream & pepProph)
@@ -243,15 +243,27 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
   return result;
 }
 
-#ifndef NOSEPARATE
+// Mattia Tomasoni
+void GroupPowerBigraph::read(Scores& fullset){
+	//  cout << "Reading GroupPowerBigraph" << endl;
+	//  cout << "\tReading BasicBigraph" << endl;
+	BasicBigraph bb;
+	bb.read(fullset);
+	speedUp(bb);
+}
+
 void GroupPowerBigraph::read(istream & is)
 {
-  //  cout << "Reading GroupPowerBigraph" << endl;
-  //  cout << "\tReading BasicBigraph" << endl;
+	//  cout << "Reading GroupPowerBigraph" << endl;
+	//  cout << "\tReading BasicBigraph" << endl;
+	BasicBigraph bb;
+	is >> bb;
+	speedUp(bb);
+}
 
-  BasicBigraph bb;
-  is >> bb;
-
+#ifndef NOSEPARATE
+void GroupPowerBigraph::speedUp(BasicBigraph& bb)
+{
   numberClones = 0;
   severedProteins = Array<string>();
 
@@ -294,11 +306,8 @@ void GroupPowerBigraph::read(istream & is)
 #else
 
  // for brute force: put into one subgraph
- void GroupPowerBigraph::read(istream & is)
+ void GroupPowerBigraph::speedUp()
  {
- BasicBigraph bb;
- is >> bb;
-
  bb.prune();
 
  numberClones = bb.numberClones;

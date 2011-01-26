@@ -9,88 +9,143 @@ BasicBigraph::BasicBigraph() :
   //
 }
 
-void BasicBigraph::read(istream & is)
-{
-  char instr;
-  string pepName, protName;
-  double value =  -10;
+// Mattia Tomasoni
+inline string getRidOfUnprintablesAndUnicode(string inpString) {
+  string outputs = "";
+  for (int jj = 0; jj < inpString.size(); jj++) {
+    char ch = inpString[jj];
+    if (((int)ch) >= 32 && ((int)ch) <= 128) {
+      outputs += ch;
+    }
+  }
+  return outputs;
+}
 
-  int pepIndex = -1;
+/**
+ * read graph protein-psm graph from percolator's Scores class intead of file
+ */
+void BasicBigraph::read(Scores& fullset){
+	string pepName, protName;
+	double value =  -10;
+	int pepIndex = -1;
+	StringTable PSMNames, proteinNames;
 
-  int state = 'e';
+	vector<ScoreHolder>::iterator psm = fullset.begin();
+	for (; psm!= fullset.end(); ++psm) {
+	  // skip decoy
+	  if(psm->label != 1) continue;
 
-  StringTable PSMNames, proteinNames;
-
-  while ( is >> instr )
-    {
-      //      cout << "Processing line: " << instr << endl;
-      if ( instr == 'e' && (state == 'e' || state == 'p') )
-	{
-	  is >> pepName;
-	  
-	  if ( pepName[1] == '.' )
-	    {
-	      // trim off the cleavage events
-	      pepName = pepName.substr(2, pepName.size()-4 );
-	    }
-	  
-	  if ( PSMNames.lookup(pepName) == -1 )
-	    {
-	      //	      cout << "Adding e " << pepName << endl;
-	      add(PSMsToProteins, PSMNames, pepName);
-	    }
-	  
+	  // e peptide_string
+	  pepName = psm->pPSM->peptide;
+	  // TODO: trim off the cleavage events
+	  if ( PSMNames.lookup(pepName) == -1 ){
+	    //cout << "Adding e " << pepName << endl;
+	    add(PSMsToProteins, PSMNames, pepName);
+	  }
 	  pepIndex = PSMNames.lookup(pepName);
 
-	  if ( state == 'p' )
-	    {
-	      cerr << "Warning: no peptide score for peptide entry " << pepName << ", using last score (" << value << ")" << endl;
-
-	      // using -10 since -1 may be used by peptide prophet
-	      if ( value == -10 )
-		{
-		  cerr << "Error: No previous peptide entry to use" << endl;
-		  throw FormatException();
-		}
-	      PSMsToProteins.weights[ pepIndex ] = max(value, PSMsToProteins.weights[ pepIndex ]);
+	  // r proteins
+	  set<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
+	  for (; pid!= psm->pPSM->proteinIds.end(); ++pid) {
+	    protName = getRidOfUnprintablesAndUnicode(*pid);
+	    if ( proteinNames.lookup(protName) == -1 ){
+	      //cout << "Adding r " << pepName << endl;
+	      add(proteinsToPSMs, proteinNames, protName);
 	    }
-	  
-	  state = 'r';
-	  
-	  //	  cout << "Read peptide: " << pepName << endl;
-	}
-      else if ( instr == 'r' && ( state == 'r' || state == 'p' ) )
-	{
-	  is >> protName;
+	    connect(PSMNames, pepName, proteinNames, protName);
+	  }
 
-	  if ( proteinNames.lookup(protName) == -1 )
-	    add(proteinsToPSMs, proteinNames, protName);
-
-	  // note: this is a hack to only get the nodes connected the
-	  // first time the peptide is seen; (it's initial weight is
-	  // -1.0 and will always be changed to >= 0.0 when it is
-	  // first finished being seen. Might want to make this better
-	  // later.
-
-	  //	  if ( PSMsToProteins.weights[ pepIndex ] == -1.0 )
-	  connect(PSMNames, pepName, proteinNames, protName);
-
-	  //	  cout << "Read protein: " << protName << endl;
-	  state = 'p';
-	}
-      else if ( instr == 'p' && state == 'p' )
-	{
-	  is >> value;
-	  //	  cout << "Read value " << value << endl;
-
-	  // this option scores peptides using only the best match
+	  // p probability of the peptide match to the spectrum
+	  value = 1- psm->pPSM->pep;
 	  PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
+	}
 
-	  //	  cout << "Gets value " << PSMsToProteins.weights[ pepIndex ] << endl;
+	PSMsToProteins.names = PSMNames.getItemsByNumber();
+	proteinsToPSMs.names = proteinNames.getItemsByNumber();
+}
 
-	  // this option scores peptides using all matches (and will
-	  // be at least as good as the best match)
-	  /***
+void BasicBigraph::read(istream & is)
+{
+	char instr;
+	string pepName, protName;
+	double value =  -10;
+
+	int pepIndex = -1;
+
+	int state = 'e';
+
+	StringTable PSMNames, proteinNames;
+
+	while ( is >> instr )
+	{
+		//      cout << "Processing line: " << instr << endl;
+		if ( instr == 'e' && (state == 'e' || state == 'p') )
+		{
+			is >> pepName;
+
+			if ( pepName[1] == '.' )
+			{
+				// trim off the cleavage events
+				pepName = pepName.substr(2, pepName.size()-4 );
+			}
+
+			if ( PSMNames.lookup(pepName) == -1 )
+			{
+				//	      cout << "Adding e " << pepName << endl;
+				add(PSMsToProteins, PSMNames, pepName);
+			}
+
+			pepIndex = PSMNames.lookup(pepName);
+
+			if ( state == 'p' )
+			{
+				cerr << "Warning: no peptide score for peptide entry " << pepName << ", using last score (" << value << ")" << endl;
+
+				// using -10 since -1 may be used by peptide prophet
+				if ( value == -10 )
+				{
+					cerr << "Error: No previous peptide entry to use" << endl;
+					throw FormatException();
+				}
+				PSMsToProteins.weights[ pepIndex ] = max(value, PSMsToProteins.weights[ pepIndex ]);
+			}
+
+			state = 'r';
+
+			//	  cout << "Read peptide: " << pepName << endl;
+		}
+		else if ( instr == 'r' && ( state == 'r' || state == 'p' ) )
+		{
+			is >> protName;
+
+			if ( proteinNames.lookup(protName) == -1 )
+				add(proteinsToPSMs, proteinNames, protName);
+
+			// note: this is a hack to only get the nodes connected the
+			// first time the peptide is seen; (it's initial weight is
+			// -1.0 and will always be changed to >= 0.0 when it is
+			// first finished being seen. Might want to make this better
+			// later.
+
+			//	  if ( PSMsToProteins.weights[ pepIndex ] == -1.0 )
+			connect(PSMNames, pepName, proteinNames, protName);
+
+			//	  cout << "Read protein: " << protName << endl;
+			state = 'p';
+		}
+		else if ( instr == 'p' && state == 'p' )
+		{
+			is >> value;
+			//	  cout << "Read value " << value << endl;
+
+			// this option scores peptides using only the best match
+			PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
+
+			//	  cout << "Gets value " << PSMsToProteins.weights[ pepIndex ] << endl;
+
+			// this option scores peptides using all matches (and will
+			// be at least as good as the best match)
+			/***
 	  if ( PSMsToProteins.weights[ pepIndex ] == -1 )
 	    {
 	      PSMsToProteins.weights[ pepIndex ] = value;
@@ -99,29 +154,29 @@ void BasicBigraph::read(istream & is)
 	    {
 	      PSMsToProteins.weights[ pepIndex ] = 1 - ( 1-PSMsToProteins.weights[ pepIndex] )*(1 - value);
 	    }
-	  ***/
+			 ***/
 
-	  state = 'e';
+			state = 'e';
+		}
+		else if ( instr == '#' )
+		{
+			// comment line
+
+			string garbage;
+			getline(is, garbage);
+		}
+		else
+		{
+			throw FormatException();
+		}
 	}
-      else if ( instr == '#' )
-	{
-	  // comment line
 
-	  string garbage;
-	  getline(is, garbage);
-	}
-      else
-	{
-	  throw FormatException();
-	}
-    }
+	PSMsToProteins.names = PSMNames.getItemsByNumber();
+	proteinsToPSMs.names = proteinNames.getItemsByNumber();
 
-  PSMsToProteins.names = PSMNames.getItemsByNumber();
-  proteinsToPSMs.names = proteinNames.getItemsByNumber();
+	//  printGraphStats();
 
-  //  printGraphStats();
-
-  //  exit(0);
+	//  exit(0);
 }
 
 void BasicBigraph::printGraphStats() const

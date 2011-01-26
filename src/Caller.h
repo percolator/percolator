@@ -56,6 +56,7 @@
 #include <xercesc/sax/HandlerBase.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
 #include "percolator_in.hxx"
+#include "GroupPowerBigraph.h"
 
 class Caller {
   public:
@@ -97,6 +98,7 @@ class Caller {
           return NULL;
       }
     }
+    int proteinLevelProbabilities(Scores& fullset);
     void writeXML(bool uniquePeptides);
     string xmlOutputFN;
     Scores fullset; //,thresholdset;
