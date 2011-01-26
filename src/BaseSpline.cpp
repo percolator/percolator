@@ -98,7 +98,8 @@ void BaseSpline::iterativeReweightedLeastSquares() {
     do {
       g = gnew;
       calcPZW();
-      Matrix aWiQ = (Matrix::packedDiagonalMatrix(Vector(n, 1) / w)* alpha).packedMultiply(Q);
+      Matrix diag = Matrix::packedDiagonalMatrix(Vector(n, 1) / w).packedMultiply(alpha);
+      Matrix aWiQ = (diag).packedMultiply(Q);
       Matrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
 #ifdef PERFORMANCE
       START
@@ -220,7 +221,7 @@ double BaseSpline::crossValidation(double alpha) {
   int n = R.numRows();
   //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n), k1(n), k2(n);
-  Matrix B = R.packedAdd( ((Qt * alpha).packedMultiply(
+  Matrix B = R.packedAdd( ((Qt.packedMultiply(alpha)).packedMultiply(
       Matrix::packedDiagonalMatrix(Vector(n+2, 1.0) / w)).packedMultiply(Q)));
   // Get the diagonals from K
   // ka[i]=B[i,i+a]=B[i+a,i]
@@ -404,7 +405,7 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
 //      }
 
       // Divide the row with maxVal
-      mat[col] /= maxVal;
+      mat[col].packedDiv(maxVal);
       double value = res[col] / maxVal;
       res.replaceElement(col,value);
 //      if(col==stop-1){
@@ -426,7 +427,7 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
         continue;
       }
       double val = nonEmpty[rowPos];
-      mat[row] = mat[row].packedSubtract(val * mat[col]);
+      mat[row] = mat[row].packedSubtract(mat[col].packedProd(val));
       double value = res[row] - (val * res[col]);
       res.replaceElement(row, value);
 
@@ -458,7 +459,7 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
     for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
       row = nonEmpty.index(rowPos);
       double val = nonEmpty[rowPos];
-      mat[row] = mat[row].packedSubtract(val * mat[col]);
+      mat[row] = mat[row].packedSubtract(mat[col].packedProd(val));
       double value = res[row] - (val * res[col]);
       res.replaceElement(row, value);
     }

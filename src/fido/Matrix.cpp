@@ -197,6 +197,17 @@ Matrix Matrix::operator *(double scale) const
 }
 
 // Mattia Tomasoni
+Matrix Matrix::packedMultiply (double scale)
+{
+  Matrix result = *this;
+  for (int k=0; k<result.numRows(); k++)
+    {
+      result[k].packedProd(scale);
+    }
+  return result;
+}
+
+// Mattia Tomasoni
 Matrix Matrix::packedMultiply(const Matrix & rhs){
   Matrix res = Matrix(numRows(),rhs.numCols(),false);
   Matrix trhs = trhs.packedTranspose(rhs);

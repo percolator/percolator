@@ -114,6 +114,8 @@ public:
 
   Matrix operator *(double scale) const;
   // Mattia Tomasoni
+  Matrix packedMultiply(double scale);
+  // Mattia Tomasoni
   Matrix packedMultiply(const Matrix & rhs);
   // Mattia Tomasoni
   Vector packedMultiply(const Vector & rhs);

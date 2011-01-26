@@ -30,6 +30,10 @@ void BasicBigraph::read(Scores& fullset){
 	int pepIndex = -1;
 	StringTable PSMNames, proteinNames;
 
+	bool generateGraphFile = true;
+	ofstream of;
+	if(generateGraphFile) of.open("/tmp/psm_graph_file");
+
 	vector<ScoreHolder>::iterator psm = fullset.begin();
 	for (; psm!= fullset.end(); ++psm) {
 	  // skip decoy
@@ -37,12 +41,16 @@ void BasicBigraph::read(Scores& fullset){
 
 	  // e peptide_string
 	  pepName = psm->pPSM->peptide;
-	  // TODO: trim off the cleavage events
+	  if ( pepName[1] == '.' ) {
+	    // trim off the cleavage events
+	    pepName = pepName.substr(2, pepName.size()-4 );
+	  }
 	  if ( PSMNames.lookup(pepName) == -1 ){
 	    //cout << "Adding e " << pepName << endl;
 	    add(PSMsToProteins, PSMNames, pepName);
 	  }
 	  pepIndex = PSMNames.lookup(pepName);
+	  if(generateGraphFile) of << "e " << pepName << endl;
 
 	  // r proteins
 	  set<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
@@ -53,12 +61,16 @@ void BasicBigraph::read(Scores& fullset){
 	      add(proteinsToPSMs, proteinNames, protName);
 	    }
 	    connect(PSMNames, pepName, proteinNames, protName);
+	    if(generateGraphFile) of << "r " << protName << endl;
 	  }
 
 	  // p probability of the peptide match to the spectrum
 	  value = 1- psm->pPSM->pep;
 	  PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
+	  if(generateGraphFile) of << "p " << value << endl;
 	}
+
+	if(generateGraphFile) of.close();
 
 	PSMsToProteins.names = PSMNames.getItemsByNumber();
 	proteinsToPSMs.names = proteinNames.getItemsByNumber();

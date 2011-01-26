@@ -44,7 +44,10 @@ public:
   Vector packedSubtract(const Vector & rhs);
   // Mattia Tomasoni
   Vector packedAdd(const Vector & rhs);
-
+  // Mattia Tomasoni
+  Vector packedDiv(double val);
+  // Mattia Tomasoni
+  Vector packedProd(double val);
 
   // does += coef * rhs
   // for higher performance

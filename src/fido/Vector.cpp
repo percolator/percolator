@@ -105,7 +105,8 @@ Vector Vector::packedSubtract(const Vector & rhs){
 
 // Mattia Tomasoni
 Vector Vector::packedAdd(const Vector & rhs){
-  Vector neg = -1 * rhs;
+  Vector neg = rhs;
+  neg.packedProd(-1);
   return packedSubtract(neg);
 }
 
@@ -565,31 +566,30 @@ void Vector::resize(int newSize)
 
 const Vector & Vector::operator *=(double val)
 {
-  // Mattia Tomasoni
-  // handle the case of packed vector
-#ifdef PACK
-  for (int k = 0; k < numberEntries(); k++) {
-       replaceElement(k, values[k]*val);
-  }
-#else
   for (Set::Iterator iter = beginNonzero(); iter != endNonzero(); iter++)
     {
       values[ *iter ] *= val;
     }
-#endif
-
   return *this;
 }
 
 const Vector & Vector::operator /=(double val)
 {
-  // Mattia Tomasoni
-  /*
   return (*this) *= (1/val);
-  */
-  for (int k = 0; k < numberEntries(); k++) {
-       replaceElement(k, values[k]/val);
-  }
+}
+
+// Mattia Tomasoni
+Vector Vector::packedProd(double val) {
+  for (int k = 0; k < numberEntries(); k++)
+    replaceElement(k, values[k]*val);
+  return *this;
+}
+
+// Mattia Tomasoni
+Vector Vector::packedDiv(double val) {
+  for (int k = 0; k < numberEntries(); k++)
+    replaceElement(k, values[k]/val);
+  return *this;
 }
 
 Vector Vector::normalized() const
