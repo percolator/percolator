@@ -24,6 +24,9 @@
 #ifndef SCHEMA_VERSION_MINOR
 #define SCHEMA_VERSION_MINOR @SCHEMA_VERSION_MINOR@
 #endif
+#ifndef WRITABLE_DIR
+#define WRITABLE_DIR "@WRITABLE_DIR@"
+#endif
 
 #include <string>
 #include <iostream>
@@ -60,6 +63,7 @@ public:
 
 protected:
 	ParseOptions parseOptions;
+        char* tokyoCabinetDir;
 	std::string tokyoCabinetTmpFN;
 	std::string targetFN;
 	std::string decoyFN;

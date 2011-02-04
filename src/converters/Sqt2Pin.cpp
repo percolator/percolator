@@ -8,6 +8,13 @@
 #include "Sqt2Pin.h"
 
 Sqt2Pin::Sqt2Pin() {
+  tokyoCabinetDir = NULL;
+}
+
+Sqt2Pin::~Sqt2Pin() {
+  //deleting temporary folder
+  rmdir(tokyoCabinetDir);
+  delete tokyoCabinetDir;
 }
 
 string Sqt2Pin::greeter() {
@@ -114,7 +121,16 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   // now query the parsing results
 
   if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
-  } else  { tokyoCabinetTmpFN = "/tmp/percolator-tmp.tcb"; }
+  } else  {
+    // create temporary directory
+    string str = string(WRITABLE_DIR) + "sqt2pin_XXXXXX";
+    tokyoCabinetDir = new char[str.size() + 1];
+    std::copy(str.begin(), str.end(), tokyoCabinetDir);
+    tokyoCabinetDir[str.size()] = '\0';
+    mkdtemp(tokyoCabinetDir);
+    tokyoCabinetTmpFN = string(tokyoCabinetDir) + "/percolator-tmp.tcb";
+    cout << tokyoCabinetDir<<endl;
+  }
 
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
@@ -278,10 +294,10 @@ int Sqt2Pin::run() {
 
   /* The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is
 	   possible in the unix system call open (see "man 2 open"). This may be a
-	   security issue if the filename to the tokyo cabinet database is in a
+	   security issue if the filename to the Tokyo cabinet database is in a
 	   directory that other users have write access to. They could add a symbolic
 	   link pointing somewhere else. It would be better if Tokyo Cabinet would
-	   fail if the database existed in our case when we use a tempory file.
+	   fail if the database existed in our case when we use a temporary file.
    */
   database.init(tokyoCabinetTmpFN);
 
@@ -373,10 +389,6 @@ int Sqt2Pin::run() {
   }
 
   return 0;
-}
-
-Sqt2Pin::~Sqt2Pin() {
-  // Auto-generated destructor stub
 }
 
 int main(int argc, char** argv) {

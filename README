@@ -53,28 +53,30 @@ Sqt2pin converter.
 
 BUILDING PERCOLATOR (from the latest snapshot or the repository)
 
-IMPORTANT: install the required libraries below!
+***READ CAREFULLY: you must install the required libraries below!***
 The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
 Make, Cmake and a C++ compiler are required; the following libraries are also
 needed to build Percolator: libxerces-c-dev, libboost-dev, libsqlite3-dev. 
 Sqt2pin, which is build together with Percolator by default, also requires: 
 gengetopt, libtokyocabinet-dev, zlib1g-dev.
-To install the above, issue the following command:
-  $ sudo apt-get install libxerces-c-dev libboost-dev build-essential cmake 
-And, optionally, if interested in building the Sqt2pin (converters) as well:
-  $ sudo apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
+Download the latest percolator-v[X]-src.tar.gz tar-ball and decompress it; 
+we will refer to the generated directory as "/path/to/source". You can now 
+install all the library mentioned above with the command:
+  $ cd /path/to/source; ./cmake/get_packages_ubuntu.sh
+The script will print a variable that is to replace the "/scrapt/prefix/path" 
+string when invoking cmake (see below).
 If you do not have sudo permissions, you will have to manually install programs
 and libraries. The same goes for older versions of Ubuntu as explained above
 in the section "INSTALLING PERCOLATOR" under "Linux".
 
-Download the latest percolator-v[X]-src.tar.gz tar-ball and decompress it; 
-we will refer to the generated directory as "/path/to/source". We will now 
-build percolator in the /tmp, but any directory where the user has read/write 
-privileges can be chosen. If you do not wish to install Sqt2pin, execute the 
-below steps with -DEXCLUDE_CONVERTERS:
+We will now build percolator in the /tmp, but any directory where the user has 
+read/write privileges can be chosen. If you do not wish to install Sqt2pin, 
+execute the below steps with -DEXCLUDE_CONVERTERS:
   $ mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
-  $ cmake -G"Eclipse CDT4 - Unix Makefiles" [-DEXCLUDE_CONVERTERS] 
-      -DCMAKE_INSTALL_PREFIX="/tmp" /path/to/source
+  $ cmake -G"Eclipse CDT4 - Unix Makefiles" 
+      [-DEXCLUDE_CONVERTERS] [-DCMAKE_BUILD_TYPE="Debug"] 
+      -DCMAKE_PREFIX_PATH="/scrapt/prefix/path"
+      DCMAKE_INSTALL_PREFIX="/tmp" /path/to/source
 The directory /tmp/percolatorBuild can now be imported into Eclipse as an 
 external, debuggable Project. Alternatively, Percolator (and optionally the 
 converters) can be installed by issuing the following:
