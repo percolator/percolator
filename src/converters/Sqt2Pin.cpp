@@ -129,7 +129,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     tokyoCabinetDir[str.size()] = '\0';
     mkdtemp(tokyoCabinetDir);
     tokyoCabinetTmpFN = string(tokyoCabinetDir) + "/percolator-tmp.tcb";
-    cout << tokyoCabinetDir<<endl;
   }
 
   if (cmd.optionSet("o")) {

@@ -23,6 +23,7 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
+#include <boost/algorithm/string.hpp> // for case insensitive string compare
 
 
 class Enzyme {

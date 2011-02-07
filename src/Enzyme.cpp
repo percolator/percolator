@@ -56,13 +56,14 @@ void Enzyme::setEnzyme(std::string enzyme) {
     delete theEnzyme;
   }
   theEnzyme = NULL;
-  if (enzyme==Chymotrypsin::getString()) { 
+  // boost::iequals: case insensitive string comparison
+  if (boost::iequals(enzyme,Chymotrypsin::getString())) {
       theEnzyme = new Chymotrypsin();
-  } else if (enzyme==Elastase::getString()) {
+  } else if (boost::iequals(enzyme,Elastase::getString())) {
       theEnzyme = new Elastase();
-  } else if (enzyme==Enzyme::getString()) {
+  } else if (boost::iequals(enzyme,Enzyme::getString())) {
       theEnzyme = new Enzyme();
-  } else if (enzyme==Trypsin::getString()) {
+  } else if (boost::iequals(enzyme,Trypsin::getString())) {
       theEnzyme = new Trypsin();
   } else {
     std::cerr << "The selected enzyme have no corresponding class" << std::endl;
