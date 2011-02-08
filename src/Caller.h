@@ -75,6 +75,7 @@ class Caller {
     void printWeights(ostream & weightStream, vector<double>& w);
     void readWeights(istream & weightStream, vector<double>& w);
     void readFiles();
+    void initializeSanityCheck();
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, char** fetureNames,
                        double pi0);

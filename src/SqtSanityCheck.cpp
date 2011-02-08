@@ -20,24 +20,28 @@
 #include "SanityCheck.h"
 #include "SqtSanityCheck.h"
 
-SqtSanityCheck::SqtSanityCheck() {
+
+SqtSanityCheck::SqtSanityCheck(){
 }
 
-SqtSanityCheck::~SqtSanityCheck() {
+SqtSanityCheck::~SqtSanityCheck(){
 }
+
+const string SqtSanityCheck::fingerPrint = "sqt";
 
 void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   // Set init direction to be the most discriminative direction
+  int numFeatures = FeatureNames::getNumFeatures();
   for (size_t set = 0; set < w.size(); ++set) {
-    for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures() + 1; ++ix) {
+    for (unsigned int ix = 0; ix < numFeatures + 1; ++ix) {
       w[set][ix] = 0;
     }
-    w[set][2] = 1.61; // deltCn
-    w[set][3] = 1.1; // Xcorr
-    w[set][7] = -0.573; // Peptide length
-    w[set][8] = 0.0335; // Charge 1
-    w[set][9] = 0.149; // Charge 2
-    w[set][10] = -0.156; // Charge 3
+    if(numFeatures >= 2) w[set][2] = 1.61; // deltCn
+    if(numFeatures >= 3) w[set][3] = 1.1; // Xcorr
+    if(numFeatures >= 7) w[set][7] = -0.573; // Peptide length
+    if(numFeatures >= 8) w[set][8] = 0.0335; // Charge 1
+    if(numFeatures >= 9) w[set][9] = 0.149; // Charge 2
+    if(numFeatures >= 10) w[set][10] = -0.156; // Charge 3
   }
   /*
 

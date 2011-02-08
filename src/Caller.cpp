@@ -27,7 +27,7 @@ Caller::Caller() :
         decoyWC(""), resultFN(""), tabFN(""), xmlInputFN(""), xmlOutputFN(""),
         weightFN(""), tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
-        test_fdr(0.01), selectionfdr(0.01),
+        reportUniquePeptides(false), test_fdr(0.01), selectionfdr(0.01),
         selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
         trainRatio(0.6), niter(10) {
 }
@@ -426,6 +426,7 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
       }
 
     }
+    ifs.close();
   }
   catch (const xercesc::DOMException& e)
   {
@@ -479,11 +480,24 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
+/**
+ * selects the appropriate sanity check. Selects SqtSanityCheck if otherCall
+ * contains the correct fingerPrint ("sqt").
+ */
+void Caller::initializeSanityCheck(){
+  if(otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
+    pCheck = new SqtSanityCheck();
+  }
+  else {
+    pCheck = new SanityCheck();
+  }
+}
+
 void Caller::readFiles() {
-  string inputFile = "";
-  if(xmlInputFN.size() != 0) inputFile = xmlInputFN;
-  if(readStdIn == true) inputFile = "./tmpXmlInput.xml";
-  if (inputFile.size() != 0) {
+  if (xmlInputFN.size() != 0 || readStdIn == true) {
+    string inputFile = "";
+    if(xmlInputFN.size() != 0) inputFile = xmlInputFN;
+    else inputFile = "./tmpXmlInput.xml";
     unsigned int nrTargets;
     unsigned int nrDecoys;
     xercesc::XMLPlatformUtils::Initialize();
@@ -555,8 +569,7 @@ void Caller::readFiles() {
         targetSet->readFragSpectrumScans(fragSpectrumScan);
         decoySet->readFragSpectrumScans(fragSpectrumScan);
       }
-
-      pCheck = new SqtSanityCheck();
+      initializeSanityCheck();
       assert(pCheck);
       normal.push_back_dataset(targetSet);
       shuffled.push_back_dataset(decoySet);
@@ -824,7 +837,8 @@ int Caller::proteinLevelProbabilities(Scores& fullset){
 	double beta = 0.01; //gridSearchBeta();
 
 	//GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = ;
-	GroupPowerBigraph gpb( RealRange(alpha, 1, alpha), RealRange(beta, 1, beta), gamma );
+	GroupPowerBigraph gpb( RealRange(alpha, 1, alpha),
+	    RealRange(beta, 1, beta), gamma );
 
 	gpb.read(fullset);
 
@@ -854,9 +868,12 @@ int Caller::run() {
   // Reading input files (pin or sqt)
   readFiles();
   fillFeatureSets();
-  if(readStdIn){
-    // erase tmp input file
-    //remove("./tmpXmlInput.xml");
+  if(xmlInputFN.size() != 0){
+    xercesc::XMLPlatformUtils::Terminate();
+  }
+  bool deleteStdInFile = false;
+  if(readStdIn && deleteStdInFile){
+    remove("./tmpXmlInput.xml");
   }
 
   if(VERB > 1){

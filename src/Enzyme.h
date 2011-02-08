@@ -32,7 +32,7 @@ class Enzyme {
       NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, ELASTASE, LYSN
     };
     virtual ~Enzyme() {
-      ;
+      delete theEnzyme;
     }
     static Enzyme* getEnzyme();
     static void setEnzyme(EnzymeType enz);
