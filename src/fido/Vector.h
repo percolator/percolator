@@ -74,7 +74,7 @@ public:
 
   // vector scaling
   friend Vector operator *(double val, const Vector & rhs);
-  double packedDotProd(const Vector& rhs) const;
+  double packedDotProd(const Vector& rhs);
   friend Vector operator /(const Vector & rhs, double val);
 
   void displayVector() const;

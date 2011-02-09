@@ -402,7 +402,7 @@ double operator *(const Vector & lhs, const Vector & rhs)
 }
 
 // Mattia Tomasoni
-double Vector::packedDotProd(const Vector& rhs) const{
+double Vector::packedDotProd(const Vector& rhs){
      double tot = 0;
      int kL, kR;
      for (kL = 0, kR = 0; kL < numberEntries() && kR < rhs.numberEntries();) {
@@ -506,7 +506,8 @@ double norm(const Array<double> & vec)
 
 //Mattia Tomasoni
 double packedNorm(const Vector & vec){
-  return sqrt(vec.packedDotProd(vec));
+  //return sqrt(vec.packedDotProd(vec));
+	return sqrt(vec*vec);
 }
 
 // Mattia Tomasoni
