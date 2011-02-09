@@ -91,7 +91,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
   Numerical epsilon = Numerical(1e-15);
   unsigned int n = x.size(), alphaIter = 0;
   initiateQR();
-  double alpha = .05, step, cv = 1e100;
+  double alpha = .05, step = 0.0, cv = 1e100;
   initg();
   do {
     int iter = 0;
@@ -118,7 +118,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       gnew = z.packedSubtract(aWiQ.packedMultiply(gamma));
       limitg();
       Vector difference = g.packedSubtract(gnew);
-      step = norm(difference) / n;
+      step = packedNorm(difference) / n;
       if (VERB > 2) {
         cerr << "step size:" << step << endl;
       }

@@ -24,7 +24,7 @@ class SanityCheck {
   public:
     SanityCheck();
     virtual ~SanityCheck();
-
+    static SanityCheck* initialize(string otherCall);
     void readWeights(istream& weightStream, vector<double>& w);
     int getInitDirection(vector<Scores>& testset,
                          vector<Scores> &trainset, Normalizer* pNorm,

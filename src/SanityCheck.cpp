@@ -23,6 +23,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "SanityCheck.h"
 #include "Globals.h"
+#include "SqtSanityCheck.h"
 
 // Class doing the sanity check for non SQT file condition
 // In most sence a place holder as very little logic is build-in in this case
@@ -37,6 +38,19 @@ SanityCheck::~SanityCheck() {
 bool SanityCheck::overRule = false;
 string SanityCheck::initWeightFN = "";
 int SanityCheck::initDefaultDir = 0;
+
+/**
+ * Returns an instance of the appropriate sanity check based on information
+ * contained in otherCall.
+ */
+SanityCheck* SanityCheck::initialize(string otherCall){
+  if(otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
+    return new SqtSanityCheck();
+  }
+  else {
+    return new SanityCheck();
+  }
+}
 
 int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   vector<Scores>& trainset,

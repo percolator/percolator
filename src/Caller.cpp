@@ -480,19 +480,6 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
-/**
- * selects the appropriate sanity check. Selects SqtSanityCheck if otherCall
- * contains the correct fingerPrint ("sqt").
- */
-void Caller::initializeSanityCheck(){
-  if(otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
-    pCheck = new SqtSanityCheck();
-  }
-  else {
-    pCheck = new SanityCheck();
-  }
-}
-
 void Caller::readFiles() {
   if (xmlInputFN.size() != 0 || readStdIn == true) {
     string inputFile = "";
@@ -569,7 +556,7 @@ void Caller::readFiles() {
         targetSet->readFragSpectrumScans(fragSpectrumScan);
         decoySet->readFragSpectrumScans(fragSpectrumScan);
       }
-      initializeSanityCheck();
+      pCheck = SanityCheck::initialize(otherCall);
       assert(pCheck);
       normal.push_back_dataset(targetSet);
       shuffled.push_back_dataset(decoySet);

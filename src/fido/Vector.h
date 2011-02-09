@@ -74,7 +74,7 @@ public:
 
   // vector scaling
   friend Vector operator *(double val, const Vector & rhs);
-  double packedDotProd(const Vector& rhs);
+  double packedDotProd(const Vector& rhs) const;
   friend Vector operator /(const Vector & rhs, double val);
 
   void displayVector() const;
@@ -165,7 +165,7 @@ public:
   void createNonzeroIndices();
   void createIndices();
 
-  friend double norm(const Vector & vec);
+  friend double packedNorm(const Vector& vec);
 
 //protected:
 
@@ -181,7 +181,7 @@ const Array<double> & operator *=(Array<double> & lhs, double val);
 double norm(const Array<double> & vec);
 
 //Mattia Tomasoni
-double norm(const Vector & vec);
+double packedNorm(const Vector& vec);
 
 Array<double> operator -(const Array<double> & rhs);
 
