@@ -27,9 +27,9 @@ Caller::Caller() :
         decoyWC(""), resultFN(""), tabFN(""), xmlInputFN(""), xmlOutputFN(""),
         weightFN(""), tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
-        reportUniquePeptides(false), test_fdr(0.01), selectionfdr(0.01),
-        selectedCpos(0), selectedCneg(0), threshTestRatio(0.3),
-        trainRatio(0.6), niter(10) {
+        reportUniquePeptides(false), calculateProteinLevelProb(false),
+        test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
+        threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
 
 Caller::~Caller() {
@@ -100,6 +100,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "condition." << endl;
   // init
   CommandLineParser cmd(intro.str());
+  cmd.defineOption("A",
+      "protein",
+      "output protein level probabilities",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("E",
       "xmlinput",
       "path to file in xml-input format (pin)",
@@ -261,6 +266,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   // now query the parsing results
   if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
+  if (cmd.optionSet("A")) calculateProteinLevelProb = true;
   if (cmd.optionSet("e")) readStdIn = true;
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
@@ -993,7 +999,7 @@ int Caller::run() {
     }
 
     // protein level probabilities
-    if(reportUniquePeptides){
+    if(calculateProteinLevelProb && reportUniquePeptides){
       proteinLevelProbabilities(fullset);
     }
   }

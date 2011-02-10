@@ -124,6 +124,7 @@ class Caller {
     bool docFeatures;
     bool reportPerformanceEachIteration;
     bool reportUniquePeptides;
+    bool calculateProteinLevelProb;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;
