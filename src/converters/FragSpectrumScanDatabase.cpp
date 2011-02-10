@@ -82,6 +82,11 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
 
   ret = unlink( fileName.c_str() );
   assert(! ret);
+  return ret;
+}
+
+void FragSpectrumScanDatabase::terminte(){
+  tcbdbclose(bdb);
 }
 
 bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par) {

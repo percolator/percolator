@@ -387,6 +387,9 @@ int Sqt2Pin::run() {
 	  cout << "Termination successful."<< endl;
   }
 
+  database.terminte();
+  xercesc::XMLPlatformUtils::Terminate();
+
   return 0;
 }
 
