@@ -76,7 +76,7 @@ execute the below steps with -DEXCLUDE_CONVERTERS:
   $ cmake -G"Eclipse CDT4 - Unix Makefiles" 
       [-DEXCLUDE_CONVERTERS] [-DCMAKE_BUILD_TYPE="Debug"] 
       -DCMAKE_PREFIX_PATH="/scrapt/prefix/path"
-      DCMAKE_INSTALL_PREFIX="/tmp" /path/to/source
+      -DCMAKE_INSTALL_PREFIX="/tmp" /path/to/source
 The directory /tmp/percolatorBuild can now be imported into Eclipse as an 
 external, debuggable Project. Alternatively, Percolator (and optionally the 
 converters) can be installed by issuing the following:

@@ -1,6 +1,6 @@
 #!/bin/sh
 # as soon as a command fails terminate this script
-base=/scratch
+base=/tmp
 
 cs_site="http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64"
 cs_pack="xsd-3.3.0-x86_64-linux-gnu"
