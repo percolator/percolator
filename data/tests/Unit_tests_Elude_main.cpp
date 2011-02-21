@@ -27,6 +27,7 @@
 #include "UnitTest_Elude_LibSVRModel.cpp"
 #include "UnitTest_Elude_RetentionModel.cpp"
 #include "UnitTest_Elude_EludeCaller.cpp"
+#include "UnitTest_Percolator_Fido.cpp"
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

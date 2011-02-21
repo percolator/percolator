@@ -4,7 +4,6 @@
 #ifndef _Matrix_H
 #define _Matrix_H
 
-
 #include "Vector.h"
 
 class Matrix
@@ -14,19 +13,11 @@ public:
     {
       cols = 0;
     }
-  // Mattia Tomasoni
-  // added boolean default parameter that allows to build an matrix without 
-  // initializing the elements in the underlying vectors
-  Matrix(int r, int c, bool initialize=true)
-  {
-    if(initialize){
+  Matrix(int r, int c)
+    {
       rows = Array<Vector>(r, Vector(c) );
       cols = c;
-    } else{
-      rows = Array<Vector>(r, Vector(0) );
-      cols = c;
     }
-  }
   Matrix(int c)
     {
       cols = c;
@@ -57,9 +48,6 @@ public:
   virtual void add(const Vector & rhs);
 
   Matrix transpose() const;
-
-  // Mattia Tomasoni
-  Matrix packedTranspose(const Matrix& mat);
 
   void reduce();
 
@@ -113,12 +101,6 @@ public:
   Matrix operator -() const;
 
   Matrix operator *(double scale) const;
-  // Mattia Tomasoni
-  Matrix packedMultiply(double scale);
-  // Mattia Tomasoni
-  Matrix packedMultiply(const Matrix & rhs);
-  // Mattia Tomasoni
-  Vector packedMultiply(const Vector & rhs);
 
   double maxMagnitude() const;
 
@@ -126,10 +108,6 @@ public:
 
   static Matrix identityMatrix(int n);
   static Matrix diagonalMatrix(const Vector & vec);
-  // Mattia Tomasoni
-  static Matrix packedDiagonalMatrix( const Vector & v );
-  // Mattia Tomasoni
-  Matrix packedAdd(const Matrix& rhs);
 
   Vector column(int k) const;
 

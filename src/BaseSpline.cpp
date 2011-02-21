@@ -98,9 +98,9 @@ void BaseSpline::iterativeReweightedLeastSquares() {
     do {
       g = gnew;
       calcPZW();
-      Matrix diag = Matrix::packedDiagonalMatrix(Vector(n, 1) / w).packedMultiply(alpha);
-      Matrix aWiQ = (diag).packedMultiply(Q);
-      Matrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
+      PackedMatrix diag = PackedMatrix::packedDiagonalMatrix(PackedVector(n, 1) / w).packedMultiply(alpha);
+      PackedMatrix aWiQ = (diag).packedMultiply(Q);
+      PackedMatrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
 #ifdef PERFORMANCE
       START
 #endif
@@ -117,7 +117,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
 #endif
       gnew = z.packedSubtract(aWiQ.packedMultiply(gamma));
       limitg();
-      Vector difference = g.packedSubtract(gnew);
+      PackedVector difference = g.packedSubtract(gnew);
       step = packedNorm(difference) / n;
       if (VERB > 2) {
         cerr << "step size:" << step << endl;
@@ -192,28 +192,28 @@ void BaseSpline::initiateQR() {
     dx.addElement(ix, x[ix + 1] - x[ix]);
     assert(dx[ix] > 0);
   }
-  Q = Matrix(n,n-2,false);
-  R = Matrix(n-2, n-2,false);
+  Q = PackedMatrix(n,n-2);
+  R = PackedMatrix(n-2, n-2);
   //Fill Q
-  Q[0].appendElement(0, 1 / dx[0]);
-  Q[1].appendElement(0, -1 / dx[0] - 1 / dx[1]);
-  Q[1].appendElement(1, 1 / dx[1]);
+  Q[0].packedAddElement(0, 1 / dx[0]);
+  Q[1].packedAddElement(0, -1 / dx[0] - 1 / dx[1]);
+  Q[1].packedAddElement(1, 1 / dx[1]);
   for (int j = 2; j < n - 2; j++) {
-    Q[j].appendElement(j-2, 1 / dx[j - 1]);
-    Q[j].appendElement(j-1, -1 / dx[j - 1] - 1 / dx[j]);
-    Q[j].appendElement(j, 1 / dx[j]);
+    Q[j].packedAddElement(j-2, 1 / dx[j - 1]);
+    Q[j].packedAddElement(j-1, -1 / dx[j - 1] - 1 / dx[j]);
+    Q[j].packedAddElement(j, 1 / dx[j]);
   }
-  Q[n - 2].appendElement(n-4, 1 / dx[n - 3]);
-  Q[n - 2].appendElement(n - 3, -1 / dx[n - 3] - 1 / dx[n - 2]);
-  Q[n - 1].appendElement(n - 3,  1 / dx[n - 2]);
+  Q[n - 2].packedAddElement(n-4, 1 / dx[n - 3]);
+  Q[n - 2].packedAddElement(n - 3, -1 / dx[n - 3] - 1 / dx[n - 2]);
+  Q[n - 1].packedAddElement(n - 3,  1 / dx[n - 2]);
   //Fill R
   for (int i = 0; i < n - 3; i++) {
-    R[i].appendElement(i, (dx[i] + dx[i + 1]) / 3);
-    R[i].appendElement(i + 1, dx[i + 1] / 6);
-    R[i + 1].appendElement(i, dx[i + 1] / 6);
+    R[i].packedAddElement(i, (dx[i] + dx[i + 1]) / 3);
+    R[i].packedAddElement(i + 1, dx[i + 1] / 6);
+    R[i + 1].packedAddElement(i, dx[i + 1] / 6);
   }
-  R[n - 3].appendElement(n - 3, (dx[n - 3] + dx[n - 2]) / 3);
-  Qt = Matrix(n-2,n,false);
+  R[n - 3].packedAddElement(n - 3, (dx[n - 3] + dx[n - 2]) / 3);
+  Qt = PackedMatrix(n-2,n);
   Qt = Qt.packedTranspose(Q);
 }
 
@@ -221,8 +221,8 @@ double BaseSpline::crossValidation(double alpha) {
   int n = R.numRows();
   //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n), k1(n), k2(n);
-  Matrix B = R.packedAdd( ((Qt.packedMultiply(alpha)).packedMultiply(
-      Matrix::packedDiagonalMatrix(Vector(n+2, 1.0) / w)).packedMultiply(Q)));
+  PackedMatrix B = R.packedAdd( ((Qt.packedMultiply(alpha)).packedMultiply(
+      PackedMatrix::packedDiagonalMatrix(Vector(n+2, 1.0) / w)).packedMultiply(Q)));
   // Get the diagonals from K
   // ka[i]=B[i,i+a]=B[i+a,i]
   for (int row = 0; row < n; ++row) {
@@ -334,31 +334,31 @@ void BaseSpline::setData(const vector<double>& xx) {
   transform(xx.begin(), xx.end(), back_inserter(x), transf);
 }
 
-void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
+void BaseSpline::solveInPlace(PackedMatrix& mat, PackedVector& res) {
   res = res.makeSparse();
   // Current implementation requires a quadratic mat
   int nCol = mat.numCols();
-  Vector nonEmpty;
+  PackedVector nonEmpty;
   int col, row, rowPos;
   for (col = 0; col < nCol; col++) {
-//    int stop = 1;
-//    if(col==stop-1){
+    int stop = 1;
+    //if(col==stop-1){
 //      cout << "*********************"<<endl;
 //      cout << col << endl;
 //      cout << "*********************"<<endl;
 //      mat.displayMatrix();
 //      cout << "RES: " <<res.values<<endl;
-//    }
+    //}
 
     // find the non-null elements in this column (below row "col")
-    nonEmpty = Vector();
+    nonEmpty = PackedVector();
     int pivotPos(-1);
     for (row = col; row < mat.numRows(); row++) {
       int rowEntries = mat[row].numberEntries();
       for (rowPos = rowEntries; rowPos--;) {
         int entryIndex = mat[row].index(rowPos);
         if (entryIndex == col) {
-          nonEmpty.appendElement(row, mat[row][rowPos]);
+          nonEmpty.packedAddElement(row, mat[row][rowPos]);
           if (row == col) {
             pivotPos = nonEmpty.numberEntries()-1;
           }
@@ -407,7 +407,7 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
       // Divide the row with maxVal
       mat[col].packedDiv(maxVal);
       double value = res[col] / maxVal;
-      res.replaceElement(col,value);
+      res.packedReplace(col,value);
 //      if(col==stop-1){
 //        cout << "\nDIVIDE ROW\n";
 //        mat.displayMatrix();
@@ -427,9 +427,10 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
         continue;
       }
       double val = nonEmpty[rowPos];
-      mat[row] = mat[row].packedSubtract(mat[col].packedProd(val));
+      PackedVector prodVector = mat[col];
+      mat[row] = mat[row].packedSubtract(prodVector.packedProd(val));
       double value = res[row] - (val * res[col]);
-      res.replaceElement(row, value);
+      res.packedReplace(row, value);
 
 //      if(col==stop-1){
 //        cout << "SUBTRACT ROW\n";
@@ -446,11 +447,11 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
 //  nonEmpty.displayVector();
 //  cout << "\n\n\n\n";
   for (col = mat.numCols(); col--;) {
-    nonEmpty = Vector();
+    nonEmpty = PackedVector();
     for (row = 0; row < col; row++) {
       for (rowPos = mat[row].numberEntries(); rowPos--;) {
         if (mat[row].index(rowPos) == col) {
-          nonEmpty.appendElement(row, mat[row][rowPos]);
+          nonEmpty.packedAddElement(row, mat[row][rowPos]);
         }
       }
     }
@@ -461,7 +462,7 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
       double val = nonEmpty[rowPos];
       mat[row] = mat[row].packedSubtract(mat[col].packedProd(val));
       double value = res[row] - (val * res[col]);
-      res.replaceElement(row, value);
+      res.packedReplace(row, value);
     }
 //    cout << res.values<<endl;
   }
@@ -470,25 +471,25 @@ void BaseSpline::solveInPlace(Matrix& mat, Vector& res) {
 
 void BaseSpline::testPerformance(){
   cout << "\nTesting performance for fido:\n";
-  Vector v;
-  Matrix M1;
-  Matrix M2;
+  PackedVector v;
+  PackedMatrix M1;
+  PackedMatrix M2;
   for (int n= 500; n <= 1000; n+=100){
     cout << "********** " << "\n";
     cout << "MATRIX DIM: " << n << "\n";
     cout << "********** "<< "\n";
     double s = 2.0;
-    v = Vector(n,3.0);
-    M1 = Matrix(n,n,false);
-    M2 = Matrix(n,n,false);
+    v = PackedVector(n,3.0);
+    M1 = PackedMatrix(n,n);
+    M2 = PackedMatrix(n,n);
     for (signed i = 0; i < signed (n); ++ i){
       for (signed j = max (i-1, 0); j < min (i+2, signed (n)); ++ j){
-        M1[i].appendElement(j, 3 * i + j);
-        M2[i].appendElement(j, 2 * i + j);
+        M1[i].packedAddElement(j, 3 * i + j);
+        M2[i].packedAddElement(j, 2 * i + j);
       }
     }
     START
-    M1 * s;
+    M1.packedMultiply(s);
     STOP("matrix-constant multiplication")
     START
     M1.packedMultiply(v);

@@ -8,7 +8,6 @@ Numerical Vector::comparator(1e-8);
 
 #define PACK
 //#define REPACK
-#define ALLOW_ZERO
 
 const Vector & Vector::operator =(const Array<double> & simpleVector)
 {
@@ -63,51 +62,6 @@ const Vector & Vector::operator -=(const Vector & rhs)
   #endif
 
   return *this;
-}
-
-// Mattia Tomasoni
-Vector Vector::packedSubtract(const Vector & rhs){
-  Vector result(0);
-  int kL, kR;
-  for (kL = 0, kR = 0; kL < numberEntries() && kR < rhs.numberEntries();) {
-    int iL = index(kL);
-    int iR = rhs.index(kR);
-    if (iL < iR) {
-      result.appendElement(iL, values[kL]);
-      kL++;
-    } else if (iL > iR) {
-      result.appendElement(iR, -rhs[kR]);
-      kR++;
-    }else {
-      double rr = values[kL];
-      double ff = rhs[kR];
-      double res = values[kL] - rhs[kR];
-      if ( sparseChecker.isNonzero(res) ) {
-        result.appendElement(iL, res);
-      }
-      kL++;
-      kR++;
-    }
-  }
-  // add anything left over
-  if (kL < numberEntries()) {
-    for (; kL < numberEntries(); kL++) {
-      result.appendElement(index(kL), values[kL]);
-    }
-  }
-  if (kR < rhs.numberEntries()) {
-    for (; kR < rhs.numberEntries(); kR++) {
-      result.appendElement(rhs.index(kR), -rhs[kR]);
-    }
-  }
-  return result;
-}
-
-// Mattia Tomasoni
-Vector Vector::packedAdd(const Vector & rhs){
-  Vector neg = rhs;
-  neg.packedProd(-1);
-  return packedSubtract(neg);
 }
 
 const Vector & Vector::addEqScaled(double coef, const Vector & rhs)
@@ -182,18 +136,6 @@ void Vector::createNonzeroIndices()
 #endif
 }
 
-// Mattia Tomasoni
-void Vector::createIndices(){
-#ifdef PACK
-  nonzeroIndices = Set();
-  for (int k=0; k<size(); k++){
-      nonzeroIndices.add( k );
-    }
-#else
-  nonzeroIndices = Set::FullSet(0 , size()-1 );
-#endif
-}
-
 void Vector::trimNonzeroIndices()
 {
 #ifdef REPACK
@@ -212,24 +154,6 @@ void Vector::trimNonzeroIndices()
 Array<double> Vector::unpack() const
 {
   return values;
-}
-
-// Mattia Tomasoni
-Vector Vector::makeSparse() const{
-  Vector sparse;
-  int count(0);
-  int ind(0);
-  for(;ind<numberEntries();){
-    int sparseInd = index(ind);
-    if(sparseInd == count){
-      sparse.appendElement(count, values[ind]);
-      ind++; count++;
-    } else {
-      sparse.appendElement(count, 0);
-      count++;
-    }
-  }
-  return sparse;
 }
 
 Vector operator *(double val, const Vector & rhs)
@@ -401,27 +325,6 @@ double operator *(const Vector & lhs, const Vector & rhs)
   return tot;
 }
 
-// Mattia Tomasoni
-double Vector::packedDotProd(const Vector& rhs){
-     double tot = 0;
-     int kL, kR;
-     for (kL = 0, kR = 0; kL < numberEntries() && kR < rhs.numberEntries();) {
-          int iL = index(kL);
-          int iR = rhs.index(kR);
-          if (iL < iR) {
-               kL++;
-          } else if (iL > iR) {
-               kR++;
-          } else {
-               // equality case
-               tot += values[kL] * rhs[kR];
-               kL++;
-               kR++;
-          }
-     }
-     return tot;
-}
-
 Vector operator /(const Vector & lhs, const Vector & rhs)
 {
   if ( lhs.size() != rhs.size() )
@@ -504,30 +407,6 @@ double norm(const Array<double> & vec)
   return sqrt(vec * vec);
 }
 
-//Mattia Tomasoni
-double packedNorm(const Vector & vec){
-  //return sqrt(vec.packedDotProd(vec));
-	return sqrt(vec*vec);
-}
-
-// Mattia Tomasoni
-void Vector::clear(){
-  values = Array<double>();
-  nonzeroIndices = Set();
-}
-
-// Mattia Tomasoni
-int Vector::index(int i) const {
-    return nonzeroIndices[i];
-}
-
-// Mattia Tomasoni
-void Vector::swapElements(int ind1, int ind2){
-  double oldInd1 = values[ind1];
-  values[ind1] = values[ind2];
-  values[ind2] = oldInd1;
-}
-
 void Vector::add(double val)
 {
   resize( size()+1 );
@@ -536,28 +415,11 @@ void Vector::add(double val)
 
 void Vector::addElement(int ind, double val)
 {
- if ( sparseChecker.isNonzero(val) )
+  if ( sparseChecker.isNonzero(val) )
     {
       nonzeroIndices.add( ind );
       values[ ind ] = val;
     }
-}
-
-// Mattia Tomasoni
-void Vector::replaceElement(int ind, double val)
-{
- if ( sparseChecker.isNonzero(val) )
-    {
-      values[ ind ] = val;
-    }
-}
-// Mattia Tomasoni
-// increments the size of the underlying Array of Values
-// allows zero valued elements
-void Vector::appendElement(int ind, double val)
-{
-      nonzeroIndices.add(ind);
-      values.add(val);
 }
 
 void Vector::resize(int newSize)
@@ -571,26 +433,13 @@ const Vector & Vector::operator *=(double val)
     {
       values[ *iter ] *= val;
     }
+
   return *this;
 }
 
 const Vector & Vector::operator /=(double val)
 {
   return (*this) *= (1/val);
-}
-
-// Mattia Tomasoni
-Vector Vector::packedProd(double val) {
-  for (int k = 0; k < numberEntries(); k++)
-    replaceElement(k, values[k]*val);
-  return *this;
-}
-
-// Mattia Tomasoni
-Vector Vector::packedDiv(double val) {
-  for (int k = 0; k < numberEntries(); k++)
-    replaceElement(k, values[k]/val);
-  return *this;
 }
 
 Vector Vector::normalized() const

@@ -5,6 +5,7 @@ set(tests
   SystemTest_Qvality_Correctness
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
+  UnitTest_Percolator_RunAllTests
 )
 ELSEIF((NOT EXCLUDE_ELUDE) AND EXCLUDE_CONVERTERS)
 set(tests
@@ -19,6 +20,7 @@ set(tests
   SystemTest_Elude_SaveLoadEvaluate
   SystemTest_Elude_TrainEvaluate
   UnitTest_Elude_RunAllTests
+  UnitTest_Percolator_RunAllTests
 )
 ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
 set(tests
@@ -27,6 +29,7 @@ set(tests
   SystemTest_Percolator_Performance
   SystemTest_Qvality_Performance
   SystemTest_Sqt2pin_Correctness
+  UnitTest_Percolator_RunAllTests
 )
 ELSE()
 set(tests
@@ -42,6 +45,7 @@ set(tests
   SystemTest_Elude_SaveLoadEvaluate
   SystemTest_Elude_TrainEvaluate
   UnitTest_Elude_RunAllTests
+  UnitTest_Percolator_RunAllTests
 )
 ENDIF()
 
@@ -59,8 +63,13 @@ endforeach(current_system_test)
 # Google tests are built explicitely.
 IF (GOOGLE_TEST AND (NOT EXCLUDE_ELUDE))
   # find_package(GTest REQUIRED)
-  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/../../src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
-  add_executable (gtest_unit Unit_tests_main.cpp)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/../../src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/fido/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
+  add_executable (gtest_unit Unit_tests_Elude_main.cpp)
   target_link_libraries (gtest_unit eludelibrary ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
+  install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+ELSEIF(GOOGLE_TEST AND EXCLUDE_ELUDE)
+  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/../../src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/fido/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
+  add_executable (gtest_unit Unit_tests_Percolator_main.cpp)
+  target_link_libraries (gtest_unit perclibrary ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
   install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
 ENDIF()

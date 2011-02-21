@@ -3,8 +3,6 @@
 
 #include "Matrix.h"
 
-#define PACK
-
 const Matrix & Matrix::operator =(const Array<Array<double> > & rhs)
 {
   // note: this will not accept arrays with no rows
@@ -61,34 +59,14 @@ Vector operator *(const Vector & lhs, const Matrix & rhs)
 
 void Matrix::displayMatrix() const
 {
-  // Mattia Tomasoni
-  // displaying indexes as well as values for packed matrixes
-#ifdef PACK
-  cout << "{";
-  for (int row=0; row<numRows(); row++){
-    cout << "{ ";
-    for (int k = 0; k < rows[row].numberEntries(); k++) {
-      cout << rows[row].index(k) << ":" << rows[row][k];
-      if (k != rows[row].numberEntries() - 1) {
-        cout << ", ";
-      }
-    }
-    cout << " }";
-
-    if (row != numRows() - 1) {
-      cout << "," << endl;
-    }
-  }
-  cout << "}"<<endl;
-
-#else
+  //  cout << endl;
   int k;
   cout << "corner\t";
   for ( k=0; k<numCols(); k++)
     {
       cout << "col" << k;
       if ( k != numCols() - 1 )
-  cout << "\t";
+	cout << "\t";
     }
   cout << endl;
   for ( k=0; k<numRows(); k++)
@@ -96,7 +74,6 @@ void Matrix::displayMatrix() const
       cout << "row" << k << "\t";
       rows[k].displayVector();
     }
-#endif
 }
 
 void Matrix::verifyMatrixIntegrity() const
@@ -151,19 +128,6 @@ Matrix Matrix::operator -() const
   return result;
 }
 
-// Mattia Tomasoni
-// transposes packed matrixes: Matrix::transpose does not take care of the
-// indexes
-Matrix Matrix::packedTranspose(const Matrix& mat) {
-  Matrix res = Matrix(mat.numCols(), mat.numRows(),false);
-  int i, j;
-  for (i = 0; i < mat.numRows(); ++i) {
-    for (j = 0; j < mat[i].numberEntries(); ++j) {
-      res[mat[i].index(j)].appendElement(i, mat[i][j]);
-    }
-  }
-  return res;
-}
 
 Matrix Matrix::transpose() const
 {
@@ -171,14 +135,10 @@ Matrix Matrix::transpose() const
 
   int k,j;
   for (k=0; k<numRows(); k++)
-  {
+    {
       for (j=0; j<numCols(); j++)
 	{
-#ifdef PACK
-        resultArray[j][k] = rows[k].values[j];
-#else
-    resultArray[j][k] = rows[k][j];
-#endif
+	  resultArray[j][k] = rows[k][j];
 	}
     }
 
@@ -194,44 +154,6 @@ Matrix Matrix::operator *(double scale) const
     }
 
   return result;
-}
-
-// Mattia Tomasoni
-Matrix Matrix::packedMultiply (double scale)
-{
-  Matrix result = *this;
-  for (int k=0; k<result.numRows(); k++)
-    {
-      result[k].packedProd(scale);
-    }
-  return result;
-}
-
-// Mattia Tomasoni
-Matrix Matrix::packedMultiply(const Matrix & rhs){
-  Matrix res = Matrix(numRows(),rhs.numCols(),false);
-  Matrix trhs = trhs.packedTranspose(rhs);
-  int row, col;
-  for (row = 0; row < numRows(); row++) {
-    for (col = 0; col < trhs.numRows(); col++) {
-      double prod = rows[row].packedDotProd(trhs[col]);
-      if (Vector::sparseChecker.isNonzero(prod)) {
-        res[row].appendElement(col, prod);
-      }
-    }
-  }
-  return res;
-}
-
-// Mattia Tomasoni
-Vector Matrix::packedMultiply(const Vector & rhs){
-  Vector res;
-  int row;
-  for (row = 0; row < numRows(); row++) {
-    double prod = rows[row].packedDotProd(rhs);
-      res.appendElement(row, prod);
-  }
-  return res;
 }
 
 Matrix operator *(const Matrix & lhs, const Matrix & rhs)
@@ -336,16 +258,6 @@ Matrix operator +(const Matrix & lhs, const Matrix & rhs)
   return result;
 }
 
-// Mattia Tomasoni
-Matrix Matrix::packedAdd(const Matrix& rhs) {
-     Matrix res = Matrix(numRows(),numCols(),false);
-     int row;
-     for (row = 0; row < numRows(); row++) {
-          res[row] = rows[row].packedAdd(rhs[row]);
-     }
-     return res;
-}
-
 Matrix operator -(const Matrix & lhs, const Matrix & rhs)
 {
   Matrix result = lhs;
@@ -421,16 +333,6 @@ void Matrix::embedInIdentity()
   cols++;
 
   add( idRow );
-}
-
-// Mattia Tomasoni
-// creates a packed diagonal matrix: Matrix::diagonalMatrix allocates 0s 
-// outside of the diagonal
-Matrix Matrix::packedDiagonalMatrix( const Vector & v ){
-  Matrix result( v.size() , v.size(), false);
-  for (int k=0; k<v.size(); k++)
-    result.rows[k].appendElement( k, v[k] );
-  return result;
 }
 
 Matrix Matrix::diagonalMatrix( const Vector & v )

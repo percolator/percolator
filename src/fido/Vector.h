@@ -17,9 +17,6 @@ public:
  explicit Vector(int N) :
   values(N, 0.0)
     {
-       // Mattia Tomasoni
-       // create indeces for zero values
-       createIndices();
     }
   explicit Vector(int N, double val) :
   values(N, val)
@@ -33,21 +30,11 @@ public:
   Vector(const Array<double> & rhs, bool repack);
 
   Array<double> unpack() const;
-  // Mattia Tomasoni
-  Vector makeSparse() const;
 
   const Vector & operator =(const Array<double> & rhs);
 
   const Vector & operator +=(const Vector & rhs);
   const Vector & operator -=(const Vector & rhs);
-  // Mattia Tomasoni
-  Vector packedSubtract(const Vector & rhs);
-  // Mattia Tomasoni
-  Vector packedAdd(const Vector & rhs);
-  // Mattia Tomasoni
-  Vector packedDiv(double val);
-  // Mattia Tomasoni
-  Vector packedProd(double val);
 
   // does += coef * rhs
   // for higher performance
@@ -57,9 +44,9 @@ public:
   const Vector & operator /=(double val);
 
   const double & operator [](int k) const
-    {
-      return values[k];
-    }
+  {
+    return values[k];
+  }
 
   Set::Iterator beginNonzero() const
     {
@@ -74,7 +61,6 @@ public:
 
   // vector scaling
   friend Vector operator *(double val, const Vector & rhs);
-  double packedDotProd(const Vector& rhs);
   friend Vector operator /(const Vector & rhs, double val);
 
   void displayVector() const;
@@ -132,22 +118,12 @@ public:
 
   void add(double val);
   void addElement(int ind, double val);
-  //Mattia Tomasoni
-  void replaceElement(int ind, double val);
-  //Mattia Tomasoni
-  void appendElement(int ind, double val);
 
   Vector normalized() const;
   double sum() const;
   double prod() const;
   double average() const;
   double variance() const;
-  //Mattia Tomasoni
-  void clear();
-  //Mattia Tomasoni
-  int index(int i) const;
-  //Mattia Tomasoni
-  void swapElements(int ind1, int ind2);
 
   class DivisionByZeroException {};
   class FormatException {};
@@ -163,9 +139,6 @@ public:
 
   void trimNonzeroIndices();
   void createNonzeroIndices();
-  void createIndices();
-
-  friend double packedNorm(const Vector& vec);
 
 //protected:
 
@@ -179,9 +152,6 @@ Vector operator -(const Vector & lhs, const Vector & rhs);
 double operator *(const Array<double> & lhs, const Array<double> & rhs);
 const Array<double> & operator *=(Array<double> & lhs, double val);
 double norm(const Array<double> & vec);
-
-//Mattia Tomasoni
-double packedNorm(const Vector& vec);
 
 Array<double> operator -(const Array<double> & rhs);
 

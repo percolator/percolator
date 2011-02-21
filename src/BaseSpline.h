@@ -21,8 +21,8 @@
 #include <assert.h>
 #include "Transform.h"
 #include "Numerical.h"
-#include "Vector.h"
-#include "Matrix.h"
+#include "PackedVector.h"
+#include "PackedMatrix.h"
 
 class BaseSpline {
   public:
@@ -39,18 +39,18 @@ class BaseSpline {
     double predict(double xx) {
       return splineEval(xx);
     }
-    static void solveInPlace(Matrix& mat, Vector& res);
+    static void solveInPlace(PackedMatrix& mat, PackedVector& res);
   protected:
     virtual void calcPZW() {
       ;
     }
     virtual void initg() {
       int n = x.size();
-      g = Vector(n,0);
-      gnew = Vector(n,0);
-      w = Vector(n,0);
-      z = Vector(n,0.5);
-      gamma = Vector(n-2,0);
+      g = PackedVector(n);
+      gnew = PackedVector(n);
+      w = PackedVector(n);
+      z = PackedVector(n,0.5);
+      gamma = PackedVector(n-2);
     }
     virtual void limitg() {
       ;
@@ -66,9 +66,9 @@ class BaseSpline {
     void testPerformance();
     Transform transf;
 
-    Matrix Q, Qt, R;
-    Vector gnew, w, z, dx;
-    Vector g, gamma;
+    PackedMatrix Q, Qt, R;
+    PackedVector gnew, w, z, dx;
+    PackedVector g, gamma;
     vector<double> x;
 };
 
