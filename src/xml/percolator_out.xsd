@@ -4,7 +4,7 @@ xmlns="http://per-colator.com/percolator_out/11"
 targetNamespace="http://per-colator.com/percolator_out/11"
 elementFormDefault="qualified" attributeFormDefault="unqualified">
 
-<!-- defin some general types -->
+<!-- define some general types -->
 <xsd:simpleType name="probability_t">
   <xsd:annotation>
     <xsd:documentation>Probability (Double in [0-1] or NaN)</xsd:documentation>
@@ -115,7 +115,6 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   </xsd:annotation>
 </xsd:element>
 
-
 <xsd:element name="psm_ids">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">List of Psm for a particular peptide.</xsd:documentation>
@@ -134,7 +133,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 </xsd:element>
 <!-- end elements for psm and peptide-->
 
-<!-- define attributes for psm and peptide-->
+<!-- define attributes for psm, peptide and protein-->
 <xsd:attribute name="psm_id" type="xsd:string">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">Unique PSM identifier</xsd:documentation>
@@ -148,7 +147,13 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 </xsd:attribute>
 
 <xsd:attribute name="decoy" type="xsd:boolean"/>
-<!-- end attributes for psm and peptide-->
+
+<xsd:attribute name="protein_id" type="xsd:string">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Unique protein identifier</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+<!-- define attributes for psm, peptide and protein-->
 
 
 <!-- define psm-->
@@ -206,6 +211,26 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   </xsd:complexType>
 </xsd:element>
 
+<!-- define protein-->
+<xsd:element name="protein">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="pep"/>
+      <xsd:element ref="q_value"/>
+      <xsd:element ref="peptide_seq" maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute ref="protein_id" use="required"/>
+  </xsd:complexType>
+</xsd:element><!-- end protein-->
+<!-- define proteins-->
+<xsd:element name="proteins">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="protein" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element>
+
 <!-- define attributes of percolator_output-->
 <xsd:attribute name="percolator_version" type="xsd:string">
   <xsd:annotation>
@@ -233,6 +258,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
       <xsd:element ref="process_info" minOccurs="1" maxOccurs="1"/>
       <xsd:element ref="psms" minOccurs="1" maxOccurs="1"/>
       <xsd:element ref="peptides" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="proteins" minOccurs="1" maxOccurs="1"/>
     </xsd:sequence>
     <xsd:attribute ref="percolator_version"  use="required" />
     <xsd:attribute ref="majorVersion" use="required" fixed="1"/>

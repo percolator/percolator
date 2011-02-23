@@ -44,12 +44,12 @@ int SanityCheck::initDefaultDir = 0;
  * contained in otherCall.
  */
 SanityCheck* SanityCheck::initialize(string otherCall){
-  if(otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
-    return new SqtSanityCheck();
-  }
-  else {
+  if(initWeightFN!="" || initDefaultDir!=0) {
     return new SanityCheck();
   }
+  else if (otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
+    return new SqtSanityCheck();
+  } else return new SanityCheck();
 }
 
 int SanityCheck::getInitDirection(vector<Scores>& testset,

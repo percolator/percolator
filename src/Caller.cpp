@@ -177,7 +177,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("W",
       "init-weights",
-      "Read initial weights from the given file",
+      "Read initial weights from the given file (one per line)",
       "filename");
   cmd.defineOption("V",
       "default-direction",
