@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-xmlns="http://per-colator.com/percolator_in/11" 
+xmlns="http://per-colator.com/percolator_in/12" 
 elementFormDefault="qualified" 
-targetNamespace="http://per-colator.com/percolator_in/11">
+targetNamespace="http://per-colator.com/percolator_in/12">
   <xs:element name="experiment">
     <xs:annotation>
       <xs:documentation>One experiment corresponds, roughly, to one
