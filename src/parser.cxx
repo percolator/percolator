@@ -19,6 +19,8 @@
 #include <xsd/cxx/tree/exceptions.hxx>
 #include <xsd/cxx/tree/error-handler.hxx>
 #include "parser.hxx"
+#include "Globals.h"
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace xercesc;
@@ -131,7 +133,11 @@ start (istream& is, const string& id, bool val)
   string schemaDefinition = SCHEMA + string("percolator_in.xsd");
   ifstream inp(schemaDefinition.c_str());
   if(inp){
-    string schemaNamespace = "http://per-colator.com/percolator_in/11";
+    string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
+    string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
+    string schemaNamespace = "http://per-colator.com/percolator_in/";
+    schemaNamespace.append(schema_major);
+    schemaNamespace.append(schema_minor);
     schemaNamespace.append(" ");
     string schemaLocation = schemaNamespace.append(schemaDefinition);
     XMLCh* propertyValue = XMLString::transcode(schemaLocation.c_str());
