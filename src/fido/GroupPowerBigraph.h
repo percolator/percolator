@@ -58,10 +58,13 @@ public:
 
   //Mattia Tomasoni
   void read(Scores& fullset);
+  //Mattia Tomasoni: making a few fields publicly accessible
+  Array<string> severedProteins;
+  Array<double> probabilityR;
+  Array<Array<string> > groupProtNames;
+  Array<BasicGroupBigraph> subgraphs;
 
 protected:
-
-  Array<string> severedProteins;
 
   int numberClones;
   void initialize();
@@ -70,16 +73,11 @@ protected:
 
   void getGroupProtNames();
 
-  Array<double> probabilityR;
-  Array<Array<string> > groupProtNames;
-
   void read(istream & is);
   //Mattia Tomasoni
   void speedUp(BasicBigraph& bb);
 
   GridModel gm;
-
-  Array<BasicGroupBigraph> subgraphs;
 
   // cached functors
   LastCachedMemberFunction<GroupPowerBigraph, double, GridModel> sumLogLikelihoodOverAllAlphaBetaCachedFunctor;

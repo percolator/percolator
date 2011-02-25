@@ -23,9 +23,9 @@ const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
         pNorm(NULL), pCheck(NULL), svmInput(NULL),
-        forwardFN(""), decoyFN(""),
-        decoyWC(""), resultFN(""), tabFN(""), xmlInputFN(""), xmlOutputFN(""),
-        weightFN(""), tabInput(false), dtaSelect(false), readStdIn(false),
+        forwardFN(""), decoyFN(""), decoyWC(""), resultFN(""), tabFN(""),
+        xmlInputFN(""), xmlOutputFN(""), weightFN(""),
+        tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(false), calculateProteinLevelProb(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
@@ -817,29 +817,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   }
 }
 
-/**
- * calculate protein level probabilities with fido
- */
-int Caller::proteinLevelProbabilities(Scores& fullset){
-	srand(time(NULL));
-	cout.precision(8);
-	cerr.precision(8);
-
-	double gamma = 0.5; //gridSearchGamma();
-	double alpha = 0.1; //gridSearchAlpha();
-	double beta = 0.01; //gridSearchBeta();
-
-	//GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = ;
-	GroupPowerBigraph gpb( RealRange(alpha, 1, alpha),
-	    RealRange(beta, 1, beta), gamma );
-
-	gpb.read(fullset);
-
-	gpb.getProteinProbs();
-	gpb.printProteinWeights();
-	return 0;
-}
-
 int Caller::run() {
   time(&startTime);
   startClock = clock();
@@ -994,13 +971,12 @@ int Caller::run() {
       }
       outs.close();
     }
-    if (xmlOutputFN.size() > 0){
-      writeXML(uniquePeptides[r]);
-    }
-
     // protein level probabilities
     if(calculateProteinLevelProb && reportUniquePeptides){
-      proteinLevelProbabilities(fullset);
+      ProteinProbEstimator::getInstance()->calculateProteinProb(fullset);
+    }
+    if (xmlOutputFN.size() > 0){
+      writeXML(uniquePeptides[r]);
     }
   }
   return 0;
@@ -1008,28 +984,20 @@ int Caller::run() {
 
 void Caller::writeXML(bool uniquePeptides) {
   ofstream os;
-  // http://www.edankert.com/grammars/xsd.referencing.html
   const string space = PERCOLATOR_OUT_NAMESPACE;
   string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
   const string schema = space +
-    " http://per-colator.com/xml/xml-" + schema_major +
-    "-" + schema_minor + "/percolator_out.xsd";
+    //" http://per-colator.com/xml/xml-" + schema_major +
+    //"-" + schema_minor + "/percolator_out.xsd";
+      " /scratch/temp/percolator/src/xml/percolator_out.xsd";
   if(! uniquePeptides){
-    //write to file
     os.open(xmlOutputFN.data(), ios::out);
     os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-
     os << "<percolator_output "
-        // default namespace for child elements of percolator output
         << endl << "xmlns=\""<< space << "\" "
-        // explicit namespace for attributes of percolator output (default)
-        // default namespaces do not apply to attributes
         << endl << "xmlns:p=\""<< space << "\" "
-        // tell the XML parser that this document should be validated against
-        // a schema
         << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-        // give a location for the schema
         << endl << "xsi:schemaLocation=\""<< schema <<"\" "
         << endl << "p:majorVersion=\"" << VERSION_MAJOR << "\" p:minorVersion=\""
         << VERSION_MINOR << "\" p:percolator_version=\"Percolator version "
@@ -1058,15 +1026,18 @@ void Caller::writeXML(bool uniquePeptides) {
   else{
     // append to file
     os.open(xmlOutputFN.data(), ios::app);
-    // output peptides
+    // append peptides
     os << "  <peptides>" << endl;
     for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
     != fullset.end(); ++psm) {
       os << (ScoreHolderPeptide)*psm;
     }
     os << "  </peptides>" << endl;
+    // append proteins
+    if(calculateProteinLevelProb){
+      ProteinProbEstimator::getInstance()->writeXML(os);
+    }
     os << "</percolator_output>" << endl;
     os.close();
   }
 }
-

@@ -103,8 +103,8 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
     <xsd:documentation xml:lang="en">Peptide sequence of this PSM including the amino acids N- and C-terminal of the peptide in the proteins sequence.</xsd:documentation>
   </xsd:annotation>
   <xsd:complexType>
-    <xsd:attribute name="n" type="aa_term_t" use="required"/>
-    <xsd:attribute name="c" type="aa_term_t" use="required"/>
+    <xsd:attribute name="n" type="aa_term_t"/>
+    <xsd:attribute name="c" type="aa_term_t"/>
     <xsd:attribute name="seq" type="aa_seq_t" use="required"/>
   </xsd:complexType>
 </xsd:element>
