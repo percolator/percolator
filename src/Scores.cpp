@@ -510,6 +510,39 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
+  sort(scores.begin(), scores.end(), lexicOrder());
+   // lexicographically order the scores (based on peptides names)
+   // new list of scores
+   vector<ScoreHolder> uniquePeptideScores = vector<ScoreHolder>();
+   string previousPeptide;
+   int previousLabel;
+   // run a pointer down the scores list
+   vector<ScoreHolder>::iterator current = scores.begin();
+   for(;current!=scores.end(); current++){
+     // compare pointer's peptide with previousPeptide
+     string currentPeptide = current->pPSM->getPeptideNoResidues();
+     if(previousPeptide.compare(currentPeptide)==0
+         && previousLabel == current->label) {
+       // if the peptide is a duplicate, append to previously inserted
+       vector<ScoreHolder>::iterator last = --uniquePeptideScores.end();
+       // the duplicate psm_id...
+       last->psms_list.push_back(current->pPSM->id);
+       // ... and all its proteins
+       BOOST_FOREACH(string pId, current->pPSM->proteinIds){
+         last->pPSM->proteinIds.insert(pId);
+       }
+     } else {
+       // otherwise insert as a new score
+       current->psms_list.push_back(current->pPSM->id);
+       uniquePeptideScores.push_back(*current);
+       // update previousPeptide
+       previousPeptide = currentPeptide;
+       previousLabel = current->label;
+     }
+   }
+   scores = uniquePeptideScores;
+   //sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
+/*
   // set of peptides encountered so far
   set<string> encounteredPeptides;
   pair<set<string>::iterator, bool> wasUnique;
@@ -547,6 +580,7 @@ void Scores::weedOutRedundant() {
     }
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ()); // Is this really needed?
+*/
 }
 
 void Scores::recalculateDescriptionOfGood(const double fdr) {

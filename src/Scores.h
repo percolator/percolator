@@ -69,6 +69,14 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
+struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool>
+{
+  bool
+  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return __x.pPSM->getPeptide() < __y.pPSM->getFullPeptide();
+  }
+};
+
 /**
  * ScoreHolder for unique peptides.
  */

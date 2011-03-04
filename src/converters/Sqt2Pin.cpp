@@ -336,6 +336,8 @@ int Sqt2Pin::run() {
     storeRetentionTime(database);
   }
 
+  xercesc::XMLPlatformUtils::Terminate();
+
   string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
   string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
@@ -367,6 +369,8 @@ int Sqt2Pin::run() {
     "</process_info>\n";
   if (xmlOutputFN == "") cout << commandLine;
   else xmlOutputStream << commandLine;
+
+  xercesc::XMLPlatformUtils::Initialize ();
 
   // print to cout (or populate xml file with) experiment information
   if (xmlOutputFN == "") {

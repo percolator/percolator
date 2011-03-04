@@ -55,6 +55,48 @@ int ProteinProbEstimator::calculateProteinProb(Scores& fullset){
   return 0;
 }
 
+/**
+ * Helper function for ProteinProbEstimator::writeXML; looks for PSMs associated
+ * with a protein. The protein graph is devided into subgraphs: go through each
+ * of them sequentially.
+ *
+ * @param protein the protein to be located
+ */
+void writeXML_writeAssociatedPeptides(GroupPowerBigraph* proteinGraph,
+    string& protein_id, ofstream& os){
+  bool found = false;
+  int peptidesIndex = -1;
+  int proteinIndex = 0 ;
+  // look for protein_id in the subgraphs
+  while(peptidesIndex == -1 && proteinIndex<proteinGraph->subgraphs.size()){
+    StringTable proteins;
+    proteins = StringTable::AddElements(
+        proteinGraph->subgraphs[proteinIndex].proteinsToPSMs.names);
+    peptidesIndex = proteins.lookup(protein_id);
+  }
+  // if it was found
+  if(peptidesIndex!=-1){
+    Set peptides = proteinGraph->subgraphs[proteinIndex].
+        proteinsToPSMs.associations[peptidesIndex];
+    // for each PSM associated with the protein, print the peptides
+    for (int k=0; k<peptides.size(); k++) {
+      string pept = proteinGraph->subgraphs[proteinIndex].
+          PSMsToProteins.names[peptides[k]];
+      os << "      <peptide_seq seq=\"" << pept << "\"/>"<<endl;
+    }
+  } else {
+    // it seems to me that every protein should have associated peptides
+    // as they were given in input to calculateProteinProb. At present this
+    // is not so. Consider throwing an error here.
+  }
+  return;
+}
+
+/**
+ * output protein level probabilites results in xml format
+ *
+ * @param os stream to which the xml is directed
+ */
 void ProteinProbEstimator::writeXML(ofstream& os){
   assert(proteinGraph!=0);
   // print protein weights to cerr
@@ -72,26 +114,7 @@ void ProteinProbEstimator::writeXML(ofstream& os){
       double pep = probabilities[k];
       os << "      <pep>" << pep << "</pep>" << endl;
       os << "      <q_value>" << 0.0 << "</q_value>" << endl;
-      // look for PSMs associated with the protein. The protein graph is devided into subgraphs:
-      // go through each of them sequentially
-      bool foundIt = false;
-      for(int k3=0; k3<proteinGraph->subgraphs.size() && !foundIt; k3++){
-        StringTable proteins;
-        proteins = StringTable::AddElements(proteinGraph->subgraphs[k3].proteinsToPSMs.names);
-        int peptidesIndex = proteins.lookup(protein_id);
-        // if the protein has been found in the present subgraph
-        if(peptidesIndex!=-1){
-          foundIt = true;
-          Set peptides = proteinGraph->subgraphs[k3].proteinsToPSMs.associations[peptidesIndex];
-          int kkk = peptides.size();
-          // for each PSM associated with the protein, print the peptides
-          for (int k4=0; k4<peptides.size(); k4++) {
-            string prot = protein_id;
-            string pept =  proteinGraph->subgraphs[k3].PSMsToProteins.names[peptides[k4]];
-            os << "      <peptide_seq seq=\"" << pept << "\"/>"<<endl;
-          }
-        }
-      }
+      writeXML_writeAssociatedPeptides(proteinGraph, protein_id, os);
       os << "    </protein>" << endl;
     }
   }
@@ -100,7 +123,7 @@ void ProteinProbEstimator::writeXML(ofstream& os){
     os << "    <protein p:protein_id=\"" << protein_id << "\">" << endl;
     os << "      <pep>" << 0.0 << "</pep>" << endl;
     os << "      <q_value>" << 0.0 << "</q_value>" << endl;
-    //os << "      <peptide_seq
+    writeXML_writeAssociatedPeptides(proteinGraph, protein_id, os);
     os << "    </protein>" << endl;
   }
   os << "  </proteins>" << endl;

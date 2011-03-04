@@ -50,6 +50,9 @@ class PSMDescription {
     string& getFullPeptide() {
       return getAParent()->peptide;
     }
+    string getPeptideNoResidues() {
+      return peptide.substr(2, peptide.size()-4);
+    }
     PSMDescription* getAParent() {
       if (parentFragment) {
         return parentFragment->getAParent();
