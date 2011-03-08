@@ -166,7 +166,7 @@ ostream & operator <<(ostream & os, const Array<T> & rhs)
     }
 
   int w = os.width();
-  os << "{";
+  os << "{ ";
 
   int k;
   for (k=0; k<rhs.size(); k++)
@@ -174,10 +174,10 @@ ostream & operator <<(ostream & os, const Array<T> & rhs)
       os.width(4);
       os << rhs[k];
       if ( k != rhs.size() - 1 )
-	os << ", ";
+	os << " , ";
     }
 
-  os << "}";
+  os << " }";
 
   os.width(w);
   return os;

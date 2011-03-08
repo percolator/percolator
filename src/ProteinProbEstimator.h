@@ -34,16 +34,21 @@ class ProteinProbEstimator {
       delete proteinGraph;
     }
     static ProteinProbEstimator* getInstance();
-    int calculateProteinProb(Scores& fullset);
+    int calculateProteinProb(Scores* fullset, bool gridSearch=false);
     void writeXML(ofstream& os);
   private:
     ProteinProbEstimator() {
       assert(instance==0);
       instance = this;
       proteinGraph = 0;
+      gamma = 0.5;
+      alpha = -1;
+      beta = -1;
     }
+    void gridSearchAlphaBeta();
     static ProteinProbEstimator* instance;
     GroupPowerBigraph* proteinGraph;
+    map<string, vector<ScoreHolder*> > proteinsToPeptides;
     double gamma;
     double alpha;
     double beta;

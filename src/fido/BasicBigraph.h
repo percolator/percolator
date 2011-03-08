@@ -57,7 +57,7 @@ public:
 
   void read(istream & is);
   // Mattia Tomasoni
-  void read(Scores& fullset);
+  void read(Scores* fullset);
   void readFromMCMC(istream & graph, istream & pepProph);
   void add(GraphLayer & gl, StringTable & st, const string & item);
   void connect(const StringTable & PSMNames, const string & pepStr, const StringTable & proteinNames, const string & protStr);

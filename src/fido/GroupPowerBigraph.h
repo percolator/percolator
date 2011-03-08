@@ -57,7 +57,7 @@ public:
   void outputPivdo(ostream & os) const;
 
   //Mattia Tomasoni
-  void read(Scores& fullset);
+  void read(Scores* fullset);
   //Mattia Tomasoni: making a few fields publicly accessible
   Array<string> severedProteins;
   Array<double> probabilityR;

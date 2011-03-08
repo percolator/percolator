@@ -168,10 +168,10 @@ class Scores {
     uint32_t lcg_rand();
     double pi0;
     double targetDecoySizeRatio;
+    vector<ScoreHolder> scores;
   protected:
     vector<double> w_vec;
     int totalNumberOfDecoys, totalNumberOfTargets, posNow;
-    vector<ScoreHolder> scores;
     std::map<const double*, ScoreHolder*> scoreMap;
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;

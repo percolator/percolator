@@ -973,7 +973,7 @@ int Caller::run() {
     }
     // protein level probabilities
     if(calculateProteinLevelProb && reportUniquePeptides){
-      ProteinProbEstimator::getInstance()->calculateProteinProb(fullset);
+      ProteinProbEstimator::getInstance()->calculateProteinProb(&fullset);
     }
     if (xmlOutputFN.size() > 0){
       writeXML(uniquePeptides[r]);

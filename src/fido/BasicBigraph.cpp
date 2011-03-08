@@ -24,7 +24,7 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
 /**
  * read graph protein-psm graph from percolator's Scores class intead of file
  */
-void BasicBigraph::read(Scores& fullset){
+void BasicBigraph::read(Scores* fullset){
 	string pepName, protName;
 	double value =  -10;
 	int pepIndex = -1;
@@ -34,8 +34,8 @@ void BasicBigraph::read(Scores& fullset){
 	ofstream of;
 	if(generateGraphFile) of.open("/tmp/psm_graph_file");
 
-	vector<ScoreHolder>::iterator psm = fullset.begin();
-	for (; psm!= fullset.end(); ++psm) {
+	vector<ScoreHolder>::iterator psm = fullset->begin();
+	for (; psm!= fullset->end(); ++psm) {
 	  // skip decoy
 	  if(psm->label != 1) continue;
 
