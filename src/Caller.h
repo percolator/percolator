@@ -106,6 +106,7 @@ class Caller {
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;
+    ProteinProbEstimator* protEstimator;
     string xmlInputFN;
     bool readStdIn;
     string forwardFN;

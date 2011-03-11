@@ -36,8 +36,6 @@ void BasicBigraph::read(Scores* fullset){
 
 	vector<ScoreHolder>::iterator psm = fullset->begin();
 	for (; psm!= fullset->end(); ++psm) {
-	  // skip decoy
-	  if(psm->label != 1) continue;
 
 	  // e peptide_string
 	  pepName = psm->pPSM->peptide;

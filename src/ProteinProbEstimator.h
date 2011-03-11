@@ -27,31 +27,33 @@
 
 #include "GroupPowerBigraph.h"
 
+struct fidoOutput {
+    Array<double> peps;
+    Array< Array<string> > protein_ids;
+    fidoOutput(Array<double> peps_par, Array<Array<string> > protein_ids_par) {
+      peps = peps_par;
+      protein_ids = protein_ids_par;
+    }
+};
+
 class ProteinProbEstimator {
   public:
-    virtual ~ProteinProbEstimator() {
-      delete instance;
-      delete proteinGraph;
-    }
-    static ProteinProbEstimator* getInstance();
-    int calculateProteinProb(Scores* fullset, bool gridSearch=false);
-    void writeXML(ofstream& os);
-  private:
-    ProteinProbEstimator() {
-      assert(instance==0);
-      instance = this;
-      proteinGraph = 0;
-      gamma = 0.5;
-      alpha = -1;
-      beta = -1;
-    }
-    void gridSearchAlphaBeta();
-    static ProteinProbEstimator* instance;
-    GroupPowerBigraph* proteinGraph;
-    map<string, vector<ScoreHolder*> > proteinsToPeptides;
     double gamma;
     double alpha;
     double beta;
+    ProteinProbEstimator(double alpha, double beta);
+    virtual ~ProteinProbEstimator() {
+      delete proteinGraph;
+    }
+    bool initialize(Scores* fullset);
+    fidoOutput calculateProteinProb(bool gridSearch);
+    void writeOutput(fidoOutput output);
+    void writeOutputToXML(ofstream& os);
+    map<string, vector<ScoreHolder*> > proteinsToPeptides;
+  private:
+    void gridSearchAlphaBeta();
+    GroupPowerBigraph* proteinGraph;
+    Scores* peptideScores;
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

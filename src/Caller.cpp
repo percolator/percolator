@@ -22,7 +22,7 @@ using namespace xercesc;
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
-        pNorm(NULL), pCheck(NULL), svmInput(NULL),
+        pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
         forwardFN(""), decoyFN(""), decoyWC(""), resultFN(""), tabFN(""),
         xmlInputFN(""), xmlOutputFN(""), weightFN(""),
         tabInput(false), dtaSelect(false), readStdIn(false),
@@ -45,6 +45,10 @@ Caller::~Caller() {
     delete svmInput;
   }
   svmInput = NULL;
+  if (protEstimator) {
+    delete protEstimator;
+  }
+  protEstimator = NULL;
 }
 
 string Caller::extendedGreeter() {
@@ -193,15 +197,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("a",
-      "aa-freq",
-      "Calculate amino acid frequency features",
-      "",
-      TRUE_IF_SET);
+      "alpha",
+      "Probability with which a present protein emits an associated peptide (to be used jointly with the -A option). Set by grid search of not specified.",
+      "value");
   cmd.defineOption("b",
-      "PTM",
-      "Calculate feature for number of post-translational modifications",
-      "",
-      TRUE_IF_SET);
+      "beta",
+      "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
+      "value");
   cmd.defineOption("d",
       "DTASelect",
       "Add an extra hit to each spectra when writing sqt files",
@@ -266,7 +268,18 @@ bool Caller::parseOptions(int argc, char **argv) {
   // now query the parsing results
   if (cmd.optionSet("E")) xmlInputFN = cmd.options["E"];
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
-  if (cmd.optionSet("A")) calculateProteinLevelProb = true;
+  if (cmd.optionSet("A")) {
+    calculateProteinLevelProb = true;
+    double alpha=-1;
+    double beta=-1;
+    if (cmd.optionSet("a")) {
+       alpha = cmd.getDouble("a", 0.01, 0.76);
+     }
+     if (cmd.optionSet("b")) {
+       beta = cmd.getDouble("b", 0.0, 0.80);
+     }
+     protEstimator = new ProteinProbEstimator(alpha,beta);
+  }
   if (cmd.optionSet("e")) readStdIn = true;
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
@@ -320,12 +333,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("N")) {
     DataSet::setPNGaseF(true);
-  }
-  if (cmd.optionSet("a")) {
-    DataSet::setAAFreqencies(true);
-  }
-  if (cmd.optionSet("b")) {
-    DataSet::setPTMfeature(true);
   }
   if (cmd.optionSet("i")) {
     niter = cmd.getInt("i", 0, 100000000);
@@ -973,7 +980,15 @@ int Caller::run() {
     }
     // protein level probabilities
     if(calculateProteinLevelProb && reportUniquePeptides){
-      ProteinProbEstimator::getInstance()->calculateProteinProb(&fullset);
+      bool gridSearch = protEstimator->initialize(&fullset);
+      if (VERB > 1)
+        cerr << "\nCalculating protein level probabilities with fido\n";
+      fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+      if(VERB > 1) {
+        cerr << "Protein level probabilities have been successfully "
+            << "now be calculated!\n";
+        protEstimator->writeOutput(output);
+      }
     }
     if (xmlOutputFN.size() > 0){
       writeXML(uniquePeptides[r]);
@@ -1034,7 +1049,7 @@ void Caller::writeXML(bool uniquePeptides) {
     os << "  </peptides>" << endl;
     // append proteins
     if(calculateProteinLevelProb){
-      ProteinProbEstimator::getInstance()->writeXML(os);
+      protEstimator->writeOutputToXML(os);
     }
     os << "</percolator_output>" << endl;
     os.close();
