@@ -257,8 +257,8 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
     <xsd:sequence>
       <xsd:element ref="process_info" minOccurs="1" maxOccurs="1"/>
       <xsd:element ref="psms" minOccurs="1" maxOccurs="1"/>
-      <xsd:element ref="peptides" minOccurs="1" maxOccurs="1"/>
-      <xsd:element ref="proteins" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="peptides" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="proteins" minOccurs="0" maxOccurs="1"/>
     </xsd:sequence>
     <xsd:attribute ref="percolator_version"  use="required" />
     <xsd:attribute ref="majorVersion" use="required" fixed="1"/>
