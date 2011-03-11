@@ -19,8 +19,6 @@
 
 int DataSet::hitsPerSpectrum = 1;
 bool DataSet::calcQuadraticFeatures = false;
-bool DataSet::calcAAFrequencies = false;
-bool DataSet::calcPTMs = false;
 bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
 bool DataSet::pngasef = false;

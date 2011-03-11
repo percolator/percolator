@@ -79,18 +79,6 @@ class DataSet {
     static bool getCalcDoc() {
       return calcDOC;
     }
-    static void setAAFreqencies(bool on) {
-      calcAAFrequencies = on;
-    }
-    static bool getAAFreqencies() {
-      return calcAAFrequencies;
-    }
-    static void setPTMfeature(bool on) {
-      calcPTMs = on;
-    }
-    static bool getPTMfeature() {
-      return calcPTMs;
-    }
     static void setPNGaseF(bool on) {
       pngasef = on;
     }
@@ -142,8 +130,6 @@ class DataSet {
 
     double isPngasef(const string& peptide);
     static bool calcQuadraticFeatures;
-    static bool calcAAFrequencies;
-    static bool calcPTMs;
     static bool calcDOC;
     static bool isotopeMass;
     static int hitsPerSpectrum;
