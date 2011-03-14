@@ -55,10 +55,6 @@ class FeatureNames {
                            featureNames.end(),
                            featureName), featureNames.begin());
     }
-    void setSQTFeatures(int minCharge, int maxCharge, bool doEnzyme,
-                        bool calcPTMs, bool doManyHitsPerSpectrum,
-                        const string& aaAlphabet,
-                        bool calQuadraticFeatures, bool calcDOC);
     // SQT Feature Number getters, will return -1 if not defined.
     int getMinCharge() {
       return minCharge;
@@ -82,14 +78,6 @@ class FeatureNames {
       assert(1==0);
       return ptmFeatNum;
     }
-    int getPNGaseFFeatNum() {
-      assert(1==0);
-      return pngFeatNum;
-    }
-    int getAaFeatNum() {
-      assert(1==0);
-      return aaFeatNum;
-    }
     int getIntraSetFeatNum() {
       assert(1==0);
       return intraSetFeatNum;
@@ -108,8 +96,8 @@ class FeatureNames {
     vector<string> featureNames;
     static size_t numFeatures;
     int minCharge, maxCharge;
-    int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum, pngFeatNum,
-        aaFeatNum, intraSetFeatNum, quadraticFeatNum, docFeatNum;
+    int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum,
+        intraSetFeatNum, quadraticFeatNum, docFeatNum;
 };
 
 #endif /*FEATURENAMES_H_*/

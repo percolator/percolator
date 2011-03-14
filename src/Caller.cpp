@@ -152,10 +152,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "maxiter",
       "Maximal number of iterations",
       "number");
-  cmd.defineOption("m",
-      "matches",
-      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
-      "number");
   cmd.defineOption("f",
       "train-ratio",
       "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.6 by default.",
@@ -214,30 +210,15 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Measure performance on test set each iteration",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("Q",
-      "quadratic",
-      "Calculate quadratic feature terms",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("O",
       "override",
       "Override error check and do not fall back on default score vector in case of suspect score vector",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("N",
-      "PNGaseF",
-      "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
       "",
       TRUE_IF_SET);
   cmd.defineOption("S",
       "seed",
       "Setting seed of the random number generator. Default value is 0",
       "value");
-  cmd.defineOption("M",
-      "isotope",
-      "Mass difference calculated to closest isotope mass rather than to the average mass.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("K",
       "klammer",
       "Retention time features calculated as in Klammer et al.",
@@ -326,24 +307,14 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("d")) {
     dtaSelect = true;
   }
-  if (cmd.optionSet("Q")) {
-    DataSet::setQuadraticFeatures(true);
-  }
   if (cmd.optionSet("O")) {
     SanityCheck::setOverrule(true);
   }
   if (cmd.optionSet("R")) {
     reportPerformanceEachIteration = true;
   }
-  if (cmd.optionSet("N")) {
-    DataSet::setPNGaseF(true);
-  }
   if (cmd.optionSet("i")) {
     niter = cmd.getInt("i", 0, 100000000);
-  }
-  if (cmd.optionSet("m")) {
-    int m = cmd.getInt("m", 1, 30000);
-    DataSet::setHitsPerSpectrum(m);
   }
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
@@ -359,9 +330,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("B")) {
     decoyOut = cmd.options["B"];
-  }
-  if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
   }
   if (cmd.optionSet("K")) {
     DescriptionOfCorrect::setKlammer(true);

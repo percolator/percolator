@@ -67,34 +67,16 @@ class DataSet {
     static FeatureNames& getFeatureNames() {
       return featureNames;
     }
-    static bool getQuadraticFeatures() {
-      return calcQuadraticFeatures;
-    }
-    static void setQuadraticFeatures(bool on) {
-      calcQuadraticFeatures = on;
-    }
     static void setCalcDoc(bool on) {
       calcDOC = on;
     }
     static bool getCalcDoc() {
       return calcDOC;
     }
-    static void setPNGaseF(bool on) {
-      pngasef = on;
-    }
-    static bool getPNGaseF() {
-      return pngasef;
-    }
     static void setIsotopeMass(bool on) {
       isotopeMass = on;
     }
     static void setNumFeatures(bool doc);
-    static void inline setHitsPerSpectrum(int hits) {
-      hitsPerSpectrum = hits;
-    }
-    static int inline getHitsPerSpectrum() {
-      return hitsPerSpectrum;
-    }
     static inline int rowIx(int row) {
       return row * FeatureNames::getNumFeatures();
     }
@@ -129,11 +111,8 @@ class DataSet {
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch & td,  unsigned int numFeatures );
 
     double isPngasef(const string& peptide);
-    static bool calcQuadraticFeatures;
     static bool calcDOC;
     static bool isotopeMass;
-    static int hitsPerSpectrum;
-    static bool pngasef;
     static string reversedFeaturePattern;
     const static string aaAlphabet;
     static string ptmAlphabet;
