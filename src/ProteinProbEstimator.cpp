@@ -412,5 +412,5 @@ void ProteinProbEstimator::writeOutputToXML(ofstream& os){
     writeXML_writeAssociatedPeptides(protein_id, os, proteinsToPeptides);
     os << "    </protein>" << endl;
   }
-  os << "  </proteins>" << endl;
+  os << "  </proteins>" << endl << endl;
 }

@@ -83,6 +83,8 @@ class Caller {
     Scores* getFullSet() {
       return &fullset;
     }
+    void calculateFDR(bool uniquePeptideRun, time_t& procStart,
+        clock_t& procStartClock, vector<vector<double> >& w, double& diff);
     int run();
     SetHandler* getSetHandler(SetHandlerType sh) {
       switch (sh) {
@@ -99,10 +101,13 @@ class Caller {
       }
     }
     void writeXML(bool uniquePeptides);
+    void writeXML_initialize();
+    void writeXML_finalize();
     string xmlOutputFN;
     Scores fullset; //,thresholdset;
   protected:
-    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys );
+    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets ,
+        unsigned int & nrDecoys );
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;

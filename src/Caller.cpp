@@ -279,6 +279,10 @@ bool Caller::parseOptions(int argc, char **argv) {
        beta = cmd.getDouble("b", 0.0, 0.80);
      }
      protEstimator = new ProteinProbEstimator(alpha,beta);
+     reportUniquePeptides = true;
+  }
+  if (cmd.optionSet("U")) {
+    reportUniquePeptides = true;
   }
   if (cmd.optionSet("e")) readStdIn = true;
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
@@ -376,10 +380,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
     Scores::setOutXmlDecoys(true);
   }
-  if (cmd.optionSet("U")) {
-    reportUniquePeptides = true;
-  }
-
   if (! cmd.optionSet("E") && ! cmd.optionSet("e")) {
     if (cmd.arguments.size() > 2) {
       cerr << "Too many arguments given" << endl;
@@ -824,13 +824,180 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   }
 }
 
+void Caller::writeXML_initialize(){
+  ofstream os;
+  const string space = PERCOLATOR_OUT_NAMESPACE;
+  string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
+  const string schema = space +
+      " http://per-colator.com/xml/xml-" + schema_major +
+      "-" + schema_minor + "/percolator_out.xsd";
+  os.open(xmlOutputFN.data(), ios::out);
+  os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
+  os << "<percolator_output "
+      << endl << "xmlns=\""<< space << "\" "
+      << endl << "xmlns:p=\""<< space << "\" "
+      << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+      << endl << "xsi:schemaLocation=\""<< schema <<"\" "
+      << endl << "p:majorVersion=\"" << VERSION_MAJOR << "\" p:minorVersion=\""
+      << VERSION_MINOR << "\" p:percolator_version=\"Percolator version "
+      << VERSION << "\">\n"<< endl;
+  os << "  <process_info>" << endl;
+  os << "    <command_line>" << call << "</command_line>" << endl;
+
+  os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
+  os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
+  if (docFeatures) {
+    os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
+                   << "</average_delta_mass>" << endl;
+    os << "    <average_pi>" << fullset.getDOC().getAvgPI()
+                   << "</average_pi>" << endl;
+  }
+  os << "  </process_info>" << endl << endl;
+  os.close();
+}
+
+void Caller::writeXML_finalize(){
+  ofstream os;
+  // append to file
+  os.open(xmlOutputFN.data(), ios::app);
+  os << "</percolator_output>" << endl;
+  os.close();
+}
+
+void Caller::writeXML(bool uniquePeptides) {
+  ofstream os;
+  // append to file
+  os.open(xmlOutputFN.data(), ios::app);
+  if(! uniquePeptides){
+    // append PSMs
+    os << "  <psms>" << endl;
+    for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
+    != fullset.end(); ++psm) {
+      os << *psm;
+    }
+    os << "  </psms>" << endl << endl;
+  }
+  else{
+    // append PEPTIDEs
+    os << "  <peptides>" << endl;
+    for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
+    != fullset.end(); ++psm) {
+      os << (ScoreHolderPeptide)*psm;
+    }
+    os << "  </peptides>" << endl << endl;
+    // append PROTEINs (if option is enabled)
+    if(calculateProteinLevelProb){
+      protEstimator->writeOutputToXML(os);
+    }
+  }
+  os.close();
+}
+
+
+void Caller::calculateFDR(bool isUniquePeptideRun, time_t& procStart,
+    clock_t& procStartClock, vector<vector<double> >& w, double& diff){
+  // write output (cerr or xml) if this is the unique peptide run and the
+  // reportUniquePeptides option was switched on OR if this is not the unique
+  // peptide run and the option was switched off
+  bool writeOutput = (isUniquePeptideRun == reportUniquePeptides);
+  if (reportUniquePeptides && VERB > 0 && writeOutput) {
+    cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM "
+        "for each unique peptide." << endl;
+  }
+  fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
+  if (VERB > 0 && writeOutput) {
+    cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
+  }
+  if (VERB > 0 && writeOutput) {
+    cerr << "Calibrating statistics - calculating q values" << endl;
+  }
+  int foundPSMs = fullset.calcQ(test_fdr);
+  fullset.calcPep();
+  if (VERB > 0 && docFeatures && writeOutput) {
+    cerr << "For the cross validation sets the average deltaMass are ";
+    for (size_t ix = 0; ix < xv_test.size(); ix++) {
+      cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
+    }
+    cerr << "and average pI are ";
+    for (size_t ix = 0; ix < xv_test.size(); ix++) {
+      cerr << xv_test[ix].getDOC().getAvgPI() << " ";
+    }
+    cerr << endl;
+  }
+  if (VERB > 0 && writeOutput) {
+    cerr << "New pi_0 estimate on merged list gives " << foundPSMs
+        << (reportUniquePeptides ? " peptides" : " PSMs") << " over q="
+        << test_fdr << endl;
+  }
+  if (VERB > 0 && writeOutput) {
+    cerr
+    << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
+    << endl;
+  }
+  time_t end;
+  time(&end);
+  diff = difftime(end, procStart);
+  ostringstream timerValues;
+  timerValues.precision(4);
+  timerValues << "Processing took "
+      << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC;
+  timerValues << " cpu seconds or " << diff << " seconds wall time"
+      << endl;
+  if (VERB > 1 && writeOutput) {
+    cerr << timerValues.str();
+  }
+  if (weightFN.size() > 0) {
+    ofstream weightStream(weightFN.data(), ios::out);
+    for (unsigned int ix = 0; ix < xval_fold; ++ix) {
+      printWeights(weightStream, w[ix]);
+    }
+    weightStream.close();
+  }
+  if (resultFN.empty() && writeOutput) {
+    normal.print(fullset);
+  } else {
+    if(writeOutput){
+      ofstream targetStream(resultFN.data(), ios::out);
+      normal.print(fullset, targetStream);
+      targetStream.close();
+    }
+  }
+  if (!decoyOut.empty() && writeOutput) {
+    ofstream decoyStream(decoyOut.data(), ios::out);
+    shuffled.print(fullset, decoyStream);
+    decoyStream.close();
+  }
+  if (docFeatures) {
+    ofstream outs("retention_times.txt", ios::out);
+    for (unsigned int set = 0; set < xval_fold; ++set) {
+      xv_test[set].printRetentionTime(outs, test_fdr);
+    }
+    outs.close();
+  }
+  // protein level probabilities
+  if(calculateProteinLevelProb && isUniquePeptideRun){
+    bool gridSearch = protEstimator->initialize(&fullset);
+    if (VERB > 1)
+      cerr << "\nCalculating protein level probabilities with fido\n";
+    fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+    if(VERB > 1) {
+      cerr << "Protein level probabilities have been successfully "
+          << "now be calculated!\n";
+      protEstimator->writeOutput(output);
+    }
+  }
+  if (xmlOutputFN.size() > 0){
+    writeXML(isUniquePeptideRun);
+  }
+}
+
 int Caller::run() {
   time(&startTime);
   startClock = clock();
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
-
   // populate tmp input file with cin information if option is enabled
   if(readStdIn){
     ofstream tmpInputFile;
@@ -897,161 +1064,17 @@ int Caller::run() {
         << endl;
   }
 
-  // unique peptides? the following code will be repeated for both analysis on
-  // psm-fdr and peptide-fdr
-  bool coutFlag = reportUniquePeptides;
-  bool uniquePeptides[] = {false, true};
-  for(int r=0; r<2; r++){
-    reportUniquePeptides = uniquePeptides[r];
-    if (reportUniquePeptides && VERB > 0 && (coutFlag == reportUniquePeptides)) {
-        cerr
-        << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM for each unique peptide."
-        << endl;
-    }
-    fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
-    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
-      cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
-    }
-    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
-      cerr << "Calibrating statistics - calculating q values" << endl;
-    }
-    int foundPSMs = fullset.calcQ(test_fdr);
-    fullset.calcPep();
-    if (VERB > 0 && docFeatures && (coutFlag == reportUniquePeptides)) {
-      cerr << "For the cross validation sets the average deltaMass are ";
-      for (size_t ix = 0; ix < xv_test.size(); ix++) {
-        cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
-      }
-      cerr << "and average pI are ";
-      for (size_t ix = 0; ix < xv_test.size(); ix++) {
-        cerr << xv_test[ix].getDOC().getAvgPI() << " ";
-      }
-      cerr << endl;
-    }
-    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
-      cerr << "New pi_0 estimate on merged list gives " << foundPSMs
-          << (reportUniquePeptides ? " peptides" : " PSMs") << " over q="
-          << test_fdr << endl;
-    }
-    if (VERB > 0 && (coutFlag == reportUniquePeptides)) {
-      cerr
-      << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
-      << endl;
-    }
-    time_t end;
-    time(&end);
-    diff = difftime(end, procStart);
-    ostringstream timerValues;
-    timerValues.precision(4);
-    timerValues << "Processing took "
-        << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC;
-    timerValues << " cpu seconds or " << diff << " seconds wall time"
-        << endl;
-    if (VERB > 1 && (coutFlag == reportUniquePeptides)) {
-      cerr << timerValues.str();
-    }
-    if (weightFN.size() > 0) {
-      ofstream weightStream(weightFN.data(), ios::out);
-      for (unsigned int ix = 0; ix < xval_fold; ++ix) {
-        printWeights(weightStream, w[ix]);
-      }
-      weightStream.close();
-    }
-    if (resultFN.empty() && (coutFlag == reportUniquePeptides)) {
-      normal.print(fullset);
-    } else {
-    	if(coutFlag == reportUniquePeptides){
-    		ofstream targetStream(resultFN.data(), ios::out);
-    		normal.print(fullset, targetStream);
-    		targetStream.close();
-    	}
-    }
-    if (!decoyOut.empty() && (coutFlag == reportUniquePeptides)) {
-      ofstream decoyStream(decoyOut.data(), ios::out);
-      shuffled.print(fullset, decoyStream);
-      decoyStream.close();
-    }
-    if (docFeatures) {
-      ofstream outs("retention_times.txt", ios::out);
-      for (unsigned int set = 0; set < xval_fold; ++set) {
-        xv_test[set].printRetentionTime(outs, test_fdr);
-      }
-      outs.close();
-    }
-    // protein level probabilities
-    if(calculateProteinLevelProb && reportUniquePeptides){
-      bool gridSearch = protEstimator->initialize(&fullset);
-      if (VERB > 1)
-        cerr << "\nCalculating protein level probabilities with fido\n";
-      fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
-      if(VERB > 1) {
-        cerr << "Protein level probabilities have been successfully "
-            << "now be calculated!\n";
-        protEstimator->writeOutput(output);
-      }
-    }
-    if (xmlOutputFN.size() > 0){
-      writeXML(uniquePeptides[r]);
-    }
+  writeXML_initialize();
+  // calculating FDRs for psms (this is not the unique peptides run)
+  bool isUniquePeptideRun = false;
+  calculateFDR(isUniquePeptideRun, procStart, procStartClock, w, diff);
+  // if reportUniquePeptides is enabled...
+  if(reportUniquePeptides){
+    // calculate FDRs for unique peptides (this not the unique peptides run)
+    isUniquePeptideRun = true;
+    calculateFDR(isUniquePeptideRun, procStart, procStartClock, w, diff);
   }
+  writeXML_finalize();
+
   return 0;
-}
-
-void Caller::writeXML(bool uniquePeptides) {
-  ofstream os;
-  const string space = PERCOLATOR_OUT_NAMESPACE;
-  string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
-  const string schema = space +
-    " http://per-colator.com/xml/xml-" + schema_major +
-    "-" + schema_minor + "/percolator_out.xsd";
-  if(! uniquePeptides){
-    os.open(xmlOutputFN.data(), ios::out);
-    os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-    os << "<percolator_output "
-        << endl << "xmlns=\""<< space << "\" "
-        << endl << "xmlns:p=\""<< space << "\" "
-        << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-        << endl << "xsi:schemaLocation=\""<< schema <<"\" "
-        << endl << "p:majorVersion=\"" << VERSION_MAJOR << "\" p:minorVersion=\""
-        << VERSION_MINOR << "\" p:percolator_version=\"Percolator version "
-        << VERSION << "\">\n"<< endl;
-    os << "  <process_info>" << endl;
-    os << "    <command_line>" << call << "</command_line>" << endl;
-
-    os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
-    os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
-    if (docFeatures) {
-      os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-             << "</average_delta_mass>" << endl;
-      os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-             << "</average_pi>" << endl;
-    }
-    os << "  </process_info>" << endl;
-    // output psms
-    os << "  <psms>" << endl;
-    for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-    != fullset.end(); ++psm) {
-      os << *psm;
-    }
-    os << "  </psms>" << endl;
-    os.close();
-  }
-  else{
-    // append to file
-    os.open(xmlOutputFN.data(), ios::app);
-    // append peptides
-    os << "  <peptides>" << endl;
-    for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-    != fullset.end(); ++psm) {
-      os << (ScoreHolderPeptide)*psm;
-    }
-    os << "  </peptides>" << endl;
-    // append proteins
-    if(calculateProteinLevelProb){
-      protEstimator->writeOutputToXML(os);
-    }
-    os << "</percolator_output>" << endl;
-    os.close();
-  }
 }
