@@ -383,10 +383,11 @@ void writeXML_writeAssociatedPeptides(string& protein_id,
  *
  * @param os stream to which the xml is directed
  */
-void ProteinProbEstimator::writeOutputToXML(ofstream& os){
+void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
   assert(proteinGraph!=0);
-  // print protein weights to cerr
-  // proteinGraph->printProteinWeights();
+  ofstream os;
+  os.open(xmlOutputFN.data(), ios::app);
+  // append PROTEINs
   os << "  <proteins>" << endl;
   Array<double> probabilities = proteinGraph->probabilityR;
   Array<int> indices = probabilities.sort();
@@ -413,4 +414,5 @@ void ProteinProbEstimator::writeOutputToXML(ofstream& os){
     os << "    </protein>" << endl;
   }
   os << "  </proteins>" << endl << endl;
+  os.close();
 }

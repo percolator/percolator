@@ -48,7 +48,7 @@ class ProteinProbEstimator {
     bool initialize(Scores* fullset);
     fidoOutput calculateProteinProb(bool gridSearch);
     void writeOutput(fidoOutput output);
-    void writeOutputToXML(ofstream& os);
+    void writeOutputToXML(string xmlOutputFN);
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
   private:
     void gridSearchAlphaBeta();

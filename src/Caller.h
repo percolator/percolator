@@ -83,7 +83,7 @@ class Caller {
     Scores* getFullSet() {
       return &fullset;
     }
-    void calculateFDR(bool uniquePeptideRun, time_t& procStart,
+    void calculatePSMProb(bool uniquePeptideRun, time_t& procStart,
         clock_t& procStartClock, vector<vector<double> >& w, double& diff);
     int run();
     SetHandler* getSetHandler(SetHandlerType sh) {
@@ -100,8 +100,10 @@ class Caller {
           return NULL;
       }
     }
-    void writeXML(bool uniquePeptides);
     void writeXML_initialize();
+    void writeXML_PSMs();
+    void writeXML_Peptides();
+    void writeXML_Proteins();
     void writeXML_finalize();
     string xmlOutputFN;
     Scores fullset; //,thresholdset;

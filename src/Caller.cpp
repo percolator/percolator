@@ -833,37 +833,37 @@ void Caller::writeXML_finalize(){
   os.close();
 }
 
-void Caller::writeXML(bool uniquePeptides) {
+void Caller::writeXML_PSMs() {
   ofstream os;
-  // append to file
   os.open(xmlOutputFN.data(), ios::app);
-  if(! uniquePeptides){
-    // append PSMs
-    os << "  <psms>" << endl;
-    for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-    != fullset.end(); ++psm) {
-      os << *psm;
-    }
-    os << "  </psms>" << endl << endl;
+  // append PSMs
+  os << "  <psms>" << endl;
+  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
+  != fullset.end(); ++psm) {
+    os << *psm;
   }
-  else{
-    // append PEPTIDEs
-    os << "  <peptides>" << endl;
-    for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-    != fullset.end(); ++psm) {
-      os << (ScoreHolderPeptide)*psm;
-    }
-    os << "  </peptides>" << endl << endl;
-    // append PROTEINs (if option is enabled)
-    if(calculateProteinLevelProb){
-      protEstimator->writeOutputToXML(os);
-    }
-  }
+  os << "  </psms>" << endl << endl;
   os.close();
 }
 
+void Caller::writeXML_Peptides() {
+  ofstream os;
+  os.open(xmlOutputFN.data(), ios::app);
+  // append PEPTIDEs
+  os << "  <peptides>" << endl;
+  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
+  != fullset.end(); ++psm) {
+    os << (ScoreHolderPeptide)*psm;
+  }
+  os << "  </peptides>" << endl << endl;
+  os.close();
+}
 
-void Caller::calculateFDR(bool isUniquePeptideRun, time_t& procStart,
+void Caller::writeXML_Proteins() {
+  protEstimator->writeOutputToXML(xmlOutputFN);
+}
+
+void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     clock_t& procStartClock, vector<vector<double> >& w, double& diff){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
@@ -943,21 +943,6 @@ void Caller::calculateFDR(bool isUniquePeptideRun, time_t& procStart,
     }
     outs.close();
   }
-  // protein level probabilities
-  if(calculateProteinLevelProb && isUniquePeptideRun){
-    bool gridSearch = protEstimator->initialize(&fullset);
-    if (VERB > 1)
-      cerr << "\nCalculating protein level probabilities with fido\n";
-    fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
-    if(VERB > 1) {
-      cerr << "Protein level probabilities have been successfully "
-          << "now be calculated!\n";
-      protEstimator->writeOutput(output);
-    }
-  }
-  if (xmlOutputFN.size() > 0){
-    writeXML(isUniquePeptideRun);
-  }
 }
 
 int Caller::run() {
@@ -1033,14 +1018,34 @@ int Caller::run() {
   }
 
   writeXML_initialize();
-  // calculating FDRs for psms (this is not the unique peptides run)
-  bool isUniquePeptideRun = false;
-  calculateFDR(isUniquePeptideRun, procStart, procStartClock, w, diff);
-  // if reportUniquePeptides is enabled...
+  // calculate psms level probabilities
+  bool isUniquePeptideRun = false; //(this is not the unique peptides run)
+  calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
+  if (xmlOutputFN.size() > 0){
+    writeXML_PSMs();
+  }
+  // calculate unique peptides level probabilities
   if(reportUniquePeptides){
-    // calculate FDRs for unique peptides (this not the unique peptides run)
-    isUniquePeptideRun = true;
-    calculateFDR(isUniquePeptideRun, procStart, procStartClock, w, diff);
+    isUniquePeptideRun = true; //(this not the unique peptides run)
+    calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
+    if (xmlOutputFN.size() > 0){
+      writeXML_Peptides();
+    }
+  }
+  // calculate protein level probabilities
+  if(calculateProteinLevelProb){
+    bool gridSearch = protEstimator->initialize(&fullset);
+    if (VERB > 1)
+      cerr << "\nCalculating protein level probabilities with fido\n";
+    fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+    if(VERB > 1) {
+      cerr << "Protein level probabilities have been successfully "
+          << "now be calculated!\n";
+      protEstimator->writeOutput(output);
+    }
+    if (xmlOutputFN.size() > 0){
+      writeXML_Proteins();
+    }
   }
   writeXML_finalize();
 
