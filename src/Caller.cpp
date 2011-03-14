@@ -859,8 +859,8 @@ void Caller::writeXML_Peptides() {
   os.close();
 }
 
-void Caller::writeXML_Proteins() {
-  protEstimator->writeOutputToXML(xmlOutputFN);
+void Caller::writeXML_Proteins(const fidoOutput& output) {
+  protEstimator->writeOutputToXML(xmlOutputFN, output);
 }
 
 void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
@@ -1044,7 +1044,7 @@ int Caller::run() {
       protEstimator->writeOutput(output);
     }
     if (xmlOutputFN.size() > 0){
-      writeXML_Proteins();
+      writeXML_Proteins(output);
     }
   }
   writeXML_finalize();

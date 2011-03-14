@@ -30,9 +30,15 @@
 struct fidoOutput {
     Array<double> peps;
     Array< Array<string> > protein_ids;
-    fidoOutput(Array<double> peps_par, Array<Array<string> > protein_ids_par) {
+    Array<double> qvalues;
+    fidoOutput(Array<double> peps_par, Array<Array<string> > protein_ids_par,
+        Array<double> qvalues_par) {
       peps = peps_par;
       protein_ids = protein_ids_par;
+      qvalues = qvalues_par;
+    }
+    int size() const{
+      return peps.size();
     }
 };
 
@@ -48,7 +54,7 @@ class ProteinProbEstimator {
     bool initialize(Scores* fullset);
     fidoOutput calculateProteinProb(bool gridSearch);
     void writeOutput(fidoOutput output);
-    void writeOutputToXML(string xmlOutputFN);
+    void writeOutputToXML(string xmlOutputFN, const fidoOutput& output);
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
   private:
     void gridSearchAlphaBeta();

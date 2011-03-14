@@ -103,7 +103,7 @@ void writeOutputToFile(fidoOutput output, string fileName) {
  * @param proteinGraph proteins and associated probabilities to be outputted
  */
 void ProteinProbEstimator::writeOutput(fidoOutput output) {
-  int size = output.peps.size();
+  int size = output.size();
   for (int k=0; k<size; k++) {
     cerr << output.peps[k] << " " << output.protein_ids[k] << endl;
   }
@@ -119,14 +119,25 @@ void ProteinProbEstimator::writeOutput(fidoOutput output) {
  * @return output results of fido encapsulated in a fidoOutput structure
  */
 fidoOutput buildOutput(GroupPowerBigraph* proteinGraph){
+  // array containing the PEPs
   Array<double> sorted = proteinGraph->probabilityR;
   assert(sorted.size()!=0);
-  Array<int> indices = sorted.sort();
+
+  // arrays that (will) contain protein ids and corresponding indexes
   Array< Array<string> > protein_ids =  Array< Array<string> >(sorted.size());
+  Array<int> indices = sorted.sort();
+  // array that (will) contain q-values
+  Array<double> qvalues = Array<double>(sorted.size());
+  double sumPepSoFar = 0;
+
+  // filling the protein_ids and qvalues arrays
   for (int k=0; k<sorted.size(); k++) {
     protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
+    // q-value: average pep of the protains scoring better than the current one
+    sumPepSoFar += sorted[k];
+    qvalues[k] = sumPepSoFar/(k+1);
   }
-  return fidoOutput(sorted, protein_ids);
+  return fidoOutput(sorted, protein_ids, qvalues);
 }
 
 /**
@@ -382,36 +393,26 @@ void writeXML_writeAssociatedPeptides(string& protein_id,
  * output protein level probabilites results in xml format
  *
  * @param os stream to which the xml is directed
+ * @param output object containing the output to be written to file
  */
-void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
-  assert(proteinGraph!=0);
+void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
+    const fidoOutput& output){
   ofstream os;
   os.open(xmlOutputFN.data(), ios::app);
   // append PROTEINs
   os << "  <proteins>" << endl;
-  Array<double> probabilities = proteinGraph->probabilityR;
-  Array<int> indices = probabilities.sort();
-
   // for each probability
-  for (int k=0; k<probabilities.size(); k++) {
+  for (int k=0; k<output.size(); k++) {
+    Array<string> protein_ids = output.protein_ids[k];
     // for each protein with a certain probability
-    for(int k2=0; k2<proteinGraph->groupProtNames[indices[k]].size(); k2++) {
-      string protein_id = proteinGraph->groupProtNames[indices[k]][k2];
+    for(int k2=0; k2<protein_ids.size(); k2++) {
+      string protein_id = protein_ids[k2];
       os << "    <protein p:protein_id=\"" << protein_id << "\">" << endl;
-      double pep = probabilities[k];
-      os << "      <pep>" << pep << "</pep>" << endl;
-      os << "      <q_value>" << 0.0 << "</q_value>" << endl;
+      os << "      <pep>" << output.peps[k] << "</pep>" << endl;
+      os << "      <q_value>" << output.qvalues[k] << "</q_value>" << endl;
       writeXML_writeAssociatedPeptides(protein_id, os, proteinsToPeptides);
       os << "    </protein>" << endl;
     }
-  }
-  for(int k=0; k<proteinGraph->severedProteins.size(); k++) {
-    string protein_id = proteinGraph->severedProteins[k];
-    os << "    <protein p:protein_id=\"" << protein_id << "\">" << endl;
-    os << "      <pep>" << 0.0 << "</pep>" << endl;
-    os << "      <q_value>" << 0.0 << "</q_value>" << endl;
-    writeXML_writeAssociatedPeptides(protein_id, os, proteinsToPeptides);
-    os << "    </protein>" << endl;
   }
   os << "  </proteins>" << endl << endl;
   os.close();

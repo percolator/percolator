@@ -103,7 +103,7 @@ class Caller {
     void writeXML_initialize();
     void writeXML_PSMs();
     void writeXML_Peptides();
-    void writeXML_Proteins();
+    void writeXML_Proteins(const fidoOutput& output);
     void writeXML_finalize();
     string xmlOutputFN;
     Scores fullset; //,thresholdset;
