@@ -23,6 +23,7 @@ This are the steps I followed to output Percolator release 1.16
   repeat 1.1 with with -DEXCLUDE_CONVERTERS=TRUE
 
 2. PACKAGES (32bit)
+  compile xsd in its 32 bits version.
   repeat 1.1 and 1.2: set(TARGET_ARCH "i386")
 
 3. SOURCE TARBALL
@@ -35,7 +36,7 @@ This are the steps I followed to output Percolator release 1.16
   $ git clone git://github.com/percolator/percolator.git
   $ cd percolator
   $ git checkout rel-1-16
-  $ ./install/windows.sh
+  $ ./install/windows_percolator.sh
   to get it out of the virtual machine:
   $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-1.16.0-win32.exe ~/Desktop/
 
