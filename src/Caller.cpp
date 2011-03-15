@@ -369,43 +369,48 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
-void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets , unsigned int & nrDecoys ) {
+/**
+ * parses the pin file and counts the number of target and decoy psms
+ *
+ * @param fname string pointing to pin file
+ * @param nrTargets stores the number of target psms (passed by reference)
+ * @param nrDecoys stores the number of decoy psms (passed by reference)
+ */
+void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
+    unsigned int& nrDecoys ) {
   try
   {
     namespace xml = xsd::cxx::xml;
     ifstream ifs;
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
     ifs.open (fname.c_str());
-
     parser p;
-
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fname.c_str(), true));
-
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument>
+    doc (p.start (ifs, fname.c_str(), true));
     doc = p.next (); // skip enzyme element
     doc = p.next (); // skip process_info element
     doc = p.next (); // skip featureDescriptions element
-
-    static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r, chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-    if (XMLString::equals( calibrationStr, doc->getDocumentElement ()->getTagName())) {
+    static const XMLCh calibrationStr[] = {
+        chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r,
+        chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+    if (XMLString::equals(calibrationStr,
+        doc->getDocumentElement()->getTagName()))
+    {
       percolatorInNs::calibration calibration(*doc->getDocumentElement ());
       doc = p.next ();
     };
 
     nrTargets=0;
     nrDecoys=0;
-
-    for (doc = p.next (); doc.get () != 0; doc = p.next ())
-    {
-      percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement ());
-      BOOST_FOREACH( const ::percolatorInNs::peptideSpectrumMatch & psm, fragSpectrumScan.peptideSpectrumMatch() )
+    for (doc = p.next (); doc.get () != 0; doc = p.next ()) {
+      percolatorInNs::fragSpectrumScan
+      fragSpectrumScan(*doc->getDocumentElement ());
+      BOOST_FOREACH(const ::percolatorInNs::peptideSpectrumMatch & psm,
+          fragSpectrumScan.peptideSpectrumMatch())
       {
-        if ( psm.isDecoy() ) {
-          nrDecoys++;
-        } else {
-          nrTargets++;
-        }
+        if (psm.isDecoy()) nrDecoys++;
+        else nrTargets++;
       }
-
     }
     ifs.close();
   }
@@ -415,18 +420,22 @@ void Caller::countTargetsAndDecoys( std::string & fname, unsigned int & nrTarget
     std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
   }
-  catch (const xml_schema::exception& e)
-  {
+  catch (const xml_schema::exception& e) {
     cerr << e << endl;
   }
-  catch (const ios_base::failure&)
-  {
+  catch (const ios_base::failure&) {
     cerr << "io failure" << endl;
   }
 
   return;
 }
 
+/**
+ * for each feature, print raw and normalized weights after training
+ *
+ * @param weightStream stream to which the weights will be written
+ * @param w vector containing the normalized weights
+ */
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
   << "# first line contains normalized weights, second line the raw weights"
@@ -440,6 +449,7 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   }
   weightStream << endl;
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
+  // TODO: they all come out 0...
   pNorm->unnormalizeweight(w, ww);
   weightStream << ww[0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
@@ -448,6 +458,15 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << endl;
 }
 
+/**
+ * Instantiates the sanityCheck and sets sizes and feature tables for the sets
+ * of target and decoy psms
+ *
+ * @param numFeatures number of features to train on
+ * @param numSpectra nuymber of spectra per set (same for both target and decoy)
+ * @param featureNames array of names of individual features
+ * @param pi0
+ */
 void Caller::filelessSetup(const unsigned int numFeatures,
     const unsigned int numSpectra,
     char** featureNames, double pi0) {
@@ -461,6 +480,11 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
+/**
+ * reads Percolator's input from file: stores enzyme info, feature names and
+ * psm info (targetSet and decoySet) and initializes the appropriate
+ * sanityCheck.
+ */
 void Caller::readFiles() {
   if (xmlInputFN.size() != 0 || readStdIn == true) {
     string inputFile = "";
@@ -578,6 +602,9 @@ void Caller::readFiles() {
   }
 }
 
+/**
+ * cross validation step
+ */
 int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
   // Setup
   struct options* Options = new options;

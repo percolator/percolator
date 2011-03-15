@@ -69,8 +69,16 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = 0.5;
-  alpha = alpha_par;
-  beta = beta_par;
+  alpha = alpha_par; // 0.1;
+  beta = beta_par; // 0.01;
+}
+
+/**
+ * sets alpha and beta to default values (avoiding the need for grid search)
+ */
+void ProteinProbEstimator::setDefaultParameters(){
+  alpha = 0.1;
+  beta = 0.01;
 }
 
 bool ProteinProbEstimator::initialize(Scores* fullset){
@@ -316,8 +324,6 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
   // at this point the parameters alpha and beta must have been initialized:
   // either statically set through command line or set after the grid search
   // or temporarily set in one of the grid search's iteration steps
-  //if(alpha == -1) alpha = 0.1;
-  //if(beta == -1) beta = 0.01;
   assert(alpha != -1);
   assert(beta != -1);
 

@@ -52,6 +52,7 @@ class ProteinProbEstimator {
       delete proteinGraph;
     }
     bool initialize(Scores* fullset);
+    void setDefaultParameters();
     fidoOutput calculateProteinProb(bool gridSearch);
     void writeOutput(fidoOutput output);
     void writeOutputToXML(string xmlOutputFN, const fidoOutput& output);
