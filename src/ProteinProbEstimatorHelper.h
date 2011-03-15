@@ -32,6 +32,276 @@
 using namespace std;
 #include <ext/hash_set>
 
+
+///////////////////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS FOR ProteinProbEstimator METHODS
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * after calculating protein level probabilities, the output is stored in a
+ * dedicated structure that can be printed out or evaluated during the grid
+ * search
+ *
+ * @param proteinGraph graph with proteins and corresponding probabilities
+ * calculated by fido
+ * @return output results of fido encapsulated in a fidoOutput structure
+ */
+fidoOutput buildOutput(GroupPowerBigraph* proteinGraph){
+  // array containing the PEPs
+  Array<double> sorted = proteinGraph->probabilityR;
+  assert(sorted.size()!=0);
+
+  // arrays that (will) contain protein ids and corresponding indexes
+  Array< Array<string> > protein_ids =  Array< Array<string> >(sorted.size());
+  Array<int> indices = sorted.sort();
+  // array that (will) contain q-values
+  Array<double> qvalues = Array<double>(sorted.size());
+  double sumPepSoFar = 0;
+
+  // filling the protein_ids and qvalues arrays
+  for (int k=0; k<sorted.size(); k++) {
+    protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
+    // q-value: average pep of the protains scoring better than the current one
+    sumPepSoFar += sorted[k];
+    qvalues[k] = sumPepSoFar/(k+1);
+  }
+  return fidoOutput(sorted, protein_ids, qvalues);
+}
+
+/**
+ * writes protein weights to file.
+ *
+ * @param proteinGraph proteins and associated probabilities to be outputted
+ * @param fileName file that will store the outputted information
+ */
+void writeOutputToFile(fidoOutput output, string fileName) {
+  ofstream of(fileName.c_str());
+  int size = output.peps.size();
+  for (int k=0; k<size; k++) {
+    of << output.peps[k] << " " << output.protein_ids[k] << endl;
+  }
+  of.close();
+}
+
+/**
+ * Helper function for ProteinProbEstimator::writeXML; looks for PSMs associated
+ * with a protein. The protein graph is divided into subgraphs: go through each
+ * of them sequentially.
+ *
+ * @param protein_id the protein to be located
+ * @param os stream the associated peptides will be written to
+ * @param proteinsToPeptides hash table containing the associations between
+ * proteins and peptides as calculated by Percolator
+ */
+void writeXML_writeAssociatedPeptides(string& protein_id,
+    ofstream& os, map<string, vector<ScoreHolder*> >& proteinsToPeptides){
+  vector<ScoreHolder*>* peptides = &proteinsToPeptides.find(protein_id)->second;
+  vector<ScoreHolder*>::iterator peptIt = peptides->begin();
+  for(; peptIt<peptides->end(); peptIt++){
+    string pept = (*peptIt)->pPSM->getPeptideNoResidues();
+    os << "      <peptide_seq seq=\"" << pept << "\"/>"<<endl;
+    // check that protein_id is there
+    assert((*peptIt)->pPSM->proteinIds.find(protein_id)
+        != (*peptIt)->pPSM->proteinIds.end());
+  }
+  /*
+  // the following code was trying to achieve the same as the above exclusively
+  // with information coming from fido (without making use of external
+  // information coming from Percolator
+  bool found = false;
+  int peptidesIndex = -1;
+  int proteinIndex = 0;
+  // look for protein_id in the subgraphs
+  while(peptidesIndex == -1 && proteinIndex<proteinGraph->subgraphs.size()){
+    StringTable proteins;
+    proteins = StringTable::AddElements(
+        proteinGraph->subgraphs[proteinIndex].proteinsToPSMs.names);
+    peptidesIndex = proteins.lookup(protein_id);
+    if(peptidesIndex == -1) proteinIndex++;
+  }
+  // if it was found
+  if(peptidesIndex!=-1){
+    Set peptides = proteinGraph->subgraphs[proteinIndex].
+        proteinsToPSMs.associations[peptidesIndex];
+    // for each PSM associated with the protein, print the peptides
+    for (int k=0; k<peptides.size(); k++) {
+      string pept = proteinGraph->subgraphs[proteinIndex].
+          PSMsToProteins.names[peptides[k]];
+      os << "      <peptide_seq seq=\"" << pept << "\"/>"<<endl;
+    }
+  } else {
+    // it seems to me that every protein should have associated peptides
+    // as they were given in input to calculateProteinProb. At present this
+    // is not so. Consider throwing an error here.
+  }
+  return;
+  */
+}
+
+/**
+ * populates a hash table that associates the name of a protein with the list
+ * of unique peptides that were associated to it by percolator. Part of this
+ * same information (less conveniently indexed) is stored and manipulated by
+ * fido in the proteinGraph field
+ *
+ * @param fullset set of unique peptides with scores computed by Percolator
+ * @param proteinsToPeptides hash table to be populated
+ */
+void populateProteinsToPeptidesTable(Scores* fullset,
+    ProteinProbEstimator* thisEstimator){
+  vector<ScoreHolder>::iterator peptIt = fullset->scores.begin();
+  // for each peptide
+  for(; peptIt < fullset->scores.end();peptIt++){
+    set<string>::iterator protIt = peptIt->pPSM->proteinIds.begin();
+    // for each protein
+    for(; protIt != peptIt->pPSM->proteinIds.end(); protIt++){
+      // look for it in the hash table
+      map<string, vector<ScoreHolder*> >::iterator found =
+          thisEstimator->proteinsToPeptides.find(*protIt);
+      if(found == thisEstimator->proteinsToPeptides.end()){
+        // if not found insert a new protein-peptide pair...
+        vector<ScoreHolder*> peptides;
+        peptides.push_back(&*peptIt);
+        pair<string,vector<ScoreHolder*> > protPeptPair(*protIt, peptides);
+        thisEstimator->proteinsToPeptides.insert(protPeptPair);
+      } else {
+        // ... otherwise update
+        found->second.push_back(&*peptIt);
+      }
+    }
+
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// GRID SEARCH
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * point in the space generated by the possible values of the parameters alpha
+ * and beta. Each point has two coordinates, two lists of protein names (the
+ * true positives and false negatives calculated by fido with the particular
+ * choice of alpha and beta) and the value of the objective function calculated
+ * in that point
+ */
+struct gridPoint {
+    gridPoint(){
+      objectiveFnValue = -1;
+    }
+    gridPoint(double alpha_par, double beta_par){
+      objectiveFnValue = -1;
+      alpha = alpha_par;
+      beta = beta_par;
+      truePositives = Array<string>();
+      falsePositives = Array<string>();
+    }
+    void calculateObjectiveFn(double lambda, ProteinProbEstimator* toBeTested);
+    bool operator >(const gridPoint& rhs) const {
+      assert(objectiveFnValue!=-1);
+      assert(rhs.objectiveFnValue!=-1);
+      if(objectiveFnValue > rhs.objectiveFnValue)
+        return true;
+      else return false;
+    }
+    Array<string> truePositives;
+    Array<string> falsePositives;
+    double objectiveFnValue;
+  private:
+    double alpha;
+    double beta;
+};
+
+/**
+ * pupulates the list of true positive and false negative proteins by looking
+ * at the label (decoy or target) of the peptides associated with the protein
+ * in the proteinsToPeptides hash table
+ */
+void populateTPandFNLists(gridPoint* point, fidoOutput output,
+    ProteinProbEstimator* toBeTested){
+  assert(point->truePositives.size()==0);
+  assert(point->falsePositives.size()==0);
+  map<string, vector<ScoreHolder*> >::iterator protIt =
+      toBeTested->proteinsToPeptides.begin();
+  // for each protein in the proteinsToPeptides hash table
+  for(; protIt != toBeTested->proteinsToPeptides.end(); protIt ++){
+    bool tp = false;
+    bool fp = false;
+    vector<ScoreHolder*>::iterator peptIt = protIt->second.begin();
+    // for each peptide associated with a certain protein
+    for(; peptIt < protIt->second.end(); peptIt++){
+      // check whether the peptide is target of decoy
+      if((*peptIt)->label != 1) fp = true;
+      else tp = true;
+    }
+    // if any of the associated peptides were targets, add the protein to the
+    // list of true positives. If any of the associated peptides were decoys, add
+    // the protein to the list of false positives.
+    // (note: it might end up in both!)
+    if(tp) point->truePositives.add(protIt->first);
+    if(fp) point->falsePositives.add(protIt->first);
+  }
+}
+
+// forward declarations needed by gridPoint::calculateObjectiveFn
+
+void calculateFDRs(
+    const fidoOutput output,
+    const Array<string>& truePositives, const Array<string>& falsePositives,
+    Array<double>& estimatedFdrs, Array<double>& empiricalFdrs);
+
+double calculateMSE_FDR(double threshold,
+    const Array<double>& estimatedFdr, const Array<double>& empiricalFdr);
+
+void calculateRoc(const fidoOutput output,
+    const Array<string>& truePositives, const Array<string>& falsePositives,
+    Array<int>& fps, Array<int>& tps);
+
+double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps);
+
+/**
+ * for a given choice of alpha and beta, calculates (1 − λ) MSE_FDR − λ ROC50
+ * and stores the result in objectiveFnValue
+ */
+void gridPoint::calculateObjectiveFn(double lambda,
+    ProteinProbEstimator* toBeTested){
+  assert(alpha!=-1);
+  assert(beta!=-1);
+  toBeTested->alpha = alpha;
+  toBeTested->beta = beta;
+  fidoOutput output = toBeTested->calculateProteinProb(false);
+  populateTPandFNLists(this, output, toBeTested);
+  // uncomment to output the results of the probability calculation to file
+  writeOutputToFile(output, "/tmp/fido/out.txt");
+  ofstream o("/tmp/fido/TPFPlists.txt");
+  o << falsePositives << endl << truePositives << endl;
+  o.close();
+
+  // calculate MSE_FDR
+  Array<double> estimatedFdrs = Array<double>();
+  Array<double> empiricalFdrs = Array<double>();
+  calculateFDRs(output, truePositives, falsePositives,
+      estimatedFdrs, empiricalFdrs);
+  // uncomment to output the results of the MSE_FDR to file
+  ofstream o1 ("/tmp/fido/FDRlists.txt");
+  o1 << estimatedFdrs << endl << empiricalFdrs << endl;
+  o1.close();
+  double threshold = 0.1;
+  double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
+
+  // calculate ROC50
+  Array<int> fps = Array<int>();
+  Array<int> tps = Array<int>();
+  calculateRoc(output, truePositives, falsePositives, fps, tps);
+  // uncomment to output the results of the ROC50 calculation to file
+  ofstream o2("/tmp/fido/ROC50lists.txt");
+  o2 << fps << endl << tps << endl;
+  o2.close();
+  int N = 50;
+  double roc50 = calculateROC50(N, fps, tps);
+
+  objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
+}
+
 namespace __gnu_cxx {
 template<> struct hash< std::string > {
     size_t operator()( const std::string & x ) const {
