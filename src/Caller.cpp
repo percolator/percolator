@@ -27,7 +27,7 @@ Caller::Caller() :
         xmlInputFN(""), xmlOutputFN(""), weightFN(""),
         tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
-        reportUniquePeptides(false), calculateProteinLevelProb(false),
+        reportUniquePeptides(true), calculateProteinLevelProb(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
@@ -240,9 +240,9 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("U",
       "unique-peptides",
-      "Remove all redundant peptides and only keep the highest scoring PSM. q-values and PEPs are only calculated on peptide level in such case",
+      "Do not remove redundant peptides, keep all PSMS, not only the highest scoring one.",
       "",
-      TRUE_IF_SET);
+      FALSE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -260,10 +260,10 @@ bool Caller::parseOptions(int argc, char **argv) {
        beta = cmd.getDouble("b", 0.0, 0.80);
      }
      protEstimator = new ProteinProbEstimator(alpha,beta);
-     reportUniquePeptides = true;
+     reportUniquePeptides = false;
   }
   if (cmd.optionSet("U")) {
-    reportUniquePeptides = true;
+    reportUniquePeptides = false;
   }
   if (cmd.optionSet("e")) readStdIn = true;
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
