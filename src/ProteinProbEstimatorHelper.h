@@ -173,6 +173,21 @@ void populateProteinsToPeptidesTable(Scores* fullset,
   }
 }
 
+double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator){
+  vector<ScoreHolder*>::iterator peptIt =
+      estimator->proteinsToPeptides.find(protein_id)->second.begin();
+  vector<ScoreHolder*>::iterator peptItEnd =
+      estimator->proteinsToPeptides.find(protein_id)->second.end();
+  unsigned int decoys = 0;
+  unsigned int targets = 0;
+  for(; peptIt < peptItEnd; peptIt++){
+    // check whether the peptide is target or a decoy
+    if((*peptIt)->label != 1) decoys++;
+    else targets++;
+  }
+  return decoys/(decoys+targets);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // GRID SEARCH
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,34 +211,55 @@ struct gridPoint {
       falsePositives = Array<string>();
     }
     void calculateObjectiveFn(double lambda, ProteinProbEstimator* toBeTested);
-    bool operator >(const gridPoint& rhs) const {
+    bool operator <(const gridPoint& rhs) const {
       assert(objectiveFnValue!=-1);
       assert(rhs.objectiveFnValue!=-1);
-      if(objectiveFnValue > rhs.objectiveFnValue)
+      if(objectiveFnValue < rhs.objectiveFnValue)
         return true;
       else return false;
     }
     Array<string> truePositives;
     Array<string> falsePositives;
     double objectiveFnValue;
-  private:
     double alpha;
     double beta;
 };
 
 /**
- * pupulates the list of true positive and false negative proteins by looking
+ * populates the list of true positive and false negative proteins by looking
  * at the label (decoy or target) of the peptides associated with the protein
  * in the proteinsToPeptides hash table
  */
-void populateTPandFNLists(gridPoint* point, fidoOutput output,
+void populateTPandFNLists(gridPoint* point, const fidoOutput& output,
     ProteinProbEstimator* toBeTested){
   assert(point->truePositives.size()==0);
   assert(point->falsePositives.size()==0);
+  // for each protein in fido's output
+  for(int i1=0; i1<output.size(); i1++){
+    for(int i2=0; i2<output.protein_ids[i1].size(); i2++){
+      // store the protein id
+      string protein_id = output.protein_ids[i1][i2];
+      double probOfDecoy = isDecoyProbability(protein_id, toBeTested);
+      if(probOfDecoy == 0) point->truePositives.add(protein_id);
+      else if(probOfDecoy == 1) point->falsePositives.add(protein_id);
+      else {
+        point->truePositives.add(protein_id);
+        point->falsePositives.add(protein_id);
+      }
+
+    }
+  }
+
+  /*
+  // the following code did the same thing as the above, but going through
+  // every protein in the proteinsToPeptides hash table instead. This is in
+  // principle correct, except that only about one fith of the protein inputed
+  // are actually present in fido's output!
   map<string, vector<ScoreHolder*> >::iterator protIt =
       toBeTested->proteinsToPeptides.begin();
   // for each protein in the proteinsToPeptides hash table
   for(; protIt != toBeTested->proteinsToPeptides.end(); protIt ++){
+    string protein_id = protIt->first;
     bool tp = false;
     bool fp = false;
     vector<ScoreHolder*>::iterator peptIt = protIt->second.begin();
@@ -234,12 +270,13 @@ void populateTPandFNLists(gridPoint* point, fidoOutput output,
       else tp = true;
     }
     // if any of the associated peptides were targets, add the protein to the
-    // list of true positives. If any of the associated peptides were decoys, add
-    // the protein to the list of false positives.
+    // list of true positives. If any of the associated peptides were decoys,
+    // add the protein to the list of false positives.
     // (note: it might end up in both!)
-    if(tp) point->truePositives.add(protIt->first);
-    if(fp) point->falsePositives.add(protIt->first);
+    if(tp) point->truePositives.add(protein_id);
+    if(fp) point->falsePositives.add(protein_id);
   }
+   */
 }
 
 // forward declarations needed by gridPoint::calculateObjectiveFn
@@ -271,9 +308,10 @@ void gridPoint::calculateObjectiveFn(double lambda,
   fidoOutput output = toBeTested->calculateProteinProb(false);
   populateTPandFNLists(this, output, toBeTested);
   // uncomment to output the results of the probability calculation to file
-  writeOutputToFile(output, "/tmp/fido/out.txt");
-  ofstream o("/tmp/fido/TPFPlists.txt");
-  o << falsePositives << endl << truePositives << endl;
+  writeOutputToFile(output, "/tmp/fido/2_fido_output.txt");
+  ofstream o("/tmp/fido/3_TPFP_lists.txt");
+  o << "falsePositives\n" << falsePositives << endl
+      << "truePositives\n" << truePositives << endl;
   o.close();
 
   // calculate MSE_FDR
@@ -282,8 +320,9 @@ void gridPoint::calculateObjectiveFn(double lambda,
   calculateFDRs(output, truePositives, falsePositives,
       estimatedFdrs, empiricalFdrs);
   // uncomment to output the results of the MSE_FDR to file
-  ofstream o1 ("/tmp/fido/FDRlists.txt");
-  o1 << estimatedFdrs << endl << empiricalFdrs << endl;
+  ofstream o1 ("/tmp/fido/4_FDR_lists.txt");
+  o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
+      << "empiricalFdrs\n" << empiricalFdrs << endl;
   o1.close();
   double threshold = 0.1;
   double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
@@ -293,7 +332,7 @@ void gridPoint::calculateObjectiveFn(double lambda,
   Array<int> tps = Array<int>();
   calculateRoc(output, truePositives, falsePositives, fps, tps);
   // uncomment to output the results of the ROC50 calculation to file
-  ofstream o2("/tmp/fido/ROC50lists.txt");
+  ofstream o2("/tmp/fido/5_ROC50_lists.txt");
   o2 << fps << endl << tps << endl;
   o2.close();
   int N = 50;
@@ -338,6 +377,9 @@ void calculateFDRs(
     const fidoOutput output,
     const Array<string>& truePositives, const Array<string>& falsePositives,
     Array<double>& estimatedFdrs, Array<double>& empiricalFdrs) {
+
+  estimatedFdrs.clear();
+  empiricalFdrs.clear();
   __gnu_cxx::hash_set<string> truePosSet(truePositives.size()),
       falsePosSet(falsePositives.size());
   int k;
@@ -387,12 +429,6 @@ void calculateFDRs(
     estimatedFdrs.add(estFDR);
     empiricalFdrs.add(empiricalFDR);
   }
-  // uncomment the following lines to output the results to cout and file
-  //cout.precision(10);
-  //cout << estimatedList << " " << empericalList << endl;
-  //ofstream fout("/tmp/fido/rlistFDROut.txt");
-  //fout << estimatedList << endl << empericalList << endl;
-  //fout.close();
 }
 
 double squareAntiderivativeAt(double m, double b, double xVal) {
@@ -423,11 +459,12 @@ double area(double x1, double y1, double x2, double y2, double threshold) {
 double calculateMSE_FDR(double threshold,
     const Array<double>& estimatedFdr, const Array<double>& empiricalFdr) {
   assert(estimatedFdr.size() == empiricalFdr.size());
-  Vector diff = Vector(estimatedFdr) - Vector(estimatedFdr);
+  Vector diff = Vector(estimatedFdr) - Vector(empiricalFdr);
   double tot = 0.0;
   int k;
   for (k=0; k<diff.size()-1; k++) {
     // stop if no part of the estFDR is < threshold
+    // values are monotonically increasing
     if (estimatedFdr[k] >= threshold) {
       if (k == 0)
         tot = 1.0 / 0.0;

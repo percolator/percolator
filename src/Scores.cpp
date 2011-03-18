@@ -63,8 +63,10 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
     return os;
   }
   os << "    <psm p:psm_id=\"" << sh.pPSM->id << "\"";
-  if (sh.label != 1) {
-    os << " p:decoy=\"true\"";
+  if (Scores::isOutXmlDecoys()) {
+    if(sh.label != 1)
+      os << " p:decoy=\"true\"";
+    else os << " p:decoy=\"false\"";
   }
   os << ">" << endl;
   os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
@@ -106,8 +108,10 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   string peptide_id =
       sh.pPSM->getPeptide().substr(2, sh.pPSM->getPeptide().size()-4);
   os << "    <peptide p:peptide_id=\"" << peptide_id << "\"";
-  if (sh.label != 1) {
-    os << " p:decoy=\"true\"";
+  if (Scores::isOutXmlDecoys()) {
+    if(sh.label != 1)
+      os << " p:decoy=\"true\"";
+    else os << " p:decoy=\"false\"";
   }
   os << ">" << endl;
   os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;

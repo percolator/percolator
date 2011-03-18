@@ -23,6 +23,7 @@
  *******************************************************************************/
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <limits>
 #include "ProteinProbEstimator.h"
@@ -69,29 +70,44 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   // and a λ approaching 0.0 will result in a more calibrated model
   double lambda = 0.15;
   // before the search starts, the best point seen so far is artificially set
-  // to the ideal absolute minimum
+  // to the ideal absolute maximum (we are minimizing!)
   gridPoint bestSoFar;
-  bestSoFar.objectiveFnValue = numeric_limits<double>::min();
+  bestSoFar.objectiveFnValue = numeric_limits<double>::max();
   double lower_a=0.01, upper_a=0.76;
   double lower_b=0.0, upper_b=0.80;
   // if a parameter had previously been set (from command line) exclude it from
   // the grid search
   if(alpha != -1) lower_a = upper_a = alpha;
-  if(beta != -1) lower_a = upper_a = beta;
+  if(beta != -1) lower_b = upper_b = beta;
+
+  if(VERB > 1) cerr << endl << "            ";
+  for(double b=lower_b; b<=upper_b; b+=0.05){
+    if(VERB > 1) cerr << "beta = " << fixed<<std::setprecision(2) << b << "  ";
+  }
+  if(VERB > 1) cerr << endl;
 
   for(double a=lower_a; a<=upper_a; a=a+0.05){
+    if(VERB > 1) cerr << "alpha=" << fixed<<std::setprecision(2) << a;
     for(double b=lower_b; b<=upper_b; b+=0.05){
-      if(VERB > 2) cerr << "Testing performances with parameters: alpha = " << a
-          << ", beta = "<< b << endl;
       gridPoint current = gridPoint(a,b);
       current.calculateObjectiveFn(lambda, this);
-      if(VERB > 2) cerr << "Objective function value is: "
-          << current.objectiveFnValue << endl;
-      if(current>bestSoFar)
-        if(VERB > 2) cerr << "Best choice of parameters, so far!\n\n";
+      if(VERB > 1) {
+        if(isinf(current.objectiveFnValue)) cerr << "  _infinity_ ";
+        else {
+          char formetted[50];
+          sprintf(formetted,"%2.6f",current.objectiveFnValue);
+          cerr << "  " << formetted << " ";
+        }
+      }
+      if(current<bestSoFar) {
         bestSoFar = current;
+      }
     }
+    if(VERB > 1) cerr << endl;
   }
+  // the search is concluded: set the parameters
+  alpha = bestSoFar.alpha;
+  beta = bestSoFar.beta;
 }
 
 /**
@@ -110,9 +126,9 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
   // parameters alpha and beta
 
   if(gridSearch) {
-    if(VERB > 2) cerr << "Estimating parameters for the model by grid search\n";
+    if(VERB > 1) cerr << "Estimating parameters for the model by grid search\n";
     gridSearchAlphaBeta();
-    if(VERB > 2) {
+    if(VERB > 1) {
       cerr << "The following parameters have been chosen;\n";
       cerr << "alpha = " << alpha << endl;
       cerr << "beta = " << beta << endl;
@@ -134,7 +150,7 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
 
   fidoOutput output = buildOutput(proteinGraph);
   // uncomment the following line to print protein level probabilities to file
-  //writeOutputToFile(output, "/tmp/fido/fidoOut.txt");
+  //writeOutputToFile(output, "/tmp/fido/6_final_fido_output.txt");
   return output;
 }
 
@@ -156,11 +172,22 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
     // for each protein with a certain probability
     for(int k2=0; k2<protein_ids.size(); k2++) {
       string protein_id = protein_ids[k2];
-      os << "    <protein p:protein_id=\"" << protein_id << "\">" << endl;
-      os << "      <pep>" << output.peps[k] << "</pep>" << endl;
-      os << "      <q_value>" << output.qvalues[k] << "</q_value>" << endl;
-      writeXML_writeAssociatedPeptides(protein_id, os, proteinsToPeptides);
-      os << "    </protein>" << endl;
+      // check wether is a decoy...
+      double probOfDecoy = isDecoyProbability(protein_id, this);
+      // if it's not a decoy, output it. If it is, only output if the option
+      // isOutXmlDecoys() is activated
+      if (probOfDecoy<0.5 || (probOfDecoy>0.5 && Scores::isOutXmlDecoys())) {
+        os << "    <protein p:protein_id=\"" << protein_id << "\"";
+        if (Scores::isOutXmlDecoys()) {
+          if(probOfDecoy>0.5) os << " p:decoy=\"true\"";
+          else  os << " p:decoy=\"false\"";
+        }
+        os << ">" << endl;
+        os << "      <pep>" << output.peps[k] << "</pep>" << endl;
+        os << "      <q_value>" << output.qvalues[k] << "</q_value>" << endl;
+        writeXML_writeAssociatedPeptides(protein_id, os, proteinsToPeptides);
+        os << "    </protein>" << endl;
+      }
     }
   }
   os << "  </proteins>" << endl << endl;
@@ -172,9 +199,23 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
  *
  * @param proteinGraph proteins and associated probabilities to be outputted
  */
-void ProteinProbEstimator::writeOutput(fidoOutput output) {
+void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
   int size = output.size();
   for (int k=0; k<size; k++) {
-    cerr << output.peps[k] << " " << output.protein_ids[k] << endl;
+    if (Scores::isOutXmlDecoys())
+      cerr << output.peps[k] << " " << output.protein_ids[k] << endl;
+    else {
+      // filter decoys
+      Array<string> filtered;
+      Array<string>::Iterator protIt = output.protein_ids[k].begin();
+      // only keep proteins associated with a majority of non-decoy psms
+      for(; protIt< output.protein_ids[k].end(); protIt++){
+        if(isDecoyProbability(*protIt, this)<0.5)
+          filtered.add(*protIt);
+      }
+      if(filtered.size()>0){
+        cerr << output.peps[k] << " " << filtered << endl;
+      }
+    }
   }
 }

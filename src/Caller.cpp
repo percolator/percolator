@@ -124,7 +124,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("Z",
       "decoy-xml-output",
-      "Include decoys PSMs in the xml-output. Only available if -X is used.",
+      "Include decoys (PSMs, peptides and/or proteins) in the xml-output. Only available if -X is used.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("P",
@@ -260,9 +260,14 @@ bool Caller::parseOptions(int argc, char **argv) {
        beta = cmd.getDouble("b", 0.0, 0.80);
      }
      protEstimator = new ProteinProbEstimator(alpha,beta);
-     reportUniquePeptides = false;
   }
   if (cmd.optionSet("U")) {
+    if (cmd.optionSet("A")){
+      cerr
+      << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
+      << "are needed to calculate protein level ones.";
+      exit(0);
+    }
     reportUniquePeptides = false;
   }
   if (cmd.optionSet("e")) readStdIn = true;

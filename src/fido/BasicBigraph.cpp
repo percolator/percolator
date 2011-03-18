@@ -32,7 +32,7 @@ void BasicBigraph::read(Scores* fullset){
 
 	bool generateGraphFile = true;
 	ofstream of;
-	if(generateGraphFile) of.open("/tmp/psm_graph_file");
+	if(generateGraphFile) of.open("/tmp/fido/1_psm_graph_file");
 
 	vector<ScoreHolder>::iterator psm = fullset->begin();
 	for (; psm!= fullset->end(); ++psm) {
