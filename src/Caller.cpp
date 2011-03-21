@@ -1066,13 +1066,15 @@ int Caller::run() {
   }
   // calculate protein level probabilities
   if(calculateProteinLevelProb){
+    clock_t start=clock();
     bool gridSearch = protEstimator->initialize(&fullset);
     if (VERB > 1)
       cerr << "\nCalculating protein level probabilities with fido\n";
     fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+    clock_t finish=clock();
     if(VERB > 1) {
-      cerr << "Protein level probabilities have been successfully "
-          << "now be calculated!\n";
+      cerr << "Protein level probabilities have been successfully calculated "
+          << "(" << (finish-start)/1000000 << " s)!" << endl;
       protEstimator->writeOutput(output);
     }
     if (xmlOutputFN.size() > 0){

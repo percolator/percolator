@@ -48,24 +48,32 @@ using namespace std;
  */
 fidoOutput buildOutput(GroupPowerBigraph* proteinGraph){
   // array containing the PEPs
-  Array<double> sorted = proteinGraph->probabilityR;
-  assert(sorted.size()!=0);
+  Array<double> peps = proteinGraph->probabilityR;
+  assert(peps.size()!=0);
 
   // arrays that (will) contain protein ids and corresponding indexes
-  Array< Array<string> > protein_ids =  Array< Array<string> >(sorted.size());
-  Array<int> indices = sorted.sort();
+  Array< Array<string> > protein_ids =  Array< Array<string> >(peps.size());
+  Array<int> indices = peps.sort();
   // array that (will) contain q-values
-  Array<double> qvalues = Array<double>(sorted.size());
+  Array<double> qvalues = Array<double>(peps.size());
   double sumPepSoFar = 0;
 
   // filling the protein_ids and qvalues arrays
-  for (int k=0; k<sorted.size(); k++) {
+  for (int k=0; k<peps.size(); k++) {
     protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
     // q-value: average pep of the protains scoring better than the current one
-    sumPepSoFar += sorted[k];
+    sumPepSoFar += peps[k];
     qvalues[k] = sumPepSoFar/(k+1);
   }
-  return fidoOutput(sorted, protein_ids, qvalues);
+
+  // appending proteins with peps=0
+  if(proteinGraph->severedProteins.size()!=0){
+    peps.add(0);
+    protein_ids.add(proteinGraph->severedProteins);
+    qvalues.add(sumPepSoFar/peps.size());
+  }
+
+  return fidoOutput(peps, protein_ids, qvalues);
 }
 
 /**
@@ -104,38 +112,6 @@ void writeXML_writeAssociatedPeptides(string& protein_id,
     assert((*peptIt)->pPSM->proteinIds.find(protein_id)
         != (*peptIt)->pPSM->proteinIds.end());
   }
-  /*
-  // the following code was trying to achieve the same as the above exclusively
-  // with information coming from fido (without making use of external
-  // information coming from Percolator
-  bool found = false;
-  int peptidesIndex = -1;
-  int proteinIndex = 0;
-  // look for protein_id in the subgraphs
-  while(peptidesIndex == -1 && proteinIndex<proteinGraph->subgraphs.size()){
-    StringTable proteins;
-    proteins = StringTable::AddElements(
-        proteinGraph->subgraphs[proteinIndex].proteinsToPSMs.names);
-    peptidesIndex = proteins.lookup(protein_id);
-    if(peptidesIndex == -1) proteinIndex++;
-  }
-  // if it was found
-  if(peptidesIndex!=-1){
-    Set peptides = proteinGraph->subgraphs[proteinIndex].
-        proteinsToPSMs.associations[peptidesIndex];
-    // for each PSM associated with the protein, print the peptides
-    for (int k=0; k<peptides.size(); k++) {
-      string pept = proteinGraph->subgraphs[proteinIndex].
-          PSMsToProteins.names[peptides[k]];
-      os << "      <peptide_seq seq=\"" << pept << "\"/>"<<endl;
-    }
-  } else {
-    // it seems to me that every protein should have associated peptides
-    // as they were given in input to calculateProteinProb. At present this
-    // is not so. Consider throwing an error here.
-  }
-  return;
-  */
 }
 
 /**
@@ -249,34 +225,6 @@ void populateTPandFNLists(gridPoint* point, const fidoOutput& output,
 
     }
   }
-
-  /*
-  // the following code did the same thing as the above, but going through
-  // every protein in the proteinsToPeptides hash table instead. This is in
-  // principle correct, except that only about one fith of the protein inputed
-  // are actually present in fido's output!
-  map<string, vector<ScoreHolder*> >::iterator protIt =
-      toBeTested->proteinsToPeptides.begin();
-  // for each protein in the proteinsToPeptides hash table
-  for(; protIt != toBeTested->proteinsToPeptides.end(); protIt ++){
-    string protein_id = protIt->first;
-    bool tp = false;
-    bool fp = false;
-    vector<ScoreHolder*>::iterator peptIt = protIt->second.begin();
-    // for each peptide associated with a certain protein
-    for(; peptIt < protIt->second.end(); peptIt++){
-      // check whether the peptide is target of decoy
-      if((*peptIt)->label != 1) fp = true;
-      else tp = true;
-    }
-    // if any of the associated peptides were targets, add the protein to the
-    // list of true positives. If any of the associated peptides were decoys,
-    // add the protein to the list of false positives.
-    // (note: it might end up in both!)
-    if(tp) point->truePositives.add(protein_id);
-    if(fp) point->falsePositives.add(protein_id);
-  }
-   */
 }
 
 // forward declarations needed by gridPoint::calculateObjectiveFn

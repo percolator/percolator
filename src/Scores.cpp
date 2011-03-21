@@ -391,7 +391,7 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
 }
 
 void Scores::normalizeScores(double fdr) {
-  // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit 
+  // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys/2u),decoys=0u;
   vector<ScoreHolder>::iterator it = scores.begin();
   double q1 = it->score;
@@ -407,10 +407,9 @@ void Scores::normalizeScores(double fdr) {
       }
     }
   }
+  assert(it != scores.end());
   assert(q1>median);
   double diff = q1-median;
-  if (diff<=0)
-    diff=1.0;
 
   for (it = scores.begin(); it != scores.end(); ++it) {
     it->score -= q1;

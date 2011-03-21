@@ -74,38 +74,35 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   gridPoint bestSoFar;
   bestSoFar.objectiveFnValue = numeric_limits<double>::max();
   double lower_a=0.01, upper_a=0.76;
-  double lower_b=0.0, upper_b=0.80;
+  double lower_b=0.01, upper_b=0.81;
   // if a parameter had previously been set (from command line) exclude it from
   // the grid search
   if(alpha != -1) lower_a = upper_a = alpha;
   if(beta != -1) lower_b = upper_b = beta;
 
-  if(VERB > 1) cerr << endl << "            ";
-  for(double b=lower_b; b<=upper_b; b+=0.05){
-    if(VERB > 1) cerr << "beta = " << fixed<<std::setprecision(2) << b << "  ";
+  if(VERB > 1) cerr << endl << "             ";
+  for(double b=log(lower_b); b<=log(upper_b); b+=0.5){
+    if(VERB > 1) cerr << "beta = " << fixed<<std::setprecision(3) << exp(b) << "  ";
   }
   if(VERB > 1) cerr << endl;
-
-  for(double a=lower_a; a<=upper_a; a=a+0.05){
-    if(VERB > 1) cerr << "alpha=" << fixed<<std::setprecision(2) << a;
-    for(double b=lower_b; b<=upper_b; b+=0.05){
-      gridPoint current = gridPoint(a,b);
+  for(double a=log(lower_a); a<=log(upper_a); a+=0.5){
+    if(VERB > 1) cerr << "alpha=" << fixed<<std::setprecision(3) << exp(a);
+    for(double b=log(lower_b); b<=log(upper_b); b+=0.5){
+      gridPoint current = gridPoint(exp(a),exp(b));
       current.calculateObjectiveFn(lambda, this);
       if(VERB > 1) {
-        if(isinf(current.objectiveFnValue)) cerr << "  _infinity_ ";
-        else {
-          char formetted[50];
-          sprintf(formetted,"%2.6f",current.objectiveFnValue);
-          cerr << "  " << formetted << " ";
-        }
+        if(isinf(current.objectiveFnValue)) cerr << "  _infinity_  ";
+        else cerr << "  " << current.objectiveFnValue << " ";
       }
-      if(current<bestSoFar) {
-        bestSoFar = current;
-      }
+      if(current<bestSoFar) bestSoFar = current;
     }
     if(VERB > 1) cerr << endl;
   }
   // the search is concluded: set the parameters
+  if(bestSoFar.objectiveFnValue == numeric_limits<double>::max()){
+    cerr << "ERROR: it was not possible to estimate values for parameters alpha and beta.\n"
+        << "Please invoke Percolator with -a and -b option to set them manually.";
+  }
   alpha = bestSoFar.alpha;
   beta = bestSoFar.beta;
 }
@@ -200,6 +197,7 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
  * @param proteinGraph proteins and associated probabilities to be outputted
  */
 void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
+  cerr << endl;
   int size = output.size();
   for (int k=0; k<size; k++) {
     if (Scores::isOutXmlDecoys())
