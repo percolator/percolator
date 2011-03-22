@@ -36,10 +36,10 @@ StdvNormalizer::~StdvNormalizer() {
 }
 
 void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<
-    double>& out, int num_feat) {
+    double>& out) {
   double sum = 0;
   unsigned int i = 0;
-  for (; i < num_feat; i++) {
+  for (; i < numFeatures; i++) {
     out[i] = in[i] / div[i];
     sum += sub[i] * in[i] / div[i];
   }
@@ -47,10 +47,10 @@ void StdvNormalizer::unnormalizeweight(const vector<double>& in, vector<
 }
 
 void StdvNormalizer::normalizeweight(const vector<double>& in, vector<
-    double>& out, int num_feat) {
+    double>& out) {
   double sum = 0;
   size_t i = 0;
-  for (; i < num_feat; i++) {
+  for (; i < numFeatures; i++) {
     out[i] = in[i] * div[i];
     sum += sub[i] * in[i];
   }

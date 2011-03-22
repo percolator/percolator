@@ -24,8 +24,8 @@ class StdvNormalizer : public Normalizer { // virtual Normalizer
     virtual void setSet(vector<double*> & featuresV,
                         vector<double*> & rtFeaturesV, size_t numFeatures,
                         size_t numRetentionFeatures);
-    void unnormalizeweight(const vector<double>& in, vector<double>& out, int num_feat);
-    void normalizeweight(const vector<double>& in, vector<double>& out, int num_feat);
+    void unnormalizeweight(const vector<double>& in, vector<double>& out);
+    void normalizeweight(const vector<double>& in, vector<double>& out);
 };
 
 #endif /*STDVNORMALIZER_H_*/
