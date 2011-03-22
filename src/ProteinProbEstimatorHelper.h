@@ -27,8 +27,10 @@
 
 #include <math.h>
 #include <string>
-#include "Vector.h"
 #include <set>
+#include <limits>
+#include "Vector.h"
+#include "Globals.h"
 using namespace std;
 #include <ext/hash_set>
 
@@ -175,11 +177,11 @@ double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator){
  * choice of alpha and beta) and the value of the objective function calculated
  * in that point
  */
-struct gridPoint {
-    gridPoint(){
+struct GridPoint {
+    GridPoint(){
       objectiveFnValue = -1;
     }
-    gridPoint(double alpha_par, double beta_par){
+    GridPoint(double alpha_par, double beta_par){
       objectiveFnValue = -1;
       alpha = alpha_par;
       beta = beta_par;
@@ -187,7 +189,7 @@ struct gridPoint {
       falsePositives = Array<string>();
     }
     void calculateObjectiveFn(double lambda, ProteinProbEstimator* toBeTested);
-    bool operator <(const gridPoint& rhs) const {
+    bool operator <(const GridPoint& rhs) const {
       assert(objectiveFnValue!=-1);
       assert(rhs.objectiveFnValue!=-1);
       if(objectiveFnValue < rhs.objectiveFnValue)
@@ -202,11 +204,157 @@ struct gridPoint {
 };
 
 /**
- * populates the list of true positive and false negative proteins by looking
- * at the label (decoy or target) of the peptides associated with the protein
- * in the proteinsToPeptides hash table
+ * 2D grid to be searched
  */
-void populateTPandFNLists(gridPoint* point, const fidoOutput& output,
+struct Grid{
+    /**
+     * constructs a 2D grid given ranges for its two variables
+     */
+    Grid(const double& l_a, const double& u_a, const double& l_b, const
+        double& u_b): lower_a(l_a), upper_a(u_a), lower_b(l_b), upper_b(u_b),
+        current(NULL) {
+      // before the search starts, the best point seen so far is artificially
+      // set to max infinity (since we are minimizing!)
+      bestSoFar = new GridPoint();
+      bestSoFar->objectiveFnValue = numeric_limits<double>::max();
+    }
+    /**
+     * constructor that builds a Grid in the default range
+     */
+    Grid(): current(NULL) {
+      lower_a = 0.01, upper_a = 0.76;
+      lower_b = 0.01, upper_b = 0.81;
+      bestSoFar = new GridPoint();
+      bestSoFar->objectiveFnValue = numeric_limits<double>::max();
+      current = NULL;
+    }
+    ~Grid(){
+      delete bestSoFar;
+      if(current) delete current;
+    }
+    void limitSearch(const int& dimension, const double& value);
+    void toCurrentPoint();
+    void calculateObjectiveFn(double lambda, ProteinProbEstimator* toBeTested);
+    void updateBest();
+    bool wasSuccessful();
+    void setToBest(ProteinProbEstimator* toBeTested);
+    double getLower_a() const;
+    double getUpper_a() const;
+    double getLower_b() const;
+    double getUpper_b() const;
+    double updateCurrent_a();
+    double updateCurrent_b();
+    double current_a;
+    double current_b;
+    static int alpha;
+    static int beta;
+  private:
+    double lower_a;
+    double upper_a;
+    double lower_b;
+    double upper_b;
+    GridPoint* bestSoFar;
+    GridPoint* current;
+};
+
+int Grid::alpha=0;
+int Grid::beta=1;
+
+/**
+ * @param dimension variable to be set: values are Grid::alpha and Grid::beta
+ * @param value value the dimension should be set to
+ */
+void Grid::limitSearch(const int& dimension, const double& value){
+  if(dimension==alpha) lower_a = upper_a = value;
+  else if(dimension==beta) lower_b = upper_b = value;
+}
+
+double Grid::getLower_a() const {
+  // starting loop: print b label(s)
+  if(VERB > 1) {
+    cerr << endl << "             ";
+    for(double b=log(lower_b); b<=log(upper_b); b+=0.5)
+      cerr << "beta = " << fixed<<std::setprecision(3) << exp(b) << "  ";
+  }
+  // return value
+  return log(lower_a);
+}
+double Grid::getUpper_a() const {
+  return log(upper_a);
+}
+
+double Grid::getLower_b() const {
+  // starting loop: print a label
+  if(VERB > 1) {
+    cerr << endl;
+    cerr << "alpha=" << fixed<<std::setprecision(3) << exp(current_a);
+  }
+  // return value
+  return log(lower_b);
+}
+double Grid::getUpper_b() const {
+  return log(upper_b);
+}
+
+double Grid::updateCurrent_a(){
+  current_a+=0.5;
+}
+double Grid::updateCurrent_b(){
+  current_b+=0.5;
+}
+
+/**
+ * updates to position of the current point to the coordinates given by
+ * current_a and current_b
+ */
+void Grid::toCurrentPoint(){
+  current = new GridPoint(exp(current_a),exp(current_b));
+}
+
+/**
+ * calculates the objective function value in the current point.
+ */
+void Grid::calculateObjectiveFn(double lambda, ProteinProbEstimator*
+    toBeTested){
+  current->calculateObjectiveFn(lambda,toBeTested);
+  if(VERB > 1) {
+    if(isinf(current->objectiveFnValue)) cerr << "  _infinity_   ";
+    else cerr << "  " << current->objectiveFnValue << " ";
+  }
+}
+
+/**
+ * if the current point is lower than the bestSoFar, update. (minimizing!)
+ */
+void Grid::updateBest(){
+  if(*current < *bestSoFar) bestSoFar = current;
+}
+
+/**
+ * @return true if at least one meaningful pair of parameters has been found
+ */
+bool Grid::wasSuccessful(){
+  if(bestSoFar->objectiveFnValue == numeric_limits<double>::max())
+    return false;
+  else return true;
+}
+
+/**
+ * @param toBeTested protein estimator whose parameters were being grid
+ * searched: they are set to the best found.
+ */
+void Grid::setToBest(ProteinProbEstimator* toBeTested){
+  toBeTested->alpha = bestSoFar->alpha;
+  toBeTested->beta = bestSoFar->beta;
+}
+
+/**
+ * Helper function to GridPoint::calculateObjectiveFn: it populates the list of
+ * true positive and false negative proteins by looking at the label (decoy or
+ * target) of the peptides associated with the protein in the proteinsToPeptides
+ * hash table
+ */
+void populateTPandFNLists(GridPoint* point, const fidoOutput& output,
     ProteinProbEstimator* toBeTested){
   assert(point->truePositives.size()==0);
   assert(point->falsePositives.size()==0);
@@ -247,7 +395,7 @@ double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps);
  * for a given choice of alpha and beta, calculates (1 − λ) MSE_FDR − λ ROC50
  * and stores the result in objectiveFnValue
  */
-void gridPoint::calculateObjectiveFn(double lambda,
+void GridPoint::calculateObjectiveFn(double lambda,
     ProteinProbEstimator* toBeTested){
   assert(alpha!=-1);
   assert(beta!=-1);
@@ -394,7 +542,7 @@ double area(double x1, double y1, double x2, double y2, double threshold) {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
   double area = squareAntiderivativeAt(m, b, min(threshold, x2) )
-      - squareAntiderivativeAt(m, b, x1);
+          - squareAntiderivativeAt(m, b, x1);
   return area;
 }
 

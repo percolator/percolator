@@ -454,7 +454,6 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   }
   weightStream << endl;
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
-  // TODO: they all come out 0...
   pNorm->unnormalizeweight(w, ww);
   weightStream << ww[0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {

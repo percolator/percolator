@@ -396,7 +396,17 @@ void Scores::normalizeScores(double fdr) {
   vector<ScoreHolder>::iterator it = scores.begin();
   double q1 = it->score;
   double median = q1 + 1.0;
-  double breakQ = 0.0;
+
+// uncomment the following to inspect the scores vector before normalizing it
+//  for (; it != scores.end(); ++it) {
+//    if (it->label == -1)
+//      cerr << " (-1)q:" << it->pPSM->q << "sc:" << it->score;
+//    else
+//      cerr << " q:" << it->pPSM->q << "sc:" << it->score;
+//  }
+//  cerr << endl;
+//  it = scores.begin();
+
   for (; it != scores.end(); ++it) {
     if (it->pPSM->q < fdr)
       q1 = it->score;
@@ -407,10 +417,10 @@ void Scores::normalizeScores(double fdr) {
       }
     }
   }
+
   assert(it != scores.end());
   assert(q1>median);
   double diff = q1-median;
-
   for (it = scores.begin(); it != scores.end(); ++it) {
     it->score -= q1;
     it->score /= diff;

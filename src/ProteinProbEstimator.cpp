@@ -25,10 +25,8 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <limits>
 #include "ProteinProbEstimator.h"
 #include "ProteinProbEstimatorHelper.h"
-#include "Globals.h"
 
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
@@ -69,42 +67,30 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   // a λ approaching 1.0 will shift the emphasis to the most accurate model,
   // and a λ approaching 0.0 will result in a more calibrated model
   double lambda = 0.15;
-  // before the search starts, the best point seen so far is artificially set
-  // to the ideal absolute maximum (we are minimizing!)
-  gridPoint bestSoFar;
-  bestSoFar.objectiveFnValue = numeric_limits<double>::max();
-  double lower_a=0.01, upper_a=0.76;
-  double lower_b=0.01, upper_b=0.81;
-  // if a parameter had previously been set (from command line) exclude it from
-  // the grid search
-  if(alpha != -1) lower_a = upper_a = alpha;
-  if(beta != -1) lower_b = upper_b = beta;
+  Grid grid = Grid();
 
-  if(VERB > 1) cerr << endl << "             ";
-  for(double b=log(lower_b); b<=log(upper_b); b+=0.5){
-    if(VERB > 1) cerr << "beta = " << fixed<<std::setprecision(3) << exp(b) << "  ";
-  }
-  if(VERB > 1) cerr << endl;
-  for(double a=log(lower_a); a<=log(upper_a); a+=0.5){
-    if(VERB > 1) cerr << "alpha=" << fixed<<std::setprecision(3) << exp(a);
-    for(double b=log(lower_b); b<=log(upper_b); b+=0.5){
-      gridPoint current = gridPoint(exp(a),exp(b));
-      current.calculateObjectiveFn(lambda, this);
-      if(VERB > 1) {
-        if(isinf(current.objectiveFnValue)) cerr << "  _infinity_  ";
-        else cerr << "  " << current.objectiveFnValue << " ";
-      }
-      if(current<bestSoFar) bestSoFar = current;
+  // if a parameter had previously been set (from command line) limit the
+  // search in the corresponding direction
+  if(alpha != -1) grid.limitSearch(Grid::alpha,alpha);
+  if(beta != -1) grid.limitSearch(Grid::beta,beta);
+
+  grid.current_a = grid.getLower_a();
+  for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
+    grid.current_b = grid.getLower_b();
+    for(; grid.current_b<=grid.getUpper_b(); grid.updateCurrent_b()){
+      grid.toCurrentPoint();
+      grid.calculateObjectiveFn(lambda, this);
+      grid.updateBest();
     }
-    if(VERB > 1) cerr << endl;
   }
+
   // the search is concluded: set the parameters
-  if(bestSoFar.objectiveFnValue == numeric_limits<double>::max()){
+  if(grid.wasSuccessful()){
+    grid.setToBest(this);
+  } else {
     cerr << "ERROR: it was not possible to estimate values for parameters alpha and beta.\n"
         << "Please invoke Percolator with -a and -b option to set them manually.";
   }
-  alpha = bestSoFar.alpha;
-  beta = bestSoFar.beta;
 }
 
 /**
@@ -126,7 +112,7 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
     if(VERB > 1) cerr << "Estimating parameters for the model by grid search\n";
     gridSearchAlphaBeta();
     if(VERB > 1) {
-      cerr << "The following parameters have been chosen;\n";
+      cerr << "\nThe following parameters have been chosen;\n";
       cerr << "alpha = " << alpha << endl;
       cerr << "beta = " << beta << endl;
       cerr << "Protein level probabilities will now be calculated\n";
