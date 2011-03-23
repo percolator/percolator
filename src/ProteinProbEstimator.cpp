@@ -23,11 +23,9 @@
  *******************************************************************************/
 
 #include <iostream>
-#include <iomanip>
 #include <fstream>
 #include "ProteinProbEstimator.h"
 #include "ProteinProbEstimatorHelper.h"
-
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
   peptideScores = 0;
@@ -68,12 +66,11 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   // and a λ approaching 0.0 will result in a more calibrated model
   double lambda = 0.15;
   Grid grid = Grid();
-
   // if a parameter had previously been set (from command line) limit the
   // search in the corresponding direction
   if(alpha != -1) grid.limitSearch(Grid::alpha,alpha);
   if(beta != -1) grid.limitSearch(Grid::beta,beta);
-
+  // start the search
   grid.current_a = grid.getLower_a();
   for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
     grid.current_b = grid.getLower_b();
@@ -83,7 +80,6 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
       grid.updateBest();
     }
   }
-
   // the search is concluded: set the parameters
   if(grid.wasSuccessful()){
     grid.setToBest(this);
@@ -183,11 +179,11 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
  * @param proteinGraph proteins and associated probabilities to be outputted
  */
 void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
-  cerr << endl;
+  cout << endl;
   int size = output.size();
   for (int k=0; k<size; k++) {
     if (Scores::isOutXmlDecoys())
-      cerr << output.peps[k] << " " << output.protein_ids[k] << endl;
+      cout << output.peps[k] << " " << output.protein_ids[k] << endl;
     else {
       // filter decoys
       Array<string> filtered;
@@ -198,7 +194,7 @@ void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
           filtered.add(*protIt);
       }
       if(filtered.size()>0){
-        cerr << output.peps[k] << " " << filtered << endl;
+        cout << output.peps[k] << " " << filtered << endl;
       }
     }
   }

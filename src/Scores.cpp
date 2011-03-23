@@ -451,9 +451,24 @@ int Scores::calcScores(vector<double>& w, double fdr) {
   return calcQ(fdr);
 }
 
+/**
+ * calculates the q-value for each psm in scores: the q-value is the minimal
+ * FDR of any set that includes the particular psm
+ */
 int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys+totalNumberOfTargets==size());
   vector<ScoreHolder>::iterator it;
+
+  // uncomment the following to inspect the scores vector
+  //cerr << endl;
+  //it = scores.begin();
+  //for (; it != scores.end(); ++it) {
+  //  if(it->label==-1)
+  //    cerr << "(" << it->label<<")" <<"sc:" << it->score << "id:" << it->pPSM->id << " ";
+  //    cerr << "(" << it->label<<")" <<"id:" << it->pPSM->id << " ";
+  //}
+  //cerr << endl;
+
   int targets = 0, decoys = 0;
   double efp = 0.0, q;
   for (it = scores.begin(); it != scores.end(); it++) {

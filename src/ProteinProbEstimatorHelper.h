@@ -29,6 +29,7 @@
 #include <string>
 #include <set>
 #include <limits>
+#include <iomanip>
 #include "Vector.h"
 #include "Globals.h"
 using namespace std;
@@ -244,6 +245,7 @@ struct Grid{
     double getUpper_b() const;
     double updateCurrent_a();
     double updateCurrent_b();
+    void testGridRanges();
     double current_a;
     double current_b;
     static int alpha;
@@ -272,9 +274,9 @@ void Grid::limitSearch(const int& dimension, const double& value){
 double Grid::getLower_a() const {
   // starting loop: print b label(s)
   if(VERB > 1) {
-    cerr << endl << "             ";
+    cerr << endl << "\t\t";
     for(double b=log(lower_b); b<=log(upper_b); b+=0.5)
-      cerr << "beta = " << fixed<<std::setprecision(3) << exp(b) << "  ";
+      cerr << "beta=" << fixed << setprecision(3) << exp(b) << "\t";
   }
   // return value
   return log(lower_a);
@@ -286,8 +288,7 @@ double Grid::getUpper_a() const {
 double Grid::getLower_b() const {
   // starting loop: print a label
   if(VERB > 1) {
-    cerr << endl;
-    cerr << "alpha=" << fixed<<std::setprecision(3) << exp(current_a);
+    cerr << "\nalpha=" << fixed << std::setprecision(3) << exp(current_a);
   }
   // return value
   return log(lower_b);
@@ -301,6 +302,10 @@ double Grid::updateCurrent_a(){
 }
 double Grid::updateCurrent_b(){
   current_b+=0.5;
+}
+
+void Grid::testGridRanges(){
+
 }
 
 /**
@@ -318,8 +323,9 @@ void Grid::calculateObjectiveFn(double lambda, ProteinProbEstimator*
     toBeTested){
   current->calculateObjectiveFn(lambda,toBeTested);
   if(VERB > 1) {
-    if(isinf(current->objectiveFnValue)) cerr << "  _infinity_   ";
-    else cerr << "  " << current->objectiveFnValue << " ";
+    if(isinf(current->objectiveFnValue)) cerr << "\t+infinity";
+    else cerr << "\t" << fixed << std::setprecision(5)
+    << current->objectiveFnValue;
   }
 }
 
