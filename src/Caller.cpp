@@ -24,7 +24,7 @@ const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
         pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
-        forwardFN(""), decoyFN(""), decoyWC(""), resultFN(""), tabFN(""),
+        forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
         xmlInputFN(""), xmlOutputFN(""), weightFN(""),
         tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
@@ -170,8 +170,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       and test set, -1 -- negative set.\
       When the --doc option the first and second feature (third and fourth column) should contain \
       the retention time and difference between observed and calculated mass",
-      "",
-      TRUE_IF_SET);
+      "filename");
   cmd.defineOption("w",
       "weights",
       "Output final weights to the given file",
@@ -294,12 +293,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("j")) {
     tabInput = true;
-    if (cmd.arguments.size() != 1) {
-      cerr
-      << "Provide exactly one arguments when using tab delimited input"
-      << endl;
-      exit(-1);
-    }
+    forwardTabInputFN = cmd.options["j"];
   }
   if (cmd.optionSet("w")) {
     weightFN = cmd.options["w"];
@@ -364,24 +358,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
     Scores::setOutXmlDecoys(true);
   }
-  if (! cmd.optionSet("E") && ! cmd.optionSet("e")) {
-    if (cmd.arguments.size() > 2) {
-      cerr << "Too many arguments given" << endl;
-      cmd.help();
-    }
-    if (cmd.arguments.size() == 0) {
-      cerr << "Error: No arguments were given.\n" << endl;
-      cmd.help();
+  // if parts of the arguments are left unparsed,
+  if (cmd.arguments.size() > 0) {
+    if(cmd.optionSet("j")){
+      cerr << "Error: use either pin of tab-delimited input format.";
       exit(-1);
     }
+    xmlInputFN = cmd.arguments[0];
   }
-  else if ( cmd.arguments.size() != 0 )
-  {  cerr << "Error: -E expects just one argument.\n" << endl;
-  cmd.help();
-  }
-
-  if (cmd.arguments.size() > 0) forwardFN = cmd.arguments[0];
-  if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
   return true;
 }
 
@@ -595,8 +579,8 @@ void Caller::readFiles() {
     }
   } else if (tabInput) {
     pCheck = new SanityCheck();
-    normal.readTab(forwardFN, 1);
-    shuffled.readTab(forwardFN, -1);
+    normal.readTab(forwardTabInputFN, 1);
+    shuffled.readTab(forwardTabInputFN, -1);
   } else if (decoyWC.empty()) {
     assert(false); //discard code path
     /*

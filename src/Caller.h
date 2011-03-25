@@ -117,8 +117,7 @@ class Caller {
     string xmlInputFN;
     char* xmlInputDir;
     bool readStdIn;
-    string forwardFN;
-    string decoyFN;
+    string forwardTabInputFN;
     string decoyWC;
     string resultFN;
     string tabFN;
