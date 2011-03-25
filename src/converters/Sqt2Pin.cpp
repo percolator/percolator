@@ -122,7 +122,9 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
 
   if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
   } else  {
-    // create temporary directory
+    // create temporary directory to store the pointer to the tokyo-cabinet
+    // database (avoid race conditions between multiple instances of sqt2pin
+    // running simultaneously)
     string str = string(WRITABLE_DIR) + "sqt2pin_XXXXXX";
     tokyoCabinetDir = new char[str.size() + 1];
     std::copy(str.begin(), str.end(), tokyoCabinetDir);

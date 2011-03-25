@@ -115,6 +115,7 @@ class Caller {
     AlgIn *svmInput;
     ProteinProbEstimator* protEstimator;
     string xmlInputFN;
+    char* xmlInputDir;
     bool readStdIn;
     string forwardFN;
     string decoyFN;

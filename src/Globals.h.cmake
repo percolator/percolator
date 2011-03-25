@@ -34,10 +34,12 @@ limitations under the License.
 #define SCHEMA_VERSION_MINOR @SCHEMA_VERSION_MINOR@
 #endif
 
+#ifndef WRITABLE_DIR
+#define WRITABLE_DIR "@WRITABLE_DIR@"
+#endif
 #ifndef SCHEMA
 #define SCHEMA "@SCHEMA@"
 #endif
-
 #ifndef ELUDE_MODELS_PATH
 #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
 #endif

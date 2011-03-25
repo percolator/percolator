@@ -137,20 +137,6 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   }
   os << "      </psm_ids>" << endl;
   os << "    </peptide>" << endl;
-
-  /*
-  istringstream iss(s);
-  bool finished = false;
-  while(! finished) {
-    string psm;
-    iss >> psm;
-    if(iss)
-      os << "        <psm_id>" << psm << "</psm_id>" << endl;
-    else finished = true;
-  }
-  os << "      </psm_ids>" << endl;
-  os << "    </peptide>" << endl;
-  */
   return os;
 }
 
