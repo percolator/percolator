@@ -8,13 +8,11 @@ macro(my_set variable default options)
 endmacro(my_set)
 
 
-set(base "/tmp")
+set(base "/usr")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 
-my_set(GOOGLE_TEST "TRUE" "Select if Google test should be included, options are: TRUE or FALSE") 
-my_set(EXCLUDE_CONVERTERS "FALSE" "Select if the coverters should be excluded from build, options are: TRUE or FALSE") 
-my_set(EXCLUDE_ELUDE "TRUE" "Select if the Elude should be excluded from build, options are: TRUE or FALSE") 
+my_set(GOOGLE_TEST "FALSE" "Select if Google test should be included, options are: TRUE or FALSE") 
 my_set(GOOGLE_TEST_PATH "${base}/gtest-1.5.0" "Give path to google test code")
 my_set(CMAKE_BUILD_TYPE "Debug" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "." "Default path to packages")
@@ -29,8 +27,6 @@ MESSAGE( STATUS "Building PERCOLATOR:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
-MESSAGE( STATUS "EXCLUDE_CONVERTERS = ${EXCLUDE_CONVERTERS}" )
-MESSAGE( STATUS "EXCLUDE_ELUDE = ${EXCLUDE_ELUDE}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
 MESSAGE( STATUS
@@ -56,10 +52,8 @@ set(SCHEMA_VERSION_MINOR "2")
 if(STATIC AND MINGW) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
   set(SCHEMA "${WRITABLE_DIR}xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
-  set(ELUDE_MODELS_PATH "${WRITABLE_DIR}elude_model\\\\")
 else() # linux
 set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
-  set(ELUDE_MODELS_PATH "${WRITABLE_DIR}elude_model/")
   set(SCHEMA "${WRITABLE_DIR}xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
@@ -74,7 +68,7 @@ foreach(i ${configurefiles})
 endforeach()
 
 ###############################################################################
-# COMPILING, INSTALLING AND TESTING
+# COMPILING AND TESTING
 ###############################################################################
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
@@ -96,13 +90,17 @@ add_subdirectory(src)
 # Enabling unit level tests (Ctest)
 enable_testing()
 # Compiling unit level tests
-add_subdirectory(data/tests)
+IF (GOOGLE_TEST)
+  add_subdirectory(data/tests)
+ENDIF()
 
-#INSTALL
+###############################################################################
+# INSTALLING
+###############################################################################
+
 if(NOT MINGW)
   install(FILES src/xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
   install(FILES src/xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
-  install(DIRECTORY data/elude_model DESTINATION ${SCHEMA}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
 endif()
 
 ###############################################################################
@@ -112,7 +110,7 @@ endif()
 # PACKAGING OPTIONS: GENERAL
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator, Elude and Qvality software package for protein classification using unique algorithms.")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
 set(CPACK_SOURCE_GENERATOR "TGZ") # This file format is used to package source code ("make package_source")
 set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_PROJECT_NAME};ALL;/")
@@ -136,26 +134,20 @@ file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
 set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURRENT_BINARY_DIR}/;/.bzr/;/.settings/;${DOT_FILES_BEGIN};${TILD_FILES}")
 
 # PACKAGING OPTIONS: DEB
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
-if(NOT EXCLUDE_CONVERTERS)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, gengetopt, libtokyocabinet-dev, zlib1g-dev, libsqlite3-dev")
-endif()
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, gengetopt, libsqlite3-dev")
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "K�ll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
-if(NOT EXCLUDE_CONVERTERS)
-  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, gengetopt, tokyocabinet-devel, zlib-devel, sqlite3-devel")
-endif()
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, sqlite3-devel")
 
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/script.nsi" DEPENDS percolator elude qvality ) 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/script.nsi" DEPENDS percolator elude qvality sqt2pin ) 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
 
 # Use CPack

@@ -1,15 +1,12 @@
 #TODO: 
-# _GET RID OF EXCLUDE_ELUDE FLAG IN ALL CMAKELISTS
 # _WIN32? STATIC? MINGW ...    VARIABLES?
-# _PACKING MIGHT HAVE TO BE DONE AS A LAST THING
-# _CONSIDER PUTTING COMMON ROUTINES IN A SEPARATE FILE (EG: .H.CMAKE FILE RECURSIVE SUBSTITUTION)
 
 cmake_minimum_required(VERSION 2.8)
 project(ELUDE)
 
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
-# PRINT VARIBALES TO STDOUT
+# PRINT VARIBALES
 MESSAGE( STATUS )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -33,7 +30,6 @@ set(CPACK_PACKAGE_VERSION_MINOR "17")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
-#TODO: REMOVE THIS FROM MAIN CMAKELISTS
 if(STATIC AND MINGW) # windows
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\elude_model\\\\")
 else() # linux
@@ -43,29 +39,17 @@ endif()
 
 # TODO: SHOULD WE DO THIS FROM PERCOLATOR_SOURCE_DIR OR FROM PERCOLATOR_SOURCE_DIR/SRC???
 #       NOT SURE IF THIS IS RECURSIVE...
-# TODO: ADD VERSION VARIABLES
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
-
 file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_SOURCE_DIR}/../*.cmake )
 foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
 
-
-#TODO: REMOVE THIS FROM MAIN CMAKELISTS
-#INSTALL
-if(NOT MINGW)
-  install(DIRECTORY ${PERCOLATOR_SOURCE_DIR}/data/elude_model DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
-endif()
-
-
-
-
-
 ###############################################################################
 # COMPILING
 ###############################################################################
+# include and link code from percolator
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
@@ -78,14 +62,11 @@ add_executable(elude ${ELUDE_SOURCES})
 
 target_link_libraries(elude eludelibrary)
 
-install(TARGETS elude EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-
 #TODO: HERE THERE SHOULD BE STUFF ABOUT LIBGCC
 
 IF(STATIC)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
 ENDIF()
-
 
 ###############################################################################
 # TESTING
@@ -96,7 +77,15 @@ ENDIF()
 # Compiling unit level tests
 #add_subdirectory(${PERCOLATOR_SOURCE_DIR}/data/tests)
 
+###############################################################################
+# TESTING
+###############################################################################
 
+#TODO: make sure this works with cpack
+if(NOT MINGW)
+  install(TARGETS elude EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  install(DIRECTORY ../../data/elude_model DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+endif()
 
 ###############################################################################
 # PACKAGING
@@ -142,12 +131,6 @@ set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 #set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
-
-#TODO: CREATE TOOLCHAIN FOR ELUDE?
-# NSIS package options
-# Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/script.nsi" DEPENDS percolator elude qvality ) 
-add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
 
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set

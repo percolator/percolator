@@ -20,7 +20,7 @@ ENDIF(APPLE)
 
 
 ###############################################################################
-# FIND EXTERNAL LIBRARIES (REQUIRED BY PERCOLATOR, CONVERTERS AND ELUDE)
+# FIND EXTERNAL LIBRARIES REQUIRED BY PERCOLATOR
 ###############################################################################
 
 # INCLUDE HEADER FILES IN SRC DIRECTORY
@@ -46,11 +46,10 @@ else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
 
+# RUN CODESYNTHESIS TO GENERATE xsdfiles
 set(xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 set(percolator_in xml/percolator_in.xsd)
 set(percolator_out xml/percolator_out.xsd)
-
-# RUN CODESYNTHESIS TO GENERATE xsdfiles
 add_custom_command(
   OUTPUT ${xsdfiles}   
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
@@ -69,13 +68,8 @@ add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS
 add_subdirectory(fido)
 
 
-#INCLUDE PERCOLATOR HEADERS FOR CONVERTERS
+#INCLUDE PERCOLATOR HEADERS
 include_directories(.) 
-
-# COMPILE CONVERTERS
-if(NOT EXCLUDE_CONVERTERS)
-  add_subdirectory(converters)
-endif()
 
 #INCLUDE FIDO HEADERS FOR PERCLIBRARY 
 include_directories(. fido)
@@ -116,10 +110,7 @@ install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to u
 
 
 ###############################################################################
-# COMPILE QUALITY AND ELUDE
+# COMPILE QUALITY
 ###############################################################################
 
 add_subdirectory(qvality)
-if(NOT EXCLUDE_ELUDE)
-  add_subdirectory(elude)
-endif()

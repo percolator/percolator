@@ -13,14 +13,14 @@ This are the steps I followed to output Percolator release 1.16
 
 1. PACKAGES (64bit)
   (main) CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "1"), set(CPACK_PACKAGE_VERSION_MINOR "16"), set(TARGET_ARCH "amd64")
-1.1. Packages (percolator + converters)
-  run ./install/ubuntu_percolator_converters.sh
+1.1. Packages (percolator)
+  run ./install/ubuntu_percolator.sh
   $ cd /tmp/percolatorBuild
-  $ cmake -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=TRUE -DEXCLUDE_CONVERTERS=FALSE -DEXCLUDE_ELUDE=FALSE -DCMAKE_INSTALL_PREFIX=/usr/bin -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ -DGOOGLE_TEST_PATH=/tmp/gtest-1.5.0 -DSCHEMA_LOCATION=/usr/share/percolator/xml-1-1 /scratch/temp/percolator
+  $ cmake -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=TRUE -DCMAKE_INSTALL_PREFIX=/usr/bin -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ -DGOOGLE_TEST_PATH=/tmp/gtest-1.5.0 -DSCHEMA_LOCATION=/usr/share/percolator/xml-1-1 /scratch/temp/percolator
   $ make package
   
-1.2. Packages (percolator only)
-  repeat 1.1 with with -DEXCLUDE_CONVERTERS=TRUE
+1.2. Packages (converters)
+  build converters
 
 2. PACKAGES (32bit)
   compile xsd in its 32 bits version.
