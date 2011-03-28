@@ -340,8 +340,8 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Terminate();
 
-  string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
+  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
   string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
       string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
       " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +

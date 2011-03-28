@@ -1,9 +1,12 @@
 #TODO: 
-# _CONSIDER PUTTING COMMON ROUTINES IN A SEPARATE FILE (EG: .H.CMAKE FILE RECURSIVE SUBSTITUTION), USEFUL MACRO, RUN CODESYNTHESIS...
+# _CONSIDER PUTTING COMMON ROUTINES IN A SEPARATE FILE (EG: VERSIONING, .H.CMAKE FILE RECURSIVE SUBSTITUTION, USEFUL MACRO, RUN CODESYNTHESIS)...
 # GTEST: make customized dir into tests for converters (and elude)
 # UPDATE README FILE AND RELEASE INSTRUCTIONS
 # customize converters/install/get_packages_ubuntu_64bit
 
+###############################################################################
+# NAME AND VERSION
+###############################################################################
 cmake_minimum_required(VERSION 2.8)
 project(PERCOLATOR-CONVERTERS)
 
@@ -31,19 +34,21 @@ set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "17")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
-set(SCHEMA_VERSION_MAJOR "1")
-set(SCHEMA_VERSION_MINOR "2")
+set(PIN_VERSION_MAJOR "1")
+set(PIN_VERSION_MINOR "1")
+set(POUT_VERSION_MAJOR "1")
+set(POUT_VERSION_MINOR "2")
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(STATIC AND MINGW) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
-  set(SCHEMA "${WRITABLE_DIR}xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
+  set(SCHEMA "${WRITABLE_DIR}schemata\\\\")
 else() # linux
 set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
-  set(SCHEMA "${WRITABLE_DIR}xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/")
+  set(SCHEMA "${WRITABLE_DIR}schemata/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
+set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 
 #TODO: is there a way to do this recursively insteadof doing it twice?
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES

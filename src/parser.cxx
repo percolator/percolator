@@ -20,7 +20,6 @@
 #include <xsd/cxx/tree/error-handler.hxx>
 #include "parser.hxx"
 #include "Globals.h"
-#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace xercesc;
@@ -33,7 +32,8 @@ public:
   parser_impl ();
 
   xml::dom::auto_ptr<DOMDocument>
-  start (istream& is, const string& id, bool validate);
+  start (istream& is, const string& id, bool val, string schemaDefinition,
+      string schema_major, string schema_minor);
 
   xml::dom::auto_ptr<DOMDocument>
   next ();
@@ -112,7 +112,8 @@ parser_impl ()
 }
 
 xml::dom::auto_ptr<DOMDocument> parser_impl::
-start (istream& is, const string& id, bool val)
+start (istream& is, const string& id, bool val, string schemaDefinition,
+    string schema_major, string schema_minor)
 {
   // Reset our state.
   //
@@ -130,11 +131,8 @@ start (istream& is, const string& id, bool val)
   parser_->setFeature (XMLUni::fgSAX2CoreValidation, val);
   parser_->setFeature (XMLUni::fgXercesSchema, val);
   // if local copy of the schema is available, use it for validation
-  string schemaDefinition = SCHEMA + string("percolator_in.xsd");
   ifstream inp(schemaDefinition.c_str());
   if(inp){
-    string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
-    string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
     string schemaNamespace = "http://per-colator.com/percolator_in/";
     schemaNamespace.append(schema_major);
     schemaNamespace.append(schema_minor);
@@ -305,9 +303,10 @@ parser ()
 }
 
 xml::dom::auto_ptr<DOMDocument> parser::
-start (istream& is, const string& id, bool val)
+start (istream& is, const string& id, bool val, string schemaDefinition,
+    string schema_major, string schema_minor)
 {
-  return impl_->start (is, id, val);
+  return impl_->start(is, id, val, schemaDefinition, schema_major, schema_minor);
 }
 
 xml::dom::auto_ptr<DOMDocument> parser::

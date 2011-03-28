@@ -8,7 +8,7 @@ macro(my_set variable default options)
 endmacro(my_set)
 
 
-set(base "/usr")
+set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 
@@ -46,19 +46,22 @@ project(PERCOLATOR)
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "17")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(SCHEMA_VERSION_MAJOR "1")
-set(SCHEMA_VERSION_MINOR "2")
+set(PIN_VERSION_MAJOR "1")
+set(PIN_VERSION_MINOR "1")
+set(POUT_VERSION_MAJOR "1")
+set(POUT_VERSION_MINOR "2")
 
 if(STATIC AND MINGW) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
-  set(SCHEMA "${WRITABLE_DIR}xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}\\\\")
+  set(SCHEMA "${WRITABLE_DIR}schemata\\\\")
+
 else() # linux
 set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
-  set(SCHEMA "${WRITABLE_DIR}xml-${SCHEMA_VERSION_MAJOR}-${SCHEMA_VERSION_MINOR}/")
+  set(SCHEMA "${WRITABLE_DIR}schemata/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(percolator-in-namespace http://per-colator.com/percolator_in/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
-set(percolator-out-namespace http://per-colator.com/percolator_out/${SCHEMA_VERSION_MAJOR}${SCHEMA_VERSION_MINOR})
+set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
+set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )

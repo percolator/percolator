@@ -34,7 +34,9 @@ public:
   // is, the root element with all the attributes but without any content.
   //
   xsd::cxx::xml::dom::auto_ptr<xercesc::DOMDocument>
-  start (std::istream& is, const std::string& id, bool validate);
+  start (std::istream& is, const std::string& id, bool validate,
+      std::string schemaDefinition, std::string schema_major,
+      std::string schema_minor);
 
   // The next function returns next first-level element with all its
   // attributes and content or 0 if no more available.

@@ -17,6 +17,7 @@
 
 #include "Caller.h"
 #include <iomanip>
+#include <boost/lexical_cast.hpp>
 using namespace std;
 using namespace xercesc;
 
@@ -385,8 +386,12 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
     ifs.open (fname.c_str());
     parser p;
+    string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+    string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+    string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr< xercesc::DOMDocument>
-    doc (p.start (ifs, fname.c_str(), true));
+    doc (p.start (ifs, fname.c_str(), true, schemaDefinition,
+        schema_major, schema_minor));
     doc = p.next (); // skip enzyme element
     doc = p.next (); // skip process_info element
     doc = p.next (); // skip featureDescriptions element
@@ -506,9 +511,13 @@ void Caller::readFiles() {
         cerr << "Can not open file " << xmlInputFN << endl;
         exit(EXIT_FAILURE);
       }
+      string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+      string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+      string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
       parser p;
       xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
-          xmlInStream, xmlInputFN.c_str(), true));
+          xmlInStream, xmlInputFN.c_str(), true, schemaDefinition,
+          schema_major, schema_minor));
 
       doc = p.next();
 
@@ -818,8 +827,8 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
 void Caller::writeXML_initialize(){
   ofstream os;
   const string space = PERCOLATOR_OUT_NAMESPACE;
-  string schema_major = boost::lexical_cast<string>(SCHEMA_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(SCHEMA_VERSION_MINOR);
+  string schema_major = boost::lexical_cast<string>(POUT_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(POUT_VERSION_MINOR);
   const string schema = space +
       " http://per-colator.com/xml/xml-" + schema_major +
       "-" + schema_minor + "/percolator_out.xsd";

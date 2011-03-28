@@ -5,6 +5,7 @@
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 
 #include "mzidentml2pin.h"
+#include <boost/lexical_cast.hpp>
 
 
 typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> peptideMapType;
@@ -90,8 +91,13 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
   ifstream ifs;
   ifs.exceptions (ifstream::badbit | ifstream::failbit);
   ifs.open (filename);
+
   parser p;
-  xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, filename, true));
+  string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+  xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, filename, true, schemaDefinition,
+      schema_major, schema_minor));
   for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
     // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
   }
@@ -246,7 +252,11 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
     ifs.open (fileName);
     parser p;
-    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fileName, true));
+    string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+    string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+    string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fileName, true, schemaDefinition,
+        schema_major, schema_minor));
     while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) {
       doc = p.next ();
       // Let's skip some sub trees that we are not interested, e.g. AuditCollection
