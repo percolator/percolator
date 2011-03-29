@@ -8,7 +8,7 @@ macro(my_set variable default options)
 endmacro(my_set)
 
 
-set(base "/tmp")
+set(base "/scratch")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D
 # set(CMAKE_INSTALL_PREFIX "${base}") 
@@ -43,8 +43,8 @@ cmake_minimum_required(VERSION 2.8)
 project(PERCOLATOR)
 
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "17")
+set(CPACK_PACKAGE_VERSION_MAJOR "2")
+set(CPACK_PACKAGE_VERSION_MINOR "0beta")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "1")

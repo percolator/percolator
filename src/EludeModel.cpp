@@ -249,7 +249,7 @@ RTModel::RTModel() :
     if (selected_features & 1 << i) {
       noFeaturesToCalc += no_features_per_group[i];
     }
-  cerr << endl;
+  //cerr << endl; this pollutes Percolator's cerr!
 }
 
 RTModel::~RTModel() {

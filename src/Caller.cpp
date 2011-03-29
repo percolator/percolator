@@ -697,7 +697,7 @@ void Caller::train(vector<vector<double> >& w) {
   // iterate
   for (unsigned int i = 0; i < niter; i++) {
     if (VERB > 1) {
-      cerr << "Iteration " << i + 1 << " : ";
+      cerr << "Iteration " << i + 1 << " :\t";
     }
     int tar = xv_step(w, true);
     if (VERB > 1) {
@@ -815,7 +815,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
         cerr << "selecting cneg by cross validation" << endl;
       }
     }
-    cerr << "A" << endl;
     return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, test_fdr);
   } else {
     vector<Scores> myset(1, fullset);
@@ -1006,8 +1005,8 @@ int Caller::run() {
     remove(xmlInputFN.c_str());
   }
 
-  if(VERB > 1){
-    std::cerr << "baFeatureNames::getNumFeatures="
+  if(VERB > 2){
+    std::cerr << "FeatureNames::getNumFeatures(): "
         << FeatureNames::getNumFeatures() << endl;
   }
   vector<vector<double> > w(xval_fold,

@@ -50,10 +50,17 @@ void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fde
     featureNames.push_back("docdMdRT");
   }
   setNumFeatures(featureNames.size());
+  if (VERB>2) {
+    std::cerr << "in FeatureNames::setFromXml\n";
+  }
   if (VERB>1) {
-    std::cerr << "in FeatureNames::setFromXml" << std::endl;
-    std::copy( featureNames.begin(), featureNames.end(), std::ostream_iterator<std::string>(std::cerr, " "));
-    std::cerr << "end of FeatureNames::setFromXml" << std::endl;
+    std::cerr << "Features:\n";
+    std::copy( featureNames.begin(), featureNames.end(),
+        std::ostream_iterator<std::string>(std::cerr, " "));
+    std::cerr << "\n";
+  }
+  if (VERB>2) {
+    std::cerr << "end of FeatureNames::setFromXml\n";
   }
   return;
 }
