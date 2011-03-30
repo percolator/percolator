@@ -386,7 +386,7 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
     ifs.open (fname.c_str());
     parser p;
-    string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+    string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr< xercesc::DOMDocument>
@@ -511,7 +511,7 @@ void Caller::readFiles() {
         cerr << "Can not open file " << xmlInputFN << endl;
         exit(EXIT_FAILURE);
       }
-      string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+      string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
       string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
       string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
       parser p;

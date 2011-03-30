@@ -42,10 +42,10 @@ set(POUT_VERSION_MINOR "2")
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(STATIC AND MINGW) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
-  set(SCHEMA "${WRITABLE_DIR}schemata\\\\")
+  set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
 else() # linux
-set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
-  set(SCHEMA "${WRITABLE_DIR}schemata/")
+  set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
+  set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
@@ -180,8 +180,7 @@ install(TARGETS mzidentml2pin DESTINATION ./bin)
 install(TARGETS sqt2pin DESTINATION ./bin)
 
 if(NOT MINGW)
-  install(FILES ../xml/percolator_in.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
-  install(FILES ../xml/percolator_out.xsd DESTINATION ${SCHEMA} PERMISSIONS OWNER_READ WORLD_READ)
+  install(FILES ../xml/percolator_in.xsd DESTINATION ${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ WORLD_READ)
 endif()
 
 ###############################################################################
