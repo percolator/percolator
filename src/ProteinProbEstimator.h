@@ -28,18 +28,25 @@
 #include "GroupPowerBigraph.h"
 
 struct fidoOutput {
-    Array<double> peps;
-    Array< Array<string> > protein_ids;
-    Array<double> qvalues;
     fidoOutput(Array<double> peps_par, Array<Array<string> > protein_ids_par,
-        Array<double> qvalues_par) {
+        Array<double> qvalues_par, unsigned int proteinsAtThr1_par,
+        unsigned int proteinsAtThr2_par) {
       peps = peps_par;
       protein_ids = protein_ids_par;
       qvalues = qvalues_par;
+      proteinsAtThr1 = proteinsAtThr1_par;
+      proteinsAtThr2 = proteinsAtThr2_par;
     }
     int size() const{
       return peps.size();
     }
+    Array<double> peps;
+    Array< Array<string> > protein_ids;
+    Array<double> qvalues;
+    const static double threshold1 = 0.015;
+    const static double threshold2 = 0.1;
+    unsigned int proteinsAtThr1;
+    unsigned int proteinsAtThr2;
 };
 
 class ProteinProbEstimator {
@@ -56,6 +63,7 @@ class ProteinProbEstimator {
     fidoOutput calculateProteinProb(bool gridSearch);
     void writeOutput(const fidoOutput& output);
     void writeOutputToXML(string xmlOutputFN, const fidoOutput& output);
+    static string printCopyright();
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
   private:
     void gridSearchAlphaBeta();

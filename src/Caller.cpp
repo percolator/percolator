@@ -78,12 +78,9 @@ string Caller::greeter() {
   ostringstream oss;
   oss << "Percolator version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss
-  << "Copyright (c) 2006-9 University of Washington. All rights reserved."
-  << endl;
-  oss << "Written by Lukas Käll (lukall@u.washington.edu) in the" << endl;
-  oss << "Department of Genome Sciences at the University of Washington."
-      << endl;
+  oss << "Copyright (c) 2006-9 University of Washington. All rights reserved.\n"
+      << "Written by Lukas Käll (lukall@u.washington.edu) in the\n"
+      << "Department of Genome Sciences at the University of Washington.\n";
   return oss.str();
 }
 
@@ -1066,11 +1063,19 @@ int Caller::run() {
   }
   // calculate protein level probabilities
   if(calculateProteinLevelProb){
+    if (VERB > 1){
+      cerr << "\nCalculating protein level probabilities with Fido\n";
+      cerr << ProteinProbEstimator::printCopyright();
+    }
     clock_t start=clock();
     bool gridSearch = protEstimator->initialize(&fullset);
-    if (VERB > 1)
-      cerr << "\nCalculating protein level probabilities with fido\n";
     fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+    if (VERB > 1){
+      cerr << output.proteinsAtThr1 << "\tproteins found at a q-value of "
+          << output.threshold1 <<"\n";
+      cerr << output.proteinsAtThr2 << "\tproteins found at a q-value of "
+          << output.threshold2 <<"\n";
+    }
     clock_t finish=clock();
     if(VERB > 1) {
       cerr << "Protein level probabilities have been successfully calculated "

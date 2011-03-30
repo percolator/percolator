@@ -50,33 +50,42 @@ using namespace std;
  * @return output results of fido encapsulated in a fidoOutput structure
  */
 fidoOutput buildOutput(GroupPowerBigraph* proteinGraph){
-  // array containing the PEPs
-  Array<double> peps = proteinGraph->probabilityR;
-  assert(peps.size()!=0);
+  // array containing the PPs (Posterior ProbabilkitieS)
+  Array<double> pps = proteinGraph->probabilityR;
+  assert(pps.size()!=0);
+  // array containing the PEPs (Posterior Error ProbabilkitieS)
+  Array<double> peps = Array<double>(pps.size());
 
   // arrays that (will) contain protein ids and corresponding indexes
-  Array< Array<string> > protein_ids =  Array< Array<string> >(peps.size());
-  Array<int> indices = peps.sort();
+  Array< Array<string> > protein_ids =  Array< Array<string> >(pps.size());
+  Array<int> indices = pps.sort();
   // array that (will) contain q-values
-  Array<double> qvalues = Array<double>(peps.size());
+  Array<double> qvalues = Array<double>(pps.size());
   double sumPepSoFar = 0;
+  unsigned int proteinsAtThr1, proteinsAtThr2 = 0;
 
   // filling the protein_ids and qvalues arrays
-  for (int k=0; k<peps.size(); k++) {
+  for (int k=0; k<pps.size(); k++) {
     protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
+    peps[k] = 1 - pps[k];
     // q-value: average pep of the protains scoring better than the current one
     sumPepSoFar += peps[k];
-    qvalues[k] = sumPepSoFar/(k+1);
+    double qValue = sumPepSoFar/(k+1);
+    qvalues[k] = qValue;
+    // update protein count under thresholds
+    if(qValue<fidoOutput::threshold2){ proteinsAtThr2++;
+      if(qValue<fidoOutput::threshold1) proteinsAtThr1++;
+    }
   }
 
-  // appending proteins with peps=0
+  // appending proteins with peps=0 (pps=1)
   if(proteinGraph->severedProteins.size()!=0){
-    peps.add(0);
+    peps.add(1);
     protein_ids.add(proteinGraph->severedProteins);
     qvalues.add(sumPepSoFar/peps.size());
   }
 
-  return fidoOutput(peps, protein_ids, qvalues);
+  return fidoOutput(peps, protein_ids, qvalues, proteinsAtThr1, proteinsAtThr2);
 }
 
 /**
@@ -501,7 +510,7 @@ void calculateFDRs(
   bool scheduledUpdate = false;
 
   for(k=0; k<output.peps.size(); k++){
-    prob = output.peps[k];
+    prob = 1 - output.peps[k];
     protsAtThreshold = output.protein_ids[k];
     numScored += protsAtThreshold.size();
     observedProteins.append(protsAtThreshold);
@@ -611,7 +620,7 @@ void calculateRoc(const fidoOutput output,
   double totalFDR = 0.0, estFDR = 0.0;
 
   for(k=0; k<output.peps.size(); k++) {
-    prob = output.peps[k];
+    prob = 1 - output.peps[k];
     protsAtThreshold = output.protein_ids[k];
     numScored += protsAtThreshold.size();
     observedProteins.append( protsAtThreshold );

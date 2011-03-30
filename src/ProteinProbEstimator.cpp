@@ -110,7 +110,7 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
     if(VERB > 1) {
       cerr << "\nThe following parameters have been chosen;\n";
       cerr << "alpha = " << alpha << endl;
-      cerr << "beta = " << beta << endl;
+      cerr << "beta  = " << beta << endl;
       cerr << "Protein level probabilities will now be calculated\n";
     }
   }
@@ -199,3 +199,15 @@ void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
     }
   }
 }
+
+string ProteinProbEstimator::printCopyright(){
+  ostringstream oss;
+  oss << "Copyright (c) 2008-9 University of Washington. All rights reserved.\n"
+      << "Written by Oliver R. Serang (orserang@u.washington.edu) in the\n"
+      << "Department of Genome Sciences at the University of Washington.\n";
+  return oss.str();
+}
+
+
+
+
