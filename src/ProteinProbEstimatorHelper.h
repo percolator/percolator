@@ -40,6 +40,8 @@ using namespace std;
 // HELPER FUNCTIONS FOR ProteinProbEstimator METHODS
 ///////////////////////////////////////////////////////////////////////////////
 
+double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator);
+
 /**
  * after calculating protein level probabilities, the output is stored in a
  * dedicated structure that can be printed out or evaluated during the grid
@@ -49,7 +51,7 @@ using namespace std;
  * calculated by fido
  * @return output results of fido encapsulated in a fidoOutput structure
  */
-fidoOutput buildOutput(GroupPowerBigraph* proteinGraph){
+fidoOutput buildOutput(GroupPowerBigraph* proteinGraph, ProteinProbEstimator* estimator){
   // array containing the PPs (Posterior ProbabilkitieS)
   Array<double> pps = proteinGraph->probabilityR;
   assert(pps.size()!=0);
@@ -73,8 +75,12 @@ fidoOutput buildOutput(GroupPowerBigraph* proteinGraph){
     double qValue = sumPepSoFar/(k+1);
     qvalues[k] = qValue;
     // update protein count under thresholds
-    if(qValue<fidoOutput::threshold2){ proteinsAtThr2++;
-      if(qValue<fidoOutput::threshold1) proteinsAtThr1++;
+    for(int p=0; p<protein_ids[k].size(); p++) {
+      if(isDecoyProbability(protein_ids[k][p], estimator)<0.5) {
+        if(qValue<fidoOutput::threshold2){ proteinsAtThr2++;
+          if(qValue<fidoOutput::threshold1) proteinsAtThr1++;
+        }
+      }
     }
   }
 
@@ -98,7 +104,7 @@ void writeOutputToFile(fidoOutput output, string fileName) {
   ofstream of(fileName.c_str());
   int size = output.peps.size();
   for (int k=0; k<size; k++) {
-    of << output.peps[k] << " " << output.protein_ids[k] << endl;
+    of << 1- output.peps[k] << " " << output.protein_ids[k] << endl;
   }
   of.close();
 }
@@ -232,11 +238,12 @@ struct Grid{
      * constructor that builds a Grid in the default range
      */
     Grid(): current(NULL) {
-      lower_a = 0.01, upper_a = 0.76;
-      lower_b = 0.01, upper_b = 0.81;
+      lower_a = 0.07, upper_a = 0.3;
+      lower_b = 0.007, upper_b = 0.1;
+      //lower_a = 1e-6, upper_a = 0.3;
+      //lower_b = 1e-5, upper_b = 0.3;
       bestSoFar = new GridPoint();
       bestSoFar->objectiveFnValue = numeric_limits<double>::max();
-      current = NULL;
     }
     ~Grid(){
       delete bestSoFar;
@@ -254,12 +261,14 @@ struct Grid{
     double getUpper_b() const;
     double updateCurrent_a();
     double updateCurrent_b();
-    void testGridRanges();
+    static void testGridRanges();
     double current_a;
     double current_b;
     static int alpha;
     static int beta;
   private:
+    const static double incrementAlpha=0.3;
+    const static double incrementBeta=0.3;
     double lower_a;
     double upper_a;
     double lower_b;
@@ -284,8 +293,8 @@ double Grid::getLower_a() const {
   // starting loop: print b label(s)
   if(VERB > 1) {
     cerr << endl << "\t\t";
-    for(double b=log(lower_b); b<=log(upper_b); b+=0.5)
-      cerr << "beta=" << fixed << setprecision(3) << exp(b) << "\t";
+    for(double b=log(lower_b); b<=log(upper_b); b+=incrementBeta)
+      cerr << "beta=" << scientific << setprecision(1) << exp(b) << "\t";
   }
   // return value
   return log(lower_a);
@@ -297,7 +306,7 @@ double Grid::getUpper_a() const {
 double Grid::getLower_b() const {
   // starting loop: print a label
   if(VERB > 1) {
-    cerr << "\nalpha=" << fixed << std::setprecision(3) << exp(current_a);
+    cerr << "\nalpha=" << scientific << std::setprecision(1) << exp(current_a);
   }
   // return value
   return log(lower_b);
@@ -307,14 +316,22 @@ double Grid::getUpper_b() const {
 }
 
 double Grid::updateCurrent_a(){
-  current_a+=0.5;
+  current_a+=incrementAlpha;
 }
 double Grid::updateCurrent_b(){
-  current_b+=0.5;
+  current_b+=incrementBeta;
 }
 
+/** prints the grid
+ */
 void Grid::testGridRanges(){
-
+  Grid grid = Grid();
+  grid.current_a = grid.getLower_a();
+    for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
+      grid.current_b = grid.getLower_b();
+      for(; grid.current_b<=grid.getUpper_b(); grid.updateCurrent_b()){
+      }
+    }
 }
 
 /**
@@ -418,34 +435,45 @@ void GridPoint::calculateObjectiveFn(double lambda,
   toBeTested->beta = beta;
   fidoOutput output = toBeTested->calculateProteinProb(false);
   populateTPandFNLists(this, output, toBeTested);
-  // uncomment to output the results of the probability calculation to file
-  writeOutputToFile(output, "/tmp/fido/2_fido_output.txt");
-  ofstream o("/tmp/fido/3_TPFP_lists.txt");
-  o << "falsePositives\n" << falsePositives << endl
-      << "truePositives\n" << truePositives << endl;
-  o.close();
+  //if(VERB > 4) {
+    // output the results of the probability calculation to file
+    writeOutputToFile(output, "/tmp/fido/2_fido_output.txt");
+    ofstream o("/tmp/fido/3_TPFP_lists.txt");
+    o << truePositives << falsePositives << endl;
+    o.close();
+  //}
 
   // calculate MSE_FDR
   Array<double> estimatedFdrs = Array<double>();
   Array<double> empiricalFdrs = Array<double>();
   calculateFDRs(output, truePositives, falsePositives,
       estimatedFdrs, empiricalFdrs);
-  // uncomment to output the results of the MSE_FDR to file
-  ofstream o1 ("/tmp/fido/4_FDR_lists.txt");
-  o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
-      << "empiricalFdrs\n" << empiricalFdrs << endl;
-  o1.close();
+  //if(VERB > 4) {
+    // output the results of the MSE_FDR to file
+    ofstream o1 ("/tmp/fido/4_FDR_lists.txt");
+    o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
+        << "empiricalFdrs\n" << empiricalFdrs << endl;
+    o1.close();
+  //}
   double threshold = 0.1;
   double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
+
+  if(isinf(mse_fdr)) {
+    // if MSE is infinity there is no need to continue: set the result to inf
+    objectiveFnValue = mse_fdr;
+    return;
+  }
 
   // calculate ROC50
   Array<int> fps = Array<int>();
   Array<int> tps = Array<int>();
   calculateRoc(output, truePositives, falsePositives, fps, tps);
-  // uncomment to output the results of the ROC50 calculation to file
-  ofstream o2("/tmp/fido/5_ROC50_lists.txt");
-  o2 << fps << endl << tps << endl;
-  o2.close();
+  //if(VERB > 4) {
+    // output the results of the ROC50 calculation to file
+    ofstream o2("/tmp/fido/5_ROC50_lists.txt");
+    o2 << fps << endl << tps << endl;
+    o2.close();
+  //}
   int N = 50;
   double roc50 = calculateROC50(N, fps, tps);
 
@@ -553,14 +581,13 @@ double antiderivativeAt(double m, double b, double xVal) {
   return m*xVal*xVal/2.0 + b*xVal;
 }
 
-double area(double x1, double y1, double x2, double y2, double threshold) {
+double areaSq(double x1, double y1, double x2, double y2, double threshold) {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
   double area = squareAntiderivativeAt(m, b, min(threshold, x2) )
           - squareAntiderivativeAt(m, b, x1);
   return area;
 }
-
 
 /**
  * calculates the FDR Mean Square Error
@@ -581,7 +608,7 @@ double calculateMSE_FDR(double threshold,
         tot = 1.0 / 0.0;
       break;
     }
-    tot += area(estimatedFdr[k],diff[k],estimatedFdr[k+1],diff[k+1],threshold);
+    tot += areaSq(estimatedFdr[k],diff[k],estimatedFdr[k+1],diff[k+1],threshold);
   }
   double xRange = min(threshold, estimatedFdr[k]) - estimatedFdr[0];
 
@@ -645,13 +672,14 @@ void calculateRoc(const fidoOutput output,
   tps.add( tpCount );
   fps.add( falsePosSet.size() );
   tps.add( truePosSet.size() );
+}
 
-  // uncomment the following lines to output the results to cout and file
-  //cout.precision(10);
-  //cout << fps << " " << tps << endl;
-  //ofstream fout("/tmp/fido/rlistROCOut.txt");
-  //fout << fps << endl << tps << endl;
-  //fout.close();
+double area(double x1, double y1, double x2, double y2, int N)
+{
+  double m = (y2-y1)/(x2-x1);
+  double b = y1-m*x1;
+
+  return antiderivativeAt(m, b, min(double(N), x2) ) - antiderivativeAt(m, b, x1);
 }
 
 /**

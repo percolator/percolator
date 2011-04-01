@@ -64,6 +64,7 @@ class ProteinProbEstimator {
     void writeOutput(const fidoOutput& output);
     void writeOutputToXML(string xmlOutputFN, const fidoOutput& output);
     static string printCopyright();
+    static void testGridRanges();
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
   private:
     void gridSearchAlphaBeta();

@@ -127,7 +127,7 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
   proteinGraph->read(peptideScores);
   proteinGraph->getProteinProbs();
 
-  fidoOutput output = buildOutput(proteinGraph);
+  fidoOutput output = buildOutput(proteinGraph, this);
   // uncomment the following line to print protein level probabilities to file
   //writeOutputToFile(output, "/tmp/fido/6_final_fido_output.txt");
   return output;
@@ -206,6 +206,10 @@ string ProteinProbEstimator::printCopyright(){
       << "Written by Oliver R. Serang (orserang@u.washington.edu) in the\n"
       << "Department of Genome Sciences at the University of Washington.\n";
   return oss.str();
+}
+
+void ProteinProbEstimator::testGridRanges(){
+  Grid::testGridRanges();
 }
 
 
