@@ -64,19 +64,21 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
 void ProteinProbEstimator::gridSearchAlphaBeta(){
   // a λ approaching 1.0 will shift the emphasis to the most accurate model,
   // and a λ approaching 0.0 will result in a more calibrated model
-  double lambda = 0.15;
   Grid grid = Grid();
   // if a parameter had previously been set (from command line) limit the
   // search in the corresponding direction
   if(alpha != -1) grid.limitSearch(Grid::alpha,alpha);
   if(beta != -1) grid.limitSearch(Grid::beta,beta);
+  // evaluate the objective function in the default location to compare
+  // performances
+  grid.compareAgainstDefault(this);
   // start the search
   grid.current_a = grid.getLower_a();
   for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
     grid.current_b = grid.getLower_b();
     for(; grid.current_b<=grid.getUpper_b(); grid.updateCurrent_b()){
       grid.toCurrentPoint();
-      grid.calculateObjectiveFn(lambda, this);
+      grid.calculateObjectiveFn(this);
       grid.updateBest();
     }
   }

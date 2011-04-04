@@ -240,8 +240,6 @@ struct Grid{
     Grid(): current(NULL) {
       lower_a = 0.07, upper_a = 0.3;
       lower_b = 0.007, upper_b = 0.1;
-      //lower_a = 1e-6, upper_a = 0.3;
-      //lower_b = 1e-5, upper_b = 0.3;
       bestSoFar = new GridPoint();
       bestSoFar->objectiveFnValue = numeric_limits<double>::max();
     }
@@ -251,7 +249,7 @@ struct Grid{
     }
     void limitSearch(const int& dimension, const double& value);
     void toCurrentPoint();
-    void calculateObjectiveFn(double lambda, ProteinProbEstimator* toBeTested);
+    void calculateObjectiveFn(ProteinProbEstimator* toBeTested);
     void updateBest();
     bool wasSuccessful();
     void setToBest(ProteinProbEstimator* toBeTested);
@@ -262,11 +260,13 @@ struct Grid{
     double updateCurrent_a();
     double updateCurrent_b();
     static void testGridRanges();
+    void compareAgainstDefault(ProteinProbEstimator* toBeTested);
     double current_a;
     double current_b;
     static int alpha;
     static int beta;
   private:
+    const static double lambda = 0.15;
     const static double incrementAlpha=0.3;
     const static double incrementBeta=0.3;
     double lower_a;
@@ -345,14 +345,29 @@ void Grid::toCurrentPoint(){
 /**
  * calculates the objective function value in the current point.
  */
-void Grid::calculateObjectiveFn(double lambda, ProteinProbEstimator*
-    toBeTested){
+void Grid::calculateObjectiveFn(ProteinProbEstimator* toBeTested){
   current->calculateObjectiveFn(lambda,toBeTested);
   if(VERB > 1) {
     if(isinf(current->objectiveFnValue)) cerr << "\t+infinity";
     else cerr << "\t" << fixed << std::setprecision(5)
     << current->objectiveFnValue;
   }
+}
+
+/**
+ * evaluate the objective function in the default location to compare
+ * performances
+ */
+void Grid::compareAgainstDefault(ProteinProbEstimator* toBeTested){
+  current_a = log(0.1);
+  current_b = log(0.01);
+  toCurrentPoint();
+  current->calculateObjectiveFn(lambda, toBeTested);
+  if(VERB > 1) {
+    cerr << "objective fn estimation for default values (a=0.1, b=0.01): "
+    << current->objectiveFnValue;
+  }
+  updateBest();
 }
 
 /**
