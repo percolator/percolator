@@ -12,33 +12,33 @@ success = True
 print "PERCOLATOR PERFORMANCE"
 
 # the output line containing "New pi_0 estimate" is extracted and if its value is 
-# outside of 622+/-5% an error is reported
-print "(*): checking new pi_0 estimate in Percolator's output..."
+# outside 622+/-5% an error is reported
+print "(*): checking estimated number of psms at 0.01 q-value threshold..."
 processFile = os.popen("grep \"New pi_0 estimate\" " + 
   "/tmp/PERCOLATOR_no_options.txt")
 output = processFile.read()
 extracted = float(output[39:42])
 if extracted < 590.9 or extracted > 653.1: 
-  print "...TEST FAILED: new pi_0 estimate=" + str(extracted) + " is outside of desired range (590.9, 653.1)"
+  print "...TEST FAILED: estimated number of psms=" + str(extracted) + " is outside desired range (590.9, 653.1)"
   print "check /tmp/PERCOLATOR_no_options.txt for details" 
   success = False
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
-# outside of (0.86, 0.90) an error is reported
-print "(*): checking selected new pi_0 estimate in Percolator's output..."
+# outside (0.86, 0.90) an error is reported
+print "(*): checking selected new pi_0 estimate..."
 processFile = os.popen("grep \"Selecting pi_0\" " +
   "/tmp/PERCOLATOR_no_options.txt")
 output = processFile.read()
 extracted = float(output[15:20])
 if extracted < 0.86 or extracted > 0.90:
-  print "...TEST FAILED: selected pi_0=" + str(extracted) + " is outside of desired range (0.86, 0.90)"
+  print "...TEST FAILED: selected pi_0=" + str(extracted) + " is outside desired range (0.86, 0.90)"
   print "check /tmp/PERCOLATOR_no_options.txt for details" 
   success = False
 
 # the first line of the stdout (the one after the line beginning with "PSMId")
 # is extracted and if the value in the 4th column (posterior_error_prob) is 
 # greater than 10e-10 an error is reported
-print "(*): checking posterior_error_prob in Percolator's output..."
+print "(*): checking posterior_error_prob..."
 processFile = open("/tmp/PERCOLATOR_no_options.txt")
 output = ""
 line = processFile.readline()

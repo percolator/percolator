@@ -7,16 +7,26 @@ xsi:schemaLocation="http://per-colator.com/percolator_out/12 http://per-colator.
 p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator version 2.0beta">
 
   <process_info>
-    <command_line>/scratch/bin/percolator /scratch/temp/percolator/data/percolator/rt/pin.xml -X /scratch/temp/percolator/data/percolator/rt/pout_D4off.xml</command_line>
+    <command_line>/scratch/bin/percolator /scratch/temp/percolator/data/percolator/rt/pin.xml -X /scratch/temp/percolator/data/percolator/rt/pout_D4off.xml -U</command_line>
     <other_command_line>/scratch/temp/percolatorBuild/src/converters/sqt2pin -o /scratch/temp/bin/data/percolator_test/retention/pin.xml -2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.ms2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.sqt /scratch/behemot_public/ms2/elude_apex_data/xml/decoy/Celegans_Jupter_C12_60min_grad.sqt</other_command_line>
     <pi_0>1</pi_0>
   </process_info>
 
   <psms>
+    <psm p:psm_id="Celegans_Jupter_C12_60min_grad_924_2_1">
+      <svm_score>5.225911</svm_score>
+      <q_value>0.000000</q_value>
+      <pep>2.559007e-05</pep>
+      <peptide_seq n="K" c="F" seq="LDATVHGEVSSK"/>
+      <protein_id>C07A12.4a</protein_id>
+      <protein_id>C07A12.4b</protein_id>
+      <protein_id>C07A12.4c</protein_id>
+      <p_value>5.882353e-02</p_value>
+    </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_921_2_1">
       <svm_score>3.743510</svm_score>
       <q_value>0.000000</q_value>
-      <pep>1.192772e-05</pep>
+      <pep>5.449486e-04</pep>
       <peptide_seq n="K" c="F" seq="LDATVHGEVSSK"/>
       <protein_id>C07A12.4a</protein_id>
       <protein_id>C07A12.4b</protein_id>
@@ -25,42 +35,42 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_918_2_1">
       <svm_score>0.000000</svm_score>
-      <q_value>0.000000</q_value>
-      <pep>2.128841e-01</pep>
+      <q_value>0.162572</q_value>
+      <pep>3.125662e-01</pep>
       <peptide_seq n="K" c="E" seq="KSEVTVNAQLQQSK"/>
       <protein_id>C42D8.2a</protein_id>
       <protein_id>C42D8.2b</protein_id>
       <protein_id>K09F5.2</protein_id>
-      <p_value>5.882353e-02</p_value>
+      <p_value>1.176471e-01</p_value>
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_925_2_1">
       <svm_score>0.000000</svm_score>
-      <q_value>0.000000</q_value>
-      <pep>2.128841e-01</pep>
+      <q_value>0.162572</q_value>
+      <pep>3.125662e-01</pep>
       <peptide_seq n="K" c="G" seq="HAIDVSAAAK"/>
       <protein_id>R11D1.8</protein_id>
-      <p_value>5.882353e-02</p_value>
+      <p_value>1.176471e-01</p_value>
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_919_3_1">
       <svm_score>-0.199986</svm_score>
-      <q_value>0.216763</q_value>
-      <pep>2.128841e-01</pep>
+      <q_value>0.185797</q_value>
+      <pep>3.792893e-01</pep>
       <peptide_seq n="K" c="-" seq="KDDDEEEKEEEEGHDEL"/>
       <protein_id>Y38A10A.5</protein_id>
       <p_value>1.764706e-01</p_value>
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_907_3_1">
       <svm_score>-0.220025</svm_score>
-      <q_value>0.216763</q_value>
-      <pep>2.128841e-01</pep>
+      <q_value>0.185797</q_value>
+      <pep>3.874869e-01</pep>
       <peptide_seq n="G" c="R" seq="IALLLPAIVLVLVMT"/>
       <protein_id>ce4.cds.14033317.0|</protein_id>
       <p_value>1.764706e-01</p_value>
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_926_1_1">
       <svm_score>-0.768697</svm_score>
-      <q_value>0.216763</q_value>
-      <pep>4.171662e-01</pep>
+      <q_value>0.185797</q_value>
+      <pep>1.000000e+00</pep>
       <peptide_seq n="V" c="F" seq="HGEVSSK"/>
       <protein_id>C07A12.4a</protein_id>
       <protein_id>C07A12.4b</protein_id>
@@ -69,7 +79,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_888_2_1">
       <svm_score>-1.056472</svm_score>
-      <q_value>0.569003</q_value>
+      <q_value>0.505780</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="R" c="K" seq="VMNTNIDGNR"/>
       <protein_id>Y57G11C.16</protein_id>
@@ -77,7 +87,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_903_2_1">
       <svm_score>-1.087551</svm_score>
-      <q_value>0.569003</q_value>
+      <q_value>0.505780</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="P" c="G" seq="YPGIGQTTPYPA"/>
       <protein_id>C18B2.4</protein_id>
@@ -85,7 +95,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_890_2_1">
       <svm_score>-1.158306</svm_score>
-      <q_value>0.578035</q_value>
+      <q_value>0.520231</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="T" c="Q" seq="FEIGAPQGPV"/>
       <protein_id>W04G3.2</protein_id>
@@ -93,7 +103,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_892_2_1">
       <svm_score>-1.306519</svm_score>
-      <q_value>0.596098</q_value>
+      <q_value>0.550245</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="L" c="L" seq="KDNQKEQFVQ"/>
       <protein_id>Y67H2A.7</protein_id>
@@ -101,7 +111,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_903_2_1">
       <svm_score>-1.405703</svm_score>
-      <q_value>0.596098</q_value>
+      <q_value>0.550245</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="G" c="L" seq="GSSSSLEKVRDV"/>
       <protein_id>C18H2.1</protein_id>
@@ -109,7 +119,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_894_1_1">
       <svm_score>-1.577226</svm_score>
-      <q_value>0.596098</q_value>
+      <q_value>0.550245</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="E" c="A" seq="VAPRIE"/>
       <protein_id>K08H10.7</protein_id>
@@ -117,7 +127,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_888_2_1">
       <svm_score>-1.799918</svm_score>
-      <q_value>0.600267</q_value>
+      <q_value>0.557391</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="H" c="G" seq="LINVMEAPNE"/>
       <protein_id>Y71G12B.11a</protein_id>
@@ -126,7 +136,7 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_916_2_1">
       <svm_score>-2.064370</svm_score>
-      <q_value>0.603840</q_value>
+      <q_value>0.563584</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="D" c="R" seq="DANQGPNAWPE"/>
       <protein_id>gi|16130733|ref|NP_417306.1|</protein_id>
@@ -134,173 +144,12 @@ p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator versi
     </psm>
     <psm p:psm_id="Celegans_Jupter_C12_60min_grad_924_2_1">
       <svm_score>-2.649246</svm_score>
-      <q_value>0.650289</q_value>
+      <q_value>0.609646</q_value>
       <pep>1.000000e+00</pep>
       <peptide_seq n="K" c="A" seq="AASIERYLRC"/>
       <protein_id>F14B4.3</protein_id>
       <p_value>9.411765e-01</p_value>
     </psm>
   </psms>
-
-  <peptides>
-    <peptide p:peptide_id="LDATVHGEVSSK">
-      <svm_score>3.743510</svm_score>
-      <q_value>0.000000</q_value>
-      <pep>1.192772e-05</pep>
-      <protein_id>C07A12.4a</protein_id>
-      <protein_id>C07A12.4b</protein_id>
-      <protein_id>C07A12.4c</protein_id>
-      <p_value>5.882353e-02</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_921_2_1</psm_id>
-        <psm_id>Celegans_Jupter_C12_60min_grad_924_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="KSEVTVNAQLQQSK">
-      <svm_score>0.000000</svm_score>
-      <q_value>0.000000</q_value>
-      <pep>2.128841e-01</pep>
-      <protein_id>C42D8.2a</protein_id>
-      <protein_id>C42D8.2b</protein_id>
-      <protein_id>K09F5.2</protein_id>
-      <p_value>5.882353e-02</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_918_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="HAIDVSAAAK">
-      <svm_score>0.000000</svm_score>
-      <q_value>0.000000</q_value>
-      <pep>2.128841e-01</pep>
-      <protein_id>R11D1.8</protein_id>
-      <p_value>5.882353e-02</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_925_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="KDDDEEEKEEEEGHDEL">
-      <svm_score>-0.199986</svm_score>
-      <q_value>0.216763</q_value>
-      <pep>2.128841e-01</pep>
-      <protein_id>Y38A10A.5</protein_id>
-      <p_value>1.764706e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_919_3_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="IALLLPAIVLVLVMT">
-      <svm_score>-0.220025</svm_score>
-      <q_value>0.216763</q_value>
-      <pep>2.128841e-01</pep>
-      <protein_id>ce4.cds.14033317.0|</protein_id>
-      <p_value>1.764706e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_907_3_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="HGEVSSK">
-      <svm_score>-0.768697</svm_score>
-      <q_value>0.216763</q_value>
-      <pep>4.171662e-01</pep>
-      <protein_id>C07A12.4a</protein_id>
-      <protein_id>C07A12.4b</protein_id>
-      <protein_id>C07A12.4c</protein_id>
-      <p_value>1.764706e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_926_1_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="VMNTNIDGNR">
-      <svm_score>-1.056472</svm_score>
-      <q_value>0.569003</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>Y57G11C.16</protein_id>
-      <p_value>4.705882e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_888_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="YPGIGQTTPYPA">
-      <svm_score>-1.087551</svm_score>
-      <q_value>0.569003</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>C18B2.4</protein_id>
-      <p_value>4.705882e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_903_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="FEIGAPQGPV">
-      <svm_score>-1.158306</svm_score>
-      <q_value>0.578035</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>W04G3.2</protein_id>
-      <p_value>5.294118e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_890_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="KDNQKEQFVQ">
-      <svm_score>-1.306519</svm_score>
-      <q_value>0.596098</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>Y67H2A.7</protein_id>
-      <p_value>7.058824e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_892_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="GSSSSLEKVRDV">
-      <svm_score>-1.405703</svm_score>
-      <q_value>0.596098</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>C18H2.1</protein_id>
-      <p_value>7.058824e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_903_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="VAPRIE">
-      <svm_score>-1.577226</svm_score>
-      <q_value>0.596098</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>K08H10.7</protein_id>
-      <p_value>7.058824e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_894_1_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="LINVMEAPNE">
-      <svm_score>-1.799918</svm_score>
-      <q_value>0.600267</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>Y71G12B.11a</protein_id>
-      <protein_id>Y71G12B.11b</protein_id>
-      <p_value>7.647059e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_888_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="DANQGPNAWPE">
-      <svm_score>-2.064370</svm_score>
-      <q_value>0.603840</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>gi|16130733|ref|NP_417306.1|</protein_id>
-      <p_value>8.235294e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_916_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-    <peptide p:peptide_id="AASIERYLRC">
-      <svm_score>-2.649246</svm_score>
-      <q_value>0.650289</q_value>
-      <pep>1.000000e+00</pep>
-      <protein_id>F14B4.3</protein_id>
-      <p_value>9.411765e-01</p_value>
-      <psm_ids>
-        <psm_id>Celegans_Jupter_C12_60min_grad_924_2_1</psm_id>
-      </psm_ids>
-    </peptide>
-  </peptides>
 
 </percolator_output>
