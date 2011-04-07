@@ -56,7 +56,7 @@ int main(int argc, char**argv)
 
     double roc50 = rocN / (N * tpArray.back());
     cout << roc50;
-    ofstream fout("/tmp/fido/roc50Out.txt");
+    ofstream fout("/tmp/roc50Out.txt");
     fout << roc50;
 
     // closing file streams

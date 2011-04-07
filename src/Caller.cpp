@@ -1072,7 +1072,7 @@ int Caller::run() {
     if(VERB > 1) {
       cerr << "Protein level probabilities have been successfully calculated "
           << "(" << (finish-start)/1000000 << " s)!" << endl;
-      cerr << output.size() << "\t: total number of proteins\n";
+      cerr << output.totProteins << "\t: total number of proteins\n";
       cerr << output.proteinsAtThr1 << "\t: proteins found at a q-value of "
           << output.threshold1 <<"\n";
       cerr << output.proteinsAtThr2 << "\t: proteins found at a q-value of "

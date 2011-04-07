@@ -30,9 +30,11 @@ void BasicBigraph::read(Scores* fullset){
 	int pepIndex = -1;
 	StringTable PSMNames, proteinNames;
 
-	bool generateGraphFile = true;
+	bool generateGraphFile = false;
 	ofstream of;
-	if(generateGraphFile) of.open("/tmp/fido/1_psm_graph_file");
+  if(generateGraphFile) {
+    if(generateGraphFile) of.open("/tmp/1percolator_psm_graph_file");
+  }
 
 	vector<ScoreHolder>::iterator psm = fullset->begin();
 	for (; psm!= fullset->end(); ++psm) {

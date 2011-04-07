@@ -30,15 +30,15 @@
 struct fidoOutput {
     fidoOutput(Array<double> peps_par, Array<Array<string> > protein_ids_par,
         Array<double> qvalues_par, unsigned int proteinsAtThr1_par,
-        unsigned int proteinsAtThr2_par) {
+        unsigned int proteinsAtThr2_par, unsigned int totProteins_par,
+        double pi_0_par) {
       peps = peps_par;
       protein_ids = protein_ids_par;
       qvalues = qvalues_par;
       proteinsAtThr1 = proteinsAtThr1_par;
       proteinsAtThr2 = proteinsAtThr2_par;
-    }
-    int size() const{
-      return peps.size();
+      totProteins = totProteins_par;
+      pi_0 = pi_0_par;
     }
     Array<double> peps;
     Array< Array<string> > protein_ids;
@@ -47,6 +47,8 @@ struct fidoOutput {
     const static double threshold2 = 0.1;
     unsigned int proteinsAtThr1;
     unsigned int proteinsAtThr2;
+    unsigned int totProteins;
+    double pi_0;
 };
 
 class ProteinProbEstimator {

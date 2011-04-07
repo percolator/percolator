@@ -63,22 +63,23 @@ fidoOutput buildOutput(GroupPowerBigraph* proteinGraph, ProteinProbEstimator* es
   Array<int> indices = pps.sort();
   // array that (will) contain q-values
   Array<double> qvalues = Array<double>(pps.size());
-  double sumPepSoFar = 0;
-  unsigned int proteinsAtThr1, proteinsAtThr2 = 0;
+  double sumPepSoFar(0);
+  unsigned int proteinsSoFar(0), proteinsAtThr1(0), proteinsAtThr2(0);
 
   // filling the protein_ids and qvalues arrays
   for (int k=0; k<pps.size(); k++) {
     protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
     peps[k] = 1 - pps[k];
-    // q-value: average pep of the protains scoring better than the current one
-    sumPepSoFar += peps[k];
-    double qValue = sumPepSoFar/(k+1);
+    // q-value: average pep of the proteins scoring better than the current one
+    sumPepSoFar += (peps[k]*protein_ids[k].size());
+    proteinsSoFar += protein_ids[k].size();
+    double qValue = sumPepSoFar/proteinsSoFar;
     qvalues[k] = qValue;
     // update protein count under thresholds
     for(int p=0; p<protein_ids[k].size(); p++) {
       if(isDecoyProbability(protein_ids[k][p], estimator)<0.5) {
         if(qValue<fidoOutput::threshold2){ proteinsAtThr2++;
-          if(qValue<fidoOutput::threshold1) proteinsAtThr1++;
+        if(qValue<fidoOutput::threshold1) proteinsAtThr1++;
         }
       }
     }
@@ -88,10 +89,14 @@ fidoOutput buildOutput(GroupPowerBigraph* proteinGraph, ProteinProbEstimator* es
   if(proteinGraph->severedProteins.size()!=0){
     peps.add(1);
     protein_ids.add(proteinGraph->severedProteins);
-    qvalues.add(sumPepSoFar/peps.size());
+    sumPepSoFar += (1*proteinGraph->severedProteins.size());
+    proteinsSoFar += proteinGraph->severedProteins.size();
+    qvalues.add(sumPepSoFar/proteinsSoFar);
   }
 
-  return fidoOutput(peps, protein_ids, qvalues, proteinsAtThr1, proteinsAtThr2);
+  double pi_0 = qvalues[pps.size()-1];
+  return fidoOutput(peps, protein_ids, qvalues, proteinsAtThr1, proteinsAtThr2,
+      proteinsSoFar, pi_0);
 }
 
 /**
@@ -103,8 +108,10 @@ fidoOutput buildOutput(GroupPowerBigraph* proteinGraph, ProteinProbEstimator* es
 void writeOutputToFile(fidoOutput output, string fileName) {
   ofstream of(fileName.c_str());
   int size = output.peps.size();
+  of << "PEP\t" << "q-value\t" << "proteins";
   for (int k=0; k<size; k++) {
-    of << 1- output.peps[k] << " " << output.protein_ids[k] << endl;
+    of << output.peps[k] << "\t" << output.qvalues[k]<< "\t"
+        << output.protein_ids[k] << endl;
   }
   of.close();
 }
@@ -422,7 +429,7 @@ void populateTPandFNLists(GridPoint* point, const fidoOutput& output,
   assert(point->truePositives.size()==0);
   assert(point->falsePositives.size()==0);
   // for each protein in fido's output
-  for(int i1=0; i1<output.size(); i1++){
+  for(int i1=0; i1<output.peps.size(); i1++){
     for(int i2=0; i2<output.protein_ids[i1].size(); i2++){
       // store the protein id
       string protein_id = output.protein_ids[i1][i2];
@@ -469,11 +476,11 @@ void GridPoint::calculateObjectiveFn(double lambda,
   fidoOutput output = toBeTested->calculateProteinProb(false);
   populateTPandFNLists(this, output, toBeTested);
   if(VERB > 4) {
-  // output the results of the probability calculation to file
-  writeOutputToFile(output, "/tmp/fido/2_fido_output.txt");
-  ofstream o("/tmp/fido/3_TPFP_lists.txt");
-  o << truePositives << falsePositives << endl;
-  o.close();
+    // output the results of the probability calculation to file
+    writeOutputToFile(output, "/tmp/2percolator_fido_output.txt");
+    ofstream o("/tmp/3percolator_TPFP_lists.txt");
+    o << truePositives << falsePositives << endl;
+    o.close();
   }
 
   // calculate MSE_FDR
@@ -482,11 +489,11 @@ void GridPoint::calculateObjectiveFn(double lambda,
   calculateFDRs(output, truePositives, falsePositives,
       estimatedFdrs, empiricalFdrs);
   if(VERB > 4) {
-  // output the results of the MSE_FDR to file
-  ofstream o1 ("/tmp/fido/4_FDR_lists.txt");
-  o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
-      << "empiricalFdrs\n" << empiricalFdrs << endl;
-  o1.close();
+    // output the results of the MSE_FDR to file
+    ofstream o1 ("/tmp/4percolator_FDR_lists.txt");
+    o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
+        << "empiricalFdrs\n" << empiricalFdrs << endl;
+    o1.close();
   }
   double threshold = 0.1;
   double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
@@ -502,10 +509,10 @@ void GridPoint::calculateObjectiveFn(double lambda,
   Array<int> tps = Array<int>();
   calculateRoc(output, truePositives, falsePositives, fps, tps);
   if(VERB > 4) {
-  // output the results of the ROC50 calculation to file
-  ofstream o2("/tmp/fido/5_ROC50_lists.txt");
-  o2 << fps << endl << tps << endl;
-  o2.close();
+    // output the results of the ROC50 calculation to file
+    ofstream o2("/tmp/5percolator_ROC50_lists.txt");
+    o2 << fps << endl << tps << endl;
+    o2.close();
   }
   int N = 50;
   double roc50 = calculateROC50(N, fps, tps);
@@ -594,9 +601,13 @@ void calculateFDRs(
 
     fpCount += fpChange;
     tpCount += tpChange;
+    /*
     totalFDR += (1-prob) * (fpChange + tpChange);
     estFDR = totalFDR / (fpCount + tpCount);
     empiricalFDR = double(fpCount) / (fpCount + tpCount);
+     */
+    estFDR = output.qvalues[k];
+    empiricalFDR = output.pi_0 * fpCount/tpCount;
     lastProb = prob;
   }
   lastProb = prob;
@@ -621,7 +632,7 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
   double area = squareAntiderivativeAt(m, b, min(threshold, x2) )
-          - squareAntiderivativeAt(m, b, x1);
+                  - squareAntiderivativeAt(m, b, x1);
   return area;
 }
 
@@ -696,8 +707,11 @@ void calculateRoc(const fidoOutput output,
       fps.add( fpCount );
       tps.add( tpCount );
       scheduledUpdate = false;
+      /*
       totalFDR += (1-prob) * (fpChange + tpChange);
       estFDR = totalFDR / (fpCount + tpCount);
+       */
+      estFDR = output.qvalues[k];
     }
     fpCount += fpChange;
     tpCount += tpChange;

@@ -195,7 +195,7 @@ int main(int argc, char**argv)
     //		cerr << "Total number of proteins scored is " << numScored << endl;
 
     cout << estimatedList << " " << empericalList << endl;
-    ofstream fout("/tmp/fido/rlistFDROut.txt");
+    ofstream fout("/tmp/rlistFDROut.txt");
     fout << estimatedList << endl << empericalList << endl;
 
     // closing file streams

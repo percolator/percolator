@@ -138,8 +138,10 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
   proteinGraph->getProteinProbs();
 
   fidoOutput output = buildOutput(proteinGraph, this);
-  // uncomment the following line to print protein level probabilities to file
-  //writeOutputToFile(output, "/tmp/fido/6_final_fido_output.txt");
+  if(VERB > 4) {
+    // print protein level probabilities to file
+    writeOutputToFile(output, "/tmp/6percolator_final_fido_output.txt");
+  }
   return output;
 }
 
@@ -156,7 +158,7 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
   // append PROTEINs
   os << "  <proteins>" << endl;
   // for each probability
-  for (int k=0; k<output.size(); k++) {
+  for (int k=0; k<output.peps.size(); k++) {
     Array<string> protein_ids = output.protein_ids[k];
     // for each protein with a certain probability
     for(int k2=0; k2<protein_ids.size(); k2++) {
@@ -189,11 +191,12 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
  * @param proteinGraph proteins and associated probabilities to be outputted
  */
 void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
-  cout << endl;
-  int size = output.size();
+  cout << "\nPEP\t" << "q-value\t" << "proteins";;
+  int size = output.peps.size();
   for (int k=0; k<size; k++) {
     if (Scores::isOutXmlDecoys())
-      cout << output.peps[k] << " " << output.protein_ids[k] << endl;
+      cout << output.peps[k] << "\t" << output.qvalues[k]<< "\t"
+      << output.protein_ids[k] << endl;
     else {
       // filter decoys
       Array<string> filtered;
@@ -204,7 +207,8 @@ void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
           filtered.add(*protIt);
       }
       if(filtered.size()>0){
-        cout << output.peps[k] << " " << filtered << endl;
+        cout << output.peps[k] << "\t" << output.qvalues[k]<< "\t"
+            << " " << filtered << endl;
       }
     }
   }

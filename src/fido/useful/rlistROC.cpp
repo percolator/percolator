@@ -151,7 +151,7 @@ int main(int argc, char**argv)
     tps.add( truePosSet.size() );
 
     cout << fps << " " << tps << endl;
-    ofstream fout("/tmp/fido/rlistROCOut.txt");
+    ofstream fout("/tmp/rlistROCOut.txt");
     fout << fps << endl << tps << endl;
 
     // closing file streams
