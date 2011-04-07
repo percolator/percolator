@@ -82,6 +82,11 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
       grid.updateBest();
     }
   }
+  if(VERB > 2){
+    cerr << "\nThe search was completed; debugging details follow:\n"
+        << "[Minimized fn: (1 − λ) * MSE_FDR − λ ROC50]\n"
+        << grid.debugInfo.str();
+  }
   // the search is concluded: set the parameters
   if(grid.wasSuccessful()){
     grid.setToBest(this);
@@ -107,7 +112,10 @@ fidoOutput ProteinProbEstimator::calculateProteinProb(bool gridSearch){
   // parameters alpha and beta
 
   if(gridSearch) {
-    if(VERB > 1) cerr << "Estimating parameters for the model by grid search\n";
+    if(VERB > 1) {
+      cerr << "The parameters for the model will be estimated by grid search."
+          << endl;
+    }
     gridSearchAlphaBeta();
     if(VERB > 1) {
       cerr << "\nThe following parameters have been chosen;\n";

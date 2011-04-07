@@ -204,7 +204,8 @@ struct GridPoint {
       truePositives = Array<string>();
       falsePositives = Array<string>();
     }
-    void calculateObjectiveFn(double lambda, ProteinProbEstimator* toBeTested);
+    void calculateObjectiveFn(double lambda, ProteinProbEstimator*
+        toBeTested, ostringstream& debug);
     bool operator <(const GridPoint& rhs) const {
       assert(objectiveFnValue!=-1);
       assert(rhs.objectiveFnValue!=-1);
@@ -228,7 +229,7 @@ struct Grid{
      */
     Grid(const double& l_a, const double& u_a, const double& l_b, const
         double& u_b): lower_a(l_a), upper_a(u_a), lower_b(l_b), upper_b(u_b),
-        current(NULL) {
+        current(NULL), debugInfo(ostringstream::in | ostringstream::out) {
       // before the search starts, the best point seen so far is artificially
       // set to max infinity (since we are minimizing!)
       bestSoFar = new GridPoint();
@@ -237,12 +238,13 @@ struct Grid{
     /**
      * constructor that builds a Grid in the default range
      */
-    Grid(): current(NULL) {
+    Grid(): current(NULL), debugInfo(ostringstream::in | ostringstream::out) {
       lower_a = 0.07, upper_a = 0.3;
       lower_b = 0.007, upper_b = 0.1;
       bestSoFar = new GridPoint();
       bestSoFar->objectiveFnValue = numeric_limits<double>::max();
     }
+    Grid(const Grid&);
     ~Grid(){
       delete bestSoFar;
       if(current) delete current;
@@ -265,8 +267,9 @@ struct Grid{
     double current_b;
     static int alpha;
     static int beta;
+    ostringstream debugInfo;
   private:
-    const static double lambda = 0.15;
+    const static double lambda = 0.25;
     const static double incrementAlpha=0.3;
     const static double incrementBeta=0.3;
     double lower_a;
@@ -327,11 +330,11 @@ double Grid::updateCurrent_b(){
 void Grid::testGridRanges(){
   Grid grid = Grid();
   grid.current_a = grid.getLower_a();
-    for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
-      grid.current_b = grid.getLower_b();
-      for(; grid.current_b<=grid.getUpper_b(); grid.updateCurrent_b()){
-      }
+  for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
+    grid.current_b = grid.getLower_b();
+    for(; grid.current_b<=grid.getUpper_b(); grid.updateCurrent_b()){
     }
+  }
 }
 
 /**
@@ -340,17 +343,29 @@ void Grid::testGridRanges(){
  */
 void Grid::toCurrentPoint(){
   current = new GridPoint(exp(current_a),exp(current_b));
+  if (VERB > 2){
+    debugInfo << "alpha=" << scientific << setprecision(1) << current->alpha
+        << ", " << "beta=" <<scientific << setprecision(1) << current->beta
+        << ": ";
+  }
 }
 
 /**
  * calculates the objective function value in the current point.
  */
 void Grid::calculateObjectiveFn(ProteinProbEstimator* toBeTested){
-  current->calculateObjectiveFn(lambda,toBeTested);
+  current->calculateObjectiveFn(lambda,toBeTested,debugInfo);
   if(VERB > 1) {
-    if(isinf(current->objectiveFnValue)) cerr << "\t+infinity";
-    else cerr << "\t" << fixed << std::setprecision(5)
-    << current->objectiveFnValue;
+    if(isinf(current->objectiveFnValue))
+      cerr << "\t+infinity";
+    else if(current->objectiveFnValue > 0) {
+      cerr << "\t" << fixed << std::setprecision(5)
+      << "+" << current->objectiveFnValue;
+    }
+    else {
+      cerr << "\t" << fixed << std::setprecision(5)
+      << current->objectiveFnValue;
+    }
   }
 }
 
@@ -362,10 +377,11 @@ void Grid::compareAgainstDefault(ProteinProbEstimator* toBeTested){
   current_a = log(0.1);
   current_b = log(0.01);
   toCurrentPoint();
-  current->calculateObjectiveFn(lambda, toBeTested);
-  if(VERB > 1) {
-    cerr << "objective fn estimation for default values (a=0.1, b=0.01): "
-    << current->objectiveFnValue;
+  current->calculateObjectiveFn(lambda, toBeTested,debugInfo);
+  if(VERB > 2) {
+    cerr << "Objective fn estimation for default values "
+        <<"(alpha=0.1, beta=0.01): "
+        << current->objectiveFnValue;
   }
   updateBest();
 }
@@ -441,58 +457,63 @@ double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps);
 /**
  * for a given choice of alpha and beta, calculates (1 − λ) MSE_FDR − λ ROC50
  * and stores the result in objectiveFnValue
+ *
+ * @return expression representing the objective function that was evaluated
  */
 void GridPoint::calculateObjectiveFn(double lambda,
-    ProteinProbEstimator* toBeTested){
+    ProteinProbEstimator* toBeTested, ostringstream& debug){
   assert(alpha!=-1);
   assert(beta!=-1);
   toBeTested->alpha = alpha;
   toBeTested->beta = beta;
   fidoOutput output = toBeTested->calculateProteinProb(false);
   populateTPandFNLists(this, output, toBeTested);
-  //if(VERB > 4) {
-    // output the results of the probability calculation to file
-    writeOutputToFile(output, "/tmp/fido/2_fido_output.txt");
-    ofstream o("/tmp/fido/3_TPFP_lists.txt");
-    o << truePositives << falsePositives << endl;
-    o.close();
-  //}
+  if(VERB > 4) {
+  // output the results of the probability calculation to file
+  writeOutputToFile(output, "/tmp/fido/2_fido_output.txt");
+  ofstream o("/tmp/fido/3_TPFP_lists.txt");
+  o << truePositives << falsePositives << endl;
+  o.close();
+  }
 
   // calculate MSE_FDR
   Array<double> estimatedFdrs = Array<double>();
   Array<double> empiricalFdrs = Array<double>();
   calculateFDRs(output, truePositives, falsePositives,
       estimatedFdrs, empiricalFdrs);
-  //if(VERB > 4) {
-    // output the results of the MSE_FDR to file
-    ofstream o1 ("/tmp/fido/4_FDR_lists.txt");
-    o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
-        << "empiricalFdrs\n" << empiricalFdrs << endl;
-    o1.close();
-  //}
+  if(VERB > 4) {
+  // output the results of the MSE_FDR to file
+  ofstream o1 ("/tmp/fido/4_FDR_lists.txt");
+  o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
+      << "empiricalFdrs\n" << empiricalFdrs << endl;
+  o1.close();
+  }
   double threshold = 0.1;
   double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
 
   if(isinf(mse_fdr)) {
     // if MSE is infinity there is no need to continue: set the result to inf
     objectiveFnValue = mse_fdr;
-    return;
+    debug << 1-lambda << "* infinity" << " - " << lambda << "* ?" << endl;
   }
 
   // calculate ROC50
   Array<int> fps = Array<int>();
   Array<int> tps = Array<int>();
   calculateRoc(output, truePositives, falsePositives, fps, tps);
-  //if(VERB > 4) {
-    // output the results of the ROC50 calculation to file
-    ofstream o2("/tmp/fido/5_ROC50_lists.txt");
-    o2 << fps << endl << tps << endl;
-    o2.close();
-  //}
+  if(VERB > 4) {
+  // output the results of the ROC50 calculation to file
+  ofstream o2("/tmp/fido/5_ROC50_lists.txt");
+  o2 << fps << endl << tps << endl;
+  o2.close();
+  }
   int N = 50;
   double roc50 = calculateROC50(N, fps, tps);
 
   objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
+  debug << 1-lambda << "*" << scientific << setprecision(1) << mse_fdr << " - "
+      << lambda << "*" << scientific << setprecision(1) << roc50 << " = "
+      << scientific << setprecision(1) << objectiveFnValue <<"\n";
 }
 
 namespace __gnu_cxx {

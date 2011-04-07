@@ -168,9 +168,14 @@ ENDIF()
 ###############################################################################
 
 # Enabling unit level tests (Ctest)
-#enable_testing()
-# Compiling unit level tests
-#add_subdirectory(${PERCOLATOR_SOURCE_DIR}/data/tests)
+enable_testing()
+# Scheduling system level tests
+add_subdirectory(data/system_tests/converters)
+# Scheduling unit level tests
+# UNCOMMENT THIS IF UNIT TESTS WILL BE ADDED IN THE FUTURE
+#if(GOOGLE_TEST)
+#  add_subdirectory(data/unit_tests/converters)
+#endif()
 
 ###############################################################################
 # INSTALLING

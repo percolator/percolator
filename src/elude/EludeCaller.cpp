@@ -1049,9 +1049,9 @@ int EludeCaller::Run() {
   vector<PSMDescription> tpsms, tepsms;
   set<string> alphabet;
   Globals::getInstance()->setVerbose(5);
-  library_path_ = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test_lib/";
-  string train_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/calibrate.txt";
-  string test_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test.txt";
+  library_path_ = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude/calibrate_data/test_lib/";
+  string train_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude/calibrate_data/calibrate.txt";
+  string test_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude/calibrate_data/test.txt";
   DataManager::LoadPeptides(train_file, true, true, tpsms, alphabet);
   DataManager::LoadPeptides(test_file, true, true, tepsms, alphabet);
   SelectTestModel(tpsms, tepsms);
@@ -1063,8 +1063,8 @@ int EludeCaller::Run() {
     cout << tpsms[i].peptide << " " << tpsms[i].retentionTime << " " << tpsms[i].predictedTime << endl;
    }
   cout << "#####################################" << endl;
-/*  train_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/calibrate_1.txt";
-  test_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude_test/calibrate_data/test_1.txt";
+/*  train_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude/calibrate_data/calibrate_1.txt";
+  test_file = "/scratch/lumi_work/projects/elude_ptms/src/percolator/data/elude/calibrate_data/test_1.txt";
   tpsms.clear();
   tepsms.clear();
   DataManager::LoadPeptides(train_file, true, true, tpsms, alphabet);

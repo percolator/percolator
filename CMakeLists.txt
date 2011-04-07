@@ -7,16 +7,13 @@ macro(my_set variable default options)
   endif(NOT DEFINED ${variable})
 endmacro(my_set)
 
-
 set(base "/scratch")
 set(percolatorBuild "${base}/percolatorBuild")
-# CMAKE_INSTALL_PREFIX must be set from command line with -D
-# set(CMAKE_INSTALL_PREFIX "${base}") 
+# CMAKE_INSTALL_PREFIX must be set from command line with -D 
 my_set(GOOGLE_TEST "FALSE" "Select if Google test should be included, options are: TRUE or FALSE") 
 my_set(GOOGLE_TEST_PATH "${base}/gtest-1.5.0" "Give path to google test code")
-my_set(CMAKE_BUILD_TYPE "Debug" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
+my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "." "Default path to packages")
-#my_set(CMAKE_PREFIX_PATH "${base}/xsd-3.3.0-x86_64-linux-gnu/;$ENV{HOME}/src/xsd-3.3.0-x86_64-linux-gnu/;$ENV{HOME}/src/xsd-3.3.0-i686-macosx" "Default path to packages")
 
 # PRINT VARIBALES TO STDOUT
 MESSAGE( STATUS )
@@ -28,6 +25,7 @@ MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
+MESSAGE( STATUS "GOOGLE_TEST = ${GOOGLE_TEST}" )
 MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -72,7 +70,7 @@ foreach(i ${configurefiles})
 endforeach()
 
 ###############################################################################
-# COMPILING AND TESTING
+# COMPILING
 ###############################################################################
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
@@ -91,12 +89,18 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # COMPILE
 add_subdirectory(src)
 
-# Enabling unit level tests (Ctest)
+###############################################################################
+# TESTING
+###############################################################################
+
+# Enabling system level tests (Ctest)
 enable_testing()
-# Compiling unit level tests
-IF (GOOGLE_TEST)
-  add_subdirectory(data/tests)
-ENDIF()
+# Scheduling system level tests
+add_subdirectory(data/system_tests/percolator)
+# Scheduling unit level tests
+if(GOOGLE_TEST)
+  add_subdirectory(data/unit_tests/percolator)
+endif()
 
 ###############################################################################
 # INSTALLING

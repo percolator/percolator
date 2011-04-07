@@ -1,7 +1,7 @@
 #!/bin/sh
 # as soon as a command fails terminate this script
 
-base=~/temp
+base=/scratch
 
 #detect (kernel) architecture
 if [ "$(uname -a | grep x86_64)" != "" ]; then
@@ -47,6 +47,12 @@ echo "Fetching GoogleTest, storing it in ${base}"
 wget "${gt_site}/${gt_pack}.tar.gz"
 tar xzf "${gt_pack}.tar.gz"
 rm "${gt_pack}.tar.gz"
+
+echo "Building GoogleTest"
+cd gtest-1.5.0; mkdir build
+cd build; cmake ../ 
+make
+cd ..
 
 echo "To build, invoke cmake from the build directory with the following option:\n"
 echo "-DCMAKE_PREFIX_PATH=\"${base}/${cs_pack};${base}/${gt_pack}\""
