@@ -42,6 +42,14 @@ using namespace std;
 
 double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator);
 
+unsigned int countTargets(const Array<string>& protein_ids,
+    ProteinProbEstimator* estimator){
+  unsigned int count(0);
+  for(int p=0; p<protein_ids.size(); p++)
+    if(isDecoyProbability(protein_ids[p], estimator)<0.5) count++;
+  return count;
+}
+
 /**
  * after calculating protein level probabilities, the output is stored in a
  * dedicated structure that can be printed out or evaluated during the grid
@@ -51,52 +59,51 @@ double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator);
  * calculated by fido
  * @return output results of fido encapsulated in a fidoOutput structure
  */
-fidoOutput buildOutput(GroupPowerBigraph* proteinGraph, ProteinProbEstimator* estimator){
+fidoOutput buildOutput(GroupPowerBigraph* proteinGraph,
+    ProteinProbEstimator* estimator){
   // array containing the PPs (Posterior ProbabilkitieS)
   Array<double> pps = proteinGraph->probabilityR;
   assert(pps.size()!=0);
   // array containing the PEPs (Posterior Error ProbabilkitieS)
   Array<double> peps = Array<double>(pps.size());
-
   // arrays that (will) contain protein ids and corresponding indexes
   Array< Array<string> > protein_ids =  Array< Array<string> >(pps.size());
   Array<int> indices = pps.sort();
   // array that (will) contain q-values
   Array<double> qvalues = Array<double>(pps.size());
-  double sumPepSoFar(0);
-  unsigned int proteinsSoFar(0), proteinsAtThr1(0), proteinsAtThr2(0);
+  double sumTargetPepSoFar(0);
+  unsigned int targetProtSoFar(0), proteinsAtThr1(0), proteinsAtThr2(0);
 
-  // filling the protein_ids and qvalues arrays
+  // calculating protein_ids, peps, qvalues
   for (int k=0; k<pps.size(); k++) {
     protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
-    peps[k] = 1 - pps[k];
+    peps[k] = 1.0 - pps[k];
     // q-value: average pep of the proteins scoring better than the current one
-    sumPepSoFar += (peps[k]*protein_ids[k].size());
-    proteinsSoFar += protein_ids[k].size();
-    double qValue = sumPepSoFar/proteinsSoFar;
+    // (only targets, current one included)
+    unsigned int targetsAtCurrentPep = countTargets(protein_ids[k], estimator);
+    sumTargetPepSoFar += (peps[k]*targetsAtCurrentPep);
+    targetProtSoFar += targetsAtCurrentPep;
+    double qValue = sumTargetPepSoFar/targetProtSoFar;
     qvalues[k] = qValue;
-    // update protein count under thresholds
-    for(int p=0; p<protein_ids[k].size(); p++) {
-      if(isDecoyProbability(protein_ids[k][p], estimator)<0.5) {
-        if(qValue<fidoOutput::threshold2){ proteinsAtThr2++;
-        if(qValue<fidoOutput::threshold1) proteinsAtThr1++;
-        }
-      }
+    // update protein count under q-value thresholds
+    if(qValue<fidoOutput::threshold2){ proteinsAtThr2+=targetsAtCurrentPep;
+    if(qValue<fidoOutput::threshold1) proteinsAtThr1+=targetsAtCurrentPep;
     }
   }
-
   // appending proteins with peps=0 (pps=1)
   if(proteinGraph->severedProteins.size()!=0){
     peps.add(1);
     protein_ids.add(proteinGraph->severedProteins);
-    sumPepSoFar += (1*proteinGraph->severedProteins.size());
-    proteinsSoFar += proteinGraph->severedProteins.size();
-    qvalues.add(sumPepSoFar/proteinsSoFar);
+    unsigned int targetsAtCurrentPep =
+        countTargets(proteinGraph->severedProteins, estimator);
+    sumTargetPepSoFar += (1*targetsAtCurrentPep);
+    targetProtSoFar += targetsAtCurrentPep;
+    qvalues.add(sumTargetPepSoFar/targetProtSoFar);
   }
 
   double pi_0 = qvalues[pps.size()-1];
   return fidoOutput(peps, protein_ids, qvalues, proteinsAtThr1, proteinsAtThr2,
-      proteinsSoFar, pi_0);
+      targetProtSoFar, pi_0);
 }
 
 /**
@@ -108,10 +115,11 @@ fidoOutput buildOutput(GroupPowerBigraph* proteinGraph, ProteinProbEstimator* es
 void writeOutputToFile(fidoOutput output, string fileName) {
   ofstream of(fileName.c_str());
   int size = output.peps.size();
-  of << "PEP\t" << "q-value\t" << "proteins";
+  of << "PEP\t\t" << "q-value\t\t" << "proteins\n";
   for (int k=0; k<size; k++) {
-    of << output.peps[k] << "\t" << output.qvalues[k]<< "\t"
-        << output.protein_ids[k] << endl;
+    of << scientific << setprecision(7) << output.peps[k] << "\t"
+        << scientific << setprecision(7) << output.qvalues[k]<< "\t"
+        << scientific << setprecision(7) << output.protein_ids[k] << endl;
   }
   of.close();
 }
@@ -601,13 +609,14 @@ void calculateFDRs(
 
     fpCount += fpChange;
     tpCount += tpChange;
-    /*
+    // calculating FDRs using a pi_0 approximation
+    estFDR = output.qvalues[k];
+    empiricalFDR = output.pi_0 * fpCount/tpCount;
+    /* the same done without pi_0
     totalFDR += (1-prob) * (fpChange + tpChange);
     estFDR = totalFDR / (fpCount + tpCount);
     empiricalFDR = double(fpCount) / (fpCount + tpCount);
      */
-    estFDR = output.qvalues[k];
-    empiricalFDR = output.pi_0 * fpCount/tpCount;
     lastProb = prob;
   }
   lastProb = prob;
@@ -632,8 +641,9 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
   double area = squareAntiderivativeAt(m, b, min(threshold, x2) )
-                  - squareAntiderivativeAt(m, b, x1);
-  return area;
+                          - squareAntiderivativeAt(m, b, x1);
+  if(isnan(area)) return 0.0;
+  else return area;
 }
 
 /**
@@ -707,11 +717,12 @@ void calculateRoc(const fidoOutput output,
       fps.add( fpCount );
       tps.add( tpCount );
       scheduledUpdate = false;
-      /*
+      // calculating FDRs using a pi_0 approximation
+      estFDR = output.qvalues[k];
+      /* the same done without pi_0
       totalFDR += (1-prob) * (fpChange + tpChange);
       estFDR = totalFDR / (fpCount + tpCount);
        */
-      estFDR = output.qvalues[k];
     }
     fpCount += fpChange;
     tpCount += tpChange;
@@ -728,8 +739,10 @@ double area(double x1, double y1, double x2, double y2, int N)
 {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
-
-  return antiderivativeAt(m, b, min(double(N), x2) ) - antiderivativeAt(m, b, x1);
+  double area = antiderivativeAt(m, b, min(double(N), x2) ) -
+      antiderivativeAt(m, b, x1);
+  if(isnan(area)) return 0.0;
+  else return area;
 }
 
 /**
