@@ -84,7 +84,8 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   }
   if(VERB > 2){
     cerr << "\nThe search was completed; debugging details follow:\n"
-        << "[Minimized fn: (1 − λ) * MSE_FDR − λ ROC50]\n"
+        << "alpha\t\t" << "beta\t\t" << "MSE_FDR\t\t" << "ROC50\t\t"
+        << "ObjFn\t\t" << "@0.015\t\t" << "@0.1\n"
         << grid.debugInfo.str();
   }
   // the search is concluded: set the parameters

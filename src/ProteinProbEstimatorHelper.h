@@ -254,8 +254,8 @@ struct Grid{
      * constructor that builds a Grid in the default range
      */
     Grid(): current(NULL), debugInfo(ostringstream::in | ostringstream::out) {
-      lower_a = 0.07, upper_a = 0.3;
-      lower_b = 0.007, upper_b = 0.1;
+      lower_a = 0.05, upper_a = 0.3;
+      lower_b = 0.005, upper_b = 0.03;
       bestSoFar = new GridPoint();
       bestSoFar->objectiveFnValue = numeric_limits<double>::max();
     }
@@ -284,7 +284,7 @@ struct Grid{
     static int beta;
     ostringstream debugInfo;
   private:
-    const static double lambda = 0.25;
+    const static double lambda = 0.35;
     const static double incrementAlpha=0.3;
     const static double incrementBeta=0.3;
     double lower_a;
@@ -359,9 +359,8 @@ void Grid::testGridRanges(){
 void Grid::toCurrentPoint(){
   current = new GridPoint(exp(current_a),exp(current_b));
   if (VERB > 2){
-    debugInfo << "alpha=" << scientific << setprecision(1) << current->alpha
-        << ", " << "beta=" <<scientific << setprecision(1) << current->beta
-        << ": ";
+    debugInfo << scientific << setprecision(3)
+        << current->alpha << "\t" << current->beta << "\t";
   }
 }
 
@@ -374,11 +373,11 @@ void Grid::calculateObjectiveFn(ProteinProbEstimator* toBeTested){
     if(isinf(current->objectiveFnValue))
       cerr << "\t+infinity";
     else if(current->objectiveFnValue > 0) {
-      cerr << "\t" << fixed << std::setprecision(5)
+      cerr << "\t" << scientific << setprecision(3)
       << "+" << current->objectiveFnValue;
     }
     else {
-      cerr << "\t" << fixed << std::setprecision(5)
+      cerr << "\t" << scientific << setprecision(3)
       << current->objectiveFnValue;
     }
   }
@@ -393,11 +392,6 @@ void Grid::compareAgainstDefault(ProteinProbEstimator* toBeTested){
   current_b = log(0.01);
   toCurrentPoint();
   current->calculateObjectiveFn(lambda, toBeTested,debugInfo);
-  if(VERB > 2) {
-    cerr << "Objective fn estimation for default values "
-        <<"(alpha=0.1, beta=0.01): "
-        << current->objectiveFnValue;
-  }
   updateBest();
 }
 
@@ -526,9 +520,11 @@ void GridPoint::calculateObjectiveFn(double lambda,
   double roc50 = calculateROC50(N, fps, tps);
 
   objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
-  debug << 1-lambda << "*" << scientific << setprecision(1) << mse_fdr << " - "
-      << lambda << "*" << scientific << setprecision(1) << roc50 << " = "
-      << scientific << setprecision(1) << objectiveFnValue <<"\n";
+  debug << scientific << setprecision(3)
+      << mse_fdr << "\t" << roc50 << "\t"
+      << objectiveFnValue << "\t"
+      << fixed << output.proteinsAtThr1 << "\t\t" << output.proteinsAtThr2
+      << "\n";
 }
 
 namespace __gnu_cxx {
