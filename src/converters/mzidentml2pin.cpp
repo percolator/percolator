@@ -93,7 +93,7 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
   ifs.open (filename);
 
   parser p;
-  string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+  string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
   string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
   xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, filename, true, schemaDefinition,
@@ -252,7 +252,7 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
     ifs.open (fileName);
     parser p;
-    string schemaDefinition = SCHEMA + string("percolator_in.xsd");
+    string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fileName, true, schemaDefinition,
