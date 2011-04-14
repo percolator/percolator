@@ -2,8 +2,8 @@
 
 struct underflow_info
 {
-  xml_schema::buffer* buf;
-  size_t pos;
+    xml_schema::buffer* buf;
+    size_t pos;
 };
 
 extern "C" int
@@ -15,13 +15,13 @@ underflow (void* user_data, char* buf, int n);
 
 
 extern "C"
-  typedef  void (*xdrrec_create_p) (
-				    XDR*,
-				    unsigned int write_size,
-				    unsigned int read_size,
-				    void* user_data,
-				    int (*read) (void* user_data, char* buf, int n),
-				    int (*write) (void* user_data, char* buf, int n));
+typedef  void (*xdrrec_create_p) (
+    XDR*,
+    unsigned int write_size,
+    unsigned int read_size,
+    void* user_data,
+    int (*read) (void* user_data, char* buf, int n),
+    int (*write) (void* user_data, char* buf, int n));
 
 
 /*
@@ -33,17 +33,24 @@ typedef  void (*xdrrec_create_p) (
   void* user_data,
   int (*read) (void* user_data, char* buf, int n),
   int (*write) (void* user_data, char* buf, int n));
-*/
+ */
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase() : bdb(0), scan2rt(0) {
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
-   xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
-   xdr.x_op = XDR_ENCODE;
-   std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
-   assert(tmpPtr.get());
-   oxdrp=tmpPtr;
+  xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
+  xdr.x_op = XDR_ENCODE;
+  std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
+  assert(tmpPtr.get());
+  oxdrp=tmpPtr;
 }
 
+//FragSpectrumScanDatabase::FragSpectrumScanDatabase(const
+//FragSpectrumScanDatabase& original) {
+//  bdb = original.bdb;
+//  scan2rt = original.scan2rt;
+//  xdr = original.xdr;
+//  oxdrp = original.oxdrp;
+//}
 
 void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
     double observedMassCharge,
@@ -62,15 +69,21 @@ void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
   return;
 }
 
+//   The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is
+//   possible in the unix system call open (see "man 2 open"). This may be a
+//   security issue if the filename to the Tokyo cabinet database is in a
+//   directory that other users have write access to. They could add a symbolic
+//   link pointing somewhere else. It would be better if Tokyo Cabinet would
+//   fail if the database existed in our case when we use a temporary file.
 bool FragSpectrumScanDatabase::init(std::string fileName) {
   bdb = tcbdbnew();
   assert(bdb);
-/*
+  /*
   retu = tchdbsetxmsiz(hdb, 200*1024*1024);
   assert( retu );
   retu = tchdbsetcache(hdb, 1000);
   assert( retu );
-*/
+   */
   bool ret =  tcbdbsetcmpfunc(bdb, tccmpint32, NULL);
   assert(ret);
   if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER | BDBOCREAT )){
@@ -140,9 +153,9 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
   while (( key = static_cast< char * > ( tcbdbcurkey(cursor,&keySize)) ) != 0 ) {
     char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
     if(value){
-       std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
-       // XMLCh * strName = xercesc::XMLString::transcode("XML 1.0 Traversal 2.0");
-       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
+      // XMLCh * strName = xercesc::XMLString::transcode("XML 1.0 Traversal 2.0");
+      ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
       free(value);
     }
     free(key);

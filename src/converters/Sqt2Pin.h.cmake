@@ -63,8 +63,8 @@ public:
 
 protected:
 	ParseOptions parseOptions;
-        char* tokyoCabinetDir;
-	std::string tokyoCabinetTmpFN;
+        std::vector<char*> tokyoCabinetDirs;
+	std::vector<std::string> tokyoCabinetTmpFNs;
 	std::string targetFN;
 	std::string decoyFN;
 	std::string xmlOutputFN;

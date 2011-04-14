@@ -8,13 +8,14 @@
 #include "Sqt2Pin.h"
 
 Sqt2Pin::Sqt2Pin() {
-  tokyoCabinetDir = NULL;
+  tokyoCabinetDirs = std::vector<char*>();
+  tokyoCabinetTmpFNs = std::vector<std::string>();
 }
 
 Sqt2Pin::~Sqt2Pin() {
-  //deleting temporary folder
-  rmdir(tokyoCabinetDir);
-  delete tokyoCabinetDir;
+  //deleting temporary folder(s)
+  for(int i=0; i<tokyoCabinetDirs.size(); i++)
+    rmdir(tokyoCabinetDirs[i]);
 }
 
 string Sqt2Pin::greeter() {
@@ -120,19 +121,9 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   cmd.parseArgs(argc, argv);
   // now query the parsing results
 
-  if (cmd.optionSet("Y")) { tokyoCabinetTmpFN = cmd.options["Y"];
-  } else  {
-    // create temporary directory to store the pointer to the tokyo-cabinet
-    // database (avoid race conditions between multiple instances of sqt2pin
-    // running simultaneously)
-    string str = string(WRITABLE_DIR) + "sqt2pin_XXXXXX";
-    tokyoCabinetDir = new char[str.size() + 1];
-    std::copy(str.begin(), str.end(), tokyoCabinetDir);
-    tokyoCabinetDir[str.size()] = '\0';
-    mkdtemp(tokyoCabinetDir);
-    tokyoCabinetTmpFN = string(tokyoCabinetDir) + "/percolator-tmp.tcb";
+  if (cmd.optionSet("Y")) {
+    tokyoCabinetTmpFNs.push_back(cmd.options["Y"]);
   }
-
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
@@ -210,7 +201,7 @@ void Sqt2Pin::readRetentionTime(string filename) {
   delete[] cstr;
 }
 
-void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase& database){
+void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
   // for each spectra from the ms2 file
   typedef std::map<int, vector<double> > map_t;
   BOOST_FOREACH(map_t::value_type& i, scan2rt){
@@ -218,8 +209,8 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase& database){
     int scanNr = i.first;
     // related retention times
     vector<double>* rTimes = &(i.second);
-    if(database.getFSS(scanNr).get()!=0){
-      fragSpectrumScan fss = *(database.getFSS(scanNr));
+    if(database->getFSS(scanNr).get()!=0){
+      fragSpectrumScan fss = *(database->getFSS(scanNr));
       fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq =
           fss.peptideSpectrumMatch();
       // retention time to be stored
@@ -262,80 +253,81 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase& database){
           psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
         psmIter->observedTime().set(storeMe);
       }
-      database.putFSS(fss);
+      database->putFSS(fss);
     }
   }
 }
 
 int Sqt2Pin::run() {
   // Content of sqt files is merged: preparing to write it to xml file
-	ofstream xmlOutputStream;
-	xmlOutputStream.open(xmlOutputFN.c_str());
-	if(!xmlOutputStream && xmlOutputFN != ""){
-	  cout << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
-	  cout << "Please invoke sqt2pin with a valid -o option" << endl;
-	  exit(-1);
-	}
-	xercesc::XMLPlatformUtils::Initialize ();
+  ofstream xmlOutputStream;
+  xmlOutputStream.open(xmlOutputFN.c_str());
+  if(!xmlOutputStream && xmlOutputFN != ""){
+    cout << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
+    cout << "Please invoke sqt2pin with a valid -o option" << endl;
+    exit(-1);
+  }
+  xercesc::XMLPlatformUtils::Initialize ();
 
-  // initializing features and experiment
+  // initializing xercesc objects corresponding to pin element...
+  // ... <featureDescriptions>
   std::auto_ptr<percolatorInNs::featureDescriptions>
   fdes_p (new ::percolatorInNs::featureDescriptions());
 
+  // ... <process_info>
   percolatorInNs::process_info::command_line_type command_line = call;
   std::auto_ptr<percolatorInNs::process_info>
   proc_info (new ::percolatorInNs::process_info(command_line));
 
+  // ... <experiment>
   std::auto_ptr< ::percolatorInNs::experiment >
   ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
 
   int maxCharge = -1;
   int minCharge = 10000;
-  FragSpectrumScanDatabase database;
 
-  /* The function "tcbdbopen" in Tokyo Cabinet does not have O_EXCL as is
-	   possible in the unix system call open (see "man 2 open"). This may be a
-	   security issue if the filename to the Tokyo cabinet database is in a
-	   directory that other users have write access to. They could add a symbolic
-	   link pointing somewhere else. It would be better if Tokyo Cabinet would
-	   fail if the database existed in our case when we use a temporary file.
-   */
-  database.init(tokyoCabinetTmpFN);
+  vector<FragSpectrumScanDatabase*> databases;
 
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
     // First we only search for the maxCharge and minCharge.
     // This done by passing the argument justSearchMaxMinCharge
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database);
+        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
+        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
     SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge, database);
+        &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge, databases,
+        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
     // Now we do full parsing of the Sqt file, and translating it to XML
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  SqtReader::fullParsing, database);
+        &maxCharge, &minCharge,  SqtReader::fullParsing, databases,
+        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
     SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::fullParsing, database);
+        &maxCharge, &minCharge, SqtReader::fullParsing, databases,
+        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
 
   } else {
     // First we only search for the maxCharge and minCharge.
     //This done by passing the argument justSearchMaxMinCharge
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, database);
+        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
+        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
     // Now we do full parsing of the Sqt file, and translating it to XML
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::fullParsing, database);
+        &maxCharge, &minCharge, SqtReader::fullParsing, databases,
+        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
   }
 
   // read retention time if sqt2pin was invoked with -2 option
   if (spectrumFile.size() > 0) {
     readRetentionTime(spectrumFile);
-    database.initRTime(&scan2rt);
-    storeRetentionTime(database);
+    databases[0]->initRTime(&scan2rt);
+    storeRetentionTime(databases[0]);
   }
 
   xercesc::XMLPlatformUtils::Terminate();
@@ -350,8 +342,8 @@ int Sqt2Pin::run() {
       "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
   if (xmlOutputFN == "") cout << headerStr;
   else {
-	  xmlOutputStream << headerStr;
-	  cout <<  "The output will be written to " << xmlOutputFN << endl;
+    xmlOutputStream << headerStr;
+    cout <<  "The output will be written to " << xmlOutputFN << endl;
   }
 
   std::string enzyme;
@@ -367,8 +359,8 @@ int Sqt2Pin::run() {
   else xmlOutputStream << enzymeStr;
 
   string commandLine = "\n<process_info>\n" +
-    string("  <command_line>") + call.substr(0,call.length()-1) + "</command_line>\n"+
-    "</process_info>\n";
+      string("  <command_line>") + call.substr(0,call.length()-1) + "</command_line>\n"+
+      "</process_info>\n";
   if (xmlOutputFN == "") cout << commandLine;
   else xmlOutputStream << commandLine;
 
@@ -376,24 +368,27 @@ int Sqt2Pin::run() {
 
   // print to cout (or populate xml file with) experiment information
   if (xmlOutputFN == "") {
-	  serializer ser;
-	  ser.start (std::cout);
-	  ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-			  ex_p->featureDescriptions());
-	  database.print(ser);
-	  std::cout << "</experiment>" << std::endl;
+    serializer ser;
+    ser.start (std::cout);
+    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
+        ex_p->featureDescriptions());
+    for(int i=0; i<databases.size();i++)
+      databases[i]->print(ser);
+    std::cout << "</experiment>" << std::endl;
   } else {
-	  serializer serXML;
-	  serXML.start (xmlOutputStream);
-	  serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-			  ex_p->featureDescriptions() );
-	  database.print(serXML);
-	  xmlOutputStream << "</experiment>" << std::endl;
-	  xmlOutputStream.close(); // close stream for output XML file
-	  cout << "Termination successful."<< endl;
+    serializer serXML;
+    serXML.start (xmlOutputStream);
+    serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
+        ex_p->featureDescriptions() );
+    for(int i=0; i<databases.size();i++)
+      databases[i]->print(serXML);
+    xmlOutputStream << "</experiment>" << std::endl;
+    xmlOutputStream.close(); // close stream for output XML file
+    cout << "Termination successful."<< endl;
   }
 
-  database.terminte();
+  for(int i=0; i<databases.size();i++)
+    databases[i]->terminte();
   xercesc::XMLPlatformUtils::Terminate();
 
   return 0;
