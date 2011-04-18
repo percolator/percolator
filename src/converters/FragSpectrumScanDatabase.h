@@ -53,11 +53,10 @@ class FragSpectrumScanDatabase {
         auto_ptr<peptideSpectrumMatch> psm_p );
     void print(serializer & ser );
     void terminte();
-    TCBDB* bdb;
   protected:
     XDR xdr;
     xml_schema::buffer buf;
-    //TCBDB* bdb;
+    TCBDB* bdb;
     // pointer to retention times
     map<int, vector<double> >* scan2rt;
     // is scoped_ptr possible here?

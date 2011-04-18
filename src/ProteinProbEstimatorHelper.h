@@ -33,7 +33,7 @@
 #include "Vector.h"
 #include "Globals.h"
 using namespace std;
-#include <ext/hash_set>
+#include <boost/unordered_set.hpp>
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,8 +216,8 @@ struct GridPoint {
       objectiveFnValue = -1;
       alpha = alpha_par;
       beta = beta_par;
-      truePositives = Array<string>();
-      falsePositives = Array<string>();
+      targets = Array<string>();
+      decoys = Array<string>();
     }
     void calculateObjectiveFn(double lambda, ProteinProbEstimator*
         toBeTested, ostringstream& debug);
@@ -228,8 +228,8 @@ struct GridPoint {
         return true;
       else return false;
     }
-    Array<string> truePositives;
-    Array<string> falsePositives;
+    Array<string> targets;
+    Array<string> decoys;
     double objectiveFnValue;
     double alpha;
     double beta;
@@ -426,21 +426,21 @@ void Grid::setToBest(ProteinProbEstimator* toBeTested){
  * target) of the peptides associated with the protein in the proteinsToPeptides
  * hash table
  */
-void populateTPandFNLists(GridPoint* point, const fidoOutput& output,
+void populateTargetDecoyLists(GridPoint* point, const fidoOutput& output,
     ProteinProbEstimator* toBeTested){
-  assert(point->truePositives.size()==0);
-  assert(point->falsePositives.size()==0);
+  assert(point->targets.size()==0);
+  assert(point->decoys.size()==0);
   // for each protein in fido's output
   for(int i1=0; i1<output.peps.size(); i1++){
     for(int i2=0; i2<output.protein_ids[i1].size(); i2++){
       // store the protein id
       string protein_id = output.protein_ids[i1][i2];
       double probOfDecoy = isDecoyProbability(protein_id, toBeTested);
-      if(probOfDecoy == 0) point->truePositives.add(protein_id);
-      else if(probOfDecoy == 1) point->falsePositives.add(protein_id);
+      if(probOfDecoy == 0) point->targets.add(protein_id);
+      else if(probOfDecoy == 1) point->decoys.add(protein_id);
       else {
-        point->truePositives.add(protein_id);
-        point->falsePositives.add(protein_id);
+        point->targets.add(protein_id);
+        point->decoys.add(protein_id);
       }
 
     }
@@ -451,14 +451,14 @@ void populateTPandFNLists(GridPoint* point, const fidoOutput& output,
 
 void calculateFDRs(
     const fidoOutput output,
-    const Array<string>& truePositives, const Array<string>& falsePositives,
+    const Array<string>& targets, const Array<string>& decoys,
     Array<double>& estimatedFdrs, Array<double>& empiricalFdrs);
 
 double calculateMSE_FDR(double threshold,
     const Array<double>& estimatedFdr, const Array<double>& empiricalFdr);
 
 void calculateRoc(const fidoOutput output,
-    const Array<string>& truePositives, const Array<string>& falsePositives,
+    const Array<string>& targets, const Array<string>& decoys,
     Array<int>& fps, Array<int>& tps);
 
 double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps);
@@ -476,19 +476,19 @@ void GridPoint::calculateObjectiveFn(double lambda,
   toBeTested->alpha = alpha;
   toBeTested->beta = beta;
   fidoOutput output = toBeTested->calculateProteinProb(false);
-  populateTPandFNLists(this, output, toBeTested);
+  populateTargetDecoyLists(this, output, toBeTested);
   if(VERB > 4) {
     // output the results of the probability calculation to file
     writeOutputToFile(output, "/tmp/2percolator_fido_output.txt");
     ofstream o("/tmp/3percolator_TPFP_lists.txt");
-    o << truePositives << falsePositives << endl;
+    o << targets << decoys << endl;
     o.close();
   }
 
   // calculate MSE_FDR
   Array<double> estimatedFdrs = Array<double>();
   Array<double> empiricalFdrs = Array<double>();
-  calculateFDRs(output, truePositives, falsePositives,
+  calculateFDRs(output, targets, decoys,
       estimatedFdrs, empiricalFdrs);
   if(VERB > 4) {
     // output the results of the MSE_FDR to file
@@ -509,7 +509,7 @@ void GridPoint::calculateObjectiveFn(double lambda,
   // calculate ROC50
   Array<int> fps = Array<int>();
   Array<int> tps = Array<int>();
-  calculateRoc(output, truePositives, falsePositives, fps, tps);
+  calculateRoc(output, targets, decoys, fps, tps);
   if(VERB > 4) {
     // output the results of the ROC50 calculation to file
     ofstream o2("/tmp/5percolator_ROC50_lists.txt");
@@ -527,29 +527,21 @@ void GridPoint::calculateObjectiveFn(double lambda,
       << "\n";
 }
 
-namespace __gnu_cxx {
-template<> struct hash< std::string > {
-    size_t operator()( const std::string & x ) const {
-      return hash< const char* >()( x.c_str() );
-    }
-};
-}
-
-int matchCount(const __gnu_cxx::hash_set<string> & positiveNames,
+int matchCount(const boost::unordered_set<string>& positiveNames,
     const Array<string> & atThreshold) {
   int count = 0;
   for (int k=0; k<atThreshold.size(); k++) {
-    if ( positiveNames.count( atThreshold[k] ) > 0 )
+    if (positiveNames.find(atThreshold[k]) != positiveNames.end())
       count++;
   }
   return count;
 }
 
-Array<string> matches(const __gnu_cxx::hash_set<string> & positiveNames,
+Array<string> matches(const boost::unordered_set<string>& positiveNames,
     const Array<string> & atThreshold) {
   Array<string> result;
   for (int k=0; k<atThreshold.size(); k++) {
-    if ( positiveNames.count( atThreshold[k] ) > 0 )
+    if (positiveNames.find(atThreshold[k]) != positiveNames.end())
       result.add( atThreshold[k] );
   }
   return result;
@@ -561,18 +553,18 @@ Array<string> matches(const __gnu_cxx::hash_set<string> & positiveNames,
  */
 void calculateFDRs(
     const fidoOutput output,
-    const Array<string>& truePositives, const Array<string>& falsePositives,
+    const Array<string>& targets, const Array<string>& decoys,
     Array<double>& estimatedFdrs, Array<double>& empiricalFdrs) {
 
   estimatedFdrs.clear();
   empiricalFdrs.clear();
-  __gnu_cxx::hash_set<string> truePosSet(truePositives.size()),
-      falsePosSet(falsePositives.size());
+  boost::unordered_set<string> truePosSet(targets.size()),
+      falsePosSet(decoys.size());
   int k;
-  for (k=0; k<truePositives.size(); k++)
-    truePosSet.insert(truePositives[k]);
-  for (k=0; k<falsePositives.size(); k++)
-    falsePosSet.insert(falsePositives[k]);
+  for (k=0; k<targets.size(); k++)
+    truePosSet.insert(targets[k]);
+  for (k=0; k<decoys.size(); k++)
+    falsePosSet.insert(decoys[k]);
   Array<string> protsAtThreshold;
   string line;
   double prob, lastProb=-1;
@@ -676,17 +668,17 @@ double calculateMSE_FDR(double threshold,
  *
  */
 void calculateRoc(const fidoOutput output,
-    const Array<string>& truePositives, const Array<string>& falsePositives,
+    const Array<string>& targets, const Array<string>& decoys,
     Array<int>& fps, Array<int>& tps) {
 
-  __gnu_cxx::hash_set<string> truePosSet(truePositives.size()),
-      falsePosSet(falsePositives.size());
+  boost::unordered_set<string> truePosSet(targets.size()),
+      falsePosSet(decoys.size());
   int k;
-  for (k=0; k<truePositives.size(); k++) {
-    truePosSet.insert( truePositives[k] );
+  for (k=0; k<targets.size(); k++) {
+    truePosSet.insert( targets[k] );
   }
-  for (k=0; k<falsePositives.size(); k++) {
-    falsePosSet.insert( falsePositives[k] );
+  for (k=0; k<decoys.size(); k++) {
+    falsePosSet.insert( decoys[k] );
   }
   Array<string> protsAtThreshold;
   string line;
