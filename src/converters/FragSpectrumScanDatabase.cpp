@@ -35,13 +35,15 @@ typedef  void (*xdrrec_create_p) (
   int (*write) (void* user_data, char* buf, int n));
  */
 
-FragSpectrumScanDatabase::FragSpectrumScanDatabase() : bdb(0), scan2rt(0) {
+FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
+    bdb(0), scan2rt(0) {
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
   xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
   xdr.x_op = XDR_ENCODE;
   std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
   assert(tmpPtr.get());
   oxdrp=tmpPtr;
+  if(id_par.empty()) id = "no_id"; else id = id_par;
 }
 
 //FragSpectrumScanDatabase::FragSpectrumScanDatabase(const

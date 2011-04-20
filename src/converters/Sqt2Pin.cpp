@@ -18,6 +18,19 @@ Sqt2Pin::~Sqt2Pin() {
     rmdir(tokyoCabinetDirs[i]);
 }
 
+string Sqt2Pin::extendedGreeter() {
+  ostringstream oss;
+  char* host = getenv("HOST");
+  if (!host) {
+    host = (char*)"unknown_host";
+  }
+  oss << greeter();
+  oss << "Issued command:" << endl << call << endl;
+  oss.seekp(-1, ios_base::cur);
+  oss << " on " << host << endl;
+  return oss.str();
+}
+
 string Sqt2Pin::greeter() {
   ostringstream oss;
   oss << "Sqt2Pin version " << VERSION << ", ";
@@ -162,6 +175,9 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
   }
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  }
   if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
   if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
   return true;
@@ -259,12 +275,15 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
 }
 
 int Sqt2Pin::run() {
+  if (VERB > 0) {
+    cerr << extendedGreeter();
+  }
   // Content of sqt files is merged: preparing to write it to xml file
   ofstream xmlOutputStream;
   xmlOutputStream.open(xmlOutputFN.c_str());
   if(!xmlOutputStream && xmlOutputFN != ""){
-    cout << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
-    cout << "Please invoke sqt2pin with a valid -o option" << endl;
+    cerr << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
+    cerr << "Please invoke sqt2pin with a valid -o option" << endl;
     exit(-1);
   }
   xercesc::XMLPlatformUtils::Initialize ();
@@ -343,18 +362,10 @@ int Sqt2Pin::run() {
   if (xmlOutputFN == "") cout << headerStr;
   else {
     xmlOutputStream << headerStr;
-    cout <<  "The output will be written to " << xmlOutputFN << endl;
+    cerr <<  "The output will be written to " << xmlOutputFN << endl;
   }
 
-  std::string enzyme;
-  switch ( Enzyme::getEnzymeType() ) {
-    case Enzyme::NO_ENZYME : { enzyme = "NO_ENZYME"; break; }
-    case Enzyme::TRYPSIN : { enzyme = "trypsin"; break; }
-    case Enzyme::CHYMOTRYPSIN : { enzyme = "chymotrypsin"; break; }
-    case Enzyme::ELASTASE : { enzyme = "elastase"; break; }
-  }
-
-  string enzymeStr = "\n<enzyme>" + enzyme + "</enzyme>\n";
+  string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
   if (xmlOutputFN == "") cout << enzymeStr;
   else xmlOutputStream << enzymeStr;
 
@@ -372,25 +383,35 @@ int Sqt2Pin::run() {
     ser.start (std::cout);
     ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
         ex_p->featureDescriptions());
-    for(int i=0; i<databases.size();i++)
+    for(int i=0; i<databases.size();i++) {
+      if(VERB>1){
+        cerr << "Populating pin file with information from "
+            << databases[i]->id << " (and correspondent decoy file)\n";
+      }
       databases[i]->print(ser);
+    }
     std::cout << "</experiment>" << std::endl;
   } else {
     serializer serXML;
     serXML.start (xmlOutputStream);
     serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
         ex_p->featureDescriptions() );
-    for(int i=0; i<databases.size();i++)
+    for(int i=0; i<databases.size();i++){
+      if(VERB>1){
+      cerr << "Outputting pin information from "
+          << databases[i]->id << " (and correspondent decoy file)\n";
+      }
       databases[i]->print(serXML);
+    }
     xmlOutputStream << "</experiment>" << std::endl;
     xmlOutputStream.close(); // close stream for output XML file
-    cout << "Termination successful."<< endl;
   }
 
   for(int i=0; i<databases.size();i++)
     databases[i]->terminte();
   xercesc::XMLPlatformUtils::Terminate();
 
+  cerr << "Termination successful."<< endl;
   return 0;
 }
 

@@ -40,7 +40,7 @@ class serializer;
 
 class FragSpectrumScanDatabase {
   public:
-    FragSpectrumScanDatabase();
+    FragSpectrumScanDatabase(string id=0);
     ~FragSpectrumScanDatabase(){}
     FragSpectrumScanDatabase(const FragSpectrumScanDatabase& original){}
     bool init(std::string filename);
@@ -53,6 +53,7 @@ class FragSpectrumScanDatabase {
         auto_ptr<peptideSpectrumMatch> psm_p );
     void print(serializer & ser );
     void terminte();
+    string id;
   protected:
     XDR xdr;
     xml_schema::buffer buf;
