@@ -57,9 +57,7 @@ class ProteinProbEstimator {
     double alpha;
     double beta;
     ProteinProbEstimator(double alpha, double beta);
-    virtual ~ProteinProbEstimator() {
-      delete proteinGraph;
-    }
+    virtual ~ProteinProbEstimator();
     bool initialize(Scores* fullset);
     void setDefaultParameters();
     fidoOutput calculateProteinProb(bool gridSearch);
@@ -67,6 +65,7 @@ class ProteinProbEstimator {
     void writeOutputToXML(string xmlOutputFN, const fidoOutput& output);
     static string printCopyright();
     static void testGridRanges();
+    void plotQValues(const fidoOutput& output);
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
   private:
     void gridSearchAlphaBeta();

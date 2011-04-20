@@ -1078,6 +1078,8 @@ int Caller::run() {
       cerr << output.proteinsAtThr2 << "\t: proteins found at a q-value of "
           << output.threshold2 <<"\n";
       protEstimator->writeOutput(output);
+      // uncomment to plot estimated vs empirical q-values
+      //protEstimator->plotQValues(output);
     }
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins(output);

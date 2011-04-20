@@ -69,11 +69,20 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
-struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool>
-{
+struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return __x.pPSM->getPeptide() < __y.pPSM->getFullPeptide();
+  }
+};
+
+struct lexicEq : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool
+  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    string xPept = __x.pPSM->getPeptideNoResidues();
+    string yPept = __y.pPSM->getPeptideNoResidues();
+    if(xPept.compare(yPept) == 0) return true;
+    else return false;
   }
 };
 

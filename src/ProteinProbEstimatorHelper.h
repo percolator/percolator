@@ -30,10 +30,10 @@
 #include <set>
 #include <limits>
 #include <iomanip>
+#include <boost/unordered_set.hpp>
 #include "Vector.h"
 #include "Globals.h"
 using namespace std;
-#include <boost/unordered_set.hpp>
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -276,7 +276,6 @@ struct Grid{
     double getUpper_b() const;
     double updateCurrent_a();
     double updateCurrent_b();
-    static void testGridRanges();
     void compareAgainstDefault(ProteinProbEstimator* toBeTested);
     double current_a;
     double current_b;
@@ -338,18 +337,6 @@ double Grid::updateCurrent_a(){
 }
 double Grid::updateCurrent_b(){
   current_b+=incrementBeta;
-}
-
-/** prints the grid
- */
-void Grid::testGridRanges(){
-  Grid grid = Grid();
-  grid.current_a = grid.getLower_a();
-  for(; grid.current_a<=grid.getUpper_a(); grid.updateCurrent_a()){
-    grid.current_b = grid.getLower_b();
-    for(; grid.current_b<=grid.getUpper_b(); grid.updateCurrent_b()){
-    }
-  }
 }
 
 /**
@@ -558,17 +545,17 @@ void calculateFDRs(
 
   estimatedFdrs.clear();
   empiricalFdrs.clear();
-  boost::unordered_set<string> truePosSet(targets.size()),
-      falsePosSet(decoys.size());
+  boost::unordered_set<string> targetsSet(targets.size()),
+      decoysSet(decoys.size());
   int k;
   for (k=0; k<targets.size(); k++)
-    truePosSet.insert(targets[k]);
+    targetsSet.insert(targets[k]);
   for (k=0; k<decoys.size(); k++)
-    falsePosSet.insert(decoys[k]);
+    decoysSet.insert(decoys[k]);
   Array<string> protsAtThreshold;
   string line;
   double prob, lastProb=-1;
-  int fpCount = 0, tpCount = 0;
+  int decoysCount = 0, targetsCount = 0;
   int numScored = 0;
   Array<string> observedProteins;
   double estFDR = 0.0;
@@ -581,25 +568,25 @@ void calculateFDRs(
     protsAtThreshold = output.protein_ids[k];
     numScored += protsAtThreshold.size();
     observedProteins.append(protsAtThreshold);
-    int fpChange = matchCount(falsePosSet, protsAtThreshold);
-    int tpChange = matchCount(truePosSet, protsAtThreshold);
+    int decoysChange = matchCount(decoysSet, protsAtThreshold);
+    int targetsChange = matchCount(targetsSet, protsAtThreshold);
 
     if ( prob != lastProb && lastProb != -1 ){
       scheduledUpdate = true;
     }
     if ( scheduledUpdate ) {
-      if ( fpChange > 0 || tpChange > 0) {
+      if ( decoysChange > 0 || targetsChange > 0) {
         estimatedFdrs.add(estFDR);
         empiricalFdrs.add(empiricalFDR);
         scheduledUpdate = false;
       }
     }
 
-    fpCount += fpChange;
-    tpCount += tpChange;
+    decoysCount += decoysChange;
+    targetsCount += targetsChange;
     // calculating FDRs using a pi_0 approximation
     estFDR = output.qvalues[k];
-    empiricalFDR = output.pi_0 * fpCount/tpCount;
+    empiricalFDR = output.pi_0 * decoysCount/targetsCount;
     /* the same done without pi_0
     totalFDR += (1-prob) * (fpChange + tpChange);
     estFDR = totalFDR / (fpCount + tpCount);
@@ -671,19 +658,19 @@ void calculateRoc(const fidoOutput output,
     const Array<string>& targets, const Array<string>& decoys,
     Array<int>& fps, Array<int>& tps) {
 
-  boost::unordered_set<string> truePosSet(targets.size()),
-      falsePosSet(decoys.size());
+  boost::unordered_set<string> targetsSet(targets.size()),
+      decoysSet(decoys.size());
   int k;
   for (k=0; k<targets.size(); k++) {
-    truePosSet.insert( targets[k] );
+    targetsSet.insert( targets[k] );
   }
   for (k=0; k<decoys.size(); k++) {
-    falsePosSet.insert( decoys[k] );
+    decoysSet.insert( decoys[k] );
   }
   Array<string> protsAtThreshold;
   string line;
   double prob, lastProb=-1;
-  int fpCount = 0, tpCount = 0;
+  int decoysCount = 0, targetsCount = 0;
   int numScored = 0;
   Array<string> observedProteins;
   fps.add(0);
@@ -696,14 +683,14 @@ void calculateRoc(const fidoOutput output,
     protsAtThreshold = output.protein_ids[k];
     numScored += protsAtThreshold.size();
     observedProteins.append( protsAtThreshold );
-    int fpChange = matchCount(falsePosSet, protsAtThreshold);
-    int tpChange = matchCount(truePosSet, protsAtThreshold);
+    int decoysChange = matchCount(decoysSet, protsAtThreshold);
+    int targetsChange = matchCount(targetsSet, protsAtThreshold);
     if ( prob != lastProb && lastProb != -1 ) {
       scheduledUpdate = true;
     }
     if ( scheduledUpdate ) {
-      fps.add( fpCount );
-      tps.add( tpCount );
+      fps.add(decoysCount);
+      tps.add(targetsCount);
       scheduledUpdate = false;
       // calculating FDRs using a pi_0 approximation
       estFDR = output.qvalues[k];
@@ -712,15 +699,15 @@ void calculateRoc(const fidoOutput output,
       estFDR = totalFDR / (fpCount + tpCount);
        */
     }
-    fpCount += fpChange;
-    tpCount += tpChange;
+    decoysCount += decoysChange;
+    targetsCount += targetsChange;
     lastProb = prob;
   }
   lastProb = prob;
-  fps.add( fpCount );
-  tps.add( tpCount );
-  fps.add( falsePosSet.size() );
-  tps.add( truePosSet.size() );
+  fps.add( decoysCount );
+  tps.add( targetsCount );
+  fps.add( decoysSet.size() );
+  tps.add( targetsSet.size() );
 }
 
 double area(double x1, double y1, double x2, double y2, int N)

@@ -26,6 +26,7 @@
 #include <fstream>
 #include "ProteinProbEstimator.h"
 #include "ProteinProbEstimatorHelper.h"
+#include "ProteinProbEstimatorDebugger.h"
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
   peptideScores = 0;
@@ -33,6 +34,10 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
   gamma = 0.5;
   alpha = alpha_par; // 0.1;
   beta = beta_par; // 0.01;
+}
+
+ProteinProbEstimator::~ProteinProbEstimator(){
+  delete proteinGraph;
 }
 
 /**
@@ -224,7 +229,12 @@ string ProteinProbEstimator::printCopyright(){
 }
 
 void ProteinProbEstimator::testGridRanges(){
-  Grid::testGridRanges();
+  DebugHelper::testGridRanges();
+}
+
+void ProteinProbEstimator::plotQValues(const fidoOutput& output){
+  assert(output.peps.size()!=0);
+  DebugHelper::plotQValues(output,this);
 }
 
 
