@@ -27,13 +27,13 @@ string Sqt2Pin::extendedGreeter() {
   oss << greeter();
   oss << "Issued command:" << endl << call << endl;
   oss.seekp(-1, ios_base::cur);
-  oss << " on " << host << endl;
+  oss << "on " << host << endl;
   return oss.str();
 }
 
 string Sqt2Pin::greeter() {
   ostringstream oss;
-  oss << "Sqt2Pin version " << VERSION << ", ";
+  oss << "\nSqt2Pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Copyright (c) 2010 Lukas Käll. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
@@ -305,6 +305,10 @@ int Sqt2Pin::run() {
   int maxCharge = -1;
   int minCharge = 10000;
 
+  if(VERB>1){
+    cerr << "\nReading from sqt file(s) and writing to database(s):\n";
+  }
+
   vector<FragSpectrumScanDatabase*> databases;
 
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
@@ -377,6 +381,10 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Initialize ();
 
+  if(VERB>1){
+    cerr << "\nWriting database(s) to pin file:\n";
+  }
+
   // print to cout (or populate xml file with) experiment information
   if (xmlOutputFN == "") {
     serializer ser;
@@ -385,8 +393,8 @@ int Sqt2Pin::run() {
         ex_p->featureDescriptions());
     for(int i=0; i<databases.size();i++) {
       if(VERB>1){
-        cerr << "Populating pin file with information from "
-            << databases[i]->id << " (and correspondent decoy file)\n";
+        cerr << "writing " << databases[i]->id
+            << " (and correspondent decoy file)\n";
       }
       databases[i]->print(ser);
     }
@@ -398,8 +406,8 @@ int Sqt2Pin::run() {
         ex_p->featureDescriptions() );
     for(int i=0; i<databases.size();i++){
       if(VERB>1){
-      cerr << "Outputting pin information from "
-          << databases[i]->id << " (and correspondent decoy file)\n";
+        cerr << "writing " << databases[i]->id
+            << " (and correspondent decoy file)\n";
       }
       databases[i]->print(serXML);
     }

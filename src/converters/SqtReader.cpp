@@ -48,7 +48,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       assert(databases.size()==lineNumber_par+1);
     }
     if (VERB>1 && pType == SqtReader::fullParsing){
-      std::cerr << "Processing file " << fn << std::endl;
+      std::cerr << "reading " << fn << std::endl;
     }
     readSQT(fn,fds, fsss, isDecoy, po, maxCharge, minCharge, pType,
         databases[lineNumber_par]);

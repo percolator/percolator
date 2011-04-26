@@ -56,10 +56,11 @@ public:
 	Sqt2Pin();
 	virtual ~Sqt2Pin();
 	std::string greeter();
+	std::string extendedGreeter();
 	bool parseOpt(int argc, char **argv);
 	int run();
 	void readRetentionTime(std::string filename);
-	void storeRetentionTime(FragSpectrumScanDatabase& database);
+	void storeRetentionTime(FragSpectrumScanDatabase* database);
 
 protected:
 	ParseOptions parseOptions;
