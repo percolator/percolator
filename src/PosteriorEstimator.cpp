@@ -43,6 +43,7 @@ static double maxLambda = 0.5;
 
 bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
+bool PosteriorEstimator::general = false;
 
 pair<double, bool> make_my_pair(double d, bool b) {
   return make_pair(d, b);
@@ -141,8 +142,7 @@ void PosteriorEstimator::estimatePEP(
 
 void PosteriorEstimator::estimatePEPGeneral(
                                      vector<pair<double, bool> >& combined,
-                                     double pi0, vector<double>& peps,
-                                     bool includeNegativesInResult) {
+                                     vector<double>& peps) {
 	// Logistic regression on the data
 	size_t nTargets = 0, nDecoys = 0;
 	LogisticRegression lr;
@@ -248,6 +248,31 @@ void PosteriorEstimator::finishStandalone(
   }
 }
 
+void PosteriorEstimator::finishStandaloneGeneralized(
+                                          vector<pair<double, bool> >& combined,
+                                          const vector<double>& peps) {
+	vector<double> q(0), xvals(0);
+	getQValuesFromPEP(peps, q);
+	vector<pair<double, bool> >::const_iterator elem = combined.begin();
+	for (; elem != combined.end(); ++elem)
+			xvals.push_back(elem->first);
+	vector<double>::iterator xval = xvals.begin();
+	vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
+	if (resultFileName.empty()) {
+		cout << "Score\tPEP\tq-value" << endl;
+		for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
+			cout << *xval << "\t" << *pep << "\t" << *qv << endl;
+		}
+	} else {
+		ofstream resultstream(resultFileName.c_str());
+		resultstream << "Score\tPEP\tq-value" << endl;
+		for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
+			resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
+		}
+		resultstream.close();
+	}
+}
+
 void PosteriorEstimator::binData(
                                  const vector<pair<double, bool> >& combined,
                                  vector<double>& medians, vector<
@@ -317,15 +342,26 @@ void PosteriorEstimator::getQValues(double pi0, const vector<pair<double,
 
 void PosteriorEstimator::getQValuesFromP(double pi0,
                                          const vector<double>& p, vector<
-                                             double> & q) {
-  double m = (double)p.size();
-  int nP = 1;
-  // assuming combined sorted in decending order
-  for (vector<double>::const_iterator myP = p.begin(); myP != p.end(); ++myP, ++nP) {
-    q.push_back((*myP * m * pi0) / (double)nP);
-  }
-  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
-  return;
+										 double> & q) {
+	double m = (double)p.size();
+	int nP = 1;
+	// assuming combined sorted in decending order
+	for (vector<double>::const_iterator myP = p.begin(); myP != p.end(); ++myP, ++nP) {
+		q.push_back((*myP * m * pi0) / (double)nP);
+	}
+	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+	return;
+}
+void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double> & q) {
+	int nP = 0;
+	double sum = 0.0;
+	// assuming combined sorted in decending order
+	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
+		sum += *myP;
+		q.push_back(sum / (double)nP);
+	}
+	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+	return;
 }
 
 void PosteriorEstimator::getPValues(
@@ -461,11 +497,15 @@ int PosteriorEstimator::run() {
   if (!pvalInput) {
     getPValues(combined, pvals);
   }
+  vector<double> peps;
+  if (competition) {
+    estimatePEPGeneralized(combined, peps);
+	finishStandaloneGeneralized(combined, peps);
+  }
   double pi0 = estimatePi0(pvals);
   if (VERB > 1) {
     cerr << "Selecting pi_0=" << pi0 << endl;
   }
-  vector<double> peps;
   // Logistic regression on the data
   estimatePEP(combined, pi0, peps);
   finishStandalone(combined, peps, pvals, pi0);
@@ -527,7 +567,12 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "output-file",
                    "Output results to file instead of stdout",
                    "file");
-  cmd.parseArgs(argc, argv);
+  cmd.defineOption("g",
+                   "generalized",
+                   "Generalized target decoy competition, situations where known incorrect PSMs are mixed in ",
+				   "",
+				   TRUE_IF_SET);
+	cmd.parseArgs(argc, argv);
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
   }
@@ -545,6 +590,9 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("r")) {
     PosteriorEstimator::setReversed(true);
+  }
+  if (cmd.optionSet("g")) {
+    PosteriorEstimator::setGeneralized(true);
   }
   if (cmd.arguments.size() > 2) {
     cerr << "Too many arguments given" << endl;
