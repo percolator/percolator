@@ -138,6 +138,65 @@ void PosteriorEstimator::estimatePEP(
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
 }
 
+
+void PosteriorEstimator::estimatePEPGeneral(
+                                     vector<pair<double, bool> >& combined,
+                                     double pi0, vector<double>& peps,
+                                     bool includeNegativesInResult) {
+	// Logistic regression on the data
+	size_t nTargets = 0, nDecoys = 0;
+	LogisticRegression lr;
+	estimate(combined, lr);
+	vector<double> xvals(0);
+	vector<pair<double, bool> >::const_iterator elem = combined.begin();
+	for (; elem != combined.end(); ++elem)
+		if (elem->second) {
+			xvals.push_back(elem->first);
+			++nTargets;
+		} else {
+			if (includeNegativesInResult) {
+				xvals.push_back(elem->first);
+			}
+			++nDecoys;
+		}
+	lr.predict(xvals, peps);
+	//#define OUTPUT_DEBUG_FILES
+#undef OUTPUT_DEBUG_FILES
+#ifdef OUTPUT_DEBUG_FILES
+	ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
+	ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
+	copy(peps.begin(), peps.end(), drIt);
+	copy(xvals.begin(), xvals.end(), xvalIt);
+#endif
+	double top = exp(*max_element(peps.begin(), peps.end()));
+	top = top/(1+top);
+	bool crap = false;
+	vector<double>::iterator pep = peps.begin();
+	for (; pep != peps.end(); ++pep) {
+		// eg = p/(1-p)
+		// eg - egp = p
+		// p = eg/(1+eg)
+		double eg = exp(*pep);
+		*pep = eg/(1+eg);
+		if (*pep >= top) {
+			*pep = top;
+			crap = true;
+		}
+	}
+	partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
+
+	double high = exp(*max_element(peps.begin(), peps.end()));
+	double low = exp(*max_element(peps.begin(), peps.end()));
+	
+    pep = peps.begin();
+	for (; pep != peps.end(); ++pep) {
+		*pep = (*pep - low)/(high-low);
+	}
+	
+}
+
+
+
 void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
                                   LogisticRegression& lr) {
   // switch sorting order
