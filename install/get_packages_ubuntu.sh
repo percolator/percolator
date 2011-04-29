@@ -49,7 +49,7 @@ tar xzf "${gt_pack}.tar.gz"
 rm "${gt_pack}.tar.gz"
 
 echo "Building GoogleTest"
-cd gtest-1.5.0; mkdir build
+cd gtest-1.5.0; mkdir -p build
 cd build; cmake ../ 
 make
 cd ..
