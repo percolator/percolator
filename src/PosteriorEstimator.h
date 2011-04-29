@@ -34,7 +34,7 @@ class PosteriorEstimator {
     static void estimatePEP(vector<pair<double, bool> >& combined,
                             double pi0, vector<double>& peps,
                             bool includeNegativesInResult = false);
-    static void estimatePEPGeneral(vector<pair<double, bool> >& combined,
+    static void estimatePEPGeneralized(vector<pair<double, bool> >& combined,
                             vector<double>& peps);
     static void estimate(vector<pair<double, bool> >& combined,
                          LogisticRegression& lr);
@@ -44,6 +44,8 @@ class PosteriorEstimator {
                            const vector<pair<double, bool> >& combined,
                            vector<double>& q);
     static void getQValuesFromP(double pi0, const vector<double>& p,
+                                vector<double>& q);
+    static void getQValuesFromPEP(const vector<double>& pep,
                                 vector<double>& q);
     static double estimatePi0(vector<double>& p,
                               const unsigned int numBoot = 100);
@@ -58,6 +60,8 @@ protected:
     void finishStandalone(vector<pair<double, bool> >& combined,
                           const vector<double>& peps,
                           const vector<double>& p, double pi0);
+    void finishStandaloneGeneralized(vector<pair<double, bool> >& combined,
+                          const vector<double>& peps);
     static void binData(const vector<pair<double, bool> >& combined,
                         vector<double>& medians,
                         vector<unsigned int>& negatives, vector<
