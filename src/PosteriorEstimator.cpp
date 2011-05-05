@@ -171,6 +171,10 @@ void PosteriorEstimator::estimatePEPGeneralized(
   bool crap = false;
   vector<double>::iterator pep = peps.begin();
   for (; pep != peps.end(); ++pep) {
+    if (crap) {
+      *pep = top;
+      continue;
+    }
     // eg = p/(1-p)
     // eg - egp = p
     // p = eg/(1+eg)
@@ -182,9 +186,14 @@ void PosteriorEstimator::estimatePEPGeneralized(
     }
   }
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
-  double high = exp(*max_element(peps.begin(), peps.end()));
-  double low = exp(*min_element(peps.begin(), peps.end()));
+  double high = *max_element(peps.begin(), peps.end());
+  double low = *min_element(peps.begin(), peps.end());
   assert(high>low);
+
+  if (VERB > 2) {
+    cerr << "Highest generalized decoy rate =" << high
+	 << ", low rate = " << low << endl;
+  }
 
   pep = peps.begin();
   for (; pep != peps.end(); ++pep) {
@@ -498,7 +507,8 @@ int PosteriorEstimator::run() {
   if (competition) {
     estimatePEPGeneralized(combined, peps);
 	finishStandaloneGeneralized(combined, peps);
-  }
+	return 0;
+  } 
   double pi0 = estimatePi0(pvals);
   if (VERB > 1) {
     cerr << "Selecting pi_0=" << pi0 << endl;
@@ -513,7 +523,7 @@ string PosteriorEstimator::greeter() {
   ostringstream oss;
   oss << "qvality version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Distributed under MIT License" << endl;
+  oss << "Distributed under Apache 2.0 License" << endl;
   oss << "Written by Lukas Käll (lukas.kall@cbr.su.se) in the" << endl;
   oss << "Department of Genome Sciences at the University of Washington."
       << endl;
@@ -566,7 +576,7 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "file");
   cmd.defineOption("g",
                    "generalized",
-                   "Generalized target decoy competition, situations where known incorrect PSMs are mixed in ",
+                   "Generalized target decoy competition, situations where PSMs known to more frequently be incorrect are mixed in with the correct PSMs",
 				   "",
 				   TRUE_IF_SET);
 	cmd.parseArgs(argc, argv);
