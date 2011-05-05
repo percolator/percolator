@@ -183,7 +183,8 @@ void PosteriorEstimator::estimatePEPGeneralized(
   }
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
   double high = exp(*max_element(peps.begin(), peps.end()));
-  double low = exp(*max_element(peps.begin(), peps.end()));
+  double low = exp(*min_element(peps.begin(), peps.end()));
+  assert(high>low);
 
   pep = peps.begin();
   for (; pep != peps.end(); ++pep) {
