@@ -346,12 +346,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     DescriptionOfCorrect::setDocType(cmd.getInt("D", 0, 15));
   }
   if (cmd.optionSet("Z")) {
-    if (xmlOutputFN.empty()) {
-      cerr
-      << "The -Z switch was set without any xml-output file specified"
-      << stderr;
-      exit(-1);
-    }
     Scores::setOutXmlDecoys(true);
   }
   // if parts of the arguments are left unparsed,
@@ -1061,25 +1055,21 @@ int Caller::run() {
   }
   // calculate protein level probabilities
   if(calculateProteinLevelProb){
-    if (VERB > 1){
+    if (VERB > 0){
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
     clock_t start=clock();
     bool gridSearch = protEstimator->initialize(&fullset);
-    fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+    fidoOutput output = protEstimator->run(gridSearch);
     clock_t finish=clock();
-    if(VERB > 1) {
+    if(VERB > 0) {
+      protEstimator->printStatistics(output);
       cerr << "Protein level probabilities have been successfully calculated "
-          << "(" << (finish-start)/1000000 << " s)!" << endl;
-      cerr << output.totProteins << "\t: total number of proteins\n";
-      cerr << output.proteinsAtThr1 << "\t: proteins found at a q-value of "
-          << output.threshold1 <<"\n";
-      cerr << output.proteinsAtThr2 << "\t: proteins found at a q-value of "
-          << output.threshold2 <<"\n";
+          << "(" << (finish-start)/1000000 << " s)!\n";
       protEstimator->writeOutput(output);
-      // uncomment to plot estimated vs empirical q-values
-      //protEstimator->plotQValues(output);
+      protEstimator->plotQValues(output);
+      protEstimator->plotRoc(output,50);
     }
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins(output);

@@ -40,14 +40,73 @@ using namespace std;
 // HELPER FUNCTIONS FOR ProteinProbEstimator METHODS
 ///////////////////////////////////////////////////////////////////////////////
 
-double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator);
+struct ProteinHelper{
+    ProteinHelper();
+    ~ProteinHelper();
+    static unsigned int countTargets(const Array<string>& protein_ids,
+        ProteinProbEstimator* estimator);
+    static unsigned int countDecoys(const Array<string>& protein_ids,
+        ProteinProbEstimator* estimator);
+    static fidoOutput buildOutput(
+        GroupPowerBigraph* proteinGraph, ProteinProbEstimator* estimator);
+    static void writeOutputToFile(fidoOutput output, string fileName);
+    static void writeXML_writeAssociatedPeptides(
+        string& protein_id, ofstream& os,
+        map<string, vector<ScoreHolder*> >& proteinsToPeptides);
+    static void populateProteinsToPeptidesTable(
+        Scores* fullset, ProteinProbEstimator* thisEstimator);
+    static double isDecoyProbability(
+        string protein_id, ProteinProbEstimator* estimator);
+    static void printStatistics(const fidoOutput& output);
+};
 
-unsigned int countTargets(const Array<string>& protein_ids,
+/**
+ * given a list of protein ids returns the number of targets
+ *
+ * @param protein_ids
+ * @param estimator object containing the complete lists of targets and decoys
+ * for the experiment
+ */
+unsigned int ProteinHelper::countTargets(const Array<string>& protein_ids,
     ProteinProbEstimator* estimator){
-  unsigned int count(0);
-  for(int p=0; p<protein_ids.size(); p++)
-    if(isDecoyProbability(protein_ids[p], estimator)<0.5) count++;
-  return count;
+  unsigned int countTargets(0);
+  // for each protein in the list
+  for(int p=0; p<protein_ids.size(); p++){
+    // if the protein is a target...
+    if(isDecoyProbability(protein_ids[p], estimator)<0.5){
+      if(ProteinProbEstimator::tiesAsOneProtein) {
+        // ... return in case ties are being counted as one protein
+        return 1;
+      } else {
+        // ... otherwise, increment the counter and keep going
+        if(isDecoyProbability(protein_ids[p], estimator)<0.5) countTargets++;
+      }
+    }
+  }
+  return countTargets;
+}
+
+/**
+ * given a list of protein ids returns the number of decoys
+ *
+ * @param protein_ids
+ * @param estimator object containing the complete lists of targets and decoys
+ * for the experiment
+ */
+unsigned int ProteinHelper::countDecoys(const Array<string>& protein_ids,
+    ProteinProbEstimator* estimator){
+  // in case ties are being counted as one protein...
+  if(ProteinProbEstimator::tiesAsOneProtein) {
+    // ... return as soon as a decoy is found
+    unsigned int countDecoys(0);
+    for(int p=0; p<protein_ids.size(); p++){
+      if(isDecoyProbability(protein_ids[p], estimator)>=0.5) return 1;
+    }
+    return 0; // zero if none were found
+  } else {
+    // ... otherwise count targets and subtract that to total
+    return protein_ids.size() - countTargets(protein_ids, estimator);
+  }
 }
 
 /**
@@ -59,51 +118,71 @@ unsigned int countTargets(const Array<string>& protein_ids,
  * calculated by fido
  * @return output results of fido encapsulated in a fidoOutput structure
  */
-fidoOutput buildOutput(GroupPowerBigraph* proteinGraph,
+fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
     ProteinProbEstimator* estimator){
   // array containing the PPs (Posterior ProbabilkitieS)
   Array<double> pps = proteinGraph->probabilityR;
   assert(pps.size()!=0);
-  // array containing the PEPs (Posterior Error ProbabilkitieS)
+  // array containing the PEPs (Posterior Error Probabilities)
   Array<double> peps = Array<double>(pps.size());
   // arrays that (will) contain protein ids and corresponding indexes
   Array< Array<string> > protein_ids =  Array< Array<string> >(pps.size());
   Array<int> indices = pps.sort();
-  // array that (will) contain q-values
-  Array<double> qvalues = Array<double>(pps.size());
+  // arrays that (will) contain estimated and empirical q-values
+  Array<double> estimQvalues = Array<double>(pps.size());
+  Array<double> empirQvalues = Array<double>(pps.size());
   double sumTargetPepSoFar(0);
-  unsigned int targetProtSoFar(0), proteinsAtThr1(0), proteinsAtThr2(0);
+  unsigned int targetProtSoFar(0), decoyProtSoFar(0),
+      proteinsAtThr1(0), proteinsAtThr2(0);
+  bool wellFormed = true;
 
   // calculating protein_ids, peps, qvalues
   for (int k=0; k<pps.size(); k++) {
     protein_ids[k] = proteinGraph->groupProtNames[indices[k]];
-    peps[k] = 1.0 - pps[k];
-    // q-value: average pep of the proteins scoring better than the current one
-    // (only targets, current one included)
+    double pep = 1.0 - pps[k];
+    if(pep < 0.0) peps[k] = 0.0;
+    else peps[k] = pep;
+    if(isnan(peps[k])|| isinf(peps[k])) wellFormed = false;
+    // estimated q-value: average pep of the proteins scoring better than the
+    // current one (only targets, current one included)
     unsigned int targetsAtCurrentPep = countTargets(protein_ids[k], estimator);
     sumTargetPepSoFar += (peps[k]*targetsAtCurrentPep);
     targetProtSoFar += targetsAtCurrentPep;
-    double qValue = sumTargetPepSoFar/targetProtSoFar;
-    qvalues[k] = qValue;
+    decoyProtSoFar += countDecoys(protein_ids[k], estimator);
+    estimQvalues[k] = sumTargetPepSoFar/targetProtSoFar;
+    if(isnan(estimQvalues[k])|| isinf(estimQvalues[k])) wellFormed = false;
+    // empirical q-value: #decoys/#targets
+    empirQvalues[k] = (double)decoyProtSoFar/targetProtSoFar;
+    if(isnan(empirQvalues[k])|| isinf(empirQvalues[k])) wellFormed = false;
     // update protein count under q-value thresholds
-    if(qValue<fidoOutput::threshold2){ proteinsAtThr2+=targetsAtCurrentPep;
-    if(qValue<fidoOutput::threshold1) proteinsAtThr1+=targetsAtCurrentPep;
+    if(estimQvalues[k]<fidoOutput::threshold2){ proteinsAtThr2+=targetsAtCurrentPep;
+    if(estimQvalues[k]<fidoOutput::threshold1) proteinsAtThr1+=targetsAtCurrentPep;
     }
   }
-  // appending proteins with peps=0 (pps=1)
+  // appending proteins with pps=0 (peps=1)
   if(proteinGraph->severedProteins.size()!=0){
     peps.add(1);
     protein_ids.add(proteinGraph->severedProteins);
     unsigned int targetsAtCurrentPep =
         countTargets(proteinGraph->severedProteins, estimator);
-    sumTargetPepSoFar += (1*targetsAtCurrentPep);
+    sumTargetPepSoFar += (1.0*targetsAtCurrentPep);
     targetProtSoFar += targetsAtCurrentPep;
-    qvalues.add(sumTargetPepSoFar/targetProtSoFar);
+    decoyProtSoFar += countDecoys(proteinGraph->severedProteins, estimator);
+    estimQvalues.add(sumTargetPepSoFar/targetProtSoFar);
+    empirQvalues.add((double)decoyProtSoFar/targetProtSoFar);
   }
 
-  double pi_0 = qvalues[pps.size()-1];
-  return fidoOutput(peps, protein_ids, qvalues, proteinsAtThr1, proteinsAtThr2,
-      targetProtSoFar, pi_0);
+  double pi_0 = 1.0;
+  // pi_0 is set to the q-value of the targets with the highest highest q-value
+  // and empirical q-values are multiplied by it
+  if(ProteinProbEstimator::usePi0==true) {
+    pi_0 = estimQvalues[estimQvalues.size()-1];
+    for(int k=0; k<empirQvalues.size(); k++)
+      empirQvalues[k] = pi_0 * empirQvalues[k];
+  }
+  return fidoOutput(peps, protein_ids, estimQvalues, empirQvalues,
+      proteinsAtThr1, proteinsAtThr2, targetProtSoFar, decoyProtSoFar,
+      pi_0, estimator->alpha, estimator->beta, wellFormed);
 }
 
 /**
@@ -112,13 +191,14 @@ fidoOutput buildOutput(GroupPowerBigraph* proteinGraph,
  * @param proteinGraph proteins and associated probabilities to be outputted
  * @param fileName file that will store the outputted information
  */
-void writeOutputToFile(fidoOutput output, string fileName) {
+void ProteinHelper::writeOutputToFile(fidoOutput output, string fileName) {
   ofstream of(fileName.c_str());
   int size = output.peps.size();
-  of << "PEP\t\t" << "q-value\t\t" << "proteins\n";
+  of << "PEP\t\t" << "est qvalues\t" << "emp qvalues\t" << "proteins\n";
   for (int k=0; k<size; k++) {
     of << scientific << setprecision(7) << output.peps[k] << "\t"
-        << scientific << setprecision(7) << output.qvalues[k]<< "\t"
+        << scientific << setprecision(7) << output.estimQvalues[k]<< "\t"
+        << scientific << setprecision(7) << output.empirQvalues[k]<< "\t"
         << scientific << setprecision(7) << output.protein_ids[k] << endl;
   }
   of.close();
@@ -134,7 +214,7 @@ void writeOutputToFile(fidoOutput output, string fileName) {
  * @param proteinsToPeptides hash table containing the associations between
  * proteins and peptides as calculated by Percolator
  */
-void writeXML_writeAssociatedPeptides(string& protein_id,
+void ProteinHelper::writeXML_writeAssociatedPeptides(string& protein_id,
     ofstream& os, map<string, vector<ScoreHolder*> >& proteinsToPeptides){
   vector<ScoreHolder*>* peptides = &proteinsToPeptides.find(protein_id)->second;
   vector<ScoreHolder*>::iterator peptIt = peptides->begin();
@@ -156,7 +236,7 @@ void writeXML_writeAssociatedPeptides(string& protein_id,
  * @param fullset set of unique peptides with scores computed by Percolator
  * @param proteinsToPeptides hash table to be populated
  */
-void populateProteinsToPeptidesTable(Scores* fullset,
+void ProteinHelper::populateProteinsToPeptidesTable(Scores* fullset,
     ProteinProbEstimator* thisEstimator){
   vector<ScoreHolder>::iterator peptIt = fullset->scores.begin();
   // for each peptide
@@ -182,7 +262,8 @@ void populateProteinsToPeptidesTable(Scores* fullset,
   }
 }
 
-double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator){
+double ProteinHelper::isDecoyProbability(string protein_id,
+    ProteinProbEstimator* estimator){
   vector<ScoreHolder*>::iterator peptIt =
       estimator->proteinsToPeptides.find(protein_id)->second.begin();
   vector<ScoreHolder*>::iterator peptItEnd =
@@ -197,6 +278,25 @@ double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator){
   return decoys/(decoys+targets);
 }
 
+/**
+ * prints the total number of proteins (targets and decoys) that were outputed
+ * by fido, the number of targets at certain q-value thresholds and similar
+ * statistics
+ */
+void ProteinHelper::printStatistics(const fidoOutput& output){
+  assert(output.peps.size() != 0);
+  if(VERB<=1) return;
+  cerr << "There were " << output.totTargets << " targets and "
+      << output.totDecoys << " decoy proteins (" << fixed << setprecision(2) <<
+      (double)output.totDecoys/(output.totTargets+output.totDecoys)*100 <<
+      "% decoys)\n";
+  cerr << output.proteinsAtThr1 << "\t: proteins found at a q-value of "
+      << output.threshold1 <<"\n";
+  cerr << output.proteinsAtThr2 << "\t: proteins found at a q-value of "
+      << output.threshold2 <<"\n";
+  cerr << "Used pi_0 = " << output.pi_0 << "\n";
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // GRID SEARCH
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,9 +304,9 @@ double isDecoyProbability(string protein_id, ProteinProbEstimator* estimator){
 /**
  * point in the space generated by the possible values of the parameters alpha
  * and beta. Each point has two coordinates, two lists of protein names (the
- * true positives and false negatives calculated by fido with the particular
- * choice of alpha and beta) and the value of the objective function calculated
- * in that point
+ * true positives and false negatives calculated by fido for the current choice
+ * of alpha and beta) and the value of the objective function calculated in
+ * that point
  */
 struct GridPoint {
     GridPoint(){
@@ -218,6 +318,9 @@ struct GridPoint {
       beta = beta_par;
       targets = Array<string>();
       decoys = Array<string>();
+    }
+    ~GridPoint(){
+      ;
     }
     void calculateObjectiveFn(double lambda, ProteinProbEstimator*
         toBeTested, ostringstream& debug);
@@ -243,8 +346,10 @@ struct Grid{
      * constructs a 2D grid given ranges for its two variables
      */
     Grid(const double& l_a, const double& u_a, const double& l_b, const
-        double& u_b): lower_a(l_a), upper_a(u_a), lower_b(l_b), upper_b(u_b),
-        current(NULL), debugInfo(ostringstream::in | ostringstream::out) {
+        double& u_b, const double& i_a, const double& i_b):
+          lower_a(l_a), upper_a(u_a), lower_b(l_b), upper_b(u_b),
+        current(NULL), debugInfo(ostringstream::in | ostringstream::out),
+        incrementAlpha(i_a), incrementBeta(i_b) {
       // before the search starts, the best point seen so far is artificially
       // set to max infinity (since we are minimizing!)
       bestSoFar = new GridPoint();
@@ -253,16 +358,23 @@ struct Grid{
     /**
      * constructor that builds a Grid in the default range
      */
-    Grid(): current(NULL), debugInfo(ostringstream::in | ostringstream::out) {
-      lower_a = 0.05, upper_a = 0.3;
-      lower_b = 0.005, upper_b = 0.03;
+    Grid(): current(NULL), debugInfo(ostringstream::in | ostringstream::out),
+        incrementAlpha(0.4), incrementBeta(0.4){
+      //incrementAlpha(0.3), incrementBeta(0.3){
+      //lower_a = 0.05, upper_a = 0.3;
+      //lower_b = 0.005, upper_b = 0.03;
+      lower_a = 0.03, upper_a = 0.2;
+      lower_b = 0.003, upper_b = 0.02;
       bestSoFar = new GridPoint();
       bestSoFar->objectiveFnValue = numeric_limits<double>::max();
     }
     Grid(const Grid&);
     ~Grid(){
+      // only bestSoFar needs to be deleted: current either points to the same
+      // location (if the last point examined was also the best found so far)
+      // or has been deleted (if the last point examined was less good than the
+      // best so far)
       delete bestSoFar;
-      if(current) delete current;
     }
     void limitSearch(const int& dimension, const double& value);
     void toCurrentPoint();
@@ -283,9 +395,9 @@ struct Grid{
     static int beta;
     ostringstream debugInfo;
   private:
-    const static double lambda = 0.35;
-    const static double incrementAlpha=0.3;
-    const static double incrementBeta=0.3;
+    const static double lambda = 0.15;
+    const double incrementAlpha;
+    const double incrementBeta;
     double lower_a;
     double upper_a;
     double lower_b;
@@ -307,29 +419,57 @@ void Grid::limitSearch(const int& dimension, const double& value){
 }
 
 double Grid::getLower_a() const {
-  // starting loop: print b label(s)
-  if(VERB > 1) {
-    cerr << endl << "\t\t";
-    for(double b=log(lower_b); b<=log(upper_b); b+=incrementBeta)
-      cerr << "beta=" << scientific << setprecision(1) << exp(b) << "\t";
+  if(ProteinProbEstimator::logScaleSearch){
+    // starting loop: print b label(s)
+    if(VERB > 1) {
+      cerr << endl << "\t\t";
+      for(double b=log(lower_b); b<=log(upper_b); b+=incrementBeta)
+        cerr << "beta=" << scientific << setprecision(1) << exp(b) << "\t";
+    }
+    // return value
+    return log(lower_a);
+  } else{
+    // starting loop: print b label(s)
+    if(VERB > 1) {
+      cerr << endl << "\t\t";
+      for(double b=lower_b; b<=upper_b; b+=incrementBeta)
+        cerr << "beta=" << scientific << setprecision(1) << b << "\t";
+    }
+    // return value
+    return lower_a;
   }
-  // return value
-  return log(lower_a);
 }
+
 double Grid::getUpper_a() const {
-  return log(upper_a);
+  if(ProteinProbEstimator::logScaleSearch)
+    return log(upper_a);
+  else
+    return upper_a;
 }
 
 double Grid::getLower_b() const {
-  // starting loop: print a label
-  if(VERB > 1) {
-    cerr << "\nalpha=" << scientific << std::setprecision(1) << exp(current_a);
+  if(ProteinProbEstimator::logScaleSearch) {
+    // starting loop: print a label
+    if(VERB > 1) {
+      cerr << "\nalpha=" << scientific << std::setprecision(1) << exp(current_a);
+    }
+    // return value
+    return log(lower_b);
+  } else {
+    // starting loop: print a label
+    if(VERB > 1) {
+      cerr << "\nalpha=" << scientific << std::setprecision(1) << current_a;
+    }
+    // return value
+    return lower_b;
   }
-  // return value
-  return log(lower_b);
 }
+
 double Grid::getUpper_b() const {
-  return log(upper_b);
+  if(ProteinProbEstimator::logScaleSearch)
+    return log(upper_b);
+  else
+    return upper_b;
 }
 
 double Grid::updateCurrent_a(){
@@ -344,10 +484,13 @@ double Grid::updateCurrent_b(){
  * current_a and current_b
  */
 void Grid::toCurrentPoint(){
-  current = new GridPoint(exp(current_a),exp(current_b));
+  if(ProteinProbEstimator::logScaleSearch)
+    current = new GridPoint(exp(current_a),exp(current_b));
+  else
+    current = new GridPoint(current_a, current_b);
   if (VERB > 2){
-    debugInfo << scientific << setprecision(3)
-        << current->alpha << "\t" << current->beta << "\t";
+    debugInfo << scientific << setprecision(3) <<
+        current->alpha << "\t" << current->beta << "\t";
   }
 }
 
@@ -360,12 +503,12 @@ void Grid::calculateObjectiveFn(ProteinProbEstimator* toBeTested){
     if(isinf(current->objectiveFnValue))
       cerr << "\t+infinity";
     else if(current->objectiveFnValue > 0) {
-      cerr << "\t" << scientific << setprecision(3)
-      << "+" << current->objectiveFnValue;
+      cerr << "\t" << scientific << setprecision(3) <<
+          "+" << current->objectiveFnValue;
     }
     else {
-      cerr << "\t" << scientific << setprecision(3)
-      << current->objectiveFnValue;
+      cerr << "\t" << scientific << setprecision(3) <<
+          current->objectiveFnValue;
     }
   }
 }
@@ -375,18 +518,30 @@ void Grid::calculateObjectiveFn(ProteinProbEstimator* toBeTested){
  * performances
  */
 void Grid::compareAgainstDefault(ProteinProbEstimator* toBeTested){
-  current_a = log(0.1);
-  current_b = log(0.01);
+  if(ProteinProbEstimator::logScaleSearch){
+    current_a = log(0.1);
+    current_b = log(0.01);
+  } else {
+    current_a = 0.1;
+    current_b = 0.01;
+  }
   toCurrentPoint();
   current->calculateObjectiveFn(lambda, toBeTested,debugInfo);
   updateBest();
 }
 
 /**
- * if the current point is lower than the bestSoFar, update. (minimizing!)
+ * if the current point is lower than the bestSoFar, keep current (i.e. delete
+ * bestSoFar and move pointer to current) else keep best so far (i.e. delete
+ * current and leave bestSoFar pointing to the minimum)
  */
 void Grid::updateBest(){
-  if(*current < *bestSoFar) bestSoFar = current;
+  if(*current < *bestSoFar){
+    delete bestSoFar;
+    bestSoFar = current;
+  } else {
+    delete current;
+  }
 }
 
 /**
@@ -422,7 +577,8 @@ void populateTargetDecoyLists(GridPoint* point, const fidoOutput& output,
     for(int i2=0; i2<output.protein_ids[i1].size(); i2++){
       // store the protein id
       string protein_id = output.protein_ids[i1][i2];
-      double probOfDecoy = isDecoyProbability(protein_id, toBeTested);
+      double probOfDecoy =
+          ProteinHelper::isDecoyProbability(protein_id, toBeTested);
       if(probOfDecoy == 0) point->targets.add(protein_id);
       else if(probOfDecoy == 1) point->decoys.add(protein_id);
       else {
@@ -450,6 +606,8 @@ void calculateRoc(const fidoOutput output,
 
 double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps);
 
+
+#include "ProteinProbEstimatorDebugger.h"
 /**
  * for a given choice of alpha and beta, calculates (1 − λ) MSE_FDR − λ ROC50
  * and stores the result in objectiveFnValue
@@ -462,12 +620,23 @@ void GridPoint::calculateObjectiveFn(double lambda,
   assert(beta!=-1);
   toBeTested->alpha = alpha;
   toBeTested->beta = beta;
-  fidoOutput output = toBeTested->calculateProteinProb(false);
+  // we are in the middle of a grid search: don't want to recursively start one!
+  bool startGridSearch = false;
+  fidoOutput output = toBeTested->run(startGridSearch);
+  if(output.wellFormed == false) {
+    // if output in broken there is no need to continue: set the result to inf
+    // this might happen for extremely low values of alpha and beta
+    objectiveFnValue = numeric_limits<double>::infinity();
+    debug << 1-lambda << "* ?" << " - " << lambda << "* ?" << endl;
+    return;
+  }
   populateTargetDecoyLists(this, output, toBeTested);
-  if(VERB > 4) {
+  if(ProteinProbEstimator::debugginMode) {
     // output the results of the probability calculation to file
-    writeOutputToFile(output, "/tmp/2percolator_fido_output.txt");
-    ofstream o("/tmp/3percolator_TPFP_lists.txt");
+    ProteinHelper::writeOutputToFile(output, string(WRITABLE_DIR) +
+        "2percolator_fido_output.txt");
+    string s = string(WRITABLE_DIR) + "3percolator_TPFP_lists.txt";
+    ofstream o(s.c_str());
     o << targets << decoys << endl;
     o.close();
   }
@@ -477,49 +646,71 @@ void GridPoint::calculateObjectiveFn(double lambda,
   Array<double> empiricalFdrs = Array<double>();
   calculateFDRs(output, targets, decoys,
       estimatedFdrs, empiricalFdrs);
-  if(VERB > 4) {
+  if(ProteinProbEstimator::debugginMode) {
     // output the results of the MSE_FDR to file
-    ofstream o1 ("/tmp/4percolator_FDR_lists.txt");
+    string s = string(WRITABLE_DIR) + "4percolator_FDR_lists.txt";
+    ofstream o1(s.c_str());
     o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
         << "empiricalFdrs\n" << empiricalFdrs << endl;
     o1.close();
   }
   double threshold = 0.1;
   double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
-
   if(isinf(mse_fdr)) {
     // if MSE is infinity there is no need to continue: set the result to inf
-    objectiveFnValue = mse_fdr;
+    objectiveFnValue = numeric_limits<double>::infinity();
     debug << 1-lambda << "* infinity" << " - " << lambda << "* ?" << endl;
+    return;
   }
 
   // calculate ROC50
   Array<int> fps = Array<int>();
   Array<int> tps = Array<int>();
   calculateRoc(output, targets, decoys, fps, tps);
-  if(VERB > 4) {
+  if(ProteinProbEstimator::debugginMode) {
     // output the results of the ROC50 calculation to file
-    ofstream o2("/tmp/5percolator_ROC50_lists.txt");
+    string s = string(WRITABLE_DIR) + "5percolator_ROC50_lists.txt";
+    ofstream o2(s.c_str());
     o2 << fps << endl << tps << endl;
     o2.close();
   }
   int N = 50;
   double roc50 = calculateROC50(N, fps, tps);
 
+  // combine results to calculate objective function value
+  //objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
   objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
-  debug << scientific << setprecision(3)
-      << mse_fdr << "\t" << roc50 << "\t"
-      << objectiveFnValue << "\t"
-      << fixed << output.proteinsAtThr1 << "\t\t" << output.proteinsAtThr2
-      << "\n";
+  debug << scientific << setprecision(3) <<
+      mse_fdr << "\t" << roc50 << "\t" <<
+      objectiveFnValue << "\t" <<
+      fixed << output.proteinsAtThr1 << "\t\t" << output.proteinsAtThr2 <<
+      "\n";
+
+  // debugging plots
+  if(ProteinProbEstimator::gridSearchDebugPlotting){
+    ProteinDebugger::plotQValues(output,toBeTested);
+    ProteinDebugger::plotRoc(output,toBeTested,N);
+  }
 }
 
+/**
+ * quantifies the overlap between positiveNames and atThreshold (used to count
+ * target and decoy proteins)
+ */
 int matchCount(const boost::unordered_set<string>& positiveNames,
     const Array<string> & atThreshold) {
   int count = 0;
+  // for each protein
   for (int k=0; k<atThreshold.size(); k++) {
-    if (positiveNames.find(atThreshold[k]) != positiveNames.end())
-      count++;
+    // if target...
+    if (positiveNames.find(atThreshold[k]) != positiveNames.end()){
+      // ... done! if ties are being counted as one protein
+      if(ProteinProbEstimator::tiesAsOneProtein){
+        return 1;
+      }
+      // ... keep counting otherwise.
+      else count++;
+    }
   }
   return count;
 }
@@ -584,9 +775,16 @@ void calculateFDRs(
 
     decoysCount += decoysChange;
     targetsCount += targetsChange;
+    estFDR = output.estimQvalues[k];
     // calculating FDRs using a pi_0 approximation
-    estFDR = output.qvalues[k];
-    empiricalFDR = output.pi_0 * decoysCount/targetsCount;
+    if(ProteinProbEstimator::usePi0){
+      empiricalFDR = output.pi_0 * decoysCount/targetsCount;
+    } else {
+      empiricalFDR = (double)decoysCount/targetsCount;
+    }
+    double stored = output.empirQvalues[k];
+    //double inspectMe = empiricalFDR;
+    assert(abs(empiricalFDR-stored)<1e-10);
     /* the same done without pi_0
     totalFDR += (1-prob) * (fpChange + tpChange);
     estFDR = totalFDR / (fpCount + tpCount);
@@ -615,8 +813,8 @@ double antiderivativeAt(double m, double b, double xVal) {
 double areaSq(double x1, double y1, double x2, double y2, double threshold) {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
-  double area = squareAntiderivativeAt(m, b, min(threshold, x2) )
-                          - squareAntiderivativeAt(m, b, x1);
+  double area = squareAntiderivativeAt(m, b, min(threshold, x2) ) -
+      squareAntiderivativeAt(m, b, x1);
   if(isnan(area)) return 0.0;
   else return area;
 }
@@ -693,7 +891,7 @@ void calculateRoc(const fidoOutput output,
       tps.add(targetsCount);
       scheduledUpdate = false;
       // calculating FDRs using a pi_0 approximation
-      estFDR = output.qvalues[k];
+      estFDR = output.estimQvalues[k];
       /* the same done without pi_0
       totalFDR += (1-prob) * (fpChange + tpChange);
       estFDR = totalFDR / (fpCount + tpCount);

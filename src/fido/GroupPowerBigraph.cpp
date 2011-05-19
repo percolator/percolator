@@ -244,11 +244,11 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
 }
 
 // Mattia Tomasoni
-void GroupPowerBigraph::read(Scores* fullset){
+void GroupPowerBigraph::read(Scores* fullset, bool debug){
 	//  cout << "Reading GroupPowerBigraph" << endl;
 	//  cout << "\tReading BasicBigraph" << endl;
 	BasicBigraph bb;
-	bb.read(fullset);
+	bb.read(fullset, debug);
 	speedUp(bb);
 }
 

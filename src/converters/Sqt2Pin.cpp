@@ -374,8 +374,8 @@ int Sqt2Pin::run() {
   else xmlOutputStream << enzymeStr;
 
   string commandLine = "\n<process_info>\n" +
-      string("  <command_line>") + call.substr(0,call.length()-1) + "</command_line>\n"+
-      "</process_info>\n";
+      string("  <command_line>") + call.substr(0,call.length()-1)
+      + "</command_line>\n" + "</process_info>\n";
   if (xmlOutputFN == "") cout << commandLine;
   else xmlOutputStream << commandLine;
 
