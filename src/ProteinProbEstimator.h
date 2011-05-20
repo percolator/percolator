@@ -30,7 +30,8 @@
 struct fidoOutput {
     fidoOutput(Array<double> peps_par, Array<Array<string> > protein_ids_par,
         Array<double> estimQvalues_par, Array<double> empirQvalues_par,
-        unsigned int proteinsAtThr1_par, unsigned int proteinsAtThr2_par,
+        unsigned int targetsAtThr1_par, unsigned int targetsAtThr2_par,
+        unsigned int decoysAtThr2_par,
         unsigned int totTargets_par, unsigned int totDecoys_par,
         double pi_0_par, double alpha_par, double beta_par,
         bool wellFormed_par) {
@@ -38,8 +39,9 @@ struct fidoOutput {
       protein_ids = protein_ids_par;
       estimQvalues = estimQvalues_par;
       empirQvalues = empirQvalues_par;
-      proteinsAtThr1 = proteinsAtThr1_par;
-      proteinsAtThr2 = proteinsAtThr2_par;
+      targetsAtThr1 = targetsAtThr1_par;
+      targetsAtThr2 = targetsAtThr2_par;
+      decoysAtThr2 = decoysAtThr2_par;
       totTargets = totTargets_par;
       totDecoys = totDecoys_par;
       pi_0 = pi_0_par;
@@ -52,9 +54,10 @@ struct fidoOutput {
     Array<double> estimQvalues;
     Array<double> empirQvalues;
     const static double threshold1 = 0.015;
-    const static double threshold2 = 0.1;
-    unsigned int proteinsAtThr1;
-    unsigned int proteinsAtThr2;
+    const static double threshold2 = 0.05;
+    unsigned int targetsAtThr1;
+    unsigned int targetsAtThr2;
+    unsigned int decoysAtThr2;
     unsigned int totTargets;
     unsigned int totDecoys;
     double pi_0;

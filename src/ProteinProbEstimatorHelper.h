@@ -133,7 +133,7 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
   Array<double> empirQvalues = Array<double>(pps.size());
   double sumTargetPepSoFar(0);
   unsigned int targetProtSoFar(0), decoyProtSoFar(0),
-      proteinsAtThr1(0), proteinsAtThr2(0);
+      targetsAtThr1(0), targetsAtThr2(0), decoysAtThr2(0);
   bool wellFormed = true;
 
   // calculating protein_ids, peps, qvalues
@@ -148,15 +148,20 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
     unsigned int targetsAtCurrentPep = countTargets(protein_ids[k], estimator);
     sumTargetPepSoFar += (peps[k]*targetsAtCurrentPep);
     targetProtSoFar += targetsAtCurrentPep;
-    decoyProtSoFar += countDecoys(protein_ids[k], estimator);
+    unsigned int decoysAtCurrentPep = countDecoys(protein_ids[k], estimator);
+    decoyProtSoFar += decoysAtCurrentPep;
     estimQvalues[k] = sumTargetPepSoFar/targetProtSoFar;
     if(isnan(estimQvalues[k])|| isinf(estimQvalues[k])) wellFormed = false;
     // empirical q-value: #decoys/#targets
     empirQvalues[k] = (double)decoyProtSoFar/targetProtSoFar;
     if(isnan(empirQvalues[k])|| isinf(empirQvalues[k])) wellFormed = false;
     // update protein count under q-value thresholds
-    if(estimQvalues[k]<fidoOutput::threshold2){ proteinsAtThr2+=targetsAtCurrentPep;
-    if(estimQvalues[k]<fidoOutput::threshold1) proteinsAtThr1+=targetsAtCurrentPep;
+    if(estimQvalues[k]<fidoOutput::threshold2){
+      targetsAtThr2+=targetsAtCurrentPep;
+      decoysAtThr2+=decoysAtCurrentPep;
+      if(estimQvalues[k]<fidoOutput::threshold1) {
+        targetsAtThr1+=targetsAtCurrentPep;
+      }
     }
   }
   // appending proteins with pps=0 (peps=1)
@@ -181,7 +186,8 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
       empirQvalues[k] = pi_0 * empirQvalues[k];
   }
   return fidoOutput(peps, protein_ids, estimQvalues, empirQvalues,
-      proteinsAtThr1, proteinsAtThr2, targetProtSoFar, decoyProtSoFar,
+      targetsAtThr1, targetsAtThr2, decoysAtThr2,
+      targetProtSoFar, decoyProtSoFar,
       pi_0, estimator->alpha, estimator->beta, wellFormed);
 }
 
@@ -290,9 +296,9 @@ void ProteinHelper::printStatistics(const fidoOutput& output){
       << output.totDecoys << " decoy proteins (" << fixed << setprecision(2) <<
       (double)output.totDecoys/(output.totTargets+output.totDecoys)*100 <<
       "% decoys)\n";
-  cerr << output.proteinsAtThr1 << "\t: proteins found at a q-value of "
+  cerr << output.targetsAtThr1 << "\t: proteins found at a q-value of "
       << output.threshold1 <<"\n";
-  cerr << output.proteinsAtThr2 << "\t: proteins found at a q-value of "
+  cerr << output.targetsAtThr2 << "\t: proteins found at a q-value of "
       << output.threshold2 <<"\n";
   cerr << "Used pi_0 = " << output.pi_0 << "\n";
 }
@@ -604,12 +610,12 @@ void calculateRoc(const fidoOutput output,
     const Array<string>& targets, const Array<string>& decoys,
     Array<int>& fps, Array<int>& tps);
 
-double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps);
+double calculateROCX(int N, const Array<int>& fps, const Array<int>& tps);
 
 
 #include "ProteinProbEstimatorDebugger.h"
 /**
- * for a given choice of alpha and beta, calculates (1 − λ) MSE_FDR − λ ROC50
+ * for a given choice of alpha and beta, calculates (1 − λ) MSE_FDR − λ ROCX
  * and stores the result in objectiveFnValue
  *
  * @return expression representing the objective function that was evaluated
@@ -657,33 +663,43 @@ void GridPoint::calculateObjectiveFn(double lambda,
   double threshold = 0.1;
   double mse_fdr = calculateMSE_FDR(threshold, estimatedFdrs, empiricalFdrs);
   if(isinf(mse_fdr)) {
-    // if MSE is infinity there is no need to continue: set the result to inf
+    // if MSE is infinity abort: set the result to inf
     objectiveFnValue = numeric_limits<double>::infinity();
-    debug << 1-lambda << "* infinity" << " - " << lambda << "* ?" << endl;
+    debug << scientific << setprecision(3) <<
+        "infinity" << "\t" << "   ?   " << "\t" <<
+        objectiveFnValue << "\t" << "\n";
     return;
   }
 
-  // calculate ROC50
+  // calculate ROCX
   Array<int> fps = Array<int>();
   Array<int> tps = Array<int>();
   calculateRoc(output, targets, decoys, fps, tps);
   if(ProteinProbEstimator::debugginMode) {
-    // output the results of the ROC50 calculation to file
-    string s = string(WRITABLE_DIR) + "5percolator_ROC50_lists.txt";
+    // output the results of the ROCX calculation to file
+    string s = string(WRITABLE_DIR) + "5percolator_ROCX_lists.txt";
     ofstream o2(s.c_str());
     o2 << fps << endl << tps << endl;
     o2.close();
   }
-  int N = 50;
-  double roc50 = calculateROC50(N, fps, tps);
+  int N = output.decoysAtThr2;
+  if(N==0) {
+    // if the number of decoys at 5% is zero abort: set the result to inf
+    objectiveFnValue = numeric_limits<double>::infinity();
+    debug << scientific << setprecision(3) <<
+        mse_fdr << "\t" << "-infinity" << "\t" <<
+        "+infinity" << "\t" << "\n";
+    return;
+  }
+  double rocX = calculateROCX(N, fps, tps);
 
   // combine results to calculate objective function value
-  //objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
-  objectiveFnValue = (1-lambda)*mse_fdr - lambda*roc50;
+  //objectiveFnValue = (1-lambda)*mse_fdr - lambda*rocX;
+  objectiveFnValue = (1-lambda)*mse_fdr - lambda*rocX;
   debug << scientific << setprecision(3) <<
-      mse_fdr << "\t" << roc50 << "\t" <<
+      mse_fdr << "\t" << rocX << "\t" <<
       objectiveFnValue << "\t" <<
-      fixed << output.proteinsAtThr1 << "\t\t" << output.proteinsAtThr2 <<
+      fixed << output.targetsAtThr1 << "\t\t" << output.targetsAtThr2 <<
       "\n";
 
   // debugging plots
@@ -849,7 +865,7 @@ double calculateMSE_FDR(double threshold,
 
 /**
  * calculates the roc curve and stores the results in the fps and tps Arrays
- * for use in calculateROC50
+ * for use in calculateROCX
  *
  */
 void calculateRoc(const fidoOutput output,
@@ -919,11 +935,11 @@ double area(double x1, double y1, double x2, double y2, int N)
 }
 
 /**
- * calculates the area under the roc curve up to 50 false positives
+ * calculates the area under the roc curve up to N false positives
  *
- * @return roc50
+ * @return rocX
  */
-double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps){
+double calculateROCX(int N, const Array<int>& fps, const Array<int>& tps){
   double rocN = 0.0;
   if ( fps.back() < N ) {
     cerr << "There are not enough false positives; needed " << N
@@ -940,8 +956,8 @@ double calculateROC50(int N, const Array<int>& fps, const Array<int>& tps){
       rocN += currentArea;
     }
   }
-  double roc50 = rocN / (N * tps.back());
-  return roc50;
+  double rocX = rocN / (N * tps.back());
+  return rocX;
 }
 
 #endif /* PROTEINPROBESTIMATORHELPER_H_ */

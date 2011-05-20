@@ -29,7 +29,7 @@
 #include "ProteinProbEstimatorDebugger.h"
 
 /**
- * enable plot to debug q-value calculation and Roc50 calculation: methods
+ * enable plot to debug q-value calculation and RocX calculation: methods
  * ProteinProbEstimator::plotQValues and ProteinProbEstimator::plotRoc will be
  * invoked
  */
@@ -140,11 +140,11 @@ fidoOutput ProteinProbEstimator::run(bool startGridSearch){
 }
 
 /**
- * choose the set of parameters that jointly maximizes the ROC50 score (the
+ * choose the set of parameters that jointly maximizes the ROCX score (the
  * average sensitivity when allowing between zero and 50 false positives) and
  * minimizes the mean squared error (MSE_FDR) from an ideally calibrated
  * probability.
- * minimize: (1 − λ) MSE_FDR − λ ROC50 with λ = 0.35
+ * minimize: (1 − λ) MSE_FDR − λ ROCX with λ = 0.35
  * range [0.01,0.76] at resolution of 0.05 for α
  * range [0.00,0.80] at resolution 0.05 for β
  */
@@ -172,7 +172,7 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   }
   if(VERB > 2){
     cerr << "\n\nThe search was completed; debugging details follow:\n"
-        << "alpha\t\t" << "beta\t\t" << "MSE_FDR\t\t" << "ROC50\t\t"
+        << "alpha\t\t" << "beta\t\t" << "MSE_FDR\t\t" << "ROCX\t\t"
         << "ObjFn\t\t" << "@0.015\t\t" << "@0.1\n"
         << grid.debugInfo.str();
   }
