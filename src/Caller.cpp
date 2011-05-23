@@ -880,7 +880,7 @@ void Caller::writeXML_Peptides() {
 }
 
 void Caller::writeXML_Proteins(const fidoOutput& output) {
-  protEstimator->writeOutputToXML(xmlOutputFN, output);
+  protEstimator->writeOutputToXML(output, xmlOutputFN);
 }
 
 void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
@@ -1066,10 +1066,12 @@ int Caller::run() {
     if(VERB > 0) {
       protEstimator->printStatistics(output);
       cerr << "Protein level probabilities have been successfully calculated "
-          << "(" << (finish-start)/1000000 << " s)!\n";
-      protEstimator->writeOutput(output);
-      protEstimator->plotQValues(output);
-      protEstimator->plotRoc(output,50);
+          << "(" << (finish-start)/1000000 << " s)\n\n";
+      protEstimator->writeOutputToStream(output, cout);
+      if(ProteinProbEstimator::debugginMode) {
+        protEstimator->plotQValues(output);
+        protEstimator->plotRoc(output,output.decoysAtThr2);
+      }
     }
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins(output);

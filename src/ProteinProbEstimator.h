@@ -53,7 +53,7 @@ struct fidoOutput {
     Array< Array<string> > protein_ids;
     Array<double> estimQvalues;
     Array<double> empirQvalues;
-    const static double threshold1 = 0.015;
+    const static double threshold1 = 0.01;
     const static double threshold2 = 0.05;
     unsigned int targetsAtThr1;
     unsigned int targetsAtThr2;
@@ -71,13 +71,15 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
+    const static double default_alpha = 0.1;
+    const static double default_beta = 0.01;
     ProteinProbEstimator(double alpha, double beta);
     virtual ~ProteinProbEstimator();
     bool initialize(Scores* fullset);
     void setDefaultParameters();
     fidoOutput run(bool startGridSearch);
-    void writeOutput(const fidoOutput& output);
-    void writeOutputToXML(string xmlOutputFN, const fidoOutput& output);
+    void writeOutputToStream(const fidoOutput& output, ostream& stream);
+    void writeOutputToXML(const fidoOutput& output, string xmlOutputFN);
     static string printCopyright();
     static void testGridRanges();
     void plotQValues(const fidoOutput& output);
@@ -86,11 +88,12 @@ class ProteinProbEstimator {
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
-    const static bool gridSearchDebugPlotting;
     const static bool debugginMode;
     const static bool logScaleSearch;
     const static bool tiesAsOneProtein;
     const static bool usePi0;
+    const static bool outputPEPs;
+    const static bool outputEmpirQVal;
   private:
     void gridSearchAlphaBeta();
     GroupPowerBigraph* proteinGraph;

@@ -29,14 +29,10 @@
 #include "ProteinProbEstimatorDebugger.h"
 
 /**
- * enable plot to debug q-value calculation and RocX calculation: methods
- * ProteinProbEstimator::plotQValues and ProteinProbEstimator::plotRoc will be
- * invoked
- */
-const bool ProteinProbEstimator::gridSearchDebugPlotting = true;
-/**
  * extra debug information is printed to file in ProteinProbEstimatorHelper.h
- * and BasicBigraph.cpp
+ * and BasicBigraph.cpp. Also enables plot to debug q-value calculation and RocX
+ * calculation: methods ProteinProbEstimator::plotQValues and
+ * ProteinProbEstimator::plotRoc will be invoked
  */
 const bool ProteinProbEstimator::debugginMode = true;
 /**
@@ -51,7 +47,16 @@ const bool ProteinProbEstimator::tiesAsOneProtein = false;
 /**
  * use pi_0 value when calculating empirical q-values
  */
-const bool ProteinProbEstimator::usePi0 = true;
+const bool ProteinProbEstimator::usePi0 = false;
+/**
+ * output protein PEPs
+ */
+const bool ProteinProbEstimator::outputPEPs = false;
+/**
+ * if set to true, output empirical q-values (from target-decoy analysis),
+ * otherwise output q-values estimated from PEPs
+ */
+const bool ProteinProbEstimator::outputEmpirQVal = true;
 
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
@@ -72,8 +77,8 @@ ProteinProbEstimator::~ProteinProbEstimator(){
  * sets alpha and beta to default values (avoiding the need for grid search)
  */
 void ProteinProbEstimator::setDefaultParameters(){
-  alpha = 0.1;
-  beta = 0.01;
+  alpha = default_alpha;
+  beta = default_beta;
 }
 
 /**
@@ -133,8 +138,10 @@ fidoOutput ProteinProbEstimator::run(bool startGridSearch){
   fidoOutput output = ProteinHelper::buildOutput(proteinGraph, this);
   if(ProteinProbEstimator::debugginMode) {
     // print protein level probabilities to file
-    ProteinHelper::writeOutputToFile(output, string(WRITABLE_DIR) +
-        "6percolator_final_fido_output.txt");
+    string fname = string(WRITABLE_DIR) + "6percolator_final_fido_output.txt";
+    ofstream out(fname.c_str());
+    writeOutputToStream(output,out);
+    out.close();
   }
   return output;
 }
@@ -173,15 +180,16 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
   if(VERB > 2){
     cerr << "\n\nThe search was completed; debugging details follow:\n"
         << "alpha\t\t" << "beta\t\t" << "MSE_FDR\t\t" << "ROCX\t\t"
-        << "ObjFn\t\t" << "@0.015\t\t" << "@0.1\n"
+        << "ObjFn\t\t" << "@0.01\t\t" << "@0.05\n"
         << grid.debugInfo.str();
   }
   // the search is concluded: set the parameters
   if(grid.wasSuccessful()){
     grid.setToBest(this);
   } else {
-    cerr << "ERROR: it was not possible to estimate values for parameters alpha and beta.\n"
+    cerr << "WARNING: it was not possible to estimate values for parameters alpha and beta.\n"
         << "Please invoke Percolator with -a and -b option to set them manually.";
+    grid.setToDefault(this);
   }
 }
 
@@ -191,19 +199,19 @@ void ProteinProbEstimator::gridSearchAlphaBeta(){
  * @param os stream to which the xml is directed
  * @param output object containing the output to be written to file
  */
-void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
-    const fidoOutput& output){
+void ProteinProbEstimator::writeOutputToXML(const fidoOutput& output,
+    string xmlOutputFN){
   ofstream os;
   os.open(xmlOutputFN.data(), ios::app);
-  // append PROTEINs
+  // append PROTEINs tag
   os << "  <proteins>" << endl;
-  // for each probability
+  // for each posterior error probability
   for (int k=0; k<output.peps.size(); k++) {
     Array<string> protein_ids = output.protein_ids[k];
-    // for each protein with a certain probability
+    // for each protein at certain probability
     for(int k2=0; k2<protein_ids.size(); k2++) {
       string protein_id = protein_ids[k2];
-      // check wether is a decoy...
+      // check whether is a decoy...
       double probOfDecoy =
           ProteinHelper::isDecoyProbability(protein_id, this);
       // if it's not a decoy, output it. If it is, only output if the option
@@ -215,8 +223,12 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
           else  os << " p:decoy=\"false\"";
         }
         os << ">" << endl;
-        os << "      <pep>" << output.peps[k] << "</pep>" << endl;
-        os << "      <q_value>" << output.estimQvalues[k] << "</q_value>\n";
+        if(ProteinProbEstimator::outputPEPs)
+          os << "      <pep>" << output.peps[k] << "</pep>" << endl;
+        if(ProteinProbEstimator::outputEmpirQVal)
+          os << "      <q_value>" << output.empirQvalues[k] << "</q_value>\n";
+        else
+          os << "      <q_value>" << output.estimQvalues[k] << "</q_value>\n";
         ProteinHelper::writeXML_writeAssociatedPeptides(
             protein_id, os, proteinsToPeptides);
         os << "    </protein>" << endl;
@@ -232,15 +244,25 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN,
  *
  * @param proteinGraph proteins and associated probabilities to be outputted
  */
-void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
-  cout << "PEP\t\t" << "est qvalues\t" << "emp qvalues\t" << "proteins\n";
+void ProteinProbEstimator::writeOutputToStream(const fidoOutput& output,
+    ostream& stream) {
+  if(ProteinProbEstimator::outputPEPs)
+    stream << "PEP\t\t";
+  if (ProteinProbEstimator::outputEmpirQVal)
+    stream << "emp qvalues\t" << "proteins\n";
+  else
+    stream << "est qvalues\t" << "proteins\n";
   int size = output.peps.size();
   for (int k=0; k<size; k++) {
-    if (Scores::isOutXmlDecoys())
-      cout << scientific << setprecision(7) << output.peps[k] << "\t"
-      << scientific << setprecision(7) << output.estimQvalues[k]<< "\t"
-      << scientific << setprecision(7) << output.empirQvalues[k]<< "\t"
-      << scientific << setprecision(7) << output.protein_ids[k] << endl;
+    if (Scores::isOutXmlDecoys()){
+      if(ProteinProbEstimator::outputPEPs)
+        stream << scientific << setprecision(7) << output.peps[k] << "\t";
+      if(ProteinProbEstimator::outputEmpirQVal)
+        stream << scientific << setprecision(7) <<output.empirQvalues[k]<< "\t";
+      else
+        stream << scientific << setprecision(7) <<output.estimQvalues[k]<< "\t";
+      stream << scientific << setprecision(7) << output.protein_ids[k] << endl;
+    }
     else {
       // filter decoys
       Array<string> filtered;
@@ -251,10 +273,13 @@ void ProteinProbEstimator::writeOutput(const fidoOutput& output) {
           filtered.add(*protIt);
       }
       if(filtered.size()>0){
-        cout << scientific << setprecision(7) << output.peps[k] << "\t"
-            << scientific << setprecision(7) << output.estimQvalues[k]<< "\t"
-            << scientific << setprecision(7) << output.empirQvalues[k]<< "\t"
-            << scientific << setprecision(7) << filtered << endl;
+        if(ProteinProbEstimator::outputPEPs)
+          stream << scientific << setprecision(7) << output.peps[k] << "\t";
+        if(ProteinProbEstimator::outputEmpirQVal)
+          stream << scientific << setprecision(7) << output.empirQvalues[k]<< "\t";
+        else
+          stream << scientific << setprecision(7) << output.estimQvalues[k]<< "\t";
+        stream << scientific << setprecision(7) << filtered << endl;
       }
     }
   }
@@ -276,7 +301,7 @@ void ProteinProbEstimator::testGridRanges(){
  *  q-value (empirical and estimated)
  */
 void ProteinProbEstimator::plotQValues(const fidoOutput& output){
-  if(!ProteinProbEstimator::gridSearchDebugPlotting) return;
+  if(!ProteinProbEstimator::debugginMode) return;
   assert(output.peps.size()!=0);
   ProteinDebugger::plotQValues(output,this);
 }
@@ -285,7 +310,7 @@ void ProteinProbEstimator::plotQValues(const fidoOutput& output){
  *  q-value (estimated)
  */
 void ProteinProbEstimator::plotRoc(const fidoOutput& output, int N){
-  if(!ProteinProbEstimator::gridSearchDebugPlotting) return;
+  if(!ProteinProbEstimator::debugginMode) return;
   assert(output.peps.size()!=0);
   ProteinDebugger::plotRoc(output,this,N);
 }

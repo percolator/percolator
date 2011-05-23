@@ -67,30 +67,32 @@ void ProteinDebugger::plotQValues(const fidoOutput& output,
   ofstream o_emp(empir.c_str());
   int targetsCount(0);
   int decoysCount(0);
+  double previousEmpirQval(0), currentEmpirQval(0);
+
   // count targets and decoys as you go down the list of qvalues
   for(int k=0; k<output.estimQvalues.size(); k++){
     targetsCount += ProteinHelper::countTargets(
         output.protein_ids[k], estimator);
     decoysCount += ProteinHelper::countDecoys(
         output.protein_ids[k], estimator);
-    if(k % 10 == 0){
-      // output estimated q-values
-      if(output.estimQvalues[k] <= threshold){ // only plot below q-value thresh
-        o_est << fixed << setprecision(6) <<
-        output.estimQvalues[k] <<"\t"<< targetsCount <<"\n";
-      }
-      // output empirical q-values
-      double emp(0);
-      if(ProteinProbEstimator::usePi0){
-        emp = (double)decoysCount/targetsCount*output.pi_0;
-      } else {
-        emp = (double)decoysCount/targetsCount;
-      }
-      double stored = output.empirQvalues[k];
-      assert(abs(emp-stored)<1e-10);
-      if (emp <= threshold)
-        o_emp << fixed << setprecision(6) << emp <<"\t"<< targetsCount <<"\n";
+    // output estimated q-values
+    if(output.estimQvalues[k] <= threshold){ // only plot below q-value thresh
+      o_est << fixed << setprecision(6) <<
+          output.estimQvalues[k] <<"\t"<< targetsCount <<"\n";
     }
+    // output empirical q-values
+    if(ProteinProbEstimator::usePi0){
+      currentEmpirQval = (double)decoysCount/targetsCount*output.pi_0;
+    } else {
+      currentEmpirQval = (double)decoysCount/targetsCount;
+    }
+    if(currentEmpirQval<previousEmpirQval) currentEmpirQval=previousEmpirQval;
+    double stored = output.empirQvalues[k];
+    assert(abs(currentEmpirQval-stored)<1e-10);
+    if (currentEmpirQval <= threshold)
+      o_emp << fixed << setprecision(6) <<
+      currentEmpirQval <<"\t"<< targetsCount <<"\n";
+    previousEmpirQval = currentEmpirQval;
   }
   o_emp.close();
   o_est.close();
