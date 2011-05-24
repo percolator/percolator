@@ -215,12 +215,10 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
     pi_0 = estimQvalues[estimQvalues.size()-1];
     for(int k=0; k<empirQvalues.size(); k++)
       empirQvalues[k] = pi_0 * empirQvalues[k];
-    /**
-     * DO IT LIKE THIS INSTEAD
-     *   double factor = pi0 * ((double)nTargets / (double)nDecoys);
-     *   transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double> (), factor));
-     *   partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
-     */
+//     consider doing it like this instead
+//     double factor = pi0 * ((double)nTargets / (double)nDecoys);
+//     transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double> (), factor));
+//     partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
   }
   return fidoOutput(peps, protein_ids, estimQvalues, empirQvalues,
       targetsAtThr1, targetsAtThr2, decoysAtThr2,
