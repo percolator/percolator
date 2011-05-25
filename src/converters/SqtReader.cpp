@@ -391,13 +391,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
             MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
                 charge, peptide.substr(2, peptide.size()- 4));
 
-
-        /*
-todo!
-        psm.scan = scan;
-        psm.massDiff = dM;
-         */
-
         f_seq.push_back( log(max(1.0, rSp))); // rank by Sp
         f_seq.push_back( 0.0 ); // delt5Cn (leave until last M line)
         f_seq.push_back( 0.0 ); // deltCn (leave until next M line)
@@ -473,24 +466,15 @@ todo!
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1); 
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
-  // observedMassCharge: since the attribute is optional, no constructor is
-  // directly available; the peptideSpectrumMatch is created first and then
-  // augmented with the desired value
-  percolatorInNs::peptideSpectrumMatch* tmp_psm =
-      new percolatorInNs::peptideSpectrumMatch (features_p,  peptide_p,psmId, isDecoy, calculatedMassToCharge, charge);
-  tmp_psm->experimentalMassToCharge().set(observedMassCharge);
+  percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
+      features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
     std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
     psm_p->occurence().push_back(oc_p);
   }
-  /*
-	  int pos =	   getScan(scan,fsss, observedMassCharge );
-    assert(pos < fsss.size());
-           fsss[pos].peptide_spectrum_match().push_back(psm_p);
-   */
-  database->savePsm(scan, observedMassCharge, psm_p);
+  database->savePsm(scan, psm_p);
 }
 
 void SqtReader::computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq ) {

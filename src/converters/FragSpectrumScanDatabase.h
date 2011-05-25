@@ -49,8 +49,7 @@ class FragSpectrumScanDatabase {
     auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,
         int valueSize);
     void putFSS(fragSpectrumScan & fss );
-    void savePsm(unsigned int scanNr, double observedMassCharge,
-        auto_ptr<peptideSpectrumMatch> psm_p );
+    void savePsm(unsigned int scanNr, auto_ptr<peptideSpectrumMatch> psm_p );
     void print(serializer & ser );
     void terminte();
     string id;
