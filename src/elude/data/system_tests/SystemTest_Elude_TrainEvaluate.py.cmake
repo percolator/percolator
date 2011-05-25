@@ -7,21 +7,23 @@ import os
 import sys
 import SystemTest_Elude_Utilities as utility
 
-path = os.path.join(os.path.dirname(sys.argv[0]), "../../")
-out_path = "/tmp/"
+pathToBinaries = os.path.join("@pathToBinaries@", "elude")
+pathToData = "@pathToData@"
+out_path = "@pathToWritable@"
 
 # context data, test does not include rt
 # the predictions are checked
 def TrainTestContextData():
   print "Running EludeTrainEvaluateTest::TrainTestContextData..."
   
-  data_folder = os.path.join(path, "data/elude/standalone/")  
+  data_folder = os.path.join(pathToData, "elude/standalone/")  
+ 
   train_file = os.path.join(data_folder, "train.txt")
   test_file = os.path.join(data_folder, "test.txt")
   out_file = os.path.join(out_path, "tmp.out")
   log_file = os.path.join(out_path, "tmp.log")
   # run Elude  
-  os.system("elude" + " -t " + train_file + " -e " + test_file + " -o " + out_file
+  os.system(pathToBinaries + " -t " + train_file + " -e " + test_file + " -o " + out_file
             + " -f -v 5 2> " + log_file)
   
   # check existence of output files 
@@ -63,7 +65,7 @@ def TrainTestContextData():
 def TrainTestNoContextData():
   print "Running EludeTrainEvaluateTest::TrainTestNoContextData..."
   
-  data_folder = os.path.join(path, "data/elude/standalone/")  
+  data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_1.txt")
   test_file = os.path.join(data_folder, "test_1.txt")
   log_file = os.path.join(out_path, "tmp.log")
@@ -71,13 +73,13 @@ def TrainTestNoContextData():
   insource_file = os.path.join(out_path, "in_source.txt")
   
   # run Elude  
-  os.system("elude" + " -t " + train_file + " -e " + test_file + " -o " 
+  os.system(pathToBinaries + " -t " + train_file + " -e " + test_file + " -o " 
             + out_file + " -i " + insource_file + " -g -x -u -y -v 5 2> " + log_file)
   
   # check existence of output files 
   if not utility.checkFilesExistence("EludeTrainEvaluateTest::TrainTestNoContextData", 
                               [insource_file, out_file, log_file]):
-    utility.cleanUp([insource_file, out_file, log_file])
+    #utility.cleanUp([insource_file, out_file, log_file])
     exit(1)
   
   # check in source fragmentation

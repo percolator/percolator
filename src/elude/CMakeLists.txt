@@ -31,10 +31,24 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
 if(STATIC AND MINGW) # windows
-  set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\elude_model\\\\")
+  set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
+  set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\share\\\\elude\\\\models\\\\")
 else() # linux
-  set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/share/percolator/elude_model/)
+  set(ELUDE_WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/elude/")
+  set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/share/elude/models/)
 endif()
+
+#SET USEFUL VARIABLES TO BE USED IN THE CODE
+if(STATIC AND MINGW) # windows
+  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
+  set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
+else() # linux
+  set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
+  set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
+endif()
+set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
+
 
 
 # TODO: SHOULD WE DO THIS FROM PERCOLATOR_SOURCE_DIR OR FROM PERCOLATOR_SOURCE_DIR/SRC???
@@ -74,12 +88,13 @@ ENDIF()
 
 # Enabling unit level tests (Ctest)
 enable_testing()
-# Scheduling system level tests
-add_subdirectory(data/system_tests/elude)
 # Scheduling unit level tests
 if(GOOGLE_TEST)
-  add_subdirectory(data/unit_tests/elude)
+  add_subdirectory(data/unit_tests/)
 endif()
+# Scheduling system level tests
+add_subdirectory(data/system_tests/)
+
 
 ###############################################################################
 # TESTING
@@ -87,8 +102,8 @@ endif()
 
 #TODO: make sure this works with cpack
 if(NOT MINGW)
-  install(TARGETS elude EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-  install(DIRECTORY ../../data/elude_model DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+  install(TARGETS elude EXPORT ELUDE DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  install(DIRECTORY data/elude/models DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
 endif()
 
 ###############################################################################

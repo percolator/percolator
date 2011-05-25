@@ -47,7 +47,7 @@ EludeCaller::EludeCaller():automatic_model_sel_(false), append_model_(false),
                            test_features_table_(NULL), processed_test_(false),
                            rt_model_(NULL), ignore_ptms_(false), lts(NULL), supress_print_(false) {
   Normalizer::setType(Normalizer::UNI);
-  Enzyme::setEnzyme(Enzyme::TRYPSIN);
+  //Enzyme::setEnzyme(Enzyme::TRYPSIN);
   RetentionFeatures::set_ignore_ptms(false);
   the_normalizer_ = Normalizer::getNormalizer();
   string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};

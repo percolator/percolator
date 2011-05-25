@@ -119,6 +119,9 @@ class EludeCaller{
    inline std::pair<double, double> lts_coefficients() { return lts->getRegCoefficients(); }
    inline void set_append_model(const bool am) { append_model_ = am; }
    inline void set_index_file(const string &file) { index_file_ = file; }
+   inline void clear_train_psms() { train_psms_.clear(); }
+   inline void clear_test_psms() { test_psms_.clear(); }
+
 
  private:
    /* the default library path */

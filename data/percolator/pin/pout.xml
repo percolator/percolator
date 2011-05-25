@@ -7,7 +7,7 @@ xsi:schemaLocation="http://per-colator.com/percolator_out/12 http://per-colator.
 p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator version 2.0beta">
 
   <process_info>
-    <command_line>/scratch/bin/percolator /scratch/temp/percolator/data/percolator/pin/pin.xml -X /scratch/temp/percolator/data/percolator/pin/pout.xml -U</command_line>
+    <command_line>/tmp/bin/percolator /tmp/percolator/data/percolator/pin/pin.xml -X /tmp/percolator/data/percolator/pin/pout.xml -U</command_line>
     <other_command_line>sqt2pin -o /afs/pdc.kth.se/home/t/tomasoni/Desktop/percolator-v1_17-src/data/tests/../../data/percolator_test/sqt2pin/pin.xml /afs/pdc.kth.se/home/t/tomasoni/Desktop/percolator-v1_17-src/data/tests/../../data/percolator_test/sqt2pin/target.sqt /afs/pdc.kth.se/home/t/tomasoni/Desktop/percolator-v1_17-src/data/tests/../../data/percolator_test/sqt2pin/reverse.sqt</other_command_line>
     <pi_0>1</pi_0>
   </process_info>
