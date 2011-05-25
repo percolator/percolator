@@ -228,8 +228,7 @@ void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificat
   //is optional for mzIdentML1.0.0 but is compulsory for percolator_in ..... Is this ok?
   assert( item.calculatedMassToCharge().present() );
   ::percolatorInNs::peptideSpectrumMatch* tmp_psm =
-      new ::percolatorInNs::peptideSpectrumMatch( features_p, peptide_p, item.id(), isDecoy, item.calculatedMassToCharge().get(), item.chargeState());
-  tmp_psm->experimentalMassToCharge().set(item.experimentalMassToCharge());
+      new ::percolatorInNs::peptideSpectrumMatch( features_p, peptide_p, item.id(), isDecoy, item.experimentalMassToCharge(), item.calculatedMassToCharge().get(), item.chargeState());
   std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
   psm_sequence.push_back(psm_p);
   return;
@@ -338,7 +337,7 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
         useScanNumber = iter->second;
         fss_p = database.getFSS( useScanNumber );
         assert(fss_p.get());
-        assert( fss_p->experimentalMassToCharge() == experimentalMassToCharge );
+        assert( fss_p->experimentalMassToCharge().get() == experimentalMassToCharge );
       }
       //	std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p
       //	::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence = fss_p->peptideSpectrumMatch();

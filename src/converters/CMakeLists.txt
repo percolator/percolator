@@ -35,7 +35,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "0beta")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
 set(PIN_VERSION_MAJOR "1")
-set(PIN_VERSION_MINOR "1")
+set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "2")
 

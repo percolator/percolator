@@ -548,7 +548,7 @@ void Caller::readFiles() {
       decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys,
           docFeatures);
 
-      // import info from xml
+      // import info from xml: read Fragment Spectrum Scans
       for (doc = p.next(); doc.get() != 0; doc = p.next()) {
         percolatorInNs::fragSpectrumScan fragSpectrumScan(
             *doc->getDocumentElement());
@@ -818,8 +818,8 @@ void Caller::writeXML_initialize(){
   string schema_major = boost::lexical_cast<string>(POUT_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(POUT_VERSION_MINOR);
   const string schema = space +
-      " http://per-colator.com/xml/xml-" + schema_major +
-      "-" + schema_minor + "/percolator_out.xsd";
+      " https://github.com/percolator/percolator/raw/pout-" + schema_major +
+      "-" + schema_minor + "/src/xml/percolator_out.xsd";
   os.open(xmlOutputFN.data(), ios::out);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<percolator_output "

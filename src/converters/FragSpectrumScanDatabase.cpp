@@ -55,14 +55,13 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
 //}
 
 void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
-    double observedMassCharge,
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
 
   std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS( scanNr );
   // if FragSpectrumScan does not yet exist, create it
   if ( ! fss.get() ) {
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan>
-    fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr, observedMassCharge));
+    fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr));
     fss = fs_p;
   }
   // add the psm to the FragSpectrumScan

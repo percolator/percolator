@@ -287,13 +287,7 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       myPsm.id = psmIter->id();
       myPsm.scan = fss.scanNumber();
       if(MassHandler::monoisotopic == true){
-        if(! psmIter->experimentalMassToCharge().present()){
-          cerr << "\nYou have selected the -M option, but no experimental mass "
-              << "information is available in the pin file you have given in input "
-              << "for peptideSpectrumMatch elements.\n";
-          exit(-1);
-        }
-        myPsm.expMass = psmIter->experimentalMassToCharge().get();
+        myPsm.expMass = psmIter->experimentalMassToCharge();
       }
       myPsm.calcMass = psmIter->calculatedMassToCharge();
       if ( psmIter->observedTime().present() ) {
@@ -311,7 +305,7 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       // myPsm.peptide = psmIter->peptide().peptideSequence();
 
       myPsm.massDiff =
-          MassHandler::massDiff(fss.experimentalMassToCharge() ,
+          MassHandler::massDiff(psmIter->experimentalMassToCharge() ,
               psmIter->calculatedMassToCharge(),
               psmIter->chargeState(),
               myPsm.peptide.substr(2, myPsm.peptide.size()
