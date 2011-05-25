@@ -86,6 +86,7 @@ void ProteinDebugger::plotQValues(const fidoOutput& output,
     } else {
       currentEmpirQval = (double)decoysCount/targetsCount;
     }
+    if(currentEmpirQval>1.0) currentEmpirQval=1.0;
     if(currentEmpirQval<previousEmpirQval) currentEmpirQval=previousEmpirQval;
     double stored = output.empirQvalues[k];
     assert(abs(currentEmpirQval-stored)<1e-10);

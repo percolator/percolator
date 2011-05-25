@@ -175,7 +175,9 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
     if(estimQvalues[k]<previousEstimQval) estimQvalues[k]=previousEstimQval;
     if(isnan(estimQvalues[k])|| isinf(estimQvalues[k])) wellFormed = false;
     // empirical q-values: #decoys/#targets
-    empirQvalues[k] = (double)decoyProtSoFar/targetProtSoFar;
+    double empirQvalue = (double)decoyProtSoFar/targetProtSoFar;
+    if(empirQvalue>1.0) empirQvalue = 1.0;
+    empirQvalues[k] = empirQvalue;
     if(empirQvalues[k]<previousEmpirQval)
       empirQvalues[k]=previousEmpirQval;
     if(isnan(empirQvalues[k])|| isinf(empirQvalues[k])) wellFormed = false;
@@ -203,10 +205,10 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
     if(estimQvalue<previousEstimQval) estimQvalue = previousEstimQval;
     estimQvalues.add(estimQvalue);
     double empirQvalue = (double)decoyProtSoFar/targetProtSoFar;
+    if(empirQvalue>1.0) empirQvalue = 1.0;
     if(empirQvalue<previousEmpirQval) empirQvalue = previousEmpirQval;
     empirQvalues.add(empirQvalue);
   }
-
 
   double pi_0 = 1.0;
   // pi_0 is set to the q-value of the targets with the highest highest q-value
@@ -816,6 +818,7 @@ void calculateFDRs(
     } else {
       empiricalFDR = (double)decoysCount/targetsCount;
     }
+    if(empiricalFDR>1.0) empiricalFDR=1.0;
     if(empiricalFDR<previousFDR) empiricalFDR=previousFDR;
     double stored = output.empirQvalues[k];
     //double inspectMe = empiricalFDR;
