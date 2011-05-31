@@ -30,6 +30,7 @@ Caller::Caller() :
         tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
+        timeCheckPoint(true), schemaValidation(true),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
@@ -239,6 +240,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Do not remove redundant peptides, keep all PSMS, not only the highest scoring one.",
       "",
       FALSE_IF_SET);
+  cmd.defineOption("s",
+      "no-schema-validation",
+      "skip validation of input file against xml schema.",
+      "",
+      TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -348,6 +354,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("Z")) {
     Scores::setOutXmlDecoys(true);
   }
+  if (cmd.optionSet("s")) {
+    schemaValidation = false;
+  }
   // if parts of the arguments are left unparsed,
   if (cmd.arguments.size() > 0) {
     if(cmd.optionSet("j")){
@@ -379,7 +388,7 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr< xercesc::DOMDocument>
-    doc (p.start (ifs, fname.c_str(), true, schemaDefinition,
+    doc (p.start (ifs, fname.c_str(), Caller::schemaValidation, schemaDefinition,
         schema_major, schema_minor));
     doc = p.next (); // skip enzyme element
     doc = p.next (); // skip process_info element
@@ -500,13 +509,15 @@ void Caller::readFiles() {
         cerr << "Can not open file " << xmlInputFN << endl;
         exit(EXIT_FAILURE);
       }
+
       string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
       string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
       string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
       parser p;
+
       xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
-          xmlInStream, xmlInputFN.c_str(), true, schemaDefinition,
-          schema_major, schema_minor));
+          xmlInStream, xmlInputFN.c_str(), Caller::schemaValidation,
+          schemaDefinition, schema_major, schema_minor));
 
       doc = p.next();
 
@@ -893,7 +904,21 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM "
         "for each unique peptide." << endl;
   }
+  if(timeCheckPoint){
+    clock_t current = clock();
+    cerr << "***\n";
+    cerr << "" << "time check point before merging sets: " <<
+        (current-procStartClock)/1000000 << " sec\n";
+    cerr << "***\n";
+  }
   fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
+  if(timeCheckPoint){
+    clock_t current = clock();
+    cerr << "***\n";
+    cerr << "" << "time check point after merging sets: " <<
+        (current-procStartClock)/1000000 << " sec\n";
+    cerr << "***\n";
+  }
   if (VERB > 0 && writeOutput) {
     cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
   }
@@ -901,7 +926,21 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     cerr << "Calibrating statistics - calculating q values" << endl;
   }
   int foundPSMs = fullset.calcQ(test_fdr);
+  if(timeCheckPoint){
+    clock_t current = clock();
+    cerr << "***\n";
+    cerr << "" << "time check point after calcolating q-values: " <<
+        (current-procStartClock)/1000000 << " sec\n";
+    cerr << "***\n";
+  }
   fullset.calcPep();
+  if(timeCheckPoint){
+    clock_t current = clock();
+    cerr << "***\n";
+    cerr << "" << "time check point after calculating PEPs: " <<
+        (current-procStartClock)/1000000 << " sec\n";
+    cerr << "***\n";
+  }
   if (VERB > 0 && docFeatures && writeOutput) {
     cerr << "For the cross validation sets the average deltaMass are ";
     for (size_t ix = 0; ix < xv_test.size(); ix++) {
@@ -994,6 +1033,14 @@ int Caller::run() {
     remove(xmlInputFN.c_str());
   }
 
+  if(timeCheckPoint){
+    clock_t current = clock();
+    cerr << "***\n";
+    cerr << "" << "time check point after reading input: " <<
+        (current-startClock)/1000000 << " sec\n";
+    cerr << "***\n";
+  }
+
   if(VERB > 2){
     std::cerr << "FeatureNames::getNumFeatures(): "
         << FeatureNames::getNumFeatures() << endl;
@@ -1036,6 +1083,14 @@ int Caller::run() {
   if (VERB > 0) {
     cerr << "Merging results from " << xv_test.size() << " datasets"
         << endl;
+  }
+
+  if(timeCheckPoint){
+    clock_t current = clock();
+    cerr << "***\n";
+    cerr << "" << "time check point after training: " <<
+        (current-startClock)/1000000 << " sec\n";
+    cerr << "***\n";
   }
 
   writeXML_initialize();

@@ -387,7 +387,7 @@ struct Grid{
       //incrementAlpha(0.3), incrementBeta(0.3){
       //lower_a = 0.05, upper_a = 0.3;
       //lower_b = 0.005, upper_b = 0.03;
-      lower_a = 0.03, upper_a = 0.2;
+      lower_a = 0.05, upper_a = 0.2;
       lower_b = 0.003, upper_b = 0.02;
       bestSoFar = new GridPoint();
       bestSoFar->objectiveFnValue = numeric_limits<double>::max();

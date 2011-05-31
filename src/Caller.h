@@ -132,6 +132,8 @@ class Caller {
     bool reportPerformanceEachIteration;
     bool reportUniquePeptides;
     bool calculateProteinLevelProb;
+    bool timeCheckPoint;
+    bool schemaValidation;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;
