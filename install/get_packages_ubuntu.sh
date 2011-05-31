@@ -29,8 +29,6 @@ fi
 set -e
 
 apt-get install libxerces-c-dev libboost-dev build-essential cmake
-# The subsequent packages are only needed for the converters, comment them out if you do not need them 
-apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
 
 my_wd=`pwd`
 cd $base

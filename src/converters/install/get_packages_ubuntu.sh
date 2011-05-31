@@ -1,9 +1,22 @@
 #!/bin/sh
 # as soon as a command fails terminate this script
+
 base=/scratch
 
-cs_site="http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64"
-cs_pack="xsd-3.3.0-x86_64-linux-gnu"
+#detect (kernel) architecture
+if [ "$(uname -a | grep x86_64)" != "" ]; then
+  architecture="64"
+else
+  architecture="32"
+fi
+
+if [ ${architecture} = "64" ]; then
+  cs_site="http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64"
+  cs_pack="xsd-3.3.0-x86_64-linux-gnu"
+else
+  cs_site="http://codesynthesis.com/download/xsd/3.3/linux-gnu/i686"
+  cs_pack="xsd-3.3.0-i686-linux-gnu"
+fi
 
 gt_site="http://googletest.googlecode.com/files"
 gt_pack="gtest-1.5.0"
@@ -16,7 +29,6 @@ fi
 set -e
 
 apt-get install libxerces-c-dev libboost-dev build-essential cmake
-# The subsequent packages are only needed for the converters, comment them out if you do not need them 
 apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
 
 my_wd=`pwd`
@@ -34,6 +46,12 @@ echo "Fetching GoogleTest, storing it in ${base}"
 wget "${gt_site}/${gt_pack}.tar.gz"
 tar xzf "${gt_pack}.tar.gz"
 rm "${gt_pack}.tar.gz"
+
+echo "Building GoogleTest"
+cd gtest-1.5.0; mkdir -p build
+cd build; cmake ../ 
+make
+cd ..
 
 echo "To build, invoke cmake from the build directory with the following option:\n"
 echo "-DCMAKE_PREFIX_PATH=\"${base}/${cs_pack};${base}/${gt_pack}\""

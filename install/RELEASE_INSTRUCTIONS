@@ -1,59 +1,98 @@
-RELEASE INSTRUCTIONS - 1.16
+RELEASE INSTRUCTIONS - 2.0
 This are the steps I followed to output Percolator release 1.16
 
-0. BRANCH
+0. GIT BRANCH
   $ git clone git@github.com:percolator/percolator.git
   $ cd percolator
-  $ git branch branch-1-16
-  $ git checkout branch-1-16
-  $ git push origin branch-1-16
+  $ git branch branch-2-0
+  $ git checkout branch-2-0
+  $ git push origin branch-2-0
   $ git checkout master
-  $ git branch -f branch-1-16 origin/branch-1-16 #track branch
-  $ git checkout branch-1-16
+  $ git branch -f branch-2-0 origin/branch-2-0 #track branch
+  $ git checkout branch-2-0
 
-1. PACKAGES (64bit)
-  (main) CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "1"), set(CPACK_PACKAGE_VERSION_MINOR "16"), set(TARGET_ARCH "amd64")
-1.1. Packages (percolator)
-  run ./install/ubuntu_percolator.sh
+
+
+1. PERCOLATOR 64bit
+  CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "0"), set(TARGET_ARCH "amd64")
+  $ ./install/get_packages_ubuntu.sh
   $ cd /tmp/percolatorBuild
-  $ cmake -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=TRUE -DCMAKE_INSTALL_PREFIX=/usr/bin -DCMAKE_PREFIX_PATH=/tmp/xsd-3.3.0-x86_64-linux-gnu/ -DGOOGLE_TEST_PATH=/tmp/gtest-1.5.0 -DSCHEMA_LOCATION=/usr/share/percolator/xml-1-1 /scratch/temp/percolator
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr/bin" /tmp/percolator
+  $ make -j8
+  $ make install
+  $ make test
   $ make package
-  
-1.2. Packages (converters)
-  build converters
+  $ make package_source
 
-2. PACKAGES (32bit)
-  compile xsd in its 32 bits version.
-  repeat 1.1 and 1.2: set(TARGET_ARCH "i386")
+  Output:
+  percolator-v2_0-linux-amd64.deb 		percolator + qvality 64bit debian
+  percolator-v2_0-linux-amd64.rpm 		percolator + qvality 64bit redhat
+  percolator-v2_0-src.tar.gz 			percolator + qvality sources
 
-3. SOURCE TARBALL
-  repeat 1.1 with: $ make package_source
 
-4. WIN EXECUTABLE
-  to be run from appropriately configured machine: 
+
+2. PERCOLATOR 32bit
+  CMakeLists.txt: set(TARGET_ARCH "i386")
+  hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
+  repeat point 1 above
+
+  Output:
+  percolator-v2_0-linux-i386.deb 		percolator + qvality 32bit debian
+  percolator-v2_0-linux-i386.rpm 		percolator + qvality 32bit redhat
+
+
+
+3. CONVERTERS 64bit
+  src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "0"), set(TARGET_ARCH "amd64")
+  [$ ./src/converters/install/get_packages_ubuntu.sh]
+  $ cd /tmp/percolator-convertersBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr/bin" /tmp/percolator/src/converters
+  $ make -j8
+  $ make install
+  $ make test
+  $ make package
+  $ make package_source
+
+  Output:
+  percolator-converters-v2_0-linux-amd64.deb 		sqt2pin + mzidentml2pin 64bit debian
+  percolator-converters-v2_0-linux-amd64.rpm 		sqt2pin + mzidentml2pin 64bit redhat
+  percolator-converters-v2_0-src.tar.gz 		sqt2pin + mzidentml2pin sources
+
+
+
+2. CONVERTERS 32bit
+  CMakeLists.txt: set(TARGET_ARCH "i386")
+  [hack ./src/converters/install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.]
+  repeat point 3 above
+
+  Output:
+  percolator-converters-v2_0-linux-i386.deb 		2pin + mzidentml2pin 32bit debian
+  percolator-converters-v2_0-linux-i386.rpm 		2pin + mzidentml2pin 32bit redhat
+
+
+
+4. WIN EXECUTABLES
+  to be run from an appropriately configured machine: 
   $ ssh [someuser]@dirac.dbb.su.se
   $ ssh -l root -p 2222 localhost
   $ git clone git://github.com/percolator/percolator.git
   $ cd percolator
-  $ git checkout rel-1-16
+  $ git checkout rel-2-0
   $ ./install/windows_percolator.sh
   to get it out of the virtual machine:
   $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-1.16.0-win32.exe ~/Desktop/
 
-5. RELEASE
+  Output:
+  percolator-2.0.0-win32.exe 			percolator + qvality + elude win32
+
+
+
+5. RELEASE ON GITHUB
   upload generated files to https://github.com/percolator/percolator/downloads
-  $ git tag -m 'Setting the rel-1-16 tag' rel-1-16 [commit_hash]
+  $ git tag -m 'Setting the rel-2-0 tag' rel-2-0 [commit_hash]
   $ git push --tags
 
 
-You'll typically end up creating the following packages/executables:
-percolator-1.15.0-win32.exe 			percolator + qvality + elude
-percolator_converters-v1_15-src.tar.gz 		percolator + qvality + elude
-percolator-v1_15-linux-amd64.deb 		percolator + qvality + elude
-percolator-v1_15-linux-amd64.rpm 		percolator + qvality + elude
-percolator-v1_15-linux-i386.deb 		percolator + qvality + elude
-percolator-v1_15-linux-i386.rpm 		percolator + qvality + elude
-percolator_converters-v1_15-linux-amd64.deb 	percolator (+ sqt2pin) + qvality + elude
-percolator_converters-v1_15-linux-amd64.rpm 	percolator (+ sqt2pin) + qvality + elude
-percolator_converters-v1_15-linux-i386.deb 	percolator (+ sqt2pin) + qvality + elude
-percolator_converters-v1_15-linux-i386.rpm 	percolator (+ sqt2pin) + qvality + elude
+
+
+
