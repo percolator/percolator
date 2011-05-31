@@ -1,20 +1,18 @@
 RELEASE INSTRUCTIONS - 2.0
-This are the steps I followed to output Percolator release 1.16
+These are the steps I followed to output Percolator release 2.0
+
+
 
 0. GIT BRANCH
-  $ git clone git@github.com:percolator/percolator.git
+  [$ git clone git@github.com:percolator/percolator.git]
+  CMakeLists.txt and src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "0")
   $ cd percolator
-  $ git branch branch-2-0
-  $ git checkout branch-2-0
-  $ git push origin branch-2-0
-  $ git checkout master
-  $ git branch -f branch-2-0 origin/branch-2-0 #track branch
-  $ git checkout branch-2-0
+
 
 
 
 1. PERCOLATOR 64bit
-  CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "0"), set(TARGET_ARCH "amd64")
+  CMakeLists.txt: set(TARGET_ARCH "amd64")
   $ ./install/get_packages_ubuntu.sh
   $ cd /tmp/percolatorBuild
   $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr/bin" /tmp/percolator
@@ -87,12 +85,22 @@ This are the steps I followed to output Percolator release 1.16
 
 
 
-5. RELEASE ON GITHUB
+5. BRANCH AND TAG
   upload generated files to https://github.com/percolator/percolator/downloads
+
+  $ git branch branch-2-0
+  $ git checkout branch-2-0
+  $ git push origin branch-2-0
+  $ git checkout master
+  $ git branch -f branch-2-0 origin/branch-2-0 #track branch
+  $ git checkout branch-2-0
+  [$ git push origin :branch-2-0 #delete remote branch if you got it wrong]
+  [$ git branch -d branch-2-0 #delete local]
+
   $ git tag -m 'Setting the rel-2-0 tag' rel-2-0 [commit_hash]
   $ git push --tags
-
-
+  [$ git push origin :refs/tags/xml-1-1 #delete remote]
+  [$ git tag -d xml-1-1 #delete local]
 
 
 
