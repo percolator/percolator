@@ -1,7 +1,7 @@
 #!/bin/sh
 # as soon as a command fails terminate this script
 
-base=/scratch
+base=/tmp
 
 #detect (kernel) architecture
 if [ "$(uname -a | grep x86_64)" != "" ]; then

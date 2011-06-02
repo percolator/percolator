@@ -3,22 +3,18 @@ These are the steps I followed to output Percolator release 2.0
 
 
 
-0. GIT BRANCH
+0. BEFORE YOU START
   [$ git clone git@github.com:percolator/percolator.git]
   CMakeLists.txt and src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "0")
-  $ cd percolator
-
-
+  build and install in some temporary location and make test
 
 
 1. PERCOLATOR 64bit
   CMakeLists.txt: set(TARGET_ARCH "amd64")
   $ ./install/get_packages_ubuntu.sh
   $ cd /tmp/percolatorBuild
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr/bin" /tmp/percolator
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /tmp/percolator
   $ make -j8
-  $ make install
-  $ make test
   $ make package
   $ make package_source
 
@@ -28,26 +24,12 @@ These are the steps I followed to output Percolator release 2.0
   percolator-v2_0-src.tar.gz 			percolator + qvality sources
 
 
-
-2. PERCOLATOR 32bit
-  CMakeLists.txt: set(TARGET_ARCH "i386")
-  hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
-  repeat point 1 above
-
-  Output:
-  percolator-v2_0-linux-i386.deb 		percolator + qvality 32bit debian
-  percolator-v2_0-linux-i386.rpm 		percolator + qvality 32bit redhat
-
-
-
-3. CONVERTERS 64bit
+2. CONVERTERS 64bit
   src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "0"), set(TARGET_ARCH "amd64")
   [$ ./src/converters/install/get_packages_ubuntu.sh]
   $ cd /tmp/percolator-convertersBuild
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr/bin" /tmp/percolator/src/converters
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /tmp/percolator/src/converters
   $ make -j8
-  $ make install
-  $ make test
   $ make package
   $ make package_source
 
@@ -58,7 +40,18 @@ These are the steps I followed to output Percolator release 2.0
 
 
 
-2. CONVERTERS 32bit
+3. PERCOLATOR 32bit
+  CMakeLists.txt: set(TARGET_ARCH "i386")
+  hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
+  repeat point 1 above
+
+  Output:
+  percolator-v2_0-linux-i386.deb 		percolator + qvality 32bit debian
+  percolator-v2_0-linux-i386.rpm 		percolator + qvality 32bit redhat
+
+
+
+4. CONVERTERS 32bit
   CMakeLists.txt: set(TARGET_ARCH "i386")
   [hack ./src/converters/install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.]
   repeat point 3 above
@@ -69,7 +62,7 @@ These are the steps I followed to output Percolator release 2.0
 
 
 
-4. WIN EXECUTABLES
+5. WIN EXECUTABLES
   to be run from an appropriately configured machine: 
   $ ssh [someuser]@dirac.dbb.su.se
   $ ssh -l root -p 2222 localhost
@@ -85,7 +78,7 @@ These are the steps I followed to output Percolator release 2.0
 
 
 
-5. BRANCH AND TAG
+6. BRANCH AND TAG
   upload generated files to https://github.com/percolator/percolator/downloads
 
   $ git branch branch-2-0

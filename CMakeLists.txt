@@ -7,7 +7,7 @@ macro(my_set variable default options)
   endif(NOT DEFINED ${variable})
 endmacro(my_set)
 
-set(base "/scratch")
+set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D 
 my_set(GOOGLE_TEST "FALSE" "Select if Google test should be included, options are: TRUE or FALSE") 
