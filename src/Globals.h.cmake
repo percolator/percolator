@@ -67,6 +67,9 @@ limitations under the License.
 
 #define VERB (Globals::getInstance()->getVerbose())
 
+#include <time.h>
+#include <string>
+
 class Globals {
   public:
     virtual ~Globals();
@@ -84,6 +87,9 @@ class Globals {
     void incVerbose() {
       verbose++;
     }
+    clock_t checkTimeClock;
+    bool timeCheckPoint;
+    void checkTime(const std::string& message);
   private:
     Globals();
     int verbose;

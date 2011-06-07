@@ -43,7 +43,11 @@ These are the steps I followed to output Percolator release 2.0
 3. PERCOLATOR 32bit
   CMakeLists.txt: set(TARGET_ARCH "i386")
   hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
-  repeat point 1 above
+  $ ./install/get_packages_ubuntu.sh
+  $ cd /tmp/percolator-sBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /tmp/percolator
+  $ make -j8
+  $ make package
 
   Output:
   percolator-v2_0-linux-i386.deb 		percolator + qvality 32bit debian
@@ -53,8 +57,12 @@ These are the steps I followed to output Percolator release 2.0
 
 4. CONVERTERS 32bit
   CMakeLists.txt: set(TARGET_ARCH "i386")
-  [hack ./src/converters/install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.]
-  repeat point 3 above
+  hack ./src/converters/install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
+  $ ./src/converters/install/get_packages_ubuntu.sh
+  $ cd /tmp/percolator-convertersBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DGOOGLE_TEST="TRUE" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /tmp/percolator/src/converters
+  $ make -j8
+  $ make package
 
   Output:
   percolator-converters-v2_0-linux-i386.deb 		2pin + mzidentml2pin 32bit debian
