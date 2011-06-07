@@ -34,7 +34,13 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
-      mkdtemp(tcd);
+      char* pointerToDir = mkdtemp(tcd);
+      if(pointerToDir == NULL) {
+        std::cerr << "sqt2pin could not create temporary directory to store " <<
+            "its tokyocabinet database.\nPlease make sure to have write " <<
+            "permissions in:\n" << string(WRITABLE_DIR) << std::endl;
+        exit(-1);
+      }
       string tcf = string(tcd) + "/percolator-tmp.tcb";
       tokyoCabinetDirs.resize(lineNumber_par+1);
       tokyoCabinetDirs[lineNumber_par]=tcd;
@@ -387,6 +393,12 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
           cerr << line << endl;
           exit(-1);
         }
+        // replacing "*" with "-" at the terminal ends of a peptide
+        if(peptide.compare(peptide.size()-1, 1, "*") == 0){
+          peptide.replace(peptide.size()-1, 1, "-");
+        }
+
+        // difference between observed and calculated mass
         double dM =
             MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
                 charge, peptide.substr(2, peptide.size()- 4));
