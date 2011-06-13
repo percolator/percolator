@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "Globals.h"
+#include <iostream>
 
 Globals* Globals::glob = 0;
 
@@ -26,6 +27,7 @@ Globals::Globals() {
   //    assert(!glob);
   glob = this;
   verbose = 2;
+  timeCheckPoint = false;
 }
 
 Globals* Globals::getInstance() {
@@ -33,6 +35,15 @@ Globals* Globals::getInstance() {
     new Globals();
   }
   return glob;
+}
+
+void Globals::checkTime(const std::string& message){
+  if(timeCheckPoint){
+    clock_t current = clock();
+    std::cerr << "time required to " << message << ": " <<
+        (current-checkTimeClock)/1000000 << " sec\n";
+    checkTimeClock = clock(); // reset
+  }
 }
 
 void Globals::clean() {

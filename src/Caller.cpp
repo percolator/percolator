@@ -30,6 +30,7 @@ Caller::Caller() :
         tabInput(false), dtaSelect(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
+        schemaValidation(true),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
@@ -239,6 +240,16 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Do not remove redundant peptides, keep all PSMS, not only the highest scoring one.",
       "",
       FALSE_IF_SET);
+  cmd.defineOption("s",
+      "no-schema-validation",
+      "skip validation of input file against xml schema.",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("c",
+      "clock",
+      "check time performance",
+      "",
+      TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -346,13 +357,15 @@ bool Caller::parseOptions(int argc, char **argv) {
     DescriptionOfCorrect::setDocType(cmd.getInt("D", 0, 15));
   }
   if (cmd.optionSet("Z")) {
-    if (xmlOutputFN.empty()) {
-      cerr
-      << "The -Z switch was set without any xml-output file specified"
-      << stderr;
-      exit(-1);
-    }
     Scores::setOutXmlDecoys(true);
+  }
+  if (cmd.optionSet("s")) {
+    schemaValidation = false;
+  }
+  if (cmd.optionSet("c")) {
+    Globals* g = Globals::getInstance();
+    g->timeCheckPoint = true;
+    g->checkTimeClock = clock();
   }
   // if parts of the arguments are left unparsed,
   if (cmd.arguments.size() > 0) {
@@ -385,7 +398,7 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr< xercesc::DOMDocument>
-    doc (p.start (ifs, fname.c_str(), true, schemaDefinition,
+    doc (p.start (ifs, fname.c_str(), Caller::schemaValidation, schemaDefinition,
         schema_major, schema_minor));
     doc = p.next (); // skip enzyme element
     doc = p.next (); // skip process_info element
@@ -506,13 +519,15 @@ void Caller::readFiles() {
         cerr << "Can not open file " << xmlInputFN << endl;
         exit(EXIT_FAILURE);
       }
+
       string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
       string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
       string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
       parser p;
+
       xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
-          xmlInStream, xmlInputFN.c_str(), true, schemaDefinition,
-          schema_major, schema_minor));
+          xmlInStream, xmlInputFN.c_str(), Caller::schemaValidation,
+          schemaDefinition, schema_major, schema_minor));
 
       doc = p.next();
 
@@ -554,7 +569,7 @@ void Caller::readFiles() {
       decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys,
           docFeatures);
 
-      // import info from xml
+      // import info from xml: read Fragment Spectrum Scans
       for (doc = p.next(); doc.get() != 0; doc = p.next()) {
         percolatorInNs::fragSpectrumScan fragSpectrumScan(
             *doc->getDocumentElement());
@@ -824,8 +839,8 @@ void Caller::writeXML_initialize(){
   string schema_major = boost::lexical_cast<string>(POUT_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(POUT_VERSION_MINOR);
   const string schema = space +
-      " http://per-colator.com/xml/xml-" + schema_major +
-      "-" + schema_minor + "/percolator_out.xsd";
+      " https://github.com/percolator/percolator/raw/pout-" + schema_major +
+      "-" + schema_minor + "/src/xml/percolator_out.xsd";
   os.open(xmlOutputFN.data(), ios::out);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<percolator_output "
@@ -886,7 +901,7 @@ void Caller::writeXML_Peptides() {
 }
 
 void Caller::writeXML_Proteins(const fidoOutput& output) {
-  protEstimator->writeOutputToXML(xmlOutputFN, output);
+  protEstimator->writeOutputToXML(output, xmlOutputFN);
 }
 
 void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
@@ -900,6 +915,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
         "for each unique peptide." << endl;
   }
   fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
+  Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
     cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
   }
@@ -907,7 +923,9 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     cerr << "Calibrating statistics - calculating q values" << endl;
   }
   int foundPSMs = fullset.calcQ(test_fdr);
+  Globals::getInstance()->checkTime("calculate q-values");
   fullset.calcPep();
+  Globals::getInstance()->checkTime("calculate PEP values");
   if (VERB > 0 && docFeatures && writeOutput) {
     cerr << "For the cross validation sets the average deltaMass are ";
     for (size_t ix = 0; ix < xv_test.size(); ix++) {
@@ -999,7 +1017,7 @@ int Caller::run() {
   if(readStdIn){
     remove(xmlInputFN.c_str());
   }
-
+  Globals::getInstance()->checkTime("read input");
   if(VERB > 2){
     std::cerr << "FeatureNames::getNumFeatures(): "
         << FeatureNames::getNumFeatures() << endl;
@@ -1043,6 +1061,7 @@ int Caller::run() {
     cerr << "Merging results from " << xv_test.size() << " datasets"
         << endl;
   }
+  Globals::getInstance()->checkTime("train");
 
   writeXML_initialize();
   // calculate psms level probabilities
@@ -1061,25 +1080,23 @@ int Caller::run() {
   }
   // calculate protein level probabilities
   if(calculateProteinLevelProb){
-    if (VERB > 1){
+    if (VERB > 0){
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
     clock_t start=clock();
     bool gridSearch = protEstimator->initialize(&fullset);
-    fidoOutput output = protEstimator->calculateProteinProb(gridSearch);
+    fidoOutput output = protEstimator->run(gridSearch);
     clock_t finish=clock();
-    if(VERB > 1) {
+    if(VERB > 0) {
+      protEstimator->printStatistics(output);
       cerr << "Protein level probabilities have been successfully calculated "
-          << "(" << (finish-start)/1000000 << " s)!" << endl;
-      cerr << output.totProteins << "\t: total number of proteins\n";
-      cerr << output.proteinsAtThr1 << "\t: proteins found at a q-value of "
-          << output.threshold1 <<"\n";
-      cerr << output.proteinsAtThr2 << "\t: proteins found at a q-value of "
-          << output.threshold2 <<"\n";
-      protEstimator->writeOutput(output);
-      // uncomment to plot estimated vs empirical q-values
-      //protEstimator->plotQValues(output);
+          << "(" << (finish-start)/1000000 << " s)\n\n";
+      protEstimator->writeOutputToStream(output, cout);
+      if(ProteinProbEstimator::debugginMode) {
+        protEstimator->plotQValues(output);
+        protEstimator->plotRoc(output,output.decoysAtThr2);
+      }
     }
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins(output);

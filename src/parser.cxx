@@ -132,7 +132,7 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
   parser_->setFeature (XMLUni::fgXercesSchema, val);
   // if local copy of the schema is available, use it for validation
   ifstream inp(schemaDefinition.c_str());
-  if(inp){
+  if(inp && val){
     string schemaNamespace = "http://per-colator.com/percolator_in/";
     schemaNamespace.append(schema_major);
     schemaNamespace.append(schema_minor);

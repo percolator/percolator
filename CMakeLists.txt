@@ -7,7 +7,7 @@ macro(my_set variable default options)
   endif(NOT DEFINED ${variable})
 endmacro(my_set)
 
-set(base "/scratch")
+set(base "/tmp")
 set(percolatorBuild "${base}/percolatorBuild")
 # CMAKE_INSTALL_PREFIX must be set from command line with -D 
 my_set(GOOGLE_TEST "FALSE" "Select if Google test should be included, options are: TRUE or FALSE") 
@@ -42,10 +42,10 @@ project(PERCOLATOR)
 
 # VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "0beta")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
-set(PIN_VERSION_MINOR "1")
+set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "2")
 

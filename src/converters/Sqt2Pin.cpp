@@ -245,7 +245,7 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
           // skip decoy
           if(psmIter_i->isDecoy() != true){
             double cm = psmIter_i->calculatedMassToCharge();
-            double em = psmIter_i->experimentalMassToCharge().get();
+            double em = psmIter_i->experimentalMassToCharge();
             // if a psm with observed mass closer to theoretical mass is found
             if(abs(cm-em) < massDiff){
               // update massDiff
@@ -254,8 +254,8 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
               vector<double>::const_iterator r = rTimes->begin();
               for(; r<rTimes->end(); r=r+2){
                 double rrr = *r;
-                double exm = psmIter_i->experimentalMassToCharge().get();
-                if(*r==psmIter_i->experimentalMassToCharge().get()){
+                double exm = psmIter_i->experimentalMassToCharge();
+                if(*r==psmIter_i->experimentalMassToCharge()){
                   storeMe = *(r+1);
                   r = rTimes->end();
                 }
@@ -361,7 +361,7 @@ int Sqt2Pin::run() {
       string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
       " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
       " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
-      " https://github.com/percolator/percolator/raw/xml" + schema_major +
+      " https://github.com/percolator/percolator/raw/pin-" + schema_major +
       "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
   if (xmlOutputFN == "") cout << headerStr;
   else {
@@ -374,8 +374,8 @@ int Sqt2Pin::run() {
   else xmlOutputStream << enzymeStr;
 
   string commandLine = "\n<process_info>\n" +
-      string("  <command_line>") + call.substr(0,call.length()-1) + "</command_line>\n"+
-      "</process_info>\n";
+      string("  <command_line>") + call.substr(0,call.length()-1)
+      + "</command_line>\n" + "</process_info>\n";
   if (xmlOutputFN == "") cout << commandLine;
   else xmlOutputStream << commandLine;
 

@@ -21,20 +21,22 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
   return outputs;
 }
 
+//Mattia Tomasoni
+#include "Globals.h"
 /**
  * read graph protein-psm graph from percolator's Scores class intead of file
  */
-void BasicBigraph::read(Scores* fullset){
+void BasicBigraph::read(Scores* fullset, bool debug){
 	string pepName, protName;
 	double value =  -10;
 	int pepIndex = -1;
 	StringTable PSMNames, proteinNames;
 
-	bool generateGraphFile = false;
 	ofstream of;
-  if(generateGraphFile) {
-    if(generateGraphFile) of.open("/tmp/1percolator_psm_graph_file");
-  }
+	if(debug) {
+	  string s = string(WRITABLE_DIR) + "1percolator_psm_graph_file.txt";
+	  of.open(s.c_str());
+	}
 
 	vector<ScoreHolder>::iterator psm = fullset->begin();
 	for (; psm!= fullset->end(); ++psm) {
@@ -50,7 +52,7 @@ void BasicBigraph::read(Scores* fullset){
 	    add(PSMsToProteins, PSMNames, pepName);
 	  }
 	  pepIndex = PSMNames.lookup(pepName);
-	  if(generateGraphFile) of << "e " << pepName << endl;
+	  if(debug) of << "e " << pepName << endl;
 
 	  // r proteins
 	  set<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
@@ -61,16 +63,16 @@ void BasicBigraph::read(Scores* fullset){
 	      add(proteinsToPSMs, proteinNames, protName);
 	    }
 	    connect(PSMNames, pepName, proteinNames, protName);
-	    if(generateGraphFile) of << "r " << protName << endl;
+	    if(debug) of << "r " << protName << endl;
 	  }
 
 	  // p probability of the peptide match to the spectrum
 	  value = 1- psm->pPSM->pep;
 	  PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
-	  if(generateGraphFile) of << "p " << value << endl;
+	  if(debug) of << "p " << value << endl;
 	}
 
-	if(generateGraphFile) of.close();
+	if(debug) of.close();
 
 	PSMsToProteins.names = PSMNames.getItemsByNumber();
 	proteinsToPSMs.names = proteinNames.getItemsByNumber();
