@@ -385,38 +385,36 @@ int Sqt2Pin::run() {
     cerr << "\nWriting database(s) to pin file:\n";
   }
 
-  // print to cout (or populate xml file with) experiment information
-  if (xmlOutputFN == "") {
+  // print to cout (or populate xml file)
+  // print features
+  {
     serializer ser;
-    ser.start (std::cout);
+    if (xmlOutputFN == "") ser.start (std::cout);
+    else ser.start (xmlOutputStream);
     ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
         ex_p->featureDescriptions());
-    for(int i=0; i<databases.size();i++) {
-      if(VERB>1){
-        cerr << "writing " << databases[i]->id
-            << " (and correspondent decoy file)\n";
-      }
-      databases[i]->print(ser);
-    }
-    std::cout << "</experiment>" << std::endl;
-  } else {
-    serializer serXML;
-    serXML.start (xmlOutputStream);
-    serXML.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-        ex_p->featureDescriptions() );
-    for(int i=0; i<databases.size();i++){
-      if(VERB>1){
-        cerr << "writing " << databases[i]->id
-            << " (and correspondent decoy file)\n";
-      }
-      databases[i]->print(serXML);
-    }
-    xmlOutputStream << "</experiment>" << std::endl;
-    xmlOutputStream.close(); // close stream for output XML file
   }
 
-  for(int i=0; i<databases.size();i++)
+  // print fragSpecturmScans
+  for(int i=0; i<databases.size();i++) {
+    serializer ser;
+    if (xmlOutputFN == "") ser.start (std::cout);
+    else ser.start (xmlOutputStream);
+    if(VERB>1){
+      cerr << "writing " << databases[i]->id
+          << " (and correspondent decoy file)\n";
+    }
+    databases[i]->print(ser);
     databases[i]->terminte();
+  }
+
+  // print closing tag
+  if (xmlOutputFN == "") std::cout << "</experiment>" << std::endl;
+  else {
+    xmlOutputStream << "</experiment>" << std::endl;
+    xmlOutputStream.close();
+  }
+
   xercesc::XMLPlatformUtils::Terminate();
 
   cerr << "Termination successful."<< endl;

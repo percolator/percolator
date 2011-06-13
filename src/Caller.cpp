@@ -1057,11 +1057,11 @@ int Caller::run() {
   if (!pCheck->validateDirection(w)) {
     fullset.calcScores(w[0]);
   }
+  Globals::getInstance()->checkTime("train");
   if (VERB > 0) {
     cerr << "Merging results from " << xv_test.size() << " datasets"
         << endl;
   }
-  Globals::getInstance()->checkTime("train");
 
   writeXML_initialize();
   // calculate psms level probabilities
