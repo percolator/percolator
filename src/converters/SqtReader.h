@@ -36,7 +36,6 @@ class ParseOptions {
     int hitsPerSpectrum;
     bool pngasef;
     std::string reversedFeaturePattern;
-    std::map<char,int> ptmScheme;
   private:
     string getRidOfUnprintables(string inpString);
 };
@@ -75,6 +74,9 @@ void push_backFeatureDescription(
     const char*);
 void computeAAFrequencies(const string& pep,
     percolatorInNs::features::feature_sequence & f_seq);
+
+    static std::map<char, int> ptmScheme;
+
 }
 
 #endif

@@ -178,7 +178,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
     if (strs.size()<2) {cerr << "Scheme is malformated" << endl; exit(-1);}
     for(unsigned int ix=0; ix+1<strs.size(); ix+=2) {
-      SqtReader::ptmScheme[strs[ix]]=static_cast<int>(strs[ix+1]);    
+      SqtReader::ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);    
     }
   }
   if (cmd.optionSet("v")) {
