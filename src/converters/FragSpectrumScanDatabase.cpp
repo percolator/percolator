@@ -100,7 +100,7 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
 }
 
 void FragSpectrumScanDatabase::terminte(){
-  tcbdbclose(bdb);
+  tcbdbdel(bdb);
 }
 
 bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par) {
@@ -155,7 +155,6 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
     char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
     if(value){
       std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
-      // XMLCh * strName = xercesc::XMLString::transcode("XML 1.0 Traversal 2.0");
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
       free(value);
     }
