@@ -276,8 +276,9 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       PSMDescription & myPsm = psms[psmNum];
 
       string mypept = psmIter->peptide().peptideSequence();
-      BOOST_FOREACH( const percolatorInNs::modification & mod,  psmIter->peptide().modification() )  {
-        int loc = mod->location();
+
+      for (::percolatorInNs::peptideType::modification_const_iterator modIter = psmIter->peptide().modification().begin(); modIter != psmIter->peptide().modification().end(); ++modIter) {
+        int loc = modIter->location();
         size_t found;
         found=mypept.find('[');
         while(found != string::npos || found < loc) {
@@ -285,7 +286,9 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
           loc += f2-found+1;
           found=mypept.find('[',f2+1);
         }
-        mypept.insert(loc,"[UNIMOD:"+ mod->uniMod().accession().toString() + "]");
+        std::stringstream ss;
+        ss << "[UNIMOD:" << modIter->uniMod().accession() << "]";
+	mypept.insert(loc,ss.str());
       }
 
       // rng:oneOrMore so the assert should always be true
