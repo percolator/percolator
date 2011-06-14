@@ -13,11 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 
- *******************************************************************************/
-/*
- * @ Created by Luminita Moruz
- * Sep, 2010
- */
+ *******************************************************************************
 /*
  * This file implements the methods of the class RTModel
  */

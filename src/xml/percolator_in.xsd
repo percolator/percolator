@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
 xmlns="http://per-colator.com/percolator_in/12" 
 elementFormDefault="qualified" 
@@ -247,9 +247,9 @@ targetNamespace="http://per-colator.com/percolator_in/12">
     <xs:sequence>
     <xs:element name="uniMod">
       <xs:complexType>
-      <xs:attribute name="accession" type="xs:string">
+      <xs:attribute name="accession" use="required" type="xs:int">
         <xs:annotation>
-          <xs:documentation> UNIMOD accession number e.g. UNIMOD:35</xs:documentation>
+          <xs:documentation> UNIMOD accession number e.g. UNIMOD:35 will have 35 in this field</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="name" type="xs:string">
@@ -260,7 +260,7 @@ targetNamespace="http://per-colator.com/percolator_in/12">
       </xs:complexType>
     </xs:element>
     </xs:sequence>
-    <xs:attribute name="location" type="xs:int">
+    <xs:attribute name="location" use="required" type="xs:int">
     <xs:annotation>
       <xs:documentation>Location of the modification within the peptide - position in peptide sequence, counted from the N-terminus residue, starting at position 1. Specific modifications to the N-terminus should be given the location 0. Modification to the C-terminus should be given as peptide length + 1.</xs:documentation>
       </xs:annotation>

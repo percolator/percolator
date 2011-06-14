@@ -275,14 +275,28 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       assert( psms.size() > psmNum );
       PSMDescription & myPsm = psms[psmNum];
 
+      string mypept = psmIter->peptide().peptideSequence();
+      BOOST_FOREACH( const percolatorInNs::modification & mod,  psmIter->peptide().modification() )  {
+        int loc = mod->location();
+        size_t found;
+        found=mypept.find('[');
+        while(found != string::npos || found < loc) {
+          size_t f2 = mypept.find(']',found+1);
+          loc += f2-found+1;
+          found=mypept.find('[',f2+1);
+        }
+        mypept.insert(loc,"[UNIMOD:"+ mod->uniMod().accession().toString() + "]");
+      }
+
       // rng:oneOrMore so the assert should always be true
       assert( psmIter->occurence().size() > 0 );
 
-
       BOOST_FOREACH( const percolatorInNs::occurence & oc,  psmIter->occurence() )  {
         myPsm.proteinIds.insert( oc.proteinId() );
+
         // adding n-term and c-term residues to peptide
-        myPsm.peptide = oc.flankN() + "." + psmIter->peptide().peptideSequence() + "." + oc.flankC();
+        myPsm.peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
+
       }
       myPsm.id = psmIter->id();
       myPsm.scan = fss.scanNumber();

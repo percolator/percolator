@@ -1,10 +1,4 @@
-/*
- * Sqt2Pin.cpp
- *
- *  Created on: Jun 16, 2010
- *      Author: lukask
- */
-
+#include <boost/algorithm/string.hpp>
 #include "Sqt2Pin.h"
 
 Sqt2Pin::Sqt2Pin() {
@@ -129,6 +123,10 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "Mass difference calculated to closest isotope mass rather than to the average mass.",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("p",
+		   "psm-annotation",
+      "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
+      "Scheme");
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -174,6 +172,14 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   }
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
+  }
+  if (cmd.optionSet("p")) {
+    std::vector<std::string> strs;
+    boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
+    if (strs.size()<2) {cerr << "Scheme is malformated" << endl; exit(-1);}
+    for(unsigned int ix=0; ix+1<strs.size(); ix+=2) {
+      SqtReader::ptmScheme[strs[ix]]=static_cast<int>(strs[ix+1]);    
+    }
   }
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));

@@ -36,6 +36,7 @@ class ParseOptions {
     int hitsPerSpectrum;
     bool pngasef;
     std::string reversedFeaturePattern;
+    std::map<char,int> ptmScheme;
   private:
     string getRidOfUnprintables(string inpString);
 };
