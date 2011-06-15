@@ -132,6 +132,12 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   cmd.parseArgs(argc, argv);
   // now query the parsing results
 
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  }
+  if (VERB > 0) {
+    cerr << extendedGreeter();
+  }
   if (cmd.optionSet("Y")) {
     tokyoCabinetTmpFNs.push_back(cmd.options["Y"]);
   }
@@ -178,11 +184,11 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
     if (strs.size()<2) {cerr << "Scheme is malformated" << endl; exit(-1);}
     for(unsigned int ix=0; ix+1<strs.size(); ix+=2) {
-      SqtReader::ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);    
+      ParseOptions::ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);   
+      if (VERB > 0) {
+        cerr << "Interpreting " << strs[ix][0] << " as modification UNIMOD:" << ParseOptions::ptmScheme[strs[ix][0]] << endl; 
+      }
     }
-  }
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
   }
   if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
   if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
@@ -281,9 +287,6 @@ void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
 }
 
 int Sqt2Pin::run() {
-  if (VERB > 0) {
-    cerr << extendedGreeter();
-  }
   // Content of sqt files is merged: preparing to write it to xml file
   ofstream xmlOutputStream;
   xmlOutputStream.open(xmlOutputFN.c_str());

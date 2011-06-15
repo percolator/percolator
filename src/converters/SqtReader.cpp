@@ -2,6 +2,8 @@
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 
+std::map<char,int> ParseOptions::ptmScheme = std::map<char,int>(); 
+
 void SqtReader::translateSqtFileToXML(const std::string fn,
     ::percolatorInNs::featureDescriptions & fds,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss, bool isDecoy,
@@ -482,7 +484,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   std::string peptideS = peptideSequence;
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
     if (aaAlphabet.find(peptideSequence[ix])==string::npos) {
-      if (SqtReader::ptmScheme.count(peptideSequence[ix])==0) {
+      if (ParseOptions::ptmScheme.count(peptideSequence[ix])==0) {
 	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         exit(-1);
       }
@@ -494,7 +496,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) {
     if (aaAlphabet.find(peptideS[ix])==string::npos) {
-      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(SqtReader::ptmScheme[peptideS[ix]]));
+      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(ParseOptions::ptmScheme[peptideS[ix]]));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
       // mod_p->residues(peptideS[ix-1]);
       peptide_p->modification().push_back(mod_p);      
