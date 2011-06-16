@@ -161,7 +161,7 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     a->estimatePi0();
     a->calcQ(fdr);
     //    a->calcPep();
-    a->normalizeScores(fdr);
+    a->normalizeScores(fdr/a->getPi0());
     copy(a->begin(), a->end(), back_inserter(scores));
   }
   if (reportUniquePeptides) {
