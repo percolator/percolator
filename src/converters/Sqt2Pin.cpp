@@ -184,9 +184,9 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
     if (strs.size()<2) {cerr << "Scheme is malformated" << endl; exit(-1);}
     for(unsigned int ix=0; ix+1<strs.size(); ix+=2) {
-      ParseOptions::ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);   
+      parseOptions.ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);   
       if (VERB > 0) {
-        cerr << "Interpreting " << strs[ix][0] << " as modification UNIMOD:" << ParseOptions::ptmScheme[strs[ix][0]] << endl; 
+        cerr << "Interpreting " << strs[ix][0] << " as modification UNIMOD:" << parseOptions.ptmScheme[strs[ix][0]] << endl; 
       }
     }
   }

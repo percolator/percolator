@@ -2,8 +2,6 @@
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 
-std::map<char,int> ParseOptions::ptmScheme = std::map<char,int>(); 
-
 void SqtReader::translateSqtFileToXML(const std::string fn,
     ::percolatorInNs::featureDescriptions & fds,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss, bool isDecoy,
@@ -349,6 +347,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
   std::string protein;
   std::vector< std::string > proteinIds;
+  std::map<char,int> ptmMap = po.ptmScheme; // This map should not be const declared as we use operator[], this is a FIXME for frther releases 
 
   while (getline(instr, line)) {
     if (line[0] == 'S') {
@@ -484,7 +483,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   std::string peptideS = peptideSequence;
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
     if (aaAlphabet.find(peptideSequence[ix])==string::npos) {
-      if (ParseOptions::ptmScheme.count(peptideSequence[ix])==0) {
+      if (ptmMap.count(peptideSequence[ix])==0) {
 	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         exit(-1);
       }
@@ -496,7 +495,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) {
     if (aaAlphabet.find(peptideS[ix])==string::npos) {
-      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(ParseOptions::ptmScheme[peptideS[ix]]));
+      int accession = ptmMap[peptideS[ix]];
+      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
       // mod_p->residues(peptideS[ix-1]);
       peptide_p->modification().push_back(mod_p);      
