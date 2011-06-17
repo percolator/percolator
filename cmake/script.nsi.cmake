@@ -21,26 +21,30 @@ Section "Dummy Section" SecDummy
 # I had problems installing Tokyo Cabinet and XDR on Windows /Erik
 #  file /tmp/percolatorBuild/src/converters/sqt2pin.exe
 #  file @CMAKE_BINARY_DIR@/src/converters/mzidentml2pin.exe
-  file @CMAKE_BINARY_DIR@/src/elude/elude.exe
+#  file @CMAKE_BINARY_DIR@/src/elude/elude.exe
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
-Section "Xml Schema" SecXml
-  SetOutPath "@SCHEMA@"
+Section "Pin Xml Schema" SecPinXml
+  SetOutPath "@PIN_SCHEMA_LOCATION@"
   file @CMAKE_SOURCE_DIR@/src/xml/percolator_in.xsd
+SectionEnd
+
+Section "Pout Xml Schema" SecPoutXml
+  SetOutPath "@POUT_SCHEMA_LOCATION@"
   file @CMAKE_SOURCE_DIR@/src/xml/percolator_out.xsd
 SectionEnd
 
-Section "Elude Models" SecElude
-  SetOutPath "@SCHEMA@..\elude_model"
-  file @CMAKE_SOURCE_DIR@/data/elude_model/
-SectionEnd
+#Section "Elude Models" SecElude
+#  SetOutPath "@SCHEMA@..\elude_model"
+#  file @CMAKE_SOURCE_DIR@/data/elude_model/
+#SectionEnd
 
 Section "Uninstall"
   Delete "$INSTDIR\Uninstall.exe"
   Delete "$INSTDIR\percolator.exe"
 #  Delete "$INSTDIR\sqt2pin.exe"
 #  Delete "$INSTDIR\mzidentml2pin.exe"
-  Delete "$INSTDIR\elude.exe"
+#  Delete "$INSTDIR\elude.exe"
   RMDir "$INSTDIR"
 SectionEnd

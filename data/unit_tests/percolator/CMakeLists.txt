@@ -24,10 +24,3 @@ include_directories (${GOOGLE_TEST_PATH}/include ${PERCOLATOR_SOURCE_DIR}/src ${
 add_executable (gtest_unit Unit_tests_Percolator_main.cpp)
 target_link_libraries (gtest_unit perclibrary ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
 install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-
-#IF (GOOGLE_TEST AND (NOT EXCLUDE_ELUDE))
-#  include_directories (${PERCOLATOR_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/../../src ${GOOGLE_TEST_PATH}/include/ ${PERCOLATOR_SOURCE_DIR}/src/fido/ ${PERCOLATOR_SOURCE_DIR}/src/elude/ ${PERCOLATOR_SOURCE_DIR}/data/tests/)
-#  add_executable (gtest_unit Unit_tests_Elude_main.cpp)
-#  target_link_libraries (gtest_unit eludelibrary ${GOOGLE_TEST_PATH}/build/libgtest.a -pthread)
-#  install (TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-#ENDIF()
