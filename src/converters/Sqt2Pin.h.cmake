@@ -27,6 +27,9 @@
 #ifndef WRITABLE_DIR
 #define WRITABLE_DIR "@WRITABLE_DIR@"
 #endif
+#ifndef TEMP_DIR
+#define TEMP_DIR "@TEMP_DIR@"
+#endif
 
 #include <string>
 #include <iostream>

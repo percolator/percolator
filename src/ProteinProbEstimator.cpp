@@ -34,7 +34,7 @@
  * calculation: methods ProteinProbEstimator::plotQValues and
  * ProteinProbEstimator::plotRoc will be invoked
  */
-const bool ProteinProbEstimator::debugginMode = true;
+const bool ProteinProbEstimator::debugginMode = false;
 /**
  * during grid search, should the grid values be sampled exponentially farther
  * away from each other? (or just linearly?)
@@ -138,7 +138,7 @@ fidoOutput ProteinProbEstimator::run(bool startGridSearch){
   fidoOutput output = ProteinHelper::buildOutput(proteinGraph, this);
   if(ProteinProbEstimator::debugginMode) {
     // print protein level probabilities to file
-    string fname = string(WRITABLE_DIR) + "6percolator_final_fido_output.txt";
+    string fname = string(TEMP_DIR) + "6percolator_final_fido_output.txt";
     ofstream out(fname.c_str());
     writeOutputToStream(output,out);
     out.close();

@@ -54,6 +54,9 @@ limitations under the License.
 #ifndef ELUDE_MODELS_PATH
 #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
 #endif
+#ifndef TEMP_DIR
+#define TEMP_DIR "@TEMP_DIR@"
+#endif
 
 #ifdef WIN32
 #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));

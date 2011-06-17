@@ -59,9 +59,9 @@ void ProteinDebugger::plotQValues(const fidoOutput& output,
   ostringstream a; a << fixed << setprecision(5) << output.alpha;
   ostringstream b; b << fixed << setprecision(5) << output.beta;
   //files that will contain the plot points
-  string estim = string(WRITABLE_DIR) +
+  string estim = string(TEMP_DIR) +
       "a" + a.str() + "_" + "b" + b.str() + "_" + "estimQValues.dat";
-  string empir = string(WRITABLE_DIR) +
+  string empir = string(TEMP_DIR) +
       "a" + a.str() + "_" + "b" + b.str() + "_" + "empirQValues.dat";
   ofstream o_est(estim.c_str());
   ofstream o_emp(empir.c_str());
@@ -98,9 +98,9 @@ void ProteinDebugger::plotQValues(const fidoOutput& output,
   o_emp.close();
   o_est.close();
   // create gnuplot script
-  string script = string(WRITABLE_DIR) +
+  string script = string(TEMP_DIR) +
       "a" + a.str() + "_" + "b" + b.str() + "_" + "plotQValues.sh";
-  string image = string(WRITABLE_DIR) +
+  string image = string(TEMP_DIR) +
         "a" + a.str() + "_" + "b" + b.str() + "_" + "qValues.png";
   ofstream o_script(script.c_str());
   o_script << "#!/usr/bin/gnuplot\n\n";
@@ -124,7 +124,7 @@ void ProteinDebugger::plotRoc(const fidoOutput& output,
     ProteinProbEstimator* estimator, int N){
   ostringstream a; a << fixed << setprecision(5) << output.alpha;
   ostringstream b; b << fixed << setprecision(5) << output.beta;
-  string roc = string(WRITABLE_DIR) +
+  string roc = string(TEMP_DIR) +
       "a" + a.str() + "_" + "b" + b.str() + "_" + "rocPlot.dat";
   ofstream o_roc(roc.c_str());
   int targetsCount(0), decoysCount(0);
@@ -143,9 +143,9 @@ void ProteinDebugger::plotRoc(const fidoOutput& output,
   }
   o_roc.close();
   // create gnuplot script
-  string script = string(WRITABLE_DIR) +
+  string script = string(TEMP_DIR) +
       "a" + a.str() + "_" + "b" + b.str() + "_" + "plotRoc.sh";
-  string image = string(WRITABLE_DIR) +
+  string image = string(TEMP_DIR) +
         "a" + a.str() + "_" + "b" + b.str() + "_" + "roc.png";
   ofstream o_script(script.c_str());
   o_script << "#!/usr/bin/gnuplot\n\n";

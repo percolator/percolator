@@ -34,7 +34,7 @@ void BasicBigraph::read(Scores* fullset, bool debug){
 
 	ofstream of;
 	if(debug) {
-	  string s = string(WRITABLE_DIR) + "1percolator_psm_graph_file.txt";
+	  string s = string(TEMP_DIR) + "1percolator_psm_graph_file.txt";
 	  of.open(s.c_str());
 	}
 

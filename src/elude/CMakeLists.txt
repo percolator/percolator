@@ -33,9 +33,12 @@ set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINO
 if(STATIC AND MINGW) # windows
   set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\share\\\\elude\\\\models\\\\")
+  set(TEMP_DIR "%TEMP%\\\\")
+  add_definitions(-D_WIN32)
 else() # linux
   set(ELUDE_WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/elude/")
   set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/share/elude/models/)
+  set(TEMP_DIR "/tmp/")
 endif()
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
