@@ -25,12 +25,11 @@
 #ifndef PROTEINPROBESTIMATORHELPER_H_
 #define PROTEINPROBESTIMATORHELPER_H_
 
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <set>
 #include <limits>
 #include <iomanip>
-#include <boost/unordered_set.hpp>
 #include "Vector.h"
 #include "Globals.h"
 using namespace std;
@@ -622,11 +621,6 @@ void populateTargetDecoyLists(GridPoint* point, const fidoOutput& output,
 
 // forward declarations needed by gridPoint::calculateObjectiveFn
 
-void calculateFDRs(
-    const fidoOutput output,
-    const Array<string>& targets, const Array<string>& decoys,
-    Array<double>& estimatedFdrs, Array<double>& empiricalFdrs);
-
 double calculateMSE_FDR(double threshold,
     const Array<double>& estimatedFdr, const Array<double>& empiricalFdr);
 
@@ -635,6 +629,38 @@ void calculateRoc(const fidoOutput output,
     Array<int>& fps, Array<int>& tps);
 
 double calculateROCX(int N, const Array<int>& fps, const Array<int>& tps);
+
+/**
+ * quantifies the overlap between positiveNames and atThreshold (used to count
+ * target and decoy proteins)
+ */
+int matchCount(const set<string>& positiveNames,
+    const Array<string> & atThreshold) {
+  int count = 0;
+  // for each protein
+  for (int k=0; k<atThreshold.size(); k++) {
+    // if target...
+    if (positiveNames.count(atThreshold[k]) > 0){
+      // ... done! if ties are being counted as one protein
+      if(ProteinProbEstimator::tiesAsOneProtein){
+        return 1;
+      }
+      // ... keep counting otherwise.
+      else count++;
+    }
+  }
+  return count;
+}
+
+Array<string> matches(const set<string>& positiveNames,
+    const Array<string> & atThreshold) {
+  Array<string> result;
+  for (int k=0; k<atThreshold.size(); k++) {
+    if (positiveNames.count(atThreshold[k]) > 0 )
+      result.add( atThreshold[k] );
+  }
+  return result;
+}
 
 
 #include "ProteinProbEstimatorDebugger.h"
@@ -663,31 +689,26 @@ void GridPoint::calculateObjectiveFn(double lambda,
   populateTargetDecoyLists(this, output, toBeTested);
   if(ProteinProbEstimator::debugginMode) {
     // output the results of the probability calculation to file
-    string fname = string(WRITABLE_DIR) + "2percolator_fido_output.txt";
+    string fname = string(TEMP_DIR) + "2percolator_fido_output.txt";
     ofstream out(fname.c_str());
     toBeTested->writeOutputToStream(output,out);
     out.close();
-    fname = string(WRITABLE_DIR) + "3percolator_TPFP_lists.txt";
+    fname = string(TEMP_DIR) + "3percolator_TPFP_lists.txt";
     ofstream tpfp(fname.c_str());
     tpfp << targets << decoys << endl;
     tpfp.close();
   }
 
-  // calculate MSE_FDR
-  Array<double> estimatedFdrs = Array<double>();
-  Array<double> empiricalFdrs = Array<double>();
-  calculateFDRs(output, targets, decoys,
-      estimatedFdrs, empiricalFdrs);
   if(ProteinProbEstimator::debugginMode) {
     // output the results of the MSE_FDR to file
-    string s = string(WRITABLE_DIR) + "4percolator_FDR_lists.txt";
+    string s = string(TEMP_DIR) + "4percolator_FDR_lists.txt";
     ofstream o1(s.c_str());
-    o1 << "estimatedFdrs\n" <<estimatedFdrs << endl
-        << "empiricalFdrs\n" << empiricalFdrs << endl;
+    o1 << "estimatedFdrs\n" << output.estimQvalues << endl
+        << "empiricalFdrs\n" << output.empirQvalues << endl;
     o1.close();
   }
   double mse_fdr = calculateMSE_FDR(output.threshold1,
-      estimatedFdrs, empiricalFdrs);
+      output.estimQvalues, output.empirQvalues);
   if(isinf(mse_fdr)) {
     // if MSE is infinity abort: set the result to inf
     objectiveFnValue = numeric_limits<double>::infinity();
@@ -703,7 +724,7 @@ void GridPoint::calculateObjectiveFn(double lambda,
   calculateRoc(output, targets, decoys, fps, tps);
   if(ProteinProbEstimator::debugginMode) {
     // output the results of the ROCX calculation to file
-    string s = string(WRITABLE_DIR) + "5percolator_ROCX_lists.txt";
+    string s = string(TEMP_DIR) + "5percolator_ROCX_lists.txt";
     ofstream o2(s.c_str());
     o2 << fps << endl << tps << endl;
     o2.close();
@@ -725,116 +746,6 @@ void GridPoint::calculateObjectiveFn(double lambda,
   if(ProteinProbEstimator::debugginMode){
     ProteinDebugger::plotQValues(output,toBeTested);
     ProteinDebugger::plotRoc(output,toBeTested,N);
-  }
-}
-
-/**
- * quantifies the overlap between positiveNames and atThreshold (used to count
- * target and decoy proteins)
- */
-int matchCount(const boost::unordered_set<string>& positiveNames,
-    const Array<string> & atThreshold) {
-  int count = 0;
-  // for each protein
-  for (int k=0; k<atThreshold.size(); k++) {
-    // if target...
-    if (positiveNames.find(atThreshold[k]) != positiveNames.end()){
-      // ... done! if ties are being counted as one protein
-      if(ProteinProbEstimator::tiesAsOneProtein){
-        return 1;
-      }
-      // ... keep counting otherwise.
-      else count++;
-    }
-  }
-  return count;
-}
-
-Array<string> matches(const boost::unordered_set<string>& positiveNames,
-    const Array<string> & atThreshold) {
-  Array<string> result;
-  for (int k=0; k<atThreshold.size(); k++) {
-    if (positiveNames.find(atThreshold[k]) != positiveNames.end())
-      result.add( atThreshold[k] );
-  }
-  return result;
-}
-
-/**
- * calculates empirical and estimated FDRs and stores the results in the
- * estimatedFdr and empiricalFdr Arrays for use in calculateMSE_FDR()
- */
-void calculateFDRs(
-    const fidoOutput output,
-    const Array<string>& targets, const Array<string>& decoys,
-    Array<double>& estimatedFdrs, Array<double>& empiricalFdrs) {
-
-  estimatedFdrs.clear();
-  empiricalFdrs.clear();
-  boost::unordered_set<string> targetsSet(targets.size()),
-      decoysSet(decoys.size());
-  int k;
-  for (k=0; k<targets.size(); k++)
-    targetsSet.insert(targets[k]);
-  for (k=0; k<decoys.size(); k++)
-    decoysSet.insert(decoys[k]);
-  Array<string> protsAtThreshold;
-  string line;
-  double prob, lastProb=-1;
-  int decoysCount = 0, targetsCount = 0;
-  int numScored = 0;
-  Array<string> observedProteins;
-  double estFDR = 0.0;
-  double empiricalFDR = 0.0;
-  double previousFDR = 0.0;
-  double totalFDR = 0.0;
-  bool scheduledUpdate = false;
-
-  for(k=0; k<output.peps.size(); k++){
-    prob = 1 - output.peps[k];
-    protsAtThreshold = output.protein_ids[k];
-    numScored += protsAtThreshold.size();
-    observedProteins.append(protsAtThreshold);
-    int decoysChange = matchCount(decoysSet, protsAtThreshold);
-    int targetsChange = matchCount(targetsSet, protsAtThreshold);
-
-    if ( prob != lastProb && lastProb != -1 ){
-      scheduledUpdate = true;
-    }
-    if ( scheduledUpdate ) {
-      if ( decoysChange > 0 || targetsChange > 0) {
-        estimatedFdrs.add(estFDR);
-        empiricalFdrs.add(empiricalFDR);
-        scheduledUpdate = false;
-      }
-    }
-
-    decoysCount += decoysChange;
-    targetsCount += targetsChange;
-    estFDR = output.estimQvalues[k];
-    // calculating FDRs using a pi_0 approximation
-    if(ProteinProbEstimator::usePi0){
-      empiricalFDR = output.pi_0 * decoysCount/targetsCount;
-    } else {
-      empiricalFDR = (double)decoysCount/targetsCount;
-    }
-    if(empiricalFDR>1.0) empiricalFDR=1.0;
-    if(empiricalFDR<previousFDR) empiricalFDR=previousFDR;
-    double stored = output.empirQvalues[k];
-    //double inspectMe = empiricalFDR;
-    assert(abs(empiricalFDR-stored)<1e-10);
-    /* the same done without pi_0
-    totalFDR += (1-prob) * (fpChange + tpChange);
-    estFDR = totalFDR / (fpCount + tpCount);
-    empiricalFDR = double(fpCount) / (fpCount + tpCount);
-     */
-    lastProb = prob;
-    previousFDR=empiricalFDR;
-  }
-  lastProb = prob;
-  {
-    estimatedFdrs.add(estFDR);
-    empiricalFdrs.add(empiricalFDR);
   }
 }
 
@@ -895,8 +806,9 @@ void calculateRoc(const fidoOutput output,
     const Array<string>& targets, const Array<string>& decoys,
     Array<int>& fps, Array<int>& tps) {
 
-  boost::unordered_set<string> targetsSet(targets.size()),
-      decoysSet(decoys.size());
+  set<string> targetsSet;
+  set<string> decoysSet;
+
   int k;
   for (k=0; k<targets.size(); k++) {
     targetsSet.insert( targets[k] );
