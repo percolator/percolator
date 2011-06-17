@@ -1,4 +1,10 @@
 #include "SqtReader.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#ifdef _WIN32
+#define  mkdir( D, M )   _mkdir( D )
+#endif
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 
@@ -30,15 +36,16 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     if(databases.size()==lineNumber_par){
       // create temporary directory to store the pointer to the tokyo-cabinet
       // database
-      string str = string(WRITABLE_DIR) + "sqt2pin_XXXXXX";
+      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
-      char* pointerToDir = mkdtemp(tcd);
-      if(pointerToDir == NULL) {
+      char* pointerToDir = tmpnam(tcd);
+      int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+      if(outcome == -1) {
         std::cerr << "sqt2pin could not create temporary directory to store " <<
             "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << string(WRITABLE_DIR) << std::endl;
+            "permissions in:\n" << string(TEMP_DIR) << std::endl;
         exit(-1);
       }
       string tcf = string(tcd) + "/percolator-tmp.tcb";

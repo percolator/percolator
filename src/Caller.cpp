@@ -16,8 +16,16 @@
  *******************************************************************************/
 
 #include "Caller.h"
+#include "unistd.h"
+#include "stdlib.h"
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#define  mkdir( D, M )   _mkdir( D )
+#endif
+
 using namespace std;
 using namespace xercesc;
 
@@ -278,14 +286,13 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("e")) {
     readStdIn = true;
-    // create temporary directory to store the file containing the information
-    // coming from standard input (avoid race conditions between multiple
-    // instances of percolator running simultaneously)
-    string str = string(WRITABLE_DIR) + "percolator_XXXXXX";
+    // avoiding race conditions
+    string str = string(TEMP_DIR) + "percolator_XXXXXX";
     xmlInputDir = new char[str.size() + 1];
     std::copy(str.begin(), str.end(), xmlInputDir);
     xmlInputDir[str.size()] = '\0';
-    mkdtemp(xmlInputDir);
+    xmlInputDir = tmpnam(xmlInputDir);
+    mkdir(xmlInputDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
   }
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
