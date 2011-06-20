@@ -2,6 +2,9 @@ v2.00
 * Added Fido code to infer proteins and calculate protein level assignments (experimental feature)
 * Changed the naming scheme for PTMs from *#@ notation to UNIMOD notation. 
 * Added a option for Lys-N Processing capability
+* Removed bug in sqt2pin that hindered combination of multiple sqt-files using meta-files
+* Separation of the code so that we have separate source packages for percolator, its converters, and elude.
+* Removed bug in the sqt2pin processing that hindered large file data processing
 
 v1.17
 * Bugfix for cases where the same peptide occurres both among the target and decoy PSMs
