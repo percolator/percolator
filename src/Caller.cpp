@@ -17,7 +17,6 @@
 
 #include "Caller.h"
 #include "unistd.h"
-#include "stdlib.h"
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
 #include <sys/types.h>
@@ -68,15 +67,12 @@ Caller::~Caller() {
 
 string Caller::extendedGreeter() {
   ostringstream oss;
-  char* host = getenv("HOST");
-  if (!host) {
-    host = (char*)"unknown_host";
-  }
+  char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call << endl;
   oss << "Started " << ctime(&startTime);
   oss.seekp(-1, ios_base::cur);
-  oss << " on " << host << endl;
+  if(host) oss << " on " << host << endl;
   oss << "Hyperparameters fdr=" << selectionfdr;
   oss << ", Cpos=" << selectedCpos << ", Cneg=" << selectedCneg
       << ", maxNiter=" << niter << endl;

@@ -14,14 +14,11 @@ Sqt2Pin::~Sqt2Pin() {
 
 string Sqt2Pin::extendedGreeter() {
   ostringstream oss;
-  char* host = getenv("HOST");
-  if (!host) {
-    host = (char*)"unknown_host";
-  }
+  char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call << endl;
   oss.seekp(-1, ios_base::cur);
-  oss << "on " << host << endl;
+  if(host) oss << "on " << host << endl;
   return oss.str();
 }
 
