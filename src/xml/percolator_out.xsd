@@ -215,7 +215,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 <xsd:element name="protein">
   <xsd:complexType>
     <xsd:sequence>
-      <xsd:element ref="pep"/>
+      <xsd:element ref="pep" minOccurs="0" maxOccurs="1"/>
       <xsd:element ref="q_value"/>
       <xsd:element ref="peptide_seq" maxOccurs="unbounded"/>
     </xsd:sequence>
