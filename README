@@ -40,11 +40,9 @@ Similarly, under CentOS5.5, you'll need:
 
 Windows
 Percolator has been tested on Windows XP SP2, Windows Vista and Window 7.
-Download the window installer, double click and follow the installation 
-procedure. Once completed open a DOS prompt and invoke Percolator from the 
-directory where it was installed. Although Percolator will work properly on the
-new "pin" input format, the Windows installed does not currently contain the 
-Sqt2pin converter.
+Download the Windows installer, double click and follow the installation 
+procedure. Once completed, open a DOS prompt and invoke Percolator from the 
+directory where it was installed. 
 
 
 ***
@@ -74,7 +72,6 @@ user has read/write privileges can be chosen. Issue the following:
   $ cmake -DCMAKE_PREFIX_PATH="/prefix/path" -DCMAKE_INSTALL_PREFIX="/tmp" \
     [-G"Eclipse CDT4 - Unix Makefiles"] [-DCMAKE_BUILD_TYPE="Debug"] \
     /path/to/source
-  $ cd /tmp/percolatorBuild
   $ make -j8; make install
 
 Advanced users (and developers) may clone the project with Git by issuing:
