@@ -13,7 +13,6 @@ print "PERCOLATOR CORRECTNESS"
 
 # PERCOLATOR
 # running percolator with no options
-# /scratch/temp/bin/data/percolator/pin/pin.xml -X /scratch/temp/bin/data/percolator/tab-delimited/pout.xml -U
 print "(*) running percolator with no options..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") +
   os.path.join(pathToData, "percolator/pin/pin.xml ") + "-X " +
@@ -27,7 +26,6 @@ if exitStatus is not None:
 
 # PERCOLATOR_tab-delimited_generate
 # running percolator with option to generate tab-delimited input
-# /scratch/temp/bin/data/percolator/sqt2pin/pin.xml -J /scratch/temp/bin/data/percolator/tab/percolatorTab -U
 print "(*) running percolator to generate tab-delimited input..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") + 
   os.path.join(pathToData, "percolator/pin/pin.xml ") + "-J " +
@@ -41,7 +39,6 @@ if exitStatus is not None:
 
 # PERCOLATOR_tab-delimited
 # running percolator with option to process tab-delimited input
-# -j /scratch/temp/bin/data/percolator/tab/percolatorTab -X /scratch/temp/bin/data/percolator/tab/pout.xml -U
 print "(*) running percolator on tab-delimited input..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") +  "-j " + 
   os.path.join(pathToData, "percolator/tab/percolatorTab ") + "-X " +
@@ -59,8 +56,6 @@ if exitStatus is not None:
 # q-value 0.01 threshold) is extracted from percolator's output with and 
 # without -D 4 option: if the estimate with the option is lower than without 
 # it, an error is reported.
-# /scratch/temp/bin/data/percolator/rt/pin.xml -X /scratch/temp/bin/data/percolator/rt/pout_D4off.xml -D 4 -U
-# /scratch/temp/bin/data/percolator/rt/pin.xml -X /scratch/temp/bin/data/percolator/rt/pout_D4on.xml -U
 print "(*) running percolator with -D 4 option (retention times)..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") +
   os.path.join(pathToData, "percolator/rt/pin.xml ") +  "-X " +
