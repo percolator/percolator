@@ -1061,11 +1061,11 @@ int Caller::run() {
         << endl;
   }
 
-  writeXML_initialize();
   // calculate psms level probabilities
   bool isUniquePeptideRun = false; //(this is not the unique peptides run)
   calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
   if (xmlOutputFN.size() > 0){
+    writeXML_initialize();
     writeXML_PSMs();
   }
   // calculate unique peptides level probabilities
