@@ -10,7 +10,9 @@ FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
 )
 
 # the value of XSD_INCLUDE_DIR should be set by the FIND_PATH routine above
-#set (XSD_INCLUDE_DIR /mnt/VirtualBoxShare/xsd-3.3.0-x86_64-linux-gnu/libxsd)
+IF(MINGW)
+  set (XSD_INCLUDE_DIR /mnt/VirtualBoxShare/xsd-3.3.0-x86_64-linux-gnu/libxsd)
+ENDIF()
 
 FIND_PROGRAM(XSD_EXECUTABLE 
   NAMES 

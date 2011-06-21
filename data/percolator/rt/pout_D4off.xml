@@ -3,11 +3,11 @@
 xmlns="http://per-colator.com/percolator_out/12" 
 xmlns:p="http://per-colator.com/percolator_out/12" 
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-xsi:schemaLocation="http://per-colator.com/percolator_out/12 http://per-colator.com/xml/xml-1-2/percolator_out.xsd" 
-p:majorVersion="2" p:minorVersion="0beta" p:percolator_version="Percolator version 2.0beta">
+xsi:schemaLocation="http://per-colator.com/percolator_out/12 https://github.com/percolator/percolator/raw/pout-1-2/src/xml/percolator_out.xsd" 
+p:majorVersion="2" p:minorVersion="0" p:percolator_version="Percolator version 2.0">
 
   <process_info>
-    <command_line>/tmp/bin/percolator /tmp/percolator/data/percolator/rt/pin.xml -X /tmp/percolator/data/percolator/rt/pout_D4off.xml -U</command_line>
+    <command_line>/scratch/bin/percolator /scratch/temp/percolator/data/percolator/rt/pin.xml -X /scratch/temp/percolator/data/percolator/rt/pout_D4off.xml -U</command_line>
     <other_command_line>/scratch/temp/percolatorBuild/src/converters/sqt2pin -o /scratch/temp/bin/data/percolator_test/retention/pin.xml -2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.ms2 /scratch/behemot_public/ms2/elude_apex_data/xml/target/Celegans_Jupter_C12_60min_grad.sqt /scratch/behemot_public/ms2/elude_apex_data/xml/decoy/Celegans_Jupter_C12_60min_grad.sqt</other_command_line>
     <pi_0>1</pi_0>
   </process_info>

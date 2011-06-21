@@ -1,14 +1,13 @@
-Percolator, Elude and Qvality software package for protein classification.
-October 2010
-Lukas Käll <lukas.kall@cbr.su.se>
+Percolator and Qvality software package for protein classification.
+June 2011
+Lukas Käll <lukas.kall@scilifelab.se>
 
 DOWNLOAD, INSTALL AND TEST
-The latest releases of Percolator can be found at among the downloads. There 
-you may find package for Linux and compiled executables for Win32. Source 
+The latest release of Percolator is available at the downloads page:
+https://github.com/percolator/percolator/downloads
+There you may find package for Linux and compiled executables for Win32. Source
 bundles are available to build Percolator from scratch if you are running a
-different system or if you do not have superuser privileges. Percolator now 
-includes a file type converter called Sqt2pin (install packages named 
-percolator_converters_* to install it).
+different system or if you do not have superuser privileges.
 
 
 ***
@@ -17,21 +16,20 @@ percolator_converters_* to install it).
 INSTALLING PERCOLATOR (from packages or installer)
 
 Linux
-Download the appropriate package from the downloads: 
-  "DEB" is available for Debian distributions (such as Ubuntu)
-  "RPM" for Red Hat (such as CentOS).
-For Debian distributions (e.g. Ubuntu)), issue the following command in the 
+Download the appropriate package from the downloads page mentioned above: 
+  ".deb" packages are available for Debian distributions (such as Ubuntu)
+  ".rpm" packages are available for Red Hat (such as CentOS).
+For Debian distributions (e.g. Ubuntu), issue the following command in the 
 directory where the package has been downloaded:
-  $ sudo dpkg -i percolator[_converters]-v[X]-linux-[ARCH].deb
+  $ sudo dpkg -i [pacakge].deb
 For Red Hat (e.g. CentOS), issue:
   $ su
-  $ rpm -ivh percolator[_converters]-v[X]-linux-[ARCH].rpm
-
-If dependency problems arise, you might have to manually some of the libraries
-on your system to match the version required (your package manager might be 
-providing an old version); this depends on what installation you are using. The
-Debian package has been tested on Ubuntu 10.04 and 10.10. Version 9.10, though,
-will require you to manually install:
+  $ rpm -ivh [package].rpm
+If dependency problems arise, you might have to compile and manually install 
+some of the libraries on your system to match the version required, as your 
+package manager might be providing an old version. The Debian package has been
+tested on Ubuntu 10.04 and 10.10 and will install flawlessly. Ubuntu 9.10, 
+though, will require you to manually install:
   libxerces-c3.1.so
 Similarly, under CentOS5.5, you'll need:
   libxerces-c3.1.so
@@ -41,6 +39,7 @@ Similarly, under CentOS5.5, you'll need:
 
 
 Windows
+Percolator has been tested on Windows XP SP2, Windows Vista and Window 7.
 Download the window installer, double click and follow the installation 
 procedure. Once completed open a DOS prompt and invoke Percolator from the 
 directory where it was installed. Although Percolator will work properly on the
@@ -56,38 +55,27 @@ BUILDING PERCOLATOR (from the latest snapshot or the repository)
 *** READ THIS CAREFULLY: you MUST install the required libraries! ***
 The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
 Make, Cmake and a C++ compiler are required; the following libraries are also
-needed to build Percolator: libxerces-c-dev, libboost-dev, libsqlite3-dev. 
-Sqt2pin, which is build together with Percolator by default, also requires: 
-gengetopt, libtokyocabinet-dev, zlib1g-dev.
-Download the latest percolator-v[X]-src.tar.gz tar-ball and decompress it; 
-we will refer to the generated directory as "/path/to/source". You can now 
-install all the library mentioned above with the command:
-  $ cd /path/to/source; ./install/get_packages_ubuntu.sh
-The script will print a variable that is to replace the "/script/prefix/path" 
-string when invoking cmake (see below).
-If you do not have sudo permissions, you will have to manually install programs
-and libraries. The same goes for older versions of Ubuntu as explained above
-in the section "INSTALLING PERCOLATOR" under "Linux".
-
-We will now build percolator in the /tmp, but any directory where the user has 
-read/write privileges can be chosen.
+needed to build Percolator: libxerces-c-dev, libboost-dev, libsqlite3-dev, 
+gengetopt.
+Download the latest [tar-ball].tar.gz and decompress it; we will refer to the 
+generated directory as "/path/to/source". You can now install all the library 
+mentioned above with the command:
+  $ cd /path/to/source; 
+  $ ./install/get_packages_ubuntu.sh
+The script will terminate by printing a string to cout; we will refer to that
+string as "/prefix/path".
+If you do not have sudo permissions, you will not be able to run the script
+mentioned above; in that case you will have to manually install the required 
+libraries. The same goes for older versions of Ubuntu and other operating 
+systems (as explained above in the section "INSTALLING PERCOLATOR").
+We will now proceeed to build percolator in /tmp, but any directory where the
+user has read/write privileges can be chosen. Issue the following:
   $ mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
-  $ cmake -G"Eclipse CDT4 - Unix Makefiles" 
-      [-DCMAKE_BUILD_TYPE="Debug"] 
-      -DCMAKE_PREFIX_PATH="/script/prefix/path"
-      -DCMAKE_INSTALL_PREFIX="/tmp" /path/to/source
-The directory /tmp/percolatorBuild can now be imported into Eclipse as an 
-external, debuggable Project. Alternatively, Percolator can be installed
-manually by issuing the following commands:
+  $ cmake -DCMAKE_PREFIX_PATH="/prefix/path" -DCMAKE_INSTALL_PREFIX="/tmp" \
+    [-G"Eclipse CDT4 - Unix Makefiles"] [-DCMAKE_BUILD_TYPE="Debug"] \
+    /path/to/source
   $ cd /tmp/percolatorBuild
-  $ make -j8
-  $ make install
-Percolator can be automatically tested by issuing:
-  $ cd /tmp/percolatorBuild
-  $ make test
-In case of unsuccessful execution, please refer to 
-the next session, "TESTING PERCOLATOR". Log files are stored in 
-/tmp/percolatorBuild/Testing/.
+  $ make -j8; make install
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
@@ -100,26 +88,14 @@ This will create a directory called "percolator" that is to be used as
 
 TESTING PERCOLATOR
 
-
-A series of scripts that execute system tests are shipped with the source code; 
-as explained above under "BUILDING PERCOLATOR", those are run automatically 
-during the build process. 
-In order to be able to properly execute the scripts, the following are require:
-_python 2.6 interpreter 
-_xmllint. 
+In order to be able to properly execute the tests, the following are require:
+  python 2.6 interpreter 
+  xmllint. 
 Those are not stated among the requirements in "BUILDING PERCOLATOR" since a 
-working version of the software can be compiled without them, but they need to
-be installed in order for the tests to succeed.
-To run tests manually, install Percolator and download the latest source tar-ball 
-from the downloads; then issue the following commands:
-
-  $ tar -zxvf percolator[_converters]-v[X]-linux-[ARCH].tar.gz
-  $ cd percolator[_converters]-v[X]-linux-[ARCH]
-  $ python ./data/tests/System_test_[T]
-
-For any test T in the tests subdirectory (some require Sqt2pin to succeed).
-
-Once you have downloaded and extracted the contents of the Percolator tar-ball
-as explained above, you can also run Percolator manually on the data contained
-in the data/percolator_test/*.
-
+working version of the software can be compiled without them.
+Assuming Percolator has been installed as explained above, it can be 
+automatically tested by issuing:
+  $ cd /tmp/percolatorBuild
+  $ make test
+If errors are encountered, the directory /tmp/percolatorBuild/Testing/ will
+contain log files that can be used to debug the problem.
