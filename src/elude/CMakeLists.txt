@@ -25,14 +25,14 @@ MESSAGE( STATUS )
 
 #TODO: VERSIONING??
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "17")
+set(CPACK_PACKAGE_VERSION_MAJOR "2")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
 if(STATIC AND MINGW) # windows
   set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
-  set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\share\\\\elude\\\\models\\\\")
+  set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\models\\\\")
   set(TEMP_DIR "%TEMP%\\\\")
   add_definitions(-D_WIN32)
 else() # linux
@@ -53,14 +53,16 @@ set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINO
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 
 
-
-# TODO: SHOULD WE DO THIS FROM PERCOLATOR_SOURCE_DIR OR FROM PERCOLATOR_SOURCE_DIR/SRC???
-#       NOT SURE IF THIS IS RECURSIVE...
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_SOURCE_DIR}/../*.cmake )
 foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+endforeach()
+file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/*.cmake )
+foreach(i ${configurefiles})
+  string(REPLACE ".cmake" "" myReplFile "${i}")
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/cmake/windows_elude/${myReplFile} @ONLY)
 endforeach()
 
 ###############################################################################
@@ -83,6 +85,7 @@ target_link_libraries(elude eludelibrary)
 
 IF(STATIC)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(elude PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
 
 ###############################################################################
@@ -124,7 +127,7 @@ set(CPACK_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_PACKAGE_NAME ${PACKAGE_NICKNAME})
 #TODO: ADD README FILE
 #set(CPACK_PACKAGE_DESCRIPTION_FILE "${PERCOLATOR_SOURCE_DIR}/src/elude/README")
-#set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/elude/COPYING")
+set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/elude/COPYING")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
 set(TARGET_ARCH "amd64") # Suitable platform architecture for distribution package: 32bit=i386, 64bit=amd64
 set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TARGET_ARCH}")
@@ -153,6 +156,11 @@ set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 #set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
+
+# NSIS package options
+# Requires NSIS for creating the package 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_elude/script.nsi" DEPENDS elude) 
+add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
 
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set

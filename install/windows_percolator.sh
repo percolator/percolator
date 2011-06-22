@@ -20,8 +20,7 @@ if [ ! -d "xsd-3.3.0-i686-windows" ]; then
   unzip ./xsd-3.3.0-i686-windows.zip
   rm xsd-3.3.0-i686-windows.zip
 fi
-# the Ubuntu package xsdcxx is as of 2010-10-21 version 1.3 and we want version 1.5
-# so we download it from the Googletest home page
+# so we download from the Googletest home page
 if [ ! -d "gtest-1.5.0" ]; then
   wget http://googletest.googlecode.com/files/gtest-1.5.0.tar.gz
   tar xzf gtest-1.5.0.tar.gz
@@ -39,6 +38,6 @@ mkdir $percolatorBuild
 cd $percolatorBuild
 
 
-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=$percolatorSource/cmake/Toolchain-mingw32.cmake '-DCMAKE_PREFIX_PATH='$base'/xsd-3.3.0-i686-windows;'$base'/xsd-3.3.0-x86_64-linux-gnu' -DMINGW=ON -DSTATIC=ON -DGOOGLE_TEST=FALSE -DCMAKE_INSTALL_PREFIX=$base $percolatorSource
+cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$percolatorSource/cmake/windows_percolator/Toolchain-mingw32.cmake '-DCMAKE_PREFIX_PATH='$base'/xsd-3.3.0-i686-windows;'$base'/xsd-3.3.0-x86_64-linux-gnu' -DMINGW=ON -DSTATIC=ON -DGOOGLE_TEST=FALSE -DCMAKE_INSTALL_PREFIX=$base $percolatorSource
 
 make -j 8 win32installer
