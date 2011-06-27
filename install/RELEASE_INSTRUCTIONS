@@ -11,7 +11,8 @@ These are the steps I followed to release Percolator version 2.00
 1. PERCOLATOR 64bit
   CMakeLists.txt: set(TARGET_ARCH "amd64")
   $ ./install/get_packages_ubuntu.sh
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator
+  $ rm -r -f /tmp/percolatorBuild; mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator
   $ make -j8
   $ make package
   $ make package_source
@@ -25,11 +26,10 @@ These are the steps I followed to release Percolator version 2.00
 2. CONVERTERS 64bit
   src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "00"), set(TARGET_ARCH "amd64")
   [$ ./src/converters/install/get_packages_ubuntu.sh]
-  $ mkdir /tmp/percolator-convertersBuild; cd /tmp/percolator-convertersBuild
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/converters
+  $ rm -r -f /tmp/percolator-convertersBuild; mkdir /tmp/percolator-convertersBuild; cd /tmp/percolator-convertersBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/converters
   $ make -j8
   $ make package
-  $ make package_source
 
   Output:
   percolator-converters-v2_00-linux-amd64.deb 		sqt2pin + mzidentml2pin 64bit debian
@@ -39,11 +39,10 @@ These are the steps I followed to release Percolator version 2.00
 3. ELUDE 64bit
   src/elude/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "00"), set(TARGET_ARCH "amd64")
   [$ ./src/converters/install/get_packages_ubuntu.sh]
-  $ mkdir /tmp/eludeBuild; cd /tmp/eludeBuild
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/elude
+  $ rm -r -f /tmp/eludeBuild; mkdir /tmp/eludeBuild; cd /tmp/eludeBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/elude
   $ make -j8
   $ make package
-  $ make package_source
   
   Output:
   elude-v2_00-linux-amd64.deb		elude 64bit debian
@@ -54,8 +53,8 @@ These are the steps I followed to release Percolator version 2.00
   CMakeLists.txt: set(TARGET_ARCH "i386")
   hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
   $ ./install/get_packages_ubuntu.sh
-  $ mkdir /tmp/percolator-Build; cd /tmp/percolator-Build
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator
+  $ rm -r -f /tmp/percolator-Build; mkdir /tmp/percolator-Build; cd /tmp/percolator-Build
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator
   $ make -j8
   $ make package
 
@@ -68,8 +67,8 @@ These are the steps I followed to release Percolator version 2.00
   src/converters/CMakeLists.txt: set(TARGET_ARCH "i386")
   hack ./src/converters/install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
   $ ./src/converters/install/get_packages_ubuntu.sh
-  $ mkdir /tmp/percolator-convertersBuild; cd /tmp/percolator-convertersBuild
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/converters
+  $ rm -r -f /tmp/percolator-convertersBuild; mkdir /tmp/percolator-convertersBuild; cd /tmp/percolator-convertersBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/converters
   $ make -j8
   $ make package
 
@@ -82,8 +81,8 @@ These are the steps I followed to release Percolator version 2.00
   src/elude/CMakeLists.txt: set(TARGET_ARCH "i386")
   hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
   $ ./install/get_packages_ubuntu.sh
-  $ mkdir /tmp/eludeBuild; cd /tmp/eludeBuild
-  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/;/tmp/gtest-1.5.0" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/elude
+  $ rm -r -f /tmp/eludeBuild; mkdir /tmp/eludeBuild; cd /tmp/eludeBuild
+  $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/elude
   $ make -j8
   $ make package
 
@@ -98,7 +97,6 @@ These are the steps I followed to release Percolator version 2.00
   $ ssh -l root -p 2222 localhost
   $ git clone git://github.com/percolator/percolator.git
   $ cd percolator
-  $ git checkout rel-2-0
   $ ./install/windows_percolator.sh
   $ ./install/windows_elude.sh
   to get it out of the virtual machine:
