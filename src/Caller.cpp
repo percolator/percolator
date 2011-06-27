@@ -978,13 +978,6 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     shuffled.print(fullset, decoyStream);
     decoyStream.close();
   }
-  if (docFeatures) {
-    ofstream outs("retention_times.txt", ios::out);
-    for (unsigned int set = 0; set < xval_fold; ++set) {
-      xv_test[set].printRetentionTime(outs, test_fdr);
-    }
-    outs.close();
-  }
 }
 
 int Caller::run() {
