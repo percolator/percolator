@@ -1,6 +1,6 @@
 !include "MUI2.nsh"
-Name "percolator-@PACKAGE_VERSION@"
-outfile "@CMAKE_BINARY_DIR@/percolator-@PACKAGE_VERSION@-win32.exe"
+Name "percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
+outfile "@CMAKE_BINARY_DIR@/percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
 installDir $PROGRAMFILES\percolator
 
 !define MUI_ABORTWARNING

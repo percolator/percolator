@@ -1,8 +1,6 @@
 #TODO: 
 # _CONSIDER PUTTING COMMON ROUTINES IN A SEPARATE FILE (EG: VERSIONING, .H.CMAKE FILE RECURSIVE SUBSTITUTION, USEFUL MACRO, RUN CODESYNTHESIS)...
-# GTEST: make customized dir into tests for converters (and elude)
 # UPDATE README FILE AND RELEASE INSTRUCTIONS
-# customize converters/install/get_packages_ubuntu_64bit
 
 ###############################################################################
 # NAME AND VERSION
@@ -31,7 +29,7 @@ MESSAGE( STATUS )
 
 # VERSION AND NAMESPACES - TO BE THE SAME AS PERCOLATOR'S
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "00")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
 set(PIN_VERSION_MAJOR "1")
