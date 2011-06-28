@@ -1,12 +1,11 @@
-Percolator and Qvality software package for protein classification.
+Percolator and format converters software packages for postprocessing of shotgun proteomics data. Elude package for retention times prediction.
 June 2011
 Lukas Käll <lukas.kall@scilifelab.se>
 
-DOWNLOAD, INSTALL AND TEST
-The latest releases of Percolator, its converters and Elude are available at 
+The latest releases of Percolator, its converters and Elude are available at
 the downloads page: https://github.com/percolator/percolator/downloads
 There you may find package for Linux and compiled executables for Win32. Source
-bundles are available to build from scratch if you are running a different 
+bundles are available to build from scratch if you are running a different
 system or if you do not have superuser privileges.
 
 
@@ -16,20 +15,24 @@ system or if you do not have superuser privileges.
 INSTALLING (from packages or installer)
 
 Linux
-Download the appropriate package from the downloads page mentioned above: 
+Download the appropriate package from the downloads page mentioned above:
   ".deb" packages are available for Debian distributions (such as Ubuntu)
   ".rpm" packages are available for Red Hat (such as CentOS).
-For Debian distributions (e.g. Ubuntu), issue the following command in the 
-directory where the package has been downloaded:
+In graphical mode, double click on the packages and follow the instructions.
+In command line mode, for Debian distributions (e.g. Ubuntu), issue the
+following to install the necessary dependencies for Percolator:
+  $ sudo apt-get install libxerces-c3.1 libboost-dev libsqlite3-0 gengetopt
+and the following for the converters:
+  $ sudo apt-get install libxerces-c3.1 libboost-dev gengetopt \
+    libtokyocabinet8 zlib1g
+Then, in the directory where the package has been downloaded:
   $ sudo dpkg --force-all --install [pacakge].deb
-For Red Hat (e.g. CentOS), issue:
+In command line mode, for Red Hat distributions (e.g. CentOS), manually build
+and install dependencies and then issue the following:
   $ su
-  $ rpm -ivh --replacefiles [package].rpm
-If dependency problems arise, you might have to compile and manually install 
-some of the libraries on your system to match the version required, as your 
-package manager might be providing an old version. Percolator's Debian package
-has been tested on Ubuntu 10.04 and 10.10 and will install flawlessly. Ubuntu 
-9.10, though, will require you to manually install:
+  $ sudo rpm -ivh --replacefiles [package].rpm
+Percolator's Debian package has been tested on Ubuntu 10.04 and 10.10 and will
+install flawlessly. Ubuntu 9.10, though, will require you to manually build:
   libxerces-c3.1.so
 Similarly, to install Percolator under CentOS5.5, you'll need:
   libxerces-c3.1.so
@@ -40,36 +43,37 @@ Similarly, to install Percolator under CentOS5.5, you'll need:
 
 Windows
 The Percolator and Elude installers have been tested on Windows XP SP2, Windows
-Vista and Window 7. Download the Windows installer, double click and follow the 
-installation procedure. Once completed, open a DOS prompt and invoke Percolator 
-from the directory where it was installed. 
+Vista and Window 7. Download the Windows installer, double click and follow the
+installation procedure. Once completed, open a DOS prompt and invoke Percolator
+from the directory where it was installed.
 
 
 ***
 
 
-BUILDING (from the latest snapshot or the repository)
+BUILDING (from source bundle or the repository)
 
 *** READ THIS CAREFULLY: you MUST install the required libraries! ***
 The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
-Make, Cmake and a C++ compiler are required. To build Percolator, the following 
-libraries are also needed: libxerces-c-dev, libboost-dev, libsqlite3-dev, 
-gengetopt. To build the converters: libxerces-c-dev, libboost-dev, gengetopt, 
-libtokyocabinet-dev, zlib1g-dev.
+Make, Cmake and a C++ compiler are required. To build Percolator, the following
+libraries are also needed: libxerces-c-dev, libboost-dev, libsqlite3-dev,
+gengetopt. To build the converters: libxerces-c-dev, libboost-dev, gengetopt,
+libtokyocabinet-dev, zlib1g-dev. In addition, both need Code Synthesis XSD in
+it 3.3 version. All the above is automatically installed by following the steps
+below; if you do note have superuser privileges, you will have to manually
+install the mentioned libraries. The same goes for older versions of Ubuntu and
+other operating systems (as explained above under "INSTALLING").
 The following instructions are written for Percolator, but the same procedure
-applies for both the converters and Elude.
-Download the latest [tar-ball].tar.gz and decompress it; we will refer to the 
-generated directory as "/path/to/source". You can now install all the library 
-mentioned above with the command:
-  $ cd /path/to/source; 
+applies for both the converters and Elude. Download the latest [tar-ball].tar.gz
+and decompress it; we will refer to the generated directory as
+"/path/to/source". Consider the subdirectory src/converters in the case of the
+converters and src/elude for Elude. You can now install all the required
+libraries mentioned above with the command:
+  $ cd /path/to/source;
   $ ./install/get_packages_ubuntu.sh
 The script will terminate by printing a string to cout; we will refer to that
 string as "/prefix/path".
-If you do not have sudo permissions, you will not be able to run the script
-mentioned above; in that case you will have to manually install the required 
-libraries. The same goes for older versions of Ubuntu and other operating 
-systems (as explained above in the section "INSTALLING PERCOLATOR").
-We will now proceeed to build percolator in /tmp, but any directory where the
+We will now proceed to build percolator in /tmp, but any directory where the
 user has read/write privileges can be chosen. Issue the following:
   $ mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
   $ cmake -DCMAKE_PREFIX_PATH="/prefix/path" -DCMAKE_INSTALL_PREFIX="/tmp" \
@@ -79,7 +83,7 @@ user has read/write privileges can be chosen. Issue the following:
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
-This will create a directory called "percolator" that is to be used as 
+This will create a directory called "percolator" that is to be used as
 /path/to/source in the instructions above
 
 
@@ -89,15 +93,16 @@ This will create a directory called "percolator" that is to be used as
 TESTING
 
 In order to be able to properly execute the tests, the following are require:
-  python 2.6 interpreter 
-  xmllint. 
-Those are not stated among the requirements in "BUILDING" since a working 
-version of the software can be compiled without them. The following 
-instructions are written for Percolator, but the same procedure applies for 
+  python 2.6 interpreter
+  xmllint.
+Those are not stated among the requirements in "BUILDING" since a working
+version of the software can be compiled without them. The following
+instructions are written for Percolator, but the same procedure applies for
 both the converters and Elude.
-Assuming Percolator has been installed as explained above, it can be 
+Assuming Percolator has been installed as explained above, it can be
 automatically tested by issuing:
   $ cd /tmp/percolatorBuild
   $ make test
 If errors are encountered, the directory /tmp/percolatorBuild/Testing/ will
 contain log files that can be used to debug the problem.
+
