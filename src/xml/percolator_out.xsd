@@ -43,7 +43,9 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
     <xsd:sequence>
       <xsd:element name="command_line" type="xsd:string"/>
       <xsd:element name="other_command_line" type="xsd:string"/>
-      <xsd:element name="pi_0" type="probability_t"/>
+      <xsd:element name="pi_0_psms" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="pi_0_peptides" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="pi_0_proteins" type="probability_t" minOccurs="0" maxOccurs="1"/>
       <xsd:element minOccurs="0" name="average_delta_mass" type="xsd:double"/>
       <xsd:element minOccurs="0" name="average_pi" type="xsd:double"/>
       <xsd:element maxOccurs="unbounded" minOccurs="0" name="comment">
