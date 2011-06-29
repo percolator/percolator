@@ -20,6 +20,7 @@ Download the appropriate package from the downloads page mentioned above:
   ".deb" packages are available for Debian distributions (such as Ubuntu)
   ".rpm" packages are available for Red Hat (such as CentOS).
 In graphical mode, double click on the packages and follow the instructions.
+The converters depend on Percolator itself, which must be intalled first!
 In command line mode, for Debian distributions (e.g. Ubuntu), issue the
 following to install the necessary dependencies for Percolator:
   $ sudo apt-get install libxerces-c3.1 libboost-dev libsqlite3-0 gengetopt
@@ -27,11 +28,11 @@ and the following for the converters:
   $ sudo apt-get install libxerces-c3.1 libboost-dev gengetopt \
     libtokyocabinet8 zlib1g
 Then, in the directory where the package has been downloaded:
-  $ sudo dpkg --force-all --install [pacakge].deb
+  $ sudo dpkg [pacakge].deb
 In command line mode, for Red Hat distributions (e.g. CentOS), manually build
 and install dependencies and then issue the following:
   $ su
-  $ sudo rpm -ivh --replacefiles [package].rpm
+  $ sudo rpm -ivh [package].rpm
 Percolator's Debian package has been tested on Ubuntu 10.04 and 10.10 and will
 install flawlessly. Ubuntu 9.10, though, will require you to manually build:
   libxerces-c3.1.so
@@ -65,7 +66,9 @@ below; if you do note have superuser privileges, you will have to manually
 install the mentioned libraries. The same goes for older versions of Ubuntu and
 other operating systems (as explained above under "INSTALLING").
 The following instructions are written for Percolator, but the same procedure
-applies for both the converters and Elude. Download the latest [tar-ball].tar.gz
+applies for both the converters and Elude. The converters depend on Percolator 
+itself, which must be intalled first!
+Download the latest [tar-ball].tar.gz
 and decompress it; we will refer to the generated directory as
 "/path/to/source". Consider the subdirectory src/converters in the case of the
 converters and src/elude for Elude. You can now install all the required

@@ -29,7 +29,7 @@ MESSAGE( STATUS )
 
 # VERSION AND NAMESPACES - TO BE THE SAME AS PERCOLATOR'S
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "00")
+set(CPACK_PACKAGE_VERSION_MINOR "01")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
 set(PIN_VERSION_MAJOR "1")
@@ -185,10 +185,6 @@ add_subdirectory(data/system_tests/converters)
 install(TARGETS mzidentml2pin DESTINATION ./bin)
 install(TARGETS sqt2pin DESTINATION ./bin)
 
-if(NOT MINGW)
-  install(FILES ../xml/percolator_in.xsd DESTINATION ${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ WORLD_READ)
-endif()
-
 ###############################################################################
 # PACKAGING
 ###############################################################################
@@ -223,14 +219,14 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ€ll <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, gengetopt, libtokyocabinet-dev, zlib1g-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, gengetopt, libtokyocabinet-dev, zlib1g-dev, percolator (>=2.01)")
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, tokyocabinet-devel, zlib-devel")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, tokyocabinet-devel, zlib-devel, percolator(>=2.01)")
 
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
