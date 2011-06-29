@@ -365,14 +365,30 @@ bool Caller::parseOptions(int argc, char **argv) {
     g->timeCheckPoint = true;
     g->checkTimeClock = clock();
   }
-  // if parts of the arguments are left unparsed,
-  if (cmd.arguments.size() > 0) {
-    if(cmd.optionSet("j")){
-      cerr << "Error: use either pin of tab-delimited input format.";
-      exit(-1);
+  // if there are no arguments left...
+  if (cmd.arguments.size() == 0) {
+    if(! cmd.optionSet("j")){ // unless the input comes from -j option
+      cerr << "Error: too few arguments.";
+      cerr << "\nInvoke with -h option for help\n";
+      exit(-1); // ...error
     }
-    xmlInputFN = cmd.arguments[0];
   }
+  // if there is one argument left...
+  if (cmd.arguments.size() == 1) {
+    xmlInputFN = cmd.arguments[0]; // then it's the pin input
+    if(cmd.optionSet("j")){ // and if the tab input is also present
+      cerr << "Error: use one of either pin or tab-delimited input format.";
+      cerr << "\nInvoke with -h option for help.\n";
+      exit(-1); // ...error
+    }
+  }
+  // if there is more then one argument left...
+  if (cmd.arguments.size() > 1) {
+    cerr << "Error: too many arguments.";
+    cerr << "\nInvoke with -h option for help\n";
+    exit(-1); // ...error
+  }
+
   return true;
 }
 
