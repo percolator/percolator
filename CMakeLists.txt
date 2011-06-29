@@ -47,7 +47,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
-set(POUT_VERSION_MINOR "2")
+set(POUT_VERSION_MINOR "3")
 
 if(STATIC AND MINGW) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
