@@ -912,7 +912,8 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM "
         "for each unique peptide." << endl;
   }
-  fullset.merge(xv_test, selectionfdr, reportUniquePeptides);
+  bool makeUnique = isUniquePeptideRun && reportUniquePeptides;
+  fullset.merge(xv_test, selectionfdr, makeUnique);
   Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
     cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
@@ -1063,7 +1064,7 @@ int Caller::run() {
   }
   // calculate unique peptides level probabilities
   if(reportUniquePeptides){
-    isUniquePeptideRun = true; //(this not the unique peptides run)
+    isUniquePeptideRun = true; //(this is the unique peptides run)
     calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
     if (xmlOutputFN.size() > 0){
       writeXML_Peptides();

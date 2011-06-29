@@ -154,7 +154,7 @@ Scores::~Scores() {
 bool Scores::outxmlDecoys = false;
 uint32_t Scores::seed = 1;
 
-void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
+void Scores::merge(vector<Scores>& sv, double fdr, bool makeUnique) {
   scores.clear();
   for (vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
@@ -165,10 +165,9 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool reportUniquePeptides) {
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores));
   }
-  if (reportUniquePeptides) {
+  if (makeUnique) {
     weedOutRedundant();
   }
-  int ss = scores.size();
   totalNumberOfDecoys = count_if(scores.begin(),
       scores.end(),
       mem_fun_ref(&ScoreHolder::isDecoy));
