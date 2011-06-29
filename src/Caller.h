@@ -100,14 +100,16 @@ class Caller {
           return NULL;
       }
     }
-    void writeXML_initialize();
+    string xmlOutputFN;
+    string xmlOutputFN_PSMs;
+    string xmlOutputFN_Peptides;
+    string xmlOutputFN_Proteins;
+    Scores fullset; //,thresholdset;
+  protected:
     void writeXML_PSMs();
     void writeXML_Peptides();
     void writeXML_Proteins(const fidoOutput& output);
-    void writeXML_finalize();
-    string xmlOutputFN;
-    Scores fullset; //,thresholdset;
-  protected:
+    void writeXML();
     void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets ,
         unsigned int & nrDecoys );
     Normalizer * pNorm;
@@ -147,6 +149,9 @@ class Caller {
     vector<double> xv_cposs, xv_cfracs;
     SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
     map<int, double> scan2rt;
+    double pi_0_psms;
+    double pi_0_peptides;
+    double pi_0_proteins;
 };
 
 #endif /*CALLER_H_*/
