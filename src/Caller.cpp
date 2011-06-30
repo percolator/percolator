@@ -70,7 +70,7 @@ string Caller::extendedGreeter() {
   char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call << endl;
-  oss << "Started " << ctime(&startTime);
+  oss << "Started " << ctime(&startTime) << endl;
   oss.seekp(-1, ios_base::cur);
   if(host) oss << " on " << host << endl;
   oss << "Hyperparameters fdr=" << selectionfdr;
