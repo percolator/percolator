@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-xmlns="http://per-colator.com/percolator_out/12" 
-targetNamespace="http://per-colator.com/percolator_out/12"
+xmlns="http://per-colator.com/percolator_out/13" 
+targetNamespace="http://per-colator.com/percolator_out/13"
 elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 <!-- define some general types -->
@@ -222,6 +222,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
       <xsd:element ref="peptide_seq" maxOccurs="unbounded"/>
     </xsd:sequence>
     <xsd:attribute ref="protein_id" use="required"/>
+    <xsd:attribute ref="decoy"/>
   </xsd:complexType>
 </xsd:element><!-- end protein-->
 <!-- define proteins-->
@@ -263,7 +264,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
       <xsd:element ref="proteins" minOccurs="0" maxOccurs="1"/>
     </xsd:sequence>
     <xsd:attribute ref="percolator_version"  use="required" />
-    <xsd:attribute ref="majorVersion" use="required" fixed="1"/>
+    <xsd:attribute ref="majorVersion" use="required" fixed="2"/>
     <xsd:attribute ref="minorVersion" use="required" />
   </xsd:complexType>
 </xsd:element><!-- end percolator_output-->
