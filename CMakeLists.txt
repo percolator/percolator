@@ -147,7 +147,7 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, gengetopt, libsqlite3-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1, libboost-dev, libsqlite3-0, gengetopt")
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
@@ -164,4 +164,5 @@ add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolato
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
 include(CPack)
+
 

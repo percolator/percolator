@@ -1,4 +1,4 @@
-Percolator and format converters software packages for postprocessing of 
+Percolator and format converters software packages for postprocessing of
 shotgun proteomics data. Elude package for retention times prediction.
 June 2011
 Lukas Käll <lukas.kall@scilifelab.se>
@@ -15,33 +15,35 @@ system or if you do not have superuser privileges.
 
 INSTALLING (from packages or installer)
 
-Linux
-Download the appropriate package from the downloads page mentioned above:
+Download the desired package (referred to as [package] in the instructions 
+below) from the downloads page mentioned above:
   ".deb" packages are available for Debian distributions (such as Ubuntu)
-  ".rpm" packages are available for Red Hat (such as CentOS).
-In graphical mode, double click on the packages and follow the instructions.
-The converters depend on Percolator itself, which must be intalled first!
-In command line mode, for Debian distributions (e.g. Ubuntu), issue the
-following to install the necessary dependencies for Percolator:
-  $ sudo apt-get install libxerces-c3.1 libboost-dev libsqlite3-0 gengetopt
+  ".rpm" packages are available for Red Hat (such as Fedora).
+The converters depend on Percolator itself, which must be installed first!
+
+Ubuntu (11.04)
+Issue the following to install the necessary dependencies for Percolator:
+  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev gengetopt
 and the following for the converters:
-  $ sudo apt-get install libxerces-c3.1 libboost-dev gengetopt \
-    libtokyocabinet8 zlib1g
+  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev gengetopt\
+    libtokyocabinet8
 Then, in the directory where the package has been downloaded:
-  $ sudo dpkg [pacakge].deb
-In command line mode, for Red Hat distributions (e.g. CentOS), manually build
-and install dependencies and then issue the following:
-  $ su
+  $ sudo dpkg --install [package].deb
+
+Fedora (13)
+Issue the following in the directory where the package has been downloaded:
+  $ wget ftp://rpmfind.net/linux/fedora/development/rawhide/x86_64/os/Packages\
+    /xerces-c-3.1.1-1.fc16.x86_64.rpm
+  $ sudo rpm -ivh xerces-c-3.1.1-1.fc16.x86_64.rpm
   $ sudo rpm -ivh [package].rpm
-Percolator's Debian package has been tested on Ubuntu 10.04 and 10.10 and will
-install flawlessly. Ubuntu 9.10, though, will require you to manually build:
-  libxerces-c3.1.so
-Similarly, to install Percolator under CentOS5.5, you'll need:
+
+Linux (other distributions)
+For other distributions you might have to manually build and install some of
+the following libraries:
   libxerces-c3.1.so
   libstdc++.so.6
   libtokyocabinet.so.8
   libsqlite3-devel.so
-
 
 Windows
 The Percolator and Elude installers have been tested on Windows XP SP2, Windows
@@ -56,7 +58,7 @@ from the directory where it was installed.
 BUILDING (from source bundle or the repository)
 
 *** READ THIS CAREFULLY: you MUST install the required libraries! ***
-The following instructions are for Linux Ubuntu (versions 10.04 and 10.10).
+The following instructions are for Ubuntu (versions 10.04, 10.10 and 11.04).
 Make, Cmake and a C++ compiler are required. To build Percolator, the following
 libraries are also needed: libxerces-c-dev, libboost-dev, libsqlite3-dev,
 gengetopt. To build the converters: libxerces-c-dev, libboost-dev, gengetopt,
@@ -66,7 +68,7 @@ below; if you do note have superuser privileges, you will have to manually
 install the mentioned libraries. The same goes for older versions of Ubuntu and
 other operating systems (as explained above under "INSTALLING").
 The following instructions are written for Percolator, but the same procedure
-applies for both the converters and Elude. The converters depend on Percolator 
+applies for both the converters and Elude. The converters depend on Percolator
 itself, which must be intalled first!
 Download the latest [tar-ball].tar.gz
 and decompress it; we will refer to the generated directory as
@@ -109,4 +111,6 @@ automatically tested by issuing:
   $ make test
 If errors are encountered, the directory /tmp/percolatorBuild/Testing/ will
 contain log files that can be used to debug the problem.
+
+
 

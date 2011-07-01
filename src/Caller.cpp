@@ -922,15 +922,19 @@ void Caller::writeXML(){
   ifs_psms.close();
   remove(xmlOutputFN_PSMs.c_str());
   // append Peptides
-  ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
-  os << ifs_peptides.rdbuf();
-  ifs_peptides.close();
-  remove(xmlOutputFN_Peptides.c_str());
+  if(reportUniquePeptides){
+    ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
+    os << ifs_peptides.rdbuf();
+    ifs_peptides.close();
+    remove(xmlOutputFN_Peptides.c_str());
+  }
   // append Proteins
-  ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
-  os << ifs_proteins.rdbuf();
-  ifs_proteins.close();
-  remove(xmlOutputFN_Proteins.c_str());
+  if(calculateProteinLevelProb){
+    ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
+    os << ifs_proteins.rdbuf();
+    ifs_proteins.close();
+    remove(xmlOutputFN_Proteins.c_str());
+  }
 
   os << "</percolator_output>" << endl;
   os.close();
@@ -1140,3 +1144,5 @@ int Caller::run() {
 
   return 0;
 }
+
+
