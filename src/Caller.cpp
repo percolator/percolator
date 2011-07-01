@@ -70,7 +70,7 @@ string Caller::extendedGreeter() {
   char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call << endl;
-  oss << "Started " << ctime(&startTime);
+  oss << "Started " << ctime(&startTime) << endl;
   oss.seekp(-1, ios_base::cur);
   if(host) oss << " on " << host << endl;
   oss << "Hyperparameters fdr=" << selectionfdr;
@@ -365,14 +365,30 @@ bool Caller::parseOptions(int argc, char **argv) {
     g->timeCheckPoint = true;
     g->checkTimeClock = clock();
   }
-  // if parts of the arguments are left unparsed,
-  if (cmd.arguments.size() > 0) {
-    if(cmd.optionSet("j")){
-      cerr << "Error: use either pin of tab-delimited input format.";
-      exit(-1);
+  // if there are no arguments left...
+  if (cmd.arguments.size() == 0) {
+    if(! cmd.optionSet("j")){ // unless the input comes from -j option
+      cerr << "Error: too few arguments.";
+      cerr << "\nInvoke with -h option for help\n";
+      exit(-1); // ...error
     }
-    xmlInputFN = cmd.arguments[0];
   }
+  // if there is one argument left...
+  if (cmd.arguments.size() == 1) {
+    xmlInputFN = cmd.arguments[0]; // then it's the pin input
+    if(cmd.optionSet("j")){ // and if the tab input is also present
+      cerr << "Error: use one of either pin or tab-delimited input format.";
+      cerr << "\nInvoke with -h option for help.\n";
+      exit(-1); // ...error
+    }
+  }
+  // if there is more then one argument left...
+  if (cmd.arguments.size() > 1) {
+    cerr << "Error: too many arguments.";
+    cerr << "\nInvoke with -h option for help\n";
+    exit(-1); // ...error
+  }
+
   return true;
 }
 
@@ -831,7 +847,43 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   }
 }
 
-void Caller::writeXML_initialize(){
+void Caller::writeXML_PSMs() {
+  ofstream os;
+  xmlOutputFN_PSMs = xmlOutputFN;
+  xmlOutputFN_PSMs.append("writeXML_PSMs");
+  os.open(xmlOutputFN_PSMs.data(), ios::out);
+  // append PSMs
+  os << "  <psms>" << endl;
+  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
+  != fullset.end(); ++psm) {
+    os << *psm;
+  }
+  os << "  </psms>" << endl << endl;
+  os.close();
+}
+
+void Caller::writeXML_Peptides() {
+  ofstream os;
+  xmlOutputFN_Peptides = xmlOutputFN;
+  xmlOutputFN_Peptides.append("writeXML_Peptides");
+  os.open(xmlOutputFN_Peptides.data(), ios::out);
+  // append PEPTIDEs
+  os << "  <peptides>" << endl;
+  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
+  != fullset.end(); ++psm) {
+    os << (ScoreHolderPeptide)*psm;
+  }
+  os << "  </peptides>" << endl << endl;
+  os.close();
+}
+
+void Caller::writeXML_Proteins(const fidoOutput& output) {
+  xmlOutputFN_Proteins = xmlOutputFN;
+  xmlOutputFN_Proteins.append("writeXML_Proteins");
+  protEstimator->writeOutputToXML(output, xmlOutputFN_Proteins);
+}
+
+void Caller::writeXML(){
   ofstream os;
   const string space = PERCOLATOR_OUT_NAMESPACE;
   string schema_major = boost::lexical_cast<string>(POUT_VERSION_MAJOR);
@@ -839,7 +891,7 @@ void Caller::writeXML_initialize(){
   const string schema = space +
       " https://github.com/percolator/percolator/raw/pout-" + schema_major +
       "-" + schema_minor + "/src/xml/percolator_out.xsd";
-  os.open(xmlOutputFN.data(), ios::out);
+  os.open(xmlOutputFN.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<percolator_output "
       << endl << "xmlns=\""<< space << "\" "
@@ -853,7 +905,7 @@ void Caller::writeXML_initialize(){
   os << "    <command_line>" << call << "</command_line>" << endl;
 
   os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
-  os << "    <pi_0>" << fullset.getPi0() << "</pi_0>" << endl;
+  os << "    <pi_0>" << pi_0_psms << "</pi_0>" << endl;
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
                    << "</average_delta_mass>" << endl;
@@ -861,45 +913,29 @@ void Caller::writeXML_initialize(){
                    << "</average_pi>" << endl;
   }
   os << "  </process_info>" << endl << endl;
-  os.close();
-}
 
-void Caller::writeXML_finalize(){
-  ofstream os;
-  // append to file
-  os.open(xmlOutputFN.data(), ios::app);
+  // apppend PSMs
+  ifstream ifs_psms(xmlOutputFN_PSMs.data(), ios::in | ios::binary);
+  os << ifs_psms.rdbuf();
+  ifs_psms.close();
+  remove(xmlOutputFN_PSMs.c_str());
+  // append Peptides
+  if(reportUniquePeptides){
+    ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
+    os << ifs_peptides.rdbuf();
+    ifs_peptides.close();
+    remove(xmlOutputFN_Peptides.c_str());
+  }
+  // append Proteins
+  if(calculateProteinLevelProb){
+    ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
+    os << ifs_proteins.rdbuf();
+    ifs_proteins.close();
+    remove(xmlOutputFN_Proteins.c_str());
+  }
+
   os << "</percolator_output>" << endl;
   os.close();
-}
-
-void Caller::writeXML_PSMs() {
-  ofstream os;
-  os.open(xmlOutputFN.data(), ios::app);
-  // append PSMs
-  os << "  <psms>" << endl;
-  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-  != fullset.end(); ++psm) {
-    os << *psm;
-  }
-  os << "  </psms>" << endl << endl;
-  os.close();
-}
-
-void Caller::writeXML_Peptides() {
-  ofstream os;
-  os.open(xmlOutputFN.data(), ios::app);
-  // append PEPTIDEs
-  os << "  <peptides>" << endl;
-  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-  != fullset.end(); ++psm) {
-    os << (ScoreHolderPeptide)*psm;
-  }
-  os << "  </peptides>" << endl << endl;
-  os.close();
-}
-
-void Caller::writeXML_Proteins(const fidoOutput& output) {
-  protEstimator->writeOutputToXML(output, xmlOutputFN);
 }
 
 void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
@@ -978,6 +1014,13 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     ofstream decoyStream(decoyOut.data(), ios::out);
     shuffled.print(fullset, decoyStream);
     decoyStream.close();
+  }
+  // set pi_0 value (to be outputted)
+  if(isUniquePeptideRun) {
+    pi_0_peptides = fullset.getPi0();
+  }
+  else {
+    pi_0_psms = fullset.getPi0();
   }
 }
 
@@ -1059,7 +1102,6 @@ int Caller::run() {
   bool isUniquePeptideRun = false; //(this is not the unique peptides run)
   calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
   if (xmlOutputFN.size() > 0){
-    writeXML_initialize();
     writeXML_PSMs();
   }
   // calculate unique peptides level probabilities
@@ -1090,11 +1132,14 @@ int Caller::run() {
         protEstimator->plotRoc(output,output.decoysAtThr2);
       }
     }
+    pi_0_proteins = output.pi_0;
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins(output);
     }
   }
-  writeXML_finalize();
+  // write output to file
+  writeXML();
 
   return 0;
 }
+

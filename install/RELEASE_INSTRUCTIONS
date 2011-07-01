@@ -1,10 +1,10 @@
-RELEASE INSTRUCTIONS - 2.00
-These are the steps I followed to release Percolator version 2.00
+RELEASE INSTRUCTIONS - 2.01
+These are the steps I followed to release Percolator version 2.01
 
 
 0. BEFORE YOU START
   [$ git clone git@github.com:percolator/percolator.git]
-  CMakeLists.txt and src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "00")
+  CMakeLists.txt, src/converters/CMakeLists.txt and src/elude/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "01")
   build and install in some temporary location and make test
 
 
@@ -18,13 +18,13 @@ These are the steps I followed to release Percolator version 2.00
   $ make package_source
 
   Output:
-  percolator-v2_00-linux-amd64.deb 		percolator + qvality 64bit debian
-  percolator-v2_00-linux-amd64.rpm 		percolator + qvality 64bit redhat
-  percolator-v2_00-src.tar.gz 			percolator + qvality + sqt2pin + mzidentml2pin + elude sources
+  percolator-v2_01-linux-amd64.deb 		percolator + qvality 64bit debian
+  percolator-v2_01-linux-amd64.rpm 		percolator + qvality 64bit redhat
+  percolator-v2_01-src.tar.gz 			percolator + qvality + sqt2pin + mzidentml2pin + elude sources
 
 
 2. CONVERTERS 64bit
-  src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "00"), set(TARGET_ARCH "amd64")
+  src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "01"), set(TARGET_ARCH "amd64")
   [$ ./src/converters/install/get_packages_ubuntu.sh]
   $ rm -r -f /tmp/percolator-convertersBuild; mkdir /tmp/percolator-convertersBuild; cd /tmp/percolator-convertersBuild
   $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/converters
@@ -32,12 +32,12 @@ These are the steps I followed to release Percolator version 2.00
   $ make package
 
   Output:
-  percolator-converters-v2_00-linux-amd64.deb 		sqt2pin + mzidentml2pin 64bit debian
-  percolator-converters-v2_00-linux-amd64.rpm 		sqt2pin + mzidentml2pin 64bit redhat
+  percolator-converters-v2_01-linux-amd64.deb 		sqt2pin + mzidentml2pin 64bit debian
+  percolator-converters-v2_01-linux-amd64.rpm 		sqt2pin + mzidentml2pin 64bit redhat
 
 
 3. ELUDE 64bit
-  src/elude/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "00"), set(TARGET_ARCH "amd64")
+  src/elude/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "01"), set(TARGET_ARCH "amd64")
   [$ ./src/converters/install/get_packages_ubuntu.sh]
   $ rm -r -f /tmp/eludeBuild; mkdir /tmp/eludeBuild; cd /tmp/eludeBuild
   $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-x86_64-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator/src/elude
@@ -45,22 +45,22 @@ These are the steps I followed to release Percolator version 2.00
   $ make package
   
   Output:
-  elude-v2_00-linux-amd64.deb		elude 64bit debian
-  elude-v2_00-linux-amd64.rpm		elude 64bit redhat
+  elude-v2_01-linux-amd64.deb		elude 64bit debian
+  elude-v2_01-linux-amd64.rpm		elude 64bit redhat
 
 
 4. PERCOLATOR 32bit
   CMakeLists.txt: set(TARGET_ARCH "i386")
   hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
   $ ./install/get_packages_ubuntu.sh
-  $ rm -r -f /tmp/percolator-Build; mkdir /tmp/percolator-Build; cd /tmp/percolator-Build
+  $ rm -r -f /tmp/percolatorBuild; mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
   $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_PREFIX_PATH="/tmp/xsd-3.3.0-i686-linux-gnu/" -DCMAKE_INSTALL_PREFIX="/usr" /scratch/temp/percolator
   $ make -j8
   $ make package
 
   Output:
-  percolator-v2_00-linux-i386.deb 		percolator + qvality 32bit debian
-  percolator-v2_00-linux-i386.rpm 		percolator + qvality 32bit redhat
+  percolator-v2_01-linux-i386.deb 		percolator + qvality 32bit debian
+  percolator-v2_01-linux-i386.rpm 		percolator + qvality 32bit redhat
 
 
 5. CONVERTERS 32bit
@@ -73,8 +73,8 @@ These are the steps I followed to release Percolator version 2.00
   $ make package
 
   Output:
-  percolator-converters-v2_00-linux-i386.deb 		sqt2pin + mzidentml2pin 32bit debian
-  percolator-converters-v2_00-linux-i386.rpm 		sqt2pin + mzidentml2pin 32bit redhat
+  percolator-converters-v2_01-linux-i386.deb 		sqt2pin + mzidentml2pin 32bit debian
+  percolator-converters-v2_01-linux-i386.rpm 		sqt2pin + mzidentml2pin 32bit redhat
 
 
 6. ELUDE 32bit
@@ -87,8 +87,8 @@ These are the steps I followed to release Percolator version 2.00
   $ make package
 
   Output:
-  elude-v2_00-linux-i386.deb		elude 32bit debian
-  elude-v2_00-linux-i386.RPM		elude 32bit redhat
+  elude-v2_01-linux-i386.deb		elude 32bit debian
+  elude-v2_01-linux-i386.RPM		elude 32bit redhat
 
 
 7. WIN INSTALLERS (PERCOLATOR AND ELUDE)
@@ -98,29 +98,30 @@ These are the steps I followed to release Percolator version 2.00
   $ git clone git://github.com/percolator/percolator.git
   $ cd percolator
   $ ./install/windows_percolator.sh
+  $ cd src/elude
   $ ./install/windows_elude.sh
   to get it out of the virtual machine:
-  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-2.00-win32.exe ~/Desktop/
-  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/elude-2.00-win32.exe ~/Desktop/
+  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-2.01-win32.exe ~/Desktop/
+  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/elude-2.01-win32.exe ~/Desktop/
 
   Output:
-  percolator-2_00-win32.exe 			percolator + qvality win32
-  elude-2_00-win32.exe 				elude win32
+  percolator-2_01-win32.exe 			percolator + qvality win32
+  elude-2_01-win32.exe 				elude win32
 
 
 8. BRANCH AND TAG (final touch)
   upload generated files to https://github.com/percolator/percolator/downloads
 
-  $ git branch branch-2-00
-  $ git checkout branch-2-00
-  $ git push origin branch-2-00
+  $ git branch branch-2-01
+  $ git checkout branch-2-01
+  $ git push origin branch-2-01
   $ git checkout master
-  $ git branch -f branch-2-00 origin/branch-2-00 #track branch
-  $ git checkout branch-2-00
-  [$ git push origin :branch-2-00 #delete remote branch if you got it wrong]
-  [$ git branch -d branch-2-00 #delete local]
+  $ git branch -f branch-2-01 origin/branch-2-01 #track branch
+  $ git checkout branch-2-01
+  [$ git push origin :branch-2-01 #delete remote branch if you got it wrong]
+  [$ git branch -d branch-2-01 #delete local]
 
-  $ git tag -m 'Setting the rel-2-00 tag' rel-2-00 [commit_hash]
+  $ git tag -m 'Setting the rel-2-01 tag' rel-2-01 [commit_hash]
   $ git push --tags
 
 

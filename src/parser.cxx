@@ -130,7 +130,8 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
 
   parser_->setFeature (XMLUni::fgSAX2CoreValidation, val);
   parser_->setFeature (XMLUni::fgXercesSchema, val);
-  // if local copy of the schema is available, use it for validation
+
+  // if local copy of the schema is available, use it for validation...
   ifstream inp(schemaDefinition.c_str());
   if(inp && val){
     string schemaNamespace = "http://per-colator.com/percolator_in/";
@@ -142,6 +143,11 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
     ArrayJanitor<XMLCh> janValue(propertyValue);
     parser_->
     setProperty(XMLUni::fgXercesSchemaExternalSchemaLocation, propertyValue);
+  }
+  // ... otherwise send a warning
+  else {
+    cerr << "WARNING: no local xml schema is available to validate the input.\n";
+    cerr << "If further errors are encountered, please reinstall Percolator.\n";
   }
   
   // Start parsing. The first document that we return is a "carcase"
@@ -314,3 +320,4 @@ next ()
 {
   return impl_->next ();
 }
+
