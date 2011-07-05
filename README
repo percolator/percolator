@@ -69,7 +69,7 @@ install the mentioned libraries. The same goes for older versions of Ubuntu and
 other operating systems (as explained above under "INSTALLING").
 The following instructions are written for Percolator, but the same procedure
 applies for both the converters and Elude. The converters depend on Percolator
-itself, which must be intalled first!
+itself, which must be installed first!
 Download the latest [tar-ball].tar.gz
 and decompress it; we will refer to the generated directory as
 "/path/to/source". Consider the subdirectory src/converters in the case of the
