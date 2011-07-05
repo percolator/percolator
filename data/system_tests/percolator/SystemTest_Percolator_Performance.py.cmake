@@ -24,6 +24,19 @@ def checkNumberOfSignificant(what,file,expected):
     success = False
   return success
 
+# check value of pi_0 is within 5% expected value
+def checkPi0(what,file,expected):
+  success = True
+  print "(*): checking pi_0 estimate for "+what+"..."
+  processFile = os.popen("grep \"Selecting pi_0\" "+file)
+  output = processFile.read()
+  extracted = float(output[15:20])
+  if extracted<expected-(5*expected/100) or extracted>expected+(5*expected/100):
+    print "...TEST FAILED: "+what+" pi_0=" + str(extracted) + " is outside of desired range"
+    print "check "+file+" for details" 
+    success = False
+  return success
+
 # check pep within 5% expected value
 def checkPep(what,file,expected):
   success=True
@@ -79,6 +92,10 @@ peptideFile="/tmp/PERCOLATOR_peptide.txt"
 success=checkNumberOfSignificant("psms",psmFile,615)
 # number of significant peptrides within boundaries
 success=checkNumberOfSignificant("peptides",peptideFile,390)
+# psm: pi0 within boundaries
+success=checkPi0("psms",psmFile,0.8797)
+# peptides: pi0 within boundaries
+success=checkPi0("peptides",peptideFile,0.9197)
 # psm: pep within boundaries
 expected=[2.61748e-13,3.26564e-09,7.28959e-08]
 success = checkPep("psms",psmFile, expected);
