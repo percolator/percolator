@@ -11,60 +11,86 @@ success = True
 
 print "PERCOLATOR PERFORMANCE"
 
-# the output line containing "New pi_0 estimate" is extracted and if its value is 
-# outside 622+/-5% an error is reported
-print "(*): checking estimated number of psms at 0.01 q-value threshold..."
-processFile = os.popen("grep \"New pi_0 estimate\" " + 
-  "/tmp/PERCOLATOR_no_options.txt")
-output = processFile.read()
-extracted = float(output[39:42])
-if extracted < 590.9 or extracted > 653.1: 
-  print "...TEST FAILED: estimated number of psms=" + str(extracted) + " is outside desired range (590.9, 653.1)"
-  print "check /tmp/PERCOLATOR_no_options.txt for details" 
-  success = False
+# check number of psms/peptides with q-value < 0.01 is withing 5% from expected
+def checkNumberOfSignificant(what,file,expected):
+  success = True
+  print "(*): checking number of significant "+what+" found..."
+  processFile = os.popen("grep \"New pi_0 estimate\" "+file)
+  output = processFile.read()
+  extracted = float(output[39:42])
+  if extracted<expected-(5*expected/100)  or extracted>expected+(5*expected/100) : 
+    print "...TEST FAILED: number of significant "+what+"=" + str(int(extracted)) + " is outside of desired range"
+    print "check "+file+" for details" 
+    success = False
+  return success
 
-# the output line containing "Selecting pi_0" is extracted and if its value is 
-# outside (0.86, 0.90) an error is reported
-print "(*): checking selected new pi_0 estimate..."
-processFile = os.popen("grep \"Selecting pi_0\" " +
-  "/tmp/PERCOLATOR_no_options.txt")
-output = processFile.read()
-extracted = float(output[15:20])
-if extracted < 0.86 or extracted > 0.90:
-  print "...TEST FAILED: selected pi_0=" + str(extracted) + " is outside desired range (0.86, 0.90)"
-  print "check /tmp/PERCOLATOR_no_options.txt for details" 
-  success = False
-
-# the first line of the stdout (the one after the line beginning with "PSMId")
-# is extracted and if the value in the 4th column (posterior_error_prob) is 
-# greater than 10e-10 an error is reported
-print "(*): checking posterior_error_prob..."
-processFile = open("/tmp/PERCOLATOR_no_options.txt")
-output = ""
-line = processFile.readline()
-finished = False
-while (not finished): # reading line by line, looking for "PSMId"
-  if line[0:5] == "PSMId":
-    output = processFile.readline() # right line extracted
-    finished = True
-  else:
+# check pep within 5% expected value
+def checkPep(what,file,expected):
+  success=True
+  print "(*): checking posterior error probabilities for "+what+"..."
+  processFile = open(file)
+  psm_line=[]
+  line = processFile.readline()
+  # extract relevant lines from file
+  while (line[0:5]!="PSMId"): # reading line by line, until "PSMId"
     line = processFile.readline()
-tabsNumber = 0
-extracted = ""
-for i in range(0, len(output)): # reading char by char, looking for 4th column
-  if output[i] == "\t":
-    tabsNumber = tabsNumber + 1
-  if tabsNumber == 3:
-    extracted += output[i] # right column extracted
-extracted = float(extracted)
-threshold = pow(10,-10)
-if extracted > threshold:
-  print "...TEST FAILED: posterior_error_prob=" + str(extracted) + " is too high"
-  print "check /tmp/PERCOLATOR_no_options.txt for details" 
-  success = False
+  for i in range (1,101):
+    if i==1: psm_line.append(processFile.readline()) # 1st psm
+    elif i == 50: psm_line.append(processFile.readline()) # 50th psm
+    elif i == 100: psm_line.append(processFile.readline()) # 100th psm
+    else: processFile.readline() # skip line
+  # extract peps from relevant lines
+  pep=["","",""]
+  i=0
+  for i in range (0, len(pep)):
+    tabsNumber = 0
+    for j in range(0, len(psm_line[i])): # reading char by char, looking for 4th column
+      if psm_line[i][j] == "\t":
+        tabsNumber = tabsNumber + 1
+      if tabsNumber == 3:
+        pep[i] += psm_line[i][j] # pep of ith psm
+  # check whether pep within 5% expected value
+  for i in range (0,3):
+    if float(pep[i])<expected[i]-(5*expected[i]/100) or float(pep[i])>expected[i]+(5*expected[i]/100):
+      success=False
+      print "...TEST FAILED: posterior error prob for "+what+" are outside the expected range"
+      print "check "+file+" for details"
+  return success
+
+# performance increase when description of correct features option is enabled
+def performanceD4On():
+  success = True
+  print "(*): checking performance with description of correct features option..."
+  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_rt_D4on.txt")
+  output = processFile.read()
+  extracted_D4on = int(output[39:40])
+  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_rt_D4off.txt")
+  output = processFile.read()
+  extracted_D4off = int(output[39:40])
+  if extracted_D4on < extracted_D4off:
+    print "...TEST FAILED: percolator with -D 4 option performed worse than without it"
+    print "check /tmp/PERCOLATOR_rt_D4on.txt and /tmp/PERCOLATOR_rt_D4off.txt for details" 
+    success = False
+  return success
+
+psmFile="/tmp/PERCOLATOR_psm.txt"
+peptideFile="/tmp/PERCOLATOR_peptide.txt"
+# number of significant psms within boundaries
+success=checkNumberOfSignificant("psms",psmFile,615)
+# number of significant peptrides within boundaries
+success=checkNumberOfSignificant("peptides",peptideFile,390)
+# psm: pep within boundaries
+expected=[2.61748e-13,3.26564e-09,7.28959e-08]
+success = checkPep("psms",psmFile, expected);
+# peptide : pep within boundaries
+expected=[4.47324e-14,3.52218e-09,1.7545e-07]
+success = checkPep("peptides",peptideFile, expected);
+# performance increase with -D 4 option
+success = performanceD4On()
+
 
 # if no errors were encountered, succeed
-if success == True:
+if success==True:
  print "...TEST SUCCEEDED"
  exit(0)
 else:
