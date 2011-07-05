@@ -2,9 +2,18 @@
 # as soon as a command fails terminate this script
 set -e
 
-base=/mnt/VirtualBoxShare
+#base=/mnt/VirtualBoxShare
+base=/tmp/test
 percolatorSource=`/bin/pwd`
 percolatorBuild=$base/percolatorBuild
+
+download(){
+  site=$1
+  pack=$2
+  wget -nc "${site}/${pack}.tar.bz2"
+  tar xjf "${pack}.tar.bz2"
+  rm "${pack}.tar.bz2"
+}
 
 # the Ubuntu package xsdcxx is as of 2010-10-21 version 3.2 and we want version 3.3
 # so we download it from the Codesynthesis home page
@@ -13,18 +22,12 @@ cd $base
 cs_version="3.3"
 cs_site="http://codesynthesis.com/download/xsd/"${cs_version}"/linux-gnu"
 if [ ! -d "xsd-3.3.0-x86_64-linux-gnu" ]; then
-  cs_site64=${cs_site}/"x86_64"
   cs_pack="xsd-"${cs_version}".0-x86_64-linux-gnu"
-  wget -nc "${cs_site64}/${cs_pack}.tar.bz2"
-  tar xjf "${cs_pack}.tar.bz2"
-  rm "${cs_pack}.tar.bz2"
+  download $cs_site/"x86_64" $cs_pack
 fi
 if [ ! -d "xsd-3.3.0-i686-windows" ]; then
-  cs_site32=${cs_site}/"i686"
   cs_pack="xsd-"${cs_version}".0-i686-linux-gnu"
-  wget -nc "${cs_site32}/${cs_pack}.tar.bz2"
-  tar xjf "${cs_pack}.tar.bz2"
-  rm "${cs_pack}.tar.bz2"
+  download $cs_site/"i686" $cs_pack
 fi
 
 if [ -d "$percolatorBuild" ]; then
