@@ -110,8 +110,8 @@ endif()
 ###############################################################################
 
 if(NOT MINGW)
-  install(FILES src/xml/percolator_in.xsd DESTINATION ${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ WORLD_READ)
-  install(FILES src/xml/percolator_out.xsd DESTINATION ${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ WORLD_READ)
+  install(FILES src/xml/percolator_in.xsd DESTINATION ${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+  install(FILES src/xml/percolator_out.xsd DESTINATION ${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 endif()
 
 ###############################################################################

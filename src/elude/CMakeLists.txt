@@ -106,7 +106,7 @@ add_subdirectory(data/system_tests/)
 #TODO: make sure this works with cpack
 if(NOT MINGW)
   install(TARGETS elude EXPORT ELUDE DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-  install(DIRECTORY data/elude/models DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ OWNER_WRITE WORLD_READ WORLD_WRITE)
+  install(DIRECTORY data/elude/models DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 endif()
 
 ###############################################################################
