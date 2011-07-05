@@ -11,6 +11,18 @@ success = True
 
 print "PERCOLATOR CORRECTNESS"
 
+# validating output against schema
+def validate(what,file):
+  success = True
+  print "(*) validating "+what+" output..."
+  processFile = os.popen("xmllint --noout --schema " + pathToData + "/../src/xml/percolator_out.xsd " + file)
+  exitStatus = processFile.close()
+  if exitStatus is not None:
+    print "...TEST FAILED: percolator (on "+what+" probabilities) produced an invalid output" 
+    print "check "+file+" for details"
+    success = False
+  return success
+
 # running percolator to calculate psm probabilities
 print "(*) running percolator to calculate psm probabilities..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") +
@@ -21,6 +33,7 @@ if exitStatus is not None:
   print "...TEST FAILED: percolator (psm probabilities) terminated with " + str(exitStatus) + " exit status"
   print "check /tmp/PERCOLATOR_psm.txt for details" 
   success = False
+success = validate("psms","/tmp/PERCOLATOR_psm.pout.xml")
 
 # running percolator to calculate peptide probabilities
 print "(*) running percolator to calculate peptide probabilities..."
@@ -32,6 +45,7 @@ if exitStatus is not None:
   print "...TEST FAILED: percolator (peptide probabilities) terminated with " + str(exitStatus) + " exit status"
   print "check /tmp/PERCOLATOR_peptide.txt for details" 
   success = False
+success = validate("peptides","/tmp/PERCOLATOR_peptide.pout.xml")
 
 # running percolator with option to generate tab-delimited input
 print "(*) running percolator to generate tab-delimited input..."
