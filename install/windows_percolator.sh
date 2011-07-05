@@ -10,25 +10,21 @@ percolatorBuild=$base/percolatorBuild
 # so we download it from the Codesynthesis home page
 # need both version for windows and for linux
 cd $base
+cs_version="3.3"
+cs_site="http://codesynthesis.com/download/xsd/"${cs_version}"/linux-gnu"
 if [ ! -d "xsd-3.3.0-x86_64-linux-gnu" ]; then
-  wget http://codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/xsd-3.3.0-x86_64-linux-gnu.tar.bz2
-  tar xfj xsd-3.3.0-x86_64-linux-gnu.tar.bz2
-  rm xsd-3.3.0-x86_64-linux-gnu.tar.bz2
+  cs_site64=${cs_site}/"x86_64"
+  cs_pack="xsd-"${cs_version}".0-x86_64-linux-gnu"
+  wget -nc "${cs_site64}/${cs_pack}.tar.bz2"
+  tar xjf "${cs_pack}.tar.bz2"
+  rm "${cs_pack}.tar.bz2"
 fi
 if [ ! -d "xsd-3.3.0-i686-windows" ]; then
-  wget http://codesynthesis.com/download/xsd/3.3/windows/i686/xsd-3.3.0-i686-windows.zip
-  unzip ./xsd-3.3.0-i686-windows.zip
-  rm xsd-3.3.0-i686-windows.zip
-fi
-# so we download from the Googletest home page
-if [ ! -d "gtest-1.5.0" ]; then
-  wget http://googletest.googlecode.com/files/gtest-1.5.0.tar.gz
-  tar xzf gtest-1.5.0.tar.gz
-  rm gtest-1.5.0.tar.gz
-  cd gtest-1.5.0; mkdir build
-  cd build; cmake ../ 
-  make
-  cd ..
+  cs_site32=${cs_site}/"i686"
+  cs_pack="xsd-"${cs_version}".0-i686-linux-gnu"
+  wget -nc "${cs_site32}/${cs_pack}.tar.bz2"
+  tar xjf "${cs_pack}.tar.bz2"
+  rm "${cs_pack}.tar.bz2"
 fi
 
 if [ -d "$percolatorBuild" ]; then
