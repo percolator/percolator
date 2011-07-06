@@ -2,8 +2,7 @@
 # as soon as a command fails terminate this script
 set -e
 
-#base=/mnt/VirtualBoxShare
-base=/tmp/test
+base=/mnt/VirtualBoxShare
 percolatorSource=`/bin/pwd`
 percolatorBuild=$base/percolatorBuild
 
