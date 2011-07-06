@@ -189,6 +189,11 @@ install(TARGETS sqt2pin DESTINATION ./bin)
 ###############################################################################
 # PACKAGING
 ###############################################################################
+macro(my_set variable default options)
+  if(NOT DEFINED ${variable})
+    set(${variable} ${default} CACHE STRING ${options} FORCE)
+  endif(NOT DEFINED ${variable})
+endmacro(my_set)
 
 # PACKAGING OPTIONS: GENERAL
 set(PACKAGE_NICKNAME "percolator-converters")
@@ -220,14 +225,14 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ€ll <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, gengetopt, libtokyocabinet-dev, zlib1g-dev, percolator (>=2.01)")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, gengetopt, libtokyocabinet-dev, zlib1g-dev, libsqlite3-0, percolator (>=2.01)")
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, tokyocabinet-devel, zlib-devel, percolator(>=2.01)")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, tokyocabinet-devel, zlib-devel, sqlite3-devel, percolator(>=2.01)")
 
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set

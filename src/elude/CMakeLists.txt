@@ -113,6 +113,11 @@ endif()
 ###############################################################################
 # PACKAGING
 ###############################################################################
+macro(my_set variable default options)
+  if(NOT DEFINED ${variable})
+    set(${variable} ${default} CACHE STRING ${options} FORCE)
+  endif(NOT DEFINED ${variable})
+endmacro(my_set)
 
 # PACKAGING OPTIONS: GENERAL
 set(PACKAGE_NICKNAME "elude")
