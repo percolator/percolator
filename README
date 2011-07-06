@@ -25,10 +25,10 @@ Ubuntu (11.04)
 Issue the following to install the necessary dependencies for Percolator:
   $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev gengetopt
 and the following for the converters:
-  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev gengetopt\
-    libtokyocabinet8
+  $ sudo apt-get install libtokyocabinet8 libsqlite3-0
 Then, in the directory where the package has been downloaded:
   $ sudo dpkg --install [package].deb
+Note that the converters depend on Percolator, which must be installed first!
 
 Fedora (13)
 Issue the following in the directory where the package has been downloaded:
