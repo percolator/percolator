@@ -55,4 +55,4 @@ make
 cd ..
 
 echo "To build, invoke cmake from the build directory with the following option:\n"
-echo "-DCMAKE_PREFIX_PATH=\"${base}/${cs_pack};${base}/${gt_pack}\""
+echo "-DCMAKE_PREFIX_PATH=\"${base}/${cs_pack};${base}/${gt_pack}\" -DGOOGLE_TEST_PATH=\"${base}/${gt_pack}\""

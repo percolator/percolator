@@ -9,9 +9,9 @@ endmacro(my_set)
 
 # CMAKE_INSTALL_PREFIX must be set from command line with -D 
 my_set(GOOGLE_TEST "FALSE" "Select if Google test should be included, options are: TRUE or FALSE") 
-my_set(GOOGLE_TEST_PATH "${base}/gtest-1.5.0" "Give path to google test code")
+my_set(GOOGLE_TEST_PATH "../gtest-1.5.0" "Give path to google test code")
 my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
-my_set(CMAKE_PREFIX_PATH "." "Default path to packages")
+my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")
 
 # PRINT VARIBALES TO STDOUT
 MESSAGE( STATUS )
