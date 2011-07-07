@@ -423,7 +423,9 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Terminate();
 
-  cerr << "\nAll the input files have been successfully processed"<< endl;
+  if(VERB>1){
+    cerr << "\nAll the input files have been successfully processed"<< endl;
+  }
   return 0;
 }
 
