@@ -146,7 +146,7 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
   }
   // ... otherwise send a warning
   else {
-    cerr << "WARNING: no local xml schema is available to validate the input.\n";
+    cerr << "WARNING: no valid local xml schema is available to validate the input.\n";
     cerr << "If further errors are encountered, please reinstall Percolator.\n";
   }
   
