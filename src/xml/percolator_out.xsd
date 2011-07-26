@@ -26,7 +26,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 	<xsd:simpleType name="aa_seq_t">
 	  <xsd:restriction base="xsd:string">
-	    <xsd:pattern value="([A-Z][#*@]?)+"/>
+	    <xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])?[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])?[A-Z]+)"/>
 	  </xsd:restriction>
 	</xsd:simpleType>
 	
