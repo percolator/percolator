@@ -129,7 +129,6 @@ class Caller {
     string decoyOut;
     bool outputAll;
     bool tabInput;
-    bool dtaSelect;
     bool docFeatures;
     bool reportPerformanceEachIteration;
     bool reportUniquePeptides;

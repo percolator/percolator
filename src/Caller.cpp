@@ -34,7 +34,7 @@ Caller::Caller() :
         pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
         forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
         xmlInputFN(""), xmlOutputFN(""), weightFN(""),
-        tabInput(false), dtaSelect(false), readStdIn(false),
+        tabInput(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
         schemaValidation(true),
@@ -196,11 +196,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "beta",
       "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
       "value");
-  cmd.defineOption("d",
-      "DTASelect",
-      "Add an extra hit to each spectra when writing sqt files",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("R",
       "test-each-iteration",
       "Measure performance on test set each iteration",
@@ -318,9 +313,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("u")) {
     Normalizer::setType(Normalizer::UNI);
-  }
-  if (cmd.optionSet("d")) {
-    dtaSelect = true;
   }
   if (cmd.optionSet("O")) {
     SanityCheck::setOverrule(true);
