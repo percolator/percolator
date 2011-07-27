@@ -60,6 +60,9 @@ private:
   //
   DOMImplementation& dom_impl_;
   xml::dom::auto_ptr<DOMDocument> doc_;
+  //number of elements have been serialized so far. (mattia tomasoni)
+  //
+  size_t count_;
 };
 
 const XMLCh ls[] = {chLatin_L, chLatin_S, chNull};
@@ -70,6 +73,10 @@ serializer_impl ()
       dom_impl_ (*DOMImplementationRegistry::getDOMImplementation (ls)),
       doc_ (dom_impl_.createDocument ())
 {
+  // initialize number of serialized object so far. (mattia tomasoni)
+  //
+  count_ = 0;
+
 #if _XERCES_VERSION >= 30000
   serializer_.reset (dom_impl_.createLSSerializer ());
   DOMConfiguration* conf (serializer_->getDomConfig ());
@@ -106,12 +113,26 @@ start (ostream& os, const string& encoding)
 DOMElement* serializer_impl::
 create (const string& name)
 {
+  // free the DOMDocument instance after 1000 elements have been serialized
+  // to avoid running out of memory (mattia tomasoni)
+  //
+  if(count_++ > 1000){
+    doc_.reset (dom_impl_.createDocument ());
+    count_ = 0;
+  }
   return doc_->createElement (xml::string (name).c_str ());
 }
 
 DOMElement* serializer_impl::
 create (const string& ns, const string& qname)
 {
+  // free the DOMDocument instance after 1000 elements have been serialized
+  // to avoid running out of memory (mattia tomasoni)
+  //
+  if(count_++ > 1000){
+    doc_.reset (dom_impl_.createDocument ());
+    count_ = 0;
+  }
   return doc_->createElementNS (
     xml::string (ns).c_str (), xml::string (qname).c_str ());
 }
