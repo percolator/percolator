@@ -303,9 +303,7 @@ void DataSet::readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & 
       }
       myPsm.id = psmIter->id();
       myPsm.scan = fss.scanNumber();
-      if(MassHandler::monoisotopic == true){
-        myPsm.expMass = psmIter->experimentalMassToCharge();
-      }
+      myPsm.expMass = psmIter->experimentalMassToCharge();
       myPsm.calcMass = psmIter->calculatedMassToCharge();
       if ( psmIter->observedTime().present() ) {
         myPsm.retentionTime = psmIter->observedTime().get();
