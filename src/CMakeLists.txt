@@ -46,14 +46,23 @@ else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
 
-# RUN CODESYNTHESIS TO GENERATE xsdfiles
-set(xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
+# RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
+set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 set(percolator_in xml/percolator_in.xsd)
-set(percolator_out xml/percolator_out.xsd)
 add_custom_command(
-  OUTPUT ${xsdfiles}   
+  OUTPUT ${xsdfiles_in}   
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+# RUN CODESYNTHESIS TO GENERATE xsdfiles for pout (percolator output)
+set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
+set(percolator_out xml/percolator_out.xsd)
+add_custom_command(
+  OUTPUT ${xsdfiles_out}   
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -79,7 +88,7 @@ include_directories(. fido)
 # PERCOLATOR
 ###############################################################################
 
-add_library(perclibrary STATIC ${xsdfiles} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp ProteinProbEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
+add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp ProteinProbEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
 
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)
