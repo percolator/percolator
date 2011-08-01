@@ -42,15 +42,18 @@ set(POUT_VERSION_MINOR "3")
 if(STATIC AND MINGW) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
+  set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}\\\\")
   set(TEMP_DIR "%TEMP%\\\\")
   add_definitions(-D_WIN32)
 else() # linux
   set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
+  set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}/")
   set(TEMP_DIR "/tmp/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
+set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
 
 #TODO: is there a way to do this recursively insteadof doing it twice?
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
@@ -103,13 +106,23 @@ else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
 
-# RUN CODESYNTHESIS on percolator_in.xsd
-set(xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
+# RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
+set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 set(percolator_in xml/percolator_in.xsd)
 add_custom_command(
-  OUTPUT ${xsdfiles}
+  OUTPUT ${xsdfiles_in}   
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+# RUN CODESYNTHESIS TO GENERATE xsdfiles for pout (percolator output)
+set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
+set(percolator_out xml/percolator_out.xsd)
+add_custom_command(
+  OUTPUT ${xsdfiles_out}   
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -122,7 +135,7 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-foreach( i ${xsdfiles} ${mzIdentMLxsdfiles} )
+foreach( i ${xsdfiles_in} ${xsdfiles_out} ${mzIdentMLxsdfiles} )
   set_source_files_properties( ${i} PROPERTIES GENERATED true)
 endforeach()
 
@@ -144,7 +157,7 @@ endmacro()
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
-add_library(perclibrary_part STATIC ${xsdfiles} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp ../fido/Set.cpp ../fido/)
+add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp ../fido/Set.cpp ../fido/)
 
 #COMPILING MSTOOLKIT
 add_subdirectory(MSToolkit)
