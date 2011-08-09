@@ -462,7 +462,7 @@ void Scores::normalizeScores(double fdr) {
   assert(it != scores.end());
   if(q1<median){
     cerr << "Error in the input data: too good separation between target "
-        << "and decoy PSMs.\nTerminating.";
+        << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
     exit(0);
   }
   double diff = q1-median;

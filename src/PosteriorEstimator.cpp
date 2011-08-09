@@ -420,10 +420,15 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
     // Calculates the difference in index between start and end
     double Wl = (double)distance(start, p.end());
     double pi0 = Wl / n / (1 - lambda);
-    if (pi0 >= 0.0) {
+    if (pi0 > 0.0) {
       lambdas.push_back(lambda);
       pi0s.push_back(pi0);
     }
+  }
+  if(pi0s.size()==0){
+    cerr << "Error in the input data: too good separation between target "
+        << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
+    exit(0);
   }
   double minPi0 = *min_element(pi0s.begin(), pi0s.end());
   // Initialize the vector mse with zeroes.
