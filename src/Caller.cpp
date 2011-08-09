@@ -905,7 +905,9 @@ void Caller::writeXML(){
 
   os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
   os << "    <pi_0_psms>" << pi_0_psms << "</pi_0_psms>" << endl;
-  os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
+  if(reportUniquePeptides)
+    os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
+  if(calculateProteinLevelProb)
   os << "    <pi_0_proteins>" << pi_0_proteins << "</pi_0_proteins>" << endl;
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
