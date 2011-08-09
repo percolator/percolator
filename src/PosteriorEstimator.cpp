@@ -420,7 +420,7 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
     // Calculates the difference in index between start and end
     double Wl = (double)distance(start, p.end());
     double pi0 = Wl / n / (1 - lambda);
-    if (pi0 > 0.0) {
+    if (pi0 >= 0.0) {
       lambdas.push_back(lambda);
       pi0s.push_back(pi0);
     }
