@@ -1,7 +1,5 @@
 #!/bin/sh
 #TODO
-# find more robust way of setting version numbers: current assumption is that version is set to 0.00
-# revert changes to reporitory (permissions to CMakeLists and new version numbers)
 # win: find a way to execute script throught ssh in batch mode (remember it needs to be run from the root of the repo)
 # win: automatically turn on virtual machine
 # duplicate instead of redirecting stderr (run() + last few lines)
@@ -14,13 +12,9 @@
 
 set -e # as soon as a command fails terminate this script
 
-if [ "$(id -u)" != "0" ]; then
+if [ "$(id -u)" != "0" ]; then # check sudo rights
    echo "Error in $0 - this script must be run as root"
    exit 1
-fi
-if ! [ -f CMakeLists.txt ]; then # check script was invoked from right location
-  echo "Error in $0 - please invoke the script from the root of the repository"
-  exit 1
 fi
 # get command line parameters
 if [ $# -ne 2 ]; then # check number of parameters
@@ -30,17 +24,20 @@ if [ $# -ne 2 ]; then # check number of parameters
 fi
 version_major=$1
 version_minor=$2
-echo "executing release scritp for version ${version_major}.${version_minor}"
+echo "Preparing to release version ${version_major}.${version_minor}..."
 
 # set variables
 base=/tmp/percolator_${version_major}_${version_minor}
-percolatorSource=`pwd`
+percolatorSource=${base}/repository
 packageDestination=${base}/packages
-cd ${base}
 
+###############################################################################
 # install libraries
-echo "installing necessary libraries" 
-apt-get install libxerces-c-dev libboost-dev build-essential cmake libtokyocabinet-dev libsqlite3-dev
+installLibraries()
+{
+  echo "installing necessary libraries" 
+  apt-get install libxerces-c-dev libboost-dev build-essential cmake libtokyocabinet-dev libsqlite3-dev
+}
 
 ###############################################################################
 # clean traces of past runs of this script
@@ -52,7 +49,7 @@ clean()
   fi
   mkdir ${base}
   mkdir ${packageDestination}
-  cd ${base}
+  mkdir ${percolatorSource}
 
   download(){
     site=$1
@@ -65,40 +62,31 @@ clean()
   cs_version="3.3"
   cs_site="http://codesynthesis.com/download/xsd/"${cs_version}"/linux-gnu"
   echo "downloading codesynthesis version"  ${cs_version}
+  cd ${base}
   cs_pack="xsd-"${cs_version}".0-x86_64-linux-gnu" # xsd64
   download $cs_site/"x86_64" $cs_pack
   cs_pack="xsd-"${cs_version}".0-i686-linux-gnu" #xsd32
   download $cs_site/"i686" $cs_pack
+  # clone repository
+  cd ${percolatorSource}
+  git clone git://github.com/percolator/percolator
 }
-clean
 
 ###############################################################################
 # change version number in the repository
 changeVersion()
 {
+  echo "changing version in CMakeLists files" 
   # change version number for percolator
-  sed 's/CPACK_PACKAGE_VERSION_MAJOR "0/CPACK_PACKAGE_VERSION_MAJOR "'${version_major}'/' <${percolatorSource}/CMakeLists.txt >${percolatorSource}/CMakeLists_tmp.txt
-  rm ${percolatorSource}/CMakeLists.txt
-  sed 's/CPACK_PACKAGE_VERSION_MINOR "00/CPACK_PACKAGE_VERSION_MINOR "'${version_minor}'/' <${percolatorSource}/CMakeLists_tmp.txt >${percolatorSource}/CMakeLists.txt
-  rm ${percolatorSource}/CMakeLists_tmp.txt
-  chown tomasoni ${percolatorSource}/CMakeLists.txt # TODO this is a hack
-  chgrp users ${percolatorSource}/CMakeLists.txt
+  perl -pi -e 's{CPACK_PACKAGE_VERSION_MAJOR "[0-9]*}{CPACK_PACKAGE_VERSION_MAJOR "'${version_major}'}g' ${percolatorSource}/percolator/CMakeLists.txt
+  perl -pi -e 's{CPACK_PACKAGE_VERSION_MINOR "[0-9]*}{CPACK_PACKAGE_VERSION_MINOR "'${version_minor}'}g' ${percolatorSource}/percolator/CMakeLists.txt
   # change version number for the converters
-  sed 's/CPACK_PACKAGE_VERSION_MAJOR "0/CPACK_PACKAGE_VERSION_MAJOR "'${version_major}'/' <${percolatorSource}/src/converters/CMakeLists.txt >${percolatorSource}/src/converters/CMakeLists_tmp.txt
-  rm ${percolatorSource}/src/converters/CMakeLists.txt
-  sed 's/CPACK_PACKAGE_VERSION_MINOR "00/CPACK_PACKAGE_VERSION_MINOR "'${version_minor}'/' <${percolatorSource}/src/converters/CMakeLists_tmp.txt >${percolatorSource}/src/converters/CMakeLists.txt
-  rm ${percolatorSource}/src/converters/CMakeLists_tmp.txt
-  chown tomasoni ${percolatorSource}/src/converters/CMakeLists.txt # TODO this is a hack
-  chgrp users ${percolatorSource}/src/converters/CMakeLists.txt
+  perl -pi -e 's{CPACK_PACKAGE_VERSION_MAJOR "[0-9]*}{CPACK_PACKAGE_VERSION_MAJOR "'${version_major}'}g' ${percolatorSource}/percolator/src/converters/CMakeLists.txt
+  perl -pi -e 's{CPACK_PACKAGE_VERSION_MINOR "[0-9]*}{CPACK_PACKAGE_VERSION_MINOR "'${version_minor}'}g' ${percolatorSource}/percolator/src/converters/CMakeLists.txt
   # change version number for elude
-  sed 's/CPACK_PACKAGE_VERSION_MAJOR "0/CPACK_PACKAGE_VERSION_MAJOR "'${version_major}'/' <${percolatorSource}/src/elude/CMakeLists.txt >${percolatorSource}/src/elude/CMakeLists_tmp.txt
-  rm ${percolatorSource}/src/elude/CMakeLists.txt
-  sed 's/CPACK_PACKAGE_VERSION_MINOR "00/CPACK_PACKAGE_VERSION_MINOR "'${version_minor}'/' <${percolatorSource}/src/elude/CMakeLists_tmp.txt >${percolatorSource}/src/elude/CMakeLists.txt
-  rm ${percolatorSource}/src/elude/CMakeLists_tmp.txt
-  chown tomasoni ${percolatorSource}/src/elude/CMakeLists.txt # TODO this is a hack
-  chgrp users ${percolatorSource}/src/elude/CMakeLists.txt
+  perl -pi -e 's{CPACK_PACKAGE_VERSION_MAJOR "[0-9]*}{CPACK_PACKAGE_VERSION_MAJOR "'${version_major}'}g' ${percolatorSource}/percolator/src/elude/CMakeLists.txt
+  perl -pi -e 's{CPACK_PACKAGE_VERSION_MINOR "[0-9]*}{CPACK_PACKAGE_VERSION_MINOR "'${version_minor}'}g' ${percolatorSource}/percolator/src/elude/CMakeLists.txt
 }
-changeVersion
 
 #askUser(){ #TODO interactive mode, can't get it to work!
 #  echo "Generate packages for" $1"? [y/n]"; 
@@ -116,12 +104,12 @@ changeVersion
 
 
 ###############################################################################
-object="PERCOLATOR64bit"
 percolator64()
 {
+  object="PERCOLATOR64bit"
   echo ${object}
   rm -rf ${base}/percolatorBuild; mkdir ${base}/percolatorBuild; cd ${base}/percolatorBuild;
-  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}
+  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator
   make -j 8
   make package
   make package_source
@@ -130,82 +118,76 @@ percolator64()
   cp *.rpm ${packageDestination}/percolator64
   cp *.tar.gz ${packageDestination}
 }
-percolator64
 
 ###############################################################################
-object="PERCOLATOR32bit"
 percolator32()
 {
+  object="PERCOLATOR32bit"
   echo ${object}
   rm -rf ${base}/percolatorBuild; mkdir ${base}/percolatorBuild; cd ${base}/percolatorBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}
+  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator
   make -j 8
   make package
   rm -rf ${packageDestination}/percolator32; mkdir ${packageDestination}/percolator32; # harvest packages
   cp *.deb ${packageDestination}/percolator32
   cp *.rpm ${packageDestination}/percolator32
 }
-#percolator32
 
 ###############################################################################
-object="CONVERTERS64bit"
 converters64()
 {
+  object="CONVERTERS64bit"
   echo ${object}
   rm -rf ${base}/percolator-convertersBuild; mkdir ${base}/percolator-convertersBuild; cd ${base}/percolator-convertersBuild;
-  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/src/converters
+  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
   make -j 8
   make package
   rm -rf ${packageDestination}/converters64; mkdir ${packageDestination}/converters64; # harvest packages
   cp *.deb ${packageDestination}/converters64
   cp *.rpm ${packageDestination}/converters64
 }
-converters64
 
 ###############################################################################
-object="CONVERTERS32bit"
 converters32()
 {
+  object="CONVERTERS32bit"
   echo ${object}
   rm -rf ${base}/percolator-convertersBuild; mkdir ${base}/percolator-convertersBuild; cd ${base}/percolator-convertersBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/src/converters
+  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
   make -j 8
   make package
   rm -rf ${packageDestination}/converters32; mkdir ${packageDestination}/converters32; # harvest packages
   cp *.deb ${packageDestination}/converters32
   cp *.rpm ${packageDestination}/converters32
 }
-#converters32
 
 ###############################################################################
-object="ELUDE64bit"
 elude64()
 {
+  object="ELUDE64bit"
   echo ${object}
   rm -rf ${base}/eludeBuild; mkdir ${base}/eludeBuild; cd ${base}/eludeBuild;
-  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/src/elude
+  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/elude
   make -j 8
   make package
   rm -rf ${packageDestination}/elude64; mkdir ${packageDestination}/elude64; # harvest packages
   cp *.deb ${packageDestination}/elude64
   cp *.rpm ${packageDestination}/elude64
 }
-elude64
 
 ###############################################################################
-object="ELUDE32bit"
 elude32()
 {
+  object="ELUDE32bit"
   echo ${object}
   rm -rf ${base}/eludeBuild; mkdir ${base}/eludeBuild; cd ${base}/eludeBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/src/elude
+  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/elude
   make -j 8
   make package
   rm -rf ${packageDestination}/elude32; mkdir ${packageDestination}/elude32; # harvest packages
   cp *.deb ${packageDestination}/elude32
   cp *.rpm ${packageDestination}/elude32
 }
-#elude32
 
 ###############################################################################
 #object="WINDOWS"
@@ -221,8 +203,22 @@ elude32()
 #  cp /scratch/VirtualBoxShare/percolatorBuild/*.exe ${packageDestination}/win
 #  cp /scratch/VirtualBoxShare/eludeBuild/*.exe ${packageDestination}/win
 #}
+
+
+installLibraries
+clean
+changeVersion
+percolator64
+#percolator32
+converters64
+#converters32
+elude64
+#elude32
 #windows
 
+echo ""
+echo "Release process for version ${version_major}.${version_minor} completed successfully!"
+echo "The newly generated packages can be found in ${packageDestination}"
 
 #} # end of run()
 #if [ -f /tmp/percolator_release_error.log ]; then
