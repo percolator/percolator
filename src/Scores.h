@@ -33,6 +33,7 @@
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
+#include "percolator_out.hxx"
 
 class SetHandler;
 
@@ -67,6 +68,7 @@ class ScoreHolder {
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
+std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
 struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool> {

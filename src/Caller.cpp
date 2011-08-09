@@ -843,12 +843,19 @@ void Caller::writeXML_PSMs() {
   ofstream os;
   xmlOutputFN_PSMs = xmlOutputFN;
   xmlOutputFN_PSMs.append("writeXML_PSMs");
-  os.open(xmlOutputFN_PSMs.data(), ios::out);
+  os.open(xmlOutputFN_PSMs.c_str(), ios::out);
+//  xercesc::XMLPlatformUtils::Initialize();
+//  serializer ser;
+//  ser.start(os);
   // append PSMs
   os << "  <psms>" << endl;
-  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-  != fullset.end(); ++psm) {
-    os << *psm;
+  for (vector<ScoreHolder>::iterator psm = fullset.begin();
+      psm != fullset.end(); ++psm) {
+//    if (Scores::isOutXmlDecoys() || psm->label==1) { //output decoys if required
+//      std::auto_ptr< ::percolatorOutNs::psm> p(returnXml_PSM(psm));
+//      ser.next("psm", *p);
+      os << *psm;
+//    }
   }
   os << "  </psms>" << endl << endl;
   os.close();
@@ -858,7 +865,7 @@ void Caller::writeXML_Peptides() {
   ofstream os;
   xmlOutputFN_Peptides = xmlOutputFN;
   xmlOutputFN_Peptides.append("writeXML_Peptides");
-  os.open(xmlOutputFN_Peptides.data(), ios::out);
+  os.open(xmlOutputFN_Peptides.c_str(), ios::out);
   // append PEPTIDEs
   os << "  <peptides>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm

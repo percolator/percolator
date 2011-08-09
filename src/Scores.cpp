@@ -37,6 +37,7 @@ using namespace std;
 #include "PosteriorEstimator.h"
 #include "ssl.h"
 #include "MassHandler.h"
+#include <boost/lexical_cast.hpp>
 
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
@@ -56,6 +57,64 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
     }
   }
   return outputs;
+}
+
+inline double truncateTo(double truncateMe, const char* length) {
+  char truncated[64];
+  char format[64];
+  strcpy(format,"%.");
+  strcat(format,length);
+  strcat(format,"lf\n");
+  sprintf(truncated, format, truncateMe);
+  return atof(truncated);
+}
+
+std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator sh){
+  // peptide sequence
+  string peptide = sh->pPSM->getPeptide();
+  ::percolatorOutNs::aa_term_t n_xml = peptide.substr(0, 1);
+  ::percolatorOutNs::aa_term_t c_xml = peptide.substr(peptide.size()-1, peptide.size());
+  ::percolatorOutNs::aa_seq_t seq_xml = peptide.substr(2, peptide.size()-4);
+  ::percolatorOutNs::peptide_seq peptide_seq_xml (seq_xml);
+  peptide_seq_xml.c(c_xml); // optional fields
+  peptide_seq_xml.n(n_xml);
+  //psm
+  std::auto_ptr< ::percolatorOutNs::psm> p(new ::percolatorOutNs::psm(
+      percolatorOutNs::psm::svm_score_type(truncateTo(sh->score,"6")),
+      percolatorOutNs::psm::q_value_type(
+          boost::lexical_cast<std::string>(sh->pPSM->q)),
+      percolatorOutNs::psm::pep_type(
+          boost::lexical_cast<std::string>(sh->pPSM->pep)),
+      peptide_seq_xml,
+      percolatorOutNs::psm::p_value_type(
+          boost::lexical_cast<std::string>(sh->pPSM->p)),
+      percolatorOutNs::psm::psm_id_type(sh->pPSM->id)
+  ));
+
+  // is decoy?
+  if (Scores::isOutXmlDecoys()) {
+    if(sh->label != 1) p->decoy(true);
+    else p->decoy(false);
+  }
+  // masses
+  p->exp_mass(truncateTo(sh->pPSM->expMass,"4"));
+  p->calc_mass(truncateTo(sh->pPSM->calcMass,"3"));
+  // retention times
+  if (DataSet::getCalcDoc()) {
+    ::percolatorOutNs::retentionTime retentionTime_xml;
+    retentionTime_xml.observed(PSMDescription::unnormalize(sh->pPSM->retentionTime));
+    retentionTime_xml.predicted(PSMDescription::unnormalize(sh->pPSM->predictedTime));
+    p->retentionTime(retentionTime_xml);
+  }
+  // protein_ids
+  percolatorOutNs::psm::protein_id_sequence protein_id_sequence_xml;
+  for (set<string>::const_iterator pid = sh->pPSM->proteinIds.begin(); pid
+  != sh->pPSM->proteinIds.end(); ++pid) {
+    protein_id_sequence_xml.push_back(getRidOfUnprintablesAndUnicode(*pid));
+  }
+  p->protein_id(protein_id_sequence_xml);
+
+  return p;
 }
 
 ostream& operator<<(ostream& os, const ScoreHolder& sh) {
