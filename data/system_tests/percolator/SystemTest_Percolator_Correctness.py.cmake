@@ -47,6 +47,18 @@ if exitStatus is not None:
   success = False
 success = validate("peptides","/tmp/PERCOLATOR_peptide.pout.xml")
 
+# running percolator to calculate protein probabilities
+print "(*) running percolator to calculate protein probabilities..."
+processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") +
+  os.path.join(pathToData, "percolator/pin/pin.xml ") + "-X /tmp/PERCOLATOR_protein.pout.xml -A " +
+  "2>&1) > /tmp/PERCOLATOR_protein.txt")
+exitStatus = processFile.close()
+if exitStatus is not None:
+  print "...TEST FAILED: percolator (protein probabilities) terminated with " + str(exitStatus) + " exit status"
+  print "check /tmp/PERCOLATOR_protein.txt for details" 
+  success = False
+success = validate("proteins","/tmp/PERCOLATOR_protein.pout.xml")
+
 # running percolator to calculate psm probabilities given input file generated from sqt2pin with ptms
 print "(*) running percolator on input with ptms..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") +

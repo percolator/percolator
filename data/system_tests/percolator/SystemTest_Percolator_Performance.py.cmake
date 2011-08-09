@@ -15,9 +15,15 @@ print "PERCOLATOR PERFORMANCE"
 def checkNumberOfSignificant(what,file,expected):
   success = True
   print "(*): checking number of significant "+what+" found..."
-  processFile = os.popen("grep \"New pi_0 estimate\" "+file)
+  if what=="proteins":
+    processFile = os.popen("grep \"proteins found at a q-value of 0.01\" "+file)
+  else:
+    processFile = os.popen("grep \"New pi_0 estimate\" "+file)
   output = processFile.read()
-  extracted = float(output[39:42])
+  if what=="proteins":
+    extracted = float(output[0:3])
+  else:
+    extracted = float(output[39:42])
   if extracted<expected-(5*expected/100)  or extracted>expected+(5*expected/100) : 
     print "...TEST FAILED: number of significant "+what+"=" + str(int(extracted)) + " is outside of desired range"
     print "check "+file+" for details" 
@@ -74,24 +80,27 @@ def checkPep(what,file,expected):
 def performanceD4On():
   success = True
   print "(*): checking performance with description of correct features option..."
-  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_rt_D4on.txt")
+  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_D4on.txt")
   output = processFile.read()
   extracted_D4on = int(output[39:40])
-  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_rt_D4off.txt")
+  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_D4off.txt")
   output = processFile.read()
   extracted_D4off = int(output[39:40])
   if extracted_D4on < extracted_D4off:
     print "...TEST FAILED: percolator with -D 4 option performed worse than without it"
-    print "check /tmp/PERCOLATOR_rt_D4on.txt and /tmp/PERCOLATOR_rt_D4off.txt for details" 
+    print "check /tmp/PERCOLATOR_D4on.txt and /tmp/PERCOLATOR_D4off.txt for details" 
     success = False
   return success
 
 psmFile="/tmp/PERCOLATOR_psm.txt"
 peptideFile="/tmp/PERCOLATOR_peptide.txt"
+proteinFile="/tmp/PERCOLATOR_protein.txt"
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,615)
 # number of significant peptrides within boundaries
 success=checkNumberOfSignificant("peptides",peptideFile,390)
+# number of significant proteins within boundaries
+success=checkNumberOfSignificant("proteins",proteinFile,272)
 # psm: pi0 within boundaries
 success=checkPi0("psms",psmFile,0.8797)
 # peptides: pi0 within boundaries
