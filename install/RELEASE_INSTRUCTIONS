@@ -1,5 +1,16 @@
+Part of the instructions below can be executed automatically by running the following on a machine with the approapriate architecture
+$ ./install/release_64bit.sh (step 1-3, to be run on a 64 bit machine)
+$ ./install/release_32bit.sh (step 4-6, to be run on a 32 bit machine)
+
+ 
+*******************************************************************************
+
+
 RELEASE INSTRUCTIONS - 2.00
 These are the steps I followed to release Percolator version 2.00
+
+
+*******************************************************************************
 
 
 0. BEFORE YOU START
@@ -7,6 +18,10 @@ These are the steps I followed to release Percolator version 2.00
   CMakeLists.txt and src/converters/CMakeLists.txt: set(CPACK_PACKAGE_VERSION_MAJOR "2"), set(CPACK_PACKAGE_VERSION_MINOR "00")
   build and install in some temporary location and make test
 
+
+*******************************************************************************
+
+NOTE: steps 1-3 must be executed on a 64 bit machine
 
 1. PERCOLATOR 64bit
   CMakeLists.txt: set(TARGET_ARCH "amd64")
@@ -49,6 +64,10 @@ These are the steps I followed to release Percolator version 2.00
   elude-v2_00-linux-amd64.rpm		elude 64bit redhat
 
 
+*******************************************************************************
+
+NOTE: steps 4-6 must be executed on a 32 bit machine
+
 4. PERCOLATOR 32bit
   CMakeLists.txt: set(TARGET_ARCH "i386")
   hack ./install/get_packages_ubuntu.sh so that it downloads xsd in its 32 bits version.
@@ -89,6 +108,9 @@ These are the steps I followed to release Percolator version 2.00
   Output:
   elude-v2_00-linux-i386.deb		elude 32bit debian
   elude-v2_00-linux-i386.RPM		elude 32bit redhat
+
+
+*******************************************************************************
 
 
 7. WIN INSTALLERS (PERCOLATOR AND ELUDE)
