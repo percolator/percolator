@@ -148,15 +148,20 @@ elude64()
 windows()
 {
   object="WINDOWS"
-  ssh -l root -p 2222 localhost 'bash -s' < /scratch/temp/percolator/install/release_windows.sh
-  rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win; # harvest packages
-  cp /scratch/VirtualBoxShare/percolatorBuild/*-win32.exe ${packageDestination}/win
-  cp /scratch/VirtualBoxShare/eludeBuild/*-win32.exe ${packageDestination}/win
+  echo ${object}
+  ssh -l root -p 2222 localhost 'bash -s' < ${percolatorSource}/percolator/install/release_windows.sh && connection="open" || connection="closed"
+  if [ "$connection" = "open" ]; then
+    # harvest packages
+    rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win;
+    cp /scratch/VirtualBoxShare/percolatorBuild/*-win32.exe ${packageDestination}/win
+    cp /scratch/VirtualBoxShare/eludeBuild/*-win32.exe ${packageDestination}/win
+  else
+    echo "The remote virtual machine is offline. Skipping windows executables."
+  fi
 }
 
 
 ###############################################################################
-
 installLibraries
 clean
 changeVersion
