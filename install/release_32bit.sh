@@ -119,7 +119,7 @@ converters32()
   object="CONVERTERS32bit"
   echo ${object}
   rm -rf ${base}/percolator-convertersBuild; mkdir ${base}/percolator-convertersBuild; cd ${base}/percolator-convertersBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
+  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
   make -j 8
   make package
   rm -rf ${packageDestination}/converters32; mkdir ${packageDestination}/converters32; # harvest packages
@@ -141,32 +141,17 @@ elude32()
   cp *.rpm ${packageDestination}/elude32
 }
 
+
 ###############################################################################
-#object="WINDOWS"
-#windows()
-#{
-#  ssh -l root -p 2222 localhost #TODO this opens an interactive session! try to do it in batch mode
-#  cd /mnt/VirtualBoxShare/percolator
-#  ./install/windows_percolator.sh
-#  cd src/elude
-#  ./install/windows_elude.sh
-#  logout
-#  rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win; # harvest packages
-#  cp /scratch/VirtualBoxShare/percolatorBuild/*.exe ${packageDestination}/win
-#  cp /scratch/VirtualBoxShare/eludeBuild/*.exe ${packageDestination}/win
-#}
-
-
 installLibraries
 clean
 changeVersion
 percolator32
 converters32
 elude32
-#windows
 
 echo ""
-echo "Release process for version ${version_major}.${version_minor} completed successfully!"
+echo "Release process for version ${version_major}.${version_minor} 32 bit completed successfully!"
 echo "The newly generated packages can be found in ${packageDestination}"
 
 #} # end of run()
