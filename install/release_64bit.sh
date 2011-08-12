@@ -149,12 +149,12 @@ windows()
 {
   object="WINDOWS"
   echo ${object}
-  ssh -l root -p 2222 localhost 'bash -s' < ${percolatorSource}/percolator/install/release_windows.sh && connection="open" || connection="closed"
+  ssh -l root -p 2222 localhost 'bash -s' < ${percolatorSource}/percolator/install/release_windows.sh ${version_major} ${version_minor} && connection="open" || connection="closed"
   if [ "$connection" = "open" ]; then
     # harvest packages
     rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win;
-    cp /scratch/VirtualBoxShare/percolatorBuild/*-win32.exe ${packageDestination}/win
-    cp /scratch/VirtualBoxShare/eludeBuild/*-win32.exe ${packageDestination}/win
+    scp -P 2222 root@localhost:/tmp/percolator_2_03/percolatorBuild/*-win32.exe ${packageDestination}/win
+    scp -P 2222 root@localhost:/tmp/percolator_2_03/eludeBuild/*-win32.exe ${packageDestination}/win
   else
     echo "The remote virtual machine is offline. Skipping windows executables."
   fi
