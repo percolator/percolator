@@ -187,19 +187,14 @@ elude32()
 }
 
 ###############################################################################
-#object="WINDOWS"
-#windows()
-#{
-#  ssh -l root -p 2222 localhost #TODO this opens an interactive session! try to do it in batch mode
-#  cd /mnt/VirtualBoxShare/percolator
-#  ./install/windows_percolator.sh
-#  cd src/elude
-#  ./install/windows_elude.sh
-#  logout
-#  rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win; # harvest packages
-#  cp /scratch/VirtualBoxShare/percolatorBuild/*.exe ${packageDestination}/win
-#  cp /scratch/VirtualBoxShare/eludeBuild/*.exe ${packageDestination}/win
-#}
+windows()
+{
+  object="WINDOWS"
+  ssh -l root -p 2222 localhost 'bash -s' < /scratch/temp/percolator/install/release_windows.sh
+  rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win; # harvest packages
+  cp /scratch/VirtualBoxShare/percolatorBuild/*-win32.exe ${packageDestination}/win
+  cp /scratch/VirtualBoxShare/eludeBuild/*-win32.exe ${packageDestination}/win
+}
 
 
 installLibraries
