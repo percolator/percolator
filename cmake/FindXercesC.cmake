@@ -1,49 +1,55 @@
-# - Try to find XercesC
-# Once done this will define
-#
-#  XERCESC_FOUND - System has XercesC
-#  XERCESC_INCLUDE_DIR - The XercesC include directory
-#  XERCESC_LIBRARY_DIR - The XercesC library dir
-#  XERCESC_LIBRARIES - The libraries needed to use XercesC
-#  XERCESC_DEFINITIONS - Compiler switches required for using XercesC
+# - Find Xerces-C
+# The following setings are defined
+# XERCESC_ROOT_DIR, the root of the include and lib directory
+# XERCESC_INCLUDE_DIR, the full path of the include dir (ADVANCED)
+# XERCESC_LIBRARIES, the name of the xerces-c library (ADVANCED)
+#####
+# Find Xerces-C
 
-# Copyright (c) 2009, Helio Chissini de Castro, <helio@kde.org>
-#
-# Redistribution and use is allowed according to the terms of the BSD license.
-# For details see the accompanying COPYING-CMAKE-SCRIPTS file.
+# Look for a root installation
+FIND_PATH(XERCESC_ROOT_DIR include/xercesc/parsers/SAXParser.hpp
+  /usr
+  DOC "The root of an installed xerces-c installation"
+)
 
+# try to find the header
+FIND_PATH(XERCESC_INCLUDE_DIR xercesc/parsers/SAXParser.hpp 
+  ${XERCESC_ROOT_DIR}/include
+  /usr/include 
+  /usr/local/include
+)
 
-IF (XERCESC_INCLUDE_DIR AND XERCESC_LIBRARIES)
-   # in cache already
-   SET(XercesC_FIND_QUIETLY TRUE)
-ENDIF (XERCESC_INCLUDE_DIR AND XERCESC_LIBRARIES)
+# Find the library
+FIND_LIBRARY(XERCESC_LIBRARY
+   NAMES xerces-c 
+   PATHS
+     ${XERCESC_ROOT_DIR}/lib
+     /usr/lib 
+     /usr/local/lib
+   DOC "The name of the xerces-c library"
+)
+IF (XERCESC_ROOT_DIR)
+  IF (XERCESC_INCLUDE_DIR AND XERCESC_LIBRARY)
+    SET (XERCESC_FOUND TRUE)
+    SET (XERCESC_LIBRARIES "${XERCESC_LIBRARY}")
+    # FIXME: There should be a better way of handling this?
+    # FIXME: How can we test to see if the lib dir isn't 
+    # FIXME: one of the default dirs?
+    LINK_DIRECTORIES(${XERCESC_ROOT_DIR}/lib)
+  ENDIF (XERCESC_INCLUDE_DIR AND XERCESC_LIBRARY)
+ENDIF (XERCESC_ROOT_DIR)
 
-IF (NOT WIN32)
-   # use pkg-config to get the directories and then use these values
-   # in the FIND_PATH() and FIND_LIBRARY() calls
-   FIND_PACKAGE(PkgConfig)
-   PKG_CHECK_MODULES(PC_XERCESC xerces-c)
-   SET(XERCESC_DEFINITIONS ${PC_XERCESC_CFLAGS_OTHER})
-   SET(XERCESC_LIBRARY_DIR ${PC_XERCESC_LIBRARY_DIRS})
-ENDIF (NOT WIN32)
+IF (XERCESC_FOUND)
+  IF (NOT XERCESC_FIND_QUIETLY)
+    MESSAGE (STATUS "Found Xerces-C: ${XERCESC_LIBRARY}")
+  ENDIF (NOT XERCESC_FIND_QUIETLY)
+ELSE (XERCESC_FOUND)
+  IF (XERCESC_FIND_REQUIRED)
+    MESSAGE(FATAL_ERROR "Could not find Xerces-C")
+  ENDIF (XERCESC_FIND_REQUIRED)
+ENDIF (XERCESC_FOUND)
 
-FIND_PATH(XERCESC_INCLUDE_DIR xercesc/dom/DOM.hpp
-   HINTS
-   ${PC_XERCESC_INCLUDEDIR}
-   ${PC_XERCESC_INCLUDE_DIRS}
-   PATH_SUFFIXES xerces-c
-   )
-
-FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c
-   HINTS
-   ${PC_XERCESC_LIBDIR}
-   ${PC_XERCESC_LIBRARY_DIRS}
-   )
-
-INCLUDE(FindPackageHandleStandardArgs)
-
-# handle the QUIETLY and REQUIRED arguments and set XERCESC_FOUND to TRUE if 
-# all listed variables are TRUE
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(XercesC DEFAULT_MSG XERCESC_LIBRARIES XERCESC_INCLUDE_DIR)
-
-MARK_AS_ADVANCED(XERCESC_INCLUDE_DIR XERCESC_LIBRARIES XERCESC_LIBRARY_DIR)
+MARK_AS_ADVANCED(
+  XERCESC_INCLUDE_DIR
+  XERCESC_LIBRARY
+)

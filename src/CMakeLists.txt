@@ -27,7 +27,33 @@ ENDIF(APPLE)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # (FIND AND) INCLUDE HEADERS OF LIBRARIES
+
+MESSAGE( STATUS "Looking for packages:" )
+
 find_package(XercesC REQUIRED) # XSD DEPENDS ON XERCESC
+
+if(XERCESC_FOUND)
+  message(STATUS "XercesC found: ${XERCESC_INCLUDE_DIR}")
+else(XERCESC_FOUND)
+  message(STATUS "XercesC not found, proceding to install it")
+  execute_process(COMMAND id -u OUTPUT_VARIABLE outputRoot)
+  if(${outputRoot} EQUAL 0) # user is Root
+    execute_process(COMMAND apt-get install libxerces-c-dev -y OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+    if(${rv} EQUAL 0) #installed okay
+      find_package(XercesC REQUIRED)
+      if(XERCESC_FOUND)
+	message(STATUS "XercesC installed correctly")
+      else(XERCESC_FOUND)
+	message(FATAL_ERROR "The package has not been installed correctly, check the permissions")
+      endif(XERCESC_FOUND)
+    else(${rv} EQUAL 0)
+      message(FATAL_ERROR "There has been a problem installing the package.Error: '${error}")
+    endif(${rv} EQUAL 0)
+  else(${outputRoot} EQUAL 0)
+    message(FATAL_ERROR "You must compile Percolator with sudo rights in order to be able to install the package")
+  endif(${outputRoot} EQUAL 0)
+endif(XERCESC_FOUND)
+
 include_directories(${XERCESC_INCLUDE_DIR})
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 include_directories(${XSD_INCLUDE_DIR})
