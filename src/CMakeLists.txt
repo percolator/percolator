@@ -48,7 +48,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 MESSAGE( STATUS "Checking packages:" )
 SET( BASE "/tmp")
 
-if(GOOGLE_TEST) ## DO IT IF ONLY IF GOOGLE TEST IS ACTIVATED AND NOT INSTALLED
+if(GOOGLE_TEST AND NOT GOOGLE_TEST_PATH) ## DO IT IF ONLY IF GOOGLE TEST IS ACTIVATED AND NOT INSTALLED
   find_package(GoogleTest REQUIRED) #TODO : it does not find the library when it's been installed in  temp
   if(NOT GTEST_FOUND)
     SET( GT_SITE "http://googletest.googlecode.com/files")
@@ -73,18 +73,18 @@ if(GOOGLE_TEST) ## DO IT IF ONLY IF GOOGLE TEST IS ACTIVATED AND NOT INSTALLED
     if(${rv} EQUAL 0) #compiled okay
       message(STATUS "GoogleTest has been installed succesfully ${_GTEST_INCLUDE_DIR}")
       find_package(GoogleTest REQUIRED)
-#       set(GOOGLE_TEST_PATH ${_GTEST_INCLUDE_DIR}) ##set the variable accordingly
+      set(GOOGLE_TEST_PATH ${_GTEST_INCLUDE_DIR}) ##set the variable accordingly
     else(${rv} EQUAL 0)
       message(FATAL_ERROR "The package Google Test has not been found, you can download it and install it from :\n
-			http://code.google.com/p/googletest/downloads/list .Alternatively you can run this instruction to install it\n
-   			under debian based systems : apt-get install google-gadgets-gtk (you must run it as sudo).")
+			  http://code.google.com/p/googletest/downloads/list .Alternatively you can run this instruction to install it\n
+			  under debian based systems : apt-get install google-gadgets-gtk (you must run it as sudo).")
     endif(${rv} EQUAL 0)
 
   else(NOT GTEST_FOUND)
     message(STATUS "Package Google Test found: ${_GTEST_INCLUDE_DIR}")
   endif(NOT GTEST_FOUND)
 
-endif(GOOGLE_TEST)
+endif(GOOGLE_TEST AND NOT GOOGLE_TEST_PATH)
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)

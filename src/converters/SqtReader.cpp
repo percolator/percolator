@@ -7,6 +7,8 @@
 #endif
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
+std::string ambiguousAA("BZJX");
+std::string modifiedAA("#@*");
 
 void SqtReader::translateSqtFileToXML(const std::string fn,
     ::percolatorInNs::featureDescriptions & fds,
@@ -230,7 +232,8 @@ void SqtReader::readSQT(const std::string fn,
     return j;
 }
  */
-void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::set<int> & theMs,  bool isDecoy, const ParseOptions & po,  int minCharge, int maxCharge, std::string psmId, FragSpectrumScanDatabase* database   ) {
+void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::set<int> & theMs,  
+			       bool isDecoy, const ParseOptions & po,  int minCharge, int maxCharge, std::string psmId, FragSpectrumScanDatabase* database   ) {
   std::set<int>::const_iterator it;
   for (it = theMs.begin(); it != theMs.end(); it++) {
     std::ostringstream stream;
@@ -489,12 +492,13 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::string peptideS = peptideSequence;
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos) {
+    if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos
+	&& modifiedAA.find(peptideSequence[ix])==string::npos){
       if (ptmMap.count(peptideSequence[ix])==0) {
 	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         exit(-1);
       }
-      peptideSequence.erase(ix,1);      
+      peptideSequence.erase(ix,1);
     }  
   }
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
