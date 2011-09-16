@@ -35,9 +35,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 #     if(${outputRoot} EQUAL 0) # user is Root
 #       execute_process(COMMAND apt-get install ${_package} -y OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
 #       if(${rv} EQUAL 0) #installed okay
-# 	find_package(${_packageName} REQUIRED)
+# 	   find_package(${_packageName} REQUIRED)
 #       else(${rv} EQUAL 0)
-# 	message(FATAL_ERROR "There has been a problem installing the package.Error: '${error}")
+# 	   message(FATAL_ERROR "There has been a problem installing the package.Error: '${error}")
 #       endif(${rv} EQUAL 0)
 #     else(${outputRoot} EQUAL 0)
 #       message(FATAL_ERROR "You must compile Percolator with sudo rights in order to be able to install the package")
@@ -47,44 +47,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 MESSAGE( STATUS "Checking packages:" )
 SET( BASE "/tmp")
-
-if(GOOGLE_TEST AND NOT GOOGLE_TEST_PATH) ## DO IT IF ONLY IF GOOGLE TEST IS ACTIVATED AND NOT INSTALLED
-  find_package(GoogleTest REQUIRED) #TODO : it does not find the library when it's been installed in  temp
-  if(NOT GTEST_FOUND)
-    SET( GT_SITE "http://googletest.googlecode.com/files")
-    SET( GT_PACK "gtest-1.5.0")
-
-    execute_process(COMMAND wget -nc "${GT_SITE}/${GT_PACK}.tar.gz" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND tar xzf "${GT_PACK}.tar.gz" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND rm "${GT_PACK}.tar.gz" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-
-    if(${rv} EQUAL 0) #installed okay
-      message(STATUS "GoogleTest has been downloaded succesfully")
-    else(${rv} EQUAL 0)
-      message(FATAL_ERROR "There has been a problem downloading the package.Error: '${error}")
-    endif(${rv} EQUAL 0)
-
-    message(STATUS "Installing GoogleTest")
-
-    execute_process(COMMAND cmake . WORKING_DIRECTORY "${BASE}/${GT_PACK}" OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND make WORKING_DIRECTORY "${BASE}/${GT_PACK}" OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND make clean WORKING_DIRECTORY "${BASE}/${GT_PACK}" OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    #TODO compile it properly and delete it after compiling
-    if(${rv} EQUAL 0) #compiled okay
-      message(STATUS "GoogleTest has been installed succesfully ${_GTEST_INCLUDE_DIR}")
-      find_package(GoogleTest REQUIRED)
-      set(GOOGLE_TEST_PATH ${_GTEST_INCLUDE_DIR}) ##set the variable accordingly
-    else(${rv} EQUAL 0)
-      message(FATAL_ERROR "The package Google Test has not been found, you can download it and install it from :\n
-			  http://code.google.com/p/googletest/downloads/list .Alternatively you can run this instruction to install it\n
-			  under debian based systems : apt-get install google-gadgets-gtk (you must run it as sudo).")
-    endif(${rv} EQUAL 0)
-
-  else(NOT GTEST_FOUND)
-    message(STATUS "Package Google Test found: ${_GTEST_INCLUDE_DIR}")
-  endif(NOT GTEST_FOUND)
-
-endif(GOOGLE_TEST AND NOT GOOGLE_TEST_PATH)
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
@@ -115,7 +77,7 @@ else(XSD_FOUND)
   execute_process(COMMAND rm "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
   
   if(${rv} EQUAL 0) #installed okay
-    message(STATUS "XSD has been downloaded succesfully")
+    message(STATUS "XSD has been downloaded succesfully : ${BASE}/${CS_PACK}")
     find_package(Xsd REQUIRED) # CODESYNTHESIS
   else(${rv} EQUAL 0)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from :\n
