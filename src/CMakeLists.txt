@@ -52,9 +52,7 @@ find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
   message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
 else(XERCESC_FOUND)
-  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from :\n
-			http://xerces.apache.org/xerces-c/download.cgi .Alternatively you can run this instruction to install it\n
-			under debian based systems : atp-get install libxerces-c-dev (you must run it as sudo).")
+  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
@@ -80,9 +78,7 @@ else(XSD_FOUND)
     message(STATUS "XSD has been downloaded succesfully : ${BASE}/${CS_PACK}")
     find_package(Xsd REQUIRED) # CODESYNTHESIS
   else(${rv} EQUAL 0)
-    message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from :\n
-			http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it\n
-			under debian based systems : apt-get install xsdcxx (you must run it as sudo).")
+    message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx ")
   endif(${rv} EQUAL 0)
 
 endif(XSD_FOUND)  
@@ -92,9 +88,7 @@ find_package(Boost 1.36.0 REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
-  message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from :\n
-			http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it\n
-			under debian based systems : apt-get install libboost-dev libboost-doc (you must run it as sudo).")
+  message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
 

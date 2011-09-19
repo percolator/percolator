@@ -9,9 +9,7 @@ find_package( Sqlite3 REQUIRED )
 if(SQLITE3_FOUND)
   message(STATUS "SQL Lite 3 found: ${SQLITE3_INCLUDE_DIR}")
 else(SQLITE3_FOUND)
-  message(FATAL_ERROR "The package SQL Lite 3 has not been found, you can download it and install it from :\n
-		      http://www.sqlite.org/download.html .Alternatively you can run this instruction to install it\n
-		      under debian based systems : apt-get install libsqlite3-0 (you must run it as sudo).")
+  message(FATAL_ERROR "The package SQL Lite 3 has not been found, you can download it and install it from : http://www.sqlite.org/download.html Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libsqlite3-0")
 endif(SQLITE3_FOUND)
 include_directories(${SQLITE3_INCLUDE_DIR})
 
@@ -19,9 +17,7 @@ find_package( ZLIB REQUIRED )
 if(ZLIB_FOUND)
   message(STATUS "Zlib found: ${SQLITE3_INCLUDE_DIR}")
 else(ZLIB_FOUND)
-  message(FATAL_ERROR "The package Zlib has not been found, you can download it and install it from :\n
-		      http://www.sqlite.org/download.html .Alternatively you can run this instruction to install it\n
-		      under debian based systems : apt-get install zlib1g-dev (you must run it as sudo).")
+  message(FATAL_ERROR "The package Zlib has not been found, you can download it and install it from : http://www.sqlite.org/download.html Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install zlib1g-dev")
 endif(ZLIB_FOUND)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
