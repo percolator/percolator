@@ -22,8 +22,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#define  mkdir( D, M )   _mkdir( D )
+#define __stdcall
 #endif
+#include <boost/filesystem.hpp>
+
 
 using namespace std;
 using namespace xercesc;
@@ -278,7 +280,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     std::copy(str.begin(), str.end(), xmlInputDir);
     xmlInputDir[str.size()] = '\0';
     xmlInputDir = tmpnam(xmlInputDir);
-    mkdir(xmlInputDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    //mkdir(xmlInputDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    boost::filesystem::create_directory<>(boost::filesystem::path(xmlInputDir));
     xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
   }
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];

@@ -3,9 +3,9 @@
 ###############################################################################
 
 set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_C_FLAGS "-O3 ")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
-set(CMAKE_C_FLAGS_RELEASE "-O3 ")
+set(CMAKE_C_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 IF(APPLE)
@@ -18,32 +18,12 @@ IF(APPLE)
   set(LINK_FLAGS "-mmacosx-version-min=10.5")
 ENDIF(APPLE)
 
-
 ###############################################################################
 # FIND EXTERNAL LIBRARIES REQUIRED BY PERCOLATOR
 ###############################################################################
 
 # INCLUDE HEADER FILES IN SRC DIRECTORY
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-# (FIND AND) INCLUDE HEADERS OF LIBRARIES
-
-# MACRO(INSTALL_PACKAGE _package _packageName)
-#   if(${AUTOMATIC_PACKAGES_INSTALLATION} MATCHES "YES")
-#     message(STATUS "${_packageName} not found, proceeding to install it")
-#     execute_process(COMMAND id -u OUTPUT_VARIABLE outputRoot)
-#     if(${outputRoot} EQUAL 0) # user is Root
-#       execute_process(COMMAND apt-get install ${_package} -y OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-#       if(${rv} EQUAL 0) #installed okay
-# 	   find_package(${_packageName} REQUIRED)
-#       else(${rv} EQUAL 0)
-# 	   message(FATAL_ERROR "There has been a problem installing the package.Error: '${error}")
-#       endif(${rv} EQUAL 0)
-#     else(${outputRoot} EQUAL 0)
-#       message(FATAL_ERROR "You must compile Percolator with sudo rights in order to be able to install the package")
-#     endif(${outputRoot} EQUAL 0)
-#   endif(${AUTOMATIC_PACKAGES_INSTALLATION} MATCHES "YES")
-# ENDMACRO(INSTALL_PACKAGE _package _packageName)
 
 MESSAGE( STATUS "Checking packages:" )
 SET( BASE "/tmp")
@@ -58,7 +38,7 @@ include_directories(${XERCESC_INCLUDE_DIR})
 
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
-  message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
+  message(STATUS "Package CodeSynthesis XSD found: ${XSD_EXECUTABLE}")
 else(XSD_FOUND)
   SET( CS_VERSION "3.3")
 
@@ -76,6 +56,7 @@ else(XSD_FOUND)
   
   if(${rv} EQUAL 0) #installed okay
     message(STATUS "XSD has been downloaded succesfully : ${BASE}/${CS_PACK}")
+    SET(CMAKE_PREFIX_PATH "${BASE}/${CS_PACK}")
     find_package(Xsd REQUIRED) # CODESYNTHESIS
   else(${rv} EQUAL 0)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx ")
@@ -84,7 +65,8 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
-find_package(Boost 1.36.0 REQUIRED)
+SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0")
+find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
@@ -156,8 +138,9 @@ IF(STATIC)
 ENDIF()
 
 if(STATIC AND MINGW)
-  find_file(XERCESC_STATIC_LIBRARY libxerces-c.a HINTS
+  find_file(XERCESC_STATIC_LIBRARY NAMES libxerces-c.a libxerces-c.la HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
+     /mingw/lib/
   )
   message("XERCESC_STATIC_LIBRARY=${XERCESC_STATIC_LIBRARY}")
   set( XERCESC_LIBRARIES ${XERCESC_STATIC_LIBRARY} )
@@ -170,7 +153,7 @@ endif()
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido pthread dl ${XERCESC_LIBRARIES})
+target_link_libraries(percolator perclibrary fido pthread dl ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
 
 # INSTALL PERCOLATOR
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!

@@ -244,6 +244,7 @@ void addFeatureNameWithEmptyDescription( percolatorInNs::featureDescriptions::fe
 int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_args_info & args_info, int minCharge, int maxCharge, bool isDecoy,  percolatorInNs::featureDescriptions & fdesFirstFile, FragSpectrumScanDatabase & database,  int * scanNumber, scanNumberMapType & scanNumberMap  ) {
   namespace xml = xsd::cxx::xml;
   int ret=0;
+  
   try
   {
     percolatorInNs::featureDescriptions fdesCurrentFile;
@@ -350,7 +351,7 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
     // peptideMap not needed anymore. Let us deallocate.
     for(iter = peptideMap.begin(); iter != peptideMap.end(); ++iter) { delete iter->second; iter->second=0; }
   }
-  catch (const xercesc_3_1::DOMException& e)
+  catch (const xercesc::DOMException& e)
   {
     char * tmpStr = XMLString::transcode(e.getMessage());
     std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  

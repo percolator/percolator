@@ -5,8 +5,8 @@
 #  TOKYOCABINET_LIBRARIES - The Tokyo Cabinet libraries
 
 
-find_path(TOKYOCABINET_INCLUDE_DIR tcbdb.h )
-find_library(TOKYOCABINET_LIBRARIES NAMES tokyocabinet )
+find_path(TOKYOCABINET_INCLUDE_DIR tcutil.h tcbdb.h )
+find_library(TOKYOCABINET_LIBRARIES NAMES tokyocabinet libtokyocabinet PATH )
 
 IF(TOKYOCABINET_INCLUDE_DIR AND TOKYOCABINET_LIBRARY)
   SET(TOKYOCABINET_FOUND TRUE)
