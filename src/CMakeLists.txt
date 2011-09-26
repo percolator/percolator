@@ -192,7 +192,7 @@ endif()
 
 # SET LIBRARIES FOR PERCOLATOR
 ##TODO Probably I have to look for the pre-compiled windows libraries for at least phtread
-target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} dl ${XERCESC_LIBRARIES})
+target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} dl ${XERCESC_LIBRARIES} ${BOOST_LIBRARIES})
 
 # INSTALL PERCOLATOR
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
