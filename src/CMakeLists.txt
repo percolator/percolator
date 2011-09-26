@@ -53,7 +53,8 @@ else(XSD_FOUND)
       SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
   endif(MINGW)
 
-  
+  MESSAGE(STATUS "Downloading XSD...")
+
   if(MINGW)
     execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
     execute_process(COMMAND unzip "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
