@@ -37,7 +37,13 @@ MESSAGE( STATUS )
 # NAME AND VERSION
 ###############################################################################
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required (VERSION 2.4)
+# We still (try to) support cmake 2.4, but cmake 2.8 policies also work:
+if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
+    cmake_policy(VERSION 2.8)
+elseif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.4)
+    cmake_policy(VERSION 2.6)
+endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
 project(PERCOLATOR)
 
 # VERSION AND NAMESPACES

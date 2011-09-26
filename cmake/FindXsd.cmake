@@ -4,11 +4,13 @@ FILE(GLOB my_tmp "/tmp/xsd*")
 FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   "[HKEY_CURRENT_USER\\software\\xsd\\include]"
   "[HKEY_CURRENT_USER]\\xsd\\include]"
- ${my_tmp}/libxsd
- ${my_local}/libxsd
+  ${my_tmp}/libxsd
+  ${my_local}/libxsd
   /usr/local/include/xsd
   /usr/include
   /usr/local/include
+  "C:/Program Files/CodeSynthesis XSD 3.3/include"
+  "D:/Program Files/CodeSynthesis XSD 3.3/include"
 )
 
 # the value of XSD_INCLUDE_DIR should be set by the FIND_PATH routine above
@@ -21,11 +23,14 @@ FIND_PROGRAM(XSD_EXECUTABLE
     xsd xsdcxx
   PATHS
     "[HKEY_CURRENT_USER\\xsd\\bin]"
-   ${my_local}/bin
-   ${my_local}
-   ${my_tmp}/bin
+    ${my_local}/bin
+    ${my_local}
+    ${my_tmp}/bin
     /usr/local/bin
     /usr/bin
+    "[HKEY_CURRENT_USER\\xsd\\bin]" $ENV{XSDDIR}/bin
+    "C:/Program Files/CodeSynthesis XSD 3.3/bin"
+    "D:/Program Files/CodeSynthesis XSD 3.3/bin"
 )
 
 # if the include and the program are found then we have it

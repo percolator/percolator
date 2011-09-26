@@ -36,7 +36,7 @@ FIND_PATH(XERCESC_INCLUDE_DIR xercesc/dom/DOM.hpp
    PATH_SUFFIXES xerces-c
    )
 
-FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c
+FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c xerces-c_3 xerces-c_2 xerces-c_static xerces-c_static_3 xerces-c_static_2 libxerces-c
    HINTS
    ${PC_XERCESC_LIBDIR}
    ${PC_XERCESC_LIBRARY_DIRS}

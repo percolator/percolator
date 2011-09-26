@@ -281,7 +281,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     xmlInputDir[str.size()] = '\0';
     xmlInputDir = tmpnam(xmlInputDir);
     //mkdir(xmlInputDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    boost::filesystem::create_directory<>(boost::filesystem::path(xmlInputDir));
+    boost::filesystem::create_directory(boost::filesystem::path(xmlInputDir));
     xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
   }
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];

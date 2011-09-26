@@ -42,16 +42,23 @@ if(XSD_FOUND)
 else(XSD_FOUND)
   SET( CS_VERSION "3.3")
 
-  if(${TARGET_ARCH} MATCHES "amd64")
+  if(MINGW)
+    SET( CS_SITE "http://codesynthesis.com/download/xsd/"${cs_version}"/windows")
+    SET( CS_PACK "xsd-"${cs_version}".0-i686-windows")
+  elseif(${TARGET_ARCH} MATCHES "amd64")
     SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/x86_64")
     SET( CS_PACK "xsd-${CS_VERSION}.0-x86_64-linux-gnu")
-  else(${TARGET_ARCH} MATCHES "amd64")
+  elseif(${TARGET_ARCH} MATCHES "amd64")
     SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/i686")
     SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
-  endif(${TARGET_ARCH} MATCHES "amd64")
+  endif()
 
   execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-  execute_process(COMMAND tar xjf "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+  if(MINGW)
+    execute_process(COMMAND unzip "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+  else(MINGW)
+    execute_process(COMMAND tar xjf "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+  endif()
   execute_process(COMMAND rm "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
   
   if(${rv} EQUAL 0) #installed okay
@@ -74,6 +81,15 @@ else(Boost_FOUND)
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
 
+if (UNIX)
+  find_library (PTHREAD_LIBRARIES pthread PATHS ${CMAKE_SOURCE_DIR}/lib /usr/lib /usr/local/lib)
+  if (NOT PTHREAD_LIBRARIES)
+    message (SEND_ERROR "PThread library not found")
+  else(NOT PTHREAD_LIBRARIES)
+    message( STATUS " Package PThread found")
+  endif (NOT PTHREAD_LIBRARIES)
+endif (UNIX)
+mark_as_advanced (PTHREAD_LIBRARIES)
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -138,22 +154,41 @@ IF(STATIC)
 ENDIF()
 
 if(STATIC AND MINGW)
-  find_file(XERCESC_STATIC_LIBRARY NAMES libxerces-c.a libxerces-c.la HINTS
+  #Look for precompiled Windows libraries
+#   find_file(XERCESC_STATIC_LIBRARY NAMES libxerces-c.a libxerces-c.la HINTS
+#      /usr/i686-pc-mingw32/sys-root/mingw/lib/
+#      /usr/i586-mingw32msvc/sys-root/mingw/lib/
+#      /usr/i586-mingw32msvc/lib/
+#      /usr/i686-pc-mingw32/lib/
+#      /mingw/lib/
+#   )
+#   message(STATUS "XERCESC_STATIC_LIBRARY=${XERCESC_STATIC_LIBRARY}")
+#   set( XERCESC_LIBRARIES ${XERCESC_STATIC_LIBRARY} )
+#   if(NOT XERCESC_STATIC_LIBRARY)
+#     message(FATAL_ERROR "could not find the static library libxerces-c.a")
+#   endif()
+  
+  find_file(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.la libpthreadGC2.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/lib/
+     /usr/i686-pc-mingw32/lib/
      /mingw/lib/
   )
-  message("XERCESC_STATIC_LIBRARY=${XERCESC_STATIC_LIBRARY}")
-  set( XERCESC_LIBRARIES ${XERCESC_STATIC_LIBRARY} )
-  if(NOT XERCESC_STATIC_LIBRARY)
-    message(FATAL_ERROR "could not find the static library libxerces-c.a")
-  endif()
+  message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
+  set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )
+  if(NOT PTHREAD_STATIC_LIBRARY)
+    message(FATAL_ERROR "could not find the static library libpthread.a")
+  endif() 
+
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido pthread dl ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+##TODO Probably I have to look for the pre-compiled windows libraries for at least phtread
+target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} dl ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
 
 # INSTALL PERCOLATOR
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
