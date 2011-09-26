@@ -51,7 +51,6 @@ else(XSD_FOUND)
     else(${TARGET_ARCH} MATCHES "amd64")
       SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/i686")
       SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
-  endif(${TARGET_ARCH} MATCHES "amd64")
   endif(MINGW)
 
   

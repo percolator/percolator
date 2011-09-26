@@ -8,6 +8,7 @@ FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   ${my_local}/libxsd
   /usr/local/include/xsd
   /usr/include
+  /usr/include/xsd
   /usr/local/include
   "C:/Program Files/CodeSynthesis XSD 3.3/include"
   "D:/Program Files/CodeSynthesis XSD 3.3/include"
