@@ -1,11 +1,15 @@
 FILE(GLOB my_local "$ENV{HOME}/src/xsd*")
 FILE(GLOB my_tmp "/tmp/xsd*")
+FILE(GLOB my_src "${PROJECT_SOURCE_DIR}/../../libs/xsd*")
+FILE(GLOB my_src2 "${PROJECT_SOURCE_DIR}/../libs/xsd*")
 
 FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   "[HKEY_CURRENT_USER\\software\\xsd\\include]"
   "[HKEY_CURRENT_USER]\\xsd\\include]"
   ${my_tmp}/libxsd
   ${my_local}/libxsd
+  ${my_src}/libxsd
+  ${my_src2}/libxsd
   /usr/local/include/xsd
   /usr/include
   /usr/include/xsd
@@ -27,6 +31,8 @@ FIND_PROGRAM(XSD_EXECUTABLE
     ${my_local}/bin
     ${my_local}
     ${my_tmp}/bin
+    ${my_src}/bin
+    ${my_src2}/bin
     /usr/local/bin
     /usr/bin
     "[HKEY_CURRENT_USER\\xsd\\bin]" $ENV{XSDDIR}/bin
