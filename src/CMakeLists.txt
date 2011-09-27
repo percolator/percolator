@@ -42,7 +42,7 @@ elseif(${TARGET_ARCH} MATCHES "amd64")
 else(${TARGET_ARCH} MATCHES "amd64")
   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
 endif()
-
+message(STATUS "Prefix path : ${CMAKE_CURRENT_SOURCE_DIR}")
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_EXECUTABLE}")
