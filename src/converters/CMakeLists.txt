@@ -21,7 +21,6 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 MESSAGE( STATUS "PERCOLATOR_SOURCE_DIR = ${PERCOLATOR_SOURCE_DIR}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
-# MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -84,7 +83,6 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 
 #FIND LIBRARIES
 MESSAGE( STATUS "Checking packages:" )
-SET( BASE "/tmp")
 
 find_package(TokyoCabinet REQUIRED)
 if(TOKYOCABINET_FOUND)
@@ -106,31 +104,19 @@ else(XERCESC_FOUND)
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
+if(WIN32)
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
+elseif(${TARGET_ARCH} MATCHES "amd64")
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-x86_64-linux-gnu")  
+else(${TARGET_ARCH} MATCHES "amd64")
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
+endif()
+
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
 else(XSD_FOUND)
-  SET( CS_VERSION "3.3")
-
-  if(${TARGET_ARCH} MATCHES "amd64")
-    SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/x86_64")
-    SET( CS_PACK "xsd-${CS_VERSION}.0-x86_64-linux-gnu")
-  else(${TARGET_ARCH} MATCHES "amd64")
-    SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/i686")
-    SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
-  endif(${TARGET_ARCH} MATCHES "amd64")
-
-  execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-  execute_process(COMMAND tar xjf "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-  execute_process(COMMAND rm "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-  
-  if(${rv} EQUAL 0) #installed okay
-    message(STATUS "XSD has been downloaded succesfully")
-    find_package(Xsd REQUIRED) # CODESYNTHESIS
-  else(${rv} EQUAL 0)
-    message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx")
-  endif(${rv} EQUAL 0)
-
+  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 

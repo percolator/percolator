@@ -27,7 +27,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 MESSAGE( STATUS "Checking packages:" )
 
-
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
   message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
@@ -36,44 +35,19 @@ else(XERCESC_FOUND)
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
+if(WIN32)
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
+elseif(${TARGET_ARCH} MATCHES "amd64")
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-x86_64-linux-gnu")  
+else(${TARGET_ARCH} MATCHES "amd64")
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
+endif()
+
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_EXECUTABLE}")
 else(XSD_FOUND)
-  SET( CS_VERSION "3.3")
-  SET( BASE "tmp/")
-#   if(MINGW)
-#     SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/windows/i686")
-#     SET( CS_PACK "xsd-${CS_VERSION}.0-i686-windows")
-  if(${TARGET_ARCH} MATCHES "amd64")
-    SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/x86_64")
-    SET( CS_PACK "xsd-${CS_VERSION}.0-x86_64-linux-gnu")
-  else(${TARGET_ARCH} MATCHES "amd64")
-    SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/i686")
-    SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
-  endif()
-
-  MESSAGE(STATUS "Downloading XSD...")
-
-#   if(MINGW)
-#     execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-#     execute_process(COMMAND unzip "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-#     execute_process(COMMAND rm "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-#   else(MINGW)
-    execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND tar xjf "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND rm "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-#   endif()
-#   
-  
-  if(${rv} EQUAL 0) #installed okay
-    message(STATUS "XSD has been downloaded succesfully : ${BASE}/${CS_PACK}")
-    SET(CMAKE_PREFIX_PATH "${BASE}/${CS_PACK}")
-    find_package(Xsd REQUIRED) # CODESYNTHESIS
-  else(${rv} EQUAL 0)
-    message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx ")
-  endif(${rv} EQUAL 0)
-
+  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx ")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
@@ -160,20 +134,7 @@ IF(STATIC)
 ENDIF()
 
 if(STATIC AND MINGW)
-  #Look for precompiled Windows libraries
-#   find_file(XERCESC_STATIC_LIBRARY NAMES libxerces-c.a libxerces-c.la HINTS
-#      /usr/i686-pc-mingw32/sys-root/mingw/lib/
-#      /usr/i586-mingw32msvc/sys-root/mingw/lib/
-#      /usr/i586-mingw32msvc/lib/
-#      /usr/i686-pc-mingw32/lib/
-#      /mingw/lib/
-#   )
-#   message(STATUS "XERCESC_STATIC_LIBRARY=${XERCESC_STATIC_LIBRARY}")
-#   set( XERCESC_LIBRARIES ${XERCESC_STATIC_LIBRARY} )
-#   if(NOT XERCESC_STATIC_LIBRARY)
-#     message(FATAL_ERROR "could not find the static library libxerces-c.a")
-#   endif()
-  
+  #Look for precompiled Windows libraries 
   find_file(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.la libpthreadGC2.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
