@@ -7,9 +7,9 @@ find_file(MINGWV NAMES i586-mingw32msvc-gcc i586-mingw32msvc-g++ PATHS
 			/usr/bin
 			/usr/local/bin)
 if(MINGWV-NOTFOUND)
-  set(MINGW_PREFIX "i686-pc-mingw32-")
+  set(MINGW_PREFIX "/usr/bin/i686-pc-mingw32-")
 else(MINGWV-NOTFOUND)
-  set(MINGW_PREFIX "i586-mingw32msvc-")
+  set(MINGW_PREFIX "/usr/bin/i586-mingw32msvc-")
 endif()
 set(CMAKE_RC_COMPILER ${MINGW_PREFIX}windres)
 set(CMAKE_AR ${MINGW_PREFIX}ar)
@@ -25,7 +25,7 @@ SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc
 			  ${PROJECT_SOURCE_DIR}/libs/xsd-3.0.0-i686-windows/libxsd;${PROJECT_SOURCE_DIR}/../libs/xsd-3.0.0-i686-windows/libxsd
 			  ${PROJECT_SOURCE_DIR}/../../libs/xsd-3.0.0-i686-windows/libxsd)
 # search for programs in the build host directories
-SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
+SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 # for libraries and headers in the target directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
