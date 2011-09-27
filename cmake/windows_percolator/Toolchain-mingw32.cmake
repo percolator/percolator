@@ -27,8 +27,8 @@ SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc
 			  ${PROJECT_SOURCE_DIR}/../libs;${PROJECT_SOURCE_DIR}/libs;${PROJECT_SOURCE_DIR}/../../libs;
 			  ${PROJECT_SOURCE_DIR}/libs/xsd-3.3.0-i686-windows/libxsd;${PROJECT_SOURCE_DIR}/../libs/xsd-3.3.0-i686-windows/libxsd
 			  ${PROJECT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686-windows/libxsd
-			  ${PROJECT_SOURCE_DIR}/libs/xsd-3.3.0-i686-windows;${PROJECT_SOURCE_DIR}/../libs/xsd-3.3.0-i686-windows
-			  ${PROJECT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686-windows)
+			  ${PROJECT_SOURCE_DIR}/libs/xsd-3.3.0-i686-window/bins;${PROJECT_SOURCE_DIR}/../libs/xsd-3.3.0-i686-windows/bin
+			  ${PROJECT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686-windows/bin)
 
 # search for programs in the build host directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
