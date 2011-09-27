@@ -18,6 +18,7 @@ set(CMAKE_LINKER ${MINGW_PREFIX}ld)
 set(CMAKE_C_COMPILER ${MINGW_PREFIX}gcc)
 set(CMAKE_CXX_COMPILER ${MINGW_PREFIX}g++)
 set(CMAKE_EXECUTABLE_SUFFIX ".exe")
+set (Boost_COMPILER "-gcc44")
 # where is the target environment
 SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc-mingw32/sys-root/mingw;/usr/i586-mingw32msvc/sys-root/mingw;
 			  ${PROJECT_SOURCE_DIR}/../libs;${PROJECT_SOURCE_DIR}/libs;${PROJECT_SOURCE_DIR}/../../libs;
