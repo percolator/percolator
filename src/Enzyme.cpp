@@ -58,22 +58,22 @@ void Enzyme::setEnzyme(std::string enzyme) {
   theEnzyme = NULL;
   // boost::iequals: case insensitive string comparison
   //TODO NOT VERY PORTABLE, USING stricmp INSTEAD
-//   if (boost::iequals(enzyme,Chymotrypsin::getString())) {
-//       theEnzyme = new Chymotrypsin();
-//   } else if (boost::iequals(enzyme,Elastase::getString())) {
-//       theEnzyme = new Elastase();
-//   } else if (boost::iequals(enzyme,Enzyme::getString())) {
-//       theEnzyme = new Enzyme();
-//   } else if (boost::iequals(enzyme,Trypsin::getString())) {
-//       theEnzyme = new Trypsin();
-  if (stricmp(enzyme,Chymotrypsin::getString())) {
+  if (boost::iequals(enzyme,Chymotrypsin::getString())) {
       theEnzyme = new Chymotrypsin();
-  } else if (stricmp(enzyme,Elastase::getString())) {
+  } else if (boost::iequals(enzyme,Elastase::getString())) {
       theEnzyme = new Elastase();
-  } else if (stricmp(enzyme,Enzyme::getString())) {
+  } else if (boost::iequals(enzyme,Enzyme::getString())) {
       theEnzyme = new Enzyme();
-  } else if (stricmp(enzyme,Trypsin::getString())) {
+  } else if (boost::iequals(enzyme,Trypsin::getString())) {
       theEnzyme = new Trypsin();
+//   if (stricmp(enzyme,Chymotrypsin::getString())) {
+//       theEnzyme = new Chymotrypsin();
+//   } else if (stricmp(enzyme,Elastase::getString())) {
+//       theEnzyme = new Elastase();
+//   } else if (stricmp(enzyme,Enzyme::getString())) {
+//       theEnzyme = new Enzyme();
+//   } else if (stricmp(enzyme,Trypsin::getString())) {
+//       theEnzyme = new Trypsin();
   } else {
     std::cerr << "The selected enzyme have no corresponding class" << std::endl;
     std::exit(-1);
@@ -90,10 +90,3 @@ size_t Enzyme::countEnzymatic(std::string& peptide) {
   return count;
 }
 
-bool CompareCaseInsensitive(std::string strFirst, std::string strSecond)
-{
-  // Convert both strings to upper case by transfrom() before compare.
-  std::transform(strFirst.begin(), strFirst.end(), strFirst.begin(), toupper);
-  std::transform(strSecond.begin(), strSecond.end(), strSecond.begin(), toupper);
-  if(strFirst == strSecond) return true; else return false;
-}
