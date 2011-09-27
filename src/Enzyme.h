@@ -21,9 +21,10 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <cstring> // needed for stricmp()
 #include <string>
 #include <assert.h>
-#include <boost/algorithm/string.hpp> // for case insensitive string compare
+//#include <boost/algorithm/string.hpp> // for case insensitive string compare  TOFIX not very portable
 
 
 class Enzyme {
@@ -70,6 +71,13 @@ class Enzyme {
     virtual EnzymeType getET() {
       return NO_ENZYME;
     }
+    
+  private:
+    inline int stricmp (const std::string &s1,const std::string &s2)
+    {
+      return stricmp (s1.c_str(), s2.c_str()); // C's stricmp
+    }
+    bool CompareCaseInsensitive(std::string strFirst, std::string strSecond);
 };
 
 class Trypsin : public Enzyme {
