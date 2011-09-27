@@ -4,9 +4,8 @@ FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   "[HKEY_CURRENT_USER\\software\\xsd\\include]"
   "[HKEY_CURRENT_USER]\\xsd\\include]"
   /usr/local/include
-  /usr/local/include/xsd
   /usr/include
-  /usr/include/xsd
+  $ENV{XSDDIR}/include
   "C:/Program Files/CodeSynthesis XSD 3.3/include"
   "D:/Program Files/CodeSynthesis XSD 3.3/include"
 )

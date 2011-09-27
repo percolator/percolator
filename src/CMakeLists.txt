@@ -26,7 +26,7 @@ ENDIF(APPLE)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 MESSAGE( STATUS "Checking packages:" )
-SET( BASE "${PROJECT_SOURCE_DIR}/libs")
+
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
@@ -41,30 +41,30 @@ if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_EXECUTABLE}")
 else(XSD_FOUND)
   SET( CS_VERSION "3.3")
-
-  if(MINGW)
-    SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/windows/i686")
-    SET( CS_PACK "xsd-${CS_VERSION}.0-i686-windows")
-  elseif(${TARGET_ARCH} MATCHES "amd64")
+  SET( BASE "tmp/")
+#   if(MINGW)
+#     SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/windows/i686")
+#     SET( CS_PACK "xsd-${CS_VERSION}.0-i686-windows")
+  if(${TARGET_ARCH} MATCHES "amd64")
     SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/x86_64")
     SET( CS_PACK "xsd-${CS_VERSION}.0-x86_64-linux-gnu")
-    else(${TARGET_ARCH} MATCHES "amd64")
-      SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/i686")
-      SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
-  endif(MINGW)
+  else(${TARGET_ARCH} MATCHES "amd64")
+    SET( CS_SITE "http://codesynthesis.com/download/xsd/${CS_VERSION}/linux-gnu/i686")
+    SET( CS_PACK "xsd-${CS_VERSION}.0-i686-linux-gnu")
+  endif()
 
   MESSAGE(STATUS "Downloading XSD...")
 
-  if(MINGW)
-    execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND unzip "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-    execute_process(COMMAND rm "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-  else(MINGW)
+#   if(MINGW)
+#     execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+#     execute_process(COMMAND unzip "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+#     execute_process(COMMAND rm "${CS_PACK}.zip" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
+#   else(MINGW)
     execute_process(COMMAND wget -nc "${CS_SITE}/${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
     execute_process(COMMAND tar xjf "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
     execute_process(COMMAND rm "${CS_PACK}.tar.bz2" WORKING_DIRECTORY ${BASE} OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE rv)
-  endif()
-  
+#   endif()
+#   
   
   if(${rv} EQUAL 0) #installed okay
     message(STATUS "XSD has been downloaded succesfully : ${BASE}/${CS_PACK}")
