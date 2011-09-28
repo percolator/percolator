@@ -6,8 +6,10 @@ find_file(MINGWV NAMES i586-mingw32msvc-gcc i586-mingw32msvc-g++ PATHS
 			/usr/local/bin)
 if(NOT MINGWV)
   set(MINGW_PREFIX "/usr/bin/i686-pc-mingw32-")
+  SET(Boost_COMPILER "-gcc45")
 else(NOT MINGWV)
   set(MINGW_PREFIX "/usr/bin/i586-mingw32msvc-")
+  SET(Boost_COMPILER "-mgw")
 endif(NOT MINGWV)
 
 # set(CMAKE_AR ${MINGW_PREFIX}ar)
@@ -19,7 +21,7 @@ set(CMAKE_RC_COMPILER ${MINGW_PREFIX}windres)
 set(CMAKE_EXECUTABLE_SUFFIX ".exe")
 
 # Boost Configuration
-SET(Boost_COMPILER "-gcc45")
+
 SET(Boost_USE_STATIC_LIBS ON) 
 # where is the target environment
 SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc-mingw32/sys-root/mingw;/usr/i586-mingw32msvc/sys-root/mingw;

@@ -25,6 +25,7 @@
 #define __stdcall
 #endif
 #include <boost/filesystem.hpp>
+#include <qt4/QtCore/qcoreevent.h>
 
 
 using namespace std;
@@ -246,6 +247,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       "check time performance",
       "",
       TRUE_IF_SET);
+  
+//   cmd.defineOption("M",
+//      "expected mass",
+//      "Experimental observed mass of the PTMs",
+//      "",
+//      TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -359,6 +366,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     Globals* g = Globals::getInstance();
     g->timeCheckPoint = true;
     g->checkTimeClock = clock();
+  }
+  if (cmd.optionSet("M")) {
+    expmass = true;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {

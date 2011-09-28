@@ -29,7 +29,7 @@ MESSAGE( STATUS "Checking packages:" )
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
-  message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR} ; ${XERCESC_LIBRARIES}")
 else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
 endif(XERCESC_FOUND)
@@ -42,7 +42,7 @@ include_directories(${XERCESC_INCLUDE_DIR})
 # elseif(${TARGET_ARCH} MATCHES "i386")
 #   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
 # endif()
-message(STATUS "Prefix path : ${CMAKE_PREFIX_PATH}")
+
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_EXECUTABLE}")
@@ -154,9 +154,9 @@ endif()
 
 
 # SET LIBRARIES FOR PERCOLATOR
-##TODO Probably I have to look for the pre-compiled windows libraries for at least phtread
-target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} dl ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
 
+target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+#target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} dl ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
 # INSTALL PERCOLATOR
 install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
 
