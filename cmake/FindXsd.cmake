@@ -1,4 +1,10 @@
-
+# - Try to find XSD
+# Once done this will define
+#
+# This module defines
+# XSD_INCLUDE_DIR, where to find elements.hxx, etc.
+# XSD_EXECUTABLE, the exe file
+# XSD_FOUND, If false, don't try to use it.
 
 FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   "[HKEY_CURRENT_USER\\software\\xsd\\include]"

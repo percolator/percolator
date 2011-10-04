@@ -12,16 +12,16 @@ else(NOT MINGWV)
   SET(Boost_COMPILER "-mgw")
 endif(NOT MINGWV)
 
-# set(CMAKE_AR ${MINGW_PREFIX}ar)
-# set(CMAKE_RANLIB ${MINGW_PREFIX}ranlib)
-# set(CMAKE_LINKER ${MINGW_PREFIX}ld)
+
 set(CMAKE_C_COMPILER ${MINGW_PREFIX}gcc)
 set(CMAKE_CXX_COMPILER ${MINGW_PREFIX}g++)
 set(CMAKE_RC_COMPILER ${MINGW_PREFIX}windres)
 set(CMAKE_EXECUTABLE_SUFFIX ".exe")
+set(CMAKE_LINKER ${MINGW_PREFIX}ld)
+# set(CMAKE_AR ${MINGW_PREFIX}ar)
+# set(CMAKE_RANLIB ${MINGW_PREFIX}ranlib)
 
 # Boost Configuration
-
 SET(Boost_USE_STATIC_LIBS ON) 
 # where is the target environment
 SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc-mingw32/sys-root/mingw;/usr/i586-mingw32msvc/sys-root/mingw;

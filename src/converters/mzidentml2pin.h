@@ -16,10 +16,11 @@
 #include "FragSpectrumScanDatabase.h"
 #include "SqtReader.h"
 #include "parser.hxx"
+#include "Option.h"
 #include "config.h"
 #include "mzIdentML1.0.0.hxx"
 #include "serializer.hxx"
-#include "mzidentml2pin_cmdline.h"
+// #include "mzidentml2pin_cmdline.h"
 #include "percolator_in.hxx"
 
 using namespace std;

@@ -134,7 +134,6 @@ class Caller {
     bool reportUniquePeptides;
     bool calculateProteinLevelProb;
     bool schemaValidation;
-//     bool expmass;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;

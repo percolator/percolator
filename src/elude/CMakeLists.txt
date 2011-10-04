@@ -1,5 +1,12 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required (VERSION 2.4)
+# We still (try to) support cmake 2.4, but cmake 2.8 policies also work:
+if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
+    cmake_policy(VERSION 2.8)
+elseif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.4)
+    cmake_policy(VERSION 2.6)
+endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
 project(ELUDE)
+
 
 set(PERCOLATOR_SOURCE_DIR "${PERCOLATOR_SOURCE_DIR}/../..")
 
@@ -101,7 +108,7 @@ add_subdirectory(data/system_tests/)
 
 
 ###############################################################################
-# TESTING
+# CROSS COMPILING
 ###############################################################################
 
 #TODO: make sure this works with cpack
@@ -162,6 +169,7 @@ set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 # NSIS package options
 # Requires NSIS for creating the package 
+#using scrip.nsi?? that is for percolator
 add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_elude/script.nsi" DEPENDS elude) 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
 

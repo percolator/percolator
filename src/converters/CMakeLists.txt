@@ -5,9 +5,15 @@
 ###############################################################################
 # NAME AND VERSION
 ###############################################################################
-cmake_minimum_required(VERSION 2.8)
-project(PERCOLATOR-CONVERTERS)
+cmake_minimum_required (VERSION 2.4)
+# We still (try to) support cmake 2.4, but cmake 2.8 policies also work:
+if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
+    cmake_policy(VERSION 2.8)
+elseif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.4)
+    cmake_policy(VERSION 2.6)
+endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
 
+project(PERCOLATOR-CONVERTERS)
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 # PRINT VARIBALES
@@ -22,14 +28,15 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 MESSAGE( STATUS "PERCOLATOR_SOURCE_DIR = ${PERCOLATOR_SOURCE_DIR}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
+MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
 MESSAGE( STATUS )
 
 # VERSION AND NAMESPACES - TO BE THE SAME AS PERCOLATOR'S
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "00")
+set(CPACK_PACKAGE_VERSION_MAJOR "2")
+set(CPACK_PACKAGE_VERSION_MINOR "03")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
 set(PIN_VERSION_MAJOR "1")
@@ -71,13 +78,13 @@ endforeach()
 # FIND EXTERNAL LIBRARIES REQUIRED BY CONVERTERS
 ###############################################################################
 
-# useful macro
-macro(my_find_program progname)
-  find_program(${progname}_EXECUTABLE ${progname})
-  if(NOT ${progname}_EXECUTABLE)
-    message(FATAL_ERROR  "${progname} not found" )
-  endif(NOT ${progname}_EXECUTABLE)
-endmacro(my_find_program)
+# # useful macro
+# macro(my_find_program progname)
+#   find_program(${progname}_EXECUTABLE ${progname})
+#   if(NOT ${progname}_EXECUTABLE)
+#     message(FATAL_ERROR  "${progname} not found" )
+#   endif(NOT ${progname}_EXECUTABLE)
+# endmacro(my_find_program)
 
 set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 
@@ -86,15 +93,14 @@ MESSAGE( STATUS "Checking packages:" )
 
 find_package(TokyoCabinet REQUIRED)
 if(TOKYOCABINET_FOUND)
-  message(STATUS "Package Tokyo Cabinet found : ${TOKYOCABINET_INCLUDE_DIR}")
+  message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
 else(TOKYOCABINET_FOUND)
   message(FATAL_ERROR "The package Tokyo Cabinet has not been found, you can download it and install it from : http://fallabs.com/tokyocabinet/ Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libtokyocabinet1")
-
 endif(TOKYOCABINET_FOUND)
-include_directories(${TOKYOCABINET_INCLUDE_DIR})
+include_directories(${TokyoCabinet_INCLUDE_DIR})
 
-my_find_program(gengetopt)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+# my_find_program(gengetopt)
+# include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
@@ -104,13 +110,13 @@ else(XERCESC_FOUND)
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
-if(WIN32)
-  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
-elseif(${TARGET_ARCH} MATCHES "amd64")
-  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-x86_64-linux-gnu")  
-else(${TARGET_ARCH} MATCHES "amd64")
-  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
-endif()
+# if(WIN32)
+#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
+# elseif(${TARGET_ARCH} MATCHES "amd64")
+#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-x86_64-linux-gnu")  
+# else(${TARGET_ARCH} MATCHES "amd64")
+#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
+# endif()
 
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
@@ -172,15 +178,15 @@ foreach( i ${xsdfiles_in} ${xsdfiles_out} ${mzIdentMLxsdfiles} )
   set_source_files_properties( ${i} PROPERTIES GENERATED true)
 endforeach()
 
-# RUN GENGETOPT (define macro to)
-macro(gengetoptmacro progname)
-add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c   ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h 
-                   COMMAND ${gengetopt_EXECUTABLE} -i ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo --file-name=${progname}_cmdline --output-dir=${CMAKE_CURRENT_BINARY_DIR}
-                     DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo  
-                     VERBATIM)
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c PROPERTIES GENERATED true)
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h PROPERTIES GENERATED true)
-endmacro()
+# # RUN GENGETOPT (define macro to)
+# macro(gengetoptmacro progname)
+# add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c   ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h 
+#                    COMMAND ${gengetopt_EXECUTABLE} -i ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo --file-name=${progname}_cmdline --output-dir=${CMAKE_CURRENT_BINARY_DIR}
+#                      DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo  
+#                      VERBATIM)
+# set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c PROPERTIES GENERATED true)
+# set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h PROPERTIES GENERATED true)
+# endmacro()
 
 ###############################################################################
 # COMPILING
@@ -197,8 +203,9 @@ add_subdirectory(MSToolkit)
 add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
-gengetoptmacro( mzidentml2pin )
-add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp ${CMAKE_CURRENT_BINARY_DIR}/mzidentml2pin_cmdline.c)
+# gengetoptmacro( mzidentml2pin )
+# add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp ${CMAKE_CURRENT_BINARY_DIR}/mzidentml2pin_cmdline.c)
+add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
 target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
 
 #COMPILING SQT2PIN
@@ -211,6 +218,10 @@ IF(STATIC)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
 ENDIF()
 
+IF(STATIC AND MINGW)
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+ENDIF()
 ###############################################################################
 # TESTING
 ###############################################################################
@@ -279,6 +290,13 @@ set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, tokyocabinet-devel, zlib-devel, sqlite3-devel, percolator(>=2.01)")
+
+#Cross compilation
+# NSIS package options
+# Requires NSIS for creating the package 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/scriptSqt2pin.nsi") 
+add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" )
+
 
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
