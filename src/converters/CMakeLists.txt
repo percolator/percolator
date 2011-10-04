@@ -294,8 +294,8 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boo
 #Cross compilation
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/scriptSqt2pin.nsi") 
-add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" )
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter") 
+add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 
 
 # Use CPack

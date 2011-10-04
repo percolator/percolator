@@ -25,7 +25,7 @@ set(CMAKE_LINKER ${MINGW_PREFIX}ld)
 SET(Boost_USE_STATIC_LIBS ON) 
 # where is the target environment
 SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc-mingw32/sys-root/mingw;/usr/i586-mingw32msvc/sys-root/mingw;
-			  /home/USERNAME/i586-mingw32msvc;/home/USERNAME/i686-pc-mingw32;
+			  /home/USERNAME/i586-mingw32msvc;/home/USERNAME/i686-pc-mingw32;${CMAKE_PREFIX_PATH};
 			  ${PROJECT_SOURCE_DIR}/../libs;${PROJECT_SOURCE_DIR}/libs;${PROJECT_SOURCE_DIR}/../../libs)
 
 # search for programs in the build host directories
