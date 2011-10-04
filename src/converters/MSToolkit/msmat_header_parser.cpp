@@ -267,7 +267,7 @@ void msmat_header_parser::set_field(msmat * msmat, char * field_name, const char
 
 void msmat_header_parser::write_header_field ( FILE * header_fh, const char * field_name,
                                                    size_t elements, size_t element_size, const void * element_value ) {
-                                                     fprintf(header_fh,"%s:%d,",field_name, elements * element_size);
+                                                     fprintf(header_fh,"%s:%zd,",field_name, elements * element_size);
                                                      if ( elements > 0 ) {
                                                        fwrite(element_value, element_size, elements, header_fh);
                                                      }
@@ -385,7 +385,7 @@ void msmat_header_parser::write_header_field_float_map ( FILE * header_fh, const
                                                              flt_map & float_map ) {
                                                                int num_elements = float_map.size();
                                                                size_t map_array_len = num_elements * 2 * sizeof(float);
-                                                               fprintf(header_fh,"%s:%d,",field_name,map_array_len);
+                                                               fprintf(header_fh,"%s:%zd,",field_name,map_array_len);
                                                                if  ( num_elements > 0 ) {
                                                                  vector<float> map_keys(num_elements);
                                                                  vector<float> map_vals(num_elements);

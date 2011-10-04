@@ -45,11 +45,11 @@ class ScoreHolder {
     int label;
     vector<string> psms_list;
     ScoreHolder() :
-      score(0.0), label(0), pPSM(NULL), psms_list (NULL) {
+      score(0.0), label(0), pPSM(NULL), psms_list () {
       ;
     }
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), label(l), pPSM(psm), psms_list (NULL) {
+      score(s), label(l), pPSM(psm), psms_list () {
       ;
     }
     virtual ~ScoreHolder() {

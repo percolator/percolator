@@ -280,10 +280,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     xmlInputDir = new char[str.size() + 1];
     std::copy(str.begin(), str.end(), xmlInputDir);
     xmlInputDir[str.size()] = '\0';
-    xmlInputDir = tmpnam(xmlInputDir);
-    //mkdir(xmlInputDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    boost::filesystem::create_directory(boost::filesystem::path(xmlInputDir));
-    xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
+    if(mkstemp(xmlInputDir) != -1){  
+      boost::filesystem::create_directory(boost::filesystem::path(xmlInputDir));
+      xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
+    }
+    else{
+      cerr << "Error: there was a problem creating temporary file.";
+      exit(-1); // ...error
+    }
   }
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {

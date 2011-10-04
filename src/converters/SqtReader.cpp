@@ -42,13 +42,20 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
-      char* pointerToDir = tmpnam(tcd);
-      int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-      if(outcome == -1) {
-        std::cerr << "sqt2pin could not create temporary directory to store " <<
+      char* pointerToDir = tcd;
+      if(mkstemp(pointerToDir) != -1){
+	//TODO will probably have to change this to boost:create_directory
+	int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	if(outcome == -1) {
+	  std::cerr << "sqt2pin could not create temporary directory to store " <<
             "its tokyocabinet database.\nPlease make sure to have write " <<
             "permissions in:\n" << string(TEMP_DIR) << std::endl;
-        exit(-1);
+	  exit(-1);
+	}
+      }
+      else{
+	cerr << "Error: there was a problem creating temporary file.";
+	exit(-1); // ...error
       }
       string tcf = string(tcd) + "/percolator-tmp.tcb";
       tokyoCabinetDirs.resize(lineNumber_par+1);
