@@ -21,7 +21,7 @@
 #
 
 find_path(TOKYOCABINET_INCLUDE_DIR tcbdb.h )
-find_library(TOKYOCABINET_LIBRARIES NAMES tokyocabinet )
+find_library(TOKYOCABINET_LIBRARIES NAMES tokyocabinet libtokyocabinet )
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(TokyoCabinet DEFAULT_MSG TOKYOCABINET_LIBRARIES TOKYOCABINET_INCLUDE_DIR)
 

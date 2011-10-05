@@ -91,16 +91,47 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 #FIND LIBRARIES
 MESSAGE( STATUS "Checking packages:" )
 
-find_package(TokyoCabinet REQUIRED)
-if(TOKYOCABINET_FOUND)
-  message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
-else(TOKYOCABINET_FOUND)
-  message(FATAL_ERROR "The package Tokyo Cabinet has not been found, you can download it and install it from : http://fallabs.com/tokyocabinet/ Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libtokyocabinet1")
-endif(TOKYOCABINET_FOUND)
-include_directories(${TokyoCabinet_INCLUDE_DIR})
+if(MINGW OR WIN32)
+    #Look for precompiled Windows libraries 
+  find_file(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.a libtokyocabinet.dll.a libtokyocabinet.dll HINTS
+     /usr/i686-pc-mingw32/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/lib/
+     /usr/i686-pc-mingw32/lib/
+     /mingw/lib/
+     ${PROJECT_SOURCE_DIR}/libs/dll/
+     ${PROJECT_SOURCE_DIR}/libs/dll/lib
+  )
+  message(STATUS "TOKYOCABINET_STATIC_LIBRARY=${TOKYOCABINET_STATIC_LIBRARY}")
+  set( TOKYOCABINET_LIBRARIES ${TOKYOCABINET_STATIC_LIBRARY} )
+  if(NOT TOKYOCABINET_LIBRARIES)
+    message(FATAL_ERROR "could not find the static library tokyo cabinet")
+  endif() 
 
-# my_find_program(gengetopt)
-# include_directories(${CMAKE_CURRENT_BINARY_DIR})
+  find_file(TOKYOCABINET_DIRECTORY_LIBRARY NAMES tcbdb.h HINTS
+     /usr/i686-pc-mingw32/sys-root/mingw/include/
+     /usr/i586-mingw32msvc/sys-root/mingw/include/
+     /usr/i586-mingw32msvc/include/
+     /usr/i686-pc-mingw32/include/
+     /mingw/include/
+     ${PROJECT_SOURCE_DIR}/TokyoCabinet/
+     ${PROJECT_SOURCE_DIR}/libs/include/
+  )
+  message(STATUS "TOKYOCABINET_DIRECTORY_LIBRARY=${TOKYOCABINET_DIRECTORY_LIBRARY}")
+  set( TokyoCabinet_INCLUDE_DIR ${TOKYOCABINET_DIRECTORY_LIBRARY} )
+  if(NOT TokyoCabinet_INCLUDE_DIR)
+    message(FATAL_ERROR "could not find the include dir of tokyo cabinet")
+  endif() 
+  include_directories(${TokyoCabinet_INCLUDE_DIR})
+else(MINGW OR WIN32)
+  find_package(TokyoCabinet REQUIRED)
+  if(TOKYOCABINET_FOUND)
+    message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
+  else(TOKYOCABINET_FOUND)
+    message(FATAL_ERROR "The package Tokyo Cabinet has not been found, you can download it and install it from : http://fallabs.com/tokyocabinet/ Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libtokyocabinet1")
+  endif(TOKYOCABINET_FOUND)
+  include_directories(${TokyoCabinet_INCLUDE_DIR})
+endif()
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
@@ -178,15 +209,6 @@ foreach( i ${xsdfiles_in} ${xsdfiles_out} ${mzIdentMLxsdfiles} )
   set_source_files_properties( ${i} PROPERTIES GENERATED true)
 endforeach()
 
-# # RUN GENGETOPT (define macro to)
-# macro(gengetoptmacro progname)
-# add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c   ${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h 
-#                    COMMAND ${gengetopt_EXECUTABLE} -i ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo --file-name=${progname}_cmdline --output-dir=${CMAKE_CURRENT_BINARY_DIR}
-#                      DEPENDS   ${CMAKE_CURRENT_BINARY_DIR}/${progname}.ggo  
-#                      VERBATIM)
-# set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.c PROPERTIES GENERATED true)
-# set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${progname}_cmdline.h PROPERTIES GENERATED true)
-# endmacro()
 
 ###############################################################################
 # COMPILING
@@ -203,8 +225,6 @@ add_subdirectory(MSToolkit)
 add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
-# gengetoptmacro( mzidentml2pin )
-# add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp ${CMAKE_CURRENT_BINARY_DIR}/mzidentml2pin_cmdline.c)
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
 target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
 
