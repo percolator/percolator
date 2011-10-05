@@ -158,8 +158,9 @@ endif()
 target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
-install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-
+IF(NOT MINGW)
+  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+endif()
 
 ###############################################################################
 # COMPILE QUALITY
