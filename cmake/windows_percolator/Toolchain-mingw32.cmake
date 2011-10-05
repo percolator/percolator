@@ -14,8 +14,8 @@ endif(NOT MINGWV)
 
 # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mwindows -mthreads -static-libgcc")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -mwindows -mthreads -static-libgcc")
-# SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined,--fix-cortex-a8,-lsupc++ -lstdc++ -L${CMAKE_INSTALL_PREFIX}/lib")
-# SET(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined,--fix-cortex-a8,-lsupc++ -lstdc++ -L${CMAKE_INSTALL_PREFIX}/lib")
+SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined,--fix-cortex-a8,-lsupc++ -lstdc++ -L${CMAKE_INSTALL_PREFIX}/lib")
+SET(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined,--fix-cortex-a8,-lsupc++ -lstdc++ -L${CMAKE_INSTALL_PREFIX}/lib")
 
 set(CMAKE_C_COMPILER    ${MINGW_PREFIX}gcc)
 set(CMAKE_CXX_COMPILER  ${MINGW_PREFIX}g++)
@@ -27,7 +27,7 @@ set(CMAKE_STRIP         ${MINGW_PREFIX}strip)
 set(CMAKE_EXECUTABLE_SUFFIX ".exe")
 
 # Boost Configuration
-# SET(Boost_USE_STATIC_LIBS ON) 
+SET(Boost_USE_STATIC_LIBS OFF) 
 
 # where is the target environment
 SET(CMAKE_FIND_ROOT_PATH /usr/i686-pc-mingw32;/usr/i586-mingw32msvc;/usr/i686-pc-mingw32/sys-root/mingw;/usr/i586-mingw32msvc/sys-root/mingw;

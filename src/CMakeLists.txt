@@ -52,17 +52,6 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
-SET(Boost_USE_MULTITHREADED ON)
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_NO_SYSTEM_PATHS OFF)
-SET(Boost_USE_STATIC_RUNTIME ON)
-
-# if (WIN32 OR APPLE OR MINGW)
-#   set(Boost_USE_STATIC_LIBS TRUE)
-# else ()
-#   set(Boost_USE_STATIC_LIBS FALSE)
-# endif ()
-
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
 find_package(Boost COMPONENTS filesystem system REQUIRED)
@@ -72,7 +61,6 @@ else(Boost_FOUND)
   message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
-add_definitions(-DBOOST_ALL_NO_LIB)
 
 if (UNIX)
   find_library (PTHREAD_LIBRARIES pthread PATHS ${CMAKE_SOURCE_DIR}/lib /usr/lib /usr/local/lib)
