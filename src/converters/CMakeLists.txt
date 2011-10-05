@@ -117,7 +117,7 @@ if(MINGW OR WIN32)
     message(FATAL_ERROR "could not find the static library tokyo cabinet")
   endif() 
 
-  find_file(TOKYOCABINET_DIRECTORY_LIBRARY NAMES tcbdb.h HINTS
+  find_path(TOKYOCABINET_DIRECTORY_LIBRARY NAMES tcbdb.h HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/include/
      /usr/i586-mingw32msvc/sys-root/mingw/include/
      /usr/i586-mingw32msvc/include/
@@ -329,8 +329,8 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boo
 #Cross compilation
 # NSIS package options
 # Requires NSIS for creating the package 
-# add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter" DEPENDS sqt2pin mzidentml2pin) 
-# add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter" DEPENDS sqt2pin mzidentml2pin) 
+add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 
 
 # Use CPack
