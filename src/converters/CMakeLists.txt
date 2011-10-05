@@ -74,6 +74,15 @@ foreach(i ${configurefiles})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
 
+
+# STATIC/DYNAMIC LIBRARY INCLUSION
+if(MINGW)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
+else(MINGW)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
+endif()
+
+
 ###############################################################################
 # FIND EXTERNAL LIBRARIES REQUIRED BY CONVERTERS
 ###############################################################################
@@ -123,6 +132,7 @@ if(MINGW OR WIN32)
     message(FATAL_ERROR "could not find the include dir of tokyo cabinet")
   endif() 
   include_directories(${TokyoCabinet_INCLUDE_DIR})
+
 else(MINGW OR WIN32)
   find_package(TokyoCabinet REQUIRED)
   if(TOKYOCABINET_FOUND)
@@ -260,8 +270,8 @@ add_subdirectory(data/system_tests/converters)
 # INSTALLING
 ###############################################################################
 
-install(TARGETS mzidentml2pin DESTINATION ./bin)
-install(TARGETS sqt2pin DESTINATION ./bin)
+install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
+install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
 
 ###############################################################################
 # PACKAGING
@@ -314,7 +324,7 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boo
 #Cross compilation
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter") 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter" DEPENDS sqt2pin mzidentml2pin 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 
 
