@@ -18,7 +18,9 @@
 #define DATASET_H_
 
 #ifdef WIN32
+#ifndef isfinite
 #define isfinite _finite
+#endif
 #endif
 #include <string>
 #include <assert.h>

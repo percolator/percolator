@@ -290,7 +290,8 @@ void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUnique
 // Park–Miller random number generator
 // from wikipedia
 uint32_t Scores::lcg_rand() {
-  seed = ((uint64_t)seed * 279470273) % 4294967291;
+  //uint64_t
+  seed = ((long unsigned int)seed * 279470273) % 4294967291;
   return seed;
 }
 
