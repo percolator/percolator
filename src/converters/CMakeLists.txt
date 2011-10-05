@@ -114,7 +114,7 @@ if(MINGW OR WIN32)
      /usr/i586-mingw32msvc/include/
      /usr/i686-pc-mingw32/include/
      /mingw/include/
-     ${PROJECT_SOURCE_DIR}/TokyoCabinet/
+     ${PROJECT_SOURCE_DIR}/libs/TokyoCabinet/
      ${PROJECT_SOURCE_DIR}/libs/include/
   )
   message(STATUS "TOKYOCABINET_DIRECTORY_LIBRARY=${TOKYOCABINET_DIRECTORY_LIBRARY}")
