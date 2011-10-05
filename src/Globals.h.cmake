@@ -59,12 +59,12 @@ limitations under the License.
 #endif
 
 #ifdef WIN32
+#ifndef isfinite
+#define isfinite _finite
+#endif
 #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
 #define D_DARRAY(name) _freea(name);
 #include <float.h>
-#ifndef isfinite
-#define isfinite _finite
-#enif
 #else
 #define C_DARRAY(name,nelem) double name[nelem];
 #define D_DARRAY(name)
