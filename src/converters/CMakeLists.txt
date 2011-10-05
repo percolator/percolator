@@ -224,6 +224,8 @@ endforeach()
 # COMPILING
 ###############################################################################
 
+
+
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
@@ -243,6 +245,7 @@ include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
 target_link_libraries(sqt2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP)
 
+
 IF(STATIC)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
@@ -252,6 +255,7 @@ IF(STATIC AND MINGW)
   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
+
 ###############################################################################
 # TESTING
 ###############################################################################
@@ -270,9 +274,10 @@ add_subdirectory(data/system_tests/converters)
 # INSTALLING
 ###############################################################################
 
-install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
-install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
-
+IF(NOT MINGW)
+  install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
+  install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
+endif()
 ###############################################################################
 # PACKAGING
 ###############################################################################
