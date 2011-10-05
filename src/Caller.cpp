@@ -22,7 +22,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef _WIN32
+#ifndef __stdcall
  #define __stdcall
+#endif
+#endif
+#ifdef _WIN32
+#include <fcntl.h>
+#define _S_IREAD 256
+#define _S_IWRITE 128
+int mkstemp(char *tmpl)
+{
+int ret=-1;
+mktemp(tmpl);
+ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
+return ret;
+}
+
 #endif
 #include <boost/filesystem.hpp>
 // #include <qt4/QtCore/qcoreevent.h>
