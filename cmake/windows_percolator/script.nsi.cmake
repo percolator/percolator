@@ -17,8 +17,8 @@
 
 ; MUI Settings
 !define MUI_ABORTWARNING
-!define MUI_ICON "$PROGICON"
-!define MUI_UNICON "$PROGICON"  ; define uninstall icon to appear in Add/Remove Programs
+!define MUI_ICON ${PROGICON}
+!define MUI_UNICON ${PROGICON}  ; define uninstall icon to appear in Add/Remove Programs
 
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
