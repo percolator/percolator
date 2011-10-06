@@ -28,9 +28,9 @@
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
 !define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
 !addplugindir ${NSI_PATH}
-!addplugindir ${NSI_PATH}\nsis_uac
-!addplugindir ${NSI_PATH}\nsis_processes
-!addplugindir ${NSI_PATH}\nsis_processes\src
+!addplugindir ${NSI_PATH}/nsis_uac
+!addplugindir ${NSI_PATH}/nsis_processes
+!addplugindir ${NSI_PATH}/nsis_processes/src
 ;-----------------------------------------------------------------------------
 ; Installer version
 ;-----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !include WinVer.nsh ;Windows version detection.
 !include WordFunc.nsh ;Used by VersionCompare macro function.
 !include ${NSI_PATH}\nsis_uac\UAC.nsh ;Used by the UAC elevation to install as user or admin.
-!include ProcFunc.nsh 
+!include ${NSI_PATH}/nsis_processes/src/ProcFunc.nsh 
 ;-----------------------------------------------------------------------------
 ; Memento selections stored in registry.
 ;-----------------------------------------------------------------------------
