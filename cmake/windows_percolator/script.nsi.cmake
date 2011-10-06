@@ -1,4 +1,4 @@
-# !include "MUI2.nsh"
+!include "MUI2.nsh"
 
 ;Percolator installer script.
 
@@ -30,6 +30,7 @@
 !addplugindir ${NSI_PATH}
 !addplugindir ${NSI_PATH}\nsis_uac
 !addplugindir ${NSI_PATH}\nsis_uac\nsis_processes
+!addplugindir ${NSI_PATH}\nsis_uac\nsis_processes\src
 ;-----------------------------------------------------------------------------
 ; Installer version
 ;-----------------------------------------------------------------------------
@@ -73,7 +74,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !include WinVer.nsh ;Windows version detection.
 !include WordFunc.nsh ;Used by VersionCompare macro function.
 !include ${NSI_PATH}\nsis_uac\UAC.nsh ;Used by the UAC elevation to install as user or admin.
- 
+!include ProcFunc.nsh 
 ;-----------------------------------------------------------------------------
 ; Memento selections stored in registry.
 ;-----------------------------------------------------------------------------
