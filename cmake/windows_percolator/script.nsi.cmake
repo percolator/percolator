@@ -160,7 +160,6 @@ Function PageLeaveReinstall
       RMDir $INSTDIR
    no_remove_uninstaller:
       StrCmp $R0 "2" 0 +3
-      UAC::Unload
       Quit
       BringToFront
    reinst_done:
