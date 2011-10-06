@@ -71,7 +71,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !include Memento.nsh ;Remember user selections.
 !include WinVer.nsh ;Windows version detection.
 !include WordFunc.nsh ;Used by VersionCompare macro function.
-!include UAC.nsh ;Used by the UAC elevation to install as user or admin.
+!include ${NSI_PATH}\nsi_uac\UAC.nsh ;Used by the UAC elevation to install as user or admin.
 
 ;-----------------------------------------------------------------------------
 ; Memento selections stored in registry.
