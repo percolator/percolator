@@ -343,6 +343,8 @@ SectionGroup "Shortcuts"
 SectionGroupEnd
 
 
+${MementoSectionDone}
+
 ; Installer section descriptions
 ;--------------------------------
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
