@@ -27,7 +27,6 @@
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
 !define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
-!addplugindir ${NSI_PATH}/nsis_uac/Release/A
 !addplugindir ${NSI_PATH}/nsis_uac/Release/U
 !addplugindir ${NSI_PATH}/nsis_processes/bin
 ;-----------------------------------------------------------------------------
@@ -142,7 +141,8 @@ UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 ##############################################################################
 
 Function LaunchPercolator
-   ${UAC.CallFunctionAsUser} LaunchPercolatorAsUser
+#    ${UAC.CallFunctionAsUser} LaunchPercolatorAsUser
+   LaunchPercolatorAsUser
 FunctionEnd
 
 Function LaunchPercolatorAsUser
