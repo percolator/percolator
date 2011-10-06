@@ -1,5 +1,3 @@
-!include "MUI2.nsh"
-
 ;Percolator installer script.
 
 ;-----------------------------------------------------------------------------
@@ -12,7 +10,7 @@
 !define OPTION_SECTION_SC_QUICK_LAUNCH
 !define OPTION_FINISHPAGE
 !define OPTION_FINISHPAGE_LAUNCHER
-!define OPTION_FINISHPAGE_RELEASE_NOTES
+;!define OPTION_FINISHPAGE_RELEASE_NOTES
 
 
 ;-----------------------------------------------------------------------------
@@ -271,15 +269,7 @@ Section "Percolator" SEC_PERCOLATOR
    DetailPrint "Installing Percolator essentials."
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
-   
-   !ifdef INSTALL_PATH
-        ;Main executable.
-        File "${INSTALL_PATH}\bin\percolator.exe"
-   !endif
-   !ifndef INSTALL_PATH
-        ;Main executable.
-        File "${BUILD_PATH}\src\percolator.exe"
-   !endif
+   File "${BUILD_PATH}\src\percolator.exe"
    
    ;MINGW
    File "${MING_BIN}\boost_filesystem-gcc45-mt-1_46_1.dll"
@@ -315,9 +305,9 @@ SectionGroup "Shortcuts"
       SetShellVarContext all
       RMDir /r "$SMPROGRAMS\Percolator"
       CreateDirectory "$SMPROGRAMS\Percolator"
-      CreateShortCut "$SMPROGRAMS\Percolator\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
+#       CreateShortCut "$SMPROGRAMS\Percolator\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
       CreateShortCut "$SMPROGRAMS\Percolator\Percolator.lnk" "$INSTDIR\percolator.exe"
-      CreateShortCut "$SMPROGRAMS\Percolator\Release notes.lnk" "$INSTDIR\NOTES.txt"
+#       CreateShortCut "$SMPROGRAMS\Percolator\Release notes.lnk" "$INSTDIR\NOTES.txt"
       CreateShortCut "$SMPROGRAMS\Percolator\Uninstall.lnk" "$INSTDIR\uninstall.exe"
       SetShellVarContext current
    ${MementoSectionEnd}
@@ -378,7 +368,7 @@ Section -post
    WriteRegDWORD HKLM "Software\Percolator" "VersionBuild" "${VER_BUILD}"
 
    ;Add or Remove Programs entry.
-   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "UninstallString" "$INSTDIR\Uninstall.exe"
    WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "InstallLocation" "$INSTDIR"
    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "DisplayName" "Percolator"
    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "Publisher" "http://per-colator.com/"
@@ -395,7 +385,7 @@ Section -post
    WriteRegStr HKCR "percolator" "" "URL: Percolator Protocol"
    WriteRegStr HKCR "percolator\DefaultIcon" "" $INSTDIR\percolator.exe,1
    WriteRegStr HKCR "percolator\shell" "" "open"
-   WriteRegStr HKCR "percolator\shell\open\command" "" '"$INSTDIR\percolator.exe" "%1"'
+   WriteRegStr HKCR "percolator\shell\open\command" "" "$INSTDIR\percolator.exe" "%1"
 
    SetDetailsPrint textonly
    DetailPrint "Finsihed."
