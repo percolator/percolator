@@ -37,6 +37,8 @@
 
 ; MUI 1.67 compatible ------
 !include "MUI.nsh"
+!include LogicLib.nsh ;Used by APPDATA uninstaller.
+!include nsDialogs.nsh ;Used by APPDATA uninstaller.
 
 ; MUI Settings
 !define MUI_ABORTWARNING
