@@ -495,7 +495,8 @@ SectionEnd
 # #
 ##############################################################################
 
-Function .onInit
+Function .OnInit
+   MessageBox MB_OK "Display some uninstall message"
    !insertmacro INSTALLOPTIONS_EXTRACT "NSIS.InstallOptions.ini"
 
    ;Remove Quick Launch option from Windows 7, as no longer applicable - usually.
