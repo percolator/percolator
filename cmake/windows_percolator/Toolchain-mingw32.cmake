@@ -6,9 +6,11 @@ find_file(MINGWV NAMES i586-mingw32msvc-gcc i586-mingw32msvc-g++ PATHS
 			/usr/local/bin)
 if(NOT MINGWV)
   set(MINGW_PREFIX "/usr/bin/i686-pc-mingw32-")
+  set(MING_PATH "/usr/i686-pc-mingw32/sys-root/mingw")
   SET(Boost_COMPILER "-gcc45")
 else(NOT MINGWV)
   set(MINGW_PREFIX "/usr/bin/i586-mingw32msvc-")
+  set(MING_PATH "/usr/i586-mingw32msvc")
   SET(Boost_COMPILER "-mgw")
 endif(NOT MINGWV)
 

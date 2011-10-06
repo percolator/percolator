@@ -61,6 +61,7 @@ else(Boost_FOUND)
   message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_INCLUDE_DIRS})
 
 if (UNIX)
   find_library (PTHREAD_LIBRARIES pthread PATHS ${CMAKE_SOURCE_DIR}/lib /usr/lib /usr/local/lib)
