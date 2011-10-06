@@ -71,7 +71,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !include Memento.nsh ;Remember user selections.
 !include WinVer.nsh ;Windows version detection.
 !include WordFunc.nsh ;Used by VersionCompare macro function.
-# !include UAC.nsh ;Used by the UAC elevation to install as user or admin.
+!include ${NSI_PATH}/nsis_uac/UAC.nsh ;Used by the UAC elevation to install as user or admin.
 # !include ${NSI_PATH}/nsis_processes/src/ProcFunc.nsh 
 ;-----------------------------------------------------------------------------
 ; Memento selections stored in registry.
@@ -141,8 +141,7 @@ UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 ##############################################################################
 
 Function LaunchPercolator
-#    ${UAC.CallFunctionAsUser} LaunchPercolatorAsUser
-   LaunchPercolatorAsUser
+   ${UAC.CallFunctionAsUser} LaunchPercolatorAsUser
 FunctionEnd
 
 Function LaunchPercolatorAsUser
