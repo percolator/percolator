@@ -143,7 +143,7 @@ UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 ##############################################################################
 
 !macro CheckForProcess processName gotoWhenFound gotoWhenNotFound
-   Processes::FindProcess ${processName}
+   FindProcess ${processName}
    StrCmp $R0 "0" ${gotoWhenNotFound} ${gotoWhenFound}
 !macroend
 
@@ -153,7 +153,7 @@ UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
      IDYES process_${processName}_kill IDNO process_${processName}_ended
    process_${processName}_kill:
       DetailPrint "Killing ${processName} processes."
-      Processes::KillProcess ${processName}
+      KillProcess ${processName}
       Sleep 1500
       StrCmp $R0 "1" process_${processName}_ended
       DetailPrint "Process to kill not found!"
