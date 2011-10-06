@@ -59,21 +59,17 @@
 
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
+Page custom PageReinstall PageLeaveReinstall
 # ; License page
 # !insertmacro MUI_PAGE_LICENSE "license.txt"   ; text file with license terms
-; Directory page
 !insertmacro MUI_PAGE_DIRECTORY
-; Instfiles page
 !insertmacro MUI_PAGE_INSTFILES
-; Finish page
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"  ; readme.txt file for user
 !insertmacro MUI_PAGE_FINISH
-
-; Uninstaller pages
 !insertmacro MUI_UNPAGE_INSTFILES
-
-; Language files
+UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 !insertmacro MUI_LANGUAGE "English"
+
 ; MUI end ------
 
 
