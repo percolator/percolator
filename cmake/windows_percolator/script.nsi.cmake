@@ -55,7 +55,6 @@ InstType Standard
 InstType Full
 InstType Minimal
 CRCCheck On
-SetCompressor @CPACK_NSIS_COMPRESSOR@
 RequestExecutionLevel user ;Now using the UAC plugin.
 ReserveFile NSIS.InstallOptions.ini
 ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
