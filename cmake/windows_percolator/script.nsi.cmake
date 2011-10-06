@@ -385,7 +385,7 @@ Section -post
    WriteRegStr HKCR "percolator" "" "URL: Percolator Protocol"
    WriteRegStr HKCR "percolator\DefaultIcon" "" $INSTDIR\percolator.exe,1
    WriteRegStr HKCR "percolator\shell" "" "open"
-   WriteRegStr HKCR "percolator\shell\open\command" "" "$INSTDIR\percolator.exe" "%1"
+   WriteRegStr HKCR "percolator\shell\open\command" "" ""$INSTDIR\percolator.exe" "%1""
 
    SetDetailsPrint textonly
    DetailPrint "Finsihed."
