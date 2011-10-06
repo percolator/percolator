@@ -1,5 +1,15 @@
 ;Percolator installer script.
 
+!define PRODUCT_NAME "Percolator"
+!define PRODUCT_VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
+!define PRODUCT_PUBLISHER "<Lukas Kall>"
+!define PRODUCT_WEB_SITE "http://per-colator.com/"
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_ROOT_KEY "HKLM"
+!define EXECUTABLE "percolator.exe"
+!define PROGICON "${NSI_PATH}\installer.ico"
+!define SETUP_BITMAP "${NSI_PATH}\welcome.bmp"
+
 ;-----------------------------------------------------------------------------
 ; Some installer script options (comment-out options not required)
 ;-----------------------------------------------------------------------------
@@ -49,6 +59,8 @@ Caption "Percolator Installer"
 outfile "@CMAKE_BINARY_DIR@/percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
 installDir $PROGRAMFILES\Percolator
 InstallDirRegKey HKCU "Software\Percolator" ""
+ShowInstDetails show
+ShowUnInstDetails show
 InstType Standard
 InstType Full
 InstType Minimal
@@ -81,11 +93,35 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 ;-----------------------------------------------------------------------------
 ; Modern User Interface (MUI) defintions and setup.
 ;-----------------------------------------------------------------------------
+; MUI Settings
+!define MUI_ABORTWARNING
+!define MUI_ICON "$PROGICON"
+!define MUI_UNICON "uninstall.ico"  ; define uninstall icon to appear in Add/Remove Programs
+
+; Welcome page
+!insertmacro MUI_PAGE_WELCOME
+; License page
+!insertmacro MUI_PAGE_LICENSE "license.txt"   ; text file with license terms
+; Directory page
+!insertmacro MUI_PAGE_DIRECTORY
+; Instfiles page
+!insertmacro MUI_PAGE_INSTFILES
+; Finish page
+!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"  ; readme.txt file for user
+!insertmacro MUI_PAGE_FINISH
+
+; Uninstaller pages
+!insertmacro MUI_UNPAGE_INSTFILES
+
+; Language files
+!insertmacro MUI_LANGUAGE "English"
+
 
 !define MUI_ABORTWARNING
 !define MUI_ICON ${NSI_PATH}\installer.ico
 !define MUI_UNICON ${NSI_PATH}\installer.ico
 !define MUI_WELCOMEFINISHPAGE_BITMAP ${NSI_PATH}\welcome.bmp
+
 !define MUI_WELCOMEPAGE_TITLE "@CPACK_PACKAGE_NAME@ ${VERSION} Setup$\r$\nInstaller"
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation.$\r$\n$\r$\n$_CLICK"
 !define MUI_HEADERIMAGE
@@ -110,15 +146,10 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 ;-----------------------------------------------------------------------------
 ; Page macros.
 ;-----------------------------------------------------------------------------
-
-!insertmacro MUI_PAGE_LICENSE "@CMAKE_SOURCE_DIR@/src/COPYING"
-; !insertmacro MUI_PAGE_COMPONENTS 
-!insertmacro MUI_PAGE_DIRECTORY
-!insertmacro MUI_PAGE_INSTFILES
- 
-!insertmacro MUI_UNPAGE_CONFIRM
-!insertmacro MUI_UNPAGE_INSTFILES
-  
+!insertmacro MUI_PAGE_WELCOME
+!ifdef OPTION_LICENSE_AGREEMENT
+   !insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
+!endif
 Page custom PageReinstall PageLeaveReinstall
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
