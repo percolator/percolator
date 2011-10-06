@@ -37,7 +37,7 @@
 !define VER_MINOR "@CPACK_PACKAGE_VERSION_MINOR@"
 !define VER_BUILD "@CPACK_PACKAGE_VERSION_PATCH@"
 !define VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
-
+!define REVISION ""
 ;-----------------------------------------------------------------------------
 ; Installer build timestamp.
 ;-----------------------------------------------------------------------------
@@ -121,8 +121,6 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
   
-!insertmacro MUI_LANGUAGE "English"
-
 Page custom PageReinstall PageLeaveReinstall
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
@@ -133,6 +131,11 @@ Page custom PageReinstall PageLeaveReinstall
 !insertmacro MUI_UNPAGE_CONFIRM
 UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 !insertmacro MUI_UNPAGE_INSTFILES
+
+;-----------------------------------------------------------------------------
+; Other MUI macros.
+;-----------------------------------------------------------------------------
+!insertmacro MUI_LANGUAGE "English"
 
 ##############################################################################
 # #
@@ -260,7 +263,7 @@ FunctionEnd
 # #
 ##############################################################################
 
-Section "Dummy Section" SecDummy
+Section "Percolator" SEC_PERCOLATOR
    SectionIn 1 2 3 RO
    SetDetailsPrint listonly
 
