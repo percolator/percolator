@@ -29,8 +29,8 @@
 !define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
 !addplugindir ${NSI_PATH}
 !addplugindir ${NSI_PATH}\nsis_uac
-!addplugindir ${NSI_PATH}\nsis_uac\nsis_processes
-!addplugindir ${NSI_PATH}\nsis_uac\nsis_processes\src
+!addplugindir ${NSI_PATH}\nsis_processes
+!addplugindir ${NSI_PATH}\nsis_processes\src
 ;-----------------------------------------------------------------------------
 ; Installer version
 ;-----------------------------------------------------------------------------
