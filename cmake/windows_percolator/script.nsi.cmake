@@ -1,5 +1,20 @@
 ; Percolator installer
 
+
+;-----------------------------------------------------------------------------
+; Some paths.
+;-----------------------------------------------------------------------------
+
+!ifndef MING_PATH
+    !define MING_PATH "/usr/i686-pc-mingw32/sys-root/mingw"
+!endif
+!define MING_BIN "${MING_PATH}/bin"
+!define MING_LIB "${MING_PATH}/lib"
+!define BUILD_PATH "@CMAKE_BINARY_DIR@"
+!define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
+!define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
+
+
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "Percolator"
 !define PRODUCT_VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
@@ -39,20 +54,8 @@
 !insertmacro MUI_LANGUAGE "English"
 ; MUI end ------
 
-;-----------------------------------------------------------------------------
-; Some paths.
-;-----------------------------------------------------------------------------
 
-!ifndef MING_PATH
-    !define MING_PATH "/usr/i686-pc-mingw32/sys-root/mingw"
-!endif
-!define MING_BIN "${MING_PATH}/bin"
-!define MING_LIB "${MING_PATH}/lib"
-!define BUILD_PATH "@CMAKE_BINARY_DIR@"
-!define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
-!define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
-!addplugindir ${NSI_PATH}/nsis_uac/Release/U
-!addplugindir ${NSI_PATH}/nsis_processes/bin
+
 ;-----------------------------------------------------------------------------
 ; Installer version
 ;-----------------------------------------------------------------------------
