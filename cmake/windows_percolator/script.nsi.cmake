@@ -94,28 +94,6 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 ; Modern User Interface (MUI) defintions and setup.
 ;-----------------------------------------------------------------------------
 ; MUI Settings
-!define MUI_ABORTWARNING
-!define MUI_ICON ${PROGICON}
-!define MUI_UNICON ${PROGICON} ; define uninstall icon to appear in Add/Remove Programs
-
-; Welcome page
-!insertmacro MUI_PAGE_WELCOME
-; License page
-!insertmacro MUI_PAGE_LICENSE "license.txt"   ; text file with license terms
-; Directory page
-!insertmacro MUI_PAGE_DIRECTORY
-; Instfiles page
-!insertmacro MUI_PAGE_INSTFILES
-; Finish page
-!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"  ; readme.txt file for user
-!insertmacro MUI_PAGE_FINISH
-
-; Uninstaller pages
-!insertmacro MUI_UNPAGE_INSTFILES
-
-; Language files
-!insertmacro MUI_LANGUAGE "English"
-
 
 !define MUI_ABORTWARNING
 !define MUI_ICON ${NSI_PATH}\installer.ico
@@ -127,7 +105,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP ${NSI_PATH}\page_header.bmp
 !define MUI_COMPONENTSPAGE_SMALLDESC
-!define MUI_FINISHPAGE_TITLE "@CPACK_PACKAGE_NAME@ Install Completed"
+!define MUI_FINISHPAGE_TITLE "Percolator Completed"
 !define MUI_FINISHPAGE_LINK "Click here to visit the @CPACK_PACKAGE_NAME@ website."
 !define MUI_FINISHPAGE_LINK_LOCATION "http://per-colator.com/"
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
