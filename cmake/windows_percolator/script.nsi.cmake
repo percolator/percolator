@@ -19,7 +19,6 @@
 ; Some paths.
 ;-----------------------------------------------------------------------------
 
-!define MUI_ABORTWARNING
 !ifndef MING_PATH
     !define MING_PATH "/usr/i686-pc-mingw32/sys-root/mingw"
 !endif
