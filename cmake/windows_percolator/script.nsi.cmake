@@ -27,7 +27,7 @@
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
 !define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
-!addplugindir ${NSI_PATH}
+!addplugindir ${NSI_PATH}/nsis_uac/Release/A
 !addplugindir ${NSI_PATH}/nsis_uac/Release/U
 !addplugindir ${NSI_PATH}/nsis_processes/bin
 ;-----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 !include Memento.nsh ;Remember user selections.
 !include WinVer.nsh ;Windows version detection.
 !include WordFunc.nsh ;Used by VersionCompare macro function.
-!include UAC.nsh ;Used by the UAC elevation to install as user or admin.
+# !include UAC.nsh ;Used by the UAC elevation to install as user or admin.
 # !include ${NSI_PATH}/nsis_processes/src/ProcFunc.nsh 
 ;-----------------------------------------------------------------------------
 ; Memento selections stored in registry.
@@ -155,33 +155,33 @@ FunctionEnd
 # #
 ##############################################################################
 
-# !macro CheckForProcess processName gotoWhenFound gotoWhenNotFound
-#    Processes::FindProcess ${processName}
-#    StrCmp $R0 "0" ${gotoWhenNotFound} ${gotoWhenFound}
-# !macroend
-# 
-# !macro ConfirmEndProcess processName
-#    MessageBox MB_YESNO|MB_ICONEXCLAMATION \
-#      "Found ${processName} process(s) which need to be stopped.$\nDo you want the installer to stop these for you?" \
-#      IDYES process_${processName}_kill IDNO process_${processName}_ended
-#    process_${processName}_kill:
-#       DetailPrint "Killing ${processName} processes."
-#       Processes::KillProcess ${processName}
-#       Sleep 1500
-#       StrCmp $R0 "1" process_${processName}_ended
-#       DetailPrint "Process to kill not found!"
-#    process_${processName}_ended:
-# !macroend
-# 
-# !macro CheckAndConfirmEndProcess processName
-#    !insertmacro CheckForProcess ${processName} 0 no_process_${processName}_to_end
-#    !insertmacro ConfirmEndProcess ${processName}
-#    no_process_${processName}_to_end:
-# !macroend
-# 
-# Function EnsurePercolatorShutdown
-#    !insertmacro CheckAndConfirmEndProcess "percolator.exe"
-# FunctionEnd
+!macro CheckForProcess processName gotoWhenFound gotoWhenNotFound
+   Processes::FindProcess ${processName}
+   StrCmp $R0 "0" ${gotoWhenNotFound} ${gotoWhenFound}
+!macroend
+
+!macro ConfirmEndProcess processName
+   MessageBox MB_YESNO|MB_ICONEXCLAMATION \
+     "Found ${processName} process(s) which need to be stopped.$\nDo you want the installer to stop these for you?" \
+     IDYES process_${processName}_kill IDNO process_${processName}_ended
+   process_${processName}_kill:
+      DetailPrint "Killing ${processName} processes."
+      Processes::KillProcess ${processName}
+      Sleep 1500
+      StrCmp $R0 "1" process_${processName}_ended
+      DetailPrint "Process to kill not found!"
+   process_${processName}_ended:
+!macroend
+
+!macro CheckAndConfirmEndProcess processName
+   !insertmacro CheckForProcess ${processName} 0 no_process_${processName}_to_end
+   !insertmacro ConfirmEndProcess ${processName}
+   no_process_${processName}_to_end:
+!macroend
+
+Function EnsurePercolatorShutdown
+   !insertmacro CheckAndConfirmEndProcess "percolator.exe"
+FunctionEnd
 
 
 ##############################################################################
