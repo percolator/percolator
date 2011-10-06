@@ -540,7 +540,7 @@ Function .onInit
    SkipSetInstDir:
 
    ;Shutdown percolator in case Add/Remove re-installer option used.
-   Call EnsurePercolatorkShutdown
+   Call EnsurePercolatorShutdown 
 FunctionEnd
 
 Function .onInstSuccess
