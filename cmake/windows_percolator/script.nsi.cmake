@@ -16,19 +16,6 @@
 
 
 ;-----------------------------------------------------------------------------
-; Initial installer setup and definitions.
-;-----------------------------------------------------------------------------
-Name "percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
-Caption "Percolator Installer"
-outfile "@CMAKE_BINARY_DIR@/percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
-installDir $PROGRAMFILES\Percolator
-InstallDirRegKey HKCU "Software\Percolator" ""
-InstType Standard
-InstType Full
-InstType Minimal
-CRCCheck On
-
-;-----------------------------------------------------------------------------
 ; Some paths.
 ;-----------------------------------------------------------------------------
 
@@ -49,14 +36,32 @@ CRCCheck On
 !define VER_MAJOR "@CPACK_PACKAGE_VERSION_MAJOR@"
 !define VER_MINOR "@CPACK_PACKAGE_VERSION_MINOR@"
 !define VER_BUILD "@CPACK_PACKAGE_VERSION_PATCH@"
-!define VERSION "@CPACK_PACKAGE_VERSION@"
+!define VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
 
 ;-----------------------------------------------------------------------------
 ; Installer build timestamp.
 ;-----------------------------------------------------------------------------
 !define /date BUILD_TIME "built on %Y/%m/%d at %I:%M %p"
 
+;-----------------------------------------------------------------------------
+; Initial installer setup and definitions.
+;-----------------------------------------------------------------------------
+Name "percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
+Caption "Percolator Installer"
+outfile "@CMAKE_BINARY_DIR@/percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
+installDir $PROGRAMFILES\Percolator
+InstallDirRegKey HKCU "Software\Percolator" ""
+InstType Standard
+InstType Full
+InstType Minimal
+CRCCheck On
+SetCompressor @CPACK_NSIS_COMPRESSOR@
+RequestExecutionLevel user ;Now using the UAC plugin.
+ReserveFile NSIS.InstallOptions.ini
+ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 
+
+@CPACK_NSIS_SECTION_SELECTED_VARS@
 ;-----------------------------------------------------------------------------
 ; Include some required header files.
 ;-----------------------------------------------------------------------------
