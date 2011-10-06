@@ -92,13 +92,8 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 ##############################################################################
 
 Function LaunchPercolator
-   ${UAC.CallFunctionAsUser} LaunchPercolatorAsUser
-FunctionEnd
-
-Function LaunchPercolatorAsUser
    Exec "$INSTDIR\percolator.exe"
 FunctionEnd
-
 
 ##############################################################################
 # #
