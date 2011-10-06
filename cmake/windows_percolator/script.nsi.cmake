@@ -275,8 +275,7 @@ Section "Dummy Section" SecDummy
    !endif
    !ifndef INSTALL_PATH
         ;Main executable.
-        File "${BUILD_PATH}\percolator.exe"
-        File @CMAKE_BINARY_DIR@/src/percolator.exe
+        File "${BUILD_PATH}\src\percolator.exe"
    !endif
    
    ;MINGW
