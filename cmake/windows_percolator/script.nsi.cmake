@@ -307,19 +307,19 @@ Section "Additional Icons" SEC_ADD_ICONS
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
 
-LangString Desc_Section1 ${LANG_ENGLISH} "Percolator essentials."
-LangString Desc_Section2 ${LANG_ENGLISH} "Percolator program group."
-LangString Desc_Section3 ${LANG_ENGLISH} "Desktop shortcut for Percolator."
-LangString Desc_Section4 ${LANG_ENGLISH} "Additional Icons for Percolator."
-
-; Installer section descriptions
-;--------------------------------
-!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC01} ${Desc_Section1}
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} ${Desc_Section2}
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} ${Desc_Section3}
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_ADD_ICONS} ${Desc_Section4}
-!insertmacro MUI_FUNCTION_DESCRIPTION_END
+# LangString Desc_Section1 ${LANG_ENGLISH} "Percolator essentials."
+# LangString Desc_Section2 ${LANG_ENGLISH} "Percolator program group."
+# LangString Desc_Section3 ${LANG_ENGLISH} "Desktop shortcut for Percolator."
+# LangString Desc_Section4 ${LANG_ENGLISH} "Additional Icons for Percolator."
+# 
+# ; Installer section descriptions
+# ;--------------------------------
+# !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC01} ${Desc_Section1}
+#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} ${Desc_Section2}
+#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} ${Desc_Section3}
+#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_ADD_ICONS} ${Desc_Section4}
+# !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Section -Post
    ;Uninstaller file.
@@ -464,13 +464,13 @@ Function un.onUninstSuccess
 FunctionEnd
 
 Function un.onInit
+  !insertmacro MUI_UNGETLANGUAGE
   MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove Percolator and all of its components?" IDYES +2
   Abort
 FunctionEnd
 
 ;Function that calls a messagebox when installation finished correctly
 Function .onInstSuccess
-  !insertmacro MUI_UNGETLANGUAGE
   MessageBox MB_OK "You have successfully installed Percolator. Use the desktop icon to start the program."
 FunctionEnd
 
