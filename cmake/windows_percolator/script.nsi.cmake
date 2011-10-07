@@ -136,7 +136,7 @@ Page custom PageReinstall PageLeaveReinstall
   !insertmacro MUI_LANGUAGE "Afrikaans"
   !insertmacro MUI_LANGUAGE "Catalan"
   !insertmacro MUI_LANGUAGE "Esperanto"
-  !insertmacro MUI_LANGUAGE "Asturian"
+
 
 ;--------------------------------
 ;Reserve Files
