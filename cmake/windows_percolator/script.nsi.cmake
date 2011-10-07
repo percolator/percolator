@@ -42,6 +42,7 @@
 !include "MUI2.nsh"
 !include LogicLib.nsh ;Used by APPDATA uninstaller.
 !include nsDialogs.nsh ;Used by APPDATA uninstaller.
+!include InstallOptions.nsh
 
 ; MUI Settings
 !define MUI_ABORTWARNING
