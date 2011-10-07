@@ -7,7 +7,7 @@
 !define MING_BIN "@MING_PATH@/bin"
 !define MING_LIB "@MING_PATH@/lib"
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
-!define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
+!define SOURCE_PATH "@PERCOLATOR_SOURCE_DIR@"
 !define NSI_PATH "${SOURCE_PATH}/../../admin/win/nsi"
 
 ;-----------------------------------------------------------------------------
