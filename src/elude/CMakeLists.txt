@@ -69,6 +69,11 @@ foreach(i ${configurefiles})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
 
+file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/*.cmake )
+foreach(i ${configurefiles})
+  string(REPLACE ".cmake" "" myReplFile "${i}")
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/cmake/windows_elude/${myReplFile} @ONLY)
+endforeach()
 
 ###############################################################################
 # COMPILING
@@ -157,7 +162,6 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ€ll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-#set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev")
 
 #TODO: I DONT THINK ELUDE NEEDS ANY LLIBRARIES, BUT DOUBLE CHECK...
 # PACKAGING OPTIONS: RPM
