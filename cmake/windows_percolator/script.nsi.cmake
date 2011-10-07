@@ -34,16 +34,24 @@
 !define EXECUTABLE "percolator.exe"
 !define PROGICON "${NSI_PATH}\installer.ico"
 !define PROGICON2 "${NSI_PATH}\uninstall.ico"
+!define PROGICON3 "${NSI_PATH}\percolator.ico"
 !define SETUP_BITMAP "${NSI_PATH}\welcome.bmp"
 
 
 ; MUI 1.67 compatible ------
-!include "MUI.nsh"
+!include "MUI2.nsh"
 !include LogicLib.nsh ;Used by APPDATA uninstaller.
 !include nsDialogs.nsh ;Used by APPDATA uninstaller.
 
 ; MUI Settings
 !define MUI_ABORTWARNING
+!define MUI_LANGDLL_ALLLANGUAGES
+;--------------------------------
+;Language Selection Dialog Settings
+;Remember the installer language
+!define MUI_LANGDLL_REGISTRY_ROOT "HKCU" 
+!define MUI_LANGDLL_REGISTRY_KEY "Software\Modern UI Test" 
+!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 !define MUI_ICON ${PROGICON}
 !define MUI_UNICON ${PROGICON2}  ; define uninstall icon to appear in Add/Remove Programs
 !define MUI_WELCOMEFINISHPAGE_BITMAP ${NSI_PATH}\welcome.bmp
@@ -69,8 +77,79 @@ Page custom PageReinstall PageLeaveReinstall
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"  ; readme.txt file for user
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_INSTFILES
+;--------------------------------
+;Languages
+
+  !insertmacro MUI_LANGUAGE "English" ;first language is the default language
+  !insertmacro MUI_LANGUAGE "French"
+  !insertmacro MUI_LANGUAGE "German"
+  !insertmacro MUI_LANGUAGE "Spanish"
+  !insertmacro MUI_LANGUAGE "SpanishInternational"
+  !insertmacro MUI_LANGUAGE "SimpChinese"
+  !insertmacro MUI_LANGUAGE "TradChinese"
+  !insertmacro MUI_LANGUAGE "Japanese"
+  !insertmacro MUI_LANGUAGE "Korean"
+  !insertmacro MUI_LANGUAGE "Italian"
+  !insertmacro MUI_LANGUAGE "Dutch"
+  !insertmacro MUI_LANGUAGE "Danish"
+  !insertmacro MUI_LANGUAGE "Swedish"
+  !insertmacro MUI_LANGUAGE "Norwegian"
+  !insertmacro MUI_LANGUAGE "NorwegianNynorsk"
+  !insertmacro MUI_LANGUAGE "Finnish"
+  !insertmacro MUI_LANGUAGE "Greek"
+  !insertmacro MUI_LANGUAGE "Russian"
+  !insertmacro MUI_LANGUAGE "Portuguese"
+  !insertmacro MUI_LANGUAGE "PortugueseBR"
+  !insertmacro MUI_LANGUAGE "Polish"
+  !insertmacro MUI_LANGUAGE "Ukrainian"
+  !insertmacro MUI_LANGUAGE "Czech"
+  !insertmacro MUI_LANGUAGE "Slovak"
+  !insertmacro MUI_LANGUAGE "Croatian"
+  !insertmacro MUI_LANGUAGE "Bulgarian"
+  !insertmacro MUI_LANGUAGE "Hungarian"
+  !insertmacro MUI_LANGUAGE "Thai"
+  !insertmacro MUI_LANGUAGE "Romanian"
+  !insertmacro MUI_LANGUAGE "Latvian"
+  !insertmacro MUI_LANGUAGE "Macedonian"
+  !insertmacro MUI_LANGUAGE "Estonian"
+  !insertmacro MUI_LANGUAGE "Turkish"
+  !insertmacro MUI_LANGUAGE "Lithuanian"
+  !insertmacro MUI_LANGUAGE "Slovenian"
+  !insertmacro MUI_LANGUAGE "Serbian"
+  !insertmacro MUI_LANGUAGE "SerbianLatin"
+  !insertmacro MUI_LANGUAGE "Arabic"
+  !insertmacro MUI_LANGUAGE "Farsi"
+  !insertmacro MUI_LANGUAGE "Hebrew"
+  !insertmacro MUI_LANGUAGE "Indonesian"
+  !insertmacro MUI_LANGUAGE "Mongolian"
+  !insertmacro MUI_LANGUAGE "Luxembourgish"
+  !insertmacro MUI_LANGUAGE "Albanian"
+  !insertmacro MUI_LANGUAGE "Breton"
+  !insertmacro MUI_LANGUAGE "Belarusian"
+  !insertmacro MUI_LANGUAGE "Icelandic"
+  !insertmacro MUI_LANGUAGE "Malay"
+  !insertmacro MUI_LANGUAGE "Bosnian"
+  !insertmacro MUI_LANGUAGE "Kurdish"
+  !insertmacro MUI_LANGUAGE "Irish"
+  !insertmacro MUI_LANGUAGE "Uzbek"
+  !insertmacro MUI_LANGUAGE "Galician"
+  !insertmacro MUI_LANGUAGE "Afrikaans"
+  !insertmacro MUI_LANGUAGE "Catalan"
+  !insertmacro MUI_LANGUAGE "Esperanto"
+  !insertmacro MUI_LANGUAGE "Asturian"
+
+;--------------------------------
+;Reserve Files
+  
+  ;If you are using solid compression, files that are required before
+  ;the actual installation should be stored first in the data block,
+  ;because this will make your installer start faster.
+  
+  !insertmacro MUI_RESERVEFILE_LANGDLL
+
+;--------------------------------
 UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
-!insertmacro MUI_LANGUAGE "English"
+# !insertmacro MUI_LANGUAGE "English"
 
 ; MUI end ------
 
@@ -220,20 +299,25 @@ Section "Desktop Shortcut" SEC_DESKTOP
       CreateShortCut "$DESKTOP\Percolator.lnk" "$INSTDIR\percolator.exe"
 SectionEnd
 
-Section -AdditionalIcons
+Section "Additional Icons" SEC_ADD_ICONS
   WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
   SetShellVarContext all		; scope is "All Users"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
 
+LangString Desc_Section1 ${LANG_ENGLISH} "Percolator essentials."
+LangString Desc_Section2 ${LANG_ENGLISH} "Percolator program group."
+LangString Desc_Section3 ${LANG_ENGLISH} "Desktop shortcut for Percolator."
+LangString Desc_Section4 ${LANG_ENGLISH} "Additional Icons for Percolator."
 
 ; Installer section descriptions
 ;--------------------------------
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC01} "Percolator essentials."
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} "Percolator program group."
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Desktop shortcut for Percolator."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC01} ${Desc_Section1}
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} ${Desc_Section2}
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} ${Desc_Section3}
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_ADD_ICONS} ${Desc_Section4}
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Section -Post
@@ -385,10 +469,12 @@ FunctionEnd
 
 ;Function that calls a messagebox when installation finished correctly
 Function .onInstSuccess
+  !insertmacro MUI_UNGETLANGUAGE
   MessageBox MB_OK "You have successfully installed Percolator. Use the desktop icon to start the program."
 FunctionEnd
 
 Function .onInit
+  !insertmacro MUI_LANGDLL_DISPLAY
   SetOutPath $TEMP
   File /oname=setup.bmp "${SETUP_BITMAP}"
 

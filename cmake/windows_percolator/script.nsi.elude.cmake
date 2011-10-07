@@ -4,8 +4,8 @@
 ; Some paths.
 ;-----------------------------------------------------------------------------
 
-!define MING_BIN "${MING_PATH}/bin"
-!define MING_LIB "${MING_PATH}/lib"
+!define MING_BIN "@MING_PATH@/bin"
+!define MING_LIB "@MING_PATH@/lib"
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
 !define NSI_PATH "${SOURCE_PATH}/../../admin/win/nsi"
@@ -34,6 +34,7 @@
 !define EXECUTABLE "elude.exe"
 !define PROGICON "${NSI_PATH}\installer.ico"
 !define PROGICON2 "${NSI_PATH}\uninstall.ico"
+!define PROGICON3 "${NSI_PATH}\percolator.ico"
 !define SETUP_BITMAP "${NSI_PATH}\welcome.bmp"
 
 
