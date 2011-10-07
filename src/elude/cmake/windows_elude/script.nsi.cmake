@@ -253,7 +253,7 @@ Section "MainSection" SEC01
    DetailPrint "Installing Elude essentials."
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
-   File "${BUILD_PATH}\src\elude.exe"
+   File "${BUILD_PATH}\elude.exe"
    File "${NSI_PATH}\percolator.ico"
 
    ;License & release notes.
