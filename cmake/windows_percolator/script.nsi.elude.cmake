@@ -1,4 +1,4 @@
-; Percolator installer
+; Elude installer
 
 ;-----------------------------------------------------------------------------
 ; Some paths.
@@ -8,7 +8,7 @@
 !define MING_LIB "${MING_PATH}/lib"
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
-!define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
+!define NSI_PATH "${SOURCE_PATH}/../../admin/win/nsi"
 
 ;-----------------------------------------------------------------------------
 ; Installer version
@@ -25,13 +25,13 @@
 ;-------------------------------------------------------------------------------------------
 
 ; HM NIS Edit Wizard helper defines
-!define PRODUCT_NAME "Percolator"
-!define PRODUCT_VERSION "Percolator-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
+!define PRODUCT_NAME "Elude"
+!define PRODUCT_VERSION "Elude-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
 !define PRODUCT_PUBLISHER "<Lukas Kall>"
 !define PRODUCT_WEB_SITE "http://per-colator.com/"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
-!define EXECUTABLE "percolator.exe"
+!define EXECUTABLE "elude.exe"
 !define PROGICON "${NSI_PATH}\installer.ico"
 !define PROGICON2 "${NSI_PATH}\uninstall.ico"
 !define SETUP_BITMAP "${NSI_PATH}\welcome.bmp"
@@ -47,12 +47,12 @@
 !define MUI_ICON ${PROGICON}
 !define MUI_UNICON ${PROGICON2}  ; define uninstall icon to appear in Add/Remove Programs
 !define MUI_WELCOMEFINISHPAGE_BITMAP ${NSI_PATH}\welcome.bmp
-!define MUI_WELCOMEPAGE_TITLE "Percolator - @CPACK_PACKAGE_NAME@ ${VERSION} Setup$\r$\nInstaller"
+!define MUI_WELCOMEPAGE_TITLE "Elude - @CPACK_PACKAGE_NAME@ ${VERSION} Setup$\r$\nInstaller"
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation.$\r$\n$\r$\n$_CLICK"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP ${NSI_PATH}\page_header.bmp
 !define MUI_COMPONENTSPAGE_SMALLDESC
-!define MUI_FINISHPAGE_TITLE "Percolator Completed"
+!define MUI_FINISHPAGE_TITLE "Elude Completed"
 !define MUI_FINISHPAGE_LINK "Click here to visit the @CPACK_PACKAGE_NAME@ website."
 !define MUI_FINISHPAGE_LINK_LOCATION "http://per-colator.com/"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
@@ -75,11 +75,11 @@ UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 ; MUI end ------
 
 
-Name "percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
-Caption "Percolator Installer"
-outfile "@CMAKE_BINARY_DIR@/percolator-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
-installDir $PROGRAMFILES\Percolator
-InstallDirRegKey HKCU "Software\Percolator" ""
+Name "elude-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
+Caption "Elude Installer"
+outfile "@CMAKE_BINARY_DIR@/elude-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
+installDir $PROGRAMFILES\Elude
+InstallDirRegKey HKCU "Software\Elude" ""
 ShowInstDetails show
 ShowUnInstDetails show
 ReserveFile NSIS.InstallOptions.ini
@@ -92,7 +92,7 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 ##############################################################################
 
 Function LaunchPercolator
-   Exec "$INSTDIR\percolator.exe"
+   Exec "$INSTDIR\elude.exe"
 FunctionEnd
 
 ##############################################################################
@@ -102,40 +102,40 @@ FunctionEnd
 ##############################################################################
 
 Function PageReinstall
-   ReadRegStr $R0 HKLM "Software\Percolator" ""
+   ReadRegStr $R0 HKLM "Software\Elude" ""
    StrCmp $R0 "" 0 +2
    Abort
 
    ;Detect version
-   ReadRegDWORD $R0 HKLM "Software\Percolator" "VersionMajor"
+   ReadRegDWORD $R0 HKLM "Software\Elude" "VersionMajor"
    IntCmp $R0 ${VER_MAJOR} minor_check new_version older_version
    minor_check:
-      ReadRegDWORD $R0 HKLM "Software\Percolator" "VersionMinor"
+      ReadRegDWORD $R0 HKLM "Software\Elude" "VersionMinor"
       IntCmp $R0 ${VER_MINOR} build_check new_version older_version
    build_check:
-      ReadRegDWORD $R0 HKLM "Software\Percolator" "VersionBuild"
+      ReadRegDWORD $R0 HKLM "Software\Elude" "VersionBuild"
       IntCmp $R0 ${VER_BUILD} same_version new_version older_version
 
    new_version:
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "An older version of Percolator is installed on your system. It is recommended that you uninstall the current version before installing. Select the operation you want to perform and click Next to continue."
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "An older version of Elude is installed on your system. It is recommended that you uninstall the current version before installing. Select the operation you want to perform and click Next to continue."
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 2" "Text" "Uninstall before installing"
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Do not uninstall"
-      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Percolator."
+      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Elude."
       StrCpy $R0 "1"
       Goto reinst_start
 
    older_version:
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "A newer version of Percolator is already installed! It is not recommended that you install an older version. If you really want to install this older version, it is better to uninstall the current version first. Select the operation you want to perform and click Next to continue."
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "A newer version of Elude is already installed! It is not recommended that you install an older version. If you really want to install this older version, it is better to uninstall the current version first. Select the operation you want to perform and click Next to continue."
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 2" "Text" "Uninstall before installing"
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Do not uninstall"
-      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Percolator."
+      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Elude."
       StrCpy $R0 "1"
       Goto reinst_start
 
    same_version:
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "Percolator ${VERSION} is already installed.\r\nSelect the operation you want to perform and click Next to continue."
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "Elude ${VERSION} is already installed.\r\nSelect the operation you want to perform and click Next to continue."
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 2" "Text" "Add/Reinstall components"
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Uninstall Percolator"
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Uninstall Elude"
       !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose the maintenance option to perform."
       StrCpy $R0 "2"
 
@@ -150,12 +150,12 @@ Function PageLeaveReinstall
    StrCmp $R0 "2" 0 +3
    StrCmp $R1 "1" reinst_done reinst_uninstall
    reinst_uninstall:
-      ReadRegStr $R1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "UninstallString"
+      ReadRegStr $R1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "UninstallString"
       HideWindow
       ClearErrors
       ExecWait '$R1 _?=$INSTDIR'
       IfErrors no_remove_uninstaller
-      IfFileExists "$INSTDIR\percolator.exe" no_remove_uninstaller
+      IfFileExists "$INSTDIR\elude.exe" no_remove_uninstaller
       Delete $R1
       RMDir $INSTDIR
    no_remove_uninstaller:
@@ -170,45 +170,32 @@ Section "MainSection" SEC01
    SetDetailsPrint listonly
 
    SetDetailsPrint textonly
-   DetailPrint "Installing Percolator essentials."
+   DetailPrint "Installing Elude essentials."
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
-   File "${BUILD_PATH}\src\percolator.exe"
+   File "${BUILD_PATH}\src\elude.exe"
    File "${NSI_PATH}\percolator.ico"
-   ;MINGW
-   File "${MING_BIN}\boost_filesystem-gcc45-mt-1_46_1.dll"
-   File "${MING_BIN}\boost_system-gcc45-mt-1_46_1.dll"
-   File "${MING_BIN}\libgcc_s_sjlj-1.dll"
-   File "${MING_BIN}\libstdc++-6.dll"
-   File "${MING_BIN}\libxerces-c-3-0.dll"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"
    File /oname=NOTES.txt ${NSI_PATH}\RELEASE_NOTES.txt
 SectionEnd
 
-Section "Pin Xml Schema" SecPinXml
-  SetOutPath "@PIN_SCHEMA_LOCATION@"
-  file @CMAKE_SOURCE_DIR@/src/xml/percolator_in.xsd
-SectionEnd
-
-Section "Pout Xml Schema" SecPoutXml
-  SetOutPath "@POUT_SCHEMA_LOCATION@"
-  file @CMAKE_SOURCE_DIR@/src/xml/percolator_out.xsd
+Section "Elude Models" SecElude
+  SetOutPath "@ELUDE_MODELS_PATH@elude_model"
+  file @CMAKE_SOURCE_DIR@/data/elude/models/
 SectionEnd
 
 Section "Start Menu Program Group" SEC_START_MENU
   SectionIn 1 2
   SetDetailsPrint textonly
-  DetailPrint "Adding shortcuts for the Percolator program group to the Start Menu."
+  DetailPrint "Adding shortcuts for the Elude program group to the Start Menu."
   SetDetailsPrint listonly
   SetShellVarContext all
-  RMDir /r "$SMPROGRAMS\Percolator"
-  CreateDirectory "$SMPROGRAMS\Percolator"
-# CreateShortCut "$SMPROGRAMS\Percolator\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
-  CreateShortCut "$SMPROGRAMS\Percolator\Percolator.lnk" "$INSTDIR\percolator.exe"
-# CreateShortCut "$SMPROGRAMS\Percolator\Release notes.lnk" "$INSTDIR\NOTES.txt"
-  CreateShortCut "$SMPROGRAMS\Percolator\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+  RMDir /r "$SMPROGRAMS\Elude"
+  CreateDirectory "$SMPROGRAMS\Elude"
+  CreateShortCut "$SMPROGRAMS\Elude\Elude.lnk" "$INSTDIR\elude.exe"
+  CreateShortCut "$SMPROGRAMS\Elude\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   SetShellVarContext current
 SectionEnd
 
@@ -217,7 +204,7 @@ Section "Desktop Shortcut" SEC_DESKTOP
       SetDetailsPrint textonly
       DetailPrint "Creating Desktop Shortcuts"
       SetDetailsPrint listonly
-      CreateShortCut "$DESKTOP\Percolator.lnk" "$INSTDIR\percolator.exe"
+      CreateShortCut "$DESKTOP\Elude.lnk" "$INSTDIR\elude.exe"
 SectionEnd
 
 Section -AdditionalIcons
@@ -231,9 +218,9 @@ SectionEnd
 ; Installer section descriptions
 ;--------------------------------
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC01} "Percolator essentials."
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} "Percolator program group."
-!insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Desktop shortcut for Percolator."
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC01} "Elude essentials."
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} "Elude program group."
+!insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Desktop shortcut for Elude."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Section -Post
@@ -249,31 +236,31 @@ Section -Post
    SetDetailsPrint listonly
 
    ;Version numbers used to detect existing installation version for comparisson.
-   WriteRegStr HKLM "Software\Percolator" "" $INSTDIR
-   WriteRegDWORD HKLM "Software\Percolator" "VersionMajor" "${VER_MAJOR}"
-   WriteRegDWORD HKLM "Software\Percolator" "VersionMinor" "${VER_MINOR}"
-   WriteRegDWORD HKLM "Software\Percolator" "VersionRevision" "${REVISION}"
-   WriteRegDWORD HKLM "Software\Percolator" "VersionBuild" "${VER_BUILD}"
+   WriteRegStr HKLM "Software\Elude" "" $INSTDIR
+   WriteRegDWORD HKLM "Software\Elude" "VersionMajor" "${VER_MAJOR}"
+   WriteRegDWORD HKLM "Software\Elude" "VersionMinor" "${VER_MINOR}"
+   WriteRegDWORD HKLM "Software\Elude" "VersionRevision" "${REVISION}"
+   WriteRegDWORD HKLM "Software\Elude" "VersionBuild" "${VER_BUILD}"
 
    ;Add or Remove Programs entry.
-   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "UninstallString" "$INSTDIR\Uninstall.exe"
-   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "InstallLocation" "$INSTDIR"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "DisplayName" "Percolator"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "Publisher" "http://per-colator.com/"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "DisplayIcon" "$INSTDIR\Uninstall.exe,0"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "DisplayVersion" "${VERSION}"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "VersionMajor" "${VER_MAJOR}"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "VersionMinor" "${VER_MINOR}.${REVISION}"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "URLInfoAbout" "http://per-colator.com/"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "HelpLink" "http://per-colator.com/"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "NoModify" "1"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator" "NoRepair" "1"
+   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "UninstallString" "$INSTDIR\Uninstall.exe"
+   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "InstallLocation" "$INSTDIR"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "DisplayName" "Elude"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "Publisher" "http://per-colator.com/"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "DisplayIcon" "$INSTDIR\Uninstall.exe,0"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "DisplayVersion" "${VERSION}"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "VersionMajor" "${VER_MAJOR}"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "VersionMinor" "${VER_MINOR}.${REVISION}"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "URLInfoAbout" "http://per-colator.com/"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "HelpLink" "http://per-colator.com/"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "NoModify" "1"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "NoRepair" "1"
 
-   ; Register Percolator:// protocol handler
-   WriteRegStr HKCR "percolator" "" "URL: Percolator Protocol"
-   WriteRegStr HKCR "percolator\DefaultIcon" "" $INSTDIR\percolator.exe,1
-   WriteRegStr HKCR "percolator\shell" "" "open"
-   WriteRegStr HKCR "percolator\shell\open\command" "" "$INSTDIR\percolator.exe %1"
+   ; Register Elude:// protocol handler
+   WriteRegStr HKCR "elude" "" "URL: Elude Protocol"
+   WriteRegStr HKCR "elude\DefaultIcon" "" $INSTDIR\elude.exe,1
+   WriteRegStr HKCR "elude\shell" "" "open"
+   WriteRegStr HKCR "elude\shell\open\command" "" "$INSTDIR\elude.exe %1"
 
    SetDetailsPrint textonly
    DetailPrint "Finsihed."
@@ -291,7 +278,7 @@ Var UnPageUserAppDataCheckbox_State
 Var UnPageUserAppDataEditBox
 
 Function un.UnPageUserAppData
-   !insertmacro MUI_HEADER_TEXT "Uninstall Percolator" "Remove Percolator's data folder from your computer."
+   !insertmacro MUI_HEADER_TEXT "Uninstall Elude" "Remove Elude's data folder from your computer."
    nsDialogs::Create /NOUNLOAD 1018
    Pop $UnPageUserAppDataDialog
 
@@ -299,10 +286,10 @@ Function un.UnPageUserAppData
       Abort
    ${EndIf}
 
-   ${NSD_CreateLabel} 0 0 100% 12u "Do you want to delete Percolator's data folder?"
+   ${NSD_CreateLabel} 0 0 100% 12u "Do you want to delete Elude's data folder?"
    Pop $0
 
-   ${NSD_CreateText} 0 13u 100% 12u "$LOCALAPPDATA\Percolator"
+   ${NSD_CreateText} 0 13u 100% 12u "$LOCALAPPDATA\Elude"
    Pop $UnPageUserAppDataEditBox
    SendMessage $UnPageUserAppDataEditBox ${EM_SETREADONLY} 1 0
 
@@ -320,39 +307,39 @@ Function un.UnPageUserAppDataLeave
 FunctionEnd
 
 Section Uninstall
-   IfFileExists "$INSTDIR\percolator.exe" percolator_installed
-      MessageBox MB_YESNO "It does not appear that Percolator is installed in the directory '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" IDYES percolator_installed
+   IfFileExists "$INSTDIR\elude.exe" percolator_installed
+      MessageBox MB_YESNO "It does not appear that Elude is installed in the directory '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" IDYES percolator_installed
       Abort "Uninstall aborted by user"
    percolator_installed:
 
    ;Delete registry keys.
-   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Percolator"
-   DeleteRegValue HKLM "Software\Percolator" "VersionBuild"
-   DeleteRegValue HKLM "Software\Percolator" "VersionMajor"
-   DeleteRegValue HKLM "Software\Percolator" "VersionMinor"
-   DeleteRegValue HKLM "Software\Percolator" "VersionRevision"
-   DeleteRegValue HKLM "Software\Percolator" ""
-   DeleteRegKey HKLM "Software\Percolator"
+   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude"
+   DeleteRegValue HKLM "Software\Elude" "VersionBuild"
+   DeleteRegValue HKLM "Software\Elude" "VersionMajor"
+   DeleteRegValue HKLM "Software\Elude" "VersionMinor"
+   DeleteRegValue HKLM "Software\Elude" "VersionRevision"
+   DeleteRegValue HKLM "Software\Elude" ""
+   DeleteRegKey HKLM "Software\Elude"
 
-   DeleteRegKey HKCR "percolator"
+   DeleteRegKey HKCR "elude"
 
    ;Start menu shortcuts.
    !ifdef OPTION_SECTION_SC_START_MENU
       SetShellVarContext all
-      RMDir /r "$SMPROGRAMS\Percolator"
+      RMDir /r "$SMPROGRAMS\Elude"
       SetShellVarContext current
    !endif
 
    ;Desktop shortcut.
    !ifdef OPTION_SECTION_SC_DESKTOP
-      IfFileExists "$DESKTOP\Percolator.lnk" 0 +2
-         Delete "$DESKTOP\Percolator.lnk"
+      IfFileExists "$DESKTOP\Elude.lnk" 0 +2
+         Delete "$DESKTOP\Elude.lnk"
    !endif
 
    ;Quick Launch shortcut.
    !ifdef OPTION_SECTION_SC_QUICK_LAUNCH
-      IfFileExists "$QUICKLAUNCH\Percolator.lnk" 0 +2
-         Delete "$QUICKLAUNCH\Percolator.lnk"
+      IfFileExists "$QUICKLAUNCH\Elude.lnk" 0 +2
+         Delete "$QUICKLAUNCH\Elude.lnk"
    !endif
 
    ;Remove all the Program Files.
@@ -360,7 +347,7 @@ Section Uninstall
 
    ;Uninstall User Data if option is checked, otherwise skip.
    ${If} $UnPageUserAppDataCheckbox_State == ${BST_CHECKED}
-      RMDir /r "$LOCALAPPDATA\Percolator"
+      RMDir /r "$LOCALAPPDATA\Elude"
    ${EndIf}
 
    SetDetailsPrint textonly
@@ -375,17 +362,17 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "Percolator was successfully removed from your computer."
+  MessageBox MB_ICONINFORMATION|MB_OK "Elude was successfully removed from your computer."
 FunctionEnd
 
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove Percolator and all of its components?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove Elude and all of its components?" IDYES +2
   Abort
 FunctionEnd
 
 ;Function that calls a messagebox when installation finished correctly
 Function .onInstSuccess
-  MessageBox MB_OK "You have successfully installed Percolator. Use the desktop icon to start the program."
+  MessageBox MB_OK "You have successfully installed Elude. Use the desktop icon to start the program."
 FunctionEnd
 
 Function .onInit
@@ -403,12 +390,6 @@ FunctionEnd
 Section Uninstall
   Delete "$INSTDIR\${PRODUCT_NAME}.url"
   Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\readme.txt"
-  Delete "$INSTDIR\boost_filesystem-gcc45-mt-1_46_1.dll"
-  Delete "$INSTDIR\boost_system-gcc45-mt-1_46_1.dll"
-  Delete "$INSTDIR\libgcc_s_sjlj-1.dll"
-  Delete "$INSTDIR\libstdc++-6.dll"
-  Delete "$INSTDIR\libxerces-c-3-0.dll"
   Delete "$INSTDIR\${PROGICON}"
   Delete "$INSTDIR\${PROGICON2}"
   Delete "$INSTDIR\${PROGICON3}"

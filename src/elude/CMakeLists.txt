@@ -68,11 +68,7 @@ foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
-# file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/*.cmake )
-# foreach(i ${configurefiles})
-#   string(REPLACE ".cmake" "" myReplFile "${i}")
-#   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/cmake/windows_elude/${myReplFile} @ONLY)
-# endforeach()
+
 
 ###############################################################################
 # COMPILING
@@ -173,8 +169,7 @@ set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 # NSIS package options
 # Requires NSIS for creating the package 
-#using scrip.nsi?? that is for percolator
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_elude/script.nsi" DEPENDS elude) 
+add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${PERCOLATOR_SOURCE_DIR}/cmake/windows_elude/script.nsi.elude" DEPENDS elude) 
 add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
 
 # Use CPack
