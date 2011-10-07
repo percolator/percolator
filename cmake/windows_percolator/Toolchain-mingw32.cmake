@@ -18,7 +18,6 @@ else(NOT MINGWV)
   SET(Boost_COMPILER "-mgw")
 endif(NOT MINGWV)
 
-message( STATUS "MinGW : ${MING_PATH}")
 # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mwindows -mthreads -static-libgcc")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -mwindows -mthreads -static-libgcc")
 # SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined,--fix-cortex-a8,-lsupc++ -lstdc++ -L${CMAKE_INSTALL_PREFIX}/lib")

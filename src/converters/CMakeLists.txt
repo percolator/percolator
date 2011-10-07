@@ -87,13 +87,6 @@ endif()
 # FIND EXTERNAL LIBRARIES REQUIRED BY CONVERTERS
 ###############################################################################
 
-# # useful macro
-# macro(my_find_program progname)
-#   find_program(${progname}_EXECUTABLE ${progname})
-#   if(NOT ${progname}_EXECUTABLE)
-#     message(FATAL_ERROR  "${progname} not found" )
-#   endif(NOT ${progname}_EXECUTABLE)
-# endmacro(my_find_program)
 
 set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 
@@ -102,7 +95,7 @@ MESSAGE( STATUS "Checking packages:" )
 
 if(MINGW OR WIN32)
     #Look for precompiled Windows libraries 
-  find_file(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.a libtokyocabinet.dll.a libtokyocabinet.dll HINTS
+  find_file(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.a libtokyocabinet.dll.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
