@@ -91,27 +91,27 @@ foreach(i ${configurefiles})
 endforeach()
 
 
-# # set install directories
-# if (WIN32 OR APPLE)
-#     set (BUILD_BUNDLE ON FORCE)
-# endif(WIN32 OR APPLE)
-# 
-# if (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
-#     set (BUNDLE_BASE_INSTALL_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_BUILD_TYPE})
-# endif (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
-# 
-# if (BUILD_BUNDLE)
-#     set (BINDIR .)
-#     set (CMAKE_INSTALL_PREFIX ${BUNDLE_BASE_INSTALL_DIR})
-# endif (BUILD_BUNDLE)
-# 
-# if (WIN32)
-#     add_definitions (-DWIN32)
-#     add_definitions (-D_WIN32)
-#     if (MINGW)
-#         add_definitions (-D__MINGW32__)
-#     endif (MINGW)
-# endif (WIN32)
+# set install directories
+if (WIN32 OR APPLE)
+    set (BUILD_BUNDLE ON FORCE)
+endif(WIN32 OR APPLE)
+
+if (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
+    set (BUNDLE_BASE_INSTALL_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_BUILD_TYPE})
+endif (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
+
+if (BUILD_BUNDLE)
+    set (BINDIR .)
+    set (CMAKE_INSTALL_PREFIX ${BUNDLE_BASE_INSTALL_DIR})
+endif (BUILD_BUNDLE)
+
+if (WIN32)
+    add_definitions (-DWIN32)
+    add_definitions (-D_WIN32)
+    if (MINGW)
+        add_definitions (-D__MINGW32__)
+    endif (MINGW)
+endif (WIN32)
 
 
 ###############################################################################
