@@ -6,14 +6,15 @@
 # XERCESC_LIBRARIES, the libraries to link against to use pwlib.
 # XERCESC_FOUND, If false, don't try to use pwlib.
 
-FIND_PATH(XERCESC_INCLUDE_DIR xercesc/dom/DOM.hpp
+FIND_PATH(XERCESC_INCLUDE_DIR xercesc/dom/DOM.hpp xercesc/parsers/SAXParser.hpp
    HINTS
    "[HKEY_CURRENT_USER\\software\\xerces-c\\src]"
    "[HKEY_CURRENT_USER\\xerces-c\\src]"
    $ENV{XERCESCROOT}/src/
+   $ENV{XERCESCROOT}/include/
    /usr/include
    /usr/local/include
-   PATH_SUFFIXES xerces-c
+   PATH_SUFFIXES xerces-c include
    )
 
 FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c xerces-c_3 xerces-c_2 xerces-c_static xerces-c_static_3 xerces-c_static_2 libxerces-c
@@ -23,6 +24,7 @@ FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c xerces-c_3 xerces-c_2 xerces-c_sta
    $ENV{XERCESCROOT}/lib
    /usr/lib
    /usr/local/lib
+   PATH_SUFFIXES lib64 lib32 lib
    )
 
 # if the include a the library are found then we have it

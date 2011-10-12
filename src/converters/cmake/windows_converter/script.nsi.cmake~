@@ -1,4 +1,4 @@
-; Elude installer
+; Converters installer
 
 ;-----------------------------------------------------------------------------
 ; Some paths.
@@ -25,13 +25,13 @@
 ;-------------------------------------------------------------------------------------------
 
 ; HM NIS Edit Wizard helper defines
-!define PRODUCT_NAME "Elude"
-!define PRODUCT_VERSION "Elude-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
+!define PRODUCT_NAME "Converters"
+!define PRODUCT_VERSION "Converters-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
 !define PRODUCT_PUBLISHER "<Lukas Kall>"
 !define PRODUCT_WEB_SITE "http://per-colator.com/"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
-!define EXECUTABLE "elude.exe"
+!define EXECUTABLE1 "Converters.exe"
 !define PROGICON "${NSI_PATH}\installer.ico"
 !define PROGICON2 "${NSI_PATH}\uninstall.ico"
 !define PROGICON3 "${NSI_PATH}\percolator.ico"
@@ -56,17 +56,17 @@
 !define MUI_ICON ${PROGICON}
 !define MUI_UNICON ${PROGICON2}  ; define uninstall icon to appear in Add/Remove Programs
 !define MUI_WELCOMEFINISHPAGE_BITMAP ${NSI_PATH}\welcome.bmp
-!define MUI_WELCOMEPAGE_TITLE "Elude - @CPACK_PACKAGE_NAME@ ${VERSION} Setup$\r$\nInstaller"
+!define MUI_WELCOMEPAGE_TITLE "Converters - @CPACK_PACKAGE_NAME@ ${VERSION} Setup$\r$\nInstaller"
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation.$\r$\n$\r$\n$_CLICK"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP ${NSI_PATH}\page_header.bmp
 !define MUI_COMPONENTSPAGE_SMALLDESC
-!define MUI_FINISHPAGE_TITLE "Elude Completed"
+!define MUI_FINISHPAGE_TITLE "Converters Completed"
 !define MUI_FINISHPAGE_LINK "Click here to visit the @CPACK_PACKAGE_NAME@ website."
 !define MUI_FINISHPAGE_LINK_LOCATION "http://per-colator.com/"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
-!define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_FUNCTION "LaunchPercolator"
+# !define MUI_FINISHPAGE_RUN
+# !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchPercolator"
 
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
@@ -155,11 +155,11 @@ UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
 ; MUI end ------
 
 
-Name "elude-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
-Caption "Elude Installer"
-outfile "@CMAKE_BINARY_DIR@/elude-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
-installDir $PROGRAMFILES\Elude
-InstallDirRegKey HKCU "Software\Elude" ""
+Name "Converters-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@"
+Caption "Converters Installer"
+outfile "@CMAKE_BINARY_DIR@/Converters-@CPACK_PACKAGE_VERSION_MAJOR@_@CPACK_PACKAGE_VERSION_MINOR@-win32.exe"
+installDir $PROGRAMFILES\Converters
+InstallDirRegKey HKCU "Software\Converters" ""
 ShowInstDetails show
 ShowUnInstDetails show
 ReserveFile NSIS.InstallOptions.ini
@@ -171,9 +171,9 @@ ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
 # #
 ##############################################################################
 
-Function LaunchPercolator
-   Exec "$INSTDIR\elude.exe"
-FunctionEnd
+# Function LaunchPercolator
+#    Exec "$INSTDIR\Converters.exe"
+# FunctionEnd
 
 ##############################################################################
 # #
@@ -182,40 +182,40 @@ FunctionEnd
 ##############################################################################
 
 Function PageReinstall
-   ReadRegStr $R0 HKLM "Software\Elude" ""
+   ReadRegStr $R0 HKLM "Software\Converters" ""
    StrCmp $R0 "" 0 +2
    Abort
 
    ;Detect version
-   ReadRegDWORD $R0 HKLM "Software\Elude" "VersionMajor"
+   ReadRegDWORD $R0 HKLM "Software\Converters" "VersionMajor"
    IntCmp $R0 ${VER_MAJOR} minor_check new_version older_version
    minor_check:
-      ReadRegDWORD $R0 HKLM "Software\Elude" "VersionMinor"
+      ReadRegDWORD $R0 HKLM "Software\Converters" "VersionMinor"
       IntCmp $R0 ${VER_MINOR} build_check new_version older_version
    build_check:
-      ReadRegDWORD $R0 HKLM "Software\Elude" "VersionBuild"
+      ReadRegDWORD $R0 HKLM "Software\Converters" "VersionBuild"
       IntCmp $R0 ${VER_BUILD} same_version new_version older_version
 
    new_version:
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "An older version of Elude is installed on your system. It is recommended that you uninstall the current version before installing. Select the operation you want to perform and click Next to continue."
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "An older version of Converters is installed on your system. It is recommended that you uninstall the current version before installing. Select the operation you want to perform and click Next to continue."
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 2" "Text" "Uninstall before installing"
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Do not uninstall"
-      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Elude."
+      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Converters."
       StrCpy $R0 "1"
       Goto reinst_start
 
    older_version:
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "A newer version of Elude is already installed! It is not recommended that you install an older version. If you really want to install this older version, it is better to uninstall the current version first. Select the operation you want to perform and click Next to continue."
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "A newer version of Converters is already installed! It is not recommended that you install an older version. If you really want to install this older version, it is better to uninstall the current version first. Select the operation you want to perform and click Next to continue."
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 2" "Text" "Uninstall before installing"
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Do not uninstall"
-      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Elude."
+      !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose how you want to install Converters."
       StrCpy $R0 "1"
       Goto reinst_start
 
    same_version:
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "Elude ${VERSION} is already installed.\r\nSelect the operation you want to perform and click Next to continue."
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 1" "Text" "Converters ${VERSION} is already installed.\r\nSelect the operation you want to perform and click Next to continue."
       !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 2" "Text" "Add/Reinstall components"
-      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Uninstall Elude"
+      !insertmacro INSTALLOPTIONS_WRITE "NSIS.InstallOptions.ini" "Field 3" "Text" "Uninstall Converters"
       !insertmacro MUI_HEADER_TEXT "Already Installed" "Choose the maintenance option to perform."
       StrCpy $R0 "2"
 
@@ -230,12 +230,13 @@ Function PageLeaveReinstall
    StrCmp $R0 "2" 0 +3
    StrCmp $R1 "1" reinst_done reinst_uninstall
    reinst_uninstall:
-      ReadRegStr $R1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "UninstallString"
+      ReadRegStr $R1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "UninstallString"
       HideWindow
       ClearErrors
       ExecWait '$R1 _?=$INSTDIR'
       IfErrors no_remove_uninstaller
-      IfFileExists "$INSTDIR\elude.exe" no_remove_uninstaller
+      IfFileExists "$INSTDIR\sqt2pin.exe" no_remove_uninstaller
+      IfFileExists "$INSTDIR\mzidentml2pin.exe" no_remove_uninstaller
       Delete $R1
       RMDir $INSTDIR
    no_remove_uninstaller:
@@ -250,32 +251,36 @@ Section "MainSection" SEC01
    SetDetailsPrint listonly
 
    SetDetailsPrint textonly
-   DetailPrint "Installing Elude essentials."
+   DetailPrint "Installing Converters essentials."
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
-   File "${BUILD_PATH}\src\elude.exe"
+   File "${BUILD_PATH}\sqt2pin.exe"
+   File "${BUILD_PATH}\mzidentml2pin.exe"
    File "${NSI_PATH}\percolator.ico"
+   File "${MING_BIN}\libgcc_s_sjlj-1.dll"
+   File "${MING_BIN}\libstdc++-6.dll"
+   File "${MING_BIN}\libxerces-c-3-0.dll"
+   File "${MING_BIN}\libsqlite3-0.dll"
+   File "@PROJECT_SOURCE_DIR@/libs/dll/TokyoCabinet.dll"
+   File "@PROJECT_SOURCE_DIR@/libs/dll/libtokyocabinet.dll"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"
    File /oname=NOTES.txt ${NSI_PATH}\RELEASE_NOTES.txt
 SectionEnd
 
-Section "Elude Models" SecElude
-  SetOutPath "@ELUDE_MODELS_PATH@elude_model"
-  file @CMAKE_SOURCE_DIR@/data/elude/models/
-SectionEnd
 
 Section "Start Menu Program Group" SEC_START_MENU
   SectionIn 1 2
   SetDetailsPrint textonly
-  DetailPrint "Adding shortcuts for the Elude program group to the Start Menu."
+  DetailPrint "Adding shortcuts for the Converters program group to the Start Menu."
   SetDetailsPrint listonly
   SetShellVarContext all
-  RMDir /r "$SMPROGRAMS\Elude"
-  CreateDirectory "$SMPROGRAMS\Elude"
-  CreateShortCut "$SMPROGRAMS\Elude\Elude.lnk" "$INSTDIR\elude.exe"
-  CreateShortCut "$SMPROGRAMS\Elude\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+  RMDir /r "$SMPROGRAMS\Converters"
+  CreateDirectory "$SMPROGRAMS\Converters"
+  CreateShortCut "$SMPROGRAMS\Converters\Sqt2pin.lnk" "$INSTDIR\Sqt2pin.exe"
+  CreateShortCut "$SMPROGRAMS\Converters\mzidentml2pin.lnk" "$INSTDIR\mzidentml2pin.exe"
+  CreateShortCut "$SMPROGRAMS\Converters\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   SetShellVarContext current
 SectionEnd
 
@@ -284,7 +289,8 @@ Section "Desktop Shortcut" SEC_DESKTOP
       SetDetailsPrint textonly
       DetailPrint "Creating Desktop Shortcuts"
       SetDetailsPrint listonly
-      CreateShortCut "$DESKTOP\Elude.lnk" "$INSTDIR\elude.exe"
+      CreateShortCut "$DESKTOP\Sqt2pin.lnk" "$INSTDIR\Sqt2pin.exe"
+      CreateShortCut "$DESKTOP\mzidentml2pin.lnk" "$INSTDIR\mzidentml2pin.exe"
 SectionEnd
 
 Section -AdditionalIcons
@@ -316,31 +322,33 @@ Section -Post
    SetDetailsPrint listonly
 
    ;Version numbers used to detect existing installation version for comparisson.
-   WriteRegStr HKLM "Software\Elude" "" $INSTDIR
-   WriteRegDWORD HKLM "Software\Elude" "VersionMajor" "${VER_MAJOR}"
-   WriteRegDWORD HKLM "Software\Elude" "VersionMinor" "${VER_MINOR}"
-   WriteRegDWORD HKLM "Software\Elude" "VersionRevision" "${REVISION}"
-   WriteRegDWORD HKLM "Software\Elude" "VersionBuild" "${VER_BUILD}"
+   WriteRegStr HKLM "Software\Converters" "" $INSTDIR
+   WriteRegDWORD HKLM "Software\Converters" "VersionMajor" "${VER_MAJOR}"
+   WriteRegDWORD HKLM "Software\Converters" "VersionMinor" "${VER_MINOR}"
+   WriteRegDWORD HKLM "Software\Converters" "VersionRevision" "${REVISION}"
+   WriteRegDWORD HKLM "Software\Converters" "VersionBuild" "${VER_BUILD}"
 
    ;Add or Remove Programs entry.
-   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "UninstallString" "$INSTDIR\Uninstall.exe"
-   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "InstallLocation" "$INSTDIR"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "DisplayName" "Elude"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "Publisher" "http://per-colator.com/"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "DisplayIcon" "$INSTDIR\Uninstall.exe,0"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "DisplayVersion" "${VERSION}"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "VersionMajor" "${VER_MAJOR}"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "VersionMinor" "${VER_MINOR}.${REVISION}"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "URLInfoAbout" "http://per-colator.com/"
-   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "HelpLink" "http://per-colator.com/"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "NoModify" "1"
-   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude" "NoRepair" "1"
+   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "UninstallString" "$INSTDIR\Uninstall.exe"
+   WriteRegExpandStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "InstallLocation" "$INSTDIR"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "DisplayName" "Converters"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "Publisher" "http://per-colator.com/"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "DisplayIcon" "$INSTDIR\Uninstall.exe,0"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "DisplayVersion" "${VERSION}"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "VersionMajor" "${VER_MAJOR}"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "VersionMinor" "${VER_MINOR}.${REVISION}"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "URLInfoAbout" "http://per-colator.com/"
+   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "HelpLink" "http://per-colator.com/"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "NoModify" "1"
+   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters" "NoRepair" "1"
 
-   ; Register Elude:// protocol handler
-   WriteRegStr HKCR "elude" "" "URL: Elude Protocol"
-   WriteRegStr HKCR "elude\DefaultIcon" "" $INSTDIR\elude.exe,1
-   WriteRegStr HKCR "elude\shell" "" "open"
-   WriteRegStr HKCR "elude\shell\open\command" "" "$INSTDIR\elude.exe %1"
+   ; Register Converters:// protocol handler
+   WriteRegStr HKCR "Converters" "" "URL: Converters Protocol"
+   WriteRegStr HKCR "Converters\DefaultIcon" "" $INSTDIR\Sqt2pin.exe,1
+   WriteRegStr HKCR "Converters\DefaultIcon" "" $INSTDIR\mzidentml2pin.exe,1
+   WriteRegStr HKCR "Converters\shell" "" "open"
+   WriteRegStr HKCR "Converters\shell\open\command" "" "$INSTDIR\Sqt2pin.exe %1"
+   WriteRegStr HKCR "Converters\shell\open\command" "" "$INSTDIR\mzidentml2pin.exe %1"
 
    SetDetailsPrint textonly
    DetailPrint "Finsihed."
@@ -358,7 +366,7 @@ Var UnPageUserAppDataCheckbox_State
 Var UnPageUserAppDataEditBox
 
 Function un.UnPageUserAppData
-   !insertmacro MUI_HEADER_TEXT "Uninstall Elude" "Remove Elude's data folder from your computer."
+   !insertmacro MUI_HEADER_TEXT "Uninstall Converters" "Remove Converters's data folder from your computer."
    nsDialogs::Create /NOUNLOAD 1018
    Pop $UnPageUserAppDataDialog
 
@@ -366,10 +374,10 @@ Function un.UnPageUserAppData
       Abort
    ${EndIf}
 
-   ${NSD_CreateLabel} 0 0 100% 12u "Do you want to delete Elude's data folder?"
+   ${NSD_CreateLabel} 0 0 100% 12u "Do you want to delete Converters's data folder?"
    Pop $0
 
-   ${NSD_CreateText} 0 13u 100% 12u "$LOCALAPPDATA\Elude"
+   ${NSD_CreateText} 0 13u 100% 12u "$LOCALAPPDATA\Converters"
    Pop $UnPageUserAppDataEditBox
    SendMessage $UnPageUserAppDataEditBox ${EM_SETREADONLY} 1 0
 
@@ -387,39 +395,39 @@ Function un.UnPageUserAppDataLeave
 FunctionEnd
 
 Section Uninstall
-   IfFileExists "$INSTDIR\elude.exe" percolator_installed
-      MessageBox MB_YESNO "It does not appear that Elude is installed in the directory '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" IDYES percolator_installed
+   IfFileExists "$INSTDIR\Converters.exe" percolator_installed
+      MessageBox MB_YESNO "It does not appear that Converters is installed in the directory '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" IDYES percolator_installed
       Abort "Uninstall aborted by user"
    percolator_installed:
 
    ;Delete registry keys.
-   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Elude"
-   DeleteRegValue HKLM "Software\Elude" "VersionBuild"
-   DeleteRegValue HKLM "Software\Elude" "VersionMajor"
-   DeleteRegValue HKLM "Software\Elude" "VersionMinor"
-   DeleteRegValue HKLM "Software\Elude" "VersionRevision"
-   DeleteRegValue HKLM "Software\Elude" ""
-   DeleteRegKey HKLM "Software\Elude"
+   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Converters"
+   DeleteRegValue HKLM "Software\Converters" "VersionBuild"
+   DeleteRegValue HKLM "Software\Converters" "VersionMajor"
+   DeleteRegValue HKLM "Software\Converters" "VersionMinor"
+   DeleteRegValue HKLM "Software\Converters" "VersionRevision"
+   DeleteRegValue HKLM "Software\Converters" ""
+   DeleteRegKey HKLM "Software\Converters"
 
-   DeleteRegKey HKCR "elude"
+   DeleteRegKey HKCR "Converters"
 
    ;Start menu shortcuts.
    !ifdef OPTION_SECTION_SC_START_MENU
       SetShellVarContext all
-      RMDir /r "$SMPROGRAMS\Elude"
+      RMDir /r "$SMPROGRAMS\Converters"
       SetShellVarContext current
    !endif
 
    ;Desktop shortcut.
    !ifdef OPTION_SECTION_SC_DESKTOP
-      IfFileExists "$DESKTOP\Elude.lnk" 0 +2
-         Delete "$DESKTOP\Elude.lnk"
+      IfFileExists "$DESKTOP\Converters.lnk" 0 +2
+         Delete "$DESKTOP\Converters.lnk"
    !endif
 
    ;Quick Launch shortcut.
    !ifdef OPTION_SECTION_SC_QUICK_LAUNCH
-      IfFileExists "$QUICKLAUNCH\Elude.lnk" 0 +2
-         Delete "$QUICKLAUNCH\Elude.lnk"
+      IfFileExists "$QUICKLAUNCH\Converters.lnk" 0 +2
+         Delete "$QUICKLAUNCH\Converters.lnk"
    !endif
 
    ;Remove all the Program Files.
@@ -427,7 +435,7 @@ Section Uninstall
 
    ;Uninstall User Data if option is checked, otherwise skip.
    ${If} $UnPageUserAppDataCheckbox_State == ${BST_CHECKED}
-      RMDir /r "$LOCALAPPDATA\Elude"
+      RMDir /r "$LOCALAPPDATA\Converters"
    ${EndIf}
 
    SetDetailsPrint textonly
@@ -442,18 +450,18 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "Elude was successfully removed from your computer."
+  MessageBox MB_ICONINFORMATION|MB_OK "Converters was successfully removed from your computer."
 FunctionEnd
 
 Function un.onInit
   !insertmacro MUI_UNGETLANGUAGE
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove Elude and all of its components?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove Converters and all of its components?" IDYES +2
   Abort
 FunctionEnd
 
 ;Function that calls a messagebox when installation finished correctly
 Function .onInstSuccess
-  MessageBox MB_OK "You have successfully installed Elude. Use the desktop icon to start the program."
+  MessageBox MB_OK "You have successfully installed Converters. Use the desktop icon to start the program."
 FunctionEnd
 
 Function .onInit
