@@ -54,6 +54,7 @@ include_directories(${XSD_INCLUDE_DIR})
 
 IF ( WIN32 )
   SET (BOOST_LIB_PREFIX "lib")
+  SET (BOOST_COMPILER "-vc71")
   IF (MSVC71)
    SET (BOOST_COMPILER "-vc71")
   ENDIF(MSVC71)
@@ -156,17 +157,18 @@ ENDIF()
 
 if(STATIC AND MINGW)
   #Look for precompiled Windows libraries 
-  find_file(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.la libpthreadGC2.a HINTS
+  find_file(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
      /usr/i686-pc-mingw32/lib/
      /mingw/lib/
+     C:\MinGW\lib
   )
   message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
   set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )
   if(NOT PTHREAD_STATIC_LIBRARY)
-    message(FATAL_ERROR "could not find the static library libpthread.a")
+    message(FATAL_ERROR "could not find the static library libpthread")
   endif() 
 
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
