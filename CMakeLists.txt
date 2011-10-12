@@ -90,6 +90,32 @@ foreach(i ${configurefiles})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
 
+
+# set install directories
+if (WIN32 OR APPLE)
+    set (BUILD_BUNDLE ON FORCE)
+endif(WIN32 OR APPLE)
+
+if (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
+    set (BUNDLE_BASE_INSTALL_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_BUILD_TYPE})
+endif (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
+
+if (BUILD_BUNDLE)
+    set (BINDIR .)
+    set (CMAKE_INSTALL_PREFIX ${BUNDLE_BASE_INSTALL_DIR})
+endif (BUILD_BUNDLE)
+
+if (WIN32)
+    add_definitions (-DWIN32)
+    add_definitions (-D_WIN32)
+    if (MINGW)
+        add_definitions (-D__MINGW32__)
+    endif (MINGW)
+
+    set (EXTRA_LIB "-lws2_32")
+endif (WIN32)
+
+
 ###############################################################################
 # COMPILING
 ###############################################################################
@@ -182,9 +208,10 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boo
 
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi" DEPENDS percolator qvality) 
-add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
-
+if(MINGW)
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi" DEPENDS percolator qvality) 
+  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
+endif()
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
 include(CPack)
