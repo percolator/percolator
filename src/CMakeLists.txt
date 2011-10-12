@@ -163,7 +163,7 @@ if(STATIC AND MINGW)
      /usr/i586-mingw32msvc/lib/
      /usr/i686-pc-mingw32/lib/
      /mingw/lib/
-     C:\MinGW\lib
+     C:/MinGW/lib/
   )
   message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
   set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )
