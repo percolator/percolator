@@ -26,6 +26,7 @@
 #define PROTEINPROBESTIMATORDEBUGGER_H_
 
 #include "boost/lexical_cast.hpp"
+#include "ProteinProbEstimator.h"
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,8 +47,14 @@ struct ProteinDebugger{
  */
 void ProteinDebugger::runScript(const string& script){
   string allowX = "chmod +x " + script;
-  system(allowX.c_str());
-  system(script.c_str());
+  if(system( allowX.c_str() ) != 0)
+  {
+    cerr << "Error: doing system call : " << allowX << endl;
+  }
+  if(system( script.c_str() ) != 0)
+  {
+    cerr << "Error: doing system call : " << script << endl;
+  }
 }
 
 /** plot to file the number of target proteins identified as a function of the
@@ -81,7 +88,7 @@ void ProteinDebugger::plotQValues(const fidoOutput& output,
           output.estimQvalues[k] <<"\t"<< targetsCount <<"\n";
     }
     // output empirical q-values
-    if(ProteinProbEstimator::usePi0){
+    if(estimator->getUsePio()){
       currentEmpirQval = (double)decoysCount/targetsCount*output.pi_0;
     } else {
       currentEmpirQval = (double)decoysCount/targetsCount;

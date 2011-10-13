@@ -73,7 +73,8 @@ class ProteinProbEstimator {
     double beta;
     const static double default_alpha = 0.1;
     const static double default_beta = 0.01;
-    ProteinProbEstimator(double alpha, double beta);
+    ProteinProbEstimator(double alpha, double beta, bool tiesAsOneProtein = false
+			 ,bool usePi0 = false, bool outputEmpirQVal = false);
     virtual ~ProteinProbEstimator();
     bool initialize(Scores* fullset);
     void setDefaultParameters();
@@ -85,19 +86,28 @@ class ProteinProbEstimator {
     void plotQValues(const fidoOutput& output);
     void plotRoc(const fidoOutput& output, int N);
     void printStatistics(const fidoOutput& output);
+    
+    void setTiesAsOneProtein(bool tiesAsOneProtein);
+    void setUsePio(bool usePi0);
+    void setOutputEmpirQval(bool outputEmpirQVal);
+    bool getTiesAsOneProtein();
+    bool getUsePio();
+    bool getOutputEmpirQval();
+    
     map<string, vector<ScoreHolder*> > proteinsToPeptides;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
     const static bool debugginMode;
     const static bool logScaleSearch;
-    const static bool tiesAsOneProtein;
-    const static bool usePi0;
     const static bool outputPEPs;
-    const static bool outputEmpirQVal;
+    
   private:
     void gridSearchAlphaBeta();
     GroupPowerBigraph* proteinGraph;
     Scores* peptideScores;
+    bool tiesAsOneProtein;
+    bool usePi0;
+    bool outputEmpirQVal;
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

@@ -260,6 +260,21 @@ bool Caller::parseOptions(int argc, char **argv) {
       "check time performance",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("g",
+    "allow-protein-group",
+    "treat ties as if it were one protein (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+  cmd.defineOption("I",
+    "protein-level-pi0",
+    "use pi_0 value when calculating empirical q-values (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+  cmd.defineOption("q",
+    "empirical-protein-q", 		   
+    "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -269,13 +284,18 @@ bool Caller::parseOptions(int argc, char **argv) {
     calculateProteinLevelProb = true;
     double alpha=-1;
     double beta=-1;
+    bool tiesAsOneProtein = cmd.optionSet("g");
+    bool usePi0 = cmd.optionSet("I");
+    bool outputEmpirQVal = cmd.optionSet("q");
+
     if (cmd.optionSet("a")) {
        alpha = cmd.getDouble("a", 0.00, 0.76);
      }
-     if (cmd.optionSet("b")) {
+    if (cmd.optionSet("b")) {
        beta = cmd.getDouble("b", 0.0, 0.80);
      }
-     protEstimator = new ProteinProbEstimator(alpha,beta);
+
+     protEstimator = new ProteinProbEstimator(alpha,beta,tiesAsOneProtein,usePi0,outputEmpirQVal);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -294,8 +314,15 @@ bool Caller::parseOptions(int argc, char **argv) {
     std::copy(str.begin(), str.end(), xmlInputDir);
     xmlInputDir[str.size()] = '\0';
     if(mkstemp(xmlInputDir) != -1){  
-      boost::filesystem::create_directory(boost::filesystem::path(xmlInputDir));
-      xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
+      try{
+	boost::filesystem::remove_all(xmlInputDir);
+	boost::filesystem::create_directory(boost::filesystem::path(xmlInputDir));
+	xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
+      }
+      catch (boost::filesystem::filesystem_error &e)
+      {
+	std::cerr << e.what() << std::endl;
+      }
     }
     else{
       cerr << "Error: there was a problem creating temporary file.";
@@ -380,7 +407,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
-    if(! cmd.optionSet("j")){ // unless the input comes from -j option
+    if(!cmd.optionSet("j") && !cmd.optionSet("e") ){ // unless the input comes from -j option or -e option
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
       exit(-1); // ...error
@@ -391,6 +418,11 @@ bool Caller::parseOptions(int argc, char **argv) {
     xmlInputFN = cmd.arguments[0]; // then it's the pin input
     if(cmd.optionSet("j")){ // and if the tab input is also present
       cerr << "Error: use one of either pin or tab-delimited input format.";
+      cerr << "\nInvoke with -h option for help.\n";
+      exit(-1); // ...error
+    }
+    if(cmd.optionSet("e")){ // if stdin pin file is present
+      cerr << "Error: the pin file has already been give as stdinput argument.";
       cerr << "\nInvoke with -h option for help.\n";
       exit(-1); // ...error
     }
