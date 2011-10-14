@@ -34,14 +34,6 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
-#ifdef WIN32
-#ifndef uint32_t
-#define uint32_t unsigned long
-#endif
-#ifndef uint64_t
-#define uint64_t unsigned long long
-#endif
-#else
 #ifndef OLD_BOOST
 #include <boost/math/special_functions/beta.hpp>
 #endif
