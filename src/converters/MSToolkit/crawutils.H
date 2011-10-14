@@ -34,6 +34,14 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#ifdef WIN32
+#ifndef uint32_t
+#define uint32_t unsigned long
+#endif
+#ifndef uint64_t
+#define uint64_t unsigned long long
+#endif
+#else
 #ifndef OLD_BOOST
 #include <boost/math/special_functions/beta.hpp>
 #endif
@@ -85,8 +93,10 @@ typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
   #define FTELL(h) ftello(h)
 #endif
 
-#ifndef __off64_t_defined
-typedef off_t off64_t; //if I compile with _LARGEFILE_SOURCE and _FILE_OFFSET_BITS=64, off_t is 64-bit
+#ifndef __off64_t_defined 
+  #ifndef off64_t
+    typedef off_t off64_t; //if I compile with _LARGEFILE_SOURCE and _FILE_OFFSET_BITS=64, off_t is 64-bit
+  #endif
 #endif
 
 #endif /* end _MSC_VER */

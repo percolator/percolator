@@ -3,7 +3,17 @@
 #include <sys/stat.h>
 
 #ifdef _WIN32
+#include <direct.h>
+#include <io.h>
 #define  mkdir( D, M )   _mkdir( D )
+void mkstemp(char *templt) {
+    // Win32 does not have the mkstemp function; _mktemp is similar,
+    // but does not actually create the file.
+    _mktemp(templt);
+    // create the file:
+    FILE *f = fopen(templt, "w");
+    fclose(f);
+}
 #endif
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");

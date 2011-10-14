@@ -46,31 +46,11 @@ include_directories(${XERCESC_INCLUDE_DIR})
 
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
-  message(STATUS "Package CodeSynthesis XSD found: ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
 else(XSD_FOUND)
   message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx ")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
-
-IF ( WIN32 )
-  SET (BOOST_LIB_PREFIX "lib")
-  SET (BOOST_COMPILER "-vc71")
-  IF (MSVC71)
-   SET (BOOST_COMPILER "-vc71")
-  ENDIF(MSVC71)
-  IF (MSVC80)
-   SET (BOOST_COMPILER "-vc80")
-  ENDIF(MSVC80)
-  IF (MSVC90)
-   SET (BOOST_COMPILER "-vc90")
-  ENDIF(MSVC90)
-  IF (MSVC91)
-   SET (BOOST_COMPILER "-vc91")
-  ENDIF(MSVC91)
-  IF (MSVC100)
-   SET (BOOST_COMPILER "-vc100")
-  ENDIF(MSVC100)
-ENDIF( WIN32 )
   
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
@@ -162,8 +142,8 @@ if(STATIC AND MINGW)
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
      /usr/i686-pc-mingw32/lib/
-     /mingw/lib/
      C:/MinGW/lib/
+     /mingw/lib   
   )
   message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
   set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )

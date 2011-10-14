@@ -17,12 +17,12 @@
 #ifndef SCORES_H_
 #define SCORES_H_
 #ifdef WIN32
-#ifndef uint32_t
-#define uint32_t unsigned long
-#endif
-#ifndef uint64_t
-#define uint64_t unsigned long long
-#endif
+// #ifndef uint32_t
+// #define uint32_t unsigned long
+// #endif
+// #ifndef uint64_t
+// #define uint64_t unsigned long long
+// #endif
 #else
 
 #include <stdint.h>
@@ -176,6 +176,13 @@ class Scores {
     inline static void setSeed(uint32_t s) {
       seed = s;
     }
+    inline static void setShowExpMass(bool expmass) {
+      showExpMass = expmass;
+    }
+    inline static bool getShowExpMass() {
+      return showExpMass;
+    }
+    
     uint32_t lcg_rand();
     double pi0;
     double targetDecoySizeRatio;
@@ -187,6 +194,7 @@ class Scores {
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;
     static uint32_t seed;
+    static bool showExpMass;
 };
 
 #endif /*SCORES_H_*/

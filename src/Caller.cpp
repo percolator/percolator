@@ -275,6 +275,11 @@ bool Caller::parseOptions(int argc, char **argv) {
     "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
+  cmd.defineOption("M",
+    "exp-mass",
+    "include the experimental mass in the output file",
+    "",
+    TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -404,6 +409,11 @@ bool Caller::parseOptions(int argc, char **argv) {
     Globals* g = Globals::getInstance();
     g->timeCheckPoint = true;
     g->checkTimeClock = clock();
+  }
+  if (cmd.optionSet("M"))
+  {
+    showExpMass = true;
+    Scores::setShowExpMass(showExpMass);
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -897,18 +907,11 @@ void Caller::writeXML_PSMs() {
   xmlOutputFN_PSMs = xmlOutputFN;
   xmlOutputFN_PSMs.append("writeXML_PSMs");
   os.open(xmlOutputFN_PSMs.c_str(), ios::out);
-//  xercesc::XMLPlatformUtils::Initialize();
-//  serializer ser;
-//  ser.start(os);
-  // append PSMs
+
   os << "  <psms>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin();
       psm != fullset.end(); ++psm) {
-//    if (Scores::isOutXmlDecoys() || psm->label==1) { //output decoys if required
-//      std::auto_ptr< ::percolatorOutNs::psm> p(returnXml_PSM(psm));
-//      ser.next("psm", *p);
       os << *psm;
-//    }
   }
   os << "  </psms>" << endl << endl;
   os.close();
