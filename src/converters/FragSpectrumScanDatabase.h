@@ -3,8 +3,6 @@
 
 #include <memory>   // std::auto_ptr
 #include <tcbdb.h>
-#include <rpc/xdr.h>
-#include <rpc/types.h>
 #include <iostream>
 #include <xercesc/dom/DOM.hpp>
 #include <cstddef>  // size_t
