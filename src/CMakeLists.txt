@@ -79,7 +79,7 @@ mark_as_advanced (PTHREAD_LIBRARIES)
 
 if(MINGW)
  #Installing xdr on mingw is not trivial. Maybe it could be fixed.
-  set( xdr_flags  --generate-insertion XDR --generate-extraction XDR )
+  set( xdr_flags  --generate-insertion --generate-extraction )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
