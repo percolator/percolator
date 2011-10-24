@@ -79,7 +79,7 @@ mark_as_advanced (PTHREAD_LIBRARIES)
 
 if(MINGW)
  #Installing xdr on mingw is not trivial. Maybe it could be fixed.
-  set( xdr_flags  "" )
+  set( xdr_flags  --generate-insertion XDR --generate-extraction XDR )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
@@ -89,7 +89,7 @@ set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BI
 set(percolator_in xml/percolator_in.xsd)
 add_custom_command(
   OUTPUT ${xsdfiles_in}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization  ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )

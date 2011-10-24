@@ -11,7 +11,6 @@
 #include <rpc/xdr.h>
 #include <map>
 #include <string>
-#include <memory>    // std::auto_ptr
 #include <iostream>
 #include "config.h"
 #include "serializer.hxx"
