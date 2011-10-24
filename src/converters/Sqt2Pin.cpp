@@ -187,8 +187,18 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       }
     }
   }
+  
   if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
   if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  
+  // if there are no arguments left...
+  if (cmd.arguments.size() == 0) {
+      cerr << "Error: too few arguments.";
+      cerr << "\nInvoke with -h option for help\n";
+      exit(-1); // ...error
+  }
+  
+  
   return true;
 }
 

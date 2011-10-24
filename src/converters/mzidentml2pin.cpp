@@ -141,9 +141,6 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
   }catch (ifstream::failure e) {
     cerr << "Exception opening/reading file :" << filename <<endl;
   }
-  catch(std::exception e){
-    cerr << e.what() <<endl;
-  }
   catch (const xercesc::DOMException& e)
   {
     char * tmpStr = XMLString::transcode(e.getMessage());
@@ -154,6 +151,9 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
   catch (const xml_schema::exception& e)
   {
     cerr << e << endl;
+  }
+  catch(std::exception e){
+    cerr << e.what() <<endl;
   }
   
   assert( foundFirstChargeState );
@@ -410,7 +410,7 @@ int loadFromTargetOrDecoyFile( const char * fileName, const input_options & args
 std::string greeter()
 {
   ostringstream oss;
-  oss << "\mzidentml2pin version " << VERSION << ", ";
+  oss << "mzidentml2pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Copyright (c) 2010 Lukas Käll. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;

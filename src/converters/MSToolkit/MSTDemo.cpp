@@ -141,7 +141,7 @@ int main(int argc, char *argv[]){
 
 	//Append our 12th spectrum to the end of the binary file
 	cout << "Appending 12th spectrum to the end of the binary file...";
-	r.appendFile("out.bin",false,tempSpec);
+	r.appendFile((char *)"out.bin",false,tempSpec);
 	cout << "Done!" << endl;
 
 	cout << "This ends the tutorial. BLARG!" << endl;
