@@ -51,7 +51,7 @@ inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
 inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
   for (int jj = 0; jj < inpString.size(); jj++) {
-    char ch = inpString[jj];
+    signed char ch = inpString[jj];
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
       outputs += ch;
     }
