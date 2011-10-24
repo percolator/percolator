@@ -17,28 +17,28 @@
 
 #include "Enzyme.h"
 
-int mystricmp(const char* str1, const char* str2)
-{
-    if (str1 == str2)
-      return 0;
-    else if (str1 == NULL)
-      return -1;
-    else if (str2 == NULL)
-      return 1;
-    else {
-      while (tolower(*str1) == tolower(*str2) && *str1 != 0 && *str2 != 0)
-    {
-	++str1;
-	++str2;
-    }
-    if (*str1 < *str2)
-	return -1;
-    else if (*str1 > *str2)
-	return 1;
-    else
-	return 0;
-    }
-}
+// int mystricmp(const char* str1, const char* str2)
+// {
+//     if (str1 == str2)
+//       return 0;
+//     else if (str1 == NULL)
+//       return -1;
+//     else if (str2 == NULL)
+//       return 1;
+//     else {
+//       while (tolower(*str1) == tolower(*str2) && *str1 != 0 && *str2 != 0)
+//     {
+// 	++str1;
+// 	++str2;
+//     }
+//     if (*str1 < *str2)
+// 	return -1;
+//     else if (*str1 > *str2)
+// 	return 1;
+//     else
+// 	return 0;
+//     }
+// }
 
 Enzyme* Enzyme::theEnzyme = NULL;
 
@@ -82,24 +82,24 @@ void Enzyme::setEnzyme(std::string enzyme) {
 
   //TODO NOT VERY PORTABLE, USING mystricmp INSTEAD
   
-//   if (boost::iequals(enzyme,Chymotrypsin::getString())) {
-//       theEnzyme = new Chymotrypsin();
-//   } else if (boost::iequals(enzyme,Elastase::getString())) {
-//       theEnzyme = new Elastase();
-//   } else if (boost::iequals(enzyme,Enzyme::getString())) {
-//       theEnzyme = new Enzyme();
-//   } else if (boost::iequals(enzyme,Trypsin::getString())) {
-//       theEnzyme = new Trypsin();
-  
-  if (mystricmp(enzyme.c_str(),Chymotrypsin::getString().c_str())) {
+  if (boost::iequals(enzyme,Chymotrypsin::getString())) {
       theEnzyme = new Chymotrypsin();
-  } else if (mystricmp(enzyme.c_str(),Elastase::getString().c_str())) {
+  } else if (boost::iequals(enzyme,Elastase::getString())) {
       theEnzyme = new Elastase();
-  } else if (mystricmp(enzyme.c_str(),Enzyme::getString().c_str())) {
+  } else if (boost::iequals(enzyme,Enzyme::getString())) {
       theEnzyme = new Enzyme();
-  } else if (mystricmp(enzyme.c_str(),Trypsin::getString().c_str())) {
+  } else if (boost::iequals(enzyme,Trypsin::getString())) {
       theEnzyme = new Trypsin();
-  } else {
+  
+//   if (mystricmp(enzyme.c_str(),Chymotrypsin::getString().c_str())) {
+//       theEnzyme = new Chymotrypsin();
+//   } else if (mystricmp(enzyme.c_str(),Elastase::getString().c_str())) {
+//       theEnzyme = new Elastase();
+//   } else if (mystricmp(enzyme.c_str(),Enzyme::getString().c_str())) {
+//       theEnzyme = new Enzyme();
+//   } else if (mystricmp(enzyme.c_str(),Trypsin::getString().c_str())) {
+//       theEnzyme = new Trypsin();
+//   } else {
     std::cerr << "The selected enzyme have no corresponding class" << std::endl;
     std::exit(-1);
   }

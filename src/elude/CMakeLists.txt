@@ -75,6 +75,20 @@ foreach(i ${configurefiles})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_elude/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/cmake/windows_elude/${myReplFile} @ONLY)
 endforeach()
 
+
+## FIND BOOST PACKAGE
+SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
+			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+  message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
+else(Boost_FOUND)
+  message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
+endif(Boost_FOUND)  
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_INCLUDE_DIRS})
+
+
 ###############################################################################
 # COMPILING
 ###############################################################################
@@ -89,7 +103,7 @@ add_library(eludelibrary RetentionFeatures.cpp DataManager.cpp EludeMain.cpp Lib
 
 add_executable(elude ${ELUDE_SOURCES})
 
-target_link_libraries(elude eludelibrary)
+target_link_libraries(elude eludelibrary ${Boost_LIBRARIES})
 
 #TODO: HERE THERE SHOULD BE STUFF ABOUT LIBGCC
 
