@@ -57,15 +57,6 @@
 #define PATHSEP '/'
 #endif
 
-//#define ER_DEBUG
-
-
-/* define FSEEK, FTELL 64-bit offset compatible macros  --
-    arguments are :
-    int FSEEK( FILE * h , off_t pos, int pos_type )
-    off_t FTELL( FILE * h )
- */
-
 //todo test these macros...
 #ifdef _MSC_VER
 #define FSEEK(h,p,offset_flag) _fseeki64(h,p,offset_flag)
@@ -84,6 +75,12 @@ typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
 #ifdef _WIN32
   #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
   #define FTELL(h) ftello64(h)
+#elifdef __APPLE__
+  #define off64_t off_t
+  #define fopen64 fopen
+  #define FSEEK(h,p,offset_flag) fseeko(h,p,offset_flag)
+  #define FTELL(h) ftello(h)
+#endif
 #else
   #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
   #define FTELL(h) ftello(h)
