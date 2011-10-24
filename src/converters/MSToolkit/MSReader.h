@@ -30,9 +30,13 @@ typedef __int64 f_off;
 #define ftell(h) _ftelli64(h)
 #else
 
+// Larger file support for files greater then 20 gigabytes
 #ifndef _LARGEFILE_SOURCE
-#error "need to define _LARGEFILE_SOURCE!!"
-#endif    /* end _LARGEFILE_SOURCE */
+#define _LARGEFILE_SOURCE
+#endif
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif
 
 typedef off_t f_off;
 #define fseek(h,p,o) fseeko(h,p,o)

@@ -85,6 +85,8 @@ void EludeCaller::DeleteRTModels() {
   rt_models_.clear();
 }
 
+
+
 /* introductory message */
 string EludeCaller::Greeter() const {
   ostringstream oss;
@@ -103,7 +105,10 @@ string EludeCaller::Greeter() const {
 /* parse the command line arguments */
 bool EludeCaller::ParseOptions(int argc, char** argv) {
   ostringstream intro;
-  intro << Greeter() << endl;
+  intro << Greeter() << endl << "Usage:" << endl;
+  intro << "   elude [-e \"input file\"] [-o \"output file\"] [other options] " << endl;
+  intro << "Where input file is the file including the test data; output file" << endl;
+  intro << "the output will be written (ensure to have read and write access on the file)." << endl;
   CommandLineParser cmd(intro.str());
   // define available options
   cmd.defineOption("v",
@@ -291,6 +296,13 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("w")) {
      supress_print_ = true;
+  }
+  
+    // if there are no arguments left...
+  if (cmd.arguments.size() == 0) {
+      cerr << "Error: too few arguments.";
+      cerr << "\nInvoke with -h option for help\n";
+      exit(-1); // ...error
   }
   return true;
 }

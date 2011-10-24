@@ -73,9 +73,13 @@
 typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
 #else
 
-#ifndef _LARGEFILE_SOURCE 
-#error "need to define _LARGEFILE_SOURCE!!"
-#endif    /* end _LARGEFILE_SOURCE */
+// Larger file support for files greater then 20 gigabytes
+#ifndef _LARGEFILE_SOURCE && defined(__APPLE__)
+  #define _LARGEFILE_SOURCE
+#endif
+#ifndef _LARGEFILE64_SOURCE && defined(__APPLE__)
+  #define _LARGEFILE64_SOURCE
+#endif   /* end _LARGEFILE_SOURCE */
 
 #ifdef _WIN32
   #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
