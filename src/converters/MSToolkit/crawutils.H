@@ -86,7 +86,7 @@ typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
 #endif
 
 #ifndef __off64_t_defined 
-  #ifndef off64_t
+  #if not defined off64_t && not defined _WIN32 
     typedef off_t off64_t; //if I compile with _LARGEFILE_SOURCE and _FILE_OFFSET_BITS=64, off_t is 64-bit
   #endif
 #endif
