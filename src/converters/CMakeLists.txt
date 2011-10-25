@@ -168,13 +168,30 @@ else(Boost_FOUND)
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
 
+
+if(STATIC AND MINGW)
+  #Look for precompiled Windows libraries 
+  find_file(PORTABLEXDR_STATIC_LIBRARY NAMES libportablexdr.a libportablexdr.dll.a libportablexdr.la HINTS
+     /usr/i686-pc-mingw32/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/lib/
+     /usr/i686-pc-mingw32/lib/
+     C:/MinGW/lib/
+     /mingw/lib   
+  )
+  message(STATUS "PORTABLEXDR_STATIC_LIBRARY=${PORTABLEXDR_STATIC_LIBRARY}")
+  set( PORTABLEXDR_LIBRARIES ${PORTABLEXDR_STATIC_LIBRARY} )
+  if(NOT PTHREAD_STATIC_LIBRARY)
+    message(FATAL_ERROR "could not find the static library portableXdr")
+  endif() 
+endif()
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
 ###############################################################################
 
 if(MINGW)
  #Installing xdr on mingw is not trivial. Maybe it could be fixed.
-  set( xdr_flags  "" )
+  set( xdr_flags --generate-ostream --generate-insertion XDR --generate-extraction XDR )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
@@ -216,7 +233,15 @@ endforeach()
 ###############################################################################
 # COMPILING
 ###############################################################################
+IF(STATIC)
+  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+ENDIF()
 
+IF(STATIC AND MINGW)
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+ENDIF()
 
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
@@ -231,23 +256,13 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
+target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-target_link_libraries(sqt2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP)
+target_link_libraries(sqt2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP)
 
-
-IF(STATIC)
-  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-ENDIF()
-
-IF(STATIC AND MINGW)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-ENDIF()
 
 ###############################################################################
 # TESTING
