@@ -116,8 +116,8 @@ typedef std::pair< IdxGroupType, IdxGroupType > TwoGroupsType;
 
 
 //Macro for general large file support - RAMP toolkit style
-#ifndef _LARGEFILE_SOURCE // use MSFT API for 64 bit file pointers
-//typedef fpos_t f_off;
+#ifndef _LARGEFILE_SOURCE and not defined __MINGW__ and not defined __WIN32__ // use MSFT API for 64 bit file pointers
+typedef fpos_t f_off;
 #include <io.h>
 #endif 
 

@@ -9,7 +9,7 @@
 int mkstemp(char *templt) {
     // Win32 does not have the mkstemp function; _mktemp is similar,
     // but does not actually create the file.
-    if(_mktemp(templt) != -1)
+    if(_mktemp(templt))
     {  // create the file:
       FILE *f = fopen(templt, "w");
       fclose(f);
