@@ -123,7 +123,12 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
   xml_schema::istream<XDR> ixdr(xdr2);
   xdrrec_skiprecord(&xdr2);
   std::auto_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
-  xdr_destroy (&xdr2);
+  //TOFIX it gives too many arguments in MINGW
+  //xdr_destroy (&xdr2);
+  if((&xdr2)->x_ops->x_destroy)			
+  {	
+    (*(&xdr2)->x_ops->x_destroy)(&xdr2);
+  }
   return fss;
 }
 

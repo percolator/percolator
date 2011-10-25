@@ -31,14 +31,14 @@ typedef __int64 f_off;
 #else
 
 // Larger file support for files greater then 20 gigabytes
-#ifndef _LARGEFILE_SOURCE
-#define _LARGEFILE_SOURCE
+#if not defined _LARGEFILE_SOURCE 
+  #define _LARGEFILE_SOURCE
 #endif
-#ifndef _LARGEFILE64_SOURCE
-#define _LARGEFILE64_SOURCE
-#endif
+#if not defined _LARGEFILE64_SOURCE 
+  #define _LARGEFILE64_SOURCE
+#endif   /* end _LARGEFILE_SOURCE */
 
-#ifndef f_off
+#ifndef __f_off
   typedef off_t f_off;
 #endif
 
