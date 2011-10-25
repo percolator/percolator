@@ -126,8 +126,12 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
   //TOFIX it gives too many arguments in MINGW
   //xdr_destroy (&xdr2);
   if((&xdr2)->x_ops->x_destroy)			
-  {	
+  {
+#if defined __MINGW__ or defined __WIN32__
+    (*(&xdr2)->x_ops->x_destroy);
+#else
     (*(&xdr2)->x_ops->x_destroy)(&xdr2);
+#endif
   }
   return fss;
 }
