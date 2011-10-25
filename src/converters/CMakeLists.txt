@@ -95,7 +95,7 @@ MESSAGE( STATUS "Checking packages:" )
 
 if(MINGW OR WIN32)
     #Look for precompiled Windows libraries 
-  find_file(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.a libtokyocabinet.dll.a HINTS
+  find_library(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.a libtokyocabinet.dll.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
@@ -171,7 +171,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 if(STATIC AND MINGW)
   #Look for precompiled Windows libraries 
-  find_file(PORTABLEXDR_STATIC_LIBRARY NAMES libportablexdr.a libportablexdr.dll.a libportablexdr.la HINTS
+  find_library(PORTABLEXDR_STATIC_LIBRARY NAMES libportablexdr.a libportablexdr.dll.a libportablexdr.la HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
@@ -233,7 +233,13 @@ endforeach()
 ###############################################################################
 # COMPILING
 ###############################################################################
-
+#Cross compilation
+# NSIS package options
+# Requires NSIS for creating the package
+if(MINGW) 
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter" DEPENDS sqt2pin mzidentml2pin) 
+  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
+endif()
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
@@ -246,12 +252,12 @@ add_subdirectory(MSToolkit)
 add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
-# add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-# IF(STATIC AND MINGW)
-#   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC TRUE)
-#   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-# ENDIF()
-# target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
+add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
+IF(STATIC AND MINGW)
+  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC TRUE)
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+ENDIF()
+target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
@@ -334,11 +340,6 @@ set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, gengetopt, tokyocabinet-devel, zlib-devel, sqlite3-devel, percolator(>=2.01)")
 
-#Cross compilation
-# NSIS package options
-# Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sqt2pin-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter" DEPENDS sqt2pin mzidentml2pin) 
-add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 
 
 # Use CPack

@@ -136,7 +136,7 @@ ENDIF()
 
 if(STATIC AND MINGW)
   #Look for precompiled Windows libraries 
-  find_file(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
+  find_library(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
