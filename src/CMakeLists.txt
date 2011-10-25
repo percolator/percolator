@@ -78,7 +78,7 @@ mark_as_advanced (PTHREAD_LIBRARIES)
 ###############################################################################
 
 if(MINGW)
-  set( xdr_flags  --generate-ostream --generate-insertion XDR --generate-extraction XDR )
+  set( xdr_flags  "" )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()

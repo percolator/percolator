@@ -122,8 +122,6 @@ typedef fpos_t f_off;
 #endif 
 
 
-
-
 #ifndef __GNUC__
 double round(double n);
 #endif

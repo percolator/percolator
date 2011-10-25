@@ -245,15 +245,6 @@ add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer
 add_subdirectory(MSToolkit)
 add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
-#COMPILING MZIDENTML2PIN
-add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
-
-#COMPILING SQT2PIN
-include_directories(. MSToolkit/RAMP MSToolkit )
-add_executable(sqt2pin Sqt2Pin.cpp )
-target_link_libraries(sqt2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP)
-
 IF(STATIC)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
@@ -263,6 +254,17 @@ IF(STATIC AND MINGW)
   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
+
+
+#COMPILING MZIDENTML2PIN
+add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
+target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
+
+#COMPILING SQT2PIN
+include_directories(. MSToolkit/RAMP MSToolkit )
+add_executable(sqt2pin Sqt2Pin.cpp )
+target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} )
+
 
 
 ###############################################################################

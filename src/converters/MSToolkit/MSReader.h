@@ -38,7 +38,7 @@ typedef __int64 f_off;
   #define _LARGEFILE64_SOURCE
 #endif   /* end _LARGEFILE_SOURCE */
 
-#ifndef __f_off
+#ifndef __off_t
   typedef off_t f_off;
 #endif
 
