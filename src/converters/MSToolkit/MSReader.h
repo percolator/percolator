@@ -38,12 +38,18 @@ typedef __int64 f_off;
 #define _LARGEFILE64_SOURCE
 #endif
 
-#ifndef off_t
+#ifndef f_off
   typedef off_t f_off;
 #endif
-#define fseek(h,p,o) fseeko(h,p,o)
-#define ftell(h) ftello(h)
 
+#ifdef _WIN32
+  #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
+  #define FTELL(h) ftello64(h)
+#else
+  #define fseek(h,p,o) fseeko(h,p,o)
+  #define ftell(h) ftello(h)
+#endif
+  
 #endif /* end _MSC_VER */ 
 
 
