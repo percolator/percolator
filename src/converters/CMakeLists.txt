@@ -233,15 +233,6 @@ endforeach()
 ###############################################################################
 # COMPILING
 ###############################################################################
-IF(STATIC)
-  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-ENDIF()
-
-IF(STATIC AND MINGW)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-ENDIF()
 
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
@@ -262,6 +253,16 @@ target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRAR
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
 target_link_libraries(sqt2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  MSToolkit RAMP)
+
+IF(STATIC)
+  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+ENDIF()
+
+IF(STATIC AND MINGW)
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+ENDIF()
 
 
 ###############################################################################
