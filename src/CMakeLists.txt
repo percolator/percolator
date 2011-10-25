@@ -78,7 +78,6 @@ mark_as_advanced (PTHREAD_LIBRARIES)
 ###############################################################################
 
 if(MINGW)
- #Installing xdr on mingw is not trivial. Maybe it could be fixed.
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
@@ -151,13 +150,27 @@ if(STATIC AND MINGW)
     message(FATAL_ERROR "could not find the static library libpthread")
   endif() 
 
+  find_file(PORTABLEXDR_STATIC_LIBRARY NAMES libportablexdr.a libportablexdr.dll.a libportablexdr.la HINTS
+     /usr/i686-pc-mingw32/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/lib/
+     /usr/i686-pc-mingw32/lib/
+     C:/MinGW/lib/
+     /mingw/lib   
+  )
+  message(STATUS "PORTABLEXDR_STATIC_LIBRARY=${PORTABLEXDR_STATIC_LIBRARY}")
+  set( PORTABLEXDR_LIBRARIES ${PORTABLEXDR_STATIC_LIBRARY} )
+  if(NOT PTHREAD_STATIC_LIBRARY)
+    message(FATAL_ERROR "could not find the static library portableXdr")
+  endif() 
+
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW)
