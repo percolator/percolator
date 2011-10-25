@@ -75,6 +75,8 @@ typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
 #ifdef _WIN32
   #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
   #define FTELL(h) ftello64(h)
+  #define srand48(seed) srand(seed)
+  #define drand48() (double(rand()) / RAND_MAX)
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
   #define off64_t off_t
   #define fopen64 fopen

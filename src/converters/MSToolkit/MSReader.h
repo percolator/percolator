@@ -38,7 +38,9 @@ typedef __int64 f_off;
 #define _LARGEFILE64_SOURCE
 #endif
 
-typedef off_t f_off;
+#ifndef off_t
+  typedef off_t f_off;
+#endif
 #define fseek(h,p,o) fseeko(h,p,o)
 #define ftell(h) ftello(h)
 

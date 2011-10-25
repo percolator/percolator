@@ -7,8 +7,13 @@
 #include <xercesc/dom/DOM.hpp>
 #include <cstddef>  // size_t
 #include <cstring>  // memcpy
+
+// #include <ace/Log_Msg.h>   // ACE_HEX_DUMP
+// #include <ace/CDR_Stream.h>
 #include <rpc/types.h>
 #include <rpc/xdr.h>
+
+
 #include <map>
 #include <string>
 #include <iostream>
