@@ -25,7 +25,7 @@ add_subdirectory(RAMP)
 
 file(GLOB MSTOOLKIT_SOURCES *.cpp)
 include_directories(RAMP)
-add_library (MSToolkit STATIC ${MSTOOLKIT_SOURCES})
+add_library (MSToolkit STATIC ../xdr_api_mingw.h ${MSTOOLKIT_SOURCES})
 IF(MINGW)
   set_property(TARGET MSToolkit PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(MSToolkit PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
