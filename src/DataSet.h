@@ -42,11 +42,11 @@
 #include "PSMDescription.h"
 #include "FeatureNames.h"
 #include <boost/foreach.hpp>
-#include <rpc/types.h>
-#include <rpc/xdr.h>
-#if defined __WIN32__ or defined __MINGW__
- #include <xdr_api_mingw.h>
-#endif
+// #include <rpc/types.h>
+// #include <rpc/xdr.h>
+// #if defined __WIN32__ or defined __MINGW__
+//  #include <xdr_api_mingw.h>
+// #endif
 #include "percolator_in.hxx"
 using namespace std;
 

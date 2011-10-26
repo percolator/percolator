@@ -1,5 +1,7 @@
+#ifndef __XDR_API_MINGW_HEADER__
+#define __XDR_API_MINGW_HEADER__
 /*
- * These are the "generic" xdr routines.
+ * These are the "generic" xdr routines for Sun.
  */
 extern bool_t xdr_void (void);
 extern bool_t xdr_short (XDR *__xdrs, short *__sp);
@@ -38,6 +40,8 @@ extern bool_t xdr_reference (XDR *__xdrs, caddr_t *__xpp, u_int __size,xdrproc_t
 extern bool_t xdr_pointer (XDR *__xdrs, char **__objpp,u_int __obj_size, xdrproc_t __xdr_obj);
 extern bool_t xdr_wrapstring (XDR *__xdrs, char **__cpp);
 extern u_long xdr_sizeof (xdrproc_t, void *);
+
+#endif
 
 extern bool_t xdrrec_endofrecord (XDR *__xdrs, bool_t __sendnow);
 extern bool_t xdrrec_skiprecord (XDR *__xdrs);

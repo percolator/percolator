@@ -33,11 +33,11 @@
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
-#include <rpc/types.h>
-#include <rpc/xdr.h>
-#if defined __WIN32__ or defined __MINGW__
- #include <xdr_api_mingw.h>
-#endif
+// #include <rpc/types.h>
+// #include <rpc/xdr.h>
+// #if defined __WIN32__ or defined __MINGW__
+//  #include <xdr_api_mingw.h>
+// #endif
 #include "percolator_out.hxx"
 
 class SetHandler;

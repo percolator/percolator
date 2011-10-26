@@ -17,11 +17,11 @@
 
 #include "parser.hxx"
 #include "config.h"
-#include <rpc/types.h>
-#include <rpc/xdr.h>
-#if defined __WIN32
- #include <xdr_api_mingw.h>
-#endif
+// #include <rpc/types.h>
+// #include <rpc/xdr.h>
+// #if defined __WIN32
+//  #include <xdr_api_mingw.h>
+// #endif
 #include "percolator_in.hxx"
 
 using namespace std;
