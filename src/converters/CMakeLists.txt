@@ -171,7 +171,7 @@ else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
-
+link_directories(${XERCESC_INCLUDE_DIR})
 # if(WIN32)
 #   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
 # elseif(${TARGET_ARCH} MATCHES "amd64")
@@ -187,6 +187,7 @@ else(XSD_FOUND)
   message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
+link_directories(${XSD_INCLUDE_DIR})
 
 find_package(Boost 1.36.0 REQUIRED)
 if(Boost_FOUND)
@@ -272,7 +273,7 @@ endif()
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
-link_directories(${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/converters ${PERCOLATOR_SOURCE_DIR}/src/converters/MSToolkit)
+link_directories(${PERCOLATOR_SOURCE_DIR}/src )
 
 add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp ../fido/Set.cpp ../fido/)
 
