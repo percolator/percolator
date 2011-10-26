@@ -12,7 +12,7 @@
 // #include <ace/CDR_Stream.h>
 #include <rpc/types.h>
 #include <rpc/xdr.h>
-#if defined __MINGW__
+#if defined __WIN32
  #include <xdr_api_mingw.h>
 #endif
 #include <map>
