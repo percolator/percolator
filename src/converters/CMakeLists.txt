@@ -171,7 +171,6 @@ else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
-link_directories(${XERCESC_INCLUDE_DIR})
 # if(WIN32)
 #   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
 # elseif(${TARGET_ARCH} MATCHES "amd64")
@@ -187,7 +186,6 @@ else(XSD_FOUND)
   message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
-link_directories(${XSD_INCLUDE_DIR})
 
 find_package(Boost 1.36.0 REQUIRED)
 if(Boost_FOUND)
@@ -201,6 +199,20 @@ link_directories(${Boost_INCLUDE_DIRS})
 
 if(STATIC AND MINGW)
   #Look for precompiled Windows libraries 
+  find_library(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
+     /usr/i686-pc-mingw32/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/sys-root/mingw/lib/
+     /usr/i586-mingw32msvc/lib/
+     /usr/i686-pc-mingw32/lib/
+     C:/MinGW/lib/
+     /mingw/lib   
+  )
+  message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
+  set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )
+  if(NOT PTHREAD_STATIC_LIBRARY)
+    message(FATAL_ERROR "could not find the static library libpthread")
+  endif() 
+
   find_library(PORTABLEXDR_STATIC_LIBRARY NAMES libportablexdr.a libportablexdr.dll.a libportablexdr.la HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
@@ -287,7 +299,7 @@ IF(STATIC AND MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
-target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES})
+target_link_libraries(mzidentml2pin converters perclibrary_part -L${XERCESC_LIBRARIES} -L${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
@@ -296,7 +308,7 @@ IF(STATIC AND MINGW)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
-target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} )
+target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP -L${XERCESC_LIBRARIES} -L${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
 
 
 
