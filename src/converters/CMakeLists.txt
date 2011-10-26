@@ -123,14 +123,14 @@ MESSAGE( STATUS "Checking packages:" )
 
 if(MINGW OR WIN32)
     #Look for precompiled Windows libraries 
-  find_library(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.a libtokyocabinet.dll.a HINTS
+  find_library(TOKYOCABINET_STATIC_LIBRARY NAMES TokyoCabinet.lib libtokyocabinet.a libtokyocabinet.dll.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/sys-root/mingw/lib/
      /usr/i586-mingw32msvc/lib/
      /usr/i686-pc-mingw32/lib/
      /mingw/lib/
-     ${PROJECT_SOURCE_DIR}/libs/dll/
-     ${PROJECT_SOURCE_DIR}/libs/dll/lib
+     ${PROJECT_SOURCE_DIR}/libs/lib
+     ${PROJECT_SOURCE_DIR}/libs/dll
   )
   message(STATUS "TOKYOCABINET_STATIC_LIBRARY=${TOKYOCABINET_STATIC_LIBRARY}")
   set( TOKYOCABINET_LIBRARIES ${TOKYOCABINET_STATIC_LIBRARY} )
