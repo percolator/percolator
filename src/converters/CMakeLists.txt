@@ -283,6 +283,14 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
+
+ADD_LIBRARY(xerces-c STATIC IMPORTED)
+SET_TARGET_PROPERTIES(xerces-c PROPERTIES IMPORTED_LOCATION
+   ${XERCESC_LIBRARIES})
+ADD_LIBRARY(portablexdr STATIC IMPORTED)
+SET_TARGET_PROPERTIES(portablexdr PROPERTIES IMPORTED_LOCATION
+   ${PORTABLEXDR_LIBRARIES})
+
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src )
@@ -299,7 +307,7 @@ IF(STATIC AND MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
-target_link_libraries(mzidentml2pin converters perclibrary_part -L${XERCESC_LIBRARIES} -L${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
+target_link_libraries(mzidentml2pin converters perclibrary_part xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
@@ -308,7 +316,7 @@ IF(STATIC AND MINGW)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
-target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP -L${XERCESC_LIBRARIES} -L${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
+target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
 
 
 
