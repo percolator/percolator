@@ -16,6 +16,9 @@ endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
 project(PERCOLATOR-CONVERTERS)
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
+# INCLUDE HEADER FILES IN SRC DIRECTORY
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 # PRINT VARIBALES
 MESSAGE( STATUS )
 MESSAGE( STATUS
@@ -195,6 +198,7 @@ else(Boost_FOUND)
   message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_INCLUDE_DIRS})
 
 
 if(STATIC AND MINGW)
