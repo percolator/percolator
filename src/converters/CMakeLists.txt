@@ -50,6 +50,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+
 IF(APPLE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
@@ -73,7 +74,7 @@ ELSEIF(UNIX)
 ENDIF(WIN32)
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
-if(STATIC AND MINGW) # windows
+if(MINGW OR WIN32) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
   set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}\\\\")
@@ -197,7 +198,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
 
-if(STATIC AND MINGW)
+if(MINGW)
   #Look for precompiled Windows libraries 
   find_library(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
      /usr/i686-pc-mingw32/sys-root/mingw/lib/
@@ -212,20 +213,13 @@ if(STATIC AND MINGW)
   if(NOT PTHREAD_STATIC_LIBRARY)
     message(FATAL_ERROR "could not find the static library libpthread")
   endif() 
-
-  find_library(PORTABLEXDR_STATIC_LIBRARY NAMES libportablexdr.a libportablexdr.dll.a libportablexdr.la HINTS
-     /usr/i686-pc-mingw32/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/lib/
-     /usr/i686-pc-mingw32/lib/
-     C:/MinGW/lib/
-     /mingw/lib   
-  )
-  message(STATUS "PORTABLEXDR_STATIC_LIBRARY=${PORTABLEXDR_STATIC_LIBRARY}")
-  set( PORTABLEXDR_LIBRARIES ${PORTABLEXDR_STATIC_LIBRARY} )
-  if(NOT PORTABLEXDR_LIBRARIES)
-    message(FATAL_ERROR "could not find the static library portableXdr")
-  endif() 
+  
+  find_package(XDR)
+  if(XDR_FOUND)
+    message(STATUS : "XDR found")
+  else(XDR_FOUND)
+    message(FATAL_ERROR "XDR not found")
+  endif()
 endif()
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
@@ -284,12 +278,10 @@ if(MINGW)
 endif()
 
 
-ADD_LIBRARY(xerces-c STATIC IMPORTED)
-SET_TARGET_PROPERTIES(xerces-c PROPERTIES IMPORTED_LOCATION
-   ${XERCESC_LIBRARIES})
-ADD_LIBRARY(portablexdr STATIC IMPORTED)
-SET_TARGET_PROPERTIES(portablexdr PROPERTIES IMPORTED_LOCATION
-   ${PORTABLEXDR_LIBRARIES})
+# add_library(xerces-c STATIC IMPORTED)
+# target_link_libraries(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
+# add_library(portablexdr STATIC IMPORTED)
+# target_link_libraries(portablexdr PROPERTIES IMPORTED_LOCATION "${PORTABLEXDR_LIBRARIES}")
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
@@ -303,20 +295,20 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-IF(STATIC AND MINGW)
-  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-ENDIF()
-target_link_libraries(mzidentml2pin converters perclibrary_part xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
+# IF(STATIC AND MINGW)
+#   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+#   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+# ENDIF()
+target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-IF(STATIC AND MINGW)
-  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-ENDIF()
-target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
+# IF(STATIC AND MINGW)
+#   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+#   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+# ENDIF()
+target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
 
 
 
