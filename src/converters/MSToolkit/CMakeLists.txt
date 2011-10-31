@@ -21,19 +21,10 @@ else(ZLIB_FOUND)
 endif(ZLIB_FOUND)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
-# add_library(sqlite3 STATIC IMPORTED)
-# set_target_properties(sqlite3 PROPERTIES IMPORTED_LOCATION "${SQLITE3_LIBRARIES}")
-# add_library(z STATIC IMPORTED)
-# set_target_properties(z PROPERTIES IMPORTED_LOCATION "${ZLIB_LIBRARIES}")
-
-
 add_subdirectory(RAMP)
 
 file(GLOB MSTOOLKIT_SOURCES *.cpp)
 include_directories(RAMP)
 add_library (MSToolkit STATIC  ${MSTOOLKIT_SOURCES})
-# IF(MINGW)
-#   set_property(TARGET MSToolkit PROPERTY LINK_SEARCH_END_STATIC ON)
-#   set_target_properties(MSToolkit PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-# ENDIF()
+
 target_link_libraries(MSToolkit ${ZLIB_LIBRARIES} ${SQLITE3_LIBRARIES} RAMP)

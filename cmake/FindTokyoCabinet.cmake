@@ -83,10 +83,31 @@ ELSE (_TokyoCabinet_IN_CACHE)
   
     IF (TokyoCabinet_ROOT_DIR)
       FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h "${TokyoCabinet_ROOT_DIR}/include")
-      FIND_LIBRARY(TokyoCabinet_LIBRARY tokyocabinet "${TokyoCabinet_ROOT_DIR}/lib")
+      FIND_LIBRARY(TokyoCabinet_LIBRARY tokyocabinet TokyoCabinet.lib libtokyocabinet.a libtokyocabinet.dll.a "${TokyoCabinet_ROOT_DIR}/lib")
     ELSE (TokyoCabinet_ROOT_DIR)
-      FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h)
-      FIND_LIBRARY(TokyoCabinet_LIBRARY tokyocabinet)
+      FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h HINTS
+		/usr/i686-pc-mingw32/sys-root/mingw/include/
+		/usr/i586-mingw32msvc/sys-root/mingw/include/
+		/usr/i586-mingw32msvc/include/
+		/usr/i686-pc-mingw32/include/
+		/mingw/include/
+		C:/MinGW/include
+		${PROJECT_SOURCE_DIR}/libs/TokyoCabinet/
+		${PROJECT_SOURCE_DIR}/libs/include/
+		/usr/include
+		/usr/local/include)
+
+      FIND_LIBRARY(TokyoCabinet_LIBRARY tokyocabinet TokyoCabinet.lib libtokyocabinet.a libtokyocabinet.dll.a HINTS
+		      /usr/i686-pc-mingw32/sys-root/mingw/lib/
+		      /usr/i586-mingw32msvc/sys-root/mingw/lib/
+		      /usr/i586-mingw32msvc/lib/
+		      /usr/i686-pc-mingw32/lib/
+		      /mingw/lib/
+		      C:/MinGW/lib
+	              ${PROJECT_SOURCE_DIR}/libs/lib
+		      ${PROJECT_SOURCE_DIR}/libs/dll
+		      /usr/lib
+		      /usr/local/lib)
     ENDIF (TokyoCabinet_ROOT_DIR)
 
     INCLUDE(FindPackageHandleStandardArgs)
@@ -94,7 +115,6 @@ ELSE (_TokyoCabinet_IN_CACHE)
     SET(TokyoCabinet_FOUND "${TOKYOCABINET_FOUND}")
 
     IF(TokyoCabinet_FOUND)
-      #SET(TokyoCabinet_LIBRARIES "${TokyoCabinet_LIBRARY} -lz -lbz2 -lrt -lpthread -lm -lc")
       SET(TokyoCabinet_LIBRARIES "${TokyoCabinet_LIBRARY}")
       SET(TokyoCabinet_INCLUDE_DIRS ${TokyoCabinet_INCLUDE_DIR})
       FIND_FILE(TokyoCabinet_TCUTIL_H tcbdb.h "${TokyoCabinet_INCLUDE_DIR}/log4cpp")
@@ -121,14 +141,6 @@ ELSE (_TokyoCabinet_IN_CACHE)
       SET(TokyoCabinet_FOUND FALSE)
     ENDIF (_cmp_result LESS 0)
   ENDIF (TokyoCabinet_FOUND AND TokyoCabinet_FIND_VERSION)
-
-#   IF (NOT TokyoCabinet_FOUND)
-#     IF (TokyoCabinet_FIND_REQUIRED)
-#       MESSAGE(FATAL_ERROR "${_details}")
-#     ELSEIF (NOT TokyoCabinet_FIND_QUIETLY)
-#       MESSAGE(STATUS "${_details}")
-#     ENDIF (TokyoCabinet_FIND_REQUIRED)
-#   ENDIF (NOT TokyoCabinet_FOUND)
 
 ENDIF (_TokyoCabinet_IN_CACHE)
 

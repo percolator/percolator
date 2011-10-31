@@ -63,15 +63,13 @@ endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
-if (UNIX)
-  find_library (PTHREAD_LIBRARIES pthread PATHS ${CMAKE_SOURCE_DIR}/lib /usr/lib /usr/local/lib)
-  if (NOT PTHREAD_LIBRARIES)
-    message (SEND_ERROR "PThread library not found")
-  else(NOT PTHREAD_LIBRARIES)
-    message( STATUS " Package PThread found")
-  endif (NOT PTHREAD_LIBRARIES)
-endif (UNIX)
-mark_as_advanced (PTHREAD_LIBRARIES)
+find_package(Pthreads)
+if(PTHREADS_FOUND)
+  message(STATUS : "Pthreads found")
+else(PTHREADS_FOUND)
+  message(FATAL_ERROR "Pthreads not found")
+endif()
+mark_as_advanced (PTHREADS_LIBRARY)
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -134,29 +132,14 @@ IF(STATIC)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
 ENDIF()
 
-if(STATIC AND MINGW)
-  #Look for precompiled Windows libraries 
-  find_library(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
-     /usr/i686-pc-mingw32/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/lib/
-     /usr/i686-pc-mingw32/lib/
-     C:/MinGW/lib/
-     /mingw/lib   
-  )
-  message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
-  set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )
-  if(NOT PTHREAD_STATIC_LIBRARY)
-    message(FATAL_ERROR "could not find the static library libpthread")
-  endif() 
-
+if(MINGW)
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES}  ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido ${PTHREADS_LIBRARY}  ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW)

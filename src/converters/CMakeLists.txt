@@ -122,48 +122,13 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 #FIND LIBRARIES
 MESSAGE( STATUS "Checking packages:" )
 
-if(MINGW OR WIN32)
-    #Look for precompiled Windows libraries 
-  find_library(TOKYOCABINET_STATIC_LIBRARY NAMES TokyoCabinet.lib libtokyocabinet.a libtokyocabinet.dll.a HINTS
-     /usr/i686-pc-mingw32/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/lib/
-     /usr/i686-pc-mingw32/lib/
-     /mingw/lib/
-     ${PROJECT_SOURCE_DIR}/libs/lib
-     ${PROJECT_SOURCE_DIR}/libs/dll
-  )
-  message(STATUS "TOKYOCABINET_STATIC_LIBRARY=${TOKYOCABINET_STATIC_LIBRARY}")
-  set( TOKYOCABINET_LIBRARIES ${TOKYOCABINET_STATIC_LIBRARY} )
-  if(NOT TOKYOCABINET_LIBRARIES)
-    message(FATAL_ERROR "could not find the static library tokyo cabinet")
-  endif() 
-
-  find_path(TOKYOCABINET_DIRECTORY_LIBRARY NAMES tcbdb.h HINTS
-     /usr/i686-pc-mingw32/sys-root/mingw/include/
-     /usr/i586-mingw32msvc/sys-root/mingw/include/
-     /usr/i586-mingw32msvc/include/
-     /usr/i686-pc-mingw32/include/
-     /mingw/include/
-     ${PROJECT_SOURCE_DIR}/libs/TokyoCabinet/
-     ${PROJECT_SOURCE_DIR}/libs/include/
-  )
-  message(STATUS "TOKYOCABINET_DIRECTORY_LIBRARY=${TOKYOCABINET_DIRECTORY_LIBRARY}")
-  set( TokyoCabinet_INCLUDE_DIR ${TOKYOCABINET_DIRECTORY_LIBRARY} )
-  if(NOT TokyoCabinet_INCLUDE_DIR)
-    message(FATAL_ERROR "could not find the include dir of tokyo cabinet")
-  endif() 
-  include_directories(${TokyoCabinet_INCLUDE_DIR})
-
-else(MINGW OR WIN32)
-  find_package(TokyoCabinet REQUIRED)
-  if(TOKYOCABINET_FOUND)
-    message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
-  else(TOKYOCABINET_FOUND)
-    message(FATAL_ERROR "The package Tokyo Cabinet has not been found, you can download it and install it from : http://fallabs.com/tokyocabinet/ Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libtokyocabinet1")
-  endif(TOKYOCABINET_FOUND)
-  include_directories(${TokyoCabinet_INCLUDE_DIR})
-endif()
+find_package(TokyoCabinet REQUIRED)
+if(TOKYOCABINET_FOUND)
+  message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
+else(TOKYOCABINET_FOUND)
+  message(FATAL_ERROR "The package Tokyo Cabinet has not been found, you can download it and install it from : http://fallabs.com/tokyocabinet/ Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libtokyocabinet1")
+endif(TOKYOCABINET_FOUND)
+include_directories(${TokyoCabinet_INCLUDE_DIR})
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
@@ -172,6 +137,7 @@ else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
+
 # if(WIN32)
 #   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
 # elseif(${TARGET_ARCH} MATCHES "amd64")
@@ -197,30 +163,20 @@ endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
-
-if(MINGW)
-  #Look for precompiled Windows libraries 
-  find_library(PTHREAD_STATIC_LIBRARY NAMES libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a HINTS
-     /usr/i686-pc-mingw32/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/sys-root/mingw/lib/
-     /usr/i586-mingw32msvc/lib/
-     /usr/i686-pc-mingw32/lib/
-     C:/MinGW/lib/
-     /mingw/lib   
-  )
-  message(STATUS "PTHREAD_STATIC_LIBRARY=${PTHREAD_STATIC_LIBRARY}")
-  set( PTHREAD_LIBRARIES ${PTHREAD_STATIC_LIBRARY} )
-  if(NOT PTHREAD_STATIC_LIBRARY)
-    message(FATAL_ERROR "could not find the static library libpthread")
-  endif() 
-  
-  find_package(XDR)
-  if(XDR_FOUND)
-    message(STATUS : "XDR found")
-  else(XDR_FOUND)
-    message(FATAL_ERROR "XDR not found")
-  endif()
+find_package(Pthreads)
+if(PTHREADS_FOUND)
+  message(STATUS : "Pthreads found")
+else(PTHREADS_FOUND)
+  message(FATAL_ERROR "Pthreads not found")
 endif()
+
+find_package(XDR)
+if(XDR_FOUND)
+  message(STATUS : "XDR found")
+else(XDR_FOUND)
+  message(FATAL_ERROR "XDR not found")
+endif()
+
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
 ###############################################################################
@@ -299,7 +255,7 @@ add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
 #   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
 #   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 # ENDIF()
-target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
+target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARY})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
@@ -308,7 +264,7 @@ add_executable(sqt2pin Sqt2Pin.cpp )
 #   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
 #   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 # ENDIF()
-target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
+target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARY} )
 
 
 
