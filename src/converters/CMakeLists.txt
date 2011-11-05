@@ -61,17 +61,6 @@ IF(APPLE)
   set(LINK_FLAGS "-mmacosx-version-min=10.5")
 ENDIF(APPLE)
 
-IF(WIN32) 
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-    SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib") 
-    SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/lib/include ${CMAKE_SOURCE_DIR}/lib/include/log4cxx)
-    SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
-ELSEIF(UNIX)
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".la" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-    SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
-    SET(CMAKE_INCLUDE_PATH /usr/include ${CMAKE_INCLUDE_PATH})
-    SET(CMAKE_LIBRARY_PATH /usr/lib /usr/lib64 ${CMAKE_LIBRARY_PATH})
-ENDIF(WIN32)
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(MINGW OR WIN32) # windows
@@ -90,17 +79,17 @@ set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINO
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
 
-#TODO: is there a way to do this recursively insteadof doing it twice?
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_SOURCE_DIR}/../*.cmake )
 foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
-file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
+
+file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter/*.cmake )
 foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/cmake/windows_converter/${myReplFile} @ONLY)
 endforeach()
 
 
@@ -229,7 +218,7 @@ endforeach()
 # NSIS package options
 # Requires NSIS for creating the package
 if(MINGW) 
-  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi.converter" DEPENDS sqt2pin mzidentml2pin) 
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter/script.nsi" DEPENDS sqt2pin mzidentml2pin) 
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
@@ -240,6 +229,8 @@ endif()
 # target_link_libraries(portablexdr PROPERTIES IMPORTED_LOCATION "${PORTABLEXDR_LIBRARIES}")
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
+# include and link code from percolator
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src )
 
