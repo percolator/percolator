@@ -51,7 +51,7 @@ else() # linux
 endif()
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
-if(STATIC AND MINGW) # windows
+if(MINGW OR WIN32) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
 else() # linux

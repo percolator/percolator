@@ -44,12 +44,12 @@ set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 
-set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_C_FLAGS "-O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_C_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
+set(CMAKE_C_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused-result -Wno-overflow")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -Wno-unused-result -Wno-overflow")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wno-unused-result -Wno-overflow")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wno-unused-result -Wno-overflow")
 
 IF(APPLE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
@@ -159,13 +159,14 @@ else(PTHREADS_FOUND)
   message(FATAL_ERROR "Pthreads not found")
 endif()
 
-find_package(XDR)
-if(XDR_FOUND)
-  message(STATUS : "XDR found")
-else(XDR_FOUND)
-  message(FATAL_ERROR "XDR not found")
+if(MINGW)
+  find_package(XDR)
+  if(XDR_FOUND)
+    message(STATUS : "XDR found")
+  else(XDR_FOUND)
+    message(FATAL_ERROR "XDR not found")
+  endif()
 endif()
-
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
 ###############################################################################
@@ -223,6 +224,7 @@ if(MINGW)
 endif()
 
 
+
 # add_library(xerces-c STATIC IMPORTED)
 # target_link_libraries(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
 # add_library(portablexdr STATIC IMPORTED)
@@ -246,7 +248,7 @@ add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
 #   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
 #   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 # ENDIF()
-target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARY})
+target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
@@ -255,7 +257,7 @@ add_executable(sqt2pin Sqt2Pin.cpp )
 #   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
 #   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 # ENDIF()
-target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARY} )
+target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
 
 
 

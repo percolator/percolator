@@ -54,7 +54,13 @@ ENDIF(NOT DEFINED PTHREADS_EXCEPTION_SCHEME)
 #
 # Find the header file
 #
-FIND_PATH(PTHREADS_INCLUDE_DIR pthread.h)
+FIND_PATH(PTHREADS_INCLUDE_DIR
+          NAMES pthread.h
+	  HINTS
+	  /usr/include
+	  /usr/local/include
+	  $ENV{PTHREAD_INCLUDE_PATH}
+	  )
 
 #
 # Find the library
@@ -76,14 +82,16 @@ ELSE(MSVC) # Unix / Cygwin / Apple / Etc.
 	SET(names pthread)
 ENDIF(MSVC)
 	
-FIND_LIBRARY(PTHREADS_LIBRARY ${names}
+FIND_LIBRARY(PTHREADS_LIBRARY NAMES ${names}
 	DOC "The Portable Threads Library"
-	HINTS
-	/usr/lib64
+	PATHS
+	${CMAKE_SOURCE_DIR}/lib
 	/usr/lib
 	/usr/local/lib
 	/lib
 	/lib64
+        /usr/lib64
+        /usr/local/lib64
 	$ENV{PTHREAD_LIBRARY_PATH}
 	/usr/i686-pc-mingw32/sys-root/mingw/lib/
 	/usr/i586-mingw32msvc/sys-root/mingw/lib/

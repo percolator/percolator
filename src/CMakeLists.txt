@@ -2,12 +2,12 @@
 # SET COMPILER OPTIONS
 ###############################################################################
 
-set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_C_FLAGS "-O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_C_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS "-O3 -pthread")
+set(CMAKE_C_FLAGS "-O3 -pthread")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -pthread")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -pthread")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pthread")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -pthread")
 IF(APPLE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
@@ -63,20 +63,20 @@ endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
+
 find_package(Pthreads)
 if(PTHREADS_FOUND)
-  message(STATUS : "Pthreads found")
+  message(STATUS  "Pthreads found")
 else(PTHREADS_FOUND)
   message(FATAL_ERROR "Pthreads not found")
 endif()
-mark_as_advanced (PTHREADS_LIBRARY)
 
 ###############################################################################
 # RUN CODESYNTHESIS
 ###############################################################################
 
 if(MINGW)
-  set( xdr_flags  "" )
+  set( xdr_flags --generate-insertion XDR --generate-extraction XDR )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
@@ -139,7 +139,7 @@ endif()
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${PTHREADS_LIBRARY}  ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW)
