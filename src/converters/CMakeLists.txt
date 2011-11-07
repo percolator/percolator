@@ -247,7 +247,7 @@ endif()
 add_library(xerces-c STATIC IMPORTED)
 set_target_properties(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
 add_library(portablexdr STATIC IMPORTED)
-set_target_properties(portablexdr PROPERTIES IMPORTED_LOCATION "${PORTABLEXDR_LIBRARIES}")
+set_target_properties(portablexdr PROPERTIES IMPORTED_LOCATION "${XDR_LIBRARIES}")
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator
 
