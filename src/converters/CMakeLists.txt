@@ -166,6 +166,27 @@ if(MINGW)
   else(XDR_FOUND)
     message(FATAL_ERROR "XDR not found")
   endif()
+
+  find_package(Glob)
+  if(GLOB_FOUND)
+    message(STATUS : "Glob found")
+  else(GLOB_FOUND)
+    message(FATAL_ERROR "Glob not found")
+  endif()
+
+  find_package(BZip2)
+  if(BZIP2_FOUND)
+    message(STATUS : "Bzip2 found")
+  else(BZIP2_FOUND)
+    message(FATAL_ERROR "Bzip2 not found")
+  endif()
+
+  find_package(Regex)
+  if(REGEX_FOUND)
+    message(STATUS : "Regex found")
+  else(REGEX_FOUND)
+    message(FATAL_ERROR "Regex not found")
+  endif()
 endif()
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
@@ -223,13 +244,6 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
-
-
-# add_library(xerces-c STATIC IMPORTED)
-# target_link_libraries(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
-# add_library(portablexdr STATIC IMPORTED)
-# target_link_libraries(portablexdr PROPERTIES IMPORTED_LOCATION "${PORTABLEXDR_LIBRARIES}")
-
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator
 
@@ -244,20 +258,12 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-# IF(STATIC AND MINGW)
-#   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-#   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-# ENDIF()
-target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES})
+target_link_libraries(mzidentml2pin -L{MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${PTHREAD_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-# IF(STATIC AND MINGW)
-#   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-#   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
-# ENDIF()
-target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREAD_LIBRARIES} )
+target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PORTABLEXDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${PTHREAD_LIBRARIES} )
 
 
 

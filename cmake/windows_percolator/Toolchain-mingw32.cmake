@@ -18,6 +18,8 @@ else(NOT MINGWV)
   SET(Boost_COMPILER "-mgw")
 endif(NOT MINGWV)
 
+SET(MINGWLIB "${MING_PATH}/lib")
+
 # IF (MSVC)
 #   SET (BOOST_LIB_PREFIX "lib")
 #   SET (BOOST_COMPILER "-vc80") #default for windows compilation

@@ -62,7 +62,7 @@ IF (TokyoCabinet_INCLUDE_DIR)
     ENDIF (NOT TokyoCabinet_TCUTIL_H STREQUAL TokyoCabinet_TCUTIL_H-NOTFOUND)
   ENDIF (NOT TokyoCabinet_VERSION)
 
-  INCLUDE(MacroFindPackageCheckCacheVersion)
+#   INCLUDE(MacroFindPackageCheckCacheVersion)
   MACRO_FIND_PACKAGE_CHECK_CACHE_VERSION(_TokyoCabinet_IN_CACHE TokyoCabinet)
   IF(NOT _TokyoCabinet_IN_CACHE)
     SET(TokyoCabinet_INCLUDE_DIR) # remove it
