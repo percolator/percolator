@@ -321,10 +321,8 @@ int Sqt2Pin::run() {
   int maxCharge = -1;
   int minCharge = 10000;
 
-  if(VERB>1){
-    cerr << "Reading input from sqt file(s):\n";
-  }
-
+  std::cerr << "Reading input from sqt file(s):\n";
+ 
   vector<FragSpectrumScanDatabase*> databases;
 
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
@@ -397,10 +395,7 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Initialize ();
 
-  if(VERB>1){
-    cerr << "\nWriting output:\n";
-  }
-
+  cerr << "\nWriting output:\n";
   // print to cout (or populate xml file)
   // print features
   {
@@ -433,9 +428,8 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Terminate();
 
-  if(VERB>1){
-    cerr << "\nAll the input files have been successfully processed"<< endl;
-  }
+  cerr << "\nAll the input files have been successfully processed"<< endl;
+
   return 0;
 }
 
