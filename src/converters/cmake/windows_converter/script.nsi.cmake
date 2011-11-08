@@ -266,7 +266,7 @@ Section "MainSection" SEC01
    File "${MING_BIN}\zlib1.dll"
    File "${MING_BIN}\pthreadGC2.dll"
    File "${MING_BIN}\glob.dll"
-   File "${MING_BIN}\bz2-1.dll"
+   File "${MING_BIN}\libbz2-2.dll"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"
