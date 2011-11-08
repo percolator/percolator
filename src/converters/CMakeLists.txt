@@ -147,28 +147,28 @@ endif()
 if(MINGW)
   find_package(XDR)
   if(XDR_FOUND)
-    message(STATUS : "XDR found")
+    message(STATUS  "XDR found")
   else(XDR_FOUND)
     message(FATAL_ERROR "The package XDR has not been found")
   endif()
 
   find_package(Glob)
   if(GLOB_FOUND)
-    message(STATUS : "Glob found")
+    message(STATUS  "Glob found")
   else(GLOB_FOUND)
     message(FATAL_ERROR "The package Glob has not been not found")
   endif()
 
   find_package(BZip2)
   if(BZIP2_FOUND)
-    message(STATUS : "Bzip2 found")
+    message(STATUS  "Bzip2 found")
   else(BZIP2_FOUND)
     message(FATAL_ERROR "The package Bzip2 has not been found")
   endif()
 
   find_package(Regex)
   if(REGEX_FOUND)
-    message(STATUS : "Regex found")
+    message(STATUS  "Regex found")
   else(REGEX_FOUND)
     message(FATAL_ERROR " The package Regex has not been found")
   endif()
@@ -244,11 +244,6 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
-IF(MINGW)
-  set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(elude PROPERTIES LINK_FLAGS "-static-libgcc -mingw32 -lpsapi")
-ENDIF()
-
 ##probably not necessary, need to set MINGWLIB accordingly and add the linker directory
 add_library(xerces-c STATIC IMPORTED)
 set_target_properties(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
@@ -277,7 +272,12 @@ include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
 target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES} )
 
-
+IF(MINGW)
+  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc -mingw32 -lpsapi")
+  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc -mingw32 -lpsapi")
+ENDIF()
 
 ###############################################################################
 # TESTING
