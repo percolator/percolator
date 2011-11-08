@@ -270,9 +270,9 @@ target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolki
 
 IF(MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc -lmingw32 -lpsapi")
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc -lpsapi")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc -lmingw32 -lpsapi")
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc -lpsapi")
 ENDIF()
 
 ###############################################################################
