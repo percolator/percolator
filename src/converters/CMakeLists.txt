@@ -1,19 +1,9 @@
-#TODO: 
-# _CONSIDER PUTTING COMMON ROUTINES IN A SEPARATE FILE (EG: VERSIONING, .H.CMAKE FILE RECURSIVE SUBSTITUTION, USEFUL MACRO, RUN CODESYNTHESIS)...
-# UPDATE README FILE AND RELEASE INSTRUCTIONS
-
 ###############################################################################
 # NAME AND VERSION
 ###############################################################################
-cmake_minimum_required (VERSION 2.4)
-# We still (try to) support cmake 2.4, but cmake 2.8 policies also work:
-if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
-    cmake_policy(VERSION 2.8)
-elseif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.4)
-    cmake_policy(VERSION 2.6)
-endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
-
+cmake_minimum_required (VERSION 2.8)
 project(PERCOLATOR-CONVERTERS)
+
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 # PRINT VARIBALES
@@ -94,9 +84,9 @@ endforeach()
 
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
-if(MINGW)
+if(MINGW OR WIN32)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
-else(MINGW)
+else(MINGW OR WIN32)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
 
@@ -115,7 +105,7 @@ find_package(TokyoCabinet REQUIRED)
 if(TOKYOCABINET_FOUND)
   message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
 else(TOKYOCABINET_FOUND)
-  message(FATAL_ERROR "The package Tokyo Cabinet has not been found, you can download it and install it from : http://fallabs.com/tokyocabinet/ Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libtokyocabinet1")
+  message(FATAL_ERROR "The package Tokyo Cabinet has not been found")
 endif(TOKYOCABINET_FOUND)
 include_directories(${TokyoCabinet_INCLUDE_DIR})
 
@@ -123,31 +113,26 @@ find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
   message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
 else(XERCESC_FOUND)
-  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
+  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
-# if(WIN32)
-#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
-# elseif(${TARGET_ARCH} MATCHES "amd64")
-#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-x86_64-linux-gnu")  
-# else(${TARGET_ARCH} MATCHES "amd64")
-#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
-# endif()
 
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
 else(XSD_FOUND)
-  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx")
+  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
+SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
+			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
 find_package(Boost 1.36.0 REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
-  message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
+  message(FATAL_ERROR "The package Boost has not been found")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
@@ -156,7 +141,7 @@ find_package(Pthreads)
 if(PTHREADS_FOUND)
   message(STATUS : "Pthreads found")
 else(PTHREADS_FOUND)
-  message(FATAL_ERROR "Pthreads not found")
+  message(FATAL_ERROR "The package Pthreads has not been not found")
 endif()
 
 if(MINGW)
@@ -164,29 +149,44 @@ if(MINGW)
   if(XDR_FOUND)
     message(STATUS : "XDR found")
   else(XDR_FOUND)
-    message(FATAL_ERROR "XDR not found")
+    message(FATAL_ERROR "The package XDR has not been found")
   endif()
 
   find_package(Glob)
   if(GLOB_FOUND)
     message(STATUS : "Glob found")
   else(GLOB_FOUND)
-    message(FATAL_ERROR "Glob not found")
+    message(FATAL_ERROR "The package Glob has not been not found")
   endif()
 
   find_package(BZip2)
   if(BZIP2_FOUND)
     message(STATUS : "Bzip2 found")
   else(BZIP2_FOUND)
-    message(FATAL_ERROR "Bzip2 not found")
+    message(FATAL_ERROR "The package Bzip2 has not been found")
   endif()
 
   find_package(Regex)
   if(REGEX_FOUND)
     message(STATUS : "Regex found")
   else(REGEX_FOUND)
-    message(FATAL_ERROR "Regex not found")
+    message(FATAL_ERROR " The package Regex has not been found")
   endif()
+
+  find_package(ZLIB)
+    if(ZLIB_FOUND)
+    message(STATUS "Zlib found")
+  else(ZLIB_FOUND)
+    message(FATAL_ERROR "The package Zlib has not been found")
+  endif(ZLIB_FOUND)
+
+  find_package(Mman)
+    if(MMAN_FOUND)
+    message(STATUS "Mman found")
+  else(MMAN_FOUND)
+    message(FATAL_ERROR "The package Mman has not been found")
+  endif(MMAN_FOUND)
+
 endif()
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
@@ -244,10 +244,18 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
+IF(MINGW)
+  set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(elude PROPERTIES LINK_FLAGS "-static-libgcc -mingw32 -lpsapi")
+ENDIF()
+
+##probably not necessary, need to set MINGWLIB accordingly and add the linker directory
 add_library(xerces-c STATIC IMPORTED)
 set_target_properties(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
 add_library(portablexdr STATIC IMPORTED)
 set_target_properties(portablexdr PROPERTIES IMPORTED_LOCATION "${XDR_LIBRARIES}")
+set(MINGWLIB "/usr/i686-pc-mingw32/sys-root/mingw/lib")
+
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator
 
@@ -262,12 +270,12 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-target_link_libraries(mzidentml2pin -L{MINGWLIB} converters perclibrary_part xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${PTHREAD_LIBRARIES})
+target_link_libraries(mzidentml2pin -L{MINGWLIB} converters perclibrary_part xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${PTHREAD_LIBRARIES} )
+target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES} )
 
 
 
@@ -289,7 +297,7 @@ add_subdirectory(data/system_tests/converters)
 # INSTALLING
 ###############################################################################
 
-IF(NOT MINGW)
+IF(NOT MINGW AND NOT WIN32)
   install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
   install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
 endif()

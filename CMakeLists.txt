@@ -37,13 +37,7 @@ MESSAGE( STATUS )
 # NAME AND VERSION
 ###############################################################################
 
-cmake_minimum_required (VERSION 2.4)
-# We still (try to) support cmake 2.4, but cmake 2.8 policies also work:
-if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
-    cmake_policy(VERSION 2.8)
-elseif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.4)
-    cmake_policy(VERSION 2.6)
-endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
+cmake_minimum_required (VERSION 2.8)
 project(PERCOLATOR)
 
 # VERSION AND NAMESPACES
@@ -91,37 +85,14 @@ foreach(i ${configurefiles})
 endforeach()
 
 
-# set install directories
-if (WIN32 OR APPLE)
-    set (BUILD_BUNDLE ON FORCE)
-endif(WIN32 OR APPLE)
-
-if (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
-    set (BUNDLE_BASE_INSTALL_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_BUILD_TYPE})
-endif (NOT DEFINED BUNDLE_BASE_INSTALL_DIR)
-
-if (BUILD_BUNDLE)
-    set (BINDIR .)
-    set (CMAKE_INSTALL_PREFIX ${BUNDLE_BASE_INSTALL_DIR})
-endif (BUILD_BUNDLE)
-
-if (WIN32)
-    add_definitions (-DWIN32)
-    add_definitions (-D_WIN32)
-    if (MINGW)
-        add_definitions (-D__MINGW32__)
-    endif (MINGW)
-endif (WIN32)
-
-
 ###############################################################################
 # COMPILING
 ###############################################################################
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
-if(MINGW)
+if(MINGW OR WIN32)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
-else(MINGW)
+else(MINGW OR WIN32)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
  
@@ -158,8 +129,6 @@ endif()
 if(NOT MINGW)
   install(FILES src/xml/percolator_in.xsd DESTINATION ${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
   install(FILES src/xml/percolator_out.xsd DESTINATION ${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-# else
-#   install(FILES "mingwm10.dll" "libgcc_s_dw2-1.dll" DESTINATION "." COMPONENT mingw_runtime)
 endif()
 
 ###############################################################################

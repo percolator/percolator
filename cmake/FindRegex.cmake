@@ -1,11 +1,11 @@
 # - Try to find Regex
 # Once done this will define
 #
-#  REGEX_FOUND - system has BZip2
-#  REGEX_INCLUDE_DIR - the BZip2 include directory
-#  REGEX_LIBRARIES - Link these to use BZip2
-#  REGEX_DEFINITIONS - Compiler switches required for using BZip2
-#  REGEX_NEED_PREFIX - this is set if the functions are prefixed with BZ2_
+#  REGEX_FOUND - system has Regex
+#  REGEX_INCLUDE_DIR - the Regex include directory
+#  REGEX_LIBRARIES - Link these to use Regex
+#  REGEX_DEFINITIONS - Compiler switches required for using Regex
+#  REGEX_NEED_PREFIX - this is set if the functions are prefixed with Regex
 
 # Copyright (c) 2011, Jose Fernandez, jc.fernandez.navarro@gmail.com
 #

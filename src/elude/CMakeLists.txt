@@ -1,12 +1,5 @@
-cmake_minimum_required (VERSION 2.4)
-# We still (try to) support cmake 2.4, but cmake 2.8 policies also work:
-if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
-    cmake_policy(VERSION 2.8)
-elseif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.4)
-    cmake_policy(VERSION 2.6)
-endif("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.6)
-project(ELUDE)
-
+cmake_minimum_required (VERSION 2.8)
+project(PERCOLATOR_ELUDE)
 
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
@@ -39,7 +32,7 @@ set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
-if(STATIC AND MINGW) # windows
+if(MINGW OR WIN32) # windows
   set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\models\\\\")
   set(TEMP_DIR "%TEMP%\\\\")
@@ -58,6 +51,7 @@ else() # linux
   set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
 endif()
+
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 
@@ -83,7 +77,7 @@ find_package(Boost REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
-  message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
+  message(FATAL_ERROR "The package Boost has not been found")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
@@ -107,7 +101,7 @@ target_link_libraries(elude eludelibrary ${Boost_LIBRARIES})
 
 #TODO: HERE THERE SHOULD BE STUFF ABOUT LIBGCC
 
-IF(STATIC)
+IF(MINGW OR WIN32)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(elude PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
@@ -130,7 +124,7 @@ add_subdirectory(data/system_tests/)
 # CROSS COMPILING
 ###############################################################################
 
-#TODO: make sure this works with cpack
+#TODO: make sure the models are included in the windows installer
 if(NOT MINGW)
   install(TARGETS elude EXPORT ELUDE DESTINATION ./bin) # Important to use relative path here (used by CPack)!
   install(DIRECTORY data/elude/models DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
@@ -187,9 +181,10 @@ set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_elude/script.nsi" DEPENDS elude) 
-add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
-
+if(MINGW)
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_elude/script.nsi" DEPENDS elude) 
+  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
+endif()
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
 include(CPack)

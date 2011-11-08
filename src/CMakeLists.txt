@@ -31,24 +31,15 @@ find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
   message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
 else(XERCESC_FOUND)
-  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found, you can download it and install it from : http://xerces.apache.org/xerces-c/download.cgi Alternatively you can run this instruction to install it under debian based systems : sudo atp-get install libxerces-c-dev ")
+  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
-
-#In case we decide to store a copy of the xsd library in the source
-# if(WIN32)
-#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-windows")
-# elseif(${TARGET_ARCH} MATCHES "amd64")
-#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-x86_64-linux-gnu")  
-# elseif(${TARGET_ARCH} MATCHES "i386")
-#   set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libs/xsd-3.3.0-i686/xsd-3.3.0-i686-linux-gnu")  
-# endif()
 
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
 else(XSD_FOUND)
-  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found, you can download it and install it from : http://www.codesynthesis.com/products/xsd/download.xhtml .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install xsdcxx ")
+  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
   
@@ -58,7 +49,7 @@ find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
-  message(FATAL_ERROR "The package Boost has not been found, you can download it and install it from : http://www.boost.org/users/download/ .Alternatively you can run this instruction to install it under debian based systems : sudo apt-get install libboost-dev libboost-doc")
+  message(FATAL_ERROR "The package Boost has not been found")
 endif(Boost_FOUND)  
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
@@ -68,7 +59,7 @@ find_package(Pthreads)
 if(PTHREADS_FOUND)
   message(STATUS  "Pthreads found")
 else(PTHREADS_FOUND)
-  message(FATAL_ERROR "Pthreads not found")
+  message(FATAL_ERROR "The package Pthreads has not been found")
 endif()
 
 ###############################################################################
@@ -128,21 +119,21 @@ add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx seriali
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)
 
-IF(STATIC)
+IF(MINGW OR WIN32)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
 ENDIF()
 
-if(MINGW)
+if(MINGW OR WIN32)
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${PTHREAD_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
-IF(NOT MINGW)
+IF(NOT MINGW AND NOT WIN32)
   install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
 endif()
 

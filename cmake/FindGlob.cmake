@@ -1,11 +1,11 @@
 # - Try to find Glob
 # Once done this will define
 #
-#  GLOB_FOUND - system has BZip2
-#  GLOB_INCLUDE_DIR - the BZip2 include directory
-#  GLOB_LIBRARIES - Link these to use BZip2
-#  GLOB_DEFINITIONS - Compiler switches required for using BZip2
-#  GLOB_NEED_PREFIX - this is set if the functions are prefixed with BZ2_
+#  GLOB_FOUND - system has Glob
+#  GLOB_INCLUDE_DIR - the Glob include directory
+#  GLOB_LIBRARIES - Link these to use Glob
+#  GLOB_DEFINITIONS - Compiler switches required for using Glob
+#  GLOB_NEED_PREFIX - this is set if the functions are prefixed with Glob
 
 # Copyright (c) 2011, Jose Fernandez, jc.fernandez.navarro@gmail.com
 #
@@ -21,7 +21,7 @@ FIND_PATH(GLOB_INCLUDE_DIR glob.h )
 
 FIND_LIBRARY(GLOB_LIBRARIES NAMES glob libglob.dll.a libglob.a )
 
-# handle the QUIETLY and REQUIRED arguments and set REGEX_FOUND to TRUE if 
+# handle the QUIETLY and REQUIRED arguments and set GLOB_FOUND to TRUE if 
 # all listed variables are TRUE
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GLOB DEFAULT_MSG GLOB_LIBRARIES GLOB_INCLUDE_DIR)
