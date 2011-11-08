@@ -247,12 +247,9 @@ endforeach()
 # NSIS package options
 # Requires NSIS for creating the package
 if(MINGW) 
-  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter/script.nsi" DEPENDS sqt2pin mzidentml2pin) 
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_converter/script.nsi" DEPENDS sqt2pin mzidentml2pin) 
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
-
-##probably not necessary, need to set MINGWLIB accordingly and add the linker directory
-set(MINGWLIB "/usr/i686-pc-mingw32/sys-root/mingw/lib")
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator

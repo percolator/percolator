@@ -23,6 +23,8 @@ else(NOT MINGWV)
 endif(NOT MINGWV)
 
 SET (BOOST_LIB_PREFIX "lib")
+##probably not necessary, need to set MINGWLIB accordingly and add the linker directory
+set(MINGWLIB "${MING_PATH}/lib")
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static-libgcc")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -static-libgcc")
