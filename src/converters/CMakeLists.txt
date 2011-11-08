@@ -187,6 +187,13 @@ if(MINGW)
     message(FATAL_ERROR "The package Mman has not been found")
   endif(MMAN_FOUND)
 
+  find_package(PSapi)
+    if(PSAPI_FOUND)
+    message(STATUS "PSapi found")
+  else(PSAPI_FOUND)
+    message(FATAL_ERROR "The package PSapi has not been found")
+  endif(PSAPI_FOUND)
+
 endif()
 ###############################################################################
 # RUN CODESYNTHESIS AND GENGETOPT
@@ -261,18 +268,18 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-target_link_libraries(mzidentml2pin -L{MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES})
+target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${PTHREADS_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES} )
+target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${PTHREADS_LIBRARIES} )
 
 IF(MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc -lpsapi")
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc -lpsapi")
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc")
 ENDIF()
 
 ###############################################################################
