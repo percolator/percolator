@@ -261,8 +261,12 @@ Section "MainSection" SEC01
    File "${MING_BIN}\libstdc++-6.dll"
    File "${MING_BIN}\libxerces-c-3-0.dll"
    File "${MING_BIN}\libsqlite3-0.dll"
-   File "@PROJECT_SOURCE_DIR@/libs/dll/TokyoCabinet.dll"
-   File "@PROJECT_SOURCE_DIR@/libs/dll/libtokyocabinet.dll"
+   File "${MING_BIN}\libtokyocabinet.dll"
+   File "${MING_BIN}\libportablexdr-0.dll"
+   File "${MING_BIN}\libtokyocabinet.dll"
+   File "${MING_BIN}\libtokyocabinet.dll"
+   File "${MING_BIN}\libtokyocabinet.dll"
+   File "${MING_BIN}\libtokyocabinet.dll"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"
@@ -395,7 +399,7 @@ Function un.UnPageUserAppDataLeave
 FunctionEnd
 
 Section Uninstall
-   IfFileExists "$INSTDIR\Converters.exe" percolator_installed
+   IfFileExists "$INSTDIR\mzidentml2pin.exe" percolator_installed
       MessageBox MB_YESNO "It does not appear that Converters is installed in the directory '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" IDYES percolator_installed
       Abort "Uninstall aborted by user"
    percolator_installed:
@@ -420,14 +424,18 @@ Section Uninstall
 
    ;Desktop shortcut.
    !ifdef OPTION_SECTION_SC_DESKTOP
-      IfFileExists "$DESKTOP\Converters.lnk" 0 +2
-         Delete "$DESKTOP\Converters.lnk"
+      IfFileExists "$DESKTOP\mzidentml2pin.lnk" 0 +2
+         Delete "$DESKTOP\mzidentml2pin.lnk"
+      IfFileExists "$DESKTOP\Sqt2pin.lnk" 0 +2
+         Delete "$DESKTOP\Sqt2pin.lnk"
    !endif
 
    ;Quick Launch shortcut.
    !ifdef OPTION_SECTION_SC_QUICK_LAUNCH
-      IfFileExists "$QUICKLAUNCH\Converters.lnk" 0 +2
-         Delete "$QUICKLAUNCH\Converters.lnk"
+      IfFileExists "$QUICKLAUNCH\mzidentml2pin.lnk" 0 +2
+         Delete "$QUICKLAUNCH\mzidentml2pin.lnk"
+      IfFileExists "$QUICKLAUNCH\Sqt2pin.lnk" 0 +2
+         Delete "$QUICKLAUNCH\Sqt2pin.lnk"
    !endif
 
    ;Remove all the Program Files.

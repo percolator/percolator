@@ -261,8 +261,12 @@ Section "MainSection" SEC01
    File "${MING_BIN}\libstdc++-6.dll"
    File "${MING_BIN}\libxerces-c-3-0.dll"
    File "${MING_BIN}\libsqlite3-0.dll"
-   File "@PROJECT_SOURCE_DIR@/libs/dll/TokyoCabinet.dll"
-   File "@PROJECT_SOURCE_DIR@/libs/dll/libtokyocabinet.dll"
+   File "${MING_BIN}\libtokyocabinet.dll"
+   File "${MING_BIN}\libportablexdr-0.dll"
+   File "${MING_BIN}\zlib1.dll"
+   File "${MING_BIN}\pthreadGC2.dll"
+   File "${MING_BIN}\glob.dll"
+   File "${MING_BIN}\bz2-1.dll"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"
