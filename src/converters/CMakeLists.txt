@@ -245,10 +245,6 @@ if(MINGW)
 endif()
 
 ##probably not necessary, need to set MINGWLIB accordingly and add the linker directory
-add_library(xerces-c STATIC IMPORTED)
-set_target_properties(xerces-c PROPERTIES IMPORTED_LOCATION "${XERCESC_LIBRARIES}")
-add_library(portablexdr STATIC IMPORTED)
-set_target_properties(portablexdr PROPERTIES IMPORTED_LOCATION "${XDR_LIBRARIES}")
 set(MINGWLIB "/usr/i686-pc-mingw32/sys-root/mingw/lib")
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
@@ -265,18 +261,18 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-target_link_libraries(mzidentml2pin -L{MINGWLIB} converters perclibrary_part xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES})
+target_link_libraries(mzidentml2pin -L{MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES})
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP xerces-c portablexdr ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES} )
+target_link_libraries(sqt2pin -L{MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PTHREADS_LIBRARIES} )
 
 IF(MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc -mingw32 -lpsapi")
+  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc -lmingw32 -lpsapi")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc -mingw32 -lpsapi")
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc -lmingw32 -lpsapi")
 ENDIF()
 
 ###############################################################################
