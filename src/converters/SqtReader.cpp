@@ -7,12 +7,31 @@
 #include <io.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
+#define tmpnam(D) tmpnam_s( D, sizeof(D) );
 int mkstemp(char *tmpl)
 {
-int ret=-1;
-mktemp(tmpl);
-ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
-return ret;
+   int ret = -1;
+   char names[sizeof(tmpl)];
+   strcpy_s( names, sizeof(names), tmpl );
+   /* Get the size of the string and add one for the null terminator.*/
+   sizeInChars = strlen(names) + 1;
+   /* Attempt to find a unique filename: */
+   err = _mktemp_s( names, sizeInChars );
+   if( err != 0 ){
+       printf( "Problem creating the template" );
+   }
+   else
+   {
+       if( fopen_s( &fp, names[i], "w" ) == 0 ) {
+          printf( "Unique filename is %s\n", names );
+	  ret = 0;  
+       }
+       else{
+          printf( "Cannot open %s\n", names );
+       }
+       fclose( fp );
+   }
+   return ret;
 }
 #endif
 #include <boost/filesystem.hpp>
@@ -54,7 +73,12 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
-      char* pointerToDir = tmpnam(tcd);
+      char * pointerToDir;
+      #if defined (__MINGW__) || defined (__WIN32__)
+        tmpnam(pointerToDir);
+      #else
+	pointerToDir = tmpnam(tcd);
+      #endif()
       int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
       if(outcome == -1) {
         std::cerr << "sqt2pin could not create temporary directory to store " <<
@@ -67,6 +91,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       }
 
       string tcf = string(tcd) + "/percolator-tmp.tcb";*/
+    
       
       string tcf = "";
       string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
@@ -74,15 +99,15 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
       if(mkstemp(tcd) != -1){  
-      try{
-	boost::filesystem::remove_all(tcd);
-	boost::filesystem::create_directory(boost::filesystem::path(tcd));
-	tcf = string(tcd) + "/percolator-tmp.tcb";
-      }
-      catch (boost::filesystem::filesystem_error &e)
-      {
-	std::cerr << e.what() << std::endl;
-      }
+	try{
+	  boost::filesystem::remove_all(tcd);
+	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
+	  tcf = string(tcd) + "/percolator-tmp.tcb";
+	}
+	catch (boost::filesystem::filesystem_error &e)
+	{
+	  std::cerr << e.what() << std::endl;
+	}
       }
       else{
 	cerr << "Error: there was a problem creating temporary file.";
