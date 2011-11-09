@@ -6,20 +6,16 @@
 #include <direct.h>
 #include <io.h>
 #define  mkdir( D, M )   _mkdir( D )
-int mkstemp(char *templt) {
-    // Win32 does not have the mkstemp function; _mktemp is similar,
-    // but does not actually create the file.
-    if(_mktemp(templt))
-    {  // create the file:
-      FILE *f = fopen(templt, "w");
-      fclose(f);
-    }
-    else
-    {
-      return -1;
-    }
+#include <fcntl.h>
+int mkstemp(char *tmpl)
+{
+int ret=-1;
+mktemp(tmpl);
+ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
+return ret;
 }
 #endif
+#include <boost/filesystem.hpp>
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 std::string ambiguousAA("BZJX");
@@ -54,7 +50,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     if(databases.size()==lineNumber_par){
       // create temporary directory to store the pointer to the tokyo-cabinet
       // database
-      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
+     /* string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
@@ -70,12 +66,40 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	std::cerr << " Temp dir created correctly \n";
       }
 
-      string tcf = string(tcd) + "/percolator-tmp.tcb";
+      string tcf = string(tcd) + "/percolator-tmp.tcb";*/
+      
+      string tcf = "";
+      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
+      char * tcd = new char[str.size() + 1];
+      std::copy(str.begin(), str.end(), tcd);
+      tcd[str.size()] = '\0';
+      if(mkstemp(tcd) != -1){  
+      try{
+	boost::filesystem::remove_all(tcd);
+	boost::filesystem::create_directory(boost::filesystem::path(tcd));
+	tcf = string(tcd) + "/percolator-tmp.tcb";
+      }
+      catch (boost::filesystem::filesystem_error &e)
+      {
+	std::cerr << e.what() << std::endl;
+      }
+      }
+      else{
+	cerr << "Error: there was a problem creating temporary file.";
+	exit(-1); // ...error
+      }
+      
+      
+      
       tokyoCabinetDirs.resize(lineNumber_par+1);
       tokyoCabinetDirs[lineNumber_par]=tcd;
       tokyoCabinetTmpFNs.resize(lineNumber_par+1);
       tokyoCabinetTmpFNs[lineNumber_par]=tcf;
       // initialize databese
+      std::cerr << "Temp directory : " << str << std::endl;
+      std::cerr << "Temp file : " << tcf << std::endl;
+      std::cerr << "File input : " << fn.c_str() << std::endl;
+      
       FragSpectrumScanDatabase* database = new FragSpectrumScanDatabase(fn);
       database->init(tokyoCabinetTmpFNs[lineNumber_par]);
       databases.resize(lineNumber_par+1);

@@ -38,8 +38,6 @@ return ret;
 
 #endif
 #include <boost/filesystem.hpp>
-// #include <qt4/QtCore/qcoreevent.h>
-
 
 using namespace std;
 using namespace xercesc;

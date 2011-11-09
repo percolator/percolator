@@ -128,7 +128,7 @@ include_directories(${XSD_INCLUDE_DIR})
 
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
-find_package(Boost 1.36.0 REQUIRED)
+find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
@@ -251,6 +251,11 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
+##temporary workaround for tokyocabinet until my own version of  tokyocabinet for windows is completed
+set(CYGWIN "${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/cygwin1.dll")
+set(CYGWINBZ "${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/cygbz2-1.dll")
+set(CYGWINZ "${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/cygz.dll")
+
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator
 
@@ -265,12 +270,20 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${PTHREADS_LIBRARIES})
+if(MINGW)
+  target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${CYGWIN} ${CYGWINBZ} ${CYGWINZ} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+else(MINGW)
+  target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+endif()
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${PTHREADS_LIBRARIES} )
+if(MINGW)
+  target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${CYGWIN} ${CYGWINBZ} ${CYGWINZ}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+else(MINGW)
+  target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+endif()
 
 IF(MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
