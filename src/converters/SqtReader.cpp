@@ -2,7 +2,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _WIN32
+#if defined (__WIN32__) || defined (__MINGW__) 
 #include <direct.h>
 #include <io.h>
 #include <stdio.h>
@@ -12,37 +12,8 @@
 #include <windows.h>
 #define _TRUNCATE 0
 #define STRUNCATE 80
-int fopen_s(FILE** pFile, const char* filename, const char* mode) {
-  *pFile = fopen(filename, mode);
-  return *pFile != NULL ? 0 : 1;
-}
 
-int strncpy_s(char* dest, size_t dest_size, const char* source, size_t count) {
-  CHECK(source != NULL);
-  CHECK(dest != NULL);
-  CHECK_GT(dest_size, 0);
-
-  if (count == _TRUNCATE) {
-    while (dest_size > 0 && *source != 0) {
-      *(dest++) = *(source++);
-      --dest_size;
-    }
-    if (dest_size == 0) {
-      *(dest - 1) = 0;
-      return STRUNCATE;
-    }
-  } else {
-    while (dest_size > 0 && count > 0 && *source != 0) {
-      *(dest++) = *(source++);
-      --dest_size;
-      --count;
-    }
-  }
-  CHECK_GT(dest_size, 0);
-  *dest = 0;
-  return 0;
-}
-
+#ifndef (__MINGW__)
 int mkstemp(char *tmpl)
 {
    int  err, sizeInChars;
@@ -53,7 +24,7 @@ int mkstemp(char *tmpl)
    /* Get the size of the string and add one for the null terminator.*/
    sizeInChars = strlen(names) + 1;
    /* Attempt to find a unique filename: */
-   err = mkstemp_s( names, sizeInChars );
+   err = _mkstemp_s( names, sizeInChars );
    if( err != 0 ){
        printf( "Problem creating the template" );
    }
@@ -70,6 +41,8 @@ int mkstemp(char *tmpl)
    }
    return ret;
 }
+#endif
+
 #endif
 #include <boost/filesystem.hpp>
 
@@ -106,7 +79,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     if(databases.size()==lineNumber_par){
       // create temporary directory to store the pointer to the tokyo-cabinet
       // database
-     /* string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
+      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
@@ -127,29 +100,29 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	std::cerr << " Temp dir created correctly \n";
       }
 
-      string tcf = string(tcd) + "/percolator-tmp.tcb";*/
+      string tcf = string(tcd) + "/percolator-tmp.tcb";
     
       
-      string tcf = "";
-      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
-      char * tcd = new char[str.size() + 1];
-      std::copy(str.begin(), str.end(), tcd);
-      tcd[str.size()] = '\0';
-      if(mkstemp(tcd) != -1){  
-	try{
-	  boost::filesystem::remove_all(tcd);
-	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
-	  tcf = string(tcd) + "/percolator-tmp.tcb";
-	}
-	catch (boost::filesystem::filesystem_error &e)
-	{
-	  std::cerr << e.what() << std::endl;
-	}
-      }
-      else{
-	cerr << "Error: there was a problem creating temporary file.";
-	exit(-1); // ...error
-      }
+//       string tcf = "";
+//       string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
+//       char * tcd = new char[str.size() + 1];
+//       std::copy(str.begin(), str.end(), tcd);
+//       tcd[str.size()] = '\0';
+//       if(mkstemp(tcd) != -1){  
+// 	try{
+// 	  boost::filesystem::remove_all(tcd);
+// 	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
+// 	  tcf = string(tcd) + "/percolator-tmp.tcb";
+// 	}
+// 	catch (boost::filesystem::filesystem_error &e)
+// 	{
+// 	  std::cerr << e.what() << std::endl;
+// 	}
+//       }
+//       else{
+// 	cerr << "Error: there was a problem creating temporary file.";
+// 	exit(-1); // ...error
+//       }
       
       
       
