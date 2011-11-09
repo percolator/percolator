@@ -77,7 +77,7 @@ ELSEIF(MINGW)
 	SET(names
 			pthreadG${PTHREADS_EXCEPTION_SCHEME}2
 			pthread
-			libpthread.a libpthread.dll.a libpthread.la 
+			libpthread.a libpthread.dll.a libpthread.la libpthreadGC2.a
 	)
 ELSE(MSVC) # Unix / Cygwin / Apple / Etc.
 	SET(names pthread)

@@ -19,90 +19,6 @@
 # TokyoCabinet_LIBRARY      - Set these two to specify include dir and
 #                             libraries directly.
 #
-MACRO(MACRO_FIND_PACKAGE_CHECK_CACHE_VERSION _out_match _name)
-  IF (ARGV2)
-    SET(_prefix ${ARGV2})
-  ELSE (ARGV2)
-    STRING(TOUPPER ${_name} _prefix)
-  ENDIF (ARGV2)
-
-  SET(${_out_match} TRUE)
-
-  IF (${_name}_FIND_VERSION) # only check when use sepcify a version in find_package
-
-    # if version cannot be found in cache, sure it's not match
-    IF (${_prefix}_VERSION)
-      INCLUDE(MacroVersionCmp)
-      MACRO_VERSION_CMP(${${_prefix}_VERSION} ${${_name}_FIND_VERSION} _cmp_result)
-      IF (_cmp_result LESS 0)
-        SET(${_out_match} FALSE)
-      ELSEIF (${_name}_FIND_VERSION_EXACT AND _cmp_result GREATER 0)
-        SET(${_out_match} FASE)
-      ENDIF (_cmp_result LESS 0)
-    ELSE (${_prefix}_VERSION)
-      SET(${_out_match} FALSE)
-    ENDIF (${_prefix}_VERSION)
-
-  ENDIF (${_name}_FIND_VERSION)
-ENDMACRO(MACRO_FIND_PACKAGE_CHECK_CACHE_VERSION)
-
-find_path(TOKYOCABINET_INCLUDE_DIR tcbdb.h )
-find_library(TOKYOCABINET_LIBRARIES NAMES tokyocabinet libtokyocabinet )
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(TokyoCabinet DEFAULT_MSG TOKYOCABINET_LIBRARIES TOKYOCABINET_INCLUDE_DIR)
-
-SET (_TokyoCabinet_IN_CACHE FALSE)
-IF (TokyoCabinet_INCLUDE_DIR)
-  IF (NOT TokyoCabinet_VERSION)
-    FIND_FILE(TokyoCabinet_TCUTIL_H tcbdb.h "${TokyoCabinet_INCLUDE_DIR}")
-
-    IF (NOT TokyoCabinet_TCUTIL_H STREQUAL TokyoCabinet_TCUTIL_H-NOTFOUND)
-      FILE(READ "${TokyoCabinet_INCLUDE_DIR}/tcbdb.h" _tokyocabinet_tcutil_h_contents)
-      STRING(REGEX REPLACE ".*#define _TC_VERSION[^\"]*\"([.0-9]+)\".*" "\\1" TokyoCabinet_VERSION "${_tokyocabinet_tcutil_h_contents}")
-    ENDIF (NOT TokyoCabinet_TCUTIL_H STREQUAL TokyoCabinet_TCUTIL_H-NOTFOUND)
-  ENDIF (NOT TokyoCabinet_VERSION)
-
-#   INCLUDE(MacroFindPackageCheckCacheVersion)
-  MACRO_FIND_PACKAGE_CHECK_CACHE_VERSION(_TokyoCabinet_IN_CACHE TokyoCabinet)
-  IF(NOT _TokyoCabinet_IN_CACHE)
-    SET(TokyoCabinet_INCLUDE_DIR) # remove it
-  ENDIF(NOT _TokyoCabinet_IN_CACHE)
-ENDIF (TokyoCabinet_INCLUDE_DIR)
-
-IF (_TokyoCabinet_IN_CACHE)
-  # in cache already
-  MESSAGE(STATUS "TokyoCabinet in cache")
-
-  SET(TokyoCabinet_FOUND TRUE)
-  SET(TokyoCabinet_INCLUDE_DIRS ${TokyoCabinet_INCLUDE_DIR})
-  SET(TokyoCabinet_LIBRARIES ${TokyoCabinet_LIBRARY})
-
-ELSE (_TokyoCabinet_IN_CACHE)
-  # should search it
-
-  SET (TokyoCabinet_FOUND FALSE)
-
-  # first pkg-config if user does not specify TokyoCabinet_INCLUDE_DIR
-  IF (NOT TokyoCabinet_INCLUDE_DIR)
-    FIND_PACKAGE(PkgConfig)
-
-    IF (PkgConfig_FOUND)
-      
-      SET(_BACKUP_PKG_CONFIG_PATH "$ENV{PKG_CONFIG_PATH}")
-      IF(TokyoCabinet_ROOT_DIR)
-        SET(ENV{PKG_CONFIG_PATH} "${TokyoCabinet_ROOT_DIR}/lib/pkgconfig")
-      ENDIF(TokyoCabinet_ROOT_DIR)
-      PKG_CHECK_MODULES(TokyoCabinet tokyocabinet)
-      SET(ENV{PKG_CONFIG_PATH} "${_BACKUP_PKG_CONFIG_PATH}")
-    
-      IF (TokyoCabinet_FOUND)
-        SET(TokyoCabinet_INCLUDE_DIR ${TokyoCabinet_INCLUDE_DIRS})
-        SET(TokyoCabinet_LIBRARY ${TokyoCabinet_LIBRARIES})
-      ENDIF (TokyoCabinet_FOUND)
-
-    ENDIF(PkgConfig_FOUND)
-
-  ENDIF (NOT TokyoCabinet_INCLUDE_DIR)
 
   # then try the normal way
   IF (NOT TokyoCabinet_FOUND)
@@ -169,8 +85,6 @@ ELSE (_TokyoCabinet_IN_CACHE)
       SET(TokyoCabinet_FOUND FALSE)
     ENDIF (_cmp_result LESS 0)
   ENDIF (TokyoCabinet_FOUND AND TokyoCabinet_FIND_VERSION)
-
-ENDIF (_TokyoCabinet_IN_CACHE)
 
 MARK_AS_ADVANCED(
   TokyoCabinet_ROOT_DIR
