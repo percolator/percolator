@@ -60,10 +60,10 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       #if defined (__MINGW__) || defined (__WIN32__)
         tmpnam(tcd);
 	string str2 = string(TEMP_DIR) + "sqt2pin_";
-	char dest[str2.size() + sizeof(tcd)];
-	strcpy( dest, str2 );
+	char *dest = new char[str2.size() + sizeof(tcd)];
+	std::copy(str2.begin(), str2.end(), dest);
 	strcat( dest, tcd );
-	pointerToDir = tcd;
+	pointerToDir = dest;
       #else
 	pointerToDir = tmpnam(tcd);
       #endif
