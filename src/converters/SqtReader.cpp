@@ -8,12 +8,23 @@
 #include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
+#include <errno.h>
 int mkstemp(char *tmpl)
 {
-  int ret=-1;
-  mktemp(tmpl);
-  ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
-  return ret;
+  char *result = _mktemp(tmpl);
+  if( result == NULL )
+  {
+    printf( "Problem creating the template\n" );
+    if (errno == EINVAL)
+    {
+       printf( "Bad parameter\n");
+    }
+     else if (errno == EEXIST)
+    {
+      printf( "Out of unique filenames\n"); 
+    }
+   }
+  return result;
 }
 #endif
 #include <boost/filesystem.hpp>
@@ -51,60 +62,69 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     if(databases.size()==lineNumber_par){
       // create temporary directory to store the pointer to the tokyo-cabinet
       // database
-      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
-      char * tcd = new char[str.size() + 1];
-      std::copy(str.begin(), str.end(), tcd);
-      tcd[str.size()] = '\0';
-      char * pointerToDir;
-      printf("Dir proposed: %s\n", tcd);
-      #if defined (__MINGW__) || defined (__WIN32__)
-        tmpnam(tcd);
-	std::string sufix(tcd);
-	std::string newdirectory = string(TEMP_DIR) + "sqt2pin_" + sufix;
-	pointerToDir = new char[newdirectory.size() + 1];
-	std::copy(newdirectory.begin(), newdirectory.end(), pointerToDir);
-	pointerToDir[newdirectory.size()] = '\0';
-      #else
-	pointerToDir = tmpnam(tcd);
-      #endif
-      printf("Dir generated: %s\n", pointerToDir);
-      int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-      if(outcome == -1) {
-        std::cerr << "sqt2pin could not create temporary directory to store " <<
-            "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << string(TEMP_DIR) << std::endl;
-        exit(-1);
-      }
-      else{
-	std::cerr << " Temp dir created correctly \n";
-      }
-
-      string tcf = string(tcd) + "/percolator-tmp.tcb";
-    
-      
-//       string tcf = "";
 //       string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
 //       char * tcd = new char[str.size() + 1];
 //       std::copy(str.begin(), str.end(), tcd);
 //       tcd[str.size()] = '\0';
-//       if(mkstemp(tcd) != -1){  
-// 	try{
-// 	  boost::filesystem::remove_all(tcd);
-// 	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
-// 	  tcf = string(tcd) + "/percolator-tmp.tcb";
-// 	}
-// 	catch (boost::filesystem::filesystem_error &e)
-// 	{
-// 	  std::cerr << e.what() << std::endl;
-// 	}
+//       char * pointerToDir;
+//       printf("Dir proposed: %s\n", tcd);
+//       #if defined (__MINGW__) || defined (__WIN32__)
+//         tmpnam(tcd);
+// 	std::string sufix(tcd);
+// 	std::string newdirectory = string(TEMP_DIR) + "sqt2pin_" + sufix;
+// 	pointerToDir = new char[newdirectory.size() + 1];
+// 	std::copy(newdirectory.begin(), newdirectory.end(), pointerToDir);
+// 	pointerToDir[newdirectory.size()] = '\0';
+//       #else
+// 	pointerToDir = tmpnam(tcd);
+//       #endif
+//       printf("Dir generated: %s\n", pointerToDir);
+//       int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+//       if(outcome == -1) {
+//         std::cerr << "sqt2pin could not create temporary directory to store " <<
+//             "its tokyocabinet database.\nPlease make sure to have write " <<
+//             "permissions in:\n" << string(TEMP_DIR) << std::endl;
+//         exit(-1);
 //       }
 //       else{
-// 	cerr << "Error: there was a problem creating temporary file.";
-// 	exit(-1); // ...error
+// 	std::cerr << " Temp dir created correctly \n";
 //       }
+// 
+//       string tcf = string(tcd) + "/percolator-tmp.tcb";
+    
       
-      
-      
+      string tcf = "";
+      char * tcd;
+      string str;
+      #if defined (__MINGW__) || defined (__WIN32__)
+	char *suffix = mkstemp("sqt2pin_XXXXXX");
+	if(suffix != NULL){  
+	  str = string(TEMP_DIR) + string(suffix);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+      #else
+	  string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+        if(mkstemp(tcd) != -1){
+      #endif
+	try{
+	  boost::filesystem::remove_all(tcd);
+	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
+	  tcf = string(tcd) + "/percolator-tmp.tcb";
+	}
+	catch (boost::filesystem::filesystem_error &e)
+	{
+	  std::cerr << e.what() << std::endl;
+	}
+      }
+      else{
+	cerr << "Error: there was a problem creating temporary file.";
+	exit(-1); // ...error
+      }
+
       tokyoCabinetDirs.resize(lineNumber_par+1);
       tokyoCabinetDirs[lineNumber_par]=tcd;
       tokyoCabinetTmpFNs.resize(lineNumber_par+1);
