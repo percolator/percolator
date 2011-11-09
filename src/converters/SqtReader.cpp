@@ -8,40 +8,35 @@
 #include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
-#if not defined (__MINGW__)
-  #define tmpnam(D) tmpnam_s( D, sizeof(D) );
-#endif 
-#define _TRUNCATE 0
-#define STRUNCATE 80
-
-#if not defined (__MINGW__)
-int mkstemp(char *tmpl)
-{
-   int  err, sizeInChars;
-   FILE *fp;
-   int ret = -1;
-   char names[sizeof(tmpl)];
-   strcpy_s( names, sizeof(names), tmpl );
-   /* Get the size of the string and add one for the null terminator.*/
-   sizeInChars = strlen(names) + 1;
-   /* Attempt to find a unique filename: */
-   err = _mkstemp_s( names, sizeInChars );
-   if( err != 0 ){
-       printf( "Problem creating the template" );
-   }
-   else
-   {
-       if( fopen_s( &fp, names, "w" ) == 0 ) {
-          printf( "Unique filename is %s\n", names );
-	  ret = 0;  
-       }
-       else{
-          printf( "Cannot open %s\n", names );
-       }
-       fclose( fp );
-   }
-   return ret;
-}
+#if not defined (__MINGW__) && not defined _MINGW && not defined MINGW
+  #define tmpnam(D) tmpnam_s( D, sizeof(D) );  
+  int mkstemp(char *tmpl)
+  {
+    int  err, sizeInChars;
+    FILE *fp;
+    int ret = -1;
+    char names[sizeof(tmpl)];
+    strcpy_s( names, sizeof(names), tmpl );
+    /* Get the size of the string and add one for the null terminator.*/
+    sizeInChars = strlen(names) + 1;
+    /* Attempt to find a unique filename: */
+    err = _mkstemp_s( names, sizeInChars );
+    if( err != 0 ){
+	printf( "Problem creating the template" );
+    }
+    else
+    {
+	if( fopen_s( &fp, names, "w" ) == 0 ) {
+	    printf( "Unique filename is %s\n", names );
+	    ret = 0;  
+	}
+	else{
+	    printf( "Cannot open %s\n", names );
+	}
+	fclose( fp );
+    }
+    return ret;
+  }
 #endif
 
 #endif
