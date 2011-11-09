@@ -5,11 +5,14 @@
 #ifdef _WIN32
 #include <direct.h>
 #include <io.h>
+#include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
 #define tmpnam(D) tmpnam_s( D, sizeof(D) );
 int mkstemp(char *tmpl)
 {
+   int  err, sizeInChars;
+   FILE *fp;
    int ret = -1;
    char names[sizeof(tmpl)];
    strcpy_s( names, sizeof(names), tmpl );
