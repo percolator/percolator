@@ -9,7 +9,7 @@
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
 #include <errno.h>
-int mkstemp(char *tmpl)
+char *mkstemp(char *tmpl)
 {
   char *result = _mktemp(tmpl);
   if( result == NULL )
