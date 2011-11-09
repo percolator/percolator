@@ -54,7 +54,7 @@
 		      /usr/local/lib)
     ENDIF (TokyoCabinet_ROOT_DIR)
 
-#     INCLUDE(FindPackageHandleStandardArgs)
+    INCLUDE(FindPackageHandleStandardArgs)
     FIND_PACKAGE_HANDLE_STANDARD_ARGS(TokyoCabinet TokyoCabinet_INCLUDE_DIR TokyoCabinet_LIBRARY)
     SET(TokyoCabinet_FOUND "${TOKYOCABINET_FOUND}")
 
