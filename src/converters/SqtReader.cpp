@@ -49,16 +49,18 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
       char * pointerToDir;
+      
       #if defined (__MINGW__) || defined (__WIN32__)
         tmpnam(pointerToDir);
       #else
 	pointerToDir = tmpnam(tcd);
       #endif
+      string out = string(pointerToDir);
       int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
       if(outcome == -1) {
         std::cerr << "sqt2pin could not create temporary directory to store " <<
             "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << string(pointerToDir) << std::endl;
+            "permissions in:\n" << out << std::endl;
         exit(-1);
       }
       else{
