@@ -51,7 +51,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     if(databases.size()==lineNumber_par){
       // create temporary directory to store the pointer to the tokyo-cabinet
       // database
-      string str = string(TEMP_DIR) + "sqt2pinXXXXXX";
+      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
       char * tcd = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), tcd);
       tcd[str.size()] = '\0';
@@ -59,6 +59,10 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       printf("Dir proposed: %s\n", tcd);
       #if defined (__MINGW__) || defined (__WIN32__)
         tmpnam(tcd);
+	string str2 = string(TEMP_DIR) + "sqt2pin_";
+	char dest[str2.size() + sizeof(tcd)];
+	strcpy( dest, str2 );
+	strcat( dest, tcd );
 	pointerToDir = tcd;
       #else
 	pointerToDir = tmpnam(tcd);
