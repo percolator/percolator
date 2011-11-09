@@ -9,7 +9,9 @@
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
 #define tmpnam(D) tmpnam_s( D, sizeof(D) );
-
+#include <win32-headers.h>
+#define _TRUNCATE 0
+#define STRUNCATE 80
 int fopen_s(FILE** pFile, const char* filename, const char* mode) {
   *pFile = fopen(filename, mode);
   return *pFile != NULL ? 0 : 1;
