@@ -8,13 +8,13 @@
 #include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
-#if not defined __MINGW__
+#if not defined (__MINGW__)
   #define tmpnam(D) tmpnam_s( D, sizeof(D) );
 #endif 
 #define _TRUNCATE 0
 #define STRUNCATE 80
 
-#if not defined __MINGW__
+#if not defined (__MINGW__)
 int mkstemp(char *tmpl)
 {
    int  err, sizeInChars;
