@@ -276,6 +276,7 @@ Section "MainSection" SEC01
    File "${SOURCE_PATH}\libs\dll\cygz.dll"
    File "${SOURCE_PATH}\libs\dll\cygwin1.dll"
    File "${SOURCE_PATH}\libs\dll\cygbz2-1.dll"
+   File "${SOURCE_PATH}\libs\dll\libz-1.dll"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"

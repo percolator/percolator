@@ -58,7 +58,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       if(outcome == -1) {
         std::cerr << "sqt2pin could not create temporary directory to store " <<
             "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << string(TEMP_DIR) << std::endl;
+            "permissions in:\n" << string(pointerToDir) << std::endl;
         exit(-1);
       }
       else{
