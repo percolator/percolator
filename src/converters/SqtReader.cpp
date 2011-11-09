@@ -59,11 +59,11 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       printf("Dir proposed: %s\n", tcd);
       #if defined (__MINGW__) || defined (__WIN32__)
         tmpnam(tcd);
-	string str2 = string(TEMP_DIR) + "sqt2pin_";
-	char *dest = new char[str2.size() + sizeof(tcd)];
-	std::copy(str2.begin(), str2.end(), dest);
-	strcat( dest, tcd );
-	pointerToDir = dest;
+	std::string sufix(tcd);
+	std::string newdirectory = string(TEMP_DIR) + "sqt2pin_" + sufix;
+	pointerToDir = new char[str2.size() + 1];
+	std::copy(str2.begin(), str2.end(), pointerToDir);
+	pointerToDir[str2.size()] = '\0';
       #else
 	pointerToDir = tmpnam(tcd);
       #endif
