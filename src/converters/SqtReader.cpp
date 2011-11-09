@@ -8,6 +8,13 @@
 #include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
+int mkstemp(char *tmpl)
+{
+  int ret=-1;
+  mktemp(tmpl);
+  ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
+  return ret;
+}
 #endif
 #include <boost/filesystem.hpp>
 
@@ -51,16 +58,17 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       char * pointerToDir;
       
       #if defined (__MINGW__) || defined (__WIN32__)
-        tmpnam(pointerToDir);
+        tmpnam(tcd);
+	pointerToDir = tcd;
       #else
 	pointerToDir = tmpnam(tcd);
       #endif
-      string out = string(pointerToDir);
+      printf("%s", tcd);
       int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
       if(outcome == -1) {
         std::cerr << "sqt2pin could not create temporary directory to store " <<
             "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << out << std::endl;
+            "permissions in:\n" << string(TEMP_DIR) << std::endl;
         exit(-1);
       }
       else{
