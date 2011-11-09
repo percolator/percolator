@@ -29,6 +29,8 @@
     ELSE (TokyoCabinet_ROOT_DIR)
       FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h HINTS
                 ${CMAKE_CURRENT_SOURCE_DIR}/libs/include/
+                ${PROJECT_SOURCE_DIR}/libs/include
+	        ${PROJECT_SOURCE_DIR}/libs/TokyoCabinet
 		/usr/i686-pc-mingw32/sys-root/mingw/include/
 		/usr/i586-mingw32msvc/sys-root/mingw/include/
 		/usr/i586-mingw32msvc/include/
@@ -42,6 +44,9 @@
 
       FIND_LIBRARY(TokyoCabinet_LIBRARY libtokyocabinet.dll.a libtokyocabinet.a tokyocabinet TokyoCabinet.lib HINTS
 		      ${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/
+		      ${PROJECT_SOURCE_DIR}/libs/lib/
+		      ${CMAKE_CURRENT_SOURCE_DIR}/libs/lib/
+		      ${PROJECT_SOURCE_DIR}/libs/dll/
 		      /usr/i686-pc-mingw32/sys-root/mingw/lib/
 		      /usr/i586-mingw32msvc/sys-root/mingw/lib/
 		      /usr/i586-mingw32msvc/lib/
