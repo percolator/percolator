@@ -271,18 +271,18 @@ add_library(converters STATIC SqtReader.cpp FragSpectrumScanDatabase.cpp )
 #COMPILING MZIDENTML2PIN
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
 if(MINGW)
-  target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
 else(MINGW)
-  target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
 endif()
 
 #COMPILING SQT2PIN
 include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
 if(MINGW)
-  target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TOKYOCABINET_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+  target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
 else(MINGW)
-  target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TOKYOCABINET_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+  target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
 endif()
 
 IF(MINGW)
