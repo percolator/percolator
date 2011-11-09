@@ -9,6 +9,38 @@
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
 #define tmpnam(D) tmpnam_s( D, sizeof(D) );
+
+int fopen_s(FILE** pFile, const char* filename, const char* mode) {
+  *pFile = fopen(filename, mode);
+  return *pFile != NULL ? 0 : 1;
+}
+
+int strncpy_s(char* dest, size_t dest_size, const char* source, size_t count) {
+  CHECK(source != NULL);
+  CHECK(dest != NULL);
+  CHECK_GT(dest_size, 0);
+
+  if (count == _TRUNCATE) {
+    while (dest_size > 0 && *source != 0) {
+      *(dest++) = *(source++);
+      --dest_size;
+    }
+    if (dest_size == 0) {
+      *(dest - 1) = 0;
+      return STRUNCATE;
+    }
+  } else {
+    while (dest_size > 0 && count > 0 && *source != 0) {
+      *(dest++) = *(source++);
+      --dest_size;
+      --count;
+    }
+  }
+  CHECK_GT(dest_size, 0);
+  *dest = 0;
+  return 0;
+}
+
 int mkstemp(char *tmpl)
 {
    int  err, sizeInChars;
@@ -19,13 +51,13 @@ int mkstemp(char *tmpl)
    /* Get the size of the string and add one for the null terminator.*/
    sizeInChars = strlen(names) + 1;
    /* Attempt to find a unique filename: */
-   err = _mktemp_s( names, sizeInChars );
+   err = mkstemp_s( names, sizeInChars );
    if( err != 0 ){
        printf( "Problem creating the template" );
    }
    else
    {
-       if( fopen_s( &fp, names[i], "w" ) == 0 ) {
+       if( fopen_s( &fp, names, "w" ) == 0 ) {
           printf( "Unique filename is %s\n", names );
 	  ret = 0;  
        }
