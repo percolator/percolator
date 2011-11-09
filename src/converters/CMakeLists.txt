@@ -101,38 +101,13 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 #FIND LIBRARIES
 MESSAGE( STATUS "Checking packages:" )
 
-if(MINGW OR WIN32)
-    #Look for precompiled Windows libraries
-  find_library(TOKYOCABINET_STATIC_LIBRARY NAMES libtokyocabinet.dll.a libtokyocabinet.a TokyoCabinet.lib HINTS
-     ${PROJECT_SOURCE_DIR}/libs/dll
-     ${PROJECT_SOURCE_DIR}/libs/lib
-  )
-  message(STATUS "TOKYOCABINET_STATIC_LIBRARY=${TOKYOCABINET_STATIC_LIBRARY}")
-  set( TOKYOCABINET_LIBRARIES ${TOKYOCABINET_STATIC_LIBRARY} )
-  if(NOT TOKYOCABINET_LIBRARIES)
-    message(FATAL_ERROR "could not find the static library tokyo cabinet")
-  endif()
-
-  find_path(TOKYOCABINET_DIRECTORY_LIBRARY NAMES tcbdb.h HINTS
-     ${PROJECT_SOURCE_DIR}/libs/TokyoCabinet/
-     ${PROJECT_SOURCE_DIR}/libs/include/
-  )
-  message(STATUS "TOKYOCABINET_DIRECTORY_LIBRARY=${TOKYOCABINET_DIRECTORY_LIBRARY}")
-  set( TokyoCabinet_INCLUDE_DIR ${TOKYOCABINET_DIRECTORY_LIBRARY} )
-  if(NOT TokyoCabinet_INCLUDE_DIR)
-    message(FATAL_ERROR "could not find the include dir of tokyo cabinet")
-  endif()
-  include_directories(${TokyoCabinet_INCLUDE_DIR})
-
-else(MINGW OR WIN32)
-  find_package(TokyoCabinet REQUIRED)
-  if(TOKYOCABINET_FOUND)
-    message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
-  else(TOKYOCABINET_FOUND)
-    message(FATAL_ERROR "The package Tokyo Cabinet has not been found")
-  endif(TOKYOCABINET_FOUND)
-  include_directories(${TokyoCabinet_INCLUDE_DIR})
-endif()
+find_package(TokyoCabinet REQUIRED)
+if(TOKYOCABINET_FOUND)
+  message(STATUS "Package Tokyo Cabinet found : ${TokyoCabinet_INCLUDE_DIR}")
+else(TOKYOCABINET_FOUND)
+  message(FATAL_ERROR "The package Tokyo Cabinet has not been found")
+endif(TOKYOCABINET_FOUND)
+include_directories(${TokyoCabinet_INCLUDE_DIR})
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
