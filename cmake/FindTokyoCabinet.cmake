@@ -49,10 +49,9 @@
   
     IF (TokyoCabinet_ROOT_DIR)
       FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h HINTS "${TokyoCabinet_ROOT_DIR}/include")
-      FIND_LIBRARY(TokyoCabinet_LIBRARY  libtokyocabinet.dll.a libtokyocabinet.a tokyocabinet TokyoCabinet.lib HINTS "${TokyoCabinet_ROOT_DIR}/lib" "${TokyoCabinet_ROOT_DIR}/dll")
+      FIND_LIBRARY(TokyoCabinet_LIBRARY tokyocabinet libtokyocabinet.dll.a libtokyocabinet.a  TokyoCabinet.lib HINTS "${TokyoCabinet_ROOT_DIR}/lib" "${TokyoCabinet_ROOT_DIR}/dll")
     ELSE (TokyoCabinet_ROOT_DIR)
       FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h HINTS
-                ${CMAKE_CURRENT_SOURCE_DIR}/libs/include/
 		/usr/i686-pc-mingw32/sys-root/mingw/include/
 		/usr/i586-mingw32msvc/sys-root/mingw/include/
 		/usr/i586-mingw32msvc/include/
@@ -64,8 +63,7 @@
 		/usr/include
 		/usr/local/include)
 
-      FIND_LIBRARY(TokyoCabinet_LIBRARY libtokyocabinet.dll.a libtokyocabinet.a tokyocabinet TokyoCabinet.lib HINTS
-		      ${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/
+      FIND_LIBRARY(TokyoCabinet_LIBRARY tokyocabinet libtokyocabinet.dll.a libtokyocabinet.a  TokyoCabinet.lib HINTS
 		      /usr/i686-pc-mingw32/sys-root/mingw/lib/
 		      /usr/i586-mingw32msvc/sys-root/mingw/lib/
 		      /usr/i586-mingw32msvc/lib/
