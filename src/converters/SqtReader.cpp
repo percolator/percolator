@@ -8,12 +8,13 @@
 #include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
-#define tmpnam(D) tmpnam_s( D, sizeof(D) );
-#include <windows.h>
+#if not defined __MINGW__
+  #define tmpnam(D) tmpnam_s( D, sizeof(D) );
+#endif 
 #define _TRUNCATE 0
 #define STRUNCATE 80
 
-#ifndef (__MINGW__)
+#if not defined __MINGW__
 int mkstemp(char *tmpl)
 {
    int  err, sizeInChars;
@@ -88,7 +89,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
         tmpnam(pointerToDir);
       #else
 	pointerToDir = tmpnam(tcd);
-      #endif()
+      #endif
       int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
       if(outcome == -1) {
         std::cerr << "sqt2pin could not create temporary directory to store " <<
