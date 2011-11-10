@@ -98,6 +98,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	  std::cerr << e.what() << std::endl;
 	}
 	printf("Dir generated: %s\n", tcd);
+	
 //         int outcome = mkdir(tcd, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 //         if(outcome == -1) {
 //           std::cerr << "sqt2pin could not create temporary directory to store " <<
