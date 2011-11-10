@@ -68,11 +68,12 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       string str;
       char * pattern = (char*)"sqt2pin_XXXXXX";
       string tempW = "c:\\windows\\temp\\";
+      string temp = string(boost::filesystem::temp_directory_path().c_str());
       string tempL = "/tmp/";
       #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
-	  str = string(boost::filesystem::temp_directory_path().c_str()) + string("\\") + string(suffix);
+	  str = temp + string("\\") + string(suffix);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
