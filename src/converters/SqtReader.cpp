@@ -27,7 +27,6 @@ char *mkstemp(char *tmpl)
   return result;
 }
 #endif
-#include <boost/filesystem.hpp>
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 std::string ambiguousAA("BZJX");
@@ -84,14 +83,6 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	  tcf = string(tcd) + "/percolator-tmp.tcb";
         if(mkstemp(tcd) != -1){
       #endif
-// 	try{
-// 	  boost::filesystem::remove_all(tcd);
-// 	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
-// 	}
-// 	catch (boost::filesystem::filesystem_error &e)
-// 	{
-// 	  std::cerr << e.what() << std::endl;
-// 	}
 	printf("Dir generated: %s\n", tcd);
         int outcome = mkdir(tcd, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if(outcome == -1) {
@@ -106,7 +97,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	
       }
       else{
-	cerr << "Error: there was a problem creating temporary file.";
+	std::cerr << "Error: there was a problem creating temporary file.";
 	exit(-1); // ...error
       }
 
@@ -124,6 +115,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       databases.resize(lineNumber_par+1);
       databases[lineNumber_par]=database;
       assert(databases.size()==lineNumber_par+1);
+      std::cerr << "Databases created.\n";
     }
     if (VERB>1 && pType == SqtReader::fullParsing){
       std::cerr << "reading " << fn << std::endl;
