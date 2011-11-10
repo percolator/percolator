@@ -77,7 +77,8 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
 	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
-	  tcf = std::string(dir.c_str()) + "\\" + "percolator-tmp.tcb";
+	  dir  /= "\\percolator-tmp.tcb";
+	  tcf = dir.str();
       #else
 	  str =  string(pattern);
 	  tcd = new char[str.size() + 1];
