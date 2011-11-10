@@ -72,11 +72,11 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
-	  str = string(suffix);
+	  str = string(boost::filesystem::temp_directory_path()).c_str()) + string("\\") + string(suffix);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
-	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() \\ tcd;
+	  boost::filesystem::path dir = boost::filesystem::path(tcd);
 	  tcf = string(dir.c_str()) + "\\" + "percolator-tmp.tcb";
       #else
 	  str =  string(pattern);
