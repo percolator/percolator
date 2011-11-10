@@ -27,6 +27,7 @@ char *mkstemp(char *tmpl)
   return result;
 }
 #endif
+#include <boost/filesystem.hpp>
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 std::string ambiguousAA("BZJX");
@@ -67,37 +68,50 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       string str;
       char * pattern = (char*)"sqt2pin_XXXXXX";
       string tempW = "c:\\windows\\temp\\";
+      string tempL = "/tmp/";
       #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
-	  str = tempW + string(suffix);
+	  str = string(suffix);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
-	  tcf = string(tcd) + "\\" + "percolator-tmp.tcb";
+	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() \\ tcd;
+	  tcf = string(dir.c_str()) + "\\" + "percolator-tmp.tcb";
       #else
-	  str = string(TEMP_DIR) + string(pattern);
+	  str =  string(pattern);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
-	  tcf = string(tcd) + "/percolator-tmp.tcb";
-        if(mkstemp(tcd) != -1){
+	  if(mkstemp(tcd) != -1){
+	    boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
+	    tcf = string(dir.c_str()) + "/percolator-tmp.tcb";
       #endif
+	try{
+          if(boost::filesystem::is_directory(dir)){
+	    boost::filesystem::remove_all(dir);
+	  }
+	  boost::filesystem::create_directory(dir);
+	}
+	catch (boost::filesystem::filesystem_error &e)
+	{
+	  std::cerr << e.what() << std::endl;
+	}
 	printf("Dir generated: %s\n", tcd);
-        int outcome = mkdir(tcd, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        if(outcome == -1) {
-          std::cerr << "sqt2pin could not create temporary directory to store " <<
-            "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << string(TEMP_DIR) << std::endl;
-          exit(-1);
-        }
-        else{
-	  std::cerr << " Temp dir created correctly \n";
-        }
+//         int outcome = mkdir(tcd, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+//         if(outcome == -1) {
+//           std::cerr << "sqt2pin could not create temporary directory to store " <<
+//             "its tokyocabinet database.\nPlease make sure to have write " <<
+//             "permissions in:\n" << string(TEMP_DIR) << std::endl;
+//           exit(-1);
+//         }
+//         else{
+// 	  std::cerr << " Temp dir created correctly \n";
+//         }
 	
       }
       else{
-	std::cerr << "Error: there was a problem creating temporary file.";
+	cerr << "Error: there was a problem creating temporary file.";
 	exit(-1); // ...error
       }
 
@@ -115,7 +129,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       databases.resize(lineNumber_par+1);
       databases[lineNumber_par]=database;
       assert(databases.size()==lineNumber_par+1);
-      std::cerr << "Databases created.\n";
+      cerr << "Databases created.";
     }
     if (VERB>1 && pType == SqtReader::fullParsing){
       std::cerr << "reading " << fn << std::endl;
