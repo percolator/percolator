@@ -62,60 +62,31 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     if(databases.size()==lineNumber_par){
       // create temporary directory to store the pointer to the tokyo-cabinet
       // database
-//       string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
-//       char * tcd = new char[str.size() + 1];
-//       std::copy(str.begin(), str.end(), tcd);
-//       tcd[str.size()] = '\0';
-//       char * pointerToDir;
-//       printf("Dir proposed: %s\n", tcd);
-//       #if defined (__MINGW__) || defined (__WIN32__)
-//         tmpnam(tcd);
-// 	std::string sufix(tcd);
-// 	std::string newdirectory = string(TEMP_DIR) + "sqt2pin_" + sufix;
-// 	pointerToDir = new char[newdirectory.size() + 1];
-// 	std::copy(newdirectory.begin(), newdirectory.end(), pointerToDir);
-// 	pointerToDir[newdirectory.size()] = '\0';
-//       #else
-// 	pointerToDir = tmpnam(tcd);
-//       #endif
-//       printf("Dir generated: %s\n", pointerToDir);
-//       int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-//       if(outcome == -1) {
-//         std::cerr << "sqt2pin could not create temporary directory to store " <<
-//             "its tokyocabinet database.\nPlease make sure to have write " <<
-//             "permissions in:\n" << string(TEMP_DIR) << std::endl;
-//         exit(-1);
-//       }
-//       else{
-// 	std::cerr << " Temp dir created correctly \n";
-//       }
-// 
-//       string tcf = string(tcd) + "/percolator-tmp.tcb";
-    
-      
+     
       string tcf = "";
       char * tcd;
       string str;
       char * pattern = (char*)"sqt2pin_XXXXXX";
-      string temp = "c:\\windows\\temp\\";
+      string tempW = "c:\\windows\\temp\\";
       #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
-	  str = temp + string(suffix);
+	  str = tempW + string(suffix);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
+	  tcf = string(tcd) + "\\" + "percolator-tmp.tcb";
       #else
-	  string str = string(TEMP_DIR) + string(pattern);
+	  str = string(TEMP_DIR) + string(pattern);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
+	  tcf = string(tcd) + "/percolator-tmp.tcb";
         if(mkstemp(tcd) != -1){
       #endif
 // 	try{
 // 	  boost::filesystem::remove_all(tcd);
 // 	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
-// 	  tcf = string(tcd) + "/percolator-tmp.tcb";
 // 	}
 // 	catch (boost::filesystem::filesystem_error &e)
 // 	{
@@ -132,8 +103,6 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
         else{
 	  std::cerr << " Temp dir created correctly \n";
         }
-
-        string tcf = string(tcd) + "/percolator-tmp.tcb";
 	
       }
       else{
