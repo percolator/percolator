@@ -72,7 +72,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
-	  str = string(boost::filesystem::temp_directory_path()).c_str()) + string("\\") + string(suffix);
+	  str = string(boost::filesystem::temp_directory_path().c_str()) + string("\\") + string(suffix);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
 	  tcd[str.size()] = '\0';
