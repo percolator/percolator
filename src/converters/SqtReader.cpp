@@ -96,11 +96,11 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       string tcf = "";
       char * tcd;
       string str;
-      char * pattern = "sqt2pin_XXXXXX";
+      char * pattern = (char*)"sqt2pin_XXXXXX";
+      string temp = "c:\\windows\\temp\\";
       #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
-	  string temp = "c:\\windows\\temp\\";
 	  str = temp + string(suffix);
 	  tcd = new char[str.size() + 1];
 	  std::copy(str.begin(), str.end(), tcd);
@@ -114,7 +114,6 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       #endif
 // 	try{
 // 	  boost::filesystem::remove_all(tcd);
-          boost::filesystem::path fullpath
 // 	  boost::filesystem::create_directory(boost::filesystem::path(tcd));
 // 	  tcf = string(tcd) + "/percolator-tmp.tcb";
 // 	}
