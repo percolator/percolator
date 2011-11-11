@@ -325,7 +325,6 @@ int Sqt2Pin::run() {
  
   vector<FragSpectrumScanDatabase*> databases;
 
-  std::cerr << "Databases created\n";
   
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
     // First we only search for the maxCharge and minCharge.

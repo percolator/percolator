@@ -2,7 +2,13 @@
 #define FRAGSPECTRUMSCANDATABASE_H
 
 #include <memory>   // std::auto_ptr
-#include <tcbdb.h>
+
+#if defined __LEVELDB__
+  #include "leveldb/db.h"
+#else
+  #include <tcbdb.h>
+#endif
+
 #include <iostream>
 #include <xercesc/dom/DOM.hpp>
 #include <cstddef>  // size_t
@@ -55,7 +61,12 @@ class FragSpectrumScanDatabase {
   protected:
     XDR xdr;
     xml_schema::buffer buf;
-    TCBDB* bdb;
+    #if defined __LEVELDB__
+      leveldb::DB* bdb;
+      leveldb::Options options;
+    #else
+      TCBDB* bdb;
+    #endif
     // pointer to retention times
     map<int, vector<double> >* scan2rt;
     // is scoped_ptr possible here?

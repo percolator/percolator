@@ -50,8 +50,8 @@ void translateSqtFileToXML(const std::string fn,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence& fsss,
       bool isDecoy, const ParseOptions& po, int* maxCharge, int* minCharge,
       parseType pType, vector<FragSpectrumScanDatabase*>& databases,
-      unsigned int lineNumber, std::vector<char*>& tokyoCabinetDirs,
-      std::vector<std::string>& tokyoCabinetTmpFNs);
+      unsigned int lineNumber, std::vector<char*>& DBtDirs,
+      std::vector<std::string>& DBTmpFNs);
 void readSQT(const std::string fn,
     ::percolatorInNs::featureDescriptions& fds,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence& fsss,

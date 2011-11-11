@@ -28,14 +28,23 @@
 #endif
 #ifdef _WIN32
 #include <fcntl.h>
-int mkstemp(char *tmpl)
+char *mkstemp(char *tmpl)
 {
-int ret=-1;
-mktemp(tmpl);
-ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
-return ret;
+  char *result = _mktemp(tmpl);
+  if( result == NULL )
+  {
+    printf( "Problem creating the template\n" );
+    if (errno == EINVAL)
+    {
+       printf( "Bad parameter\n");
+    }
+     else if (errno == EEXIST)
+    {
+      printf( "Out of unique filenames\n"); 
+    }
+   }
+  return result;
 }
-
 #endif
 #include <boost/filesystem.hpp>
 
@@ -311,26 +320,45 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("e")) {
     readStdIn = true;
-    // avoiding race conditions
-    string str = string(TEMP_DIR) + "percolator_XXXXXX";
-    xmlInputDir = new char[str.size() + 1];
-    std::copy(str.begin(), str.end(), xmlInputDir);
-    xmlInputDir[str.size()] = '\0';
-    if(mkstemp(xmlInputDir) != -1){  
-      try{
-	boost::filesystem::remove_all(xmlInputDir);
-	boost::filesystem::create_directory(boost::filesystem::path(xmlInputDir));
-	xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
+    string tcf = "";
+    char * tcd;
+    string str;
+    char * pattern = (char*)"percolator_XXXXXX";
+    string tempW = "c:\\windows\\temp\\";
+    string tempL = "/tmp/";
+    #if defined (__MINGW__) || defined (__WIN32__)
+	char *suffix = mkstemp(pattern);
+	if(suffix != NULL){ 
+	  str = ("\") + string(suffix);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
+	  tcf = std::string((dir / "\pin-tmp.xml").string());
+    #else
+	  str =  string(pattern);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+	  if(mkstemp(tcd) != -1){
+	    boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
+	    tcf = string(dir.c_str()) + "/pin-tmp.xml";	    
+    #endif
+	try{
+          if(boost::filesystem::is_directory(dir)){
+	    boost::filesystem::remove_all(dir);
+	  }
+	  boost::filesystem::create_directory(dir);
+	}
+	catch (boost::filesystem::filesystem_error &e)
+	{
+	  std::cerr << e.what() << std::endl;
+	}	
       }
-      catch (boost::filesystem::filesystem_error &e)
-      {
-	std::cerr << e.what() << std::endl;
+      else{
+	cerr << "Error: there was a problem creating temporary file.";
+	exit(-1); // ...error
       }
-    }
-    else{
-      cerr << "Error: there was a problem creating temporary file.";
-      exit(-1); // ...error
-    }
   }
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {

@@ -24,16 +24,6 @@ typedef  void (*xdrrec_create_p) (
     int (*write) (void* user_data, char* buf, int n));
 
 
-/*
-extern "C"
-typedef  void (*xdrrec_create_p) (
-  XDR*,
-  unsigned int write_size,
-  unsigned int read_size,
-  void* user_data,
-  int (*read) (void* user_data, char* buf, int n),
-  int (*write) (void* user_data, char* buf, int n));
- */
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
     bdb(0), scan2rt(0) {
@@ -46,13 +36,6 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
   if(id_par.empty()) id = "no_id"; else id = id_par;
 }
 
-//FragSpectrumScanDatabase::FragSpectrumScanDatabase(const
-//FragSpectrumScanDatabase& original) {
-//  bdb = original.bdb;
-//  scan2rt = original.scan2rt;
-//  xdr = original.xdr;
-//  oxdrp = original.oxdrp;
-//}
 
 void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
@@ -77,30 +60,38 @@ void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
 //   link pointing somewhere else. It would be better if Tokyo Cabinet would
 //   fail if the database existed in our case when we use a temporary file.
 bool FragSpectrumScanDatabase::init(std::string fileName) {
-  bdb = tcbdbnew();
-  assert(bdb);
-  /*
-  retu = tchdbsetxmsiz(hdb, 200*1024*1024);
-  assert( retu );
-  retu = tchdbsetcache(hdb, 1000);
-  assert( retu );
-   */
-  bool ret =  tcbdbsetcmpfunc(bdb, tccmpint32, NULL);
-  assert(ret);
-  if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER | BDBOCREAT )){
-    int errorcode = tcbdbecode(bdb);
-    fprintf(stderr, "open error: %s\n", tcbdberrmsg(errorcode));
-    exit(EXIT_FAILURE);
-  }
-  // unlink => Potential race condition, but Unix seems to lack unlink() with an file descriptor argument.
 
+  #if defined __LEVELDB__
+    options.create_if_missing = true;
+    options.error_if_exists = true;
+    leveldb::Status status = leveldb::DB::Open(options, fileName.c_str(), &bdb);
+    if (!status.ok()){ 
+      std::cerr << status.ToString() << endl;
+      exit(EXIT_FAILURE);
+    }
+    bool ret = status.ok();
+  #else
+    bdb = tcbdbnew();
+    assert(bdb);
+    bool ret =  tcbdbsetcmpfunc(bdb, tccmpint32, NULL);
+    assert(ret);
+    if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER | BDBOCREAT )){
+      int errorcode = tcbdbecode(bdb);
+      fprintf(stderr, "open error: %s\n", tcbdberrmsg(errorcode));
+      exit(EXIT_FAILURE);
+    }
+  #endif
   ret = unlink( fileName.c_str() );
   assert(! ret);
   return ret;
 }
 
 void FragSpectrumScanDatabase::terminte(){
-  tcbdbdel(bdb);
+  #if defined __LEVELDB__
+    delete bdb;
+  #else
+    tcbdbdel(bdb);   
+  #endif
 }
 
 bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par) {
@@ -137,55 +128,101 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {
-  assert(bdb);
-  int valueSize = 0;
-  char * value = ( char * ) tcbdbget(bdb, ( const char* ) &scanNr, sizeof( scanNr ), &valueSize);
-  if(!value) {
-    // ecode = tcbdbecode(bdb);
-    // fprintf(stderr, "get error: %s\n", tcbdberrmsg(ecode));
-    return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
-  }
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));
-  free(value);
+  #if defined __LEVELDB__
+    assert(bdb);
+    int valueSize = 0;
+    std::string value;
+    std::stringstream out;
+    out << scanNr;
+    leveldb::Slice s1 = out.str(); //be careful with the scope of the slice
+    leveldb::Status s = bdb->Get(leveldb::ReadOptions(), s1, &value);
+    if(!s.ok()){
+      return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
+    }
+    char *retvalue=new char[value.size()+1];
+    retvalue[value.size()]=0;
+    memcpy(retvalue,value.c_str(),value.size());
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue, (int)sizeof(retvalue) )); 
+  #else
+    assert(bdb);
+    int valueSize = 0;
+    char * value = ( char * ) tcbdbget(bdb, ( const char* ) &scanNr, sizeof( scanNr ), &valueSize);
+    if(!value) {
+      return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
+    }
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));  
+    free(value);
+  #endif
   return ret;
 }
 
 void FragSpectrumScanDatabase::print(serializer & ser) {
-  BDBCUR *cursor;
-  char *key;
-  assert(bdb);
-  cursor = tcbdbcurnew(bdb);
-  assert(cursor);
-  tcbdbcurfirst(cursor);
-  // using tcbdbcurkey3 is probably faster
-  int keySize;
-  int valueSize;
-  while (( key = static_cast< char * > ( tcbdbcurkey(cursor,&keySize)) ) != 0 ) {
-    char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
-    if(value){
-      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
+  #if defined __LEVELDB__
+    assert(bdb);
+    leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+      char *retvalue=new char[it->value().ToString().size()+1];
+      retvalue[it->value().ToString().size()]=0;
+      memcpy(retvalue,it->value().ToString().c_str(),it->value().ToString().size());
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,(int)sizeof(retvalue)));
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
-      free(value);
     }
-    free(key);
-    tcbdbcurnext(cursor);
-  }
-  tcbdbcurdel(cursor);
+    assert(it->status().ok());  // Check for any errors found during the scan
+    delete it;
+  #else
+    BDBCUR *cursor;
+    char *key;
+    assert(bdb);
+    cursor = tcbdbcurnew(bdb);
+    assert(cursor);
+    tcbdbcurfirst(cursor);
+    // using tcbdbcurkey3 is probably faster
+    int keySize;
+    int valueSize;
+    while (( key = static_cast< char * > ( tcbdbcurkey(cursor,&keySize)) ) != 0 ) {
+      char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
+      if(value){
+	std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
+	ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
+	free(value);
+      }
+      free(key);
+      tcbdbcurnext(cursor);
+    }
+    tcbdbcurdel(cursor);
+  #endif
 }
 
 void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss ) {
-  assert(bdb);
-  *oxdrp << fss;
-  xdrrec_endofrecord (&xdr, true);
-  ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
-  size_t keySize = sizeof(key);
-  size_t valueSize(buf.size ());
-  if(!tcbdbput(bdb, ( const char * ) &key, keySize, buf.data (), buf.size () ))
-  {
-    int  errorcode = tcbdbecode(bdb);
-    fprintf(stderr, "put error: %s\n", tcbdberrmsg(errorcode));
-    exit(EXIT_FAILURE);
-  }
+  #if defined __LEVELDB__
+    assert(bdb);
+    *oxdrp << fss;
+    xdrrec_endofrecord (&xdr, true);
+    leveldb::WriteOptions write_options;
+    //careful in windows
+    write_options.sync = true;
+    std::stringstream out;
+    out << (unsigned int)fss.scanNumber();
+    leveldb::Slice s1 = out.str();
+    leveldb::Status status = bdb->Put(write_options,s1,buf.data());
+    if(!status.ok()){
+      std::cerr << status.ToString() << endl;
+      exit(EXIT_FAILURE);
+    }
+  #else
+    assert(bdb);
+    *oxdrp << fss;
+    xdrrec_endofrecord (&xdr, true);
+    ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
+    size_t keySize = sizeof(key);
+    size_t valueSize(buf.size ());
+    if(!tcbdbput(bdb, ( const char * ) &key, keySize, buf.data (), buf.size () ))
+    {
+      int  errorcode = tcbdbecode(bdb);
+      fprintf(stderr, "put error: %s\n", tcbdberrmsg(errorcode));
+      exit(EXIT_FAILURE);
+    }  
+  #endif
   buf.size(0);
   return;
 }
