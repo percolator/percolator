@@ -64,6 +64,10 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
   #if defined __LEVELDB__
     options.create_if_missing = true;
     options.error_if_exists = true;
+    options.max_open_files = 100;
+    options.write_buffer_size = 4194304*2; //8 MB
+    options.block_size = 4096*4; //16K
+    
     leveldb::Status status = leveldb::DB::Open(options, fileName.c_str(), &bdb);
     if (!status.ok()){ 
       std::cerr << status.ToString() << endl;
@@ -80,15 +84,16 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
       fprintf(stderr, "open error: %s\n", tcbdberrmsg(errorcode));
       exit(EXIT_FAILURE);
     }
+    ret = unlink( fileName.c_str() );
+    assert(! ret);
   #endif
-  ret = unlink( fileName.c_str() );
-  assert(! ret);
+    
   return ret;
 }
 
 void FragSpectrumScanDatabase::terminte(){
   #if defined __LEVELDB__
-    delete bdb;
+    delete(bdb);
   #else
     tcbdbdel(bdb);   
   #endif
@@ -130,19 +135,19 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {
   #if defined __LEVELDB__
     assert(bdb);
-    int valueSize = 0;
-    std::string value;
-    std::stringstream out;
-    out << scanNr;
-    leveldb::Slice s1 = out.str(); //be careful with the scope of the slice
-    leveldb::Status s = bdb->Get(leveldb::ReadOptions(), s1, &value);
-    if(!s.ok()){
+    leveldb::Slice s1((const char*)&scanNr,sizeof(scanNr));
+    leveldb::Iterator* itr = bdb->NewIterator(leveldb::ReadOptions());
+    itr->Seek(s1);
+    if(!itr->Valid() || s1 != itr->key()){
       return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
     }
-    char *retvalue=new char[value.size()+1];
-    retvalue[value.size()]=0;
-    memcpy(retvalue,value.c_str(),value.size());
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue, (int)sizeof(retvalue) )); 
+//     std::cerr << itr->key().ToString() << ": "  << itr->value().ToString() << endl;
+    leveldb::Slice value = itr->value();
+    int valueSize = value.size();
+    char *retvalue = new char[value.size()+1];
+    retvalue[value.size()] = 0;
+    memcpy(retvalue,value.data(),value.size());
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,valueSize)); 
   #else
     assert(bdb);
     int valueSize = 0;
@@ -160,12 +165,17 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
   #if defined __LEVELDB__
     assert(bdb);
     leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
+    std::cerr << "Printing...." << std::endl;
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
-      char *retvalue=new char[it->value().ToString().size()+1];
-      retvalue[it->value().ToString().size()]=0;
-      memcpy(retvalue,it->value().ToString().c_str(),it->value().ToString().size());
-      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,(int)sizeof(retvalue)));
+      std::cerr << it->key().ToString() << ": "  << it->value().ToString() << endl;
+      leveldb::Slice value = it->value();
+      int valueSize = value.size();
+      char *retvalue = new char[value.size()+1];
+      retvalue[value.size()] = 0;
+      memcpy(retvalue,value.data(),value.size());
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,valueSize));
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
+      
     }
     assert(it->status().ok());  // Check for any errors found during the scan
     delete it;
@@ -199,12 +209,10 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
     *oxdrp << fss;
     xdrrec_endofrecord (&xdr, true);
     leveldb::WriteOptions write_options;
-    //careful in windows
-    write_options.sync = true;
-    std::stringstream out;
-    out << (unsigned int)fss.scanNumber();
-    leveldb::Slice s1 = out.str();
+    ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
+    leveldb::Slice s1(( const char * ) &key,sizeof(key));
     leveldb::Status status = bdb->Put(write_options,s1,buf.data());
+    std::cerr << "Storing : " << ( const char * ) &key  << ": "  << *buf.data() << endl;
     if(!status.ok()){
       std::cerr << status.ToString() << endl;
       exit(EXIT_FAILURE);

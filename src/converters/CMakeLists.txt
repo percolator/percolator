@@ -158,7 +158,7 @@ link_directories(${Boost_INCLUDE_DIRS})
 
 find_package(Pthreads)
 if(PTHREADS_FOUND)
-  message(STATUS : "Pthreads found")
+  message(STATUS  "Pthreads found")
 else(PTHREADS_FOUND)
   message(FATAL_ERROR "The package Pthreads has not been not found")
 endif()
@@ -270,11 +270,6 @@ if(MINGW)
   add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_converter/script.nsi" DEPENDS sqt2pin mzidentml2pin) 
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
-
-##temporary workaround for tokyocabinet until my own version of  tokyocabinet for windows is completed
-set(CYGWIN "${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/cygwin1.dll")
-set(CYGWINBZ "${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/cygbz2-1.dll")
-set(CYGWINZ "${CMAKE_CURRENT_SOURCE_DIR}/libs/dll/cygz.dll")
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator
