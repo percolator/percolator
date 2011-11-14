@@ -37,6 +37,7 @@
 #include <xercesc/dom/DOMElement.hpp>
 #include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include "percolator_in.hxx"
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace percolatorInNs;

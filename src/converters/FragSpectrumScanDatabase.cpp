@@ -87,7 +87,6 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
     ret = unlink( fileName.c_str() );
     assert(! ret);
   #endif
-    
   return ret;
 }
 
@@ -135,19 +134,17 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {
   #if defined __LEVELDB__
     assert(bdb);
-    leveldb::Slice s1((const char*)&scanNr,sizeof(scanNr));
+    std::string skey = boost::lexical_cast<std::string>(scanNr);
+    leveldb::Slice s1(skey);
     leveldb::Iterator* itr = bdb->NewIterator(leveldb::ReadOptions());
     itr->Seek(s1);
     if(!itr->Valid() || s1 != itr->key()){
+      delete itr;
       return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
     }
-//     std::cerr << itr->key().ToString() << ": "  << itr->value().ToString() << endl;
-    leveldb::Slice value = itr->value();
-    int valueSize = value.size();
-    char *retvalue = new char[value.size()+1];
-    retvalue[value.size()] = 0;
-    memcpy(retvalue,value.data(),value.size());
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,valueSize)); 
+    char *retvalue = const_cast<char*>(itr->value().data());
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,itr->value().size()));
+    delete itr;
   #else
     assert(bdb);
     int valueSize = 0;
@@ -165,19 +162,11 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
   #if defined __LEVELDB__
     assert(bdb);
     leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
-    std::cerr << "Printing...." << std::endl;
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
-      std::cerr << it->key().ToString() << ": "  << it->value().ToString() << endl;
-      leveldb::Slice value = it->value();
-      int valueSize = value.size();
-      char *retvalue = new char[value.size()+1];
-      retvalue[value.size()] = 0;
-      memcpy(retvalue,value.data(),value.size());
-      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,valueSize));
+      char *retvalue = const_cast<char*>(it->value().data());
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,it->value().size()));
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
-      
     }
-    assert(it->status().ok());  // Check for any errors found during the scan
     delete it;
   #else
     BDBCUR *cursor;
@@ -210,9 +199,10 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
     xdrrec_endofrecord (&xdr, true);
     leveldb::WriteOptions write_options;
     ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
-    leveldb::Slice s1(( const char * ) &key,sizeof(key));
-    leveldb::Status status = bdb->Put(write_options,s1,buf.data());
-    std::cerr << "Storing : " << ( const char * ) &key  << ": "  << *buf.data() << endl;
+    std::string skey = boost::lexical_cast<std::string>(key);
+    leveldb::Slice s2(buf.data(),buf.size());
+    leveldb::Slice s1(skey);
+    leveldb::Status status = bdb->Put(write_options,s1,s2);
     if(!status.ok()){
       std::cerr << status.ToString() << endl;
       exit(EXIT_FAILURE);
