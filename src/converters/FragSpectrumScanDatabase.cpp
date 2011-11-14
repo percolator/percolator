@@ -1,5 +1,6 @@
 #include "FragSpectrumScanDatabase.h"
 
+#ifndef __BOOSTDB__
 struct underflow_info
 {
     xml_schema::buffer* buf;
@@ -23,17 +24,25 @@ typedef  void (*xdrrec_create_p) (
     int (*read) (void* user_data, char* buf, int n),
     int (*write) (void* user_data, char* buf, int n));
 
-
+#endif
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
-    bdb(0), scan2rt(0) {
+    scan2rt(0) {
+#ifndef __BOOSTDB__
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
   xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
   xdr.x_op = XDR_ENCODE;
   std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
   assert(tmpPtr.get());
   oxdrp=tmpPtr;
+  bdb(0);
   if(id_par.empty()) id = "no_id"; else id = id_par;
+#else
+  std::ostringstream ostr;
+  text_oarchive oa (ostr);
+  std::auto_ptr< xml_schema::ostream<text_oarchive> > tmpPtr(new xml_schema::ostream<text_oarchive>(oa));
+  oxdrp = tmpPtr;
+#endif
 }
 
 
@@ -74,7 +83,7 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
       exit(EXIT_FAILURE);
     }
     bool ret = status.ok();
-  #else
+  #elifdef __TOKYODB__
     bdb = tcbdbnew();
     assert(bdb);
     bool ret =  tcbdbsetcmpfunc(bdb, tccmpint32, NULL);
@@ -86,6 +95,8 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
     }
     ret = unlink( fileName.c_str() );
     assert(! ret);
+  #else
+
   #endif
   return ret;
 }
@@ -145,7 +156,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
     char *retvalue = const_cast<char*>(itr->value().data());
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,itr->value().size()));
     delete itr;
-  #else
+  #elifdef __TOKYODB__
     assert(bdb);
     int valueSize = 0;
     char * value = ( char * ) tcbdbget(bdb, ( const char* ) &scanNr, sizeof( scanNr ), &valueSize);
@@ -154,6 +165,8 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
     }
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));  
     free(value);
+  #else
+
   #endif
   return ret;
 }
@@ -207,7 +220,7 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
       std::cerr << status.ToString() << endl;
       exit(EXIT_FAILURE);
     }
-  #else
+  #elifdef __BOOSTDB__
     assert(bdb);
     *oxdrp << fss;
     xdrrec_endofrecord (&xdr, true);
@@ -220,6 +233,8 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
       fprintf(stderr, "put error: %s\n", tcbdberrmsg(errorcode));
       exit(EXIT_FAILURE);
     }  
+  #else
+   *oxdrp << fss;
   #endif
   buf.size(0);
   return;

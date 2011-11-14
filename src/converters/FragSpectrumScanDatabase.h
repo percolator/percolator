@@ -5,6 +5,9 @@
 
 #if defined __LEVELDB__
   #include "leveldb/db.h"
+#elif defined __BOOSTDB__
+  #include <boost/archive/text_iarchive.hpp>
+  #include <boost/archive/text_oarchive.hpp>
 #else
   #include <tcbdb.h>
 #endif
@@ -14,8 +17,10 @@
 #include <cstddef>  // size_t
 #include <cstring>  // memcpy
 
-#include <rpc/types.h>
-#include <rpc/xdr.h>
+#ifndef __BOOSTDB__
+  #include <rpc/types.h>
+  #include <rpc/xdr.h>
+#endif
 
 #include <map>
 #include <string>
@@ -60,18 +65,25 @@ class FragSpectrumScanDatabase {
     void terminte();
     string id;
   protected:
-    XDR xdr;
-    xml_schema::buffer buf;
+    #ifndef __BOOSTDB__
+      XDR xdr;
+      xml_schema::buffer buf;
+      std::auto_ptr< xml_schema::ostream<XDR> > oxdrp;
+    #else
+      using boost::archive::text_oarchive;
+      using boost::archive::text_iarchive;
+      std::auto_ptr< xml_schema::ostream<text_oarchive> > oxdrp;
+    #endif  
     #if defined __LEVELDB__
       leveldb::DB* bdb;
       leveldb::Options options;
-    #else
+    #elifndef __BOOSTDB__
       TCBDB* bdb;
     #endif
     // pointer to retention times
     map<int, vector<double> >* scan2rt;
     // is scoped_ptr possible here?
-    std::auto_ptr< xml_schema::ostream<XDR> > oxdrp;
+    
 };
 
 #endif

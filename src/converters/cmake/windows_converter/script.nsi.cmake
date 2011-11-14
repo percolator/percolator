@@ -263,11 +263,16 @@ Section "MainSection" SEC01
    File "${MING_BIN}\libxerces-c-3-0.dll"
    File "${MING_BIN}\libsqlite3-0.dll"
    File "${MING_BIN}\libportablexdr-0.dll"
-   
+   File "${MING_BIN}\boost_filesystem-gcc45-mt-1_46_1.dll"
+   File "${MING_BIN}\boost_system-gcc45-mt-1_46_1.dll"
+   File "${MING_BIN}\boost_filesystem-gcc45-mt-d-1_46_1.dll"
+   File "${MING_BIN}\boost_system-gcc45-mt-d-1_46_1.dll"
    !ifdef LEVELDB
-      File "${MING_BIN}\leveldb.dll"
+      File "${MING_BIN}\libleveldb.dll"
       File "${MING_BIN}\boost_thread-gcc45-mt-1_46_1.dll"
       File "${MING_BIN}\boost_date_time-gcc45-mt-1_46_1.dll"
+      File "${MING_BIN}\boost_thread-gcc45-mt-d-1_46_1.dll"
+      File "${MING_BIN}\boost_date_time-gcc45-mt-d-1_46_1.dll"
    !else
       File "${MING_BIN}\zlib1.dll"
       File "${MING_BIN}\libtokyocabinet.dll"
@@ -276,8 +281,7 @@ Section "MainSection" SEC01
       File "${MING_BIN}\libbz2-2.dll"
       File "${MING_BIN}\libgnurx-0.dll"
    !endif
-   File "${MING_BIN}\boost_filesystem-gcc45-mt-1_46_1.dll"
-   File "${MING_BIN}\boost_system-gcc45-mt-1_46_1.dll"
+
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"
