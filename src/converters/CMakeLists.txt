@@ -163,14 +163,18 @@ else(PTHREADS_FOUND)
   message(FATAL_ERROR "The package Pthreads has not been not found")
 endif()
 
-if(MINGW AND NOT LEVELDB)
-
+if(MINGW)
   find_package(XDR)
   if(XDR_FOUND)
     message(STATUS  "XDR found")
   else(XDR_FOUND)
     message(FATAL_ERROR "The package XDR has not been found")
   endif()
+endif()
+
+if(MINGW AND NOT LEVELDB)
+
+
 
   find_package(Glob)
   if(GLOB_FOUND)
