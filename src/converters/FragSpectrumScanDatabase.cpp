@@ -36,6 +36,8 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
   assert(tmpPtr.get());
   oxdrp=tmpPtr;
   if(id_par.empty()) id = "no_id"; else id = id_par;
+#else
+  bdb = new mapdb();
 #endif
 }
 
@@ -90,8 +92,9 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
     ret = unlink( fileName.c_str() );
     assert(! ret);
   #else
-    ret = true;
+    bool ret = true;
   #endif
+    
   return ret;
 }
 
@@ -152,6 +155,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
     char *retvalue = const_cast<char*>(itr->value().data());
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,itr->value().size()));
     delete itr;
+    return ret;
   #elifdef __TOKYODB__
     assert(bdb);
     int valueSize = 0;
@@ -161,19 +165,21 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
     }
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));  
     free(value);
+    return ret;
   #else
     assert(bdb);
-    if(bdb->find(scanNr) != bdb->end()){
-       std::istringstream istr (bdb.at(scanNr));
-       text_iarchive ia (istr);
-       xml_schema::istream<text_iarchive> is (ia);
-       std::auto_ptr<::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is));    
-    }
-    else{
+    mapdb::iterator it;
+    it = bdb->find(scanNr);
+    if(it == bdb->end()){
       return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
-    }
+    }       
+    std::istringstream istr (it->second);
+    text_iarchive ia (istr);
+    xml_schema::istream<text_iarchive> is (ia);
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is));    
+    return ret;
   #endif
-  return ret;
+  
 }
 
 void FragSpectrumScanDatabase::print(serializer & ser) {
@@ -209,11 +215,12 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
     tcbdbcurdel(cursor);
   #else
     assert(bdb);
-    BOOST_FOREACH(map m,bdb){
-       std::istringstream istr (m);
+    mapdb::iterator it;
+    for (it = bdb->begin(); it != bdb->end(); it++) {
+       std::istringstream istr (it->second);
        text_iarchive ia (istr);
        xml_schema::istream<text_iarchive> is (ia);
-       std::auto_ptr<::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));  
+       std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));  
        ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
     }
   #endif
@@ -235,7 +242,7 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
       exit(EXIT_FAILURE);
     }
     buf.size(0);
-  #elifdef __BOOSTDB__
+  #elifdef __TOKYODB__
     assert(bdb);
     *oxdrp << fss;
     xdrrec_endofrecord (&xdr, true);
@@ -250,12 +257,11 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
     }
     buf.size(0);
   #else
-    std::auto_ptr<::percolatorInNs::fragSpectrumScan> c (fss);
     std::ostringstream ostr;
     text_oarchive oa (ostr);
     xml_schema::ostream<text_oarchive> os (oa);
-    os << *c;
-    bdb[fss.scanNumber] = osrt.str();
+    os << fss;
+    bdb->insert(make_pair<unsigned int, std::string >((unsigned int)fss.scanNumber(),ostr.str()));
   #endif
 }
 
