@@ -8,7 +8,9 @@
 #elif defined __BOOSTDB__
   #include <boost/archive/text_iarchive.hpp>
   #include <boost/archive/text_oarchive.hpp>
-#else
+  #include <boost/unordered_set.hpp>
+  #include <boost/foreach.hpp>
+#elif __TOKYODB__
   #include <tcbdb.h>
 #endif
 
@@ -72,7 +74,8 @@ class FragSpectrumScanDatabase {
     #else
       using boost::archive::text_oarchive;
       using boost::archive::text_iarchive;
-      std::auto_ptr< xml_schema::ostream<text_oarchive> > oxdrp;
+      typedef boost::unordered_map<unsigned int, std::string> map;
+      map* bdb;
     #endif  
     #if defined __LEVELDB__
       leveldb::DB* bdb;

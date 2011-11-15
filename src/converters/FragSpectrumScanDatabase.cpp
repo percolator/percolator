@@ -27,7 +27,7 @@ typedef  void (*xdrrec_create_p) (
 #endif
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
-    scan2rt(0) {
+    bdb(0),scan2rt(0) {
 #ifndef __BOOSTDB__
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
   xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
@@ -35,13 +35,7 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
   std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
   assert(tmpPtr.get());
   oxdrp=tmpPtr;
-  bdb(0);
   if(id_par.empty()) id = "no_id"; else id = id_par;
-#else
-  std::ostringstream ostr;
-  text_oarchive oa (ostr);
-  std::auto_ptr< xml_schema::ostream<text_oarchive> > tmpPtr(new xml_schema::ostream<text_oarchive>(oa));
-  oxdrp = tmpPtr;
 #endif
 }
 
@@ -96,7 +90,7 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
     ret = unlink( fileName.c_str() );
     assert(! ret);
   #else
-
+    ret = true;
   #endif
   return ret;
 }
@@ -104,7 +98,7 @@ bool FragSpectrumScanDatabase::init(std::string fileName) {
 void FragSpectrumScanDatabase::terminte(){
   #if defined __LEVELDB__
     delete(bdb);
-  #else
+  #elifdef __TOKYODB__
     tcbdbdel(bdb);   
   #endif
 }
@@ -114,6 +108,7 @@ bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par)
   scan2rt=scan2rt_par;
 }
 
+#ifndef __BOOSTDB__
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::deserializeFSSfromBinary( char * value, int valueSize ) {
   xml_schema::buffer buf2;
   buf2.capacity(valueSize);
@@ -141,6 +136,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
   }
   return fss;
 }
+#endif
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {
   #if defined __LEVELDB__
@@ -166,7 +162,16 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));  
     free(value);
   #else
-
+    assert(bdb);
+    if(bdb->find(scanNr) != bdb->end()){
+       std::istringstream istr (bdb.at(scanNr));
+       text_iarchive ia (istr);
+       xml_schema::istream<text_iarchive> is (ia);
+       std::auto_ptr<::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is));    
+    }
+    else{
+      return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
+    }
   #endif
   return ret;
 }
@@ -181,7 +186,7 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
     }
     delete it;
-  #else
+  #elifdef __TOKYODB__
     BDBCUR *cursor;
     char *key;
     assert(bdb);
@@ -202,6 +207,15 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
       tcbdbcurnext(cursor);
     }
     tcbdbcurdel(cursor);
+  #else
+    assert(bdb);
+    BOOST_FOREACH(map m,bdb){
+       std::istringstream istr (m);
+       text_iarchive ia (istr);
+       xml_schema::istream<text_iarchive> is (ia);
+       std::auto_ptr<::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));  
+       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
+    }
   #endif
 }
 
@@ -220,6 +234,7 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
       std::cerr << status.ToString() << endl;
       exit(EXIT_FAILURE);
     }
+    buf.size(0);
   #elifdef __BOOSTDB__
     assert(bdb);
     *oxdrp << fss;
@@ -232,14 +247,19 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
       int  errorcode = tcbdbecode(bdb);
       fprintf(stderr, "put error: %s\n", tcbdberrmsg(errorcode));
       exit(EXIT_FAILURE);
-    }  
+    }
+    buf.size(0);
   #else
-   *oxdrp << fss;
+    std::auto_ptr<::percolatorInNs::fragSpectrumScan> c (fss);
+    std::ostringstream ostr;
+    text_oarchive oa (ostr);
+    xml_schema::ostream<text_oarchive> os (oa);
+    os << *c;
+    bdb[fss.scanNumber] = osrt.str();
   #endif
-  buf.size(0);
-  return;
 }
 
+#ifndef __BOOSTDB__
 extern "C" int
 overflow (void* p, char* buf, int n_)
 {
@@ -265,3 +285,4 @@ underflow (void* p, char* buf, int n_)
   ui->pos += n;
   return n;
 }
+#endif
