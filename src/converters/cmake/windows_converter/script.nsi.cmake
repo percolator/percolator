@@ -277,7 +277,7 @@ Section "MainSection" SEC01
       File "${MING_BIN}\boost_thread-gcc45-mt-d-1_46_1.dll"
       File "${MING_BIN}\boost_date_time-gcc45-mt-d-1_46_1.dll"
       File "${MING_BIN}\libportablexdr-0.dll"
-   !elifdef TOKYODB
+   !elseif defined TOKYODB
       File "${MING_BIN}\zlib1.dll"
       File "${MING_BIN}\libtokyocabinet.dll"
       File "${MING_BIN}\pthreadGC2.dll"
