@@ -345,6 +345,10 @@ IF(MINGW)
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_filesystem*.dll boost_system*.dll boost_serialization*.dll 
 				     libxerces-c*.dll libsqlite3*.dll libgcc_s_sjlj*.dll libstdc++*.dll")
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_filesystem*.dll")
+
   if(LEVELDB)
     file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
