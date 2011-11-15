@@ -46,6 +46,7 @@
 !include LogicLib.nsh ;Used by APPDATA uninstaller.
 !include nsDialogs.nsh ;Used by APPDATA uninstaller.
 !include InstallOptions.nsh
+!include LogicLib.nsh
 
 ; MUI Settings
 !define MUI_ABORTWARNING
@@ -270,14 +271,14 @@ Section "MainSection" SEC01
    File "${MING_BIN}\boost_system-gcc45-mt-d-1_46_1.dll"
    File "${MING_BIN}\boost_serialization-gcc45-mt-d-1_46_1.dll"
    File "${MING_BIN}\boost_serialization-gcc45-mt-d-1_46_1.dll"
-   !ifdef LEVELDB
+   ${if} ${LEVELDB} == "ON"
       File "${MING_BIN}\libleveldb.dll"
       File "${MING_BIN}\boost_thread-gcc45-mt-1_46_1.dll"
       File "${MING_BIN}\boost_date_time-gcc45-mt-1_46_1.dll"
       File "${MING_BIN}\boost_thread-gcc45-mt-d-1_46_1.dll"
       File "${MING_BIN}\boost_date_time-gcc45-mt-d-1_46_1.dll"
       File "${MING_BIN}\libportablexdr-0.dll"
-   !elseif defined TOKYODB
+   ${ElseIf} ${TOKYODB} == "ON"
       File "${MING_BIN}\zlib1.dll"
       File "${MING_BIN}\libtokyocabinet.dll"
       File "${MING_BIN}\pthreadGC2.dll"
@@ -285,7 +286,7 @@ Section "MainSection" SEC01
       File "${MING_BIN}\libbz2-2.dll"
       File "${MING_BIN}\libgnurx-0.dll"
       File "${MING_BIN}\libportablexdr-0.dll"
-   !endif
+   ${EndIf}
 
 
    ;License & release notes.
