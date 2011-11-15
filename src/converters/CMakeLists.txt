@@ -343,18 +343,18 @@ IF(MINGW)
   file(MAKE_DIRECTORY "nsi_bin")
   file(COPY "${MING_PATH}/bin"
              DESTINATION "nsi_bin/"
-             FILES_MATCHING PATTERN "boost_filesystem*.dll" "boost_system*.dll" "boost_serialization*.dll" 
-				     "libxerces-c*.dll" "libsqlite3*.dll" "libgcc_s_sjlj*.dll" "libstdc++*.dll")
+             FILES_MATCHING PATTERN "boost_filesystem*.dll" | "boost_system*.dll" | "boost_serialization*.dll" 
+				     "libxerces-c*.dll" | "libsqlite3*.dll" | "libgcc_s_sjlj*.dll" | "libstdc++*.dll")
   if(LEVELDB)
     file(COPY "${MING_PATH}/bin"
              DESTINATION "nsi_bin/"
-             FILES_MATCHING PATTERN "boost_interprocess*.dll" "boost_date_time*.dll" "boost_thread*.dll" 
-				     "libleveldb*.dll" "libportablexdr*.dll")
+             FILES_MATCHING PATTERN "boost_interprocess*.dll" | "boost_date_time*.dll" | "boost_thread*.dll" 
+				     "libleveldb*.dll" | "libportablexdr*.dll")
   elseif(TOKYODB)
     file(COPY "${MING_PATH}/bin"
              DESTINATION "nsi_bin/"
-             FILES_MATCHING PATTERN "zlib*.dll" "libtokyocabinet*.dll" "pthreadGC2*.dll" "libgnurx*.dll"
-				     "glob*.dll" "libportablexdr*.dll" "libbz*.dll")
+             FILES_MATCHING PATTERN "zlib*.dll" | "libtokyocabinet*.dll" | "pthreadGC2*.dll" | "libgnurx*.dll"
+				     "glob*.dll" | "libportablexdr*.dll" | "libbz*.dll")
   endif()
 endif()
 ###############################################################################
