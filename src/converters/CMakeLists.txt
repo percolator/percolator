@@ -343,22 +343,69 @@ IF(MINGW)
   file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin")
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_filesystem*.dll boost_system*.dll boost_serialization*.dll 
-				     libxerces-c*.dll libsqlite3*.dll libgcc_s_sjlj*.dll libstdc++*.dll")
+             FILES_MATCHING PATTERN "boost_system*.dll")
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_filesystem*.dll")
 
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_serialization*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libxerces-c*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libgcc_s_sjlj*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libstdc++*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libsqlite3*.dll")
+
   if(LEVELDB)
     file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
-             FILES_MATCHING PATTERN "boost_interprocess*.dll boost_date_time*.dll boost_thread*.dll 
-				     libleveldb*.dll libportablexdr*.dll")
+             FILES_MATCHING PATTERN "boost_interprocess*.dlll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "boost_date_time*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "boost_thread*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "libleveldb*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "libportablexdr*.dll")
   elseif(TOKYODB)
     file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
-             FILES_MATCHING PATTERN "zlib*.dll libtokyocabinet*.dll pthreadGC2*.dll libgnurx*.dll
-				     glob*.dll libportablexdr*.dll libbz*.dll")
+             FILES_MATCHING PATTERN "zlib*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "libtokyocabinet*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "pthreadGC2*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "libgnurx*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "glob*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "libportablexdr*.dll")
+    file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
+             FILES_MATCHING PATTERN "libbz*.dll")
   endif()
 endif()
 ###############################################################################

@@ -260,7 +260,7 @@ Section "MainSection" SEC01
    SetOutPath "$INSTDIR"
    File "${BUILD_PATH}\sqt2pin.exe"
    File "${BUILD_PATH}\mzidentml2pin.exe"
-   CopyFiles "${BUILD_PATH}\\nsi_bin\\*" "${INSTDIR}\\"
+   CopyFiles ${BUILD_PATH}\nsi_bin\*.* ${INSTDIR}
 
 #    File "${NSI_PATH}\percolator.ico"
 #    File "${MING_BIN}\libgcc_s_sjlj-1.dll"
