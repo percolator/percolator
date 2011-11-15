@@ -263,14 +263,19 @@ Section "MainSection" SEC01
    File "${NSI_PATH}\percolator.ico"
    File "${MING_BIN}\libgcc_s_sjlj-1.dll"
    File "${MING_BIN}\libstdc++-6.dll"
+   
+ 
    File "${MING_BIN}\libxerces-c-3-0.dll"
    File "${MING_BIN}\libsqlite3-0.dll"
    File "${MING_BIN}\boost_filesystem-gcc45-mt-1_46_1.dll"
    File "${MING_BIN}\boost_system-gcc45-mt-1_46_1.dll"
    File "${MING_BIN}\boost_filesystem-gcc45-mt-d-1_46_1.dll"
    File "${MING_BIN}\boost_system-gcc45-mt-d-1_46_1.dll"
-   File "${MING_BIN}\boost_serialization-gcc45-mt-d-1_46_1.dll"
-   File "${MING_BIN}\boost_serialization-gcc45-mt-d-1_46_1.dll"
+#    File "${MING_BIN}\boost_serialization-gcc45-mt-d-1_46_1.dll"
+#    File "${MING_BIN}\boost_serialization-gcc45-mt-d-1_46_1.dll"
+  
+   Copyfiles  "${MING_BIN}\boost_serialization*" ${INSTDIR}
+  
 #    ${if} ${LEVELDB} == "ON"
 #       File "${MING_BIN}\libleveldb.dll"
 #       File "${MING_BIN}\boost_thread-gcc45-mt-1_46_1.dll"
