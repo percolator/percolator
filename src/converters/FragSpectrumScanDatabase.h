@@ -10,17 +10,19 @@
 #if defined __BOOSTDB__
 //   #include <boost/archive/text_iarchive.hpp>
 //   #include <boost/archive/text_oarchive.hpp>
-  #include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-  #include <boost/unordered_set.hpp>	
-  #include <boost/unordered_map.hpp>
+//   #include <boost/archive/binary_oarchive.hpp>
+// #include <boost/archive/binary_iarchive.hpp>
+//   #include <boost/unordered_set.hpp>	
+//   #include <boost/unordered_map.hpp>
   #include <boost/foreach.hpp>
-  #include <boost/serialization/level.hpp>
-  #include <boost/serialization/tracking.hpp>
-  using boost::archive::binary_oarchive;
-  using boost::archive::binary_iarchive;
+//   #include <boost/serialization/level.hpp>
+//   #include <boost/serialization/tracking.hpp>
+//   using boost::archive::binary_oarchive;
+//   using boost::archive::binary_iarchive;
 //   using boost::archive::text_oarchive;
 //   using boost::archive::text_iarchive;
+    #include <rpc/types.h>
+  #include <rpc/xdr.h>
 #endif
   
 #if defined __TOKYODB__
@@ -90,8 +92,12 @@ class FragSpectrumScanDatabase {
 	TCBDB* bdb;
       #endif
     #else
-      typedef std::multimap< unsigned int, std::string, std::less<unsigned int> > mapdb;
+//       typedef std::multimap< unsigned int, std::string, std::less<unsigned int> > mapdb;
+      typedef std::multimap<unsigned int, std::string, std::less<unsigned int> > mapdb;
       mapdb bdb;
+      XDR xdr;
+      xml_schema::buffer buf;
+      std::auto_ptr< xml_schema::ostream<XDR> > oxdrp;
       int DecoyStored;
       int TargetStored;
     #endif  
