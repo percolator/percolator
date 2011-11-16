@@ -256,11 +256,7 @@ Section "MainSection" SEC01
    File "${BUILD_PATH}\src\percolator.exe"
    File "${NSI_PATH}\percolator.ico"
    ;MINGW
-   File "${MING_BIN}\boost_filesystem-gcc45-mt-1_46_1.dll"
-   File "${MING_BIN}\boost_system-gcc45-mt-1_46_1.dll"
-   File "${MING_BIN}\libgcc_s_sjlj-1.dll"
-   File "${MING_BIN}\libstdc++-6.dll"
-   File "${MING_BIN}\libxerces-c-3-0.dll"
+   File "${BUILD_PATH}\\nsi_bin\\*.*"
 
    ;License & release notes.
    File "@CPACK_RESOURCE_FILE_LICENSE@"

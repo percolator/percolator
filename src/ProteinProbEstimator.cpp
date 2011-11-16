@@ -57,7 +57,7 @@ const bool ProteinProbEstimator::logScaleSearch=true;
 /**
  * output protein PEPs
  */
-const bool ProteinProbEstimator::outputPEPs = false;
+const bool ProteinProbEstimator::outputPEPs = true;
 
 
 

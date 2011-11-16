@@ -5,15 +5,25 @@
 
 #if defined __LEVELDB__
   #include "leveldb/db.h"
-#elif defined __BOOSTDB__
-  #include <boost/archive/text_iarchive.hpp>
-  #include <boost/archive/text_oarchive.hpp>
+#endif
+
+#if defined __BOOSTDB__
+//   #include <boost/archive/text_iarchive.hpp>
+//   #include <boost/archive/text_oarchive.hpp>
+  #include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
   #include <boost/unordered_set.hpp>	
   #include <boost/unordered_map.hpp>
   #include <boost/foreach.hpp>
-  using boost::archive::text_oarchive;
-  using boost::archive::text_iarchive;
-#elif __TOKYODB__
+  #include <boost/serialization/level.hpp>
+  #include <boost/serialization/tracking.hpp>
+  using boost::archive::binary_oarchive;
+  using boost::archive::binary_iarchive;
+//   using boost::archive::text_oarchive;
+//   using boost::archive::text_iarchive;
+#endif
+  
+#if defined __TOKYODB__
   #include <tcbdb.h>
 #endif
 
@@ -22,7 +32,7 @@
 #include <cstddef>  // size_t
 #include <cstring>  // memcpy
 
-#ifndef __BOOSTDB__
+#if defined __TOKYODB__ || defined __LEVELDB__
   #include <rpc/types.h>
   #include <rpc/xdr.h>
 #endif
@@ -62,28 +72,30 @@ class FragSpectrumScanDatabase {
     bool init(std::string filename);
     bool initRTime(map<int, vector<double> >* scan2rt_par);
     auto_ptr<fragSpectrumScan> getFSS( unsigned int scanNr );
-    auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,
-        int valueSize);
+    auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize);
     void putFSS(fragSpectrumScan & fss );
     void savePsm(unsigned int scanNr, auto_ptr<peptideSpectrumMatch> psm_p );
     void print(serializer & ser );
     void terminte();
     string id;
   protected:
-    #ifndef __BOOSTDB__
+    #if defined __TOKYODB__ || defined __LEVELDB__
       XDR xdr;
       xml_schema::buffer buf;
       std::auto_ptr< xml_schema::ostream<XDR> > oxdrp;
+      #if defined __LEVELDB__
+	leveldb::DB* bdb;
+	leveldb::Options options;
+      #else
+	TCBDB* bdb;
+      #endif
     #else
-      typedef boost::unordered_map<unsigned int, std::string> mapdb;
-      mapdb* bdb;
+      typedef std::multimap< unsigned int, std::string, std::less<unsigned int> > mapdb;
+      mapdb bdb;
+      int DecoyStored;
+      int TargetStored;
     #endif  
-    #if defined __LEVELDB__
-      leveldb::DB* bdb;
-      leveldb::Options options;
-    #elifndef __BOOSTDB__
-      TCBDB* bdb;
-    #endif
+    
     // pointer to retention times
     map<int, vector<double> >* scan2rt;
     // is scoped_ptr possible here?

@@ -27,10 +27,10 @@ elseif(BOOSTDB)
   add_definitions(-D__BOOSTDB__)
 elseif(TOKYODB)
   message( STATUS "Using Tokyo Cabinet")
-  add_definitions(-D__TOKYOCABINET__)
+  add_definitions(-D__TOKYODB__)
 else()
   message( STATUS "Using default : Tokyo Cabinet")
-  add_definitions(-D__TOKYOCABINET__)
+  add_definitions(-D__TOKYODB__)
 endif()
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -47,7 +47,6 @@ set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 
-set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_CXX_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
 set(CMAKE_C_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wno-unused-result -Wno-overflow")
@@ -227,8 +226,8 @@ endif()
 # RUN CODESYNTHESIS AND GENGETOPT
 ###############################################################################
 
-if(BOOSTDB)
-  set( xdr_flags --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::text_oarchive --generate-extraction boost::archive::text_iarchive )
+if(BOOSTDB AND NOT TOKYODB AND NOT LEVELDB)
+  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive )
 else()
   set( xdr_flags --generate-insertion XDR --generate-extraction XDR  )
 endif()

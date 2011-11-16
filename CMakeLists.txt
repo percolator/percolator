@@ -179,6 +179,30 @@ if(MINGW)
   add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi" DEPENDS percolator qvality) 
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
 endif()
+
+IF(MINGW)
+
+  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin")
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_system*.dll")
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_filesystem*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libxerces-c*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libgcc_s_sjlj*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libstdc++*.dll")
+
+endif()
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
 include(CPack)

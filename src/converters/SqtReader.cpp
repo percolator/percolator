@@ -83,9 +83,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	  tcd[str.size()] = '\0';
 	  //TOFIX tmpnam is not portable but mkstemp leaves a file as residue
 	  char* pointerToDir = tmpnam(tcd);
-	  //int fd = mkstemp(tcd);
 	  if( pointerToDir ){
-	    //boost::filesystem::path dir = boost::filesystem::temp_directory_path() / pointerToDir;
 	    boost::filesystem::path dir = pointerToDir;
 	    tcf = string(dir.c_str()) + "/percolator-tmp.tcb";
       #endif
@@ -197,7 +195,6 @@ void SqtReader::readSQT(const std::string fn,
   if ( pType == justSearchMaxMinCharge ) {
     return;
   }
-  //  if (VERB > 1) std::cerr << n << " records in file " << fn << std::endl;
   if (n <= 0) {
     std::cerr << "The file " << fn << " does not contain any records"
         << std::endl;
@@ -285,7 +282,7 @@ void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment
 }
 
 
-void SqtReader::push_backFeatureDescription(     percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
+void SqtReader::push_backFeatureDescription( percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
 
   std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
   assert(f_p.get());
@@ -314,7 +311,6 @@ void SqtReader::addFeatureDescriptions( percolatorInNs::featureDescriptions & fe
   push_backFeatureDescription( fd_sequence,"Mass");
   push_backFeatureDescription( fd_sequence,"PepLen");
 
-  //  chargeFeatNum = fd_sequence.size();
   minCharge = minC;
   maxCharge = maxC;
 
@@ -389,7 +385,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   int ourPos;
   std::string line, tmp;
 
-  //  double * feat = psm.features;
   double mass, deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr =
       0.0, nSM = 0.0, tstSM = 0.0;
   bool gotL = true;
@@ -483,9 +478,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
         f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
         if (po.calcPTMs) f_seq.push_back(  DataSet::cntPTMs(peptide));
         if (po.pngasef) f_seq.push_back( DataSet::isPngasef(peptide, isDecoy));
-        //      if (hitsPerSpectrum>1)
-        //        feat[nxtFeat++]=(ms==0?1.0:0.0);
-
         if (po.calcAAFrequencies) {
           computeAAFrequencies(peptide, f_seq);
         }
@@ -538,7 +530,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
-      // mod_p->residues(peptideS[ix-1]);
       peptide_p->modification().push_back(mod_p);      
       peptideS.erase(ix,1);      
     }  

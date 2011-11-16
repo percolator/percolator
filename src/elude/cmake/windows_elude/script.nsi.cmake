@@ -254,6 +254,7 @@ Section "MainSection" SEC01
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
    File "${BUILD_PATH}\elude.exe"
+   File "${BUILD_PATH}\\nsi_bin\\*.*"
    File "${NSI_PATH}\percolator.ico"
 
    ;License & release notes.
