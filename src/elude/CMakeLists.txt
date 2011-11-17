@@ -20,7 +20,7 @@ MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
 MESSAGE( STATUS )
-
+ 
 # VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "0")
 set(CPACK_PACKAGE_VERSION_MINOR "00")
