@@ -12,45 +12,59 @@ system or if you do not have superuser privileges.
 
 ***
 
-
 INSTALLING (from packages or installer)
 
 Download the desired package (referred to as [package] in the instructions 
 below) from the downloads page mentioned above:
   ".deb" packages are available for Debian distributions (such as Ubuntu)
   ".rpm" packages are available for Red Hat (such as Fedora).
+  ".dmg" packages are available for Mac.
+  ".exe" windows installers.
 The converters depend on Percolator itself, which must be installed first!
 
 Ubuntu (11.04)
 Issue the following to install the necessary dependencies for Percolator:
-  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev gengetopt
+  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev libboost-filesystem-dev libboost-system-dev
 and the following for the converters:
-  $ sudo apt-get install libtokyocabinet8 libsqlite3-0
+  $ sudo apt-get install libtokyocabinet8 libsqlite3-0 libbost-serialization-dev libleveldb-dev leveldb-doc zlib1g-dev
 Then, in the directory where the package has been downloaded:
   $ sudo dpkg --install [package].deb
 Note that the converters depend on Percolator, which must be installed first!
 
-Fedora (13)
-Issue the following in the directory where the package has been downloaded:
-  $ wget ftp://rpmfind.net/linux/fedora/development/rawhide/x86_64/os/Packages\
-    /xerces-c-3.1.1-1.fc16.x86_64.rpm
-  $ sudo rpm -ivh xerces-c-3.1.1-1.fc16.x86_64.rpm
-  $ sudo rpm -ivh [package].rpm
+Fedora (15)
+All the external dependencies listed before are available to downloaded and installed in the yum repository in Fedora.
+Then the rpm package can be installed as usual : sudo rpm --install packagename.rpm
+
+Mac OSX
+All the external dependencies listed before are available to downloaded and installed in the curl repository in Mac.
+Then the dmg can be installed as usual.
 
 Linux (other distributions)
 For other distributions you might have to manually build and install some of
-the following libraries:
-  libxerces-c3.1.so
-  libstdc++.so.6
-  libtokyocabinet.so.8
-  libsqlite3-devel.so
+the libraries described before.
+
+Cross-Compilation (MinGW)
+Percolator, Converters and Elude are compatible with cross-compilation in Fedora, Ubuntu and Windows
+using MinGW. Note that all the dependencies listed before have to be cross-compiled and installed
+in the MinGW home folder.
+Converters are only able to be cross-compiled using the BOOST xml-serialization scheme. Support
+for tokyocabinet and leveldb will soon be added.
 
 Windows
-The Percolator and Elude installers have been tested on Windows XP SP2, Windows
+The Percolator, Converters and Elude installers have been tested on Windows XP SP2, Windows
 Vista and Window 7. Download the Windows installer, double click and follow the
 installation procedure. Once completed, open a DOS prompt and invoke Percolator
 from the directory where it was installed.
 
+
+PATCHES AND VERSIONED LIBRARIES
+
+A patch to fix a bug in the XSD binaries por MAC is included.
+A patch to fix a bug in the MinGW-PortableXDR for Fedora is included.
+An implementation of the Windows compatible version of Tokycabinet is 
+avaible in the repository ( Note that it is still in development process)
+An implementation of LevelDB compatible with different platforms is avaible
+to download in the repository.
 
 ***
 
@@ -60,9 +74,10 @@ BUILDING (from source bundle or the repository)
 *** READ THIS CAREFULLY: you MUST install the required libraries! ***
 The following instructions are for Ubuntu (versions 10.04, 10.10 and 11.04).
 Make, Cmake and a C++ compiler are required. To build Percolator, the following
-libraries are also needed: libxerces-c-dev, libboost-dev, libsqlite3-dev. 
-To build the converters: libxerces-c-dev, libboost-dev, gengetopt,
-libtokyocabinet-dev, zlib1g-dev. In addition, both need Code Synthesis XSD in
+libraries are also needed: libxerces-c-dev, libboost-dev, libsqlite3-dev, libboost-filesystem-dev and libboost-system-dev. 
+To build the converters: libxerces-c-dev, libboost-dev, libboost-filesystem-dev and libboost-system-dev, libbost-serialization-dev,
+libleveldb-dev, libtokyocabinet-dev, zlib1g-dev. Note that tokyocabinet and leveldb are both optional libraries
+In addition, both need Code Synthesis XSD in
 it 3.3 version. All the above is automatically installed by following the steps
 below; if you do note have superuser privileges, you will have to manually
 install the mentioned libraries. The same goes for older versions of Ubuntu and
