@@ -17,6 +17,7 @@
 
 #include "Enzyme.h"
 
+
 Enzyme* Enzyme::theEnzyme = NULL;
 
 Enzyme* Enzyme::getEnzyme() {
@@ -56,7 +57,7 @@ void Enzyme::setEnzyme(std::string enzyme) {
     delete theEnzyme;
   }
   theEnzyme = NULL;
-  // boost::iequals: case insensitive string comparison
+  
   if (boost::iequals(enzyme,Chymotrypsin::getString())) {
       theEnzyme = new Chymotrypsin();
   } else if (boost::iequals(enzyme,Elastase::getString())) {
@@ -65,7 +66,8 @@ void Enzyme::setEnzyme(std::string enzyme) {
       theEnzyme = new Enzyme();
   } else if (boost::iequals(enzyme,Trypsin::getString())) {
       theEnzyme = new Trypsin();
-  } else {
+  }
+  else {
     std::cerr << "The selected enzyme have no corresponding class" << std::endl;
     std::exit(-1);
   }
@@ -80,3 +82,4 @@ size_t Enzyme::countEnzymatic(std::string& peptide) {
   }
   return count;
 }
+

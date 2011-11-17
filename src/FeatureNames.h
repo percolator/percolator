@@ -24,6 +24,7 @@
 #include <iostream>
 #include <assert.h>
 #include <boost/foreach.hpp>
+
 #include "percolator_in.hxx"
 
 using namespace std;

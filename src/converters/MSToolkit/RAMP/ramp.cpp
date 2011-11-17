@@ -183,7 +183,7 @@ RAMPFILE* rampOpenFile(const char* filename) {
       int n_nonempty_lines = 0;
       buf[sizeof(buf) - 1] = 0;
       while (!ramp_feof(result)) {
-        ramp_fgets(buf, sizeof(buf) - 1, result);
+        (void) ramp_fgets(buf, sizeof(buf) - 1, result);
         if (strstr(buf, "<msRun")) {
           result->bIsMzData = 0;
           bRecognizedFormat = 1;
@@ -504,7 +504,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
         int k;
         // HENRY -- also reads the "id" field, which is the scan num
         if ((beginOffsetId = (char*)(strstr(buf, "id=\""))) == NULL) {
-          ramp_fgets(buf, SIZE_BUF, pFI);
+          (void) ramp_fgets(buf, SIZE_BUF, pFI);
           continue;
         }
         beginOffsetId += 4;
@@ -536,7 +536,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
         (*iLastScan) = n;
         // HENRY -- using merely the ">" as the beginning of the offset is somewhat scary, but I'm not changing it now.
         if ((beginScanOffset = (char*)(strstr(buf, ">"))) == NULL) {
-          ramp_fgets(buf, SIZE_BUF, pFI);
+          (void) ramp_fgets(buf, SIZE_BUF, pFI);
           continue;
         }
         beginScanOffset++;
@@ -570,7 +570,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
          }
          }
          */
-        ramp_fgets(buf, SIZE_BUF, pFI);
+        (void) ramp_fgets(buf, SIZE_BUF, pFI);
       }
       // HENRY -- We have no idea whether scan number 1, n/2 or n-1 is a missing scan or not. So we cannot just blindly test them.
       // Instead, we start from 1, n/2 and n to find a valid offset to test. (we can test n because n still points to the
@@ -962,7 +962,7 @@ void readHeader(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex, // look here
          * Find end of tag.
          */
         while (!(pStr = strchr(pStr, '>'))) {
-          ramp_fgets(stringBuf, SIZE_BUF, pFI);
+          (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
           pStr = stringBuf;
           if ((pStr2 = (char*)strstr(stringBuf, "precursorScanNum="))) {
             sscanf(pStr2 + 18, "%d", &(scanHeader->precursorScanNum));
@@ -979,7 +979,7 @@ void readHeader(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex, // look here
          * Skip past white space.
          */
         while (!(pStr = skipspace(pStr))) {
-          ramp_fgets(stringBuf, SIZE_BUF, pFI);
+          (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
           pStr = stringBuf;
         }
         sscanf(pStr, "%lf<", &(scanHeader->precursorMZ));
@@ -1051,9 +1051,9 @@ int readMsLevel(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
   }
 #endif
   ramp_fseek(pFI, lScanIndex, SEEK_SET);
-  ramp_fgets(stringBuf, SIZE_BUF, pFI);
+  (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
   while (!(beginMsLevel = (char*)strstr(stringBuf, "msLevel="))) {
-    ramp_fgets(stringBuf, SIZE_BUF, pFI);
+    (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
   }
   beginMsLevel += 9; // We need to move the length of msLevel="
   endMsLevel = (char*)findquot(beginMsLevel);
@@ -1566,9 +1566,9 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
       char* pToBeCorrected;
       e_contentType contType = mzInt; // default to m/z-int
       // now determine peaks precision
-      ramp_fgets(buf, sizeof(buf) - 1, pFI);
+      (void) ramp_fgets(buf, sizeof(buf) - 1, pFI);
       while (!(pBeginData = (char*)strstr(buf, "<peaks"))) {
-        ramp_fgets(buf, sizeof(buf) - 1, pFI);
+        (void) ramp_fgets(buf, sizeof(buf) - 1, pFI);
       }
       getIsLittleEndian(buf, &isLittleEndian);
       // TODO ALL OF THE FOLLOWING CHECKS ASSUME THAT THE NAME AND THE VALUE OF THE
@@ -1621,7 +1621,7 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
           compressedLen = atoi(pBeginData + strlen("compressedLen=\""));
         }
         if (!(pBeginData = strstr(buf, ">"))) { // There is more to read
-          ramp_fgets(buf, sizeof(buf) - 1 , pFI);
+          (void) ramp_fgets(buf, sizeof(buf) - 1 , pFI);
           getIsLittleEndian(buf, &isLittleEndian);
         } else {
           pBeginData++; // skip the >
@@ -1786,11 +1786,11 @@ void readMSRun(RAMPFILE* pFI, struct RunHeaderStruct* runHeader) {
   }
 #endif
   char stringBuf[SIZE_BUF + 1];
-  ramp_fseek(pFI, 0 , SEEK_SET); // rewind
-  ramp_fgets(stringBuf, SIZE_BUF, pFI);
+  (void) ramp_fseek(pFI, 0 , SEEK_SET); // rewind
+  (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
   while ((!strstr(stringBuf, pFI->bIsMzData ? "<mzData" : "<msRun"))
       && !ramp_feof(pFI)) { /* this should not be needed if index offset points to correct location */
-    ramp_fgets(stringBuf, SIZE_BUF, pFI);
+    (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
   }
   while (!ramp_feof(pFI)) {
     const char* cp;
@@ -1811,7 +1811,7 @@ void readMSRun(RAMPFILE* pFI, struct RunHeaderStruct* runHeader) {
         : "<scan"))) {
       break; /* we're into data territory now */
     }
-    ramp_fgets(stringBuf, SIZE_BUF, pFI);
+    (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
   }
 }
 
@@ -1920,15 +1920,15 @@ InstrumentStruct* getInstrumentStruct(RAMPFILE* pFI) {
   }
 #endif
   // HENRY - need to rewind to get instrument info
-  ramp_fseek(pFI, 0 , SEEK_SET);
-  ramp_fgets(stringBuf, SIZE_BUF, pFI);
+  (void) ramp_fseek(pFI, 0 , SEEK_SET);
+  (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
   if (pFI->bIsMzData) { // TODO
   } else {
     int isAncient = 0;
     while (!strstr(stringBuf, "<msInstrument") && !(isAncient = (NULL
         != strstr(stringBuf, "<instrument")))
         && !strstr(stringBuf, "<dataProcessing") && !ramp_feof(pFI)) { /* this should not be needed if index offset points to correct location */
-      ramp_fgets(stringBuf, SIZE_BUF, pFI);
+     (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
     }
     while (!strstr(stringBuf, isAncient ? "</instrument"
         : "</msInstrument") && !strstr(stringBuf, "</dataProcessing")
@@ -1984,7 +1984,7 @@ InstrumentStruct* getInstrumentStruct(RAMPFILE* pFI) {
           found[4] = 1;
         }
       }
-      ramp_fgets(stringBuf, SIZE_BUF, pFI);
+      (void) ramp_fgets(stringBuf, SIZE_BUF, pFI);
     } // while
   }
   if (found[0] || found[1] || found[2] || found[3] || found[4]) {

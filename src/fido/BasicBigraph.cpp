@@ -688,6 +688,10 @@ void BasicBigraph::displayDotty(const string & name) const
   outputDotty(fout, name);
 
   string cmd = "dotty " + graphName + " ";
-  system( cmd.c_str() );
+  if(system( cmd.c_str() ) != 0)
+  {
+    cerr << "Error: doing system call : " << cmd << endl;
+  }
+
   //    getchar();
 }

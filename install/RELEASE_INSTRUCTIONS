@@ -6,8 +6,8 @@ $ ./install/release_32bit.sh (step 4-6, to be run on a 32 bit machine)
 *******************************************************************************
 
 
-RELEASE INSTRUCTIONS - 2.00
-These are the steps I followed to release Percolator version 2.00
+RELEASE INSTRUCTIONS - 2.03
+These are the steps I followed to release Percolator version 2.03
 
 
 *******************************************************************************
@@ -124,13 +124,13 @@ NOTE: steps 4-6 must be executed on a 32 bit machine
   $ ./install/windows_elude.sh
 
   to get it out of the virtual machine:
-  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-2.00-win32.exe ~/Desktop/
-  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/elude-2.00-win32.exe ~/Desktop/
-
+  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/percolatorBuild/percolator-2.03-win32.exe ~/Desktop/
+  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/eludeBuild/elude-2.03-win32.exe ~/Desktop/
+  $ scp -P 2222 root@dirac.dbb.su.se:/tmp/convertersBuild/converters-2.03-win32.exe ~/Desktop/
   Output:
-  percolator-2_00-win32.exe 			percolator + qvality win32
-  elude-2_00-win32.exe 				elude win32
-
+  percolator-2_03-win32.exe 			percolator + qvality win32
+  elude-2_03-win32.exe 				elude win32
+  converters-2_03-win32.exe                     sqt2pin win32
 
 *******************************************************************************
 

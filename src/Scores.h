@@ -17,12 +17,12 @@
 #ifndef SCORES_H_
 #define SCORES_H_
 #ifdef WIN32
-#ifndef uint32_t
-#define uint32_t unsigned long
-#endif
-#ifndef uint64_t
-#define uint64_t unsigned long long
-#endif
+// #ifndef uint32_t
+// #define uint32_t unsigned long
+// #endif
+// #ifndef uint64_t
+// #define uint64_t unsigned long long
+// #endif
 #else
 
 #include <stdint.h>
@@ -33,6 +33,7 @@
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
+
 #include "percolator_out.hxx"
 
 class SetHandler;
@@ -45,11 +46,11 @@ class ScoreHolder {
     int label;
     vector<string> psms_list;
     ScoreHolder() :
-      score(0.0), label(0), pPSM(NULL), psms_list (NULL) {
+      score(0.0), label(0), pPSM(NULL), psms_list () {
       ;
     }
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), label(l), pPSM(psm), psms_list (NULL) {
+      score(s), label(l), pPSM(psm), psms_list () {
       ;
     }
     virtual ~ScoreHolder() {
@@ -176,6 +177,13 @@ class Scores {
     inline static void setSeed(uint32_t s) {
       seed = s;
     }
+    inline static void setShowExpMass(bool expmass) {
+      showExpMass = expmass;
+    }
+    inline static bool getShowExpMass() {
+      return showExpMass;
+    }
+    
     uint32_t lcg_rand();
     double pi0;
     double targetDecoySizeRatio;
@@ -187,6 +195,7 @@ class Scores {
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;
     static uint32_t seed;
+    static bool showExpMass;
 };
 
 #endif /*SCORES_H_*/

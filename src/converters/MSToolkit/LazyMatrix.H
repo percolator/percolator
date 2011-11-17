@@ -33,7 +33,7 @@
 
 using namespace std;
 
-typedef enum sparse_level {
+enum sparse_level {
 	LM_FULL_DATA,
 	LM_RETAIN_DATA,
 	LM_SPARSE_DATA

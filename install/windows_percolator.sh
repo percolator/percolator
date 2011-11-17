@@ -24,9 +24,12 @@ if [ ! -d "xsd-3.3.0-x86_64-linux-gnu" ]; then
   cs_pack="xsd-"${cs_version}".0-x86_64-linux-gnu"
   download $cs_site/"x86_64" $cs_pack
 fi
+cs_site="http://codesynthesis.com/download/xsd/"${cs_version}"/windows"
 if [ ! -d "xsd-3.3.0-i686-windows" ]; then
-  cs_pack="xsd-"${cs_version}".0-i686-linux-gnu"
-  download $cs_site/"i686" $cs_pack
+  cs_pack="xsd-"${cs_version}".0-i686-windows"
+  wget -nc "${site}/${pack}.zip"
+  unzip "${pack}.zip"
+  rm "${pack}.zip"
 fi
 
 if [ -d "$percolatorBuild" ]; then
@@ -37,5 +40,4 @@ cd $percolatorBuild
 
 
 cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$percolatorSource/cmake/windows_percolator/Toolchain-mingw32.cmake '-DCMAKE_PREFIX_PATH='$base'/xsd-3.3.0-i686-windows;'$base'/xsd-3.3.0-x86_64-linux-gnu' -DMINGW=ON -DSTATIC=ON -DGOOGLE_TEST=FALSE -DCMAKE_INSTALL_PREFIX=$base $percolatorSource
-
 make -j 8 win32installer

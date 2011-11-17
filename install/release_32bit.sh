@@ -32,7 +32,7 @@ packageDestination=${base}/packages
 installLibraries()
 {
   echo "installing necessary libraries" 
-  apt-get install libxerces-c-dev libboost-dev build-essential cmake libtokyocabinet-dev libsqlite3-dev
+  apt-get install libxerces-c-dev libboost-dev build-essential cmake libtokyocabinet-dev libsqlite3-dev zlib1g-dev libboost-filesystem-dev libboost-system-dev libbost-serialization-dev libleveldb-dev leveldb-doc
 }
 
 ###############################################################################
@@ -105,7 +105,7 @@ percolator32()
   object="PERCOLATOR32bit"
   echo ${object}
   rm -rf ${base}/percolatorBuild; mkdir ${base}/percolatorBuild; cd ${base}/percolatorBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator
+  cmake -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator
   make -j 8
   make package
   rm -rf ${packageDestination}/percolator32; mkdir ${packageDestination}/percolator32; # harvest packages
@@ -119,7 +119,7 @@ converters32()
   object="CONVERTERS32bit"
   echo ${object}
   rm -rf ${base}/percolator-convertersBuild; mkdir ${base}/percolator-convertersBuild; cd ${base}/percolator-convertersBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
+  cmake -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
   make -j 8
   make package
   rm -rf ${packageDestination}/converters32; mkdir ${packageDestination}/converters32; # harvest packages
@@ -133,7 +133,7 @@ elude32()
   object="ELUDE32bit"
   echo ${object}
   rm -rf ${base}/eludeBuild; mkdir ${base}/eludeBuild; cd ${base}/eludeBuild;
-  cmake -DTARGET_ARCH=i386 -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/elude
+  cmake -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-i686-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/elude
   make -j 8
   make package
   rm -rf ${packageDestination}/elude32; mkdir ${packageDestination}/elude32; # harvest packages

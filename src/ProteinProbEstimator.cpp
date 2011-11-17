@@ -40,26 +40,29 @@ const bool ProteinProbEstimator::debugginMode = false;
  * away from each other? (or just linearly?)
  */
 const bool ProteinProbEstimator::logScaleSearch=true;
-/**
+
+/**tiesAsOneProtein
  * treat ties as if it were one protein
  */
-const bool ProteinProbEstimator::tiesAsOneProtein = false;
-/**
+
+/**usePi0
  * use pi_0 value when calculating empirical q-values
  */
-const bool ProteinProbEstimator::usePi0 = false;
-/**
- * output protein PEPs
- */
-const bool ProteinProbEstimator::outputPEPs = false;
-/**
+
+/** outputEmpirQVal
  * if set to true, output empirical q-values (from target-decoy analysis),
  * otherwise output q-values estimated from PEPs
  */
-const bool ProteinProbEstimator::outputEmpirQVal = true;
+
+/**
+ * output protein PEPs
+ */
+const bool ProteinProbEstimator::outputPEPs = true;
 
 
-ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
+
+ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par,bool tiesAsOneProtein
+			 ,bool usePi0, bool outputEmpirQVal) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = 0.5;
@@ -67,6 +70,9 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par) {
   beta = beta_par;
   numberDecoyProteins = 0;
   numberTargetProteins = 0;
+  this->tiesAsOneProtein = tiesAsOneProtein;
+  this->usePi0 = usePi0;
+  this->outputEmpirQVal = outputEmpirQVal;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator(){
@@ -225,7 +231,7 @@ void ProteinProbEstimator::writeOutputToXML(const fidoOutput& output,
         os << ">" << endl;
         if(ProteinProbEstimator::outputPEPs)
           os << "      <pep>" << output.peps[k] << "</pep>" << endl;
-        if(ProteinProbEstimator::outputEmpirQVal)
+        if(ProteinProbEstimator::getOutputEmpirQval())
           os << "      <q_value>" << output.empirQvalues[k] << "</q_value>\n";
         else
           os << "      <q_value>" << output.estimQvalues[k] << "</q_value>\n";
@@ -248,7 +254,7 @@ void ProteinProbEstimator::writeOutputToStream(const fidoOutput& output,
     ostream& stream) {
   if(ProteinProbEstimator::outputPEPs)
     stream << "PEP\t\t";
-  if (ProteinProbEstimator::outputEmpirQVal)
+  if (ProteinProbEstimator::getOutputEmpirQval())
     stream << "emp qvalues\t" << "proteins\n";
   else
     stream << "est qvalues\t" << "proteins\n";
@@ -257,7 +263,7 @@ void ProteinProbEstimator::writeOutputToStream(const fidoOutput& output,
     if (Scores::isOutXmlDecoys()){
       if(ProteinProbEstimator::outputPEPs)
         stream << scientific << setprecision(7) << output.peps[k] << "\t";
-      if(ProteinProbEstimator::outputEmpirQVal)
+      if(ProteinProbEstimator::getOutputEmpirQval())
         stream << scientific << setprecision(7) <<output.empirQvalues[k]<< "\t";
       else
         stream << scientific << setprecision(7) <<output.estimQvalues[k]<< "\t";
@@ -275,7 +281,7 @@ void ProteinProbEstimator::writeOutputToStream(const fidoOutput& output,
       if(filtered.size()>0){
         if(ProteinProbEstimator::outputPEPs)
           stream << scientific << setprecision(7) << output.peps[k] << "\t";
-        if(ProteinProbEstimator::outputEmpirQVal)
+        if(ProteinProbEstimator::getOutputEmpirQval())
           stream << scientific << setprecision(7) << output.empirQvalues[k]<< "\t";
         else
           stream << scientific << setprecision(7) << output.estimQvalues[k]<< "\t";
@@ -318,3 +324,39 @@ void ProteinProbEstimator::plotRoc(const fidoOutput& output, int N){
 void ProteinProbEstimator::printStatistics(const fidoOutput& output){
   ProteinHelper::printStatistics(output);
 }
+
+void ProteinProbEstimator::setOutputEmpirQval(bool outputEmpirQVal)
+{
+  this->outputEmpirQVal = outputEmpirQVal;
+}
+
+void ProteinProbEstimator::setTiesAsOneProtein(bool tiesAsOneProtein)
+{
+  this->tiesAsOneProtein = tiesAsOneProtein;
+}
+
+void ProteinProbEstimator::setUsePio(bool usePi0)
+{
+  this->usePi0 = usePi0;
+}
+
+bool ProteinProbEstimator::getOutputEmpirQval()
+{
+  return this->outputEmpirQVal;
+}
+
+bool ProteinProbEstimator::getTiesAsOneProtein()
+{
+  return this->tiesAsOneProtein;
+}
+
+bool ProteinProbEstimator::getUsePio()
+{
+  return this->usePi0;
+}
+
+
+
+
+
+

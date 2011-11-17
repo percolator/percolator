@@ -159,7 +159,10 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 #ifdef DEBUG
 	  //          std::cerr << "lazy reading row # " << i << ", offset:" << FTELL(matrix_fh) << std::endl;
 #endif
-          fread(&(r_out[0]), sizeof(float) , cols() , matrix_fh);
+          if(!fread(&(r_out[0]), sizeof(float) , cols() , matrix_fh))
+	  {
+	    cerr << "Error reading file in LazyMatrix.cpp" << endl;
+	  }
       }
       else {
           _get_row_full( r_out, i );
@@ -174,7 +177,10 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
           std::cerr << "lazy reading row # " << i << ", offset:" << FTELL(matrix_fh) << std::endl;
 #endif
              std::vector<float>::iterator b = this->m[i]->begin();
-             fread(&(r_out[0]), sizeof(float) , cols() , matrix_fh);
+             if(!fread(&(r_out[0]), sizeof(float) , cols() , matrix_fh))
+	     {
+	      cerr << "Error reading file in LazyMatrix.cpp" << endl;
+	     }
              copy(r_out.begin(), r_out.end(), m[i]->begin() );
         }
         else {

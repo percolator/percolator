@@ -11,7 +11,7 @@ fi
 set -e
 
 #install libraries
-apt-get install libxerces-c-dev libboost-dev build-essential cmake
+apt-get install libxerces-c-dev libboost-dev build-essential libboost-filesystem-dev libboost-system-dev cmake
 
 #detect kernel architecture
 if [ "$(uname -a | grep x86_64)" != "" ]; then

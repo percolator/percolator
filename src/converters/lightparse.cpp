@@ -17,6 +17,7 @@
 
 #include "parser.hxx"
 #include "config.h"
+
 #include "percolator_in.hxx"
 
 using namespace std;
