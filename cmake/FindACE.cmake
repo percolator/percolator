@@ -9,7 +9,7 @@
 
 # also defined, but not for general use are
 # ACE_LIBRARY, where to find the ACE library.
-
+ 
 set( ACE_FOUND 0 )
 
 if ( UNIX )
