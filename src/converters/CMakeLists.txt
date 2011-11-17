@@ -471,16 +471,6 @@ IF(APPLE)
         SET(MACOSX_BUNDLE_BUNDLE_VERSION ${VERSION})
         SET(MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION})
         SET(MACOSX_BUNDLE_LONG_VERSION_STRING "Version ${VERSION}")
-        INSTALL(TARGETS sqt2pin
-                # If not using ".." the package would not build correctly
-                # or even worse, it would install the app in /usr
-                BUNDLE DESTINATION ../Applications
-            )
-        INSTALL(TARGETS mzidentml2pin
-                # If not using ".." the package would not build correctly
-                # or even worse, it would install the app in /usr
-                BUNDLE DESTINATION ../Applications
-            )
 elseif(UNIX)
 	set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TARGET_ARCH}")
