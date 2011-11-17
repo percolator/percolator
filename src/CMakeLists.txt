@@ -2,12 +2,12 @@
 # SET COMPILER OPTIONS
 ###############################################################################
 
-set(CMAKE_CXX_FLAGS "-O3 -pthread")
-set(CMAKE_C_FLAGS "-O3 -pthread")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -pthread")
-set(CMAKE_C_FLAGS_RELEASE "-O3 -pthread")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pthread")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g -pthread")
+set(CMAKE_CXX_FLAGS "-O3")
+set(CMAKE_C_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 IF(APPLE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
@@ -67,7 +67,7 @@ endif()
 ###############################################################################
 
 if(MINGW)
-  set( xdr_flags --generate-insertion XDR --generate-extraction XDR )
+  set( "" )
 else()
   set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
 endif()
