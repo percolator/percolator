@@ -21,7 +21,7 @@
  limitations under the License.
 
  *******************************************************************************/
-
+ 
 #ifndef PROTEINPROBESTIMATOR_H_
 #define PROTEINPROBESTIMATOR_H_
 
