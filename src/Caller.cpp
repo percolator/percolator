@@ -22,8 +22,31 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#define  mkdir( D, M )   _mkdir( D )
+#ifndef __stdcall
+ #define __stdcall
 #endif
+#endif
+#ifdef _WIN32
+#include <fcntl.h>
+char *mkstemp(char *tmpl)
+{
+  char *result = _mktemp(tmpl);
+  if( result == NULL )
+  {
+    printf( "Problem creating the template\n" );
+    if (errno == EINVAL)
+    {
+       printf( "Bad parameter\n");
+    }
+     else if (errno == EEXIST)
+    {
+      printf( "Out of unique filenames\n"); 
+    }
+   }
+  return result;
+}
+#endif
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace xercesc;
@@ -231,7 +254,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("U",
       "unique-peptides",
-      "Do not remove redundant peptides, keep all PSMS, not only the highest scoring one.",
+      "Do not remove redundant peptides, keep all PSMS and exclude Peptide Level Probability.",
       "",
       FALSE_IF_SET);
   cmd.defineOption("s",
@@ -244,6 +267,26 @@ bool Caller::parseOptions(int argc, char **argv) {
       "check time performance",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("g",
+    "allow-protein-group",
+    "treat ties as if it were one protein (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+  cmd.defineOption("I",
+    "protein-level-pi0",
+    "use pi_0 value when calculating empirical q-values (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+  cmd.defineOption("q",
+    "empirical-protein-q", 		   
+    "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+  cmd.defineOption("M",
+    "exp-mass",
+    "include the experimental mass in the output file",
+    "",
+    TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -253,13 +296,18 @@ bool Caller::parseOptions(int argc, char **argv) {
     calculateProteinLevelProb = true;
     double alpha=-1;
     double beta=-1;
+    bool tiesAsOneProtein = cmd.optionSet("g");
+    bool usePi0 = cmd.optionSet("I");
+    bool outputEmpirQVal = cmd.optionSet("q");
+
     if (cmd.optionSet("a")) {
        alpha = cmd.getDouble("a", 0.00, 0.76);
      }
-     if (cmd.optionSet("b")) {
+    if (cmd.optionSet("b")) {
        beta = cmd.getDouble("b", 0.0, 0.80);
      }
-     protEstimator = new ProteinProbEstimator(alpha,beta);
+
+     protEstimator = new ProteinProbEstimator(alpha,beta,tiesAsOneProtein,usePi0,outputEmpirQVal);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -272,14 +320,49 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("e")) {
     readStdIn = true;
-    // avoiding race conditions
-    string str = string(TEMP_DIR) + "percolator_XXXXXX";
-    xmlInputDir = new char[str.size() + 1];
-    std::copy(str.begin(), str.end(), xmlInputDir);
-    xmlInputDir[str.size()] = '\0';
-    xmlInputDir = tmpnam(xmlInputDir);
-    mkdir(xmlInputDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    xmlInputFN = string(xmlInputDir) + "/pin-tmp.xml";
+    string tcf = "";
+    char * tcd;
+    string str;
+    char * pattern = (char*)"percolator_XXXXXX";
+    string tempW = "c:\\windows\\temp\\";
+    string tempL = "/tmp/";
+    #if defined (__MINGW__) || defined (__WIN32__)
+	char *suffix = mkstemp(pattern);
+	if(suffix != NULL){ 
+	  str = ("\\") + string(suffix);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
+	  tcf = std::string((dir / "\pin-tmp.xml").string());
+    #else
+	  str =  string(pattern);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+	  //TOFIX tmpnam is not portable but mkstemp leaves a file as residue
+	  char* pointerToDir = tmpnam(tcd);
+	  //int fd = mkstemp(tcd);
+	  if( pointerToDir ){
+	    //boost::filesystem::path dir = boost::filesystem::temp_directory_path() / pointerToDir;
+	    boost::filesystem::path dir = pointerToDir;
+	    tcf = string(dir.c_str()) + "/pin-tmp.xml";	    
+    #endif
+	try{
+          if(boost::filesystem::is_directory(dir)){
+	    boost::filesystem::remove_all(dir);
+	  }
+	  boost::filesystem::create_directory(dir);
+	}
+	catch (boost::filesystem::filesystem_error &e)
+	{
+	  std::cerr << e.what() << std::endl;
+	}	
+      }
+      else{
+	cerr << "Error: there was a problem creating temporary file.";
+	exit(-1); // ...error
+      }
   }
   if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
   if (cmd.optionSet("p")) {
@@ -357,9 +440,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     g->timeCheckPoint = true;
     g->checkTimeClock = clock();
   }
+  if (cmd.optionSet("M"))
+  {
+    showExpMass = true;
+    Scores::setShowExpMass(showExpMass);
+  }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
-    if(! cmd.optionSet("j")){ // unless the input comes from -j option
+    if(!cmd.optionSet("j") && !cmd.optionSet("e") ){ // unless the input comes from -j option or -e option
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
       exit(-1); // ...error
@@ -370,6 +458,11 @@ bool Caller::parseOptions(int argc, char **argv) {
     xmlInputFN = cmd.arguments[0]; // then it's the pin input
     if(cmd.optionSet("j")){ // and if the tab input is also present
       cerr << "Error: use one of either pin or tab-delimited input format.";
+      cerr << "\nInvoke with -h option for help.\n";
+      exit(-1); // ...error
+    }
+    if(cmd.optionSet("e")){ // if stdin pin file is present
+      cerr << "Error: the pin file has already been give as stdinput argument.";
       cerr << "\nInvoke with -h option for help.\n";
       exit(-1); // ...error
     }
@@ -844,18 +937,11 @@ void Caller::writeXML_PSMs() {
   xmlOutputFN_PSMs = xmlOutputFN;
   xmlOutputFN_PSMs.append("writeXML_PSMs");
   os.open(xmlOutputFN_PSMs.c_str(), ios::out);
-//  xercesc::XMLPlatformUtils::Initialize();
-//  serializer ser;
-//  ser.start(os);
-  // append PSMs
+
   os << "  <psms>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin();
       psm != fullset.end(); ++psm) {
-//    if (Scores::isOutXmlDecoys() || psm->label==1) { //output decoys if required
-//      std::auto_ptr< ::percolatorOutNs::psm> p(returnXml_PSM(psm));
-//      ser.next("psm", *p);
       os << *psm;
-//    }
   }
   os << "  </psms>" << endl << endl;
   os.close();

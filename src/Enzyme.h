@@ -18,12 +18,13 @@
 
 #ifndef ENZYME_H_
 #define ENZYME_H_
-
+#include <boost/algorithm/string.hpp> // for case insensitive string compare  TOFIX not very portable
 #include <cstdlib>
 #include <iostream>
+#include <cstring> // needed for stricmp()
 #include <string>
 #include <assert.h>
-#include <boost/algorithm/string.hpp> // for case insensitive string compare
+
 
 
 class Enzyme {
@@ -69,6 +70,13 @@ class Enzyme {
     }
     virtual EnzymeType getET() {
       return NO_ENZYME;
+    }
+    
+  private:
+    
+    inline int stricmp (const std::string &s1,const std::string &s2)
+    {
+      return stricmp (s1.c_str(), s2.c_str()); // C's stricmp
     }
 };
 

@@ -231,6 +231,6 @@ void CommandLineParser::findOption(char** argv, int& index) {
       return;
     }
   }
-  error("ERROR: percolator was invoked with an invalid option.\n" +
+  error("ERROR: program was invoked with an invalid option.\n" +
 		  string("Please run \"percolator --help.\""));
 }

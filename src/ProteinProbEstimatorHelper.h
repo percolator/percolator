@@ -32,6 +32,7 @@
 #include <iomanip>
 #include "Vector.h"
 #include "Globals.h"
+#include "ProteinProbEstimator.h"
 using namespace std;
 
 
@@ -76,7 +77,7 @@ unsigned int ProteinHelper::countTargets(const Array<string>& protein_ids,
   for(int p=0; p<protein_ids.size(); p++){
     // if the protein is a target...
     if(isDecoyProbability(protein_ids[p], estimator)<0.5){
-      if(ProteinProbEstimator::tiesAsOneProtein) {
+      if(estimator->getTiesAsOneProtein()) {
         // ... return in case ties are being counted as one protein
         return 1;
       } else {
@@ -98,7 +99,7 @@ unsigned int ProteinHelper::countTargets(const Array<string>& protein_ids,
 unsigned int ProteinHelper::countDecoys(const Array<string>& protein_ids,
     ProteinProbEstimator* estimator){
   // in case ties are being counted as one protein...
-  if(ProteinProbEstimator::tiesAsOneProtein) {
+  if(estimator->getTiesAsOneProtein()) {
     // ... return as soon as a decoy is found
     unsigned int countDecoys(0);
     for(int p=0; p<protein_ids.size(); p++){
@@ -181,7 +182,7 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
       empirQvalues[k]=previousEmpirQval;
     if(isnan(empirQvalues[k])|| isinf(empirQvalues[k])) wellFormed = false;
     // update protein count under q-value thresholds
-    if(ProteinProbEstimator::outputEmpirQVal){
+    if(estimator->getOutputEmpirQval()){
       updateProteinsAtThr(k,empirQvalues,targetsAtThr1,targetsAtThr2,
           decoysAtThr2,targetsAtCurrentPep,decoysAtCurrentPep);
     } else {
@@ -212,7 +213,7 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
   double pi_0 = 1.0;
   // pi_0 is set to the q-value of the targets with the highest highest q-value
   // and empirical q-values are multiplied by it
-  if(ProteinProbEstimator::usePi0) {
+  if(estimator->getUsePio()) {
     pi_0 = estimQvalues[estimQvalues.size()-1];
     for(int k=0; k<empirQvalues.size(); k++)
       empirQvalues[k] = pi_0 * empirQvalues[k];
@@ -626,7 +627,7 @@ double calculateMSE_FDR(double threshold,
 
 void calculateRoc(const fidoOutput output,
     const Array<string>& targets, const Array<string>& decoys,
-    Array<int>& fps, Array<int>& tps);
+    Array<int>& fps, Array<int>& tps, ProteinProbEstimator *estimator);
 
 double calculateROCX(int N, const Array<int>& fps, const Array<int>& tps);
 
@@ -635,14 +636,14 @@ double calculateROCX(int N, const Array<int>& fps, const Array<int>& tps);
  * target and decoy proteins)
  */
 int matchCount(const set<string>& positiveNames,
-    const Array<string> & atThreshold) {
+    const Array<string> & atThreshold, ProteinProbEstimator *estimator) {
   int count = 0;
   // for each protein
   for (int k=0; k<atThreshold.size(); k++) {
     // if target...
     if (positiveNames.count(atThreshold[k]) > 0){
       // ... done! if ties are being counted as one protein
-      if(ProteinProbEstimator::tiesAsOneProtein){
+      if(estimator->getTiesAsOneProtein()){
         return 1;
       }
       // ... keep counting otherwise.
@@ -721,7 +722,7 @@ void GridPoint::calculateObjectiveFn(double lambda,
   // calculate ROCX
   Array<int> fps = Array<int>();
   Array<int> tps = Array<int>();
-  calculateRoc(output, targets, decoys, fps, tps);
+  calculateRoc(output, targets, decoys, fps, tps, toBeTested);
   if(ProteinProbEstimator::debugginMode) {
     // output the results of the ROCX calculation to file
     string s = string(TEMP_DIR) + "5percolator_ROCX_lists.txt";
@@ -804,7 +805,7 @@ double calculateMSE_FDR(double threshold,
  */
 void calculateRoc(const fidoOutput output,
     const Array<string>& targets, const Array<string>& decoys,
-    Array<int>& fps, Array<int>& tps) {
+    Array<int>& fps, Array<int>& tps, ProteinProbEstimator *estimator) {
 
   set<string> targetsSet;
   set<string> decoysSet;
@@ -832,8 +833,8 @@ void calculateRoc(const fidoOutput output,
     protsAtThreshold = output.protein_ids[k];
     numScored += protsAtThreshold.size();
     observedProteins.append( protsAtThreshold );
-    int decoysChange = matchCount(decoysSet, protsAtThreshold);
-    int targetsChange = matchCount(targetsSet, protsAtThreshold);
+    int decoysChange = matchCount(decoysSet, protsAtThreshold, estimator);
+    int targetsChange = matchCount(targetsSet, protsAtThreshold, estimator);
     if ( prob != lastProb && lastProb != -1 ) {
       scheduledUpdate = true;
     }

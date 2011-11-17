@@ -33,7 +33,7 @@ packageDestination=${base}/packages
 installLibraries()
 {
   echo "installing necessary libraries" 
-  apt-get install libxerces-c-dev libboost-dev build-essential cmake libtokyocabinet-dev libsqlite3-dev
+  apt-get install libxerces-c-dev libboost-dev build-essential cmake libtokyocabinet-dev libsqlite3-dev zlib1g-dev libboost-filesystem-dev libboost-system-dev libbost-serialization-dev libleveldb-dev leveldb-doc
 }
 
 ###############################################################################
@@ -106,7 +106,7 @@ percolator64()
   object="PERCOLATOR64bit"
   echo ${object}
   rm -rf ${base}/percolatorBuild; mkdir ${base}/percolatorBuild; cd ${base}/percolatorBuild;
-  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator
+  cmake -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator
   make -j 8
   make package
   make package_source
@@ -122,7 +122,7 @@ converters64()
   object="CONVERTERS64bit"
   echo ${object}
   rm -rf ${base}/percolator-convertersBuild; mkdir ${base}/percolator-convertersBuild; cd ${base}/percolator-convertersBuild;
-  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
+  cmake -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/converters
   make -j 8
   make package
   rm -rf ${packageDestination}/converters64; mkdir ${packageDestination}/converters64; # harvest packages
@@ -136,7 +136,7 @@ elude64()
   object="ELUDE64bit"
   echo ${object}
   rm -rf ${base}/eludeBuild; mkdir ${base}/eludeBuild; cd ${base}/eludeBuild;
-  cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/elude
+  cmake -DCMAKE_BUILD_TYPE=Release '-DCMAKE_PREFIX_PATH='${base}'/xsd-3.3.0-x86_64-linux-gnu/' -DCMAKE_INSTALL_PREFIX='/usr' ${percolatorSource}/percolator/src/elude
   make -j 8
   make package
   rm -rf ${packageDestination}/elude64; mkdir ${packageDestination}/elude64; # harvest packages
@@ -155,6 +155,7 @@ windows()
     rm -rf ${packageDestination}/win; mkdir ${packageDestination}/win;
     scp -P 2222 root@localhost:/tmp/percolator_2_03/percolatorBuild/*-win32.exe ${packageDestination}/win
     scp -P 2222 root@localhost:/tmp/percolator_2_03/eludeBuild/*-win32.exe ${packageDestination}/win
+    scp -P 2222 root@localhost:/tmp/percolator_2_03/convertersBuild/*-win32.exe ${packageDestination}/win
   else
     echo "The remote virtual machine is offline. Skipping windows executables."
   fi

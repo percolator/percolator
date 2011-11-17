@@ -57,15 +57,6 @@
 #define PATHSEP '/'
 #endif
 
-//#define ER_DEBUG
-
-
-/* define FSEEK, FTELL 64-bit offset compatible macros  --
-    arguments are :
-    int FSEEK( FILE * h , off_t pos, int pos_type )
-    off_t FTELL( FILE * h )
- */
-
 //todo test these macros...
 #ifdef _MSC_VER
 #define FSEEK(h,p,offset_flag) _fseeki64(h,p,offset_flag)
@@ -73,14 +64,34 @@
 typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
 #else
 
-#ifndef _LARGEFILE_SOURCE
-#error "need to define _LARGEFILE_SOURCE!!"
-#endif    /* end _LARGEFILE_SOURCE */
+// Larger file support for files greater then 20 gigabytes
+#if not defined _LARGEFILE_SOURCE && defined(__APPLE__)
+  #define _LARGEFILE_SOURCE
+#endif
+#if not defined _LARGEFILE64_SOURCE && defined(__APPLE__)
+  #define _LARGEFILE64_SOURCE
+#endif   /* end _LARGEFILE_SOURCE */
 
-#define FSEEK(h,p,offset_flag) fseeko(h,p,offset_flag)
-#define FTELL(h) ftello(h)
-//TODO -- I should check during the build if off_t really is 
-typedef off_t off64_t; //if I compile with _LARGEFILE_SOURCE and _FILE_OFFSET_BITS=64, off_t is 64-bit
+#ifdef _WIN32
+  #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
+  #define FTELL(h) ftello64(h)
+  #define srand48(seed) srand(seed)
+  #define drand48() (double(rand()) / RAND_MAX)
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+  #define off64_t off_t
+  #define fopen64 fopen
+  #define FSEEK(h,p,offset_flag) fseeko(h,p,offset_flag)
+  #define FTELL(h) ftello(h)
+#else
+  #define FSEEK(h,p,offset_flag) fseeko64(h,p,offset_flag)
+  #define FTELL(h) ftello(h)
+#endif
+
+#ifndef __off64_t_defined 
+  #if not defined off64_t && not defined _WIN32 
+    typedef off_t off64_t; //if I compile with _LARGEFILE_SOURCE and _FILE_OFFSET_BITS=64, off_t is 64-bit
+  #endif
+#endif
 
 #endif /* end _MSC_VER */
 
@@ -105,12 +116,10 @@ typedef std::pair< IdxGroupType, IdxGroupType > TwoGroupsType;
 
 
 //Macro for general large file support - RAMP toolkit style
-#ifndef _LARGEFILE_SOURCE // use MSFT API for 64 bit file pointers
+#if not defined _LARGEFILE_SOURCE and not defined __MINGW__ and not defined __WIN32__ // use MSFT API for 64 bit file pointers
 typedef fpos_t f_off;
 #include <io.h>
 #endif 
-
-
 
 
 #ifndef __GNUC__

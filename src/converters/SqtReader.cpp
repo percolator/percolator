@@ -2,19 +2,45 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _WIN32
+#if defined (__WIN32__) || defined (__MINGW__) 
+#include <direct.h>
+#include <io.h>
+#include <stdio.h>
 #define  mkdir( D, M )   _mkdir( D )
+#include <fcntl.h>
+#include <errno.h>
+char *mkstemp(char *tmpl)
+{
+  char *result = _mktemp(tmpl);
+  if( result == NULL )
+  {
+    printf( "Problem creating the template\n" );
+    if (errno == EINVAL)
+    {
+       printf( "Bad parameter\n");
+    }
+     else if (errno == EEXIST)
+    {
+      printf( "Out of unique filenames\n"); 
+    }
+   }
+  return result;
+}
 #endif
+#include <boost/filesystem.hpp>
 
 std::string aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
+std::string ambiguousAA("BZJX");
+std::string modifiedAA("#@*");
 
 void SqtReader::translateSqtFileToXML(const std::string fn,
     ::percolatorInNs::featureDescriptions & fds,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss, bool isDecoy,
       const ParseOptions & po, int * maxCharge,  int * minCharge, parseType pType,
       vector<FragSpectrumScanDatabase*>& databases, unsigned int lineNumber_par,
-      std::vector<char*>& tokyoCabinetDirs, std::vector<std::string>&
-      tokyoCabinetTmpFNs){
+      std::vector<char*>& DBtDirs, std::vector<std::string>&
+      DBTmpFNs){
+  
   std::ifstream fileIn(fn.c_str(), std::ios::in);
   if (!fileIn) {
     std::cerr << "Could not open file " << fn << std::endl;
@@ -34,28 +60,56 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     // there must be as many databases as lines in the metafile containing sqt
     // files. If this is not the case, add a new one
     if(databases.size()==lineNumber_par){
-      // create temporary directory to store the pointer to the tokyo-cabinet
-      // database
-      string str = string(TEMP_DIR) + "sqt2pin_XXXXXX";
-      char * tcd = new char[str.size() + 1];
-      std::copy(str.begin(), str.end(), tcd);
-      tcd[str.size()] = '\0';
-      char* pointerToDir = tmpnam(tcd);
-      int outcome = mkdir(pointerToDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-      if(outcome == -1) {
-        std::cerr << "sqt2pin could not create temporary directory to store " <<
-            "its tokyocabinet database.\nPlease make sure to have write " <<
-            "permissions in:\n" << string(TEMP_DIR) << std::endl;
-        exit(-1);
+      // create temporary directory to store the pointer to the database
+      string tcf = "";
+      char * tcd;
+      string str;
+      char * pattern = (char*)"sqt2pin_XXXXXX";
+      string tempW = "c:\\windows\\temp\\";
+      string tempL = "/tmp/";
+      #if defined (__MINGW__) || defined (__WIN32__)
+	char *suffix = mkstemp(pattern);
+	if(suffix != NULL){ 
+	  str = ("\\") + string(suffix);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
+	  tcf = std::string((dir / "\percolator-tmp.tcb").string());
+      #else
+	  str =  string(pattern);
+	  tcd = new char[str.size() + 1];
+	  std::copy(str.begin(), str.end(), tcd);
+	  tcd[str.size()] = '\0';
+	  //TOFIX tmpnam is not portable but mkstemp leaves a file as residue
+	  char* pointerToDir = tmpnam(tcd);
+	  if( pointerToDir ){
+	    boost::filesystem::path dir = pointerToDir;
+	    tcf = string(dir.c_str()) + "/percolator-tmp.tcb";
+      #endif
+	try{
+          if(boost::filesystem::is_directory(dir)){
+	    boost::filesystem::remove_all(dir);
+	  }
+	  boost::filesystem::create_directory(dir);
+	}
+	catch (boost::filesystem::filesystem_error &e)
+	{
+	  std::cerr << e.what() << std::endl;
+	}	
       }
-      string tcf = string(tcd) + "/percolator-tmp.tcb";
-      tokyoCabinetDirs.resize(lineNumber_par+1);
-      tokyoCabinetDirs[lineNumber_par]=tcd;
-      tokyoCabinetTmpFNs.resize(lineNumber_par+1);
-      tokyoCabinetTmpFNs[lineNumber_par]=tcf;
-      // initialize databese
+      else{
+	cerr << "Error: there was a problem creating temporary file.";
+	exit(-1); // ...error
+      }
+
+      DBtDirs.resize(lineNumber_par+1);
+      DBtDirs[lineNumber_par]=tcd;
+      DBTmpFNs.resize(lineNumber_par+1);
+      DBTmpFNs[lineNumber_par]=tcf;
+      // initialize databese     
       FragSpectrumScanDatabase* database = new FragSpectrumScanDatabase(fn);
-      database->init(tokyoCabinetTmpFNs[lineNumber_par]);
+      database->init(DBTmpFNs[lineNumber_par]);
       databases.resize(lineNumber_par+1);
       databases[lineNumber_par]=database;
       assert(databases.size()==lineNumber_par+1);
@@ -73,8 +127,8 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
     while (getline(meta, line2)) {
       if (line2.size() > 0 && line2[0] != '#') {
         translateSqtFileToXML(line2, fds, fsss, isDecoy, po, maxCharge,
-            minCharge, pType, databases, lineNumber, tokyoCabinetDirs,
-            tokyoCabinetTmpFNs);
+            minCharge, pType, databases, lineNumber, DBtDirs,
+            DBTmpFNs);
         lineNumber++;
       }
     }
@@ -88,7 +142,8 @@ void SqtReader::readSQT(const std::string fn,
       bool isDecoy, const ParseOptions & po, int* maxCharge,  int* minCharge,
       parseType pType, FragSpectrumScanDatabase* database) {
 
-
+  std::cerr << "Reading sqt " << fn << std::endl;
+  
   std::string ptmAlphabet;
   // Normal + Amino acid + PTM + hitsPerSpectrum + doc
   const int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3;
@@ -140,7 +195,6 @@ void SqtReader::readSQT(const std::string fn,
   if ( pType == justSearchMaxMinCharge ) {
     return;
   }
-  //  if (VERB > 1) std::cerr << n << " records in file " << fn << std::endl;
   if (n <= 0) {
     std::cerr << "The file " << fn << " does not contain any records"
         << std::endl;
@@ -216,21 +270,8 @@ void SqtReader::readSQT(const std::string fn,
   sqtIn.close();
 }
 
-
-/*
-  int getScan( unsigned int scanNr, ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, double observedMassCharge ) {
-
-    int j=0;
-    for ( ::percolatorInNs::experiment::fragSpectrumScan_sequence::iterator i = fsss.begin(); i != fsss.end() ; ++i,  j++ ) {
-       if ( scanNr == i->num() ) { return j; }
-}
-    std::auto_ptr< ::percolatorInNs::observed > ob_p( new ::percolatorInNs::observed(observedMassCharge) );
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fs_p( new ::percolatorInNs::fragSpectrumScan(ob_p, scanNr));
-    fsss.push_back(fs_p);
-    return j;
-}
- */
-void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::set<int> & theMs,  bool isDecoy, const ParseOptions & po,  int minCharge, int maxCharge, std::string psmId, FragSpectrumScanDatabase* database   ) {
+void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::set<int> & theMs,  
+			       bool isDecoy, const ParseOptions & po,  int minCharge, int maxCharge, std::string psmId, FragSpectrumScanDatabase* database   ) {
   std::set<int>::const_iterator it;
   for (it = theMs.begin(); it != theMs.end(); it++) {
     std::ostringstream stream;
@@ -241,10 +282,8 @@ void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment
 }
 
 
-void SqtReader::push_backFeatureDescription(     percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
+void SqtReader::push_backFeatureDescription( percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
 
-  //    int numberAlreadyAdded = fd_sequence.size();
-  // std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(numberAlreadyAdded +1,str));
   std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
   assert(f_p.get());
   fd_sequence.push_back(f_p);
@@ -255,6 +294,7 @@ void SqtReader::addFeatureDescriptions( percolatorInNs::featureDescriptions & fe
     bool calcPTMs, bool doPNGaseF,
     const std::string& aaAlphabet,
     bool calcQuadratic) {
+  
   size_t numFeatures;
   int minCharge, maxCharge;
   int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum, pngFeatNum,
@@ -271,7 +311,6 @@ void SqtReader::addFeatureDescriptions( percolatorInNs::featureDescriptions & fe
   push_backFeatureDescription( fd_sequence,"Mass");
   push_backFeatureDescription( fd_sequence,"PepLen");
 
-  //  chargeFeatNum = fd_sequence.size();
   minCharge = minC;
   maxCharge = maxC;
 
@@ -323,7 +362,7 @@ void SqtReader::addFeatureDescriptions( percolatorInNs::featureDescriptions & fe
 string getRidOfUnprintables(string inpString) {
   string outputs = "";
   for (int jj = 0; jj < inpString.size(); jj++) {
-    char ch = inpString[jj];
+    signed char ch = inpString[jj];
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
       outputs += ch;
     }
@@ -332,7 +371,8 @@ string getRidOfUnprintables(string inpString) {
 }
 
 static int counter = 0;
-void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const ParseOptions & po,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase* database ) {
+void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const ParseOptions & po,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  
+			int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase* database ) {
 
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   unsigned int scan;
@@ -345,7 +385,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   int ourPos;
   std::string line, tmp;
 
-  //  double * feat = psm.features;
   double mass, deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr =
       0.0, nSM = 0.0, tstSM = 0.0;
   bool gotL = true;
@@ -365,7 +404,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
         cerr << line << endl;
         exit(-1);
       }
-
       // Computer name might not be set, just skip this part of the line
       linestr.ignore(256, '\t');
       linestr.ignore(256, '\t');
@@ -440,23 +478,9 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
         f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
         if (po.calcPTMs) f_seq.push_back(  DataSet::cntPTMs(peptide));
         if (po.pngasef) f_seq.push_back( DataSet::isPngasef(peptide, isDecoy));
-        //      if (hitsPerSpectrum>1)
-        //        feat[nxtFeat++]=(ms==0?1.0:0.0);
-
         if (po.calcAAFrequencies) {
           computeAAFrequencies(peptide, f_seq);
         }
-        /*
-        if (calcDOC) {
-          // These features will be set before each iteration
-          DescriptionOfCorrect::calcRegressionFeature(psm);
-          f_seq.push_back( abs(psm.pI - 6.5));
-          f_seq.push_back( abs(psm.massDiff));
-          //          feat[nxtFeat++]=abs(psm.retentionTime);
-          f_seq.push_back( 0 );
-          f_seq.push_back( 0 );
-        }
-         */
         gotL = false;
       }
       ms++;
@@ -489,12 +513,13 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::string peptideS = peptideSequence;
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos) {
+    if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos
+	&& modifiedAA.find(peptideSequence[ix])==string::npos){
       if (ptmMap.count(peptideSequence[ix])==0) {
 	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         exit(-1);
       }
-      peptideSequence.erase(ix,1);      
+      peptideSequence.erase(ix,1);
     }  
   }
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
@@ -505,7 +530,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
-      // mod_p->residues(peptideS[ix-1]);
       peptide_p->modification().push_back(mod_p);      
       peptideS.erase(ix,1);      
     }  

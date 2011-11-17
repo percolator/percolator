@@ -12,6 +12,22 @@ typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> p
 
 typedef map<std::string, int> scanNumberMapType;
 
+std::string call;
+enum enzyme_type { enzyme_type_arg_no_enzyme, enzyme_type_arg_elastase, enzyme_type_arg_chymotrypsin, enzyme_type_arg_trypsin};
+struct input_options
+{
+  std::vector<std::string> decoy_file_arg;
+  std::vector<std::string> target_file_arg;
+  std::string tmp_file_for_indermediate_results_arg;
+  bool target_file_given;
+  bool decoy_file_given;
+  enzyme_type enzyme_type_arg; 
+  bool ptm_flag;
+  bool pngasef_flag;
+  bool aa_freq_flag;
+
+};
+
 static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e,chLatin_n, chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
 
 /* A sketchy overview of the conversion. ( Xpath is used in the explanation )
@@ -90,36 +106,56 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
   bool foundFirstChargeState = false;
   ifstream ifs;
   ifs.exceptions (ifstream::badbit | ifstream::failbit);
-  ifs.open (filename);
+  try
+  {
+    ifs.open (filename);
 
-  parser p;
-  string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
-  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-  xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, filename, true, schemaDefinition,
+    parser p;
+    string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
+    string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+    string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, filename, true, schemaDefinition,
       schema_major, schema_minor));
-  for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
-    // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
-  }
-  ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-
-  int scanNumber = 0;
-  for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
-    ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-    assert(specIdResult.SpectrumIdentificationItem().size() > 0);
-    ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p( new ::percolatorInNs::fragSpectrumScan( scanNumber, experimentalMassToCharge )); 
-    scanNumber++;
-    BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
-      if ( ! foundFirstChargeState ) {
-	minMax.min = item.chargeState();
-	minMax.max = item.chargeState();
-	foundFirstChargeState = true;
-      }
-      minMax.min = std::min(item.chargeState(),minMax.min);
-      minMax.max = std::max(item.chargeState(),minMax.max);
+    for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
+      // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
+    ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
+
+    int scanNumber = 0;
+    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
+      ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
+      assert(specIdResult.SpectrumIdentificationItem().size() > 0);
+      ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p( new ::percolatorInNs::fragSpectrumScan( scanNumber, experimentalMassToCharge )); 
+      scanNumber++;
+      BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
+	if ( ! foundFirstChargeState ) {
+	  minMax.min = item.chargeState();
+	  minMax.max = item.chargeState();
+	  foundFirstChargeState = true;
+	}
+	minMax.min = std::min(item.chargeState(),minMax.min);
+	minMax.max = std::max(item.chargeState(),minMax.max);
+      }
+    }
+  }catch (ifstream::failure e) {
+    cerr << "Exception opening/reading file :" << filename <<endl;
   }
+  catch (const xercesc::DOMException& e)
+  {
+    char * tmpStr = XMLString::transcode(e.getMessage());
+    std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  
+    XMLString::release(&tmpStr);
+
+  }
+  catch (const xml_schema::exception& e)
+  {
+    cerr << e << endl;
+  }
+  catch(std::exception e){
+    cerr << e.what() <<endl;
+  }
+  
   assert( foundFirstChargeState );
   vec.push_back( minMax );
   return;
@@ -128,7 +164,7 @@ void getMinAndMaxCharge(const char * filename, std::vector< MinMaxStruct > & vec
 
 
 
-void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, peptideMapType & peptideMap, int minCharge, int maxCharge, ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge, const struct gengetopt_args_info & args_info, bool isDecoy, percolatorInNs::featureDescriptions & fdesFirstFile,  ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence ) {
+void createPSM( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, peptideMapType & peptideMap, int minCharge, int maxCharge, ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge, const input_options & args_info, bool isDecoy, percolatorInNs::featureDescriptions & fdesFirstFile,  ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence ) {
 
   // It is strange but mzIdentML has "experimentalMassToCharge" on the PSM-level in the XML tree. This leads to a lot of redundant information.
   // Let us check that our assumption ( experimentalMassToCharge is constant in the subtree under SpectrumIdentificationResult ) is really valid with an assert()
@@ -241,9 +277,10 @@ void addFeatureNameWithEmptyDescription( percolatorInNs::featureDescriptions::fe
   return;
 }
 
-int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_args_info & args_info, int minCharge, int maxCharge, bool isDecoy,  percolatorInNs::featureDescriptions & fdesFirstFile, FragSpectrumScanDatabase & database,  int * scanNumber, scanNumberMapType & scanNumberMap  ) {
+int loadFromTargetOrDecoyFile( const char * fileName, const input_options & args_info, int minCharge, int maxCharge, bool isDecoy,  percolatorInNs::featureDescriptions & fdesFirstFile, FragSpectrumScanDatabase & database,  int * scanNumber, scanNumberMapType & scanNumberMap  ) {
   namespace xml = xsd::cxx::xml;
   int ret=0;
+  
   try
   {
     percolatorInNs::featureDescriptions fdesCurrentFile;
@@ -350,7 +387,7 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
     // peptideMap not needed anymore. Let us deallocate.
     for(iter = peptideMap.begin(); iter != peptideMap.end(); ++iter) { delete iter->second; iter->second=0; }
   }
-  catch (const xercesc_3_1::DOMException& e)
+  catch (const xercesc::DOMException& e)
   {
     char * tmpStr = XMLString::transcode(e.getMessage());
     std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  
@@ -370,22 +407,180 @@ int loadFromTargetOrDecoyFile( const char * fileName, const struct gengetopt_arg
   return ret;
 }
 
+std::string greeter()
+{
+  ostringstream oss;
+  oss << "mzidentml2pin version " << VERSION << ", ";
+  oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
+  oss << "Copyright (c) 2010 Lukas Käll. All rights reserved." << endl;
+  oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
+  oss << "Department of Biochemistry and Biophysics at the Stockholm University."
+      << endl;
+  return oss.str();
+  
+}
+
+std::string extendedGreeter() {
+  ostringstream oss;
+  char* host = getenv("HOSTNAME");
+  oss << greeter();
+  oss << "Issued command:" << endl << call << endl;
+  oss.seekp(-1, ios_base::cur);
+  if(host) oss << "on " << host << endl;
+  return oss.str();
+}
+
+std::vector<std::string> parseFileNames(const std::string &str)
+{
+//   char * pch;
+//   std::vector<std::string> tokens;
+//   pch = strtok (str," ,|-");
+//   while (pch != NULL)
+//   {
+//     list.insert(pch);
+//     pch = strtok (NULL, " ,|-");
+//   }
+  
+  istringstream iss(str);
+  std::vector<string> tokens;
+  copy(istream_iterator<string>(iss),
+         istream_iterator<string>(),
+         back_inserter<vector<string> >(tokens));
+
+  
+  return tokens;
+}
+
+bool ParseOptions(int argc, char **argv, input_options &args_info)
+{
+  ostringstream callStream;
+  callStream << argv[0];
+  for (int i = 1; i < argc; i++) {
+    callStream << " " << argv[i];
+  }
+  callStream << endl;
+  call = callStream.str();
+  ostringstream intro, endnote;
+  intro << greeter() << endl << "Usage:" << endl;
+  intro << "   mzidentml2pin [options] -t target.sqt -d decoy.sqt" << endl << endl;
+  intro << "Target.sqt is the target sqt-file, and decoy.sqt is" << endl;
+  intro << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
+  intro << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;
+  intro << "path per line. For successful result, the different runs should be generated" << endl;
+  intro << "under similar condition." << endl;
+
+  // init
+  CommandLineParser cmd(intro.str());
+  
+  cmd.defineOption("t",
+      "target-file",
+      "A target file in mzIdentML (sequest) format",
+      "filename");
+  cmd.defineOption("d",
+      "decoy-file",
+      "A decoy file in mzIdentML (sequest) format",
+      "filename");
+  cmd.defineOption("e",
+      "verbose",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
+      "",
+      "trypsin");
+  cmd.defineOption("w",
+      "tmp-file-for-indermediate-results",
+      "tmp file for indermediate results default = /tmp/convertsequest-tmpfile.tcb",
+      "filename",
+      "/tmp/convertsequest-tmpfile.tcb");
+  cmd.defineOption("b",
+      "ptm",
+      "Calculate feature for number of post-translational modifications",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("a",
+      "aa-freq",
+      "Calculate amino acid frequency features",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("N",
+      "pngasef",
+      "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("v",
+      "verbose",
+      "Set verbosity of output: 0=no processing info, 5=all, default is 2",
+      "level");
+  
+  cmd.parseArgs(argc, argv);
+  
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  }
+  if (VERB > 0) {
+    cerr << extendedGreeter();
+  }
+  
+  args_info.tmp_file_for_indermediate_results_arg = "/tmp/convertsequest-tmpfile.tcb";
+  
+  if (cmd.optionSet("t")) {
+    //TODO WATCH OUT IT COULD BE A LIST
+    args_info.target_file_arg = parseFileNames(cmd.options["t"]);
+    args_info.target_file_given = true;
+  }
+  if (cmd.optionSet("d")) {
+    //TODO WATCH OUT IT COULD BE A LIST
+    args_info.decoy_file_arg = parseFileNames(cmd.options["d"]);
+    args_info.decoy_file_given = true;
+  }
+  if (cmd.optionSet("e")) {
+    //TODO WATCH OUT IT IS A ENUM
+
+    if( cmd.options["e"] == "no enzyme") 
+      args_info.enzyme_type_arg = enzyme_type_arg_no_enzyme; 
+    else if( cmd.options["e"] == "elastase") 
+      args_info.enzyme_type_arg = enzyme_type_arg_elastase; 
+    else if( cmd.options["e"] == "chymotrypsin")
+      args_info.enzyme_type_arg = enzyme_type_arg_chymotrypsin;
+    else if( cmd.options["e"] == "trypsin") 
+      args_info.enzyme_type_arg = enzyme_type_arg_trypsin;
+    else  
+      args_info.enzyme_type_arg = enzyme_type_arg_trypsin; 
+
+  }
+  if (cmd.optionSet("w")) {
+    args_info.tmp_file_for_indermediate_results_arg = cmd.options["w"];
+  }
+  if (cmd.optionSet("b")) {
+    args_info.ptm_flag = true;
+  }
+  if (cmd.optionSet("a")) {
+    args_info.aa_freq_flag = true;
+  }
+  if (cmd.optionSet("N")) {
+    args_info.pngasef_flag = true;
+  }
+  
+  return true;
+}
+
+
+
+
 int
 main (int argc, char* argv[])
 {
   /* Initialize command options parser */
-  struct gengetopt_args_info args_info;
-  if(cmdline_parser(argc, argv, &args_info) != 0){
+  struct input_options args_info;
+  if(!ParseOptions(argc, argv, args_info)){
     exit(EXIT_FAILURE);
   }
   xercesc::XMLPlatformUtils::Initialize ();
 
   std::vector< MinMaxStruct > vec;
   for (int i = 0; i < args_info.target_file_given; ++i) {
-    getMinAndMaxCharge(args_info.target_file_arg[i],vec);
+    getMinAndMaxCharge(args_info.target_file_arg[i].c_str(),vec);
   }
   for (int i = 0; i < args_info.decoy_file_given; ++i) {
-    getMinAndMaxCharge(args_info.decoy_file_arg[i],vec);
+    getMinAndMaxCharge(args_info.decoy_file_arg[i].c_str(),vec);
   }
   int minCharge;
   int maxCharge;
@@ -400,13 +595,13 @@ main (int argc, char* argv[])
   scanNumberMapType scanNumberMap;
   std::auto_ptr<percolatorInNs::featureDescriptions> fdesFirstFile_p ( new ::percolatorInNs::featureDescriptions());
   for (int i = 0; i < args_info.target_file_given; ++i) {
-    printf ("passed target file: %s\n", args_info.target_file_arg[i]);
-    ret = loadFromTargetOrDecoyFile(args_info.target_file_arg[i], args_info, minCharge, maxCharge, false /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap  );
-    if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.target_file_arg[i]); break; }
+    printf ("passed target file: %s\n", args_info.target_file_arg[i].c_str());
+    ret = loadFromTargetOrDecoyFile(args_info.target_file_arg[i].c_str(), args_info, minCharge, maxCharge, false /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap  );
+    if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.target_file_arg[i].c_str()); break; }
   }
   for (int i = 0; ret == 0 && i < args_info.decoy_file_given; ++i) {
-    loadFromTargetOrDecoyFile(args_info.decoy_file_arg[i], args_info, minCharge, maxCharge, true /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap   );
-    if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.decoy_file_arg[i]); }
+    loadFromTargetOrDecoyFile(args_info.decoy_file_arg[i].c_str(), args_info, minCharge, maxCharge, true /* isDecoy */, *fdesFirstFile_p, database, &scanNumber,  scanNumberMap   );
+    if (! ret ) { fprintf(stderr,"error: failed to read/load/parse file:%s",args_info.decoy_file_arg[i].c_str()); }
   }
   std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
   std::cout << "<experiment  xmlns=\"" << PERCOLATOR_IN_NAMESPACE <<  "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\""  << PERCOLATOR_IN_NAMESPACE <<  " file:///scratch/e/nypercol/percolator/src/percolator-xml.xsd\">" << std::endl;

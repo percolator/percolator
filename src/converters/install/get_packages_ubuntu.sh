@@ -29,7 +29,7 @@ fi
 set -e
 
 apt-get install libxerces-c-dev libboost-dev build-essential cmake
-apt-get install gengetopt libtokyocabinet-dev zlib1g-dev
+apt-get install libtokyocabinet-dev zlib1g-dev libboost-filesystem-dev libboost-system-dev libbost-serialization-dev libleveldb-dev leveldb-doc
 
 my_wd=`pwd`
 cd $base

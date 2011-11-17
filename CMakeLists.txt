@@ -26,6 +26,7 @@ MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "GOOGLE_TEST = ${GOOGLE_TEST}" )
 MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
+MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
@@ -36,19 +37,39 @@ MESSAGE( STATUS )
 # NAME AND VERSION
 ###############################################################################
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required (VERSION 2.8)
 project(PERCOLATOR)
 
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "00")
+set(CPACK_PACKAGE_VERSION_MAJOR "2")
+set(CPACK_PACKAGE_VERSION_MINOR "03")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 
-if(STATIC AND MINGW) # windows
+IF(WIN32) 
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib") 
+    SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/lib/include ${CMAKE_SOURCE_DIR}/lib/include/log4cxx)
+    SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
+ELSEIF(UNIX)
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".la" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
+    SET(CMAKE_INCLUDE_PATH /usr/include ${CMAKE_INCLUDE_PATH})
+    SET(CMAKE_LIBRARY_PATH /usr/lib /usr/lib64 ${CMAKE_LIBRARY_PATH})
+ENDIF(WIN32)
+
+# Detect machine architecture, on UNIX:
+if(UNIX)
+	execute_process(COMMAND uname -m
+		OUTPUT_VARIABLE TARGET_ARCH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture uname -m: ${TARGET_ARCH}")
+endif(UNIX)
+
+if(MINGW OR WIN32) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
   set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}\\\\")
@@ -71,13 +92,18 @@ foreach(i ${configurefiles})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
 
+
 ###############################################################################
 # COMPILING
 ###############################################################################
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
-OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
-
+if(MINGW OR WIN32)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
+else(MINGW OR WIN32)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
+endif()
+ 
 # useful macro
 macro(my_find_program progname)
   find_program(${progname}_EXECUTABLE ${progname})
@@ -121,7 +147,6 @@ endif()
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
-set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
 set(CPACK_SOURCE_GENERATOR "TGZ") # This file format is used to package source code ("make package_source")
 set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_PROJECT_NAME};ALL;/")
 set(CPACK_PACKAGE_VENDOR "Stockholms Universitet")
@@ -130,23 +155,36 @@ set(CPACK_PACKAGE_DESCRIPTION_FILE "${PERCOLATOR_SOURCE_DIR}/src/README")
 set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/COPYING")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
 my_set(TARGET_ARCH "amd64" "set build architecture: options are i386 and amd64")
-set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TARGET_ARCH}")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-src")
+
+IF(APPLE)
+	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
+        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-${TARGET_ARCH}")
+        set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-src")
+        SET(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.4u.sdk)
+        SET(CMAKE_OSX_ARCHITECTURES ppc;i386)
+        SET(CMAKE_FIND_ROOT_PATH /Developer/SDKs/MacOSX10.4u.sdk)
+        SET(MACOSX_BUNDLE_BUNDLE_NAME Converters)
+        SET(MACOSX_BUNDLE_BUNDLE_VERSION ${VERSION})
+        SET(MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION})
+        SET(MACOSX_BUNDLE_LONG_VERSION_STRING "Version ${VERSION}")
+elseif(UNIX)
+	set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
+        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TARGET_ARCH}")
+        set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-src")
+endif()
+
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")
 set(CPACK_STRIP_FILES TRUE)
 
 file(GLOB_RECURSE DOT_FILES_BEGIN ".*") # To be ignored by Cpack
 file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
-# uncomment to print list of files ignored by Cpack
-#message("ignoring the following:")
-#message("${DOT_FILES_BEGIN}")
-#message("${TILD_FILES}")
+
 set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURRENT_BINARY_DIR}/;/.bzr/;/.settings/;${DOT_FILES_BEGIN};${TILD_FILES}")
 
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1, libboost-dev, gengetopt")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1, libboost-dev")
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
@@ -157,9 +195,34 @@ set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boo
 
 # NSIS package options
 # Requires NSIS for creating the package 
-add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi" DEPENDS percolator qvality) 
-add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
+if(MINGW)
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_percolator/script.nsi" DEPENDS percolator qvality) 
+  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/percolator-${PACKAGE_VERSION}-win32.exe" )
+endif()
 
+IF(MINGW)
+
+  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin")
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_system*.dll")
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_filesystem*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libxerces-c*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libgcc_s_sjlj*.dll")
+
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "libstdc++*.dll")
+
+endif()
 # Use CPack
 # the following MUST appear AFTER CPACK variables have been set
 include(CPack)

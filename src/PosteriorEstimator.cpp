@@ -347,8 +347,7 @@ void PosteriorEstimator::getQValues(double pi0, const vector<pair<double,
 }
 
 void PosteriorEstimator::getQValuesFromP(double pi0,
-                                         const vector<double>& p, vector<
-										 double> & q) {
+                                         const vector<double>& p, vector<double> & q) {
 	double m = (double)p.size();
 	int nP = 1;
 	// assuming combined sorted in decending order

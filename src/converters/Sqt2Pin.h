@@ -19,10 +19,10 @@
 #define SQT2PIN_H_
 
 #ifndef PIN_VERSION_MAJOR
-#define PIN_VERSION_MAJOR @PIN_VERSION_MAJOR@
+#define PIN_VERSION_MAJOR "@PIN_VERSION_MAJOR@"
 #endif
 #ifndef PIN_VERSION_MINOR
-#define PIN_VERSION_MINOR @PIN_VERSION_MINOR@
+#define PIN_VERSION_MINOR "@PIN_VERSION_MINOR@"
 #endif
 #ifndef WRITABLE_DIR
 #define WRITABLE_DIR "@WRITABLE_DIR@"
@@ -67,14 +67,14 @@ public:
 
 protected:
 	ParseOptions parseOptions;
-        std::vector<char*> tokyoCabinetDirs;
-	std::vector<std::string> tokyoCabinetTmpFNs;
+        std::vector<char*> tmpDirs;
+	std::vector<std::string> tmpFNs;
 	std::string targetFN;
 	std::string decoyFN;
 	std::string xmlOutputFN;
 	std::string call;
-  std::string spectrumFile;
-  map<int, vector<double> > scan2rt;
+	std::string spectrumFile;
+	map<int, vector<double> > scan2rt;
 };
 
 int main(int argc, char **argv);

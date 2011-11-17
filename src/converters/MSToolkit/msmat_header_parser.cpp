@@ -35,16 +35,23 @@ int msmat_header_parser::read_header(msmat * m, FILE * header_fh, bool get_class
   * 3. */
 
   int status = 1;
-  fseek(header_fh,0,SEEK_SET);
+  (void) fseek(header_fh,0,SEEK_SET);
   char cur_line[128];
   char key_field[128];
 
-  fgets(cur_line,128,header_fh);
+  if(!fgets(cur_line,128,header_fh))
+  {
+    cout << "Error reading file msmat header parser";
+  }
   int last_line_start = ftell(header_fh);
   /* should be at next line */;
 
   while ( 1 ) {
-    fgets(cur_line,128,header_fh);
+    if(!fgets(cur_line,128,header_fh))
+    {
+      cout << "Error reading file msmat header parser";
+      continue;
+    }
     if ( strncmp(cur_line,HEADER_END,HEADER_END_LEN) == 0) {
       this->data_start_offset = last_line_start + HEADER_END_LEN + 1 ;
       return status;
@@ -81,7 +88,7 @@ int msmat_header_parser::read_header(msmat * m, FILE * header_fh, bool get_class
         /* pointer to value start and key field */
 
         int semi_start_pos = last_line_start + (int)( colon_pos - key_field );
-        fseek(header_fh,semi_start_pos,SEEK_SET);
+        (void) fseek(header_fh,semi_start_pos,SEEK_SET);
         char should_be_semi = (char)fgetc(header_fh);
         assert(should_be_semi == ':');		
         if ( (last_line_start = process_field(m,header_fh, key_field )) < 0 ) {
@@ -169,8 +176,14 @@ int msmat_header_parser::process_field(msmat * m, FILE * header_fh, char * field
   if ( fscanf(header_fh,"%d,",&field_len) != 1 ) {
     char line_buf[256];
     cerr << "error trying to find data from line -- failed";
-    fgets(line_buf,256,header_fh);
-    cerr << "line:" << line_buf << endl;
+    if(!fgets(line_buf,256,header_fh))
+    {
+      cerr << "line:" << "Error reading line" << endl;
+    }
+    else
+    {
+      cerr << "line:" << line_buf << endl;
+    }
     exit(-1);
   }
 
@@ -183,7 +196,10 @@ int msmat_header_parser::process_field(msmat * m, FILE * header_fh, char * field
   }
   else {
     char * field_data_input = (char*)calloc(field_len, sizeof(char) );
-    fread(field_data_input,sizeof(char),field_len,header_fh);
+    if(!fread(field_data_input,sizeof(char),field_len,header_fh))
+    {
+      cerr << "Error processing " << field_name << endl;
+    }
     const char * field_data = (const char *)field_data_input;
     set_field(m,field_name,field_data, field_len);
     free(field_data_input);
@@ -192,8 +208,11 @@ int msmat_header_parser::process_field(msmat * m, FILE * header_fh, char * field
   if ( should_be_newline != '\n') {
     char tmp_data[65];
     size_t fpos = ftell(header_fh);
-    fseek(header_fh,fpos-32,SEEK_SET);
-    fread(tmp_data,sizeof(char),64,header_fh);
+    (void) fseek(header_fh,fpos-32,SEEK_SET);
+    if(!fread(tmp_data,sizeof(char),64,header_fh))
+    {
+      cerr << "Error processing temp filename in msmat_header_parser" << endl;
+    }
     fprintf(stdout,"Nearby data: %s\n",tmp_data);
     tmp_data[34] = 0;
     fprintf(stdout,"Flanking: %s\n",tmp_data + 31);
@@ -267,7 +286,7 @@ void msmat_header_parser::set_field(msmat * msmat, char * field_name, const char
 
 void msmat_header_parser::write_header_field ( FILE * header_fh, const char * field_name,
                                                    size_t elements, size_t element_size, const void * element_value ) {
-                                                     fprintf(header_fh,"%s:%d,",field_name, elements * element_size);
+                                                     fprintf(header_fh,"%s:%zd,",field_name, elements * element_size);
                                                      if ( elements > 0 ) {
                                                        fwrite(element_value, element_size, elements, header_fh);
                                                      }
@@ -385,7 +404,7 @@ void msmat_header_parser::write_header_field_float_map ( FILE * header_fh, const
                                                              flt_map & float_map ) {
                                                                int num_elements = float_map.size();
                                                                size_t map_array_len = num_elements * 2 * sizeof(float);
-                                                               fprintf(header_fh,"%s:%d,",field_name,map_array_len);
+                                                               fprintf(header_fh,"%s:%zd,",field_name,map_array_len);
                                                                if  ( num_elements > 0 ) {
                                                                  vector<float> map_keys(num_elements);
                                                                  vector<float> map_vals(num_elements);

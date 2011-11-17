@@ -1,15 +1,16 @@
 #include <boost/algorithm/string.hpp>
 #include "Sqt2Pin.h"
+#include <ssl.h>
 
 Sqt2Pin::Sqt2Pin() {
-  tokyoCabinetDirs = std::vector<char*>();
-  tokyoCabinetTmpFNs = std::vector<std::string>();
+  tmpDirs = std::vector<char*>();
+  tmpFNs = std::vector<std::string>();
 }
 
 Sqt2Pin::~Sqt2Pin() {
   //deleting temporary folder(s)
-  for(int i=0; i<tokyoCabinetDirs.size(); i++)
-    rmdir(tokyoCabinetDirs[i]);
+  for(int i=0; i<tmpDirs.size(); i++)
+    rmdir(tmpDirs[i]);
 }
 
 string Sqt2Pin::extendedGreeter() {
@@ -136,7 +137,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     cerr << extendedGreeter();
   }
   if (cmd.optionSet("Y")) {
-    tokyoCabinetTmpFNs.push_back(cmd.options["Y"]);
+    tmpFNs.push_back(cmd.options["Y"]);
   }
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
@@ -187,8 +188,18 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       }
     }
   }
+  
   if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
   if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  
+  // if there are no arguments left...
+  if (cmd.arguments.size() == 0) {
+      cerr << "Error: too few arguments.";
+      cerr << "\nInvoke with -h option for help\n";
+      exit(-1); // ...error
+  }
+  
+  
   return true;
 }
 
@@ -311,32 +322,31 @@ int Sqt2Pin::run() {
   int maxCharge = -1;
   int minCharge = 10000;
 
-  if(VERB>1){
-    cerr << "Reading input from sqt file(s):\n";
-  }
-
+  std::cerr << "Reading input from sqt file(s):\n";
+ 
   vector<FragSpectrumScanDatabase*> databases;
 
+  
   if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
     // First we only search for the maxCharge and minCharge.
     // This done by passing the argument justSearchMaxMinCharge
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
-        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
+        0, tmpDirs, tmpFNs);
     SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
         &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge, databases,
-        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
+        0, tmpDirs, tmpFNs);
     // Now we do full parsing of the Sqt file, and translating it to XML
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge,  SqtReader::fullParsing, databases,
-        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
+        0, tmpDirs, tmpFNs);
     SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::fullParsing, databases,
-        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
+        0, tmpDirs, tmpFNs);
 
   } else {
     // First we only search for the maxCharge and minCharge.
@@ -344,12 +354,12 @@ int Sqt2Pin::run() {
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
-        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
+        0, tmpDirs, tmpFNs);
     // Now we do full parsing of the Sqt file, and translating it to XML
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::fullParsing, databases,
-        0, tokyoCabinetDirs, tokyoCabinetTmpFNs);
+        0, tmpDirs, tmpFNs);
   }
 
   // read retention time if sqt2pin was invoked with -2 option
@@ -387,10 +397,7 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Initialize ();
 
-  if(VERB>1){
-    cerr << "\nWriting output:\n";
-  }
-
+  cerr << "\nWriting output:\n";
   // print to cout (or populate xml file)
   // print features
   {
@@ -402,6 +409,7 @@ int Sqt2Pin::run() {
   }
 
   // print fragSpecturmScans
+  std::cerr << "Databases : " << databases.size() << std::endl;
   for(int i=0; i<databases.size();i++) {
     serializer ser;
     if (xmlOutputFN == "") ser.start (std::cout);
@@ -423,9 +431,8 @@ int Sqt2Pin::run() {
 
   xercesc::XMLPlatformUtils::Terminate();
 
-  if(VERB>1){
-    cerr << "\nAll the input files have been successfully processed"<< endl;
-  }
+  cerr << "\nAll the input files have been successfully processed"<< endl;
+
   return 0;
 }
 

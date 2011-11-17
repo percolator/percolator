@@ -51,7 +51,7 @@ inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
 inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
   for (int jj = 0; jj < inpString.size(); jj++) {
-    char ch = inpString[jj];
+    signed char ch = inpString[jj];
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
       outputs += ch;
     }
@@ -131,8 +131,10 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << scientific << sh.pPSM->pep << "</pep>" << endl;
-  os << "      <exp_mass>" << fixed << setprecision (4)
-            << sh.pPSM->expMass << "</exp_mass>" << endl;
+  if(Scores::getShowExpMass()) {
+    os << "      <exp_mass>" << fixed << setprecision (4) 
+    << sh.pPSM->expMass << "</exp_mass>" << endl;
+  }   
   os << "      <calc_mass>" << fixed << setprecision (3)
             << sh.pPSM->calcMass << "</calc_mass>" << endl;
   if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\""
@@ -174,8 +176,10 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
   os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
   os << "      <pep>" << scientific << sh.pPSM->pep << "</pep>" << endl;
-  os << "      <exp_mass>" << fixed << setprecision (4)
+  if(Scores::getShowExpMass()) {
+    os << "      <exp_mass>" << fixed << setprecision (4)
             << sh.pPSM->expMass << "</exp_mass>" << endl;
+  }
   os << "      <calc_mass>" << fixed << setprecision (3)
             << sh.pPSM->calcMass << "</calc_mass>" << endl;
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
@@ -207,6 +211,7 @@ Scores::~Scores() {
 }
 
 bool Scores::outxmlDecoys = false;
+bool Scores::showExpMass = false;
 uint32_t Scores::seed = 1;
 
 void Scores::merge(vector<Scores>& sv, double fdr, bool makeUnique) {
@@ -290,7 +295,8 @@ void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUnique
 // Park–Miller random number generator
 // from wikipedia
 uint32_t Scores::lcg_rand() {
-  seed = ((uint64_t)seed * 279470273) % 4294967291;
+  //uint64_t
+  seed = ((long unsigned int)seed * 279470273) % 4294967291;
   return seed;
 }
 

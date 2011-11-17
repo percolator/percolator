@@ -115,14 +115,19 @@ void LPSolver::outputMathematica(char * fname) const
   outA.close();
 
   string instr = string("sed s/e/*10^/g ")+string(fname)+string(" > ")+string("/tmp/tmp_t");
-  system( instr.c_str() );
+  if(system( instr.c_str() ) != 0)
+  {
+    cerr << "Error: doing system call : " << instr << endl;
+  }
 
   string instr2 = "mv /tmp/tmp_t " + string(fname);
-  system( instr2.c_str() );
+  if(system( instr2.c_str() ) != 0)
+  {
+    cerr << "Error: doing system call : " << instr2 << endl;
+  }
+
 
   ofstream outB(fname, ios::app);
   outB << "Timing[LinearProgramming[-f, A, b, Method->\"Simplex\"]]" << endl;
   outB << "f.Last[%]" << endl;
 }
-
-

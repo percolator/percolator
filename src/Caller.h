@@ -1,4 +1,4 @@
-/*******************************************************************************
+ /*******************************************************************************
  Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -134,6 +134,7 @@ class Caller {
     bool reportUniquePeptides;
     bool calculateProteinLevelProb;
     bool schemaValidation;
+    bool showExpMass;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;
