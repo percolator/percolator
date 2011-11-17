@@ -1,4 +1,5 @@
 #include "FragSpectrumScanDatabase.h"
+#include <MSToolkitTypes.h>
 
 struct underflow_info
 {
@@ -12,7 +13,7 @@ overflow (void* user_data, char* buf, int n);
 extern "C" int
 underflow (void* user_data, char* buf, int n);
 
-
+#if not defined __BOOSTDB__
 extern "C"
 typedef  void (*xdrrec_create_p) (
     XDR*,
@@ -21,7 +22,7 @@ typedef  void (*xdrrec_create_p) (
     void* user_data,
     int (*read) (void* user_data, char* buf, int n),
     int (*write) (void* user_data, char* buf, int n));
-
+#endif
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
     scan2rt(0) {
@@ -35,12 +36,6 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
   oxdrp=tmpPtr;
 #elif defined __BOOSTDB__
   bdb = mapdb();
-  xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
-  xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
-  xdr.x_op = XDR_ENCODE;
-  std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
-  assert(tmpPtr.get());
-  oxdrp=tmpPtr;
 #endif
   if(id_par.empty()) id = "no_id"; else id = id_par;
 }
@@ -116,6 +111,7 @@ bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par)
 }
 
 
+#if not defined __BOOSTDB__
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::deserializeFSSfromBinary( char * value, int valueSize ) {
   xml_schema::buffer buf2;
   buf2.capacity(valueSize);
@@ -143,7 +139,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::des
   }
   return fss;
 }
-
+#endif
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::getFSS( unsigned int scanNr ) {
   #if defined __LEVELDB__
@@ -171,19 +167,16 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabase::get
     free(value);
     return ret;
   #elif defined __BOOSTDB__
-    
     mapdb::const_iterator it;
     it = bdb.find(scanNr);
     if(it == bdb.end()){
       return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
     }
-//     std::istringstream istr (it->second);
-//     binary_iarchive ia (istr);
-//     xml_schema::istream<binary_iarchive> is (ia);
-//     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is)); 
-    char *retvalue = const_cast<char*>(it->second.c_str());
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret (deserializeFSSfromBinary(retvalue,it->second.size())); 
-    return ret;
+    std::istringstream istr (it->second);
+    binary_iarchive ia (istr);
+    xml_schema::istream<binary_iarchive> is (ia);
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is)); 
+    return ret;      
   #endif
 
 }
@@ -221,16 +214,12 @@ void FragSpectrumScanDatabase::print(serializer & ser) {
     tcbdbcurdel(cursor);
   #elif defined __BOOSTDB__
     mapdb::const_iterator it;
-    std::cerr << "Size : " << bdb.size() << std::endl;
     for (it = bdb.begin(); it != bdb.end(); it++) {
-//     std::istringstream istr (it->second);
-//     binary_iarchive ia (istr);
-//     xml_schema::istream<binary_iarchive> is (ia);
-//     std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is))
-
-       char *retvalue = const_cast<char*>(it->second.c_str());
-       std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss (deserializeFSSfromBinary(retvalue,it->second.size())); 
-       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
+      std::istringstream istr (it->second);
+      binary_iarchive ia (istr);
+      xml_schema::istream<binary_iarchive> is (ia);
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));
+      ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
     }
   #endif
 }
@@ -266,22 +255,14 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
     }
     buf.size(0);
   #elif defined __BOOSTDB__
-//     TargetStored++;
-//     std::ostringstream ostr;
-//     binary_oarchive oa (ostr);
-//     xml_schema::ostream<binary_oarchive> os (oa);
-//     os << fss;
-//     ostr.flush();
-//     std::cerr << fss.scanNumber() << std::endl << ostr.str() << std::endl;
-//     ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
-//     bdb.insert(make_pair<unsigned int, std::string >(key,ostr.str()));
-//     ostr.str(""); // reset the strin
-     *oxdrp << fss;
-     xdrrec_endofrecord (&xdr, true);
-     ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
-     std::string value(buf.data(),buf.size());
-     bdb.insert(std::pair<unsigned int,std::string>(key,value));
-     buf.size(0);
+    std::ostringstream ostr;
+    binary_oarchive oa (ostr);
+    xml_schema::ostream<binary_oarchive> os (oa);
+    os << fss;
+    ostr.flush();
+    ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
+    bdb[key] = ostr.str();
+    ostr.str(""); // reset the string
   #endif
 }
 

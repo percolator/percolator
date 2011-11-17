@@ -29,8 +29,8 @@ elseif(TOKYODB)
   message( STATUS "Using Tokyo Cabinet")
   add_definitions(-D__TOKYODB__)
 else()
-  message( STATUS "Using default : Tokyo Cabinet")
-  add_definitions(-D__TOKYODB__)
+  message( STATUS "Using default : Boost DB")
+  add_definitions(-D__BOOSTDB__)
 endif()
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -227,8 +227,7 @@ endif()
 ###############################################################################
 
 if(BOOSTDB AND NOT TOKYODB AND NOT LEVELDB)
-#  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive )
-  set( xdr_flags --generate-insertion XDR --generate-extraction XDR  )
+  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive )
 else()
   set( xdr_flags --generate-insertion XDR --generate-extraction XDR  )
 endif()
