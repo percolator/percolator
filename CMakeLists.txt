@@ -61,6 +61,14 @@ ELSEIF(UNIX)
     SET(CMAKE_LIBRARY_PATH /usr/lib /usr/lib64 ${CMAKE_LIBRARY_PATH})
 ENDIF(WIN32)
 
+# Detect machine architecture, on UNIX:
+if(UNIX)
+	execute_process(COMMAND uname -m
+		OUTPUT_VARIABLE TARGET_ARCH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture uname -m: ${TARGET_ARCH}")
+endif(UNIX)
+
 if(MINGW OR WIN32) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
   set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")

@@ -32,6 +32,15 @@ set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
+# Detect machine architecture, on UNIX:
+if(UNIX)
+	execute_process(COMMAND uname -m
+		OUTPUT_VARIABLE TARGET_ARCH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture uname -m: ${TARGET_ARCH}")
+endif(UNIX)
+
+
 if(MINGW OR WIN32) # windows
   set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\models\\\\")
