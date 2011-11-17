@@ -275,7 +275,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("I",
     "protein-level-pi0",
     "use pi_0 value when calculating empirical q-values (Only valid if option -A is active).",
-    "",
+    "", 
     TRUE_IF_SET);
   cmd.defineOption("q",
     "empirical-protein-q", 		   

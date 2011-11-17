@@ -130,7 +130,7 @@ endif()
 
 
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido pthread ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW AND NOT WIN32)

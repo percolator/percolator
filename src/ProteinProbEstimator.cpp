@@ -44,7 +44,7 @@ const bool ProteinProbEstimator::logScaleSearch=true;
 /**tiesAsOneProtein
  * treat ties as if it were one protein
  */
-
+ 
 /**usePi0
  * use pi_0 value when calculating empirical q-values
  */
