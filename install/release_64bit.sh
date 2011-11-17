@@ -169,7 +169,6 @@ changeVersion
 percolator64
 converters64
 elude64
-windows
 
 echo ""
 echo "Release process for version ${version_major}.${version_minor} 64 bit completed successfully!"

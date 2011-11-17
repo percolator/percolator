@@ -1,3 +1,25 @@
+v2.02
+* Added new xml binary serialization schemes in Sqt2pin. It now supports LevelDB + XDR and Boost Serialization + Hash tables.
+* Added three new parameters in percolator, "exp-mass",  "empirical-protein-q" and "protein-level-pi0".
+* Added output of PEP by default in percolator.
+* Bugfix: fixed sqt2pin to accept extra characters in the peptides of the input files.
+* Remove some external dependencies and/or libraries.
+* Added support to APPLE systems.
+* Added support to WINDOWS system through cross-compilation under MINGW.
+* Bugfix: Compilation error of sqt2pin in some platforms.
+* Removed warnings in the building process.
+* Added cross compilation compatibility with Ubuntu-Debian systems (MinGW).
+* Improved the building and compilation process.
+* Added parameter -M to activate the exp_mass in the ouput of percolator.
+* Bugfix: Execution error while creating temporal directories in sqt2pin fixed.
+* Created a patch for XSD binaries libraries in MAC.
+* Created a patch for XDR serialization in Windows.
+* Added an adapted version for percolator of LevelDB and TokyoCabinet libraries.
+* Generated packages for MAC,Ubuntu and Fedora systems.
+* Generated installer of percolator,elude and sqt2pin for windows systems.
+* Added GUI for installers in Windows. Included icons, language options as well as many add-ons.
+* Improved the compatibility and robustness of the code.
+
 v2.01
 * Bugfix: corrected PSM level statistics for cases when percolator executed w/o -U flag
 

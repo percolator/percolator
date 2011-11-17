@@ -1,6 +1,6 @@
 #include "FragSpectrumScanDatabase.h"
 #include <MSToolkitTypes.h>
-
+ 
 struct underflow_info
 {
     xml_schema::buffer* buf;

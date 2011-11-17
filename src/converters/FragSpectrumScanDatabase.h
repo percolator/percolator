@@ -1,6 +1,6 @@
 #ifndef FRAGSPECTRUMSCANDATABASE_H
 #define FRAGSPECTRUMSCANDATABASE_H
-
+ 
 #include <memory>   // std::auto_ptr
 
 #if defined __LEVELDB__

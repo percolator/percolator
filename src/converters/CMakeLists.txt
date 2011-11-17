@@ -11,6 +11,7 @@ MESSAGE( STATUS )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
+MESSAGE( STATUS "Indicate the type of XML serialization scheme : -DBOOSTDB -DTOKYODB -DLEVELDB . By setting up one of those variables to ON. BoostDB will be taken as default if no option is given.")
 MESSAGE( STATUS "Building PERCOLATOR-CONVERTERS:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
@@ -49,8 +50,8 @@ MESSAGE( STATUS
 MESSAGE( STATUS )
 
 # VERSION AND NAMESPACES - TO BE THE SAME AS PERCOLATOR'S
-set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "03")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "00")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
 set(PIN_VERSION_MAJOR "1")
