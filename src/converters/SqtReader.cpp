@@ -85,7 +85,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
 	  char* pointerToDir = tmpnam(tcd);
 	  if( pointerToDir ){
 	    boost::filesystem::path dir = pointerToDir;
-	    tcf = string(dir.c_str()) + "/percolator-tmp.tcb";
+	    tcf = std::string((dir / "/percolator-tmp.tcb").string());
       #endif
 	try{
           if(boost::filesystem::is_directory(dir)){
