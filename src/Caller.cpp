@@ -346,7 +346,8 @@ bool Caller::parseOptions(int argc, char **argv) {
 	  if( pointerToDir ){
 	    //boost::filesystem::path dir = boost::filesystem::temp_directory_path() / pointerToDir;
 	    boost::filesystem::path dir = pointerToDir;
-	    tcf = string(dir.c_str()) + "/pin-tmp.xml";	    
+// /*	    tcf = string(dir.c_str()) + "/pin-tmp.xml";*/	  
+	    tcf = std::string((dir / "/pin-tmp.xml").string());
     #endif
 	try{
           if(boost::filesystem::is_directory(dir)){
