@@ -169,6 +169,7 @@ fidoOutput ProteinHelper::buildOutput(GroupPowerBigraph* proteinGraph,
     unsigned int targetsAtCurrentPep = countTargets(protein_ids[k], estimator);
     sumTargetPepSoFar += (peps[k]*targetsAtCurrentPep);
     targetProtSoFar += targetsAtCurrentPep;
+    // TOFIX isnt it the number of the decoys just total - number of targets??
     unsigned int decoysAtCurrentPep = countDecoys(protein_ids[k], estimator);
     decoyProtSoFar += decoysAtCurrentPep;
     estimQvalues[k] = sumTargetPepSoFar/targetProtSoFar;

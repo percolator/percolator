@@ -11,7 +11,7 @@ Array<double> GroupPowerBigraph::proteinProbs(const GridModel & myGM)
   
   for (int k=0; k<subgraphs.size(); k++)
     {
-      //      cout << "Working on subgraph with size " << subgraphs[k].proteinsToPSMs.size() << endl;
+//            cout << "Working on subgraph with size " << subgraphs[k].proteinsToPSMs.size() << endl;
 
       subgraphs[k].getProteinProbs(myGM);
 
@@ -189,7 +189,7 @@ double GroupPowerBigraph::getLogNumberStates() const
 
 Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold )
 {
-  //  cerr << "Iter partition... @ threshold = " << newPeptideThreshold << endl;
+   cout << "Iter partition... @ threshold = " << newPeptideThreshold << endl;
 
   /***
   bool bigFlag = false;
@@ -210,18 +210,18 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
   Array<BasicBigraph> preResult = bb.partitionSections();
   Array<BasicBigraph> result;
 
-  //  cerr << "Using threshold " << newPeptideThreshold << endl;
+   cout << "Using threshold " << newPeptideThreshold << endl;
   for (int k=0; k<preResult.size(); k++)
     {
       double logNumConfig = BasicGroupBigraph( preResult[k] ).logNumberOfConfigurations();
       if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS )
 	{
-	  //	  cout << LOG_MAX_ALLOWED_CONFIGURATIONS << " < " << logNumConfig << endl;
+// 	  	  cout << LOG_MAX_ALLOWED_CONFIGURATIONS << " < " << logNumConfig << endl;
 
 	  //	  double smallest = Vector(preResult[k].PSMsToProteins.weights).min();
 	  double newThresh = 1.25*(newPeptideThreshold + 1e-6);
 
-	  //	  cerr << "\tworking on subdividing a group of size " << logNumConfig << " with threshold " << newThresh << endl; 
+/*	  	  cout << "\tworking on subdividing a group of size " << logNumConfig << " with threshold " << newThresh << endl;*/ 
 
 	  Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], newThresh);
 
@@ -229,15 +229,15 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
 	}
       else
 	{
-	  //	  cout << LOG_MAX_ALLOWED_CONFIGURATIONS << " >= " << logNumConfig << endl;
-
-	  //	  if ( logNumConfig > 3 )
-	  //	    	    cerr << "\tadding section with size " << logNumConfig << endl;
+// 	  	  cout << LOG_MAX_ALLOWED_CONFIGURATIONS << " >= " << logNumConfig << endl;
+// 
+// 	  	  if ( logNumConfig > 3 )
+// 	  	    	    cerr << "\tadding section with size " << logNumConfig << endl;
 	  result.add( preResult[k] );
 	}
 
-      //      if ( bigFlag ) 
-      //	preResult[k].displayDotty("Sub");
+//            if ( bigFlag ) 
+// 	      preResult[k].displayDotty("Sub");
     }
 
   return result;
@@ -245,8 +245,8 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
 
 // Mattia Tomasoni
 void GroupPowerBigraph::read(Scores* fullset, bool debug){
-	//  cout << "Reading GroupPowerBigraph" << endl;
-	//  cout << "\tReading BasicBigraph" << endl;
+// 	std::cout << "Reading GroupPowerBigraph" << std::endl;
+// 	std::cout << "\tReading BasicBigraph" << std::endl;
 	BasicBigraph bb;
 	bb.read(fullset, debug);
 	speedUp(bb);
@@ -267,7 +267,10 @@ void GroupPowerBigraph::speedUp(BasicBigraph& bb)
   numberClones = 0;
   severedProteins = Array<string>();
 
-  //  cout << "Starting partition..." << endl;
+//    std::cout << "Starting partition..." << endl;
+//    
+//    std::cout << "Total number of proteins before partition is " << bb.proteinsToPSMs.size() << endl;
+//    std::cout << "Total number of PSMs before partition is " << bb.PSMsToProteins.size() << endl;
 
   #ifndef NOPRUNE
   Array<BasicBigraph> subBasic = iterativePartitionSubgraphs(bb, 0.0);
@@ -275,20 +278,20 @@ void GroupPowerBigraph::speedUp(BasicBigraph& bb)
   Array<BasicBigraph> subBasic = iterativePartitionSubgraphs(bb, -1);
   #endif
   
-  //  cout << "Finished partitioning into " << subBasic.size() << " partitions" << endl;
+//    std::cout << "Finished partitioning into " << subBasic.size() << " partitions" << endl;
 
-  // useful for debugging the iterative partition for small graphs
-  //  for (int cc=0; cc<subBasic.size(); cc++)
-  //    {
-  //subBasic[cc].displayDotty("Test");
-  //    }
+  //useful for debugging the iterative partition for small graphs
+//    for (int cc=0; cc<subBasic.size(); cc++)
+//      {
+//       subBasic[cc].displayDotty("Test");
+//      }
 
-  //  cout << "Number of clones was " << numberClones << endl << endl;
-
-  //  cout << "\tPartition complete" << endl;
-
-  //  cout << "Total number of proteins is " << bb.proteinsToPSMs.size() << endl;
-  //  cout << "Total number of PSMs is " << bb.PSMsToProteins.size() << endl;
+//    std::cout << "Number of clones was " << numberClones << endl << endl;
+// 
+//    std::cout << "\tPartition complete" << endl;
+// 
+//    std::cout << "Total number of proteins is " << bb.proteinsToPSMs.size() << endl;
+//    std::cout << "Total number of PSMs is " << bb.PSMsToProteins.size() << endl;
 
   //  exit(0);
 
@@ -300,7 +303,7 @@ void GroupPowerBigraph::speedUp(BasicBigraph& bb)
     }
 
   initialize();
-  //  cout << "Initialized" << endl;
+//    std::cout << "Initialized" << endl;
 }
 
 #else
@@ -322,7 +325,7 @@ void GroupPowerBigraph::initialize()
   getGroupProtNames();
   //  getSumLikelihoodOverAllAlphaBetaGivenD();
 
-  //  cout << "Initialized" << endl;
+//    std::cout << "Initialized" << endl;
 }
 
 void GroupPowerBigraph::gridScan() const
@@ -349,8 +352,8 @@ void GroupPowerBigraph::gridScan() const
       //      mat[ local.getRowIndex() ][ local.getColIndex() ] = unprunedProbabilityAlphaBetaGivenD(local);
     }
 
-  cerr << "Best model: " << bestModel << endl;
-  cerr << "\thad prob: " << bestProb << endl;
+//   cerr << "Best model: " << bestModel << endl;
+//   cerr << "\thad prob: " << bestProb << endl;
 
   Matrix(mat).displayMatrix();
 }

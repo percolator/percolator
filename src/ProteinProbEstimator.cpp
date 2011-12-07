@@ -138,9 +138,14 @@ fidoOutput ProteinProbEstimator::run(bool startGridSearch){
   delete proteinGraph;
   proteinGraph = new GroupPowerBigraph ( RealRange(alpha, 1, alpha),
       RealRange(beta, 1, beta), gamma );
+  
+//   std::cerr << "Size of peptide Scores : " << peptideScores->size() << std::endl;
+  
   proteinGraph->read(peptideScores, ProteinProbEstimator::debugginMode);
   proteinGraph->getProteinProbs();
-
+ 
+//   std::cerr << "Size of protein Prob Graph : " << proteinGraph->probabilityR.size() << std::endl;
+  
   fidoOutput output = ProteinHelper::buildOutput(proteinGraph, this);
   if(ProteinProbEstimator::debugginMode) {
     // print protein level probabilities to file

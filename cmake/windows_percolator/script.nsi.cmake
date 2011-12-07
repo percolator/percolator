@@ -254,6 +254,7 @@ Section "MainSection" SEC01
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
    File "${BUILD_PATH}\src\percolator.exe"
+   File "${BUILD_PATH}\src\qvality.exe"
    File "${NSI_PATH}\percolator.ico"
    ;MINGW
    File "${BUILD_PATH}\\nsi_bin\\*.*"
@@ -283,6 +284,7 @@ Section "Start Menu Program Group" SEC_START_MENU
   CreateDirectory "$SMPROGRAMS\Percolator"
 # CreateShortCut "$SMPROGRAMS\Percolator\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
   CreateShortCut "$SMPROGRAMS\Percolator\Percolator.lnk" "$INSTDIR\percolator.exe"
+  CreateShortCut "$SMPROGRAMS\Percolator\Percolator.lnk" "$INSTDIR\qvality.exe"
 # CreateShortCut "$SMPROGRAMS\Percolator\Release notes.lnk" "$INSTDIR\NOTES.txt"
   CreateShortCut "$SMPROGRAMS\Percolator\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   SetShellVarContext current
@@ -294,6 +296,7 @@ Section "Desktop Shortcut" SEC_DESKTOP
       DetailPrint "Creating Desktop Shortcuts"
       SetDetailsPrint listonly
       CreateShortCut "$DESKTOP\Percolator.lnk" "$INSTDIR\percolator.exe"
+      CreateShortCut "$DESKTOP\Percolator.lnk" "$INSTDIR\qvality.exe"
 SectionEnd
 
 Section "Additional Icons" SEC_ADD_ICONS
@@ -353,8 +356,10 @@ Section -Post
    ; Register Percolator:// protocol handler
    WriteRegStr HKCR "percolator" "" "URL: Percolator Protocol"
    WriteRegStr HKCR "percolator\DefaultIcon" "" $INSTDIR\percolator.exe,1
+   WriteRegStr HKCR "percolator\DefaultIcon" "" $INSTDIR\qvality.exe,1
    WriteRegStr HKCR "percolator\shell" "" "open"
    WriteRegStr HKCR "percolator\shell\open\command" "" "$INSTDIR\percolator.exe %1"
+   WriteRegStr HKCR "percolator\shell\open\command" "" "$INSTDIR\qvality.exe %1"
 
    SetDetailsPrint textonly
    DetailPrint "Finsihed."
@@ -428,12 +433,16 @@ Section Uninstall
    !ifdef OPTION_SECTION_SC_DESKTOP
       IfFileExists "$DESKTOP\Percolator.lnk" 0 +2
          Delete "$DESKTOP\Percolator.lnk"
+      IfFileExists "$DESKTOP\qvality.lnk" 0 +2
+         Delete "$DESKTOP\qvality.lnk"
    !endif
 
    ;Quick Launch shortcut.
    !ifdef OPTION_SECTION_SC_QUICK_LAUNCH
       IfFileExists "$QUICKLAUNCH\Percolator.lnk" 0 +2
          Delete "$QUICKLAUNCH\Percolator.lnk"
+      IfFileExists "$QUICKLAUNCH\qvality.lnk" 0 +2
+         Delete "$QUICKLAUNCH\qvality.lnk"
    !endif
 
    ;Remove all the Program Files.
