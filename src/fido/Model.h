@@ -162,6 +162,21 @@ class GridModel : public Model
   {
     return lhs.alphaRange == rhs.alphaRange && lhs.betaRange == rhs.betaRange && lhs.gamma == rhs.gamma;
   }
+  
+  void setalphaRange(RealRange a)
+  {
+    alphaRange = a;
+  }
+  
+  void setbetaRange(RealRange b)
+  {
+    betaRange = b;
+  }
+  
+  void setGamma(double g)
+  {
+    gamma = g;
+  }
 
   void start()
   {

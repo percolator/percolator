@@ -9,17 +9,17 @@ BasicBigraph::BasicBigraph() :
   //
 }
 
-// Mattia Tomasoni
-inline string getRidOfUnprintablesAndUnicode(string inpString) {
-  string outputs = "";
-  for (int jj = 0; jj < inpString.size(); jj++) {
-    char ch = inpString[jj];
-    if (((int)ch) >= 32 && ((int)ch) <= 128) {
-      outputs += ch;
-    }
-  }
-  return outputs;
-}
+// // Mattia Tomasoni
+// inline string getRidOfUnprintablesAndUnicode(string inpString) {
+//   string outputs = "";
+//   for (int jj = 0; jj < inpString.size(); jj++) {
+//     char ch = inpString[jj];
+//     if (((int)ch) >= 32 && ((int)ch) <= 128) {
+//       outputs += ch;
+//     }
+//   }
+//   return outputs;
+// }
 
 //Mattia Tomasoni
 #include "Globals.h"
@@ -48,7 +48,7 @@ void BasicBigraph::read(Scores* fullset, bool debug){
 	    pepName = pepName.substr(2, pepName.size()-4 );
 	  }
 	  if ( PSMNames.lookup(pepName) == -1 ){
-	    std::cout << "Adding e " << pepName << endl;
+	    //cout << "Adding e " << pepName << endl;
 	    add(PSMsToProteins, PSMNames, pepName);
 	  }
 	  pepIndex = PSMNames.lookup(pepName);
@@ -59,6 +59,7 @@ void BasicBigraph::read(Scores* fullset, bool debug){
 	  for (; pid!= psm->pPSM->proteinIds.end(); ++pid) {
 	    protName = getRidOfUnprintablesAndUnicode(*pid);
 	    if ( proteinNames.lookup(protName) == -1 ){
+	      //cout << "Adding r " << pepName << endl;
 	      add(proteinsToPSMs, proteinNames, protName);
 	    }
 	    connect(PSMNames, pepName, proteinNames, protName);
@@ -274,21 +275,21 @@ void BasicBigraph::saveSeveredProteins()
       if ( proteinsToPSMs.associations[k].size() == 0 )
 	{
 	  // this protein will be excised out by reindex
-// 	  	  cout << "Protein with no assocs " << proteinsToPSMs.names[k] << endl;
+	  //	  cout << "Protein with no assocs " << proteinsToPSMs.names[k] << endl;
 	  severedProteins.add( proteinsToPSMs.names[k] );
 	}
     }
 
-   cout << "Severed protein list: " << severedProteins.size() << endl;
+  //  cout << "Severed protein list: " << severedProteins << endl;
 }
 
 void BasicBigraph::prune()
 {
-   cout << "Traditional prune and reindex" << endl;
-   cout << "Pruning with threshold " << PeptideThreshold << endl;
+  //  cout << "Traditional prune and reindex" << endl;
+  //  cout << "Pruning with threshold " << PeptideThreshold << endl;
 
-//    displayDotty("Before");
-   
+  //  displayDotty("Before");
+  
   removePoorPSMs();
   removePoorProteins();
   
@@ -299,17 +300,17 @@ void BasicBigraph::prune()
   //  floorLowPSMs();
   markSectionPartitions();
 
-   cout << "Cloning low-scoring PSMs" << endl;
+  //  cout << "Cloning low-scoring PSMs" << endl;
   cloneMultipleMarkedPSMs();
 
-   cout << "Number clones is (after cloning) " << numberClones << endl;
+  //  cout << "Number clones is (after cloning) " << numberClones << endl;
 
-   cout << "Reindexing" << endl;
+  //  cout << "Reindexing" << endl;
   reindex();
 
-//    displayDotty("After");
+  //  displayDotty("After");
 
-   cout << "Number clones is (after reindex) " << numberClones << endl;
+  //  cout << "Number clones is (after reindex) " << numberClones << endl;
 }
 
 void BasicBigraph::floorLowPSMs()
@@ -345,7 +346,7 @@ void BasicBigraph::cloneMultipleMarkedPSMs()
 
 void BasicBigraph::clonePSM(int pepIndex)
 {
-   cout << "\tcloning one PSM: " << PSMsToProteins.names[ pepIndex ] << endl;
+  //  cout << "\tcloning one PSM: " << PSMsToProteins.names[ pepIndex ] << endl;
   // add a new copy of this PSM for every section
 
   // first find the sections that this PSM associates with
@@ -404,7 +405,7 @@ void BasicBigraph::clonePSM(int pepIndex)
 
   // count the number of clones added (not including the original)
 
-   cout << "Adding " << numberClones << " clones" << endl;
+  //  cout << "Adding " << numberClones << " clones" << endl;
   numberClones += sections.size()-1;
 }
 
@@ -478,7 +479,7 @@ void BasicBigraph::removePoorPSMs()
       //      if ( PSMsToProteins.weights[k] < 0.2 )
       if ( PSMsToProteins.weights[k] < 0.0 )
 	{
-// 	  	  cout << "\tRemoving bad PSM " << PSMsToProteins.names[k] << " which had weight " << PSMsToProteins.weights[k] << endl;
+	  //	  cout << "\tRemoving bad PSM " << PSMsToProteins.names[k] << " which had weight " << PSMsToProteins.weights[k] << endl;
 	  disconnectPSM(k);
 	}
     }
@@ -492,8 +493,8 @@ void BasicBigraph::removePoorProteins()
     {
       if ( Vector(PSMsToProteins.weights[ proteinsToPSMs.associations[k] ]).max() < ProteinThreshold )
 	{
-// 	  	  cout << "\tDisconnecting protein " << proteinsToPSMs.names[k] << endl;
-// 	  	  cout << "\t" << PSMsToProteins.weights[ proteinsToPSMs.associations[k] ] << endl;
+	  //	  cout << "\tDisconnecting protein " << proteinsToPSMs.names[k] << endl;
+	  //	  cout << "\t" << PSMsToProteins.weights[ proteinsToPSMs.associations[k] ] << endl;
 	  disconnectProtein(k);
 	}
     }
@@ -592,7 +593,7 @@ int BasicBigraph::markSectionPartitions()
 {
   // returns the number of sections that are found
 
-   cout << "Marking with threshold " << PeptideThreshold << endl;
+  //  cout << "Marking with threshold " << PeptideThreshold << endl;
 
   // clear & allocate the sectionMarks
   proteinsToPSMs.sectionMarks = Array<Set>(proteinsToPSMs.size());
@@ -608,12 +609,12 @@ int BasicBigraph::markSectionPartitions()
       if ( proteinsToPSMs[k].section == -1 )
 	{
 	  traceConnected( k, proteinsToPSMs, section );
-	  	  cout << "Just started a new section: " << section << endl;
+	  //	  cout << "Just started a new section: " << section << endl;
 	  section++;
 	}
     }
   
-   cout << "There are " << section << " partitions" << endl;
+  //  cout << "There are " << section << " partitions" << endl;
 
   return section;
 }

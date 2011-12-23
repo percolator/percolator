@@ -17,12 +17,22 @@ class GroupPowerBigraph : public ProteinIdentifier
 public:
   static double LOG_MAX_ALLOWED_CONFIGURATIONS;
 
- GroupPowerBigraph(const RealRange & aR, const RealRange & bR, double gamma) :
-  ProteinIdentifier(), gm(aR, bR, gamma), sumLogLikelihoodOverAllAlphaBetaCachedFunctor( & GroupPowerBigraph::sumLogLikelihoodOverAllAlphaBeta, "sumLogLikelihoodOverAllAlphaBeta")
+ GroupPowerBigraph(Scores* fullset,double __alpha, double __beta, double __gamma) :
+  ProteinIdentifier(),gm(RealRange(__alpha,1,__alpha),RealRange(__beta,1,__beta),__gamma), 
+  sumLogLikelihoodOverAllAlphaBetaCachedFunctor( & GroupPowerBigraph::sumLogLikelihoodOverAllAlphaBeta, "sumLogLikelihoodOverAllAlphaBeta")
       {
+	read(fullset);
 	//	cout << "Constructed GroupPowerBigraph" << endl;
       }
-
+      
+  GroupPowerBigraph(char * fname,double __alpha, double __beta, double __gamma) :
+  ProteinIdentifier(), gm(RealRange(__alpha,1,__alpha),RealRange(__beta,1,__beta),__gamma), 
+  sumLogLikelihoodOverAllAlphaBetaCachedFunctor( & GroupPowerBigraph::sumLogLikelihoodOverAllAlphaBeta, "sumLogLikelihoodOverAllAlphaBeta")
+      {
+	ifstream fin(fname);
+	read(fin);
+	//	cout << "Constructed GroupPowerBigraph" << endl;
+      }
   Array<double> proteinProbs(const GridModel & myGM);
   Array<double> proteinProbsOverAllAlphaBeta();
   void printProteinWeights() const;
@@ -56,8 +66,11 @@ public:
 
   void outputPivdo(ostream & os) const;
 
+  pair<Array<Array<string> >, Array<double> > getDescendingProteinsAndWeights() const;
+  void setAlphaBetaGamma(double alpha, double beta, double gamma);
+  
   //Mattia Tomasoni
-  void read(Scores* fullset, bool debug);
+  void read(Scores* fullset, bool debug = false);
   //Mattia Tomasoni: making a few fields publicly accessible
   Array<string> severedProteins;
   Array<double> probabilityR;
@@ -79,6 +92,7 @@ protected:
 
   GridModel gm;
 
+  double alpha,beta,gamma;
   // cached functors
   LastCachedMemberFunction<GroupPowerBigraph, double, GridModel> sumLogLikelihoodOverAllAlphaBetaCachedFunctor;
 

@@ -963,10 +963,10 @@ void Caller::writeXML_Peptides() {
   os.close();
 }
 
-void Caller::writeXML_Proteins(const fidoOutput& output) {
+void Caller::writeXML_Proteins() {
   xmlOutputFN_Proteins = xmlOutputFN;
   xmlOutputFN_Proteins.append("writeXML_Proteins");
-  protEstimator->writeOutputToXML(output, xmlOutputFN_Proteins);
+  protEstimator->writeOutputToXML(xmlOutputFN_Proteins);
 }
 
 void Caller::writeXML(){
@@ -1209,24 +1209,15 @@ int Caller::run() {
       cerr << ProteinProbEstimator::printCopyright();
     }
     clock_t start=clock();
-    bool gridSearch = protEstimator->initialize(&fullset);
-    fidoOutput output = protEstimator->run(gridSearch);
+    protEstimator->initialize(&fullset);
+    protEstimator->run(true);
     clock_t finish=clock();
-    if(VERB > 0) {
-      protEstimator->printStatistics(output);
-      cerr << "Protein level probabilities have been successfully calculated "
-          << "(" << (finish-start)/1000000 << " s)\n\n";
-      protEstimator->writeOutputToStream(output, cout);
-      if(ProteinProbEstimator::debugginMode) {
-        protEstimator->plotQValues(output);
-        protEstimator->plotRoc(output,output.decoysAtThr2);
-      }
-    }
-    pi_0_proteins = output.pi_0;
+    pi_0_proteins = protEstimator->getPi0();
     if (xmlOutputFN.size() > 0){
-      writeXML_Proteins(output);
+      writeXML_Proteins();
     }
   }
+  
   // write output to file
   writeXML();
 

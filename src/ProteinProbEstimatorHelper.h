@@ -244,7 +244,7 @@ void ProteinHelper::writeXML_writeAssociatedPeptides(string& protein_id,
   vector<ScoreHolder*>* peptides = &proteinsToPeptides.find(protein_id)->second;
   vector<ScoreHolder*>::iterator peptIt = peptides->begin();
   for(; peptIt<peptides->end(); peptIt++){
-    string pept = (*peptIt)->pPSM->getPeptideNoResidues();
+    string pept = (*peptIt)->pPSM->getPeptideSequence();
     os << "      <peptide_seq seq=\"" << pept << "\"/>"<<endl;
     // check that protein_id is there
     assert((*peptIt)->pPSM->proteinIds.find(protein_id)

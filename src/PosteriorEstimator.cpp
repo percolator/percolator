@@ -79,8 +79,7 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
   double n = in.size();
   size_t num_draw = min(in.size(), max_size);
   for (size_t ix = 0; ix < num_draw; ++ix) {
-    size_t draw = (size_t)((double)rand() / ((double)RAND_MAX + (double)1)
-        * n);
+    size_t draw = (size_t)((double)rand() / ((double)RAND_MAX + (double)1) * n);
     out.push_back(in[draw]);
   }
   // sort in desending order

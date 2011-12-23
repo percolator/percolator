@@ -102,7 +102,6 @@ add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS
 #COMPILE FIDO
 add_subdirectory(fido)
 
-
 #INCLUDE PERCOLATOR HEADERS
 include_directories(.) 
 

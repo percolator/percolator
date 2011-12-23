@@ -254,7 +254,7 @@ Section "MainSection" SEC01
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
    File "${BUILD_PATH}\src\percolator.exe"
-   File "${BUILD_PATH}\src\qvality.exe"
+   File "${BUILD_PATH}\src\qvality\qvality.exe"
    File "${NSI_PATH}\percolator.ico"
    ;MINGW
    File "${BUILD_PATH}\\nsi_bin\\*.*"

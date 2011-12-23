@@ -38,7 +38,14 @@ using namespace std;
 #include "ssl.h"
 #include "MassHandler.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
+
+/** Compare function to use to get unique peptides from a list of PSMs**/
+
+inline bool mycmp(const ScoreHolder &a,const ScoreHolder &b) {
+  return (boost::iequals(a.pPSM->getPeptideSequence(),b.pPSM->getPeptideSequence()) && (a.label == b.label));
+}
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
@@ -46,17 +53,6 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
 
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score < other.score);
-}
-
-inline string getRidOfUnprintablesAndUnicode(string inpString) {
-  string outputs = "";
-  for (int jj = 0; jj < inpString.size(); jj++) {
-    signed char ch = inpString[jj];
-    if (((int)ch) >= 32 && ((int)ch) <= 128) {
-      outputs += ch;
-    }
-  }
-  return outputs;
 }
 
 inline double truncateTo(double truncateMe, const char* length) {
@@ -589,33 +585,9 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
-  sort(scores.begin(), scores.end(), lexicOrder());
-   // lexicographically order the scores (based on peptides names)
-   // new list of scores
-   vector<ScoreHolder> uniquePeptideScores = vector<ScoreHolder>();
-   string previousPeptide;
-   int previousLabel;
-   // run a pointer down the scores list
-   vector<ScoreHolder>::iterator current = scores.begin();
-   for(;current!=scores.end(); current++){
-     // compare pointer's peptide with previousPeptide
-     string currentPeptide = current->pPSM->getPeptideNoResidues();
-     if(previousPeptide.compare(currentPeptide)==0
-         && previousLabel == current->label) {
-       // if the peptide is a duplicate
-       vector<ScoreHolder>::iterator last = --uniquePeptideScores.end();
-       // append the duplicate psm_id
-       last->psms_list.push_back(current->pPSM->id);
-     } else {
-       // otherwise insert as a new score
-       current->psms_list.push_back(current->pPSM->id);
-       uniquePeptideScores.push_back(*current);
-       // update previousPeptide
-       previousPeptide = currentPeptide;
-       previousLabel = current->label;
-     }
-   }
-   scores = uniquePeptideScores;
+   // lexicographically order the scores (based on peptides names,labels and scores)
+   std::sort(scores.begin(), scores.end(), lexicOrderProb());
+   scores.erase(std::unique(scores.begin(), scores.end(), mycmp), scores.end());
    sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
 }
 
@@ -726,4 +698,16 @@ void Scores::calcPep() {
   for (size_t ix = 0; ix < scores.size(); ix++) {
     (scores[ix]).pPSM->pep = peps[ix];
   }
+}
+
+unsigned Scores::getQvaluesBelowLevel(double level) {
+  
+  unsigned hits = 0;
+  
+  for (size_t ix = 0; ix < scores.size(); ix++) {
+    if(scores[ix].isTarget() && scores[ix].pPSM->q <= level)
+      hits++;
+  }
+  
+  return hits;
 }

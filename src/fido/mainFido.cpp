@@ -24,10 +24,10 @@ int main(int argc, char**argv)
       if ( argc == 6 )
 	GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = atof(argv[5]);
 
-      GroupPowerBigraph gpb( RealRange(alpha, 1, alpha), RealRange(beta, 1, beta), gamma );
-
-      ifstream fin(argv[1]);
-      fin >> gpb;
+      //GroupPowerBigraph gpb( RealRange(alpha, 1, alpha), RealRange(beta, 1, beta), gamma );
+      GroupPowerBigraph gpb(argv[1],alpha, beta, gamma );
+      //ifstream fin(argv[1]);
+      //fin >> gpb;
 
       gpb.getProteinProbs();
       gpb.printProteinWeights();

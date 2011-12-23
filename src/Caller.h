@@ -108,7 +108,7 @@ class Caller {
   protected:
     void writeXML_PSMs();
     void writeXML_Peptides();
-    void writeXML_Proteins(const fidoOutput& output);
+    void writeXML_Proteins();
     void writeXML();
     void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets ,
         unsigned int & nrDecoys );
