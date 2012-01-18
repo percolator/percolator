@@ -36,6 +36,15 @@ void Enzyme::setEnzyme(EnzymeType enz) {
     case CHYMOTRYPSIN:
       theEnzyme = new Chymotrypsin();
       return;
+    case THERMOLYSIN:
+      theEnzyme = new Thermolysin();
+      return;
+    case PROTEINASEK:
+      theEnzyme = new Proteinasek();
+      return;
+    case PEPSIN:
+      theEnzyme = new Pepsin();
+      return;
     case ELASTASE:
       theEnzyme = new Elastase();
       return;
@@ -60,6 +69,12 @@ void Enzyme::setEnzyme(std::string enzyme) {
   
   if (boost::iequals(enzyme,Chymotrypsin::getString())) {
       theEnzyme = new Chymotrypsin();
+  } else if (boost::iequals(enzyme,Thermolysin::getString())) {
+      theEnzyme = new Thermolysin();
+  } else if (boost::iequals(enzyme,Proteinasek::getString())) {
+      theEnzyme = new Proteinasek();
+  } else if (boost::iequals(enzyme,Pepsin::getString())) {
+      theEnzyme = new Pepsin();
   } else if (boost::iequals(enzyme,Elastase::getString())) {
       theEnzyme = new Elastase();
   } else if (boost::iequals(enzyme,Enzyme::getString())) {

@@ -97,6 +97,21 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "Replace tryptic features with chymo-tryptic features.",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("t",
+      "thermolysin",
+      "Replace tryptic features with thermlysinic features.",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("k",
+      "proteinasek",
+      "Replace tryptic features with proteinase-k features.",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("n",
+      "pepsin",
+      "Replace tryptic features with peptic features.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("e",
       "elastase",
       "Replace tryptic features with elastase features.",
@@ -153,6 +168,15 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   }
   if (cmd.optionSet("c")) {
     Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
+  }
+  if (cmd.optionSet("t")) {
+    Enzyme::setEnzyme(Enzyme::THERMOLYSIN);
+  }
+  if (cmd.optionSet("k")) {
+    Enzyme::setEnzyme(Enzyme::PROTEINASEK);
+  }
+  if (cmd.optionSet("n")) {
+    Enzyme::setEnzyme(Enzyme::PEPSIN);
   }
   if (cmd.optionSet("l")) {
     Enzyme::setEnzyme(Enzyme::LYSN);

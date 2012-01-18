@@ -30,7 +30,7 @@
 class Enzyme {
   public:
     enum EnzymeType {
-      NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, ELASTASE, LYSN
+      NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, THERMOLYSIN, PROTEINASEK, PEPSIN, ELASTASE, LYSN
     };
     virtual ~Enzyme() {
       delete theEnzyme;
@@ -124,6 +124,78 @@ class Chymotrypsin : public Enzyme {
     }
     virtual EnzymeType getET() {
       return CHYMOTRYPSIN;
+    }
+};
+
+class Thermolysin : public Enzyme {
+  public:
+    virtual ~Thermolysin() {
+      ;
+    }
+    Thermolysin() {
+      ;
+    }
+    static std::string getString() {
+      return "thermolysin";
+    }
+  protected:
+    virtual std::string toString() {
+      return getString();
+    }
+    virtual bool isEnz(const char& n, const char& c) {
+      return (((c == 'A' || c == 'F' || c == 'I' || c == 'L' || c == 'M'
+          || c == 'V' || (n == 'R' && c == 'G')) && n != 'D' && n != 'E') || n == '-' || c == '-');
+    }
+    virtual EnzymeType getET() {
+      return THERMOLYSIN;
+    }
+};
+
+class Proteinasek : public Enzyme {
+  public:
+    virtual ~Proteinasek() {
+      ;
+    }
+    Proteinasek() {
+      ;
+    }
+    static std::string getString() {
+      return "proteinasek";
+    }
+  protected:
+    virtual std::string toString() {
+      return getString();
+    }
+    virtual bool isEnz(const char& n, const char& c) {
+      return ((n == 'A' || n == 'E' || n == 'F' || n == 'I' || n == 'L'
+          || n == 'T' || n == 'V' || n == 'W' || n == 'Y' ) || n == '-' || c == '-');
+    }
+    virtual EnzymeType getET() {
+      return PROTEINASEK;
+    }
+};
+
+class Pepsin : public Enzyme {
+  public:
+    virtual ~Pepsin() {
+      ;
+    }
+    Pepsin() {
+      ;
+    }
+    static std::string getString() {
+      return "pepsin";
+    }
+  protected:
+    virtual std::string toString() {
+      return getString();
+    }
+    virtual bool isEnz(const char& n, const char& c) {
+      return (((c == 'F' || c == 'L' || c == 'W' || c == 'Y' || n == 'F'
+          || n == 'L' || n == 'W' || n == 'Y') && n != 'R') || n == '-' || c == '-');
+    }
+    virtual EnzymeType getET() {
+      return PEPSIN;
     }
 };
 

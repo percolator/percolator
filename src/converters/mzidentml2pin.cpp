@@ -13,7 +13,7 @@ typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> p
 typedef map<std::string, int> scanNumberMapType;
 
 std::string call;
-enum enzyme_type { enzyme_type_arg_no_enzyme, enzyme_type_arg_elastase, enzyme_type_arg_chymotrypsin, enzyme_type_arg_trypsin};
+enum enzyme_type { enzyme_type_arg_no_enzyme, enzyme_type_arg_elastase, enzyme_type_arg_pepsin, enzyme_type_arg_proteinasek, enzyme_type_arg_thermolysin, enzyme_type_arg_chymotrypsin, enzyme_type_arg_trypsin};
 struct input_options
 {
   std::vector<std::string> decoy_file_arg;
@@ -482,7 +482,7 @@ bool ParseOptions(int argc, char **argv, input_options &args_info)
       "filename");
   cmd.defineOption("e",
       "verbose",
-      "Type of enzyme \"no_enzyme\",\"elastase\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
       "",
       "trypsin");
   cmd.defineOption("w",
@@ -540,6 +540,12 @@ bool ParseOptions(int argc, char **argv, input_options &args_info)
       args_info.enzyme_type_arg = enzyme_type_arg_elastase; 
     else if( cmd.options["e"] == "chymotrypsin")
       args_info.enzyme_type_arg = enzyme_type_arg_chymotrypsin;
+    else if( cmd.options["e"] == "thermolysin")
+      args_info.enzyme_type_arg = enzyme_type_arg_thermolysin;
+    else if( cmd.options["e"] == "proteinasek")
+      args_info.enzyme_type_arg = enzyme_type_arg_proteinasek;
+    else if( cmd.options["e"] == "pepsin")
+      args_info.enzyme_type_arg = enzyme_type_arg_pepsin;
     else if( cmd.options["e"] == "trypsin") 
       args_info.enzyme_type_arg = enzyme_type_arg_trypsin;
     else  
@@ -611,6 +617,9 @@ main (int argc, char* argv[])
   case enzyme_type_arg_no_enzyme: enzymeStr = "no enzyme"; break;
   case enzyme_type_arg_elastase: enzymeStr = "elastase"; break;
   case enzyme_type_arg_chymotrypsin: enzymeStr = "chymotrypsin"; break;
+  case enzyme_type_arg_thermolysin: enzymeStr = "thermolysin"; break;
+  case enzyme_type_arg_proteinasek: enzymeStr = "proteinasek"; break;
+  case enzyme_type_arg_pepsin: enzymeStr = "pepsin"; break;
   case enzyme_type_arg_trypsin: enzymeStr = "trypsin"; break;
   default: break;
   }
