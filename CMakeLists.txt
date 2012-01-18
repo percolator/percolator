@@ -18,7 +18,7 @@ MESSAGE( STATUS )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
-MESSAGE( STATUS "Building PERCOLATOR:" )
+MESSAGE( STATUS " Building PERCOLATOR:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
