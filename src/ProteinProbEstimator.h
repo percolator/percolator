@@ -296,7 +296,6 @@ class ProteinProbEstimator {
     double getBeta();
     double getGamma();
     
-    const static bool logScaleSearch;
     const static bool outputPEPs;
     
   private:

@@ -390,9 +390,20 @@ void ProteinProbEstimator::gridSearch()
   double threshold2 = 0.05;
   double threshold3 = 0.1;
   int rocN = 75;
-  double gamma_search[] = {0.1, 0.25, 0.5, 075};
-  double beta_search[] = {0.0, 0.01, 0.15, 0.020, 0.025, 0.05};
-  double alpha_search[] = {0.01, 0.04, 0.09, 0.16, 0.25, 0.36};
+  
+  //TODO make the range of the grid search and the N parametizable or according to data size
+  
+//   double gamma_search[] = {0.1, 0.25, 0.5, 075};
+//   double beta_search[] = {0.0, 0.01, 0.15, 0.020, 0.025, 0.05};
+//   double alpha_search[] = {0.01, 0.04, 0.09, 0.16, 0.25, 0.36};
+  
+//   double gamma_search[] = {0.1,0.25, 0.5, 075, 0.9};
+//   double beta_search[] = {0.0, 0.01, 0.15, 0.025,0.35,0.05,0.1};
+//   double alpha_search[] = {0.01, 0.04,0.09, 0.16, 0.25, 0.36,0.5};
+  
+  double gamma_search[] = {0.1, 0.5, 075};
+  double beta_search[] = {0.0, 0.01, 0.15, 0.025, 0.05};
+  double alpha_search[] = {0.01, 0.04, 0.16, 0.25, 0.36};
   
   for (unsigned int i=0; i<sizeof(gamma_search)/sizeof(double); i++)
   {
@@ -403,15 +414,17 @@ void ProteinProbEstimator::gridSearch()
 	gamma = gamma_search[i];
 	alpha = alpha_search[j];
 	beta = beta_search[k];
-	pepProteins.clear();
 	//std::cout << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
 	gpb.setAlphaBetaGamma(alpha, beta, gamma);
 	gpb.getProteinProbs();
-	pepProteins = gpb.getProteinProbsPercolator();
-	std::vector<double> prot_probs;
-	std::vector<std::vector<std::string> > prot_names;
-	transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_probs), RetrieveKey());
-	transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_names), RetrieveValue());
+	pair< vector< vector< string > >, std::vector< double > > NameProbs;
+	NameProbs = gpb.getProteinProbsAndNames();
+	//pepProteins.clear();
+	//pepProteins = gpb.getProteinProbsPercolator();
+	std::vector<double> prot_probs = NameProbs.second;
+	std::vector<std::vector<std::string> > prot_names = NameProbs.first;
+	//transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_probs), RetrieveKey());
+	//transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_names), RetrieveValue());
 	std::pair<std::vector<double>,std::vector<double> > EstEmp = getEstimated_and_Empirical_FDR(prot_names,prot_probs);
 	pair<std::vector<int>, std::vector<int> > roc = getROC(prot_names);
 	double rocR = getROC_N(roc.first, roc.second, rocN);

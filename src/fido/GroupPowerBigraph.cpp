@@ -173,6 +173,43 @@ std::multimap<double, std::vector<std::string> > GroupPowerBigraph::getProteinPr
   return pepProteins;
 }
 
+pair< vector< vector< string > >, std::vector< double > > GroupPowerBigraph::getProteinProbsAndNames() const
+{
+  std::vector< std::vector< std::string > > names;
+  std::vector<double> probabilities;
+  
+  Array<double> sorted = probabilityR;
+  Array<int> indices = sorted.sort();
+  for (int k=0; k<sorted.size(); k++)
+  {
+    double pep = (1.0 - (double)sorted[k]);
+    std::vector<std::string> proteins;
+    for ( int j = 0; j < groupProtNames[ indices[k] ].size(); j++)
+    {
+      std::string protein = groupProtNames[ indices[k] ][j];
+      proteins.push_back(protein);
+    }
+    names.push_back(proteins);
+    probabilities.push_back(pep);
+  }
+  if(severedProteins.size()!=0)
+  {
+    double pep = 1.0;
+    std::vector<std::string> proteins;
+    for(int i = 0; i < severedProteins.size(); i++)
+    {
+      std::string protein = severedProteins[i];
+      proteins.push_back(protein);
+    }
+    names.push_back(proteins);
+    probabilities.push_back(pep);
+  }
+    
+  return std::make_pair<std::vector< std::vector< std::string > >, std::vector<double> >(names,probabilities);
+
+}
+
+
 double GroupPowerBigraph::getLogNumberStates() const
 {
   double total = 0;

@@ -33,6 +33,7 @@ public:
   Array<double> proteinProbsOverAllAlphaBeta();
   void printProteinWeights() const;
   std::multimap<double, std::vector<std::string> > getProteinProbsPercolator() const;
+  std::pair<std::vector<std::vector<std::string> >,std::vector<double> > getProteinProbsAndNames() const;
   void getProteinProbs();
   void getProteinProbsOverAllAlphaBeta();
   Array<string> peptideNames() const;
