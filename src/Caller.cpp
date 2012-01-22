@@ -219,6 +219,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "beta",
       "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
       "value");
+  cmd.defineOption("G",
+      "gamma",
+      "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
+      "value");
   cmd.defineOption("R",
       "test-each-iteration",
       "Measure performance on test set each iteration",
@@ -282,6 +286,21 @@ bool Caller::parseOptions(int argc, char **argv) {
     "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
+  cmd.defineOption("N",
+    "no-group-proteins", 		   
+    "Proteins will not be grouped (Only valid if option -A is active).",
+    "",
+    FALSE_IF_SET);
+  cmd.defineOption("E",
+    "no-separate-proteins", 		   
+    "Proteins will not be separated (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);    
+  cmd.defineOption("D",
+    "no-prune-proteins", 		   
+    "Proteins will not be pruned (from target-decoy analysis) (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
   cmd.defineOption("M",
     "exp-mass",
     "include the experimental mass in the output file",
@@ -294,20 +313,31 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
   if (cmd.optionSet("A")) {
     calculateProteinLevelProb = true;
-    double alpha=-1;
-    double beta=-1;
+    double alpha = -1;
+    double beta = -1;
+    double gamma = -1;
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
-
+    bool grouProteins = cmd.optionSet("N");
+    bool noseparate = cmd.optionSet("E");;
+    bool noprune = cmd.optionSet("D");;
+    bool gridSearch = true;
+    
     if (cmd.optionSet("a")) {
-       alpha = cmd.getDouble("a", 0.00, 0.76);
+       alpha = cmd.getDouble("a", 0.00, 0.90);
      }
     if (cmd.optionSet("b")) {
-       beta = cmd.getDouble("b", 0.0, 0.80);
+       beta = cmd.getDouble("b", 0.00, 0.90);
      }
+    if (cmd.optionSet("G")) {
+      gamma = cmd.getDouble("G", 0.00, 0.90);
+    }
+    if(alpha != -1 || beta != -1 || gamma != -1)
+	gridSearch = false;
 
-     protEstimator = new ProteinProbEstimator(alpha,beta,tiesAsOneProtein,usePi0,outputEmpirQVal);
+    protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
+					      grouProteins,noseparate,noprune,gridSearch);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -995,7 +1025,17 @@ void Caller::writeXML(){
   if(reportUniquePeptides)
     os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
   if(calculateProteinLevelProb)
-  os << "    <pi_0_proteins>" << pi_0_proteins << "</pi_0_proteins>" << endl;
+  {  
+    os << "    <pi_0_proteins>" << pi_0_proteins << "</pi_0_proteins>" << endl;
+    os << "    <alpha>" << protEstimator->getAlpha() <<"</alpha>" << endl;
+    os << "    <beta>"  << protEstimator->getBeta() <<"</beta>" << endl;
+    os << "    <gamma>" << protEstimator->getGamma() <<"</gamma>" << endl;
+  }
+  os << "    <psms_qlevel>" <<  numberQpsms <<"</psms_qlevel>" << endl;
+  if(reportUniquePeptides)
+    os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.1) << "</peptides_qlevel>" << endl;
+  if(calculateProteinLevelProb)
+    os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.1) << "</proteins_qlevel>" << endl;  
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
                    << "</average_delta_mass>" << endl;
@@ -1111,6 +1151,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
   }
   else {
     pi_0_psms = fullset.getPi0();
+    numberQpsms = fullset.getQvaluesBelowLevel(0.1);
   }
 }
 
@@ -1210,7 +1251,7 @@ int Caller::run() {
     }
     clock_t start=clock();
     protEstimator->initialize(&fullset);
-    protEstimator->run(true);
+    protEstimator->run();
     clock_t finish=clock();
     pi_0_proteins = protEstimator->getPi0();
     if (xmlOutputFN.size() > 0){

@@ -24,6 +24,7 @@
 #include <functional>
 #include <numeric>
 #include "converters/MSToolkit/MSToolkitTypes.h"
+#include <iterator>
 
 class Protein {
   
@@ -92,12 +93,12 @@ class Protein {
       return isDecoy;
     }
     
-    std::vector<ScoreHolderPeptide> getPeptide() {
-      return peptide;
+    std::vector<std::string> getPeptides() {
+      return peptides;
     }
     
-    std::vector<ScoreHolderPeptide> getPeptide() const {
-      return peptide;
+    std::vector<std::string> getPeptides() const {
+      return peptides;
     }
     
     void setName(std::string namenew)
@@ -125,10 +126,14 @@ class Protein {
       p = pnew;
     }
     
-    void setPeptide(ScoreHolderPeptide newpeptides) {
-      peptide.push_back(newpeptides);; 
+    void setPeptide(std::string peptide) {
+      peptides.push_back(peptide);
     }
     
+    void setPeptides(std::vector<std::string> peptidesnew)
+    {
+       peptides = std::vector<std::string>(peptidesnew);
+    }
 
    
   private:
@@ -137,7 +142,7 @@ class Protein {
     double q, qemp, pep, p, pi0;
     string id;
     bool isDecoy;
-    std::vector<ScoreHolderPeptide> peptide;
+    std::vector<std::string> peptides;
     
 };
 
@@ -147,7 +152,7 @@ class Protein {
       bool
       operator()(const Protein& __x, const Protein& __y) const 
       {
-	return (__x.getPEP() > __y.getPEP() );
+	return (__x.getPEP() < __y.getPEP() );
       }
     };
   
@@ -158,8 +163,9 @@ class Protein {
     };
     
     struct IntCmp {
-    bool operator()(const std::pair<const std::string,double> &lhs, const std::pair<const std::string,double> &rhs) {
-        return lhs.second< rhs.second;
+    bool operator()(const std::pair<const double,std::vector<std::string> > &lhs, 
+		    const std::pair<const double,std::vector<std::string> > &rhs) {
+        return lhs.first < rhs.first;
       }
     };
 
@@ -179,56 +185,86 @@ class Protein {
       return boost::iequals(a.getName(),b.getName());
     }
     
-    inline std::pair<const std::string,double> mymin_pair(const std::pair<const std::string,double>& a, 
-							   const std::pair<const std::string,double>& b) {
-      return a.second > b.second ? b : a;
-    }
-    
     inline bool mycomp_pair(const std::pair<const std::string,double>& a, 
 			    const std::pair<const std::string,double>& b) {
       return a.second < b.second;
     }
     
-    struct pair_sum {
-      
-      std::pair<std::string,double> min;
-      inline double mymin(double a, double b) {
+    inline double mymin(double a, double b) 
+    {
 	return a > b ? b : a;
-      }
-      std::pair<std::string,double> operator()(const std::pair<std::string,double> & i) {
-        return std::pair<std::string,double>(i.first, mymin(min.second,i.second));
+    }
+
+    
+    struct pair_min {
+      pair_min() {}
+      std::pair<double,std::vector<std::string> > operator()(std::pair<double,std::vector<std::string> > & sum, 
+							     std::pair<double,std::vector<std::string> > & i) {
+        return pair<double,std::vector<std::string> >(mymin(sum.first,i.first), i.second);
       }
     };
-    
-    inline void partial_sum(std::map<const std::string,double> a /*double (*op)(double,double)*/)
-    {
-       pair_sum pair_sum_func;
-       std::for_each(a.rbegin(),a.rend(),pair_sum_func);
-    }
-    
+
+
     struct mul_x {
       mul_x(double x) : x(x) {}
-      std::pair<const std::string,double> operator()(std::pair< const std::string,double> y) 
-		    { return std::pair<const std::string,double>(y.first,y.second * x); }
+      std::pair<double,std::vector<std::string> > 
+      operator()(std::pair<double,std::vector<std::string> > y) 
+      { return std::pair<double,std::vector<std::string> >(y.first * x,y.second ); }
       private:
 	double x;
     };
 
+    inline std::map<const double,std::vector<std::string> >::const_iterator 
+    MapSearchByValue(const std::map<double,std::vector<std::string> > & SearchMap, 
+		     const std::string & SearchVal)
+    {
+      std::map<double,std::vector<std::string> >::const_iterator iRet = SearchMap.end();
+      for (std::map<double,std::vector<std::string> >::const_iterator iTer = SearchMap.begin(); 
+	   iTer != SearchMap.end(); iTer ++)
+      {
+        if (std::find(iTer->second.begin(),iTer->second.end(),SearchVal) != iTer->second.end())
+        {
+            iRet = iTer;
+            break;
+        }
+      }
+      return iRet;
+    }
+    
+    struct RetrieveKey
+    {
+      template <typename T>
+      typename T::first_type operator()(T keyValuePair) const
+      {
+        return keyValuePair.first;
+      }
+    };
+    
+    struct RetrieveValue
+    {
+      template <typename T>
+      typename T::second_type operator()(T keyValuePair) const
+      {
+        return keyValuePair.second;
+      }
+    };
+
+
 class ProteinProbEstimator {
   public:
-    double gamma;
-    double alpha;
-    double beta;
-    const static double default_gamma = 0.5;
-    const static double default_alpha = 0.1;
+
+    const static double default_gamma = 0.5; //0.01;
+    const static double default_alpha = 0.1; //0.01;
     const static double default_beta = 0.01;
     
     ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
-			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
-			 bool noseparate = true, bool noprune = false);
-    virtual ~ProteinProbEstimator();
+			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = true, 
+			 bool noseparate = false, bool noprune = false, bool dogridSearch = true);
+    
+    ~ProteinProbEstimator();
+    
     bool initialize(Scores* fullset);
-    void run(bool startGridSearch = true);
+    void run();
     void writeOutputToXML(string xmlOutputFN);
     static string printCopyright();
     
@@ -247,12 +283,18 @@ class ProteinProbEstimator {
     bool getSeparateProteins();
     /** Return the scores whose q value is less or equal than the threshold given**/
     unsigned getQvaluesBelowLevel(double level);
+    unsigned getQvaluesBelowLevelDecoy(double level);
     void setTargetandDecoysNames();
     std::map<const std::string,Protein> getProteins();
     void updateProteinProbabilities();
     void estimateQValues();
-    void estimateQValuesEmp(double pi0);
+    void estimatePValues(); 
+    void estimateQValuesEmp();
+    double estimatePi0(const unsigned int numBoot = 100);
     double getPi0();
+    double getAlpha();
+    double getBeta();
+    double getGamma();
     
     const static bool logScaleSearch;
     const static bool outputPEPs;
@@ -260,23 +302,25 @@ class ProteinProbEstimator {
   private:
     
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
-    int matchCount( const set<string> & positiveNames, const Array<string> & atThreshold );
-    double getROC_N(const Array<int> & fpArray, const Array<int> & tpArray, int N);
-    pair<Array<double>, Array<double> > getEstimated_and_Empirical_FDR(Array<Array<string> > names, 
-								   Array<double> probabilities, 
-								   const set<string> & falsePosSet, 
-								   const set<string> & truePosSet);
-    double getFDR_divergence(const Array<double> estFDR, const Array<double> empFDR, double THRESH);
-    pair<Array<int>, Array<int> > getROC(Array<Array<string> > names, Array<double> probabilities, 
-					 const set<string> & falsePosSet, const set<string> & truePosSet);
+    double getROC_N(const std::vector<int> & fpArray, const std::vector<int> & tpArray, int N);
+    pair<std::vector<double>, std::vector<double> > getEstimated_and_Empirical_FDR(std::vector<std::vector<string> > names, 
+								   std::vector<double> probabilities);
+    double getFDR_divergence(const std::vector<double> estFDR, const std::vector<double> empFDR, double THRESH);
+    pair<std::vector<int>, std::vector<int> > getROC(std::vector<std::vector<string> > names);
     void gridSearch();
+    
+
+    int countTargets(std::vector<std::string> proteinList);
+    int countDecoys(std::vector<std::string> proteinList);
     
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
-    /**assuming the uniqueness of the protein names**/
-    std::map<const std::string,Protein> proteins;
-    std::map<const std::string,double> estQ;
-    std::map<const std::string,double> empQ;
+    /**proteins are mapped by the name, estQ and empQ are mapped by the q values**/
+    std::map<const std::string,Protein> proteins;    
+    std::multimap<double,std::vector<std::string> > pepProteins;
+    std::vector<double> qvalues;
+    std::vector<double> qvaluesEmp;
+    std::vector<double> pvalues;
     Scores* peptideScores;
     bool tiesAsOneProtein;
     bool usePi0;
@@ -284,9 +328,13 @@ class ProteinProbEstimator {
     bool groupProteins;
     bool noseparate;
     bool noprune;
+    bool dogridSearch;
     double pi0;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
+    double gamma;
+    double alpha;
+    double beta;
     
 };
 

@@ -557,3 +557,17 @@ void Vector::displayVector() const
     }
   cout << endl;
 }
+
+double diffNormSquared(const Vector & u, const Vector & v)
+{
+  double res = 0.0;
+
+  Set s = u.nonzeroIndices & v.nonzeroIndices;
+  
+  for (int i=0; i<s.size(); i++)
+    {
+      int ind = s[i];
+      res += pow(u[ind] - v[ind], 2.0);
+    }
+  return sqrt(res);
+}

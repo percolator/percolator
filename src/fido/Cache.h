@@ -69,9 +69,7 @@ template <typename C, typename R, typename A>
       return returnValueGivenArg;
     #endif
 
-    //    cout << "Computing using member function..." << endl;
     returnValueGivenArg = mf.operator()(a, obj);
-    //    cout << "Back from member function" << endl;
 
     myObj = obj;
     arg = a;

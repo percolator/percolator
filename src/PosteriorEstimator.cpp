@@ -359,7 +359,7 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double> & q) {
 	int nP = 0;
 	double sum = 0.0;
-	// assuming combined sorted in decending order
+	// assuming pep sorted in decending order ?? sure?? //TOFIX 
 	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
 		sum += *myP;
 		q.push_back(sum / (double)nP);

@@ -152,6 +152,7 @@ class Caller {
     double pi_0_psms;
     double pi_0_peptides;
     double pi_0_proteins;
+    double numberQpsms;
 };
 
 #endif /*CALLER_H_*/

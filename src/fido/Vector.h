@@ -139,11 +139,14 @@ public:
 
   void trimNonzeroIndices();
   void createNonzeroIndices();
+  
+  friend double diffNormSquared(const Vector & u, const Vector & v);
 
 //protected:
 
   Set nonzeroIndices;
   Array<double> values;
+  
 };
 
 Vector operator +(const Vector & lhs, const Vector & rhs);

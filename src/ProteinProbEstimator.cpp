@@ -27,6 +27,19 @@ const bool ProteinProbEstimator::outputPEPs = true;
 
 /** Helper functions **/
 
+template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
+                                 size_t max_size = 1000) {
+  out.clear();
+  double n = in.size();
+  size_t num_draw = min(in.size(), max_size);
+  for (size_t ix = 0; ix < num_draw; ++ix) {
+    size_t draw = (size_t)((double)rand() / ((double)RAND_MAX + (double)1) * n);
+    out.push_back(in[draw]);
+  }
+  // sort in desending order
+  sort(out.begin(), out.end());
+}
+
 double antiderivativeAt(double m, double b, double xVal)
 {
   return m*xVal*xVal/2.0 + b*xVal;
@@ -37,7 +50,10 @@ double area(double x1, double y1, double x2, double y2, double max_x)
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
 
-  return antiderivativeAt(m, b, min(max_x, x2) ) - antiderivativeAt(m, b, x1);
+  double area =  antiderivativeAt(m, b, min(max_x, x2) ) - antiderivativeAt(m, b, x1);
+  
+  if(isnan(area)) return 0.0;
+  else return area;
 }
 
 double squareAntiderivativeAt(double m, double b, double xVal)
@@ -47,14 +63,11 @@ double squareAntiderivativeAt(double m, double b, double xVal)
   double v = 2*m*b;
   double t = b*b;
 
-  //  cout << "\t\tsquareAntiderivativeAt " << xVal << " is " << u*xVal*xVal*xVal/3.0 + v*xVal*xVal/2.0 + t*xVal << endl;
-  //  cout << "u, v, t = " << u << " " << v << " " << t << endl;
-
   return u*xVal*xVal*xVal/3.0 + v*xVal*xVal/2.0 + t*xVal;
 }
 
-ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool tiesAsOneProtein
-			 ,bool usePi0, bool outputEmpirQVal, bool groupProteins, bool noseparate, bool noprune) {
+ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
+			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, bool __dogridSearch) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = gamma_par;
@@ -62,13 +75,14 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   beta = beta_par;
   numberDecoyProteins = 0;
   numberTargetProteins = 0;
-  pi0 = 0.0;
-  this->tiesAsOneProtein = tiesAsOneProtein;
-  this->usePi0 = usePi0;
-  this->outputEmpirQVal = outputEmpirQVal;
-  this->groupProteins = groupProteins;
-  this->noseparate = noseparate;
-  this->noprune = noprune;
+  pi0 = 1.0;
+  tiesAsOneProtein = __tiesAsOneProtein;
+  usePi0 = __usePi0;
+  outputEmpirQVal = __outputEmpirQVal;
+  groupProteins = __groupProteins;
+  noseparate = __noseparate;
+  noprune = __noprune;
+  dogridSearch = __dogridSearch;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator(){
@@ -82,120 +96,238 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
   setTargetandDecoysNames();
 }
 
-void ProteinProbEstimator::run(bool startGridSearch){
+void ProteinProbEstimator::run(){
   
   srand(time(NULL)); cout.precision(8); cerr.precision(8);
   // by default, a grid search is executed to estimate the values of the
   // parameters gamma alpha and beta
-  if(startGridSearch) {
+  if(dogridSearch) {
     if(VERB > 1) {
       cerr << "The parameters for the model will be estimated by grid search."
           << endl;
     }
     gridSearch();
-    if(VERB > 1) {
+  }
+  else
+  {
+    if(alpha == -1)
+      alpha = default_alpha;
+    if(beta == -1)
+      beta = default_beta;
+    if(gamma == -1)
+      gamma = default_gamma;
+  }
+  if(VERB > 1) {
       cerr << "\nThe following parameters have been chosen;\n";
       cerr << "gamma = " << gamma << endl;
       cerr << "alpha = " << alpha << endl;
       cerr << "beta  = " << beta << endl;
       cerr << "Protein level probabilities will now be calculated\n";
-    }
-  }
-  else
-  {
-    alpha = default_alpha;
-    beta = default_beta;
-    gamma = default_gamma;
   }
 
-  //GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = ;
-  
   delete proteinGraph;
-  //proteinGraph = new GroupPowerBigraph (peptideScores,alpha,beta,gamma,groupProteins,noprune,noseparate);
-  proteinGraph = new GroupPowerBigraph (peptideScores,alpha,beta,gamma);
-  
-//   std::cerr << "Size of peptide Scores : " << peptideScores->size() << std::endl;
+  proteinGraph = new GroupPowerBigraph (peptideScores,alpha,beta,gamma,groupProteins,noseparate,noprune);
   proteinGraph->getProteinProbs();
+  pepProteins.clear();
+  pepProteins = proteinGraph->getProteinProbsPercolator();
+  
   estimateQValues();
+  
   if(usePi0)
-    /** call get Pvalues and calculate Pi0 as qvality **/
-    //TODO include the ties as one protein functionality and the use Pi0 as well
-    estimateQValuesEmp(estQ.rbegin()->second);
-  else
-    estimateQValuesEmp(1.0);
+  {
+    pi0 = *qvalues.rbegin();
+    //estimatePValues();
+    //pi0 = estimatePi0();
+  }
+  estimateQValuesEmp();
   updateProteinProbabilities();
-//   std::cerr << "Size of protein Prob Graph : " << proteinGraph->probabilityR.size() << std::endl;
+  
 }
 
 
-unsigned int ProteinProbEstimator::getQvaluesBelowLevel(double level)
+void ProteinProbEstimator::estimatePValues()
+{
+  // assuming combined sorted in best hit first order
+  std::vector<std::pair<double , bool> > combined;
+  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); 
+       it != pepProteins.end(); it++) 
+  {
+     double prob = it->first;
+     std::vector<std::string> proteinList = it->second;
+     for(std::vector<std::string>::const_iterator itP = proteinList.begin(); 
+	 itP != proteinList.end(); itP++)
+      {
+	std::string proteinName = *itP;
+	bool isdecoy = proteins[proteinName].getIsDecoy();
+	combined.push_back(std::make_pair<double,bool>(prob,isdecoy));
+      }
+  }
+  pvalues.clear();
+  vector<pair<double, bool> >::const_iterator myPair = combined.begin();
+  size_t nDecoys = 0, posSame = 0, negSame = 0;
+  double prevScore = -4711.4711; // number that hopefully never turn up first in sequence
+  while (myPair != combined.end()) {
+    if (myPair->first != prevScore) {
+      for (size_t ix = 0; ix < posSame; ++ix) {
+        pvalues.push_back((double)nDecoys + (((double)negSame)
+            / (double)(posSame + 1)) * (ix + 1));
+      }
+      nDecoys += negSame;
+      negSame = 0;
+      posSame = 0;
+      prevScore = myPair->first;
+    }
+    if (myPair->second) {
+      ++negSame;
+    } else {
+      ++posSame;
+    }
+    ++myPair;
+  }
+  transform(pvalues.begin(), pvalues.end(), pvalues.begin(), bind2nd(divides<double> (),
+                                                   (double)nDecoys));
+}
+
+
+double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) 
+{
+  vector<double> pBoot, lambdas, pi0s, mse;
+  vector<double>::iterator start;
+  int numLambda = 100;
+  double maxLambda = 0.5;
+  size_t n = pvalues.size();
+  // Calculate pi0 for different values for lambda
+  // N.B. numLambda and maxLambda are global variables.
+  for (unsigned int ix = 0; ix <= numLambda; ++ix) {
+    double lambda = ((ix + 1) / (double)numLambda) * maxLambda;
+    // Find the index of the first element in p that is < lambda.
+    // N.B. Assumes p is sorted in ascending order.
+    start = lower_bound(pvalues.begin(), pvalues.end(), lambda);
+    // Calculates the difference in index between start and end
+    double Wl = (double)distance(start, pvalues.end());
+    double pi0 = Wl / n / (1 - lambda);
+    if (pi0 > 0.0) {
+      lambdas.push_back(lambda);
+      pi0s.push_back(pi0);
+    }
+  }
+  if(pi0s.size()==0){
+    cerr << "Error in the input data: too good separation between target "
+        << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
+    exit(0);
+  }
+  double minPi0 = *min_element(pi0s.begin(), pi0s.end());
+  // Initialize the vector mse with zeroes.
+  fill_n(back_inserter(mse), pi0s.size(), 0.0);
+  // Examine which lambda level that is most stable under bootstrap
+  for (unsigned int boot = 0; boot < numBoot; ++boot) {
+    // Create an array of bootstrapped p-values, and sort in ascending order.
+    bootstrap<double> (pvalues, pBoot);
+    n = pBoot.size();
+    for (unsigned int ix = 0; ix < lambdas.size(); ++ix) {
+      start = lower_bound(pBoot.begin(), pBoot.end(), lambdas[ix]);
+      double Wl = (double)distance(start, pBoot.end());
+      double pi0Boot = Wl / n / (1 - lambdas[ix]);
+      // Estimated mean-squared error.
+      mse[ix] += (pi0Boot - minPi0) * (pi0Boot - minPi0);
+    }
+  }
+  // Which index did the iterator get?
+  unsigned int minIx = distance(mse.begin(), min_element(mse.begin(),
+                                                         mse.end()));
+  double pi0 = max(min(pi0s[minIx], 1.0), 0.0);
+  return pi0;
+}
+
+unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level)
 {   
     unsigned nP = 0;
-    for (std::map<std::string,Protein>::const_iterator myP = proteins.begin(); 
+    for (std::map<const std::string,Protein>::const_iterator myP = proteins.begin(); 
 	 myP != proteins.end(); ++myP) {
-	 if(myP->second.getQ() <= level) nP++;
+	 if(myP->second.getQ() < level && !myP->second.getIsDecoy()) nP++;
     }
     return nP;
 }
 
-void ProteinProbEstimator::estimateQValues()
-{
-  int nP = 1;
-  double sum = 0.0;
-  double qvalue = 0.0;
-  // assuming combined sorted in decending order
-  Array<double> sorted = proteinGraph->getDescendingProteinsAndWeights().second;
-  Array< Array<string> > protein_ids = proteinGraph->getDescendingProteinsAndWeights().first;
-  for (int i=0; i<sorted.size(); i++,nP++)
-  {
-    double pep = 1.0 - sorted[i];
-    if(pep < 0.0 || !isnan(pep)) pep = 0.0;
-    if(pep > 1.0 || isinf(pep))  pep = 1.0;
-    sum += pep;
-    qvalue = (sum / (double)nP);
-    for (int j=0; j<protein_ids[i].size(); j++)
-      estQ.insert(std::pair<std::string,double>(std::string(protein_ids[i][j]),qvalue));
-  }
-  partial_sum(estQ);
+unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level)
+{   
+    unsigned nP = 0;
+    for (std::map<const std::string,Protein>::const_iterator myP = proteins.begin(); 
+	 myP != proteins.end(); ++myP) {
+	 if(myP->second.getQ() < level && myP->second.getIsDecoy()) nP++;
+    }
+    return nP;
 }
 
-void ProteinProbEstimator::estimateQValuesEmp(double pi0)
+
+void ProteinProbEstimator::estimateQValues()
+{
+
+  int nP = 0;
+  double sum = 0.0;
+  double qvalue = 0.0;
+  qvalues.clear();
+  // assuming probabilites sorted in decending order
+  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); 
+       it != pepProteins.end(); it++) 
+  {
+    int ntargets = countTargets(it->second);
+    sum += (double)(it->first * ntargets);
+    nP += ntargets;
+    qvalue = (sum / (double)nP);
+    qvalues.push_back(qvalue);
+  }
+  std::partial_sum(qvalues.rbegin(),qvalues.rend(),qvalues.rbegin(),mymin);
+}
+
+void ProteinProbEstimator::estimateQValuesEmp()
 {
     // assuming combined sorted in decending order
   double nDecoys = 0;
   double nTargets = 0;
-  Array<double> pps = proteinGraph->getDescendingProteinsAndWeights().second;
-  Array< Array<string> > protein_ids = proteinGraph->getDescendingProteinsAndWeights().first;
-  for (int i=0; i<pps.size(); i++) {
-    double pep = 1.0 - pps[i];
-    if(pep < 0.0 || !isnan(pep)) pep = 0.0;
-    for (int j=0; j<protein_ids[i].size(); j++) {
-      if (proteins[protein_ids[i][j]].getIsDecoy()) {
-	++nDecoys;
-      } else {
-	++nTargets;
-	empQ.insert(std::make_pair<std::string,double>(std::string(protein_ids[i][j]),(((double)nDecoys) / (double)nTargets)));
-	
-      }
-    }
+  double qvalue = 0.0;
+  double numDecoy = 0;
+  pvalues.clear();
+  qvaluesEmp.clear();
+  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); 
+       it != pepProteins.end(); it++) 
+  {
+    nTargets += countTargets(it->second);
+    numDecoy = countDecoys(it->second);
+    nDecoys += numDecoy;
+    qvalue = (double)nDecoys / (double)nTargets;
+    if(qvalue > 1.0) qvalue = 1.0;
+    qvaluesEmp.push_back(qvalue);
+    if(numDecoy > 0)
+      pvalues.push_back((nDecoys)/(double)(numberDecoyProteins));
+    else 
+      pvalues.push_back((nDecoys+(double)1)/(numberDecoyProteins+(double)1));
   }
-  
-  double factor = pi0 * ((double)nTargets / (double)nDecoys);
-  std::for_each(empQ.begin(), empQ.end(), mul_x(factor));
-  partial_sum(empQ);
 
+  double factor = pi0 * ((double)nTargets / (double)nDecoys);
+  std::transform(qvaluesEmp.begin(), qvaluesEmp.end(), 
+		 qvaluesEmp.begin(), bind2nd(multiplies<double> (),factor));
+  std::partial_sum(qvaluesEmp.rbegin(), qvaluesEmp.rend(), qvaluesEmp.rbegin(), mymin);
 }
 
 void ProteinProbEstimator::updateProteinProbabilities()
 {
-  Array<double> pps = proteinGraph->getDescendingProteinsAndWeights().second;
-  Array< Array<string> > protein_ids = proteinGraph->getDescendingProteinsAndWeights().first;
-  for (int i=0; i<pps.size(); i++) {
-    double pep = 1.0 - pps[i];
-    for (int j=0; j<protein_ids[i].size(); j++) {
-      proteins[protein_ids[i][j]].setPEP(pep);
-      proteins[protein_ids[i][j]].setQ(estQ[protein_ids[i][j]]);
-      proteins[protein_ids[i][j]].setQemp(empQ[protein_ids[i][j]]);
+  std::vector<double> peps;
+  std::vector<std::vector<std::string> > proteinNames;
+  transform(pepProteins.begin(), pepProteins.end(), back_inserter(peps), RetrieveKey());
+  transform(pepProteins.begin(), pepProteins.end(), back_inserter(proteinNames), RetrieveValue());
+
+  for (unsigned i = 0; i < peps.size(); i++) 
+  {
+    double pep = peps[i];
+    std::vector<std::string> proteinlist = proteinNames[i];
+    for(unsigned j = 0; j < proteinlist.size(); j++)
+    {
+      std::string proteinName = proteinlist[j];
+      proteins[proteinName].setPEP(pep);
+      proteins[proteinName].setQ(qvalues[i]);
+      proteins[proteinName].setQemp(qvaluesEmp[i]);
+      proteins[proteinName].setP(pvalues[i]);
     }
   }
 }
@@ -207,6 +339,7 @@ std::map<const std::string,Protein> ProteinProbEstimator::getProteins()
   return this->proteins;
 }
 
+
 void ProteinProbEstimator::setTargetandDecoysNames()
 {
   vector<ScoreHolder>::iterator psm = peptideScores->begin();
@@ -216,27 +349,29 @@ void ProteinProbEstimator::setTargetandDecoysNames()
     set<string>::iterator protIt = psm->pPSM->proteinIds.begin();
     // for each protein
     for(; protIt != psm->pPSM->proteinIds.end(); protIt++){
-      // CHECK PROTEIN EXITS 
-      Protein newprotein(*protIt,0.0,0.0,0.0,0.0,psm->label != -1 ? false : true);
-      newprotein.setPeptide(*psm);
-      proteins.insert(std::make_pair<std::string,Protein>(*protIt,newprotein));
-   
-      if(std::string(*protIt).find("random") != string::npos) //is decoy
+
+      if(proteins.find(*protIt) == proteins.end())
       {
-	//std::cout << "Reading Decoy protein : " << *protIt << std::endl;
-	falsePosSet.insert(*protIt);
-	numberDecoyProteins++;
+	Protein newprotein(*protIt,0.0,0.0,0.0,0.0,psm->isDecoy());
+	newprotein.setPeptides(std::vector<std::string>(1,psm->pPSM->getPeptideSequence()));
+	proteins.insert(std::make_pair<std::string,Protein>(*protIt,newprotein));
+	if(psm->isDecoy())
+	{
+	  falsePosSet.insert(*protIt);
+	}
+	else
+	{
+	  truePosSet.insert(*protIt);
+	}
       }
       else
       {
-	//std::cout << "Reading Target protein : " << *protIt << std::endl;
-	truePosSet.insert(*protIt);
-	numberTargetProteins++;
-
+	proteins[*protIt].setPeptide(psm->pPSM->getPeptideSequence());
       }
-	
     }
   }
+  numberDecoyProteins = falsePosSet.size();
+  numberTargetProteins = truePosSet.size();
 }
 
 void ProteinProbEstimator::gridSearch()
@@ -245,15 +380,19 @@ void ProteinProbEstimator::gridSearch()
   double gamma_temp, alpha_temp, beta_temp;
   gamma_temp = alpha_temp = beta_temp = 0.01;
 
-  //GroupPowerBigraph gpb( peptideScores, default_gamma, default_alpha, default_beta,groupProteins,noprune,noseparate);
-  GroupPowerBigraph gpb( peptideScores, default_gamma, default_alpha, default_beta);
+  GroupPowerBigraph gpb( peptideScores, default_gamma, default_alpha, default_beta,groupProteins,noprune,noseparate);
+
   double gamma_best, alpha_best, beta_best;
 	 gamma_best = alpha_best = beta_best = -1.0;
   double best_objective = -100000000;
 
-  double gamma_search[] = {0.1, 0.5, 0.9};
+  double threshold = 0.01;
+  double threshold2 = 0.05;
+  double threshold3 = 0.1;
+  int rocN = 75;
+  double gamma_search[] = {0.1, 0.25, 0.5, 075};
+  double beta_search[] = {0.0, 0.01, 0.15, 0.020, 0.025, 0.05};
   double alpha_search[] = {0.01, 0.04, 0.09, 0.16, 0.25, 0.36};
-  double beta_search[] = {0.0, 0.01, 0.025, 0.05};
   
   for (unsigned int i=0; i<sizeof(gamma_search)/sizeof(double); i++)
   {
@@ -264,18 +403,21 @@ void ProteinProbEstimator::gridSearch()
 	gamma = gamma_search[i];
 	alpha = alpha_search[j];
 	beta = beta_search[k];
-	std::cout << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
+	pepProteins.clear();
+	//std::cout << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
 	gpb.setAlphaBetaGamma(alpha, beta, gamma);
 	gpb.getProteinProbs();
-	pair<Array<Array<string> >, Array<double> > prot_groups_and_probs = gpb.getDescendingProteinsAndWeights();
-	Array<Array<string> > prot_names = prot_groups_and_probs.first;
-	Array<double> prot_probs = prot_groups_and_probs.second;
-	pair<Array<int>, Array<int> > roc = getROC(prot_names, prot_probs, falsePosSet, truePosSet);
-	double roc50 = getROC_N(roc.first, roc.second, 50);
-	pair<Array<double>, Array<double> > est_and_emp_fdr = getEstimated_and_Empirical_FDR(prot_names, prot_probs, falsePosSet, truePosSet);
-	double fdr_mse = getFDR_divergence(est_and_emp_fdr.first, est_and_emp_fdr.second, 0.10);
+	pepProteins = gpb.getProteinProbsPercolator();
+	std::vector<double> prot_probs;
+	std::vector<std::vector<std::string> > prot_names;
+	transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_probs), RetrieveKey());
+	transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_names), RetrieveValue());
+	std::pair<std::vector<double>,std::vector<double> > EstEmp = getEstimated_and_Empirical_FDR(prot_names,prot_probs);
+	pair<std::vector<int>, std::vector<int> > roc = getROC(prot_names);
+	double rocR = getROC_N(roc.first, roc.second, rocN);
+	double fdr_mse = getFDR_divergence(EstEmp.first, EstEmp.second, threshold3);
 	double lambda = 0.15;
-	double current_objective = lambda * roc50 - (1-lambda) * fdr_mse;
+	double current_objective = lambda * rocR - (1-lambda) * fdr_mse;
 	if (current_objective > best_objective)
 	{
 	  best_objective = current_objective;
@@ -283,7 +425,7 @@ void ProteinProbEstimator::gridSearch()
 	  alpha_best = alpha;
 	  beta_best = beta;
 	}
-	cerr << gamma << " " << alpha << " " << beta << " : " << roc50 << " " << fdr_mse << " " << current_objective << endl;
+	//cerr << gamma << " " << alpha << " " << beta << " : " << roc50 << " " << fdr_mse << " " << current_objective << endl;
       }
     }
   }
@@ -299,12 +441,16 @@ void ProteinProbEstimator::gridSearch()
  */
 void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
   
+  
+  std::vector<std::pair<std::string,Protein> > myvec(proteins.begin(), proteins.end());
+  std::sort(myvec.begin(), myvec.end(), IntCmpProb());
+
   ofstream os;
   os.open(xmlOutputFN.data(), ios::app);
   // append PROTEINs tag
   os << "  <proteins>" << endl;
-  for (std::map<std::string,Protein>::const_iterator myP = proteins.begin(); 
-	 myP != proteins.end(); ++myP) {
+  for (std::vector<std::pair<std::string,Protein> > ::const_iterator myP = myvec.begin(); 
+	 myP != myvec.end(); myP++) {
 
         os << "    <protein p:protein_id=\"" << myP->second.getName() << "\"";
   
@@ -316,13 +462,17 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
         if(ProteinProbEstimator::outputPEPs)
           os << "      <pep>" << myP->second.getPEP() << "</pep>" << endl;
         if(ProteinProbEstimator::getOutputEmpirQval())
-          os << "      <q_value>" << myP->second.getQemp() << "</q_value>\n";
-        else
-          os << "      <q_value>" << myP->second.getQ() << "</q_value>\n";
-	for(std::vector<ScoreHolderPeptide>::const_iterator peptIt = myP->second.getPeptide().begin(); 
-	    peptIt != myP->second.getPeptide().end(); peptIt++){
-	  string pept = (*peptIt).pPSM->getPeptideSequence();
-	  os << " 	<peptide_seq seq=\"" << pept << "\"/>"<<endl;
+          os << "      <q_value_emp>" << myP->second.getQemp() << "</q_value_emp>\n";
+        os << "      <q_value>" << myP->second.getQ() << "</q_value>\n";
+	os << "      <p_value>" << myP->second.getP() << "</p_value>\n";
+	std::vector<std::string> peptides = myP->second.getPeptides();
+	for(std::vector<std::string>::const_iterator peptIt = peptides.begin(); peptIt != peptides.end(); peptIt++)
+	{
+	  if(!peptIt->empty())
+	  {
+	    os << "      <peptide_seq seq=\"" << peptIt->c_str() << "\"/>"<<endl;
+	  }
+	    
 	}
         os << "    </protein>" << endl;
   }
@@ -340,20 +490,8 @@ string ProteinProbEstimator::printCopyright(){
   return oss.str();
 }
 
-int ProteinProbEstimator::matchCount( const set<string> & positiveNames, const Array<string> & atThreshold )
-{
-  int count = 0;
-  
-  for (int k=0; k<atThreshold.size(); k++)
-    {
-      if ( positiveNames.count( atThreshold[k] ) > 0 )
-	count++;
-    }
 
-  return count;
-}
-
-double ProteinProbEstimator::getROC_N(const Array<int> & fpArray, const Array<int> & tpArray, int N)
+double ProteinProbEstimator::getROC_N(const std::vector<int> & fpArray, const std::vector<int> & tpArray, int N)
 {
   double rocN = 0.0;
 
@@ -381,67 +519,61 @@ double ProteinProbEstimator::getROC_N(const Array<int> & fpArray, const Array<in
   return rocN / (N * tpArray.back());
 }
 
-pair<Array<double>, Array<double> > ProteinProbEstimator::getEstimated_and_Empirical_FDR(Array<Array<string> > names, 
-								   Array<double> probabilities, 
-								   const set<string> & falsePosSet, 
-								   const set<string> & truePosSet)
+pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimated_and_Empirical_FDR(std::vector<std::vector<string> > names, 
+								   std::vector<double> probabilities)
 {
-  Array<double> estFDR_array, empFDR_array;
-  estFDR_array.add(0);
-  empFDR_array.add(0);
-  
-  int fpCount, tpCount;
-  fpCount = tpCount = 0;
-  double totalFDR = 0.0, estFDR = 0.0;
-
-  bool scheduledUpdate = false;
-  
-  double lastProb = -1.0;
+  std::vector<double> estFDR_array, empFDR_array;
+  double fpCount = 0.0, tpCount = 0.0;
+  double totalFDR = 0.0, estFDR = 0.0, empFDR = 0.0;
   for (int k=0; k<names.size(); k++)
     {
       double prob = probabilities[k];
-      int fpChange = matchCount(falsePosSet, names[k]);
-      int tpChange = matchCount(truePosSet, names[k]);
+      int fpChange = countDecoys(names[k]);
+      int tpChange = countTargets(names[k]);
       
-      // for different style of grading, counting groups as a
-      // single protein and throwing away any groups that include
-      // TPs and FPs
-      if ( tpChange > 0 && fpChange > 0 )
-	tpChange = fpChange = 0;
-      
-      if ( tpChange > 0 )
+      if ( tpChange > 0 && tiesAsOneProtein)
 	tpChange = 1;
-      if ( fpChange > 0 )
+      if ( fpChange > 0 && tiesAsOneProtein )
 	fpChange = 1;
+
+      fpCount += (double)fpChange;
+      tpCount += (double)tpChange;
       
-      if ( prob != lastProb && lastProb != -1 )
-	{
-	  scheduledUpdate = true;
-	}
+      totalFDR += (prob) * (double)(tpChange);
+      estFDR = totalFDR / (tpCount);
+      empFDR = fpCount / tpCount; 
+      if(empFDR > 1.0) empFDR = 1.0;
+      if(estFDR > 1.0) estFDR = 1.0;
+      
+      estFDR_array.push_back(estFDR);
+      //empFDR_array.push_back(totalFDR);
+      empFDR_array.push_back(empFDR);
 
-      if ( scheduledUpdate )
-	{
-	  scheduledUpdate = false;
-
-	  totalFDR += (1-prob) * (fpChange + tpChange);
-	  estFDR = totalFDR / (fpCount + tpCount);
-	  
-	  estFDR_array.add(estFDR);
-	  empFDR_array.add(totalFDR);
-	}
-
-      fpCount += fpChange;
-      tpCount += tpChange;
-
-      lastProb = prob;
     }
-  
-  return pair<Array<double>, Array<double> >(estFDR_array, empFDR_array);
+  std::partial_sum(estFDR_array.rbegin(),estFDR_array.rend(),estFDR_array.rbegin(),mymin);
+  double factor = pi0 * ((double)tpCount / (double)fpCount);
+  std::transform(empFDR_array.begin(), empFDR_array.end(), 
+		 empFDR_array.begin(), bind2nd(multiplies<double> (),factor));
+  std::partial_sum(empFDR_array.rbegin(),empFDR_array.rend(),empFDR_array.rbegin(),mymin);
+  return pair<std::vector<double>, std::vector<double> >(estFDR_array, empFDR_array);
 }
 
-double ProteinProbEstimator::getFDR_divergence(const Array<double> estFDR, const Array<double> empFDR, double THRESH)
+std::vector<double> diffVector(const std::vector<double> &a, 
+			       const std::vector<double> &b)
 {
-  Vector diff = Vector(estFDR) - Vector(empFDR);
+  std::vector<double> result = std::vector<double>(a.size());
+
+  for (int k=0; k<result.size(); k++)
+    {
+      result[k] = a[k] - b[k];
+    }
+  
+  return result;
+}
+
+double ProteinProbEstimator::getFDR_divergence(const std::vector<double> estFDR, const std::vector<double> empFDR, double THRESH)
+{
+  std::vector<double> diff = diffVector(estFDR,empFDR);
 
   double tot = 0.0;
 
@@ -468,66 +600,36 @@ double ProteinProbEstimator::getFDR_divergence(const Array<double> estFDR, const
   return tot / xRange;
 }
 
-pair<Array<int>, Array<int> > ProteinProbEstimator::getROC(Array<Array<string> > names, Array<double> probabilities, 
-							  const set<string> & falsePosSet, const set<string> & truePosSet)
+pair<std::vector<int>, std::vector<int> > ProteinProbEstimator::getROC(std::vector<std::vector<string> > names)
 {
-  Array<int> fps, tps;
-  fps.add(0);
-  tps.add(0);
-  
+  std::vector<int> fps, tps;
   int fpCount, tpCount;
   fpCount = tpCount = 0;
-
-  bool scheduledUpdate = false;
   
-  double lastProb = -1.0;
   for (int k=0; k<names.size(); k++)
     {
-      double prob = probabilities[k];
-      int fpChange = matchCount(falsePosSet, names[k]);
-      int tpChange = matchCount(truePosSet, names[k]);
+      int fpChange = countDecoys(names[k]);
+      int tpChange = countTargets(names[k]);
       
-      // for different style of grading, counting groups as a
-      // single protein and throwing away any groups that include
-      // TPs and FPs
-      if ( tpChange > 0 && fpChange > 0 )
-	tpChange = fpChange = 0;
-      
-      if ( tpChange > 0 )
+      if ( tpChange > 0 && tiesAsOneProtein )
 	tpChange = 1;
-      if ( fpChange > 0 )
+      if ( fpChange > 0 && tiesAsOneProtein )
 	fpChange = 1;
       
-      if ( prob != lastProb && lastProb != -1 )
-	{
-	  scheduledUpdate = true;
-	}
-
-      if ( scheduledUpdate )
-	{
-	  fps.add( fpCount );
-	  tps.add( tpCount );
-	  scheduledUpdate = false;
-
-	  //	  cout << fpCount << " " << tpCount << endl;
-
-	  //	  totalFDR += (1-prob) * (fpChange + tpChange);
-	  //	  estFDR = totalFDR / (fpCount + tpCount);
-	}
-
       fpCount += fpChange;
       tpCount += tpChange;
-
-      lastProb = prob;
+      
+      fps.push_back( fpCount );
+      tps.push_back( tpCount );
+	
     }
 
-  fps.add( fpCount );
-  tps.add( tpCount );	  
+  fps.push_back( fpCount );
+  tps.push_back( tpCount );	  
+  fps.push_back( falsePosSet.size() );
+  tps.push_back( truePosSet.size() );
   
-  fps.add( falsePosSet.size() );
-  tps.add( truePosSet.size() );
-  
-  return pair<Array<int>, Array<int> >(fps, tps);
+  return pair<std::vector<int>, std::vector<int> >(fps, tps);
 }
 
 
@@ -598,6 +700,52 @@ bool ProteinProbEstimator::getSeparateProteins()
 }
 
 
+int ProteinProbEstimator::countTargets(std::vector<std::string> proteinList)
+{
+  int count = 0;
+  for(int i = 0; i < proteinList.size(); i++)
+  {
+    if(truePosSet.count(proteinList[i]) > 0)
+    {
+      count++;
+    }
+  }
+  if(tiesAsOneProtein && count > 0)
+    return 1;
+  else
+    return count;
+}
 
+int ProteinProbEstimator::countDecoys(std::vector<std::string> proteinList)
+{
+  int count = 0;
+  for(int i = 0; i < proteinList.size(); i++)
+  {
+    if(falsePosSet.count(proteinList[i]) > 0)
+    {
+      count++;
+    }
+  }
+  
+  if(tiesAsOneProtein && count > 0)
+    return 1;
+  else
+    return count;
+}
+
+double ProteinProbEstimator::getAlpha()
+{
+ return alpha;
+}
+
+double ProteinProbEstimator::getBeta()
+{
+  return beta;
+}
+
+double ProteinProbEstimator::getGamma()
+{
+  return gamma;
+}
 
 

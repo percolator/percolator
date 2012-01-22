@@ -518,6 +518,8 @@ int Scores::calcQ(double fdr) {
 
   int targets = 0, decoys = 0;
   double efp = 0.0, q;
+  
+  // NOTE DOES THIS REALLY CALCULATE P VALUES??
   for (it = scores.begin(); it != scores.end(); it++) {
     if (it->label != -1) {
       targets++;
@@ -705,9 +707,21 @@ unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
   
   for (size_t ix = 0; ix < scores.size(); ix++) {
-    if(scores[ix].isTarget() && scores[ix].pPSM->q <= level)
+    if(scores[ix].isTarget() && scores[ix].pPSM->q < level)
       hits++;
   }
   
   return hits;
+}
+
+std::vector<std::string> Scores::getPeptides(std::string proteinName)
+{
+  std::vector<std::string> peptides;
+  for (size_t ix = 0; ix < scores.size(); ix++)
+  {
+    if(scores[ix].pPSM->proteinIds.find(proteinName) != scores[ix].pPSM->proteinIds.end())
+      peptides.push_back(scores[ix].pPSM->getPeptideSequence());
+      //std::cerr << "adding peptide " << scores[ix].pPSM->getPeptideSequence() << std::endl;
+  }
+  return peptides;
 }

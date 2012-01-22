@@ -56,7 +56,7 @@ public:
 
   virtual void clear();
   virtual void resize(int n);
-
+  
   void remove(int k);
 
   // accessors

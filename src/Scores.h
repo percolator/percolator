@@ -177,6 +177,9 @@ class Scores {
       return pi0;
     }
     
+    /** Return a list of peptides that are matching the given protein name **/
+    std::vector<std::string> getPeptides(std::string proteinName);
+    
     /** Return the scores whose q value is less or equal than the threshold given**/
     unsigned getQvaluesBelowLevel(double level);
     
