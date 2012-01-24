@@ -39,12 +39,12 @@ the following for Elude:
 
   $ sudo apt-get install libboost-dev
 
-*** the tool converters can be compiled using three different data engines [boost-serialization, tokycabinet
-*** or leveldb]. This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB -DLEVELDB=ON
+*** The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
+*** This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB -DLEVELDB=ON
 *** Originally by default the boost-serialization version is taken.
 
 NOTE that the packages Xercesc-c and Xsd codesynthesis might have to be installed manually depending on which
-platform/repository percolator is building from. In that case follow the links below :
+platform/repository percolator is building on. In that case follow the links below :
 
 http://www.codesynthesis.com/products/xsd/
 http://xerces.apache.org/xerces-c/
@@ -120,6 +120,8 @@ user has read/write privileges can be chosen. Issue the following:
           /path/to/source
   $ make -j8; make install
 
+NOTE that all the params between [] are just optional
+
 DCMAKE_INSTALL_PREFIX = indicates where to install percolator
 CMAKE_BUILD_TYPE = indicates the type of building (Release by default)
 CMAKE_PREFIX_PATH = indicates and extra path to look for packages for example the binaries of XSD.
@@ -135,6 +137,8 @@ In case percolator needs to be cross-compiled. Issue the following :
   $ make -j8; make install
 
 NOTE that all the params between [] are just optional : 
+NOTE that when cross compiling, all the dependencies have to be cross compiled under MinGW and located
+in the default MinGW directory.
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
@@ -156,7 +160,7 @@ instructions are written for Percolator, but the same procedure applies for
 both the converters and Elude.
 Assuming Percolator has been installed as explained above, it can be
 automatically tested by issuing:
-  $ cd /tmp/percolatorBuild
+  $ cd /path/to/build
   $ make test
 If errors are encountered, the directory /tmp/percolatorBuild/Testing/ will
 contain log files that can be used to debug the problem.
