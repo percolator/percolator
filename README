@@ -44,10 +44,16 @@ the following for Elude:
 *** Originally by default the boost-serialization version is taken.
 
 NOTE that the packages Xercesc-c and Xsd codesynthesis might have to be installed manually depending on which
-platform/repository percolator is building on. In that case follow the links below :
+platform/repository percolator is building on. In that case follow the links below to download build and install them :
 
 http://www.codesynthesis.com/products/xsd/
 http://xerces.apache.org/xerces-c/
+
+NOTE the package LevelDB might not be available for all the repositories. In that case download and install it
+from the following link :
+
+http://code.google.com/p/leveldb/
+
 
 Then, in the directory where the package has been downloaded:
   $ sudo dpkg --install [package].deb
