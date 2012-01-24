@@ -33,7 +33,7 @@ the following for the converters:
 or
   $ sudo apt-get install  libsqlite3-0  zlib1g-dev libtokyocabinet8
 or
-  $ sudo apt-get install  libsqlite3-0  libleveldb-dev leveldb-doc zlib1g-dev libboost-serialization-dev
+  $ sudo apt-get install  libsqlite3-0  zlib1g-dev libboost-serialization-dev
 
 the following for Elude:
 
