@@ -39,9 +39,9 @@ the following for Elude:
 
   $ sudo apt-get install libboost-dev
 
-*** The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
-*** This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB -DLEVELDB=ON
-*** Originally by default the boost-serialization version is taken.
+NOTE The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
+This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB or -DLEVELDB
+originally by default the boost-serialization version is taken.
 
 NOTE that the packages Xercesc-c and Xsd codesynthesis might have to be installed manually depending on which
 platform/repository percolator is building on. In that case follow the links below to download build and install them :
