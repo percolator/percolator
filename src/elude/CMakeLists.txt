@@ -20,10 +20,10 @@ MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
 MESSAGE( STATUS )
-
+ 
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "02")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "00")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "2")
@@ -157,7 +157,8 @@ set(CPACK_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_PACKAGE_NAME ${PACKAGE_NICKNAME})
 set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/elude/COPYING")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
-my_set(TARGET_ARCH "amd64" "set build architecture: options are i386 and amd64")
+my_set(TARGET_ARCH "noarch" "set build architecture: options are i686, i386 and amd64")
+set(TARGET_ARCH "i386")
 #TODO: ADD README FILE
 IF(APPLE)
 	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
@@ -173,7 +174,7 @@ IF(APPLE)
 elseif(UNIX)
 	set(CPACK_GENERATOR "DEB;RPM") # Distribution packaging formats ("make package"); RPM packaging can also be included later
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-${TARGET_ARCH}")
-        set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-src")
+        set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-linux-src")
 endif()
 
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")
@@ -185,7 +186,7 @@ file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
 set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURRENT_BINARY_DIR}/;/.bzr/;/.settings/;${DOT_FILES_BEGIN};${TILD_FILES}")
 
 # PACKAGING OPTIONS: DEB
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas KÃ€ll <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Kall <lukas.kall@cbr.su.se>, Luminita Moruz <lumi.moruz@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev")
 
@@ -193,7 +194,7 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev")
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
-set(CPACK_RPM_PACKAGE_GROUP "Kll-lab")
+set(CPACK_RPM_PACKAGE_GROUP "Kall-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1, boost-devel")
 
 # NSIS package options

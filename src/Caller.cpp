@@ -301,6 +301,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     "Proteins will not be pruned (from target-decoy analysis) (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
+  cmd.defineOption("P",
+      "deepness",
+      "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
+      "value");
   cmd.defineOption("M",
     "exp-mass",
     "include the experimental mass in the output file",
@@ -319,11 +323,16 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
-    bool grouProteins = cmd.optionSet("N");
+    bool grouProteins = true; 
+    grouProteins =  cmd.optionSet("N");
     bool noseparate = cmd.optionSet("E");;
-    bool noprune = cmd.optionSet("D");;
+    bool noprune = cmd.optionSet("D");
     bool gridSearch = true;
-    
+    unsigned deepness = 3;
+    if (cmd.optionSet("P")) {
+      deepness = (cmd.getInt("P", 0, 3));
+    }
+    //TODO if groupProteins false or noprune true FIDO fails with big datasets
     if (cmd.optionSet("a")) {
        alpha = cmd.getDouble("a", 0.00, 0.90);
      }
@@ -337,7 +346,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 	gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					      grouProteins,noseparate,noprune,gridSearch);
+					      grouProteins,noseparate,noprune,gridSearch,deepness);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){

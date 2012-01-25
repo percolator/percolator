@@ -44,7 +44,9 @@ class ScoreHolder {
     PSMDescription* pPSM;
     //  const double * featVec;
     int label;
-    vector<string> psms_list;
+    /* this container holds the psms for each peptide, they have be unique */
+    std::vector<std::string> psms_list;
+    
     ScoreHolder() :
       score(0.0), label(0), pPSM(NULL), psms_list () {
       ;
@@ -88,6 +90,7 @@ struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
       && (__x.score > __y.score) ) );
   }
 };
+
 
 struct lexicEq : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool

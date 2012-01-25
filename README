@@ -24,19 +24,47 @@ The converters depend on Percolator itself, which must be installed first!
 
 Ubuntu (11.04)
 Issue the following to install the necessary dependencies for Percolator:
-  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost1.42-dev libboost-filesystem-dev libboost-system-dev
-and the following for the converters:
-  $ sudo apt-get install libtokyocabinet8 libsqlite3-0 libbost-serialization-dev libleveldb-dev leveldb-doc zlib1g-dev
+
+  $ sudo apt-get install libxerces-c3.1 xsdcxx libboost-dev libboost-filesystem-dev libboost-system-dev
+
+the following for the converters:
+
+  $ sudo apt-get install  libsqlite3-0  libleveldb-dev leveldb-doc zlib1g-dev 
+or
+  $ sudo apt-get install  libsqlite3-0  zlib1g-dev libtokyocabinet8
+or
+  $ sudo apt-get install  libsqlite3-0  zlib1g-dev libboost-serialization-dev
+
+the following for Elude:
+
+  $ sudo apt-get install libboost-dev
+
+NOTE The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
+This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB or -DLEVELDB
+originally by default the boost-serialization version is taken.
+
+NOTE that the packages Xercesc-c and Xsd codesynthesis might have to be installed manually depending on which
+platform/repository percolator is building on. In that case follow the links below to download build and install them :
+
+http://www.codesynthesis.com/products/xsd/
+http://xerces.apache.org/xerces-c/
+
+NOTE the package LevelDB might not be available for all the repositories. In that case download and install it
+from the following link :
+
+http://code.google.com/p/leveldb/
+
+
 Then, in the directory where the package has been downloaded:
   $ sudo dpkg --install [package].deb
 Note that the converters depend on Percolator, which must be installed first!
 
 Fedora (15)
-All the external dependencies listed before are available to downloaded and installed in the yum repository in Fedora.
+All the external dependencies listed before are available to be downloaded and installed in the yum repository in Fedora.
 Then the rpm package can be installed as usual : sudo rpm --install packagename.rpm
 
 Mac OSX
-All the external dependencies listed before are available to downloaded and installed in the curl repository in Mac.
+All the external dependencies listed before are available to be downloaded and installed in the curl repository in Mac.
 Then the dmg can be installed as usual.
 
 Linux (other distributions)
@@ -52,7 +80,7 @@ for tokyocabinet and leveldb will soon be added.
 
 Windows
 The Percolator, Converters and Elude installers have been tested on Windows XP SP2, Windows
-Vista and Window 7. Download the Windows installer, double click and follow the
+Vista and Window 7. Download the Windows installer, double click it and follow the
 installation procedure. Once completed, open a DOS prompt and invoke Percolator
 from the directory where it was installed.
 
@@ -68,15 +96,14 @@ to download in the repository.
 
 ***
 
-
 BUILDING (from source bundle or the repository)
 
 *** READ THIS CAREFULLY: you MUST install the required libraries! ***
 The following instructions are for Ubuntu (versions 10.04, 10.10 and 11.04).
 Make, Cmake and a C++ compiler are required. To build Percolator, the following
-libraries are also needed: libxerces-c-dev, libboost-dev, libsqlite3-dev, libboost-filesystem-dev and libboost-system-dev. 
-To build the converters: libxerces-c-dev, libboost-dev, libboost-filesystem-dev and libboost-system-dev, libbost-serialization-dev,
-libleveldb-dev, libtokyocabinet-dev, zlib1g-dev. Note that tokyocabinet and leveldb are both optional libraries
+libraries are also needed: libxerces-c-dev, xsdcxx,  libboost-dev, libboost-filesystem-dev and libboost-system-dev. 
+To build the converters: libxerces-c-dev, xsdcxx, libsqlite3-dev, libboost-dev, libboost-filesystem-dev,libboost-system-dev, libboost-serialization-dev or
+libleveldb-dev or libtokyocabinet-dev and zlib1g-dev. Note that tokyocabinet and leveldb are both optional libraries
 In addition, both need Code Synthesis XSD in
 it 3.3 version. All the above is automatically installed by following the steps
 below; if you do note have superuser privileges, you will have to manually
@@ -88,18 +115,36 @@ itself, which must be installed first!
 Download the latest [tar-ball].tar.gz and decompress it; we will refer to the 
 generated directory as "/path/to/source" (that would be the src/converters 
 subdirectory for the converters, and src/elude in case of Elude).
-You can now install all the required libraries mentioned above with the command:
-  $ cd /path/to/source;
-  $ ./install/get_packages_ubuntu.sh
-The script will terminate by printing a string to cout; we will refer to that
-string as "/prefix/path".
-We will now proceed to build percolator in /tmp, but any directory where the
+We will also refer as "/path/to/build" as the build directory.
+
+We will now proceed to build percolator in "/path/to/build", but any directory where the
 user has read/write privileges can be chosen. Issue the following:
-  $ mkdir /tmp/percolatorBuild; cd /tmp/percolatorBuild
-  $ cmake -DCMAKE_PREFIX_PATH="/prefix/path" -DCMAKE_INSTALL_PREFIX="/tmp" \
-    [-G"Eclipse CDT4 - Unix Makefiles"] [-DCMAKE_BUILD_TYPE="Debug"] \
-    /path/to/source
+  $ cd /path/to/build
+  $ cmake [-DCMAKE_INSTALL_PREFIX="/usr/local/bin"] \
+          [-DCMAKE_BUILD_TYPE="Debug" | "Release"] \
+          [-DCMAKE_PREFIX_PATH="/path/to/libraries"]
+          /path/to/source
   $ make -j8; make install
+
+NOTE that all the params between [] are just optional
+
+DCMAKE_INSTALL_PREFIX = indicates where to install percolator
+CMAKE_BUILD_TYPE = indicates the type of building (Release by default)
+CMAKE_PREFIX_PATH = indicates and extra path to look for packages for example the binaries of XSD.
+
+In case percolator needs to be cross-compiled. Issue the following :
+  $ cd /path/to/build
+  $ cmake [-DCMAKE_INSTALL_PREFIX="/usr/local/bin"] \
+          [-DCMAKE_BUILD_TYPE="Debug" | "Release"] \
+          [-DCMAKE_PREFIX_PATH="/path/to/libraries"]
+          -G"Eclipse CDT4 - Unix Makefiles"
+          -DCMAKE_TOOLCHAIN_FILE="/path/to/source/cmake/windows_percolator/Toolchain-mingw32.cmake"
+          /path/to/source
+  $ make -j8; make install
+
+NOTE that all the params between [] are just optional : 
+NOTE that when cross compiling, all the dependencies have to be cross compiled under MinGW and located
+in the default MinGW directory.
 
 Advanced users (and developers) may clone the project with Git by issuing:
 $ git clone git://github.com/percolator/percolator
@@ -121,7 +166,7 @@ instructions are written for Percolator, but the same procedure applies for
 both the converters and Elude.
 Assuming Percolator has been installed as explained above, it can be
 automatically tested by issuing:
-  $ cd /tmp/percolatorBuild
+  $ cd /path/to/build
   $ make test
 If errors are encountered, the directory /tmp/percolatorBuild/Testing/ will
 contain log files that can be used to debug the problem.

@@ -259,7 +259,7 @@ class ProteinProbEstimator {
     
     ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = true, 
-			 bool noseparate = false, bool noprune = false, bool dogridSearch = true);
+			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3);
     
     ~ProteinProbEstimator();
     
@@ -331,6 +331,7 @@ class ProteinProbEstimator {
     double pi0;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
+    unsigned int deepness;
     double gamma;
     double alpha;
     double beta;

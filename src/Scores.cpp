@@ -216,8 +216,6 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool makeUnique) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
     a->estimatePi0();
     a->calcQ(fdr);
-    //    a->calcPep();
-    //a->normalizeScores(fdr*a->getPi0());
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores));
   }
@@ -506,20 +504,10 @@ int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys+totalNumberOfTargets==size());
   vector<ScoreHolder>::iterator it;
 
-  // uncomment the following to inspect the scores vector
-  //cerr << endl;
-  //it = scores.begin();
-  //for (; it != scores.end(); ++it) {
-  //  if(it->label==-1)
-  //    cerr << "(" << it->label<<")" <<"sc:" << it->score << "id:" << it->pPSM->id << " ";
-  //    cerr << "(" << it->label<<")" <<"id:" << it->pPSM->id << " ";
-  //}
-  //cerr << endl;
-
   int targets = 0, decoys = 0;
   double efp = 0.0, q;
   
-  // NOTE DOES THIS REALLY CALCULATE P VALUES??
+  // NOTE check this
   for (it = scores.begin(); it != scores.end(); it++) {
     if (it->label != -1) {
       targets++;
@@ -587,9 +575,40 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
+  
    // lexicographically order the scores (based on peptides names,labels and scores)
    std::sort(scores.begin(), scores.end(), lexicOrderProb());
-   scores.erase(std::unique(scores.begin(), scores.end(), mycmp), scores.end());
+   
+   /*
+    * much faster and simpler version but it does not fill up psms_list     
+    * which will imply iterating over the unique peptides and the removed list many times 
+    * scores.erase(std::unique(scores.begin(), scores.end(), mycmp), scores.end());
+   */
+   
+   vector<ScoreHolder> uniquePeptideScores = vector<ScoreHolder>();
+   string previousPeptide;
+   int previousLabel;
+   // run a pointer down the scores list
+   vector<ScoreHolder>::iterator current = scores.begin();
+   for(;current!=scores.end(); current++){
+     // compare pointer's peptide with previousPeptide
+     string currentPeptide = current->pPSM->getPeptideSequence();
+     if(boost::iequals(currentPeptide,previousPeptide) 
+       && (previousLabel == current->label)) {
+       // if the peptide is a duplicate
+       vector<ScoreHolder>::iterator last = --uniquePeptideScores.end();
+       // append the duplicate psm_id
+       last->psms_list.push_back(current->pPSM->id);
+     } else {
+       // otherwise insert as a new score
+       current->psms_list.push_back(current->pPSM->id);
+       uniquePeptideScores.push_back(*current);
+       // update previousPeptide
+       previousPeptide = currentPeptide;
+       previousLabel = current->label;
+     }
+   }
+   scores = uniquePeptideScores;
    sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
 }
 

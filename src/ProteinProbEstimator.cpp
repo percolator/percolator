@@ -67,7 +67,8 @@ double squareAntiderivativeAt(double m, double b, double xVal)
 }
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
-			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, bool __dogridSearch) {
+			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
+			  bool __dogridSearch, unsigned __deepness) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = gamma_par;
@@ -83,6 +84,7 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   noseparate = __noseparate;
   noprune = __noprune;
   dogridSearch = __dogridSearch;
+  deepness = __deepness;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator(){
@@ -380,7 +382,7 @@ void ProteinProbEstimator::gridSearch()
   double gamma_temp, alpha_temp, beta_temp;
   gamma_temp = alpha_temp = beta_temp = 0.01;
 
-  GroupPowerBigraph gpb( peptideScores, default_gamma, default_alpha, default_beta,groupProteins,noprune,noseparate);
+  GroupPowerBigraph *gpb = new GroupPowerBigraph( peptideScores, default_alpha, default_beta,default_gamma,groupProteins,noprune,noseparate);
 
   double gamma_best, alpha_best, beta_best;
 	 gamma_best = alpha_best = beta_best = -1.0;
@@ -389,21 +391,40 @@ void ProteinProbEstimator::gridSearch()
   double threshold = 0.01;
   double threshold2 = 0.05;
   double threshold3 = 0.1;
-  int rocN = 75;
+  int rocN = 50;
   
   //TODO make the range of the grid search and the N parametizable or according to data size
-  
-//   double gamma_search[] = {0.1, 0.25, 0.5, 075};
-//   double beta_search[] = {0.0, 0.01, 0.15, 0.020, 0.025, 0.05};
-//   double alpha_search[] = {0.01, 0.04, 0.09, 0.16, 0.25, 0.36};
-  
-//   double gamma_search[] = {0.1,0.25, 0.5, 075, 0.9};
-//   double beta_search[] = {0.0, 0.01, 0.15, 0.025,0.35,0.05,0.1};
-//   double alpha_search[] = {0.01, 0.04,0.09, 0.16, 0.25, 0.36,0.5};
-  
-  double gamma_search[] = {0.1, 0.5, 075};
+  double gamma_search[] = {0.5};
   double beta_search[] = {0.0, 0.01, 0.15, 0.025, 0.05};
   double alpha_search[] = {0.01, 0.04, 0.16, 0.25, 0.36};
+  
+  if(deepness == 0)
+  {
+    double gamma_search[] = {0.1,0.25, 0.5, 075, 0.9};
+    double beta_search[] = {0.0, 0.01, 0.15, 0.025,0.35,0.05,0.1};
+    double alpha_search[] = {0.01, 0.04,0.09, 0.16, 0.25, 0.36,0.5};
+  }
+  else if(deepness == 1)
+  {
+    double gamma_search[] = {0.1, 0.25, 0.5, 075};
+    double beta_search[] = {0.0, 0.01, 0.15, 0.020, 0.025, 0.05};
+    double alpha_search[] = {0.01, 0.04, 0.09, 0.16, 0.25, 0.36};
+  }
+  else if(deepness == 2)
+  {
+    double gamma_search[] = {0.1, 0.5, 0.75};
+    double beta_search[] = {0.0, 0.01, 0.15, 0.025, 0.05};
+    double alpha_search[] = {0.01, 0.04, 0.16, 0.25, 0.36};
+  }
+  else if(deepness == 3)
+  {
+    double gamma_search[] = {0.5};
+    double beta_search[] = {0.0, 0.01, 0.15, 0.025, 0.05};
+    double alpha_search[] = {0.01, 0.04, 0.16, 0.25, 0.36};
+    
+  }
+
+
   
   for (unsigned int i=0; i<sizeof(gamma_search)/sizeof(double); i++)
   {
@@ -415,10 +436,11 @@ void ProteinProbEstimator::gridSearch()
 	alpha = alpha_search[j];
 	beta = beta_search[k];
 	//std::cout << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
-	gpb.setAlphaBetaGamma(alpha, beta, gamma);
-	gpb.getProteinProbs();
+	gpb->setAlphaBetaGamma(alpha, beta, gamma);
+	gpb->getProteinProbs();
+	//std::cout << " Protein Probabilities calculated " <<std::endl;
 	pair< vector< vector< string > >, std::vector< double > > NameProbs;
-	NameProbs = gpb.getProteinProbsAndNames();
+	NameProbs = gpb->getProteinProbsAndNames();
 	//pepProteins.clear();
 	//pepProteins = gpb.getProteinProbsPercolator();
 	std::vector<double> prot_probs = NameProbs.second;
@@ -438,11 +460,13 @@ void ProteinProbEstimator::gridSearch()
 	  alpha_best = alpha;
 	  beta_best = beta;
 	}
-	//cerr << gamma << " " << alpha << " " << beta << " : " << roc50 << " " << fdr_mse << " " << current_objective << endl;
+	//cerr << gamma << " " << alpha << " " << beta << " : " << rocR << " " << fdr_mse << " " << current_objective << endl;
+	
       }
     }
   }
   
+  if(gpb)delete gpb;
   alpha = alpha_best;
   beta = beta_best;
   gamma = gamma_best;
