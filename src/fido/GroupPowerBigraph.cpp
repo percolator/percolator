@@ -152,24 +152,12 @@ std::multimap<double, std::vector<std::string> > GroupPowerBigraph::getProteinPr
     double pep = (1.0 - (double)sorted[k]);
     if(pep < 0.0)pep = 0.0;
     if(pep > 1.0)pep = 1.0;
-    std::vector<std::string> proteins;
-    for ( int j = 0; j < groupProtNames[ indices[k] ].size(); j++)
-    {
-      std::string protein = groupProtNames[ indices[k] ][j];
-      proteins.push_back(protein);
-    }
-    pepProteins.insert(std::make_pair<double,std::vector<std::string> >(pep,proteins));
+ 
+    pepProteins.insert(std::make_pair<double,std::vector<std::string> >(pep,groupProtNames[ indices[k] ].getVector()));
   }
   if(severedProteins.size()!=0)
   {
-    double pep = 1.0;
-    std::vector<std::string> proteins;
-    for(int i = 0; i < severedProteins.size(); i++)
-    {
-      std::string protein = severedProteins[i];
-      proteins.push_back(protein);
-    }
-    pepProteins.insert(std::make_pair<double,std::vector<std::string> >(pep,proteins));
+    pepProteins.insert(std::make_pair<double,std::vector<std::string> >(1.0,severedProteins.getVector()));
   }
     
   return pepProteins;
@@ -187,28 +175,14 @@ pair< vector< vector< string > >, std::vector< double > > GroupPowerBigraph::get
     double pep = (1.0 - (double)sorted[k]);
     if(pep < 0.0)pep = 0.0;
     if(pep > 1.0)pep = 1.0;
-    std::vector<std::string> proteins;
-    for ( int j = 0; j < groupProtNames[ indices[k] ].size(); j++)
-    {
-      std::string protein = groupProtNames[ indices[k] ][j];
-      proteins.push_back(protein);
-    }
-    names.push_back(proteins);
+    names.push_back(groupProtNames[ indices[k] ].getVector());
     probabilities.push_back(pep);
   }
   if(severedProteins.size()!=0)
   {
-    double pep = 1.0;
-    std::vector<std::string> proteins;
-    for(int i = 0; i < severedProteins.size(); i++)
-    {
-      std::string protein = severedProteins[i];
-      proteins.push_back(protein);
-    }
-    names.push_back(proteins);
-    probabilities.push_back(pep);
+    names.push_back(severedProteins.getVector());
+    probabilities.push_back(1.0);
   }
-    
   return std::make_pair<std::vector< std::vector< std::string > >, std::vector<double> >(names,probabilities);
 
 }

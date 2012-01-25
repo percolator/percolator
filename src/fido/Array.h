@@ -32,7 +32,7 @@ public:
 
   explicit Array(int n);
   Array(int n, const T & defaultValue);
-
+  Array(const vector<T> & newvector);
   // destructor
   virtual ~Array() {};
 
@@ -47,6 +47,9 @@ public:
 
   Array<int> sort();
   Array<int> sortA();
+  
+  vector<T> getVector();
+  vector<T> getVector() const;
 
   virtual void add(const T & element);
   virtual void append(const Array<T> & elements);

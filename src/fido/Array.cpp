@@ -16,6 +16,12 @@ Array<T>::Array(int n, const T & element) :
 }
 
 template <typename T>
+Array<T>::Array(const vector<T> & newvector) :
+  data(newvector)
+{
+}
+
+template <typename T>
 const T & Array<T>::operator [] (int k) const
 {
   boundsCheck(k);
@@ -297,3 +303,14 @@ Array<int> Array<T>::sortA()
   return result;
 }
 
+template <typename T>
+vector<T> Array<T>::getVector()
+{
+  return data;
+}
+
+template <typename T>
+vector<T> Array<T>::getVector() const
+{
+  return data;
+}

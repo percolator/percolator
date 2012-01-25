@@ -45,6 +45,16 @@ double antiderivativeAt(double m, double b, double xVal)
   return m*xVal*xVal/2.0 + b*xVal;
 }
 
+double squareAntiderivativeAt(double m, double b, double xVal)
+{
+  // turn into ux^2+vx+t
+  double u = m*m;
+  double v = 2*m*b;
+  double t = b*b;
+
+  return u*xVal*xVal*xVal/3.0 + v*xVal*xVal/2.0 + t*xVal;
+}
+
 double area(double x1, double y1, double x2, double y2, double max_x)
 {
   double m = (y2-y1)/(x2-x1);
@@ -56,15 +66,16 @@ double area(double x1, double y1, double x2, double y2, double max_x)
   else return area;
 }
 
-double squareAntiderivativeAt(double m, double b, double xVal)
-{
-  // turn into ux^2+vx+t
-  double u = m*m;
-  double v = 2*m*b;
-  double t = b*b;
-
-  return u*xVal*xVal*xVal/3.0 + v*xVal*xVal/2.0 + t*xVal;
+double areaSq(double x1, double y1, double x2, double y2, double threshold) {
+  double m = (y2-y1)/(x2-x1);
+  double b = y1-m*x1;
+  double area = squareAntiderivativeAt(m, b, min(threshold, x2) ) -
+      squareAntiderivativeAt(m, b, x1);
+  if(isnan(area)) return 0.0;
+  else return area;
 }
+
+
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
@@ -444,12 +455,8 @@ void ProteinProbEstimator::gridSearch()
 	//std::cout << " Protein Probabilities calculated " <<std::endl;
 	pair< vector< vector< string > >, std::vector< double > > NameProbs;
 	NameProbs = gpb->getProteinProbsAndNames();
-	//pepProteins.clear();
-	//pepProteins = gpb.getProteinProbsPercolator();
 	std::vector<double> prot_probs = NameProbs.second;
 	std::vector<std::vector<std::string> > prot_names = NameProbs.first;
-	//transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_probs), RetrieveKey());
-	//transform(pepProteins.begin(), pepProteins.end(), back_inserter(prot_names), RetrieveValue());
 	std::pair<std::vector<double>,std::vector<double> > EstEmp = getEstimated_and_Empirical_FDR(prot_names,prot_probs);
 	pair<std::vector<int>, std::vector<int> > roc = getROC(prot_names);
 	double rocR = getROC_N(roc.first, roc.second, rocN);
@@ -570,11 +577,6 @@ pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimat
       double prob = probabilities[k];
       int fpChange = countDecoys(names[k]);
       int tpChange = countTargets(names[k]);
-      
-      if ( tpChange > 0 && tiesAsOneProtein)
-	tpChange = 1;
-      if ( fpChange > 0 && tiesAsOneProtein )
-	fpChange = 1;
 
       fpCount += (double)fpChange;
       tpCount += (double)tpChange;
@@ -586,10 +588,11 @@ pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimat
       if(estFDR > 1.0) estFDR = 1.0;
       
       estFDR_array.push_back(estFDR);
-      //empFDR_array.push_back(totalFDR);
       empFDR_array.push_back(empFDR);
 
     }
+    
+  //NOTE this part is time consuming, could it be skipped without affecting the objetive function??
   std::partial_sum(estFDR_array.rbegin(),estFDR_array.rend(),estFDR_array.rbegin(),mymin);
   double factor = pi0 * ((double)tpCount / (double)fpCount);
   std::transform(empFDR_array.begin(), empFDR_array.end(), 
@@ -611,10 +614,10 @@ std::vector<double> diffVector(const std::vector<double> &a,
   return result;
 }
 
-double ProteinProbEstimator::getFDR_divergence(const std::vector<double> estFDR, const std::vector<double> empFDR, double THRESH)
+double ProteinProbEstimator::getFDR_divergence(std::vector<double> estFDR, std::vector<double> empFDR, double THRESH)
 {
-  std::vector<double> diff = diffVector(estFDR,empFDR);
-
+  //std::vector<double> diff = diffVector(estFDR,empFDR);
+  Vector diff = Vector(estFDR) - Vector(empFDR);
   double tot = 0.0;
 
   int k;
@@ -629,7 +632,8 @@ double ProteinProbEstimator::getFDR_divergence(const std::vector<double> estFDR,
 	  break;
 	}
 
-      tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+      //tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+        tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
     }
 
   double xRange = min(THRESH, estFDR[k]) - estFDR[0];
@@ -639,6 +643,7 @@ double ProteinProbEstimator::getFDR_divergence(const std::vector<double> estFDR,
 
   return tot / xRange;
 }
+
 
 pair<std::vector<int>, std::vector<int> > ProteinProbEstimator::getROC(std::vector<std::vector<string> > names)
 {
@@ -650,12 +655,7 @@ pair<std::vector<int>, std::vector<int> > ProteinProbEstimator::getROC(std::vect
     {
       int fpChange = countDecoys(names[k]);
       int tpChange = countTargets(names[k]);
-      
-      if ( tpChange > 0 && tiesAsOneProtein )
-	tpChange = 1;
-      if ( fpChange > 0 && tiesAsOneProtein )
-	fpChange = 1;
-      
+      //NOTE possible alternative is to only sum up when the new prob is different that the previous one
       fpCount += fpChange;
       tpCount += tpChange;
       
