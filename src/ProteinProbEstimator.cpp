@@ -143,7 +143,10 @@ void ProteinProbEstimator::run(){
   }
   estimateQValuesEmp();
   updateProteinProbabilities();
-  
+  if(VERB > 1)
+  {
+    cerr << "\nThe number of Protein idenfified below q=0.01 is : " << getQvaluesBelowLevel(0.01) << endl;
+  }
 }
 
 

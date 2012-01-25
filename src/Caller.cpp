@@ -1042,9 +1042,9 @@ void Caller::writeXML(){
   }
   os << "    <psms_qlevel>" <<  numberQpsms <<"</psms_qlevel>" << endl;
   if(reportUniquePeptides)
-    os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.1) << "</peptides_qlevel>" << endl;
+    os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.01) << "</peptides_qlevel>" << endl;
   if(calculateProteinLevelProb)
-    os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.1) << "</proteins_qlevel>" << endl;  
+    os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.01) << "</proteins_qlevel>" << endl;  
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
                    << "</average_delta_mass>" << endl;
@@ -1160,7 +1160,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
   }
   else {
     pi_0_psms = fullset.getPi0();
-    numberQpsms = fullset.getQvaluesBelowLevel(0.1);
+    numberQpsms = fullset.getQvaluesBelowLevel(0.01);
   }
 }
 
