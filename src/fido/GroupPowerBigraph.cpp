@@ -150,6 +150,8 @@ std::multimap<double, std::vector<std::string> > GroupPowerBigraph::getProteinPr
   for (int k=0; k<sorted.size(); k++)
   {
     double pep = (1.0 - (double)sorted[k]);
+    if(pep < 0.0)pep = 0.0;
+    if(pep > 1.0)pep = 1.0;
     std::vector<std::string> proteins;
     for ( int j = 0; j < groupProtNames[ indices[k] ].size(); j++)
     {
@@ -183,6 +185,8 @@ pair< vector< vector< string > >, std::vector< double > > GroupPowerBigraph::get
   for (int k=0; k<sorted.size(); k++)
   {
     double pep = (1.0 - (double)sorted[k]);
+    if(pep < 0.0)pep = 0.0;
+    if(pep > 1.0)pep = 1.0;
     std::vector<std::string> proteins;
     for ( int j = 0; j < groupProtNames[ indices[k] ].size(); j++)
     {
