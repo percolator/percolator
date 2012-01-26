@@ -402,9 +402,12 @@ void ProteinProbEstimator::gridSearch()
 	 gamma_best = alpha_best = beta_best = -1.0;
   double best_objective = -100000000;
 
+  //NOTE accuracy level of the calculation of the objetive function
   double threshold = 0.01;
   double threshold2 = 0.05;
   double threshold3 = 0.1;
+  
+  //NOTE perhaps rocN should be related to the number of decoy hits at a certain threshold
   int rocN = 50;
   
   //TODO make the range of the grid search and the N parametizable or according to data size
@@ -593,6 +596,7 @@ pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimat
     }
     
   //NOTE this part is time consuming, could it be skipped without affecting the objetive function??
+  //TODO try to avoid this step and see if it affects performance, it would save time
   std::partial_sum(estFDR_array.rbegin(),estFDR_array.rend(),estFDR_array.rbegin(),mymin);
   double factor = pi0 * ((double)tpCount / (double)fpCount);
   std::transform(empFDR_array.begin(), empFDR_array.end(), 
