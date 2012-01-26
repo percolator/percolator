@@ -143,6 +143,7 @@ void ProteinProbEstimator::run(){
   if(usePi0)
   {
     pi0 = *qvalues.rbegin();
+    //TODO activate this and check the empirical q values
     //estimatePValues();
     //pi0 = estimatePi0();
   }
@@ -150,7 +151,7 @@ void ProteinProbEstimator::run(){
   updateProteinProbabilities();
   if(VERB > 1)
   {
-    cerr << "\nThe number of Protein idenfified below q=0.01 is : " << getQvaluesBelowLevel(0.01) << endl;
+    cerr << "\nThe number of Proteins idenfified below q=0.01 is : " << getQvaluesBelowLevel(0.01) << endl;
   }
 }
 
