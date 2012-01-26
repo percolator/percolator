@@ -296,8 +296,6 @@ class ProteinProbEstimator {
     double getBeta();
     double getGamma();
     
-    const static bool outputPEPs;
-    
   private:
     
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/

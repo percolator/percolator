@@ -19,12 +19,6 @@
 #include <fstream>
 #include "ProteinProbEstimator.h"
 
-/**
- * output protein PEPs
- */
-const bool ProteinProbEstimator::outputPEPs = true;
-
-
 /** Helper functions **/
 
 template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
@@ -509,8 +503,7 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
           else  os << " p:decoy=\"false\"";
         }
         os << ">" << endl;
-        if(ProteinProbEstimator::outputPEPs)
-          os << "      <pep>" << myP->second.getPEP() << "</pep>" << endl;
+        os << "      <pep>" << myP->second.getPEP() << "</pep>" << endl;
         if(ProteinProbEstimator::getOutputEmpirQval())
           os << "      <q_value_emp>" << myP->second.getQemp() << "</q_value_emp>\n";
         os << "      <q_value>" << myP->second.getQ() << "</q_value>\n";
