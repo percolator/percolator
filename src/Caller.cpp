@@ -1258,10 +1258,8 @@ int Caller::run() {
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
-    clock_t start=clock();
     protEstimator->initialize(&fullset);
     protEstimator->run();
-    clock_t finish=clock();
     pi_0_proteins = protEstimator->getPi0();
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins();

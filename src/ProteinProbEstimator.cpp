@@ -19,6 +19,7 @@
 #include <fstream>
 #include "ProteinProbEstimator.h"
 
+
 /** Helper functions **/
 
 template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
@@ -105,15 +106,25 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
 
 void ProteinProbEstimator::run(){
   
-  srand(time(NULL)); cout.precision(8); cerr.precision(8);
+  time_t startTime;
+  clock_t startClock;
+  time(&startTime);
+  startClock = clock();
   // by default, a grid search is executed to estimate the values of the
   // parameters gamma alpha and beta
   if(dogridSearch) {
     if(VERB > 1) {
-      cerr << "The parameters for the model will be estimated by grid search."
+      cerr << "\nThe parameters for the model will be estimated by grid search."
           << endl;
     }
     gridSearch();
+    time_t procStart;
+    clock_t procStartClock = clock();
+    time(&procStart);
+    double diff = difftime(procStart, startTime);
+    if (VERB > 1) cerr << "\nEstimating the parameters took : "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff << " seconds wall time" << endl;
   }
   else
   {
@@ -129,7 +140,7 @@ void ProteinProbEstimator::run(){
       cerr << "gamma = " << gamma << endl;
       cerr << "alpha = " << alpha << endl;
       cerr << "beta  = " << beta << endl;
-      cerr << "Protein level probabilities will now be calculated\n";
+      cerr << "\nProtein level probabilities will now be calculated\n";
   }
 
   delete proteinGraph;
@@ -153,6 +164,14 @@ void ProteinProbEstimator::run(){
   {
     cerr << "\nThe number of Proteins idenfified below q=0.01 is : " << getQvaluesBelowLevel(0.01) << endl;
   }
+  
+  time_t procStart;
+  clock_t procStartClock = clock();
+  time(&procStart);
+  double diff = difftime(procStart, startTime);
+  if (VERB > 1) cerr << "Estimating Protein Probabilities took : "
+    << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+    << " cpu seconds or " << diff << " seconds wall time" << endl;
 }
 
 
@@ -447,10 +466,10 @@ void ProteinProbEstimator::gridSearch()
 	gamma = gamma_search[i];
 	alpha = alpha_search[j];
 	beta = beta_search[k];
-	//std::cout << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
+	std::cerr << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
 	gpb->setAlphaBetaGamma(alpha, beta, gamma);
 	gpb->getProteinProbs();
-	//std::cout << " Protein Probabilities calculated " <<std::endl;
+	std::cerr << " Protein Probabilities calculated " <<std::endl;
 	pair< vector< vector< string > >, std::vector< double > > NameProbs;
 	NameProbs = gpb->getProteinProbsAndNames();
 	std::vector<double> prot_probs = NameProbs.second;
@@ -468,7 +487,7 @@ void ProteinProbEstimator::gridSearch()
 	  alpha_best = alpha;
 	  beta_best = beta;
 	}
-	//cerr << gamma << " " << alpha << " " << beta << " : " << rocR << " " << fdr_mse << " " << current_objective << endl;
+	cerr << gamma << " " << alpha << " " << beta << " : " << rocR << " " << fdr_mse << " " << current_objective << endl;
 	
       }
     }
@@ -583,7 +602,6 @@ pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimat
       empFDR = fpCount / tpCount; 
       if(empFDR > 1.0) empFDR = 1.0;
       if(estFDR > 1.0) estFDR = 1.0;
-      
       estFDR_array.push_back(estFDR);
       empFDR_array.push_back(empFDR);
 
@@ -630,8 +648,8 @@ double ProteinProbEstimator::getFDR_divergence(std::vector<double> estFDR, std::
 	  break;
 	}
 
-      //tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
-        tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+      tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+      //  tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
     }
 
   double xRange = min(THRESH, estFDR[k]) - estFDR[0];
