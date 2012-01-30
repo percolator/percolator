@@ -212,6 +212,7 @@ double BasicGroupBigraph::logLikelihoodConstant(const Model & m) const
   bool starting = true;
 
   Array<Counter> n = originalN;
+
   for (Counter::start(n); Counter::inRange(n); Counter::advance(n))
     {
       double L = logLikelihoodNGivenD(m, n);

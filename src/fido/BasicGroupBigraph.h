@@ -38,7 +38,8 @@ class Counter
   }
   bool inRange() const
   {
-    return state <= size;
+    bool ret = state <= size;
+    return ret;
   }
   void advance()
   {

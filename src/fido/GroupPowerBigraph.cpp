@@ -235,7 +235,7 @@ void GroupPowerBigraph::read(Scores* fullset){
   BasicBigraph bb;
   bb.read(fullset);
 
-  //TODO when noseparate it does nor work
+  //TODO when noseparate it does not work
   if(!noseparate)
   {
     numberClones = 0;
@@ -262,7 +262,7 @@ void GroupPowerBigraph::read(Scores* fullset){
 
     numberClones = bb.numberClones;
 
-    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb) );
+    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,groupProteins) );
     
   }
   

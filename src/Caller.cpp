@@ -288,17 +288,17 @@ bool Caller::parseOptions(int argc, char **argv) {
     TRUE_IF_SET);
   cmd.defineOption("N",
     "no-group-proteins", 		   
-    "Proteins will not be grouped (Only valid if option -A is active).",
+    "Proteins with same probabilities will not be grouped (Only valid if option -A is active).",
     "",
-    FALSE_IF_SET);
-  cmd.defineOption("E",
+    TRUE_IF_SET);
+/*  cmd.defineOption("E",
     "no-separate-proteins", 		   
-    "Proteins will not be separated (Only valid if option -A is active).",
+    "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
     "",
-    TRUE_IF_SET);    
+    TRUE_IF_SET); */   
   cmd.defineOption("D",
     "no-prune-proteins", 		   
-    "Proteins will not be pruned (from target-decoy analysis) (Only valid if option -A is active).",
+    "Peptides with low score will not be pruned before calculating protein probabilities (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
   cmd.defineOption("P",
@@ -324,8 +324,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
     bool grouProteins = true; 
-    grouProteins =  cmd.optionSet("N");
-    bool noseparate = cmd.optionSet("E");;
+    if(cmd.optionSet("N"))
+      grouProteins = false;
+    
+//     bool noseparate = cmd.optionSet("E");;
+    //TODO when noseparate activates function logLikelihoodConstant 
+    //in BasicGroupBigraph never ends cos Counter never reaches the end
+      
+    bool noseparate = false;  
     bool noprune = cmd.optionSet("D");
     bool gridSearch = true;
     unsigned deepness = 3;

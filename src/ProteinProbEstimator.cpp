@@ -155,8 +155,8 @@ void ProteinProbEstimator::run(){
   {
     pi0 = *qvalues.rbegin();
     //TODO activate this and check the empirical q values
-    //estimatePValues();
-    //pi0 = estimatePi0();
+    estimatePValues();
+    pi0 = estimatePi0();
   }
   estimateQValuesEmp();
   updateProteinProbabilities();
@@ -410,16 +410,15 @@ void ProteinProbEstimator::gridSearch()
   double gamma_temp, alpha_temp, beta_temp;
   gamma_temp = alpha_temp = beta_temp = 0.01;
 
-  GroupPowerBigraph *gpb = new GroupPowerBigraph( peptideScores, default_alpha, default_beta,default_gamma,groupProteins,noprune,noseparate);
+  GroupPowerBigraph *gpb = new GroupPowerBigraph( peptideScores, default_alpha, default_beta,default_gamma,groupProteins,noseparate,noprune);
 
   double gamma_best, alpha_best, beta_best;
 	 gamma_best = alpha_best = beta_best = -1.0;
   double best_objective = -100000000;
 
   //NOTE accuracy level of the calculation of the objetive function
-  double threshold = 0.01;
-  double threshold2 = 0.05;
-  double threshold3 = 0.1;
+
+  double threshold = 0.05; //0.05,0.01,0.1
   
   //NOTE perhaps rocN should be related to the number of decoy hits at a certain threshold
   int rocN = 50;
@@ -466,10 +465,10 @@ void ProteinProbEstimator::gridSearch()
 	gamma = gamma_search[i];
 	alpha = alpha_search[j];
 	beta = beta_search[k];
-	std::cerr << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
+	//std::cerr << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
 	gpb->setAlphaBetaGamma(alpha, beta, gamma);
 	gpb->getProteinProbs();
-	std::cerr << " Protein Probabilities calculated " <<std::endl;
+	//std::cerr << " Protein Probabilities calculated " <<std::endl;
 	pair< vector< vector< string > >, std::vector< double > > NameProbs;
 	NameProbs = gpb->getProteinProbsAndNames();
 	std::vector<double> prot_probs = NameProbs.second;
@@ -477,7 +476,7 @@ void ProteinProbEstimator::gridSearch()
 	std::pair<std::vector<double>,std::vector<double> > EstEmp = getEstimated_and_Empirical_FDR(prot_names,prot_probs);
 	pair<std::vector<int>, std::vector<int> > roc = getROC(prot_names);
 	double rocR = getROC_N(roc.first, roc.second, rocN);
-	double fdr_mse = getFDR_divergence(EstEmp.first, EstEmp.second, threshold3);
+	double fdr_mse = getFDR_divergence(EstEmp.first, EstEmp.second, threshold);
 	double lambda = 0.15;
 	double current_objective = lambda * rocR - (1-lambda) * fdr_mse;
 	if (current_objective > best_objective)
@@ -487,8 +486,7 @@ void ProteinProbEstimator::gridSearch()
 	  alpha_best = alpha;
 	  beta_best = beta;
 	}
-	cerr << gamma << " " << alpha << " " << beta << " : " << rocR << " " << fdr_mse << " " << current_objective << endl;
-	
+	//cerr << gamma << " " << alpha << " " << beta << " : " << rocR << " " << fdr_mse << " " << current_objective << endl;
       }
     }
   }
@@ -648,8 +646,11 @@ double ProteinProbEstimator::getFDR_divergence(std::vector<double> estFDR, std::
 	  break;
 	}
 
-      tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
-      //  tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+	//NOTE this affects the conservativeness of the objetive function
+	// areaSq gives a more conservative value with less proteins but more confidence
+	
+      //tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+        tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
     }
 
   double xRange = min(THRESH, estFDR[k]) - estFDR[0];
