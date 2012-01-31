@@ -190,7 +190,7 @@ class Protein {
       return a.second < b.second;
     }
     
-    inline double mymin(double a, double b) 
+    inline double myminfunc(double a, double b) 
     {
 	return a > b ? b : a;
     }
@@ -200,7 +200,7 @@ class Protein {
       pair_min() {}
       std::pair<double,std::vector<std::string> > operator()(std::pair<double,std::vector<std::string> > & sum, 
 							     std::pair<double,std::vector<std::string> > & i) {
-        return pair<double,std::vector<std::string> >(mymin(sum.first,i.first), i.second);
+        return pair<double,std::vector<std::string> >(myminfunc(sum.first,i.first), i.second);
       }
     };
 

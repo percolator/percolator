@@ -307,7 +307,7 @@ void ProteinProbEstimator::estimateQValues()
     qvalue = (sum / (double)nP);
     qvalues.push_back(qvalue);
   }
-  std::partial_sum(qvalues.rbegin(),qvalues.rend(),qvalues.rbegin(),mymin);
+  std::partial_sum(qvalues.rbegin(),qvalues.rend(),qvalues.rbegin(),myminfunc);
 }
 
 void ProteinProbEstimator::estimateQValuesEmp()
@@ -337,7 +337,7 @@ void ProteinProbEstimator::estimateQValuesEmp()
   double factor = pi0 * ((double)nTargets / (double)nDecoys);
   std::transform(qvaluesEmp.begin(), qvaluesEmp.end(), 
 		 qvaluesEmp.begin(), bind2nd(multiplies<double> (),factor));
-  std::partial_sum(qvaluesEmp.rbegin(), qvaluesEmp.rend(), qvaluesEmp.rbegin(), mymin);
+  std::partial_sum(qvaluesEmp.rbegin(), qvaluesEmp.rend(), qvaluesEmp.rbegin(), myminfunc);
 }
 
 void ProteinProbEstimator::updateProteinProbabilities()
@@ -607,11 +607,11 @@ pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimat
     
   //NOTE this part is time consuming, could it be skipped without affecting the objetive function??
   //TODO try to avoid this step and see if it affects performance, it would save time
-  std::partial_sum(estFDR_array.rbegin(),estFDR_array.rend(),estFDR_array.rbegin(),mymin);
+  std::partial_sum(estFDR_array.rbegin(),estFDR_array.rend(),estFDR_array.rbegin(),myminfunc);
   double factor = pi0 * ((double)tpCount / (double)fpCount);
   std::transform(empFDR_array.begin(), empFDR_array.end(), 
 		 empFDR_array.begin(), bind2nd(multiplies<double> (),factor));
-  std::partial_sum(empFDR_array.rbegin(),empFDR_array.rend(),empFDR_array.rbegin(),mymin);
+  std::partial_sum(empFDR_array.rbegin(),empFDR_array.rend(),empFDR_array.rbegin(),myminfunc);
   return pair<std::vector<double>, std::vector<double> >(estFDR_array, empFDR_array);
 }
 
