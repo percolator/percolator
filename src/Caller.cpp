@@ -221,7 +221,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("G",
       "gamma",
-      "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
+      "Prior probability of that a protein is present in the sample ( to be
+used with the -A option). Set by grid search of not specified",
       "value");
   cmd.defineOption("R",
       "test-each-iteration",
