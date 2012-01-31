@@ -4,7 +4,7 @@ v2.04
 	-a (--alpha) 
 	-b (--beta)
 	-G (--gamma)
-  	-N (--allow-protein-groups)
+  	-N (--group-proteins)
         -D (--no-prune-proteins)
         -P (--deepness)
 * Added information to the pout file:
