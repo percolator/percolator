@@ -1,6 +1,5 @@
 v2.04
-* Bugfix : selection of highest scored PSM before weeding out redudants
-* Added new integration of Fido to estimate Protein Probabilities
+* Incorporated new version of Fido to estimate Protein Probabilities
 * Improved estimation of q values of Proteins.
 * Added new parameters to use when estimating Protein Probabilities :
 	-a (--alpha) 
@@ -11,6 +10,7 @@ v2.04
         -P (--deepness)
 * Added new information to the output file. Number of PSMs,peptides and Proteins below at FDR 1%.
 * Added new information to the output file. Pi0s calculated and alpha,beta and gamma values selected.
+* Corrected an error in the selection process of the highest scoring PSM for each peptide.
         
 
 v2.02
