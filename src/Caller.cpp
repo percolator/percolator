@@ -287,8 +287,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     "",
     TRUE_IF_SET);
   cmd.defineOption("N",
-    "no-group-proteins", 		   
-    "Proteins with same probabilities will not be grouped (Only valid if option -A is active).",
+    "allow-protein-groups", 		   
+    "Proteins with same probabilities will be grouped (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
 /*  cmd.defineOption("E",
@@ -323,15 +323,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
-    bool grouProteins = true; 
-    if(cmd.optionSet("N"))
-      grouProteins = false;
-    
-//     bool noseparate = cmd.optionSet("E");;
+    bool grouProteins = cmd.optionSet("N"); 
+
+    //bool noseparate = cmd.optionSet("E");;
     //TODO when noseparate activates function logLikelihoodConstant 
     //in BasicGroupBigraph never ends cos Counter never reaches the end
-      
-    bool noseparate = false;  
+    bool noseparate = false; 
+    
     bool noprune = cmd.optionSet("D");
     bool gridSearch = true;
     unsigned deepness = 3;

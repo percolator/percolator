@@ -158,7 +158,7 @@ class BasicGroupBigraph : public BasicBigraph
     return groupProtNames;
   }
 
- BasicGroupBigraph(bool __groupProtein = true) :
+ BasicGroupBigraph(bool __groupProtein = false) :
   likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), 
   probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), 
   probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"), 
@@ -176,7 +176,7 @@ class BasicGroupBigraph : public BasicBigraph
         trivialGroupProteins();
    }
 
- BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = true) :
+ BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = false) :
  BasicBigraph(rhs),   
  likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), 
  probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), 

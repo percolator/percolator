@@ -17,7 +17,7 @@ public:
   static double LOG_MAX_ALLOWED_CONFIGURATIONS;
 
  GroupPowerBigraph(Scores* fullset,double __alpha, double __beta, double __gamma, 
-		   bool __groupProteins = true, bool __noseparate = false , bool __noprune = false) :
+		   bool __groupProteins = false, bool __noseparate = false , bool __noprune = false) :
   ProteinIdentifier(),
   gm(RealRange(__alpha,1,__alpha),RealRange(__beta,1,__beta),__gamma),
   groupProteins(__groupProteins), 
