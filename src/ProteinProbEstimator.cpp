@@ -34,7 +34,6 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
   // sort in desending order
   sort(out.begin(), out.end());
 }
->>>>>>> branch-2-02
 
 double antiderivativeAt(double m, double b, double xVal)
 {
