@@ -1,3 +1,18 @@
+v2.04
+* Bugfix : selection of highest scored PSM before weeding out redudants
+* Added new integration of Fido to estimate Protein Probabilities
+* Improved estimation of q values of Proteins.
+* Added new parameters to use when estimating Protein Probabilities :
+	-a (--alpha) 
+	-b (--beta)
+	-G (--gamma)
+  	-N (--no-groups-proteins)
+        -D (--no-prune-proteins)
+        -P (--deepness)
+* Added new information to the output file. Number of PSMs,peptides and Proteins below at FDR 1%.
+* Added new information to the output file. Pi0s calculated and alpha,beta and gamma values selected.
+        
+
 v2.02
 * Added new xml binary serialization schemes in Sqt2pin. It now supports LevelDB + XDR and Boost Serialization + Hash tables.
 * Added three new parameters in percolator, "exp-mass",  "empirical-protein-q" and "protein-level-pi0".
