@@ -1,6 +1,5 @@
 v2.04
 * Incorporated new version of Fido to estimate Protein Probabilities
-* Improved estimation of q values of Proteins.
 * Added new parameters to use when estimating Protein Probabilities :
 	-a (--alpha) 
 	-b (--beta)
@@ -8,10 +7,14 @@ v2.04
   	-N (--no-groups-proteins)
         -D (--no-prune-proteins)
         -P (--deepness)
-* Added new information to the output file. Number of PSMs,peptides and Proteins below at FDR 1%.
-* Added new information to the output file. Pi0s calculated and alpha,beta and gamma values selected.
-* Corrected an error in the selection process of the highest scoring PSM for each peptide.
-        
+* Added information to the pout file:
+	Number of PSMs,peptides and Proteins below at FDR 1%.
+	Pi0s calculated at PSM, peptide and protein level.
+	alpha,beta and gamma values for fido.
+* Corrected an error in the selection process of the highest
+  scoring PSM for each peptide.
+
+v2.03
 
 v2.02
 * Added new xml binary serialization schemes in Sqt2pin. It now supports LevelDB + XDR and Boost Serialization + Hash tables.
