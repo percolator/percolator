@@ -221,8 +221,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("G",
       "gamma",
-      "Prior probability of that a protein is present in the sample ( to be
-used with the -A option). Set by grid search of not specified",
+      "Prior probability of that a protein is present in the sample ( to be used with the -A option). Set by grid search of not specified",
       "value");
   cmd.defineOption("R",
       "test-each-iteration",
@@ -288,7 +287,7 @@ used with the -A option). Set by grid search of not specified",
     "",
     TRUE_IF_SET);
   cmd.defineOption("N",
-    "allow-protein-groups", 		   
+    "group-proteins", 		   
     "Proteins with same probabilities will be grouped (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
