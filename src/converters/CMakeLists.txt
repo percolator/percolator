@@ -471,7 +471,7 @@ set(CPACK_SET_DESTDIR TRUE) # Enabling absolute paths for CPack (important!)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Software package for the conversion from different search engine result formats to Percolator input format.")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
 my_set(TARGET_ARCH "noarch" "set build architecture: options are i686, i386 and amd64")
-set(TARGET_ARCH "amd64")
+set(TARGET_ARCH "i386")
 
 IF(APPLE)
 	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
