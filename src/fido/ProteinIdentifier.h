@@ -10,6 +10,7 @@
 #include "Matrix.h"
 #include "Random.h"
 #include "Model.h"
+#include "Scores.h"
 
 using namespace std;
 
@@ -19,24 +20,23 @@ public:
   ProteinIdentifier();
   virtual ~ProteinIdentifier() {}
 
-  friend istream & operator >>(istream & is, ProteinIdentifier & pi)
+  friend Scores* operator >>(Scores* fullset, ProteinIdentifier & pi)
   {
-    pi.read(is);
-    return is;
+    pi.read(fullset);
+    return fullset;
   }
 
   virtual void printProteinWeights() const = 0;
 
   class FormatException {};
-
-  // note: this should be private later
-  double ProteinThreshold, PeptideThreshold;
+  
+  double ProteinThreshold, PeptideThreshold, PsmThreshold;
+  
 protected:
 
-  virtual void read(istream & is) = 0;
-
-  double PeptideProphetPrior;
+  virtual void read(Scores* fullset) = 0;
+  
+  double PeptidePrior;
 };
 
 #endif
-

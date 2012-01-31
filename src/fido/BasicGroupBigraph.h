@@ -8,16 +8,11 @@
 #include "ReplicateIndexer.h"
 #include "BasicBigraph.h"
 #include "Model.h"
-
 #include "Cache.h"
 
-
+//TODO parameter??
 //#define TRUE_BRUTE
-
 #ifdef TRUE_BRUTE
-#define NOSEPARATE
-#define NOGROUP
-#define NOPRUNE
 #define NOCACHE
 #endif
 
@@ -43,7 +38,8 @@ class Counter
   }
   bool inRange() const
   {
-    return state <= size;
+    bool ret = state <= size;
+    return ret;
   }
   void advance()
   {
@@ -96,12 +92,8 @@ class BasicGroupBigraph : public BasicBigraph
   // protected:
 
   Array<Counter> originalN;
-
   Array<Array<string> > groupProtNames;
-
   Array<double> probabilityR;
-
-  //  Array<double> probabilityE_OverAlphaBeta;
 
   // protected construction functions
   void groupProteins();
@@ -166,32 +158,42 @@ class BasicGroupBigraph : public BasicBigraph
     return groupProtNames;
   }
 
- BasicGroupBigraph() :
-  likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"), logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant")
+ BasicGroupBigraph(bool __groupProtein = true) :
+  likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), 
+  probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), 
+  probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"), 
+  logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
+  groupProtein(__groupProtein)
   {
   }
 
- void read(istream & fin)
+  void read(Scores* fullset)
    {
-     BasicBigraph::read(fin);
-     groupProteins();
+     BasicBigraph::read(fullset);
+     if(groupProtein)
+	groupProteins();
+     else
+        trivialGroupProteins();
    }
 
- BasicGroupBigraph(const BasicBigraph & rhs) :
- BasicBigraph(rhs),   likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"), logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant")
+ BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = true) :
+ BasicBigraph(rhs),   
+ likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), 
+ probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), 
+ probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"), 
+ logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
+ groupProtein(__groupProtein)
   {
-    #ifndef NOGROUP
-    groupProteins();
-    #else
-    trivialGroupProteins();
-    #endif
-
-    // these should not vary for alpha and beta
-    //    getPeptideProbsOverAllAlphaBeta();
-
-    //    getSumLikelihoodOverAllAlphaBeta();
+    if(groupProtein)
+      groupProteins();
+    else
+      trivialGroupProteins();
   }
+  
+protected: 
+  bool groupProtein;
 };
+
 
 #endif
 

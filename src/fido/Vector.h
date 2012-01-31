@@ -27,6 +27,11 @@ public:
     {
       *this = rhs;
     }
+  Vector(const std::vector<double> &rhs)
+   {
+      *this = Array<double>(rhs);
+   }
+    
   Vector(const Array<double> & rhs, bool repack);
 
   Array<double> unpack() const;
@@ -139,11 +144,14 @@ public:
 
   void trimNonzeroIndices();
   void createNonzeroIndices();
+  
+  friend double diffNormSquared(const Vector & u, const Vector & v);
 
 //protected:
 
   Set nonzeroIndices;
   Array<double> values;
+  
 };
 
 Vector operator +(const Vector & lhs, const Vector & rhs);

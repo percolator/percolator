@@ -79,8 +79,7 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
   double n = in.size();
   size_t num_draw = min(in.size(), max_size);
   for (size_t ix = 0; ix < num_draw; ++ix) {
-    size_t draw = (size_t)((double)rand() / ((double)RAND_MAX + (double)1)
-        * n);
+    size_t draw = (size_t)((double)rand() / ((double)RAND_MAX + (double)1) * n);
     out.push_back(in[draw]);
   }
   // sort in desending order
@@ -360,7 +359,7 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double> & q) {
 	int nP = 0;
 	double sum = 0.0;
-	// assuming combined sorted in decending order
+	// assuming pep sorted in decending order ?? sure?? //TOFIX 
 	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
 		sum += *myP;
 		q.push_back(sum / (double)nP);

@@ -1,12 +1,9 @@
-// Written by Oliver Serang 2009
-// see license for more information
-
 #ifndef _BasicBigraph_H
 #define _BasicBigraph_H
 
 #include "ProteinIdentifier.h"
 #include <fstream>
-#include "Scores.h" // from Percolator
+#include "Scores.h"
 
 class BasicBigraph : public ProteinIdentifier
 {
@@ -46,7 +43,7 @@ public:
     }
     GraphNode operator [] (int k)
     {
-      return GraphNode( names[k], associations[k], weights[k], sections[k], sectionMarks[k] );
+      return GraphNode( names[k], associations[k], weights[k], sections[k], sectionMarks[k]);
     }
     int size() const
     {
@@ -55,17 +52,16 @@ public:
     }
   };
 
-  void read(istream & is);
-  // Mattia Tomasoni
-  void read(Scores* fullset, bool debug);
-  void readFromMCMC(istream & graph, istream & pepProph);
+  void read(Scores* fullset);
   void add(GraphLayer & gl, StringTable & st, const string & item);
   void connect(const StringTable & PSMNames, const string & pepStr, const StringTable & proteinNames, const string & protStr);
-
   void disconnectProtein(int k);
   void disconnectPSM(int k);
+  void pseudoCountPSMs();
   void floorLowPSMs();
   int markSectionPartitions();
+  void removeDegeneratePSMs();
+  void cloneDegeneratePSMs();
   void removePoorPSMs();
   void removePoorProteins();
   void reindex();
@@ -75,16 +71,16 @@ public:
   void clonePSM(int pepIndex);
 
   int numberClones;
-
   Array<string> severedProteins;
 
   void saveSeveredProteins();
 
 public:
-  void outputDotty(ofstream & fout, const string & name) const;
-  void displayDotty(const string & name) const;
+  void printGraph();
 
   GraphLayer proteinsToPSMs, PSMsToProteins;
+
+  string cleanPeptideSequence(string pepSeq) const;
 
   void printGraphStats() const;
   void print() const

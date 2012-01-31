@@ -130,29 +130,19 @@ double BasicGroupBigraph::probabilityEEpsilonGivenN(const Model & m, int indexEp
 double BasicGroupBigraph::likelihoodNGivenD(const Model & m, const Array<Counter> & n) const
 {
   double prod = 1.0;
-
-  //  cout << "\tL(N=n | D) for n = " << n << " is ";
   for (int k=0; k<PSMsToProteins.size(); k++)
     {
       double probEGivenD = PSMsToProteins.weights[k];
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
-
-      //      double probE = probabilityE(m)[k];
-
-      // using cached functor
-      //      double probE = probabilityECachedFunctor(m, this)[ k ];
-
-      double probE = PeptideProphetPrior;
+      double probE = PeptidePrior;
+      // NOTE peptidePrior is 0.07
       //      double probE = .5;
-
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
       
       prod *= term;
     }
-
-  //  cout << prod << endl;
 
   return prod;
 }
@@ -161,28 +151,19 @@ double BasicGroupBigraph::logLikelihoodNGivenD(const Model & m, const Array<Coun
 {
   double logProd = 0.0;
 
-  //  cout << "\tL(N=n | D) for n = " << n << " is ";
   for (int k=0; k<PSMsToProteins.size(); k++)
     {
       double probEGivenD = PSMsToProteins.weights[k];
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
-
-      //      double probE = probabilityE(m)[k];
-
-      // using cached functor
-      //      double probE = probabilityECachedFunctor(m, this)[ k ];
-
-      double probE = PeptideProphetPrior;
+      double probE = PeptidePrior;
+      // NOTE peptidePrior is 0.07
       //      double probE = .5;
-
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
       
       logProd += log2(term);
     }
-
-  //  cout << prod << endl;
 
   return logProd;
 }
@@ -203,13 +184,10 @@ double BasicGroupBigraph::logNumberOfConfigurations() const
 {
   double result = 0.0;
 
-  //  cout << "\tGetting logNumber configs for " << originalN << endl;
   for (int k=0; k<originalN.size(); k++)
     {
       result += log2(originalN[k].size+1);
     }
-
-  //  cout << "\t\twas = " << result << endl;
 
   return result;
 }
@@ -221,28 +199,10 @@ double BasicGroupBigraph::probabilityNNu(const Model & m, const Counter & nNu) c
 
 double BasicGroupBigraph::probabilityNGivenD(const Model & m, const Array<Counter> & n) const
 {
-  //  return likelihoodNGivenD(m, n) * probabilityN(m, n) / likelihoodConstant(m);
-
-  // using cached functor
-  //  cout << "Calling functor" << endl;
-  //  cout << likelihoodConstantCachedFunctor.name << endl;
-  //  cout << "correct object address is " << this << endl;
-
   // working version, but numerically unstable
   //  double like = likelihoodNGivenD(m, n) * probabilityN(m, n) / likelihoodConstantCachedFunctor(m, this);
-
   // log version
   double logLike= logLikelihoodNGivenD(m,n) + log2(probabilityN(m,n)) - logLikelihoodConstantCachedFunctor(m,this);
-
-  /***
-  cout << "L = " << like << endl;
-  cout << "2^logL = " << pow(2.0, logLike) << endl << endl;
-
-  cout << "L(N|D) = " << likelihoodNGivenD(m,n) << endl;
-  cout << "2^logL(N|D) = " << pow( 2.0, logLikelihoodNGivenD(m,n) ) << endl << endl;
-  ***/
-
-  //return like;
   return pow(2.0, logLike);
 }
 
@@ -252,6 +212,7 @@ double BasicGroupBigraph::logLikelihoodConstant(const Model & m) const
   bool starting = true;
 
   Array<Counter> n = originalN;
+
   for (Counter::start(n); Counter::inRange(n); Counter::advance(n))
     {
       double L = logLikelihoodNGivenD(m, n);
@@ -282,35 +243,22 @@ double BasicGroupBigraph::likelihoodConstant(const Model & m) const
       double L = likelihoodNGivenD(m, n);
       double p = probabilityN(m, n);
       double term = L*p;
-      //      cout << "\tL and p are: " << L << ", " << p << endl;
-      //      cout << "\t\tterm is " << term << endl;
-
-      //      cout << "\tif you'd used logL: " << logLikelihoodNGivenD(m,n) << endl;
       result += term;
     }
-
-  //  if ( isinf( result ) )
-  //    print();
-  //    displayDotty("Checker");
-
-  //  cout << "\tWith result " << result << endl;
+    
   return result;
 }
 
 Array<double> BasicGroupBigraph::probabilityEGivenD(const Model & m)
 {
   Array<Counter> n = originalN;
-
-  //  cout << "originalN = " << originalN << endl;
-
   Vector result;
 
   for (Counter::start(n); Counter::inRange(n); Counter::advance(n))
     {
       // NOTE: should this be logged?
       Vector term = pow(2.0, logLikelihoodNGivenD(m, n) - logLikelihoodConstantCachedFunctor(m, this) ) * Vector( eCorrection(m, n) );
-
-      //      Vector term = likelihoodNGivenD(m, n)/likelihoodConstantCachedFunctor(m, this) * Vector( eCorrection(m, n) );
+      //Vector term = likelihoodNGivenD(m, n)/likelihoodConstantCachedFunctor(m, this) * Vector( eCorrection(m, n) );
 
       if ( result.size() == 0 )
 	{
@@ -335,15 +283,9 @@ Array<double> BasicGroupBigraph::eCorrection(const Model & m, const Array<Counte
 
       double probEGivenD = PSMsToProteins.weights[k];
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
-
-      //      double probE = probabilityE(m)[k];
-
-      // using cached functor
-      //      double probE = probabilityECachedFunctor(m, this)[ k ];
-
-      double probE = PeptideProphetPrior;
+      double probE = PeptidePrior;
+      // NOTE peptidePrior is 0.07
       //      double probE = .5;
-
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
@@ -355,19 +297,10 @@ Array<double> BasicGroupBigraph::eCorrection(const Model & m, const Array<Counte
 Array<double> BasicGroupBigraph::probabilityRGivenD(const Model & m)
 {
   Array<Counter> n = originalN;
-
-  //  cout << "originalN = " << originalN << endl;
-
   Vector result;
 
   for (Counter::start(n); Counter::inRange(n); Counter::advance(n))
     {
-      /***
-      cout << "Current iter: " << endl;
-      cout << '\t' << n << endl;
-      cout << '\t' << probabilityNGivenD(m,n);
-      cout << '\t' << probabilityRGivenN(n) << endl << endl;
-      ***/
 
       Vector term = probabilityNGivenD(m, n) * Vector( probabilityRGivenN(n) );
 
@@ -405,9 +338,7 @@ double BasicGroupBigraph::probabilityRRhoGivenN(int indexRho, const Array<Counte
 
 void BasicGroupBigraph::getProteinProbs(const Model & m)
 {
-  //  cout << m << endl;
   probabilityR = probabilityRGivenD(m);
-  //  cout << "BasicGroupBigraph::probR = " << probabilityR << endl;
 }
 
 double BasicGroupBigraph::probabilityEEpsilonOverAllAlphaBeta(const GridModel & gm, int indexEpsilon) const
@@ -446,4 +377,3 @@ double BasicGroupBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & gm) con
 {
   return logLikelihoodConstantCachedFunctor(gm, this);
 }
-

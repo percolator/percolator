@@ -219,6 +219,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "beta",
       "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
       "value");
+  cmd.defineOption("G",
+      "gamma",
+      "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
+      "value");
   cmd.defineOption("R",
       "test-each-iteration",
       "Measure performance on test set each iteration",
@@ -282,6 +286,25 @@ bool Caller::parseOptions(int argc, char **argv) {
     "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
+  cmd.defineOption("N",
+    "no-group-proteins", 		   
+    "Proteins with same probabilities will not be grouped (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+/*  cmd.defineOption("E",
+    "no-separate-proteins", 		   
+    "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET); */   
+  cmd.defineOption("D",
+    "no-prune-proteins", 		   
+    "Peptides with low score will not be pruned before calculating protein probabilities (Only valid if option -A is active).",
+    "",
+    TRUE_IF_SET);
+  cmd.defineOption("P",
+      "deepness",
+      "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
+      "value");
   cmd.defineOption("M",
     "exp-mass",
     "include the experimental mass in the output file",
@@ -294,20 +317,42 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
   if (cmd.optionSet("A")) {
     calculateProteinLevelProb = true;
-    double alpha=-1;
-    double beta=-1;
+    double alpha = -1;
+    double beta = -1;
+    double gamma = -1;
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
-
+    bool grouProteins = true; 
+    if(cmd.optionSet("N"))
+      grouProteins = false;
+    
+//     bool noseparate = cmd.optionSet("E");;
+    //TODO when noseparate activates function logLikelihoodConstant 
+    //in BasicGroupBigraph never ends cos Counter never reaches the end
+      
+    bool noseparate = false;  
+    bool noprune = cmd.optionSet("D");
+    bool gridSearch = true;
+    unsigned deepness = 3;
+    if (cmd.optionSet("P")) {
+      deepness = (cmd.getInt("P", 0, 3));
+    }
+    //TODO if groupProteins false or noprune true FIDO fails with big datasets
     if (cmd.optionSet("a")) {
-       alpha = cmd.getDouble("a", 0.00, 0.76);
+       alpha = cmd.getDouble("a", 0.00, 0.90);
      }
     if (cmd.optionSet("b")) {
-       beta = cmd.getDouble("b", 0.0, 0.80);
+       beta = cmd.getDouble("b", 0.00, 0.90);
      }
+    if (cmd.optionSet("G")) {
+      gamma = cmd.getDouble("G", 0.00, 0.90);
+    }
+    if(alpha != -1 || beta != -1 || gamma != -1)
+	gridSearch = false;
 
-     protEstimator = new ProteinProbEstimator(alpha,beta,tiesAsOneProtein,usePi0,outputEmpirQVal);
+    protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
+					      grouProteins,noseparate,noprune,gridSearch,deepness);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -346,7 +391,6 @@ bool Caller::parseOptions(int argc, char **argv) {
 	  if( pointerToDir ){
 	    //boost::filesystem::path dir = boost::filesystem::temp_directory_path() / pointerToDir;
 	    boost::filesystem::path dir = pointerToDir;
-// /*	    tcf = string(dir.c_str()) + "/pin-tmp.xml";*/	  
 	    tcf = std::string((dir / "/pin-tmp.xml").string());
     #endif
 	try{
@@ -963,10 +1007,10 @@ void Caller::writeXML_Peptides() {
   os.close();
 }
 
-void Caller::writeXML_Proteins(const fidoOutput& output) {
+void Caller::writeXML_Proteins() {
   xmlOutputFN_Proteins = xmlOutputFN;
   xmlOutputFN_Proteins.append("writeXML_Proteins");
-  protEstimator->writeOutputToXML(output, xmlOutputFN_Proteins);
+  protEstimator->writeOutputToXML(xmlOutputFN_Proteins);
 }
 
 void Caller::writeXML(){
@@ -995,7 +1039,17 @@ void Caller::writeXML(){
   if(reportUniquePeptides)
     os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
   if(calculateProteinLevelProb)
-  os << "    <pi_0_proteins>" << pi_0_proteins << "</pi_0_proteins>" << endl;
+  {  
+    os << "    <pi_0_proteins>" << pi_0_proteins << "</pi_0_proteins>" << endl;
+    os << "    <alpha>" << protEstimator->getAlpha() <<"</alpha>" << endl;
+    os << "    <beta>"  << protEstimator->getBeta() <<"</beta>" << endl;
+    os << "    <gamma>" << protEstimator->getGamma() <<"</gamma>" << endl;
+  }
+  os << "    <psms_qlevel>" <<  numberQpsms <<"</psms_qlevel>" << endl;
+  if(reportUniquePeptides)
+    os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.01) << "</peptides_qlevel>" << endl;
+  if(calculateProteinLevelProb)
+    os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.01) << "</proteins_qlevel>" << endl;  
   if (docFeatures) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
                    << "</average_delta_mass>" << endl;
@@ -1111,6 +1165,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
   }
   else {
     pi_0_psms = fullset.getPi0();
+    numberQpsms = fullset.getQvaluesBelowLevel(0.01);
   }
 }
 
@@ -1208,25 +1263,14 @@ int Caller::run() {
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
-    clock_t start=clock();
-    bool gridSearch = protEstimator->initialize(&fullset);
-    fidoOutput output = protEstimator->run(gridSearch);
-    clock_t finish=clock();
-    if(VERB > 0) {
-      protEstimator->printStatistics(output);
-      cerr << "Protein level probabilities have been successfully calculated "
-          << "(" << (finish-start)/1000000 << " s)\n\n";
-      protEstimator->writeOutputToStream(output, cout);
-      if(ProteinProbEstimator::debugginMode) {
-        protEstimator->plotQValues(output);
-        protEstimator->plotRoc(output,output.decoysAtThr2);
-      }
-    }
-    pi_0_proteins = output.pi_0;
+    protEstimator->initialize(&fullset);
+    protEstimator->run();
+    pi_0_proteins = protEstimator->getPi0();
     if (xmlOutputFN.size() > 0){
-      writeXML_Proteins(output);
+      writeXML_Proteins();
     }
   }
+  
   // write output to file
   writeXML();
 

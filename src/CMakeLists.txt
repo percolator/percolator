@@ -102,7 +102,6 @@ add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS
 #COMPILE FIDO
 add_subdirectory(fido)
 
-
 #INCLUDE PERCOLATOR HEADERS
 include_directories(.) 
 
@@ -128,7 +127,7 @@ if(MINGW OR WIN32)
 endif()
 
 
-
+ 
 # SET LIBRARIES FOR PERCOLATOR
 target_link_libraries(percolator perclibrary fido pthread ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  

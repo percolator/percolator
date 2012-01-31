@@ -44,7 +44,9 @@ class ScoreHolder {
     PSMDescription* pPSM;
     //  const double * featVec;
     int label;
-    vector<string> psms_list;
+    /* this container holds the psms for each peptide, they have be unique */
+    std::vector<std::string> psms_list;
+    
     ScoreHolder() :
       score(0.0), label(0), pPSM(NULL), psms_list () {
       ;
@@ -79,15 +81,37 @@ struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool> {
   }
 };
 
+struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool
+  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return ( (__x.pPSM->getPeptide() < __y.pPSM->getFullPeptide() ) 
+    || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label != __y.label) )
+    || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label == __y.label)
+      && (__x.score > __y.score) ) );
+  }
+};
+
+
 struct lexicEq : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    string xPept = __x.pPSM->getPeptideNoResidues();
-    string yPept = __y.pPSM->getPeptideNoResidues();
+    string xPept = __x.pPSM->getPeptideSequence();
+    string yPept = __y.pPSM->getPeptideSequence();
     if(xPept.compare(yPept) == 0) return true;
     else return false;
   }
 };
+
+inline string getRidOfUnprintablesAndUnicode(string inpString) {
+  string outputs = "";
+  for (int jj = 0; jj < inpString.size(); jj++) {
+    signed char ch = inpString[jj];
+    if (((int)ch) >= 32 && ((int)ch) <= 128) {
+      outputs += ch;
+    }
+  }
+  return outputs;
+}
 
 /**
  * ScoreHolder for unique peptides.
@@ -155,6 +179,13 @@ class Scores {
     double getPi0() {
       return pi0;
     }
+    
+    /** Return a list of peptides that are matching the given protein name **/
+    std::vector<std::string> getPeptides(std::string proteinName);
+    
+    /** Return the scores whose q value is less or equal than the threshold given**/
+    unsigned getQvaluesBelowLevel(double level);
+    
     void fill(string& fn);
     inline unsigned int size() {
       return (totalNumberOfTargets + totalNumberOfDecoys);

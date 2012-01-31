@@ -209,29 +209,6 @@ class GridModel : public Model
     count++;
   }
 
-  /***
-  void advance()
-  {
-    // triangular prior (alpha >= beta)
-    alphaRange.advance();
-
-    if ( ! alphaRange.inRange() )
-      {
-	betaRange.advance();
-	alphaRange.start();
-	
-	alphaRange.setValue( betaRange.getValue() );
-
-	// note: assumes same bounding region
-	alphaRange.setCount( betaRange.getCount() );
-      }
-
-    setAlphaBeta( alphaRange.getValue(), betaRange.getValue() );
-
-    count++;
-  }
-  ***/
-
   int getCount() const
   {
     return count;
@@ -241,7 +218,21 @@ class GridModel : public Model
   {
     return alphaRange.inRange() && betaRange.inRange();
   }
+  
+  void setalphaRange(RealRange __alphaRange)
+  {
+    alphaRange = __alphaRange;
+  }
+  
+  void setbetaRange(RealRange __betaRange)
+  {
+    betaRange = __betaRange;
+  }
+  
+  void setGamma(double __gamma)
+  {
+    gamma = __gamma;
+  }
 };
 
 #endif
-

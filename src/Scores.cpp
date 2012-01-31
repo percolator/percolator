@@ -38,7 +38,14 @@ using namespace std;
 #include "ssl.h"
 #include "MassHandler.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
+
+/** Compare function to use to get unique peptides from a list of PSMs**/
+
+inline bool mycmp(const ScoreHolder &a,const ScoreHolder &b) {
+  return (boost::iequals(a.pPSM->getPeptideSequence(),b.pPSM->getPeptideSequence()) && (a.label == b.label));
+}
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
@@ -46,17 +53,6 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
 
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score < other.score);
-}
-
-inline string getRidOfUnprintablesAndUnicode(string inpString) {
-  string outputs = "";
-  for (int jj = 0; jj < inpString.size(); jj++) {
-    signed char ch = inpString[jj];
-    if (((int)ch) >= 32 && ((int)ch) <= 128) {
-      outputs += ch;
-    }
-  }
-  return outputs;
 }
 
 inline double truncateTo(double truncateMe, const char* length) {
@@ -220,8 +216,6 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool makeUnique) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
     a->estimatePi0();
     a->calcQ(fdr);
-    //    a->calcPep();
-    //a->normalizeScores(fdr*a->getPi0());
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores));
   }
@@ -510,18 +504,10 @@ int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys+totalNumberOfTargets==size());
   vector<ScoreHolder>::iterator it;
 
-  // uncomment the following to inspect the scores vector
-  //cerr << endl;
-  //it = scores.begin();
-  //for (; it != scores.end(); ++it) {
-  //  if(it->label==-1)
-  //    cerr << "(" << it->label<<")" <<"sc:" << it->score << "id:" << it->pPSM->id << " ";
-  //    cerr << "(" << it->label<<")" <<"id:" << it->pPSM->id << " ";
-  //}
-  //cerr << endl;
-
   int targets = 0, decoys = 0;
   double efp = 0.0, q;
+  
+  // NOTE check this
   for (it = scores.begin(); it != scores.end(); it++) {
     if (it->label != -1) {
       targets++;
@@ -589,9 +575,16 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
-  sort(scores.begin(), scores.end(), lexicOrder());
-   // lexicographically order the scores (based on peptides names)
-   // new list of scores
+  
+   // lexicographically order the scores (based on peptides names,labels and scores)
+   std::sort(scores.begin(), scores.end(), lexicOrderProb());
+   
+   /*
+    * much faster and simpler version but it does not fill up psms_list     
+    * which will imply iterating over the unique peptides and the removed list many times 
+    * scores.erase(std::unique(scores.begin(), scores.end(), mycmp), scores.end());
+   */
+   
    vector<ScoreHolder> uniquePeptideScores = vector<ScoreHolder>();
    string previousPeptide;
    int previousLabel;
@@ -599,9 +592,9 @@ void Scores::weedOutRedundant() {
    vector<ScoreHolder>::iterator current = scores.begin();
    for(;current!=scores.end(); current++){
      // compare pointer's peptide with previousPeptide
-     string currentPeptide = current->pPSM->getPeptideNoResidues();
-     if(previousPeptide.compare(currentPeptide)==0
-         && previousLabel == current->label) {
+     string currentPeptide = current->pPSM->getPeptideSequence();
+     if(boost::iequals(currentPeptide,previousPeptide) 
+       && (previousLabel == current->label)) {
        // if the peptide is a duplicate
        vector<ScoreHolder>::iterator last = --uniquePeptideScores.end();
        // append the duplicate psm_id
@@ -726,4 +719,28 @@ void Scores::calcPep() {
   for (size_t ix = 0; ix < scores.size(); ix++) {
     (scores[ix]).pPSM->pep = peps[ix];
   }
+}
+
+unsigned Scores::getQvaluesBelowLevel(double level) {
+  
+  unsigned hits = 0;
+  
+  for (size_t ix = 0; ix < scores.size(); ix++) {
+    if(scores[ix].isTarget() && scores[ix].pPSM->q < level)
+      hits++;
+  }
+  
+  return hits;
+}
+
+std::vector<std::string> Scores::getPeptides(std::string proteinName)
+{
+  std::vector<std::string> peptides;
+  for (size_t ix = 0; ix < scores.size(); ix++)
+  {
+    if(scores[ix].pPSM->proteinIds.find(proteinName) != scores[ix].pPSM->proteinIds.end())
+      peptides.push_back(scores[ix].pPSM->getPeptideSequence());
+      //std::cerr << "adding peptide " << scores[ix].pPSM->getPeptideSequence() << std::endl;
+  }
+  return peptides;
 }
