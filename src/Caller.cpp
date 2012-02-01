@@ -296,12 +296,12 @@ bool Caller::parseOptions(int argc, char **argv) {
     "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
     "",
     TRUE_IF_SET); */   
-  cmd.defineOption("D",
+  cmd.defineOption("C",
     "no-prune-proteins", 		   
     "Peptides with low score will not be pruned before calculating protein probabilities (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
-  cmd.defineOption("P",
+  cmd.defineOption("d",
       "deepness",
       "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
       "value");
@@ -330,11 +330,11 @@ bool Caller::parseOptions(int argc, char **argv) {
     //in BasicGroupBigraph never ends cos Counter never reaches the end
     bool noseparate = false; 
     
-    bool noprune = cmd.optionSet("D");
+    bool noprune = cmd.optionSet("C");
     bool gridSearch = true;
     unsigned deepness = 3;
-    if (cmd.optionSet("P")) {
-      deepness = (cmd.getInt("P", 0, 3));
+    if (cmd.optionSet("d")) {
+      deepness = (cmd.getInt("d", 0, 3));
     }
     //TODO if groupProteins false or noprune true FIDO fails with big datasets
     if (cmd.optionSet("a")) {
