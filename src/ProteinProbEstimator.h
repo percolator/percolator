@@ -259,7 +259,8 @@ class ProteinProbEstimator {
     
     ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
-			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3);
+			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
+			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 50, bool conservative = true);
     
     ~ProteinProbEstimator();
     
@@ -333,6 +334,10 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
+    double lambda;
+    double threshold;
+    unsigned rocN;
+    bool conservative;
     
 };
 

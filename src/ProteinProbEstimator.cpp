@@ -74,7 +74,8 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
 
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
-			  bool __dogridSearch, unsigned __deepness) {
+			  bool __dogridSearch, unsigned __deepness, double __lambda, double __threshold, unsigned __rocN,
+			  bool __conservative) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = gamma_par;
@@ -91,6 +92,10 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   noprune = __noprune;
   dogridSearch = __dogridSearch;
   deepness = __deepness;
+  lambda = __lambda;
+  threshold = __threshold;
+  rocN = __rocN;
+  conservative = __conservative;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator(){
@@ -418,10 +423,10 @@ void ProteinProbEstimator::gridSearch()
 
   //NOTE accuracy level of the calculation of the objetive function
 
-  double threshold = 0.05; //0.05,0.01,0.1
+  //double threshold = 0.05; //0.05,0.01,0.1
   
   //NOTE perhaps rocN should be related to the number of decoy hits at a certain threshold
-  int rocN = 50;
+  //int rocN = 50;
   
   //TODO make the range of the grid search and the N parametizable or according to data size
   double gamma_search[] = {0.5};
@@ -477,7 +482,7 @@ void ProteinProbEstimator::gridSearch()
 	pair<std::vector<int>, std::vector<int> > roc = getROC(prot_names);
 	double rocR = getROC_N(roc.first, roc.second, rocN);
 	double fdr_mse = getFDR_divergence(EstEmp.first, EstEmp.second, threshold);
-	double lambda = 0.15;
+	//double lambda = 0.15;
 	double current_objective = lambda * rocR - (1-lambda) * fdr_mse;
 	if (current_objective > best_objective)
 	{
@@ -649,8 +654,10 @@ double ProteinProbEstimator::getFDR_divergence(std::vector<double> estFDR, std::
 	//NOTE this affects the conservativeness of the objetive function
 	// areaSq gives a more conservative value with less proteins but more confidence
 	
-      //tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
-        tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+	if(!conservative)
+	  tot += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
+        else
+	  tot += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1], estFDR[k+1]);
     }
 
   double xRange = min(THRESH, estFDR[k]) - estFDR[0];

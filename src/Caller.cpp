@@ -296,18 +296,40 @@ bool Caller::parseOptions(int argc, char **argv) {
     "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
     "",
     TRUE_IF_SET); */   
-  cmd.defineOption("D",
+  cmd.defineOption("C",
     "no-prune-proteins", 		   
     "Peptides with low score will not be pruned before calculating protein probabilities (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
-  cmd.defineOption("P",
+  cmd.defineOption("d",
       "deepness",
       "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
       "value");
   cmd.defineOption("M",
     "exp-mass",
     "include the experimental mass in the output file",
+    "",
+    TRUE_IF_SET);
+  
+  /**temporary parameters for benchmarking purposes**/
+  cmd.defineOption("Y",
+      "lambda",
+      "Setting lambda value for objective function",
+      "value");
+  
+  cmd.defineOption("T",
+      "threshold",
+      "Setting threshold value for MSE in objective function",
+      "value");
+  
+  cmd.defineOption("E",
+      "rocN",
+      "Setting rocN value for ROC curve in objective function",
+      "value");
+    
+  cmd.defineOption("Q",
+    "noconservative",
+    "MSE uses the area instead of areasq",
     "",
     TRUE_IF_SET);
 
@@ -330,10 +352,27 @@ bool Caller::parseOptions(int argc, char **argv) {
     //in BasicGroupBigraph never ends cos Counter never reaches the end
     bool noseparate = false; 
     
-    bool noprune = cmd.optionSet("D");
+    /**temporary variables for calibration **/
+    double lambda = 0.15;
+    double threshold = 0.05;
+    unsigned rocN = 50;
+    bool conservative = true;
+    if (cmd.optionSet("Y")) {
+      lambda = cmd.getDouble("Y", 0.0, 0.5);
+    }
+    if (cmd.optionSet("T")) {
+      threshold = cmd.getDouble("T", 0.0, 0.1);
+    }
+    if (cmd.optionSet("E")) {
+      rocN = cmd.getInt("E", 0, 100);
+    }
+    if (cmd.optionSet("C"))
+      conservative = false;
+    
+    bool noprune = cmd.optionSet("C");
     bool gridSearch = true;
     unsigned deepness = 3;
-    if (cmd.optionSet("P")) {
+    if (cmd.optionSet("d")) {
       deepness = (cmd.getInt("P", 0, 3));
     }
     //TODO if groupProteins false or noprune true FIDO fails with big datasets
@@ -350,7 +389,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 	gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					      grouProteins,noseparate,noprune,gridSearch,deepness);
+					      grouProteins,noseparate,noprune,gridSearch,deepness,lambda,threshold,rocN,conservative);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
