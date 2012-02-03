@@ -158,7 +158,12 @@ class Protein {
   
     struct IntCmpProb {
     bool operator()(const std::pair<const std::string,Protein> &lhs, const std::pair<const std::string,Protein> &rhs) {
-        return lhs.second.getPEP() < rhs.second.getPEP();
+        return 
+	   (  (lhs.second.getPEP() < rhs.second.getPEP())
+	   || ( (lhs.second.getPEP() == rhs.second.getPEP()) && (lhs.second.getQ() < rhs.second.getQ()) )
+	   || ( (lhs.second.getPEP() == rhs.second.getPEP()) && (lhs.second.getQ() == rhs.second.getQ())
+	      && (lhs.second.getName() < rhs.second.getName()) )  
+	   );
       }
     };
     
@@ -260,7 +265,7 @@ class ProteinProbEstimator {
     ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
-			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 50, bool conservative = true);
+			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 50, bool conservative = true, unsigned qtype = 1);
     
     ~ProteinProbEstimator();
     
@@ -334,10 +339,13 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
+    /**temporary variables for calibration **/
     double lambda;
     double threshold;
     unsigned rocN;
     bool conservative;
+    unsigned qtype;
+    /**temporary variables for calibration **/
     
 };
 

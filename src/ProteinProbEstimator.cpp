@@ -75,7 +75,7 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
 			  bool __dogridSearch, unsigned __deepness, double __lambda, double __threshold, unsigned __rocN,
-			  bool __conservative) {
+			  bool __conservative, unsigned __qtype) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = gamma_par;
@@ -92,10 +92,12 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   noprune = __noprune;
   dogridSearch = __dogridSearch;
   deepness = __deepness;
+  /**temporary variables for calibration **/
   lambda = __lambda;
   threshold = __threshold;
   rocN = __rocN;
   conservative = __conservative;
+  qtype = __qtype; //0 = avg(targets) 1 = avg(targets + decoys) 2 = individually procedure
 }
 
 ProteinProbEstimator::~ProteinProbEstimator(){
@@ -306,11 +308,39 @@ void ProteinProbEstimator::estimateQValues()
   for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); 
        it != pepProteins.end(); it++) 
   {
-    int ntargets = countTargets(it->second);
-    sum += (double)(it->first * ntargets);
-    nP += ntargets;
-    qvalue = (sum / (double)nP);
-    qvalues.push_back(qvalue);
+    //NOTE I think the pep should be multiplied by the number of targets plus number of decoys
+    //NOTE I consider proteins with the same pep to have same q value although I could
+    //assume that proteins with same pep but different order can have different q values
+    //in that case the order of the proteins matter which is why I do not implement it in that way
+    
+    if(qtype == 0)
+    {
+      int ntargets = countTargets(it->second);
+      sum += (double)(it->first * ntargets);
+      nP += ntargets;
+      qvalue = (sum / (double)nP);
+      qvalues.push_back(qvalue);
+    }
+    else if(qtype == 1)
+    {
+      int ntargets = countTargets(it->second);
+      int ndecoys = countDecoys(it->second);
+      sum += (double)(it->first * (ntargets + ndecoys));
+      nP += (ntargets + ndecoys);
+      qvalue = (sum / (double)nP);
+      qvalues.push_back(qvalue);
+    }
+    else if (qtype == 2)
+    {
+      for(unsigned i=0; i<it->second.size(); i++)
+      {	
+	sum += it->first;
+	nP++;
+	qvalue = (sum / (double)nP);
+	qvalues.push_back(qvalue);
+      }
+    }
+
   }
   std::partial_sum(qvalues.rbegin(),qvalues.rend(),qvalues.rbegin(),myminfunc);
 }
@@ -327,16 +357,46 @@ void ProteinProbEstimator::estimateQValuesEmp()
   for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); 
        it != pepProteins.end(); it++) 
   {
-    nTargets += countTargets(it->second);
-    numDecoy = countDecoys(it->second);
-    nDecoys += numDecoy;
-    qvalue = (double)nDecoys / (double)nTargets;
-    if(qvalue > 1.0) qvalue = 1.0;
-    qvaluesEmp.push_back(qvalue);
-    if(numDecoy > 0)
-      pvalues.push_back((nDecoys)/(double)(numberDecoyProteins));
-    else 
-      pvalues.push_back((nDecoys+(double)1)/(numberDecoyProteins+(double)1));
+    //NOTE this procedure of calculating the FDR using target and decoys might not be
+    //accurate at peptide level where the number of FP is higher
+    if(qtype == 0 || qtype == 1)
+    {
+      nTargets += countTargets(it->second);
+      numDecoy = countDecoys(it->second);
+      nDecoys += numDecoy;
+      qvalue = (double)nDecoys / (double)nTargets;
+      if(qvalue > 1.0) qvalue = 1.0;
+      qvaluesEmp.push_back(qvalue);
+      if(numDecoy > 0)
+        pvalues.push_back((nDecoys)/(double)(numberDecoyProteins));
+      else 
+        pvalues.push_back((nDecoys+(double)1)/(numberDecoyProteins+(double)1));
+    }
+    else
+    {
+      std::vector<std::string> proteins = it->second;
+      for(std::vector<std::string>::const_iterator it2 = proteins.begin(); it2 != proteins.end(); it2++)
+      {
+	 std::string protein = *it2;
+	 if(falsePosSet.count(protein) > 0)
+	 {  
+	   nDecoys++;
+	   numDecoy = 1;
+	 }
+	 else
+	 {
+	   nTargets++;
+	   numDecoy = 0;
+	 }
+	 qvalue = (double)nDecoys / (double)nTargets;
+	 if(qvalue > 1.0) qvalue = 1.0;
+	 qvaluesEmp.push_back(qvalue);
+	 if(numDecoy > 0)
+	  pvalues.push_back((nDecoys)/(double)(numberDecoyProteins));
+	else 
+	  pvalues.push_back((nDecoys+(double)1)/(numberDecoyProteins+(double)1));
+      }
+    }
   }
 
   double factor = pi0 * ((double)nTargets / (double)nDecoys);
@@ -351,18 +411,29 @@ void ProteinProbEstimator::updateProteinProbabilities()
   std::vector<std::vector<std::string> > proteinNames;
   transform(pepProteins.begin(), pepProteins.end(), back_inserter(peps), RetrieveKey());
   transform(pepProteins.begin(), pepProteins.end(), back_inserter(proteinNames), RetrieveValue());
-
+  unsigned qindex = 0;
   for (unsigned i = 0; i < peps.size(); i++) 
   {
     double pep = peps[i];
     std::vector<std::string> proteinlist = proteinNames[i];
     for(unsigned j = 0; j < proteinlist.size(); j++)
-    {
+    { 
       std::string proteinName = proteinlist[j];
-      proteins[proteinName].setPEP(pep);
-      proteins[proteinName].setQ(qvalues[i]);
-      proteins[proteinName].setQemp(qvaluesEmp[i]);
-      proteins[proteinName].setP(pvalues[i]);
+      if(qtype == 0 || qtype ==1)
+      {
+	proteins[proteinName].setPEP(pep);
+	proteins[proteinName].setQ(qvalues[i]);
+	proteins[proteinName].setQemp(qvaluesEmp[i]);
+	proteins[proteinName].setP(pvalues[i]);
+      }
+      else
+      {	
+	proteins[proteinName].setPEP(pep);
+	proteins[proteinName].setQ(qvalues[qindex]);
+	proteins[proteinName].setQemp(qvaluesEmp[qindex]);
+	proteins[proteinName].setP(pvalues[qindex]);
+      }
+      qindex++;
     }
   }
 }
@@ -596,17 +667,54 @@ pair<std::vector<double>, std::vector<double> > ProteinProbEstimator::getEstimat
       double prob = probabilities[k];
       int fpChange = countDecoys(names[k]);
       int tpChange = countTargets(names[k]);
+      //NOTE I think the pep should be multiplied by the number of targets plus number of decoys
+      //NOTE I consider proteins with the same pep to have same q value although I could
+      //assume that proteins with same pep but different order can have different q values
+      //in that case the order of the proteins matter which is why I do not implement it in that way
+      //NOTE this way of calculating empFDR might not be totally accurate since the number of FP is higher at protein level
+      if(qtype == 0)
+      {
+	fpCount += (double)fpChange;
+	tpCount += (double)tpChange;
+	totalFDR += (prob) * (double)(tpChange);
+	estFDR = totalFDR / (tpCount);
+	empFDR = fpCount / tpCount; 
+	if(empFDR > 1.0) empFDR = 1.0;
+	if(estFDR > 1.0) estFDR = 1.0;
+	estFDR_array.push_back(estFDR);
+	empFDR_array.push_back(empFDR);
+      }
+      else if(qtype == 1)
+      {
+	fpCount += (double)fpChange;
+	tpCount += (double)tpChange;
+	totalFDR += (prob) * (double)(tpChange + fpChange);
+	estFDR = totalFDR / (tpCount + fpCount);
+	empFDR = fpCount / tpCount; 
+	if(empFDR > 1.0) empFDR = 1.0;
+	if(estFDR > 1.0) estFDR = 1.0;
+	estFDR_array.push_back(estFDR);
+	empFDR_array.push_back(empFDR);
+      }
+      else if(qtype == 2)
+      {
+	for(unsigned i=0; i<names[k].size(); i++)
+	{
+	    if(falsePosSet.count(names[k][i]) > 0)
+	      fpCount++;
+	    else
+	      tpCount++;
+	    totalFDR += (prob);
+	    estFDR = totalFDR / (tpCount + fpCount);
+	    empFDR = fpCount / tpCount; 
+	    if(empFDR > 1.0) empFDR = 1.0;
+	    if(estFDR > 1.0) estFDR = 1.0;
+	    estFDR_array.push_back(estFDR);
+	    empFDR_array.push_back(empFDR);
+	 }
+      }
+	
 
-      fpCount += (double)fpChange;
-      tpCount += (double)tpChange;
-      
-      totalFDR += (prob) * (double)(tpChange);
-      estFDR = totalFDR / (tpCount);
-      empFDR = fpCount / tpCount; 
-      if(empFDR > 1.0) empFDR = 1.0;
-      if(estFDR > 1.0) estFDR = 1.0;
-      estFDR_array.push_back(estFDR);
-      empFDR_array.push_back(empFDR);
 
     }
     

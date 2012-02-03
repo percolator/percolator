@@ -326,12 +326,18 @@ bool Caller::parseOptions(int argc, char **argv) {
       "rocN",
       "Setting rocN value for ROC curve in objective function",
       "value");
+  
+  cmd.defineOption("H",
+      "qtype",
+      "Setting way of calulation q value avg(ntargets) or avg(ntargets+ndecoys)",
+      "value");
     
   cmd.defineOption("Q",
     "noconservative",
     "MSE uses the area instead of areasq",
     "",
     TRUE_IF_SET);
+  /**temporary variables for calibration **/
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -357,6 +363,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     double threshold = 0.05;
     unsigned rocN = 50;
     bool conservative = true;
+    unsigned qtype = 1;
     if (cmd.optionSet("Y")) {
       lambda = cmd.getDouble("Y", 0.0, 0.5);
     }
@@ -367,7 +374,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       rocN = cmd.getInt("E", 0, 100);
     }
     if (cmd.optionSet("C"))
+    {
       conservative = false;
+    }
+    if (cmd.optionSet("H")) {
+      qtype = cmd.getInt("H", 0, 3);
+    }
+    /**temporary variables for calibration **/
     
     bool noprune = cmd.optionSet("C");
     bool gridSearch = true;
@@ -389,7 +402,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 	gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					      grouProteins,noseparate,noprune,gridSearch,deepness,lambda,threshold,rocN,conservative);
+					      grouProteins,noseparate,noprune,gridSearch,deepness,lambda,threshold,rocN,conservative,qtype);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
