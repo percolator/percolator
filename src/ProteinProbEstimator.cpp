@@ -160,10 +160,11 @@ void ProteinProbEstimator::run(){
   
   if(usePi0)
   {
-    pi0 = *qvalues.rbegin();
     //TODO activate this and check the empirical q values
     estimatePValues();
     pi0 = estimatePi0();
+    if(pi0 == -1) pi0 = *qvalues.rbegin();
+      
   }
   estimateQValuesEmp();
   updateProteinProbabilities();
@@ -250,8 +251,8 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
   }
   if(pi0s.size()==0){
     cerr << "Error in the input data: too good separation between target "
-        << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
-    exit(0);
+        << "and decoy PSMs.\nImpossible to estimate pi0. Taking the highest estimated q value as pi0.\n";
+    return -1;
   }
   double minPi0 = *min_element(pi0s.begin(), pi0s.end());
   // Initialize the vector mse with zeroes.
