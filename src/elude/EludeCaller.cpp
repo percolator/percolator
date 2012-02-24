@@ -106,7 +106,7 @@ string EludeCaller::Greeter() const {
 bool EludeCaller::ParseOptions(int argc, char** argv) {
   ostringstream intro;
   intro << Greeter() << endl << "Usage:" << endl;
-  intro << "   elude [-e \"input file\"] [-o \"output file\"] [other options] " << endl;
+  intro << "   elude [-t \"train data file\" ] [-l \"retention model\"] " << endl;
   intro << "Where input file is the file including the test data; output file" << endl;
   intro << "the output will be written (ensure to have read and write access on the file)." << endl;
   CommandLineParser cmd(intro.str());
@@ -298,12 +298,6 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
      supress_print_ = true;
   }
   
-    // if there are no arguments left...
-  if (cmd.arguments.size() == 0) {
-      cerr << "Error: too few arguments.";
-      cerr << "\nInvoke with -h option for help\n";
-      exit(-1); // ...error
-  }
   return true;
 }
 
