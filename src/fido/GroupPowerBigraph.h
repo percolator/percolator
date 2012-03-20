@@ -3,18 +3,20 @@
 
 #ifndef _GroupPowerBigraph_H
 #define _GroupPowerBigraph_H
-
 #include "ProteinIdentifier.h"
 #include "BasicGroupBigraph.h"
 #include "PivdoSplitter.h"
 #include "Scores.h" // from Percolator
+
 using namespace std;
 
 
 class GroupPowerBigraph : public ProteinIdentifier
 {
+  
 public:
-  static double LOG_MAX_ALLOWED_CONFIGURATIONS;
+  
+ static double LOG_MAX_ALLOWED_CONFIGURATIONS;
 
  GroupPowerBigraph(Scores* fullset,double __alpha, double __beta, double __gamma, 
 		   bool __groupProteins = false, bool __noseparate = false , bool __noprune = false) :
@@ -28,7 +30,8 @@ public:
 	setAlphaBetaGamma(__alpha, __beta, __gamma);
 	read(fullset);
       }
-      
+  
+  ~GroupPowerBigraph();
   Array<double> proteinProbs(const GridModel & myGM);
   Array<double> proteinProbsOverAllAlphaBeta();
   void printProteinWeights() const;

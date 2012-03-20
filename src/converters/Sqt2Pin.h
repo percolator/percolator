@@ -74,6 +74,8 @@ protected:
 	std::string xmlOutputFN;
 	std::string call;
 	std::string spectrumFile;
+	bool iscombined;
+	std::string pattern;
 	map<int, vector<double> > scan2rt;
 };
 

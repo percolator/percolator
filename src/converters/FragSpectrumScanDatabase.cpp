@@ -242,9 +242,9 @@ void FragSpectrumScanDatabase::putFSS( ::percolatorInNs::fragSpectrumScan & fss 
     buf.size(0);
   #elif defined __TOKYODB__
     assert(bdb);
+    ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
     *oxdrp << fss;
     xdrrec_endofrecord (&xdr, true);
-    ::percolatorInNs::fragSpectrumScan::scanNumber_type key = fss.scanNumber();
     size_t keySize = sizeof(key);
     size_t valueSize(buf.size ());
     if(!tcbdbput(bdb, ( const char * ) &key, keySize, buf.data (), buf.size () ))

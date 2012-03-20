@@ -25,10 +25,30 @@
 #include <numeric>
 #include "converters/MSToolkit/MSToolkitTypes.h"
 #include <iterator>
+#include "FastaProteinReader.h"
+#include <tcutil.h>
+#include <vector>
+
 
 class Protein {
   
   public:
+    
+    struct Peptide{
+      Peptide(std::string __name,bool __isdecoy,double __pep,double __q,double __empq)
+      {
+	name = __name;
+	isdecoy = __isdecoy;
+	pep =__pep;
+	q = __q;
+	empq = __empq;
+      }
+      double pep;
+      double q;
+      double empq;
+      std::string name;
+      bool isdecoy;
+    };
     
     Protein() {
       q = qemp = pep = p = 0.0;
@@ -36,11 +56,16 @@ class Protein {
       name = "";
     }
     
-    Protein(std::string namenew,double qnew, double qempnew, double pepnew, double pnew, bool isdecoy_new)
+    Protein(std::string namenew,double qnew, double qempnew, double pepnew, double pnew, bool isdecoy_new, Peptide *__peptide)
 	      :name(namenew),q(qnew),qemp(qempnew),pep(pepnew),p(pnew),isDecoy(isdecoy_new)
-	    {}
+	    {
+	      if(__peptide)
+		peptides.push_back(__peptide);
+	    }
     
     ~Protein() {
+      for(unsigned i = 0; i < peptides.size(); i++)
+	delete peptides[i];
     }
     
     std::string getName()
@@ -93,11 +118,11 @@ class Protein {
       return isDecoy;
     }
     
-    std::vector<std::string> getPeptides() {
+    std::vector<Peptide*> getPeptides() {
       return peptides;
     }
     
-    std::vector<std::string> getPeptides() const {
+    std::vector<Peptide*> getPeptides() const {
       return peptides;
     }
     
@@ -126,13 +151,18 @@ class Protein {
       p = pnew;
     }
     
-    void setPeptide(std::string peptide) {
-      peptides.push_back(peptide);
+    void setPeptide(std::string peptide,bool isdecoy,double pep,double q,double empq) {
+      peptides.push_back(new Peptide(peptide,isdecoy,pep,q,empq));
     }
     
-    void setPeptides(std::vector<std::string> peptidesnew)
+    void setPeptide(Peptide *__peptide)
     {
-       peptides = std::vector<std::string>(peptidesnew);
+      peptides.push_back(__peptide);
+    }
+    
+    void setPeptides(std::vector<Peptide*> peptidesnew)
+    {
+       peptides = std::vector<Peptide*>(peptidesnew);
     }
 
    
@@ -142,7 +172,7 @@ class Protein {
     double q, qemp, pep, p, pi0;
     string id;
     bool isDecoy;
-    std::vector<std::string> peptides;
+    std::vector<Peptide*> peptides;
     
 };
 
@@ -157,12 +187,12 @@ class Protein {
     };
   
     struct IntCmpProb {
-    bool operator()(const std::pair<const std::string,Protein> &lhs, const std::pair<const std::string,Protein> &rhs) {
+    bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
         return 
-	   (  (lhs.second.getPEP() < rhs.second.getPEP())
-	   || ( (lhs.second.getPEP() == rhs.second.getPEP()) && (lhs.second.getQ() < rhs.second.getQ()) )
-	   || ( (lhs.second.getPEP() == rhs.second.getPEP()) && (lhs.second.getQ() == rhs.second.getQ())
-	      && (lhs.second.getName() < rhs.second.getName()) )  
+	   (  (lhs.second->getPEP() < rhs.second->getPEP())
+	   || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
+	   || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
+	      && (lhs.second->getName() < rhs.second->getName()) )  
 	   );
       }
     };
@@ -256,16 +286,19 @@ class Protein {
 
 
 class ProteinProbEstimator {
+  
   public:
 
     const static double default_gamma = 0.5; //0.01;
     const static double default_alpha = 0.1; //0.01;
     const static double default_beta = 0.01;
+    const static double psmThresholdMayu = 1.0;
     
     ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
-			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 50, bool conservative = true, unsigned qtype = 1);
+			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
+			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false);
     
     ~ProteinProbEstimator();
     
@@ -281,17 +314,37 @@ class ProteinProbEstimator {
     void setGroupProteins(bool groupProteins);
     void setPruneProteins(bool noprune);
     void setSeparateProteins(bool noseparate);
+    void setGridSearch(bool dogridSearch);
+    void setDeepness(unsigned deepness);
+    void setLambda(double lambda);
+    void setThreshold(double threshold);
+    void setROCN(double rocn);
+    void setTargetDb(std::string targetDB);
+    void setDecoyDb(std::string decoyDB);
+    void setMayusFDR(bool mayufdr);
+    void setFDR(double fdr);
     bool getTiesAsOneProtein();
     bool getUsePio();
     bool getOutputEmpirQval();
     bool getGroupProteins();
     bool getPruneProteins();
     bool getSeparateProteins();
+    bool getMayuFdr();
+    bool getDeepness();
+    bool getGridSearch();
+    std::string getDecoyPatter();
+    std::string getDecoyDB();
+    std::string getTargetDB();
+    unsigned getROCN();
+    double getThreshold();
+    double getLambda();
+    double getFDR();
     /** Return the scores whose q value is less or equal than the threshold given**/
     unsigned getQvaluesBelowLevel(double level);
     unsigned getQvaluesBelowLevelDecoy(double level);
+    
     void setTargetandDecoysNames();
-    std::map<const std::string,Protein> getProteins();
+    std::map<const std::string,Protein*> getProteins();
     void updateProteinProbabilities();
     void estimateQValues();
     void estimatePValues(); 
@@ -306,20 +359,21 @@ class ProteinProbEstimator {
     
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
     double getROC_N(const std::vector<int> & fpArray, const std::vector<int> & tpArray, int N);
-    pair<std::vector<double>, std::vector<double> > getEstimated_and_Empirical_FDR(std::vector<std::vector<string> > names, 
-								   std::vector<double> probabilities);
+    std::pair<std::vector<double>, std::vector<double> > getEstimated_and_Empirical_FDR(std::vector<std::vector<string> > names, 
+								std::vector<double> probabilities);
     double getFDR_divergence(const std::vector<double> estFDR, const std::vector<double> empFDR, double THRESH);
-    pair<std::vector<int>, std::vector<int> > getROC(std::vector<std::vector<string> > names);
-    void gridSearch();
-    
-
+    std::pair<std::vector<int>, std::vector<int> > getROC(std::vector<std::vector<string> > names);
+    void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
     int countTargets(std::vector<std::string> proteinList);
     int countDecoys(std::vector<std::string> proteinList);
-    
+    std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPSM(double threshold);
+    std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPSM(std::multimap<double, std::vector<std::string> > pepProteins,
+									      double threshold);
+    double estimatePi0Bin(unsigned FP,unsigned TP);
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
-    /**proteins are mapped by the name, estQ and empQ are mapped by the q values**/
-    std::map<const std::string,Protein> proteins;    
+    FastaProteinReader *fastReader;
+    std::map<const std::string,Protein*> proteins;    
     std::multimap<double,std::vector<std::string> > pepProteins;
     std::vector<double> qvalues;
     std::vector<double> qvaluesEmp;
@@ -332,6 +386,9 @@ class ProteinProbEstimator {
     bool noseparate;
     bool noprune;
     bool dogridSearch;
+    bool mayufdr;
+    bool updateRocN;
+    double fdr;
     double pi0;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
@@ -339,13 +396,12 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
-    /**temporary variables for calibration **/
     double lambda;
     double threshold;
     unsigned rocN;
-    bool conservative;
-    unsigned qtype;
-    /**temporary variables for calibration **/
+    std::string targetDB;
+    std::string decoyDB;
+    std::string decoyPattern;
     
 };
 

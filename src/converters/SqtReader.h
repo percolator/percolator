@@ -27,6 +27,7 @@ class ParseOptions {
     pngasef(false),
     calcDOC(false),
     hitsPerSpectrum(1),
+    iscombined(false),
     reversedFeaturePattern(""){};
     bool calcQuadraticFeatures;
     bool calcAAFrequencies;
@@ -35,6 +36,7 @@ class ParseOptions {
     bool isotopeMass;
     int hitsPerSpectrum;
     bool pngasef;
+    bool iscombined;
     std::string reversedFeaturePattern;
     std::map<char, int> ptmScheme;
   private:

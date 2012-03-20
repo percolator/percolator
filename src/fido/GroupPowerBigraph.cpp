@@ -5,6 +5,12 @@
 
 double GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = 18;
 
+GroupPowerBigraph::~GroupPowerBigraph()
+{
+
+}
+
+
 Array<double> GroupPowerBigraph::proteinProbs(const GridModel & myGM)
 {
   Array<double> result;
@@ -159,7 +165,7 @@ std::multimap<double, std::vector<std::string> > GroupPowerBigraph::getProteinPr
   {
     pepProteins.insert(std::make_pair<double,std::vector<std::string> >(1.0,severedProteins.getVector()));
   }
-    
+ 
   return pepProteins;
 }
 
@@ -201,7 +207,6 @@ double GroupPowerBigraph::getLogNumberStates() const
 
 Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold )
 {
-  //  cerr << "Iter partition... @ threshold = " << newPeptideThreshold << endl;
 
   bb.PeptideThreshold = newPeptideThreshold;
   bb.prune();
@@ -211,7 +216,6 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
   Array<BasicBigraph> preResult = bb.partitionSections();
   Array<BasicBigraph> result;
 
-  //  cerr << "Using threshold " << newPeptideThreshold << endl;
   for (int k=0; k<preResult.size(); k++)
     {
       double logNumConfig = BasicGroupBigraph( preResult[k] ).logNumberOfConfigurations();

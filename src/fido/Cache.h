@@ -20,8 +20,6 @@ template <typename C, typename R, typename A>
     }
   virtual R operator ()(const A & arg, const C * obj) const
   {
-    //    cout << "In member function call" << endl;
-    //    cout << "\tobject pointer = " << obj << endl;
     return (obj->*func)(arg);
   }
 };

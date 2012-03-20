@@ -55,12 +55,12 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
 
-find_package(Pthreads)
-if(PTHREADS_FOUND)
-  message(STATUS  "Pthreads found")
-else(PTHREADS_FOUND)
-  message(FATAL_ERROR "The package Pthreads has not been found")
-endif()
+# find_package(Pthreads)
+# if(PTHREADS_FOUND)
+#   message(STATUS  "Pthreads found")
+# else(PTHREADS_FOUND)
+#   message(FATAL_ERROR "The package Pthreads has not been found")
+# endif()
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -113,7 +113,7 @@ include_directories(. fido)
 # PERCOLATOR
 ###############################################################################
 
-add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp ProteinProbEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
+add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp ProteinProbEstimator.cpp FastaProteinReader.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
 
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)

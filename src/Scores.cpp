@@ -382,6 +382,8 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
       it != spectraScores.end(); ++it) {
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new folder
+    
+    //NOTE what if the folder if full but previousSpectrum is the same as current spectrum??
     if(previousSpectrum != (*it).first){
       randIndex = lcg_rand() % xval_fold;
       // allow only indexes of folders that are non-full

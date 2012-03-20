@@ -147,11 +147,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Include decoys (PSMs, peptides and/or proteins) in the xml-output. Only available if -X is used.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("P",
-      "pattern",
-      "Option for single SQT file mode defining the name pattern used for shuffled data base. \
-      Typically set to random_seq",
-      "pattern");
   cmd.defineOption("p",
       "Cpos",
       "Cpos, penalty for mistakes made on positive examples. Set by cross validation if not specified.",
@@ -235,7 +230,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("S",
       "seed",
-      "Setting seed of the random number generator. Default value is 0",
+      "Setting seed of the random number generator. Default value is 1",
       "value");
   cmd.defineOption("K",
       "klammer",
@@ -288,7 +283,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     TRUE_IF_SET);
   cmd.defineOption("N",
     "group-proteins", 		   
-    "Proteins with same probabilities will be grouped (Only valid if option -A is active).",
+    "it activates the grouping of protein with similar connectivity, for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 can be grouped as 1 protein (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
 /*  cmd.defineOption("E",
@@ -298,7 +293,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     TRUE_IF_SET); */   
   cmd.defineOption("C",
     "no-prune-proteins", 		   
-    "Peptides with low score will not be pruned before calculating protein probabilities (Only valid if option -A is active).",
+    "it does not prune peptides with a very low score ( ~0.0) which means that if a peptide with a very low score is mathing two proteins, when we prune the peptide,it will be duplicated to generate two new protein groups (Only valid if option -A is active).",
     "",
     TRUE_IF_SET);
   cmd.defineOption("d",
@@ -310,45 +305,59 @@ bool Caller::parseOptions(int argc, char **argv) {
     "include the experimental mass in the output file",
     "",
     TRUE_IF_SET);
-  
-  /**temporary parameters for benchmarking purposes**/
   cmd.defineOption("Y",
       "lambda",
-      "Setting lambda value for objective function",
+      "Setting lambda value for objective function while grid searching alpha,beta and gamma (Only valid if option -A is active)",
       "value");
-  
   cmd.defineOption("T",
       "threshold",
-      "Setting threshold value for MSE in objective function",
+      "Setting threshold value for MSE in objective function(Only valid if option -A is active)",
       "value");
-  
   cmd.defineOption("E",
       "rocN",
-      "Setting rocN value for ROC curve in objective function",
+      "Setting rocN value for ROC curve in objective function(Only valid if option -A is active)",
       "value");
-  
-  cmd.defineOption("H",
-      "qtype",
-      "Setting way of calulation q value avg(ntargets) or avg(ntargets+ndecoys)",
-      "value");
-    
   cmd.defineOption("Q",
-    "noconservative",
-    "MSE uses the area instead of areasq",
+    "mayusfdr",
+    "Estimate Protein False Discovery Rate using Mayu's method (Only valid if option -A is active)",
     "",
     TRUE_IF_SET);
-  /**temporary variables for calibration **/
-
+  cmd.defineOption("TD",
+      "target-database",
+      "Database with target proteins (If combined target-decoy database leave the decoy-database empty) (Only valid if option -A and -Q are active)",
+      "filename");
+  cmd.defineOption("DD",
+      "decoy-database",
+      "Database with decoy proteins (Only valid if option -A and -Q are active)",
+      "filename");
+  cmd.defineOption("P",
+      "pattern",
+      "Option for single SQT file mode defining the name pattern used for shuffled data base. \
+      Typically set to random_seq",
+      "pattern");
+ 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
   if (cmd.optionSet("A")) {
+    
     calculateProteinLevelProb = true;
     double alpha = -1;
     double beta = -1;
     double gamma = -1;
-    bool tiesAsOneProtein = cmd.optionSet("g");
+    bool noseparate = false; 
+    bool mayusfdr = false;
+    double lambda = 0.15;
+    double threshold = 0.05;
+    unsigned rocN = 0;
+    bool gridSearch = true;
+    unsigned deepness = 3;
+    std::string targetDB = "";
+    std::string decoyDB = "";
+    std::string decoyWC = "";
+    
+    bool tiesAsOneProtein = !cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
     bool grouProteins = cmd.optionSet("N"); 
@@ -356,53 +365,46 @@ bool Caller::parseOptions(int argc, char **argv) {
     //bool noseparate = cmd.optionSet("E");;
     //TODO when noseparate activates function logLikelihoodConstant 
     //in BasicGroupBigraph never ends cos Counter never reaches the end
-    bool noseparate = false; 
-    
-    /**temporary variables for calibration **/
-    double lambda = 0.15;
-    double threshold = 0.05;
-    unsigned rocN = 50;
-    bool conservative = true;
-    unsigned qtype = 1;
+
     if (cmd.optionSet("Y")) {
       lambda = cmd.getDouble("Y", 0.0, 0.5);
     }
     if (cmd.optionSet("T")) {
-      threshold = cmd.getDouble("T", 0.0, 0.1);
+      threshold = cmd.getDouble("T", 0.01, 0.99);
     }
     if (cmd.optionSet("E")) {
-      rocN = cmd.getInt("E", 0, 100);
+      rocN = cmd.getInt("E", 0, 200);
     }
-    if (cmd.optionSet("C"))
-    {
-      conservative = false;
-    }
-    if (cmd.optionSet("H")) {
-      qtype = cmd.getInt("H", 0, 3);
-    }
-    /**temporary variables for calibration **/
     
-    bool noprune = cmd.optionSet("C");
-    bool gridSearch = true;
-    unsigned deepness = 3;
-    if (cmd.optionSet("d")) {
-      deepness = (cmd.getInt("P", 0, 3));
+    if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
+    
+    if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
+    
+    if (cmd.optionSet("DD")) decoyDB = cmd.options["DD"];
+    
+    if (cmd.optionSet("Q"))
+    {
+      mayusfdr = true;
     }
-    //TODO if groupProteins false or noprune true FIDO fails with big datasets
+
+    bool noprune = cmd.optionSet("C");
+
+    if (cmd.optionSet("d")) {
+      deepness = (cmd.getInt("d", 0, 3));
+    }
     if (cmd.optionSet("a")) {
-       alpha = cmd.getDouble("a", 0.00, 0.90);
+       alpha = cmd.getDouble("a", 0.00, 1.0);
      }
     if (cmd.optionSet("b")) {
-       beta = cmd.getDouble("b", 0.00, 0.90);
+       beta = cmd.getDouble("b", 0.00, 1.0);
      }
     if (cmd.optionSet("G")) {
-      gamma = cmd.getDouble("G", 0.00, 0.90);
+      gamma = cmd.getDouble("G", 0.00, 1.0);
     }
-    if(alpha != -1 || beta != -1 || gamma != -1)
-	gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					      grouProteins,noseparate,noprune,gridSearch,deepness,lambda,threshold,rocN,conservative,qtype);
+					      grouProteins,noseparate,noprune,gridSearch,deepness,
+					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -419,8 +421,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     char * tcd;
     string str;
     char * pattern = (char*)"percolator_XXXXXX";
-    string tempW = "c:\\windows\\temp\\";
-    string tempL = "/tmp/";
     #if defined (__MINGW__) || defined (__WIN32__)
 	char *suffix = mkstemp(pattern);
 	if(suffix != NULL){ 
@@ -459,7 +459,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 	exit(-1); // ...error
       }
   }
-  if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
+  
   if (cmd.optionSet("p")) {
     selectedCpos = cmd.getDouble("p", 0.0, 1e127);
   }
@@ -511,7 +511,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     test_fdr = cmd.getDouble("t", 0.0, 1.0);
   }
   if (cmd.optionSet("S")) {
-    Scores::setSeed(cmd.getInt("S", 0, 20000));
+    Scores::setSeed(cmd.getInt("S", 1, 20000));
   }
   if (cmd.optionSet("B")) {
     decoyOut = cmd.options["B"];
@@ -935,6 +935,7 @@ void Caller::train(vector<vector<double> >& w) {
         << test_fdr << " were found when measuring on the test set"
         << endl;
   }
+  
 }
 
 void Caller::fillFeatureSets() {
@@ -1144,6 +1145,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
   }
   bool makeUnique = isUniquePeptideRun && reportUniquePeptides;
   fullset.merge(xv_test, selectionfdr, makeUnique);
+  
   Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
     cerr << "Selecting pi_0=" << fullset.getPi0() << endl;

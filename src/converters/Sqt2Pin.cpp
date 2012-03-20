@@ -44,7 +44,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   call = callStream.str();
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt" << endl << endl;
+  intro << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt " << endl << endl;
   intro << "Where output.xml is where the output will be written (ensure to have read and " << endl;
   intro << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
   intro << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
@@ -140,7 +140,17 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
 		   "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
       "Scheme");
-
+  cmd.defineOption("Z",
+      "combined",
+      "The input will be a target/decoy combined file.",
+      "",
+      TRUE_IF_SET);
+  
+  cmd.defineOption("P",
+      "pattern",
+      "Pattern used to identify the decoy PSMs",
+      "",
+      "pattern");
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -213,9 +223,31 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     }
   }
   
-  if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
-  if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  if (cmd.optionSet("P")) pattern = cmd.options["P"];
+  if (cmd.optionSet("Z")) iscombined = true;
   
+  if(iscombined)
+  {
+    if(cmd.arguments.size() > 1)
+    {
+      std::cerr << "Error, there should be only one argument.\n"; 
+    }
+    else if (!pattern.empty())
+    {
+      parseOptions.reversedFeaturePattern = pattern;
+      parseOptions.iscombined = true;
+      targetFN = cmd.arguments[0];
+    }
+    else
+    {
+      std::cerr << "Error, pattern should contain a valid set of alphanumberic characters.\n"; 
+    }
+  }
+  else
+  {
+    if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
+    if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
       cerr << "Error: too few arguments.";
@@ -351,7 +383,7 @@ int Sqt2Pin::run() {
   vector<FragSpectrumScanDatabase*> databases;
 
   
-  if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
+  if (!parseOptions.iscombined) {
     // First we only search for the maxCharge and minCharge.
     // This done by passing the argument justSearchMaxMinCharge
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
@@ -375,13 +407,14 @@ int Sqt2Pin::run() {
   } else {
     // First we only search for the maxCharge and minCharge.
     //This done by passing the argument justSearchMaxMinCharge
+    std::cerr << "Reading a combined (target-decoy) file .." << std::endl;
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
         0, tmpDirs, tmpFNs);
     // Now we do full parsing of the Sqt file, and translating it to XML
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
+        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::fullParsing, databases,
         0, tmpDirs, tmpFNs);
   }
