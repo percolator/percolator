@@ -462,11 +462,14 @@ void Scores::normalizeScores(double fdr) {
   }
 
   assert(it != scores.end());
-  if(q1<median){
+  assert(q1>median);
+  //NOTE why the assert works but the if does not ..it does not get into the if even though q1 is bigger than median
+  /*if(q1>median){
     cerr << "Error in the input data: too good separation between target "
-        << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
+         << "and decoy PSMs.\n";
     exit(0);
-  }
+  }*/
+  
   double diff = q1-median;
   for (it = scores.begin(); it != scores.end(); ++it) {
     it->score -= q1;

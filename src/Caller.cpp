@@ -28,23 +28,6 @@
 #endif
 #ifdef _WIN32
 #include <fcntl.h>
-char *mkstemp(char *tmpl)
-{
-  char *result = _mktemp(tmpl);
-  if( result == NULL )
-  {
-    printf( "Problem creating the template\n" );
-    if (errno == EINVAL)
-    {
-       printf( "Bad parameter\n");
-    }
-     else if (errno == EEXIST)
-    {
-      printf( "Out of unique filenames\n"); 
-    }
-   }
-  return result;
-}
 #endif
 #include <boost/filesystem.hpp>
 
@@ -336,6 +319,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       Typically set to random_seq",
       "pattern");
  
+  cmd.defineOption("CO",
+    "conservative",
+    "Use squared area instead of normal area when estimating MSE FDR divergence, might give better results with small datasets (Only valid if option -A is active)",
+    "",
+    TRUE_IF_SET);
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -347,7 +336,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     double beta = -1;
     double gamma = -1;
     bool noseparate = false; 
-    bool mayusfdr = false;
     double lambda = 0.15;
     double threshold = 0.05;
     unsigned rocN = 0;
@@ -361,50 +349,41 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
     bool grouProteins = cmd.optionSet("N"); 
-
+    bool conservative = !cmd.optionSet("CO");
+    bool mayusfdr = cmd.optionSet("Q");
+    bool noprune = cmd.optionSet("C");
+    
+    if(mayusfdr && usePi0)
+    {
+      std::cerr << "ERROR : Pi0 and Mayus FDR cannot be used together to estimate Protein Probabilities." << std::endl;
+      exit(0);
+    }
     //bool noseparate = cmd.optionSet("E");;
     //TODO when noseparate activates function logLikelihoodConstant 
     //in BasicGroupBigraph never ends cos Counter never reaches the end
 
     if (cmd.optionSet("Y")) {
-      lambda = cmd.getDouble("Y", 0.0, 0.5);
+      lambda = cmd.getDouble("Y", 0.01, 0.99);
     }
     if (cmd.optionSet("T")) {
       threshold = cmd.getDouble("T", 0.01, 0.99);
     }
     if (cmd.optionSet("E")) {
-      rocN = cmd.getInt("E", 0, 200);
+      rocN = cmd.getInt("E", 25, 1000);
     }
-    
-    if (cmd.optionSet("P")) decoyWC = cmd.options["P"];
-    
+   
+    if (cmd.optionSet("P"))  decoyWC = cmd.options["P"];
     if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
-    
     if (cmd.optionSet("DD")) decoyDB = cmd.options["DD"];
+    if (cmd.optionSet("d"))  deepness = (cmd.getInt("d", 0, 3));
+    if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
+    if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
+    if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
     
-    if (cmd.optionSet("Q"))
-    {
-      mayusfdr = true;
-    }
-
-    bool noprune = cmd.optionSet("C");
-
-    if (cmd.optionSet("d")) {
-      deepness = (cmd.getInt("d", 0, 3));
-    }
-    if (cmd.optionSet("a")) {
-       alpha = cmd.getDouble("a", 0.00, 1.0);
-     }
-    if (cmd.optionSet("b")) {
-       beta = cmd.getDouble("b", 0.00, 1.0);
-     }
-    if (cmd.optionSet("G")) {
-      gamma = cmd.getDouble("G", 0.00, 1.0);
-    }
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					      grouProteins,noseparate,noprune,gridSearch,deepness,
-					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr);
+					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr,conservative);
   }
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -417,47 +396,28 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("e")) {
     readStdIn = true;
-    string tcf = "";
-    char * tcd;
-    string str;
-    char * pattern = (char*)"percolator_XXXXXX";
-    #if defined (__MINGW__) || defined (__WIN32__)
-	char *suffix = mkstemp(pattern);
-	if(suffix != NULL){ 
-	  str = ("\\") + string(suffix);
-	  tcd = new char[str.size() + 1];
-	  std::copy(str.begin(), str.end(), tcd);
-	  tcd[str.size()] = '\0';
-	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
-	  tcf = std::string((dir / "\pin-tmp.xml").string());
-    #else
-	  str =  string(pattern);
-	  tcd = new char[str.size() + 1];
-	  std::copy(str.begin(), str.end(), tcd);
-	  tcd[str.size()] = '\0';
-	  //TOFIX tmpnam is not portable but mkstemp leaves a file as residue
-	  char* pointerToDir = tmpnam(tcd);
-	  //int fd = mkstemp(tcd);
-	  if( pointerToDir ){
-	    //boost::filesystem::path dir = boost::filesystem::temp_directory_path() / pointerToDir;
-	    boost::filesystem::path dir = pointerToDir;
-	    tcf = std::string((dir / "/pin-tmp.xml").string());
-    #endif
-	try{
-          if(boost::filesystem::is_directory(dir)){
-	    boost::filesystem::remove_all(dir);
-	  }
-	  boost::filesystem::create_directory(dir);
-	}
-	catch (boost::filesystem::filesystem_error &e)
-	{
-	  std::cerr << e.what() << std::endl;
-	}	
+    string str = "";
+    try
+    {
+      boost::filesystem::path ph = boost::filesystem::unique_path();
+      boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+      boost::filesystem::path file("pin-tmp.xml");
+      xmlInputFN = std::string((dir / file).string()); 
+      str =  dir.string();
+      xmlInputDir = new char[str.size() + 1];
+      std::copy(str.begin(), str.end(), xmlInputDir);
+      xmlInputDir[str.size()] = '\0';
+      if(boost::filesystem::is_directory(dir))
+      {
+	boost::filesystem::remove_all(dir);
       }
-      else{
-	cerr << "Error: there was a problem creating temporary file.";
-	exit(-1); // ...error
-      }
+	
+      boost::filesystem::create_directory(dir);
+    } 
+    catch (boost::filesystem::filesystem_error &e)
+    {
+      std::cerr << e.what() << std::endl;
+    }	
   }
   
   if (cmd.optionSet("p")) {

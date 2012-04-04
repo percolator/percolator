@@ -9,23 +9,6 @@
 #define  mkdir( D, M )   _mkdir( D )
 #include <fcntl.h>
 #include <errno.h>
-char *mkstemp(char *tmpl)
-{
-  char *result = _mktemp(tmpl);
-  if( result == NULL )
-  {
-    printf( "Problem creating the template\n" );
-    if (errno == EINVAL)
-    {
-       printf( "Bad parameter\n");
-    }
-     else if (errno == EEXIST)
-    {
-      printf( "Out of unique filenames\n"); 
-    }
-   }
-  return result;
-}
 #endif
 #include <boost/filesystem.hpp>
 
@@ -64,42 +47,28 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       string tcf = "";
       char * tcd;
       string str;
-      char * pattern = (char*)"sqt2pin_XXXXXX";
-      #if defined (__MINGW__) || defined (__WIN32__)
-	char *suffix = mkstemp(pattern);
-	if(suffix != NULL){ 
-	  str = ("\\") + string(suffix);
-	  tcd = new char[str.size() + 1];
-	  std::copy(str.begin(), str.end(), tcd);
-	  tcd[str.size()] = '\0';
-	  boost::filesystem::path dir = boost::filesystem::temp_directory_path() / tcd;
-	  tcf = std::string((dir / "\percolator-tmp.tcb").string());
-      #else
-	str =  string(pattern);
+      
+      try
+      {
+        boost::filesystem::path ph = boost::filesystem::unique_path();
+	boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+	boost::filesystem::path file("percolator-tmp.tcb");
+	tcf = std::string((dir / file).string()); 
+	str =  dir.string();
 	tcd = new char[str.size() + 1];
 	std::copy(str.begin(), str.end(), tcd);
 	tcd[str.size()] = '\0';
-	//TODO tmpnam is not portable but mkstemp leaves a file as residue
-	char* pointerToDir = tmpnam(tcd);
-	if( pointerToDir ){
-	  boost::filesystem::path dir = pointerToDir;
-	  tcf = std::string((dir / "/percolator-tmp.tcb").string());
-      #endif
-	try{
-          if(boost::filesystem::is_directory(dir)){
-	    boost::filesystem::remove_all(dir);
-	  }
-	  boost::filesystem::create_directory(dir);
-	}
-	catch (boost::filesystem::filesystem_error &e)
+	if(boost::filesystem::is_directory(dir))
 	{
-	  std::cerr << e.what() << std::endl;
-	}	
-      }
-      else{
-	cerr << "Error: there was a problem creating temporary file.";
-	exit(-1); // ...error
-      }
+	  boost::filesystem::remove_all(dir);
+	}
+	
+	boost::filesystem::create_directory(dir);
+      } 
+      catch (boost::filesystem::filesystem_error &e)
+      {
+	std::cerr << e.what() << std::endl;
+      }	
 
       DBtDirs.resize(lineNumber_par+1);
       DBtDirs[lineNumber_par]=tcd;
@@ -190,7 +159,7 @@ void SqtReader::readSQT(const std::string fn,
 	  ++n;
 	}
 	else if( !isDecoy || (po.reversedFeaturePattern.empty() ||
-	    ((line.find(po.reversedFeaturePattern, 0) != std::string::npos) == 1)))
+          ((line.find(po.reversedFeaturePattern, 0) != std::string::npos) == 1)))
 	{
 	  ++ms;
 	  ++n;
@@ -260,7 +229,7 @@ void SqtReader::readSQT(const std::string fn,
 
       ++lines;
       buff << line << std::endl;
-      if(po.iscombined && (int)theMs.size() < po.hitsPerSpectrum * 2)
+      if(po.iscombined && (int)theMs.size() < po.hitsPerSpectrum)
 	theMs.insert(ms - 1);
       else if ((int)theMs.size() < po.hitsPerSpectrum &&
           ( !isDecoy || ( po.reversedFeaturePattern.empty() ||
@@ -500,12 +469,14 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
 
     if (line.at(0) == 'L' && !gotL) {
       if (instr.peek() != 'L') gotL = true;
+      
+      line = line.substr(0, 2) + getRidOfUnprintables(line.substr(2));
+      linestr.clear();
+      linestr.str(line);
+      linestr >> tmp >> protein;
+      
       if(po.iscombined)
       {
-	line = line.substr(0, 2) + getRidOfUnprintables(line.substr(2));
-	linestr.clear();
-	linestr.str(line);
-	linestr >> tmp >> protein;
 	if( (line.find(po.reversedFeaturePattern) != std::string::npos) )
 	  proteinIdsDecoys.push_back(protein);
 	else
@@ -513,10 +484,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
       }
       else 
       {
-	line = line.substr(0, 2) + getRidOfUnprintables(line.substr(2));
-	linestr.clear();
-	linestr.str(line);
-	linestr >> tmp >> protein;
 	proteinIds.push_back(protein);
       }
     }
@@ -560,9 +527,10 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
       peptideS.erase(ix,1);      
     }  
   }
-  
+
   if(!po.iscombined)
   {
+    
     percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
 	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);

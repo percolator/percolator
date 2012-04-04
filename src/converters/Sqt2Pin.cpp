@@ -145,7 +145,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "The input will be a target/decoy combined file.",
       "",
       TRUE_IF_SET);
-  
   cmd.defineOption("P",
       "pattern",
       "Pattern used to identify the decoy PSMs",
@@ -231,6 +230,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     if(cmd.arguments.size() > 1)
     {
       std::cerr << "Error, there should be only one argument.\n"; 
+      exit(-1);
     }
     else if (!pattern.empty())
     {
@@ -241,12 +241,19 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     else
     {
       std::cerr << "Error, pattern should contain a valid set of alphanumberic characters.\n"; 
+      exit(-1);
     }
   }
   else
   {
     if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
     if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+    
+    if(targetFN == "" || decoyFN == "")
+    {
+      std::cerr << "Error, one of the input files is missing.\n"; 
+      exit(-1); 
+    }
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -378,14 +385,14 @@ int Sqt2Pin::run() {
   int maxCharge = -1;
   int minCharge = 10000;
 
-  std::cerr << "Reading input from sqt file(s):\n";
- 
   vector<FragSpectrumScanDatabase*> databases;
 
-  
   if (!parseOptions.iscombined) {
     // First we only search for the maxCharge and minCharge.
     // This done by passing the argument justSearchMaxMinCharge
+    
+    std::cerr << "Reading input from sqt files:\n";
+    
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
@@ -407,7 +414,9 @@ int Sqt2Pin::run() {
   } else {
     // First we only search for the maxCharge and minCharge.
     //This done by passing the argument justSearchMaxMinCharge
-    std::cerr << "Reading a combined (target-decoy) file .." << std::endl;
+    
+    std::cerr << "Reading input from a combined (target-decoy) sqt file .." << std::endl;
+    
     SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
         &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,

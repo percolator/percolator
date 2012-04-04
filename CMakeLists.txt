@@ -37,7 +37,7 @@ MESSAGE( STATUS )
 # NAME AND VERSION
 ###############################################################################
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.6)
 project(PERCOLATOR)
  
 # VERSION AND NAMESPACES

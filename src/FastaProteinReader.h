@@ -87,8 +87,7 @@ public:
   void parseDataBase(const char *seqfile);
   unsigned getNumberBins();
   unsigned getBinProteins(unsigned bin);
-  unsigned countTargetProteins(unsigned bin,std::set<std::string> proteins);
-  unsigned countDecoyProteins(unsigned bin,std::set<std::string> proteins);
+  unsigned countProteins(unsigned bin,std::set<std::string> proteins);
   double estimateFDR(std::set<std::string> target,std::set<std::string> decoy);
   void setDecoyPrefix(std::string);
   void setTargetDecoyRatio(double ratio);
@@ -117,12 +116,9 @@ private:
   double targetDecoyRatio;
   bool binequalDeepth;
   std::string decoy_prefix;
-  std::map<unsigned,std::vector<std::string> > binnedProteinsTargets;
-  std::map<unsigned,std::vector<std::string> > binnedProteinsDecoys;
-  std::multimap<double,std::string> groupedProteinsTargets;
-  std::multimap<double,std::string> groupedProteinsDecoys;
+  std::map<unsigned,std::vector<std::string> > binnedProteins;
+  std::multimap<double,std::string> groupedProteins;
   std::map<char, double> massMap_;
   std::vector<double> lenghts; 
- 
 };
 #endif /* FASTAPROTEINREADER_H_*/

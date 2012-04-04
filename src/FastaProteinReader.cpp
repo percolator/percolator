@@ -53,6 +53,16 @@
 #include <FastaProteinReader.h>
 #include <math.h>
 
+
+struct RetrieveValue
+{
+  template <typename T>
+  typename T::second_type operator()(T keyValuePair) const
+  {
+    return keyValuePair.second;
+  }
+};
+
 double stirling_log_factorial(double n)
 {
   double PI = 3.141592653589793;
@@ -69,12 +79,10 @@ double exact_log_factorial(double n)
 
 double log_factorial(double n)
 {
-  double log_fact = 0;
   if(n < 1000)
-    log_fact = exact_log_factorial(n);
+    return exact_log_factorial(n);
   else
-    log_fact = stirling_log_factorial(n);
-  return log_fact;
+    return stirling_log_factorial(n);
 }
 
 double log_binomial(double n,double k)
@@ -86,8 +94,8 @@ double log_binomial(double n,double k)
 double hypergeometric(int x,int N,int w,int d)
 {
   //natural logarithm of the probability
-  double log_prob = 0;
-  log_prob = log_binomial(w,x) + log_binomial(N-w,d-x) - log_binomial(N,d);
+  if(d > 0)return exp(log_binomial(w,x) + log_binomial(N-w,d-x) - log_binomial(N,d));
+  else return 0.0;
 }
 
 
@@ -189,10 +197,9 @@ FastaProteinReader::FastaProteinReader(unsigned int __minpeplength, unsigned int
 
 FastaProteinReader::~FastaProteinReader()
 {
-  FreeAll(binnedProteinsDecoys);
-  FreeAll(binnedProteinsTargets);
-  FreeAll(groupedProteinsDecoys);
-  FreeAll(groupedProteinsTargets);
+  FreeAll(binnedProteins);
+  FreeAll(groupedProteins);
+  FreeAll(lenghts);
 }
 
 
@@ -211,6 +218,7 @@ void FastaProteinReader::parseDataBase(const char* seqfile,const char* seqfileDe
   std::map<std::string,std::string> targetProteins;
   std::map<std::string,std::string> decoyProteins;
   
+  //NOTE I do not parse the gene names because there is not standard definiton for it
   try
   {
     ffp = OpenFASTA(seqfile);
@@ -231,7 +239,6 @@ void FastaProteinReader::parseDataBase(const char* seqfile,const char* seqfileDe
       exit(-1);
     }
     
- 
     ffpDecoy = OpenFASTA(seqfileDecoy);
     
     if(ffpDecoy != NULL)
@@ -256,26 +263,20 @@ void FastaProteinReader::parseDataBase(const char* seqfile,const char* seqfileDe
     e.what();
   }
   
-  if(targetProteins.size() != decoyProteins.size())
+  /*if(targetProteins.size() != decoyProteins.size())
   {
     targetDecoyRatio = (double)targetProteins.size() / (double)decoyProteins.size();
-    int extra = targetProteins.size() - decoyProteins.size();
-    while(extra)
-    {
-      decoyProteins.insert(std::make_pair<std::string,std::string>("",""));
-      extra--;
-    }
   }
   else
-    targetDecoyRatio = 1.0;
+    targetDecoyRatio = 1.0;*/
   
   if(decoyProteins.size() == 0 || targetProteins.size() == 0)
   {
-    std::cerr <<  "Error estimating Protein FDR, the database is empty or the number of target and decoys are different\n" << std::endl;
+    std::cerr <<  "Error parsing the databases, one of the databases given is empty\n" << std::endl;
     exit(-1);
   }
   else if(VERB > 2)
-    std::cerr << "found " << targetProteins.size() << " target proteins in DB and " << decoyProteins.size() << " decoys proteins in DB" << std::endl;
+    std::cerr << "Read " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database" << std::endl;
   
   correctIdenticalSequences(targetProteins,decoyProteins);
 }
@@ -324,26 +325,20 @@ void FastaProteinReader::parseDataBase(const char* seqfile)
     e.what();
   }
   
-  if(targetProteins.size() != decoyProteins.size())
+  /*if(targetProteins.size() != decoyProteins.size())
   {
     targetDecoyRatio = (double)targetProteins.size() / (double)decoyProteins.size();
-    int extra = targetProteins.size() - decoyProteins.size();
-    while(extra)
-    {
-      decoyProteins.insert(std::make_pair<std::string,std::string>("",""));
-      extra--;
-    }
   }
   else
-    targetDecoyRatio = 1.0;
+    targetDecoyRatio = 1.0;*/
     
   if(decoyProteins.size() == 0 || targetProteins.size() == 0)
   {
-    std::cerr << "Error, the database is empty or the number of target and decoys are different\n";
+    std::cerr << "Error parsing the database, the database given is empty\n";
     exit(-1);
   }
   else if(VERB > 2)
-    std::cerr << "found " << targetProteins.size() << " target proteins in DB and " << decoyProteins.size() << " decoys proteins in DB" << std::endl;
+    std::cerr << "Read " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database" << std::endl;
   
   correctIdenticalSequences(targetProteins,decoyProteins);
   
@@ -354,23 +349,18 @@ void FastaProteinReader::correctIdenticalSequences(std::map<std::string,std::str
 {
   std::map<std::string,std::string>::const_iterator it,it2;
   
-  groupedProteinsDecoys.clear();
-  groupedProteinsTargets.clear();
+  groupedProteins.clear();
   lenghts.clear();
-  
   it = targetProteins.begin();
   it2 = decoyProteins.begin();
   
   std::set<std::string> previouSeqs;
   double length = 0.0;
   
-  for(;it != targetProteins.end(); it++,it2++)
+  for(it = targetProteins.begin() ;it != targetProteins.end(); it++)
   {
     std::string targetSeq = (*it).second;
     std::string targetName = (*it).first;
-    std::string decoySeq = (*it2).second;
-    std::string decoyName = (*it2).first;
-    
     if(previouSeqs.count(targetSeq) > 0)
     {
       length = 0.0;
@@ -380,9 +370,25 @@ void FastaProteinReader::correctIdenticalSequences(std::map<std::string,std::str
       length = calculateProtLength(targetSeq);
       previouSeqs.insert(targetSeq);
     }
-    
-    groupedProteinsTargets.insert(std::make_pair<double,std::string>(length,targetName));
-    groupedProteinsDecoys.insert(std::make_pair<double,std::string>(length,decoyName));
+    groupedProteins.insert(std::make_pair<double,std::string>(length,targetName));
+    lenghts.push_back(length);
+  }
+  
+  for(it2 = decoyProteins.begin() ;it2 != decoyProteins.end(); it2++)
+  {
+    std::string decoySeq = (*it2).second;
+    std::string decoyName = (*it2).first;
+        
+    if(previouSeqs.count(decoySeq) > 0)
+    {
+      length = 0.0;
+    }
+    else
+    {
+      length = calculateProtLength(decoySeq);
+      previouSeqs.insert(decoySeq);
+    }
+    groupedProteins.insert(std::make_pair<double,std::string>(length,decoyName));
     lenghts.push_back(length);
   }
   
@@ -396,31 +402,35 @@ void FastaProteinReader::groupProteinsGene()
 
 double FastaProteinReader::estimateFDR(std::set<std::string> target,std::set<std::string> decoy)
 {   
-    if(binnedProteinsDecoys.size() > 0)
-        FreeAll(binnedProteinsDecoys);
-    if(binnedProteinsTargets.size() > 0)
-	FreeAll(binnedProteinsTargets);
-    
+    if(binnedProteins.size() > 0)
+    {
+       FreeAll(binnedProteins);
+    } 
     if(binequalDeepth)
+    {
       binProteinsEqualDeepth();
+    }
     else
+    {
       binProteinsEqualWidth();
+    }
     
     if(VERB > 2)
-      std::cerr << "There are : " << target.size() << " target proteins and " << decoy.size() << " decoys proteins with high confident PSMs" << std::endl;    
+      std::cerr << "There are : " << target.size() << " target proteins and " << decoy.size() << " decoys proteins that contains high confident PSMs" << std::endl;    
     
     double fdr = 0.0;
     double fptol = 0.0;
     
     for(unsigned i = 0; i < nbins; i++)
     {
-      unsigned  numberTP = countTargetProteins(i,target);
-      unsigned  numberFP = countDecoyProteins(i,decoy);
+      unsigned  numberTP = countProteins(i,target);
+      unsigned  numberFP = countProteins(i,decoy);
       unsigned  N = getBinProteins(i);
       double fp = estimatePi0HG(N,numberTP,targetDecoyRatio*numberFP);
+      
       if(VERB > 2)
 	std::cerr << "\nEstimating FDR for bin " << i << " with " << numberFP << " Decoy proteins, " 
-	      << numberTP << " Target proteins, and " << N << " Total Target Proteins " << " with exp fp " << fp << std::endl;
+	      << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
       if(numberTP > 0)
       {
 	fdr += fp / (double)numberTP;
@@ -439,96 +449,82 @@ void FastaProteinReader::binProteinsEqualDeepth()
   //assuming lengths sorted from less to bigger
   
   std::sort(lenghts.begin(),lenghts.end());
-  
   unsigned entries = lenghts.size();
   //integer divion and its residue
   unsigned nr_bins = (unsigned)((entries - entries%nbins) / nbins);
   unsigned residues = entries % nbins;
+  if(VERB > 2)
+    std::cerr << " Binning proteins using equal deepth " << std::endl;
   while(residues >= nbins && residues != 0)
   {
     nr_bins += (unsigned)((residues - residues%nbins) / nbins);
     residues = residues % nbins; 
   }
-  
   std::vector<double> values;
-  for(unsigned i = 0; i<nbins; i++)
+  for(unsigned i = 0; i < nbins; i++)
   {
     unsigned index = (unsigned)(nr_bins * i);
     double value = lenghts[index];
     values.push_back(value);
+    if(VERB > 2)
+      std::cerr << " Value of bin : " << i << " = " << value << std::endl;
   }
-  
   //there are some elements at the end that are <= nbins that could not be fitted
   if(residues > 0) values.push_back(lenghts.back());
-  else  nbins--;
+  else nbins--;
   
-  std::multimap<double,std::string>::iterator it,it2,itlow,itlow2,itup;
-
+  std::multimap<double,std::string>::iterator itlow,itup;
   for(unsigned i = 0; i < nbins; i++)
   {
     double lowerbound = values[i];
     double upperbound = values[i+1];
-    itlow = groupedProteinsTargets.lower_bound(lowerbound);  
-    itlow2 = groupedProteinsDecoys.lower_bound(lowerbound); 
-    itup =  groupedProteinsTargets.upper_bound(upperbound);
-    std::vector<std::string> targetproteins;
-    std::vector<std::string> decoyproteins;
-    for ( it=itlow,it2=itlow2 ; it != itup; it++,it2++ )
-    {
-      targetproteins.push_back((*it).second);
-      decoyproteins.push_back((*it2).second);
-    }
-    binnedProteinsTargets.insert(std::make_pair<unsigned,std::vector<std::string> >(i,targetproteins));
-    binnedProteinsDecoys.insert(std::make_pair<unsigned,std::vector<std::string> >(i,decoyproteins));
+    itlow = groupedProteins.lower_bound(lowerbound);
+    itup =  groupedProteins.upper_bound(upperbound);
+    std::vector<std::string> proteins;
+    std::transform(itlow, itup, std::back_inserter(proteins), RetrieveValue());
+    binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
   }
-  
+  FreeAll(values);
 }
     
 void FastaProteinReader::binProteinsEqualWidth()
 {
   std::sort(lenghts.begin(),lenghts.end());
-  
   double min = lenghts.front();
   double max = lenghts.back();
   std::vector<double> values;
   int span = abs(max - min);
   double part = span / nbins;
-  
+  if(VERB > 2)
+    std::cerr << " Binning proteins using equal width " << std::endl;
   for(unsigned i = 0; i < nbins; i++)
   {
-    values.push_back(min + i*part);
+    unsigned index = (unsigned) min + i*part;
+    double value = lenghts[index];
+    values.push_back(value);
+    if(VERB > 2)
+      std::cerr << " Value of bin : " << i << " = " << value << std::endl;
   }
   values.push_back(max);
-  
-  std::multimap<double,std::string>::iterator it,it2,itlow,itlow2,itup;
-
+  std::multimap<double,std::string>::iterator itlow,itup;
   for(unsigned i = 0; i < nbins; i++)
   {
     double lowerbound = values[i];
     double upperbound = values[i+1];
-    itlow = groupedProteinsTargets.lower_bound(lowerbound);  
-    itlow2 = groupedProteinsDecoys.lower_bound(lowerbound); 
-    itup =  groupedProteinsTargets.upper_bound(upperbound);
-    std::vector<std::string> targetproteins;
-    std::vector<std::string> decoyproteins;
-    for ( it=itlow,it2=itlow2 ; it != itup; it++,it2++ )
-    {
-      targetproteins.push_back((*it).second);
-      decoyproteins.push_back((*it2).second);
-    }
-    binnedProteinsTargets.insert(std::make_pair<unsigned,std::vector<std::string> >(i,targetproteins));
-    binnedProteinsDecoys.insert(std::make_pair<unsigned,std::vector<std::string> >(i,decoyproteins));
+    itlow = groupedProteins.lower_bound(lowerbound);
+    itup =  groupedProteins.upper_bound(upperbound);
+    std::vector<std::string> proteins;
+    std::transform(itlow, itup, std::back_inserter(proteins), RetrieveValue());
+    binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
   }
+  FreeAll(values);
 }
 
-double FastaProteinReader::estimatePi0HG(unsigned N,unsigned TP,unsigned FP)
+double FastaProteinReader::estimatePi0HG(unsigned N,unsigned targets,unsigned cf)
 {
-
-  unsigned cf = FP;
   std::vector<double> logprob;
   double finalprob = 0;
   double fdr = 0;
-  double targets = TP;
   for(unsigned fp = 0; fp <= cf; fp++)
   {
     unsigned tp = targets - fp;
@@ -537,7 +533,7 @@ double FastaProteinReader::estimatePi0HG(unsigned N,unsigned TP,unsigned FP)
     logprob.push_back(prob);
   }
   //normalization
-  double sum = std::accumulate(logprob.rbegin(), logprob.rend(), 0);
+  double sum = (double)std::accumulate(logprob.rbegin(), logprob.rend(), 0.0);
   std::transform(logprob.begin(), logprob.end(), 
 		 logprob.begin(), std::bind2nd(std::divides<double> (),sum));
   
@@ -637,9 +633,9 @@ unsigned int FastaProteinReader::calculateProtLength(std::string protsequence)
 }
 
 
-unsigned int FastaProteinReader::countDecoyProteins(unsigned int bin, std::set< std::string > proteins)
+unsigned int FastaProteinReader::countProteins(unsigned int bin, std::set< std::string > proteins)
 {
-  std::vector<std::string> proteinsBins = binnedProteinsDecoys[bin];
+  std::vector<std::string> proteinsBins = binnedProteins[bin];
   
   unsigned count = 0;
   for(std::set<std::string>::const_iterator it = proteins.begin(); it != proteins.end(); it++)
@@ -655,26 +651,9 @@ unsigned int FastaProteinReader::countDecoyProteins(unsigned int bin, std::set< 
 }
 
 
-unsigned int FastaProteinReader::countTargetProteins(unsigned int bin, std::set< std::string > proteins)
-{
-  std::vector<std::string> proteinsBins = binnedProteinsTargets[bin];
-  
-  unsigned count = 0;
-  for(std::set<std::string>::const_iterator it = proteins.begin(); it != proteins.end(); it++)
-  {
-    if(std::find(proteinsBins.begin(), proteinsBins.end(), *it)!=proteinsBins.end())
-    {
-      count++;
-    }
-  }
-  FreeAll(proteinsBins);
-  return count;
-
-}
-
 unsigned int FastaProteinReader::getBinProteins(unsigned int bin)
 {
-  return binnedProteinsTargets[bin].size();
+  return binnedProteins[bin].size();
 }
 
 
@@ -753,33 +732,3 @@ void FastaProteinReader::initMassMap(bool useAvgMass){
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -26,7 +26,6 @@
 #include "converters/MSToolkit/MSToolkitTypes.h"
 #include <iterator>
 #include "FastaProteinReader.h"
-#include <tcutil.h>
 #include <vector>
 
 
@@ -289,16 +288,17 @@ class ProteinProbEstimator {
   
   public:
 
-    const static double default_gamma = 0.5; //0.01;
-    const static double default_alpha = 0.1; //0.01;
+    const static double default_gamma = 0.5; 
+    const static double default_alpha = 0.1; 
     const static double default_beta = 0.01;
-    const static double psmThresholdMayu = 1.0;
+    const static double psmThresholdMayu = 0.05;
+    const static double thresholdRoc = 0.05;
     
     ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
 			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
-			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false);
+			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, bool conservative = false);
     
     ~ProteinProbEstimator();
     
@@ -366,10 +366,9 @@ class ProteinProbEstimator {
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
     int countTargets(std::vector<std::string> proteinList);
     int countDecoys(std::vector<std::string> proteinList);
-    std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPSM(double threshold);
-    std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPSM(std::multimap<double, std::vector<std::string> > pepProteins,
-									      double threshold);
+    std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPeptides(double threshold);
     double estimatePi0Bin(unsigned FP,unsigned TP);
+    
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
     FastaProteinReader *fastReader;
@@ -388,7 +387,7 @@ class ProteinProbEstimator {
     bool dogridSearch;
     bool mayufdr;
     bool updateRocN;
-    double fdr;
+    bool conservative;
     double pi0;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
