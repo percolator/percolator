@@ -24,6 +24,11 @@ class Numerical
       epsilon = eps;
     }
 
+  virtual ~Numerical()
+    {
+      
+    }
+    
   bool isPos(double d);
   bool isNonpos(double d);
   bool isNeg(double d);

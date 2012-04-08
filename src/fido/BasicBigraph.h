@@ -26,6 +26,10 @@ public:
       sectionMark(sM)
     {
     }
+    
+    ~GraphNode()
+    {
+    }
   };
 
   struct GraphLayer
@@ -36,6 +40,17 @@ public:
     Array<int> sections;
     Array<Set> sectionMarks;
 
+    ~GraphLayer()
+    {
+      /*FreeAll(names);
+      FreeAll(weights);
+      FreeAll(sections);
+      for(unsigned i = 0; i < associations.size(); i++)
+	FreeAll(associations[i]);
+      for(unsigned i = 0; i < sectionMarks.size(); i++)
+	FreeAll(sectionMarks[i]);*/
+    }
+    
     friend ostream & operator <<(ostream & os, const GraphLayer & gl)
     {
       os << "\t" << gl.associations << endl << "\t" << gl.weights << endl << "\t" << gl.names << endl;
@@ -93,6 +108,7 @@ public:
   }
 
   BasicBigraph();
+  virtual ~BasicBigraph();
 
   void printProteinWeights() const;
 

@@ -119,6 +119,8 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   {
     updateRocN = true;
   }
+  
+  proteinGraph = new GroupPowerBigraph (peptideScores,alpha,beta,gamma,groupProteins,noseparate,noprune);
 }
 
 ProteinProbEstimator::~ProteinProbEstimator()
@@ -166,7 +168,7 @@ void ProteinProbEstimator::run(){
   { 
     /** MAYUS method for estimation of Protein FDR **/
     
-    fastReader = new FastaProteinReader();
+    fastReader = new ProteinFDRestimator();
     
     /* Default configuration (changeable by functions)
      * min peptide lenght = 4
@@ -182,7 +184,7 @@ void ProteinProbEstimator::run(){
     
     if(decoyPattern.size() > 0) fastReader->setDecoyPrefix(decoyPattern);
     
-    std::cerr << "Estimating Protein FDR using Mayu's method..." << std::endl;
+    std::cerr << "Estimating Protein FDR using Mayu's method described in : http://prottools.ethz.ch/muellelu/web/LukasReiter/Mayu/" << std::endl;
     
     if(decoyDB == "" && targetDB != "")
       fastReader->parseDataBase(targetDB.c_str());
@@ -231,12 +233,12 @@ void ProteinProbEstimator::run(){
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
   }
-  else
+  /*else
   {
       alpha = default_alpha;
       beta = default_beta;
       gamma = default_gamma;
-  }
+  }*/
   if(VERB > 1) {
       cerr << "\nThe following parameters have been chosen;\n";
       cerr << "gamma = " << gamma << endl;
@@ -245,7 +247,8 @@ void ProteinProbEstimator::run(){
       cerr << "\nProtein level probabilities will now be calculated\n";
   }
 
-  proteinGraph = new GroupPowerBigraph (peptideScores,alpha,beta,gamma,groupProteins,noseparate,noprune);
+  //proteinGraph = new GroupPowerBigraph (peptideScores,alpha,beta,gamma,groupProteins,noseparate,noprune);
+  proteinGraph->setAlphaBetaGamma(alpha,beta,gamma);
   proteinGraph->getProteinProbs();
   pepProteins.clear();
   pepProteins = proteinGraph->getProteinProbsPercolator();
@@ -259,6 +262,7 @@ void ProteinProbEstimator::run(){
     if(pi0 <= 0.0 || pi0 > 1.0) pi0 = *qvalues.rbegin();
   }
   
+  //if(ProteinProbEstimator::getOutputEmpirQval())
   estimateQValuesEmp();
   updateProteinProbabilities();
   proteinGraph->printProteinWeights();
@@ -413,7 +417,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level)
     unsigned nP = 0;
     for (std::map<const std::string,Protein*>::const_iterator myP = proteins.begin(); 
 	 myP != proteins.end(); ++myP) {
-	 if(myP->second->getQ() < level && !myP->second->getIsDecoy()) nP++;
+	 if(myP->second->getQ() <= level && !myP->second->getIsDecoy()) nP++;
     }
     return nP;
 }
@@ -423,7 +427,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level)
     unsigned nP = 0;
     for (std::map<const std::string,Protein*>::const_iterator myP = proteins.begin(); 
 	 myP != proteins.end(); ++myP) {
-	 if(myP->second->getQ() < level && myP->second->getIsDecoy()) nP++;
+	 if(myP->second->getQ() <= level && myP->second->getIsDecoy()) nP++;
     }
     return nP;
 }
@@ -459,7 +463,7 @@ void ProteinProbEstimator::estimateQValues()
     }    
     else
     {
-      for(unsigned i=0; i<it->second.size(); i++)
+      for(unsigned i=0; i < it->second.size(); i++)
       {	
 	//NOTE if I count only the target proteins, then I have to assign  the same qvalue to decoy proteins
 	/*if(falsePosSet.count(it->second[i]) == 0)
@@ -625,14 +629,11 @@ void ProteinProbEstimator::setTargetandDecoysNames()
 
 void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __beta)
 {
-
-  //NOTE a good other way to get information to calibrate is to the compare the distribution of the not confident proteins is similar 
-  //to the distribution of decoys proteins
-  double gamma_temp, alpha_temp, beta_temp;
-  gamma_temp = alpha_temp = beta_temp = 0.01;
-
-  GroupPowerBigraph *gpb = new GroupPowerBigraph( peptideScores, default_alpha, default_beta,
-						  default_gamma,groupProteins,noseparate,noprune);
+  
+  /*double gamma_temp, alpha_temp, beta_temp;
+  gamma_temp = alpha_temp = beta_temp = 0.01;*/
+  /*GroupPowerBigraph *gpb = new GroupPowerBigraph( peptideScores, default_alpha, default_beta,
+						  default_gamma,groupProteins,noseparate,noprune);*/
 
   double gamma_best, alpha_best, beta_best;
 	 gamma_best = alpha_best = beta_best = -1.0;
@@ -688,10 +689,10 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	if(VERB > 2)
 	  std::cerr << "Grid searching : " << alpha << " " << beta << " " << gamma << std::endl;
 	
-	gpb->setAlphaBetaGamma(alpha, beta, gamma);
-	gpb->getProteinProbs();
-	pair< vector< vector< string > >, std::vector< double > > NameProbs;
-	NameProbs = gpb->getProteinProbsAndNames();
+	proteinGraph->setAlphaBetaGamma(alpha, beta, gamma);
+	proteinGraph->getProteinProbs();
+	std::pair< std::vector< std::vector< std::string > >, std::vector< double > > NameProbs;
+	NameProbs = proteinGraph->getProteinProbsAndNames();
 	std::vector<double> prot_probs = NameProbs.second;
 	std::vector<std::vector<std::string> > prot_names = NameProbs.first;
 	
@@ -723,7 +724,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
     }
   }
   
-  if(gpb)delete gpb;
+  //if(gpb)delete gpb;
   alpha = alpha_best;
   beta = beta_best;
   gamma = gamma_best;
@@ -803,7 +804,6 @@ double ProteinProbEstimator::getROC_N(const std::vector<int> & fpArray, const st
       
       if ( fpArray[k] != fpArray[k+1] )
 	{
-	  // this line segment is a function
 	  double currentArea = area(fpArray[k], tpArray[k], fpArray[k+1], tpArray[k+1], N);
 	  rocNvalue += currentArea;
 	}
@@ -1054,7 +1054,7 @@ int ProteinProbEstimator::countTargets(std::vector<std::string> proteinList)
   
   for(int i = 0; i < proteinList.size(); i++)
   {
-    if(truePosSet.count(proteinList[i]) > 0)
+    if(truePosSet.find(proteinList[i]) != truePosSet.end())
     {
       count++;
     }
@@ -1069,7 +1069,7 @@ int ProteinProbEstimator::countDecoys(std::vector<std::string> proteinList)
   
   for(int i = 0; i < proteinList.size(); i++)
   {
-    if(falsePosSet.count(proteinList[i]) > 0)
+    if(falsePosSet.find(proteinList[i]) != falsePosSet.end())
     {
       count++;
     }
@@ -1177,20 +1177,3 @@ void ProteinProbEstimator::setThreshold(double threshold)
 {
   this->threshold = threshold;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

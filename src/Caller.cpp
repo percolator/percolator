@@ -111,11 +111,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "the output will be written (ensure to have read and write access on the file)." << endl;
   // init
   CommandLineParser cmd(intro.str());
-  cmd.defineOption("A",
-      "protein",
-      "output protein level probabilities",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("X",
       "xmloutput",
       "path to file in xml-output format (pout)",
@@ -189,18 +184,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Use unit normalization [0-1] instead of standard deviation normalization",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("a",
-      "alpha",
-      "Probability with which a present protein emits an associated peptide (to be used jointly with the -A option). Set by grid search of not specified.",
-      "value");
-  cmd.defineOption("b",
-      "beta",
-      "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search of not specified",
-      "value");
-  cmd.defineOption("G",
-      "gamma",
-      "Prior probability of that a protein is present in the sample ( to be used with the -A option). Set by grid search of not specified",
-      "value");
   cmd.defineOption("R",
       "test-each-iteration",
       "Measure performance on test set each iteration",
@@ -249,93 +232,122 @@ bool Caller::parseOptions(int argc, char **argv) {
       "check time performance",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("M",
+      "exp-mass",
+      "include the experimental mass in the output file",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("A",
+      "protein",
+      "output protein level probabilities",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("a",
+      "alpha",
+      "Probability with which a present protein emits an associated peptide (to be used jointly with the -A option) \
+       Set by grid search if not specified.",
+      "value");
+  cmd.defineOption("b",
+      "beta",
+      "Probability of the creation of a peptide from noise (to be used jointly with the -A option). Set by grid search if not specified",
+      "value");
+  cmd.defineOption("G",
+      "gamma",
+      "Prior probability of that a protein is present in the sample ( to be used with the -A option). Set by grid search if not specified",
+      "value");
   cmd.defineOption("g",
-    "allow-protein-group",
-    "treat ties as if it were one protein (Only valid if option -A is active).",
-    "",
-    TRUE_IF_SET);
+      "allow-protein-group",
+      "treat ties as if it were one protein (Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("I",
-    "protein-level-pi0",
-    "use pi_0 value when calculating empirical q-values (Only valid if option -A is active).",
-    "", 
-    TRUE_IF_SET);
+      "protein-level-pi0",
+      "use pi_0 value when calculating empirical q-values (no effect if option Q is activated) (Only valid if option -A is active).",
+      "", 
+      TRUE_IF_SET);
   cmd.defineOption("q",
-    "empirical-protein-q", 		   
-    "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
-    "",
-    TRUE_IF_SET);
+      "empirical-protein-q", 		   
+      "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("N",
-    "group-proteins", 		   
-    "it activates the grouping of protein with similar connectivity, for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 can be grouped as 1 protein (Only valid if option -A is active).",
-    "",
-    TRUE_IF_SET);
-/*  cmd.defineOption("E",
-    "no-separate-proteins", 		   
-    "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
-    "",
-    TRUE_IF_SET); */   
+      "group-proteins", 		   
+      "activates the grouping of proteins with similar connectivity, \
+       for example if proteins P1 and P2 have the same peptides matching both of them P1 and P2 can be grouped as 1 protein \
+       (Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("E",
+      "no-separate-proteins", 		   
+      "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET); 
   cmd.defineOption("C",
-    "no-prune-proteins", 		   
-    "it does not prune peptides with a very low score ( ~0.0) which means that if a peptide with a very low score is mathing two proteins, when we prune the peptide,it will be duplicated to generate two new protein groups (Only valid if option -A is active).",
-    "",
-    TRUE_IF_SET);
+      "no-prune-proteins", 		   
+      "it does not prune peptides with a very low score ( ~0.0) which means that if a peptide with a very low score is mathing two proteins, \
+       when we prune the peptide,it will be duplicated to generate two new protein groups (Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("d",
       "deepness",
-      "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
+      "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) \
+       of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
       "value");
-  cmd.defineOption("M",
-    "exp-mass",
-    "include the experimental mass in the output file",
-    "",
-    TRUE_IF_SET);
   cmd.defineOption("Y",
       "lambda",
-      "Setting lambda value for objective function while grid searching alpha,beta and gamma (Only valid if option -A is active)",
+      "Setting lambda value for objective function ( ROC_N * lambda - ( 1-lambda * MSE) ) \
+       while grid searching alpha,beta and gamma (Only valid if option -A is active)",
       "value");
   cmd.defineOption("T",
       "threshold",
-      "Setting threshold value for MSE in objective function(Only valid if option -A is active)",
+      "Setting threshold value for MSE in objective function. Only q-values below the threshold will be taken into account \
+       to estimate the FDR divergence curve (Only valid if option -A is active)",
       "value");
-  cmd.defineOption("E",
+  
+  /*cmd.defineOption("E",
       "rocN",
       "Setting rocN value for ROC curve in objective function(Only valid if option -A is active)",
-      "value");
+      "value");*/
+  
   cmd.defineOption("Q",
-    "mayusfdr",
-    "Estimate Protein False Discovery Rate using Mayu's method (Only valid if option -A is active)",
-    "",
-    TRUE_IF_SET);
+      "mayusfdr",
+      "Estimate Protein False Discovery Rate using Mayu's method, the FDR estimated will be used in the estimation of the empirical q-values. \
+       (Only valid if option -A is active)",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("TD",
-      "target-database",
-      "Database with target proteins (If combined target-decoy database leave the decoy-database empty) (Only valid if option -A and -Q are active)",
+      "database",
+      "Database with target and decoy proteins. (Only valid if option -A and -Q are active)",
       "filename");
-  cmd.defineOption("DD",
+  
+  /*cmd.defineOption("DD",
       "decoy-database",
       "Database with decoy proteins (Only valid if option -A and -Q are active)",
-      "filename");
+      "filename");*/
+  
   cmd.defineOption("P",
       "pattern",
-      "Option for single SQT file mode defining the name pattern used for shuffled data base. \
-      Typically set to random_seq",
-      "pattern");
- 
+      "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if Q is activated and the label that idenfifies the decoys in the database \
+       is not the default (by default : ramdom_seq_) (Only valid if option -A  and -Q are active).",
+      "value");
   cmd.defineOption("CO",
-    "conservative",
-    "Use squared area instead of normal area when estimating MSE FDR divergence, might give better results with small datasets (Only valid if option -A is active)",
-    "",
-    TRUE_IF_SET);
+      "conservative",
+      "Use normal area instead of squared area when estimating MSE FDR divergence, might give better results with small datasets or when the number of \
+       false positive Proteins is too high (Only valid if option -A is active)",
+      "",
+      TRUE_IF_SET);
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
   if (cmd.optionSet("A")) {
-    
+   
+    std::cerr << "WTFFF" << std::endl;
     calculateProteinLevelProb = true;
     double alpha = -1;
     double beta = -1;
     double gamma = -1;
-    bool noseparate = false; 
     double lambda = 0.15;
     double threshold = 0.05;
     unsigned rocN = 0;
@@ -352,15 +364,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool conservative = !cmd.optionSet("CO");
     bool mayusfdr = cmd.optionSet("Q");
     bool noprune = cmd.optionSet("C");
+    bool noseparate = cmd.optionSet("E");
     
     if(mayusfdr && usePi0)
     {
-      std::cerr << "ERROR : Pi0 and Mayus FDR cannot be used together to estimate Protein Probabilities." << std::endl;
+      std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used together to estimate Protein Probabilities." << std::endl;
       exit(0);
     }
-    //bool noseparate = cmd.optionSet("E");;
-    //TODO when noseparate activates function logLikelihoodConstant 
-    //in BasicGroupBigraph never ends cos Counter never reaches the end
 
     if (cmd.optionSet("Y")) {
       lambda = cmd.getDouble("Y", 0.01, 0.99);
@@ -368,18 +378,19 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("T")) {
       threshold = cmd.getDouble("T", 0.01, 0.99);
     }
-    if (cmd.optionSet("E")) {
+    /*if (cmd.optionSet("E")) {
       rocN = cmd.getInt("E", 25, 1000);
-    }
+    }*/
    
     if (cmd.optionSet("P"))  decoyWC = cmd.options["P"];
     if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
-    if (cmd.optionSet("DD")) decoyDB = cmd.options["DD"];
+    //if (cmd.optionSet("DD")) decoyDB = cmd.options["DD"];
     if (cmd.optionSet("d"))  deepness = (cmd.getInt("d", 0, 3));
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
     
+    if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					      grouProteins,noseparate,noprune,gridSearch,deepness,

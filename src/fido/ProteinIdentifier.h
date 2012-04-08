@@ -30,6 +30,12 @@ public:
 
   class FormatException {};
   
+  template <typename T>
+  void FreeAll( T & t ) {
+    T tmp;
+    t.swap( tmp );
+  }
+  
   double ProteinThreshold, PeptideThreshold, PsmThreshold;
   
 protected:

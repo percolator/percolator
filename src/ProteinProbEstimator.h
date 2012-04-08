@@ -25,7 +25,7 @@
 #include <numeric>
 #include "converters/MSToolkit/MSToolkitTypes.h"
 #include <iterator>
-#include "FastaProteinReader.h"
+#include "ProteinFDRestimator.h"
 #include <vector>
 
 
@@ -288,13 +288,13 @@ class ProteinProbEstimator {
   
   public:
 
-    const static double default_gamma = 0.5; 
+    /*const static double default_gamma = 0.5; 
     const static double default_alpha = 0.1; 
-    const static double default_beta = 0.01;
+    const static double default_beta = 0.01;*/
     const static double psmThresholdMayu = 0.05;
     const static double thresholdRoc = 0.05;
     
-    ProteinProbEstimator(double alpha, double beta, double gamma, bool tiesAsOneProtein = false,
+    ProteinProbEstimator(double alpha = -1, double beta = -1, double gamma = -1, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
 			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
@@ -371,7 +371,7 @@ class ProteinProbEstimator {
     
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
-    FastaProteinReader *fastReader;
+    ProteinFDRestimator *fastReader;
     std::map<const std::string,Protein*> proteins;    
     std::multimap<double,std::vector<std::string> > pepProteins;
     std::vector<double> qvalues;

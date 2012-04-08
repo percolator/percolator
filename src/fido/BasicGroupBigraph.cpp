@@ -3,6 +3,23 @@
 
 #include "BasicGroupBigraph.h"
 
+BasicGroupBigraph::~BasicGroupBigraph()
+{
+  /*for(unsigned i = 0; i < groupProtNames.size(); i++)
+  {
+    FreeAll(groupProtNames[i]);
+  }
+  FreeAll(groupProtNames);
+  FreeAll(probabilityR);
+  for(unsigned i = 0; i < originalN.size(); i++)
+  {
+    delete originalN[i];
+  }
+  FreeAll(originalN);
+  delete logLikelihoodConstantCachedFunctor;*/
+}
+
+
 void BasicGroupBigraph::printProteinWeights() const
 {
   Array<double> sorted = proteinsToPSMs.weights;
@@ -368,10 +385,10 @@ Array<double> BasicGroupBigraph::probabilityEOverAllAlphaBeta(const GridModel & 
   return result;
 }
 
-double BasicGroupBigraph::likelihoodAlphaBetaGivenD(const GridModel & gm) const
+/*double BasicGroupBigraph::likelihoodAlphaBetaGivenD(const GridModel & gm) const
 {
   return likelihoodConstantCachedFunctor(gm, this);
-}
+}*/
 
 double BasicGroupBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & gm) const
 {

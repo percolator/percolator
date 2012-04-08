@@ -43,8 +43,8 @@
 
 ****************************************************************************************/
 
-#ifndef FASTAPROTEINREADER_H_
-#define FASTAPROTEINREADER_H_
+#ifndef PROTEINFDRESTIMATOR_H_
+#define PROTEINFDRESTIMATOR_H_
 
 #include "Globals.h"
 #include <stdio.h>
@@ -74,15 +74,15 @@ extern int        ReadFASTA(FASTAFILE *fp, char **ret_seq, char **ret_name, int 
 extern void       CloseFASTA(FASTAFILE *ffp);
 
 
-class FastaProteinReader
+class ProteinFDRestimator
 {
   
 public:
   
-  FastaProteinReader(unsigned minpeplength = 4, unsigned minmaxx = 400, unsigned maxmass = 6000, 
+  ProteinFDRestimator(unsigned minpeplength = 4, unsigned minmaxx = 400, unsigned maxmass = 6000, 
 		     std::string decoy_prefix = "random", double missed_cleavages = 0, unsigned nbins = 10, 
 		     double targetDecoyRatio = 1.0, bool binequalDeepth = true);
-  ~FastaProteinReader();
+  virtual ~ProteinFDRestimator();
   void parseDataBase(const char *seqfile,const char* seqfileDecoy);
   void parseDataBase(const char *seqfile);
   unsigned getNumberBins();
@@ -116,9 +116,9 @@ private:
   double targetDecoyRatio;
   bool binequalDeepth;
   std::string decoy_prefix;
-  std::map<unsigned,std::vector<std::string> > binnedProteins;
+  std::map<unsigned,std::set<std::string> > binnedProteins;
   std::multimap<double,std::string> groupedProteins;
   std::map<char, double> massMap_;
   std::vector<double> lenghts; 
 };
-#endif /* FASTAPROTEINREADER_H_*/
+#endif /* PROTEINFDRESTIMATOR_H_ */

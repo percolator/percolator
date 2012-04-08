@@ -50,7 +50,7 @@
 #include <ctype.h>
 #include <iostream>
 #include <algorithm>
-#include <FastaProteinReader.h>
+#include <ProteinFDRestimator.h>
 #include <math.h>
 
 
@@ -62,6 +62,17 @@ struct RetrieveValue
     return keyValuePair.second;
   }
 };
+
+bool stringCompare( const std::string &left, const std::string &right ){
+   for( std::string::const_iterator lit = left.begin(), rit = right.begin(); lit != left.end() && rit != right.end(); ++lit, ++rit )
+      if( tolower( *lit ) < tolower( *rit ) )
+         return true;
+      else if( tolower( *lit ) > tolower( *rit ) )
+         return false;
+   if( left.size() < right.size() )
+      return true;
+   return false;
+}
 
 double stirling_log_factorial(double n)
 {
@@ -185,7 +196,7 @@ CloseFASTA(FASTAFILE *ffp)
 
 /******************************************************************************************************************/
 
-FastaProteinReader::FastaProteinReader(unsigned int __minpeplength, unsigned int __minmaxx,
+ProteinFDRestimator::ProteinFDRestimator(unsigned int __minpeplength, unsigned int __minmaxx,
 				       unsigned int __maxmass,std::string __decoy_prefix, double __missed_cleavages, 
 				       unsigned __nbins, double __targetDecoyRatio, bool __binequalDeepth)
 				       :minpeplength(__minpeplength),minmass(__minmaxx),maxmass(__maxmass),
@@ -195,7 +206,7 @@ FastaProteinReader::FastaProteinReader(unsigned int __minpeplength, unsigned int
   initMassMap();
 }
 
-FastaProteinReader::~FastaProteinReader()
+ProteinFDRestimator::~ProteinFDRestimator()
 {
   FreeAll(binnedProteins);
   FreeAll(groupedProteins);
@@ -204,7 +215,7 @@ FastaProteinReader::~FastaProteinReader()
 
 
 
-void FastaProteinReader::parseDataBase(const char* seqfile,const char* seqfileDecoy)
+void ProteinFDRestimator::parseDataBase(const char* seqfile,const char* seqfileDecoy)
 {
   FASTAFILE *ffp;
   FASTAFILE *ffpDecoy;
@@ -281,7 +292,7 @@ void FastaProteinReader::parseDataBase(const char* seqfile,const char* seqfileDe
   correctIdenticalSequences(targetProteins,decoyProteins);
 }
 
-void FastaProteinReader::parseDataBase(const char* seqfile)
+void ProteinFDRestimator::parseDataBase(const char* seqfile)
 {
   FASTAFILE *ffp;
   char *seq;
@@ -344,7 +355,7 @@ void FastaProteinReader::parseDataBase(const char* seqfile)
   
 }
 
-void FastaProteinReader::correctIdenticalSequences(std::map<std::string,std::string> targetProteins,
+void ProteinFDRestimator::correctIdenticalSequences(std::map<std::string,std::string> targetProteins,
 						   std::map<std::string,std::string> decoyProteins)
 {
   std::map<std::string,std::string>::const_iterator it,it2;
@@ -395,12 +406,12 @@ void FastaProteinReader::correctIdenticalSequences(std::map<std::string,std::str
   FreeAll(previouSeqs);
 }
 
-void FastaProteinReader::groupProteinsGene()
+void ProteinFDRestimator::groupProteinsGene()
 {
 
 }
 
-double FastaProteinReader::estimateFDR(std::set<std::string> target,std::set<std::string> decoy)
+double ProteinFDRestimator::estimateFDR(std::set<std::string> target,std::set<std::string> decoy)
 {   
     if(binnedProteins.size() > 0)
     {
@@ -444,7 +455,7 @@ double FastaProteinReader::estimateFDR(std::set<std::string> target,std::set<std
 
 
 
-void FastaProteinReader::binProteinsEqualDeepth()
+void ProteinFDRestimator::binProteinsEqualDeepth()
 {
   //assuming lengths sorted from less to bigger
   
@@ -480,14 +491,16 @@ void FastaProteinReader::binProteinsEqualDeepth()
     double upperbound = values[i+1];
     itlow = groupedProteins.lower_bound(lowerbound);
     itup =  groupedProteins.upper_bound(upperbound);
-    std::vector<std::string> proteins;
-    std::transform(itlow, itup, std::back_inserter(proteins), RetrieveValue());
-    binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
+    //std::vector<std::string> proteins;
+    std::set<std::string> proteins;
+    std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
+    //binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
+    binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
   FreeAll(values);
 }
     
-void FastaProteinReader::binProteinsEqualWidth()
+void ProteinFDRestimator::binProteinsEqualWidth()
 {
   std::sort(lenghts.begin(),lenghts.end());
   double min = lenghts.front();
@@ -513,14 +526,16 @@ void FastaProteinReader::binProteinsEqualWidth()
     double upperbound = values[i+1];
     itlow = groupedProteins.lower_bound(lowerbound);
     itup =  groupedProteins.upper_bound(upperbound);
-    std::vector<std::string> proteins;
-    std::transform(itlow, itup, std::back_inserter(proteins), RetrieveValue());
-    binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
+    //std::vector<std::string> proteins;
+    std::set<std::string> proteins;
+    std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
+    //binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
+    binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
   FreeAll(values);
 }
 
-double FastaProteinReader::estimatePi0HG(unsigned N,unsigned targets,unsigned cf)
+double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned cf)
 {
   std::vector<double> logprob;
   double finalprob = 0;
@@ -547,7 +562,7 @@ double FastaProteinReader::estimatePi0HG(unsigned N,unsigned targets,unsigned cf
 
 }
 
-double FastaProteinReader::calculatePepMAss(std::string pepsequence,double charge)
+double ProteinFDRestimator::calculatePepMAss(std::string pepsequence,double charge)
 {
   double mass  =  0.0;
   if (pepsequence.length () > minpeplength) {
@@ -557,9 +572,6 @@ double FastaProteinReader::calculatePepMAss(std::string pepsequence,double charg
       if(isalpha(pepsequence[i])){
         mass += massMap_[pepsequence[i]];
       }
-      /*else{
-        mass += massMap_['X'];
-      }*/
     }
     
     mass = (mass + massMap_['o'] + (charge * massMap_['h'])); 
@@ -568,7 +580,7 @@ double FastaProteinReader::calculatePepMAss(std::string pepsequence,double charg
 }
 
 
-unsigned int FastaProteinReader::calculateProtLength(std::string protsequence)
+unsigned int ProteinFDRestimator::calculateProtLength(std::string protsequence)
 {
   
   size_t length = protsequence.length();
@@ -630,16 +642,20 @@ unsigned int FastaProteinReader::calculateProtLength(std::string protsequence)
 }
 
 
-unsigned int FastaProteinReader::countProteins(unsigned int bin, std::set< std::string > proteins)
+unsigned int ProteinFDRestimator::countProteins(unsigned int bin, std::set< std::string > proteins)
 {
-  std::vector<std::string> proteinsBins = binnedProteins[bin];
+  //std::vector<std::string> proteinsBins = binnedProteins[bin];
+  std::set<std::string> proteinsBins = binnedProteins[bin];
   
   unsigned count = 0;
   for(std::set<std::string>::const_iterator it = proteins.begin(); it != proteins.end(); it++)
   {
-    if(std::find(proteinsBins.begin(), proteinsBins.end(), *it) != proteinsBins.end() )
+    //if(std::find(proteinsBins.begin(), proteinsBins.end(), *it) != proteinsBins.end() )
+    std::set<std::string>::iterator itfound = proteinsBins.find(*it);
+    if(itfound != proteinsBins.end())
     {
       count++;
+      proteinsBins.erase(itfound);
     }
   }
   
@@ -648,24 +664,24 @@ unsigned int FastaProteinReader::countProteins(unsigned int bin, std::set< std::
 }
 
 
-unsigned int FastaProteinReader::getBinProteins(unsigned int bin)
+unsigned int ProteinFDRestimator::getBinProteins(unsigned int bin)
 {
   return binnedProteins[bin].size();
 }
 
 
-unsigned int FastaProteinReader::getNumberBins()
+unsigned int ProteinFDRestimator::getNumberBins()
 {
   return nbins;
 }
 
-void FastaProteinReader::setDecoyPrefix(std::string prefix)
+void ProteinFDRestimator::setDecoyPrefix(std::string prefix)
 {
   decoy_prefix = prefix;
 }
 
 
-void FastaProteinReader::initMassMap(bool useAvgMass){
+void ProteinFDRestimator::initMassMap(bool useAvgMass){
  
 
   if (useAvgMass) /*avg masses*/

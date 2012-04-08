@@ -9,8 +9,16 @@ BasicBigraph::BasicBigraph() :
   //
 }
 
+BasicBigraph::~BasicBigraph()
+{
+  //delete proteinsToPSMs;
+  //delete PSMsToProteins;
+  //FreeAll(severedProteins);
+}
+
 
 void BasicBigraph::read(Scores* fullset){
+  
   string pepName, protName;
   double value =  -10;
   int pepIndex = -1;
@@ -39,12 +47,14 @@ void BasicBigraph::read(Scores* fullset){
       connect(PSMNames, pepName, proteinNames, protName);
     }
     // p probability of the peptide match to the spectrum
-    value = 1- psm->pPSM->pep;
+    value = 1 - psm->pPSM->pep;
     PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
  }
 
   PSMsToProteins.names = PSMNames.getItemsByNumber();
   proteinsToPSMs.names = proteinNames.getItemsByNumber();
+  
+  pseudoCountPSMs();
 }
 
 void BasicBigraph::printGraphStats() const
@@ -76,7 +86,7 @@ void BasicBigraph::saveSeveredProteins()
 
 void BasicBigraph::prune()
 {
-  
+  //TODO áll these functions can be seriously improved in computational time
   removePoorPSMs();
   removePoorProteins();
   saveSeveredProteins();
@@ -388,4 +398,15 @@ Array<BasicBigraph> BasicBigraph::partitionSections()
     }
 
   return result;
+}
+
+void BasicBigraph::pseudoCountPSMs()
+{
+  for (int k=0; k<PSMsToProteins.size(); k++)
+    {
+      if ( PSMsToProteins.weights[k] < PeptideThreshold )
+	{
+	  PSMsToProteins.weights[k] = PeptideThreshold;
+	}
+    }  
 }
