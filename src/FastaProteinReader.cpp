@@ -547,9 +547,9 @@ double FastaProteinReader::estimatePi0HG(unsigned N,unsigned targets,unsigned cf
 
 }
 
-float FastaProteinReader::calculatePepMAss(std::string pepsequence,double charge)
+double FastaProteinReader::calculatePepMAss(std::string pepsequence,double charge)
 {
-  float mass  = 0;
+  double mass  =  0.0;
   if (pepsequence.length () > minpeplength) {
     
     for(unsigned i=0; i<pepsequence.length();i++)
@@ -580,7 +580,6 @@ unsigned int FastaProteinReader::calculateProtLength(std::string protsequence)
   std::string peptide;
   unsigned maxSeqLength = 40;
   std::set<std::string> peptides;
-  std::vector<double> massVector;
   
   for(size_t start=0;start<length;start++){
     if((start == 0) || 
@@ -614,7 +613,6 @@ unsigned int FastaProteinReader::calculateProtLength(std::string protsequence)
           if((mass > minmass) && (mass< maxmass))
 	  {
             peptides.insert(peptide);
-            massVector.push_back(mass);
           }
           numMisCleavages++;
           if(numMisCleavages > missed_cleavages){
@@ -628,7 +626,6 @@ unsigned int FastaProteinReader::calculateProtLength(std::string protsequence)
   
   unsigned size = peptide.size();
   FreeAll(peptide);
-  FreeAll(massVector);
   return size;
 }
 

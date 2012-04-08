@@ -94,7 +94,7 @@ public:
   
 private:
   
-  float calculatePepMAss(std::string pepsequence, double charge = 2);
+  double calculatePepMAss(std::string pepsequence, double charge = 2);
   unsigned calculateProtLength(std::string protsequence);
   void initMassMap(bool useAvgMass = false);
   void binProteinsEqualDeepth();

@@ -7,16 +7,18 @@ ProteinIdentifier::ProteinIdentifier()
 {
   
   //TODO these guys should be parametizable
-  ProteinThreshold = 1e-5;
-  //ProteinThreshold = 0.0;
   
-  //  PeptideThreshold = 1e-9;
+  //ProteinThreshold = 1e-2;
+  ProteinThreshold = 1e-5;
+  
+  //PeptideThreshold = 1e-9;
+  //PeptideThreshold = 1e-3;
   PeptideThreshold = 9e-3;
-  //PeptideThreshold = 0.0;
   
   PsmThreshold = 0.0;
   
-  //  PeptidePrior = .5;
+  //PeptidePrior = 0.5;
+  //PeptidePrior = 0.1;
   PeptidePrior = .07384;
 }
 

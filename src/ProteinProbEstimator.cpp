@@ -168,7 +168,7 @@ void ProteinProbEstimator::run(){
     
     fastReader = new FastaProteinReader();
     
-    /* Default configuration 
+    /* Default configuration (changeable by functions)
      * min peptide lenght = 4
      * min mass = 400
      * max mass = 6000
@@ -711,7 +711,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	}
 	
 	if(VERB > 2)
-	  std::cerr << "Roc " << rocN <<" , MSE and objective value " << " : " << rocR << " " << fdr_mse << " " << current_objective << std::endl;
+	  std::cerr << "Roc " << rocN <<" , MSE and objective function value " << " : " << rocR << " " << fdr_mse << " " << current_objective << std::endl;
 	
 	FreeAll(prot_names);
 	FreeAll(prot_probs);
