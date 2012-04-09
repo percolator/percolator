@@ -327,8 +327,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   cmd.defineOption("P",
       "pattern",
-      "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if Q is activated and the label that idenfifies the decoys in the database \
-       is not the default (by default : ramdom_seq_) (Only valid if option -A  and -Q are active).",
+      "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if the label that idenfifies the decoys in the database \
+       is not the default (by default : ramdom_seq_) (Only valid if option -A  is active).",
       "value");
   cmd.defineOption("CO",
       "conservative",
@@ -336,14 +336,24 @@ bool Caller::parseOptions(int argc, char **argv) {
        false positive Proteins is too high (Only valid if option -A is active)",
       "",
       TRUE_IF_SET);
-  
+
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
+  
+  if (cmd.optionSet("U")) {
+    if (cmd.optionSet("A")){
+      cerr
+      << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
+      << "are needed to calculate protein level ones.";
+      exit(0);
+    }
+    reportUniquePeptides = false;
+  }
+
   if (cmd.optionSet("A")) {
-   
-    std::cerr << "WTFFF" << std::endl;
+  
     calculateProteinLevelProb = true;
     double alpha = -1;
     double beta = -1;
@@ -355,9 +365,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     unsigned deepness = 3;
     std::string targetDB = "";
     std::string decoyDB = "";
-    std::string decoyWC = "";
+    std::string decoyWC = "random_seq_";
     
-    bool tiesAsOneProtein = !cmd.optionSet("g");
+    bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
     bool grouProteins = cmd.optionSet("N"); 
@@ -365,6 +375,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool mayusfdr = cmd.optionSet("Q");
     bool noprune = cmd.optionSet("C");
     bool noseparate = cmd.optionSet("E");
+    //NOTE fido fails when this option is activated
+    noseparate = false;
     
     if(mayusfdr && usePi0)
     {
@@ -396,15 +408,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 					      grouProteins,noseparate,noprune,gridSearch,deepness,
 					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr,conservative);
   }
-  if (cmd.optionSet("U")) {
-    if (cmd.optionSet("A")){
-      cerr
-      << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
-      << "are needed to calculate protein level ones.";
-      exit(0);
-    }
-    reportUniquePeptides = false;
-  }
+  
   if (cmd.optionSet("e")) {
     readStdIn = true;
     string str = "";

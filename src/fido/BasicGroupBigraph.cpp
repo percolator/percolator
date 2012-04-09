@@ -385,11 +385,6 @@ Array<double> BasicGroupBigraph::probabilityEOverAllAlphaBeta(const GridModel & 
   return result;
 }
 
-/*double BasicGroupBigraph::likelihoodAlphaBetaGivenD(const GridModel & gm) const
-{
-  return likelihoodConstantCachedFunctor(gm, this);
-}*/
-
 double BasicGroupBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & gm) const
 {
   return logLikelihoodConstantCachedFunctor(gm, this);

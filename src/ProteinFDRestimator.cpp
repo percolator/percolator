@@ -274,20 +274,24 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile,const char* seqfileD
     e.what();
   }
   
-  /*if(targetProteins.size() != decoyProteins.size())
-  {
-    targetDecoyRatio = (double)targetProteins.size() / (double)decoyProteins.size();
-  }
-  else
-    targetDecoyRatio = 1.0;*/
-  
   if(decoyProteins.size() == 0 || targetProteins.size() == 0)
   {
     std::cerr <<  "Error parsing the databases, one of the databases given is empty\n" << std::endl;
     exit(-1);
   }
   else if(VERB > 2)
-    std::cerr << "Read " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database" << std::endl;
+  {  
+    std::cerr << "\nRead " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database\n" << std::endl;
+  }
+  
+  if(targetProteins.size() != decoyProteins.size())
+  {
+    targetDecoyRatio = (double)targetProteins.size() / (double)decoyProteins.size();
+  }
+  else
+  {  
+    targetDecoyRatio = 1.0;
+  }
   
   correctIdenticalSequences(targetProteins,decoyProteins);
 }
@@ -336,27 +340,30 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile)
     e.what();
   }
   
-  /*if(targetProteins.size() != decoyProteins.size())
+  if(decoyProteins.size() == 0 || targetProteins.size() == 0)
+  {
+    std::cerr << "Error parsing the database, the database given does not contain either decoys or targets\n";
+    exit(-1);
+  }
+  else if(VERB > 2)
+  {  
+    std::cerr << "\nRead " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database\n" << std::endl;
+  }
+  
+  if(targetProteins.size() != decoyProteins.size())
   {
     targetDecoyRatio = (double)targetProteins.size() / (double)decoyProteins.size();
   }
   else
-    targetDecoyRatio = 1.0;*/
-    
-  if(decoyProteins.size() == 0 || targetProteins.size() == 0)
-  {
-    std::cerr << "Error parsing the database, the database given is empty\n";
-    exit(-1);
+  {  
+    targetDecoyRatio = 1.0;
   }
-  else if(VERB > 2)
-    std::cerr << "Read " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database" << std::endl;
   
   correctIdenticalSequences(targetProteins,decoyProteins);
-  
 }
 
-void ProteinFDRestimator::correctIdenticalSequences(std::map<std::string,std::string> targetProteins,
-						   std::map<std::string,std::string> decoyProteins)
+void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,std::string> &targetProteins,
+						    const std::map<std::string,std::string> &decoyProteins)
 {
   std::map<std::string,std::string>::const_iterator it,it2;
   
@@ -372,7 +379,7 @@ void ProteinFDRestimator::correctIdenticalSequences(std::map<std::string,std::st
   {
     std::string targetSeq = (*it).second;
     std::string targetName = (*it).first;
-    if(previouSeqs.count(targetSeq) > 0)
+    if(previouSeqs.find(targetSeq) != previouSeqs.end())
     {
       length = 0.0;
     }
@@ -389,8 +396,7 @@ void ProteinFDRestimator::correctIdenticalSequences(std::map<std::string,std::st
   {
     std::string decoySeq = (*it2).second;
     std::string decoyName = (*it2).first;
-        
-    if(previouSeqs.count(decoySeq) > 0)
+    if(previouSeqs.find(decoySeq) != previouSeqs.end())
     {
       length = 0.0;
     }
@@ -408,10 +414,10 @@ void ProteinFDRestimator::correctIdenticalSequences(std::map<std::string,std::st
 
 void ProteinFDRestimator::groupProteinsGene()
 {
-
+  /**not implemented yet**/
 }
 
-double ProteinFDRestimator::estimateFDR(std::set<std::string> target,std::set<std::string> decoy)
+double ProteinFDRestimator::estimateFDR(const std::set<std::string> &target, const std::set<std::string> &decoy)
 {   
     if(binnedProteins.size() > 0)
     {
@@ -427,7 +433,7 @@ double ProteinFDRestimator::estimateFDR(std::set<std::string> target,std::set<st
     }
     
     if(VERB > 2)
-      std::cerr << "There are : " << target.size() << " target proteins and " << decoy.size() << " decoys proteins that contains high confident PSMs" << std::endl;    
+      std::cerr << "\nThere are : " << target.size() << " target proteins and " << decoy.size() << " decoys proteins that contains high confident PSMs\n" << std::endl;    
     
     double fdr = 0.0;
     double fptol = 0.0;
@@ -442,6 +448,7 @@ double ProteinFDRestimator::estimateFDR(std::set<std::string> target,std::set<st
       if(VERB > 2)
 	std::cerr << "\nEstimating FDR for bin " << i << " with " << numberFP << " Decoy proteins, " 
 	      << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
+	      
       if(numberTP > 0)
       {
 	fdr += fp / (double)numberTP;
@@ -465,7 +472,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
   unsigned nr_bins = (unsigned)((entries - entries%nbins) / nbins);
   unsigned residues = entries % nbins;
   if(VERB > 2)
-    std::cerr << " Binning proteins using equal deepth " << std::endl;
+    std::cerr << "\nBinning proteins using equal deepth\n" << std::endl;
   while(residues >= nbins && residues != 0)
   {
     nr_bins += (unsigned)((residues - residues%nbins) / nbins);
@@ -478,7 +485,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     double value = lenghts[index];
     values.push_back(value);
     if(VERB > 2)
-      std::cerr << " Value of bin : " << i << " = " << value << std::endl;
+      std::cerr << "\nValue of bin : " << i << " = " << value << std::endl;
   }
   //there are some elements at the end that are <= nbins that could not be fitted
   if(residues > 0) values.push_back(lenghts.back());
@@ -491,10 +498,8 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     double upperbound = values[i+1];
     itlow = groupedProteins.lower_bound(lowerbound);
     itup =  groupedProteins.upper_bound(upperbound);
-    //std::vector<std::string> proteins;
     std::set<std::string> proteins;
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
-    //binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
     binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
   FreeAll(values);
@@ -509,14 +514,14 @@ void ProteinFDRestimator::binProteinsEqualWidth()
   int span = abs(max - min);
   double part = span / nbins;
   if(VERB > 2)
-    std::cerr << " Binning proteins using equal width " << std::endl;
+    std::cerr << "\nBinning proteins using equal width\n" << std::endl;
   for(unsigned i = 0; i < nbins; i++)
   {
     unsigned index = (unsigned) min + i*part;
     double value = lenghts[index];
     values.push_back(value);
     if(VERB > 2)
-      std::cerr << " Value of bin : " << i << " = " << value << std::endl;
+      std::cerr << "\nValue of bin : " << i << " = " << value << std::endl;
   }
   values.push_back(max);
   std::multimap<double,std::string>::iterator itlow,itup;
@@ -526,10 +531,8 @@ void ProteinFDRestimator::binProteinsEqualWidth()
     double upperbound = values[i+1];
     itlow = groupedProteins.lower_bound(lowerbound);
     itup =  groupedProteins.upper_bound(upperbound);
-    //std::vector<std::string> proteins;
     std::set<std::string> proteins;
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
-    //binnedProteins.insert(std::make_pair<unsigned,std::vector<std::string> >(i,proteins));
     binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
   FreeAll(values);
@@ -642,15 +645,12 @@ unsigned int ProteinFDRestimator::calculateProtLength(std::string protsequence)
 }
 
 
-unsigned int ProteinFDRestimator::countProteins(unsigned int bin, std::set< std::string > proteins)
+unsigned int ProteinFDRestimator::countProteins(unsigned int bin,const std::set<std::string> &proteins)
 {
-  //std::vector<std::string> proteinsBins = binnedProteins[bin];
   std::set<std::string> proteinsBins = binnedProteins[bin];
-  
   unsigned count = 0;
   for(std::set<std::string>::const_iterator it = proteins.begin(); it != proteins.end(); it++)
   {
-    //if(std::find(proteinsBins.begin(), proteinsBins.end(), *it) != proteinsBins.end() )
     std::set<std::string>::iterator itfound = proteinsBins.find(*it);
     if(itfound != proteinsBins.end())
     {

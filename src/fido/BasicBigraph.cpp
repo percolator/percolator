@@ -54,7 +54,7 @@ void BasicBigraph::read(Scores* fullset){
   PSMsToProteins.names = PSMNames.getItemsByNumber();
   proteinsToPSMs.names = proteinNames.getItemsByNumber();
   
-  pseudoCountPSMs();
+  //pseudoCountPSMs();
 }
 
 void BasicBigraph::printGraphStats() const

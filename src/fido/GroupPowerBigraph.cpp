@@ -23,20 +23,6 @@ GroupPowerBigraph::~GroupPowerBigraph()
   FreeAll(subgraphs);*/
 }
 
-
-/*Array<double> GroupPowerBigraph::proteinProbs(const GridModel & myGM)
-{
-  Array<double> result;
-  
-  for (int k=0; k<subgraphs.size(); k++)
-    {
-      subgraphs[k].getProteinProbs(myGM);
-      result.append( subgraphs[k].proteinProbabilities() );
-    }
-
-  return result;
-}*/
-
 Array<double> GroupPowerBigraph::proteinProbs()
 {
   Array<double> result;
@@ -52,26 +38,9 @@ Array<double> GroupPowerBigraph::proteinProbs()
 
 void GroupPowerBigraph::getProteinProbs()
 {
-  /*GridModel local = gm;
-  local.start();
-  probabilityR = proteinProbs(local);*/
   probabilityR = proteinProbs();
 }
 
-/*double GroupPowerBigraph::likelihoodAlphaBetaGivenD(const GridModel & myGM) const
-{
-  return pow(2.0, logLikelihoodAlphaBetaGivenD(myGM) );
-
-  double prod = 1.0;
-
-  for (int k=0; k<subgraphs.size(); k++)
-    {
-      prod *= subgraphs[k].likelihoodAlphaBetaGivenD(myGM);
-    }
-
-  return prod / pow( 1-myGM.spontaneousEmission() , numberClones);
-}
-*/
 double GroupPowerBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & myGM) const
 {
 
@@ -85,70 +54,6 @@ double GroupPowerBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & myGM) c
   return sum - numberClones * log2( 1-myGM.spontaneousEmission() );
 }
 
-/*double GroupPowerBigraph::probabilityAlphaBetaGivenD(const GridModel & myGM) const
-{
-  // using cached functor
-  return pow(2.0, logLikelihoodAlphaBetaGivenD(myGM) - sumLogLikelihoodOverAllAlphaBetaCachedFunctor(myGM, this) );
-}*/
-
-/*double GroupPowerBigraph::sumLogLikelihoodOverAllAlphaBeta(const GridModel & myGM) const
-{
-  GridModel local = myGM;
-
-  double result = 0.0;
-  bool starting = true;
-
-  for (local.start(); local.inRange(); local.advance())
-    {
-      double logLike = logLikelihoodAlphaBetaGivenD(local);
-     
-      if ( starting ) 
-	{
-	  starting = false;
-	  result = logLike;
-	}
-      else
-	{
-	  result = Numerical::logAdd(result, logLike);
-	}
-    }
-
-  return result;
-}
-*/
-
-/*void GroupPowerBigraph::getProteinProbsOverAllAlphaBeta()
-{
-  probabilityR = proteinProbsOverAllAlphaBeta();
-}
-*/
-
-/*Array<double> GroupPowerBigraph::proteinProbsOverAllAlphaBeta()
-{
-  Vector cumulative;
-
-  GridModel local = gm;
-  for ( local.start(); local.inRange(); local.advance() )
-    {
-      double prob = probabilityAlphaBetaGivenD(local);
-
-      // hack for efficiency
-      if ( prob > 1e-5 )
-	{
-	  Array<double> protProbs = proteinProbs( local );
-	  Vector posteriorsForCurrentAlphaBeta = prob * Vector( protProbs );
-
-	  if ( cumulative.size() == 0 )
-	    cumulative = posteriorsForCurrentAlphaBeta;
-	  else
-	    cumulative += posteriorsForCurrentAlphaBeta;
-	}
-
-    }
-
-  return cumulative.unpack();
-}
-*/
 void GroupPowerBigraph::getGroupProtNames()
 {
   int k,j;
@@ -208,8 +113,8 @@ pair< vector< vector< string > >, std::vector< double > > GroupPowerBigraph::get
   for (int k=0; k<sorted.size(); k++)
   {
     double pep = (1.0 - (double)sorted[k]);
-    if(pep < 0.0)pep = 0.0;
-    if(pep > 1.0)pep = 1.0;
+    if(pep <= 0.0)pep = 0.0;
+    if(pep >= 1.0)pep = 1.0;
     names.push_back(groupProtNames[ indices[k] ].getVector());
     probabilities.push_back(pep);
   }
@@ -279,6 +184,7 @@ void GroupPowerBigraph::read(Scores* fullset){
     
     if(!noprune)
       subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
+      //subBasic = iterativePartitionSubgraphs(bb, 0.0);
     else
       subBasic = iterativePartitionSubgraphs(bb, -1);
 
@@ -330,12 +236,7 @@ void GroupPowerBigraph::outputPivdo(ostream & os) const
 
 void GroupPowerBigraph::setAlphaBetaGamma(double alpha, double beta, double gamma)
 {
-  /*gm.setalphaRange(RealRange(alpha,1,alpha));
-  gm.setbetaRange(RealRange(beta,1,beta));
-  gm.setGamma(gamma);*/
-  
   gm.setAlphaBetaGamma(alpha,beta,gamma);
- 
 }
 
 Array<string> GroupPowerBigraph::peptideNames() const

@@ -140,14 +140,10 @@ class BasicGroupBigraph : public BasicBigraph
 
   // cache functors
   // note that these will need to be updated if the object is copied
- /* LastCachedMemberFunction<BasicGroupBigraph, double, Model> likelihoodConstantCachedFunctor;
-  LastCachedMemberFunction<BasicGroupBigraph, Array<double>, Model> probabilityECachedFunctor;
-  LastCachedMemberFunction<BasicGroupBigraph, Array<double>, GridModel> probabilityEOverAllAlphaBetaCachedFunctor;*/
   LastCachedMemberFunction<BasicGroupBigraph, double, Model> logLikelihoodConstantCachedFunctor;
 
  public:
   // for partitioning
-  
   void refreshCache()
   {
     logLikelihoodConstantCachedFunctor.reset();
@@ -171,9 +167,6 @@ class BasicGroupBigraph : public BasicBigraph
   }
 
  BasicGroupBigraph(bool __groupProtein = false) :
-  /*likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), 
-  probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), 
-  probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"), */
   logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
   groupProtein(__groupProtein)
   {
@@ -190,9 +183,6 @@ class BasicGroupBigraph : public BasicBigraph
 
  BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = false) :
  BasicBigraph(rhs),   
- /*likelihoodConstantCachedFunctor( & BasicGroupBigraph::likelihoodConstant, "likelihoodConstant"), 
- probabilityECachedFunctor( & BasicGroupBigraph::probabilityE, "probabilityE"), 
- probabilityEOverAllAlphaBetaCachedFunctor( & BasicGroupBigraph::probabilityEOverAllAlphaBeta, "probabilityEOverAllAlphaBeta"),*/ 
  logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
  groupProtein(__groupProtein)
   {

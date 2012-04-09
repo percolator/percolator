@@ -80,15 +80,15 @@ class ProteinFDRestimator
 public:
   
   ProteinFDRestimator(unsigned minpeplength = 4, unsigned minmaxx = 400, unsigned maxmass = 6000, 
-		     std::string decoy_prefix = "random", double missed_cleavages = 0, unsigned nbins = 10, 
+		     std::string decoy_prefix = "random_seq_", double missed_cleavages = 0, unsigned nbins = 10, 
 		     double targetDecoyRatio = 1.0, bool binequalDeepth = true);
   virtual ~ProteinFDRestimator();
   void parseDataBase(const char *seqfile,const char* seqfileDecoy);
   void parseDataBase(const char *seqfile);
   unsigned getNumberBins();
   unsigned getBinProteins(unsigned bin);
-  unsigned countProteins(unsigned bin,std::set<std::string> proteins);
-  double estimateFDR(std::set<std::string> target,std::set<std::string> decoy);
+  unsigned countProteins(unsigned bin,const std::set<std::string> &proteins);
+  double estimateFDR(const std::set<std::string> &target, const std::set<std::string> &decoy);
   void setDecoyPrefix(std::string);
   void setTargetDecoyRatio(double ratio);
   
@@ -101,8 +101,8 @@ private:
   void binProteinsEqualWidth();
   /**proteins with same sequence only the alphabetical ordered first keeps the sequence
    * the rest of the sequences are set to null. This will keep only 1 protein when there is a degenerated peptide */
-  void correctIdenticalSequences(std::map<std::string,std::string> targetProteins,
-						   std::map<std::string,std::string> decoyProteins);
+  void correctIdenticalSequences(const std::map<std::string,std::string> &targetProteins,
+						   const std::map<std::string,std::string> &decoyProteins);
   /**group proteins according to genes in order to estimate their lenght, proteins of the same gene group which has a tryptic peptide that has
    already been counted wont count that already counted tryptic peptide to estimate its lenght **/
   void groupProteinsGene();

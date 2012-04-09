@@ -298,9 +298,9 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
 			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
-			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, bool conservative = false);
+			 std::string decoyDB = "", std::string decoyPattern = "random_seq_", bool mayufdr = false, bool conservative = false);
     
-    ~ProteinProbEstimator();
+    virtual ~ProteinProbEstimator();
     
     bool initialize(Scores* fullset);
     void run();
@@ -358,16 +358,20 @@ class ProteinProbEstimator {
   private:
     
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
-    double getROC_N(const std::vector<int> & fpArray, const std::vector<int> & tpArray, int N);
-    std::pair<std::vector<double>, std::vector<double> > getEstimated_and_Empirical_FDR(std::vector<std::vector<string> > names, 
-								std::vector<double> probabilities);
-    double getFDR_divergence(const std::vector<double> estFDR, const std::vector<double> empFDR, double THRESH);
-    std::pair<std::vector<int>, std::vector<int> > getROC(std::vector<std::vector<string> > names);
+    double getROC_N(const std::vector<unsigned> &fpArray, const std::vector<unsigned> &tpArray, int N);
+    std::pair<std::vector<double>, std::vector<double> > getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names, 
+								const std::vector<double> &probabilities);
+    double getFDR_divergence(const std::vector<double> &estFDR, const std::vector<double> &empFDR, double THRESH);
+    std::pair<std::vector<unsigned>, std::vector<unsigned> > getROC(const std::vector<std::vector<string> > &names);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
-    int countTargets(std::vector<std::string> proteinList);
-    int countDecoys(std::vector<std::string> proteinList);
+    unsigned countTargets(const std::vector<std::string> &proteinList);
+    unsigned countDecoys(const std::vector<std::string> &proteinList);
+    unsigned countTargets(std::string protein);
+    unsigned countDecoys(std::string protein);
+    
     std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPeptides(double threshold);
-    double estimatePi0Bin(unsigned FP,unsigned TP);
+    
+    /*double estimatePi0Bin(unsigned FP,unsigned TP);*/
     
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
