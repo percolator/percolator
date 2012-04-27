@@ -299,18 +299,16 @@ bool Caller::parseOptions(int argc, char **argv) {
        while grid searching alpha,beta and gamma (Only valid if option -A is active)",
       "value");
   cmd.defineOption("T",
-      "threshold",
+      "mse-threshold",
       "Setting threshold value for MSE in objective function. Only q-values below the threshold will be taken into account \
        to estimate the FDR divergence curve (Only valid if option -A is active)",
       "value");
-  
-  /*cmd.defineOption("E",
+  cmd.defineOption("RC",
       "rocN",
-      "Setting rocN value for ROC curve in objective function(Only valid if option -A is active)",
-      "value");*/
-  
+      "Setting N value for ROC curve in objective function(Only valid if option -A is active)",
+      "value");
   cmd.defineOption("Q",
-      "mayusfdr",
+      "protein-fdr",
       "Estimate Protein False Discovery Rate using Mayu's method, the FDR estimated will be used in the estimation of the empirical q-values. \
        (Only valid if option -A is active)",
       "",
@@ -365,7 +363,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     unsigned deepness = 3;
     std::string targetDB = "";
     std::string decoyDB = "";
-    std::string decoyWC = "random_seq_";
+    std::string decoyWC = "random";
     
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
@@ -375,7 +373,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool mayusfdr = cmd.optionSet("Q");
     bool noprune = cmd.optionSet("C");
     bool noseparate = cmd.optionSet("E");
-    //NOTE fido fails when this option is activated
+    //NOTE fido fails when this option is activated with big datasets
     noseparate = false;
     
     if(mayusfdr && usePi0)
@@ -390,9 +388,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("T")) {
       threshold = cmd.getDouble("T", 0.01, 0.99);
     }
-    /*if (cmd.optionSet("E")) {
-      rocN = cmd.getInt("E", 25, 1000);
-    }*/
+    if (cmd.optionSet("RC")) {
+      rocN = cmd.getInt("RC", 5, 1000);
+    }
    
     if (cmd.optionSet("P"))  decoyWC = cmd.options["P"];
     if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
@@ -532,7 +530,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       exit(-1); // ...error
     }
     if(cmd.optionSet("e")){ // if stdin pin file is present
-      cerr << "Error: the pin file has already been give as stdinput argument.";
+      cerr << "Error: the pin file has already been given as stdinput argument.";
       cerr << "\nInvoke with -h option for help.\n";
       exit(-1); // ...error
     }
@@ -1066,7 +1064,10 @@ void Caller::writeXML(){
     os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
   if(calculateProteinLevelProb)
   {  
-    os << "    <pi_0_proteins>" << pi_0_proteins << "</pi_0_proteins>" << endl;
+    if(protEstimator->getUsePio())
+      os << "    <pi_0_proteins>" << protEstimator->getPi0() << "</pi_0_proteins>" << endl;
+    if(protEstimator->getMayuFdr())
+      os << "    <fdr_proteins>" << protEstimator->getFDR() << "</fdr_proteins>" << endl;
     os << "    <alpha>" << protEstimator->getAlpha() <<"</alpha>" << endl;
     os << "    <beta>"  << protEstimator->getBeta() <<"</beta>" << endl;
     os << "    <gamma>" << protEstimator->getGamma() <<"</gamma>" << endl;
@@ -1292,7 +1293,6 @@ int Caller::run() {
     }
     protEstimator->initialize(&fullset);
     protEstimator->run();
-    pi_0_proteins = protEstimator->getPi0();
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins();
     }

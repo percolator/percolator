@@ -228,7 +228,6 @@ class Protein {
     {
 	return a > b ? b : a;
     }
-
     
     struct pair_min {
       pair_min() {}
@@ -298,7 +297,7 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
 			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
-			 std::string decoyDB = "", std::string decoyPattern = "random_seq_", bool mayufdr = false, bool conservative = false);
+			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, bool conservative = false);
     
     virtual ~ProteinProbEstimator();
     
@@ -342,7 +341,7 @@ class ProteinProbEstimator {
     /** Return the scores whose q value is less or equal than the threshold given**/
     unsigned getQvaluesBelowLevel(double level);
     unsigned getQvaluesBelowLevelDecoy(double level);
-    
+  
     void setTargetandDecoysNames();
     std::map<const std::string,Protein*> getProteins();
     void updateProteinProbabilities();
@@ -366,13 +365,10 @@ class ProteinProbEstimator {
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
     unsigned countTargets(const std::vector<std::string> &proteinList);
     unsigned countDecoys(const std::vector<std::string> &proteinList);
-    unsigned countTargets(std::string protein);
-    unsigned countDecoys(std::string protein);
-    
+    bool isTarget(const std::string& proteinName);
+    bool isDecoy(const std::string& proteinName);
     std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPeptides(double threshold);
-    
-    /*double estimatePi0Bin(unsigned FP,unsigned TP);*/
-    
+
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
     ProteinFDRestimator *fastReader;
@@ -393,6 +389,7 @@ class ProteinProbEstimator {
     bool updateRocN;
     bool conservative;
     double pi0;
+    double fdr;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
     unsigned int deepness;

@@ -222,17 +222,18 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     }
   }
   
+  std::string pattern = "";
   if (cmd.optionSet("P")) pattern = cmd.options["P"];
-  if (cmd.optionSet("Z")) iscombined = true;
+  bool iscombined = cmd.optionSet("Z");
   
   if(iscombined)
   {
     if(cmd.arguments.size() > 1)
     {
-      std::cerr << "Error, there should be only one argument.\n"; 
+      std::cerr << "Error, there should be only one input file.\n"; 
       exit(-1);
     }
-    else if (!pattern.empty())
+    else if (pattern != "")
     {
       parseOptions.reversedFeaturePattern = pattern;
       parseOptions.iscombined = true;

@@ -80,7 +80,7 @@ class ProteinFDRestimator
 public:
   
   ProteinFDRestimator(unsigned minpeplength = 4, unsigned minmaxx = 400, unsigned maxmass = 6000, 
-		     std::string decoy_prefix = "random_seq_", double missed_cleavages = 0, unsigned nbins = 10, 
+		     std::string decoy_prefix = "random", double missed_cleavages = 0, unsigned nbins = 10, 
 		     double targetDecoyRatio = 1.0, bool binequalDeepth = true);
   virtual ~ProteinFDRestimator();
   void parseDataBase(const char *seqfile,const char* seqfileDecoy);

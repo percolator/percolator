@@ -465,7 +465,6 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &target, con
 void ProteinFDRestimator::binProteinsEqualDeepth()
 {
   //assuming lengths sorted from less to bigger
-  
   std::sort(lenghts.begin(),lenghts.end());
   unsigned entries = lenghts.size();
   //integer divion and its residue
@@ -507,6 +506,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     
 void ProteinFDRestimator::binProteinsEqualWidth()
 {
+  //assuming lengths sorted from less to bigger
   std::sort(lenghts.begin(),lenghts.end());
   double min = lenghts.front();
   double max = lenghts.back();

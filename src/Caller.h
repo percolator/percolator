@@ -151,7 +151,6 @@ class Caller {
     map<int, double> scan2rt;
     double pi_0_psms;
     double pi_0_peptides;
-    double pi_0_proteins;
     double numberQpsms;
 };
 
