@@ -70,15 +70,15 @@ void GroupPowerBigraph::getGroupProtNames()
 
 void GroupPowerBigraph::printProteinWeights() const
 {
+  //NOTE this is priting out PEPs not posterior probabilities
   Array<double> sorted = probabilityR;
   Array<int> indices = sorted.sort();
-  cout << "\nProtein level probabilities:\n";
   for (int k=0; k<sorted.size(); k++)
   {
-    cout << sorted[k] << " " << groupProtNames[ indices[k] ] << endl;
+    cout << double(1 - sorted[k]) << " " << groupProtNames[ indices[k] ] << endl;
   }
   if(severedProteins.size()!=0)
-    cout << "0.0 " << severedProteins << endl;
+    cout << "1.0 " << severedProteins << endl;
 }
 
 /*return a map of PEPs and their respectives proteins */
@@ -103,11 +103,10 @@ std::multimap<double, std::vector<std::string> > GroupPowerBigraph::getProteinPr
   return pepProteins;
 }
 
-pair< vector< vector< string > >, std::vector< double > > GroupPowerBigraph::getProteinProbsAndNames() const
+void GroupPowerBigraph::getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const
 {
-  std::vector< std::vector< std::string > > names;
-  std::vector<double> probabilities;
-  
+  names.clear();
+  probs.clear();
   Array<double> sorted = probabilityR;
   Array<int> indices = sorted.sort();
   for (int k=0; k<sorted.size(); k++)
@@ -116,15 +115,14 @@ pair< vector< vector< string > >, std::vector< double > > GroupPowerBigraph::get
     if(pep <= 0.0)pep = 0.0;
     if(pep >= 1.0)pep = 1.0;
     names.push_back(groupProtNames[ indices[k] ].getVector());
-    probabilities.push_back(pep);
+    probs.push_back(pep);
   }
   if(severedProteins.size()!=0)
   {
     names.push_back(severedProteins.getVector());
-    probabilities.push_back(1.0);
+    probs.push_back(1.0);
   }
-  return std::make_pair<std::vector< std::vector< std::string > >, std::vector<double> >(names,probabilities);
-
+  return;
 }
 
 

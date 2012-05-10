@@ -34,7 +34,7 @@ public:
   Array<double> proteinProbs();
   void printProteinWeights() const;
   std::multimap<double, std::vector<std::string> > getProteinProbsPercolator() const;
-  std::pair<std::vector<std::vector<std::string> >,std::vector<double> > getProteinProbsAndNames() const;
+  void getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const;
   void getProteinProbs();
   Array<string> peptideNames() const;
   Array<BasicBigraph> iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold );

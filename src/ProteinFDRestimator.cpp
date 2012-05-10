@@ -63,17 +63,7 @@ struct RetrieveValue
   }
 };
 
-bool stringCompare( const std::string &left, const std::string &right ){
-   for( std::string::const_iterator lit = left.begin(), rit = right.begin(); lit != left.end() && rit != right.end(); ++lit, ++rit )
-      if( tolower( *lit ) < tolower( *rit ) )
-         return true;
-      else if( tolower( *lit ) > tolower( *rit ) )
-         return false;
-   if( left.size() < right.size() )
-      return true;
-   return false;
-}
-
+/** external functions used to estimate the expexted value of the hypergeometric distribution **/
 double stirling_log_factorial(double n)
 {
   double PI = 3.141592653589793;
@@ -109,6 +99,11 @@ double hypergeometric(int x,int N,int w,int d)
   else return 0.0;
 }
 
+/* Simple API for FASTA file reading
+ * for Bio5495/BME537 Computational Molecular Biology
+ * SRE, Sun Sep  8 05:35:11 2002 [AA2721, transatlantic]
+ * CVS $Id$
+ */
 
 FASTAFILE *
 OpenFASTA(const char *seqfile)
@@ -136,7 +131,6 @@ ReadFASTA(FASTAFILE *ffp, char **ret_seq, char **ret_name, /*char **ret_gene,*/ 
   
   //TODO it would be nice to get the gene name but not all the databases contain it and it is located in 
   //different positions
-  
   //char *gene;
   
   int   n;
@@ -198,10 +192,11 @@ CloseFASTA(FASTAFILE *ffp)
 
 ProteinFDRestimator::ProteinFDRestimator(unsigned int __minpeplength, unsigned int __minmaxx,
 				       unsigned int __maxmass,std::string __decoy_prefix, double __missed_cleavages, 
-				       unsigned __nbins, double __targetDecoyRatio, bool __binequalDeepth)
+				       unsigned __nbins, double __targetDecoyRatio, bool __binequalDeepth, unsigned __maxSeqlength)
 				       :minpeplength(__minpeplength),minmass(__minmaxx),maxmass(__maxmass),
 				       decoy_prefix(__decoy_prefix),missed_cleavages(__missed_cleavages),
-				       nbins(__nbins),targetDecoyRatio(__targetDecoyRatio),binequalDeepth(__binequalDeepth)
+				       nbins(__nbins),targetDecoyRatio(__targetDecoyRatio),
+				       binequalDeepth(__binequalDeepth),maxSeqlength(__maxSeqlength)
 {
   initMassMap();
 }
@@ -246,7 +241,7 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile,const char* seqfileD
     }
     else
     {
-      std::cerr <<  "Error reading Target Database : " << seqfile <<  std::endl;
+      std::cerr <<  "Error reading target database : " << seqfile <<  std::endl;
       exit(-1);
     }
     
@@ -265,7 +260,7 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile,const char* seqfileD
     }
     else
     {
-      std::cerr <<  "Error reading Decoy Database : " << seqfileDecoy <<  std::endl;
+      std::cerr <<  "Error reading decoy database : " << seqfileDecoy <<  std::endl;
       exit(-1);
     }
   }
@@ -281,7 +276,7 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile,const char* seqfileD
   }
   else if(VERB > 2)
   {  
-    std::cerr << "\nRead " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database\n" << std::endl;
+    std::cerr << "\nRead " << targetProteins.size() << " target proteins and " << decoyProteins.size() << " decoys proteins\n" << std::endl;
   }
   
   if(targetProteins.size() != decoyProteins.size())
@@ -330,7 +325,7 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile)
     }
     else
     {
-      std::cerr <<  "Error reading Combined Database : " << seqfile <<  std::endl;
+      std::cerr <<  "Error reading combined database : " << seqfile <<  std::endl;
       exit(-1);
     }
   
@@ -347,7 +342,7 @@ void ProteinFDRestimator::parseDataBase(const char* seqfile)
   }
   else if(VERB > 2)
   {  
-    std::cerr << "\nRead " << targetProteins.size() << " target proteins in Database and " << decoyProteins.size() << " decoys proteins in Database\n" << std::endl;
+    std::cerr << "\nRead " << targetProteins.size() << " target proteins and " << decoyProteins.size() << " decoys proteins\n" << std::endl;
   }
   
   if(targetProteins.size() != decoyProteins.size())
@@ -375,7 +370,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
   std::set<std::string> previouSeqs;
   double length = 0.0;
   
-  for(it = targetProteins.begin() ;it != targetProteins.end(); it++)
+  for(it = targetProteins.begin(); it != targetProteins.end(); it++)
   {
     std::string targetSeq = (*it).second;
     std::string targetName = (*it).first;
@@ -392,7 +387,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     lenghts.push_back(length);
   }
   
-  for(it2 = decoyProteins.begin() ;it2 != decoyProteins.end(); it2++)
+  for(it2 = decoyProteins.begin(); it2 != decoyProteins.end(); it2++)
   {
     std::string decoySeq = (*it2).second;
     std::string decoyName = (*it2).first;
@@ -409,7 +404,8 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     lenghts.push_back(length);
   }
   
-  FreeAll(previouSeqs);
+  //FreeAll(previouSeqs);
+  return;
 }
 
 void ProteinFDRestimator::groupProteinsGene()
@@ -417,8 +413,26 @@ void ProteinFDRestimator::groupProteinsGene()
   /**not implemented yet**/
 }
 
-double ProteinFDRestimator::estimateFDR(const std::set<std::string> &target, const std::set<std::string> &decoy)
+void ProteinFDRestimator::estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy) 
+{ 
+  unsigned  numberTP = countProteins(i,target);
+  unsigned  numberFP = countProteins(i,decoy);
+  unsigned  N = getBinProteins(i);
+  double fp = estimatePi0HG(N,numberTP,targetDecoyRatio*numberFP);
+  if(VERB > 2)
+      std::cerr << "\nEstimating FDR for bin " << i << " in thread " << boost::this_thread::get_id() << " with " << numberFP << " Decoy proteins, " 
+	  << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
+  fptol += fp;
+} 
+
+double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, const std::set<std::string> &__decoy)
 {   
+  
+    time_t startTime;
+    clock_t startClock;
+    time(&startTime);
+    startClock = clock();
+    
     if(binnedProteins.size() > 0)
     {
        FreeAll(binnedProteins);
@@ -433,28 +447,24 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &target, con
     }
     
     if(VERB > 2)
-      std::cerr << "\nThere are : " << target.size() << " target proteins and " << decoy.size() << " decoys proteins that contains high confident PSMs\n" << std::endl;    
-    
-    double fdr = 0.0;
-    double fptol = 0.0;
+      std::cerr << "\nThere are : " << __target.size() << " target proteins and " << __decoy.size() << " decoys proteins that contains high confident PSMs\n" << std::endl;    
+
+    fptol = 0.0;
+    boost::thread t[nbins]; 
     
     for(unsigned i = 0; i < nbins; i++)
     {
-      unsigned  numberTP = countProteins(i,target);
-      unsigned  numberFP = countProteins(i,decoy);
-      unsigned  N = getBinProteins(i);
-      double fp = estimatePi0HG(N,numberTP,targetDecoyRatio*numberFP);
-      
-      if(VERB > 2)
-	std::cerr << "\nEstimating FDR for bin " << i << " with " << numberFP << " Decoy proteins, " 
-	      << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
-	      
-      if(numberTP > 0)
-      {
-	fdr += fp / (double)numberTP;
-	fptol += fp;
-      }
+       t[i] = boost::thread(boost::bind(&ProteinFDRestimator::estimateFDRthread,this,i,__target,__decoy)); 
+       t[i].join();
     }
+    
+    time_t procStart;
+    clock_t procStartClock = clock();
+    time(&procStart);
+    double diff = difftime(procStart, startTime);
+    if (VERB > 2) std::cerr << "\nEstimating the protein FDR took : "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff << " seconds wall time\n" << std::endl;
     
     if(isnan(fptol) || isinf(fptol) || fptol == 0)fptol = -1;
     return fptol ;
@@ -501,7 +511,8 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
     binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
-  FreeAll(values);
+  //FreeAll(values);
+  return;
 }
     
 void ProteinFDRestimator::binProteinsEqualWidth()
@@ -535,7 +546,8 @@ void ProteinFDRestimator::binProteinsEqualWidth()
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
     binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
-  FreeAll(values);
+  //FreeAll(values);
+  return;
 }
 
 double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned cf)
@@ -559,7 +571,7 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
   for(unsigned i = 0; i < logprob.size(); i++)
     finalprob += logprob[i] * i;
 
-  FreeAll(logprob);
+  //FreeAll(logprob);
   if(isnan(finalprob) || isinf(finalprob)) finalprob = 0.0;
   return finalprob;
 
@@ -579,68 +591,47 @@ double ProteinFDRestimator::calculatePepMAss(std::string pepsequence,double char
     
     mass = (mass + massMap_['o'] + (charge * massMap_['h'])); 
   }
-  return mass;
+  return mass; 
 }
 
 
 unsigned int ProteinFDRestimator::calculateProtLength(std::string protsequence)
 {
-  
   size_t length = protsequence.length();
+  std::string peptide;
+  std::set<std::string> peptides;
+  
   if(protsequence[length-1] != '*'){
     protsequence.push_back('*');
     length++;
   }
-
-  std::string peptide;
-  unsigned maxSeqLength = 40;
-  std::set<std::string> peptides;
   
-  for(size_t start=0;start<length;start++){
-    if((start == 0) || 
-       (protsequence[start] == 'K' && protsequence[start+1] != 'P') || 
-       (protsequence[start] == 'R' && protsequence[start+1] != 'P')) {
-
+  for(size_t start=0; start<length; start++)
+  {
+    if((start == 0) || (protsequence[start] == 'K' && protsequence[start+1] != 'P') || (protsequence[start] == 'R' && protsequence[start+1] != 'P')) 
+    {
       int numMisCleavages = 0;  
-      
-      for(size_t end=start+1;((end<length) && (((int)(end-start)) < maxSeqLength));end++){
-	
-        if((protsequence[end] == 'K') || (protsequence[end] == 'R') || (protsequence[end] == '*')){
-	  
-          if(end < length){
-	    
-            if(protsequence[end+1] != 'P'){
-              peptide = protsequence.substr(start,((int)(end-start))+2);
-            } else {
-              continue;
-            }
-          }
-          else{
-            peptide = protsequence.substr(start,((int)(end-start))+2);
-          }
-          
-          double mass;
-          if (start == 0) {
-            mass = calculatePepMAss(std::string(" ").append(peptide));
-          } else {
-            mass = calculatePepMAss(peptide);
-          }
-          if((mass > minmass) && (mass< maxmass))
+      for(size_t end=start+1;( (end<length) && (((int)(end-start)) < maxSeqlength) && (numMisCleavages <= missed_cleavages) );end++)
+      {
+        if((protsequence[end] == 'K') || (protsequence[end] == 'R') || (protsequence[end] == '*'))
+	{
+          if( (end > length) || (end < length && protsequence[end+1] != 'P')  )
 	  {
-            peptides.insert(peptide);
-          }
-          numMisCleavages++;
-          if(numMisCleavages > missed_cleavages){
-            break;
-          }
+	    peptide = protsequence.substr(start,((int)(end-start))+2);
+	    double  mass = calculatePepMAss(peptide);
+	    if((mass > minmass) && (mass< maxmass))
+	    {
+	      peptides.insert(peptide);
+	    }
+	    numMisCleavages++;
+	  }
         }
       } 
-
     }
   }
   
   unsigned size = peptide.size();
-  FreeAll(peptide);
+  //FreeAll(peptide);
   return size;
 }
 
@@ -658,8 +649,7 @@ unsigned int ProteinFDRestimator::countProteins(unsigned int bin,const std::set<
       proteinsBins.erase(itfound);
     }
   }
-  
-  FreeAll(proteinsBins);
+  //FreeAll(proteinsBins);
   return count;
 }
 
@@ -686,8 +676,8 @@ void ProteinFDRestimator::initMassMap(bool useAvgMass){
 
   if (useAvgMass) /*avg masses*/
     {
-      massMap_['h']=  1.00794;  /* hydrogen */
-      massMap_['o']= 15.9994;   /* oxygen */
+      massMap_['h']=  1.00794;  
+      massMap_['o']= 15.9994;   
 
       massMap_['G']= 57.05192;
       massMap_['A']= 71.07880;
@@ -740,8 +730,6 @@ void ProteinFDRestimator::initMassMap(bool useAvgMass){
       massMap_['V']= 99.0684136;
       massMap_['W']=186.07931;
       massMap_['Y']=163.06333;
-      //massMap_['X']=113.0840636;
-
     }
 
 }

@@ -289,9 +289,9 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("d",
-      "deepness",
-      "Setting deepness 0 or 1 or 2 or 3 from high deepness to low deepness(less computational time) \
-       of the grid search for Alpha,Beta and Gamma estimation(Only valid if option -A is active). Default value is 3",
+      "depth",
+      "Setting depth 0 or 1 or 2 or 3 from high depth to low depth(less computational time) \
+       of the grid search for the estimation Alpha,Beta and Gamma parameters for fido(Only valid if option -A is active). Default value is 3",
       "value");
   cmd.defineOption("Y",
       "lambda",
@@ -360,7 +360,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     double threshold = 0.05;
     unsigned rocN = 0;
     bool gridSearch = true;
-    unsigned deepness = 3;
+    unsigned depth = 3;
     std::string targetDB = "";
     std::string decoyDB = "";
     std::string decoyWC = "random";
@@ -373,7 +373,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool mayusfdr = cmd.optionSet("Q");
     bool noprune = cmd.optionSet("C");
     bool noseparate = cmd.optionSet("E");
-    //NOTE fido fails when this option is activated with big datasets
+    //NOTE fido fails sometimes when this option is activated with big datasets
     noseparate = false;
     
     if(mayusfdr && usePi0)
@@ -395,7 +395,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("P"))  decoyWC = cmd.options["P"];
     if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
     //if (cmd.optionSet("DD")) decoyDB = cmd.options["DD"];
-    if (cmd.optionSet("d"))  deepness = (cmd.getInt("d", 0, 3));
+    if (cmd.optionSet("d"))  depth = (cmd.getInt("d", 0, 3));
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
@@ -403,7 +403,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					      grouProteins,noseparate,noprune,gridSearch,deepness,
+					      grouProteins,noseparate,noprune,gridSearch,depth,
 					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr,conservative);
   }
   
@@ -691,13 +691,11 @@ void Caller::readFiles() {
       string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
       string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
       parser p;
-
       xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
           xmlInStream, xmlInputFN.c_str(), Caller::schemaValidation,
           schemaDefinition, schema_major, schema_minor));
 
       doc = p.next();
-
       // read enzyme element
       // the enzyme element is a subelement but CodeSynthesis Xsd does not
       // generate a class for it. (I am trying to find a command line option
@@ -767,21 +765,7 @@ void Caller::readFiles() {
     pCheck = new SanityCheck();
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);
-  } else if (decoyWC.empty()) {
-    assert(false); //discard code path
-    /*
-		pCheck = new SqtSanityCheck();
-		normal.readFile(forwardFN, 1);
-		shuffled.readFile(decoyFN, -1);
-     */
-  } else {
-    assert(false); //discard code path
-    /*
-		pCheck = new SqtSanityCheck();
-		normal.readFile(forwardFN, decoyWC, false);
-		shuffled.readFile(forwardFN, decoyWC, true);
-     */
-  }
+  } 
 }
 
 /**

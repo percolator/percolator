@@ -45,7 +45,7 @@ include_directories(${XSD_INCLUDE_DIR})
   
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
-find_package(Boost COMPONENTS filesystem system REQUIRED)
+find_package(Boost COMPONENTS filesystem system thread REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
 else(Boost_FOUND)
@@ -126,7 +126,11 @@ if(MINGW OR WIN32)
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
-
+if(PROFILING)
+  set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set(CMAKE_CXX_FLAGS "-Wall -g -pg -fprofile-arcs -ftest-coverage")
+  MESSAGE( STATUS "Profiling mode activated")
+endif()
  
 # SET LIBRARIES FOR PERCOLATOR
 target_link_libraries(percolator perclibrary fido pthread ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})

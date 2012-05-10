@@ -29,6 +29,8 @@
 #include <vector>
 
 
+/** data container that will store all the information of the proteins, peptides, type, qvalues,pvalues etc..**/
+
 class Protein {
   
   public:
@@ -175,16 +177,8 @@ class Protein {
     
 };
 
-/** To be used to sort the array of proteins **/
+/** set of helper functions to sort data structures and some operations overloaded **/
 
-    struct ProbOrder : public binary_function<Protein, Protein, bool> {
-      bool
-      operator()(const Protein& __x, const Protein& __y) const 
-      {
-	return (__x.getPEP() < __y.getPEP() );
-      }
-    };
-  
     struct IntCmpProb {
     bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
         return 
@@ -193,13 +187,6 @@ class Protein {
 	   || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
 	      && (lhs.second->getName() < rhs.second->getName()) )  
 	   );
-      }
-    };
-    
-    struct IntCmp {
-    bool operator()(const std::pair<const double,std::vector<std::string> > &lhs, 
-		    const std::pair<const double,std::vector<std::string> > &rhs) {
-        return lhs.first < rhs.first;
       }
     };
 
@@ -219,51 +206,11 @@ class Protein {
       return boost::iequals(a.getName(),b.getName());
     }
     
-    inline bool mycomp_pair(const std::pair<const std::string,double>& a, 
-			    const std::pair<const std::string,double>& b) {
-      return a.second < b.second;
-    }
-    
     inline double myminfunc(double a, double b) 
     {
 	return a > b ? b : a;
     }
-    
-    struct pair_min {
-      pair_min() {}
-      std::pair<double,std::vector<std::string> > operator()(std::pair<double,std::vector<std::string> > & sum, 
-							     std::pair<double,std::vector<std::string> > & i) {
-        return pair<double,std::vector<std::string> >(myminfunc(sum.first,i.first), i.second);
-      }
-    };
 
-
-    struct mul_x {
-      mul_x(double x) : x(x) {}
-      std::pair<double,std::vector<std::string> > 
-      operator()(std::pair<double,std::vector<std::string> > y) 
-      { return std::pair<double,std::vector<std::string> >(y.first * x,y.second ); }
-      private:
-	double x;
-    };
-
-    inline std::map<const double,std::vector<std::string> >::const_iterator 
-    MapSearchByValue(const std::map<double,std::vector<std::string> > & SearchMap, 
-		     const std::string & SearchVal)
-    {
-      std::map<double,std::vector<std::string> >::const_iterator iRet = SearchMap.end();
-      for (std::map<double,std::vector<std::string> >::const_iterator iTer = SearchMap.begin(); 
-	   iTer != SearchMap.end(); iTer ++)
-      {
-        if (std::find(iTer->second.begin(),iTer->second.end(),SearchVal) != iTer->second.end())
-        {
-            iRet = iTer;
-            break;
-        }
-      }
-      return iRet;
-    }
-    
     struct RetrieveKey
     {
       template <typename T>
@@ -282,31 +229,54 @@ class Protein {
       }
     };
 
+    
+/** Interface with Fido **/
 
 class ProteinProbEstimator {
   
   public:
-
-    /*const static double default_gamma = 0.5; 
-    const static double default_alpha = 0.1; 
-    const static double default_beta = 0.01;*/
+    /** threshold used to estimate the protein FDR **/
     const static double psmThresholdMayu = 0.05;
+    /** threshold to compute the N of the roc curve function **/
     const static double thresholdRoc = 0.05;
     
     ProteinProbEstimator(double alpha = -1, double beta = -1, double gamma = -1, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
-			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned deepness = 3,
+			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
 			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, bool conservative = false);
     
     virtual ~ProteinProbEstimator();
     
+    /** reads the proteins from the set of scored peptides from percolator **/
     bool initialize(Scores* fullset);
+    /** initialize the estimation of the protein probabilities and the grid search **/
     void run();
+    /** write the list of proteins to the output file **/
     void writeOutputToXML(string xmlOutputFN);
-    static string printCopyright();
+
+    /** Return the number of proteins whose q value is less or equal than the threshold given**/
+    unsigned getQvaluesBelowLevel(double level);
+    unsigned getQvaluesBelowLevelDecoy(double level);
+   
+    /** populate the list of proteins**/
+    void setTargetandDecoysNames();
+    /** return the data structure for the proteins **/
+    std::map<const std::string,Protein*> getProteins();
+    /** update the proteins with the computed qvalues and pvalues**/
+    void updateProteinProbabilities();
+    /** compute estimated qvalues from the PEP**/
+    void estimateQValues();
+    /** compute pvalues from the scored target/decoy proteins**/
+    void estimatePValues(); 
+    /** compute empirical qvalues from the target/decoy proteins**/
+    void estimateQValuesEmp();
+    /** compute pi0 from the set of pvalues**/
+    double estimatePi0(const unsigned int numBoot = 100);
     
-    /**setters and getters for constants **/
+    static string printCopyright();
+	
+     /**setters and getters for variables **/
     void setTiesAsOneProtein(bool tiesAsOneProtein);
     void setUsePio(bool usePi0);
     void setOutputEmpirQval(bool outputEmpirQVal);
@@ -314,7 +284,7 @@ class ProteinProbEstimator {
     void setPruneProteins(bool noprune);
     void setSeparateProteins(bool noseparate);
     void setGridSearch(bool dogridSearch);
-    void setDeepness(unsigned deepness);
+    void setDepth(unsigned depth);
     void setLambda(double lambda);
     void setThreshold(double threshold);
     void setROCN(double rocn);
@@ -329,7 +299,7 @@ class ProteinProbEstimator {
     bool getPruneProteins();
     bool getSeparateProteins();
     bool getMayuFdr();
-    bool getDeepness();
+    bool getDepth();
     bool getGridSearch();
     std::string getDecoyPatter();
     std::string getDecoyDB();
@@ -338,17 +308,6 @@ class ProteinProbEstimator {
     double getThreshold();
     double getLambda();
     double getFDR();
-    /** Return the scores whose q value is less or equal than the threshold given**/
-    unsigned getQvaluesBelowLevel(double level);
-    unsigned getQvaluesBelowLevelDecoy(double level);
-  
-    void setTargetandDecoysNames();
-    std::map<const std::string,Protein*> getProteins();
-    void updateProteinProbabilities();
-    void estimateQValues();
-    void estimatePValues(); 
-    void estimateQValuesEmp();
-    double estimatePi0(const unsigned int numBoot = 100);
     double getPi0();
     double getAlpha();
     double getBeta();
@@ -358,17 +317,25 @@ class ProteinProbEstimator {
     
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
     double getROC_N(const std::vector<unsigned> &fpArray, const std::vector<unsigned> &tpArray, int N);
-    std::pair<std::vector<double>, std::vector<double> > getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names, 
-								const std::vector<double> &probabilities);
+    void getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names,
+					   const std::vector<double> &probabilities,
+					   std::vector<double> &empq,
+					   std::vector<double> &estq);
     double getFDR_divergence(const std::vector<double> &estFDR, const std::vector<double> &empFDR, double THRESH);
-    std::pair<std::vector<unsigned>, std::vector<unsigned> > getROC(const std::vector<std::vector<string> > &names);
+    void getROC(const std::vector<std::vector<string> > &names,std::vector<unsigned> &numberFP,std::vector<unsigned> &numberTP);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
+    
+    /** functions to count number of target and decoy proteins **/
     unsigned countTargets(const std::vector<std::string> &proteinList);
     unsigned countDecoys(const std::vector<std::string> &proteinList);
     bool isTarget(const std::string& proteinName);
     bool isDecoy(const std::string& proteinName);
-    std::pair<std::set<std::string>,std::set<std::string> > getTPandPFfromPeptides(double threshold);
-
+    
+    /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
+     * this function is used to estimate the protein FDR**/
+    void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, std::set<std::string> &numberFP);
+   
+    /** variables **/
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
     ProteinFDRestimator *fastReader;
@@ -392,7 +359,7 @@ class ProteinProbEstimator {
     double fdr;
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
-    unsigned int deepness;
+    unsigned int depth;
     double gamma;
     double alpha;
     double beta;
