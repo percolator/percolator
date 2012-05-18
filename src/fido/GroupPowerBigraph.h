@@ -60,7 +60,6 @@ protected:
   bool groupProteins;
   bool noseparate;
   bool noprune;
-  //NOTE make protected
   Array<std::string> severedProteins;
   Array<double> probabilityR;
   Array<Array<std::string> > groupProtNames;

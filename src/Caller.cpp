@@ -944,7 +944,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
 
   assert( svmInput );
 
-  if (selectedCpos <= 0 || selectedCneg <= 0) {
+  if (selectedCpos >= 0 && selectedCneg >= 0) {
     xv_train.resize(xval_fold);
     xv_test.resize(xval_fold);
     if(xmlInputFN.size() > 0){
@@ -979,6 +979,7 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     }
     return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, test_fdr);
   } else {
+    //NOTE apparently it crashes here
     vector<Scores> myset(1, fullset);
     cerr << "B" << endl;
     return pCheck->getInitDirection(myset, myset, pNorm, w, test_fdr);

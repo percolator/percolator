@@ -29,7 +29,9 @@ MESSAGE( STATUS "Checking packages:" )
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
-  message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
+  message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "       Version: ${XERCESC_VERSION}")
 else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
 endif(XERCESC_FOUND)
@@ -44,13 +46,9 @@ endif(XSD_FOUND)
 include_directories(${XSD_INCLUDE_DIR})
   
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
-			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
-find_package(Boost COMPONENTS filesystem system thread REQUIRED)
-if(Boost_FOUND)
-  message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
-else(Boost_FOUND)
-  message(FATAL_ERROR "The package Boost has not been found")
-endif(Boost_FOUND)  
+			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
+			       "1.48" "1.48.0" "1.49" "1.49.0")
+find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
@@ -133,7 +131,7 @@ if(PROFILING)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido pthread ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW AND NOT WIN32)

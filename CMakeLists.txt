@@ -50,6 +50,8 @@ set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 
+set(BOOST_MIN_VERSION "1.46.0")
+
 IF(WIN32) 
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
     SET(CMAKE_FIND_LIBRARY_PREFIXES "" "lib") 
@@ -63,12 +65,18 @@ ELSEIF(UNIX)
 ENDIF(WIN32)
 
 # Detect machine architecture, on UNIX:
-if(UNIX)
+if(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
+	execute_process(COMMAND dpkg --print-architecture
+		OUTPUT_VARIABLE TARGET_ARCH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture: ${TARGET_ARCH}")
+endif(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
+if(APPLE AND NOT DEFINED ${TARGET_ARCH})
 	execute_process(COMMAND uname -m
 		OUTPUT_VARIABLE TARGET_ARCH
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
-	message(STATUS "Architecture uname -m: ${TARGET_ARCH}")
-endif(UNIX)
+	message(STATUS "Architecture: ${TARGET_ARCH}")
+endif(APPLE AND NOT DEFINED ${TARGET_ARCH})
 
 if(MINGW OR WIN32) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
@@ -156,14 +164,16 @@ set(CPACK_PACKAGE_DESCRIPTION_FILE "${PERCOLATOR_SOURCE_DIR}/src/README")
 set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/COPYING")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
 my_set(TARGET_ARCH "noarch" "set build architecture: options are i686, i386 and amd64")
-set(TARGET_ARCH "i386")
+
 IF(APPLE)
 	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-${TARGET_ARCH}")
         set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-src")
-        SET(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.4u.sdk)
-        SET(CMAKE_OSX_ARCHITECTURES ppc;i386)
-        SET(CMAKE_FIND_ROOT_PATH /Developer/SDKs/MacOSX10.4u.sdk)
+        if(${TARGET_ARCH} STREQUAL "x86_64")
+	  set(CMAKE_OSX_ARCHITECTURES "ppc;i386;ppc64;x86_64" CACHE STRING "Build architectures for OSX" FORCE)
+        else(${TARGET_ARCH} STREQUAL "x86_64")
+	  set(CMAKE_OSX_ARCHITECTURES ppc;i386 CACHE STRING "Build architectures for OSX" FORCE)
+        endif(${TARGET_ARCH} STREQUAL "x86_64")
         SET(MACOSX_BUNDLE_BUNDLE_NAME Converters)
         SET(MACOSX_BUNDLE_BUNDLE_VERSION ${VERSION})
         SET(MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION})
@@ -185,14 +195,15 @@ set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURR
 # PACKAGING OPTIONS: DEB
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1, xsdcxx, libboost-dev, libboost-filesystem-dev, libboost-system-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, libboost-thread-dev")
 
 # PACKAGING OPTIONS: RPM
 set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Käll-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, boost-filesystem (>=1.46), boost-system, boost-thread")
+set(CPACK_RPM_PACKAGE_RELOCATABLE FALSE)
 
 # NSIS package options
 # Requires NSIS for creating the package 
@@ -214,6 +225,10 @@ IF(MINGW)
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libxerces-c*.dll")
+             
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_thread*.dll")
 
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
@@ -224,8 +239,5 @@ IF(MINGW)
              FILES_MATCHING PATTERN "libstdc++*.dll")
 
 endif()
-# Use CPack
-# the following MUST appear AFTER CPACK variables have been set
+
 include(CPack)
-
-

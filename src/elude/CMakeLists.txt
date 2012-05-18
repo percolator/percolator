@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.6)
 project(PERCOLATOR_ELUDE)
 
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
@@ -32,12 +32,18 @@ set(POUT_VERSION_MINOR "3")
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
 # Detect machine architecture, on UNIX:
-if(UNIX)
+if(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
+	execute_process(COMMAND dpkg --print-architecture
+		OUTPUT_VARIABLE TARGET_ARCH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture: ${TARGET_ARCH}")
+endif(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
+if(APPLE AND NOT DEFINED ${TARGET_ARCH})
 	execute_process(COMMAND uname -m
 		OUTPUT_VARIABLE TARGET_ARCH
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
-	message(STATUS "Architecture uname -m: ${TARGET_ARCH}")
-endif(UNIX)
+	message(STATUS "Architecture: ${TARGET_ARCH}")
+endif(APPLE AND NOT DEFINED ${TARGET_ARCH})
 
 
 if(MINGW OR WIN32) # windows
@@ -158,15 +164,17 @@ set(CPACK_PACKAGE_NAME ${PACKAGE_NICKNAME})
 set(CPACK_RESOURCE_FILE_LICENSE "${PERCOLATOR_SOURCE_DIR}/src/elude/COPYING")
 set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}")
 my_set(TARGET_ARCH "noarch" "set build architecture: options are i686, i386 and amd64")
-set(TARGET_ARCH "amd64")
+
 #TODO: ADD README FILE
 IF(APPLE)
 	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-${TARGET_ARCH}")
         set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-src")
-#        SET(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.4u.sdk)
-        SET(CMAKE_OSX_ARCHITECTURES ppc;i386)
-#        SET(CMAKE_FIND_ROOT_PATH /Developer/SDKs/MacOSX10.4u.sdk)
+        if(${TARGET_ARCH} STREQUAL "x86_64")
+	  set(CMAKE_OSX_ARCHITECTURES "ppc;i386;ppc64;x86_64" CACHE STRING "Build architectures for OSX" FORCE)
+        else(${TARGET_ARCH} STREQUAL "x86_64")
+	  set(CMAKE_OSX_ARCHITECTURES ppc;i386 CACHE STRING "Build architectures for OSX" FORCE)
+        endif(${TARGET_ARCH} STREQUAL "x86_64")
         SET(MACOSX_BUNDLE_BUNDLE_NAME Elude)
         SET(MACOSX_BUNDLE_BUNDLE_VERSION ${VERSION})
         SET(MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION})
@@ -196,13 +204,12 @@ set(CPACK_RPM_PACKAGE_LICENSE "Apache 2.0 license")
 set(CPACK_RPM_PACKAGE_VENDOR "Stockholms Universitet")
 set(CPACK_RPM_PACKAGE_GROUP "Kall-lab")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1, boost-devel")
-
+set(CPACK_RPM_PACKAGE_RELOCATABLE FALSE)
 # NSIS package options
 # Requires NSIS for creating the package 
 if(MINGW)
   add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" COMMAND makensis "${CMAKE_BINARY_DIR}/cmake/windows_elude/script.nsi" DEPENDS elude) 
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/elude-${PACKAGE_VERSION}-win32.exe" )
 endif()
-# Use CPack
-# the following MUST appear AFTER CPACK variables have been set
+
 include(CPack)

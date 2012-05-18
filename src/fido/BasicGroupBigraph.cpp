@@ -153,7 +153,6 @@ double BasicGroupBigraph::likelihoodNGivenD(const Model & m, const Array<Counter
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
       double probE = PeptidePrior;
       // NOTE peptidePrior is 0.07
-      //      double probE = .5;
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
@@ -174,7 +173,6 @@ double BasicGroupBigraph::logLikelihoodNGivenD(const Model & m, const Array<Coun
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
       double probE = PeptidePrior;
       // NOTE peptidePrior is 0.07
-      //      double probE = .5;
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
