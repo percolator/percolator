@@ -214,9 +214,7 @@ double BasicGroupBigraph::probabilityNNu(const Model & m, const Counter & nNu) c
 
 double BasicGroupBigraph::probabilityNGivenD(const Model & m, const Array<Counter> & n) const
 {
-  // working version, but numerically unstable
-  //  double like = likelihoodNGivenD(m, n) * probabilityN(m, n) / likelihoodConstantCachedFunctor(m, this);
-  // log version
+
   double logLike= logLikelihoodNGivenD(m,n) + log2(probabilityN(m,n)) - logLikelihoodConstantCachedFunctor(m,this);
   return pow(2.0, logLike);
 }
@@ -273,7 +271,6 @@ Array<double> BasicGroupBigraph::probabilityEGivenD(const Model & m)
     {
       // NOTE: should this be logged?
       Vector term = pow(2.0, logLikelihoodNGivenD(m, n) - logLikelihoodConstantCachedFunctor(m, this) ) * Vector( eCorrection(m, n) );
-      //Vector term = likelihoodNGivenD(m, n)/likelihoodConstantCachedFunctor(m, this) * Vector( eCorrection(m, n) );
 
       if ( result.size() == 0 )
 	{
@@ -295,7 +292,6 @@ Array<double> BasicGroupBigraph::eCorrection(const Model & m, const Array<Counte
   for (int k=0; k<result.size(); k++)
     {
       // NOTE: check this
-
       double probEGivenD = PSMsToProteins.weights[k];
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
       double probE = PeptidePrior;

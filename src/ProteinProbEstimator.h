@@ -27,7 +27,7 @@
 #include <iterator>
 #include "ProteinFDRestimator.h"
 #include <vector>
-
+#include <boost/assign/list_of.hpp>
 
 /** data container that will store all the information of the proteins, peptides, type, qvalues,pvalues etc..**/
 

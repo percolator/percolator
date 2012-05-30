@@ -182,7 +182,6 @@ void GroupPowerBigraph::read(Scores* fullset){
     
     if(!noprune)
       subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
-      //subBasic = iterativePartitionSubgraphs(bb, 0.0);
     else
       subBasic = iterativePartitionSubgraphs(bb, -1);
 

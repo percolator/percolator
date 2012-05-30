@@ -25,7 +25,7 @@ The converters depend on Percolator itself, which must be installed first!
 Ubuntu (11.04)
 Issue the following to install the necessary dependencies for Percolator:
 
-  $ sudo apt-get install libxerces-c3.1 xsdcxx libboost-dev libboost-filesystem-dev libboost-system-dev
+  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost-filesystem-dev libboost-system-dev libboost-thread-dev
 
 the following for the converters:
 
@@ -39,21 +39,21 @@ the following for Elude:
 
   $ sudo apt-get install libboost-dev
 
-NOTE The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
-This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB or -DLEVELDB
-originally by default the boost-serialization version is taken.
-
-NOTE that the packages Xercesc-c and Xsd codesynthesis might have to be installed manually depending on which
+NOTE that the packages Xercesc-c  might have to be installed manually depending on which
 platform/repository percolator is building on. In that case follow the links below to download build and install them :
 
-http://www.codesynthesis.com/products/xsd/
 http://xerces.apache.org/xerces-c/
 
+NOTE in case you need to build Xercesc-c from the source, it is recommendable to disable the net support by adding the flag :
+
+  --disable-network
+
+     It is also recommendable to remove previous installed versions of Xercesc-c in the system.
+  
 NOTE the package LevelDB might not be available for all the repositories. In that case download and install it
 from the following link :
 
 http://code.google.com/p/leveldb/
-
 
 Then, in the directory where the package has been downloaded:
   $ sudo dpkg --install [package].deb
@@ -101,11 +101,26 @@ BUILDING (from source bundle or the repository)
 *** READ THIS CAREFULLY: you MUST install the required libraries! ***
 The following instructions are for Ubuntu (versions 10.04, 10.10 and 11.04).
 Make, Cmake and a C++ compiler are required. To build Percolator, the following
-libraries are also needed: libxerces-c-dev, xsdcxx,  libboost-dev, libboost-filesystem-dev and libboost-system-dev. 
-To build the converters: libxerces-c-dev, xsdcxx, libsqlite3-dev, libboost-dev, libboost-filesystem-dev,libboost-system-dev, libboost-serialization-dev or
+libraries are also needed: libxerces-c-dev, libboost-dev, libboost-filesystem-dev, libboost-thread-dev and libboost-system-dev. 
+To build the converters: libxerces-c-dev, libsqlite3-dev, libboost-dev, libboost-filesystem-dev,libboost-system-dev, libboost-serialization-dev or
 libleveldb-dev or libtokyocabinet-dev and zlib1g-dev. Note that tokyocabinet and leveldb are both optional libraries
 In addition, both need Code Synthesis XSD in
-it 3.3 version. All the above is automatically installed by following the steps
+it 3.3 version. 
+
+
+If the package Code Synthesis XSD is not available in the repository ( apt-get install xsdcxx ) for ubuntu systems, 
+you can either install it from the source :
+  http://www.codesynthesis.com/products/xsd/
+or use the binary version instead. You can always download the binaries version, places them in a directory 
+and indicate cmake where the binaries are located by using the flag :
+
+  -DCMAKE_PREFIX_PATH = /path-to-xsd-binaries
+
+NOTE The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
+This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB or -DLEVELDB
+originally by default the boost-serialization version is taken.
+
+All the above is automatically installed by following the steps
 below; if you do note have superuser privileges, you will have to manually
 install the mentioned libraries. The same goes for older versions of Ubuntu and
 other operating systems (as explained above under "INSTALLING").

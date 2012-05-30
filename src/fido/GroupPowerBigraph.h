@@ -44,7 +44,8 @@ public:
   pair<Array<Array<string> >, Array<double> > getDescendingProteinsAndWeights() const;
   void setAlphaBetaGamma(double alpha, double beta, double gamma);
   Array<std::string> getSeveredProteins();
-
+  //NOTE to clone object
+  //GroupPowerBigraph *clone();
 protected:
 
   void initialize();

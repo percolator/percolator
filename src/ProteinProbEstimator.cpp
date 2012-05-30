@@ -608,52 +608,58 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   double best_objective = -100000000;
   std::vector<std::vector<std::string> > names;
   std::vector<double> probs,empq,estq;
-  std::vector<unsigned> numberFP,numberTP;
+  std::vector<unsigned> numberFP,numberTP;  
+  std::vector<double> gamma_search,beta_search,alpha_search;
   
-  double gamma_search[] = {0.5};
-  double beta_search[] = {0.0, 0.01, 0.15, 0.025, 0.05};
-  double alpha_search[] = {0.01, 0.04, 0.16, 0.25, 0.36};
-  
-  if(depth == 0)
+  switch(depth)
   {
-    double gamma_search[] = {0.1,0.25, 0.5, 075, 0.9};
-    double beta_search[] = {0.0, 0.01, 0.15, 0.025,0.35,0.05,0.1};
-    double alpha_search[] = {0.01, 0.04,0.09, 0.16, 0.25, 0.36,0.5};
-  }
-  else if(depth == 1)
-  {
-    double gamma_search[] = {0.1, 0.25, 0.5, 075};
-    double beta_search[] = {0.0, 0.01, 0.15, 0.020, 0.025, 0.05};
-    double alpha_search[] = {0.01, 0.04, 0.09, 0.16, 0.25, 0.36};
-  }
-  else if(depth == 2)
-  {
-    double gamma_search[] = {0.1, 0.5, 0.75};
-    double beta_search[] = {0.0, 0.01, 0.15, 0.025, 0.05};
-    double alpha_search[] = {0.01, 0.04, 0.16, 0.25, 0.36};
+    case 0:
+      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75)(0.9);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.025)(0.035)(0.05)(0.1);
+      alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);
+      break;
+    
+    case 1:
+      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.025)(0.35)(0.05);
+      alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36);
+      break;
+      
+    case 2:
+      gamma_search = boost::assign::list_of(0.1)(0.5)(0.75);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.030)(0.05);
+      alpha_search = boost::assign::list_of(0.01)(0.04)(0.16)(0.25)(0.36);
+      break;
+    
+    default:
+      gamma_search = boost::assign::list_of(0.5);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.030)(0.05);
+      alpha_search = boost::assign::list_of(0.01)(0.04)(0.16)(0.25)(0.36);
   }
 
   if(__alpha != -1)
-    double alpha_search[] = {__alpha};
+    alpha_search = boost::assign::list_of(__alpha);
   if(__beta != -1)
-    double beta_search[] = {__beta};
+    beta_search = boost::assign::list_of(__beta);
   if(__gamma != -1)
-    double gamma_search[] = {__gamma};
+    gamma_search = boost::assign::list_of(__gamma);
   
-  for (unsigned int i=0; i<sizeof(gamma_search)/sizeof(double); i++)
+  //NOTE paralellize it for gamma, build copy constructor for fido
+  
+  for (unsigned int i = 0; i < gamma_search.size(); i++)
   {
-    for (unsigned int j=0; j<sizeof(alpha_search)/sizeof(double); j++)
+    for (unsigned int j = 0; j < alpha_search.size(); j++)
     {
-      for (unsigned int k=0; k<sizeof(beta_search)/sizeof(double); k++)
+      for (unsigned int k = 0; k < beta_search.size(); k++)
       {
-	gamma = gamma_search[i];
-	alpha = alpha_search[j];
-	beta = beta_search[k];
+	double gamma_local = gamma_search[i];
+	double alpha_local = alpha_search[j];
+	double beta_local = beta_search[k];
 	
 	if(VERB > 2)
-	  std::cerr << "Grid searching Alpha= " << alpha << " Beta= " << beta << " Gamma= " << gamma << std::endl;
+	  std::cerr << "Grid searching Alpha= " << alpha_local << " Beta= " << beta_local << " Gamma= " << gamma_local << std::endl;
 	
-	proteinGraph->setAlphaBetaGamma(alpha, beta, gamma);
+	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();
 	proteinGraph->getProteinProbsAndNames(names,probs);
 	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
@@ -661,18 +667,18 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	
 	double rocR = getROC_N(numberFP, numberTP, rocN);
 	double fdr_mse = getFDR_divergence(estq, empq, threshold);
-	double current_objective = (lambda * rocR) - ((1-lambda) * (fdr_mse));
+	double current_objective = (lambda * rocR) - fabs(((1-lambda) * (fdr_mse)));
 	
 	if (current_objective > best_objective)
 	{
 	  best_objective = current_objective;
-	  gamma_best = gamma;
-	  alpha_best = alpha;
-	  beta_best = beta;
+	  gamma_best = gamma_local;
+	  alpha_best = alpha_local;
+	  beta_best = beta_local;
 	}
 	
 	if(VERB > 2)
-	  std::cerr << "Roc " << rocN <<" , MSE and objective function value " << " : " << rocR << " " << fdr_mse << " " << current_objective << std::endl;
+	  std::cerr << "Roc " << rocN <<" , MSE and objective function value " << " : " << rocR << " " << fabs(fdr_mse) << " " << current_objective << std::endl;
 	
       }
     }

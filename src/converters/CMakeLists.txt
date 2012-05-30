@@ -59,8 +59,6 @@ set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 
-set(BOOST_MIN_VERSION "1.46.0")
-
 IF(NOT APPLE)
   set(CMAKE_CXX_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
   set(CMAKE_C_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
@@ -178,6 +176,7 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
+set(BOOST_MIN_VERSION "1.46.0")
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
 			       "1.48" "1.48.0" "1.49" "1.49.0")
