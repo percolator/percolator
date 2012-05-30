@@ -17,7 +17,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <tcutil.h>
 #include "ProteinProbEstimator.h"
 
 /** Helper functions **/
