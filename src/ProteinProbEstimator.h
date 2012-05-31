@@ -23,7 +23,6 @@
 #include <boost/algorithm/string.hpp>
 #include <functional>
 #include <numeric>
-#include "converters/MSToolkit/MSToolkitTypes.h"
 #include <iterator>
 #include "ProteinFDRestimator.h"
 #include <vector>

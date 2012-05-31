@@ -524,8 +524,8 @@ void ProteinProbEstimator::updateProteinProbabilities()
 {
   std::vector<double> peps;
   std::vector<std::vector<std::string> > proteinNames;
-  transform(pepProteins.begin(), pepProteins.end(), back_inserter(peps), RetrieveKey());
-  transform(pepProteins.begin(), pepProteins.end(), back_inserter(proteinNames), RetrieveValue());
+  std::transform(pepProteins.begin(), pepProteins.end(), std::back_inserter(peps), RetrieveKey());
+  std::transform(pepProteins.begin(), pepProteins.end(), std::back_inserter(proteinNames), RetrieveValue());
   unsigned qindex = 0;
   for (unsigned i = 0; i < peps.size(); i++) 
   {
@@ -620,7 +620,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
     
     case 1:
       gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
-      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.025)(0.35)(0.05);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.025)(0.035)(0.05);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36);
       break;
       
@@ -643,7 +643,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   if(__gamma != -1)
     gamma_search = boost::assign::list_of(__gamma);
   
-  //NOTE paralellize it for gamma, build copy constructor for fido
+  //NOTE paralellize it for gamma, build copy constructor for fido, be careful with shared variables (mutex)
   
   for (unsigned int i = 0; i < gamma_search.size(); i++)
   {
