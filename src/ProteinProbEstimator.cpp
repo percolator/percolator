@@ -613,19 +613,19 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   switch(depth)
   {
     case 0:
-      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75)(0.9);
+      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
       beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.025)(0.035)(0.05)(0.1);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);
       break;
     
     case 1:
-      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
+      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5);
       beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.025)(0.035)(0.05);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36);
       break;
       
     case 2:
-      gamma_search = boost::assign::list_of(0.1)(0.5)(0.75);
+      gamma_search = boost::assign::list_of(0.1)(0.5);
       beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.030)(0.05);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.16)(0.25)(0.36);
       break;
@@ -851,7 +851,7 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	    if(empFDR < previousEmpQ) empFDR = previousEmpQ;
 	    else previousEmpQ = empFDR;
 	    
-	    if(estFDR <= thresholdRoc && updateRocN) rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,1000)));
+	    if(estFDR <= thresholdRoc && updateRocN) rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
 	    
 	    estq.push_back(estFDR);
 	    empq.push_back(empFDR);
