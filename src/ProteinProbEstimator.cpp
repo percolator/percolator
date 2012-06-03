@@ -235,6 +235,7 @@ void ProteinProbEstimator::run(){
   proteinGraph->setAlphaBetaGamma(alpha,beta,gamma);
   proteinGraph->getProteinProbs();
   pepProteins.clear();
+  //NOTE perhaps a reference instead of copying??
   pepProteins = proteinGraph->getProteinProbsPercolator();
   
   estimateQValues();
@@ -255,7 +256,7 @@ void ProteinProbEstimator::run(){
 
   if(VERB > 1)
   {
-    std::cerr << "\nThe number of Proteins idenfified at qvalue = 0.01 is : " << getQvaluesBelowLevel(0.01) << std::endl;
+    std::cerr << "\nThe number of Proteins idenfified at q-value = 0.01 is : " << getQvaluesBelowLevel(0.01) << std::endl;
   }
   
   time_t procStart;
@@ -266,9 +267,7 @@ void ProteinProbEstimator::run(){
     << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
     << " cpu seconds or " << diff << " seconds wall time" << endl;
   
-    
-  //NOTE printing proteins to output or file
-   //proteinGraph->printProteinWeights();
+
    if(tabDelimitedOut && !proteinFN.empty())
    {
       ofstream proteinOut(proteinFN.data(), ios::out);
@@ -1000,12 +999,12 @@ unsigned ProteinProbEstimator::countDecoys(const std::vector<std::string> &prote
 }
 
 bool ProteinProbEstimator::isDecoy(const std::string& proteinName) 
-{
+{  //NOTE faster but I assume the label that identifies decoys is in decoyPattern
    return proteinName.find(decoyPattern) != std::string::npos;
 }
     
 bool ProteinProbEstimator::isTarget(const std::string& proteinName) 
-{
+{  //NOTE faster but I assume the label that identifies decoys is in decoyPattern
    return proteinName.find(decoyPattern) == std::string::npos;
 }
 
