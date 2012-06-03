@@ -243,7 +243,9 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
-			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, bool conservative = false);
+			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, 
+			 bool conservative = false, bool outputDecoys = false, bool tabDelimitedOut = false, 
+			 std::string proteinFN = "");
     
     virtual ~ProteinProbEstimator();
     
@@ -272,6 +274,8 @@ class ProteinProbEstimator {
     void estimateQValuesEmp();
     /** compute pi0 from the set of pvalues**/
     double estimatePi0(const unsigned int numBoot = 100);
+    /** print a tab delimited list of proteins probabilities in a file or stdout**/
+    void print(ostream& myout);
     
     static string printCopyright();
 	
@@ -291,6 +295,9 @@ class ProteinProbEstimator {
     void setDecoyDb(std::string decoyDB);
     void setMayusFDR(bool mayufdr);
     void setFDR(double fdr);
+    void setOutputDecoys(bool outputDecoys);
+    void setTabDelimitedOutput(bool tabDelimitedOut);
+    void setProteinFN(std::string proteinFN);
     bool getTiesAsOneProtein();
     bool getUsePio();
     bool getOutputEmpirQval();
@@ -300,6 +307,9 @@ class ProteinProbEstimator {
     bool getMayuFdr();
     bool getDepth();
     bool getGridSearch();
+    bool getOutputDecoys();
+    bool getTabDelimitedOutput();
+    std::string getProteinFN();
     std::string getDecoyPatter();
     std::string getDecoyDB();
     std::string getTargetDB();
@@ -354,6 +364,8 @@ class ProteinProbEstimator {
     bool mayufdr;
     bool updateRocN;
     bool conservative;
+    bool tabDelimitedOut;
+    bool outputDecoys;
     double pi0;
     double fdr;
     unsigned int numberDecoyProteins;
@@ -368,6 +380,7 @@ class ProteinProbEstimator {
     std::string targetDB;
     std::string decoyDB;
     std::string decoyPattern;
+    std::string proteinFN;
     
 };
 

@@ -68,7 +68,8 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
 			  bool __dogridSearch, unsigned __depth, double __lambda, double __threshold, unsigned __rocN,
-			  std::string __targetDB, std::string __decoyDB, std::string __decoyPattern, bool __mayufdr, bool __conservative) {
+			  std::string __targetDB, std::string __decoyDB, std::string __decoyPattern, bool __mayufdr, 
+			  bool __conservative, bool __outputDecoys, bool __tabDelimitedOut, std::string __proteinFN) {
   peptideScores = 0;
   proteinGraph = 0;
   gamma = gamma_par;
@@ -102,6 +103,9 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   {
     updateRocN = true;
   }
+  outputDecoys = __outputDecoys;
+  tabDelimitedOut = __tabDelimitedOut;
+  proteinFN = __proteinFN;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator()
@@ -246,12 +250,9 @@ void ProteinProbEstimator::run(){
     pi0 = fdr;
   }
   
-  if(ProteinProbEstimator::getOutputEmpirQval())
-    estimateQValuesEmp();
-  
+  estimateQValuesEmp();
   updateProteinProbabilities();
-  proteinGraph->printProteinWeights();
-  
+
   if(VERB > 1)
   {
     std::cerr << "\nThe number of Proteins idenfified at qvalue = 0.01 is : " << getQvaluesBelowLevel(0.01) << std::endl;
@@ -264,8 +265,50 @@ void ProteinProbEstimator::run(){
   if (VERB > 1) cerr << "Estimating Protein Probabilities took : "
     << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
     << " cpu seconds or " << diff << " seconds wall time" << endl;
+  
+    
+  //NOTE printing proteins to output or file
+   //proteinGraph->printProteinWeights();
+   if(tabDelimitedOut && !proteinFN.empty())
+   {
+      ofstream proteinOut(proteinFN.data(), ios::out);
+      print(proteinOut);
+      proteinOut.close();
+   }
+   else
+   {
+      print(std::cout);
+   }
+  
 }
 
+void ProteinProbEstimator::print(ostream& myout) {
+  
+  std::vector<std::pair<std::string,Protein*> > myvec(proteins.begin(), proteins.end());
+  std::sort(myvec.begin(), myvec.end(), IntCmpProb());
+  
+  myout
+      << "ProteinId\tq-value\tposterior_error_prob\tpeptideIds"
+      << std::endl;
+      
+  for (std::vector<std::pair<std::string,Protein*> > ::const_iterator myP = myvec.begin(); 
+	 myP != myvec.end(); myP++) 
+  {
+    if( (!outputDecoys && !myP->second->getIsDecoy()) || (outputDecoys))
+    {
+      myout << myP->second->getName() << "\t" << myP->second->getQ() << "\t" << myP->second->getPEP() << "\t";
+      std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
+      for(std::vector<Protein::Peptide*>::const_iterator peptIt = peptides.begin(); peptIt != peptides.end(); peptIt++)
+      {
+	 if((*peptIt)->name != "")
+	 {
+	    myout << (*peptIt)->name << "  ";
+	 }
+      }
+      myout << std::endl;
+    }
+  }
+}
 
 void ProteinProbEstimator::estimatePValues()
 {
@@ -704,30 +747,34 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
   os << "  <proteins>" << endl;
   for (std::vector<std::pair<std::string,Protein*> > ::const_iterator myP = myvec.begin(); 
 	 myP != myvec.end(); myP++) {
-
-        os << "    <protein p:protein_id=\"" << myP->second->getName() << "\"";
-  
-        if (Scores::isOutXmlDecoys()) {
-          if(myP->second->getIsDecoy()) os << " p:decoy=\"true\"";
-          else  os << " p:decoy=\"false\"";
-        }
-        os << ">" << endl;
-        os << "      <pep>" << myP->second->getPEP() << "</pep>" << endl;
-        if(ProteinProbEstimator::getOutputEmpirQval())
-          os << "      <q_value_emp>" << myP->second->getQemp() << "</q_value_emp>\n";
-        os << "      <q_value>" << myP->second->getQ() << "</q_value>\n";
-	if(ProteinProbEstimator::getOutputEmpirQval())
-	  os << "      <p_value>" << myP->second->getP() << "</p_value>\n";
-	std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
-	for(std::vector<Protein::Peptide*>::const_iterator peptIt = peptides.begin(); peptIt != peptides.end(); peptIt++)
+     
+        if( (!outputDecoys && !myP->second->getIsDecoy()) || (outputDecoys))
 	{
-	  if((*peptIt)->name != "")
-	  {
-	    os << "      <peptide_seq seq=\"" << (*peptIt)->name << "\"/>"<<endl;
+
+	  os << "    <protein p:protein_id=\"" << myP->second->getName() << "\"";
+  
+	  if (outputDecoys) {
+	    if(myP->second->getIsDecoy()) os << " p:decoy=\"true\"";
+	    else  os << " p:decoy=\"false\"";
 	  }
+	  os << ">" << endl;
+	  os << "      <pep>" << myP->second->getPEP() << "</pep>" << endl;
+	  if(ProteinProbEstimator::getOutputEmpirQval())
+	    os << "      <q_value_emp>" << myP->second->getQemp() << "</q_value_emp>\n";
+	  os << "      <q_value>" << myP->second->getQ() << "</q_value>\n";
+	  if(ProteinProbEstimator::getOutputEmpirQval())
+	    os << "      <p_value>" << myP->second->getP() << "</p_value>\n";
+	  std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
+	  for(std::vector<Protein::Peptide*>::const_iterator peptIt = peptides.begin(); peptIt != peptides.end(); peptIt++)
+	  {
+	    if((*peptIt)->name != "")
+	    {
+	      os << "      <peptide_seq seq=\"" << (*peptIt)->name << "\"/>"<<endl;
+	    }
 	    
+	  }
+	  os << "    </protein>" << endl;
 	}
-        os << "    </protein>" << endl;
   }
     
   os << "  </proteins>" << endl << endl;
@@ -1037,6 +1084,26 @@ void ProteinProbEstimator::setThreshold(double __threshold)
   threshold = __threshold;
 }
 
+void ProteinProbEstimator::setFDR(double __fdr)
+{
+  fdr = __fdr;
+}
+
+void ProteinProbEstimator::setOutputDecoys(bool __outputDecoys)
+{
+  outputDecoys = __outputDecoys;
+}
+
+void ProteinProbEstimator::setProteinFN(std::string __proteinFN)
+{
+  proteinFN = __proteinFN;
+}
+
+void ProteinProbEstimator::setTabDelimitedOutput(bool __tabDelimitedOut)
+{
+  tabDelimitedOut = __tabDelimitedOut;
+}
+
 bool ProteinProbEstimator::getTiesAsOneProtein()
 {
   return tiesAsOneProtein;
@@ -1133,3 +1200,21 @@ double ProteinProbEstimator::getThreshold()
 {
   return threshold;
 }
+
+bool ProteinProbEstimator::getOutputDecoys()
+{
+  return outputDecoys;
+}
+
+string ProteinProbEstimator::getProteinFN()
+{
+  return proteinFN;
+}
+
+bool ProteinProbEstimator::getTabDelimitedOutput()
+{
+  return tabDelimitedOut;
+}
+
+
+

@@ -47,7 +47,7 @@ void SqtReader::translateSqtFileToXML(const std::string fn,
       string tcf = "";
       char * tcd;
       string str;
-      
+      //NOTE this is actually not needed in case we compile with the boost-serialization scheme
       try
       {
         boost::filesystem::path ph = boost::filesystem::unique_path();

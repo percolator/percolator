@@ -219,7 +219,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("U",
       "unique-peptides",
-      "Do not remove redundant peptides, keep all PSMS and exclude Peptide Level Probability.",
+      "Do not remove redundant peptides, keep all PSMS and exclude peptide level probabilities.",
       "",
       FALSE_IF_SET);
   cmd.defineOption("s",
@@ -267,7 +267,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("q",
       "empirical-protein-q", 		   
-      "output empirical q-values (from target-decoy analysis) (Only valid if option -A is active).",
+      "output empirical q-values and p-values (from target-decoy analysis) (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
   cmd.defineOption("N",
@@ -334,6 +334,10 @@ bool Caller::parseOptions(int argc, char **argv) {
        false positive Proteins is too high (Only valid if option -A is active)",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("PR",
+      "protein-results",
+      "Output tab delimited protein probabilities results to a file instead of stdout",
+      "filename");
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -364,7 +368,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     std::string targetDB = "";
     std::string decoyDB = "";
     std::string decoyWC = "random";
-    
+    std::string proteinFN = "";
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
@@ -373,6 +377,12 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool mayusfdr = cmd.optionSet("Q");
     bool noprune = cmd.optionSet("C");
     bool noseparate = cmd.optionSet("E");
+    bool tabDelimitedOut = false;
+    bool outputDecoys = cmd.optionSet("Z");
+    if (cmd.optionSet("PR")) {
+      proteinFN = cmd.options["PR"];
+      tabDelimitedOut = true;
+    }
     //NOTE fido fails sometimes when this option is activated with big datasets
     noseparate = false;
     
@@ -404,7 +414,8 @@ bool Caller::parseOptions(int argc, char **argv) {
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					      grouProteins,noseparate,noprune,gridSearch,depth,
-					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr,conservative);
+					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr,conservative,
+					      outputDecoys,tabDelimitedOut,proteinFN);
   }
   
   if (cmd.optionSet("e")) {
