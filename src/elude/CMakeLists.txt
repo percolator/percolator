@@ -85,7 +85,7 @@ endforeach()
 
 
 if(APPLE)
-  SET(Boost_USE_STATIC_LIBS   ON)
+  SET(Boost_USE_STATIC_LIBS ON)
 endif(APPLE)
 ## FIND BOOST PACKAGE
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
@@ -105,18 +105,28 @@ link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 file(GLOB ELUDE_SOURCES *.cpp)
 file(GLOB P_SOURCES ${PERCOLATOR_SOURCE_DIR}/src/PSMDescription.cpp)
 
-add_library(eludelibrary RetentionFeatures.cpp DataManager.cpp EludeMain.cpp LibSVRModel.cpp LibsvmWrapper.cpp SVRModel.h RetentionModel.cpp EludeCaller.cpp  LTSRegression.cpp ../svm.cpp ../Normalizer.cpp ../UniNormalizer.cpp ../StdvNormalizer.cpp ../Option.cpp ../Enzyme.cpp ../PSMDescription.cpp ../Globals.cpp)
+add_library(eludelibrary STATIC RetentionFeatures.cpp DataManager.cpp EludeMain.cpp LibSVRModel.cpp LibsvmWrapper.cpp SVRModel.h RetentionModel.cpp EludeCaller.cpp  LTSRegression.cpp ../svm.cpp ../Normalizer.cpp ../UniNormalizer.cpp ../StdvNormalizer.cpp ../Option.cpp ../Enzyme.cpp ../PSMDescription.cpp ../Globals.cpp)
 
 add_executable(elude ${ELUDE_SOURCES})
 
 target_link_libraries(elude eludelibrary ${Boost_LIBRARIES})
 
 #TODO: HERE THERE SHOULD BE STUFF ABOUT LIBGCC
+# STATIC/DYNAMIC LIBRARY INCLUSION
+if(MINGW OR WIN32 OR APPLE)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
+else(MINGW OR WIN32 OR APPLE)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
+endif()
 
 IF(MINGW OR WIN32)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(elude PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 ENDIF()
+
+if(APPLE)
+  set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
+endif(APPLE)
 
 ###############################################################################
 # TESTING
@@ -138,7 +148,11 @@ add_subdirectory(data/system_tests/)
 
 #TODO: make sure the models are included in the windows installer
 if(NOT MINGW)
-  install(TARGETS elude EXPORT ELUDE DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  if(APPLE)
+    install(TARGETS elude EXPORT ELUDE DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!
+  else(APPLE)
+    install(TARGETS elude EXPORT ELUDE DESTINATION ./bin)
+  endif(APPLE)
   install(DIRECTORY data/elude/models DESTINATION ${ELUDE_MODELS_PATH}.. FILE_PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 endif()
 

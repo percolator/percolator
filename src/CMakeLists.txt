@@ -120,7 +120,7 @@ add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx seriali
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)
 
-IF(MINGW OR WIN32)
+IF(MINGW OR WIN32 OR APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
 ENDIF()
 
@@ -139,7 +139,11 @@ target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} $
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW AND NOT WIN32)
-  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  if(APPLE)
+     install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+  else(APPLE)
+    install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  endif(APPLE)
 endif()
 
 ###############################################################################
