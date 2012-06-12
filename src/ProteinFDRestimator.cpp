@@ -52,7 +52,7 @@
 #include <algorithm>
 #include <ProteinFDRestimator.h>
 #include <math.h>
-
+#include <cmath>
 
 struct RetrieveValue
 {
