@@ -56,6 +56,18 @@
 #include <set>
 #include <assert.h>
 #include <boost/thread.hpp> 
+#include <math.h>
+#include <cmath>
+#ifdef __APPLE__
+#ifdef __INTEL_COMPILER
+  #define isnan(x) _isnan(x)
+  #define isinf(x) _isinf(x)
+#else
+  #define isinf(x) std::isinf(x)
+  #define isnan(x) std::isnan(x)
+#endif
+#endif
+
 #define FASTA_MAXLINE 512	/* Requires FASTA file lines to be <512 characters */
 
 template <typename T>

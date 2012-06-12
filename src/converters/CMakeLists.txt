@@ -123,9 +123,9 @@ endforeach()
 
 
 # STATIC/DYNAMIC LIBRARY INCLUSION
-if(MINGW OR WIN32)
+if(MINGW OR WIN32 OR APPLE)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
-else(MINGW OR WIN32)
+else(MINGW OR WIN32 OR APPLE)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
 
@@ -458,8 +458,13 @@ add_subdirectory(data/system_tests/converters)
 ###############################################################################
 
 IF(NOT MINGW AND NOT WIN32)
-  install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
-  install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
+  if(APPLE)
+    install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+    install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+  else(APPLE)
+    install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
+    install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
+  endif(APPLE)
 endif()
 ###############################################################################
 # PACKAGING
@@ -479,6 +484,8 @@ set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_M
 my_set(TARGET_ARCH "noarch" "set build architecture: options are i686, i386 and amd64")
 
 IF(APPLE)
+        SET(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.7.sdk)
+        SET(CMAKE_FIND_ROOT_PATH /Developer/SDKs/MacOSX10.7.sdk)
 	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-${TARGET_ARCH}-${DB}")
         if(${TARGET_ARCH} STREQUAL "x86_64")

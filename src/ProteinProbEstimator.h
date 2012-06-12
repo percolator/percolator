@@ -27,6 +27,17 @@
 #include "ProteinFDRestimator.h"
 #include <vector>
 #include <boost/assign/list_of.hpp>
+#include <math.h>
+#include <cmath>
+#ifdef __APPLE__
+#ifdef __INTEL_COMPILER
+  #define isnan(x) _isnan(x)
+  #define isinf(x) _isinf(x)
+#else
+  #define isinf(x) std::isinf(x)
+  #define isnan(x) std::isnan(x)
+#endif
+#endif
 
 /** data container that will store all the information of the proteins, peptides, type, qvalues,pvalues etc..**/
 

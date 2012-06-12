@@ -106,6 +106,7 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
   for (int jj = 0; jj < inpString.size(); jj++) {
     signed char ch = inpString[jj];
+    //NOTE signed char ranges -128 to 127
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
       outputs += ch;
     }

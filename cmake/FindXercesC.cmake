@@ -74,6 +74,7 @@ if( MSVC )
 endif( MSVC )
 
 # if the include a the library are found then we have it
+## CHECK  FOR CORRECT VERSION OF XERCESC AND THE FUNCTIONS INCLUDED
 SET( XERCESC_FOUND 0 )
 IF(XERCESC_INCLUDE_DIR)
   IF(XERCESC_LIBRARIES)

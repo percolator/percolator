@@ -15,6 +15,14 @@ FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   ${CMAKE_PREFIX_PATH}/include
   "C:/Program Files/CodeSynthesis XSD 3.3/include"
   "D:/Program Files/CodeSynthesis XSD 3.3/include"
+  "[HKEY_CURRENT_USER\\software\\xsd]"
+  "[HKEY_CURRENT_USER]\\xsd]"
+  /usr/local
+  /usr
+  $ENV{XSDDIR}
+  ${CMAKE_PREFIX_PATH}
+  "C:/Program Files/CodeSynthesis XSD 3.3"
+  "D:/Program Files/CodeSynthesis XSD 3.3"
 )
 
 
@@ -38,8 +46,6 @@ IF(XSD_INCLUDE_DIR)
   ENDIF(XSD_EXECUTABLE)
 ENDIF(XSD_INCLUDE_DIR)
 
-# MESSAGE(STATUS "XSD_INCLUDE_DIR=${XSD_INCLUDE_DIR}")
-# MESSAGE(STATUS "XSD_EXECUTABLE=${XSD_EXECUTABLE}")
 
 MARK_AS_ADVANCED(
   XSD_INCLUDE_DIR
