@@ -362,7 +362,7 @@ else(MINGW)
   endif()
 endif()
 
-IF(MINGW OR APPLE)
+IF(MINGW)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
@@ -484,8 +484,6 @@ set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_M
 my_set(TARGET_ARCH "noarch" "set build architecture: options are i686, i386 and amd64")
 
 IF(APPLE)
-        SET(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.7.sdk)
-        SET(CMAKE_FIND_ROOT_PATH /Developer/SDKs/MacOSX10.7.sdk)
 	SET(CPACK_GENERATOR "TGZ;TBZ2;OSXX11")
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-mac-${TARGET_ARCH}-${DB}")
         if(${TARGET_ARCH} STREQUAL "x86_64")
