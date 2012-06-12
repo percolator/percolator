@@ -296,7 +296,6 @@ Array<double> BasicGroupBigraph::eCorrection(const Model & m, const Array<Counte
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
       double probE = PeptidePrior;
       // NOTE peptidePrior is 0.07
-      //      double probE = .5;
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;

@@ -345,12 +345,13 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
   
   if (cmd.optionSet("U")) {
-    if (cmd.optionSet("A")){
+    /*if (cmd.optionSet("A")){
       cerr
       << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
       << "are needed to calculate protein level ones.";
       exit(0);
-    }
+    }*/
+    //NOTE should I use psms instead of peptides when estimating protein probabilities
     reportUniquePeptides = false;
   }
 
