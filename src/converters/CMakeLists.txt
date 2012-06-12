@@ -362,7 +362,7 @@ else(MINGW)
   endif()
 endif()
 
-IF(MINGW)
+IF(MINGW OR APPLE)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
