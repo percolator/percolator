@@ -25,7 +25,7 @@ The converters depend on Percolator itself, which must be installed first!
 Ubuntu (11.04)
 Issue the following to install the necessary dependencies for Percolator:
 
-  $ sudo apt-get install libxerces-c3.1 libboost-dev libboost-filesystem-dev libboost-system-dev libboost-thread-dev
+  $ sudo apt-get install libxerces-c-dev libboost-dev libboost-filesystem-dev libboost-system-dev libboost-thread-dev
 
 the following for the converters:
 

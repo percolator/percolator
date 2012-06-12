@@ -16,12 +16,12 @@ def checkNumberOfSignificant(what,file,expected):
   success = True
   print "(*): checking number of significant "+what+" found..."
   if what=="proteins":
-    processFile = os.popen("grep \"proteins found at a q-value of 0.01\" "+file)
+    processFile = os.popen("grep \"The number of Proteins idenfified at q-value = 0.01 is :\" "+file)
   else:
     processFile = os.popen("grep \"New pi_0 estimate\" "+file)
   output = processFile.read()
   if what=="proteins":
-    extracted = float(output[0:3])
+    extracted = float(output[-3:])
   else:
     extracted = float(output[39:42])
   if extracted<expected-(5*expected/100)  or extracted>expected+(5*expected/100) : 
@@ -98,9 +98,9 @@ proteinFile="/tmp/PERCOLATOR_protein.txt"
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,615)
 # number of significant peptrides within boundaries
-success=checkNumberOfSignificant("peptides",peptideFile,390)
+success=checkNumberOfSignificant("peptides",peptideFile,412)
 # number of significant proteins within boundaries
-success=checkNumberOfSignificant("proteins",proteinFile,272)
+success=checkNumberOfSignificant("proteins",proteinFile,153)
 # psm: pi0 within boundaries
 success=checkPi0("psms",psmFile,0.8797)
 # peptides: pi0 within boundaries
