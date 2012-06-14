@@ -29,11 +29,11 @@ Issue the following to install the necessary dependencies for Percolator:
 
 the following for the converters:
 
-  $ sudo apt-get install  libsqlite3-0  libleveldb-dev leveldb-doc zlib1g-dev 
+  $ sudo apt-get install  libsqlite3-dev  libleveldb-dev leveldb-doc zlib1g-dev 
 or
-  $ sudo apt-get install  libsqlite3-0  zlib1g-dev libtokyocabinet8
+  $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libtokyocabinet8
 or
-  $ sudo apt-get install  libsqlite3-0  zlib1g-dev libboost-serialization-dev
+  $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libboost-serialization-dev
 
 the following for Elude:
 

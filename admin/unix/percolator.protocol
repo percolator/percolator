@@ -1,6 +1,6 @@
 [Protocol]
 exec=/path/to/binary "%u"
-protocol=tomahawk
+protocol=percolator
 input=none
 output=none
 helper=true

@@ -161,7 +161,9 @@ endif()
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
-  message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
+  message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "       Version: ${XERCESC_VERSION}")
 else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
 endif(XERCESC_FOUND)
@@ -453,10 +455,6 @@ enable_testing()
 # Scheduling system level tests
 add_subdirectory(data/system_tests/converters)
 # Scheduling unit level tests
-# UNCOMMENT THIS IF UNIT TESTS WILL BE ADDED IN THE FUTURE
-#if(GOOGLE_TEST)
-#  add_subdirectory(data/unit_tests/converters)
-#endif()
 
 ###############################################################################
 # INSTALLING
@@ -525,13 +523,13 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Kall <lukas.kall@cbr.su.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
 if(TOKYODB)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
-				      libtokyocabinet-dev, zlib1g-dev, libsqlite3-0, percolator (>=2.01)")
+				      libtokyocabinet-dev, zlib1g-dev, libsqlite3-dev , percolator (>=2.01)")
 elseif(LEVELDB)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
-			             leveldb-dev, zlib1g-dev, libsqlite3-0, percolator (>=2.01)")
+			             leveldb-dev, zlib1g-dev, libsqlite3-dev , percolator (>=2.01)")
 elseif(BOOSTDB)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
-                                    ,libboost-serialization-dev (>=1.46), zlib1g-dev, libsqlite3-0, percolator (>=2.01)")
+                                    ,libboost-serialization-dev (>=1.46), zlib1g-dev, libsqlite3-dev, percolator (>=2.01)")
 endif()
 
 # PACKAGING OPTIONS: RPM
