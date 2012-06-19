@@ -364,7 +364,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
   lenghts.clear();
   it = targetProteins.begin();
   it2 = decoyProteins.begin();
-  
+  unsigned num_corrected = 0;
   std::set<std::string> previouSeqs;
   double length = 0.0;
   
@@ -375,6 +375,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     if(previouSeqs.find(targetSeq) != previouSeqs.end())
     {
       length = 0.0;
+      num_corrected++;
     }
     else
     {
@@ -392,6 +393,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     if(previouSeqs.find(decoySeq) != previouSeqs.end())
     {
       length = 0.0;
+      num_corrected++;
     }
     else
     {
@@ -402,6 +404,10 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     lenghts.push_back(length);
   }
   
+  if(VERB > 2)
+  {
+    std::cerr << "There have been " << num_corrected << " of identical sequences corrected to ''" << std::endl;
+  }
   //FreeAll(previouSeqs);
   return;
 }
@@ -492,7 +498,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     double value = lenghts[index];
     values.push_back(value);
     if(VERB > 2)
-      std::cerr << "\nValue of bin : " << i << " = " << value << std::endl;
+      std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;
   }
   //there are some elements at the end that are <= nbins that could not be fitted
   if(residues > 0) values.push_back(lenghts.back());
@@ -530,7 +536,7 @@ void ProteinFDRestimator::binProteinsEqualWidth()
     double value = lenghts[index];
     values.push_back(value);
     if(VERB > 2)
-      std::cerr << "\nValue of bin : " << i << " = " << value << std::endl;
+      std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;
   }
   values.push_back(max);
   std::multimap<double,std::string>::iterator itlow,itup;
@@ -628,6 +634,10 @@ unsigned int ProteinFDRestimator::calculateProtLength(std::string protsequence)
     }
   }
   
+  if(protsequence == "MICFLSLFSSTSSHFLTICVMIKCKTKEIEMTKEVIVESFELDHTIVKAPYVRLISEEFGPKGDRITNFDVRLVQPNQNSIETAGLHTIEHLLAKLIRQRIDGMIDCSPFGCRTGFHLIMWGKHSSTDIAKVIKSSLEEIATGITWEDVPGTTLESCGNYKDHSLFAAKEWAQLIIDQGISDDPFSRHVI*")
+  {
+    std::cerr << "Protein " << "gi|228995275|ref|NP_269689.2|" << " has " << peptide.size() << " tryptic digested peptides " << std::endl;
+  }
   unsigned size = peptide.size();
   //FreeAll(peptide);
   return size;

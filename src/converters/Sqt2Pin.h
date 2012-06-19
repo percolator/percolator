@@ -37,14 +37,11 @@
 #include <string>
 #include "SqtReader.h"
 #include "Option.h"
-#include "Enzyme.h"
 #include "config.h"
 #include "serializer.hxx"
 #include "MSReader.h"
 #include "Spectrum.h"
 #include "MSToolkitTypes.h"
-#include "MassHandler.h"
-#include "SqtReader.h"
 #include "DataSet.h"
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
@@ -52,7 +49,6 @@
 #include <cmath>
 
 using namespace std;
-
 
 class Sqt2Pin {
 public:
@@ -67,14 +63,13 @@ public:
 
 protected:
 	ParseOptions parseOptions;
-        std::vector<char*> tmpDirs;
-	std::vector<std::string> tmpFNs;
 	std::string targetFN;
 	std::string decoyFN;
 	std::string xmlOutputFN;
 	std::string call;
 	std::string spectrumFile;
 	map<int, vector<double> > scan2rt;
+	SqtReader *reader;
 };
 
 int main(int argc, char **argv);

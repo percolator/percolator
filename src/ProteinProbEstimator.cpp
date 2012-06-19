@@ -167,6 +167,7 @@ void ProteinProbEstimator::run(){
      * correct identical sequences = true
      * max peptide length = 40
      */
+    //NOTE these values should be the same as the parameters used for the database search engines
     
     if(decoyPattern != "") fastReader->setDecoyPrefix(decoyPattern);
     
@@ -354,10 +355,13 @@ void ProteinProbEstimator::estimatePValues()
 
 void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, std::set<std::string> &numberFP)
 {
+  //FP = all peptides with q <= threshold and decoy
+  //TP = at least one peptide with q <= threshold and target
   //NOTE I am extracting the proteins from the unique peptides not the psms as in MAYU
   for (std::map<std::string,Protein*>::const_iterator it = proteins.begin();
        it != proteins.end(); it++)
   {
+     bool isfp = false;
      std::string protname = it->first;
      std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
      for(std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
@@ -366,10 +370,26 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std
 	Protein::Peptide *p = *itP;
 	if(p->q <= threshold)
 	{
-	  if(it->second->getIsDecoy())numberFP.insert(protname);
-	  else numberTP.insert(protname);
-	  break;
+	  if(it->second->getIsDecoy())
+	  {
+	    isfp = true;
+	  }
+	  else 
+	  {
+	    isfp = false;
+	    numberTP.insert(protname);
+	    break;
+	  }
 	}
+	/*else
+	{
+	  isfp = false;
+	}*/
+      }
+      
+      if(isfp)
+      {
+	numberFP.insert(protname);
       }
 
   }

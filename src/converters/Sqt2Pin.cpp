@@ -3,14 +3,14 @@
 #include <ssl.h>
 
 Sqt2Pin::Sqt2Pin() {
-  tmpDirs = std::vector<char*>();
-  tmpFNs = std::vector<std::string>();
+  reader = new SqtReader();
 }
 
 Sqt2Pin::~Sqt2Pin() {
   //deleting temporary folder(s)
-  for(int i=0; i<tmpDirs.size(); i++)
-    rmdir(tmpDirs[i]);
+  //NOTE destroy reader??
+  if(reader)
+    delete reader;
 }
 
 string Sqt2Pin::extendedGreeter() {
@@ -161,7 +161,8 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     cerr << extendedGreeter();
   }
   if (cmd.optionSet("Y")) {
-    tmpFNs.push_back(cmd.options["Y"]);
+    //tmpFNs.push_back(cmd.options["Y"]);
+    reader->setFile(cmd.options["Y"]);
   }
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
@@ -394,23 +395,23 @@ int Sqt2Pin::run() {
     
     std::cerr << "Reading input from sqt files:\n";
     
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
-        0, tmpDirs, tmpFNs);
-    SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
+        &maxCharge, &minCharge, Reader::justSearchMaxMinCharge, databases,
+        0/*, tmpDirs, tmpFNs*/);
+    reader->translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge, databases,
-        0, tmpDirs, tmpFNs);
+        &maxCharge, &minCharge,  Reader::justSearchMaxMinCharge, databases,
+        0/*, tmpDirs, tmpFNs*/);
     // Now we do full parsing of the Sqt file, and translating it to XML
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  SqtReader::fullParsing, databases,
-        0, tmpDirs, tmpFNs);
-    SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
+        &maxCharge, &minCharge,  Reader::fullParsing, databases,
+        0/*, tmpDirs, tmpFNs*/);
+    reader->translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::fullParsing, databases,
-        0, tmpDirs, tmpFNs);
+        &maxCharge, &minCharge, Reader::fullParsing, databases,
+        0/*, tmpDirs, tmpFNs*/);
 
   } else {
     // First we only search for the maxCharge and minCharge.
@@ -418,15 +419,15 @@ int Sqt2Pin::run() {
     
     std::cerr << "Reading input from a combined (target-decoy) sqt file .." << std::endl;
     
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
-        0, tmpDirs, tmpFNs);
+        &maxCharge, &minCharge, Reader::justSearchMaxMinCharge, databases,
+        0/*, tmpDirs, tmpFNs*/);
     // Now we do full parsing of the Sqt file, and translating it to XML
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
+    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
         ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::fullParsing, databases,
-        0, tmpDirs, tmpFNs);
+        &maxCharge, &minCharge, Reader::fullParsing, databases,
+        0/*, tmpDirs, tmpFNs*/);
   }
 
   // read retention time if sqt2pin was invoked with -2 option

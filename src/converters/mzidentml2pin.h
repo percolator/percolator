@@ -14,7 +14,7 @@
 #include "DataSet.h"
 #include "MassHandler.h"
 #include "FragSpectrumScanDatabase.h"
-#include "SqtReader.h"
+#include "Reader.h"
 #include "parser.hxx"
 #include "Option.h"
 #include "config.h"
