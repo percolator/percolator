@@ -17,14 +17,8 @@
 
 #include "SqtReader.h"
 
-SqtReader::SqtReader()
+SqtReader::SqtReader(ParseOptions po):Reader(po)
 {
-
-}
-
-SqtReader::SqtReader(const SqtReader& other)
-{
-
 }
 
 SqtReader::~SqtReader()
@@ -32,18 +26,10 @@ SqtReader::~SqtReader()
 
 }
 
-SqtReader& SqtReader::operator=(const SqtReader& other)
+void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match,  
+			::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  
+			std::string psmId , FragSpectrumScanDatabase* database ) 
 {
-return *this;
-}
-
-bool SqtReader::operator==(const SqtReader& other) const
-{
-///TODO: return ...;
-}
-
-void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const ParseOptions & po,  ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  
-			int minCharge, int maxCharge , std::string psmId , FragSpectrumScanDatabase* database ) {
 
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   
@@ -239,7 +225,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
     database->savePsm(scan, psm_p);
   }
   else
-  { 
+  { //NOTE need this make sure this works okay
     std::auto_ptr< percolatorInNs::features >  features_p2( new percolatorInNs::features( *features_p->_clone() ) );
     std::auto_ptr< percolatorInNs::peptideType >  peptide_p2( new percolatorInNs::peptideType( *peptide_p->_clone() ) );
     
@@ -276,25 +262,50 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match, const P
   }
 }
 
+void SqtReader::getMaxMinCharge(string fn)
+{
+  int charge = 0;
+  std::string line;
+  std::istringstream lineParse;
+  std::ifstream sqtIn;
+  unsigned int scanExtra;
+  std::string tmp;
+  
+  sqtIn.open(fn.c_str(), std::ios::in);
+  if (!sqtIn) {
+    std::cerr << "Could not open file " << fn << std::endl;
+    exit(-1);
+  }
+
+  ;
+  while (getline(sqtIn, line)) {
+    if (line[0] == 'S' && sqtIn.peek() != 'S') 
+    {
+      lineParse.clear();
+      lineParse.str(line);
+      lineParse >> tmp >> tmp >> scanExtra >> charge;
+      if (minCharge > charge) minCharge = charge;
+      if (maxCharge < charge) maxCharge = charge; 
+    }
+     
+  }
+  sqtIn.close();
+}
+
+
 void SqtReader::read(const std::string fn,
     ::percolatorInNs::featureDescriptions & fds,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,
-      bool isDecoy, const ParseOptions & po, int* maxCharge,  int* minCharge,
-      parseType pType, FragSpectrumScanDatabase* database) {
+      bool isDecoy,FragSpectrumScanDatabase* database) {
 
-  std::cerr << "Reading sqt " << fn << std::endl;
   
   std::string ptmAlphabet;
-  // Normal + Amino acid + PTM + hitsPerSpectrum + doc
-  const int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3;
-
   int label;
   double *feature, *regressionFeature;
   int numSpectra;
   std::string fileId;
-
-  int n = 0, charge = 0, ms = 0;
-
+  int charge;
+  int n = 0, ms = 0;
   std::string line, tmp, prot;
   std::istringstream lineParse;
   std::ifstream sqtIn;
@@ -303,6 +314,7 @@ void SqtReader::read(const std::string fn,
     std::cerr << "Could not open file " << fn << std::endl;
     exit(-1);
   }
+  
   bool look = false;
   unsigned int scanExtra;
   while (getline(sqtIn, line)) {
@@ -311,12 +323,6 @@ void SqtReader::read(const std::string fn,
       lineParse.str(line);
       lineParse >> tmp >> tmp >> scanExtra >> charge;
       look = true;
-
-      if ( pType == justSearchMaxMinCharge ) {
-        if (*minCharge > charge) *minCharge = charge;
-        if (*maxCharge < charge) *maxCharge = charge;
-      }
-
       ms = 0;
     }
      
@@ -339,9 +345,7 @@ void SqtReader::read(const std::string fn,
 	}
     }
   }
-  if ( pType == justSearchMaxMinCharge ) {
-    return;
-  }
+
   if (n <= 0) {
     std::cerr << "The file " << fn << " does not contain any records"
         << std::endl;
@@ -352,8 +356,7 @@ void SqtReader::read(const std::string fn,
   sqtIn.seekg(0, std::ios::beg);
 
   if ( fds.featureDescription().size() == 0 ) {
-    addFeatureDescriptions(fds,*minCharge,
-        *maxCharge,
+    addFeatureDescriptions(fds,
         Enzyme::getEnzymeType() != Enzyme::NO_ENZYME 			    ,
         po.calcPTMs,
         po.pngasef,
@@ -377,8 +380,7 @@ void SqtReader::read(const std::string fn,
   while (getline(sqtIn, line)) {
     if (line[0] == 'S') {
       if (lines > 1) {
-        readSectionS( buff.str(), fsss , theMs, isDecoy, po, *minCharge,
-            *maxCharge, id.str(), database);
+        readSectionS( buff.str(), fsss , theMs, isDecoy,id.str(), database);
       }
       buff.str("");
       buff.clear();
@@ -412,19 +414,109 @@ void SqtReader::read(const std::string fn,
   }
   if (lines > 1) {
     std::string idstr = id.str();
-    readSectionS(  buff.str(), fsss, theMs, isDecoy, po,  *minCharge, *maxCharge, id.str(), database);
+    readSectionS(  buff.str(), fsss, theMs, isDecoy, id.str(), database);
   }
   sqtIn.close();
 }
 
-void  SqtReader::readSectionS( std::string record , ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, std::set<int> & theMs,  
-			       bool isDecoy, const ParseOptions & po,  int minCharge, int maxCharge, std::string psmId, FragSpectrumScanDatabase* database   ) {
+void  SqtReader::readSectionS( std::string record ,::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, 
+			       std::set<int> & theMs, bool isDecoy,std::string psmId, FragSpectrumScanDatabase* database   ) {
   std::set<int>::const_iterator it;
   for (it = theMs.begin(); it != theMs.end(); it++) {
     std::ostringstream stream;
     stream << psmId << "_" << (*it + 1);
-    readPSM(isDecoy,record,*it, po, fsss, minCharge, maxCharge, stream.str(), database);
+    readPSM(isDecoy,record,*it, fsss, stream.str(), database);
   }
   return;
 }
 
+bool SqtReader::checkValidity(std::string file)
+{
+  bool ismeta = false;
+  std::ifstream fileIn(file.c_str(), std::ios::in);
+  if (!fileIn) {
+    std::cerr << "Could not open file " << file << std::endl;
+    exit(-1);
+  }
+  std::string line;
+  if (!getline(fileIn, line)) {
+    std::cerr << "Could not read file " << file << std::endl;
+    exit(-1);
+  }
+  fileIn.close();
+  if (line.size() > 1 && line[0]=='H' && (line[1]=='\t' || line[1]==' ')) {
+    if (line.find("SQTGenerator") == std::string::npos) {
+      std::cerr << "SQT file not generated by CRUX: " << file << std::endl;
+      exit(-1);
+    }
+  }
+  else
+  {
+    ismeta = true;
+  }
+  return ismeta;
+}
+
+void SqtReader::addFeatureDescriptions( 
+    percolatorInNs::featureDescriptions & fe_des,bool doEnzyme,
+    bool calcPTMs, bool doPNGaseF,
+    const std::string& aaAlphabet,
+    bool calcQuadratic) 
+{
+  
+  size_t numFeatures;
+  int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum, pngFeatNum,
+  aaFeatNum, intraSetFeatNum, quadraticFeatNum, docFeatNum;
+
+  percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  fe_des.featureDescription();
+
+  push_backFeatureDescription( fd_sequence, "lnrSp");
+  push_backFeatureDescription( fd_sequence,"deltLCn");
+  push_backFeatureDescription( fd_sequence,"deltCn");
+  push_backFeatureDescription( fd_sequence,"Xcorr");
+  push_backFeatureDescription( fd_sequence,"Sp");
+  push_backFeatureDescription( fd_sequence,"IonFrac");
+  push_backFeatureDescription( fd_sequence,"Mass");
+  push_backFeatureDescription( fd_sequence,"PepLen");
+
+  for (int charge = minCharge; charge <= maxCharge; ++charge) {
+    std::ostringstream cname;
+    cname << "Charge" << charge;
+    push_backFeatureDescription( fd_sequence,cname.str().c_str());
+
+  }
+  if (doEnzyme) {
+    enzFeatNum = fd_sequence.size();
+    push_backFeatureDescription( fd_sequence,"enzN");
+    push_backFeatureDescription( fd_sequence,"enzC");
+    push_backFeatureDescription( fd_sequence,"enzInt");
+  }
+  numSPFeatNum = fd_sequence.size();
+  push_backFeatureDescription( fd_sequence,"lnNumSP");
+  push_backFeatureDescription( fd_sequence,"dM");
+  push_backFeatureDescription( fd_sequence,"absdM");
+  if (calcPTMs) {
+    ptmFeatNum = fd_sequence.size();
+    push_backFeatureDescription( fd_sequence,"ptm");
+  }
+  if (doPNGaseF) {
+    pngFeatNum = fd_sequence.size();
+    push_backFeatureDescription( fd_sequence,"PNGaseF");
+  }
+  if (!aaAlphabet.empty()) {
+    aaFeatNum = fd_sequence.size();
+    for (std::string::const_iterator it = aaAlphabet.begin(); it
+    != aaAlphabet.end(); it++)
+      push_backFeatureDescription( fd_sequence,*it + "-Freq");
+  }
+  if (calcQuadratic) {
+    quadraticFeatNum = fd_sequence.size();
+    for (int f1 = 1; f1 < quadraticFeatNum; ++f1) {
+      for (int f2 = 0; f2 < f1; ++f2) {
+        std::ostringstream feat;
+        feat << "f" << f1 + 1 << "*" << "f" << f2 + 1;
+        push_backFeatureDescription( fd_sequence,feat.str().c_str());
+      }
+    }
+  }
+}

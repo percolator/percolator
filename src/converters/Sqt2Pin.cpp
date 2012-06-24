@@ -3,12 +3,10 @@
 #include <ssl.h>
 
 Sqt2Pin::Sqt2Pin() {
-  reader = new SqtReader();
+ 
 }
 
 Sqt2Pin::~Sqt2Pin() {
-  //deleting temporary folder(s)
-  //NOTE destroy reader??
   if(reader)
     delete reader;
 }
@@ -160,10 +158,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
-  if (cmd.optionSet("Y")) {
-    //tmpFNs.push_back(cmd.options["Y"]);
-    reader->setFile(cmd.options["Y"]);
-  }
+
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
@@ -210,6 +205,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   }
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
+    parseOptions.monoisotopic = true;
   }
   if (cmd.optionSet("p")) {
     std::vector<std::string> strs;
@@ -302,7 +298,7 @@ void Sqt2Pin::readRetentionTime(string filename) {
   delete[] cstr;
 }
 
-void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
+void Sqt2Pin::storeRetentionTime(serialize_scheme* database){
   // for each spectra from the ms2 file
   typedef std::map<int, vector<double> > map_t;
   BOOST_FOREACH(map_t::value_type& i, scan2rt){
@@ -368,9 +364,17 @@ int Sqt2Pin::run() {
     cerr << "Please invoke sqt2pin with a valid -o option" << endl;
     exit(-1);
   }
+  
+  //initialize reader
+  parseOptions.boost_serialization = boost_serialization;
+  parseOptions.peptidelength = 6;
+  parseOptions.targetFN = targetFN;
+  parseOptions.decoyFN = decoyFN;
+  reader = new SqtReader(parseOptions);
+  
   xercesc::XMLPlatformUtils::Initialize ();
-
   // initializing xercesc objects corresponding to pin element...
+  
   // ... <featureDescriptions>
   std::auto_ptr<percolatorInNs::featureDescriptions>
   fdes_p (new ::percolatorInNs::featureDescriptions());
@@ -384,50 +388,29 @@ int Sqt2Pin::run() {
   std::auto_ptr< ::percolatorInNs::experiment >
   ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
 
-  int maxCharge = -1;
-  int minCharge = 10000;
+  //NOTE here is where I declare the serializer depending on the library we built converters with
+  vector<serialize_scheme*> databases;
 
-  vector<FragSpectrumScanDatabase*> databases;
-
-  if (!parseOptions.iscombined) {
-    // First we only search for the maxCharge and minCharge.
-    // This done by passing the argument justSearchMaxMinCharge
+  //NOTE no need to pass parseOption maybe...
+  
+  if (!parseOptions.iscombined) 
+  {
     
     std::cerr << "Reading input from sqt files:\n";
     
-    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, Reader::justSearchMaxMinCharge, databases,
-        0/*, tmpDirs, tmpFNs*/);
-    reader->translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  Reader::justSearchMaxMinCharge, databases,
-        0/*, tmpDirs, tmpFNs*/);
-    // Now we do full parsing of the Sqt file, and translating it to XML
-    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  Reader::fullParsing, databases,
-        0/*, tmpDirs, tmpFNs*/);
-    reader->translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, Reader::fullParsing, databases,
-        0/*, tmpDirs, tmpFNs*/);
-
-  } else {
-    // First we only search for the maxCharge and minCharge.
-    //This done by passing the argument justSearchMaxMinCharge
+    reader->translateFileToXML(targetFN,ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), false /* is_decoy */,databases,0);
+    reader->translateFileToXML(decoyFN, ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), true /* is_decoy */,databases,0);
+    
+  } 
+  else 
+  {
     
     std::cerr << "Reading input from a combined (target-decoy) sqt file .." << std::endl;
-    
-    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, Reader::justSearchMaxMinCharge, databases,
-        0/*, tmpDirs, tmpFNs*/);
-    // Now we do full parsing of the Sqt file, and translating it to XML
-    reader->translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, Reader::fullParsing, databases,
-        0/*, tmpDirs, tmpFNs*/);
+ 
+    reader->translateFileToXML(targetFN,ex_p->featureDescriptions(),
+        ex_p->fragSpectrumScan(), false /* is_decoy */,databases,0);
   }
 
   // read retention time if sqt2pin was invoked with -2 option

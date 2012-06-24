@@ -11,7 +11,9 @@ MESSAGE( STATUS )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
-MESSAGE( STATUS "Indicate the type of XML serialization scheme : -DBOOSTDB=ON or -DTOKYODB=ON or -DLEVELDB=ON . By setting up one of those variables to ON. BoostDB will be taken as default if no option is given.")
+MESSAGE( STATUS "Indicate the type of XML serialization scheme : -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" or -DSERIALIZE=\"LevelDB\". 
+		  By setting up the variable SERIALIZE to either Boost or TokyoCabined or LevelDB we will chose the serialization to be taken 
+		  to build Converters. Boost option will be taken as default if no option is given.")
 MESSAGE( STATUS "Building PERCOLATOR-CONVERTERS:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
@@ -20,29 +22,22 @@ MESSAGE( STATUS "PERCOLATOR_SOURCE_DIR = ${PERCOLATOR_SOURCE_DIR}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
 MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
-if(LEVELDB)
-  message( STATUS "Using Level DB")
+if(${SERIALIZE} EQUAL "LevelDB")
+  message( STATUS "Using LevelDB Serialization scheme")
   add_definitions(-D__LEVELDB__)
-  set(BOOSTDB FALSE)
-  set(TOKYODB FALSE)
-  set(DB "LevelDB")
-elseif(BOOSTDB)
-  message( STATUS "Using Boost DB")
-  add_definitions(-D__BOOSTDB__)
-  set(LEVELDB FALSE)
-  set(TOKYODB FALSE)
-  set(DB "BoostDB")
-elseif(TOKYODB)
-  message( STATUS "Using Tokyo Cabinet")
-  add_definitions(-D__TOKYODB__)
-  set(LEVELDB FALSE)
-  set(BOOSTDB FALSE)
-  set(DB "TokyoDB")
-else()
-  message( STATUS "Using default : Boost DB")
+  set(LEVELDB TRUE)
+elseif(${SERIALIZE} EQUAL "Boost")
+  message( STATUS "Using Boost Serialization scheme")
   add_definitions(-D__BOOSTDB__)
   set(BOOSTDB TRUE)
-  set(DB "BoostDB")
+elseif(${SERIALIZE} EQUAL "TokyoCabinet")
+  message( STATUS "Using Tokyo Cabinet Serialization scheme")
+  add_definitions(-D__TOKYODB__)
+  set(TOKYODB TRUE)
+else()
+  message( STATUS "Using default : Boost Serialization scheme")
+  add_definitions(-D__BOOSTDB__)
+  set(BOOSTDB TRUE)
 endif()
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -188,7 +183,7 @@ SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "
 			       "1.48" "1.48.0" "1.49" "1.49.0")
 			       
 if(BOOSTDB)
-  find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system serialization REQUIRED)
+  find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS serialization filesystem system REQUIRED)
 else(BOOSTDB)
   find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 endif()
@@ -313,98 +308,62 @@ endif()
 
 #COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
 # include and link code from percolator
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src )
 
 add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp ../fido/Set.cpp ../fido/)
 
-#COMPILING MSTOOLKIT
+#COMPILING 
 add_subdirectory(MSToolkit)
-add_library(converters  STATIC Reader.cpp SqtReader.cpp FragSpectrumScanDatabase.cpp )
+if(LEVELDB)
+  add_library(converters STATIC Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
+elseif(TOKYODB)
+  add_library(converters STATIC Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
+elseif(BOOSTDB)
+  add_library(converters STATIC Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
+endif()
 
-#COMPILING MZIDENTML2PIN
+include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
-if(MINGW)
-  if(LEVELDB)
-    target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-  elseif(TOKYODB)
-    target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-  elseif(BOOSTDB)
-    target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-  endif()
-else(MINGW)
-  if(LEVELDB)
-    target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-  elseif(TOKYODB)
-    target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-  elseif(BOOSTDB)
-    target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-  endif()
-endif()
-
-#COMPILING SQT2PIN
-include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(sqt2pin Sqt2Pin.cpp )
-if(MINGW)
-  if(LEVELDB)
-     target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(TOKYODB)
-    target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(BOOSTDB)
-    target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  endif()
-else(MINGW)
-  if(LEVELDB)
-    target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(TOKYODB)
-    target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(BOOSTDB)
-    target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  endif()
-endif()
-
-#COMPILING TANDEM2PIN
-include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(tandem2pin tandem2pin.cpp )
-if(MINGW)
-  if(LEVELDB)
-     target_link_libraries(tandem2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(TOKYODB)
-    target_link_libraries(tandem2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(BOOSTDB)
-    target_link_libraries(tandem2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  endif()
-else(MINGW)
-  if(LEVELDB)
-    target_link_libraries(tandem2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(TOKYODB)
-    target_link_libraries(tandem2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  elseif(BOOSTDB)
-    target_link_libraries(tandem2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
-  endif()
-endif()
-
-#COMPILING MSGFDB2PIN
-include_directories(. MSToolkit/RAMP MSToolkit )
 add_executable(msgfdb2pin msgfdb2pin.cpp )
 if(MINGW)
-  if(LEVELDB)
-     target_link_libraries(msgfdb2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+  if(LEVELDB)          
+    target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(tandem2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(msgfdb2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${LDB_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
   elseif(TOKYODB)
+    target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(tandem2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
     target_link_libraries(msgfdb2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES}  ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}  ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
   elseif(BOOSTDB)
+    target_link_libraries(mzidentml2pin -L${MINGWLIB} converters perclibrary_part ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(sqt2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(tandem2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
     target_link_libraries(msgfdb2pin -L${MINGWLIB} converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
   endif()
 else(MINGW)
   if(LEVELDB)
+    target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(tandem2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
     target_link_libraries(msgfdb2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${LDB_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
   elseif(TOKYODB)
+    target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(tandem2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
     target_link_libraries(msgfdb2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${TokyoCabinet_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
   elseif(BOOSTDB)
+    target_link_libraries(mzidentml2pin converters perclibrary_part ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(sqt2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
+    target_link_libraries(tandem2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
     target_link_libraries(msgfdb2pin converters perclibrary_part  MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES} )
   endif()
 endif()
+
 
 IF(MINGW OR WIN32)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
@@ -415,7 +374,6 @@ IF(MINGW OR WIN32)
   set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-static-libgcc")
   set_property(TARGET msgfdb2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(msgfdb2pin PROPERTIES LINK_FLAGS "-static-libgcc")
-  
 ENDIF()
 
 if(APPLE)
@@ -428,12 +386,6 @@ endif(APPLE)
 #necessary dlls for the windows exe
 IF(MINGW)
   file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin")
-  file(COPY "${MING_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_system*.dll")
-  file(COPY "${MING_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_filesystem*.dll")
 
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
@@ -454,6 +406,14 @@ IF(MINGW)
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libsqlite3*.dll")
+             
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_system*.dll")
+             
+  file(COPY "${MING_PATH}/bin/"
+             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             FILES_MATCHING PATTERN "boost_filesystem*.dll")
 
   if(LEVELDB)
     file(COPY "${MING_PATH}/bin/"
@@ -471,6 +431,8 @@ IF(MINGW)
     file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
              FILES_MATCHING PATTERN "libportablexdr*.dll")
+
+             
   elseif(TOKYODB)
     file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
@@ -493,6 +455,8 @@ IF(MINGW)
     file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/
              FILES_MATCHING PATTERN "libbz*.dll")
+
+             
   endif()
 endif()
 ###############################################################################
@@ -581,8 +545,8 @@ elseif(LEVELDB)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
 			             leveldb-dev, zlib1g-dev, libsqlite3-dev , percolator (>=2.01)")
 elseif(BOOSTDB)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
-                                    ,libboost-serialization-dev (>=1.46), zlib1g-dev, libsqlite3-dev, percolator (>=2.01)")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev,libboost-serialization-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
+                                    zlib1g-dev, libsqlite3-dev, percolator (>=2.01)")
 endif()
 
 # PACKAGING OPTIONS: RPM
@@ -598,8 +562,8 @@ elseif(LEVELDB)
   set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel (>=1.46), boost-filesystem (>=1.46), boost-system, 
 				   leveldb-devel, zlib-devel, sqlite3-devel, percolator(>=2.01)")
 elseif(BOOSTDB)
-  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel (>=1.46), boost-filesystem (>=1.46), boost-system, 
-				   boost-serialization (>=1.46), zlib-devel, sqlite3-devel, percolator(>=2.01)")
+  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel (>=1.46),boost-serialization, boost-filesystem (>=1.46), boost-system,
+                                 zlib-devel, sqlite3-devel, percolator(>=2.01)")
 endif()
 
 include(CPack)

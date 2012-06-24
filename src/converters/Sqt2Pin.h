@@ -31,6 +31,20 @@
 #define TEMP_DIR "@TEMP_DIR@"
 #endif
 
+#if defined __LEVELDB__
+  #include "FragSpectrumScanDatabaseLeveldb.h"
+  typedef FragSpectrumScanDatabaseLeveldb serialize_scheme;
+  bool boost_serialization = true;
+#elif defined __TOKYODB__
+  #include "FragSpectrumScanDatabaseTokyodb.h"
+  typedef FragSpectrumScanDatabaseTokyodb serialize_scheme;
+  bool boost_serialization = false;
+#else
+  #include "FragSpectrumScanDatabaseBoostdb.h"
+  typedef FragSpectrumScanDatabaseBoostdb serialize_scheme;
+  bool boost_serialization = false;
+#endif
+  
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -51,17 +65,26 @@
 using namespace std;
 
 class Sqt2Pin {
-public:
-	Sqt2Pin();
-	virtual ~Sqt2Pin();
-	std::string greeter();
-	std::string extendedGreeter();
-	bool parseOpt(int argc, char **argv);
-	int run();
-	void readRetentionTime(std::string filename);
-	void storeRetentionTime(FragSpectrumScanDatabase* database);
 
-protected:
+ public:
+	Sqt2Pin();
+	
+	virtual ~Sqt2Pin();
+	
+	std::string greeter();
+	
+	std::string extendedGreeter();
+	
+	bool parseOpt(int argc, char **argv);
+	
+	int run();
+	
+	void readRetentionTime(std::string filename);
+	
+	void storeRetentionTime(serialize_scheme* database);
+
+ private:
+  
 	ParseOptions parseOptions;
 	std::string targetFN;
 	std::string decoyFN;

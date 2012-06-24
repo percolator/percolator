@@ -25,30 +25,33 @@ class SqtReader: public Reader
 
 public:
   
-  SqtReader();
-  SqtReader(const SqtReader& other);
+  SqtReader(ParseOptions po);
+  
   virtual ~SqtReader();
-  virtual SqtReader& operator=(const SqtReader& other);
-  virtual bool operator==(const SqtReader& other) const;
-
-  void read(const std::string fn,
-    ::percolatorInNs::featureDescriptions& fds,
+  
+  virtual void read(const std::string fn,
+     ::percolatorInNs::featureDescriptions& fds,
      ::percolatorInNs::experiment::fragSpectrumScan_sequence& fsss,
-      bool is_decoy, const ParseOptions& po, int* maxCharge, int* minCharge,
-      parseType t, FragSpectrumScanDatabase* database);
+     bool is_decoy, FragSpectrumScanDatabase* database);
 
   void readSectionS( std::string record,
     ::percolatorInNs::experiment::fragSpectrumScan_sequence& fsss,
-     std::set<int> & theMs, bool is_decoy, const ParseOptions& po,
-     int minCharge, int maxCharge, std::string psmId,
-     FragSpectrumScanDatabase* database);
+     std::set<int> & theMs, bool is_decoy,
+     std::string psmId,FragSpectrumScanDatabase* database);
 
   void readPSM(bool is_decoy, const std::string &in, int match,
-    const ParseOptions& po,
-    ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss,
-     int minCharge, int maxCharge, std::string psmId,
-     FragSpectrumScanDatabase* database );
-
+     ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss,
+     std::string psmId,FragSpectrumScanDatabase* database );
+  
+  virtual bool checkValidity(std::string file);
+ 
+  virtual void getMaxMinCharge(std::string fn);
+  
+  void addFeatureDescriptions( 
+      percolatorInNs::featureDescriptions & fe_des,bool doEnzyme,
+      bool calcPTMs, bool doPNGaseF,
+      const std::string& aaAlphabet,
+      bool calcQuadratic);
 };
 
 #endif // SQTREADER_H
