@@ -114,7 +114,7 @@ protected:
    static const std::string ambiguousAA;
    static const std::string modifiedAA;
    std::vector<boost::shared_ptr<FragSpectrumScanDatabase> > databases;
-   //NOTE as soon as I get the program working these 3 guys have to be smart pointers
+   //NOTE as soon as I get the program working these 2 guys have to be smart pointers
    ::percolatorInNs::experiment::fragSpectrumScan_sequence fss;
    ::percolatorInNs::featureDescriptions f_seq;
    int maxCharge;

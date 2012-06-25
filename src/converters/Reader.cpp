@@ -84,21 +84,30 @@ void Reader::print(ofstream &xmlOutputStream)
       " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
       " https://github.com/percolator/percolator/raw/pin-" + schema_major +
       "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
-  if (po.xmlOutputFN == "") cout << headerStr;
-  else {
+      
+  if (po.xmlOutputFN == "") 
+    cout << headerStr;
+  else 
+  {
     xmlOutputStream << headerStr;
     cerr <<  "The output will be written to " << po.xmlOutputFN << endl;
   }
 
   string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
-  if (po.xmlOutputFN == "") cout << enzymeStr;
-  else xmlOutputStream << enzymeStr;
+  
+  if (po.xmlOutputFN == "") 
+    cout << enzymeStr;
+  else 
+    xmlOutputStream << enzymeStr;
 
   string commandLine = "\n<process_info>\n" +
       string("  <command_line>") + po.call.substr(0,po.call.length()-1)
       + "</command_line>\n" + "</process_info>\n";
-  if (po.xmlOutputFN == "") cout << commandLine;
-  else xmlOutputStream << commandLine;
+      
+  if (po.xmlOutputFN == "") 
+    cout << commandLine;
+  else 
+    xmlOutputStream << commandLine;
 
   xercesc::XMLPlatformUtils::Initialize ();
 
@@ -127,8 +136,10 @@ void Reader::print(ofstream &xmlOutputStream)
   }
 
   // print closing tag
-  if (po.xmlOutputFN == "") std::cout << "</experiment>" << std::endl;
-  else {
+  if (po.xmlOutputFN == "") 
+    std::cout << "</experiment>" << std::endl;
+  else 
+  {
     xmlOutputStream << "</experiment>" << std::endl;
     xmlOutputStream.close();
   }

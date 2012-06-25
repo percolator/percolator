@@ -19,7 +19,7 @@ MzidentmlReader::~MzidentmlReader()
 
 bool MzidentmlReader::checkValidity(string file)
 {
-  bool ismeta = false;
+  bool ismeta = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
     std::cerr << "Could not open file " << file << std::endl;
@@ -40,7 +40,7 @@ bool MzidentmlReader::checkValidity(string file)
   }
   else
   {
-    ismeta = true;
+    ismeta = false;
   }
   return ismeta;
 }
@@ -58,8 +58,7 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
     string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn, true, schemaDefinition,
-      schema_major, schema_minor));
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn, true, schemaDefinition,schema_major, schema_minor));
     for (doc = p.next (); doc.get () != 0 && 
       !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() );
       doc = p.next ()) {
@@ -76,17 +75,20 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
     push_backFeatureDescription("PepLen");
 
 
-    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & param, specIdResult.SpectrumIdentificationItem()[0].cvParam() )  {
-      if ( param.value().present() ) {
+    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & param, specIdResult.SpectrumIdentificationItem()[0].cvParam() )  
+    {
+      if ( param.value().present() ) 
+      {
         push_backFeatureDescription(param.name().c_str());
       }
     }
-    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, specIdResult.SpectrumIdentificationItem()[0].userParam())  {
-      if ( param.value().present() ) {
+    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, specIdResult.SpectrumIdentificationItem()[0].userParam())  
+    {
+      if ( param.value().present() ) 
+      {
         push_backFeatureDescription(param.name().c_str());
       }
     }
-    
     
     //NOTE are these added already??
     /*if (doEnzyme) {
@@ -139,32 +141,31 @@ void MzidentmlReader::getMaxMinCharge(string fn)
   {
     ifs.open (fn.c_str());
     parser p;
+    //NOTE why the scheme definition is percolator??
     string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn, true, schemaDefinition,
-      schema_major, schema_minor));
+    
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn, true, schemaDefinition, schema_major, schema_minor));
     for (doc = p.next (); doc.get () != 0 && 
-      !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() );
-      doc = p.next ()) {
+      !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+    {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
     ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
 
     int scanNumber = 0;
-    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, 
-           doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
     {
       ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
       
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
       
-      std::auto_ptr< ::percolatorInNs::fragSpectrumScan > fss_p( new ::percolatorInNs::fragSpectrumScan( scanNumber, experimentalMassToCharge )); 
-      
-      scanNumber++;
-      BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
-	if ( ! foundFirstChargeState ) {
+      BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  
+      {
+	if ( ! foundFirstChargeState ) 
+	{
 	  minCharge = item.chargeState();
 	  minCharge = item.chargeState();
 	  foundFirstChargeState = true;
@@ -213,7 +214,8 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn.c_str(), true, schemaDefinition,
         schema_major, schema_minor));
     
-    while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) {
+    while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) 
+    {
       doc = p.next ();
       // Let's skip some sub trees that we are not interested, e.g. AuditCollection
     }
@@ -222,7 +224,8 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
 
     peptideMapType peptideMap;
 
-    BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide() )  {
+    BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide() ) 
+    {
       assert( peptideMap.find( peptide.id() ) == peptideMap.end() ); // The peptide refs should be unique.
       mzIdentML_ns::SequenceCollectionType::Peptide_type *pept = new mzIdentML_ns::SequenceCollectionType::Peptide_type( peptide);
       assert(pept);
@@ -230,34 +233,40 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     }
     
     for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, 
-      doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
+      doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+    {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
     
     ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
     assert( specIdResult.SpectrumIdentificationItem().size() > 0 );
 
-    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
+    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+    {
       ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
       std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss_p(0);;
       scanNumberMapType::iterator iter = scanNumberMap.find( specIdResult.id() );
       int useScanNumber;
-      if ( iter == scanNumberMap.end() ) {
+      if ( iter == scanNumberMap.end() ) 
+      {
         scanNumberMap[ specIdResult.id() ]=scanNumber;
         useScanNumber = scanNumber;
         ++scanNumber;
         std::auto_ptr< ::percolatorInNs::fragSpectrumScan> tmp_p( new ::percolatorInNs::fragSpectrumScan( useScanNumber, experimentalMassToCharge ));  ;
         fss_p = tmp_p;
-      } else {
+      } 
+      else 
+      {
         useScanNumber = iter->second;
         fss_p = database->getFSS( useScanNumber );
         assert(fss_p.get());
         assert( fss_p->experimentalMassToCharge().get() == experimentalMassToCharge );
       }
 
-      BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
+      BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  
+      {
         createPSM(item, peptideMap, experimentalMassToCharge, isDecoy, fss_p->peptideSpectrumMatch());
       }
       database->putFSS( *fss_p );
@@ -316,37 +325,40 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::PSI_PI_analysis_search_Spe
   f_seq.push_back( DataSet::peptideLength(peptideSeqWithFlanks)); // Peptide length
   int charge = item.chargeState();
 
-  double dM =
-    MassHandler::massDiff( item.experimentalMassToCharge(),
-			   item.calculatedMassToCharge().get(),
-			   charge,
-			   peptideSeq );
+  double dM = MassHandler::massDiff( item.experimentalMassToCharge(), item.calculatedMassToCharge().get(),charge, peptideSeq );
 
-  for (int c = minCharge; c
-	 <= maxCharge; c++) {
+  for (int c = minCharge; c <= maxCharge; c++) 
+  {
     f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
   }
- 
   assert(peptideSeq.size() >= 1 );
 
-  if ( Enzyme::getEnzymeType() != Enzyme::NO_ENZYME ) {
-    f_seq.push_back( Enzyme::isEnzymatic(peptideSeqWithFlanks.at(0),peptideSeqWithFlanks.at(2)) ? 1.0
-		     : 0.0);
-    f_seq.push_back( 
-		    Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3),
-					peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1))
-		    ? 1.0
-		    : 0.0);
+  if ( Enzyme::getEnzymeType() != Enzyme::NO_ENZYME ) 
+  {
+    f_seq.push_back( Enzyme::isEnzymatic(peptideSeqWithFlanks.at(0),peptideSeqWithFlanks.at(2)) ? 1.0: 0.0);
+    f_seq.push_back( Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3),
+					peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1)) ? 1.0: 0.0);
     f_seq.push_back( (double)Enzyme::countEnzymatic(peptideSeq) );
   }
   f_seq.push_back( dM ); // obs - calc mass
   f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
-  if (po.calcPTMs ) { f_seq.push_back(  DataSet::cntPTMs(peptideSeqWithFlanks)); }
-  if (po.pngasef ) { f_seq.push_back( DataSet::isPngasef(peptideSeqWithFlanks, isDecoy)); }
-  if (po.calcAAFrequencies ) { computeAAFrequencies(peptideSeqWithFlanks, f_seq); }
+  if (po.calcPTMs ) 
+  { 
+    f_seq.push_back(  DataSet::cntPTMs(peptideSeqWithFlanks)); 
+  }
+  if (po.pngasef ) 
+  { 
+    f_seq.push_back( DataSet::isPngasef(peptideSeqWithFlanks, isDecoy)); 
+  }
+  if (po.calcAAFrequencies ) 
+  { 
+    computeAAFrequencies(peptideSeqWithFlanks, f_seq); 
+  }
    
-  BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & cv, item.cvParam() )  {
-    if ( cv.value().present() ) {
+  BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & cv, item.cvParam() )  
+  {
+    if ( cv.value().present() ) 
+    {
       // SpectrumIdentificationItem/cvParam/@value has the datatype string, even though the values seem to be float or double. 
       // percolator_in.xsd uses the datatype double for the features/feature, so we need to convert the string.
       // Using feature_traits for the conversion from std::string to double seems to be the right way to go. Another option would have been to use "strtod()".
@@ -354,8 +366,10 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::PSI_PI_analysis_search_Spe
       f_seq.push_back( fe);
     }
   }
-  BOOST_FOREACH(  const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, item.userParam() )  {
-    if ( param.value().present() ) {
+  BOOST_FOREACH(  const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, item.userParam() )  
+  {
+    if ( param.value().present() ) 
+    {
       // SpectrumIdentificationItem/userParam/@value has the datatype string, even though the values seem to be float or double or int. 
       // percolator_in.xsd uses the datatype double for the features/feature, so we need to convert the string.
       // Using feature_traits for the conversion from std::string to double seems to be the right way to go. Another option would have been to use "strtod()".

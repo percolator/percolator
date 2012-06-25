@@ -107,11 +107,11 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
       "Scheme");
-  cmd.defineOption("Z",
+  /*cmd.defineOption("Z",
       "combined",
       "The input will be a target/decoy combined file.",
       "",
-      TRUE_IF_SET);
+      TRUE_IF_SET);*/
   cmd.defineOption("P",
       "pattern",
       "Pattern used to identify the decoy PSMs",
@@ -185,40 +185,36 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     }
   }
   
-  std::string pattern = "";
-  if (cmd.optionSet("P")) pattern = cmd.options["P"];
-  bool iscombined = cmd.optionSet("Z");
-  
-  if(iscombined)
+  if (cmd.optionSet("P")) 
   {
-    if(cmd.arguments.size() > 1)
+    parseOptions.reversedFeaturePattern = cmd.options["P"];
+  }
+  if (cmd.arguments.size() > 0)
+  {
+    targetFN = cmd.arguments[0];
+  }
+  if (cmd.arguments.size() > 1) 
+  {
+    decoyFN = cmd.arguments[1];
+  }
+  if(targetFN == "" && decoyFN == "")
+  {
+    std::cerr << "Error, one of the input files is missing.\n"; 
+    exit(-1); 
+  }
+  else if(targetFN != "" && decoyFN == "")
+  {
+    parseOptions.iscombined = true;
+    if(parseOptions.reversedFeaturePattern == "")
     {
-      std::cerr << "Error, there should be only one input file.\n"; 
-      exit(-1);
-    }
-    else if (pattern != "")
-    {
-      parseOptions.reversedFeaturePattern = pattern;
-      parseOptions.iscombined = true;
-      targetFN = cmd.arguments[0];
-    }
-    else
-    {
-      std::cerr << "Error, pattern should contain a valid set of alphanumberic characters.\n"; 
-      exit(-1);
+      parseOptions.reversedFeaturePattern = "random";
     }
   }
   else
   {
-    if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
-    if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
-    
-    if(targetFN == "" || decoyFN == "")
-    {
-      std::cerr << "Error, one of the input files is missing.\n"; 
-      exit(-1); 
-    }
+    parseOptions.iscombined = false;
   }
+  
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
       cerr << "Error: too few arguments.";

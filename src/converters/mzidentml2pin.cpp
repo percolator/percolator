@@ -80,11 +80,6 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("Z",
-      "combined",
-      "The input will be a target/decoy combined file.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("P",
       "pattern",
       "Pattern used to identify the decoy PSMs",
@@ -174,39 +169,34 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
     }
   }
   
-  std::string pattern = "";
-  if (cmd.optionSet("P")) pattern = cmd.options["P"];
-  bool iscombined = cmd.optionSet("Z");
-  
-  if(iscombined)
+  if (cmd.optionSet("P")) 
   {
-    if(cmd.arguments.size() > 1)
+    parseOptions.reversedFeaturePattern = cmd.options["P"];
+  }
+  if (cmd.arguments.size() > 0)
+  {
+    targetFN = cmd.arguments[0];
+  }
+  if (cmd.arguments.size() > 1) 
+  {
+    decoyFN = cmd.arguments[1];
+  }
+  if(targetFN == "" && decoyFN == "")
+  {
+    std::cerr << "Error, one of the input files is missing.\n"; 
+    exit(-1); 
+  }
+  else if(targetFN != "" && decoyFN == "")
+  {
+    parseOptions.iscombined = true;
+    if(parseOptions.reversedFeaturePattern == "")
     {
-      std::cerr << "Error, there should be only one input file.\n"; 
-      exit(-1);
-    }
-    else if (pattern != "")
-    {
-      parseOptions.reversedFeaturePattern = pattern;
-      parseOptions.iscombined = true;
-      targetFN = cmd.arguments[0];
-    }
-    else
-    {
-      std::cerr << "Error, pattern should contain a valid set of alphanumberic characters.\n"; 
-      exit(-1);
+      parseOptions.reversedFeaturePattern = "random";
     }
   }
   else
   {
-    if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
-    if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
-    
-    if(targetFN == "" || decoyFN == "")
-    {
-      std::cerr << "Error, one of the input files is missing.\n"; 
-      exit(-1); 
-    }
+    parseOptions.iscombined = false;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
