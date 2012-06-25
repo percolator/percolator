@@ -22,34 +22,14 @@ FragSpectrumScanDatabaseBoostdb::FragSpectrumScanDatabaseBoostdb(std::string id)
   bdb = new mapdb();
 }
 
-FragSpectrumScanDatabaseBoostdb::FragSpectrumScanDatabaseBoostdb(const FragSpectrumScanDatabase& original)
-{
-
-}
-
-FragSpectrumScanDatabaseBoostdb::FragSpectrumScanDatabaseBoostdb()
-{
-
-}
-
-FragSpectrumScanDatabaseBoostdb::FragSpectrumScanDatabaseBoostdb(const FragSpectrumScanDatabaseBoostdb& other)
-{
-
-}
-
 FragSpectrumScanDatabaseBoostdb::~FragSpectrumScanDatabaseBoostdb()
 {
 
 }
 
-FragSpectrumScanDatabaseBoostdb& FragSpectrumScanDatabaseBoostdb::operator=(const FragSpectrumScanDatabaseBoostdb& other)
+string FragSpectrumScanDatabaseBoostdb::toString()
 {
- return *this;
-}
-
-bool FragSpectrumScanDatabaseBoostdb::operator==(const FragSpectrumScanDatabaseBoostdb& other) const
-{
-///TODO: return ...;
+  return std::string("FragSpectrumScanDatabaseBoostdb");
 }
 
 bool FragSpectrumScanDatabaseBoostdb::init(std::string fileName) {

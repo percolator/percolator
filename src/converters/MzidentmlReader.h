@@ -19,18 +19,6 @@
 #define MZIDENTMLREADER_H
 
 #include <Reader.h>
-#include <iostream>
-#include <fstream>
-#include <numeric>
-#include <map>
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xsd/cxx/xml/string.hxx>
-#include <boost/foreach.hpp>
-#include <algorithm>
-#include "Enzyme.h"
-#include "DataSet.h"
-#include "MassHandler.h"
 #include "FragSpectrumScanDatabase.h"
 #include "parser.hxx"
 #include "mzIdentML1.0.0.hxx"
@@ -46,25 +34,20 @@ class MzidentmlReader: public Reader
 public:
 
   MzidentmlReader(ParseOptions po);
+  
   virtual ~MzidentmlReader();
-
-  virtual void read(const std::string fn, percolatorInNs::featureDescriptions& fds, 
-		    percolatorInNs::experiment::fragSpectrumScan_sequence& fsss, bool is_decoy, 
-		    FragSpectrumScanDatabase* database);
+  
+  virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   virtual bool checkValidity(std::string file);
  
   virtual void getMaxMinCharge(std::string fn);
   
-  int loadFromTargetOrDecoyFile( const char * fileName,  bool isDecoy,  
-			       percolatorInNs::featureDescriptions & fdesFirstFile, 
-			       FragSpectrumScanDatabase & database,  int * scanNumber, 
-			       scanNumberMapType & scanNumberMap  );
+  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn);
  
   void createPSM(const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, 
 		peptideMapType & peptideMap,::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type 
-		experimentalMassToCharge,bool isDecoy, percolatorInNs::featureDescriptions & fdesFirstFile,  
-		::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence );
+		experimentalMassToCharge,bool isDecoy,::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence );
   
 };
 

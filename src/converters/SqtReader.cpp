@@ -1,21 +1,5 @@
-/*
-    Copyright 2012 <copyright holder> <email>
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
-
 #include "SqtReader.h"
+#include "DataSet.h"
 
 SqtReader::SqtReader(ParseOptions po):Reader(po)
 {
@@ -26,13 +10,11 @@ SqtReader::~SqtReader()
 
 }
 
-void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match,  
-			::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,  
-			std::string psmId , FragSpectrumScanDatabase* database ) 
+void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,  
+			std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
 
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
-  
   unsigned int scan;
   int charge;
   double observedMassCharge;
@@ -43,8 +25,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,  int match,
   int ourPos;
   std::string line, tmp;
 
-  double mass, deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr =
-      0.0, nSM = 0.0, tstSM = 0.0;
+  double mass, deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr = 0.0, nSM = 0.0, tstSM = 0.0;
   bool gotL = true;
   int ms = 0;
   std::string peptide;
@@ -293,12 +274,9 @@ void SqtReader::getMaxMinCharge(string fn)
 }
 
 
-void SqtReader::read(const std::string fn,
-    ::percolatorInNs::featureDescriptions & fds,
-     ::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss,
-      bool isDecoy,FragSpectrumScanDatabase* database) {
+void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database) 
+{
 
-  
   std::string ptmAlphabet;
   int label;
   double *feature, *regressionFeature;
@@ -355,15 +333,6 @@ void SqtReader::read(const std::string fn,
   sqtIn.clear();
   sqtIn.seekg(0, std::ios::beg);
 
-  if ( fds.featureDescription().size() == 0 ) {
-    addFeatureDescriptions(fds,
-        Enzyme::getEnzymeType() != Enzyme::NO_ENZYME 			    ,
-        po.calcPTMs,
-        po.pngasef,
-        (po.calcAAFrequencies ? aaAlphabet : ""),
-        po.calcQuadraticFeatures);
-  }
-
   std::string seq;
   fileId = fn;
   size_t spos = fileId.rfind('/');
@@ -380,7 +349,7 @@ void SqtReader::read(const std::string fn,
   while (getline(sqtIn, line)) {
     if (line[0] == 'S') {
       if (lines > 1) {
-        readSectionS( buff.str(), fsss , theMs, isDecoy,id.str(), database);
+        readSectionS( buff.str(), theMs, isDecoy,id.str(), database);
       }
       buff.str("");
       buff.clear();
@@ -414,25 +383,26 @@ void SqtReader::read(const std::string fn,
   }
   if (lines > 1) {
     std::string idstr = id.str();
-    readSectionS(  buff.str(), fsss, theMs, isDecoy, id.str(), database);
+    readSectionS(  buff.str(), theMs, isDecoy, id.str(), database);
   }
   sqtIn.close();
 }
 
-void  SqtReader::readSectionS( std::string record ,::percolatorInNs::experiment::fragSpectrumScan_sequence  & fsss, 
-			       std::set<int> & theMs, bool isDecoy,std::string psmId, FragSpectrumScanDatabase* database   ) {
+void  SqtReader::readSectionS( std::string record,std::set<int> & theMs, bool isDecoy,
+			       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database) 
+{
   std::set<int>::const_iterator it;
   for (it = theMs.begin(); it != theMs.end(); it++) {
     std::ostringstream stream;
     stream << psmId << "_" << (*it + 1);
-    readPSM(isDecoy,record,*it, fsss, stream.str(), database);
+    readPSM(isDecoy,record,*it, stream.str(), database);
   }
   return;
 }
 
-bool SqtReader::checkValidity(std::string file)
+bool SqtReader::checkValidity(const std::string file)
 {
-  bool ismeta = false;
+  bool ismeta = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
     std::cerr << "Could not open file " << file << std::endl;
@@ -452,71 +422,148 @@ bool SqtReader::checkValidity(std::string file)
   }
   else
   {
-    ismeta = true;
+    ismeta = false;
   }
+  
   return ismeta;
 }
 
-void SqtReader::addFeatureDescriptions( 
-    percolatorInNs::featureDescriptions & fe_des,bool doEnzyme,
-    bool calcPTMs, bool doPNGaseF,
-    const std::string& aaAlphabet,
-    bool calcQuadratic) 
+void SqtReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn) 
 {
-  
-  size_t numFeatures;
-  int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum, pngFeatNum,
-  aaFeatNum, intraSetFeatNum, quadraticFeatNum, docFeatNum;
-
-  percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  fe_des.featureDescription();
-
-  push_backFeatureDescription( fd_sequence, "lnrSp");
-  push_backFeatureDescription( fd_sequence,"deltLCn");
-  push_backFeatureDescription( fd_sequence,"deltCn");
-  push_backFeatureDescription( fd_sequence,"Xcorr");
-  push_backFeatureDescription( fd_sequence,"Sp");
-  push_backFeatureDescription( fd_sequence,"IonFrac");
-  push_backFeatureDescription( fd_sequence,"Mass");
-  push_backFeatureDescription( fd_sequence,"PepLen");
+  push_backFeatureDescription("lnrSp");
+  push_backFeatureDescription("deltLCn");
+  push_backFeatureDescription("deltCn");
+  push_backFeatureDescription("Xcorr");
+  push_backFeatureDescription("Sp");
+  push_backFeatureDescription("IonFrac");
+  push_backFeatureDescription("Mass");
+  push_backFeatureDescription("PepLen");
 
   for (int charge = minCharge; charge <= maxCharge; ++charge) {
     std::ostringstream cname;
     cname << "Charge" << charge;
-    push_backFeatureDescription( fd_sequence,cname.str().c_str());
+    push_backFeatureDescription(cname.str().c_str());
 
   }
   if (doEnzyme) {
-    enzFeatNum = fd_sequence.size();
-    push_backFeatureDescription( fd_sequence,"enzN");
-    push_backFeatureDescription( fd_sequence,"enzC");
-    push_backFeatureDescription( fd_sequence,"enzInt");
+    push_backFeatureDescription("enzN");
+    push_backFeatureDescription("enzC");
+    push_backFeatureDescription("enzInt");
   }
-  numSPFeatNum = fd_sequence.size();
-  push_backFeatureDescription( fd_sequence,"lnNumSP");
-  push_backFeatureDescription( fd_sequence,"dM");
-  push_backFeatureDescription( fd_sequence,"absdM");
-  if (calcPTMs) {
-    ptmFeatNum = fd_sequence.size();
-    push_backFeatureDescription( fd_sequence,"ptm");
+  push_backFeatureDescription("lnNumSP");
+  push_backFeatureDescription("dM");
+  push_backFeatureDescription("absdM");
+  if (po.calcPTMs) {
+    push_backFeatureDescription("ptm");
   }
-  if (doPNGaseF) {
-    pngFeatNum = fd_sequence.size();
-    push_backFeatureDescription( fd_sequence,"PNGaseF");
+  if (po.pngasef) {
+    push_backFeatureDescription("PNGaseF");
   }
   if (!aaAlphabet.empty()) {
-    aaFeatNum = fd_sequence.size();
     for (std::string::const_iterator it = aaAlphabet.begin(); it
     != aaAlphabet.end(); it++)
-      push_backFeatureDescription( fd_sequence,*it + "-Freq");
+      push_backFeatureDescription(*it + "-Freq");
   }
-  if (calcQuadratic) {
-    quadraticFeatNum = fd_sequence.size();
-    for (int f1 = 1; f1 < quadraticFeatNum; ++f1) {
+  if (po.calcQuadraticFeatures) {
+    for (int f1 = 1; f1 < f_seq.featureDescription().size(); ++f1) {
       for (int f2 = 0; f2 < f1; ++f2) {
         std::ostringstream feat;
         feat << "f" << f1 + 1 << "*" << "f" << f2 + 1;
-        push_backFeatureDescription( fd_sequence,feat.str().c_str());
+        push_backFeatureDescription(feat.str().c_str());
       }
+    }
+  }
+}
+
+void SqtReader::readRetentionTime(string filename) 
+{
+  MSReader r;
+  Spectrum s;
+  r.setFilter(MS2);
+  char* cstr = new char[filename.size() + 1];
+  strcpy(cstr, filename.c_str());
+  // read first spectrum
+  r.readFile(cstr, s);
+  while(s.getScanNumber() != 0){
+    // check whether an EZ lines is available
+    if(s.sizeEZ() != 0){
+      // for each EZ line (each psm)
+      for(int i = 0; i<s.sizeEZ(); i++){
+        // save experimental mass and retention time
+        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).mh);
+        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).pRTime);
+      }
+    }
+    // if no EZ line is available, check for an RTime lines
+    else if((double)s.getRTime() != 0){
+      scan2rt[s.getScanNumber()].push_back(s.getRTime());
+    }
+    // if neither EZ nor I lines are available
+    else{
+      cout << "The ms2 in input does not appear to contain retention time "
+          << "information. Please run without -2 option.";
+      exit(-1);
+    }
+    // read next scan
+    r.readFile(NULL, s);
+  }
+  delete[] cstr;
+}
+
+void SqtReader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database)
+{
+  // for each spectra from the ms2 file
+  typedef std::map<int, vector<double> > map_t;
+  BOOST_FOREACH(map_t::value_type& i, scan2rt){
+    // scan number
+    int scanNr = i.first;
+    // related retention times
+    vector<double>* rTimes = &(i.second);
+    if(database->getFSS(scanNr).get()!=0){
+      fragSpectrumScan fss = *(database->getFSS(scanNr));
+      fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq =
+          fss.peptideSpectrumMatch();
+      // retention time to be stored
+      double storeMe = 0;
+      // if rTimes only contains one element
+      if(rTimes->size()==1){
+        // take that as retention time
+        storeMe = rTimes->at(0);
+      }
+      else{
+        // else, take retention time of psm that has observed mass closest to
+        // theoretical mass (smallest massDiff)
+        double massDiff = std::numeric_limits<double>::max(); // + infinity
+        for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i =
+            psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i) {
+          // skip decoy
+          if(psmIter_i->isDecoy() != true){
+            double cm = psmIter_i->calculatedMassToCharge();
+            double em = psmIter_i->experimentalMassToCharge();
+            // if a psm with observed mass closer to theoretical mass is found
+            if(abs(cm-em) < massDiff){
+              // update massDiff
+              massDiff = abs(cm-em);
+              // get corresponding retention time
+              vector<double>::const_iterator r = rTimes->begin();
+              for(; r<rTimes->end(); r=r+2){
+                double rrr = *r;
+                double exm = psmIter_i->experimentalMassToCharge();
+                if(*r==psmIter_i->experimentalMassToCharge()){
+                  storeMe = *(r+1);
+                  r = rTimes->end();
+                }
+              }
+            }
+          }
+        }
+      }
+      // store retention time for all psms in fss
+      for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter =
+          psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
+        psmIter->observedTime().set(storeMe);
+      }
+      database->putFSS(fss);
     }
   }
 }

@@ -1,12 +1,4 @@
-#include "mzidentml2pin.h"
-#include <boost/lexical_cast.hpp>
-
-
-enum enzyme_type { enzyme_type_arg_no_enzyme, enzyme_type_arg_elastase, 
-		    enzyme_type_arg_pepsin, enzyme_type_arg_proteinasek, 
-		    enzyme_type_arg_thermolysin, enzyme_type_arg_chymotrypsin, 
-		    enzyme_type_arg_trypsin};
-		    
+#include "mzidentml2pin.h"		    
 
 Mzidentml2pin::Mzidentml2pin()
 {
@@ -29,7 +21,6 @@ std::string Mzidentml2pin::greeter()
   oss << "Department of Biochemistry and Biophysics at the Stockholm University."
       << endl;
   return oss.str();
-  
 }
 
 std::string Mzidentml2pin::extendedGreeter() {
@@ -105,7 +96,7 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
       "filename");
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+      "Maximal number of matches to take in consideration per spectrum",
       "number");
   cmd.defineOption("M",
       "isotope",
@@ -229,8 +220,8 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
 }
 
 
-int Mzidentml2pin::run() {
-  // Content of sqt files is merged: preparing to write it to xml file
+int Mzidentml2pin::run() 
+{
   ofstream xmlOutputStream;
   xmlOutputStream.open(xmlOutputFN.c_str());
   if(!xmlOutputStream && xmlOutputFN != ""){
@@ -239,113 +230,18 @@ int Mzidentml2pin::run() {
     exit(-1);
   }
   
-    //initialize reader
-  parseOptions.boost_serialization = boost_serialization;
+  //initialize reader
   parseOptions.peptidelength = 6;
+  parseOptions.targetFN = targetFN;
+  parseOptions.decoyFN = decoyFN;
+  parseOptions.call = call;
+  parseOptions.spectrumFN = spectrumFile;
+  parseOptions.xmlOutputFN = xmlOutputFN;
   reader = new MzidentmlReader(parseOptions);
   
-  xercesc::XMLPlatformUtils::Initialize ();
-  // initializing xercesc objects corresponding to pin element...
-  // ... <featureDescriptions>
-  std::auto_ptr<percolatorInNs::featureDescriptions>
-  fdes_p (new ::percolatorInNs::featureDescriptions());
-
-  // ... <process_info>
-  percolatorInNs::process_info::command_line_type command_line = call;
-  std::auto_ptr<percolatorInNs::process_info>
-  proc_info (new ::percolatorInNs::process_info(command_line));
-
-  // ... <experiment>
-  std::auto_ptr< ::percolatorInNs::experiment >
-  ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
-
-  //NOTE here is where I declare the serializer depending on the library we built converters with
-  vector<serialize_scheme*> databases;
-
-  if (!parseOptions.iscombined) 
-  {
-    
-    std::cerr << "Reading input from mzid files:\n";
-    
-    reader->translateFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */,databases,0);
-    reader->translateFileToXML(decoyFN, ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */,databases,0);
-    
-  } 
-  else 
-  {
-    
-    std::cerr << "Reading input from a combined (target-decoy) mzid file .." << std::endl;
- 
-    reader->translateFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */,databases,0);
-    
-  }
-
-
-  xercesc::XMLPlatformUtils::Terminate();
-
-  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-  string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
-      string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
-      " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
-      " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
-      " https://github.com/percolator/percolator/raw/pin-" + schema_major +
-      "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
-  if (xmlOutputFN == "") cout << headerStr;
-  else {
-    xmlOutputStream << headerStr;
-    cerr <<  "The output will be written to " << xmlOutputFN << endl;
-  }
-
-  string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
-  if (xmlOutputFN == "") cout << enzymeStr;
-  else xmlOutputStream << enzymeStr;
-
-  string commandLine = "\n<process_info>\n" +
-      string("  <command_line>") + call.substr(0,call.length()-1)
-      + "</command_line>\n" + "</process_info>\n";
-  if (xmlOutputFN == "") cout << commandLine;
-  else xmlOutputStream << commandLine;
-
-  xercesc::XMLPlatformUtils::Initialize ();
-
-  cerr << "\nWriting output:\n";
-  // print to cout (or populate xml file)
-  // print features
-  {
-    serializer ser;
-    if (xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-        ex_p->featureDescriptions());
-  }
-
-  // print fragSpecturmScans
-  std::cerr << "Databases : " << databases.size() << std::endl;
-  for(int i=0; i<databases.size();i++) {
-    serializer ser;
-    if (xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-    if(VERB>1){
-      cerr << "outputting content of " << databases[i]->id
-          << " (and correspondent decoy file)\n";
-    }
-    databases[i]->print(ser);
-    databases[i]->terminte();
-  }
-
-  // print closing tag
-  if (xmlOutputFN == "") std::cout << "</experiment>" << std::endl;
-  else {
-    xmlOutputStream << "</experiment>" << std::endl;
-    xmlOutputStream.close();
-  }
-
-  xercesc::XMLPlatformUtils::Terminate();
-
+  reader->init();
+  reader->print(xmlOutputStream);
+  
   cerr << "\nAll the input files have been successfully processed"<< endl;
 
   return 0;

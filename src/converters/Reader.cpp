@@ -1,6 +1,12 @@
 #include "Reader.h"
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <typeinfo>
+
+#ifndef PIN_VERSION_MAJOR
+  #define PIN_VERSION_MAJOR "@PIN_VERSION_MAJOR@"
+#endif
+#ifndef PIN_VERSION_MINOR
+  #define PIN_VERSION_MINOR "@PIN_VERSION_MINOR@"
+#endif
 
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
@@ -8,7 +14,7 @@ const std::string Reader::modifiedAA("#@*");
 
 Reader::Reader(ParseOptions __po)
 :po(__po)
-{  
+{
   tmpDirs = std::vector<char*>();
   tmpFNs = std::vector<std::string>();
   maxCharge = -1;
@@ -25,9 +31,204 @@ Reader::~Reader()
 }
 
 
+void Reader::init()
+{
+  // initializing xercesc objects corresponding to pin element...
+  xercesc::XMLPlatformUtils::Initialize ();
+  
+  // ... <featureDescriptions>
+  std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p (new ::percolatorInNs::featureDescriptions());
 
-void Reader::push_backFeatureDescription( percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence , const char * str) {
+  // ... <process_info>
+  percolatorInNs::process_info::command_line_type command_line = po.call;
+  std::auto_ptr<percolatorInNs::process_info> proc_info (new ::percolatorInNs::process_info(command_line));
 
+  // ... <experiment>
+  std::auto_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
+
+
+  f_seq = ex_p->featureDescriptions();
+  fss = ex_p->fragSpectrumScan();
+  
+  if (!po.iscombined) 
+  {
+    std::cerr << "Reading input from files: " <<  std::endl;
+    translateFileToXML(po.targetFN, false /* is_decoy */,0);
+    translateFileToXML(po.decoyFN, true /* is_decoy */,0);
+  } 
+  else 
+  {
+    
+    std::cerr << "Reading input from a combined (target-decoy) file .." << std::endl;
+    translateFileToXML(po.targetFN, false /* is_decoy */,0);
+  }
+
+  // read retention time if sqt2pin was invoked with -2 option
+  if (po.spectrumFN.size() > 0) {
+    readRetentionTime(po.spectrumFN);
+    databases[0]->initRTime(&scan2rt);
+    storeRetentionTime(databases[0]);
+  }
+
+  xercesc::XMLPlatformUtils::Terminate();
+
+}
+
+void Reader::print(ofstream &xmlOutputStream)
+{
+  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+  string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
+      string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
+      " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
+      " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
+      " https://github.com/percolator/percolator/raw/pin-" + schema_major +
+      "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
+  if (po.xmlOutputFN == "") cout << headerStr;
+  else {
+    xmlOutputStream << headerStr;
+    cerr <<  "The output will be written to " << po.xmlOutputFN << endl;
+  }
+
+  string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
+  if (po.xmlOutputFN == "") cout << enzymeStr;
+  else xmlOutputStream << enzymeStr;
+
+  string commandLine = "\n<process_info>\n" +
+      string("  <command_line>") + po.call.substr(0,po.call.length()-1)
+      + "</command_line>\n" + "</process_info>\n";
+  if (po.xmlOutputFN == "") cout << commandLine;
+  else xmlOutputStream << commandLine;
+
+  xercesc::XMLPlatformUtils::Initialize ();
+
+  cerr << "\nWriting output:\n";
+  // print to cout (or populate xml file)
+  // print features
+  {
+    serializer ser;
+    if (po.xmlOutputFN == "") ser.start (std::cout);
+    else ser.start (xmlOutputStream);
+    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",f_seq);
+  }
+
+  // print fragSpecturmScans
+  std::cerr << "Databases : " << databases.size() << std::endl;
+  for(int i=0; i<databases.size();i++) {
+    serializer ser;
+    if (po.xmlOutputFN == "") ser.start (std::cout);
+    else ser.start (xmlOutputStream);
+    if(VERB>1){
+      cerr << "outputting content of " << databases[i]->id
+          << " (and correspondent decoy file)\n";
+    }
+    databases[i]->print(ser);
+    databases[i]->terminte();
+  }
+
+  // print closing tag
+  if (po.xmlOutputFN == "") std::cout << "</experiment>" << std::endl;
+  else {
+    xmlOutputStream << "</experiment>" << std::endl;
+    xmlOutputStream.close();
+  }
+
+  xercesc::XMLPlatformUtils::Terminate();
+
+}
+
+
+void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int lineNumber_par)
+  {
+  
+    //TODO check its is a metafile or not and if it is valid formed, mmm I should split this function in two to make it clearer
+    if(checkValidity(fn))
+    {
+      // there must be as many databases as lines in the metafile containing sqt
+      // files. If this is not the case, add a new one
+      if(databases.size()==lineNumber_par)
+      {
+	// initialize databese     
+	std::auto_ptr<serialize_scheme> database(new serialize_scheme(fn));
+      
+	//NOTE this is actually not needed in case we compile with the boost-serialization scheme
+	//indicate this with a flag and avoid the creating of temp files when using boost-serialization
+	if(database->toString() != "FragSpectrumScanDatabaseBoostdb")
+	{
+	  // create temporary directory to store the pointer to the database
+	  string tcf = "";
+	  char * tcd;
+	  string str;
+      
+	  //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
+	  //filesystem when we dont use them
+	  try
+	  {
+	    boost::filesystem::path ph = boost::filesystem::unique_path();
+	    boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+	    boost::filesystem::path file("converters-tmp.tcb");
+	    tcf = std::string((dir / file).string()); 
+	    str =  dir.string();
+	    tcd = new char[str.size() + 1];
+	    std::copy(str.begin(), str.end(), tcd);
+	    tcd[str.size()] = '\0';
+	    if(boost::filesystem::is_directory(dir))
+	    {
+	      boost::filesystem::remove_all(dir);
+	    }
+	
+	    boost::filesystem::create_directory(dir);
+	  } 
+	  catch (boost::filesystem::filesystem_error &e)
+	  {
+	    std::cerr << e.what() << std::endl;
+	  }
+	
+	  tmpDirs.resize(lineNumber_par+1);
+	  tmpDirs[lineNumber_par]=tcd;
+	  tmpFNs.resize(lineNumber_par+1);
+	  tmpFNs[lineNumber_par]=tcf;
+	  database->init(tmpFNs[lineNumber_par]);
+	}
+	else
+	{
+	  database->init("");
+	}
+      
+	databases.resize(lineNumber_par+1);
+	databases[lineNumber_par]=database;
+	assert(databases.size()==lineNumber_par+1);
+      }
+      if (VERB>1){
+	std::cerr << "reading " << fn << std::endl;
+      }
+    
+      getMaxMinCharge(fn);
+      if ( f_seq.featureDescription().size() == 0 ) {
+	addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME,po.calcAAFrequencies ? aaAlphabet : "",po.targetFN);
+	//NOTE feature descriptions are the same for different files
+      }
+      read(fn,isDecoy,databases[lineNumber_par]);
+    
+    } else {
+      // we hopefully found a meta file
+      unsigned int lineNumber=0;
+      std::string line2;
+      std::ifstream meta(fn.data(), std::ios::in);
+      while (getline(meta, line2)) {
+	if (line2.size() > 0 && line2[0] != '#') {
+	  //NOTE remove the whitespaces
+	  line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());
+	  translateFileToXML(line2,isDecoy,lineNumber);
+	  lineNumber++;
+	}
+      }
+      meta.close();
+    }
+  }
+void Reader::push_backFeatureDescription(const char * str) {
+  
+  percolatorInNs::featureDescriptions::featureDescription_sequence  &fd_sequence =  f_seq.featureDescription();
   std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
   assert(f_p.get());
   fd_sequence.push_back(f_p);
@@ -49,7 +250,7 @@ string Reader::getRidOfUnprintables(string inpString) {
   return outputs;
 }
 
-void Reader::computeAAFrequencies(const string& pep,   percolatorInNs::features::feature_sequence & f_seq ) {
+void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::feature_sequence & f_seq ) {
   // Overall amino acid composition features
   assert(pep.size() >= 5);
   string::size_type aaSize = aaAlphabet.size();

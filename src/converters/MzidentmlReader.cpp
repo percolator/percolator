@@ -1,4 +1,5 @@
 #include "MzidentmlReader.h"
+#include "DataSet.h"
 
 static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e,chLatin_n, 
 						  chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, 
@@ -14,15 +15,6 @@ MzidentmlReader::MzidentmlReader(ParseOptions po):Reader(po)
 MzidentmlReader::~MzidentmlReader()
 {
 
-}
-
-void MzidentmlReader::read(const std::string fn, percolatorInNs::featureDescriptions& fds, 
-			   percolatorInNs::experiment::fragSpectrumScan_sequence& fsss, 
-			   bool is_decoy, FragSpectrumScanDatabase* database)
-{
-  int scanNumber=0;
-  scanNumberMapType scanNumberMap;
-  loadFromTargetOrDecoyFile(fn.c_str(),is_decoy,fds,*database,&scanNumber,scanNumberMap);
 }
 
 bool MzidentmlReader::checkValidity(string file)
@@ -51,6 +43,89 @@ bool MzidentmlReader::checkValidity(string file)
     ismeta = true;
   }
   return ismeta;
+}
+
+
+void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet, std::string fn)
+{
+
+  ifstream ifs;
+  ifs.exceptions (ifstream::badbit | ifstream::failbit);
+  try
+  {
+    ifs.open (fn.c_str());
+    parser p;
+    string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
+    string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+    string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn, true, schemaDefinition,
+      schema_major, schema_minor));
+    for (doc = p.next (); doc.get () != 0 && 
+      !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() );
+      doc = p.next ()) {
+      // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
+    }
+    ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
+    
+    push_backFeatureDescription("deltLCn");
+    push_backFeatureDescription("deltCn");
+    //push_backFeatureDescription("Xcorr");
+    //push_backFeatureDescription("Sp");
+    push_backFeatureDescription("IonFrac");
+    push_backFeatureDescription("Mass" );
+    push_backFeatureDescription("PepLen");
+
+
+    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & param, specIdResult.SpectrumIdentificationItem()[0].cvParam() )  {
+      if ( param.value().present() ) {
+        push_backFeatureDescription(param.name().c_str());
+      }
+    }
+    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, specIdResult.SpectrumIdentificationItem()[0].userParam())  {
+      if ( param.value().present() ) {
+        push_backFeatureDescription(param.name().c_str());
+      }
+    }
+    
+    
+    //NOTE are these added already??
+    /*if (doEnzyme) {
+      push_backFeatureDescription("enzN");
+      push_backFeatureDescription("enzC");
+      push_backFeatureDescription("enzInt");
+    }
+
+    if (po.calcPTMs) {
+      push_backFeatureDescription("ptm");
+    }
+    if (po.pngasef) {
+      push_backFeatureDescription("PNGaseF");
+    }
+    if (!aaAlphabet.empty()) {
+      for (std::string::const_iterator it = aaAlphabet.begin(); it
+      != aaAlphabet.end(); it++)
+	push_backFeatureDescription(*it + "-Freq");
+    }*/
+
+  }catch (ifstream::failure e) {
+    cerr << "Exception opening/reading file :" << fn <<endl;
+  }
+  catch (const xercesc::DOMException& e)
+  {
+    char * tmpStr = XMLString::transcode(e.getMessage());
+    std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  
+    XMLString::release(&tmpStr);
+
+  }
+  catch (const xml_schema::exception& e)
+  {
+    cerr << e << endl;
+  }
+  catch(std::exception e){
+    cerr << e.what() <<endl;
+  }
+  
+  return; 
 }
 
 
@@ -120,26 +195,24 @@ void MzidentmlReader::getMaxMinCharge(string fn)
   return;
 }
 
-int MzidentmlReader::loadFromTargetOrDecoyFile( const char * fileName,  bool isDecoy,  
-			       percolatorInNs::featureDescriptions & fdesFirstFile, 
-			       FragSpectrumScanDatabase & database,  int * scanNumber, 
-			       scanNumberMapType & scanNumberMap  ) 
+void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
   namespace xml = xsd::cxx::xml;
-  int ret=0;
+  int scanNumber=0;
+  scanNumberMapType scanNumberMap;
   
   try
   {
-    percolatorInNs::featureDescriptions fdesCurrentFile;
     ifstream ifs;
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
-    ifs.open (fileName);
+    ifs.open (fn.c_str());
     parser p;
     string schemaDefinition = PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fileName, true, schemaDefinition,
+    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn.c_str(), true, schemaDefinition,
         schema_major, schema_minor));
+    
     while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) {
       doc = p.next ();
       // Let's skip some sub trees that we are not interested, e.g. AuditCollection
@@ -155,56 +228,15 @@ int MzidentmlReader::loadFromTargetOrDecoyFile( const char * fileName,  bool isD
       assert(pept);
       peptideMap.insert( std::make_pair(peptide.id(), pept ) ) ;
     }
+    
     for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, 
       doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
+    
     ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
- 
-    percolatorInNs::featureDescriptions::featureDescription_sequence  & fd_sequence =  fdesCurrentFile.featureDescription();
-
-
     assert( specIdResult.SpectrumIdentificationItem().size() > 0 );
 
-    push_backFeatureDescription( fd_sequence,"deltLCn");
-    push_backFeatureDescription( fd_sequence,"deltCn");
-    //push_backFeatureDescription( fd_sequence,"Xcorr" );
-    //push_backFeatureDescription( fd_sequence,"Sp" );
-    push_backFeatureDescription( fd_sequence,"IonFrac" );
-    push_backFeatureDescription( fd_sequence,"Mass" );
-    push_backFeatureDescription( fd_sequence,"PepLen" );
-
-    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_cvParamType & param, specIdResult.SpectrumIdentificationItem()[0].cvParam() )  {
-      if ( param.value().present() ) {
-        push_backFeatureDescription( fd_sequence, param.name().c_str() );
-      }
-    }
-    BOOST_FOREACH( const ::mzIdentML_ns::FuGE_Common_Ontology_userParamType & param, specIdResult.SpectrumIdentificationItem()[0].userParam())  {
-      if ( param.value().present() ) {
-        push_backFeatureDescription( fd_sequence, param.name().c_str() );
-      }
-    }
- 
-    if ( fdesFirstFile.featureDescription().size() == 0 ) {
-      // This is the first time this function is called. We save the current Feature descriptions
-      assert ( fdesCurrentFile.featureDescription().size() > 0 ); 
-      fdesFirstFile = fdesCurrentFile;
-    }
-    // Additional files should have the same Feature descriptions as the first file
-    assert ( fdesCurrentFile.featureDescription().size() == fdesFirstFile.featureDescription().size() ); 
-    bool differenceFound = false;
-    for ( int i = 0; i < fdesFirstFile.featureDescription().size() ;  ++i ) {
-      ::percolatorInNs::featureDescription & fdesc1 = fdesFirstFile.featureDescription()[i];
-      ::percolatorInNs::featureDescription & fdesc2 = fdesCurrentFile.featureDescription()[i];
-
-      if ( fdesc1.name() != fdesc2.name() ) { differenceFound = true; break; }  
-    }
-    if ( differenceFound ) 
-    {
-      // We create the feature description list for every file. This is just a check that these list look the same.
-      std::cerr << "ERROR: The file: " << fileName << " translates into a feature list that is different from the a previously created feature list ( from another file ).\n" << std::endl;
-      exit(-1);
-    }
     for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) {
       ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
@@ -213,22 +245,22 @@ int MzidentmlReader::loadFromTargetOrDecoyFile( const char * fileName,  bool isD
       scanNumberMapType::iterator iter = scanNumberMap.find( specIdResult.id() );
       int useScanNumber;
       if ( iter == scanNumberMap.end() ) {
-        scanNumberMap[ specIdResult.id() ]=*scanNumber;
-        useScanNumber = *scanNumber;
+        scanNumberMap[ specIdResult.id() ]=scanNumber;
+        useScanNumber = scanNumber;
         ++scanNumber;
         std::auto_ptr< ::percolatorInNs::fragSpectrumScan> tmp_p( new ::percolatorInNs::fragSpectrumScan( useScanNumber, experimentalMassToCharge ));  ;
         fss_p = tmp_p;
       } else {
         useScanNumber = iter->second;
-        fss_p = database.getFSS( useScanNumber );
+        fss_p = database->getFSS( useScanNumber );
         assert(fss_p.get());
         assert( fss_p->experimentalMassToCharge().get() == experimentalMassToCharge );
       }
 
       BOOST_FOREACH( const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  {
-        createPSM(item, peptideMap, experimentalMassToCharge, isDecoy, fdesFirstFile , fss_p->peptideSpectrumMatch());
+        createPSM(item, peptideMap, experimentalMassToCharge, isDecoy, fss_p->peptideSpectrumMatch());
       }
-      database.putFSS( *fss_p );
+      database->putFSS( *fss_p );
     }
     
     peptideMapType::iterator iter;
@@ -242,26 +274,24 @@ int MzidentmlReader::loadFromTargetOrDecoyFile( const char * fileName,  bool isD
     char * tmpStr = XMLString::transcode(e.getMessage());
     std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;  
     XMLString::release(&tmpStr);
-    ret = 1;
+    exit(-1);
   }
   catch (const xml_schema::exception& e)
   {
     cerr << e << endl;
-    ret = 1;
+    exit(-1);
   }
   catch (const ios_base::failure&)
   {
     cerr << "io failure" << endl;
-    ret = 1;
+    exit(-1);
   }
-  return ret;
 }
 
 void MzidentmlReader::createPSM(const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, 
-				 peptideMapType & peptideMap,::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge, 
-				 bool isDecoy, percolatorInNs::featureDescriptions & fdesFirstFile,  
-				 ::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence ) {
-
+		peptideMapType & peptideMap,::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type 
+		experimentalMassToCharge,bool isDecoy,::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence) 
+{
   assert( item.experimentalMassToCharge() == experimentalMassToCharge );
   assert( item.Peptide_ref().present() );
   assert( peptideMap.find( item.Peptide_ref().get() ) != peptideMap.end() );
@@ -334,7 +364,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::PSI_PI_analysis_search_Spe
     }
   }
   // maybe  f_seq.size() normally is greater than  fdesFirstFile.featureDescription().size() ? fix this
-  assert( fdesFirstFile.featureDescription().size() == f_seq.size() );
+  assert( this->f_seq.featureDescription().size() == f_seq.size() );
   //is optional for mzIdentML1.0.0 but is compulsory for percolator_in ..... Is this ok?
   assert( item.calculatedMassToCharge().present() );
   ::percolatorInNs::peptideSpectrumMatch* tmp_psm =

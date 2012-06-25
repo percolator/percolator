@@ -39,34 +39,14 @@ FragSpectrumScanDatabaseLeveldb::FragSpectrumScanDatabaseLeveldb(std::string id)
   oxdrp=tmpPtr;
 }
 
-FragSpectrumScanDatabaseLeveldb::FragSpectrumScanDatabaseLeveldb(const FragSpectrumScanDatabase& original)
-{
-
-}
-
-FragSpectrumScanDatabaseLeveldb::FragSpectrumScanDatabaseLeveldb()
-{
-
-}
-
-FragSpectrumScanDatabaseLeveldb::FragSpectrumScanDatabaseLeveldb(const FragSpectrumScanDatabaseTokyoDB& other)
-{
-
-}
-
 FragSpectrumScanDatabaseLeveldb::~FragSpectrumScanDatabaseLeveldb()
 {
 
 }
 
-FragSpectrumScanDatabaseLeveldb& FragSpectrumScanDatabaseLeveldb::operator=(const FragSpectrumScanDatabaseLeveldb& other)
+std::string FragSpectrumScanDatabaseLeveldb::toString()
 {
-return *this;
-}
-
-bool FragSpectrumScanDatabaseLeveldb::operator==(const FragSpectrumScanDatabaseLeveldb& other) const
-{
-///TODO: return ...;
+  return std::string("FragSpectrumScanDatabaseLeveldb");
 }
 
 bool FragSpectrumScanDatabaseLeveldb::init(std::string fileName) 

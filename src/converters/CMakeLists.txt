@@ -11,9 +11,11 @@ MESSAGE( STATUS )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
-MESSAGE( STATUS "Indicate the type of XML serialization scheme : -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" or -DSERIALIZE=\"LevelDB\". 
-		  By setting up the variable SERIALIZE to either Boost or TokyoCabined or LevelDB we will chose the serialization to be taken 
-		  to build Converters. Boost option will be taken as default if no option is given.")
+MESSAGE( STATUS "Indicate the type of XML serialization scheme : 
+		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" or -DSERIALIZE=\"LevelDB\".
+		  By setting up the variable SERIALIZE to either Boost or TokyoCabined or LevelDB 
+		  we will chose the serialization scheme to be taken to build Converters.
+		  Boost serialization option will be taken as default if no option is given.")
 MESSAGE( STATUS "Building PERCOLATOR-CONVERTERS:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
@@ -22,23 +24,26 @@ MESSAGE( STATUS "PERCOLATOR_SOURCE_DIR = ${PERCOLATOR_SOURCE_DIR}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
 MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
-if(${SERIALIZE} EQUAL "LevelDB")
+MESSAGE( STATUS "SERIALIZE = ${SERIALIZE}")
+
+if(${SERIALIZE} STREQUAL "LevelDB")
   message( STATUS "Using LevelDB Serialization scheme")
   add_definitions(-D__LEVELDB__)
   set(LEVELDB TRUE)
-elseif(${SERIALIZE} EQUAL "Boost")
+elseif(${SERIALIZE} STREQUAL "Boost")
   message( STATUS "Using Boost Serialization scheme")
   add_definitions(-D__BOOSTDB__)
   set(BOOSTDB TRUE)
-elseif(${SERIALIZE} EQUAL "TokyoCabinet")
+elseif(${SERIALIZE} STREQUAL "TokyoCabinet")
   message( STATUS "Using Tokyo Cabinet Serialization scheme")
   add_definitions(-D__TOKYODB__)
   set(TOKYODB TRUE)
 else()
-  message( STATUS "Using default : Boost Serialization scheme")
+  message( STATUS "Using default Serialization scheme : Boost Serialization scheme")
   add_definitions(-D__BOOSTDB__)
   set(BOOSTDB TRUE)
 endif()
+
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
@@ -136,6 +141,24 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 #FIND LIBRARIES
 MESSAGE( STATUS "Checking packages.." )
 
+find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
+if(XERCESC_FOUND)
+  message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
+  message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "       Version: ${XERCESC_VERSION}")
+else(XERCESC_FOUND)
+  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
+endif(XERCESC_FOUND)
+include_directories(${XERCESC_INCLUDE_DIR})
+
+find_package(Xsd REQUIRED) # CODESYNTHESIS
+if(XSD_FOUND)
+  message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
+else(XSD_FOUND)
+  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
+endif(XSD_FOUND)  
+include_directories(${XSD_INCLUDE_DIR})
+
 if(LEVELDB)
   find_package(LDB REQUIRED)
   if(LDB_FOUND)
@@ -153,25 +176,6 @@ elseif(TOKYODB)
   endif(TOKYOCABINET_FOUND)
   include_directories(${TokyoCabinet_INCLUDE_DIR})
 endif()
-
-find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
-if(XERCESC_FOUND)
-  message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
-  message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
-  message(STATUS "       Version: ${XERCESC_VERSION}")
-else(XERCESC_FOUND)
-  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
-endif(XERCESC_FOUND)
-include_directories(${XERCESC_INCLUDE_DIR})
-
-
-find_package(Xsd REQUIRED) # CODESYNTHESIS
-if(XSD_FOUND)
-  message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
-else(XSD_FOUND)
-  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
-endif(XSD_FOUND)  
-include_directories(${XSD_INCLUDE_DIR})
 
 if(APPLE)
   SET(Boost_USE_STATIC_LIBS   ON)
@@ -285,7 +289,7 @@ add_custom_command(
 set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.hxx )
 add_custom_command(
   OUTPUT ${mzIdentMLxsdfiles}  
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization  --root-element-all --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -316,15 +320,15 @@ add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer
 #COMPILING 
 add_subdirectory(MSToolkit)
 if(LEVELDB)
-  add_library(converters STATIC Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
+  add_library(converters STATIC ${mzIdentMLxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
 elseif(TOKYODB)
-  add_library(converters STATIC Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
+  add_library(converters STATIC ${mzIdentMLxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
 elseif(BOOSTDB)
-  add_library(converters STATIC Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
+  add_library(converters STATIC ${mzIdentMLxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
 endif()
 
 include_directories(. MSToolkit/RAMP MSToolkit )
-add_executable(mzidentml2pin  ${mzIdentMLxsdfiles} mzidentml2pin.cpp )
+add_executable(mzidentml2pin mzidentml2pin.cpp )
 add_executable(sqt2pin Sqt2Pin.cpp )
 add_executable(tandem2pin tandem2pin.cpp )
 add_executable(msgfdb2pin msgfdb2pin.cpp )

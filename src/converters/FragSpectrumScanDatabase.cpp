@@ -1,18 +1,6 @@
 #include "FragSpectrumScanDatabase.h"
 #include <MSToolkitTypes.h>
  
-struct underflow_info
-{
-    xml_schema::buffer* buf;
-    size_t pos;
-};
-
-extern "C" int
-overflow (void* user_data, char* buf, int n);
-
-extern "C" int
-underflow (void* user_data, char* buf, int n);
-
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
     scan2rt(0) 

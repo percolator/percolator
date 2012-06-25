@@ -14,11 +14,9 @@
  limitations under the License.
 
  *******************************************************************************/
-
 #ifndef PARSEOPTIONS_H
 #define PARSEOPTIONS_H
 
-#include <iostream>
 #include <string>
 #include <map>
 
@@ -39,7 +37,11 @@ class ParseOptions
     monoisotopic(false),
     boost_serialization(true),
     targetFN(""),
-    decoyFN(""){};
+    decoyFN(""),
+    call(""),
+    spectrumFN(""),
+    xmlOutputFN("")
+    {};
     bool calcQuadraticFeatures;
     bool calcAAFrequencies;
     bool calcPTMs;
@@ -54,6 +56,9 @@ class ParseOptions
     std::string reversedFeaturePattern;
     std::string targetFN;
     std::string decoyFN;
+    std::string spectrumFN;
+    std::string call;
+    std::string xmlOutputFN;
     std::map<char, int> ptmScheme;
 };
 

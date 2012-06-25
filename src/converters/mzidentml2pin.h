@@ -18,53 +18,13 @@
 #ifndef MZIDENTML2PIN_H
 #define MZIDENTML2PIN_H
 
-#ifndef PIN_VERSION_MAJOR
-#define PIN_VERSION_MAJOR "@PIN_VERSION_MAJOR@"
-#endif
-#ifndef PIN_VERSION_MINOR
-#define PIN_VERSION_MINOR "@PIN_VERSION_MINOR@"
-#endif
-#ifndef WRITABLE_DIR
-#define WRITABLE_DIR "@WRITABLE_DIR@"
-#endif
-#ifndef TEMP_DIR
-#define TEMP_DIR "@TEMP_DIR@"
-#endif
 
-#if defined __LEVELDB__
-  #include "FragSpectrumScanDatabaseLeveldb.h"
-  typedef FragSpectrumScanDatabaseLeveldb serialize_scheme;
-  bool boost_serialization = true;
-#elif defined __TOKYODB__
-  #include "FragSpectrumScanDatabaseTokyodb.h"
-  typedef FragSpectrumScanDatabaseTokyodb serialize_scheme;
-  bool boost_serialization = false;
-#else
-  #include "FragSpectrumScanDatabaseBoostdb.h"
-  typedef FragSpectrumScanDatabaseBoostdb serialize_scheme;
-  bool boost_serialization = false;
-#endif
-  
-  
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include "MzidentmlReader.h"
 #include "Option.h"
 #include "config.h"
-#include "serializer.hxx"
-#include "MSReader.h"
-#include "Spectrum.h"
-#include "MSToolkitTypes.h"
-#include "DataSet.h"
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <limits>
-#include <cmath>
+#include <string>
 
 using namespace std;
-using namespace xercesc;
 
 class Mzidentml2pin {
   

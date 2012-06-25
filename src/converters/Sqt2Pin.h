@@ -18,49 +18,9 @@
 #ifndef SQT2PIN_H_
 #define SQT2PIN_H_
 
-#ifndef PIN_VERSION_MAJOR
-#define PIN_VERSION_MAJOR "@PIN_VERSION_MAJOR@"
-#endif
-#ifndef PIN_VERSION_MINOR
-#define PIN_VERSION_MINOR "@PIN_VERSION_MINOR@"
-#endif
-#ifndef WRITABLE_DIR
-#define WRITABLE_DIR "@WRITABLE_DIR@"
-#endif
-#ifndef TEMP_DIR
-#define TEMP_DIR "@TEMP_DIR@"
-#endif
-
-#if defined __LEVELDB__
-  #include "FragSpectrumScanDatabaseLeveldb.h"
-  typedef FragSpectrumScanDatabaseLeveldb serialize_scheme;
-  bool boost_serialization = true;
-#elif defined __TOKYODB__
-  #include "FragSpectrumScanDatabaseTokyodb.h"
-  typedef FragSpectrumScanDatabaseTokyodb serialize_scheme;
-  bool boost_serialization = false;
-#else
-  #include "FragSpectrumScanDatabaseBoostdb.h"
-  typedef FragSpectrumScanDatabaseBoostdb serialize_scheme;
-  bool boost_serialization = false;
-#endif
-  
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include "SqtReader.h"
 #include "Option.h"
 #include "config.h"
-#include "serializer.hxx"
-#include "MSReader.h"
-#include "Spectrum.h"
-#include "MSToolkitTypes.h"
-#include "DataSet.h"
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <limits>
-#include <cmath>
 
 using namespace std;
 
@@ -79,9 +39,6 @@ class Sqt2Pin {
 	
 	int run();
 	
-	void readRetentionTime(std::string filename);
-	
-	void storeRetentionTime(serialize_scheme* database);
 
  private:
   
@@ -91,7 +48,6 @@ class Sqt2Pin {
 	std::string xmlOutputFN;
 	std::string call;
 	std::string spectrumFile;
-	map<int, vector<double> > scan2rt;
 	SqtReader *reader;
 };
 

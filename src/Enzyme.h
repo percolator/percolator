@@ -18,6 +18,7 @@
 
 #ifndef ENZYME_H_
 #define ENZYME_H_
+
 #include <boost/algorithm/string.hpp> // for case insensitive string compare  TOFIX not very portable
 #include <cstdlib>
 #include <iostream>

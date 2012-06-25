@@ -18,32 +18,53 @@
 #ifndef READER_H
 #define READER_H
 
-#include "FragSpectrumScanDatabase.h"
-#include <string>
-#include <set>
+#include "Enzyme.h"
+#include "DataSet.h"
 #include <iostream>
 #include <fstream>
+#include <numeric>
+#include <map>
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/util/XMLString.hpp>
+#include <xsd/cxx/xml/string.hxx>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string>
+#include <set>
 #include <cmath>
 #include <algorithm>
 #include <vector>
 #include "Globals.h"
-#include "Enzyme.h"
 #include "MassHandler.h"
-#include "DataSet.h"
 #include "FeatureNames.h"
 #include "percolator_in.hxx"
 #include "parseoptions.h"
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp> 
+#include "MSReader.h"
+#include "Spectrum.h"
 #include <assert.h>
 #if defined (__WIN32__) || defined (__MINGW__) 
-#include <direct.h>
-#include <io.h>
-#include <stdio.h>
-#define  mkdir( D, M )   _mkdir( D )
-#include <fcntl.h>
-#include <errno.h>
+  #include <direct.h>
+  #include <io.h>
+  #include <stdio.h>
+  #define  mkdir( D, M )   _mkdir( D )
+  #include <fcntl.h>
+  #include <errno.h>
 #endif
 
+#if defined __LEVELDB__
+  #include "FragSpectrumScanDatabaseLeveldb.h"
+  typedef FragSpectrumScanDatabaseLeveldb serialize_scheme;
+#elif defined __TOKYODB__ 
+  #include "FragSpectrumScanDatabaseTokyodb.h"
+  typedef FragSpectrumScanDatabaseTokyoDB serialize_scheme;
+#else
+  #include "FragSpectrumScanDatabaseBoostdb.h"
+  typedef FragSpectrumScanDatabaseBoostdb serialize_scheme;
+#endif
+  
+  
 using namespace std;
 
 class Reader
@@ -54,117 +75,33 @@ public:
   Reader(ParseOptions po);
   virtual ~Reader();
   
-  //NOTE template function need to be declared and implemented in header
-  template<class T>
-  void translateFileToXML(const std::string fn,
-     ::percolatorInNs::featureDescriptions & fds,
-     ::percolatorInNs::experiment::fragSpectrumScan_sequence & fsss, bool isDecoy,
-     vector<T*>& databases, unsigned int lineNumber_par)
-  {
-  
-    //TODO check its is a metafile or not and if it is valid formed
-    if(checkValidity(fn))
-    {
-      // there must be as many databases as lines in the metafile containing sqt
-      // files. If this is not the case, add a new one
-      if(databases.size()==lineNumber_par)
-      {
-	// initialize databese     
-	T* database = new T(fn);
-      
-	//NOTE this is actually not needed in case we compile with the boost-serialization scheme
-	//indicate this with a flag and avoid the creating of temp files when using boost-serialization
-	if(!po.boost_serialization)
-	{
-	  // create temporary directory to store the pointer to the database
-	  string tcf = "";
-	  char * tcd;
-	  string str;
-      
-	  //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
-	  //filesystem when we dont use them
-	  try
-	  {
-	    boost::filesystem::path ph = boost::filesystem::unique_path();
-	    boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
-	    boost::filesystem::path file("converters-tmp.tcb");
-	    tcf = std::string((dir / file).string()); 
-	    str =  dir.string();
-	    tcd = new char[str.size() + 1];
-	    std::copy(str.begin(), str.end(), tcd);
-	    tcd[str.size()] = '\0';
-	    if(boost::filesystem::is_directory(dir))
-	    {
-	      boost::filesystem::remove_all(dir);
-	    }
-	
-	    boost::filesystem::create_directory(dir);
-	  } 
-	  catch (boost::filesystem::filesystem_error &e)
-	  {
-	    std::cerr << e.what() << std::endl;
-	  }
-	
-	  tmpDirs.resize(lineNumber_par+1);
-	  tmpDirs[lineNumber_par]=tcd;
-	  tmpFNs.resize(lineNumber_par+1);
-	  tmpFNs[lineNumber_par]=tcf;
-	  database->init(tmpFNs[lineNumber_par]);
-	}
-	else
-	{
-	  database->init("");
-	}
-      
-	databases.resize(lineNumber_par+1);
-	databases[lineNumber_par]=database;
-	assert(databases.size()==lineNumber_par+1);
-      }
-      if (VERB>1){
-	std::cerr << "reading " << fn << std::endl;
-      }
-    
-      getMaxMinCharge(fn);
-      read(fn,fds, fsss, isDecoy,databases[lineNumber_par]);
-    
-    } else {
-      // we hopefully found a meta file
-      unsigned int lineNumber=0;
-      std::string line2;
-      std::ifstream meta(fn.data(), std::ios::in);
-      while (getline(meta, line2)) {
-	if (line2.size() > 0 && line2[0] != '#') {
-	  //NOTE remove the whitespaces
-	  line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());
-	  translateFileToXML(line2, fds, fsss, isDecoy,databases, lineNumber);
-	  lineNumber++;
-	}
-      }
-      meta.close();
-    }
-  }
+  void translateFileToXML(const std::string fn,bool isDecoy,unsigned int lineNumber_par);
 
   string getRidOfUnprintables(std::string inpString);
   
-  virtual void read(const std::string fn,
-    ::percolatorInNs::featureDescriptions& fds,
-     ::percolatorInNs::experiment::fragSpectrumScan_sequence& fsss,
-      bool is_decoy,FragSpectrumScanDatabase* database){};
+  virtual void read(const std::string fn,bool is_decoy,boost::shared_ptr<FragSpectrumScanDatabase> database){};
       
   virtual bool checkValidity(std::string file){};
   
   virtual void getMaxMinCharge(std::string fn){};
   
-  void push_backFeatureDescription(
-    percolatorInNs::featureDescriptions::featureDescription_sequence&,
-    const char*);
+  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn){};
+  
+  virtual void readRetentionTime(std::string filename){};
+	
+  virtual void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database){};
+  
+  void push_backFeatureDescription(const char *str);
 
-  void computeAAFrequencies(const string& pep,
-    percolatorInNs::features::feature_sequence & f_seq);
+  void computeAAFrequencies(const string& pep,percolatorInNs::features::feature_sequence & f_seq);
   
   double calculatePepMAss(std::string pepsequence,double charge);
 
   void initMassMap(bool useAvgMass);
+  
+  void init();
+  
+  void print(ofstream &xmlOutputStream);
   
 private:
   
@@ -176,10 +113,15 @@ protected:
    static const std::string aaAlphabet;
    static const std::string ambiguousAA;
    static const std::string modifiedAA;
+   std::vector<boost::shared_ptr<FragSpectrumScanDatabase> > databases;
+   //NOTE as soon as I get the program working these 3 guys have to be smart pointers
+   ::percolatorInNs::experiment::fragSpectrumScan_sequence fss;
+   ::percolatorInNs::featureDescriptions f_seq;
    int maxCharge;
    int minCharge;
    ParseOptions po;
    std::map<char, double> massMap_;
+   std::map<int, vector<double> > scan2rt;
 };
 
 #endif
