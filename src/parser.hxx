@@ -36,7 +36,7 @@ public:
   xsd::cxx::xml::dom::auto_ptr<xercesc::DOMDocument>
   start (std::istream& is, const std::string& id, bool validate,
       std::string schemaDefinition, std::string schema_major,
-      std::string schema_minor);
+      std::string schema_minor,std::string schemaNamespace = "http://per-colator.com/percolator_in/");
 
   // The next function returns next first-level element with all its
   // attributes and content or 0 if no more available.

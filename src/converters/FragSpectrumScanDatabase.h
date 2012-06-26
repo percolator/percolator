@@ -26,7 +26,7 @@
 #include <map>
 #include <string>
 #include <iostream>
-#include "config.h"
+#include "Globals.h"
 #include "serializer.hxx"
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/dom/DOM.hpp>

@@ -1,13 +1,6 @@
 #include "Reader.h"
 #include <typeinfo>
 
-#ifndef PIN_VERSION_MAJOR
-  #define PIN_VERSION_MAJOR "@PIN_VERSION_MAJOR@"
-#endif
-#ifndef PIN_VERSION_MINOR
-  #define PIN_VERSION_MINOR "@PIN_VERSION_MINOR@"
-#endif
-
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
 const std::string Reader::modifiedAA("#@*");

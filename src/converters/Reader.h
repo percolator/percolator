@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <vector>
 #include "Globals.h"
+#include "config.h"
 #include "MassHandler.h"
 #include "FeatureNames.h"
 #include "percolator_in.hxx"
@@ -63,8 +64,7 @@
   #include "FragSpectrumScanDatabaseBoostdb.h"
   typedef FragSpectrumScanDatabaseBoostdb serialize_scheme;
 #endif
-  
-  
+   
 using namespace std;
 
 class Reader

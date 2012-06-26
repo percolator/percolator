@@ -107,11 +107,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
       "Scheme");
-  /*cmd.defineOption("Z",
-      "combined",
-      "The input will be a target/decoy combined file.",
-      "",
-      TRUE_IF_SET);*/
   cmd.defineOption("P",
       "pattern",
       "Pattern used to identify the decoy PSMs",

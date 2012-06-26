@@ -21,7 +21,6 @@
 #include "FragSpectrumScanDatabase.h"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/foreach.hpp>
 
 using boost::archive::binary_oarchive;
 using boost::archive::binary_iarchive;

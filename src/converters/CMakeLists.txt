@@ -58,6 +58,8 @@ set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "2")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
+set(MZIDENTML_VERSION_MAJOR "1")
+set(MZIDENTML_VERSION_MINOR "1")
 
 IF(NOT APPLE)
   set(CMAKE_CXX_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
@@ -93,26 +95,29 @@ endif(APPLE AND NOT DEFINED ${TARGET_ARCH})
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(MINGW OR WIN32) # windows
-  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
-  set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
-  set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}\\\\")
-  set(TEMP_DIR "%TEMP%\\\\")
+  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
+  set(MZIDENTML_SCHEMA_LOCATION "${WRITABLE_DIR}xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
   add_definitions(-D_WIN32)
 else() # linux
-  set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
-  set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
-  set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}/")
-  set(TEMP_DIR "/tmp/")
+  set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/converters/")
+  set(MZIDENTML_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
+set(mzIdentML-namespace "http://psidev.info/psi/pi/mzIdentML/${MZIDENTML_VERSION_MAJOR}.${MZIDENTML_VERSION_MINOR}")
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_SOURCE_DIR}/../*.cmake )
 foreach(i ${configurefiles})
   string(REPLACE ".cmake" "" myReplFile "${i}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+endforeach()
+
+file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )
+foreach(i ${configurefiles})
+  string(REPLACE ".cmake" "" myReplFile "${i}")
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
 endforeach()
 
 file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter ${CMAKE_CURRENT_SOURCE_DIR}/cmake/windows_converter/*.cmake )
@@ -136,7 +141,6 @@ endif()
 
 
 set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
-
 
 #FIND LIBRARIES
 MESSAGE( STATUS "Checking packages.." )
@@ -270,7 +274,8 @@ set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BI
 set(percolator_in xml/percolator_in.xsd)
 add_custom_command(
   OUTPUT ${xsdfiles_in}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  
+  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -280,17 +285,32 @@ set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_
 set(percolator_out xml/percolator_out.xsd)
 add_custom_command(
   OUTPUT ${xsdfiles_out}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  
+  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-# RUN CODESYNTHESIS on mzIdentML1.0.0.xsd
-set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.hxx )
+# # RUN CODESYNTHESIS on mzIdentML1.0.0.xsd
+# set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.hxx )
+# set(mzIdentML_in xml/mzIdentML1.0.0.xsd)
+# add_custom_command(
+#   OUTPUT ${mzIdentMLxsdfiles}  
+#   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+#   --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  
+#   --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
+#   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
+#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+
+# RUN CODESYNTHESIS on mzIdentML1.1.0.xsd
+set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.hxx )
+set(mzIdentML_in xml/mzIdentML1.1.0.xsd)
 add_custom_command(
   OUTPUT ${mzIdentMLxsdfiles}  
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mzIdentML1.0.0.xsd
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+  --namespace-map http://psidev.info/psi/pi/mzIdentML/1.1=mzIdentML_ns  
+  --namespace-map http://psidev.info/fuge-light/1.1=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -310,12 +330,16 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
-#COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES
+#COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES ??? Do I really need to import fido classes? and all these classes??
 # include and link code from percolator
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src )
 
-add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp ../fido/Set.cpp ../fido/)
+add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp 
+	    ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp 
+	    ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp 
+	    ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp 
+	    ../fido/Set.cpp ../fido/)
 
 #COMPILING 
 add_subdirectory(MSToolkit)
@@ -477,7 +501,7 @@ add_subdirectory(data/system_tests/converters)
 # INSTALLING
 ###############################################################################
 
-IF(NOT MINGW AND NOT WIN32)
+IF(NOT MINGW)
   if(APPLE)
     install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
     install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
@@ -489,7 +513,11 @@ IF(NOT MINGW AND NOT WIN32)
     install(TARGETS tandem2pin EXPORT mzidentml2pin  DESTINATION ./bin)
     install(TARGETS msgfdb2pin EXPORT sqt2pin DESTINATION ./bin)
   endif(APPLE)
+  
+  install(FILES ../xml/mzIdentML1.0.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+  install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 endif()
+
 ###############################################################################
 # PACKAGING
 ###############################################################################

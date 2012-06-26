@@ -110,7 +110,7 @@ if(MINGW OR WIN32 OR APPLE)
 else(MINGW OR WIN32 OR APPLE)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
- 
+
 # useful macro
 macro(my_find_program progname)
   find_program(${progname}_EXECUTABLE ${progname})

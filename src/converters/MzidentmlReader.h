@@ -21,7 +21,9 @@
 #include <Reader.h>
 #include "FragSpectrumScanDatabase.h"
 #include "parser.hxx"
-#include "mzIdentML1.0.0.hxx"
+//TOFIX I should detect what schema the input file has been created with
+//#include "mzIdentML1.0.0.hxx"
+#include "mzIdentML1.1.0.hxx"
 
 using namespace std;
 using namespace xercesc;
@@ -44,8 +46,9 @@ public:
   virtual void getMaxMinCharge(std::string fn);
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn);
- 
-  void createPSM(const ::mzIdentML_ns::PSI_PI_analysis_search_SpectrumIdentificationItemType & item, 
+  
+  /*PSI_PI_analysis_search_SpectrumIdentificationItemType*/
+  void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
 		peptideMapType & peptideMap,::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type 
 		experimentalMassToCharge,bool isDecoy,::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence );
   
