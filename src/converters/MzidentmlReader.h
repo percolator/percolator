@@ -21,14 +21,24 @@
 #include <Reader.h>
 #include "FragSpectrumScanDatabase.h"
 #include "parser.hxx"
-//TOFIX I should detect what schema the input file has been created with
-//#include "mzIdentML1.0.0.hxx"
+//TODO this version of the program only works for 1.1.0
 #include "mzIdentML1.1.0.hxx"
 
 using namespace std;
 using namespace xercesc;
 typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> peptideMapType;
+typedef map<std::string, mzIdentML_ns::SequenceCollectionType::DBSequence_type *> proteinMapType;
+typedef multimap<std::string, mzIdentML_ns::PeptideEvidenceType *> peptideEvidenceMapType;
 typedef map<std::string, int> scanNumberMapType;
+
+struct RetrieveValue
+{
+  template <typename T>
+  typename T::second_type operator()(T keyValuePair) const
+  {
+    return keyValuePair.second;
+  }
+};
 
 class MzidentmlReader: public Reader
 {
@@ -47,10 +57,19 @@ public:
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn);
   
-  /*PSI_PI_analysis_search_SpectrumIdentificationItemType*/
   void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
-		peptideMapType & peptideMap,::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type 
-		experimentalMassToCharge,bool isDecoy,::percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_sequence & psm_sequence );
+		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
+		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database );
+  
+  void cleanHashMaps();
+  
+  
+private :
+    
+    peptideMapType peptideMap;
+    proteinMapType proteinMap;
+    peptideEvidenceMapType peptideEvidenceMap;
+    map<string,int> hashparams;
   
 };
 

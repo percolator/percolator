@@ -47,10 +47,10 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
   call = callStream.str();
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   mzidentml2pin [options] target.sqt decoy.sqt" << endl << endl;
-  intro << "Target.sqt is the target sqt-file, and decoy.sqt is" << endl;
-  intro << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
-  intro << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;
+  intro << "   mzidentml2pin [options] target.mzid decoy.mzid" << endl << endl;
+  intro << "Target.mzid [Sequest] is the target MzIdentML-file, and decoy.mzid [Sequest] is" << endl;
+  intro << "the decoy MzIdentML-file. Small data sets may be merged by replace the mzid-files with" << endl;
+  intro << "meta files. Meta files are text files containing the paths of mzid-files, one" << endl;
   intro << "path per line. For successful result, the different runs should be generated" << endl;
   intro << "under similar condition." << endl;
 

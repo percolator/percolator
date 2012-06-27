@@ -21,7 +21,7 @@ Name=New Native Application Configuration
 Type=Native Application
 
 [Launch][Launch Configuration 0][Data]
-Arguments=-o pin.xml Sequest_example_ver1.1.mzid
+Arguments=-o pin2.xml Sequest_example_ver1.1.mzid
 Debugger Shell=
 Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
 Dependency Action=Nothing

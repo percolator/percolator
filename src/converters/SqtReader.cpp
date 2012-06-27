@@ -34,7 +34,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   std::vector< std::string > proteinIds;
   //this vector is only used when we read a combined file
   std::vector< std::string > proteinIdsDecoys;
-  std::map<char,int> ptmMap = po.ptmScheme; // This map should not be const declared as we use operator[], this is a FIXME for frther releases 
+  std::map<char,int> ptmMap = po.ptmScheme; 
 
   while (getline(instr, line)) 
   {
@@ -119,7 +119,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         }
         f_seq.push_back( log(max(1.0, nSM)));
         f_seq.push_back( dM ); // obs - calc mass
-        f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
+        f_seq.push_back( abs(dM) ); // abs only defined for integers on some systems
         if (po.calcPTMs) 
 	{
 	  f_seq.push_back(  DataSet::cntPTMs(peptide));
@@ -168,7 +168,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
 
   if (!isfinite(f_seq[2])) std::cerr << in;
 
-  assert(peptide.size() >= 5 );
+  assert(peptide.size() >= po.peptidelength );
   percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1);
   
@@ -336,6 +336,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
 	  ++ms;
 	  ++n;
 	}
+	//NOTE this is fishy, only add the Matches for target PSMs??
 	else if( !isDecoy || (po.reversedFeaturePattern == "" ||
           ((line.find(po.reversedFeaturePattern, 0) != std::string::npos))))
 	{
@@ -407,6 +408,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
       {                                            
 	theMs.insert(ms - 1);
       }
+      //NOTE this is fishy, only add the Matches for target PSMs??
       else if ((int)theMs.size() < po.hitsPerSpectrum &&
           ( !isDecoy || ( po.reversedFeaturePattern == "" ||
               ((line.find(po.reversedFeaturePattern, 0) != std::string::npos)))))
@@ -508,7 +510,9 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphab
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
       push_backFeatureDescription(*it + "-Freq");
   }
-  if (po.calcQuadraticFeatures) 
+  
+  //NOTE this is not being filled up later in the PSM
+  /**if (po.calcQuadraticFeatures) 
   {
     for (int f1 = 1; f1 < f_seq.featureDescription().size(); ++f1) 
     {
@@ -519,7 +523,7 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphab
         push_backFeatureDescription(feat.str().c_str());
       }
     }
-  }
+  }**/
 }
 
 void SqtReader::readRetentionTime(string filename) 
