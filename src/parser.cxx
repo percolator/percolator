@@ -140,6 +140,7 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
     schemaNamespace.append(schema_minor);
     schemaNamespace.append(" ");
     string schemaLocation = schemaNamespace.append(schemaDefinition);
+    
     XMLCh* propertyValue = XMLString::transcode(schemaLocation.c_str());
     ArrayJanitor<XMLCh> janValue(propertyValue);
     parser_->setProperty(XMLUni::fgXercesSchemaExternalSchemaLocation, propertyValue);

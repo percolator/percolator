@@ -681,6 +681,16 @@ void Caller::readFiles() {
     unsigned int nrDecoys;
     xercesc::XMLPlatformUtils::Initialize();
     countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
+    if(nrTargets == 0)
+    {
+      std::cerr << "\nERROR : the number of target PSMs found is zero.\n" << std::endl;
+      exit(-1);
+    }
+    if(nrDecoys == 0)
+    {
+      std::cerr << "\nERROR : the number of decoy PSMs found is zero.\n" << std::endl;
+      exit(-1);
+    }
     int j = 0;
     DataSet * targetSet = new DataSet();
     assert(targetSet);

@@ -45,7 +45,7 @@ limitations under the License.
 #endif
 
 #ifndef PERCOLATOR_IN_NAMESPACE
-  #define PERCOLATOR_IN_NAMESPACE "@percolator-out-namespace@"
+  #define PERCOLATOR_IN_NAMESPACE "@percolator-in-namespace@"
 #endif
 
 #ifndef PERCOLATOR_OUT_NAMESPACE

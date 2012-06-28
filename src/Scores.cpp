@@ -440,16 +440,6 @@ void Scores::normalizeScores(double fdr) {
   double q1 = it->score;
   double median = q1 + 1.0;
 
-// uncomment the following to inspect the scores vector before normalizing it
-//  for (; it != scores.end(); ++it) {
-//    if (it->label == -1)
-//      cerr << " (-1)q:" << it->pPSM->q << "sc:" << it->score;
-//    else
-//      cerr << " q:" << it->pPSM->q << "sc:" << it->score;
-//  }
-//  cerr << endl;
-//  it = scores.begin();
-
   for (; it != scores.end(); ++it) {
     if (it->pPSM->q < fdr)
       q1 = it->score;
@@ -462,13 +452,14 @@ void Scores::normalizeScores(double fdr) {
   }
 
   assert(it != scores.end());
-  assert(q1>median);
-  //NOTE why the assert works but the if does not ..it does not get into the if even though q1 is bigger than median
-  /*if(q1>median){
+  //assert(q1>median);
+  
+  //NOTE why the assert works but the if does not ..
+  if(abs(q1) > abs(median)){
     cerr << "Error in the input data: too good separation between target "
          << "and decoy PSMs.\n";
     exit(0);
-  }*/
+  }
   
   double diff = q1-median;
   for (it = scores.begin(); it != scores.end(); ++it) {

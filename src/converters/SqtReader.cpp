@@ -32,8 +32,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
   std::string protein;
   std::vector< std::string > proteinIds;
-  //this vector is only used when we read a combined file
-  std::vector< std::string > proteinIdsDecoys;
   std::map<char,int> ptmMap = po.ptmScheme; 
 
   while (getline(instr, line)) 
@@ -147,17 +145,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
       linestr.str(line);
       linestr >> tmp >> protein;
       
-      if(po.iscombined)
-      {
-	if( (line.find(po.reversedFeaturePattern) != std::string::npos) )
-	  proteinIdsDecoys.push_back(protein);
-	else
-	  proteinIds.push_back(protein);
-      }
-      else 
-      {
-	proteinIds.push_back(protein);
-      }
+      proteinIds.push_back(protein);
+      
     }
   }
 
@@ -188,10 +177,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
     }  
   }
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
-  
-  //NOTE needed for the case when a combined target/decoy file has a psm with target and decoys (copy constructor does not work)
-  //std::auto_ptr< percolatorInNs::peptideType >  peptide_p2( new percolatorInNs::peptideType( peptideSequence   ) );
-  
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) 
   {
@@ -201,64 +186,28 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
       peptide_p->modification().push_back(mod_p);      
-      //peptide_p2->modification().push_back(mod_p);
       peptideS.erase(ix,1);      
     }  
   }
   
-  if(!po.iscombined)
+  if(po.iscombined)
   {
-    
-    percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
-	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
-    std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
-
-    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
-    {
-      std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
-      psm_p->occurence().push_back(oc_p);
-    }
+    //NOTE when combine search the PSM will take the identity of its first ranked Peptide
+    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+  }
   
-    database->savePsm(scan, psm_p);
-  }
-  else
-  { //NOTE need this make sure this works okay
-    std::auto_ptr< percolatorInNs::features >  features_p2( new percolatorInNs::features( *features_p->_clone() ) );
-    std::auto_ptr< percolatorInNs::peptideType >  peptide_p2( new percolatorInNs::peptideType( *peptide_p->_clone() ) );
-    
-    if(proteinIdsDecoys.size() > 0)
-    {
-      percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
-	features_p,  peptide_p,psmId, true /*is decoy*/, observedMassCharge, calculatedMassToCharge, charge);
-      
-      std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
+  percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
+	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
+  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
-      for ( std::vector< std::string >::const_iterator i = proteinIdsDecoys.begin(); i != proteinIdsDecoys.end(); ++i ) 
-      {
-	std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
-	psm_p->occurence().push_back(oc_p);
-      }
-    
-      database->savePsm(scan, psm_p);
-    }
-    
-    if(proteinIds.size() > 0)
-    {      
-      percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
-	features_p2,  peptide_p2,psmId, false /*is decoy*/, observedMassCharge, calculatedMassToCharge, charge);
-      
-      std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
-
-      for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
-      {
-	std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
-	psm_p->occurence().push_back(oc_p);
-      }
-    
-      database->savePsm(scan, psm_p);
-    }
-    
+  for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
+  {
+    std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
+    psm_p->occurence().push_back(oc_p);
   }
+  
+  database->savePsm(scan, psm_p);
+  
 }
 
 void SqtReader::getMaxMinCharge(string fn)
@@ -331,14 +280,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
 	lineParse.clear();
 	lineParse.str(line);
 	lineParse >> tmp >> prot;
-	if(po.iscombined)
-	{
-	  ++ms;
-	  ++n;
-	}
-	//NOTE this is fishy, only add the Matches for target PSMs??
-	else if( !isDecoy || (po.reversedFeaturePattern == "" ||
-          ((line.find(po.reversedFeaturePattern, 0) != std::string::npos))))
+	if( !isDecoy || (po.reversedFeaturePattern == "" || ( (line.find(po.reversedFeaturePattern, 0) != std::string::npos) ) ) )
 	{
 	  ++ms;
 	  ++n;
@@ -404,14 +346,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
     {
       ++lines;
       buff << line << std::endl;
-      if(po.iscombined && (int)theMs.size() < po.hitsPerSpectrum)
-      {                                            
-	theMs.insert(ms - 1);
-      }
-      //NOTE this is fishy, only add the Matches for target PSMs??
-      else if ((int)theMs.size() < po.hitsPerSpectrum &&
-          ( !isDecoy || ( po.reversedFeaturePattern == "" ||
-              ((line.find(po.reversedFeaturePattern, 0) != std::string::npos)))))
+     if ((int)theMs.size() < po.hitsPerSpectrum && ( !isDecoy || ( po.reversedFeaturePattern == "" || ((line.find(po.reversedFeaturePattern, 0) != std::string::npos)))))
       {
 	  theMs.insert(ms - 1);
       }
@@ -419,8 +354,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
   }
   if (lines > 1) 
   {
-    std::string idstr = id.str();
-    readSectionS(  buff.str(), theMs, isDecoy, id.str(), database);
+    readSectionS(buff.str(), theMs, isDecoy, id.str(), database);
   }
   sqtIn.close();
 }

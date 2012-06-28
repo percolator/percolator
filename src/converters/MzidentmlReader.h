@@ -28,7 +28,8 @@ using namespace std;
 using namespace xercesc;
 typedef map<std::string, mzIdentML_ns::SequenceCollectionType::Peptide_type *> peptideMapType;
 typedef map<std::string, mzIdentML_ns::SequenceCollectionType::DBSequence_type *> proteinMapType;
-typedef multimap<std::string, mzIdentML_ns::PeptideEvidenceType *> peptideEvidenceMapType;
+typedef multimap<std::string, mzIdentML_ns::PeptideEvidenceType *> peptideEvidenceMapType_peptideid;
+typedef map<std::string, mzIdentML_ns::PeptideEvidenceType *> peptideEvidenceMapType;
 typedef map<std::string, int> scanNumberMapType;
 
 struct RetrieveValue
@@ -68,6 +69,7 @@ private :
     
     peptideMapType peptideMap;
     proteinMapType proteinMap;
+    //peptideEvidenceMapType_peptideid peptideEvidenceMap_peptideid;
     peptideEvidenceMapType peptideEvidenceMap;
     map<string,int> hashparams;
   

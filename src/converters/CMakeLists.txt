@@ -26,15 +26,15 @@ MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
 MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
 MESSAGE( STATUS "SERIALIZE = ${SERIALIZE}")
 
-if(${SERIALIZE} STREQUAL "LevelDB")
+if("${SERIALIZE}" STREQUAL "LevelDB")
   message( STATUS "Using LevelDB Serialization scheme")
   add_definitions(-D__LEVELDB__)
   set(LEVELDB TRUE)
-elseif(${SERIALIZE} STREQUAL "Boost")
+elseif("${SERIALIZE}" STREQUAL "Boost")
   message( STATUS "Using Boost Serialization scheme")
   add_definitions(-D__BOOSTDB__)
   set(BOOSTDB TRUE)
-elseif(${SERIALIZE} STREQUAL "TokyoCabinet")
+elseif("${SERIALIZE}" STREQUAL "TokyoCabinet")
   message( STATUS "Using Tokyo Cabinet Serialization scheme")
   add_definitions(-D__TOKYODB__)
   set(TOKYODB TRUE)
@@ -290,17 +290,6 @@ add_custom_command(
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-
-# # RUN CODESYNTHESIS on mzIdentML1.0.0.xsd
-# set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.0.0.hxx )
-# set(mzIdentML_in xml/mzIdentML1.0.0.xsd)
-# add_custom_command(
-#   OUTPUT ${mzIdentMLxsdfiles}  
-#   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
-#   --namespace-map http://psidev.info/psi/pi/mzIdentML/1.0=mzIdentML_ns  
-#   --namespace-map http://psidev.info/fuge-light/1.0=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
-#   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
-#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 
 # RUN CODESYNTHESIS on mzIdentML1.1.0.xsd
 set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.hxx )

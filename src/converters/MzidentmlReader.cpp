@@ -63,7 +63,7 @@ bool MzidentmlReader::checkValidity(string file)
   }
   fileIn.close();
   if (line.size() > 1 && line[0]=='<' && line[1]=='?') {
-    //NOTE here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
+    //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
     if (line.find("xml") == std::string::npos) {
       std::cerr << "file is not xml format " << file << std::endl;
       exit(-1);
@@ -80,8 +80,7 @@ bool MzidentmlReader::checkValidity(string file)
 void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet, std::string fn)
 {
   //NOTE from now lets assume the features all always SEQUEST features, ideally I would create my list of features from the 
-  //     features description
-    
+  //     features description of the XSD
   push_backFeatureDescription("lnrSp");
   push_backFeatureDescription("deltCn");
   push_backFeatureDescription("Xcorr");
@@ -221,7 +220,6 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     peptideEvidenceMap.clear();
     
     //NOTE probably I can get rid of these hash tables with a proper access to elements by tag and id
-    
     BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide() ) 
     {
       //PEPTIDE
@@ -240,7 +238,8 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     {
       //PEPTIDE EVIDENCE
       ::mzIdentML_ns::PeptideEvidenceType *peptE = new mzIdentML_ns::PeptideEvidenceType(peptideE);
-      peptideEvidenceMap.insert(std::make_pair(peptideE.peptide_ref(),peptE));      
+      //peptideEvidenceMap_peptideid.insert(std::make_pair(peptideE.peptide_ref(),peptE));
+      peptideEvidenceMap.insert(std::make_pair(peptideE.id(),peptE)); 
     }
     
     //NOTE wouldnt be  better to use the get tag by Name to jump to Spectrum collection?
@@ -257,8 +256,6 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
-      
-      //std::string scanId = boost::lexical_cast<std::string>(percolatorInNs::features::feature_traits::create(specIdResult.spectrumID().c_str(),0,0,0));
       
       BOOST_FOREACH( const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  
       {
@@ -307,16 +304,28 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   
   std::string peptideSeq =  peptideMap[item.peptide_ref().get()]->PeptideSequence();
   std::string peptideId = item.peptide_ref().get();
-  std::vector<mzIdentML_ns::PeptideEvidenceType *> peptide_evidences;
-
-  std::transform(peptideEvidenceMap.lower_bound(peptideId),peptideEvidenceMap.upper_bound(peptideId),
-		 std::inserter(peptide_evidences,peptide_evidences.begin()), RetrieveValue());
+  
+  /*std::vector<mzIdentML_ns::PeptideEvidenceType *> peptide_evidences;
+  std::transform(peptideEvidenceMap_peptideid.lower_bound(peptideId),peptideEvidenceMap_peptideid.upper_bound(peptideId),
+		 std::inserter(peptide_evidences,peptide_evidences.begin()), RetrieveValue());*/
   
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
-  BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceType *pepEv, peptide_evidences)
+  
+  //NOTE I should notify the authors of mzIdentML to notify this bug
+  /*if(item.PeptideEvidenceRef().size() != peptide_evidences.size())
   {
+    std::cerr << "Warning : something extrange happened, the number of Peptide Evidences of PSM "
+              << boost::lexical_cast<string>(item.id()) << " found in the Spectrum tag does not "
+	      << "correspond to the number of evidences found in the PeptideEvidence tag." << std::endl;
+  }*/
+  
+  
+  BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
+  {
+    std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
+    ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
     __flankN = boost::lexical_cast<string>(pepEv->pre());
     __flankC = boost::lexical_cast<string>(pepEv->post());
     std::string proteinid = boost::lexical_cast<string>(pepEv->dBSequence_ref());
@@ -325,17 +334,20 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     proteinIds.push_back(proteinName);
   }
   
+  /*BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceType *pepEv, peptide_evidences)
+  {
+    __flankN = boost::lexical_cast<string>(pepEv->pre());
+    __flankC = boost::lexical_cast<string>(pepEv->post());
+    std::string proteinid = boost::lexical_cast<string>(pepEv->dBSequence_ref());
+    mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
+    std::string proteinName = boost::lexical_cast<string>(proteinObj->accession());
+    proteinIds.push_back(proteinName);
+  }*/
+   
   if(po.iscombined && !po.reversedFeaturePattern.empty())
   {
     //NOTE taking the highest ranked PSM protein for combined search
-    if(proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos)
-    {
-      isDecoy = true;
-    }
-    else
-    {
-      isDecoy = false;
-    }
+    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
   }
   
   double rank = item.rank();
@@ -426,7 +438,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
       peptideSeq.erase(ix,1);
     }  
   }
-  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSeq ) );
+  
+  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType(peptideSeq));
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) 
   {
@@ -440,7 +453,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     }  
   }
   
-  ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch( features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
+  ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch(features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
   std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
   
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
@@ -449,7 +462,9 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     psm_p->occurence().push_back(oc_p);
   }
   
-  std::cerr << " Saving PSM " << psmid << std::endl;
+  /*std::cerr << " Saved PSM " << psmid << " " << isDecoy << " " << observed_mass << " " << theoretic_mass 
+	    << " " << charge << " " << peptideSeqWithFlanks << " " << proteinIds.front() << " " << deltaCN << " " << xCorr << std::endl;*/
+  
   database->savePsm(useScanNumber, psm_p);
   
   return;

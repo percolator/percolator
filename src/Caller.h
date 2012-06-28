@@ -44,7 +44,6 @@
 #include "Globals.h"
 #include "MassHandler.h"
 #include "Enzyme.h"
-#include "config.h"
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include "parser.hxx"
