@@ -95,7 +95,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("2",
       "ms2-file",
-      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
+      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",				//NOTE not used atm remove?
       "filename");
   cmd.defineOption("M",
       "isotope",

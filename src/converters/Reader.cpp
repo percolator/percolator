@@ -204,7 +204,7 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
 	assert(databases.size()==lineNumber_par+1);
       }
       if (VERB>1){
-	std::cerr << "reading " << fn << std::endl;
+	std::cerr << "Reading " << fn << std::endl;
       }
     
       getMaxMinCharge(fn);
@@ -216,6 +216,7 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
     
     } else {
       // we hopefully found a meta file
+      std::cerr << "Found a meta file" << std::endl;
       unsigned int lineNumber=0;
       std::string line2;
       std::ifstream meta(fn.data(), std::ios::in);

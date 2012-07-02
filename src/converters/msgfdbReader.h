@@ -41,9 +41,7 @@ public:
 private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
-  std::string remove_endl(std::string s );
-  const int charge_pos;
-  const int n_columns;
+  void remove_endl(std::string s);
   
   void readPSM(std::string line,bool isDecoy,std::string fileId,
 	       boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names);
