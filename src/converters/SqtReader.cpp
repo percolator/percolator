@@ -438,6 +438,8 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphab
   {
     push_backFeatureDescription("PNGaseF");
   }
+  
+  //FIXME Possibly something wrong here, output xml looks weird
   if (!aaAlphabet.empty()) 
   {
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)

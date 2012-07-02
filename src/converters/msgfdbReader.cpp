@@ -28,15 +28,6 @@ std::vector<std::string> msgfdbReader::split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
-/**
-void msgfdbReader::remove_endl(std::string s)
-{
-  int pos=s.find('\n');
-  if(pos!=std::string::npos){
-    s.erase(pos,1);
-  }
-}**/
-
 
 bool msgfdbReader::checkValidity(const std::string file)
 {
@@ -55,7 +46,7 @@ bool msgfdbReader::checkValidity(const std::string file)
   }
   fileIn.close();
   
-  if (line.find("SpecIndex") != std::string::npos && line.find("MSGFScore") != std::string::npos) //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
+  if (line.find("SpecIndex") != std::string::npos && line.find("MSGF") != std::string::npos) //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
   {
     std::vector<std::string> column_names=split(line,'\t');
     if(!(column_names.size()==14||column_names.size()==15))//Check that the size is corrrect, it should have length 14 or 15
@@ -94,7 +85,7 @@ void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
     push_backFeatureDescription("enzInt");
   }
   
-  //NOTE NSM?
+  //TODO NSM?
   //push_backFeatureDescription("lnNumSP");
   
   //Mass difference
@@ -111,7 +102,8 @@ void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
     push_backFeatureDescription("PNGaseF");
   }
   
-  if (!aaAlphabet.empty()) 
+  //FIXME Something here is wrong, the output looks really strange
+  if (!aaAlphabet.empty()) //Not necesary?
   {
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
       push_backFeatureDescription(*it + "-Freq");
@@ -250,11 +242,17 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   
   //Get the flanks/termini and remove them from the peptide sequence
   std::vector<std::string> tmp_vect=split(peptide,'.');
-  percolatorInNs::occurence::flankN_type flankN=tmp_vect.at(0);
-  percolatorInNs::occurence::flankC_type flankC=tmp_vect.at(2); 
+  try{
+    percolatorInNs::occurence::flankN_type flankN=tmp_vect.at(0);
+    percolatorInNs::occurence::flankC_type flankC=tmp_vect.at(2); 
 
-  std::string peptideSequence=tmp_vect.at(1);
-  std::string peptideS = peptideSequence;
+    std::string peptideSequence=tmp_vect.at(1);
+    std::string peptideS = peptideSequence;
+  }
+  catch(exception e){
+    std::cerr << "There is a problem with the peptide string: " << peptide << " SpecIndex: " << specIndex << std::endl;
+    exit(-1);
+  }
   
   //Remove modifications
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) {

@@ -65,7 +65,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "level");
   cmd.defineOption("u",
       "unitnorm",
-      "Use unit normalization [0-1] instead of standard deviation normalization",		//NOTE not used?
+      "Use unit normalization [0-1] instead of standard deviation normalization",							//NOTE not used?
       "",
       TRUE_IF_SET);
   cmd.defineOption("a",
@@ -102,7 +102,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "Mass difference calculated to closest isotope mass rather than to the average mass.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("p",											//???
+  cmd.defineOption("p",															//???
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
       "Scheme");
