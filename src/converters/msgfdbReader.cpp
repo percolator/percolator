@@ -16,7 +16,7 @@ std::vector<std::string> &msgfdbReader::split(const std::string &s, char delim, 
     std::stringstream ss(s);
     std::string item;
     while(std::getline(ss, item, delim)) {
-      if(item.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")!=std::string::npos){
+      if(item.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_#@*")!=std::string::npos){
 	elems.push_back(item); 
       }
     }
@@ -69,19 +69,12 @@ bool msgfdbReader::checkValidity(const std::string file)
     ismeta = false;
   }
 
-  std::cerr << "TMP validate"<< std::endl;
-  
-  
-  
   return ismeta;
 }
 
 
 void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn)
 {
-  
-  std::cerr << "TMP featuer decr"<< std::endl;
-  
   push_backFeatureDescription("deNovoScore");
   push_backFeatureDescription("MSGFScore");
   push_backFeatureDescription("Mass");
@@ -154,9 +147,6 @@ void msgfdbReader::getMaxMinCharge(const std::string fn){
     exit(-1);
   }
 
-  std::cerr << "TMP search"<< std::endl;
-  
-  
   sqtIn.close();
   return;
 }
@@ -221,8 +211,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   
   //Calculate peptide mass
   double calculatedMassToCharge=Reader::calculatePepMAss(peptide,charge);
-
-  std::cerr << "TMP3  "<< specIndex << std::endl;
   
   //Push_back the DeNovoScore and msgfscore
   f_seq.push_back(deNovoScore);
@@ -260,32 +248,13 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     computeAAFrequencies(peptide, f_seq);
   }
   
-  std::cerr << "TMP remove mod  "<< std::endl;
-  
   //Get the flanks/termini and remove them from the peptide sequence
   std::vector<std::string> tmp_vect=split(peptide,'.');
-  
-  std::cerr << "TMP4 1 "<< peptide << std::endl;
-  
-  for(int i=0; i<tmp_vect.size();i++){
-    std::cerr << "asdf  "<< tmp_vect.at(i) << std::endl;
-  }
-  
   percolatorInNs::occurence::flankN_type flankN=tmp_vect.at(0);
-  
-  std::cerr << "TMP4 2 "<< std::endl;
-  
-  percolatorInNs::occurence::flankC_type flankC=tmp_vect.at(2); //Fel
-  
-  std::cerr << "TMP4 3 "<< std::endl;
-  
+  percolatorInNs::occurence::flankC_type flankC=tmp_vect.at(2); 
+
   std::string peptideSequence=tmp_vect.at(1);
-  
-  std::cerr << "TMP4 4 "<< std::endl;
-  
   std::string peptideS = peptideSequence;
-  
-  std::cerr << "TMP 6  "<< std::endl;
   
   //Remove modifications
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
@@ -300,8 +269,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   }
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
   
-  std::cerr << "TMP 7  "<< std::endl;
-  
   //Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) {
     if (aaAlphabet.find(peptideS[ix])==string::npos) {
@@ -313,8 +280,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
       peptideS.erase(ix,1);      
     }  
   }
-  
-  std::cerr << "TMP iscombied  "<< std::endl;
   
   if(po.iscombined)
   {
@@ -364,9 +329,6 @@ void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   
   //Read file line by line, each line is one psm. Tab delimated
   while (getline(sqtIn, line)) { //TODO Fix max psm thing po.hitsPerSpectrum
-
-    std::cerr << "TMP line iter"<< std::endl;
-
     readPSM(line,isDecoy,fileId, database, column_names);
   }
 }
