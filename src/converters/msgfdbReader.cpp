@@ -1,5 +1,4 @@
 #include "msgfdbReader.h"
-#include "DataSet.h"
 
 msgfdbReader::msgfdbReader(ParseOptions po):Reader(po)
 {
@@ -230,7 +229,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   f_seq.push_back(MSGFScore);
 
   f_seq.push_back( observedMassCharge ); // Observed mass
-  f_seq.push_back( DataSet::peptideLength(peptide)); // Peptide length
+  f_seq.push_back( peptideLength(peptide)); // Peptide length
   int nxtFeat = 8;
   for (int c = minCharge; c
   <= maxCharge; c++)
@@ -251,11 +250,11 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   
   if (po.calcPTMs) 
   {
-    f_seq.push_back(DataSet::cntPTMs(peptide));
+    f_seq.push_back(cntPTMs(peptide));
   }
   if (po.pngasef) 
   {
-    f_seq.push_back(DataSet::isPngasef(peptide,isDecoy));
+    f_seq.push_back(isPngasef(peptide,isDecoy));
   }
   if (po.calcAAFrequencies) {
     computeAAFrequencies(peptide, f_seq);

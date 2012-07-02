@@ -4,8 +4,9 @@
 // this class behaves like vector, except it has
 // added functionality to map functions over the
 // Array
+#ifndef _Array_H
+#define _Array_H
 
-using namespace std;
 
 #include <iostream>
 #include <vector>
@@ -13,15 +14,12 @@ using namespace std;
 #include <string>
 #include <sstream>
 #include <algorithm>
-
-#ifndef _Array_H
-#define _Array_H
-
-
 #include "Streamable.h"
-//#define SAFE_ARRAYS
 
-class Set;
+//class Set;
+using namespace std;
+
+
 
 template <typename T>
 class Array 
@@ -39,10 +37,9 @@ public:
   // important vector functions
   virtual const T & operator [] (int k) const;
   virtual T & operator [] (int k);
-  //  virtual Array<T> operator [](const Set & rhs) const;
   virtual Array<T> operator [](const Array<int> & rhs) const;
 
-  Set operator ==(const T & rhs) const;
+  //Set operator ==(const T & rhs) const;
   bool operator ==(const Array<T> & rhs) const;
 
   Array<int> sort();
@@ -149,9 +146,7 @@ ostream & operator <<(ostream & os, const Array<T> & rhs);
 template <typename T>
 ostream & operator >>(ostream & os, Array<T> & rhs);
 
-
-#include "Set.h"
-
+//#include "Set.h"
 #include "Array.cpp"
 
 #endif

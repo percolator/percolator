@@ -117,8 +117,19 @@ and indicate cmake where the binaries are located by using the flag :
   -DCMAKE_PREFIX_PATH = /path-to-xsd-binaries
 
 NOTE The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
-This can be indicated by setting one of these compilation flags to ON : -DBOOSTDB or -DTOKYODB or -DLEVELDB
-originally by default the boost-serialization version is taken.
+This can be indicated by setting up the variable SERIALIZATION :
+  
+  -DSERIALIZATION="TokyoCabinet"
+  
+  or
+  
+  -DSERIALIZATION="LevelDB"
+  
+  or
+  
+  -DSERIALIZATION="Boost"
+  
+Originally, by default the boost-serialization version is taken.
 
 All the above is automatically installed by following the steps
 below; if you do note have superuser privileges, you will have to manually

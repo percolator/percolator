@@ -3,17 +3,20 @@
 
 #include "BasicBigraph.h"
 
-BasicBigraph::BasicBigraph() :
-  ProteinIdentifier()
+BasicBigraph::BasicBigraph(): PsmThreshold(0.0),PeptideThreshold(1e-3),ProteinThreshold(1e-3),PeptidePrior(0.1)
 {
   //
 }
 
+BasicBigraph::BasicBigraph(double __psmthreshold, double __peptidethreshold, double __proteinthreshold, double __peptideprior):
+  PsmThreshold(__psmthreshold),PeptideThreshold(__peptidethreshold),ProteinThreshold(__proteinthreshold),PeptidePrior(__peptideprior)
+{
+
+}
+
 BasicBigraph::~BasicBigraph()
 {
-  //delete proteinsToPSMs;
-  //delete PSMsToProteins;
-  //FreeAll(severedProteins);
+
 }
 
 
@@ -54,7 +57,8 @@ void BasicBigraph::read(Scores* fullset){
   PSMsToProteins.names = PSMNames.getItemsByNumber();
   proteinsToPSMs.names = proteinNames.getItemsByNumber();
   
-  //pseudoCountPSMs();
+  //NOTE this function is assigning PeptideThreshold probablity to all the PSMs with a prob below PeptideThreshold
+  /**pseudoCountPSMs();**/
 }
 
 void BasicBigraph::printGraphStats() const
@@ -86,27 +90,15 @@ void BasicBigraph::saveSeveredProteins()
 
 void BasicBigraph::prune()
 {
-  //TODO áll these functions can be seriously improved in computational time
   removePoorPSMs();
   removePoorProteins();
   saveSeveredProteins();
   reindex();
-  //  floorLowPSMs();
   markSectionPartitions();
   cloneMultipleMarkedPSMs();
   reindex();
 }
 
-void BasicBigraph::floorLowPSMs()
-{
-  for (int k=0; k<PSMsToProteins.size(); k++)
-    {
-      if ( PSMsToProteins.weights[k] <= PeptideThreshold )
-	{
-	  PSMsToProteins.weights[k] = 0.0;
-	}
-    }
-}
 
 void BasicBigraph::cloneMultipleMarkedPSMs()
 {
@@ -248,7 +240,7 @@ void BasicBigraph::removePoorPSMs()
   int k;
   for (k=0; k<PSMsToProteins.size(); k++)
     {
-      if ( PSMsToProteins.weights[k] < BasicBigraph::PsmThreshold  )
+      if ( PSMsToProteins.weights[k] < PsmThreshold  )
 	{
 	  disconnectPSM(k);
 	}
@@ -409,4 +401,44 @@ void BasicBigraph::pseudoCountPSMs()
 	  PSMsToProteins.weights[k] = PeptideThreshold;
 	}
     }  
+}
+
+void BasicBigraph::setPsmThreshold(double __psm_threshold)
+{
+  PsmThreshold = __psm_threshold;
+}
+
+void BasicBigraph::setPeptideThreshold(double __peptide_threshold)
+{
+  PeptideThreshold = __peptide_threshold;
+}
+
+void BasicBigraph::setProteinThreshold(double __protein_threshold)
+{
+  ProteinThreshold = __protein_threshold;
+}
+
+void BasicBigraph::setPeptidePrior(double __peptide_prior)
+{
+  PeptidePrior = __peptide_prior;
+}
+
+double BasicBigraph::getPeptidePrior()
+{
+  return PeptidePrior;
+}
+
+double BasicBigraph::getPeptideThreshold()
+{
+  return PeptideThreshold;
+}
+
+double BasicBigraph::getProteinThreshold()
+{
+  return ProteinThreshold;
+}
+
+double BasicBigraph::getPsmThreshold()
+{
+  return PsmThreshold; 
 }

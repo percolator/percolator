@@ -13,17 +13,13 @@ const Vector & Vector::operator =(const Array<double> & simpleVector)
 {
   values = simpleVector;
   createNonzeroIndices();
-  //  cout << "Done vec = array<double> " << endl;
-  //  cout << "Result: " << values << endl << nonzeroIndices << endl;
   return *this;
 }
 
 Vector::Vector(const Array<double> & simpleVector, bool pack)
 {
   values = simpleVector;
-
-  //  if ( pack )
-    createNonzeroIndices();
+  createNonzeroIndices();
 }
 
 const Vector & Vector::operator +=(const Vector & rhs)
@@ -51,8 +47,6 @@ const Vector & Vector::operator -=(const Vector & rhs)
   for (Set::Iterator iter = rhs.beginNonzero(); iter != rhs.endNonzero(); iter++)
     {
       values[ *iter ] -= rhs[ *iter ];
-      //      if ( sparseChecker.isZero( values[ *iter ] ) )
-      //	zeroedIndices.add( *iter );
     }
 
   #ifdef REPACK
@@ -66,8 +60,6 @@ const Vector & Vector::operator -=(const Vector & rhs)
 
 const Vector & Vector::addEqScaled(double coef, const Vector & rhs)
 {
-  //  return ( (*this) += coef * rhs);
-  
   Set zeroedIndices;
   for (Set::Iterator iter = rhs.beginNonzero(); iter != rhs.endNonzero(); iter++)
     {

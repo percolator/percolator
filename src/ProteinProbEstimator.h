@@ -74,7 +74,8 @@ class Protein {
 		peptides.push_back(__peptide);
 	    }
     
-    ~Protein() {
+    ~Protein() 
+    {
       for(unsigned i = 0; i < peptides.size(); i++)
 	delete peptides[i];
     }

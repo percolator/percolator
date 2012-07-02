@@ -319,16 +319,10 @@ if(MINGW)
   add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
-#COMPILING (NEEDED SUBSET OF) PERCOLATOR/FIDO CLASSES ??? Do I really need to import fido classes? and all these classes??
 # include and link code from percolator
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido)
-link_directories(${PERCOLATOR_SOURCE_DIR}/src )
-
-add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../serializer.cxx ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../DataSet.cpp 
-	    ../FeatureNames.cpp ../parser.cxx ../PosteriorEstimator.cpp ../Scores.cpp ../SetHandler.cpp ../svm.cpp ../BaseSpline.cpp 
-	    ../LogisticRegression.cpp ../DescriptionOfCorrect.cpp ../PSMDescription.cpp ../ResultHolder.cpp ../Normalizer.cpp ../StdvNormalizer.cpp 
-	    ../UniNormalizer.cpp ../Option.cpp ../EludeModel.cpp ../fido/PackedVector.cpp ../fido/PackedMatrix.cpp ../fido/Numerical.cpp ../fido/Vector.cpp 
-	    ../fido/Set.cpp ../fido/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
+link_directories(${PERCOLATOR_SOURCE_DIR}/src)
+add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../serializer.cxx ../parser.cxx)
 
 #COMPILING 
 add_subdirectory(MSToolkit)

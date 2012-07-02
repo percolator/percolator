@@ -277,7 +277,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
   std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
 }
 
-double Reader::calculatePepMAss(std::string pepsequence,double charge)
+double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
 {
   double mass  =  0.0;
   if (pepsequence.length () > po.peptidelength) {
@@ -351,4 +351,46 @@ void Reader::initMassMap(bool useAvgMass)
       massMap_['W']=186.07931;
       massMap_['Y']=163.06333;
     }
+}
+
+unsigned int Reader::peptideLength(const string& pep) {
+  unsigned int len = 0;
+  for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
+    if (aaAlphabet.find(pep.at(pos)) != string::npos) {
+      len++;
+    }
+  }
+  return len;
+}
+
+unsigned int Reader::cntPTMs(const string& pep) {
+  unsigned int len = 0;
+  for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
+    if (modifiedAA.find(pep.at(pos)) != string::npos) {
+      len++;
+    }
+  }
+  return len;
+}
+
+double Reader::isPngasef(const string& peptide, bool isDecoy ) {
+  size_t next_pos = 0, pos;
+  while ((pos = peptide.find("N*", next_pos)) != string::npos) {
+    next_pos = pos + 1;
+    if (! isDecoy) {
+      pos += 3;
+      if (peptide[pos] == '#') {
+        pos += 1;
+      }
+    } else {
+      pos -= 2;
+      if (peptide[pos] == '#') {
+        pos -= 1;
+      }
+    }
+    if (peptide[pos] == 'T' || peptide[pos] == 'S') {
+      return 1.0;
+    }
+  }
+  return 0.0;
 }

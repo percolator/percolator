@@ -3,28 +3,33 @@
 
 #ifndef _GroupPowerBigraph_H
 #define _GroupPowerBigraph_H
-#include "ProteinIdentifier.h"
+
 #include "BasicGroupBigraph.h"
-#include "PivdoSplitter.h"
+#include "StringTable.h"
+#include "Array.h"
+#include "Random.h"
+#include "Model.h"
 #include "Scores.h" // from Percolator
 
 using namespace std;
 
 
-class GroupPowerBigraph : public ProteinIdentifier
+class GroupPowerBigraph
 {
   
 public:
   
- static double LOG_MAX_ALLOWED_CONFIGURATIONS;
-
  GroupPowerBigraph(Scores* fullset,double __alpha, double __beta, double __gamma, 
 		   bool __groupProteins = false, bool __noseparate = false , bool __noprune = false) :
-  ProteinIdentifier(),
   gm(__alpha,__beta,__gamma),
   groupProteins(__groupProteins), 
   noseparate(__noseparate), 
-  noprune(__noprune)
+  noprune(__noprune),
+  LOG_MAX_ALLOWED_CONFIGURATIONS(18),
+  PsmThreshold(0.0),
+  PeptideThreshold(1e-3),
+  ProteinThreshold(1e-3),
+  PeptidePrior(0.1)
       {
 	setAlphaBetaGamma(__alpha, __beta, __gamma);
 	read(fullset);
@@ -37,39 +42,48 @@ public:
   void getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const;
   void getProteinProbs();
   Array<string> peptideNames() const;
-  Array<BasicBigraph> iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold );
   double getLogNumberStates() const;
-  double logLikelihoodAlphaBetaGivenD( const GridModel & myGM ) const;
-  void outputPivdo(ostream & os) const;
   pair<Array<Array<string> >, Array<double> > getDescendingProteinsAndWeights() const;
   void setAlphaBetaGamma(double alpha, double beta, double gamma);
   Array<std::string> getSeveredProteins();
+  void setMaxAllowedConfigurations(double max_conf);
+  double getMaxAllowedConfigurations();
+  void setPsmThreshold(double psm_threshold);
+  double getPsmThreshold();
+  void setPeptideThreshold(double peptide_threshold);
+  double getPeptideThreshold();
+  void setProteinThreshold(double protein_threshold);
+  double getProteinThreshold();
+  void setPeptidePrior(double peptide_prior);
+  double getPeptidePrior();
+  
   //NOTE to clone object
   //GroupPowerBigraph *clone();
-protected:
+  
+private:
 
   void initialize();
-  Array<double> probabilityXAndEGivenD();
-  Array<double> probabilityXGivenD();
-  
   void getGroupProtNames();
   void read(Scores* fullset);
-
+  Array<BasicBigraph> iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold );
+  
   Model gm;
   Numerical zeroChecker;
   int numberClones;
   bool groupProteins;
   bool noseparate;
   bool noprune;
+  double ProteinThreshold;
+  double PeptideThreshold;
+  double PsmThreshold;
+  double PeptidePrior;
+  double LOG_MAX_ALLOWED_CONFIGURATIONS;
   Array<std::string> severedProteins;
   Array<double> probabilityR;
   Array<Array<std::string> > groupProtNames;
   Array<BasicGroupBigraph> subgraphs;
 };
 
-
 ostream & operator <<(ostream & os, pair<double,double> rhs);
 
-
 #endif
-

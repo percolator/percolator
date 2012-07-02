@@ -204,9 +204,6 @@ void ProteinProbEstimator::run(){
 	<< fptol << " expected number of false positives proteins\n" << std::endl;
     }
     
-    //FreeAll(numberTP);
-    //FreeAll(numberFP);
-    
     /** MAYUS method for estimationg of Protein FDR**/
   }
   
@@ -613,11 +610,7 @@ void ProteinProbEstimator::updateProteinProbabilities()
       qindex++;
     }
   }
-  
-  /*for(unsigned i = 0; i < proteinNames.size(); i++)
-    FreeAll(proteinNames[i]);
-  FreeAll(proteinNames);
-  FreeAll(peps);*/
+
 }
 
 

@@ -1,5 +1,4 @@
 #include "SqtReader.h"
-#include "DataSet.h"
 
 SqtReader::SqtReader(ParseOptions po):Reader(po)
 {
@@ -103,7 +102,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         f_seq.push_back( sp ); // Sp
         f_seq.push_back( matched / expected ); // Fraction matched/expected ions
         f_seq.push_back( observedMassCharge ); // Observed mass
-        f_seq.push_back( DataSet::peptideLength(peptide)); // Peptide length
+        f_seq.push_back(peptideLength(peptide)); // Peptide length
         int nxtFeat = 8;
         for (int c = minCharge; c <= maxCharge; c++)
           f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
@@ -120,11 +119,11 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         f_seq.push_back( abs(dM) ); // abs only defined for integers on some systems
         if (po.calcPTMs) 
 	{
-	  f_seq.push_back(  DataSet::cntPTMs(peptide));
+	  f_seq.push_back(cntPTMs(peptide));
 	}
 	if (po.pngasef) 
 	{
-	  f_seq.push_back( DataSet::isPngasef(peptide, isDecoy));
+	  f_seq.push_back(isPngasef(peptide, isDecoy));
 	}
         if (po.calcAAFrequencies) 
 	{

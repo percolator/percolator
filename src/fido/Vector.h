@@ -3,9 +3,8 @@
 
 #ifndef _Vector_H
 #define _Vector_H
-
 #include <math.h>
-#include "Array.h"
+#include "Set.h"
 #include "Numerical.h"
 
 class Vector
@@ -40,11 +39,7 @@ public:
 
   const Vector & operator +=(const Vector & rhs);
   const Vector & operator -=(const Vector & rhs);
-
-  // does += coef * rhs
-  // for higher performance
   const Vector & addEqScaled(double coef, const Vector & rhs);
-
   const Vector & operator *=(double val);
   const Vector & operator /=(double val);
 
@@ -53,6 +48,7 @@ public:
     return values[k];
   }
 
+  
   Set::Iterator beginNonzero() const
     {
       // decide whether to use full or not...

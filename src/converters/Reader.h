@@ -19,7 +19,6 @@
 #define READER_H
 
 #include "Enzyme.h"
-#include "DataSet.h"
 #include <iostream>
 #include <fstream>
 #include <numeric>
@@ -95,13 +94,19 @@ public:
 
   void computeAAFrequencies(const string& pep,percolatorInNs::features::feature_sequence & f_seq);
   
-  double calculatePepMAss(std::string pepsequence,double charge);
+  double calculatePepMAss(const std::string &pepsequence,double charge);
 
   void initMassMap(bool useAvgMass);
   
   void init();
   
   void print(ofstream &xmlOutputStream);
+  
+  unsigned int peptideLength(const string& pep);
+  
+  unsigned int cntPTMs(const string& pep);
+  
+  double isPngasef(const string& peptide, bool isDecoy );
   
 private:
   

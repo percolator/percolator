@@ -2,7 +2,7 @@
 // see license for more information
 
 // member functions
-
+class Set;
 template <typename T>
 Array<T>::Array(int n) :
   data(n)
@@ -116,7 +116,6 @@ void Array<T>::boundsCheck(int i) const
 }
 
 template <typename T>
-//Array<T> Array<T>::operator [](const Set & rhs) const
 Array<T> Array<T>::operator [](const Array<int> & rhs) const
 {
   Array<T> result(rhs.size());
@@ -224,21 +223,21 @@ istream & operator >>(istream & is, Array<T> & rhs)
   return is;
 }
 
-template <typename T>
-Set Array<T>::operator ==(const T & rhs) const
-{
-  Set result;
-
-  for (int k=0; k<size(); k++)
-    {
-      if ( (*this)[k] == rhs )
-	{
-	  result.add(k);
-	}
-    }
-
-  return result;
-}
+// template <typename T>
+// Set Array<T>::operator ==(const T & rhs) const
+// {
+//   Set result;
+// 
+//   for (int k=0; k<size(); k++)
+//     {
+//       if ( (*this)[k] == rhs )
+// 	{
+// 	  result.add(k);
+// 	}
+//     }
+// 
+//   return result;
+// }
 
 template <typename T>
 bool Array<T>::operator ==(const Array<T> & rhs) const

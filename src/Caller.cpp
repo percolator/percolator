@@ -383,8 +383,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       proteinFN = cmd.options["PR"];
       tabDelimitedOut = true;
     }
-    //NOTE fido fails sometimes when this option is activated with big datasets
-    noseparate = false;
     
     if(mayusfdr && usePi0)
     {

@@ -1,5 +1,4 @@
 #include "MzidentmlReader.h"
-#include "DataSet.h"
 
 static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e,chLatin_n, 
 						  chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, 
@@ -238,7 +237,6 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     {
       //PEPTIDE EVIDENCE
       ::mzIdentML_ns::PeptideEvidenceType *peptE = new mzIdentML_ns::PeptideEvidenceType(peptideE);
-      //peptideEvidenceMap_peptideid.insert(std::make_pair(peptideE.peptide_ref(),peptE));
       peptideEvidenceMap.insert(std::make_pair(peptideE.id(),peptE)); 
     }
     
@@ -313,7 +311,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   std::string __flankN = "";
   std::string __flankC = "";
   
-  //NOTE I should notify the authors of mzIdentML to notify this bug
+  //NOTE I should notify the authors of mzIdentML this bug
   /*if(item.PeptideEvidenceRef().size() != peptide_evidences.size())
   {
     std::cerr << "Warning : something extrange happened, the number of Peptide Evidences of PSM "
@@ -363,7 +361,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
   std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
   assert(peptideSeqWithFlanks.size() >= po.peptidelength );
-  unsigned peptide_length = DataSet::peptideLength(peptideSeqWithFlanks);
+  unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
   double dM = MassHandler::massDiff(observed_mass,theoretic_mass,charge, peptideSeq );
   std::map<char,int> ptmMap = po.ptmScheme;
   std::string psmid = boost::lexical_cast<string>(item.id()) + "_" + boost::lexical_cast<string>(useScanNumber) + "_" + 
@@ -392,7 +390,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   f_seq.push_back( Sp );
   f_seq.push_back( ionMatched/ionTotal );
   f_seq.push_back( observed_mass ); 
-  f_seq.push_back( DataSet::peptideLength(peptideSeqWithFlanks) ); 
+  f_seq.push_back( peptideLength(peptideSeqWithFlanks) ); 
 
   for (int c = minCharge; c <= maxCharge; c++) 
   {
@@ -410,11 +408,11 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   
   if (po.calcPTMs ) 
   { 
-    f_seq.push_back(  DataSet::cntPTMs(peptideSeqWithFlanks)); 
+    f_seq.push_back(cntPTMs(peptideSeqWithFlanks)); 
   }
   if (po.pngasef ) 
   { 
-    f_seq.push_back( DataSet::isPngasef(peptideSeqWithFlanks, isDecoy)); 
+    f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy)); 
   }
   if (po.calcAAFrequencies ) 
   { 

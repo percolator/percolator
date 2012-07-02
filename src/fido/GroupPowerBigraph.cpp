@@ -3,24 +3,9 @@
 
 #include "GroupPowerBigraph.h"
 
-double GroupPowerBigraph::LOG_MAX_ALLOWED_CONFIGURATIONS = 18;
-
 GroupPowerBigraph::~GroupPowerBigraph()
 {
-  /*delete gm;
-  delete zeroChecker;
-  FreeAll(severedProteins);
-  FreeAll(probabilityR);
-  for(unsigned i = 0 ; i < groupProtNames.size(); i++)
-  {
-    FreeAll(groupProtNames[i]);
-  }
-  FreeAll(groupProtNames);
-  for(unsigned i = 0; i < subgraphs.size(); i++)
-  {
-    delete subgraphs[i];
-  }
-  FreeAll(subgraphs);*/
+
 }
 
 Array<double> GroupPowerBigraph::proteinProbs()
@@ -39,19 +24,6 @@ Array<double> GroupPowerBigraph::proteinProbs()
 void GroupPowerBigraph::getProteinProbs()
 {
   probabilityR = proteinProbs();
-}
-
-double GroupPowerBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & myGM) const
-{
-
-  double sum = 0.0;
-
-  for (int k=0; k<subgraphs.size(); k++)
-    {
-      sum += subgraphs[k].logLikelihoodAlphaBetaGivenD(myGM);
-    }
-
-  return sum - numberClones * log2( 1-myGM.spontaneousEmission() );
 }
 
 void GroupPowerBigraph::getGroupProtNames()
@@ -140,30 +112,40 @@ double GroupPowerBigraph::getLogNumberStates() const
 Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold )
 {
 
-  bb.PeptideThreshold = newPeptideThreshold;
+  bb.setPeptideThreshold(newPeptideThreshold);
   bb.prune();
   severedProteins.append( bb.severedProteins );
-  numberClones += bb.numberClones;
 
   Array<BasicBigraph> preResult = bb.partitionSections();
   Array<BasicBigraph> result;
 
   for (int k=0; k<preResult.size(); k++)
     {
-      double logNumConfig = BasicGroupBigraph( preResult[k] ).logNumberOfConfigurations();
-      if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS )
+      BasicGroupBigraph bgb = BasicGroupBigraph( preResult[k] );
+      double logNumConfig = bgb.logNumberOfConfigurations();
+      if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && log2(bgb.PSMsToProteins.size())+log2(bgb.getOriginalN()[0].size+1) <= LOG_MAX_ALLOWED_CONFIGURATIONS )
 	{
 	  double newThresh = 1.25*(newPeptideThreshold + 1e-6);
 	  Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], newThresh);
 	  result.append( completelyFragmented );
 	}
+      else if (logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS)
+	{
+	  // the graph cannot become pruned to the desired efficiency;
+	  // prune as much as possible
+	  double largest = Vector(preResult[k].PSMsToProteins.weights).max();
+	  Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], largest);
+	  result.append( completelyFragmented );
+	}
       else
 	{
+	  // the graph is already pruned to the desired degree
 	  result.add( preResult[k] );
 	}
     }
 
   return result;
+
 }
 
 void GroupPowerBigraph::read(Scores* fullset){
@@ -171,12 +153,9 @@ void GroupPowerBigraph::read(Scores* fullset){
   BasicBigraph bb;
   bb.read(fullset);
 
-  //TODO when noseparate active it does not work
   if(!noseparate)
   {
-    numberClones = 0;
     severedProteins = Array<string>();
-
     Array<BasicBigraph> subBasic;
     subBasic = Array<BasicBigraph>();
     
@@ -194,23 +173,17 @@ void GroupPowerBigraph::read(Scores* fullset){
   }
   else
   {
-    if(!noprune)
+    if(noprune)
     {
-      bb.prune();
-      numberClones = bb.numberClones;
+      bb.setPeptideThreshold(-1);
     }
-    else
-    {
-      numberClones = 0;
-    }
+    bb.prune();
     severedProteins = Array<string>();
     subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,groupProteins));
   }
   
   initialize();
-
 }
-
 
 
 void GroupPowerBigraph::initialize()
@@ -223,12 +196,6 @@ ostream & operator <<(ostream & os, pair<double,double> rhs)
 {
   os << "("<< rhs.first << ", " << rhs.second << ")";
   return os;
-}
-
-void GroupPowerBigraph::outputPivdo(ostream & os) const
-{
-  for (int k=0; k<subgraphs.size(); k++)
-    PivdoSplitter(subgraphs[k]).outputPivdo(os);
 }
 
 void GroupPowerBigraph::setAlphaBetaGamma(double alpha, double beta, double gamma)
@@ -278,3 +245,59 @@ Array<std::string> GroupPowerBigraph::getSeveredProteins()
 {
   return severedProteins;
 }
+
+void GroupPowerBigraph::setMaxAllowedConfigurations(double max_conf)
+{
+  LOG_MAX_ALLOWED_CONFIGURATIONS = max_conf;
+}
+
+void GroupPowerBigraph::setPsmThreshold(double __psm_threshold)
+{
+  PsmThreshold = __psm_threshold;
+}
+
+void GroupPowerBigraph::setPeptideThreshold(double __peptide_threshold)
+{
+  PeptideThreshold = __peptide_threshold;
+}
+
+void GroupPowerBigraph::setProteinThreshold(double __protein_threshold)
+{
+  ProteinThreshold = __protein_threshold;
+}
+
+void GroupPowerBigraph::setPeptidePrior(double __peptide_prior)
+{
+  PeptidePrior = __peptide_prior;
+}
+
+double GroupPowerBigraph::getMaxAllowedConfigurations()
+{
+  return LOG_MAX_ALLOWED_CONFIGURATIONS;
+}
+
+double GroupPowerBigraph::getPeptidePrior()
+{
+  return PeptidePrior;
+}
+
+double GroupPowerBigraph::getPeptideThreshold()
+{
+  return PeptideThreshold;
+}
+
+double GroupPowerBigraph::getProteinThreshold()
+{
+  return ProteinThreshold;
+}
+
+double GroupPowerBigraph::getPsmThreshold()
+{
+  return PsmThreshold;
+}
+
+
+
+
+
+

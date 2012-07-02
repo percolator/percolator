@@ -4,14 +4,11 @@
 #ifndef _BasicGroupBigraph_H
 #define _BasicGroupBigraph_H
 
-#include "ProteinIdentifier.h"
 #include "ReplicateIndexer.h"
 #include "BasicBigraph.h"
 #include "Model.h"
 #include "Cache.h"
 
-//TODO parameter??
-//#define TRUE_BRUTE
 #ifdef TRUE_BRUTE
 #define NOCACHE
 #endif
@@ -93,14 +90,71 @@ class Counter
 
 class BasicGroupBigraph : public BasicBigraph
 {
-  // hack should be protected
- public:
-  // protected:
 
+
+
+ public:
+   
+  BasicGroupBigraph(bool __groupProtein = false, bool __trivialGrouping = false) :
+    logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
+    groupProtein(__groupProtein),trivialGrouping(__trivialGrouping)
+  {
+  }
+
+  BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = false, bool __trivialGrouping = false) :
+  BasicBigraph(rhs),   
+  logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
+  groupProtein(__groupProtein),trivialGrouping(__trivialGrouping)
+  {
+    if(groupProtein)
+      groupProteins();
+    else
+      trivialGroupProteins();
+  }
+  
+  virtual ~BasicGroupBigraph();
+  
+  void read(Scores* fullset)
+  {
+     BasicBigraph::read(fullset);
+     if(groupProtein)
+	groupProteins();
+     else
+       trivialGroupProteins();
+  }
+   
+    // for partitioning
+  void refreshCache()
+  {
+    logLikelihoodConstantCachedFunctor.reset();
+  }
+  
+  double logNumberOfConfigurations() const;
+  void getProteinProbs(const Model & m);
+  void printProteinWeights() const;
+
+  const Array<double> & proteinProbabilities() const
+  {
+    return probabilityR;
+  }
+  const Array<Array<string> > & proteinGroupNames() const
+  {
+    return groupProtNames;
+  }
+  
+  const Array<Counter> & getOriginalN() const
+  {
+    return originalN;
+  }
+
+private:
+  
   Array<Counter> originalN;
   Array<Array<string> > groupProtNames;
   Array<double> probabilityR;
-
+  bool groupProtein;
+  bool trivialGrouping;
+ 
   // protected construction functions
   void groupProteins();
   void trivialGroupProteins();
@@ -133,6 +187,7 @@ class BasicGroupBigraph : public BasicBigraph
 
   Array<double> probabilityEGivenD(const Model & m);
   Array<double> eCorrection(const Model & m, const Array<Counter> & n);
+  double eCorrectionEpsilon(int indexEpsilon, const Model & m, const Array<Counter> & n);
 
   // for unknown alpha, beta
   double probabilityEEpsilonOverAllAlphaBeta(const GridModel & gm, int indexEpsilon) const;
@@ -141,64 +196,9 @@ class BasicGroupBigraph : public BasicBigraph
   // cache functors
   // note that these will need to be updated if the object is copied
   LastCachedMemberFunction<BasicGroupBigraph, double, Model> logLikelihoodConstantCachedFunctor;
-
- public:
-  // for partitioning
-  void refreshCache()
-  {
-    logLikelihoodConstantCachedFunctor.reset();
-  }
   
-  double logNumberOfConfigurations() const;
-
-  void getProteinProbs(const Model & m);
-  void printProteinWeights() const;
-
   double logLikelihoodAlphaBetaGivenD(const GridModel & gm) const;
-  double likelihoodAlphaBetaGivenD(const GridModel & gm) const;
-
-  const Array<double> & proteinProbabilities() const
-  {
-    return probabilityR;
-  }
-  const Array<Array<string> > & proteinGroupNames() const
-  {
-    return groupProtNames;
-  }
-
- BasicGroupBigraph(bool __groupProtein = false) :
-  logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-  groupProtein(__groupProtein)
-  {
-  }
-
-  void read(Scores* fullset)
-   {
-     BasicBigraph::read(fullset);
-     if(groupProtein)
-	groupProteins();
-     else
-        trivialGroupProteins();
-   }
-
- BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = false) :
- BasicBigraph(rhs),   
- logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
- groupProtein(__groupProtein)
-  {
-    if(groupProtein)
-      groupProteins();
-    else
-      trivialGroupProteins();
-  }
-  
-  
-  virtual ~BasicGroupBigraph();
-
-  
-protected: 
-  
-  bool groupProtein;
+  double likelihoodAlphaBetaGivenD(const GridModel & gm) const;  
   
 };
 

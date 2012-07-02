@@ -8,9 +8,9 @@
 class Combinatorics
 {
  public:
+   
   static double binomial(int n, int k)
   {
-    //    cout << "Getting bin(" << n << "," << k << ")" << endl;
     return product(k+1,n)/product(2,n-k);
   }
   static double logBinomial(int n, int k)
