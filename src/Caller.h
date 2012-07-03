@@ -62,7 +62,9 @@ class Caller {
     enum SetHandlerType {
       NORMAL = 0, SHUFFLED, SHUFFLED_TEST, SHUFFLED_THRESHOLD
     };
+    
   public:
+    
     Caller();
     Caller(bool uniquePeptides);
     virtual ~Caller();
@@ -104,13 +106,15 @@ class Caller {
     string xmlOutputFN_Peptides;
     string xmlOutputFN_Proteins;
     Scores fullset; //,thresholdset;
+    
   protected:
+    
     void writeXML_PSMs();
     void writeXML_Peptides();
     void writeXML_Proteins();
     void writeXML();
-    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets ,
-        unsigned int & nrDecoys );
+    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets,unsigned int & nrDecoys );
+    
     Normalizer * pNorm;
     SanityCheck * pCheck;
     AlgIn *svmInput;

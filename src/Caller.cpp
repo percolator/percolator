@@ -147,7 +147,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "number");
   cmd.defineOption("f",
       "train-ratio",
-      "Fraction of the negative data set to be used as train set when only providing one negative set, remaining examples will be used as test set. Set to 0.6 by default.",
+      "Fraction of the negative data set to be used as train set when only providing one negative set, \
+      remaining examples will be used as test set. Set to 0.6 by default.",
       "value");
   cmd.defineOption("J",
       "tab-out",
@@ -273,7 +274,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("N",
       "group-proteins", 		   
       "activates the grouping of proteins with similar connectivity, \
-       for example if proteins P1 and P2 have the same peptides matching both of them P1 and P2 can be grouped as 1 protein \
+       for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 can be grouped as one protein \
        (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
@@ -284,7 +285,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET); 
   cmd.defineOption("C",
       "no-prune-proteins", 		   
-      "it does not prune peptides with a very low score ( ~0.0) which means that if a peptide with a very low score is mathing two proteins, \
+      "it does not prune peptides with a very low score (~0.0) which means that if a peptide with a very low score is matching two proteins,\
        when we prune the peptide,it will be duplicated to generate two new protein groups (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
@@ -292,20 +293,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "depth",
       "Setting depth 0 or 1 or 2 or 3 from high depth to low depth(less computational time) \
        of the grid search for the estimation Alpha,Beta and Gamma parameters for fido(Only valid if option -A is active). Default value is 3",
-      "value");
-  cmd.defineOption("Y",
-      "lambda",
-      "Setting lambda value for objective function ( ROC_N * lambda - ( 1-lambda * MSE) ) \
-       while grid searching alpha,beta and gamma (Only valid if option -A is active)",
-      "value");
-  cmd.defineOption("T",
-      "mse-threshold",
-      "Setting threshold value for MSE in objective function. Only q-values below the threshold will be taken into account \
-       to estimate the FDR divergence curve (Only valid if option -A is active)",
-      "value");
-  cmd.defineOption("RC",
-      "rocN",
-      "Setting N value for ROC curve in objective function(Only valid if option -A is active)",
       "value");
   cmd.defineOption("Q",
       "protein-fdr",
@@ -317,23 +304,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "database",
       "Database with target and decoy proteins. (Only valid if option -A and -Q are active)",
       "filename");
-  
-  /*cmd.defineOption("DD",
-      "decoy-database",
-      "Database with decoy proteins (Only valid if option -A and -Q are active)",
-      "filename");*/
-  
   cmd.defineOption("P",
       "pattern",
       "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if the label that idenfifies the decoys in the database \
-       is not the default (by default : ramdom_seq_) (Only valid if option -A  is active).",
+       is not the default (by default : ramdom) (Only valid if option -A  is active).",
       "value");
-  cmd.defineOption("CO",
-      "conservative",
-      "Use normal area instead of squared area when estimating MSE FDR divergence, might give better results with small datasets or when the number of \
-       false positive Proteins is too high (Only valid if option -A is active)",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("PR",
       "protein-results",
       "Output tab delimited protein probabilities results to a file instead of stdout",
@@ -360,9 +335,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     double alpha = -1;
     double beta = -1;
     double gamma = -1;
-    double lambda = 0.15;
-    double threshold = 0.05;
-    unsigned rocN = 0;
     bool gridSearch = true;
     unsigned depth = 3;
     std::string targetDB = "";
@@ -373,12 +345,12 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
     bool grouProteins = cmd.optionSet("N"); 
-    bool conservative = !cmd.optionSet("CO");
     bool mayusfdr = cmd.optionSet("Q");
     bool noprune = cmd.optionSet("C");
     bool noseparate = cmd.optionSet("E");
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
+    
     if (cmd.optionSet("PR")) {
       proteinFN = cmd.options["PR"];
       tabDelimitedOut = true;
@@ -389,20 +361,9 @@ bool Caller::parseOptions(int argc, char **argv) {
       std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used together to estimate Protein Probabilities." << std::endl;
       exit(0);
     }
-
-    if (cmd.optionSet("Y")) {
-      lambda = cmd.getDouble("Y", 0.01, 0.99);
-    }
-    if (cmd.optionSet("T")) {
-      threshold = cmd.getDouble("T", 0.01, 0.99);
-    }
-    if (cmd.optionSet("RC")) {
-      rocN = cmd.getInt("RC", 5, 1000);
-    }
    
     if (cmd.optionSet("P"))  decoyWC = cmd.options["P"];
     if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
-    //if (cmd.optionSet("DD")) decoyDB = cmd.options["DD"];
     if (cmd.optionSet("d"))  depth = (cmd.getInt("d", 0, 3));
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
@@ -411,9 +372,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					      grouProteins,noseparate,noprune,gridSearch,depth,
-					      lambda,threshold,rocN,targetDB,decoyDB,decoyWC,mayusfdr,conservative,
-					      outputDecoys,tabDelimitedOut,proteinFN);
+					       grouProteins,noseparate,noprune,gridSearch,depth,
+					       targetDB,decoyDB,decoyWC,mayusfdr,
+					       outputDecoys,tabDelimitedOut,proteinFN);
   }
   
   if (cmd.optionSet("e")) {
@@ -569,21 +530,23 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     ifstream ifs;
     ifs.exceptions (ifstream::badbit | ifstream::failbit);
     ifs.open (fname.c_str());
+    if (!ifs) {
+      cerr << "Can not open file " << fname << endl;
+      exit(EXIT_FAILURE);
+    }
     parser p;
     string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
     string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr< xercesc::DOMDocument>
-    doc (p.start (ifs, fname.c_str(), Caller::schemaValidation, schemaDefinition,
-        schema_major, schema_minor));
+    doc (p.start (ifs, fname.c_str(), Caller::schemaValidation, schemaDefinition,schema_major, schema_minor));
     doc = p.next (); // skip enzyme element
     doc = p.next (); // skip process_info element
     doc = p.next (); // skip featureDescriptions element
     static const XMLCh calibrationStr[] = {
         chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r,
         chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-    if (XMLString::equals(calibrationStr,
-        doc->getDocumentElement()->getTagName()))
+    if (XMLString::equals(calibrationStr, doc->getDocumentElement()->getTagName()))
     {
       percolatorInNs::calibration calibration(*doc->getDocumentElement ());
       doc = p.next ();
@@ -608,12 +571,15 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     char * tmpStr = XMLString::transcode(e.getMessage());
     std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
+    exit(-1);
   }
   catch (const xml_schema::exception& e) {
     cerr << e << endl;
+    exit(-1);
   }
   catch (const ios_base::failure&) {
     cerr << "io failure" << endl;
+    exit(-1);
   }
 
   return;
@@ -674,7 +640,9 @@ void Caller::filelessSetup(const unsigned int numFeatures,
  * sanityCheck.
  */
 void Caller::readFiles() {
-  if (xmlInputFN.size() != 0) {
+  
+  if (xmlInputFN.size() != 0) 
+  {
     unsigned int nrTargets;
     unsigned int nrDecoys;
     xercesc::XMLPlatformUtils::Initialize();
@@ -959,8 +927,8 @@ void Caller::fillFeatureSets() {
 }
 
 int Caller::preIterationSetup(vector<vector<double> >& w) {
+  
   svmInput = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1); // One input set, to be reused multiple times
-
   assert( svmInput );
 
   if (selectedCpos >= 0 && selectedCneg >= 0) {
@@ -998,7 +966,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     }
     return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, test_fdr);
   } else {
-    //NOTE apparently it crashes here
     vector<Scores> myset(1, fullset);
     cerr << "B" << endl;
     return pCheck->getInitDirection(myset, myset, pNorm, w, test_fdr);
@@ -1301,10 +1268,8 @@ int Caller::run() {
       writeXML_Proteins();
     }
   }
-  
   // write output to file
   writeXML();
-
   return 0;
 }
 

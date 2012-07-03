@@ -77,7 +77,8 @@ class Protein {
     ~Protein() 
     {
       for(unsigned i = 0; i < peptides.size(); i++)
-	delete peptides[i];
+	if(peptides[i])
+	  delete peptides[i];
     }
     
     std::string getName()
@@ -246,18 +247,68 @@ class Protein {
 class ProteinProbEstimator {
   
   public:
+    
+    /** PROTEIN FDR ESTIMATOR PARAMETERS **/
+    
+
+    
+    /** FIDO PARAMETERS **/
+    
+    /** when grouping proteins discard all possible combinations for each group*/
+    const static bool trivialGrouping = false;
+    /** reduce the tree of proteins to increase the speed of computation of alpha,beta,gamma **/
+    const static bool reduceTree = true;
+    /** compute peptide level prior probability instead of using default = 0.1 **/
+    const static bool computePriors = true;
+    /** use normal area instead of squared area when estimating the MSE FDR divergence **/
+    const static bool conservative = true;
+    /** threshold used for fido to remove poor PSMs **/
+    const static double psmThreshold = 0.0;
+    const static double reduced_psmThreshold = 0.15;
+    /** threshold used for fido to classify a psm as very low confidence **/
+    const static double peptideThreshold = 0.001;
+    const static double reduced_peptideThreshold = 0.1;
+    /** threshold used for fido to classify a psm as very low confidence and prune it **/
+    const static double proteinThreshold = 0.01;
+    const static double reduced_proteinThreshold = 0.1;
+    /** default value for peptide prior probability used in fido to compute the peptide likehood **/
+    const static double peptidePrior = 0.1;
+    /** number of maximum of tree configurations allowed in fido **/
+    const static double max_allow_configurations = 18;
+    
+    /** GRID SEARCH PARAMETERS **/
+    
+    /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
+    const static double lambda = 0.15;
+    /** threshold used in the MSE FDR divergence function to meassure separation between empirical and estimated q values*/
+    const static double threshold = 0.05;
+    /** number of false positives allowed while estiaming the ROC curve score **/
+    /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
+    const static unsigned default_rocN = 50;
+    const static bool updateRocN = true;
+    /** threshold to compute the N of the roc curve function **/
+    const static double thresholdRoc = 0.05;  
+    
+    
+    /** GENERAL PARAMETERS **/
+    
     /** threshold used to estimate the protein FDR **/
     const static double psmThresholdMayu = 0.05;
-    /** threshold to compute the N of the roc curve function **/
-    const static double thresholdRoc = 0.05;
+    /** whether to use the decoy prefix(faster) to check if a protein is decoy or not **/
+    const static bool useDecoyPrefix = true;
+    /** whether to count decoy proteins when estimated q values or not **/
+    const static bool countDecoyQvalue = false;
+    /** protein prior probability used to estimate the peptide prior probabilities **/
+    const static double prior_protein = 0.5;
+    
+    
+    /******************************************************************************************************************/
     
     ProteinProbEstimator(double alpha = -1, double beta = -1, double gamma = -1, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
-			 double lambda = 0.15, double threshold = 0.05, unsigned rocN = 0, std::string targetDB = "", 
-			 std::string decoyDB = "", std::string decoyPattern = "random", bool mayufdr = false, 
-			 bool conservative = false, bool outputDecoys = false, bool tabDelimitedOut = false, 
-			 std::string proteinFN = "");
+			 std::string targetDB = "",std::string decoyDB = "", std::string decoyPattern = "random", 
+			 bool mayufdr = false,bool outputDecoys = false, bool tabDelimitedOut = false, std::string proteinFN = "");
     
     virtual ~ProteinProbEstimator();
     
@@ -288,7 +339,7 @@ class ProteinProbEstimator {
     double estimatePi0(const unsigned int numBoot = 100);
     /** print a tab delimited list of proteins probabilities in a file or stdout**/
     void print(ostream& myout);
-    
+    /** print copyright of the author of Fido**/
     static string printCopyright();
 	
      /**setters and getters for variables **/
@@ -300,9 +351,6 @@ class ProteinProbEstimator {
     void setSeparateProteins(bool noseparate);
     void setGridSearch(bool dogridSearch);
     void setDepth(unsigned depth);
-    void setLambda(double lambda);
-    void setThreshold(double threshold);
-    void setROCN(double rocn);
     void setTargetDb(std::string targetDB);
     void setDecoyDb(std::string decoyDB);
     void setMayusFDR(bool mayufdr);
@@ -325,9 +373,6 @@ class ProteinProbEstimator {
     std::string getDecoyPatter();
     std::string getDecoyDB();
     std::string getTargetDB();
-    unsigned getROCN();
-    double getThreshold();
-    double getLambda();
     double getFDR();
     double getPi0();
     double getAlpha();
@@ -355,7 +400,10 @@ class ProteinProbEstimator {
     /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
      * this function is used to estimate the protein FDR**/
     void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, std::set<std::string> &numberFP);
-   
+       
+    /** estimate prior probabilities for peptide level **/
+    double estimatePriors();
+    
     /** variables **/
     std::set<string> truePosSet, falsePosSet;
     GroupPowerBigraph* proteinGraph;
@@ -374,8 +422,6 @@ class ProteinProbEstimator {
     bool noprune;
     bool dogridSearch;
     bool mayufdr;
-    bool updateRocN;
-    bool conservative;
     bool tabDelimitedOut;
     bool outputDecoys;
     double pi0;
@@ -383,17 +429,14 @@ class ProteinProbEstimator {
     unsigned int numberDecoyProteins;
     unsigned int numberTargetProteins;
     unsigned int depth;
+    unsigned int rocN;
     double gamma;
     double alpha;
     double beta;
-    double lambda;
-    double threshold;
-    unsigned rocN;
     std::string targetDB;
     std::string decoyDB;
     std::string decoyPattern;
     std::string proteinFN;
-    
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

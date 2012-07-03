@@ -19,7 +19,7 @@ class GroupPowerBigraph
   
 public:
   
- GroupPowerBigraph(Scores* fullset,double __alpha, double __beta, double __gamma, 
+ GroupPowerBigraph(double __alpha, double __beta, double __gamma, 
 		   bool __groupProteins = false, bool __noseparate = false , bool __noprune = false) :
   gm(__alpha,__beta,__gamma),
   groupProteins(__groupProteins), 
@@ -29,16 +29,16 @@ public:
   PsmThreshold(0.0),
   PeptideThreshold(1e-3),
   ProteinThreshold(1e-3),
-  PeptidePrior(0.1)
-      {
-	setAlphaBetaGamma(__alpha, __beta, __gamma);
-	read(fullset);
-      }
+  PeptidePrior(0.1),
+  trivialgruping(false)
+  {
+    setAlphaBetaGamma(__alpha, __beta, __gamma);
+  }
   
   ~GroupPowerBigraph();
   Array<double> proteinProbs();
   void printProteinWeights() const;
-  std::multimap<double, std::vector<std::string> > getProteinProbsPercolator() const;
+  void getProteinProbsPercolator(std::multimap<double, std::vector<std::string> > &pepProteins) const;
   void getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const;
   void getProteinProbs();
   Array<string> peptideNames() const;
@@ -56,15 +56,22 @@ public:
   double getProteinThreshold();
   void setPeptidePrior(double peptide_prior);
   double getPeptidePrior();
-  
+  void setTrivialGrouping(bool trivialgruping);
+  bool getTrivialGrouping();
+  bool getGrouProteins();
+  void setGroupProteins(bool __groupProteins);
+  bool getPruneProteins();
+  void setPruneProteins(bool __pruneProteins);
+  bool getSeparateProteins();
+  void setSeparateProteins(bool __separateProteins);
+  void read(Scores* fullset);
   //NOTE to clone object
   //GroupPowerBigraph *clone();
-  
 private:
 
   void initialize();
   void getGroupProtNames();
-  void read(Scores* fullset);
+  
   Array<BasicBigraph> iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold );
   
   Model gm;
@@ -73,6 +80,7 @@ private:
   bool groupProteins;
   bool noseparate;
   bool noprune;
+  bool trivialgruping;
   double ProteinThreshold;
   double PeptideThreshold;
   double PsmThreshold;
