@@ -40,11 +40,11 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   call = callStream.str();
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt " << endl << endl;
+  intro << "   msgfdb2pin [options] -o output.xml target_file decoy_file " << endl << endl;
   intro << "Where output.xml is where the output will be written (ensure to have read and " << endl;
-  intro << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
-  intro << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
-  intro << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;
+  intro << "write access on the file).target_file is the target msgfdb-file, and decoy_file is" << endl;
+  intro << "the decoy msgfdb-file. Small data sets may be merged by replace the msgfdb-files with" << endl;
+  intro << "meta files. Meta files are text files containing the paths of msgfdb-files, one" << endl;
   intro << "path per line. For successful result, the different runs should be generated" << endl;
   intro << "under similar condition." << endl;
 
@@ -57,17 +57,17 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "filename");
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+      "Maximal number of matches to take in consideration per spectrum when using msgfdb-files",
       "number");
   cmd.defineOption("v",
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
       "level");
-  cmd.defineOption("u",
+  /**cmd.defineOption("u",
       "unitnorm",
-      "Use unit normalization [0-1] instead of standard deviation normalization",							//NOTE not used?
+      "Use unit normalization [0-1] instead of standard deviation normalization",
       "",
-      TRUE_IF_SET);
+      TRUE_IF_SET);**/
   cmd.defineOption("a",
       "aa-freq",
       "Calculate amino acid frequency features",
@@ -88,16 +88,16 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("2",
+  /**cmd.defineOption("2",
       "ms2-file",
-      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",				//NOTE not used atm remove?
-      "filename");
+      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
+      "filename");**/
   cmd.defineOption("M",
       "isotope",
       "Mass difference calculated to closest isotope mass rather than to the average mass.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("p",															//???
+  cmd.defineOption("p",
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
       "Scheme");
@@ -152,9 +152,9 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
     parseOptions.hitsPerSpectrum=m;
   }
 
-  if (cmd.optionSet("2")) {
+  /**if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
-  }
+  }**/
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
     parseOptions.monoisotopic = true;

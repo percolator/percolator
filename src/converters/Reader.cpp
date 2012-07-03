@@ -56,7 +56,7 @@ void Reader::init()
     translateFileToXML(po.targetFN, false /* is_decoy */,0);
   }
 
-  // read retention time if sqt2pin was invoked with -2 option
+  // read retention time if the converter was invoked with -2 option
   if (po.spectrumFN.size() > 0) {
     readRetentionTime(po.spectrumFN);
     databases[0]->initRTime(&scan2rt);
@@ -148,7 +148,7 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
     //TODO check its is a metafile or not and if it is valid formed, mmm I should split this function in two to make it clearer
     if(checkValidity(fn))
     {
-      // there must be as many databases as lines in the metafile containing sqt
+      // there must be as many databases as lines in the metafile containing the
       // files. If this is not the case, add a new one
       if(databases.size()==lineNumber_par)
       {

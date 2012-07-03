@@ -80,6 +80,10 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("p",
+      "psm-annotation",
+      "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
+      "Scheme");
   cmd.defineOption("P",
       "pattern",
       "Pattern used to identify the decoy PSMs",
@@ -238,12 +242,12 @@ int Mzidentml2pin::run()
 }
 
 int main(int argc, char** argv) {
-  Mzidentml2pin* pSqt2Pin = new Mzidentml2pin();
+  Mzidentml2pin* pMzidentml2pin = new Mzidentml2pin();
   int retVal = -1;
-  if (pSqt2Pin->parseOpt(argc, argv)) {
-    retVal = pSqt2Pin->run();
+  if (pMzidentml2pin->parseOpt(argc, argv)) {
+    retVal = pMzidentml2pin->run();
   }
-  delete pSqt2Pin;
+  delete pMzidentml2pin;
   Globals::clean();
   return retVal;
 }

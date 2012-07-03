@@ -85,9 +85,6 @@ void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
     push_backFeatureDescription("enzInt");
   }
   
-  //TODO NSM?
-  //push_backFeatureDescription("lnNumSP");
-  
   //Mass difference
   push_backFeatureDescription("dM");
   push_backFeatureDescription("absdM");
@@ -191,13 +188,13 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     PepFDR=boost::lexical_cast<double>(psm_vector.at(14));
   }else
   {
-    FDR=atof(psm_vector.at(13).c_str());
+    FDR=atof(psm_vector.at(13).c_str()); //NOTE lexical_cast not working
     //FDR=boost::lexical_cast<double>(psm_vector.at(13));
   }
   
   //std::cerr << "1 " << observedMassCharge << "\t" << pmError << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << specProb << "\t" << pValue << "\t" << FDR << std::endl;
   //std::cerr << "2 " << psm_vector.at(4) << "\t" << psm_vector.at(5) << "\t" << psm_vector.at(9) << "\t" << psm_vector.at(10) << "\t" << psm_vector.at(11) << "\t" << psm_vector.at(12) << "\t" << psm_vector.at(13) << std::endl;
-  
+   
   //Create id
   id.str("");
   id << fileId << '_' << specIndex << '_' << scan;
@@ -296,7 +293,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
       peptide_p->modification().push_back(mod_p);      
-      //peptide_p2->modification().push_back(mod_p);
       peptideS.erase(ix,1);      
     }  
   }
@@ -318,6 +314,29 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   }
   
   database->savePsm(scan, psm_p);
+  
+  
+  //NOTE code to print out all features to a tab file for plotting
+  //Doesn't print aa freqs and tda1
+  /**
+  ofstream fileOut;
+  if(isDecoy){
+    fileOut.open("out_decoy.txt", std::ios_base::app);
+  }else
+  {
+    fileOut.open("out_target.txt", std::ios_base::app);
+  }
+  if (fileOut.is_open())
+  {
+    fileOut << observedMassCharge << "\t" << pmError << "\t" << charge << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << specProb << "\t" << pValue << "\t" << EFDR << "\t" << peptideLength(peptide);
+    fileOut << "\t"<<dM << "\t"<< (dM < 0 ? -dM : dM)<<"\t"<<cntPTMs(peptide)<<"\t"<<isPngasef(peptide,isDecoy)<<"\n";
+    fileOut.close();
+  }
+  else{
+    cout << "Unable to open file";
+    exit(-1);
+  }**/
+
 }
 
 void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
