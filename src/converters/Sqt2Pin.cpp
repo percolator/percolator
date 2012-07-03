@@ -64,7 +64,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
       "level");
-  cmd.defineOption("u",
+  cmd.defineOption("u",				//NOTE not used?
       "unitnorm",
       "Use unit normalization [0-1] instead of standard deviation normalization",
       "",
