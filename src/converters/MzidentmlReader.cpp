@@ -112,14 +112,16 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
   {
     push_backFeatureDescription("PNGaseF");
   }
-  if (!aaAlphabet.empty()) 
+
+  if (po.calcAAFrequencies)
   {
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
     {
-      push_backFeatureDescription(*it + "-Freq");
+      std::string temp = boost::lexical_cast<std::string>(*it)+"-Freq";
+      push_backFeatureDescription(temp.c_str());
     }
   }
-    
+      
 }
 
 

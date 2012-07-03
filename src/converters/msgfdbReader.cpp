@@ -102,11 +102,13 @@ void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
     push_backFeatureDescription("PNGaseF");
   }
   
-  //FIXME Something here is wrong, the output looks really strange
-  if (!aaAlphabet.empty()) //Not necesary?
+  if (po.calcAAFrequencies)
   {
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
-      push_backFeatureDescription(*it + "-Freq");
+    {
+      std::string temp = boost::lexical_cast<std::string>(*it)+"-Freq";
+      push_backFeatureDescription(temp.c_str());
+    }
   }
 }
 
@@ -126,9 +128,9 @@ void msgfdbReader::getMaxMinCharge(const std::string fn){
   getline(sqtIn, line); //First line is column names which is of no intrest for max and min charge
 
   while (getline(sqtIn, line)) {
-    //Get line and look for min/max charge, charge is at pos charge_pos
+    //Get line and look for min/max charge
     std::vector<std::string> psm_vector=split(line,'\t');
-    charge=atoi(psm_vector.at(6).c_str()); //TODO Error handling, would be nice if it could handle scientific notation
+    charge=boost::lexical_cast<int>(psm_vector.at(6)); //Charge is column 7
     if (minCharge > charge) minCharge = charge;
     if (maxCharge < charge) maxCharge = charge;
     n++;
@@ -149,6 +151,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   std::ostringstream id;
   std::vector< std::string > proteinIds;
   std::vector< std::string > proteinIdsDecoys; //This vector is only used when we read a combined file
+  bool tda1=false;
   
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
@@ -160,26 +163,40 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     std::cerr << "One row or more in " << fileId << " has the wrong number of columns: "<< psm_vector.size() << ". Should be " << column_names.size() << std::endl;
     exit(-1);
   }
+  if(column_names.at(13)=="FDR"){//If this is true then the -tda 1 option was used in msgfb
+    tda1=true;
+  }
   
   //Variables related to the MSGFDB file type 
-  //TODO error handling
-  std::string specFile=psm_vector.at(0);
-  double specIndex=atof(psm_vector.at(1).c_str());
-  double scan=atof(psm_vector.at(2).c_str());
-  std::string fragMethod=psm_vector.at(3);
-  double observedMassCharge=atof(psm_vector.at(4).c_str()); //Called precursor mass
-  double pmError=atof(psm_vector.at(5).c_str());
-  int charge=atoi(psm_vector.at(6).c_str()); //TODO would be nice if it could handle scientific notation
-  std::string peptide=psm_vector.at(7);
-  std::string proteinID=psm_vector.at(8);
-  double deNovoScore=atof(psm_vector.at(9).c_str());
-  double MSGFScore=atof(psm_vector.at(10).c_str());
-  double specProb=atof(psm_vector.at(11).c_str());
-  double pValue=atof(psm_vector.at(12).c_str());
-  double FDR=atof(psm_vector.at(13).c_str()); //if -tda 1 option was NOT used in msgfdb this is really EFDR specfied in the msgfdb documentation
-  if(column_names.at(13)=="FDR"){//-tda 1 option is was used in msgfdb there is one more feature
-    double PepFDR=atof(psm_vector.at(14).c_str());
+  std::string specFile=boost::lexical_cast<std::string>(psm_vector.at(0));
+  double specIndex=boost::lexical_cast<double>(psm_vector.at(1));
+  double scan=boost::lexical_cast<double>(psm_vector.at(2));
+  std::string fragMethod=boost::lexical_cast<std::string>(psm_vector.at(3));
+  double observedMassCharge=boost::lexical_cast<double>(psm_vector.at(4)); //Called precursor mass in the msgfdb file
+  double pmError=boost::lexical_cast<double>(psm_vector.at(5));
+  int charge=boost::lexical_cast<int>(psm_vector.at(6));
+  std::string peptide=boost::lexical_cast<std::string>(psm_vector.at(7));
+  std::string proteinID=boost::lexical_cast<std::string>(psm_vector.at(8));
+  double deNovoScore=boost::lexical_cast<double>(psm_vector.at(9));
+  double MSGFScore=boost::lexical_cast<double>(psm_vector.at(10));
+  double specProb=boost::lexical_cast<double>(psm_vector.at(11));
+  double pValue=boost::lexical_cast<double>(psm_vector.at(12));
+  
+  double EFDR; 	//Used if tda1 option was used
+  double PepFDR;//Used if tda1 option was used
+  double FDR; 	//Used if tda1 option was not used in msgfb
+  
+  if(tda1){//if -tda 1 option is was used in msgfdb there is one more feature and FDR is sligtly different
+    EFDR=boost::lexical_cast<double>(psm_vector.at(13));
+    PepFDR=boost::lexical_cast<double>(psm_vector.at(14));
+  }else
+  {
+    FDR=atof(psm_vector.at(13).c_str());
+    //FDR=boost::lexical_cast<double>(psm_vector.at(13));
   }
+  
+  //std::cerr << "1 " << observedMassCharge << "\t" << pmError << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << specProb << "\t" << pValue << "\t" << FDR << std::endl;
+  //std::cerr << "2 " << psm_vector.at(4) << "\t" << psm_vector.at(5) << "\t" << psm_vector.at(9) << "\t" << psm_vector.at(10) << "\t" << psm_vector.at(11) << "\t" << psm_vector.at(12) << "\t" << psm_vector.at(13) << std::endl;
   
   //Create id
   id.str("");
@@ -242,12 +259,17 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   
   //Get the flanks/termini and remove them from the peptide sequence
   std::vector<std::string> tmp_vect=split(peptide,'.');
+  percolatorInNs::occurence::flankN_type flankN;
+  percolatorInNs::occurence::flankC_type flankC;
+  std::string peptideSequence;
+  std::string peptideS;
+  
   try{
-    percolatorInNs::occurence::flankN_type flankN=tmp_vect.at(0);
-    percolatorInNs::occurence::flankC_type flankC=tmp_vect.at(2); 
+    flankN=tmp_vect.at(0);
+    flankC=tmp_vect.at(2); 
 
-    std::string peptideSequence=tmp_vect.at(1);
-    std::string peptideS = peptideSequence;
+    peptideSequence=tmp_vect.at(1);
+    peptideS = peptideSequence;
   }
   catch(exception e){
     std::cerr << "There is a problem with the peptide string: " << peptide << " SpecIndex: " << specIndex << std::endl;

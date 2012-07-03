@@ -78,11 +78,6 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "Calculate feature for number of post-translational modifications",
       "",
       TRUE_IF_SET);
-  /**cmd.defineOption("Q",
-      "quadratic",
-      "Calculate quadratic feature terms",
-      "",
-      TRUE_IF_SET);**/
   cmd.defineOption("e",
       "enzyme",
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
@@ -125,9 +120,6 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
-  /**if (cmd.optionSet("Q")) {
-    parseOptions.calcQuadraticFeatures=true;
-  }**/
   if (cmd.optionSet("e")) {
     if( cmd.options["e"] == "no enzyme") 
       Enzyme::setEnzyme(Enzyme::NO_ENZYME); 
