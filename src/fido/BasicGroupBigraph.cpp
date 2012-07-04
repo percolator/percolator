@@ -210,7 +210,6 @@ double BasicGroupBigraph::probabilityNNu(const Model & m, const Counter & nNu) c
 
 double BasicGroupBigraph::probabilityNGivenD(const Model & m, const Array<Counter> & n) const
 {
-
   double logLike= logLikelihoodNGivenD(m,n) + log2(probabilityN(m,n)) - logLikelihoodConstantCachedFunctor(m,this);
   return pow(2.0, logLike);
 }

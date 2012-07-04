@@ -1,10 +1,3 @@
-# Unfortunately there is no standard cmake module for sqlite3
-# in http://cmake.org/cmake/help/cmake-2-8-docs.html
-# as of 2010-03-05
-# Therefore the 
-# ${CMAKE_PROJECT_DIR}/cmake/FindSqlite3.cmake
-# was added
-
 find_package( Sqlite3 REQUIRED )
 if(SQLITE3_FOUND)
   message(STATUS "SQL Lite 3 found: ${SQLITE3_INCLUDE_DIR}")

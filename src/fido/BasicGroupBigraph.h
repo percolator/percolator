@@ -92,7 +92,6 @@ class BasicGroupBigraph : public BasicBigraph
 {
 
 
-
  public:
    
   BasicGroupBigraph(bool __groupProtein = false, bool __trivialGrouping = false) :
