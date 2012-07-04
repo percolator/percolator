@@ -280,6 +280,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
 double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
 {
   double mass  =  0.0;
+  charge = 2;
   if (pepsequence.length () > po.peptidelength) {
     
     for(unsigned i=0; i<pepsequence.length();i++)
@@ -289,7 +290,7 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
       }
     }
     
-    mass = (mass + massMap_['o'] + (charge * massMap_['h'])); 
+    mass = (mass + massMap_['o'] + (charge * massMap_['h'])) + 1; 
   }
   return mass; 
 }

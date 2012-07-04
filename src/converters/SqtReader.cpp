@@ -94,7 +94,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         }
         // difference between observed and calculated mass
         double dM = MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,charge, peptide.substr(2, peptide.size()- 4));
-
+	
         f_seq.push_back( log(max(1.0, rSp))); // rank by Sp
         f_seq.push_back( 0.0 ); // delt5Cn (leave until last M line)
         f_seq.push_back( 0.0 ); // deltCn (leave until next M line)
@@ -188,6 +188,11 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
       peptideS.erase(ix,1);      
     }  
   }
+  
+  //double calculatedMassToCharge_2=Reader::calculatePepMAss(peptideSequence,charge);
+  //double calculatedMassToCharge_2f=Reader::calculatePepMAss(peptide,charge);
+  //cerr << "Difference, no flanks: " << calculatedMassToCharge-calculatedMassToCharge_2 << " Wit flanks: " << calculatedMassToCharge-calculatedMassToCharge_2f  << " Obs: " << observedMassCharge << endl;
+  
   
   if(po.iscombined)
   {

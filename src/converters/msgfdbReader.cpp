@@ -16,7 +16,7 @@ std::vector<std::string> &msgfdbReader::split(const std::string &s, char delim, 
     std::stringstream ss(s);
     std::string item;
     while(std::getline(ss, item, delim)) {
-      if(item.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_#@*")!=std::string::npos){
+      if(item.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_#@*?")!=std::string::npos){
 	elems.push_back(item); 
       }
     }
@@ -49,9 +49,10 @@ bool msgfdbReader::checkValidity(const std::string file)
   if (line.find("SpecIndex") != std::string::npos && line.find("MSGF") != std::string::npos) //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
   {
     std::vector<std::string> column_names=split(line,'\t');
-    if(!(column_names.size()==14||column_names.size()==15))//Check that the size is corrrect, it should have length 14 or 15
+    if(!(column_names.size()==13||column_names.size()==14||column_names.size()==15))//Check that the size is corrrect, it should have length 14 or 15
     { 
-      std::cerr << "The file " << file << " has the wrong number of columns: "<< column_names.size() << ". Should be 14 or 15." << std::endl;
+      std::cerr << "The file " << file << " has the wrong number of columns: "<< column_names.size() << ". Should be 13,14 or 15" << std::endl;
+      std::cerr << "depending on which msgfdb options were used." << std::endl;
       exit(-1);
     }
   } 
@@ -115,16 +116,16 @@ void msgfdbReader::getMaxMinCharge(const std::string fn){
   
   std::string line, tmp, prot;
   std::istringstream lineParse;
-  std::ifstream sqtIn;
-  sqtIn.open(fn.c_str(), std::ios::in);
-  if (!sqtIn) {
+  std::ifstream msgfdbIn;
+  msgfdbIn.open(fn.c_str(), std::ios::in);
+  if (!msgfdbIn) {
     std::cerr << "Could not open file " << fn << std::endl;
     exit(-1);
   }
   
-  getline(sqtIn, line); //First line is column names which is of no intrest for max and min charge
+  getline(msgfdbIn, line); //First line is column names which is of no intrest for max and min charge
 
-  while (getline(sqtIn, line)) {
+  while (getline(msgfdbIn, line)) {
     //Get line and look for min/max charge
     std::vector<std::string> psm_vector=split(line,'\t');
     charge=boost::lexical_cast<int>(psm_vector.at(6)); //Charge is column 7
@@ -134,11 +135,11 @@ void msgfdbReader::getMaxMinCharge(const std::string fn){
   }
   if (n <= 0) {
     std::cerr << "The file " << fn << " does not contain any records"<< std::endl;
-    sqtIn.close();
+    msgfdbIn.close();
     exit(-1);
   }
 
-  sqtIn.close();
+  msgfdbIn.close();
   return;
 }
 
@@ -148,7 +149,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   std::ostringstream id;
   std::vector< std::string > proteinIds;
   std::vector< std::string > proteinIdsDecoys; //This vector is only used when we read a combined file
-  bool tda1=false;
+  bool tda1=false, ndef=false;
   
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
@@ -160,8 +161,13 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     std::cerr << "One row or more in " << fileId << " has the wrong number of columns: "<< psm_vector.size() << ". Should be " << column_names.size() << std::endl;
     exit(-1);
   }
-  if(column_names.at(13)=="FDR"){//If this is true then the -tda 1 option was used in msgfb
-    tda1=true;
+  if(column_names.size()>13)
+  {
+    ndef=true; //This means that msgfdb was used with default value to the -n optioner or with -tda 1
+    if(column_names.at(13)=="FDR") //If this is true then the -tda 1 option was used in msgfb
+    {
+      tda1=true;
+    }
   }
   
   //Variables related to the MSGFDB file type 
@@ -186,9 +192,9 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   if(tda1){//if -tda 1 option is was used in msgfdb there is one more feature and FDR is sligtly different
     EFDR=boost::lexical_cast<double>(psm_vector.at(13));
     PepFDR=boost::lexical_cast<double>(psm_vector.at(14));
-  }else
+  }else if(ndef)
   {
-    FDR=atof(psm_vector.at(13).c_str()); //NOTE lexical_cast not working
+    FDR=atof(psm_vector.at(13).c_str()); //FIXME lexical_cast not working
     //FDR=boost::lexical_cast<double>(psm_vector.at(13));
   }
   
@@ -215,44 +221,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   //Check length of peptide, if its to short it cant contain both flanks and peptide
   assert(peptide.size() >= 5 );
   
-  //Calculate peptide mass
-  double calculatedMassToCharge=Reader::calculatePepMAss(peptide,charge);
-  
-  //Push_back the DeNovoScore and msgfscore
-  f_seq.push_back(deNovoScore);
-  f_seq.push_back(MSGFScore);
-
-  f_seq.push_back( observedMassCharge ); // Observed mass
-  f_seq.push_back( peptideLength(peptide)); // Peptide length
-  int nxtFeat = 8;
-  for (int c = minCharge; c
-  <= maxCharge; c++)
-    f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
-
-  if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-    f_seq.push_back( Enzyme::isEnzymatic(peptide.at(0),peptide.at(2)) ? 1.0 : 0.0);
-    f_seq.push_back(Enzyme::isEnzymatic(peptide.at(peptide.size() - 3),peptide.at(peptide.size() - 1)) ? 1.0 : 0.0);
-    std::string peptid2 = peptide.substr(2, peptide.length() - 4);
-    f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
-  }
-  
-  //Calculate difference between observed and calculated mass
-  double dM =MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
-                                   charge, peptide.substr(2, peptide.size()- 4));
-  f_seq.push_back( dM ); // obs - calc mass
-  f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
-  
-  if (po.calcPTMs) 
-  {
-    f_seq.push_back(cntPTMs(peptide));
-  }
-  if (po.pngasef) 
-  {
-    f_seq.push_back(isPngasef(peptide,isDecoy));
-  }
-  if (po.calcAAFrequencies) {
-    computeAAFrequencies(peptide, f_seq);
-  }
   
   //Get the flanks/termini and remove them from the peptide sequence
   std::vector<std::string> tmp_vect=split(peptide,'.');
@@ -297,6 +265,47 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     }  
   }
   
+  //Calculate peptide mass
+  //double calculatedMassToCharge=Reader::calculatePepMAss(peptide,charge); //NOTE With flanks
+  double calculatedMassToCharge=Reader::calculatePepMAss(peptideSequence,charge); //NOTE Without flanks
+  
+  //Push_back the DeNovoScore and msgfscore
+  f_seq.push_back(deNovoScore);
+  f_seq.push_back(MSGFScore);
+
+  f_seq.push_back( observedMassCharge ); // Observed mass
+  f_seq.push_back( peptideLength(peptideSequence)); // Peptide length
+  int nxtFeat = 8;
+  for (int c = minCharge; c
+  <= maxCharge; c++)
+    f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
+
+  if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
+    f_seq.push_back( Enzyme::isEnzymatic(peptide.at(0),peptide.at(2)) ? 1.0 : 0.0);
+    f_seq.push_back(Enzyme::isEnzymatic(peptide.at(peptide.size() - 3),peptide.at(peptide.size() - 1)) ? 1.0 : 0.0);
+    std::string peptid2 = peptide.substr(2, peptide.length() - 4);
+    f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
+  }
+  
+  //Calculate difference between observed and calculated mass
+  double dM =MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
+                                   charge, peptide.substr(2, peptide.size()- 4));
+  f_seq.push_back( dM ); // obs - calc mass
+  f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
+  
+  if (po.calcPTMs) 
+  {
+    f_seq.push_back(cntPTMs(peptide)); //With flanks
+  }
+  if (po.pngasef) 
+  {
+    f_seq.push_back(isPngasef(peptide,isDecoy)); //With flanks
+  }
+  if (po.calcAAFrequencies) {
+    computeAAFrequencies(peptide, f_seq); //With flanks
+  }
+  
+  
   if(po.iscombined)
   {
     //NOTE when combine search the PSM will take the identity of its first ranked Peptide
@@ -318,7 +327,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   
   //NOTE code to print out all features to a tab file for plotting
   //Doesn't print aa freqs and tda1
-  /**
+  
   ofstream fileOut;
   if(isDecoy){
     fileOut.open("out_decoy.txt", std::ios_base::app);
@@ -335,7 +344,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   else{
     cout << "Unable to open file";
     exit(-1);
-  }**/
+  }
 
 }
 
@@ -345,15 +354,15 @@ void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   
   std::string line, tmp, prot;
   std::istringstream lineParse;
-  std::ifstream sqtIn;
-  sqtIn.open(fn.c_str(), std::ios::in);
-  if (!sqtIn) {
+  std::ifstream msgfdbIn;
+  msgfdbIn.open(fn.c_str(), std::ios::in);
+  if (!msgfdbIn) {
     std::cerr << "Could not open file " << fn << std::endl;
     exit(-1);
   }
   
   //The first row contains the names of the columns
-  getline(sqtIn, line);
+  getline(msgfdbIn, line);
   std::vector<std::string> column_names=split(line,'\t');
   
   if(column_names.at(0)[0]=='#'){
@@ -367,7 +376,7 @@ void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   if (spos != std::string::npos) fileId.erase(spos);
   
   //Read file line by line, each line is one psm. Tab delimated
-  while (getline(sqtIn, line)) { //TODO Fix max psm thing po.hitsPerSpectrum
+  while (getline(msgfdbIn, line)) {
     readPSM(line,isDecoy,fileId, database, column_names);
   }
 }

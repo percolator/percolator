@@ -46,7 +46,8 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   intro << "the decoy msgfdb-file. Small data sets may be merged by replace the msgfdb-files with" << endl;
   intro << "meta files. Meta files are text files containing the paths of msgfdb-files, one" << endl;
   intro << "path per line. For successful result, the different runs should be generated" << endl;
-  intro << "under similar condition." << endl;
+  intro << "under similar condition. msgfdb2pin will use all psms in the files, if a maximum" << endl;
+  intro << "number of matches is wanted re-run msgfdb with the -n option." << endl;
 
   // init
   CommandLineParser cmd(intro.str());
@@ -55,9 +56,10 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "outputXML",
       "save output in an XML file",
       "filename");
+  //TODO The matches for each spectra is spread over the whole file so
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum when using msgfdb-files",
+      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
       "number");
   cmd.defineOption("v",
       "verbose",

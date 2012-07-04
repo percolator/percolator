@@ -56,19 +56,15 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "outputXML",
       "save output in an XML file",
       "filename");
-  cmd.defineOption("m",
+  //TODO The m option doesn't work atm cause the psms are not sorted by spectra in the output from msgfdb. Might be hard to implement because of that.
+  /**cmd.defineOption("m",
       "matches",
       "Maximal number of matches to take in consideration per spectrum when using sqt-files",
-      "number");
+      "number");**/
   cmd.defineOption("v",
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
       "level");
-  cmd.defineOption("u",				//NOTE not used?
-      "unitnorm",
-      "Use unit normalization [0-1] instead of standard deviation normalization",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("a",
       "aa-freq",
       "Calculate amino acid frequency features",
@@ -79,11 +75,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "Calculate feature for number of post-translational modifications",
       "",
       TRUE_IF_SET);
-  /**cmd.defineOption("Q",
-      "quadratic",
-      "Calculate quadratic feature terms",
-      "",
-      TRUE_IF_SET);**/
   cmd.defineOption("e",
       "enzyme",
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
@@ -126,9 +117,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
-  /**if (cmd.optionSet("Q")) {
-    parseOptions.calcQuadraticFeatures=true;
-  }**/
   if (cmd.optionSet("e")) {
     if( cmd.options["e"] == "no enzyme") 
       Enzyme::setEnzyme(Enzyme::NO_ENZYME); 
@@ -156,10 +144,10 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("b")) {
     parseOptions.calcPTMs=true;
   }
-  if (cmd.optionSet("m")) {
+  /**if (cmd.optionSet("m")) {
     int m = cmd.getInt("m", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
-  }
+  }**/
 
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
