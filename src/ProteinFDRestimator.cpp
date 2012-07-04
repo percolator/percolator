@@ -190,13 +190,13 @@ CloseFASTA(FASTAFILE *ffp)
 
 ProteinFDRestimator::ProteinFDRestimator(unsigned int __minpeplength, unsigned int __minmaxx,
 				       unsigned int __maxmass,std::string __decoy_prefix, double __missed_cleavages, 
-				       unsigned __nbins, double __targetDecoyRatio, bool __binequalDeepth, unsigned __maxSeqlength)
+				       unsigned __nbins, double __targetDecoyRatio, bool __binequalDeepth, unsigned __maxSeqlength, bool useAvgMass)
 				       :minpeplength(__minpeplength),minmass(__minmaxx),maxmass(__maxmass),
 				       decoy_prefix(__decoy_prefix),missed_cleavages(__missed_cleavages),
 				       nbins(__nbins),targetDecoyRatio(__targetDecoyRatio),
 				       binequalDeepth(__binequalDeepth),maxSeqlength(__maxSeqlength)
 {
-  initMassMap();
+  initMassMap(useAvgMass);
 }
 
 ProteinFDRestimator::~ProteinFDRestimator()
@@ -379,7 +379,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     }
     else
     {
-      length = calculateProtLength(targetSeq);
+      length = calculateProtLength(targetSeq,targetName);
       previouSeqs.insert(targetSeq);
     }
     groupedProteins.insert(std::make_pair<double,std::string>(length,targetName));
@@ -397,7 +397,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
     }
     else
     {
-      length = calculateProtLength(decoySeq);
+      length = calculateProtLength(decoySeq,decoyName);
       previouSeqs.insert(decoySeq);
     }
     groupedProteins.insert(std::make_pair<double,std::string>(length,decoyName));
@@ -486,13 +486,14 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
   unsigned residues = entries % nbins;
   if(VERB > 2)
     std::cerr << "\nBinning proteins using equal deepth\n" << std::endl;
+  
   while(residues >= nbins && residues != 0)
   {
     nr_bins += (unsigned)((residues - residues%nbins) / nbins);
     residues = residues % nbins; 
   }
   std::vector<double> values;
-  for(unsigned i = 0; i < nbins; i++)
+  for(unsigned i = 0; i <= nbins; i++)
   {
     unsigned index = (unsigned)(nr_bins * i);
     double value = lenghts[index];
@@ -501,9 +502,13 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
       std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;
   }
   //there are some elements at the end that are <= nbins that could not be fitted
-  if(residues > 0) values.push_back(lenghts.back());
-  else nbins--;
-  
+  if(residues > 0)
+  {
+    values.back() = lenghts.back();
+    if(VERB > 2)
+      std::cerr << "\nValue of last bin is fixed to : " << values.back() << std::endl;
+  }
+
   std::multimap<double,std::string>::iterator itlow,itup;
   for(unsigned i = 0; i < nbins; i++)
   {
@@ -515,7 +520,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
     binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
-  //FreeAll(values);
+
   return;
 }
     
@@ -528,8 +533,10 @@ void ProteinFDRestimator::binProteinsEqualWidth()
   std::vector<double> values;
   int span = abs(max - min);
   double part = span / nbins;
+  
   if(VERB > 2)
     std::cerr << "\nBinning proteins using equal width\n" << std::endl;
+  
   for(unsigned i = 0; i < nbins; i++)
   {
     unsigned index = (unsigned) min + i*part;
@@ -550,7 +557,7 @@ void ProteinFDRestimator::binProteinsEqualWidth()
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
     binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
   }
-  //FreeAll(values);
+
   return;
 }
 
@@ -575,7 +582,6 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
   for(unsigned i = 0; i < logprob.size(); i++)
     finalprob += logprob[i] * i;
 
-  //FreeAll(logprob);
   if(isnan(finalprob) || isinf(finalprob)) finalprob = 0.0;
   return finalprob;
 
@@ -584,7 +590,7 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
 double ProteinFDRestimator::calculatePepMAss(std::string pepsequence,double charge)
 {
   double mass  =  0.0;
-  if (pepsequence.length () > minpeplength) {
+  if (pepsequence.length () >= minpeplength) {
     
     for(unsigned i=0; i<pepsequence.length();i++)
     {
@@ -593,53 +599,52 @@ double ProteinFDRestimator::calculatePepMAss(std::string pepsequence,double char
       }
     }
     
-    mass = (mass + massMap_['o'] + (charge * massMap_['h'])); 
+    mass = (mass + massMap_['o'] + (charge * massMap_['h']) + 1.00727649); 
   }
   return mass; 
 }
 
 
-unsigned int ProteinFDRestimator::calculateProtLength(std::string protsequence)
+unsigned int ProteinFDRestimator::calculateProtLength(std::string protsequence,std::string proteinname)
 {
   size_t length = protsequence.length();
-  std::string peptide;
   std::set<std::string> peptides;
   
-  if(protsequence[length-1] != '*'){
-    protsequence.push_back('*');
-    length++;
+  if (length>0 && protsequence[length-1]=='*') {
+    --length;
   }
   
   for(size_t start=0; start<length; start++)
   {
-    if((start == 0) || (protsequence[start] == 'K' && protsequence[start+1] != 'P') || (protsequence[start] == 'R' && protsequence[start+1] != 'P')) 
+    if( start == 0 || ( protsequence[start+1] != 'P' && ( protsequence[start] == 'K' || protsequence[start] == 'R' ) ) ) 
     {
       int numMisCleavages = 0;  
-      for(size_t end=start+1;( (end<length) && (((int)(end-start)) < maxSeqlength) && (numMisCleavages <= missed_cleavages) );end++)
+      for(size_t end=start+1;( end<length && numMisCleavages <= missed_cleavages );end++)
       {
-        if((protsequence[end] == 'K') || (protsequence[end] == 'R') || (protsequence[end] == '*'))
+	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
+        if( (protsequence[end] == 'K' || protsequence[end] == 'R') && protsequence[end+1] != 'P' )
 	{
-          if( (end > length) || (end < length && protsequence[end+1] != 'P')  )
-	  {
-	    peptide = protsequence.substr(start,((int)(end-start))+2);
-	    double  mass = calculatePepMAss(peptide);
-	    if((mass > minmass) && (mass< maxmass))
-	    {
-	      peptides.insert(peptide);
-	    }
+	   int begin = start;
+	   int finish = end - start + 1;
+	   if(start != 0)
+	   {  
+	     begin++;
+	     finish--;
+	   }
+	   std::string peptide = protsequence.substr(begin,finish);
+	   double  mass = calculatePepMAss(peptide);
+	   
+	   if((mass > minmass) && (mass< maxmass) && (peptide.size() >= minpeplength))
+	   {
+	     peptides.insert(peptide);
+	   }
 	    numMisCleavages++;
-	  }
         }
       } 
     }
   }
   
-  if(protsequence == "MICFLSLFSSTSSHFLTICVMIKCKTKEIEMTKEVIVESFELDHTIVKAPYVRLISEEFGPKGDRITNFDVRLVQPNQNSIETAGLHTIEHLLAKLIRQRIDGMIDCSPFGCRTGFHLIMWGKHSSTDIAKVIKSSLEEIATGITWEDVPGTTLESCGNYKDHSLFAAKEWAQLIIDQGISDDPFSRHVI*")
-  {
-    std::cerr << "Protein " << "gi|228995275|ref|NP_269689.2|" << " has " << peptide.size() << " tryptic digested peptides " << std::endl;
-  }
-  unsigned size = peptide.size();
-  //FreeAll(peptide);
+  unsigned size = peptides.size();
   return size;
 }
 
@@ -657,7 +662,6 @@ unsigned int ProteinFDRestimator::countProteins(unsigned int bin,const std::set<
       proteinsBins.erase(itfound);
     }
   }
-  //FreeAll(proteinsBins);
   return count;
 }
 

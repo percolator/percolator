@@ -99,9 +99,9 @@ class ProteinFDRestimator
   
 public:
   
-  ProteinFDRestimator(unsigned minpeplength = 4, unsigned minmaxx = 400, unsigned maxmass = 6000, 
+  ProteinFDRestimator(unsigned minpeplength = 6, unsigned minmaxx = 400, unsigned maxmass = 6000, 
 		     std::string decoy_prefix = "random", double missed_cleavages = 0, unsigned nbins = 10, 
-		     double targetDecoyRatio = 1.0, bool binequalDeepth = true, unsigned maxSeqlength = 40);
+		     double targetDecoyRatio = 1.0, bool binequalDeepth = true, unsigned maxSeqlength = 40, bool useAvgMass = false);
   virtual ~ProteinFDRestimator();
   /** extract the protein and their sequences from the fasta files (target and decoy) given **/
   void parseDataBase(const char *seqfile,const char* seqfileDecoy);
@@ -126,7 +126,7 @@ private:
   /** estimates the mass of a peptide sequence **/
   double calculatePepMAss(std::string pepsequence, double charge = 2);
   /**estimate the number of tryptic digested peptides of a protein sequence**/
-  unsigned calculateProtLength(std::string protsequence);
+  unsigned calculateProtLength(std::string protsequence,std::string proteinname = "");
   /**initialize the hash table of amino acid masses**/
   void initMassMap(bool useAvgMass = false);
   /**bins proteins according to the lenght**/
