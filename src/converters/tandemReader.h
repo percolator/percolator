@@ -20,9 +20,8 @@
 #define TANDEMREADER_H
 
 #include "Reader.h"
-
 #include "parser.hxx"
-//#include "tandem_doll_mod.hxx"
+#include "tandem2011.12.01.1.hxx"
 #include "FragSpectrumScanDatabase.h"
 
 class tandemReader: public Reader

@@ -309,9 +309,7 @@ void tandemReader::readPSM(std::string line,bool isDecoy,std::string fileId,
 
 void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
 {
-  std::string fileId;
-  
-  std::string line, tmp, prot;
+  std::string line, tmp, prot, fileId;
   std::istringstream lineParse;
   std::ifstream tandemIn;
   tandemIn.open(fn.c_str(), std::ios::in);
@@ -336,33 +334,37 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   
   //TODO read file here
   
+  namespace xml = xsd::cxx::xml;
   
+  
+  //NOTE in tandem.xml  added xmlns="http://www.thegpm.org/TANDEM/2011.12.01.1"
   
   try
   {  
-    namespace xml = xsd::cxx::xml;
     ifstream ifs;
     ifs.exceptions(ifstream::badbit|ifstream::failbit);
-    string fn2="xtandem_example_output.xml";
-    ifs.open(fn2.c_str());
+    
+    ifs.open(fn.c_str());
     parser p;
     
-    string schemaDefinition= string("tandem_doll_mod.xsd");
-    string scheme_namespace = "asdf";
+    string schemaDefinition = TANDEM_SCHEMA_LOCATION + string("tandem2011.12.01.1.xsd");
+    string scheme_namespace = TANDEM_NAMESPACE;
+    
+    //string schemaDefinition = string("tandem.xsd");
+    //string scheme_namespace = "tandem";
+    
     string schema_major = "";
     string schema_minor = "";
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn2.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
-
-    //true=Caller::schemaValidation
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
 
     //auto_ptr<bioml> bioml_p (new bioml (doc->next()));
 
-    for (doc = p.next(); doc.get() != 0,doc->getDocumentElement()->getTagName(); doc = p.next ()) 
+    std::cerr << "TMP1 " << std::endl;
+    for (doc = p.next(); doc.get() != 0; doc = p.next ()) 
     {
-      //cerr<< *doc->getDocumentElement() <<endl;
+      std::cerr << "TMP iter " << std::endl;
+      cerr << *doc->getDocumentElement()->getTagName() << std::endl;
     }
-    
-    //cout << "Label: " << bioml_p->label() << endl;
 
     ifs.close();
 
@@ -384,9 +386,11 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   }
   catch (const xml_schema::exception& e)
   {
+    cerr << "Problem with xml file and xercesc and/or codesynthesis:" << endl;
     cerr << e << endl;
+    exit(1);
   }
   
-  
+  std::cerr << "TMP Done reader " << std::endl;
 }
 

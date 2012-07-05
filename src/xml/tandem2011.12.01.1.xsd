@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<xsd:schema attributeFormDefault="unqualified" elementFormDefault="qualified" version="1.0" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:gaml="http://www.bioml.com/gaml/"
+	targetNamespace="http://www.thegpm.org/TANDEM/2011.12.01.1">
+<xsd:import       namespace="http://www.bioml.com/gaml/"
+		  schemaLocation="gaml_tandem1.0.xsd"/>
+<xsd:annotation>
+  <xsd:documentation>Schema for GAML data from tandem cyclone version 2011.12.01.1 This version 1.0 of the xsd schema.</xsd:documentation>
+</xsd:annotation>
+  <xsd:element name="bioml">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element maxOccurs="unbounded" name="group">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element maxOccurs="unbounded" name="protein">
+                <xsd:complexType>
+                  <xsd:sequence>
+		    <xsd:element name="note" minOccurs="0">
+  		      <xsd:complexType>
+                        <xsd:simpleContent>
+                          <xsd:extension base="xsd:string">
+                          <xsd:attribute name="label" type="xsd:string">
+                          </xsd:attribute>
+                          </xsd:extension>
+                        </xsd:simpleContent>
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="file" minOccurs="0">
+                      <xsd:complexType>
+                        <xsd:attribute name="type" type="xsd:string" />
+                        <xsd:attribute name="URL" type="xsd:string" />
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="peptide">
+                      <xsd:complexType>
+                        <xsd:complexContent mixed="true">
+                          <xsd:restriction base="xsd:anyType">
+                            <xsd:sequence>
+                              <xsd:element name="domain">
+                                <xsd:complexType>
+                                  <xsd:complexContent mixed="true">
+                                    <xsd:restriction base="xsd:anyType">
+                                      <xsd:sequence>
+				         <xsd:element name="aa" minOccurs="0" maxOccurs="unbounded">
+                                          <xsd:complexType>
+                                            <xsd:attribute name="type" type="xsd:string" use="required"/>
+                                            <xsd:attribute name="at" type="xsd:string" use="required"/>
+					     <xsd:attribute name="modified" type="xsd:string" use="required"/>
+                                          </xsd:complexType>
+				         </xsd:element>
+				       </xsd:sequence>
+                                      <xsd:attribute name="id" type="xsd:string" use="required"/>
+                                      <xsd:attribute name="start" type="xsd:int" />
+                                      <xsd:attribute name="end" type="xsd:int" />
+                                      <xsd:attribute name="expect" type="xsd:string" use="required"/>
+                                      <xsd:attribute name="mh" type="xsd:decimal" use="required"/>
+                                      <xsd:attribute name="delta" type="xsd:decimal" use="required"/>
+                                      <xsd:attribute name="hyperscore" type="xsd:decimal" use="required"/>
+                                      <xsd:attribute name="nextscore" type="xsd:decimal" use="required"/>
+                                      <xsd:attribute name="y_score" type="xsd:decimal" use="required"/>
+                                      <xsd:attribute name="y_ions" type="xsd:int" use="required"/>
+                                      <xsd:attribute name="b_score" type="xsd:decimal" use="required"/>
+                                      <xsd:attribute name="b_ions" type="xsd:int" use="required"/>
+                                      <xsd:attribute name="pre" type="xsd:string" use="required"/>
+                                      <xsd:attribute name="post" type="xsd:string" use="required"/>
+                                      <xsd:attribute name="seq" type="xsd:string" use="required"/>
+                                      <xsd:attribute name="missed_cleavages" type="xsd:int" use="required"/>
+                                    </xsd:restriction>
+                                  </xsd:complexContent>
+				 </xsd:complexType>
+                              </xsd:element>
+                            </xsd:sequence>
+                            <xsd:attribute name="start" type="xsd:int" />
+                            <xsd:attribute name="end" type="xsd:int" />
+                          </xsd:restriction>
+                        </xsd:complexContent>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                  <xsd:attribute name="expect" type="xsd:decimal" use="required"/>
+                  <xsd:attribute name="id" type="xsd:decimal" use="required"/>
+                  <xsd:attribute name="uid" type="xsd:int" />
+                  <xsd:attribute name="label" type="xsd:string" />
+                  <xsd:attribute name="sumI" type="xsd:decimal" use="required"/>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element maxOccurs="unbounded" name="group">
+                <xsd:complexType>
+                  <xsd:sequence>
+		    <xsd:element name="note" minOccurs="0">
+  		      <xsd:complexType>
+                        <xsd:simpleContent>
+                          <xsd:extension base="xsd:string">
+                          <xsd:attribute name="label" type="xsd:string">
+                          </xsd:attribute>
+                          </xsd:extension>
+                        </xsd:simpleContent>
+                      </xsd:complexType>
+                    </xsd:element>
+		    <xsd:element ref="gaml:trace" maxOccurs="unbounded"/>
+                  </xsd:sequence>
+                  <xsd:attribute name="label" type="xsd:string" />
+                  <xsd:attribute name="type" type="xsd:string" />
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+            <xsd:attribute name="id" type="xsd:int" use="required"/>
+            <xsd:attribute name="mh" type="xsd:decimal" use="required"/>
+            <xsd:attribute name="z" type="xsd:int" use="required"/>
+            <xsd:attribute name="rt" type="xsd:string" use="required"/>
+            <xsd:attribute name="expect" type="xsd:string" use="required"/>
+            <xsd:attribute name="label" type="xsd:string" use="required"/>
+            <xsd:attribute name="type" type="xsd:string" use="required"/>
+            <xsd:attribute name="sumI" type="xsd:decimal" use="required"/>
+            <xsd:attribute name="maxI" type="xsd:decimal" use="required"/>
+            <xsd:attribute name="fI" type="xsd:decimal" use="required"/>
+            <xsd:attribute name="act" type="xsd:int" use="required"/>
+          </xsd:complexType>
+        </xsd:element>
+	<xsd:element minOccurs="0" maxOccurs="3" name="group">
+          <xsd:complexType>
+            <xsd:sequence>
+	      <xsd:element name="note" minOccurs="0" maxOccurs="unbounded">
+  	        <xsd:complexType>
+                  <xsd:simpleContent>
+                    <xsd:extension base="xsd:string">
+                      <xsd:attribute name="label" type="xsd:int" use="optional"/>
+		      <xsd:attribute name="type" type="xsd:int" />
+                    </xsd:extension>
+                  </xsd:simpleContent>
+                </xsd:complexType>
+              </xsd:element>
+	    </xsd:sequence>
+            <xsd:attribute name="label" type="xsd:string" />
+            <xsd:attribute name="type" type="xsd:string" />
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+      <xsd:attribute name="label" type="xsd:string" />
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>
