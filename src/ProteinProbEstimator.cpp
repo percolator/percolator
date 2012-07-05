@@ -198,7 +198,7 @@ void ProteinProbEstimator::run(){
     
     if(decoyPattern != "") fastReader->setDecoyPrefix(decoyPattern);
     
-    std::cerr << "\nEstimating Protein FDR using Mayu's method described in : \
+    std::cerr << "\nEstimating Protein FDR using Mayu's method described in :\
     http://prottools.ethz.ch/muellelu/web/LukasReiter/Mayu/\n" << std::endl;
     
     if(decoyDB == "" && targetDB != "")
@@ -239,8 +239,7 @@ void ProteinProbEstimator::run(){
   {
     if(VERB > 1) 
     {
-      std::cerr << "\nThe parameters for the model will be estimated by grid search.\n"
-          << endl;
+      std::cerr << "\nThe parameters for the model will be estimated by grid search.\n" << std::endl;
     }
     
     gridSearch(alpha,gamma,beta);
@@ -438,35 +437,28 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std
   for (std::map<std::string,Protein*>::const_iterator it = proteins.begin();
        it != proteins.end(); it++)
   {
-     bool isfp = true;
+     unsigned num_target_confident = 0;
+     unsigned num_decoy_confident = 0;
      std::string protname = it->first;
      std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
      for(std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
 	itP != peptides.end(); itP++)
       {
 	Protein::Peptide *p = *itP;
-	if(p->q <= threshold)
-	{
-	  if(it->second->getIsDecoy())
-	  {
-	    isfp = isfp && true;
-	  }
-	  else 
-	  {
-	    isfp = false;
-	    numberTP.insert(protname);
-	    break;
-	  }
-	}
-	else
-	{
-	  isfp = false;
-	}
+	if(p->q <= threshold && p->isdecoy)
+	  ++num_decoy_confident;
+	else if(p->q <= threshold && !p->isdecoy)
+	  ++num_target_confident;
       }
       
-      if(isfp)
+      //if(num_decoy_confident > 0 && num_target_confident == 0)
+      if(num_decoy_confident > 0)
       {
 	numberFP.insert(protname);
+      }
+      else if(num_target_confident > 0)
+      {
+	numberTP.insert(protname);
       }
   }
   return;
