@@ -309,9 +309,7 @@ void tandemReader::readPSM(std::string line,bool isDecoy,std::string fileId,
 
 void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
 {
-  std::string fileId;
-  
-  std::string line, tmp, prot;
+  std::string line, tmp, prot, fileId;
   std::istringstream lineParse;
   std::ifstream tandemIn;
   tandemIn.open(fn.c_str(), std::ios::in);
@@ -335,58 +333,76 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   if (spos != std::string::npos) fileId.erase(spos);
   
   //TODO read file here
+  //TODO max hits per spectra
+  
+  namespace xml = xsd::cxx::xml;
   
   
+  //NOTE in tandem.xml  added xmlns="http://www.thegpm.org/TANDEM/2011.12.01.1"
   
   try
   {  
-    namespace xml = xsd::cxx::xml;
     ifstream ifs;
     ifs.exceptions(ifstream::badbit|ifstream::failbit);
-    string fn2="xtandem_example_output.xml";
-    ifs.open(fn2.c_str());
+    
+    ifs.open(fn.c_str());
     parser p;
     
-    string schemaDefinition= string("tandem_doll_mod.xsd");
-    string scheme_namespace = "asdf";
+    string schemaDefinition = TANDEM_SCHEMA_LOCATION + string("tandem2011.12.01.1.xsd");
+    string scheme_namespace = TANDEM_NAMESPACE;
     string schema_major = "";
     string schema_minor = "";
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn2.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
-
-    //true=Caller::schemaValidation
-
-    //auto_ptr<bioml> bioml_p (new bioml (doc->next()));
-
-    for (doc = p.next(); doc.get() != 0,doc->getDocumentElement()->getTagName(); doc = p.next ()) 
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
+   
+    assert(doc.get());
+    tandem_ns::bioml biomlObj(*doc->getDocumentElement());
+    //xml_schema::dom::auto_ptr< xercesc::DOMElement> biomlDom=*doc->getDocumentElement();
+    
+    std::cerr << "Bioml label: " << biomlObj.label() << std::endl; //TMP
+    
+    //std::auto_ptr< ::tandem_ns::group > g(new ::tandem_ns::group(biomlObj.group().first()));
+    
+    //TODO would be nice if this worked
+    BOOST_FOREACH(const tandem_ns::bioml::group_type &g, biomlObj.group())
     {
-      //cerr<< *doc->getDocumentElement() <<endl;
+      //tandem_ns::bioml::group_type *gro=new tandem_ns::bioml::group_type(g);
+      std::cerr << "TMP iter boost " << std::endl;
+      //std::cerr << gro->id() << std::endl;
     }
     
-    //cout << "Label: " << bioml_p->label() << endl;
+    static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
+    
+    for (doc = p.next(); doc.get() != 0; doc = p.next ())
+    {
+      tandem_ns::group groupObj(*doc->getDocumentElement());
+      //std::cerr << "Type: " << groupObj.type() << std::endl;
+      if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()))
+      {
+	//std::cerr << "Id group: " << groupObj.id() << std::endl;
+	tandem_ns::group::protein_sequence protObj=groupObj.protein();
 
+	BOOST_FOREACH(const tandem_ns::group::protein_type &p, groupObj.protein())
+	{
+	  tandem_ns::protein::peptide_type peptideObj=p.peptide();
+	  tandem_ns::protein::note_optional n=p.note();
+	  std::cerr << "Note: " << n << std::endl;
+	  
+	  //std::cerr << "Prot: " << p.id() << std::endl;
+	  //std::cerr << "Pep: " << peptideObj << std::endl;
+	}
+      }
+    }
+    
     ifs.close();
-
-    /*for (bioml::group_const_iterator i (bioml_p->group ().begin ());
-         i != bioml_p->group ().end ();
-         ++i)
-    {*/
-	//i är pekare på group och *i är värdet
-
-	//cout << "Id: " << i->id() << endl;
-
-    	/*for (group_t::name_const_iterator j (i->name ().begin ());
-             j != i->name ().end ();
-            ++j)
-    	{
-      		cout << i->greeting () << ", " << *j << "!" << endl;
-    	}*/
-    //}
+    
+    // XMLString Transcode get text content
   }
   catch (const xml_schema::exception& e)
   {
+    cerr << "Problem with xml file, xercesc and/or codesynthesis: " << endl;
     cerr << e << endl;
+    exit(1);
   }
-  
   
 }
 

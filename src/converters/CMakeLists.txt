@@ -60,6 +60,9 @@ set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 set(MZIDENTML_VERSION_MAJOR "1")
 set(MZIDENTML_VERSION_MINOR "1")
+set(GAML_TANDEM_VERSION_MAJOR "1")
+set(GAML_TANDEM_VERSION_MINOR "0")
+set(TANDEM_VERSION "2011.12.01.1")
 
 IF(NOT APPLE)
   set(CMAKE_CXX_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
@@ -97,15 +100,22 @@ endif(APPLE AND NOT DEFINED ${TARGET_ARCH})
 if(MINGW OR WIN32) # windows
   set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
   set(MZIDENTML_SCHEMA_LOCATION "${WRITABLE_DIR}xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
+  set(GAML_TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-gaml_tandem-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}\\\\")
+  set(TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-tandem-${TANDEM_VERSION}\\\\")
   add_definitions(-D_WIN32)
 else() # linux
   set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/converters/")
   set(MZIDENTML_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}/")
+  #set(GAML_TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}/")
+  set(GAML_TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${TANDEM_VERSION}/")
+  set(TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${TANDEM_VERSION}/")
 endif()
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
 set(mzIdentML-namespace "http://psidev.info/psi/pi/mzIdentML/${MZIDENTML_VERSION_MAJOR}.${MZIDENTML_VERSION_MINOR}")
+set(gaml_tandem-namespace "http://www.bioml.com/gaml/")
+set(tandem-namespace "http://www.thegpm.org/TANDEM/${TANDEM_VERSION}")
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_SOURCE_DIR}/../*.cmake )
@@ -297,13 +307,36 @@ set(mzIdentML_in xml/mzIdentML1.1.0.xsd)
 add_custom_command(
   OUTPUT ${mzIdentMLxsdfiles}  
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
-  --namespace-map http://psidev.info/psi/pi/mzIdentML/1.1=mzIdentML_ns  
-  --namespace-map http://psidev.info/fuge-light/1.1=fuge_light_ns  ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
+  --namespace-map http://psidev.info/psi/pi/mzIdentML/1.1=mzIdentML_ns  ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
+  #--namespace-map http://psidev.info/fuge-light/1.1=fuge_light_ns
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-foreach( i ${xsdfiles_in} ${xsdfiles_out} ${mzIdentMLxsdfiles} )
+# RUN CODESYNTHESIS on gaml_tandem.xsd
+set(gaml_tandemxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/gaml_tandem1.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/gaml_tandem1.0.hxx )
+set(gaml_tandem_in xml/gaml_tandem1.0.xsd)
+add_custom_command(
+  OUTPUT ${gaml_tandemxsdfiles}  
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+  --namespace-map http://www.bioml.com/gaml/=gaml_tandem_ns ${CMAKE_CURRENT_SOURCE_DIR}/../${gaml_tandem_in}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${gaml_tandem_in}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+# RUN CODESYNTHESIS on tandem.xsd
+set(tandemxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/tandem2011.12.01.1.cxx ${CMAKE_CURRENT_BINARY_DIR}/tandem2011.12.01.1.hxx )
+set(tandem_in xml/tandem2011.12.01.1.xsd)
+add_custom_command(
+  OUTPUT ${tandemxsdfiles}  
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+  --namespace-map http://www.thegpm.org/TANDEM/2011.12.01.1=tandem_ns  
+  --namespace-map http://www.bioml.com/gaml/=gaml_tandem_ns ${CMAKE_CURRENT_SOURCE_DIR}/../${tandem_in}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${tandem_in}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+foreach( i ${xsdfiles_in} ${xsdfiles_out} ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles})
   set_source_files_properties( ${i} PROPERTIES GENERATED true)
 endforeach()
 
@@ -327,11 +360,11 @@ add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../Option.cpp
 #COMPILING 
 add_subdirectory(MSToolkit)
 if(LEVELDB)
-  add_library(converters STATIC ${mzIdentMLxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
+  add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
 elseif(TOKYODB)
-  add_library(converters STATIC ${mzIdentMLxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
+  add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
 elseif(BOOSTDB)
-  add_library(converters STATIC ${mzIdentMLxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
+  add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
 endif()
 
 include_directories(. MSToolkit/RAMP MSToolkit )
@@ -499,6 +532,10 @@ IF(NOT MINGW)
   
   install(FILES ../xml/mzIdentML1.0.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
   install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+  install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+  install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+  install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+  install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 endif()
 
 ###############################################################################

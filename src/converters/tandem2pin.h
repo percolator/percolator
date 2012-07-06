@@ -21,6 +21,7 @@
 #include "tandemReader.h"
 #include "Option.h"
 #include "config.h"
+#include <string>
 
 using namespace std;
 

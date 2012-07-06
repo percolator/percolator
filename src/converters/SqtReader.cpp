@@ -189,11 +189,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
     }  
   }
   
-  //double calculatedMassToCharge_2=Reader::calculatePepMAss(peptideSequence,charge);
-  //double calculatedMassToCharge_2f=Reader::calculatePepMAss(peptide,charge);
-  //cerr << "Difference, no flanks: " << calculatedMassToCharge-calculatedMassToCharge_2 << " Wit flanks: " << calculatedMassToCharge-calculatedMassToCharge_2f  << " Obs: " << observedMassCharge << endl;
-  
-  
   if(po.iscombined)
   {
     //NOTE when combine search the PSM will take the identity of its first ranked Peptide
