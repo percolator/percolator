@@ -333,6 +333,7 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   if (spos != std::string::npos) fileId.erase(spos);
   
   //TODO read file here
+  //TODO max hits per spectra
   
   namespace xml = xsd::cxx::xml;
   
@@ -349,23 +350,52 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
     
     string schemaDefinition = TANDEM_SCHEMA_LOCATION + string("tandem2011.12.01.1.xsd");
     string scheme_namespace = TANDEM_NAMESPACE;
-    
-    //string schemaDefinition = string("tandem.xsd");
-    //string scheme_namespace = "tandem";
-    
     string schema_major = "";
     string schema_minor = "";
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
-
-    //auto_ptr<bioml> bioml_p (new bioml (doc->next()));
-
-    std::cerr << "TMP1 " << std::endl;
-    for (doc = p.next(); doc.get() != 0; doc = p.next ()) 
+   
+    assert(doc.get());
+    tandem_ns::bioml biomlObj(*doc->getDocumentElement());
+    //xml_schema::dom::auto_ptr< xercesc::DOMElement> biomlDom=*doc->getDocumentElement();
+    
+    std::cerr << "Bioml label: " << biomlObj.label() << std::endl; //TMP
+    
+    //std::auto_ptr< ::tandem_ns::group > g(new ::tandem_ns::group(biomlObj.group().first()));
+    
+    
+    //xercesc_3_1::DOMElement root = dynamic_cast<xercesc_3_1::DOMElement>( (*doc->getDocumentElement()) );
+    //xercesc_3_1::DOMNode root = *doc->getDocumentElement();
+    //const XMLCh* att = xercesc::XMLString::transcode( "group" );
+    
+    /**
+    BOOST_FOREACH(const tandem_ns::bioml::group_type &g, biomlObj.group())
     {
-      std::cerr << "TMP iter " << std::endl;
-      cerr << *doc->getDocumentElement()->getTagName() << std::endl;
+      //tandem_ns::bioml::group_type *gro=new tandem_ns::bioml::group_type(g);
+      std::cerr << "TMP iter boost " << std::endl;
+      //std::cerr << gro->id() << std::endl;
+    }**/
+    
+    static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
+    
+    for (doc = p.next(); doc.get() != 0; doc = p.next ())
+    {
+      std::cerr << "TMP iter doc " << std::endl;
+      if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()))
+      {
+	tandem_ns::group groupObj(*doc->getDocumentElement());
+	std::cerr << "Label2: " << groupObj.label() << std::endl;
+	tandem_ns::group::protein_sequence protObj=groupObj.protein();
+	
+	BOOST_FOREACH(const tandem_ns::group::protein_type &p, groupObj.protein())
+	{
+	  tandem_ns::protein::peptide_type peptideObj=p.peptide();
+	  std::cerr << "Prot: " << p.id() << std::endl;
+	  std::cerr << "Pep: " << peptideObj << std::endl;
+	}
+;
+      }
     }
-
+    
     ifs.close();
 
     /*for (bioml::group_const_iterator i (bioml_p->group ().begin ());
@@ -386,7 +416,7 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   }
   catch (const xml_schema::exception& e)
   {
-    cerr << "Problem with xml file and xercesc and/or codesynthesis:" << endl;
+    cerr << "Problem with xml file, xercesc and/or codesynthesis: " << endl;
     cerr << e << endl;
     exit(1);
   }

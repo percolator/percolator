@@ -327,7 +327,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   
   //NOTE code to print out all features to a tab file for plotting
   //Doesn't print aa freqs and tda1
-  
+  /**
   ofstream fileOut;
   if(isDecoy){
     fileOut.open("out_decoy.txt", std::ios_base::app);
@@ -344,7 +344,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   else{
     cout << "Unable to open file";
     exit(-1);
-  }
+  }**/
 
 }
 

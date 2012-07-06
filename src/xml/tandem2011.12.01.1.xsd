@@ -14,7 +14,20 @@
         <xsd:element maxOccurs="unbounded" name="group">
           <xsd:complexType>
             <xsd:sequence>
-              <xsd:element maxOccurs="unbounded" name="protein">
+	      <xsd:element name="note" minOccurs="0" maxOccurs="3">
+		<xsd:annotation>
+		  <xsd:documentation>This is for input parameters at end of file.</xsd:documentation>
+                </xsd:annotation>
+  	        <xsd:complexType>
+                  <xsd:simpleContent>
+                    <xsd:extension base="xsd:string">
+	              <xsd:attribute name="label" type="xsd:int" use="optional"/>
+		      <xsd:attribute name="type" type="xsd:int" use="optional"/>
+                    </xsd:extension>
+                  </xsd:simpleContent>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element minOccurs="1" maxOccurs="unbounded" name="protein">
                 <xsd:complexType>
                   <xsd:sequence>
 		    <xsd:element name="note" minOccurs="0">
@@ -72,8 +85,8 @@
 				 </xsd:complexType>
                               </xsd:element>
                             </xsd:sequence>
-                            <xsd:attribute name="start" type="xsd:int" />
-                            <xsd:attribute name="end" type="xsd:int" />
+                            <xsd:attribute name="start" type="xsd:int" use="required"/>
+                            <xsd:attribute name="end" type="xsd:int" use="required"/>
                           </xsd:restriction>
                         </xsd:complexContent>
                       </xsd:complexType>
@@ -81,12 +94,12 @@
                   </xsd:sequence>
                   <xsd:attribute name="expect" type="xsd:decimal" use="required"/>
                   <xsd:attribute name="id" type="xsd:decimal" use="required"/>
-                  <xsd:attribute name="uid" type="xsd:int" />
-                  <xsd:attribute name="label" type="xsd:string" />
+                  <xsd:attribute name="uid" type="xsd:int" use="optional"/>
+                  <xsd:attribute name="label" type="xsd:string" use="optional"/>
                   <xsd:attribute name="sumI" type="xsd:decimal" use="required"/>
                 </xsd:complexType>
               </xsd:element>
-              <xsd:element maxOccurs="unbounded" name="group">
+              <xsd:element minOccurs="0" maxOccurs="unbounded" name="group">
                 <xsd:complexType>
                   <xsd:sequence>
 		    <xsd:element name="note" minOccurs="0">
@@ -101,40 +114,22 @@
                     </xsd:element>
 		    <xsd:element ref="gaml:trace" maxOccurs="unbounded"/>
                   </xsd:sequence>
-                  <xsd:attribute name="label" type="xsd:string" />
-                  <xsd:attribute name="type" type="xsd:string" />
+                  <xsd:attribute name="label" type="xsd:string" use="required"/>
+                  <xsd:attribute name="type" type="xsd:string" use="required"/>
                 </xsd:complexType>
               </xsd:element>
             </xsd:sequence>
-            <xsd:attribute name="id" type="xsd:int" use="required"/>
-            <xsd:attribute name="mh" type="xsd:decimal" use="required"/>
-            <xsd:attribute name="z" type="xsd:int" use="required"/>
-            <xsd:attribute name="rt" type="xsd:string" use="required"/>
-            <xsd:attribute name="expect" type="xsd:string" use="required"/>
-            <xsd:attribute name="label" type="xsd:string" use="required"/>
+            <xsd:attribute name="id" type="xsd:int" use="optional"/>
+	    <xsd:attribute name="label" type="xsd:string" use="required"/>
             <xsd:attribute name="type" type="xsd:string" use="required"/>
-            <xsd:attribute name="sumI" type="xsd:decimal" use="required"/>
-            <xsd:attribute name="maxI" type="xsd:decimal" use="required"/>
-            <xsd:attribute name="fI" type="xsd:decimal" use="required"/>
-            <xsd:attribute name="act" type="xsd:int" use="required"/>
-          </xsd:complexType>
-        </xsd:element>
-	<xsd:element minOccurs="0" maxOccurs="3" name="group">
-          <xsd:complexType>
-            <xsd:sequence>
-	      <xsd:element name="note" minOccurs="0" maxOccurs="unbounded">
-  	        <xsd:complexType>
-                  <xsd:simpleContent>
-                    <xsd:extension base="xsd:string">
-                      <xsd:attribute name="label" type="xsd:int" use="optional"/>
-		      <xsd:attribute name="type" type="xsd:int" />
-                    </xsd:extension>
-                  </xsd:simpleContent>
-                </xsd:complexType>
-              </xsd:element>
-	    </xsd:sequence>
-            <xsd:attribute name="label" type="xsd:string" />
-            <xsd:attribute name="type" type="xsd:string" />
+            <xsd:attribute name="mh" type="xsd:decimal" use="optional"/>
+            <xsd:attribute name="z" type="xsd:int" use="optional"/>
+            <xsd:attribute name="rt" type="xsd:string" use="optional"/>
+            <xsd:attribute name="expect" type="xsd:string" use="optional"/>
+            <xsd:attribute name="sumI" type="xsd:decimal" use="optional"/>
+            <xsd:attribute name="maxI" type="xsd:decimal" use="optional"/>
+            <xsd:attribute name="fI" type="xsd:decimal" use="optional"/>
+            <xsd:attribute name="act" type="xsd:int" use="optional"/>
           </xsd:complexType>
         </xsd:element>
       </xsd:sequence>
