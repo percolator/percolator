@@ -14,20 +14,20 @@
         <xsd:element maxOccurs="unbounded" name="group">
           <xsd:complexType>
             <xsd:sequence>
-	      <xsd:element name="note" minOccurs="0" maxOccurs="3">
+	      <xsd:element name="note" minOccurs="0" maxOccurs="unbounded">
 		<xsd:annotation>
 		  <xsd:documentation>This is for input parameters at end of file.</xsd:documentation>
                 </xsd:annotation>
   	        <xsd:complexType>
                   <xsd:simpleContent>
                     <xsd:extension base="xsd:string">
-	              <xsd:attribute name="label" type="xsd:int" use="optional"/>
-		      <xsd:attribute name="type" type="xsd:int" use="optional"/>
+	              <xsd:attribute name="label" type="xsd:string" use="optional"/>
+		      <xsd:attribute name="type" type="xsd:string" use="optional"/>
                     </xsd:extension>
                   </xsd:simpleContent>
                 </xsd:complexType>
               </xsd:element>
-              <xsd:element minOccurs="1" maxOccurs="unbounded" name="protein">
+              <xsd:element minOccurs="0" maxOccurs="unbounded" name="protein">
                 <xsd:complexType>
                   <xsd:sequence>
 		    <xsd:element name="note" minOccurs="0">

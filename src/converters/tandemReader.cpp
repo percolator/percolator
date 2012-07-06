@@ -362,57 +362,40 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
     
     //std::auto_ptr< ::tandem_ns::group > g(new ::tandem_ns::group(biomlObj.group().first()));
     
-    
-    //xercesc_3_1::DOMElement root = dynamic_cast<xercesc_3_1::DOMElement>( (*doc->getDocumentElement()) );
-    //xercesc_3_1::DOMNode root = *doc->getDocumentElement();
-    //const XMLCh* att = xercesc::XMLString::transcode( "group" );
-    
-    /**
+    //TODO would be nice if this worked
     BOOST_FOREACH(const tandem_ns::bioml::group_type &g, biomlObj.group())
     {
       //tandem_ns::bioml::group_type *gro=new tandem_ns::bioml::group_type(g);
       std::cerr << "TMP iter boost " << std::endl;
       //std::cerr << gro->id() << std::endl;
-    }**/
+    }
     
     static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ())
     {
-      std::cerr << "TMP iter doc " << std::endl;
+      tandem_ns::group groupObj(*doc->getDocumentElement());
+      //std::cerr << "Type: " << groupObj.type() << std::endl;
       if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()))
       {
-	tandem_ns::group groupObj(*doc->getDocumentElement());
-	std::cerr << "Label2: " << groupObj.label() << std::endl;
+	//std::cerr << "Id group: " << groupObj.id() << std::endl;
 	tandem_ns::group::protein_sequence protObj=groupObj.protein();
-	
+
 	BOOST_FOREACH(const tandem_ns::group::protein_type &p, groupObj.protein())
 	{
 	  tandem_ns::protein::peptide_type peptideObj=p.peptide();
-	  std::cerr << "Prot: " << p.id() << std::endl;
-	  std::cerr << "Pep: " << peptideObj << std::endl;
+	  tandem_ns::protein::note_optional n=p.note();
+	  std::cerr << "Note: " << n << std::endl;
+	  
+	  //std::cerr << "Prot: " << p.id() << std::endl;
+	  //std::cerr << "Pep: " << peptideObj << std::endl;
 	}
-;
       }
     }
     
     ifs.close();
-
-    /*for (bioml::group_const_iterator i (bioml_p->group ().begin ());
-         i != bioml_p->group ().end ();
-         ++i)
-    {*/
-	//i är pekare på group och *i är värdet
-
-	//cout << "Id: " << i->id() << endl;
-
-    	/*for (group_t::name_const_iterator j (i->name ().begin ());
-             j != i->name ().end ();
-            ++j)
-    	{
-      		cout << i->greeting () << ", " << *j << "!" << endl;
-    	}*/
-    //}
+    
+    // XMLString Transcode get text content
   }
   catch (const xml_schema::exception& e)
   {
@@ -421,6 +404,5 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
     exit(1);
   }
   
-  std::cerr << "TMP Done reader " << std::endl;
 }
 
