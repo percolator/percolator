@@ -34,6 +34,22 @@
 using namespace std;
 using namespace xercesc;
 
+/** some constants to be used to compare xml strings **/
+
+static const XMLCh databasesStr[] = {
+      chLatin_d, chLatin_a, chLatin_t, chLatin_a, chLatin_b, chLatin_a,
+      chLatin_s, chLatin_e, chLatin_s, chNull };
+      
+static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
+      chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
+      chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+	  
+static const XMLCh proteinsStr[] = { chLatin_p, chLatin_r,
+      chLatin_o, chLatin_t, chLatin_e, chLatin_i, chLatin_n,
+      chLatin_s, chNull };
+      
+/** some constants to be used to compare xml strings **/
+      
 const unsigned int Caller::xval_fold = 3;
 
 Caller::Caller() :
@@ -43,7 +59,7 @@ Caller::Caller() :
         tabInput(false), readStdIn(false),
         docFeatures(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
-        schemaValidation(true),
+        schemaValidation(true), hasProteins(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
@@ -297,13 +313,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("Q",
       "protein-fdr",
       "Estimate Protein False Discovery Rate using Mayu's method, the FDR estimated will be used in the estimation of the empirical q-values. \
-       (Only valid if option -A is active)",
+       (Only valid if option -A is active)(The pin file must contain a list of proteins with their respectives lenghts, check sqt2pin -F)",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("TD",
-      "database",
-      "Database with target and decoy proteins. (Only valid if option -A and -Q are active)",
-      "filename");
   cmd.defineOption("P",
       "pattern",
       "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if the label that idenfifies the decoys in the database \
@@ -361,9 +373,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used together to estimate Protein Probabilities." << std::endl;
       exit(0);
     }
-   
-    if (cmd.optionSet("P"))  decoyWC = cmd.options["P"];
-    if (cmd.optionSet("TD")) targetDB = cmd.options["TD"];
+  
     if (cmd.optionSet("d"))  depth = (cmd.getInt("d", 0, 3));
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
@@ -372,8 +382,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
-					       grouProteins,noseparate,noprune,gridSearch,depth,
-					       targetDB,decoyDB,decoyWC,mayusfdr,
+					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
 					       outputDecoys,tabDelimitedOut,proteinFN);
   }
   
@@ -540,21 +549,32 @@ void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
     string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
     xml_schema::dom::auto_ptr< xercesc::DOMDocument>
     doc (p.start (ifs, fname.c_str(), Caller::schemaValidation, schemaDefinition,schema_major, schema_minor));
-    doc = p.next (); // skip enzyme element
+    
+    doc = p.next(); //skip first tag 
+    
+    doc = p.next();// skip enzyme element
+    
+    //checking if database is present to jump it
+    if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName()))
+    {
+      percolatorInNs::databases databases(*doc->getDocumentElement());
+      doc = p.next();
+    }
+    
     doc = p.next (); // skip process_info element
     doc = p.next (); // skip featureDescriptions element
-    static const XMLCh calibrationStr[] = {
-        chLatin_c, chLatin_a, chLatin_l, chLatin_i, chLatin_b,chLatin_r,
-        chLatin_a, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
+    
+    //checking if calibration is present to jump it
     if (XMLString::equals(calibrationStr, doc->getDocumentElement()->getTagName()))
     {
       percolatorInNs::calibration calibration(*doc->getDocumentElement ());
       doc = p.next ();
     };
-
+    
     nrTargets=0;
     nrDecoys=0;
-    for (doc = p.next (); doc.get () != 0; doc = p.next ()) {
+    for (doc = p.next (); doc.get () != 0 
+      && !XMLString::equals(proteinsStr, doc->getDocumentElement()->getTagName()); doc = p.next ()) {
       percolatorInNs::fragSpectrumScan
       fragSpectrumScan(*doc->getDocumentElement ());
       BOOST_FOREACH(const ::percolatorInNs::peptideSpectrumMatch & psm,
@@ -645,8 +665,11 @@ void Caller::readFiles() {
   {
     unsigned int nrTargets;
     unsigned int nrDecoys;
+    
     xercesc::XMLPlatformUtils::Initialize();
+    
     countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
+    
     if(nrTargets == 0)
     {
       std::cerr << "\nERROR : the number of target PSMs found is zero.\n" << std::endl;
@@ -657,6 +680,7 @@ void Caller::readFiles() {
       std::cerr << "\nERROR : the number of decoy PSMs found is zero.\n" << std::endl;
       exit(-1);
     }
+    
     int j = 0;
     DataSet * targetSet = new DataSet();
     assert(targetSet);
@@ -664,8 +688,10 @@ void Caller::readFiles() {
     DataSet * decoySet = new DataSet();
     assert(decoySet);
     decoySet->setLabel(-1);
+    
     try {
-      namespace xml = xsd::cxx::xml;
+      
+      //namespace xml = xsd::cxx::xml;
       std::ifstream xmlInStream;
       xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
       xmlInStream.open(xmlInputFN.c_str());
@@ -694,46 +720,72 @@ void Caller::readFiles() {
       XMLString::release(&value);
       doc = p.next();
 
+      //checking if database is present to jump it
+      if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName()))
+      {
+	
+	//NOTE I dont really need this info, do I? good to have it though
+	/*
+	std::auto_ptr< ::percolatorInNs::databases > 
+	databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
+	
+	protEstimator->setMinLength(databases->parameters().min_peptide_length());
+	protEstimator->setMaxLength(databases->parameters().max_peptide_length());
+	protEstimator->setMinMass(databases->parameters().min_peptide_mass());
+	protEstimator->setMaxMass(databases->parameters().max_peptide_mass());
+	protEstimator->setAvgMass(databases->parameters().avg_mass());
+	protEstimator->setMissCleavages(databases->parameters().miss_cleavages());
+	*/
+	doc = p.next();
+	Caller::hasProteins = true;
+      }
+      
       // read process_info element
       percolatorInNs::process_info
       processInfo(*doc->getDocumentElement());
       otherCall = processInfo.command_line();
       doc = p.next();
 
-      static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
-          chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
-          chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-      if (XMLString::equals(calibrationStr,
-          doc->getDocumentElement()->getTagName())) {
-        percolatorInNs::calibration calibration(
-            *doc->getDocumentElement());
+
+      if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) 
+      {
+        percolatorInNs::calibration calibration(*doc->getDocumentElement());
         doc = p.next();
       };
 
-      percolatorInNs::featureDescriptions featureDescriptions(
-          *doc->getDocumentElement());
+      percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
 
       FeatureNames& feNames = DataSet::getFeatureNames();
       feNames.setFromXml(featureDescriptions, docFeatures);
 
-      targetSet->initFeatureTables(feNames.getNumFeatures(), nrTargets,
-          docFeatures);
-      decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys,
-          docFeatures);
+      targetSet->initFeatureTables(feNames.getNumFeatures(), nrTargets, docFeatures);
+      decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys, docFeatures);
 
       // import info from xml: read Fragment Spectrum Scans
-      for (doc = p.next(); doc.get() != 0; doc = p.next()) {
-        percolatorInNs::fragSpectrumScan fragSpectrumScan(
-            *doc->getDocumentElement());
+      for (doc = p.next(); doc.get()!= 0 && 
+	!XMLString::equals(proteinsStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
+      {
+        percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
         targetSet->readFragSpectrumScans(fragSpectrumScan);
         decoySet->readFragSpectrumScans(fragSpectrumScan);
       }
+      
+      // import info from xml: read database proteins
+      // only read them if they are present and the optio of using mayusfdr is activated
+      for (doc = p.next(); doc.get()!= 0 
+	&& Caller::hasProteins && Caller::calculateProteinLevelProb && protEstimator->getMayuFdr(); doc = p.next()) 
+      {
+        std::auto_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
+	 protEstimator->addProteinDb(*protein);
+      }
+      
       pCheck = SanityCheck::initialize(otherCall);
       assert(pCheck);
       normal.push_back_dataset(targetSet);
       shuffled.push_back_dataset(decoySet);
       normal.setSet();
       shuffled.setSet();
+      ifs.close();
     }
 
     catch (const xml_schema::exception& e) {

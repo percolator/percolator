@@ -67,9 +67,8 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
     
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
-			  bool __dogridSearch, unsigned __depth,std::string __targetDB, std::string __decoyDB, 
-			  std::string __decoyPattern, bool __mayufdr,bool __outputDecoys, bool __tabDelimitedOut, 
-			  std::string __proteinFN) 
+			  bool __dogridSearch, unsigned __depth,std::string __decoyPattern, bool __mayufdr,bool __outputDecoys, 
+			  bool __tabDelimitedOut, std::string __proteinFN) 
 {
   peptideScores = 0;
   proteinGraph = 0;
@@ -87,15 +86,13 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   noprune = __noprune;
   dogridSearch = __dogridSearch;
   depth = __depth;
-  targetDB = __targetDB;
-  decoyDB = __decoyDB;
   decoyPattern = __decoyPattern;
   mayufdr = __mayufdr;
   fdr = 1.0;
   outputDecoys = __outputDecoys;
   tabDelimitedOut = __tabDelimitedOut;
   proteinFN = __proteinFN;
-  rocN = default_rocN;
+  rocN = default_rocN; 
 }
 
 ProteinProbEstimator::~ProteinProbEstimator()
@@ -180,40 +177,21 @@ void ProteinProbEstimator::run(){
   { 
     /** MAYUS method for estimation of Protein FDR **/
     
-    fastReader = new ProteinFDRestimator();
-    
-    /* Default configuration (changeable by functions)
-     * min peptide lenght = 4
-     * min mass = 400
-     * max mass = 6000
-     * decoy prefix = random
-     * num missed cleavages = 0
-     * number of bins = 10
-     * target decoy ratio = 1.0
-     * binning mode = equal deepth
-     * correct identical sequences = true
-     * max peptide length = 40
-     */
-    //NOTE these values should be the same as the parameters used for the database search engines
-    
-    if(decoyPattern != "") fastReader->setDecoyPrefix(decoyPattern);
-    
     std::cerr << "\nEstimating Protein FDR using Mayu's method described in :\
     http://prottools.ethz.ch/muellelu/web/LukasReiter/Mayu/\n" << std::endl;
     
-    if(decoyDB == "" && targetDB != "")
-      fastReader->parseDataBase(targetDB.c_str());
-    else if(targetDB != "" && decoyDB != "")
-      fastReader->parseDataBase(targetDB.c_str(),decoyDB.c_str());
-    else
-    {  
-      std::cerr << "\nError database file could not be loaded\n" << std::endl;
-      exit(-1);
-    }
+    fastReader = new ProteinFDRestimator();
+    fastReader->setDecoyPrefix(decoyPattern);
+    fastReader->setTargetDecoyRatio(target_decoy_ratio);
+    fastReader->setEqualDeepthBinning(binning_equal_deepth);
+    fastReader->setNumberBins(number_bins);
+
+    fastReader->correctIdenticalSequences(targetProteins,decoyProteins);
     //These guys are the number of target and decoys proteins but from the subset of PSM with FDR < threshold
     std::set<std::string> numberTP;
     std::set<std::string> numberFP;
     getTPandPFfromPeptides(psmThresholdMayu,numberTP,numberFP);
+    
     double fptol = fastReader->estimateFDR(numberTP,numberFP);
     
     if(fptol == -1)
@@ -327,6 +305,7 @@ double ProteinProbEstimator::estimatePriors()
   /* Compute a priori probabilities of peptide presence */
   /* it is the mean of the probabilities, maybe one prior for each charge */
   double prior_peptide = 0.0;
+  double prior_peptide2 = 0.0;
   unsigned total_peptides = 0;
   double prior = 0.0;
   for (vector<ScoreHolder>::iterator psm = peptideScores->begin(); psm!= peptideScores->end(); ++psm) 
@@ -345,9 +324,11 @@ double ProteinProbEstimator::estimatePriors()
       }
       /* update computed prior */
       prior_peptide += prior;
+      prior_peptide2 += psm->pPSM->pep;
       ++total_peptides;
     }
   }
+  //prior = prior_peptide2 / (double)total_peptides;
   prior = prior_peptide / (double)total_peptides;
   if(prior > 0.99) prior = 0.99;
   if(prior < 0.01) prior = 0.01;
@@ -430,10 +411,21 @@ void ProteinProbEstimator::estimatePValues()
 void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
 						  std::set<std::string> &numberFP)
 {
-  //FP = all peptides with q <= threshold and decoy
-  //TP = at least one peptide with q <= threshold and target
-  
-  //NOTE I am extracting the proteins from peptide level probabilities not from PSM level probabilities as Mayu does
+  /* The original paper of Mayu describes a protein as :
+   * FP = if only if all its peptides with q <= threshold are decoy
+   * TP = at least one of its peptides with q <= threshold is target
+   * However, the way mayu estimates it on the program is like this :
+   * FP = any protein that contains a decoy psm with q <= threshold
+   * TP = any protein that contains a target psm with q <= threshold
+   * They do not consider protein containing both decoy and target psms
+   * Also, mayu estimates q as the empirical (target-decoy) q value.
+   * Percolator estimates q as the empirical (target-decoy) q value and adjusted by pi0
+   * Mayu extract the list of TP and FP proteins from PSM level whereas percolator
+   * extract the list of TP and FP proteins from peptide level, this avoids redundancy and
+   * gives a better calibration since peptide level q values are re-adjusted in percolator.
+   * This creates sometimes a difference in the number of TP and FP proteins which causes a difference
+   * in the estimated protein FDR
+   */
   for (std::map<std::string,Protein*>::const_iterator it = proteins.begin();
        it != proteins.end(); it++)
   {
@@ -447,8 +439,11 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std
 	Protein::Peptide *p = *itP;
 	if(p->q <= threshold && p->isdecoy)
 	  ++num_decoy_confident;
-	else if(p->q <= threshold && !p->isdecoy)
+	if(p->q <= threshold && !p->isdecoy)
+	//else if(p->q <= threshold && !p->isdecoy)
 	  ++num_target_confident;
+	
+	
       }
       
       //if(num_decoy_confident > 0 && num_target_confident == 0)
@@ -456,7 +451,8 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std
       {
 	numberFP.insert(protname);
       }
-      else if(num_target_confident > 0)
+      if(num_target_confident > 0)
+      //else if(num_target_confident > 0)
       {
 	numberTP.insert(protname);
       }
@@ -474,7 +470,8 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
   size_t n = pvalues.size();
   // Calculate pi0 for different values for lambda
   // N.B. numLambda and maxLambda are global variables.
-  for (unsigned int ix = 0; ix <= numLambda; ++ix) {
+  for (unsigned int ix = 0; ix <= numLambda; ++ix) 
+  {
     double lambda = ((ix + 1) / (double)numLambda) * maxLambda;
     // Find the index of the first element in p that is < lambda.
     // N.B. Assumes p is sorted in ascending order.
@@ -482,12 +479,14 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
     // Calculates the difference in index between start and end
     double Wl = (double)distance(start, pvalues.end());
     double pi0 = Wl / n / (1 - lambda);
-    if (pi0 > 0.0) {
+    if (pi0 > 0.0) 
+    {
       lambdas.push_back(lambda);
       pi0s.push_back(pi0);
     }
   }
-  if(pi0s.size()==0){
+  if(pi0s.size()==0)
+  {
     cerr << "Error in the input data: too good separation between target "
         << "and decoy Proteins.\nImpossible to estimate pi0. Taking the highest estimated q value as pi0.\n";
     return -1;
@@ -496,11 +495,13 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
   // Initialize the vector mse with zeroes.
   fill_n(back_inserter(mse), pi0s.size(), 0.0);
   // Examine which lambda level that is most stable under bootstrap
-  for (unsigned int boot = 0; boot < numBoot; ++boot) {
+  for (unsigned int boot = 0; boot < numBoot; ++boot) 
+  {
     // Create an array of bootstrapped p-values, and sort in ascending order.
     bootstrap<double> (pvalues, pBoot);
     n = pBoot.size();
-    for (unsigned int ix = 0; ix < lambdas.size(); ++ix) {
+    for (unsigned int ix = 0; ix < lambdas.size(); ++ix) 
+    {
       start = lower_bound(pBoot.begin(), pBoot.end(), lambdas[ix]);
       double Wl = (double)distance(start, pBoot.end());
       double pi0Boot = Wl / n / (1 - lambdas[ix]);
@@ -509,8 +510,7 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
     }
   }
   // Which index did the iterator get?
-  unsigned int minIx = distance(mse.begin(), min_element(mse.begin(),
-                                                         mse.end()));
+  unsigned int minIx = distance(mse.begin(), min_element(mse.begin(),mse.end()));
   double pi0 = max(min(pi0s[minIx], 1.0), 0.0);
   return pi0;
 }
@@ -730,6 +730,17 @@ void ProteinProbEstimator::setTargetandDecoysNames()
   }  
   numberDecoyProteins = falsePosSet.size();
   numberTargetProteins = truePosSet.size();
+}
+
+
+void ProteinProbEstimator::addProteinDb(const percolatorInNs::protein& protein)
+{
+  if(protein.isDecoy())
+    decoyProteins.insert(std::make_pair<std::string,std::pair<std::string,double> >
+    (protein.name(),std::make_pair<std::string,double>(protein.sequence(),protein.length())));
+  else
+    targetProteins.insert(std::make_pair<std::string,std::pair<std::string,double> >
+    (protein.name(),std::make_pair<std::string,double>(protein.sequence(),protein.length())));
 }
 
 void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __beta)
@@ -1183,11 +1194,6 @@ bool ProteinProbEstimator::getOutputEmpirQval()
   return outputEmpirQVal;
 }
 
-void ProteinProbEstimator::setDecoyDb(string __decoyDB)
-{
-  decoyDB = __decoyDB;
-}
-
 void ProteinProbEstimator::setDepth(unsigned int __depth)
 {
   depth = __depth;
@@ -1202,12 +1208,6 @@ void ProteinProbEstimator::setMayusFDR(bool __mayufdr)
 {
   mayufdr = __mayufdr;
 }
-
-void ProteinProbEstimator::setTargetDb(string __targetDB)
-{
-  targetDB = __targetDB;
-}
-
 
 void ProteinProbEstimator::setFDR(double __fdr)
 {
@@ -1260,7 +1260,6 @@ bool ProteinProbEstimator::getSeparateProteins()
   return noseparate;
 }
 
-
 double ProteinProbEstimator::getAlpha()
 {
  return alpha;
@@ -1276,10 +1275,6 @@ double ProteinProbEstimator::getGamma()
   return gamma;
 }
 
-string ProteinProbEstimator::getDecoyDB()
-{
-  return decoyDB;
-}
 
 string ProteinProbEstimator::getDecoyPatter()
 {
@@ -1305,11 +1300,6 @@ double ProteinProbEstimator::getFDR()
 bool ProteinProbEstimator::getGridSearch()
 {
   return dogridSearch;
-}
-
-string ProteinProbEstimator::getTargetDB()
-{
-  return targetDB;
 }
 
 bool ProteinProbEstimator::getOutputDecoys()

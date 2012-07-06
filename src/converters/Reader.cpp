@@ -5,6 +5,99 @@ const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
 const std::string Reader::modifiedAA("#@*");
 
+
+/* Simple API for FASTA file reading
+ * for Bio5495/BME537 Computational Molecular Biology
+ * SRE, Sun Sep  8 05:35:11 2002 [AA2721, transatlantic]
+ * CVS $Id$
+ */
+
+FASTAFILE *
+OpenFASTA(const char *seqfile)
+{
+  FASTAFILE *ffp;
+
+  ffp = (FASTAFILE *)malloc(sizeof(FASTAFILE));
+  ffp->fp = fopen(seqfile, "r");              /* Assume seqfile exists & readable!   */
+  if (ffp->fp == NULL) 
+  { 
+    free(ffp); 
+    return NULL; 
+  } 
+  if ((fgets(ffp->buffer, FASTA_MAXLINE, ffp->fp)) == NULL)
+    { free(ffp); return NULL; }
+  return ffp;
+}
+
+int
+ReadFASTA(FASTAFILE *ffp, char **ret_seq, char **ret_name, /*char **ret_gene,*/ int *ret_L)
+{
+  char *s;
+  char *name;
+  char *seq;
+  
+  //TODO it would be nice to get the gene name but not all the databases contain it and it is located in 
+  //different positions
+  //char *gene;
+  
+  int   n;
+  int   nalloc;
+  
+  /* Peek at the lookahead buffer; see if it appears to be a valid FASTA descline.
+   */
+  if (ffp->buffer[0] != '>') return 0;    
+
+  /* Parse out the name: the first non-whitespace token after the >
+   */
+  s  = strtok(ffp->buffer+1, " \t\n");
+  name = (char *)malloc(sizeof(char) * (strlen(s)+1));
+  strcpy(name, s);
+
+  /* Everything else 'til the next descline is the sequence.
+   * Note the idiom for dynamic reallocation of seq as we
+   * read more characters, so we don't have to assume a maximum
+   * sequence length.
+   */
+  seq = (char *)malloc(sizeof(char) * 128);     /* allocate seq in blocks of 128 residues */
+  nalloc = 128;
+  n = 0;
+  while (fgets(ffp->buffer, FASTA_MAXLINE, ffp->fp))
+    {
+      if (ffp->buffer[0] == '>') break;	/* a-ha, we've reached the next descline */
+
+      for (s = ffp->buffer; *s != '\0'; s++)
+	{
+	  if (! isalpha(*s)) continue;  /* accept any alphabetic character */
+
+	  seq[n] = *s;                  /* store the character, bump length n */
+	  n++;
+	  if (nalloc == n)	        /* are we out of room in seq? if so, expand */
+	    {			        /* (remember, need space for the final '\0')*/
+	      nalloc += 128;
+	      seq = (char *)realloc(seq, sizeof(char) * nalloc);
+	    }
+	}
+    }
+  seq[n] = '\0';
+
+  *ret_name = name;
+  *ret_seq  = seq;
+  *ret_L    = n;
+  /**ret_gene = gene;*/
+  
+  return 1;
+}      
+
+void
+CloseFASTA(FASTAFILE *ffp)
+{
+  fclose(ffp->fp);
+  free(ffp);
+}
+
+/******************************************************************************************************************/
+
+
 Reader::Reader(ParseOptions __po)
 :po(__po)
 {
@@ -43,6 +136,12 @@ void Reader::init()
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
   
+  if(po.readProteins)
+  {
+    //NOTE I should store proteins in Btree as well
+    readProteins(po.targetDb,po.decoyDb);
+  }
+  
   if (!po.iscombined) 
   {
     std::cerr << "Reading input from files: " <<  std::endl;
@@ -69,6 +168,9 @@ void Reader::init()
 
 void Reader::print(ofstream &xmlOutputStream)
 {
+  
+  xercesc::XMLPlatformUtils::Initialize ();
+  
   string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
   string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
   string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
@@ -92,7 +194,20 @@ void Reader::print(ofstream &xmlOutputStream)
     cout << enzymeStr;
   else 
     xmlOutputStream << enzymeStr;
+  
+  if(po.readProteins)
+  {    
+    serializer ser;
+    if (po.xmlOutputFN == "") ser.start (std::cout);
+    else ser.start (xmlOutputStream);
 
+    std::auto_ptr< ::percolatorInNs::parameters > parameters
+    ( new ::percolatorInNs::parameters(po.missed_cleavages,po.peptidelength,po.maxmass,po.minmass,po.maxpeplength,po.iscombined));
+    ::percolatorInNs::databases databases(po.targetDb,po.decoyDb,parameters);
+    
+    ser.next ( PERCOLATOR_IN_NAMESPACE, "databases",databases);
+  }
+  
   string commandLine = "\n<process_info>\n" +
       string("  <command_line>") + po.call.substr(0,po.call.length()-1)
       + "</command_line>\n" + "</process_info>\n";
@@ -101,8 +216,6 @@ void Reader::print(ofstream &xmlOutputStream)
     cout << commandLine;
   else 
     xmlOutputStream << commandLine;
-
-  xercesc::XMLPlatformUtils::Initialize ();
 
   cerr << "\nWriting output:\n";
   // print to cout (or populate xml file)
@@ -128,6 +241,31 @@ void Reader::print(ofstream &xmlOutputStream)
     databases[i]->terminte();
   }
 
+  if(po.readProteins && !proteins.empty())
+  { 
+    
+    if (po.xmlOutputFN == "") 
+      cout << "\n<proteins>\n";
+    else 
+      xmlOutputStream << "\n<proteins>\n";
+    
+    serializer ser;
+    std::vector<Protein*>::const_iterator it;
+    if (po.xmlOutputFN == "") ser.start (std::cout);
+    else ser.start (xmlOutputStream);
+    for (it = proteins.begin(); it != proteins.end(); it++) 
+    { //NOTE uss this is horrible, I should serialize the object protein as the PSMs
+      //FIXME thi serialization is creating a gap \o between elements
+      std::auto_ptr< ::percolatorInNs::protein> p (new ::percolatorInNs::protein((*it)->name,(*it)->length,(*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
+      ser.next(PERCOLATOR_IN_NAMESPACE, "protein", *p);
+    }
+    
+    if (po.xmlOutputFN == "") 
+      cout << "\n</proteins>\n";
+    else 
+      xmlOutputStream << "\n</proteins>\n";
+  }
+  
   // print closing tag
   if (po.xmlOutputFN == "") 
     std::cout << "</experiment>" << std::endl;
@@ -206,7 +344,7 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
       if (VERB>1){
 	std::cerr << "Reading " << fn << std::endl;
       }
-    
+      
       getMaxMinCharge(fn);
       if ( f_seq.featureDescription().size() == 0 ) {
 	addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME,po.calcAAFrequencies ? aaAlphabet : "",po.targetFN);
@@ -280,7 +418,6 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
 double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
 {
   double mass  =  0.0;
-  charge = 2;
   if (pepsequence.length () > po.peptidelength) {
     
     for(unsigned i=0; i<pepsequence.length();i++)
@@ -290,7 +427,7 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
       }
     }
     
-    mass = (mass + massMap_['o'] + (charge * massMap_['h'])) + 1; 
+    mass = (mass + massMap_['o'] + (charge * massMap_['h']) + 1.00727649);
   }
   return mass; 
 }
@@ -394,4 +531,140 @@ double Reader::isPngasef(const string& peptide, bool isDecoy ) {
     }
   }
   return 0.0;
+}
+
+
+void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, unsigned &proteins_counter)
+{
+  FASTAFILE *ffp;
+  char *seq;
+  char *name;
+  int   L;
+  //NOTE I do not parse the gene names because there is not standard definiton for it
+  try
+  {
+    ffp = OpenFASTA(seqfile);
+    
+    if(ffp != NULL)
+    {
+      std::cerr << "Reading fasta file : " << seqfile << std::endl;
+      
+      while (ReadFASTA(ffp, &seq, &name, &L))
+	{
+	  std::string protein_name(name);
+	  std::string protein_seq(seq);
+	  if(isCombined) isDecoy = protein_seq.find(po.reversedFeaturePattern) != std::string::npos ? true : false;
+	  std::set<std::string> peptides;
+	  double totalMass = 0.0;
+	  //NOTE here I should check the enzyme and do the according digestion
+	  //unsigned num_tryptic = calculateProtLengthElastase(protein_seq,peptides,totalMass);
+	  unsigned num_tryptic = calculateProtLengthTrypsin(protein_seq,peptides,totalMass);
+	  //unsigned num_tryptic = calculateProtLengthChymotrypsin(protein_seq,peptides,totalMass);
+	  //unsigned num_tryptic = calculateProtLengthThermolysin(protein_seq,peptides,totalMass);
+	  //unsigned num_tryptic = calculateProtLengthProteinasek(protein_seq,peptides,totalMass);
+	  Protein *tmp = new Protein();
+	  tmp->id = ++proteins_counter;
+	  tmp->name = protein_name;
+	  tmp->isDecoy = isDecoy;
+	  tmp->sequence = protein_seq;
+	  tmp->peptides = peptides;
+	  tmp->length = num_tryptic;
+	  tmp->totalMass = totalMass;
+	  proteins.push_back(tmp);
+	  free(seq);
+	  free(name);
+	}
+	
+      CloseFASTA(ffp);
+    }
+    else
+    {
+      std::cerr <<  "Error reading combined database : " << seqfile <<  std::endl;
+      exit(-1);
+    }
+  
+    
+  }catch(const std::exception &e)
+  {
+    e.what();
+  }
+  
+  std::string type = isDecoy ?  "target" : "decoy";
+  if(po.iscombined) type = "target and decoy";
+  
+  if(proteins_counter == 0)
+  {
+    std::cerr << "Error parsing the database, the database given does not contain " << type << " proteins\n" << std::endl;
+    exit(-1);
+  }
+  else if(VERB > 2)
+  {
+    std::cerr << "\nRead " << proteins_counter << type << " proteins\n" << std::endl;
+  }
+  
+  return;
+}
+
+unsigned int Reader::calculateProtLengthTrypsin(string protsequence, 
+						set< string >& peptides, double& totalMass)
+{
+  size_t length = protsequence.length();
+  
+  if (length>0 && protsequence[length-1]=='*') {
+    --length;
+  }
+  
+  for(size_t start=0; start<length; start++)
+  {
+    if( start == 0 || ( protsequence[start+1] != 'P' && ( protsequence[start] == 'K' || protsequence[start] == 'R' ) ) ) 
+    {
+      int numMisCleavages = 0;  
+      for(size_t end=start+1;( end<length && numMisCleavages <= po.missed_cleavages );end++)
+      {
+	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
+        if( (protsequence[end] == 'K' || protsequence[end] == 'R') && protsequence[end+1] != 'P' )
+	{
+	   int begin = start;
+	   int finish = end - start + 1;
+	   if(start != 0)
+	   {  
+	     begin++;
+	     finish--;
+	   }
+	   std::string peptide = protsequence.substr(begin,finish);
+	   double  mass = calculatePepMAss(peptide);
+	   
+	   if((mass > po.minmass) && (mass< po.maxmass) && (peptide.size() >= po.peptidelength))
+	   {
+	     peptides.insert(peptide);
+	     totalMass+=mass;
+	   }
+	    numMisCleavages++;
+        }
+      } 
+    }
+  }
+  
+  unsigned size = peptides.size();
+  return size;
+}
+
+void Reader::readProteins(string filenameTarget, string fileNamedecoy)
+{
+    unsigned proteins_counter = 0; 
+    //NOTE improve the error testing cases
+    if(fileNamedecoy == "" && filenameTarget != "")
+    {
+      parseDataBase(filenameTarget.c_str(),false,true,proteins_counter);
+    }
+    else if(filenameTarget != "" && fileNamedecoy != "")
+    {
+      parseDataBase(filenameTarget.c_str(),false,false,proteins_counter);
+      parseDataBase(fileNamedecoy.c_str(),true,false,proteins_counter);
+    }
+    else
+    {  
+      std::cerr << "\nError database file/s could not be loaded\n" << std::endl;
+      exit(-1);
+    }
 }

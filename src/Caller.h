@@ -138,6 +138,7 @@ class Caller {
     bool calculateProteinLevelProb;
     bool schemaValidation;
     bool showExpMass;
+    bool hasProteins;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;

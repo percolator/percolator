@@ -22,6 +22,32 @@ targetNamespace="http://per-colator.com/percolator_in/12">
 	      the sample.</xs:documentation>
           </xs:annotation>
         </xs:element>
+	<xs:element minOccurs="0" maxOccurs="1" name="databases">
+          <xs:annotation>
+            <xs:documentation>The databases used to search the spectra files against.</xs:documentation>
+          </xs:annotation>
+	  <xs:complexType>
+	    <xs:sequence>
+	      <xs:element minOccurs="1" maxOccurs="1" name="target_database" type="xs:string"/>
+	      <xs:element minOccurs="1" maxOccurs="1" name="decoy_database" type="xs:string"/>
+	      <xs:element minOccurs="1" maxOccurs="1" name="parameters">
+	      <xs:annotation>
+		<xs:documentation>Some parameters used to search the spectra.</xs:documentation>
+	      </xs:annotation>
+		<xs:complexType>
+		  <xs:sequence>
+		    <xs:element minOccurs="1" maxOccurs="1" name="miss_cleavages" type="xs:int"/>
+		    <xs:element minOccurs="1" maxOccurs="1" name="min_peptide_length" type="xs:int"/>
+		    <xs:element minOccurs="1" maxOccurs="1" name="max_peptide_mass" type="xs:int"/>
+		    <xs:element minOccurs="1" maxOccurs="1" name="min_peptide_mass" type="xs:int"/>
+		    <xs:element minOccurs="1" maxOccurs="1" name="max_peptide_length" type="xs:int"/>
+		    <xs:element minOccurs="1" maxOccurs="1" name="avg_mass" type="xs:boolean"/>
+		  </xs:sequence>
+		</xs:complexType>
+	      </xs:element>
+	    </xs:sequence>
+	  </xs:complexType>
+        </xs:element>
         <xs:element minOccurs="0" name="calibration">
           <xs:annotation>
             <xs:documentation>These are the instrument specific
@@ -83,10 +109,12 @@ targetNamespace="http://per-colator.com/percolator_in/12">
           </xs:complexType>
         </xs:element>
         <xs:element maxOccurs="unbounded" name="fragSpectrumScan">
+	  
           <xs:annotation>
             <xs:documentation>One fragmentation spectrum</xs:documentation>
           </xs:annotation>
           <xs:complexType>
+	    
             <xs:sequence>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="peptideSpectrumMatch">
                 <xs:annotation>
@@ -122,15 +150,13 @@ targetNamespace="http://per-colator.com/percolator_in/12">
                         </xs:attribute>
                         <xs:attribute name="flankN" use="required" type="aa_term_t">
                           <xs:annotation>
-                            <xs:documentation> The amino acid of the most
-			N-terminal flanking residue of the peptide.
+                            <xs:documentation> The amino acid of the most N-terminal flanking residue of the peptide.
                         </xs:documentation>
                           </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="flankC" use="required" type="aa_term_t">
                           <xs:annotation>
-                            <xs:documentation> The amino acid of the most
-			C-terminal flanking residue of the peptide.
+                            <xs:documentation> The amino acid of the most C-terminal flanking residue of the peptide.
                         </xs:documentation>
                           </xs:annotation>
                         </xs:attribute>
@@ -186,18 +212,34 @@ targetNamespace="http://per-colator.com/percolator_in/12">
                 <xs:documentation>The ion current of the precursor peptide.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
-            <!--
-            <xs:attribute name="observedTime" type="xs:double">
-              <xs:annotation>
-                <xs:documentation>The clock time when the scan observed, i.e. the observed retention time given in minutes.</xs:documentation>
-              </xs:annotation>
-            </xs:attribute>
-            -->
           </xs:complexType>
-        </xs:element>
+	</xs:element>
+	  <!--Start of definition of the tag proteins-->
+	  <xs:element name="proteins" minOccurs="0" maxOccurs="1">
+	    <xs:complexType>
+	      <xs:sequence>
+		<xs:element minOccurs="0" maxOccurs="unbounded" name="protein">
+		  <xs:annotation>
+		    <xs:documentation>A protein presented in the database.</xs:documentation>
+		  </xs:annotation>
+		  <xs:complexType>
+		    <xs:sequence>
+		      <xs:element name="name" type="xs:string" />
+		      <xs:element name="length" type="xs:double" />
+		      <xs:element name="totalMass" type="xs:double" />   
+		      <xs:element name="sequence" type="aa_seq_t" />
+		    </xs:sequence>
+		    <xs:attribute name="id" use="required" type="xs:double"/>
+		    <xs:attribute name="isDecoy" use="required" type="xs:boolean"/>
+		  </xs:complexType>
+		</xs:element>
+	      </xs:sequence>
+	    </xs:complexType>
+	   </xs:element>
+	<!--End of definition of the tag proteins--> 
       </xs:sequence>
     </xs:complexType>
-  </xs:element>
+</xs:element>
   <xs:simpleType name="probability_t">
     <xs:annotation>
       <xs:documentation>Probability (Double in [0-1] or NaN)</xs:documentation>

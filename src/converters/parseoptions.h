@@ -40,7 +40,14 @@ class ParseOptions
     decoyFN(""),
     call(""),
     spectrumFN(""),
-    xmlOutputFN("")
+    xmlOutputFN(""),
+    minmass(400),
+    maxmass(6000),
+    maxpeplength(40),
+    missed_cleavages(0),
+    targetDb(""),
+    decoyDb(""),
+    readProteins(false)
     {};
     bool calcQuadraticFeatures;
     bool calcAAFrequencies;
@@ -60,6 +67,13 @@ class ParseOptions
     std::string call;
     std::string xmlOutputFN;
     std::map<char, int> ptmScheme;
+    double minmass;
+    double maxmass;
+    unsigned maxpeplength;
+    unsigned missed_cleavages;
+    std::string targetDb;
+    std::string decoyDb;
+    bool readProteins;
 };
 
 #endif // PARSEOPTIONS_H

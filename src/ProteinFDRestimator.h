@@ -68,94 +68,70 @@
 #endif
 #endif
 
-#define FASTA_MAXLINE 512	/* Requires FASTA file lines to be <512 characters */
-
 template <typename T>
 void FreeAll( T & t ) {
     T tmp;
     t.swap( tmp );
 }
 
-/** external functions in C to read fasta files **/
-
-/* Simple API for FASTA file reading
- * for Bio5495/BME537 Computational Molecular Biology
- * SRE, Sun Sep  8 05:35:11 2002 [AA2721, transatlantic]
- * CVS $Id$
- */
-
-typedef struct fastafile_s {
-  FILE *fp;
-  char  buffer[FASTA_MAXLINE];
-} FASTAFILE;
-
-extern FASTAFILE *OpenFASTA(char *seqfile);
-extern int        ReadFASTA(FASTAFILE *fp, char **ret_seq, char **ret_name, int *ret_L);
-extern void       CloseFASTA(FASTAFILE *ffp);
-/** external functions in C to read fasta files **/
-
 class ProteinFDRestimator
 {
   
 public:
   
-  ProteinFDRestimator(unsigned minpeplength = 6, unsigned minmaxx = 400, unsigned maxmass = 6000, 
-		     std::string decoy_prefix = "random", double missed_cleavages = 0, unsigned nbins = 10, 
-		     double targetDecoyRatio = 1.0, bool binequalDeepth = true, unsigned maxSeqlength = 40, bool useAvgMass = false);
+  ProteinFDRestimator(std::string decoy_prefix = "random", unsigned nbins = 10, 
+		       double targetDecoyRatio = 1.0, bool binequalDeepth = true);
   virtual ~ProteinFDRestimator();
-  /** extract the protein and their sequences from the fasta files (target and decoy) given **/
-  void parseDataBase(const char *seqfile,const char* seqfileDecoy);
-  /** extract the protein and their sequences from the combined(target and decoy) fasta files  given **/
-  void parseDataBase(const char *seqfile);
-  /** return the variable that defines the number of bins **/
-  unsigned getNumberBins();
+
   /** return the number of proteins in bin i **/
   unsigned getBinProteins(unsigned bin);
+  
   /** return the number of proteins in bin i that are in the list of proteins given **/
   unsigned countProteins(unsigned bin,const std::set<std::string> &proteins);
+  
   /** estimate and return the global FDR for a given set of target and decoy proteins **/
   double estimateFDR(const std::set<std::string> &target, const std::set<std::string> &decoy);
-  /** define the decoy prefix used to identify the decoy proteins **/
+
+  /**This function populates the proteins, proteins with same sequence only the alphabetical ordered first keeps the sequence
+   * the rest of the sequences are set to null. This will keep only 1 protein when there is a degenerated peptide */
+  void correctIdenticalSequences(const std::map<std::string,std::pair<std::string,double> > &targetProteins,
+				   const std::map<std::string,std::pair<std::string,double> > &decoyProteins);
+  
+  /** SETTERS AND GETTERS **/
+  
+  void setNumberBins(unsigned nbins);
+  void setEqualDeepthBinning(bool equal_deepth);
   void setDecoyPrefix(std::string prefix);
-  /** define the target decoy ratio used to adjust for an inequal number of target and decyo proteins in the database **/
   void setTargetDecoyRatio(double ratio);
+  unsigned getNumberBins();
+  bool getEqualDeppthBinning();
+  double getTargetDecoyRatio();
+  std::string getDecoyPrefix();
   
 private:
+  
   /** estimates the FDR of bin i **/
   void estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy);
-  /** estimates the mass of a peptide sequence **/
-  double calculatePepMAss(std::string pepsequence, double charge = 2);
-  /**estimate the number of tryptic digested peptides of a protein sequence**/
-  unsigned calculateProtLength(std::string protsequence,std::string proteinname = "");
-  /**initialize the hash table of amino acid masses**/
-  void initMassMap(bool useAvgMass = false);
+
   /**bins proteins according to the lenght**/
   void binProteinsEqualDeepth();
   void binProteinsEqualWidth();
-  /**proteins with same sequence only the alphabetical ordered first keeps the sequence
-   * the rest of the sequences are set to null. This will keep only 1 protein when there is a degenerated peptide */
-  void correctIdenticalSequences(const std::map<std::string,std::string> &targetProteins,
-						   const std::map<std::string,std::string> &decoyProteins);
+
   /**group proteins according to genes in order to estimate their lenght, proteins of the same gene group which has a tryptic peptide that has
    already been counted wont count that already counted tryptic peptide to estimate its lenght **/
   void groupProteinsGene();
+  
   /** estimate the expected value of the hypergeometric distributions for N,TP and FP **/
   double estimatePi0HG(unsigned N,unsigned TP,unsigned FP);
   
   /** variables **/
   unsigned nbins;
-  unsigned minpeplength;
-  unsigned minmass;
-  unsigned maxmass;
-  unsigned missed_cleavages;
   double targetDecoyRatio;
   double fptol;
   bool binequalDeepth;
-  unsigned maxSeqlength;
   std::string decoy_prefix;
   std::map<unsigned,std::set<std::string> > binnedProteins;
   std::multimap<double,std::string> groupedProteins;
-  std::map<char, double> massMap_;
   std::vector<double> lenghts; 
   std::set<std::string> *target;
   std::set<std::string> *decoy;

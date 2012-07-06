@@ -53,6 +53,8 @@
   #include <errno.h>
 #endif
 
+#define FASTA_MAXLINE 512	/* Requires FASTA file lines to be <512 characters */
+
 #if defined __LEVELDB__
   #include "FragSpectrumScanDatabaseLeveldb.h"
   typedef FragSpectrumScanDatabaseLeveldb serialize_scheme;
@@ -65,6 +67,45 @@
 #endif
    
 using namespace std;
+
+/** external functions in C to read fasta files **/
+
+/* Simple API for FASTA file reading
+ * for Bio5495/BME537 Computational Molecular Biology
+ * SRE, Sun Sep  8 05:35:11 2002 [AA2721, transatlantic]
+ * CVS $Id$
+ */
+
+typedef struct fastafile_s {
+  FILE *fp;
+  char  buffer[FASTA_MAXLINE];
+} FASTAFILE;
+
+extern FASTAFILE *OpenFASTA(char *seqfile);
+extern int        ReadFASTA(FASTAFILE *fp, char **ret_seq, char **ret_name, int *ret_L);
+extern void       CloseFASTA(FASTAFILE *ffp);
+
+class Protein
+{
+  
+public:
+  
+  Protein() {
+   length = 0;
+   totalMass = 0.0;
+   isDecoy = false;
+   name = "";
+   id = 0;
+  }
+    
+  std::string name;
+  std::string sequence;
+  double totalMass;
+  unsigned id;
+  bool isDecoy;
+  unsigned length;
+  std::set<std::string> peptides;
+};
 
 class Reader
 {
@@ -94,7 +135,7 @@ public:
 
   void computeAAFrequencies(const string& pep,percolatorInNs::features::feature_sequence & f_seq);
   
-  double calculatePepMAss(const std::string &pepsequence,double charge);
+  double calculatePepMAss(const std::string &pepsequence,double charge = 2);
 
   void initMassMap(bool useAvgMass);
   
@@ -107,6 +148,13 @@ public:
   unsigned int cntPTMs(const string& pep);
   
   double isPngasef(const string& peptide, bool isDecoy );
+  
+  void readProteins(std::string filenameTarget,std::string fileNamedecoy);
+  
+  void parseDataBase(const char* seqfile, bool isDecoy,bool isCombined, unsigned &proteins_counter);
+  
+  unsigned calculateProtLengthTrypsin(std::string protsequence,
+				      std::set<std::string> &peptides,double &totalMass);
   
 private:
   
@@ -127,6 +175,7 @@ protected:
    ParseOptions po;
    std::map<char, double> massMap_;
    std::map<int, vector<double> > scan2rt;
+   std::vector<Protein*> proteins;
 };
 
 #endif

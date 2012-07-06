@@ -29,6 +29,7 @@
 #include <boost/assign/list_of.hpp>
 #include <math.h>
 #include <cmath>
+#include "percolator_in.hxx"
 #ifdef __APPLE__
 #ifdef __INTEL_COMPILER
   #define isnan(x) _isnan(x)
@@ -250,16 +251,34 @@ class ProteinProbEstimator {
     
     /** PROTEIN FDR ESTIMATOR PARAMETERS **/
     
-
+    /* Default configuration (changeable by functions)
+     * min peptide lenght = 6
+     * min mass = 400
+     * max mass = 6000
+     * decoy prefix = random
+     * num missed cleavages = 0
+     * number of bins = 10
+     * target decoy ratio = 1.0
+     * binning mode = equal deepth
+     * correct identical sequences = true
+     * max peptide length = 40
+     * use average mass = false
+     */
+    const static bool correct_identical_sequences = true;
+    const static bool binning_equal_deepth = true;
+    const static double target_decoy_ratio = 1.0;
+    const static unsigned number_bins = 10;
     
     /** FIDO PARAMETERS **/
     
     /** when grouping proteins discard all possible combinations for each group*/
     const static bool trivialGrouping = false;
     /** reduce the tree of proteins to increase the speed of computation of alpha,beta,gamma **/
-    const static bool reduceTree = true;
+    /** using the reduced tree increase the speed x10 and it does not have effect in the protein probabilities
+     * for big files, for smaller files it gives less conservative results. */
+    const static bool reduceTree = false;
     /** compute peptide level prior probability instead of using default = 0.1 **/
-    const static bool computePriors = true;
+    const static bool computePriors = false;
     /** use normal area instead of squared area when estimating the MSE FDR divergence **/
     const static bool conservative = true;
     /** threshold used for fido to remove poor PSMs **/
@@ -307,8 +326,8 @@ class ProteinProbEstimator {
     ProteinProbEstimator(double alpha = -1, double beta = -1, double gamma = -1, bool tiesAsOneProtein = false,
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
-			 std::string targetDB = "",std::string decoyDB = "", std::string decoyPattern = "random", 
-			 bool mayufdr = false,bool outputDecoys = false, bool tabDelimitedOut = false, std::string proteinFN = "");
+			 std::string decoyPattern = "random", bool mayufdr = false,bool outputDecoys = false, 
+			 bool tabDelimitedOut = false, std::string proteinFN = "");
     
     virtual ~ProteinProbEstimator();
     
@@ -339,9 +358,13 @@ class ProteinProbEstimator {
     double estimatePi0(const unsigned int numBoot = 100);
     /** print a tab delimited list of proteins probabilities in a file or stdout**/
     void print(ostream& myout);
+    
+    /** add proteins read from the database **/
+    void addProteinDb(const percolatorInNs::protein &protein);
+    
     /** print copyright of the author of Fido**/
     static string printCopyright();
-	
+
      /**setters and getters for variables **/
     void setTiesAsOneProtein(bool tiesAsOneProtein);
     void setUsePio(bool usePi0);
@@ -351,8 +374,6 @@ class ProteinProbEstimator {
     void setSeparateProteins(bool noseparate);
     void setGridSearch(bool dogridSearch);
     void setDepth(unsigned depth);
-    void setTargetDb(std::string targetDB);
-    void setDecoyDb(std::string decoyDB);
     void setMayusFDR(bool mayufdr);
     void setFDR(double fdr);
     void setOutputDecoys(bool outputDecoys);
@@ -371,8 +392,6 @@ class ProteinProbEstimator {
     bool getTabDelimitedOutput();
     std::string getProteinFN();
     std::string getDecoyPatter();
-    std::string getDecoyDB();
-    std::string getTargetDB();
     double getFDR();
     double getPi0();
     double getAlpha();
@@ -410,6 +429,8 @@ class ProteinProbEstimator {
     ProteinFDRestimator *fastReader;
     std::map<const std::string,Protein*> proteins;    
     std::multimap<double,std::vector<std::string> > pepProteins;
+    std::map<std::string,std::pair<std::string,double> > targetProteins;
+    std::map<std::string,std::pair<std::string,double> > decoyProteins;
     std::vector<double> qvalues;
     std::vector<double> qvaluesEmp;
     std::vector<double> pvalues;
@@ -433,8 +454,6 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
-    std::string targetDB;
-    std::string decoyDB;
     std::string decoyPattern;
     std::string proteinFN;
 };
