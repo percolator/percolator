@@ -72,6 +72,7 @@ private :
     //peptideEvidenceMapType_peptideid peptideEvidenceMap_peptideid;
     peptideEvidenceMapType peptideEvidenceMap;
     map<string,int> hashparams;
+    //static const XMLCh sequenceCollectionStr[];
   
 };
 

@@ -24,6 +24,9 @@
 #include "tandem2011.12.01.1.hxx"
 #include "FragSpectrumScanDatabase.h"
 
+using namespace std;
+using namespace xercesc;
+
 class tandemReader: public Reader
 {
 
@@ -44,6 +47,8 @@ public:
 private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
+  bool fixedXML;
+  
   void remove_endl(std::string s);
   
   void readPSM(std::string line,bool isDecoy,std::string fileId,

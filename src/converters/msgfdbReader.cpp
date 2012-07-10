@@ -198,9 +198,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     //FDR=boost::lexical_cast<double>(psm_vector.at(13));
   }
   
-  //std::cerr << "1 " << observedMassCharge << "\t" << pmError << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << specProb << "\t" << pValue << "\t" << FDR << std::endl;
-  //std::cerr << "2 " << psm_vector.at(4) << "\t" << psm_vector.at(5) << "\t" << psm_vector.at(9) << "\t" << psm_vector.at(10) << "\t" << psm_vector.at(11) << "\t" << psm_vector.at(12) << "\t" << psm_vector.at(13) << std::endl;
-   
   //Create id
   id.str("");
   id << fileId << '_' << specIndex << '_' << scan;
