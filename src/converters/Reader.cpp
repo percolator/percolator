@@ -1,101 +1,10 @@
 #include "Reader.h"
+#include <../../fido_project/crux_1.37/src/c/ArrayLibrary/VectorFunctions.h>
 #include <typeinfo>
 
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
 const std::string Reader::modifiedAA("#@*");
-
-
-/* Simple API for FASTA file reading
- * for Bio5495/BME537 Computational Molecular Biology
- * SRE, Sun Sep  8 05:35:11 2002 [AA2721, transatlantic]
- * CVS $Id$
- */
-
-FASTAFILE *
-OpenFASTA(const char *seqfile)
-{
-  FASTAFILE *ffp;
-
-  ffp = (FASTAFILE *)malloc(sizeof(FASTAFILE));
-  ffp->fp = fopen(seqfile, "r");              /* Assume seqfile exists & readable!   */
-  if (ffp->fp == NULL) 
-  { 
-    free(ffp); 
-    return NULL; 
-  } 
-  if ((fgets(ffp->buffer, FASTA_MAXLINE, ffp->fp)) == NULL)
-    { free(ffp); return NULL; }
-  return ffp;
-}
-
-int
-ReadFASTA(FASTAFILE *ffp, char **ret_seq, char **ret_name, /*char **ret_gene,*/ int *ret_L)
-{
-  char *s;
-  char *name;
-  char *seq;
-  
-  //TODO it would be nice to get the gene name but not all the databases contain it and it is located in 
-  //different positions
-  //char *gene;
-  
-  int   n;
-  int   nalloc;
-  
-  /* Peek at the lookahead buffer; see if it appears to be a valid FASTA descline.
-   */
-  if (ffp->buffer[0] != '>') return 0;    
-
-  /* Parse out the name: the first non-whitespace token after the >
-   */
-  s  = strtok(ffp->buffer+1, " \t\n");
-  name = (char *)malloc(sizeof(char) * (strlen(s)+1));
-  strcpy(name, s);
-
-  /* Everything else 'til the next descline is the sequence.
-   * Note the idiom for dynamic reallocation of seq as we
-   * read more characters, so we don't have to assume a maximum
-   * sequence length.
-   */
-  seq = (char *)malloc(sizeof(char) * 128);     /* allocate seq in blocks of 128 residues */
-  nalloc = 128;
-  n = 0;
-  while (fgets(ffp->buffer, FASTA_MAXLINE, ffp->fp))
-    {
-      if (ffp->buffer[0] == '>') break;	/* a-ha, we've reached the next descline */
-
-      for (s = ffp->buffer; *s != '\0'; s++)
-	{
-	  if (! isalpha(*s)) continue;  /* accept any alphabetic character */
-
-	  seq[n] = *s;                  /* store the character, bump length n */
-	  n++;
-	  if (nalloc == n)	        /* are we out of room in seq? if so, expand */
-	    {			        /* (remember, need space for the final '\0')*/
-	      nalloc += 128;
-	      seq = (char *)realloc(seq, sizeof(char) * nalloc);
-	    }
-	}
-    }
-  seq[n] = '\0';
-
-  *ret_name = name;
-  *ret_seq  = seq;
-  *ret_L    = n;
-  /**ret_gene = gene;*/
-  
-  return 1;
-}      
-
-void
-CloseFASTA(FASTAFILE *ffp)
-{
-  fclose(ffp->fp);
-  free(ffp);
-}
-
-/******************************************************************************************************************/
 
 
 Reader::Reader(ParseOptions __po)
@@ -138,7 +47,6 @@ void Reader::init()
   
   if(po.readProteins)
   {
-    //NOTE I should store proteins in Btree as well
     readProteins(po.targetDb,po.decoyDb);
   }
   
@@ -243,27 +151,31 @@ void Reader::print(ofstream &xmlOutputStream)
 
   if(po.readProteins && !proteins.empty())
   { 
-    
     if (po.xmlOutputFN == "") 
-      cout << "\n<proteins>\n";
+      //cout << "\n<proteins>\n";
+      cout << "\n";
     else 
-      xmlOutputStream << "\n<proteins>\n";
+      //xmlOutputStream << "\n<proteins>\n";
+      xmlOutputStream << "\n";
     
     serializer ser;
     std::vector<Protein*>::const_iterator it;
     if (po.xmlOutputFN == "") ser.start (std::cout);
     else ser.start (xmlOutputStream);
     for (it = proteins.begin(); it != proteins.end(); it++) 
-    { //NOTE uss this is horrible, I should serialize the object protein as the PSMs
+    { //NOTE uss this is horrible, I should serialize in a Btree the object protein as the PSMs
       //FIXME thi serialization is creating a gap \o between elements
-      std::auto_ptr< ::percolatorInNs::protein> p (new ::percolatorInNs::protein((*it)->name,(*it)->length,(*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
+      std::auto_ptr< ::percolatorInNs::protein> p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
+							(*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
       ser.next(PERCOLATOR_IN_NAMESPACE, "protein", *p);
     }
     
     if (po.xmlOutputFN == "") 
-      cout << "\n</proteins>\n";
+      //cout << "\n</proteins>\n";
+      cout << "\n";
     else 
-      xmlOutputStream << "\n</proteins>\n";
+      //xmlOutputStream << "\n</proteins>\n";
+      xmlOutputStream << "\n";
   }
   
   // print closing tag
@@ -536,46 +448,44 @@ double Reader::isPngasef(const string& peptide, bool isDecoy ) {
 
 void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, unsigned &proteins_counter)
 {
-  FASTAFILE *ffp;
-  char *seq;
-  char *name;
-  int   L;
+
   //NOTE I do not parse the gene names because there is not standard definiton for it
   try
   {
-    ffp = OpenFASTA(seqfile);
-    
-    if(ffp != NULL)
-    {
-      std::cerr << "Reading fasta file : " << seqfile << std::endl;
-      
-      while (ReadFASTA(ffp, &seq, &name, &L))
-	{
-	  std::string protein_name(name);
-	  std::string protein_seq(seq);
-	  if(isCombined) isDecoy = protein_seq.find(po.reversedFeaturePattern) != std::string::npos ? true : false;
-	  std::set<std::string> peptides;
-	  double totalMass = 0.0;
-	  //NOTE here I should check the enzyme and do the according digestion
-	  //unsigned num_tryptic = calculateProtLengthElastase(protein_seq,peptides,totalMass);
-	  unsigned num_tryptic = calculateProtLengthTrypsin(protein_seq,peptides,totalMass);
-	  //unsigned num_tryptic = calculateProtLengthChymotrypsin(protein_seq,peptides,totalMass);
-	  //unsigned num_tryptic = calculateProtLengthThermolysin(protein_seq,peptides,totalMass);
-	  //unsigned num_tryptic = calculateProtLengthProteinasek(protein_seq,peptides,totalMass);
-	  Protein *tmp = new Protein();
-	  tmp->id = ++proteins_counter;
-	  tmp->name = protein_name;
-	  tmp->isDecoy = isDecoy;
-	  tmp->sequence = protein_seq;
-	  tmp->peptides = peptides;
-	  tmp->length = num_tryptic;
-	  tmp->totalMass = totalMass;
-	  proteins.push_back(tmp);
-	  free(seq);
-	  free(name);
-	}
-	
-      CloseFASTA(ffp);
+    filebuf fb;
+    fb.open (seqfile,ios::in);
+    istream buffer(&fb);
+    std::cerr << "Reading fasta file : " << seqfile << std::endl;
+    if (!buffer.eof()) {
+	  wchar_t c;
+	  while (!buffer.eof()) {
+	    c = buffer.peek();
+	    if( c == '>' )
+	    {
+	      std::string protein_name;
+	      std::string protein_seq;
+	      read_from_fasta(buffer,protein_name,protein_seq);
+	      //std::cerr << " Reading " << protein_name << " " << protein_seq << std::endl;
+	      if(isCombined) isDecoy = protein_name.find(po.reversedFeaturePattern,0) != std::string::npos;
+	      std::set<std::string> peptides;
+	      double totalMass = 0.0;
+	      //NOTE here I should check the enzyme and do the according digestion
+	      //unsigned num_tryptic = calculateProtLengthElastase(protein_seq,peptides,totalMass);
+	      unsigned num_tryptic = calculateProtLengthTrypsin(protein_seq,peptides,totalMass);
+	      //unsigned num_tryptic = calculateProtLengthChymotrypsin(protein_seq,peptides,totalMass);
+	      //unsigned num_tryptic = calculateProtLengthThermolysin(protein_seq,peptides,totalMass);
+	      //unsigned num_tryptic = calculateProtLengthProteinasek(protein_seq,peptides,totalMass);
+	      Protein *tmp = new Protein();
+	      tmp->id = ++proteins_counter;
+	      tmp->name = protein_name;
+	      tmp->isDecoy = isDecoy;
+	      tmp->sequence = protein_seq;
+	      tmp->peptides = peptides;
+	      tmp->length = num_tryptic;
+	      tmp->totalMass = totalMass;
+	      proteins.push_back(tmp);
+	   }
+	 } 
     }
     else
     {
@@ -583,6 +493,8 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
       exit(-1);
     }
   
+    buffer.clear();
+    fb.close();
     
   }catch(const std::exception &e)
   {
@@ -667,4 +579,81 @@ void Reader::readProteins(string filenameTarget, string fileNamedecoy)
       std::cerr << "\nError database file/s could not be loaded\n" << std::endl;
       exit(-1);
     }
+}
+
+void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &seq) 
+{
+  std::string comment;
+  char b[BUFFER_LEN+1];
+  b[BUFFER_LEN] = '\0';
+  stringstream buf;
+  char c = buffer.peek();
+
+   while (!buffer.eof() and (c == ' ' or c == '\n')) {   
+      buffer.ignore(1);
+      if (!buffer.eof()) c = buffer.peek();
+   }
+   
+   if (!buffer.eof() and c != '>') {
+      stringstream ss;
+      ss << "next character is " << c;
+      std::cerr << "ERROR parsing fasta " << "Incorrect format " << ss.str() << std::endl;
+      exit(-1);
+   }
+   
+  buffer.getline(b, BUFFER_LEN);
+  name = string(b+1);
+  name.erase(std::remove(name.begin(), name.end(), '\r'), name.end());
+
+  long int pos;
+  {
+    long int pos1 = name.find(' ');
+    long int pos2 = name.find('\t');
+    if (pos1 != -1 and pos2 != -1)
+      pos = pos1 < pos2 ? pos1 : pos2;
+    else if (pos1 != -1)
+      pos = pos1;
+    else if (pos2 != -1)
+      pos = pos2;
+    else
+      pos = -1;
+  }
+
+  if (pos > 0) {
+    comment = name.substr(pos+1,name.length());
+    name = name.substr(0,pos);
+  }
+  
+  string temp;
+  char char_temp;
+  
+  while (!buffer.eof() and (buffer.peek() != '>')) {
+    
+    buffer >> temp;
+    for (string::iterator iter = temp.begin(); iter != temp.end(); iter++) {
+
+      if ((*iter >= 'A') and (*iter <= 'Z'))
+      {
+	buf << *iter;
+      }
+      else
+      {
+	std::cerr << "ERROR parsing fasta " << "Incorrect fasta sequence character " << *iter << std::endl;
+	exit(-1);
+      }
+    }
+  
+    c = buffer.peek();
+
+    while (!buffer.eof() and (c == ' ' or c == '\n' or c == '\r')) {
+    
+      buffer.ignore(1);
+      if (!buffer.eof()) c = buffer.peek();
+    }
+ }
+ 
+  seq = string(buf.str());
+  
+  return;
+
 }

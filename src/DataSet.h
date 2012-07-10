@@ -62,43 +62,44 @@ class DataSet {
       label = l;
     }
     void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
-
-    void initFeatureTables(const unsigned int numFeatures,
-                           const unsigned int numSpectra,
-                           bool regresionTable = false);
+    
+    void initFeatureTables(const unsigned int numFeatures,bool regresionTable = false);
+    
     static FeatureNames& getFeatureNames() {
       return featureNames;
     }
+    
     static void setCalcDoc(bool on) {
       calcDOC = on;
     }
     static bool getCalcDoc() {
       return calcDOC;
     }
+    
     static void setIsotopeMass(bool on) {
       isotopeMass = on;
     }
+    
     static void setNumFeatures(bool doc);
-    static inline int rowIx(int row) {
-      return row * FeatureNames::getNumFeatures();
-    }
-    double* getFeature() {
-      return feature;
-    }
-    const double* getFeatures(const int pos) const;
+
+    //const double* getFeatures(const int pos) const;
+    
     int inline getSize() const {
       return numSpectra;
     }
-    int inline const getLabel() const {
+    
+    const int inline  getLabel() const {
       return label;
     }
+    
     PSMDescription* getNext(int& pos);
+    
     void setRetentionTime(map<int, double>& scan2rt) {
       PSMDescription::setRetentionTime(psms, scan2rt);
     }
+    
     bool writeTabData(ofstream& out, const string& lab);
-    void
-        readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
+    void readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
@@ -106,12 +107,11 @@ class DataSet {
     void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
-
     static double isPngasef(const string& peptide, bool isDecoy );
+    void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
 
   protected:
-    void readPsm(const ::percolatorInNs::peptideSpectrumMatch & td,  unsigned int numFeatures );
-
+    
     double isPngasef(const string& peptide);
     static bool calcDOC;
     static bool isotopeMass;
@@ -119,10 +119,8 @@ class DataSet {
     const static string aaAlphabet;
     static string ptmAlphabet;
     const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
-    vector<PSMDescription> psms;
-    int psmNum;
+    vector<PSMDescription*> psms;
     int label;
-    double* feature, *regressionFeature;
     int numSpectra;
     string sqtFN;
     string pattern;
@@ -130,6 +128,7 @@ class DataSet {
     bool doPattern;
     bool matchPattern;
     static FeatureNames featureNames;
+    bool regresionTable;
 };
 
 #endif /*DATASET_H_*/

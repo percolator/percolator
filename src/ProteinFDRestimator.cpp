@@ -62,6 +62,7 @@ struct RetrieveValue
 };
 
 /** external functions used to estimate the expexted value of the hypergeometric distribution **/
+
 double stirling_log_factorial(double n)
 {
   double PI = 3.141592653589793;
@@ -261,7 +262,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
       std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;
   }
   //there are some elements at the end that are <= nbins that could not be fitted
-  //FIXME I think it fails if it enters here
+  //FIXME I think it fails if it enters here in some scenarios
   if(residues > 0)
   {
     values.back() = lenghts.back();

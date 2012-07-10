@@ -113,7 +113,6 @@ class Caller {
     void writeXML_Peptides();
     void writeXML_Proteins();
     void writeXML();
-    void countTargetsAndDecoys( std::string & fname, unsigned int & nrTargets,unsigned int & nrDecoys );
     
     Normalizer * pNorm;
     SanityCheck * pCheck;

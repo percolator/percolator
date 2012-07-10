@@ -32,7 +32,7 @@ class ParseOptions
     calcDOC(false),
     hitsPerSpectrum(1),
     iscombined(false),
-    reversedFeaturePattern(""),
+    reversedFeaturePattern("random"),
     peptidelength(6),
     monoisotopic(false),
     boost_serialization(true),

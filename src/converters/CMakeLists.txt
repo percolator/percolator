@@ -14,8 +14,8 @@ MESSAGE( STATUS
 MESSAGE( STATUS "Indicate the type of XML serialization scheme : 
 		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" or -DSERIALIZE=\"LevelDB\".
 		  By setting up the variable SERIALIZE to either Boost or TokyoCabined or LevelDB 
-		  we will chose the serialization scheme to be taken to build Converters.
-		  Boost serialization option will be taken as default if no option is given.")
+		  you will chose the serialization scheme that will be used to build Converters.
+		  Boost serialization option will be used as default if no option is given.")
 MESSAGE( STATUS "Building PERCOLATOR-CONVERTERS:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
@@ -55,7 +55,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "04")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 #TODO: VERSIONING?? schema versions must be the same for converters and percolator
 set(PIN_VERSION_MAJOR "1")
-set(PIN_VERSION_MINOR "2")
+set(PIN_VERSION_MINOR "3")
 set(POUT_VERSION_MAJOR "1")
 set(POUT_VERSION_MINOR "3")
 set(MZIDENTML_VERSION_MAJOR "1")
@@ -533,8 +533,6 @@ IF(NOT MINGW)
   install(FILES ../xml/mzIdentML1.0.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
   install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
   install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-  install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-  install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
   install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 endif()
 

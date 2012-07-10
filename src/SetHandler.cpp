@@ -18,8 +18,6 @@
 #include "SetHandler.h"
 
 SetHandler::SetHandler() {
-  // charge=c;
-  // norm=Normalizer::getNew();
   n_examples = 0;
   labels = NULL;
   c_vec = NULL;
@@ -47,7 +45,7 @@ void SetHandler::filelessSetup(const unsigned int numFeatures,
                                const int label) {
   DataSet* pSet = new DataSet();
   pSet->setLabel(label);
-  pSet->initFeatureTables(numFeatures, numSpectra);
+  pSet->initFeatureTables(numFeatures);
   subsets.push_back(pSet);
   n_examples = numSpectra;
 }
@@ -111,9 +109,9 @@ PSMDescription* SetHandler::getNext(int& setPos, int& ixPos) {
   return subsets[setPos]->getNext(ixPos);
 }
 
-const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
+/*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
   return subsets[setPos]->getFeatures(ixPos);
-}
+}*/
 
 int const SetHandler::getLabel(int setPos) {
   assert(setPos >= 0 && setPos < (signed int)subsets.size());

@@ -70,11 +70,10 @@ class PSMDescription {
                                  peptide[peptide.size() - 1])
           && Enzyme::countEnzymatic(peptide) == 0);
     }
-    void
-        checkFragmentPeptides(
-                              vector<PSMDescription>::reverse_iterator other,
-                              vector<PSMDescription>::reverse_iterator theEnd);
-    static void setRetentionTime(vector<PSMDescription>& psms, map<int,
+    void checkFragmentPeptides(vector<PSMDescription*>::reverse_iterator other,
+                               vector<PSMDescription*>::reverse_iterator theEnd);
+    
+    static void setRetentionTime(vector<PSMDescription*>& psms, map<int,
         double>& scan2rt);
     static double unnormalize(double normalizedTime);
     static void unnormalizeRetentionTimes(vector<PSMDescription> & psms);

@@ -36,17 +36,32 @@ using namespace xercesc;
 
 /** some constants to be used to compare xml strings **/
 
+//databases
 static const XMLCh databasesStr[] = {
       chLatin_d, chLatin_a, chLatin_t, chLatin_a, chLatin_b, chLatin_a,
       chLatin_s, chLatin_e, chLatin_s, chNull };
+     
       
+//calibration
 static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
       chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
       chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-	  
+
+//proteins
 static const XMLCh proteinsStr[] = { chLatin_p, chLatin_r,
       chLatin_o, chLatin_t, chLatin_e, chLatin_i, chLatin_n,
       chLatin_s, chNull };
+
+//protein      
+static const XMLCh proteinStr[] = { chLatin_p, chLatin_r,
+      chLatin_o, chLatin_t, chLatin_e, chLatin_i, chLatin_n, chNull };
+      
+//fragSpectrumScan 
+static const XMLCh fragSpectrumScanStr[] = { chLatin_f, chLatin_r,
+      chLatin_a, chLatin_g, chLatin_S, chLatin_p, chLatin_e,
+      chLatin_c, chLatin_t, chLatin_r, chLatin_u, chLatin_m,
+      chLatin_S, chLatin_c, chLatin_a, chLatin_n, chNull };   
+      
       
 /** some constants to be used to compare xml strings **/
       
@@ -325,6 +340,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "protein-results",
       "Output tab delimited protein probabilities results to a file instead of stdout",
       "filename");
+  cmd.defineOption("RT",
+      "reduce-tree",
+      "Reduce the tree of proteins in order to estimate alpha,beta and gamma faster.(Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -362,6 +382,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool noseparate = cmd.optionSet("E");
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
+    bool reduceTree = cmd.optionSet("RT");
     
     if (cmd.optionSet("PR")) {
       proteinFN = cmd.options["PR"];
@@ -383,7 +404,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
-					       outputDecoys,tabDelimitedOut,proteinFN);
+					       outputDecoys,tabDelimitedOut,proteinFN,reduceTree);
   }
   
   if (cmd.optionSet("e")) {
@@ -525,87 +546,6 @@ bool Caller::parseOptions(int argc, char **argv) {
 }
 
 /**
- * parses the pin file and counts the number of target and decoy psms
- *
- * @param fname string pointing to pin file
- * @param nrTargets stores the number of target psms (passed by reference)
- * @param nrDecoys stores the number of decoy psms (passed by reference)
- */
-void Caller::countTargetsAndDecoys( std::string& fname, unsigned int& nrTargets,
-    unsigned int& nrDecoys ) {
-  try
-  {
-    namespace xml = xsd::cxx::xml;
-    ifstream ifs;
-    ifs.exceptions (ifstream::badbit | ifstream::failbit);
-    ifs.open (fname.c_str());
-    if (!ifs) {
-      cerr << "Can not open file " << fname << endl;
-      exit(EXIT_FAILURE);
-    }
-    parser p;
-    string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
-    string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
-    string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument>
-    doc (p.start (ifs, fname.c_str(), Caller::schemaValidation, schemaDefinition,schema_major, schema_minor));
-    
-    doc = p.next(); //skip first tag 
-    
-    doc = p.next();// skip enzyme element
-    
-    //checking if database is present to jump it
-    if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName()))
-    {
-      percolatorInNs::databases databases(*doc->getDocumentElement());
-      doc = p.next();
-    }
-    
-    doc = p.next (); // skip process_info element
-    doc = p.next (); // skip featureDescriptions element
-    
-    //checking if calibration is present to jump it
-    if (XMLString::equals(calibrationStr, doc->getDocumentElement()->getTagName()))
-    {
-      percolatorInNs::calibration calibration(*doc->getDocumentElement ());
-      doc = p.next ();
-    };
-    
-    nrTargets=0;
-    nrDecoys=0;
-    for (doc = p.next (); doc.get () != 0 
-      && !XMLString::equals(proteinsStr, doc->getDocumentElement()->getTagName()); doc = p.next ()) {
-      percolatorInNs::fragSpectrumScan
-      fragSpectrumScan(*doc->getDocumentElement ());
-      BOOST_FOREACH(const ::percolatorInNs::peptideSpectrumMatch & psm,
-          fragSpectrumScan.peptideSpectrumMatch())
-      {
-        if (psm.isDecoy()) nrDecoys++;
-        else nrTargets++;
-      }
-    }
-    ifs.close();
-  }
-  catch (const xercesc::DOMException& e)
-  {
-    char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;
-    XMLString::release(&tmpStr);
-    exit(-1);
-  }
-  catch (const xml_schema::exception& e) {
-    cerr << e << endl;
-    exit(-1);
-  }
-  catch (const ios_base::failure&) {
-    cerr << "io failure" << endl;
-    exit(-1);
-  }
-
-  return;
-}
-
-/**
  * for each feature, print raw and normalized weights after training
  *
  * @param weightStream stream to which the weights will be written
@@ -668,20 +608,6 @@ void Caller::readFiles() {
     
     xercesc::XMLPlatformUtils::Initialize();
     
-    countTargetsAndDecoys(xmlInputFN, nrTargets, nrDecoys);
-    
-    if(nrTargets == 0)
-    {
-      std::cerr << "\nERROR : the number of target PSMs found is zero.\n" << std::endl;
-      exit(-1);
-    }
-    if(nrDecoys == 0)
-    {
-      std::cerr << "\nERROR : the number of decoy PSMs found is zero.\n" << std::endl;
-      exit(-1);
-    }
-    
-    int j = 0;
     DataSet * targetSet = new DataSet();
     assert(targetSet);
     targetSet->setLabel(1);
@@ -691,7 +617,7 @@ void Caller::readFiles() {
     
     try {
       
-      //namespace xml = xsd::cxx::xml;
+      namespace xml = xsd::cxx::xml;
       std::ifstream xmlInStream;
       xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
       xmlInStream.open(xmlInputFN.c_str());
@@ -723,18 +649,10 @@ void Caller::readFiles() {
       //checking if database is present to jump it
       if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName()))
       {
-	
 	//NOTE I dont really need this info, do I? good to have it though
 	/*
 	std::auto_ptr< ::percolatorInNs::databases > 
 	databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
-	
-	protEstimator->setMinLength(databases->parameters().min_peptide_length());
-	protEstimator->setMaxLength(databases->parameters().max_peptide_length());
-	protEstimator->setMinMass(databases->parameters().min_peptide_mass());
-	protEstimator->setMaxMass(databases->parameters().max_peptide_mass());
-	protEstimator->setAvgMass(databases->parameters().avg_mass());
-	protEstimator->setMissCleavages(databases->parameters().miss_cleavages());
 	*/
 	doc = p.next();
 	Caller::hasProteins = true;
@@ -749,7 +667,8 @@ void Caller::readFiles() {
 
       if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) 
       {
-        percolatorInNs::calibration calibration(*doc->getDocumentElement());
+	//NOTE I am not doing anything with calibration
+        //percolatorInNs::calibration calibration(*doc->getDocumentElement());
         doc = p.next();
       };
 
@@ -757,26 +676,54 @@ void Caller::readFiles() {
 
       FeatureNames& feNames = DataSet::getFeatureNames();
       feNames.setFromXml(featureDescriptions, docFeatures);
-
-      targetSet->initFeatureTables(feNames.getNumFeatures(), nrTargets, docFeatures);
-      decoySet->initFeatureTables(feNames.getNumFeatures(), nrDecoys, docFeatures);
+      targetSet->initFeatureTables(feNames.getNumFeatures(), docFeatures);
+      decoySet->initFeatureTables(feNames.getNumFeatures(), docFeatures);
 
       // import info from xml: read Fragment Spectrum Scans
       for (doc = p.next(); doc.get()!= 0 && 
-	!XMLString::equals(proteinsStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
+	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
+	//NOTE I should process the PSMs here and call targetSet->readPsm or decoySet->redPsm accordingly
         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-        targetSet->readFragSpectrumScans(fragSpectrumScan);
-        decoySet->readFragSpectrumScans(fragSpectrumScan);
+	BOOST_FOREACH(const percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch())
+	{
+	  if(psm.isDecoy())
+	  {
+	    decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
+	  }
+	  else
+	  {
+	    targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
+	  }
+	}
       }
-      
+
       // import info from xml: read database proteins
-      // only read them if they are present and the optio of using mayusfdr is activated
+      // only read them if they are present and the option of using mayusfdr is activated
+      unsigned readProteins = 0;
       for (doc = p.next(); doc.get()!= 0 
-	&& Caller::hasProteins && Caller::calculateProteinLevelProb && protEstimator->getMayuFdr(); doc = p.next()) 
+	&& Caller::hasProteins && Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr()
+	&& XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         std::auto_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
 	 protEstimator->addProteinDb(*protein);
+	 ++readProteins;
+      }
+      
+      if(targetSet->getSize() == 0)
+      {
+	std::cerr << "\nERROR : the number of target PSMs found is zero.\n" << std::endl;
+	exit(-1);
+      }
+      if(decoySet->getSize() == 0)
+      {
+	std::cerr << "\nERROR : the number of decoy PSMs found is zero.\n" << std::endl;
+	exit(-1);
+      }
+      if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
+      {
+	std::cerr << "\nERROR : options -Q and -A are activated but the number of proteins found in the inpu file is zero.\n" << std::endl;
+	exit(-1);
       }
       
       pCheck = SanityCheck::initialize(otherCall);
@@ -785,7 +732,7 @@ void Caller::readFiles() {
       shuffled.push_back_dataset(decoySet);
       normal.setSet();
       shuffled.setSet();
-      ifs.close();
+      xmlInStream.close();
     }
 
     catch (const xml_schema::exception& e) {
@@ -796,11 +743,11 @@ void Caller::readFiles() {
       exit(EXIT_FAILURE);
     } catch (const xercesc::DOMException& e) {
       char * tmpStr = XMLString::transcode(e.getMessage());
-      std::cerr << "catch  xercesc::DOMException=" << tmpStr
-          << std::endl;
+      std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;
       XMLString::release(&tmpStr);
     }
   } else if (tabInput) {
+    //NOTE should check the tab input gets loaded correctly
     pCheck = new SanityCheck();
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);

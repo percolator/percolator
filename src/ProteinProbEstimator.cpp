@@ -68,7 +68,7 @@ double areaSq(double x1, double y1, double x2, double y2, double threshold) {
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
 			  bool __dogridSearch, unsigned __depth,std::string __decoyPattern, bool __mayufdr,bool __outputDecoys, 
-			  bool __tabDelimitedOut, std::string __proteinFN) 
+			  bool __tabDelimitedOut, std::string __proteinFN, bool __reduceTree) 
 {
   peptideScores = 0;
   proteinGraph = 0;
@@ -93,6 +93,7 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   tabDelimitedOut = __tabDelimitedOut;
   proteinFN = __proteinFN;
   rocN = default_rocN; 
+  reduceTree = __reduceTree;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator()
@@ -177,8 +178,7 @@ void ProteinProbEstimator::run(){
   { 
     /** MAYUS method for estimation of Protein FDR **/
     
-    std::cerr << "\nEstimating Protein FDR using Mayu's method described in :\
-    http://prottools.ethz.ch/muellelu/web/LukasReiter/Mayu/\n" << std::endl;
+    std::cerr << "\nEstimating Protein FDR ... " << std::endl;
     
     fastReader = new ProteinFDRestimator();
     fastReader->setDecoyPrefix(decoyPattern);

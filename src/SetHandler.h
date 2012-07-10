@@ -40,25 +40,26 @@ namespace percolatorInNs {
 }
 
 class SetHandler {
+  
   protected:
     vector<DataSet*> subsets;
     vector<const double*> examples;
     double* labels;
     double* c_vec;
     int n_examples;
+    
   public:
+    
     SetHandler();
     virtual ~SetHandler();
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, const int label);
 
-
-
     void push_back_dataset( DataSet * ds );
 
-    void static
-    modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
-               const string& greet, bool dtaSelect);
+    /*void modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
+               const string& greet, bool dtaSelect);*/
+    
     void generateTrainingSet(const double fdr, const double cpos,
                              const double cneg, Scores& sc);
     void setSet();
@@ -66,10 +67,13 @@ class SetHandler {
     void createXvalSets(vector<SetHandler>& train,
                         vector<SetHandler>& test,
                         const unsigned int xval_fold);
+    
     PSMDescription* getNext(int&, int&);
-    const double* getFeatures(const int setPos, const int ixPos) const;
+    
+    //const double* getFeatures(const int setPos, const int ixPos) const;
+    
     void readTab(const string& dataFN, const int label);
-    void static writeTab(const string& dataFN, const SetHandler& norm,
+    static void writeTab(const string& dataFN, const SetHandler& norm,
                          const SetHandler& shuff);
     int const getLabel(int setPos);
     inline int const getTrainingSetSize() {

@@ -53,7 +53,7 @@
   #include <errno.h>
 #endif
 
-#define FASTA_MAXLINE 512	/* Requires FASTA file lines to be <512 characters */
+#define BUFFER_LEN 10240
 
 #if defined __LEVELDB__
   #include "FragSpectrumScanDatabaseLeveldb.h"
@@ -67,23 +67,6 @@
 #endif
    
 using namespace std;
-
-/** external functions in C to read fasta files **/
-
-/* Simple API for FASTA file reading
- * for Bio5495/BME537 Computational Molecular Biology
- * SRE, Sun Sep  8 05:35:11 2002 [AA2721, transatlantic]
- * CVS $Id$
- */
-
-typedef struct fastafile_s {
-  FILE *fp;
-  char  buffer[FASTA_MAXLINE];
-} FASTAFILE;
-
-extern FASTAFILE *OpenFASTA(char *seqfile);
-extern int        ReadFASTA(FASTAFILE *fp, char **ret_seq, char **ret_name, int *ret_L);
-extern void       CloseFASTA(FASTAFILE *ffp);
 
 class Protein
 {
@@ -156,6 +139,8 @@ public:
   unsigned calculateProtLengthTrypsin(std::string protsequence,
 				      std::set<std::string> &peptides,double &totalMass);
   
+  void read_from_fasta(istream & buffer, std::string &name , std::string &seq); 
+  
 private:
   
    std::vector<char*> tmpDirs;
@@ -179,6 +164,3 @@ protected:
 };
 
 #endif
-
-
-

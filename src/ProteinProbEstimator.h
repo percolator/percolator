@@ -273,10 +273,12 @@ class ProteinProbEstimator {
     
     /** when grouping proteins discard all possible combinations for each group*/
     const static bool trivialGrouping = false;
+    
     /** reduce the tree of proteins to increase the speed of computation of alpha,beta,gamma **/
     /** using the reduced tree increase the speed x10 and it does not have effect in the protein probabilities
      * for big files, for smaller files it gives less conservative results. */
-    const static bool reduceTree = false;
+    //const static bool reduceTree = false;
+    
     /** compute peptide level prior probability instead of using default = 0.1 **/
     const static bool computePriors = false;
     /** use normal area instead of squared area when estimating the MSE FDR divergence **/
@@ -327,7 +329,7 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 std::string decoyPattern = "random", bool mayufdr = false,bool outputDecoys = false, 
-			 bool tabDelimitedOut = false, std::string proteinFN = "");
+			 bool tabDelimitedOut = false, std::string proteinFN = "", bool reduceTree = false);
     
     virtual ~ProteinProbEstimator();
     
@@ -445,6 +447,7 @@ class ProteinProbEstimator {
     bool mayufdr;
     bool tabDelimitedOut;
     bool outputDecoys;
+    bool reduceTree;
     double pi0;
     double fdr;
     unsigned int numberDecoyProteins;
