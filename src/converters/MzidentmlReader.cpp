@@ -322,6 +322,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   }*/
   
   
+  //FIXME IMPORTANT fix, here I take only 1 peptide per PSM but the option -m might tell me to take more,
+  //FIXME I have to modify this loop to obtain more PSMs in that case
   BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
   {
     std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();

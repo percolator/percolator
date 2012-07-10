@@ -369,8 +369,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     double gamma = -1;
     bool gridSearch = true;
     unsigned depth = 3;
-    std::string targetDB = "";
-    std::string decoyDB = "";
     std::string decoyWC = "random";
     std::string proteinFN = "";
     bool tiesAsOneProtein = cmd.optionSet("g");
@@ -751,6 +749,7 @@ void Caller::readFiles() {
     pCheck = new SanityCheck();
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);
+    std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
   } 
 }
 
@@ -1197,12 +1196,9 @@ int Caller::run() {
   }
   Globals::getInstance()->checkTime("read input");
   if(VERB > 2){
-    std::cerr << "FeatureNames::getNumFeatures(): "
-        << FeatureNames::getNumFeatures() << endl;
+    std::cerr << "FeatureNames::getNumFeatures(): "<< FeatureNames::getNumFeatures() << endl;
   }
-  vector<vector<double> > w(xval_fold,
-      vector<double> (FeatureNames::getNumFeatures()
-  + 1)), ww;
+  vector<vector<double> > w(xval_fold,vector<double> (FeatureNames::getNumFeatures()+ 1)), ww;
   int firstNumberOfPositives = preIterationSetup(w);
   if (VERB > 0) {
     cerr << "Estimating " << firstNumberOfPositives << " over q="

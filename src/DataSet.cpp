@@ -219,24 +219,26 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
       getline(is, line);
       ix++;
     }
+    
+    PSMDescription  *myPsm = new PSMDescription();
     buff.str(line);
     buff.clear();
-    buff >> psms[i]->id;
+    buff >> myPsm->id;
     buff >> tmp; // get rid of label
-    double *featureRow = new double[FeatureNames::getNumFeatures()];
-    psms[i]->features = featureRow;
+    double *featureRow = new double[m];
+    myPsm->features = featureRow;
     if (calcDOC) {
-      buff >> psms[i]->retentionTime;
-      buff >> psms[i]->massDiff;
+      buff >> myPsm->retentionTime;
+      buff >> myPsm->massDiff;
     }
     for (register unsigned int j = 0; j < m; j++) {
       buff >> featureRow[j];
     }
-    buff >> psms[i]->peptide;
+    buff >> myPsm->peptide;
     while (!!buff) {
       buff >> tmp;
       if (tmp.size() > 0) {
-        psms[i]->proteinIds.insert(tmp);
+        myPsm->proteinIds.insert(tmp);
       }
     }
     if (calcDOC) {
@@ -245,6 +247,9 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
       featureRow[m + 1] = abs(psms[i]->massDiff);
       featureRow[m + 2] = 0;
     }
+    
+    psms.push_back(myPsm);
+    ++numSpectra;
   }
 }
 

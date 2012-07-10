@@ -589,7 +589,7 @@ void Scores::weedOutRedundant() {
    for(;current!=scores.end(); current++){
      // compare pointer's peptide with previousPeptide
      string currentPeptide = current->pPSM->getPeptideSequence();
-     if(boost::iequals(currentPeptide,previousPeptide) 
+     if(boost::equals(currentPeptide,previousPeptide) 
        && (previousLabel == current->label)) {
        // if the peptide is a duplicate
        vector<ScoreHolder>::iterator last = --uniquePeptideScores.end();
