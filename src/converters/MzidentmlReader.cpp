@@ -3,8 +3,6 @@
 static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e,chLatin_n, 
 						  chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, 
 						  chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-						  
-						  
 
 MzidentmlReader::MzidentmlReader(ParseOptions po):Reader(po)
 {
