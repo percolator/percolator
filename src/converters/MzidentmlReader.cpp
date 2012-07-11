@@ -47,7 +47,7 @@ void MzidentmlReader::cleanHashMaps()
 
 bool MzidentmlReader::checkValidity(string file)
 {
-  bool ismeta = true;
+  bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
     std::cerr << "Could not open file " << file << std::endl;
@@ -58,23 +58,50 @@ bool MzidentmlReader::checkValidity(string file)
     std::cerr << "Could not read file " << file << std::endl;
     exit(-1);
   }
-  fileIn.close();
-  if (line.size() > 1 && line[0]=='<' && line[1]=='?') {
-    //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
-    if (line.find("xml") == std::string::npos) {
-      std::cerr << "file is not xml format " << file << std::endl;
-      exit(-1);
-    }
+  //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
+  if (line.find("<?xml") == std::string::npos) {
+    std::cerr << "ERROR : the input file is not xml format " << file << std::endl;
+    exit(-1);
   }
   else
   {
-    ismeta = false;
+    std::string line2,line3;
+    getline(fileIn, line2);
+    getline(fileIn, line3);
+    
+    if ( (line2[1] != '!' && line2.find("SEQUEST") != std::string::npos && line2.find("MzIdentML") != std::string::npos)  
+       ||(line3[1] != '!' && line3.find("SEQUEST") != std::string::npos && line3.find("MzIdentML") != std::string::npos) )
+    {
+       std::cerr << "ERROR : the input file is not MzIdentML - Sequest format " << file << std::endl;
+       exit(-1);
+    }
+    
   }
-  return ismeta;
+  fileIn.close();
+  return isvalid;
 }
 
+bool MzidentmlReader::checkIsMeta(string file)
+{
+  //NOTE assuming the file has been tested before
+  bool isMeta;
+  std::ifstream fileIn(file.c_str(), std::ios::in);
+  std::string line;
+  getline(fileIn, line);
+  fileIn.close();
+  //NOTE this is not a correct way to check if it is meta for mzident FIXME
+  if (line.find("<?xml") != std::string::npos)
+  {
+    isMeta = false;
+  }
+  else
+  {
+    isMeta = true;
+  }
+  return isMeta;
+}
 
-void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet, std::string fn)
+void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet)
 {
   //NOTE from now lets assume the features all always SEQUEST features, ideally I would create my list of features from the 
   //     features description of the XSD
@@ -320,6 +347,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   }*/
   
   
+  //FIXME IMPORTANT fix, here I take only 1 peptide per PSM but the option -m might tell me to take more,
+  //FIXME I have to modify this loop to obtain more PSMs in that case
   BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
   {
     std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();

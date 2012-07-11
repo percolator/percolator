@@ -125,8 +125,13 @@ bool tandemReader::checkValidity(const std::string file)
   return ismeta;
 }
 
+bool tandemReader::checkIsMeta(string file)
+{
 
-void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn) //TODO Needs some changes
+}
+
+
+void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet) //TODO Needs some changes
 {
   push_backFeatureDescription("deNovoScore");
   push_backFeatureDescription("MSGFScore");

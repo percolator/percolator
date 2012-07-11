@@ -33,10 +33,12 @@ public:
   virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   virtual bool checkValidity(const std::string file);
+  
+  virtual bool checkIsMeta(std::string file);
  
   virtual void getMaxMinCharge(std::string fn);
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn);
+  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
   
 private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);

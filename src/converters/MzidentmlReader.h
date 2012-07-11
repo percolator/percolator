@@ -53,10 +53,12 @@ public:
   virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   virtual bool checkValidity(std::string file);
+  
+  virtual bool checkIsMeta(std::string file);
  
   virtual void getMaxMinCharge(std::string fn);
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn);
+  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
   
   void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
 		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,

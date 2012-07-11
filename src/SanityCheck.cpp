@@ -59,7 +59,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   double test_fdr) {
   pTestset = &testset;
   pTrainset = &trainset;
-  fdr = test_fdr;
+  fdr = test_fdr; 
   if (initWeightFN.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
     ifstream weightStream(initWeightFN.data(), ios::in);
@@ -88,6 +88,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     for (size_t set = 0; set < w.size(); ++set) {
       (*pTrainset)[set].getInitDirection(fdr, w[set], true);
     }
+    
   } else {
     for (size_t set = 0; set < w.size(); ++set) {
       for (size_t ix = 0; ix < w[set].size(); ix++) {

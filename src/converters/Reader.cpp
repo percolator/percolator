@@ -1,5 +1,6 @@
 #include "Reader.h"
 #include <typeinfo>
+#include <tcutil.h>
 
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
@@ -25,6 +26,7 @@ Reader::~Reader()
 }
 
 
+
 void Reader::init()
 {
   // initializing xercesc objects corresponding to pin element...
@@ -44,22 +46,79 @@ void Reader::init()
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
   
+  bool isMeta = false;
+  
   if(po.readProteins)
   {
     readProteins(po.targetDb,po.decoyDb);
   }
   
+  //check files are metafiles or not
+  if(!po.iscombined)
+  {
+    bool isMetaTarget = checkIsMeta(po.targetFN); 
+    bool isMetaDecoy = checkIsMeta(po.decoyFN);
+    if(isMetaTarget == isMetaDecoy)
+      isMeta = isMetaTarget;
+    else
+    {
+      std::cerr << "ERROR : one of the input files is a metafile whereas the other one is not a metaFile. " << std::endl;
+    }
+  }
+  else
+    isMeta= checkIsMeta(po.targetFN);
+  
+    
+  //if they are metaFiles check for max/min charge in the meta of the target files
+  //otherwise check for max/min charge in the target file
+  if(isMeta)
+  {
+    //I iterate over all the files to check validity and get max/min charge but I only get the charge from the 
+    // target files, max/min charge should be the same for the decoy files
+    std::string line;
+    std::ifstream meta(po.targetFN.data(), std::ios::in);
+    while (getline(meta, line)) {
+      if (line.size() > 0 && line[0] != '#') {
+	 line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+	 checkValidity(line);
+	 getMaxMinCharge(line);
+      }
+     }
+    meta.close();
+    if(!po.iscombined)
+    {
+      meta.open(po.decoyFN.data(), std::ios::in);
+      while (getline(meta, line)) {
+	if (line.size() > 0 && line[0] != '#') {
+	  line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+	  checkValidity(line);
+	}
+      }
+      meta.close();
+    }
+   }
+  else
+  {
+    checkValidity(po.targetFN);
+    if(!po.iscombined)
+      checkValidity(po.decoyFN);
+    getMaxMinCharge(po.targetFN);
+  }
+
+  //once I have max/min charge I can put in the features
+  addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME,po.calcAAFrequencies ? aaAlphabet : "");
+  
   if (!po.iscombined) 
   {
     std::cerr << "Reading input from files: " <<  std::endl;
-    translateFileToXML(po.targetFN, false /* is_decoy */,0);
-    translateFileToXML(po.decoyFN, true /* is_decoy */,0);
+    translateFileToXML(po.targetFN, false /* is_decoy */,0,isMeta);
+    translateFileToXML(po.decoyFN, true /* is_decoy */,0,isMeta);
   } 
   else 
   {
     
     std::cerr << "Reading input from a combined (target-decoy) file .." << std::endl;
-    translateFileToXML(po.targetFN, false /* is_decoy */,0);
+    translateFileToXML(po.targetFN, false /* is_decoy */,0,isMeta);
   }
 
   // read retention time if the converter was invoked with -2 option
@@ -191,11 +250,10 @@ void Reader::print(ofstream &xmlOutputStream)
 }
 
 
-void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int lineNumber_par)
+void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int lineNumber_par, bool isMeta)
   {
-  
-    //TODO check its is a metafile or not and if it is valid formed, mmm I should split this function in two to make it clearer
-    if(checkValidity(fn))
+      
+    if(!isMeta)
     {
       // there must be as many databases as lines in the metafile containing the
       // files. If this is not the case, add a new one
@@ -255,12 +313,7 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
       if (VERB>1){
 	std::cerr << "Reading " << fn << std::endl;
       }
-      
-      getMaxMinCharge(fn);
-      if ( f_seq.featureDescription().size() == 0 ) {
-	addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME,po.calcAAFrequencies ? aaAlphabet : "",po.targetFN);
-	//NOTE feature descriptions are the same for different files
-      }
+
       read(fn,isDecoy,databases[lineNumber_par]);
     
     } else {
@@ -271,7 +324,6 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
       std::ifstream meta(fn.data(), std::ios::in);
       while (getline(meta, line2)) {
 	if (line2.size() > 0 && line2[0] != '#') {
-	  //NOTE remove the whitespaces
 	  line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());
 	  translateFileToXML(line2,isDecoy,lineNumber);
 	  lineNumber++;
