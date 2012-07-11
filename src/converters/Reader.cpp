@@ -326,7 +326,7 @@ void Reader::translateFileToXML(const std::string fn, bool isDecoy, unsigned int
       while (getline(meta, line2)) {
 	if (line2.size() > 0 && line2[0] != '#') {
 	  line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());
-	  translateFileToXML(line2,isDecoy,lineNumber);
+	  translateFileToXML(line2,isDecoy,lineNumber,false);
 	  lineNumber++;
 	}
       }
