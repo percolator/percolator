@@ -1,5 +1,4 @@
 #include "Reader.h"
-#include <../../fido_project/crux_1.37/src/c/ArrayLibrary/VectorFunctions.h>
 #include <typeinfo>
 
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");

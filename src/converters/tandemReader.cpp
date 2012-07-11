@@ -185,45 +185,33 @@ void tandemReader::getMaxMinCharge(const std::string fn){
   
   try
   {
-  xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
-  assert(doc.get());
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
+    assert(doc.get());
     
-  for (doc = p.next(); doc.get() != 0; doc = p.next ())
-  {
-    if(!fixedXML) //Fix xml and parse to object model TODO
+    for (doc = p.next(); doc.get() != 0; doc = p.next ())
     {
-      std::cerr << "Fixing xml file" << std::endl; //TMP
-      //add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
-    }
+      if(!fixedXML) //Fix xml and parse to object model TODO
+      {
+	std::cerr << "Fixing xml file" << std::endl; //TMP
+	//add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
+      }
       
-    if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()))
-    {
       try{
 	tandem_ns::group groupObj(*doc->getDocumentElement());
-	
-	BOOST_FOREACH(const tandem_ns::group::group1_type &groupGAML, groupObj.group1()) //Getting the group element surrounding the GAML namespace
+	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && groupObj.type()!="parameters") //Check that the tag name is group and that its not the inputput parameters
 	{
-	  
-	  BOOST_FOREACH(const gaml_tandem_ns::trace &traceGAML, groupGAML.trace()) //GAML:trace
+	  if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
 	  {
-	    if(traceGAML.type()=="tandem mass spectrum")//Check that were are looking at the right trace element
-	    {
-	      BOOST_FOREACH(const gaml_tandem_ns::attribute &attributeTraceGAML, traceGAML.attribute()) //GAML:attribute
-	      {
-	      
-		gaml_tandem_ns::attribute::type_type typeAttr=attributeTraceGAML.type();
-		if(typeAttr=="charge")//Not all attribute elements are for charge
-		{
-		  //std::string chargeStr=
-		  //charge=boost::lexical_cast<int>(chargeStr);
-		  if (minCharge > charge) minCharge = charge;
-		  if (maxCharge < charge) maxCharge = charge;
-		  nTot++;
-		}
-	      }
-	    }
+	    stringstream chargeStream (stringstream::in | stringstream::out);
+	    chargeStream << groupObj.z();
+	    if (minCharge > charge) minCharge = charge;
+	    if (maxCharge < charge) maxCharge = charge;
+	    nTot++;
+	  }else
+	  {
+	    cerr << "Missing charge(attribute z in group element) for one or more groups in: " << fn << endl;
+	    exit(1);
 	  }
-	  
 	}
       }catch(exception e)
       {
@@ -231,10 +219,7 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 	cerr << e.what() << endl;
 	exit(1);
       }
-	
     }
-      
-  }
   }catch (const xml_schema::exception& e)
   {
     cerr << "Problem reading the xml file: " << fn << endl;
@@ -264,19 +249,8 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   std::string line, tmp, prot, fileId;
   std::istringstream lineParse;
   std::ifstream tandemIn;
-  tandemIn.open(fn.c_str(), std::ios::in);
-  if (!tandemIn) {
-    std::cerr << "Could not open file " << fn << std::endl;
-    exit(-1);
-  }
   
-  //The first row contains the names of the columns
-  getline(tandemIn, line);
-  std::vector<std::string> column_names=split(line,'\t');
-  
-  if(column_names.at(0)[0]=='#'){
-    column_names.at(0)=column_names.at(0).erase(0,1); //Remove "#" in the first name
-  }
+  namespace xml = xsd::cxx::xml;
   
   fileId = fn;
   size_t spos = fileId.rfind('/');
@@ -284,27 +258,20 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   spos = fileId.find('.');
   if (spos != std::string::npos) fileId.erase(spos);
   
-  //TODO max hits per spectra
-  
-  namespace xml = xsd::cxx::xml;
-  
-  
-  //NOTE in tandem.xml  added xmlns="http://www.thegpm.org/TANDEM/2011.12.01.1"
-  
+  ifstream ifs;
+  ifs.exceptions(ifstream::badbit|ifstream::failbit);
+    
+  ifs.open(fn.c_str());
+  parser p;
+    
   try //TODO move the try catch
-  {  
-    ifstream ifs;
-    ifs.exceptions(ifstream::badbit|ifstream::failbit);
-    
-    ifs.open(fn.c_str());
-    parser p;
-    
+  {     
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
     
     assert(doc.get());
     
     //tandem_ns::bioml biomlObj=biomlObj(*doc->getDocumentElement());
-    //std::cerr << "Bioml label: " << biomlObj.label() << std::endl; //TMP
+    //std::cerr << "Bioml label: " << biomlObj.label() << std::endl;
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ())
     {
@@ -320,7 +287,6 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
      
       //tandem_ns::group groupObj(*docGroup->getDocumentElement(),xml_schema::flags::dont_validate | xml_schema::flags::keep_dom | xml_schema::flags::dont_initialize);
       
-      
       // The caller should have associated a dom::auto_ptr object
       // that owns this document with the document node using the
       // xml_schema::dom::tree_node_key key.
@@ -332,53 +298,47 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	//Fix xml and parse to object model
 	std::cerr << "Fixing xml file" << std::endl; //TMP
 	//add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
-      } 
-      
-      tandem_ns::group groupObj(*doc->getDocumentElement());
-      
-      //std::cerr << "Type: " << groupObj.type() << std::endl; //TMP
-      
-      if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && groupObj.type()!="parameters") //Check that the tag name is group and that its not the inputput parameters
-      {
-	std::cerr << "Id group: " << groupObj.id() << std::endl;
-	tandem_ns::group::protein_sequence protObj=groupObj.protein();
-
-	BOOST_FOREACH(const tandem_ns::group::protein_type &prot, groupObj.protein())
-	{
-	  tandem_ns::protein::peptide_type peptideObj=prot.peptide();
-	  //std::cerr << "Pep: " << peptideObj << std::endl;
-	  
-	  
-	  if (prot.note().present())       // test
-	  {
-	    tandem_ns::protein::note_optional n=prot.note();
-	    std::cerr << "Note: " << n << std::endl;
-	    //std::istream << n;
-	  }
-
-	  
-	  //std::cerr << "Prot: " << p.id() << std::endl;
-	  //std::cerr << "Pep: " << peptideObj << std::endl;
-	}
-	
-	BOOST_FOREACH(const tandem_ns::group::group1_type &groupGAML, groupObj.group1())
-	{
-	  //std::cerr << "GAML: " << groupGAML.label() << std::endl;
-	  
-	  BOOST_FOREACH(const gaml_tandem_ns::trace &traceGAML, groupGAML.trace())
-	  {
-	    //std::cerr << "GAML TRACE: " << traceGAML << std::endl;
-	    BOOST_FOREACH(const gaml_tandem_ns::attribute &attributeTraceGAML, traceGAML.attribute())
-	    {
-	      std::cerr << "GAML atr: " << attributeTraceGAML << std::endl;
-	    }
-	  }
-	  
-	  //::gaml_tandem_ns::trace traceGAML=groupGAML.trace();
-	}
-	
       }
       
+      try
+      {
+	tandem_ns::group groupObj(*doc->getDocumentElement());
+	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && groupObj.type()!="parameters") //Check that the tag name is group and that its not the inputput parameters
+	{
+
+	  BOOST_FOREACH(const tandem_ns::group::protein_type &protObj, groupObj.protein()) //Protein
+	  {
+	    tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
+	    tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
+
+	  }
+	
+	  BOOST_FOREACH(const tandem_ns::group::group1_type &groupGAMLObj, groupObj.group1()) //Getting the group element surrounding the GAML namespace
+	  {
+	  
+	    BOOST_FOREACH(const gaml_tandem_ns::trace &traceGAMLObj, groupGAMLObj.trace()) //GAML:trace
+	    {
+	      
+	      BOOST_FOREACH(const gaml_tandem_ns::attribute &attributeTraceGAMLObj, traceGAMLObj.attribute()) //GAML:attribute
+	      {
+		gaml_tandem_ns::attribute::type_type typeAttr=attributeTraceGAMLObj.type();
+		if(typeAttr=="a0") //ao value, related to the hyperscore expectation
+		{
+		  cerr << "a0" << std::endl;
+		} else if(typeAttr=="a1") //a1 value, related to the hyperscore expectation
+		{
+		  cerr << "a1" << std::endl;
+		}
+	      }
+	    }
+	  }
+	}
+      }catch(exception e)
+      {
+	cerr << "Problem parsing the codesynthesis object model for the xml file: " << fn << endl;
+	cerr << e.what() << endl;
+	exit(1);
+      } 
       //*docGroup.release(); //Remove it and its children
     }
     
