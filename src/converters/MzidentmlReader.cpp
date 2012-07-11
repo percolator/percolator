@@ -58,12 +58,26 @@ bool MzidentmlReader::checkValidity(string file)
     std::cerr << "Could not read file " << file << std::endl;
     exit(-1);
   }
-  fileIn.close();
   //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
-  if (line.find("xml") == std::string::npos) {
-    std::cerr << "file is not xml format " << file << std::endl;
+  if (line.find("<?xml") == std::string::npos) {
+    std::cerr << "ERROR : the input file is not xml format " << file << std::endl;
     exit(-1);
   }
+  else
+  {
+    std::string line2,line3;
+    getline(fileIn, line2);
+    getline(fileIn, line3);
+    
+    if ( (line2[1] != '!' && line2.find("SEQUEST") != std::string::npos && line2.find("MzIdentML") != std::string::npos)  
+       ||(line3[1] != '!' && line3.find("SEQUEST") != std::string::npos && line3.find("MzIdentML") != std::string::npos) )
+    {
+       std::cerr << "ERROR : the input file is not MzIdentML - Sequest format " << file << std::endl;
+       exit(-1);
+    }
+    
+  }
+  fileIn.close();
   return isvalid;
 }
 
@@ -76,7 +90,7 @@ bool MzidentmlReader::checkIsMeta(string file)
   getline(fileIn, line);
   fileIn.close();
   //NOTE this is not a correct way to check if it is meta for mzident FIXME
-  if (line.size() > 1 && line[0]=='H' && (line[1]=='\t' || line[1]==' '))
+  if (line.find("<?xml") != std::string::npos)
   {
     isMeta = false;
   }
