@@ -38,6 +38,8 @@ public:
 	       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   virtual bool checkValidity(const std::string file);
+  
+  virtual bool checkIsMeta(std::string file);
  
   virtual void getMaxMinCharge(std::string fn);
   
@@ -45,7 +47,7 @@ public:
 	
   virtual void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn);
+  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
 };
 
 #endif // SQTREADER_H

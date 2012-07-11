@@ -47,7 +47,7 @@ void MzidentmlReader::cleanHashMaps()
 
 bool MzidentmlReader::checkValidity(string file)
 {
-  bool ismeta = true;
+  bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
     std::cerr << "Could not open file " << file << std::endl;
@@ -59,22 +59,35 @@ bool MzidentmlReader::checkValidity(string file)
     exit(-1);
   }
   fileIn.close();
-  if (line.size() > 1 && line[0]=='<' && line[1]=='?') {
-    //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
-    if (line.find("xml") == std::string::npos) {
-      std::cerr << "file is not xml format " << file << std::endl;
-      exit(-1);
-    }
+  //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
+  if (line.find("xml") == std::string::npos) {
+    std::cerr << "file is not xml format " << file << std::endl;
+    exit(-1);
+  }
+  return isvalid;
+}
+
+bool MzidentmlReader::checkIsMeta(string file)
+{
+  //NOTE assuming the file has been tested before
+  bool isMeta;
+  std::ifstream fileIn(file.c_str(), std::ios::in);
+  std::string line;
+  getline(fileIn, line);
+  fileIn.close();
+  //NOTE this is not a correct way to check if it is meta for mzident FIXME
+  if (line.size() > 1 && line[0]=='H' && (line[1]=='\t' || line[1]==' '))
+  {
+    isMeta = false;
   }
   else
   {
-    ismeta = false;
+    isMeta = true;
   }
-  return ismeta;
+  return isMeta;
 }
 
-
-void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet, std::string fn)
+void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet)
 {
   //NOTE from now lets assume the features all always SEQUEST features, ideally I would create my list of features from the 
   //     features description of the XSD

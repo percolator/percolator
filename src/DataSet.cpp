@@ -277,6 +277,7 @@ void DataSet::initFeatureTables(const unsigned int numFeat, bool __regressionTab
 {
   FeatureNames::setNumFeatures(numFeat);
   regresionTable = __regressionTable;
+  psms.clear();
 }
 
 void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber)

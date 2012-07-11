@@ -64,8 +64,12 @@ bool msgfdbReader::checkValidity(const std::string file)
   return ismeta;
 }
 
+bool msgfdbReader::checkIsMeta(string file)
+{
 
-void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn)
+}
+
+void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet)
 {
   push_backFeatureDescription("deNovoScore");
   push_backFeatureDescription("MSGFScore");

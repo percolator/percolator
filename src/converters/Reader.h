@@ -98,7 +98,7 @@ public:
   Reader(ParseOptions po);
   virtual ~Reader();
   
-  void translateFileToXML(const std::string fn,bool isDecoy,unsigned int lineNumber_par);
+  void translateFileToXML(const std::string fn,bool isDecoy,unsigned int lineNumber_par,bool isMeta = false);
 
   string getRidOfUnprintables(std::string inpString);
   
@@ -106,9 +106,11 @@ public:
       
   virtual bool checkValidity(std::string file){};
   
+  virtual bool checkIsMeta(std::string file){};
+  
   virtual void getMaxMinCharge(std::string fn){};
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet,std::string fn){};
+  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet){};
   
   virtual void readRetentionTime(std::string filename){};
 	
