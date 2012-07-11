@@ -31,7 +31,7 @@ std::vector<std::string> msgfdbReader::split(const std::string &s, char delim) {
 
 bool msgfdbReader::checkValidity(const std::string file)
 {
-  bool ismeta = true;
+  bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) 
   {
@@ -54,19 +54,37 @@ bool msgfdbReader::checkValidity(const std::string file)
       std::cerr << "The file " << file << " has the wrong number of columns: "<< column_names.size() << ". Should be 13,14 or 15" << std::endl;
       std::cerr << "depending on which msgfdb options were used." << std::endl;
       exit(-1);
+    }else
+    {
+      isvalid=true;
     }
-  } 
-  else
+  }else
   {
-    ismeta = false;
+    isvalid = false;
   }
 
-  return ismeta;
+  return isvalid;
 }
 
 bool msgfdbReader::checkIsMeta(string file)
 {
+  bool ismeta;
+  std::string line;
+  
+  std::ifstream fileIn(file.c_str(), std::ios::in);
+  getline(fileIn, line);
+  fileIn.close();
+  
+  if (line.find("SpecIndex") != std::string::npos && line.find("MSGF") != std::string::npos) //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
+  {
+    ismeta=false;
+  } 
+  else
+  {
+    ismeta = true;
+  }
 
+  return ismeta;
 }
 
 void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet)
