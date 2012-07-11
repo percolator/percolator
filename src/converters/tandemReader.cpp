@@ -128,7 +128,7 @@ bool tandemReader::checkValidity(const std::string file)
   return isvalid;
 }
 
-bool tandemReader::checkIsMeta(const std::string file)
+bool tandemReader::checkIsMeta(std::string file)
 {
   bool ismeta;
   std::string line;
@@ -146,11 +146,6 @@ bool tandemReader::checkIsMeta(const std::string file)
 
   fileIn.close();
   return ismeta;
-}
-
-bool tandemReader::checkIsMeta(string file)
-{
-
 }
 
 
