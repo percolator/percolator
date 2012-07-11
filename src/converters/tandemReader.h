@@ -51,10 +51,7 @@ private:
   std::vector<std::string> split(const std::string &s, char delim);
   bool fixedXML;
   
-  void remove_endl(std::string s);
-  
-  void readPSM(std::string line,bool isDecoy,std::string fileId,
-	       boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names);
+  void readPSM();
 };
 
 #endif //TANDEMREADER_H

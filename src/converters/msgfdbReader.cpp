@@ -349,10 +349,10 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   /**
   ofstream fileOut;
   if(isDecoy){
-    fileOut.open("out_decoy.txt", std::ios_base::app);
+    fileOut.open(fileId+"out_decoy.txt", std::ios_base::app);
   }else
   {
-    fileOut.open("out_target.txt", std::ios_base::app);
+    fileOut.open(fileId+"out_target.txt", std::ios_base::app);
   }
   if (fileOut.is_open())
   {

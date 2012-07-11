@@ -1,6 +1,8 @@
 #include "tandemReader.h"
 
 static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
+static const XMLCh groupTypeStr[] = { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull};
+static const XMLCh groupModelStr[] = { chLatin_m, chLatin_o, chLatin_d, chLatin_e, chLatin_l, chNull};
 string schemaDefinition = TANDEM_SCHEMA_LOCATION + string("tandem2011.12.01.1.xsd");
 string scheme_namespace = TANDEM_NAMESPACE;
 string schema_major = "";
@@ -212,21 +214,24 @@ void tandemReader::getMaxMinCharge(const std::string fn){
     assert(doc.get());
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ())
-    {
-      if(!fixedXML) //Fix xml and parse to object model TODO
-      {
-	std::cerr << "Fixing xml file" << std::endl; //TMP
-	//add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
-      }
-      
+    {  
       try{
-	tandem_ns::group groupObj(*doc->getDocumentElement());
-	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && groupObj.type()!="parameters") //Check that the tag name is group and that its not the inputput parameters
+	//Check that the tag name is group and that its not the inputput parameters
+	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr)))  
 	{
+	  if(!fixedXML) //Fix xml and parse to object model TODO
+	  {
+	    std::cerr << "Fixing xml file" << std::endl; //TMP
+	    //add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
+	  }
+	  
+	  tandem_ns::group groupObj(*doc->getDocumentElement());
+	  
 	  if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
 	  {
 	    stringstream chargeStream (stringstream::in | stringstream::out);
 	    chargeStream << groupObj.z();
+	    chargeStream >> charge;
 	    if (minCharge > charge) minCharge = charge;
 	    if (maxCharge < charge) maxCharge = charge;
 	    nTot++;
@@ -260,12 +265,18 @@ void tandemReader::getMaxMinCharge(const std::string fn){
   return;
 }
 
-/**
-void tandemReader::readPSM(std::string line,bool isDecoy,std::string fileId,
-			   boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names){
+
+void tandemReader::readPSM(){
+  
+  std::cerr << "asdf" << std::endl;//TMP
   
   
-}**/
+  //Calculate features and stuff
+  
+  //Loop trough the map and push it back
+  
+  //Save psm
+}
 
 void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
 {
@@ -286,57 +297,104 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
     
   ifs.open(fn.c_str());
   parser p;
-    
-  try //TODO move the try catch
+  
+  try
   {     
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
-    
     assert(doc.get());
     
-    //tandem_ns::bioml biomlObj=biomlObj(*doc->getDocumentElement());
-    //std::cerr << "Bioml label: " << biomlObj.label() << std::endl;
+    //tandem_ns::bioml biomlObj=biomlObj(*doc->getDocumentElement()); NOTE the root of the element, doesn't have any useful attributes
     
-    for (doc = p.next(); doc.get() != 0; doc = p.next ())
+    for (doc = p.next(); doc.get() != 0; doc = p.next ()) //Loops over the grouo elements which are the spectra and the last 3 are the input parameters
     {
+      //NOTE cant acess mixed content using codesynthesis, need to keep dom assoication. See the manual for tree parser and : 
+      //http://www.codesynthesis.com/pipermail/xsd-users/2008-October/002005.html
       
-      
-      //xml_schema::dom::auto_ptr< xercesc::DOMDocument> docGroup=xercesc_3_1::DOMImplementation::createDocument();
+      /**xml_schema::dom::auto_ptr< xercesc::DOMDocument> docGroup=xercesc_3_1::DOMImplementation::createDocument();
      
-      //xml_schema::dom::auto_ptr< xercesc::DOMDocument> docGroup=NULL;
+      xml_schema::dom::auto_ptr< xercesc::DOMDocument> docGroup=NULL;
       
-      //docGroup.adoptNode(*doc->getDocumentElement(),true);
+      docGroup.adoptNode(*doc->getDocumentElement(),true);
       
-      //docGroup.setUserData (xml_schema::dom::tree_node_key, docGroup.get (), 0);
+      docGroup.setUserData (xml_schema::dom::tree_node_key, docGroup.get (), 0);
      
-      //tandem_ns::group groupObj(*docGroup->getDocumentElement(),xml_schema::flags::dont_validate | xml_schema::flags::keep_dom | xml_schema::flags::dont_initialize);
+      tandem_ns::group groupObj(*docGroup->getDocumentElement(),xml_schema::flags::dont_validate | xml_schema::flags::keep_dom | xml_schema::flags::dont_initialize);
       
-      // The caller should have associated a dom::auto_ptr object
-      // that owns this document with the document node using the
-      // xml_schema::dom::tree_node_key key.
-      
-      
-      //TODO Add namespace if missing here
-      if(!fixedXML)
-      {
-	//Fix xml and parse to object model
-	std::cerr << "Fixing xml file" << std::endl; //TMP
-	//add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
-      }
+      The caller should have associated a dom::auto_ptr object
+      that owns this document with the document node using the
+      xml_schema::dom::tree_node_key key. **/
       
       try
       {
-	tandem_ns::group groupObj(*doc->getDocumentElement());
-	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && groupObj.type()!="parameters") //Check that the tag name is group and that its not the inputput parameters
-	{
-
-	  BOOST_FOREACH(const tandem_ns::group::protein_type &protObj, groupObj.protein()) //Protein
-	  {
-	    tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
-	    tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
-
-	  }
 	
-	  BOOST_FOREACH(const tandem_ns::group::group1_type &groupGAMLObj, groupObj.group1()) //Getting the group element surrounding the GAML namespace
+	//Check that the tag name is group and that its not the inputput parameters
+	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr))) 
+	{
+	  
+	  //TODO Add namespace if missing here
+	  if(!fixedXML)
+	  {
+	    //Fix xml and parse to object model
+	    std::cerr << "Fixing xml file" << std::endl; //TMP
+	    //add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
+	  }
+	  
+	  int nHits=0;
+	  bool a0Found=false;
+	  bool a1Found=false;
+	  tandem_ns::group groupObj(*doc->getDocumentElement());
+	  
+	  //Information about the spectra and the highest scoring match. NOTE The attributes related to the highest scoring match is not parsed from the group element
+	  //TODO put in map
+	  groupObj.mh(); 	//the parent ion mass (plus a proton) from the spectrum.
+	  groupObj.z(); 	//the parent ion charge from the spectrum.
+	  groupObj.sumI();	//sumI – the log10 value of the sum of all of the fragment ion intensities
+	  groupObj.maxI();	//maxI – the maximum fragment ion intensity
+	  groupObj.fI();	//fI – a multiplier to convert the normalized spectrum contained in this group back to the original intensity values NOTE Want this or not?
+
+	  if(nHits<po.hitsPerSpectrum)
+	  {
+	    //PSMS here
+	    BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
+	    {
+	      tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
+	      tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
+	    
+	      //Information about the protein that the spectra matched
+	      //TODO put in map
+	      protObj.expect();	//the log10 value of the expectation value for the protein
+	      protObj.sumI();	//the sum of all of the fragment ions that identify this protein
+	    
+	      //Describes the region of the protein’s sequence that wasidentified.
+	      //TODO put in map
+	      domainObj.expect();		//the expectation value for the peptide identification
+	      domainObj.mh();		//mh – the calculated peptide mass + a proton
+	      domainObj.delta();		//delta – the spectrum mh minus the calculated mh
+	      domainObj.hyperscore();	//hyperscore – Tandem’s score for the identification
+	      domainObj.nextscore();
+	      domainObj.y_score();
+	      domainObj.y_ions();
+	      domainObj.b_score();
+	      domainObj.b_ions();
+	      domainObj.pre();		//pre – the four residues preceding the domain
+	      domainObj.post();		//post – the four residues following the domain
+	      domainObj.seq();		//seq – the sequence of the domain
+	      domainObj.missed_cleavages();//missed_cleavages – the number of potential cleavage sites in this peptide sequence.
+
+	      BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa()) //Protein
+	      {
+		//Information about modifications in the peptide
+		//TODO put in map
+		aaObj.modified();
+		aaObj.type();
+		aaObj.at();
+	      }
+	    }
+	    nHits++;
+	  }//End if nHits
+	  
+	  
+	  BOOST_FOREACH(const tandem_ns::group1 &groupGAMLObj, groupObj.group1()) //Getting the group element surrounding the GAML namespace
 	  {
 	  
 	    BOOST_FOREACH(const gaml_tandem_ns::trace &traceGAMLObj, groupGAMLObj.trace()) //GAML:trace
@@ -345,29 +403,45 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	      BOOST_FOREACH(const gaml_tandem_ns::attribute &attributeTraceGAMLObj, traceGAMLObj.attribute()) //GAML:attribute
 	      {
 		gaml_tandem_ns::attribute::type_type typeAttr=attributeTraceGAMLObj.type();
-		if(typeAttr=="a0") //ao value, related to the hyperscore expectation
+		//a0 and a1 are two constans used to calculate the hyperscore expectation function. See:
+		//Fenyö D, Beavis RC
+		//A method for assessing the statistical significance of mass spectrometry-based protein identifications using general scoring schemes
+		if(typeAttr=="a0")
 		{
-		  cerr << "a0" << std::endl;
-		} else if(typeAttr=="a1") //a1 value, related to the hyperscore expectation
+		  if(a0Found)
+		  {
+		    cerr << "Found more than one a0 attribute in a groups GAML part." << fn << endl;
+		    exit(1);
+		  }
+		  a0Found=true;
+		  std::string strTMP(attributeTraceGAMLObj.c_str ()); //TODO put in map
+		  std::cerr << "a0 " << strTMP << std::endl; //TMP
+		  
+		} else if(typeAttr=="a1")
 		{
-		  cerr << "a1" << std::endl;
+		  if(a1Found)
+		  {
+		    cerr << "Found more than one a1 attribute in a groups GAML part." << fn << endl;
+		    exit(1);
+		  }
+		  a1Found=true;
+		  std::string strTMP(attributeTraceGAMLObj.c_str ()); //TODO put in map
 		}
 	      }
 	    }
 	  }
-	}
+	  //TODO Save psm here? call readPSM Loop? Two maps, one for the general stuff and one for the indidual stuff? Need a list of maps for indidual?
+	}//End of if
       }catch(exception e)
       {
 	cerr << "Problem parsing the codesynthesis object model for the xml file: " << fn << endl;
 	cerr << e.what() << endl;
 	exit(1);
-      } 
-      //*docGroup.release(); //Remove it and its children
-    }
+      }
+    }//End of for p.next
     
     ifs.close();
     
-    // XMLString Transcode get text content
   }
   catch (const xml_schema::exception& e)
   {
