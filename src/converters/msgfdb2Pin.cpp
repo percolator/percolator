@@ -56,10 +56,10 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "outputXML",
       "save output in an XML file",
       "filename");
-  //TODO The matches for each spectra is spread over the whole file so
+  //TODO Add an option for which feature should be used for matches per spectra sorting
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+      "Maximal number of matches to take in consideration per spectrum, in the order of apperance.",
       "number");
   cmd.defineOption("v",
       "verbose",

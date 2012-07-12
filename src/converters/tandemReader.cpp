@@ -37,52 +37,41 @@ std::vector<std::string>tandemReader::split(const std::string &s, char delim) {
 }
 
 //TODO fix this and add to interface
-/**
 xercesc::DOMElement* add_namespace (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               parser p,
+               xercesc::DOMElement* e,
                const XMLCh* ns)
 {
-
   DOMElement* ne;
-  DOMElement* e=doc->getDocumentElement();
-  
-  for (doc = p.next(); doc.get() != 0; doc = p.next ())
-  {
-    std::cerr << "Add: " << "1" << std::endl;
-  }**/
-  /**
-  if(e.getNamespaceURI()!="http://www.bioml.com/gaml/")//Check if gaml namespace FIXME
-  {
+
+  //if(e.getNamespaceURI()!="http://www.bioml.com/gaml/")//Check if gaml namespace FIXME
+  //{
     ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
-  }else
+  /*}else
   {
     ne=e;
-  }
+  }*/
 
-  ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
   //static const XMLCH asdf=e->getLocalName;
   std::cerr << "Add: " << "1" << std::endl;
   
   for (DOMNode* n = ne->getFirstChild (); n != 0; n = n->getNextSibling ())
   {
-    std::cerr << "Add: " << "2" << std::endl;
     if (n->getNodeType () == DOMNode::ELEMENT_NODE)
     {
-      std::cerr << "Add: " << "3" << std::endl;
-      n = add_namespace (doc,p,ns);
+      n = add_namespace (doc, static_cast<DOMElement*> (n), ns);
     }
-  }**/
+  }
 
-  //return ne;
-//}
+  return ne;
+}
 
-/**
+
 xercesc::DOMElement* add_namespace (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               parser p,
+               xercesc::DOMElement* e,
                const std::string& ns)
 {
-  return add_namespace (doc, p, xsd::cxx::xml::string (ns).c_str ());
-}**/
+  return add_namespace (doc, e, xsd::cxx::xml::string (ns).c_str ());
+}
 
 
 bool tandemReader::checkValidity(const std::string file)
@@ -210,7 +199,8 @@ void tandemReader::getMaxMinCharge(const std::string fn){
   
   try
   {
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
+    //Sending fixedXML as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),fixedXML, schemaDefinition,schema_major, schema_minor, scheme_namespace));
     assert(doc.get());
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ())
@@ -219,10 +209,10 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 	//Check that the tag name is group and that its not the inputput parameters
 	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr)))  
 	{
-	  if(!fixedXML) //Fix xml and parse to object model TODO
+	  if(!fixedXML)
 	  {
 	    std::cerr << "Fixing xml file" << std::endl; //TMP
-	    //add_namespace (doc,"http://www.thegpm.org/TANDEM/2011.12.01.1");
+	    //add_namespace (doc,doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1");
 	  }
 	  
 	  tandem_ns::group groupObj(*doc->getDocumentElement());
@@ -266,10 +256,39 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 }
 
 
-void tandemReader::readPSM(){
+void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database){
+
+  tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
+  tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
+	    
+  //Information about the protein that the spectra matched
+  protObj.expect();	//the log10 value of the expectation value for the protein
+  protObj.sumI();	//the sum of all of the fragment ions that identify this protein
+	    
+  //Describes the region of the protein’s sequence that wasidentified.
+  domainObj.expect();	//the expectation value for the peptide identification
+  domainObj.mh();	//mh – the calculated peptide mass + a proton
+  domainObj.delta();	//delta – the spectrum mh minus the calculated mh
+  domainObj.hyperscore();//hyperscore – Tandem’s score for the identification
+  domainObj.nextscore();
+  domainObj.y_score();
+  domainObj.y_ions();
+  domainObj.b_score();
+  domainObj.b_ions();
+  domainObj.pre();		//pre – the four residues preceding the domain
+  domainObj.post();		//post – the four residues following the domain
+  domainObj.seq();		//seq – the sequence of the domain
+  domainObj.missed_cleavages();//missed_cleavages – the number of potential cleavage sites in this peptide sequence.
+
+  BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa()) //Protein
+  {
+    //Information about modifications in the peptide
+    aaObj.modified();
+    aaObj.type();
+    aaObj.at();
+  }
   
-  std::cerr << "asdf" << std::endl;//TMP
-  
+  //TODO Check if decoy if combined, move? which variable in the xml?
   
   //Calculate features and stuff
   
@@ -299,8 +318,9 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   parser p;
   
   try
-  {     
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace));
+  { 
+    //Sending fixedXML as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),fixedXML, schemaDefinition,schema_major, schema_minor, scheme_namespace));
     assert(doc.get());
     
     //tandem_ns::bioml biomlObj=biomlObj(*doc->getDocumentElement()); NOTE the root of the element, doesn't have any useful attributes
@@ -309,20 +329,7 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
     {
       //NOTE cant acess mixed content using codesynthesis, need to keep dom assoication. See the manual for tree parser and : 
       //http://www.codesynthesis.com/pipermail/xsd-users/2008-October/002005.html
-      
-      /**xml_schema::dom::auto_ptr< xercesc::DOMDocument> docGroup=xercesc_3_1::DOMImplementation::createDocument();
-     
-      xml_schema::dom::auto_ptr< xercesc::DOMDocument> docGroup=NULL;
-      
-      docGroup.adoptNode(*doc->getDocumentElement(),true);
-      
-      docGroup.setUserData (xml_schema::dom::tree_node_key, docGroup.get (), 0);
-     
-      tandem_ns::group groupObj(*docGroup->getDocumentElement(),xml_schema::flags::dont_validate | xml_schema::flags::keep_dom | xml_schema::flags::dont_initialize);
-      
-      The caller should have associated a dom::auto_ptr object
-      that owns this document with the document node using the
-      xml_schema::dom::tree_node_key key. **/
+      //Not implementet here
       
       try
       {
@@ -351,48 +358,6 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	  groupObj.sumI();	//sumI – the log10 value of the sum of all of the fragment ion intensities
 	  groupObj.maxI();	//maxI – the maximum fragment ion intensity
 	  groupObj.fI();	//fI – a multiplier to convert the normalized spectrum contained in this group back to the original intensity values NOTE Want this or not?
-
-	  if(nHits<po.hitsPerSpectrum)
-	  {
-	    //PSMS here
-	    BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
-	    {
-	      tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
-	      tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
-	    
-	      //Information about the protein that the spectra matched
-	      //TODO put in map
-	      protObj.expect();	//the log10 value of the expectation value for the protein
-	      protObj.sumI();	//the sum of all of the fragment ions that identify this protein
-	    
-	      //Describes the region of the protein’s sequence that wasidentified.
-	      //TODO put in map
-	      domainObj.expect();		//the expectation value for the peptide identification
-	      domainObj.mh();		//mh – the calculated peptide mass + a proton
-	      domainObj.delta();		//delta – the spectrum mh minus the calculated mh
-	      domainObj.hyperscore();	//hyperscore – Tandem’s score for the identification
-	      domainObj.nextscore();
-	      domainObj.y_score();
-	      domainObj.y_ions();
-	      domainObj.b_score();
-	      domainObj.b_ions();
-	      domainObj.pre();		//pre – the four residues preceding the domain
-	      domainObj.post();		//post – the four residues following the domain
-	      domainObj.seq();		//seq – the sequence of the domain
-	      domainObj.missed_cleavages();//missed_cleavages – the number of potential cleavage sites in this peptide sequence.
-
-	      BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa()) //Protein
-	      {
-		//Information about modifications in the peptide
-		//TODO put in map
-		aaObj.modified();
-		aaObj.type();
-		aaObj.at();
-	      }
-	    }
-	    nHits++;
-	  }//End if nHits
-	  
 	  
 	  BOOST_FOREACH(const tandem_ns::group1 &groupGAMLObj, groupObj.group1()) //Getting the group element surrounding the GAML namespace
 	  {
@@ -429,9 +394,20 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 		}
 	      }
 	    }
+	  }//End of GAML part
+	  
+	  //PSMS here
+	  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
+	  {
+	    if(nHits<po.hitsPerSpectrum)
+	    {
+	      createPSM(protObj,isDecoy,database);
+	      nHits++;
+	    }
+
 	  }
-	  //TODO Save psm here? call readPSM Loop? Two maps, one for the general stuff and one for the indidual stuff? Need a list of maps for indidual?
-	}//End of if
+	  
+	}//End of if group and not parameters
       }catch(exception e)
       {
 	cerr << "Problem parsing the codesynthesis object model for the xml file: " << fn << endl;

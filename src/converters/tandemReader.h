@@ -51,7 +51,7 @@ private:
   std::vector<std::string> split(const std::string &s, char delim);
   bool fixedXML;
   
-  void readPSM();
+  void createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
 };
 
 #endif //TANDEMREADER_H
