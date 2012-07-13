@@ -46,8 +46,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   intro << "the decoy msgfdb-file. Small data sets may be merged by replace the msgfdb-files with" << endl;
   intro << "meta files. Meta files are text files containing the paths of msgfdb-files, one" << endl;
   intro << "path per line. For successful result, the different runs should be generated" << endl;
-  intro << "under similar condition. msgfdb2pin will use all psms in the files, if a maximum" << endl;
-  intro << "number of matches is wanted re-run msgfdb with the -n option." << endl;
+  intro << "under similar condition." << endl;
 
   // init
   CommandLineParser cmd(intro.str());

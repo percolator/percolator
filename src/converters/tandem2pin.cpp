@@ -92,11 +92,6 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "ms2-file",
       "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
       "filename");**/
-  cmd.defineOption("M",
-      "isotope",
-      "Mass difference calculated to closest isotope mass rather than to the average mass.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("p",
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
@@ -155,10 +150,6 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   /**if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }**/
-  if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
-    parseOptions.monoisotopic = true;
-  }
   if (cmd.optionSet("p")) {
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));

@@ -172,6 +172,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   std::vector< std::string > proteinIds;
   bool tda1=false, ndef=false;
   int rank;
+  double calculatedMassToCharge, calculatedMass, dM;
   
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
@@ -211,6 +212,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   double PepFDR;//Used if tda1 option was used
   double FDR; 	//Used if tda1 option was not used in msgfb
   
+  
   if(tda1){//if -tda 1 option is was used in msgfdb there is one more feature and FDR is sligtly different
     EFDR=boost::lexical_cast<double>(psm_vector.at(13));
     PepFDR=boost::lexical_cast<double>(psm_vector.at(14));
@@ -247,113 +249,118 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     rank++;
   }
   idCounterMap[key.str()]=rank; //If key already exits the value gets replaced by rank, if it doesn't a new object is created with key and value.
-  
-  //if(rank>3)std::cerr << "R: " << rank << " Key: " << key.str() << std::endl;
-  //if(rank>1)std::cerr << "R: " << rank << " Key: " << key.str() << std::endl;
  
   if(rank<=po.hitsPerSpectrum)
   {
-  //Create id
-  id.str("");
-  id << fileId << '_' << specIndex << '_' << scan << '_' << charge << '_' << rank;
-  std::string psmId=id.str();
+    //Create id
+    id.str("");
+    id << fileId << '_' << specIndex << '_' << scan << '_' << charge << '_' << rank;
+    std::string psmId=id.str();
   
-
+    //Get the flanks/termini and remove them from the peptide sequence
+    std::vector<std::string> tmp_vect=split(peptide,'.');
+    percolatorInNs::occurence::flankN_type flankN;
+    percolatorInNs::occurence::flankC_type flankC;
+    std::string peptideSequence;
+    std::string peptideS;
   
-  
-  //Get the flanks/termini and remove them from the peptide sequence
-  std::vector<std::string> tmp_vect=split(peptide,'.');
-  percolatorInNs::occurence::flankN_type flankN;
-  percolatorInNs::occurence::flankC_type flankC;
-  std::string peptideSequence;
-  std::string peptideS;
-  
-  try{
-    flankN=tmp_vect.at(0);
-    flankC=tmp_vect.at(2); 
-
-    peptideSequence=tmp_vect.at(1);
-    peptideS = peptideSequence;
-  }
-  catch(exception e){
-    std::cerr << "There is a problem with the peptide string: " << peptide << " SpecIndex: " << specIndex << std::endl;
-    exit(-1);
-  }
-  
-  //Remove modifications
-  for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos
-	&& modifiedAA.find(peptideSequence[ix])==string::npos){
-      if (ptmMap.count(peptideSequence[ix])==0) {
-	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
-        exit(-1);
+    try{
+      flankN=tmp_vect.at(0);
+      flankC=tmp_vect.at(2);
+      if(flankN.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
+      {
+	flankN="-";
       }
-      peptideSequence.erase(ix,1);
-    }  
-  }
-  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
-  
-  //Register the ptms
-  for(unsigned int ix=0;ix<peptideS.size();++ix) {
-    if (aaAlphabet.find(peptideS[ix])==string::npos) {
-      int accession = ptmMap[peptideS[ix]];
-      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
-      peptide_p->modification().push_back(mod_p);      
-      peptideS.erase(ix,1);      
-    }  
-  }
-  
-  //Calculate peptide mass
-  //double calculatedMassToCharge=Reader::calculatePepMAss(peptide,charge); //NOTE With flanks
-  double calculatedMassToCharge=Reader::calculatePepMAss(peptideSequence,charge); //NOTE Without flanks
-  
-  //Push_back the DeNovoScore and msgfscore
-  f_seq.push_back(deNovoScore);
-  f_seq.push_back(MSGFScore);
+      if(flankC.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
+      {
+	flankC="-";
+      }
 
-  f_seq.push_back( observedMassCharge ); // Observed mass
-  f_seq.push_back( peptideLength(peptideSequence)); // Peptide length
-  int nxtFeat = 8;
-  for (int c = minCharge; c
-  <= maxCharge; c++)
-    f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
-
-  if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-    f_seq.push_back( Enzyme::isEnzymatic(peptide.at(0),peptide.at(2)) ? 1.0 : 0.0);
-    f_seq.push_back(Enzyme::isEnzymatic(peptide.at(peptide.size() - 3),peptide.at(peptide.size() - 1)) ? 1.0 : 0.0);
-    std::string peptid2 = peptide.substr(2, peptide.length() - 4);
-    f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
-  }
+      peptideSequence=tmp_vect.at(1);
+      peptideS = peptideSequence;
+    }
+    catch(exception e){
+      std::cerr << "There is a problem with the peptide string: " << peptide << " SpecIndex: " << specIndex << std::endl;
+      exit(-1);
+    }
   
-  //Calculate difference between observed and calculated mass
-  double dM =MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
+    //Remove modifications
+    for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
+      if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos
+	      && modifiedAA.find(peptideSequence[ix])==string::npos){
+	if (ptmMap.count(peptideSequence[ix])==0) {
+	  cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
+	  exit(-1);
+	}
+	peptideSequence.erase(ix,1);
+      }  
+    }
+    std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
+  
+    //Register the ptms
+    for(unsigned int ix=0;ix<peptideS.size();++ix) {
+      if (aaAlphabet.find(peptideS[ix])==string::npos) {
+	int accession = ptmMap[peptideS[ix]];
+	std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
+	std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
+	peptide_p->modification().push_back(mod_p);      
+	peptideS.erase(ix,1);      
+      }  
+    }
+  
+    //Calculate peptide mass
+    //double calculatedMassToCharge=Reader::calculatePepMAss(peptide,charge); //NOTE With flanks
+    calculatedMass=Reader::calculatePepMAss(peptideSequence,charge); //NOTE Without flanks
+    
+    //Mass in the msgfdb file is mass/charge NOTE Not sure if this is correct, might be something else
+    calculatedMassToCharge=calculatedMass/charge;
+  
+    //Push_back the DeNovoScore and msgfscore
+    f_seq.push_back(deNovoScore);
+    f_seq.push_back(MSGFScore);
+
+    f_seq.push_back( observedMassCharge ); // Observed mass
+    f_seq.push_back( peptideLength(peptideSequence)); // Peptide length
+    int nxtFeat = 8;
+    for (int c = minCharge; c
+    <= maxCharge; c++)
+      f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
+
+    if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
+      f_seq.push_back( Enzyme::isEnzymatic(peptide.at(0),peptide.at(2)) ? 1.0 : 0.0);
+      f_seq.push_back(Enzyme::isEnzymatic(peptide.at(peptide.size() - 3),peptide.at(peptide.size() - 1)) ? 1.0 : 0.0);
+      std::string peptid2 = peptide.substr(2, peptide.length() - 4);
+      f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
+    }
+  
+    //Calculate difference between observed and calculated mass
+    dM =MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
                                    charge, peptide.substr(2, peptide.size()- 4));
-  f_seq.push_back( dM ); // obs - calc mass
-  f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
+    f_seq.push_back( dM ); // obs - calc mass
+    f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
   
-  if (po.calcPTMs) 
-  {
-    f_seq.push_back(cntPTMs(peptide)); //With flanks
-  }
-  if (po.pngasef) 
-  {
-    f_seq.push_back(isPngasef(peptide,isDecoy)); //With flanks
-  }
-  if (po.calcAAFrequencies) {
-    computeAAFrequencies(peptide, f_seq); //With flanks
-  }
+    if (po.calcPTMs) 
+    {
+      f_seq.push_back(cntPTMs(peptide)); //With flanks
+    }
+    if (po.pngasef) 
+    {
+      f_seq.push_back(isPngasef(peptide,isDecoy)); //With flanks
+    }
+    if (po.calcAAFrequencies) {
+      computeAAFrequencies(peptide, f_seq); //With flanks
+    }
   
-  percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
+    percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
 	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
-  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
+    std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
-  for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
-  {
-    std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
-    psm_p->occurence().push_back(oc_p);
-  }
-  database->savePsm(scan, psm_p);
+    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
+    {
+      std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
+      psm_p->occurence().push_back(oc_p);
+    }
+    database->savePsm(scan, psm_p);
   
   }//End of if(rank<po.hitsPerSpectrum)
   
@@ -377,8 +384,8 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   else{
     cout << "Unable to open file";
     exit(-1);
-  }**/
-
+  }
+  **/
 }
 
 void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)

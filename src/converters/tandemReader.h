@@ -27,6 +27,8 @@
 using namespace std;
 using namespace xercesc;
 
+typedef map<std::string, double> spectraMapType;
+
 class tandemReader: public Reader
 {
 
@@ -50,8 +52,9 @@ private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
   bool fixedXML;
+  spectraMapType spectraMap;
   
-  void createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  void createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,spectraMapType &spectraMap,std::string fn);
 };
 
 #endif //TANDEMREADER_H

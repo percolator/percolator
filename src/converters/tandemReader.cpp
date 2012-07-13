@@ -142,8 +142,8 @@ bool tandemReader::checkIsMeta(std::string file)
 
 void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet) //TODO Needs some changes
 {
-  push_backFeatureDescription("deNovoScore");
-  push_backFeatureDescription("MSGFScore");
+  push_backFeatureDescription("hyperscore");
+  push_backFeatureDescription("nextscore");
   push_backFeatureDescription("Mass");
   push_backFeatureDescription("PepLen");
   
@@ -256,31 +256,70 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 }
 
 
-void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database){
+void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,spectraMapType &spectraMap,std::string fn){
 
+  typedef map<std::string,double> protMapType;
+  typedef map<std::string,std::string> protMapStringType;
+  
+  std::ostringstream id;
+  std::string fileId, protId, proteinName;
+  int rank, spectraId;
+  std::vector< std::string > proteinNames;
+  protMapType protMap;
+  protMapStringType protMapString;
+  
+  std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
+  percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
+  std::map<char,int> ptmMap = po.ptmScheme; //NOTE not used yet
+  
   tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
   tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
-	    
+	      
+  fileId = fn;
+  size_t spos = fileId.rfind('/');
+  if (spos != std::string::npos) fileId.erase(0, spos + 1);
+  spos = fileId.find('.');
+  if (spos != std::string::npos) fileId.erase(spos);
+  
+  
   //Information about the protein that the spectra matched
-  protObj.expect();	//the log10 value of the expectation value for the protein
-  protObj.sumI();	//the sum of all of the fragment ions that identify this protein
+  protMap["protExpect"]=protObj.expect();	//the log10 value of the expectation value for the protein
+  protMap["protSumI"]=protObj.sumI();	//the sum of all of the fragment ions that identify this protein
+  protId=protObj.id();	//the identifier for this particular identification (spectrum #).(id #)
+  int pos=protId.find('.');
+  
+  if (pos!=string::npos)
+  {
+    spectraId=boost::lexical_cast<int>(protId.substr(0,pos));
+    rank=boost::lexical_cast<int>(protId.substr(pos+1));
+  }
 	    
-  //Describes the region of the protein’s sequence that wasidentified.
-  domainObj.expect();	//the expectation value for the peptide identification
-  domainObj.mh();	//mh – the calculated peptide mass + a proton
-  domainObj.delta();	//delta – the spectrum mh minus the calculated mh
-  domainObj.hyperscore();//hyperscore – Tandem’s score for the identification
-  domainObj.nextscore();
-  domainObj.y_score();
-  domainObj.y_ions();
-  domainObj.b_score();
-  domainObj.b_ions();
-  domainObj.pre();		//pre – the four residues preceding the domain
-  domainObj.post();		//post – the four residues following the domain
-  domainObj.seq();		//seq – the sequence of the domain
-  domainObj.missed_cleavages();//missed_cleavages – the number of potential cleavage sites in this peptide sequence.
+  //Describes the region of the protein’s sequence that was identified.
+  protMap["domainExpect"]=domainObj.expect();		//the expectation value for the peptide identification
+  protMap["calculatedMass"]=domainObj.mh();		//the calculated peptide mass + a proton
+  protMap["massDiff"]=domainObj.delta();		//the spectrum mh minus the calculated mh
+  protMap["hyperScore"]=domainObj.hyperscore();	//Tandem’s score for the identification
+  protMap["nextScore"]=domainObj.nextscore();
+  protMap["yScore"]=domainObj.y_score();
+  protMap["yIons"]=domainObj.y_ions();
+  protMap["bScore"]=domainObj.b_score();
+  protMap["bIons"]=domainObj.b_ions();
+  protMapString["domainPre"]=domainObj.pre();		//the four residues preceding the domain
+  protMapString["domainPost"]=domainObj.post();	//the four residues following the domain
+  protMapString["peptide"]=domainObj.seq();		//the sequence of the domain TODO flanks? is it first in seq or before?
+  protMap["missedCleavages"]=domainObj.missed_cleavages();//the number of potential cleavage sites in this peptide sequence.
 
-  BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa()) //Protein
+  //Get absMassDiff
+  if(protMap["massDiff"]>0)
+  {
+    protMap["absMassDiff"]=protMap["massDiff"];
+  }
+  else
+  {
+    protMap["absMassDiff"]=-protMap["massDiff"];
+  }
+  
+  BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa()) //Do something good with aaObj TODO
   {
     //Information about modifications in the peptide
     aaObj.modified();
@@ -288,32 +327,85 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
     aaObj.at();
   }
   
-  //TODO Check if decoy if combined, move? which variable in the xml?
   
-  //Calculate features and stuff
+  //Create id
+  id.str("");
+  id << fileId << '_' << spectraId << '_' << spectraMap["charge"] << '_' << rank;
+  std::string psmId=id.str();
   
-  //Loop trough the map and push it back
+  //Get rid of unprinatables in proteinID and make list of proteinIDs
+  proteinName=protObj.label();
+  proteinName=getRidOfUnprintables(proteinName);
+  proteinNames.push_back(proteinName);
+  
+  //Adjust isDecoy if combined file
+  if(po.iscombined)
+  {
+    isDecoy = proteinNames.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+  }
+  
+  //Check length of peptide, if its to short it cant contain both flanks and peptide
+  assert(protMapString["peptide"].size() >= 5 );
+  
+  
+  //Push back the main scores
+  f_seq.push_back(protMap["hyperScore"]);
+  f_seq.push_back(protMap["nextScore"]);
+
+  f_seq.push_back(spectraMap["charge"]);
+
+  //Expect
+  f_seq.push_back(protMap["protExpect"]);
+  f_seq.push_back(protMap["domainExpect"]);
+  
+  //Ion related features
+  f_seq.push_back(spectraMap["sumI"]);
+  f_seq.push_back(protMap["protSumI"]);
+  f_seq.push_back(spectraMap["maxI"]);
+  
+  //TODO calculate ions thing with this:
+  //protMap["yScore"]
+  //protMap["yIons"]
+  //protMap["bScore"]
+  //protMap["bIons"]
+  
+  // per_peptides[p]['ionRatio'] = float(int(peptides[pep]['b_ions'])+int(peptides[pep]['y_ions'])) / float(len(peptides[pep]['seq'])*2)
+  
+  //Hyperscore constants
+  f_seq.push_back(spectraMap["a0"]);
+  f_seq.push_back(spectraMap["a1"]);
+  
+  //Pusback massrelated
+  f_seq.push_back(spectraMap["parenIonMass"]);
+  f_seq.push_back(protMap["massDiff"]);
+  f_seq.push_back(protMap["absMassDiff"]);
+  
+  //Length of peptide
+  f_seq.push_back(protMapString["peptide"].size()); //NOTE atm with or wihtout flanks?
+  
+  //TODO Missed cleavages
+  //protMap["missedCleavages"]
+  
+  //TODO push back peptide sequence, what todo do with pre and post?
+  
+  //TODO Calculate features
   
   //Save psm
+  //database->savePsm(spectraId, psm_p);
+  protMap.clear();
 }
 
 void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
 {
-  std::string line, tmp, prot, fileId;
+  std::string line, tmp, prot;
   std::istringstream lineParse;
   std::ifstream tandemIn;
+  int spectraId;
   
   namespace xml = xsd::cxx::xml;
   
-  fileId = fn;
-  size_t spos = fileId.rfind('/');
-  if (spos != std::string::npos) fileId.erase(0, spos + 1);
-  spos = fileId.find('.');
-  if (spos != std::string::npos) fileId.erase(spos);
-  
   ifstream ifs;
   ifs.exceptions(ifstream::badbit|ifstream::failbit);
-    
   ifs.open(fn.c_str());
   parser p;
   
@@ -351,13 +443,26 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	  bool a1Found=false;
 	  tandem_ns::group groupObj(*doc->getDocumentElement());
 	  
-	  //Information about the spectra and the highest scoring match. NOTE The attributes related to the highest scoring match is not parsed from the group element
-	  //TODO put in map
-	  groupObj.mh(); 	//the parent ion mass (plus a proton) from the spectrum.
-	  groupObj.z(); 	//the parent ion charge from the spectrum.
-	  groupObj.sumI();	//sumI – the log10 value of the sum of all of the fragment ion intensities
-	  groupObj.maxI();	//maxI – the maximum fragment ion intensity
-	  groupObj.fI();	//fI – a multiplier to convert the normalized spectrum contained in this group back to the original intensity values NOTE Want this or not?
+	  if(!spectraMap.empty())
+	  {
+	    spectraMap.clear();
+	  }
+	  
+	  //Information about the spectra and the highest scoring match. 
+	  //NOTE The attributes related to the highest scoring match is not parsed from the group element, all matches are parsed in createPSM function from the protein element and its children
+	  if(groupObj.mh().present() && groupObj.z().present() && groupObj.sumI().present() && groupObj.maxI().present() && groupObj.fI().present()&& groupObj.id().present())
+	  {
+	    spectraMap["parenIonMass"]=groupObj.mh().get(); 	//the parent ion mass (plus a proton) from the spectrum
+	    spectraMap["charge"]=groupObj.z().get(); 	//the parent ion charge from the spectrum
+	    spectraMap["sumI"]=groupObj.sumI().get();	//the log10 value of the sum of all of the fragment ion intensities
+	    spectraMap["maxI"]=groupObj.maxI().get();	//the maximum fragment ion intensity
+	    spectraMap["fI"]=groupObj.fI().get();	//a multiplier to convert the normalized spectrum contained in this group back to the original intensity values NOTE Currently not used
+	  }
+	  else
+	  {
+	    cerr << "An required attribute is not present in the group/spectra element in file: " << fn << endl;
+	    exit(1);
+	  }
 	  
 	  BOOST_FOREACH(const tandem_ns::group1 &groupGAMLObj, groupObj.group1()) //Getting the group element surrounding the GAML namespace
 	  {
@@ -375,22 +480,21 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 		{
 		  if(a0Found)
 		  {
-		    cerr << "Found more than one a0 attribute in a groups GAML part." << fn << endl;
+		    cerr << "Found more than one a0 attribute in a groups GAML part. File: " << fn << endl;
 		    exit(1);
 		  }
 		  a0Found=true;
-		  std::string strTMP(attributeTraceGAMLObj.c_str ()); //TODO put in map
-		  std::cerr << "a0 " << strTMP << std::endl; //TMP
+		  spectraMap["a0"]=attributeTraceGAMLObj;
 		  
 		} else if(typeAttr=="a1")
 		{
 		  if(a1Found)
 		  {
-		    cerr << "Found more than one a1 attribute in a groups GAML part." << fn << endl;
+		    cerr << "Found more than one a1 attribute in a groups GAML part. File: " << fn << endl;
 		    exit(1);
 		  }
 		  a1Found=true;
-		  std::string strTMP(attributeTraceGAMLObj.c_str ()); //TODO put in map
+		  spectraMap["a1"]=attributeTraceGAMLObj;
 		}
 	      }
 	    }
@@ -401,11 +505,12 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	  {
 	    if(nHits<po.hitsPerSpectrum)
 	    {
-	      createPSM(protObj,isDecoy,database);
+	      createPSM(protObj,isDecoy,database,spectraMap,fn);
 	      nHits++;
 	    }
 
 	  }
+	  spectraMap.clear();
 	  
 	}//End of if group and not parameters
       }catch(exception e)

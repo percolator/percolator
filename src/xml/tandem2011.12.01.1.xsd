@@ -43,7 +43,7 @@
                     <xsd:element name="file" minOccurs="0">
                       <xsd:complexType>
                         <xsd:attribute name="type" type="xsd:string" />
-                        <xsd:attribute name="URL" type="xsd:string" />
+                        <xsd:attribute name="URL" type="xsd:string" use="required"/>
                       </xsd:complexType>
                     </xsd:element>
                     <xsd:element name="peptide">
@@ -65,9 +65,9 @@
 				         </xsd:element>
 				       </xsd:sequence>
                                       <xsd:attribute name="id" type="xsd:string" use="required"/>
-                                      <xsd:attribute name="start" type="xsd:int" />
-                                      <xsd:attribute name="end" type="xsd:int" />
-                                      <xsd:attribute name="expect" type="xsd:string" use="required"/>
+                                      <xsd:attribute name="start" type="xsd:int" use="required"/>
+                                      <xsd:attribute name="end" type="xsd:int" use="required"/>
+                                      <xsd:attribute name="expect" type="xsd:double" use="required"/>
                                       <xsd:attribute name="mh" type="xsd:decimal" use="required"/>
                                       <xsd:attribute name="delta" type="xsd:decimal" use="required"/>
                                       <xsd:attribute name="hyperscore" type="xsd:decimal" use="required"/>
@@ -92,10 +92,10 @@
                       </xsd:complexType>
                     </xsd:element>
                   </xsd:sequence>
-                  <xsd:attribute name="expect" type="xsd:decimal" use="required"/>
-                  <xsd:attribute name="id" type="xsd:decimal" use="required"/>
+                  <xsd:attribute name="expect" type="xsd:double" use="required"/>
+                  <xsd:attribute name="id" type="xsd:string" use="required"/>
                   <xsd:attribute name="uid" type="xsd:int" use="optional"/>
-                  <xsd:attribute name="label" type="xsd:string" use="optional"/>
+                  <xsd:attribute name="label" type="xsd:string" use="required"/>
                   <xsd:attribute name="sumI" type="xsd:decimal" use="required"/>
                 </xsd:complexType>
               </xsd:element>
@@ -125,7 +125,7 @@
             <xsd:attribute name="mh" type="xsd:decimal" use="optional"/>
             <xsd:attribute name="z" type="xsd:int" use="optional"/>
             <xsd:attribute name="rt" type="xsd:string" use="optional"/>
-            <xsd:attribute name="expect" type="xsd:string" use="optional"/>
+            <xsd:attribute name="expect" type="xsd:double" use="optional"/>
             <xsd:attribute name="sumI" type="xsd:decimal" use="optional"/>
             <xsd:attribute name="maxI" type="xsd:decimal" use="optional"/>
             <xsd:attribute name="fI" type="xsd:decimal" use="optional"/>
