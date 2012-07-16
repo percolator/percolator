@@ -36,167 +36,49 @@ std::vector<std::string>tandemReader::split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
-
-
-
-
-xercesc::DOMElement*
-add_namespace2 (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               xercesc::DOMElement* e,
-               const XMLCh* ns, int lvl)
+void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns)
 {
-  using namespace xercesc;
-
-  //DOMElement* ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
-  DOMElement* ne=e;
-  std::cerr << "Tag: " << XMLString::transcode(e->getTagName()) << std::endl;
-
-  for (DOMNode* n = ne->getFirstChild (); n != 0; n = n->getNextSibling ())
-  {
-    if (n->getNodeType () == DOMNode::ELEMENT_NODE)
-    {
-      n = add_namespace2 (doc, static_cast<DOMElement*> (n), ns, 1);
-    }
-  }
-
-  return ne;
-}
-
-xercesc::DOMElement*
-add_namespace2 (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               xercesc::DOMElement* e,
-               const std::string& ns, int lvl)
-{
-  return add_namespace2 (doc, e, xsd::cxx::xml::string (ns).c_str (), 1);
-}
-
-
-
-
-
-void add_namespace3 (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               xercesc::DOMElement* e,
-               const XMLCh* ns, int lvl)
-{
-  std::cerr << "Lvl: " << lvl << " New func call" << std::endl;
-  int nlvl=lvl+1;
+  //std::cerr << "New func call" << std::endl;
   
   DOMElement* ne;
   XMLCh* GAML_XMLCH=XMLString::transcode("www.bioml.com/gaml/");
-  std::cerr << "Lvl: " << lvl << " Tag: ";
-  std::cerr << XMLString::transcode(e->getTagName()) << std::endl;
-  std::cerr << "Lvl: " << lvl << " Doc tag: ";
-  std::cerr << std::endl;
-  std::cerr << XMLString::transcode(doc->getDocumentElement()->getTagName()) << std::endl;
+  //std::cerr <<"Tag: ";
+  //std::cerr << XMLString::transcode(e->getTagName()) << std::endl;
+  //std::cerr << "Doc tag: ";
+  //std::cerr << XMLString::transcode(doc->getDocumentElement()->getTagName()) << std::endl;
   
-  /*
   if(XMLString::equals(e->getNamespaceURI(),GAML_XMLCH))//Check if gaml namespace FIXME
   {
     ne=e;
   }else
   {
-    //ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
-    ne=e;
-  }*/
-  ne=e;
+    ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
+  }
  
-  std::cerr << "Lvl: " << lvl << " For" << std::endl;
+  //std::cerr << "Lvl: " << lvl << " For" << std::endl;
   DOMNodeList* childList=ne->getChildNodes();
  
   for(int iter=0; iter<childList->getLength();iter++)
   {
-    std::cerr << "Lvl: " << lvl << " For iter" << std::endl;
+    //std::cerr << "Lvl: " << lvl << " For iter" << std::endl;
     if (childList->item(iter)->getNodeType () == DOMNode::ELEMENT_NODE)
     {
-      std::cerr << "Lvl: " << lvl << " If iter" << std::endl;
-      add_namespace3 (doc, static_cast<DOMElement*> (childList->item(iter)), ns, nlvl);
+      add_namespace (doc, static_cast<DOMElement*> (childList->item(iter)), ns);
       //add_namespace (doc, static_cast<DOMElement*> (n), ns, nlvl);
-      std::cerr << "Lvl: " << lvl << " If Tag iter ";
-      std::cerr << XMLString::transcode(childList->item(iter)->getLocalName()) << std::endl; //TMP
+      //std::cerr << "If Tag iter ";
+      //std::cerr << XMLString::transcode(childList->item(iter)->getLocalName()) << std::endl; //TMP
     }
   }
   
   XMLString::release(&GAML_XMLCH); 
   
-  std::cerr << "Lvl: " << lvl << " End" << std::endl;
+  //std::cerr << "End" << std::endl;
 }
 
 
-void add_namespace3 (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               xercesc::DOMElement* e,
-               const std::string& ns, int lvl)
+void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns)
 {
-  add_namespace3 (doc, e, xsd::cxx::xml::string (ns).c_str (),lvl);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//TODO fix this and add to interface
-xercesc::DOMElement* add_namespace (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               xercesc::DOMElement* e,
-               const XMLCh* ns, int lvl)
-{
-  std::cerr << "Lvl: " << lvl << " New func call" << std::endl;
-  int nlvl=lvl+1;
-  
-  DOMElement* ne;
-  XMLCh* GAML_XMLCH=XMLString::transcode("www.bioml.com/gaml/");
-  std::cerr << "Lvl: " << lvl << " Tag: ";
-  std::cerr << XMLString::transcode(e->getTagName()) << std::endl;
-  std::cerr << "Lvl: " << lvl << " Doc tag: ";
-  std::cerr << std::endl;
-  std::cerr << XMLString::transcode(doc->getDocumentElement()->getTagName()) << std::endl;
-  
-  /*
-  if(XMLString::equals(e->getNamespaceURI(),GAML_XMLCH))//Check if gaml namespace FIXME
-  {
-    ne=e;
-  }else
-  {
-    //ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
-    ne=e;
-  }*/
-  ne=e;
- 
-  std::cerr << "Lvl: " << lvl << " For" << std::endl;
-  for (DOMNode* n = ne->getFirstChild (); n != NULL; n = n->getNextSibling ())
-  {
-    std::cerr << "Lvl: " << lvl << " For iter" << std::endl;
-    if (n->getNodeType () == DOMNode::ELEMENT_NODE)
-    {
-      std::cerr << "Lvl: " << lvl << " If iter" << std::endl;
-      n = add_namespace (doc, static_cast<DOMElement*> (n), ns, nlvl);
-      //add_namespace (doc, static_cast<DOMElement*> (n), ns, nlvl);
-      std::cerr << "Lvl: " << lvl << " If Tag iter ";
-      std::cerr << XMLString::transcode(n->getLocalName()) << std::endl; //TMP
-    }
-  }
-  
-  XMLString::release(&GAML_XMLCH); 
-  
-  std::cerr << "Lvl: " << lvl << " End" << std::endl;
-  return ne;
-}
-
-
-xercesc::DOMElement* add_namespace (xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc,
-               xercesc::DOMElement* e,
-               const std::string& ns, int lvl)
-{
-  return add_namespace (doc, e, xsd::cxx::xml::string (ns).c_str (),lvl);
+  add_namespace (doc, e, xsd::cxx::xml::string (ns).c_str ());
 }
 
 
@@ -229,10 +111,11 @@ bool tandemReader::checkValidity(const std::string file)
     {
       isvalid=true;
     }
-    if(line_bioml.find("xmlns=\"http://www.thegpm.org/TANDEM/2011.12.01.1\"")!=std::string::npos){ 
+    if(line_bioml.find("xmlns=\"http://www.thegpm.org/TANDEM/2011.12.01.1\"")!=std::string::npos){
       fixedXML=true;
     }else
     {
+      std::cerr << "WARNING: File: " << file << " is missing namespace information, xml file will not be validated before parsing." << std::endl;
       fixedXML=false;
     }
   } 
@@ -337,13 +220,8 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 	{
 	  if(!fixedXML)
 	  {
-	    std::cerr << "Fixing xml file" << std::endl; //TMP
-	    add_namespace3 (doc,doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1",1);
+	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1");
 	  }
-	  
-	  std::cerr << "Tag_NE: ";
-	  std::cerr << XMLString::transcode(doc->getDocumentElement()->getTagName()) << std::endl; //TMP
-	  
 	  
 	  tandem_ns::group groupObj(*doc->getDocumentElement());
 	  
@@ -380,7 +258,7 @@ void tandemReader::getMaxMinCharge(const std::string fn){
     std::cerr << "The file " << fn << " does not contain any records" << std::endl;
     exit(1);
   }
-   
+  
   ifs.close();
   return;
 }
@@ -438,7 +316,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   protMapString["domainPost"]=domainObj.post();	//the four residues following the domain
   protMapString["peptide"]=domainObj.seq();		//the sequence of the domain TODO flanks? is it first in seq or before?
   protMap["missedCleavages"]=domainObj.missed_cleavages();//the number of potential cleavage sites in this peptide sequence.
-
+  
   //Get absMassDiff
   if(protMap["massDiff"]>0)
   {
@@ -457,7 +335,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
     aaObj.at();
   }
   
-  std::cerr << "Protid: " << protId << std::endl; //TMP
+  //std::cerr << "Protid: " << protId << std::endl; //TMP
   
   //Create id
   id.str("");
@@ -565,8 +443,8 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	  if(!fixedXML)
 	  {
 	    //Fix xml and parse to object model
-	    std::cerr << "Fixing xml file" << std::endl; //TMP
-	    add_namespace (doc,doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1",1);
+	    //std::cerr << "Read Fixing xml file" << std::endl; //TMP
+	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1");
 	  }
 	  
 	  int nHits=0;

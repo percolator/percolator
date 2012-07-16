@@ -54,6 +54,9 @@ private:
   bool fixedXML;
   spectraMapType spectraMap;
   
+  //void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns);
+  //void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns);
+  
   void createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,spectraMapType &spectraMap,std::string fn);
 };
 
