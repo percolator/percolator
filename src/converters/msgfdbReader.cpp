@@ -222,18 +222,24 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     //FDR=boost::lexical_cast<double>(psm_vector.at(13));
   }
   
-  //Get rid of unprinatables in proteinID and make list of proteinIDs
+  //Get rid of unprinatables in proteinID and make list of proteinIDs //FIXME Not list?
   proteinID=getRidOfUnprintables(proteinID);
   proteinIds.push_back(proteinID);
   
   //Adjust isDecoy if combined file
   if(po.iscombined)
   {
-    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos; //FIXME if not list
   }
   //Check length of peptide, if its to short it cant contain both flanks and peptide
   assert(peptide.size() >= 5 );
-
+  assert(peptide.size() >= po.peptidelength );
+  
+  if(peptide.size()<po.peptidelength )
+  {
+    std::cerr << "The peptide: " << peptide << " is shorter than the specified minium length." << std::endl;
+    exit(-1);
+  }
 
   //Get rank from map aka number of hits from the same spectra so far
   key.str("");
@@ -355,7 +361,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
 	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
-    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
+    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) //FIXME always length one?
     {
       std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
       psm_p->occurence().push_back(oc_p);

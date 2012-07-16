@@ -51,11 +51,16 @@ public:
 private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
-  bool fixedXML;
   spectraMapType spectraMap;
   
-  //void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns);
-  //void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns);
+  bool fixedXML;
+  bool x_score;
+  bool y_score;
+  bool z_score;
+  bool a_score;
+  bool b_score;
+  bool c_score;
+  bool firstPSM;
   
   void createPSM(const tandem_ns::protein &protObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,spectraMapType &spectraMap,std::string fn);
 };

@@ -10,7 +10,13 @@ string schema_minor = "";
 
 tandemReader::tandemReader(ParseOptions po):Reader(po)
 {
-  
+  x_score=false;
+  y_score=false;
+  z_score=false;
+  a_score=false;
+  b_score=false;
+  c_score=false;
+  firstPSM=true;
 }
 
 tandemReader::~tandemReader()
@@ -115,7 +121,9 @@ bool tandemReader::checkValidity(const std::string file)
       fixedXML=true;
     }else
     {
-      std::cerr << "WARNING: File: " << file << " is missing namespace information, xml file will not be validated before parsing." << std::endl;
+      std::cerr << "WARNING: File: " << file << " is missing namespace information, xml file will not be validated before parsing. Add the namespace by copying:" << std::endl;
+      std::cerr << "xmlns=\"http://www.thegpm.org/TANDEM/2011.12.01.1\"" << std::endl;
+      std::cerr << "and paste it in the namespace declaration in the xml file." << std::endl;
       fixedXML=false;
     }
   } 
@@ -153,7 +161,22 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
 {
   push_backFeatureDescription("hyperscore");
   push_backFeatureDescription("nextscore");
+  push_backFeatureDescription("ProteinExpectedValue");
+  push_backFeatureDescription("DomainExpectedValue");
+  
+  push_backFeatureDescription("ProteinSumIon");
+  //push_backFeatureDescription("IonRatio"); TODO
+  
+  push_backFeatureDescription("Hyperscore constan a0");
+  push_backFeatureDescription("Hyperscore constan a1");
+
   push_backFeatureDescription("Mass");
+  //Mass difference
+  push_backFeatureDescription("dM");
+  push_backFeatureDescription("absdM");
+  
+  push_backFeatureDescription("Missed cleaveges");
+  
   push_backFeatureDescription("PepLen");
   
   for (int charge = minCharge; charge <= maxCharge; ++charge) 
@@ -170,9 +193,6 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
     push_backFeatureDescription("enzInt");
   }
   
-  //Mass difference
-  push_backFeatureDescription("dM");
-  push_backFeatureDescription("absdM");
   
   if (po.calcPTMs) 
   {
@@ -220,10 +240,11 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 	{
 	  if(!fixedXML)
 	  {
-	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1");
+	    //cerr << "Asdf" << endl;
+	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1"); //Using get to get a normal pointer since an auto_ptr cant be used in recursive functions
 	  }
 	  
-	  tandem_ns::group groupObj(*doc->getDocumentElement());
+	  tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse to the codesynthesis object model
 	  
 	  if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
 	  {
@@ -237,6 +258,68 @@ void tandemReader::getMaxMinCharge(const std::string fn){
 	  {
 	    cerr << "Missing charge(attribute z in group element) for one or more groups in: " << fn << endl;
 	    exit(1);
+	  }
+	  if(firstPSM)
+	  {
+	    BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
+	    {
+	      //Check what type of scores/ions are present
+	      tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
+	      tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
+	    
+	      //x,y,z
+	      if(domainObj.x_score().present())
+	      {
+		x_score=true;
+	      }
+	      if(domainObj.x_ions().present())
+	      {
+		x_score=true;
+	      }
+	      if(domainObj.y_score().present())
+	      {
+		y_score=true;
+	      }
+	      if(domainObj.y_ions().present())
+	      {
+		y_score=true;
+	      }
+	      if(domainObj.z_score().present())
+	      {
+		z_score=true;
+	      }
+	      if(domainObj.z_ions().present())
+	      {
+		z_score=true;
+	      }
+	    
+	      //a,b,c
+	      if(domainObj.a_score().present())
+	      {
+		a_score=true;
+	      }
+	      if(domainObj.a_ions().present())
+	      {
+		a_score=true;
+	      }
+	      if(domainObj.b_score().present())
+	      {
+		b_score=true;
+	      }
+	      if(domainObj.b_ions().present())
+	      {
+		b_score=true;
+	      }
+	      if(domainObj.c_score().present())
+	      {
+		c_score=true;
+	      }
+	      if(domainObj.c_ions().present())
+	      {
+		c_score=true;
+	      }
+	    }//End of boost
+	    firstPSM=false;
 	  }
 	}
       }catch(exception e)
@@ -278,7 +361,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
-  std::map<char,int> ptmMap = po.ptmScheme; //NOTE not used yet
+  std::map<char,int> ptmMap = po.ptmScheme;
   
   tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
   tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
@@ -308,13 +391,130 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   protMap["massDiff"]=domainObj.delta();		//the spectrum mh minus the calculated mh
   protMap["hyperScore"]=domainObj.hyperscore();	//Tandem’s score for the identification
   protMap["nextScore"]=domainObj.nextscore();
-  protMap["yScore"]=domainObj.y_score();
-  protMap["yIons"]=domainObj.y_ions();
-  protMap["bScore"]=domainObj.b_score();
-  protMap["bIons"]=domainObj.b_ions();
+  
+  //x score and ions
+  if(domainObj.x_score().present() && domainObj.x_ions().present())
+  {
+    if(!x_score)
+    {
+      std::cerr << "x score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+    protMap["xScore"]=domainObj.x_score().get();
+    protMap["xIons"]=domainObj.x_ions().get();
+  }
+  else
+  {
+    if(x_score)
+    {
+      std::cerr << "x score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+  }
+  
+  //y score and ions
+  if(domainObj.y_score().present() && domainObj.y_ions().present())
+  {
+    if(!y_score)
+    {
+      std::cerr << "y score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+    protMap["yScore"]=domainObj.y_score().get();
+    protMap["yIons"]=domainObj.y_ions().get();
+  }
+  else
+  {
+    if(y_score)
+    {
+      std::cerr << "y score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+  }
+  
+  //z score and ions
+  if(domainObj.z_score().present() && domainObj.z_ions().present())
+  {
+    if(!z_score)
+    {
+      std::cerr << "z score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+    protMap["zScore"]=domainObj.z_score().get();
+    protMap["zIons"]=domainObj.z_ions().get();
+  }
+  else
+  {
+    if(z_score)
+    {
+      std::cerr << "z score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+  }
+  
+  //a score and ions
+  if(domainObj.a_score().present() && domainObj.a_ions().present())
+  {
+    if(!a_score)
+    {
+      std::cerr << "a score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+    protMap["aScore"]=domainObj.a_score().get();
+    protMap["aIons"]=domainObj.a_ions().get();
+  }
+  else
+  {
+    if(a_score)
+    {
+      std::cerr << "a score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+  }
+  
+  //b score and ions
+  if(domainObj.b_score().present() && domainObj.b_ions().present())
+  {
+    if(!b_score)
+    {
+      std::cerr << "b score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+    protMap["bScore"]=domainObj.b_score().get();
+    protMap["bIons"]=domainObj.b_ions().get();
+  }
+  else
+  {
+    if(b_score)
+    {
+      std::cerr << "b score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+  }
+  
+  //c score and ions
+  if(domainObj.c_score().present() && domainObj.c_ions().present())
+  {
+    if(!c_score)
+    {
+      std::cerr << "c score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+    protMap["cScore"]=domainObj.c_score().get();
+    protMap["cIons"]=domainObj.c_ions().get();
+  }
+  else
+  {
+    if(c_score)
+    {
+      std::cerr << "c score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      exit(-1);
+    } 
+  }
+  
   protMapString["domainPre"]=domainObj.pre();		//the four residues preceding the domain
   protMapString["domainPost"]=domainObj.post();	//the four residues following the domain
-  protMapString["peptide"]=domainObj.seq();		//the sequence of the domain TODO flanks? is it first in seq or before?
+  protMapString["peptide"]=domainObj.seq();		//the sequence of the domain
   protMap["missedCleavages"]=domainObj.missed_cleavages();//the number of potential cleavage sites in this peptide sequence.
   
   //Get absMassDiff
@@ -327,15 +527,13 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
     protMap["absMassDiff"]=-protMap["massDiff"];
   }
   
-  BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa()) //Do something good with aaObj TODO
+  //Information about mass modifications in the peptide
+  BOOST_FOREACH(const tandem_ns::aa &aaObj, domainObj.aa())
   {
-    //Information about modifications in the peptide
     aaObj.modified();
     aaObj.type();
     aaObj.at();
   }
-  
-  //std::cerr << "Protid: " << protId << std::endl; //TMP
   
   //Create id
   id.str("");
@@ -343,41 +541,70 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   std::string psmId=id.str();
   
   //Get rid of unprinatables in proteinID and make list of proteinIDs
-  proteinName=protObj.label();
-  proteinName=getRidOfUnprintables(proteinName);
-  proteinNames.push_back(proteinName);
+  protMapString["proteinName"]=getRidOfUnprintables(protObj.label());
   
   //Adjust isDecoy if combined file
   if(po.iscombined)
   {
-    isDecoy = proteinNames.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+    isDecoy = protMapString["proteinName"].find(po.reversedFeaturePattern, 0) != std::string::npos;
   }
   
   //Check length of peptide, if its to short it cant contain both flanks and peptide
-  assert(protMapString["peptide"].size() >= 5 );
+  if(protMapString["peptide"].size()<po.peptidelength )
+  {
+    std::cerr << "The peptide: " << protMapString["peptide"] << " is shorter than the specified minium length. File: " << fn << std::endl;
+    exit(-1);
+  }
   
+  //Make new strings without flank and make strings with the flanks FIXME LENGTH
+  protMapString["peptideNoFlank"]=protMapString["peptide"].substr(1,protMapString["peptide"].length() - 2);
+  protMapString["flankN"]=protMapString["peptide"].at(0);
+  protMapString["flankC"]=protMapString["peptide"].at(protMapString["peptide"].length()-1);
+  std::string peptideS=protMapString["peptideNoFlank"]; //TMP string used to get all modifications to the psm object
+  std::string peptideNoFlankNoMod=protMapString["peptideNoFlank"];
+  
+  //Remove modifications FIXME maybee depends on option file. look it up
+  for(unsigned int ix=0;ix<peptideNoFlankNoMod.size();++ix)
+  {
+    if (aaAlphabet.find(peptideNoFlankNoMod[ix])==string::npos && ambiguousAA.find(peptideNoFlankNoMod[ix])==string::npos && modifiedAA.find(peptideNoFlankNoMod[ix])==string::npos)
+    {
+      if (ptmMap.count(peptideNoFlankNoMod[ix])==0) 
+      {
+	cerr << "Peptide sequence " << protMapString["peptide"] << " contains modification " << peptideNoFlankNoMod[ix] << " that is not specified by a \"-p\" argument" << endl;
+	exit(-1);
+      }
+      peptideNoFlankNoMod.erase(ix,1);
+    }  
+  }
+  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideNoFlankNoMod   ) );
+  
+  //Register the ptms
+  for(unsigned int ix=0;ix<peptideS.size();++ix) 
+  {
+    if (aaAlphabet.find(peptideS[ix])==string::npos) 
+    {
+      int accession = ptmMap[peptideS[ix]];
+      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
+      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
+      peptide_p->modification().push_back(mod_p);      
+      peptideS.erase(ix,1);      
+    }  
+  }
   
   //Push back the main scores
   f_seq.push_back(protMap["hyperScore"]);
   f_seq.push_back(protMap["nextScore"]);
-
-  f_seq.push_back(spectraMap["charge"]);
 
   //Expect
   f_seq.push_back(protMap["protExpect"]);
   f_seq.push_back(protMap["domainExpect"]);
   
   //Ion related features
-  f_seq.push_back(spectraMap["sumI"]);
   f_seq.push_back(protMap["protSumI"]);
-  f_seq.push_back(spectraMap["maxI"]);
   
-  //TODO calculate ions thing with this:
-  //protMap["yScore"]
-  //protMap["yIons"]
-  //protMap["bScore"]
-  //protMap["bIons"]
-  
+  //TODO calculate ions thing with this ion stuff
+  //Check that is present before doing that
+  //Change so that its checked if present when searching for charge so that it can be put in feature descriptions
   // per_peptides[p]['ionRatio'] = float(int(peptides[pep]['b_ions'])+int(peptides[pep]['y_ions'])) / float(len(peptides[pep]['seq'])*2)
   
   //Hyperscore constants
@@ -389,18 +616,49 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   f_seq.push_back(protMap["massDiff"]);
   f_seq.push_back(protMap["absMassDiff"]);
   
+  //Missed cleavages
+  f_seq.push_back(protMap["missedCleavages"]);
+  
   //Length of peptide
-  f_seq.push_back(protMapString["peptide"].size()); //NOTE atm with or wihtout flanks?
+  f_seq.push_back(peptideLength(protMapString["peptide"])); //NOTE atm with or wihtout flanks?
   
-  //TODO Missed cleavages
-  //protMap["missedCleavages"]
+  //Charge
+  for (int c = minCharge; c <= maxCharge; c++) 
+  {
+    f_seq.push_back( spectraMap["charge"] == c ? 1.0 : 0.0);
+  }
   
-  //TODO push back peptide sequence, what todo do with pre and post?
+  //Enzyme //FIXME LENGTH
+  if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) 
+  {
+    f_seq.push_back( Enzyme::isEnzymatic(protMapString["peptide"].at(0),protMapString["peptide"].at(2)) ? 1.0 : 0.0);
+    f_seq.push_back(Enzyme::isEnzymatic(protMapString["peptide"].at(protMapString["peptide"].size() - 3),protMapString["peptide"].at(protMapString["peptide"].size() - 1)) ? 1.0 : 0.0);
+    f_seq.push_back( (double)Enzyme::countEnzymatic(protMapString["peptideNoFlank"]) );
+  }
   
-  //TODO Calculate features
+  if (po.calcPTMs) 
+  {
+    f_seq.push_back(cntPTMs(protMapString["peptide"])); //With flanks
+  }
+  if (po.pngasef) 
+  {
+    f_seq.push_back(isPngasef(protMapString["peptide"],isDecoy)); //With flanks
+  }
+  if (po.calcAAFrequencies) {
+    computeAAFrequencies(protMapString["peptide"], f_seq); //With flanks
+  }
   
-  //Save psm
-  //database->savePsm(spectraId, psm_p);
+  //TODO x!tandems new stuff
+  
+  //Save the psm
+  percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
+	features_p,  peptide_p,psmId, isDecoy, spectraMap["parenIonMass"], protMap["calculatedMass"], spectraMap["charge"]);
+  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
+  std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence ("1",protMapString["flankN"], protMapString["flankC"]));
+  psm_p->occurence().push_back(oc_p);
+  
+  database->savePsm(spectraId, psm_p);
+    
   protMap.clear();
 }
 
@@ -418,8 +676,6 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   ifs.open(fn.c_str());
   parser p;
   
-  try
-  { 
     //Sending fixedXML as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),fixedXML, schemaDefinition,schema_major, schema_minor, scheme_namespace));
     assert(doc.get());
@@ -431,26 +687,20 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
       //NOTE cant acess mixed content using codesynthesis, need to keep dom assoication. See the manual for tree parser and : 
       //http://www.codesynthesis.com/pipermail/xsd-users/2008-October/002005.html
       //Not implementet here
-      
-      try
-      {
 	
 	//Check that the tag name is group and that its not the inputput parameters
 	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr))) 
 	{
 	  
-	  //TODO Add namespace if missing here
 	  if(!fixedXML)
 	  {
-	    //Fix xml and parse to object model
-	    //std::cerr << "Read Fixing xml file" << std::endl; //TMP
-	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1");
+	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1"); //Using get to get a normal pointer since an auto_ptr cant be used in recursive functions
 	  }
 	  
 	  int nHits=0;
 	  bool a0Found=false;
 	  bool a1Found=false;
-	  tandem_ns::group groupObj(*doc->getDocumentElement());
+	  tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse it the codesynthesis object model.
 	  
 	  if(!spectraMap.empty())
 	  {
@@ -517,28 +767,10 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	      createPSM(protObj,isDecoy,database,spectraMap,fn);
 	      nHits++;
 	    }
-
 	  }
 	  spectraMap.clear();
-	  
 	}//End of if group and not parameters
-      }catch(exception e)
-      {
-	cerr << "Problem parsing the codesynthesis object model for the xml file: " << fn << endl;
-	cerr << e.what() << endl;
-	exit(1);
-      }
     }//End of for p.next
-    
     ifs.close();
-    
-  }
-  catch (const xml_schema::exception& e)
-  {
-    cerr << "Problem reading the xml file: " << fn << endl;
-    cerr << e << endl;
-    exit(1);
-  }
-  
 }
 
