@@ -1,10 +1,21 @@
+/* Some Notes about the code
+ * 
+ * The defaultNameSpace bool
+ * It is used to check if the tandem xml file has a default namespace declared named http://www.thegpm.org/TANDEM/2011.12.01.1
+ * The bool is set to true if it has. Normal tandem files doesn't have it declared this namespace declared and the code wont work properly if it has
+ * beacuse of that the xsd file doesn't have the targetnamespace declared:
+ * targetNamespace="http://www.thegpm.org/TANDEM/2011.12.01.1"
+ * But the rest of the code should be able to handle it properly.
+ * 
+ */
+
 #include "tandemReader.h"
 
 static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
 static const XMLCh groupTypeStr[] = { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull};
 static const XMLCh groupModelStr[] = { chLatin_m, chLatin_o, chLatin_d, chLatin_e, chLatin_l, chNull};
 string schemaDefinition = TANDEM_SCHEMA_LOCATION + string("tandem2011.12.01.1.xsd");
-string scheme_namespace = TANDEM_NAMESPACE;
+string scheme_namespace; //Will be set in checkValidity based on the bool defaultNameSpace
 string schema_major = "";
 string schema_minor = "";
 
@@ -24,8 +35,7 @@ tandemReader::~tandemReader()
 
 }
 
-
-//Some functions to handle strings
+//A function to split strings
 std::vector<std::string> &tandemReader::split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
@@ -42,26 +52,20 @@ std::vector<std::string>tandemReader::split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
+//NOTE Function to add namespace to a dom documents all elements except elements that has the namespace www.bioml.com/gaml/
+/*
 void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns)
 {
-  //std::cerr << "New func call" << std::endl;
-  
   DOMElement* ne;
   XMLCh* GAML_XMLCH=XMLString::transcode("www.bioml.com/gaml/");
-  //std::cerr <<"Tag: ";
-  //std::cerr << XMLString::transcode(e->getTagName()) << std::endl;
-  //std::cerr << "Doc tag: ";
-  //std::cerr << XMLString::transcode(doc->getDocumentElement()->getTagName()) << std::endl;
   
-  if(XMLString::equals(e->getNamespaceURI(),GAML_XMLCH))//Check if gaml namespace FIXME
+  if(XMLString::equals(e->getNamespaceURI(),GAML_XMLCH))//Check if gaml namespace
   {
     ne=e;
   }else
   {
     ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
   }
- 
-  //std::cerr << "Lvl: " << lvl << " For" << std::endl;
   DOMNodeList* childList=ne->getChildNodes();
  
   for(int iter=0; iter<childList->getLength();iter++)
@@ -70,23 +74,16 @@ void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const X
     if (childList->item(iter)->getNodeType () == DOMNode::ELEMENT_NODE)
     {
       add_namespace (doc, static_cast<DOMElement*> (childList->item(iter)), ns);
-      //add_namespace (doc, static_cast<DOMElement*> (n), ns, nlvl);
-      //std::cerr << "If Tag iter ";
-      //std::cerr << XMLString::transcode(childList->item(iter)->getLocalName()) << std::endl; //TMP
     }
   }
-  
   XMLString::release(&GAML_XMLCH); 
-  
-  //std::cerr << "End" << std::endl;
 }
-
 
 void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns)
 {
   add_namespace (doc, e, xsd::cxx::xml::string (ns).c_str ());
 }
-
+*/
 
 bool tandemReader::checkValidity(const std::string file)
 {
@@ -118,13 +115,12 @@ bool tandemReader::checkValidity(const std::string file)
       isvalid=true;
     }
     if(line_bioml.find("xmlns=\"http://www.thegpm.org/TANDEM/2011.12.01.1\"")!=std::string::npos){
-      fixedXML=true;
+      defaultNameSpace=true;
+      scheme_namespace=TANDEM_NAMESPACE;
     }else
     {
-      std::cerr << "WARNING: File: " << file << " is missing namespace information, xml file will not be validated before parsing. Add the namespace by copying:" << std::endl;
-      std::cerr << "xmlns=\"http://www.thegpm.org/TANDEM/2011.12.01.1\"" << std::endl;
-      std::cerr << "and paste it in the namespace declaration in the xml file." << std::endl;
-      fixedXML=false;
+      defaultNameSpace=false;
+      scheme_namespace="";
     }
   } 
   else
@@ -165,10 +161,14 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
   push_backFeatureDescription("DomainExpectedValue");
   
   push_backFeatureDescription("ProteinSumIon");
-  //push_backFeatureDescription("IonRatio"); TODO
   
-  push_backFeatureDescription("Hyperscore constan a0");
-  push_backFeatureDescription("Hyperscore constan a1");
+  if(b_score && y_score)
+  {
+    push_backFeatureDescription("IonRatio");
+  }
+  
+  push_backFeatureDescription("Hyperscore constant a0");
+  push_backFeatureDescription("Hyperscore constant a1");
 
   push_backFeatureDescription("Mass");
   //Mass difference
@@ -228,105 +228,93 @@ void tandemReader::getMaxMinCharge(const std::string fn){
   
   try
   {
-    //Sending fixedXML as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),fixedXML, schemaDefinition,schema_major, schema_minor, scheme_namespace));
+    //Sending defaultNameSpace as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace,!defaultNameSpace));
     assert(doc.get());
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ())
     {  
-      try{
-	//Check that the tag name is group and that its not the inputput parameters
-	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr)))  
-	{
-	  if(!fixedXML)
-	  {
-	    //cerr << "Asdf" << endl;
-	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1"); //Using get to get a normal pointer since an auto_ptr cant be used in recursive functions
-	  }
-	  
-	  tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse to the codesynthesis object model
-	  
-	  if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
-	  {
-	    stringstream chargeStream (stringstream::in | stringstream::out);
-	    chargeStream << groupObj.z();
-	    chargeStream >> charge;
-	    if (minCharge > charge) minCharge = charge;
-	    if (maxCharge < charge) maxCharge = charge;
-	    nTot++;
-	  }else
-	  {
-	    cerr << "Missing charge(attribute z in group element) for one or more groups in: " << fn << endl;
-	    exit(1);
-	  }
-	  if(firstPSM)
-	  {
-	    BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
-	    {
-	      //Check what type of scores/ions are present
-	      tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
-	      tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
-	    
-	      //x,y,z
-	      if(domainObj.x_score().present())
-	      {
-		x_score=true;
-	      }
-	      if(domainObj.x_ions().present())
-	      {
-		x_score=true;
-	      }
-	      if(domainObj.y_score().present())
-	      {
-		y_score=true;
-	      }
-	      if(domainObj.y_ions().present())
-	      {
-		y_score=true;
-	      }
-	      if(domainObj.z_score().present())
-	      {
-		z_score=true;
-	      }
-	      if(domainObj.z_ions().present())
-	      {
-		z_score=true;
-	      }
-	    
-	      //a,b,c
-	      if(domainObj.a_score().present())
-	      {
-		a_score=true;
-	      }
-	      if(domainObj.a_ions().present())
-	      {
-		a_score=true;
-	      }
-	      if(domainObj.b_score().present())
-	      {
-		b_score=true;
-	      }
-	      if(domainObj.b_ions().present())
-	      {
-		b_score=true;
-	      }
-	      if(domainObj.c_score().present())
-	      {
-		c_score=true;
-	      }
-	      if(domainObj.c_ions().present())
-	      {
-		c_score=true;
-	      }
-	    }//End of boost
-	    firstPSM=false;
-	  }
-	}
-      }catch(exception e)
+      //Check that the tag name is group and that its not the inputput parameters
+      if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr)))  
       {
-	cerr << "Problem parsing the codesynthesis object model for the xml file: " << fn << endl;
-	cerr << e.what() << endl;
-	exit(1);
+	tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse to the codesynthesis object model
+	  
+	if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
+	{
+	  stringstream chargeStream (stringstream::in | stringstream::out);
+	  chargeStream << groupObj.z();
+	  chargeStream >> charge;
+	  if (minCharge > charge) minCharge = charge;
+	  if (maxCharge < charge) maxCharge = charge;
+	  nTot++;
+	}
+	else
+	{
+	  cerr << "Missing charge(attribute z in group element) for one or more groups in: " << fn << endl;
+	  exit(1);
+	}
+	if(firstPSM)
+	{
+	  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
+	  {
+	    //Check what type of scores/ions are present
+	    tandem_ns::protein::peptide_type peptideObj=protObj.peptide();
+	    tandem_ns::peptide::domain_type domainObj=peptideObj.domain();
+	    
+	    //x,y,z
+	    if(domainObj.x_score().present())
+	    {
+	      x_score=true;
+	    }
+	    if(domainObj.x_ions().present())
+	    {
+	      x_score=true;
+	    }
+	    if(domainObj.y_score().present())
+	    {
+	      y_score=true;
+	    }
+	    if(domainObj.y_ions().present())
+	    {
+	      y_score=true;
+	    }
+	    if(domainObj.z_score().present())
+	    {
+	      z_score=true;
+	    }
+	    if(domainObj.z_ions().present())
+	    {
+	      z_score=true;
+	    }
+	    
+	    //a,b,c
+	    if(domainObj.a_score().present())
+	    {
+	      a_score=true;
+	    }
+	    if(domainObj.a_ions().present())
+	    {
+	      a_score=true;
+	    }
+	    if(domainObj.b_score().present())
+	    {
+	      b_score=true;
+	    }
+	    if(domainObj.b_ions().present())
+	    {
+	      b_score=true;
+	    }
+	    if(domainObj.c_score().present())
+	    {
+	      c_score=true;
+	    }
+	    if(domainObj.c_ions().present())
+	    {
+	      c_score=true;
+	    }
+	  }//End of boost
+	  firstPSM=false;
+	}
       }
     }
   }catch (const xml_schema::exception& e)
@@ -563,7 +551,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   std::string peptideS=protMapString["peptideNoFlank"]; //TMP string used to get all modifications to the psm object
   std::string peptideNoFlankNoMod=protMapString["peptideNoFlank"];
   
-  //Remove modifications FIXME maybee depends on option file. look it up
+  //Remove modifications
   for(unsigned int ix=0;ix<peptideNoFlankNoMod.size();++ix)
   {
     if (aaAlphabet.find(peptideNoFlankNoMod[ix])==string::npos && ambiguousAA.find(peptideNoFlankNoMod[ix])==string::npos && modifiedAA.find(peptideNoFlankNoMod[ix])==string::npos)
@@ -602,10 +590,11 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   //Ion related features
   f_seq.push_back(protMap["protSumI"]);
   
-  //TODO calculate ions thing with this ion stuff
-  //Check that is present before doing that
-  //Change so that its checked if present when searching for charge so that it can be put in feature descriptions
-  // per_peptides[p]['ionRatio'] = float(int(peptides[pep]['b_ions'])+int(peptides[pep]['y_ions'])) / float(len(peptides[pep]['seq'])*2)
+  //Calculate Ion ratio NOTE Not complety sure this is right and it would be nice to use the other variables to.
+  if(b_score && y_score)
+  {
+    f_seq.push_back(float(protMap["bIons"]+protMap["yIons"])/float(protMapString["peptide"].length()*2)); //FIXME LENGTH
+  }
   
   //Hyperscore constants
   f_seq.push_back(spectraMap["a0"]);
@@ -620,7 +609,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   f_seq.push_back(protMap["missedCleavages"]);
   
   //Length of peptide
-  f_seq.push_back(peptideLength(protMapString["peptide"])); //NOTE atm with or wihtout flanks?
+  f_seq.push_back(peptideLength(protMapString["peptide"])); //FIXME LENGTH
   
   //Charge
   for (int c = minCharge; c <= maxCharge; c++) 
@@ -638,14 +627,14 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   
   if (po.calcPTMs) 
   {
-    f_seq.push_back(cntPTMs(protMapString["peptide"])); //With flanks
+    f_seq.push_back(cntPTMs(protMapString["peptide"])); //With flanks FIXME LENGTH
   }
   if (po.pngasef) 
   {
-    f_seq.push_back(isPngasef(protMapString["peptide"],isDecoy)); //With flanks
+    f_seq.push_back(isPngasef(protMapString["peptide"],isDecoy)); //With flanks FIXME LENGTH
   }
   if (po.calcAAFrequencies) {
-    computeAAFrequencies(protMapString["peptide"], f_seq); //With flanks
+    computeAAFrequencies(protMapString["peptide"], f_seq); //With flanks FIXME LENGTH
   }
   
   //TODO x!tandems new stuff
@@ -676,9 +665,11 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   ifs.open(fn.c_str());
   parser p;
   
-    //Sending fixedXML as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
-    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),fixedXML, schemaDefinition,schema_major, schema_minor, scheme_namespace));
+    //Sending defaultNameSpace as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
+    xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace,!defaultNameSpace));
     assert(doc.get());
+    
+    //std::cerr << "Doc: " << XMLString::transcode(doc->getDocumentElement()->getTagName()) << std::endl;
     
     //tandem_ns::bioml biomlObj=biomlObj(*doc->getDocumentElement()); NOTE the root of the element, doesn't have any useful attributes
     
@@ -691,12 +682,6 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
 	//Check that the tag name is group and that its not the inputput parameters
 	if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr))) 
 	{
-	  
-	  if(!fixedXML)
-	  {
-	    add_namespace(doc.get(),doc->getDocumentElement(),"http://www.thegpm.org/TANDEM/2011.12.01.1"); //Using get to get a normal pointer since an auto_ptr cant be used in recursive functions
-	  }
-	  
 	  int nHits=0;
 	  bool a0Found=false;
 	  bool a1Found=false;

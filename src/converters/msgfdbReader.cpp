@@ -11,7 +11,7 @@ msgfdbReader::~msgfdbReader()
 }
 
 
-//Some functions to handle strings
+//A function to split strings
 std::vector<std::string> &msgfdbReader::split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;

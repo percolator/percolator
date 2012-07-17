@@ -53,7 +53,7 @@ private:
   std::vector<std::string> split(const std::string &s, char delim);
   spectraMapType spectraMap;
   
-  bool fixedXML;
+  bool defaultNameSpace;
   bool x_score;
   bool y_score;
   bool z_score;

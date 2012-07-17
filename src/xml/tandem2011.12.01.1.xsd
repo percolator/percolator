@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <xsd:schema attributeFormDefault="unqualified" elementFormDefault="qualified" version="1.0" 
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-	xmlns:gaml="http://www.bioml.com/gaml/"
-	targetNamespace="http://www.thegpm.org/TANDEM/2011.12.01.1">
+	  xmlns:gaml="http://www.bioml.com/gaml/">
+	<!--targetNamespace="http://www.thegpm.org/TANDEM/2011.12.01.1"-->
 <xsd:import       namespace="http://www.bioml.com/gaml/"
 		  schemaLocation="gaml_tandem1.0.xsd"/>
 <xsd:annotation>
