@@ -101,6 +101,26 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "Pattern used to identify the decoy PSMs",
       "",
       "pattern");
+  /** new parameters for reading the fasta to obtain the proteins **/
+  //TODO conflict proably between reader and tandem, have to check
+  /**
+  cmd.defineOption("F",
+      "databases",
+      "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
+      "",
+      "filename");
+  cmd.defineOption("c",
+      "cleavages",
+      "Number of allowed miss cleavages used in the search engine (default 0).",
+      "",
+      "number");
+  **/
+  cmd.defineOption("l",
+      "length",
+      "Minimum peptide length allowed used in the search engine (default 6).",
+      "",
+      "number");
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -166,6 +186,26 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   {
     parseOptions.reversedFeaturePattern = cmd.options["P"];
   }
+  if (cmd.optionSet("F"))
+  {
+    std::vector<std::string> strs;
+    boost::split(strs, cmd.options["F"], boost::is_any_of(","));
+    strs.push_back("");
+    parseOptions.targetDb = strs[0];
+    parseOptions.decoyDb = strs[1];
+    parseOptions.readProteins = true;
+  }
+  
+  if (cmd.optionSet("c"))
+  {
+    parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
+  }
+  
+  if (cmd.optionSet("l"))
+  {
+    parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
   if (cmd.arguments.size() > 0)
   {
     targetFN = cmd.arguments[0];
@@ -213,7 +253,11 @@ int tandem2Pin::run() {
   }
   
   //initialize reader
-  parseOptions.peptidelength = 6;
+  /** these three should be parameters **/
+  parseOptions.minmass = 400;
+  parseOptions.maxmass = 6000;
+  parseOptions.maxpeplength = 40;
+  /** these three should be parameters **/
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;

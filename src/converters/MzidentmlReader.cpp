@@ -150,7 +150,7 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
 }
 
 
-void MzidentmlReader::getMaxMinCharge(string fn)
+void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
 {
 
   bool foundFirstChargeState = false;
@@ -390,7 +390,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
   double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
   std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
-  assert(peptideSeqWithFlanks.size() >= po.peptidelength );
+  assert(peptideSeq.size() >= po.peptidelength );
   unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
   double dM = MassHandler::massDiff(observed_mass,theoretic_mass,charge, peptideSeq );
   std::map<char,int> ptmMap = po.ptmScheme;

@@ -156,7 +156,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
 
   if (!isfinite(f_seq[2])) std::cerr << in;
 
-  if(peptide.size()<po.peptidelength )
+  if(peptide.size()-4<po.peptidelength)
   {
     std::cerr << "The peptide: " << peptide << " is shorter than the specified minium length." << std::endl;
     exit(-1);
@@ -214,7 +214,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   
 }
 
-void SqtReader::getMaxMinCharge(string fn)
+void SqtReader::getMaxMinCharge(string fn, bool isDecoy)
 {
   int charge = 0;
   std::string line;

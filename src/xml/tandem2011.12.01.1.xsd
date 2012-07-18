@@ -68,21 +68,21 @@
                                       <xsd:attribute name="start" type="xsd:int" use="required"/>
                                       <xsd:attribute name="end" type="xsd:int" use="required"/>
                                       <xsd:attribute name="expect" type="xsd:double" use="required"/>
-                                      <xsd:attribute name="mh" type="xsd:decimal" use="required"/>
-                                      <xsd:attribute name="delta" type="xsd:decimal" use="required"/>
-                                      <xsd:attribute name="hyperscore" type="xsd:decimal" use="required"/>
-                                      <xsd:attribute name="nextscore" type="xsd:decimal" use="required"/>
-				       <xsd:attribute name="x_score" type="xsd:decimal" use="optional"/>
+                                      <xsd:attribute name="mh" type="xsd:double" use="required"/>
+                                      <xsd:attribute name="delta" type="xsd:double" use="required"/>
+                                      <xsd:attribute name="hyperscore" type="xsd:double" use="required"/>
+                                      <xsd:attribute name="nextscore" type="xsd:double" use="required"/>
+				       <xsd:attribute name="x_score" type="xsd:double" use="optional"/>
                                       <xsd:attribute name="x_ions" type="xsd:int" use="optional"/>
-				       <xsd:attribute name="y_score" type="xsd:decimal" use="optional"/>
+				       <xsd:attribute name="y_score" type="xsd:double" use="optional"/>
                                       <xsd:attribute name="y_ions" type="xsd:int" use="optional"/>
-                                      <xsd:attribute name="z_score" type="xsd:decimal" use="optional"/>
+                                      <xsd:attribute name="z_score" type="xsd:double" use="optional"/>
                                       <xsd:attribute name="z_ions" type="xsd:int" use="optional"/>
-				       <xsd:attribute name="a_score" type="xsd:decimal" use="optional"/>
+				       <xsd:attribute name="a_score" type="xsd:double" use="optional"/>
                                       <xsd:attribute name="a_ions" type="xsd:int" use="optional"/>
-                                      <xsd:attribute name="b_score" type="xsd:decimal" use="optional"/>
+                                      <xsd:attribute name="b_score" type="xsd:double" use="optional"/>
                                       <xsd:attribute name="b_ions" type="xsd:int" use="optional"/>
-				       <xsd:attribute name="c_score" type="xsd:decimal" use="optional"/>
+				       <xsd:attribute name="c_score" type="xsd:double" use="optional"/>
                                       <xsd:attribute name="c_ions" type="xsd:int" use="optional"/>
                                       <xsd:attribute name="pre" type="xsd:string" use="required"/>
                                       <xsd:attribute name="post" type="xsd:string" use="required"/>
@@ -104,7 +104,7 @@
                   <xsd:attribute name="id" type="xsd:string" use="required"/>
                   <xsd:attribute name="uid" type="xsd:int" use="optional"/>
                   <xsd:attribute name="label" type="xsd:string" use="required"/>
-                  <xsd:attribute name="sumI" type="xsd:decimal" use="required"/>
+                  <xsd:attribute name="sumI" type="xsd:double" use="required"/>
                 </xsd:complexType>
               </xsd:element>
               <xsd:element minOccurs="0" maxOccurs="unbounded" name="group">
@@ -130,13 +130,13 @@
             <xsd:attribute name="id" type="xsd:int" use="optional"/>
 	    <xsd:attribute name="label" type="xsd:string" use="required"/>
             <xsd:attribute name="type" type="xsd:string" use="required"/>
-            <xsd:attribute name="mh" type="xsd:decimal" use="optional"/>
+            <xsd:attribute name="mh" type="xsd:double" use="optional"/>
             <xsd:attribute name="z" type="xsd:int" use="optional"/>
             <xsd:attribute name="rt" type="xsd:string" use="optional"/>
             <xsd:attribute name="expect" type="xsd:double" use="optional"/>
-            <xsd:attribute name="sumI" type="xsd:decimal" use="optional"/>
-            <xsd:attribute name="maxI" type="xsd:decimal" use="optional"/>
-            <xsd:attribute name="fI" type="xsd:decimal" use="optional"/>
+            <xsd:attribute name="sumI" type="xsd:double" use="optional"/>
+            <xsd:attribute name="maxI" type="xsd:double" use="optional"/>
+            <xsd:attribute name="fI" type="xsd:double" use="optional"/>
             <xsd:attribute name="act" type="xsd:int" use="optional"/>
           </xsd:complexType>
         </xsd:element>

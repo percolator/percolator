@@ -41,7 +41,6 @@ void Reader::init()
   // ... <experiment>
   std::auto_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
 
-
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
   
@@ -67,7 +66,8 @@ void Reader::init()
   else
     isMeta= checkIsMeta(po.targetFN);
   
-    
+  //NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters. tandemReader for instance checks if a certain attribute is present or not.
+  
   //if they are metaFiles check for max/min charge in the meta of the target files
   //otherwise check for max/min charge in the target file
   if(isMeta)
@@ -79,8 +79,9 @@ void Reader::init()
     while (getline(meta, line)) {
       if (line.size() > 0 && line[0] != '#') {
 	 line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+	 std::cerr << "Am" << std::endl;
 	 checkValidity(line);
-	 getMaxMinCharge(line);
+	 getMaxMinCharge(line,false);
       }
      }
     meta.close();
@@ -90,7 +91,9 @@ void Reader::init()
       while (getline(meta, line)) {
 	if (line.size() > 0 && line[0] != '#') {
 	  line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+	  std::cerr << "Bm" << std::endl;
 	  checkValidity(line);
+	  getMaxMinCharge(line,true);
 	}
       }
       meta.close();
@@ -99,11 +102,12 @@ void Reader::init()
   else
   {
     checkValidity(po.targetFN);
-    if(!po.iscombined)
+    getMaxMinCharge(po.targetFN,false);
+    if(!po.iscombined){
       checkValidity(po.decoyFN);
-    getMaxMinCharge(po.targetFN);
+      getMaxMinCharge(po.decoyFN,true);
+    }
   }
-
   //once I have max/min charge I can put in the features
   addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME,po.calcAAFrequencies ? aaAlphabet : "");
   
@@ -128,7 +132,6 @@ void Reader::init()
   }
 
   xercesc::XMLPlatformUtils::Terminate();
-
 }
 
 void Reader::print(ofstream &xmlOutputStream)
@@ -380,7 +383,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
 double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
 {
   double mass  =  0.0;
-  if (pepsequence.length () > po.peptidelength) {
+  if (pepsequence.length () >= po.peptidelength) {
     
     for(unsigned i=0; i<pepsequence.length();i++)
     {
@@ -391,7 +394,13 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
     
     mass = (mass + massMap_['o'] + (charge * massMap_['h']) + 1.00727649);
   }
-  return mass; 
+  else
+  {
+    std::cerr << "Calculate peptide mass error: The peptide is to short: " << pepsequence << std::endl;
+    exit(-1);
+  }
+  
+  return(mass);
 }
 
 void Reader::initMassMap(bool useAvgMass)

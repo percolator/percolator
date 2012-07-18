@@ -134,14 +134,12 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
   // if local copy of the schema is available, use it for validation...
   ifstream inp(schemaDefinition.c_str());
   if(inp && val){
-    //string schemaNamespace = "http://per-colator.com/percolator_in/";
     //NOTE this is horrible code and not generic
     schemaNamespace.append(schema_major);
     schemaNamespace.append(schema_minor);
     schemaNamespace.append(" ");
     string schemaLocation;
     
-    //TODO Make this part better
     if(noNameSpace)
     {
       schemaLocation = schemaDefinition;
@@ -150,7 +148,6 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
     {
       schemaLocation = schemaNamespace.append(schemaDefinition);
     }
-
     
     XMLCh* propertyValue = XMLString::transcode(schemaLocation.c_str());
     ArrayJanitor<XMLCh> janValue(propertyValue);

@@ -5,7 +5,6 @@
  * The bool is set to true if it has. Normal tandem files doesn't have it declared this namespace declared and the code wont work properly if it has
  * beacuse of that the xsd file doesn't have the targetnamespace declared:
  * targetNamespace="http://www.thegpm.org/TANDEM/2011.12.01.1"
- * But the rest of the code should be able to handle it properly.
  * 
  */
 
@@ -122,6 +121,7 @@ bool tandemReader::checkValidity(const std::string file)
       defaultNameSpace=false;
       scheme_namespace="";
     }
+    defaultNameSpaceVect.push_back(defaultNameSpace); //Needed to check that all have or dont have default namespace
   } 
   else
   {
@@ -214,7 +214,7 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
   }
 }
 
-void tandemReader::getMaxMinCharge(const std::string fn){
+void tandemReader::getMaxMinCharge(const std::string fn, bool isDecoy){
   
   int nTot = 0, charge = 0;
   
@@ -224,6 +224,11 @@ void tandemReader::getMaxMinCharge(const std::string fn){
   ifs.exceptions(ifstream::badbit|ifstream::failbit);
     
   ifs.open(fn.c_str());
+  if (!ifs)
+  {
+    std::cerr << "Could not open file " << fn << std::endl;
+    exit(-1);
+  }
   parser p;
   
   try
@@ -385,7 +390,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(!x_score)
     {
-      std::cerr << "x score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "x score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
     protMap["xScore"]=domainObj.x_score().get();
@@ -395,7 +400,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(x_score)
     {
-      std::cerr << "x score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "x score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
   }
@@ -405,7 +410,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(!y_score)
     {
-      std::cerr << "y score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "y score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
     protMap["yScore"]=domainObj.y_score().get();
@@ -415,7 +420,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(y_score)
     {
-      std::cerr << "y score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "y score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
   }
@@ -425,7 +430,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(!z_score)
     {
-      std::cerr << "z score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "z score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
     protMap["zScore"]=domainObj.z_score().get();
@@ -435,7 +440,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(z_score)
     {
-      std::cerr << "z score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "z score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
   }
@@ -445,7 +450,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(!a_score)
     {
-      std::cerr << "a score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "a score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
     protMap["aScore"]=domainObj.a_score().get();
@@ -455,7 +460,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(a_score)
     {
-      std::cerr << "a score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "a score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
   }
@@ -465,7 +470,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(!b_score)
     {
-      std::cerr << "b score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "b score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
     protMap["bScore"]=domainObj.b_score().get();
@@ -475,7 +480,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(b_score)
     {
-      std::cerr << "b score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "b score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
   }
@@ -485,7 +490,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(!c_score)
     {
-      std::cerr << "c score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "c score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
     protMap["cScore"]=domainObj.c_score().get();
@@ -495,7 +500,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     if(c_score)
     {
-      std::cerr << "c score/ions is only reported in some domain elements, it should be reported in all or none. File: " << fn << endl;
+      std::cerr << "c score/ions is only reported in some domain elements, it should be reported in all or none." << endl;
       exit(-1);
     } 
   }
@@ -536,20 +541,23 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   {
     isDecoy = protMapString["proteinName"].find(po.reversedFeaturePattern, 0) != std::string::npos;
   }
+
+  //Make new strings without flank and make strings with the flanks FIXME Not sure if this is the correct flanks
+  protMapString["peptideNoFlank"]=protMapString["peptide"].substr(0,protMapString["peptide"].length() - 1); //TODO check this might be -2 or something
+  protMapString["flankN"]=protMapString["domainPre"].at(protMapString["domainPre"].size()-1); //Last of pre
+  protMapString["flankC"]=protMapString["peptide"].at(protMapString["peptide"].length()-1); //Last of peptide
+  protMapString["peptideWithFlank"]=protMapString["flankN"]+"."+protMapString["peptideNoFlank"]+"."+protMapString["flankC"];
+  
+  std::string peptideS=protMapString["peptideNoFlank"]; //TMP string used to get all modifications to the psm object
+  std::string peptideNoFlankNoMod=protMapString["peptideNoFlank"];
   
   //Check length of peptide, if its to short it cant contain both flanks and peptide
-  if(protMapString["peptide"].size()<po.peptidelength )
+  if(protMapString["peptideNoFlank"].size()<po.peptidelength )
   {
-    std::cerr << "The peptide: " << protMapString["peptide"] << " is shorter than the specified minium length. File: " << fn << std::endl;
+    std::cerr << "The peptide: " << protMapString["peptideWithFlank"] << " is shorter than the specified minium length. File: " << fn << std::endl;
     exit(-1);
   }
   
-  //Make new strings without flank and make strings with the flanks FIXME LENGTH
-  protMapString["peptideNoFlank"]=protMapString["peptide"].substr(1,protMapString["peptide"].length() - 2);
-  protMapString["flankN"]=protMapString["peptide"].at(0);
-  protMapString["flankC"]=protMapString["peptide"].at(protMapString["peptide"].length()-1);
-  std::string peptideS=protMapString["peptideNoFlank"]; //TMP string used to get all modifications to the psm object
-  std::string peptideNoFlankNoMod=protMapString["peptideNoFlank"];
   
   //Remove modifications
   for(unsigned int ix=0;ix<peptideNoFlankNoMod.size();++ix)
@@ -558,7 +566,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
     {
       if (ptmMap.count(peptideNoFlankNoMod[ix])==0) 
       {
-	cerr << "Peptide sequence " << protMapString["peptide"] << " contains modification " << peptideNoFlankNoMod[ix] << " that is not specified by a \"-p\" argument" << endl;
+	cerr << "Peptide sequence " << protMapString["peptideWithFlank"] << " contains modification " << peptideNoFlankNoMod[ix] << " that is not specified by a \"-p\" argument" << endl;
 	exit(-1);
       }
       peptideNoFlankNoMod.erase(ix,1);
@@ -593,7 +601,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   //Calculate Ion ratio NOTE Not complety sure this is right and it would be nice to use the other variables to.
   if(b_score && y_score)
   {
-    f_seq.push_back(float(protMap["bIons"]+protMap["yIons"])/float(protMapString["peptide"].length()*2)); //FIXME LENGTH
+    f_seq.push_back(float(protMap["bIons"]+protMap["yIons"])/float((protMapString["peptideWithFlank"].length()-2)*2));//-2 is cause of the . in the sequence
   }
   
   //Hyperscore constants
@@ -609,7 +617,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   f_seq.push_back(protMap["missedCleavages"]);
   
   //Length of peptide
-  f_seq.push_back(peptideLength(protMapString["peptide"])); //FIXME LENGTH
+  f_seq.push_back(peptideLength(protMapString["peptideWithFlank"]));
   
   //Charge
   for (int c = minCharge; c <= maxCharge; c++) 
@@ -617,24 +625,24 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
     f_seq.push_back( spectraMap["charge"] == c ? 1.0 : 0.0);
   }
   
-  //Enzyme //FIXME LENGTH
+  //Enzyme
   if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) 
   {
-    f_seq.push_back( Enzyme::isEnzymatic(protMapString["peptide"].at(0),protMapString["peptide"].at(2)) ? 1.0 : 0.0);
-    f_seq.push_back(Enzyme::isEnzymatic(protMapString["peptide"].at(protMapString["peptide"].size() - 3),protMapString["peptide"].at(protMapString["peptide"].size() - 1)) ? 1.0 : 0.0);
+    f_seq.push_back( Enzyme::isEnzymatic(protMapString["peptideWithFlank"].at(0),protMapString["peptideWithFlank"].at(2)) ? 1.0 : 0.0);
+    f_seq.push_back(Enzyme::isEnzymatic(protMapString["peptideWithFlank"].at(protMapString["peptideWithFlank"].size() - 3),protMapString["peptideWithFlank"].at(protMapString["peptideWithFlank"].size() - 1)) ? 1.0 : 0.0);
     f_seq.push_back( (double)Enzyme::countEnzymatic(protMapString["peptideNoFlank"]) );
   }
   
   if (po.calcPTMs) 
   {
-    f_seq.push_back(cntPTMs(protMapString["peptide"])); //With flanks FIXME LENGTH
+    f_seq.push_back(cntPTMs(protMapString["peptideWithFlank"]));
   }
   if (po.pngasef) 
   {
-    f_seq.push_back(isPngasef(protMapString["peptide"],isDecoy)); //With flanks FIXME LENGTH
+    f_seq.push_back(isPngasef(protMapString["peptideWithFlank"],isDecoy));
   }
   if (po.calcAAFrequencies) {
-    computeAAFrequencies(protMapString["peptide"], f_seq); //With flanks FIXME LENGTH
+    computeAAFrequencies(protMapString["peptideWithFlank"], f_seq);
   }
   
   //TODO x!tandems new stuff
@@ -664,6 +672,16 @@ void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   ifs.exceptions(ifstream::badbit|ifstream::failbit);
   ifs.open(fn.c_str());
   parser p;
+  
+  //Check that all files have defaultNameSpace declared or not
+  for(int i=0; i<defaultNameSpaceVect.size(); i++)
+  {
+    if(defaultNameSpaceVect.at(i)!=defaultNameSpace)
+    {
+      cerr << "Some files have a default namespace others have not, check that the X!Tandem version used to make the files is the same." << std::endl;
+      exit(1);
+    }   
+  }
   
     //Sending defaultNameSpace as the bool for validation since if its not fixed the namespace has to be added later and then we cant validate the schema and xml file.
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace,!defaultNameSpace));

@@ -21,7 +21,10 @@
 
 #include "Reader.h"
 
-typedef map<std::string, int> counterMapType;
+typedef pair<std::string, int> psmIdentPairType;
+typedef pair<std::string, int> peptideDecoyKey;
+typedef map<peptideDecoyKey, int> counterMapType;
+typedef map<peptideDecoyKey, std::vector<std::string> > peptideProteinMapType;
 
 class msgfdbReader: public Reader
 {
@@ -38,14 +41,19 @@ public:
   
   virtual bool checkIsMeta(std::string file);
  
-  virtual void getMaxMinCharge(std::string fn);
+  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
+  const char* flankN;
   
 private:
+  std::set< psmIdentPairType > usedPSMs;
+  counterMapType idCounterMap;
+  peptideProteinMapType peptideProteinMap;
+  
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
-  counterMapType idCounterMap;
+
   
   void readPSM(std::string line,bool isDecoy,std::string fileId,
 	       boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names, counterMapType &idCounterMap);

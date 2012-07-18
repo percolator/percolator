@@ -44,7 +44,7 @@ public:
   
   virtual bool checkIsMeta(std::string file);
  
-  virtual void getMaxMinCharge(std::string fn);
+  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
   
@@ -52,6 +52,7 @@ private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
   spectraMapType spectraMap;
+  std::vector<bool> defaultNameSpaceVect;
   
   bool defaultNameSpace;
   bool x_score;
