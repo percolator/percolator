@@ -542,10 +542,10 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
     isDecoy = protMapString["proteinName"].find(po.reversedFeaturePattern, 0) != std::string::npos;
   }
 
-  //Make new strings without flank and make strings with the flanks FIXME Not sure if this is the correct flanks
-  protMapString["peptideNoFlank"]=protMapString["peptide"].substr(0,protMapString["peptide"].length() - 1); //TODO check this might be -2 or something
+  //Make new strings without flank and make strings with the flanks
+  protMapString["peptideNoFlank"]=protMapString["peptide"];
   protMapString["flankN"]=protMapString["domainPre"].at(protMapString["domainPre"].size()-1); //Last of pre
-  protMapString["flankC"]=protMapString["peptide"].at(protMapString["peptide"].length()-1); //Last of peptide
+  protMapString["flankC"]=protMapString["domainPost"].at(0); //First of post
   protMapString["peptideWithFlank"]=protMapString["flankN"]+"."+protMapString["peptideNoFlank"]+"."+protMapString["flankC"];
   
   std::string peptideS=protMapString["peptideNoFlank"]; //TMP string used to get all modifications to the psm object
@@ -651,7 +651,7 @@ void tandemReader::createPSM(const tandem_ns::protein &protObj,bool isDecoy,boos
   percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
 	features_p,  peptide_p,psmId, isDecoy, spectraMap["parenIonMass"], protMap["calculatedMass"], spectraMap["charge"]);
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
-  std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence ("1",protMapString["flankN"], protMapString["flankC"]));
+  std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (protMapString["proteinName"],protMapString["flankN"], protMapString["flankC"])); //NOTE might need to be changed, wrong type of flanks
   psm_p->occurence().push_back(oc_p);
   
   database->savePsm(spectraId, psm_p);

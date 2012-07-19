@@ -102,7 +102,7 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "",
       "pattern");
   /** new parameters for reading the fasta to obtain the proteins **/
-  //TODO conflict proably between reader and tandem, have to check
+  //TODO conflict proably between reader and tandem, have to check. Its because tandem can output missed cleavages
   /**
   cmd.defineOption("F",
       "databases",

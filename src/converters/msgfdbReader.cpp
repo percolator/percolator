@@ -187,8 +187,6 @@ void msgfdbReader::getMaxMinCharge(const std::string fn, bool isDecoy){
       }
       if(!found)
       {
-	std::cerr << "Found not found: " << peptide << " Prot: " << proteinID << std::endl; //TMP
-	
 	tmpVector.push_back(proteinID);
 	peptideProteinMap[peptideDecoyPair]=tmpVector;
       }
@@ -405,7 +403,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     dM =MassHandler::massDiff(observedMassCharge*charge, calculatedMass,
                                    charge, peptideNoFlank);
     f_seq.push_back( dM ); // obs - calc mass
-    f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
+    f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems 
     
     if (po.calcPTMs) 
     {
@@ -444,7 +442,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     }
     if (fileOut.is_open())
     {
-      fileOut << observedMassCharge << "\t" << charge << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << pValue << "\t" << peptideLength(peptide);
+      fileOut << observedMassCharge << "\t" << charge << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << pValue << "\t" << peptideLength(peptideWithFlank);
       fileOut << "\t"<<dM << "\t" << (dM < 0 ? -dM : dM) << "\n";
       fileOut.close();
     }
@@ -452,8 +450,8 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     {
       cout << "Unable to open file";
       exit(-1);
-    }
-    **/
+    }**/
+    
 
   }//End of if(rank<po.hitsPerSpectrum)
   }//End of if psmUsed

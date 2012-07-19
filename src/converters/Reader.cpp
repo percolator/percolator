@@ -79,7 +79,6 @@ void Reader::init()
     while (getline(meta, line)) {
       if (line.size() > 0 && line[0] != '#') {
 	 line.erase(std::remove(line.begin(),line.end(),' '),line.end());
-	 std::cerr << "Am" << std::endl;
 	 checkValidity(line);
 	 getMaxMinCharge(line,false);
       }
@@ -91,7 +90,6 @@ void Reader::init()
       while (getline(meta, line)) {
 	if (line.size() > 0 && line[0] != '#') {
 	  line.erase(std::remove(line.begin(),line.end(),' '),line.end());
-	  std::cerr << "Bm" << std::endl;
 	  checkValidity(line);
 	  getMaxMinCharge(line,true);
 	}
