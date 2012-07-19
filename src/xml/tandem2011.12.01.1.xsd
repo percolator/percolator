@@ -51,7 +51,7 @@
                         <xsd:complexContent mixed="true">
                           <xsd:restriction base="xsd:anyType">
                             <xsd:sequence>
-                              <xsd:element name="domain">
+                              <xsd:element name="domain" maxOccurs="unbounded">
                                 <xsd:complexType>
                                   <xsd:complexContent mixed="true">
                                     <xsd:restriction base="xsd:anyType">

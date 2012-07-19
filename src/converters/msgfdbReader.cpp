@@ -451,7 +451,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
       cout << "Unable to open file";
       exit(-1);
     }**/
-    
 
   }//End of if(rank<po.hitsPerSpectrum)
   }//End of if psmUsed
