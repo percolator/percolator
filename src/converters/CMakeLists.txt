@@ -330,7 +330,8 @@ set(tandem_in xml/tandem2011.12.01.1.xsd)
 add_custom_command(
   OUTPUT ${tandemxsdfiles}  
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
-  --namespace-map http://www.thegpm.org/TANDEM/2011.12.01.1=tandem_ns  
+  --namespace-map http://www.thegpm.org/TANDEM/2011.12.01.1=tandem_ns
+  --namespace-map =tandem_ns
   --namespace-map http://www.bioml.com/gaml/=gaml_tandem_ns ${CMAKE_CURRENT_SOURCE_DIR}/../${tandem_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${tandem_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

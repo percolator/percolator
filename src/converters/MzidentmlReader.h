@@ -56,7 +56,7 @@ public:
   
   virtual bool checkIsMeta(std::string file);
  
-  virtual void getMaxMinCharge(std::string fn);
+  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
   

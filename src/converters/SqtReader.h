@@ -41,7 +41,7 @@ public:
   
   virtual bool checkIsMeta(std::string file);
  
-  virtual void getMaxMinCharge(std::string fn);
+  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
   
   virtual void readRetentionTime(std::string filename);
 	

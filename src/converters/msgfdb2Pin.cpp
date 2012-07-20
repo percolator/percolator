@@ -46,8 +46,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   intro << "the decoy msgfdb-file. Small data sets may be merged by replace the msgfdb-files with" << endl;
   intro << "meta files. Meta files are text files containing the paths of msgfdb-files, one" << endl;
   intro << "path per line. For successful result, the different runs should be generated" << endl;
-  intro << "under similar condition. msgfdb2pin will use all psms in the files, if a maximum" << endl;
-  intro << "number of matches is wanted re-run msgfdb with the -n option." << endl;
+  intro << "under similar condition." << endl;
 
   // init
   CommandLineParser cmd(intro.str());
@@ -56,10 +55,10 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "outputXML",
       "save output in an XML file",
       "filename");
-  //TODO The matches for each spectra is spread over the whole file so
+  //TODO Add an option for which feature should be used for matches per spectra sorting
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+      "Maximal number of matches to take in consideration per spectrum, in the order of apperance.",
       "number");
   cmd.defineOption("v",
       "verbose",
@@ -108,6 +107,23 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "Pattern used to identify the decoy PSMs",
       "",
       "pattern");
+  /** new parameters for reading the fasta to obtain the proteins **/
+  cmd.defineOption("F",
+      "databases",
+      "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
+      "",
+      "filename");
+  cmd.defineOption("c",
+      "cleavages",
+      "Number of allowed miss cleavages used in the search engine (default 0).",
+      "",
+      "number");
+  cmd.defineOption("l",
+      "length",
+      "Minimum peptide length allowed used in the search engine (default 6).",
+      "",
+      "number");
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -177,6 +193,27 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   {
     parseOptions.reversedFeaturePattern = cmd.options["P"];
   }
+  
+  if (cmd.optionSet("F"))
+  {
+    std::vector<std::string> strs;
+    boost::split(strs, cmd.options["F"], boost::is_any_of(","));
+    strs.push_back("");
+    parseOptions.targetDb = strs[0];
+    parseOptions.decoyDb = strs[1];
+    parseOptions.readProteins = true;
+  }
+  
+  if (cmd.optionSet("c"))
+  {
+    parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
+  }
+  
+  if (cmd.optionSet("l"))
+  {
+    parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
   if (cmd.arguments.size() > 0)
   {
     targetFN = cmd.arguments[0];
@@ -224,7 +261,11 @@ int msgfdb2Pin::run() {
   }
   
   //initialize reader
-  parseOptions.peptidelength = 6;
+  /** these three should be parameters **/
+  parseOptions.minmass = 400;
+  parseOptions.maxmass = 6000;
+  parseOptions.maxpeplength = 40;
+  /** these three should be parameters **/
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;

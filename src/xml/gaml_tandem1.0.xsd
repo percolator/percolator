@@ -18,7 +18,7 @@
 	<xsd:element name="attribute">
   		<xsd:complexType>
         	<xsd:simpleContent>
-        		<xsd:extension base="xsd:string">
+        		<xsd:extension base="xsd:double">
         			<xsd:attribute name="type" type="xsd:string" use="required">
         			</xsd:attribute>
         		</xsd:extension>

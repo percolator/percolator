@@ -33,7 +33,7 @@ public:
 
   xml::dom::auto_ptr<DOMDocument>
   start (istream& is, const string& id, bool val, string schemaDefinition,
-      string schema_major, string schema_minor, string schemaNamespace = "http://per-colator.com/percolator_in/");
+      string schema_major, string schema_minor, string schemaNamespace = "http://per-colator.com/percolator_in/", bool noNameSpace=false);
 
   xml::dom::auto_ptr<DOMDocument>
   next ();
@@ -113,7 +113,7 @@ parser_impl ()
 
 xml::dom::auto_ptr<DOMDocument> parser_impl::
 start (istream& is, const string& id, bool val, string schemaDefinition,
-    string schema_major, string schema_minor,string schemaNamespace)
+    string schema_major, string schema_minor,string schemaNamespace, bool noNameSpace)
 {
   // Reset our state.
   //
@@ -134,16 +134,31 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
   // if local copy of the schema is available, use it for validation...
   ifstream inp(schemaDefinition.c_str());
   if(inp && val){
-    //string schemaNamespace = "http://per-colator.com/percolator_in/";
     //NOTE this is horrible code and not generic
     schemaNamespace.append(schema_major);
     schemaNamespace.append(schema_minor);
     schemaNamespace.append(" ");
-    string schemaLocation = schemaNamespace.append(schemaDefinition);
+    string schemaLocation;
+    
+    if(noNameSpace)
+    {
+      schemaLocation = schemaDefinition;
+    }
+    else
+    {
+      schemaLocation = schemaNamespace.append(schemaDefinition);
+    }
     
     XMLCh* propertyValue = XMLString::transcode(schemaLocation.c_str());
     ArrayJanitor<XMLCh> janValue(propertyValue);
-    parser_->setProperty(XMLUni::fgXercesSchemaExternalSchemaLocation, propertyValue);
+    if(noNameSpace)
+    {
+      parser_->setProperty(XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, propertyValue);
+    }
+    else
+    {
+      parser_->setProperty(XMLUni::fgXercesSchemaExternalSchemaLocation, propertyValue);
+    }
   }
   // ... otherwise send a warning
   else {
@@ -311,9 +326,9 @@ parser ()
 
 xml::dom::auto_ptr<DOMDocument> parser::
 start (istream& is, const string& id, bool val, string schemaDefinition,
-    string schema_major, string schema_minor,string schemaNamespace)
+    string schema_major, string schema_minor,string schemaNamespace, bool noNameSpace)
 {
-  return impl_->start(is, id, val, schemaDefinition, schema_major, schema_minor,schemaNamespace);
+  return impl_->start(is, id, val, schemaDefinition, schema_major, schema_minor,schemaNamespace, noNameSpace);
 }
 
 xml::dom::auto_ptr<DOMDocument> parser::

@@ -11,7 +11,7 @@ msgfdbReader::~msgfdbReader()
 }
 
 
-//Some functions to handle strings
+//A function to split strings
 std::vector<std::string> &msgfdbReader::split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
@@ -31,7 +31,7 @@ std::vector<std::string> msgfdbReader::split(const std::string &s, char delim) {
 
 bool msgfdbReader::checkValidity(const std::string file)
 {
-  bool ismeta = true;
+  bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) 
   {
@@ -54,19 +54,37 @@ bool msgfdbReader::checkValidity(const std::string file)
       std::cerr << "The file " << file << " has the wrong number of columns: "<< column_names.size() << ". Should be 13,14 or 15" << std::endl;
       std::cerr << "depending on which msgfdb options were used." << std::endl;
       exit(-1);
+    }else
+    {
+      isvalid=true;
     }
-  } 
-  else
+  }else
   {
-    ismeta = false;
+    isvalid = false;
   }
 
-  return ismeta;
+  return isvalid;
 }
 
 bool msgfdbReader::checkIsMeta(string file)
 {
+  bool ismeta;
+  std::string line;
+  
+  std::ifstream fileIn(file.c_str(), std::ios::in);
+  getline(fileIn, line);
+  fileIn.close();
+  
+  if (line.find("SpecIndex") != std::string::npos && line.find("MSGF") != std::string::npos) //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
+  {
+    ismeta=false;
+  } 
+  else
+  {
+    ismeta = true;
+  }
 
+  return ismeta;
 }
 
 void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet)
@@ -114,7 +132,7 @@ void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
   }
 }
 
-void msgfdbReader::getMaxMinCharge(const std::string fn){
+void msgfdbReader::getMaxMinCharge(const std::string fn, bool isDecoy){
   
   int n = 0, charge = 0;
   
@@ -130,12 +148,49 @@ void msgfdbReader::getMaxMinCharge(const std::string fn){
   getline(msgfdbIn, line); //First line is column names which is of no intrest for max and min charge
 
   while (getline(msgfdbIn, line)) {
-    //Get line and look for min/max charge
+    //Look for min/max charge
     std::vector<std::string> psm_vector=split(line,'\t');
     charge=boost::lexical_cast<int>(psm_vector.at(6)); //Charge is column 7
     if (minCharge > charge) minCharge = charge;
     if (maxCharge < charge) maxCharge = charge;
     n++;
+    
+    //Make a map of all peptides and which proteins they are in
+    std::string peptide=boost::lexical_cast<std::string>(psm_vector.at(7));
+    std::string proteinID=boost::lexical_cast<std::string>(psm_vector.at(8));
+    proteinID=getRidOfUnprintables(proteinID);
+    
+    peptideDecoyKey peptideDecoyPair;
+    
+    if(isDecoy) peptideDecoyPair=make_pair (peptide,1);
+    if(!isDecoy) peptideDecoyPair=make_pair (peptide,0);
+    
+    
+    if(peptideProteinMap.count(peptideDecoyPair)==0) //Check if already present
+    {
+      vector<std::string> tmpVector;
+      tmpVector.push_back(proteinID);
+      peptideProteinMap[peptideDecoyPair]=tmpVector;
+      
+    }
+    else
+    {
+      bool found=false;
+      vector<std::string> tmpVector=peptideProteinMap[peptideDecoyPair];
+      
+      for(int i=0; i<tmpVector.size();i++) //Check if its already
+      {
+	if(tmpVector[i]==proteinID) 
+	{
+	  found=true;
+	}
+      }
+      if(!found)
+      {
+	tmpVector.push_back(proteinID);
+	peptideProteinMap[peptideDecoyPair]=tmpVector;
+      }
+    }
   }
   if (n <= 0) {
     std::cerr << "The file " << fn << " does not contain any records"<< std::endl;
@@ -148,12 +203,18 @@ void msgfdbReader::getMaxMinCharge(const std::string fn){
 }
 
 void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
-			   boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names){
+			   boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names, counterMapType &idCounterMap){
   
-  std::ostringstream id;
+  std::ostringstream id,keyStream,psmIdentStream;
   std::vector< std::string > proteinIds;
-  std::vector< std::string > proteinIdsDecoys; //This vector is only used when we read a combined file
-  bool tda1=false, ndef=false;
+  bool tda1=false, ndef=false, psmUsed=false;
+  int rank;
+  double calculatedMassToCharge, calculatedMass, dM;
+  peptideDecoyKey keyCounter, peptideDecoyPair;
+  psmIdentPairType psmIdentPair;
+  percolatorInNs::occurence::flankN_type flankN;
+  percolatorInNs::occurence::flankC_type flankC;
+  std::string peptideSequence, peptideS, peptideNoFlank;
   
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
@@ -182,7 +243,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   double observedMassCharge=boost::lexical_cast<double>(psm_vector.at(4)); //Called precursor mass in the msgfdb file
   double pmError=boost::lexical_cast<double>(psm_vector.at(5));
   int charge=boost::lexical_cast<int>(psm_vector.at(6));
-  std::string peptide=boost::lexical_cast<std::string>(psm_vector.at(7));
+  std::string peptideWithFlank=boost::lexical_cast<std::string>(psm_vector.at(7));
   std::string proteinID=boost::lexical_cast<std::string>(psm_vector.at(8));
   double deNovoScore=boost::lexical_cast<double>(psm_vector.at(9));
   double MSGFScore=boost::lexical_cast<double>(psm_vector.at(10));
@@ -193,160 +254,182 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   double PepFDR;//Used if tda1 option was used
   double FDR; 	//Used if tda1 option was not used in msgfb
   
+  
   if(tda1){//if -tda 1 option is was used in msgfdb there is one more feature and FDR is sligtly different
     EFDR=boost::lexical_cast<double>(psm_vector.at(13));
     PepFDR=boost::lexical_cast<double>(psm_vector.at(14));
   }else if(ndef)
   {
-    FDR=atof(psm_vector.at(13).c_str()); //FIXME lexical_cast not working
-    //FDR=boost::lexical_cast<double>(psm_vector.at(13));
+    FDR=atof(psm_vector.at(13).c_str());
   }
-  
-  //Create id
-  id.str("");
-  id << fileId << '_' << specIndex << '_' << scan;
-  std::string psmId=id.str();
-  
-  //Get rid of unprinatables in proteinID and make list of proteinIDs
-  proteinID=getRidOfUnprintables(proteinID);
-  if(po.iscombined){
-    if( (line.find(po.reversedFeaturePattern) != std::string::npos) )
-      proteinIdsDecoys.push_back(proteinID);
-    else
-      proteinIds.push_back(proteinID);
-  }
-  else{
-    proteinIds.push_back(proteinID);
-  }
-  
-  //Check length of peptide, if its to short it cant contain both flanks and peptide
-  assert(peptide.size() >= 5 );
-  
   
   //Get the flanks/termini and remove them from the peptide sequence
-  std::vector<std::string> tmp_vect=split(peptide,'.');
-  percolatorInNs::occurence::flankN_type flankN;
-  percolatorInNs::occurence::flankC_type flankC;
-  std::string peptideSequence;
-  std::string peptideS;
-  
+  std::vector<std::string> tmp_vect=split(peptideWithFlank,'.');
   try{
     flankN=tmp_vect.at(0);
-    flankC=tmp_vect.at(2); 
+    flankC=tmp_vect.at(2);
+    if(flankN.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
+    {
+      flankN="-";
+    }
+    if(flankC.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
+    {
+      flankC="-";
+    }
 
     peptideSequence=tmp_vect.at(1);
     peptideS = peptideSequence;
   }
   catch(exception e){
-    std::cerr << "There is a problem with the peptide string: " << peptide << " SpecIndex: " << specIndex << std::endl;
+    std::cerr << "There is a problem with the peptide string: " << peptideWithFlank << " SpecIndex: " << specIndex << std::endl;
     exit(-1);
   }
   
-  //Remove modifications
-  for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos
-	&& modifiedAA.find(peptideSequence[ix])==string::npos){
-      if (ptmMap.count(peptideSequence[ix])==0) {
-	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
-        exit(-1);
-      }
-      peptideSequence.erase(ix,1);
-    }  
-  }
-  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
+  peptideNoFlank=flankN+"."+peptideWithFlank+"."+flankC;
   
-  //Register the ptms
-  for(unsigned int ix=0;ix<peptideS.size();++ix) {
-    if (aaAlphabet.find(peptideS[ix])==string::npos) {
-      int accession = ptmMap[peptideS[ix]];
-      std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
-      peptide_p->modification().push_back(mod_p);      
-      peptideS.erase(ix,1);      
-    }  
-  }
-  
-  //Calculate peptide mass
-  //double calculatedMassToCharge=Reader::calculatePepMAss(peptide,charge); //NOTE With flanks
-  double calculatedMassToCharge=Reader::calculatePepMAss(peptideSequence,charge); //NOTE Without flanks
-  
-  //Push_back the DeNovoScore and msgfscore
-  f_seq.push_back(deNovoScore);
-  f_seq.push_back(MSGFScore);
-
-  f_seq.push_back( observedMassCharge ); // Observed mass
-  f_seq.push_back( peptideLength(peptideSequence)); // Peptide length
-  int nxtFeat = 8;
-  for (int c = minCharge; c
-  <= maxCharge; c++)
-    f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
-
-  if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-    f_seq.push_back( Enzyme::isEnzymatic(peptide.at(0),peptide.at(2)) ? 1.0 : 0.0);
-    f_seq.push_back(Enzyme::isEnzymatic(peptide.at(peptide.size() - 3),peptide.at(peptide.size() - 1)) ? 1.0 : 0.0);
-    std::string peptid2 = peptide.substr(2, peptide.length() - 4);
-    f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
-  }
-  
-  //Calculate difference between observed and calculated mass
-  double dM =MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,
-                                   charge, peptide.substr(2, peptide.size()- 4));
-  f_seq.push_back( dM ); // obs - calc mass
-  f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems
-  
-  if (po.calcPTMs) 
+  //Check length of peptide, if its to short it cant contain both flanks and peptide
+  if(peptideNoFlank.size()<po.peptidelength)
   {
-    f_seq.push_back(cntPTMs(peptide)); //With flanks
-  }
-  if (po.pngasef) 
-  {
-    f_seq.push_back(isPngasef(peptide,isDecoy)); //With flanks
-  }
-  if (po.calcAAFrequencies) {
-    computeAAFrequencies(peptide, f_seq); //With flanks
+    std::cerr << "The peptide: " << peptideWithFlank << " is shorter than the specified minium length." << std::endl;
+    exit(-1);
   }
   
+  //Get rid of unprinatables in proteinID and make list of proteinIDs
+  proteinID=getRidOfUnprintables(proteinID);
   
+  psmIdentStream.str("");
+  psmIdentStream << specIndex << "_" << peptideWithFlank;
+  
+  //If its a combined filed isDecoy will be false when this function is called so it has to adjusted based on pattern
+  //Also the keys for the maps will be always be false if its combined filed
   if(po.iscombined)
   {
-    //NOTE when combine search the PSM will take the identity of its first ranked Peptide
-    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+    isDecoy = proteinID.find(po.reversedFeaturePattern, 0) != std::string::npos;
+    
+    //Key for the map with peptides and proteins
+    peptideDecoyPair=make_pair (peptideWithFlank,0);
+    
+    //Key for the map with psms and if the psm has been used or not
+    psmIdentPair=make_pair (psmIdentStream.str(),0);
   }
+  else
+  {
+    //Key for the map with peptides and proteins
+    if(isDecoy) peptideDecoyPair=make_pair (peptideWithFlank,1);
+    if(!isDecoy) peptideDecoyPair=make_pair (peptideWithFlank,0);
+    
+    //Key for the map with psms and if the psm has been used or not
+    if(isDecoy) psmIdentPair=make_pair (psmIdentStream.str(),1);
+    if(!isDecoy) psmIdentPair=make_pair (psmIdentStream.str(),0);
+  }
+
+  if(usedPSMs.insert(psmIdentPair).second) //If the if statment is not true the function is done beacause this psm, decoy combination has already been put in to the database
+  {
   
-  percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
+  proteinIds=peptideProteinMap[peptideDecoyPair]; //Get all proteins associated with this peptide
+  
+  //Get rank from map aka number of hits from the same spectra so far
+  keyStream.str("");
+  keyStream << specIndex;
+  if(isDecoy) keyCounter=make_pair (keyStream.str(),1);
+  if(!isDecoy) keyCounter=make_pair (keyStream.str(),0);
+  if(idCounterMap.count(keyCounter)==0)
+  {
+    rank=1;
+  }
+  else
+  {
+    rank=idCounterMap[keyCounter];
+    rank++;
+  }
+  idCounterMap[keyCounter]=rank; //If key already exits the value gets replaced by rank, if it doesn't a new object is created with key and value.
+ 
+  if(rank<=po.hitsPerSpectrum)
+  {
+    //Create id
+    id.str("");
+    id << fileId << '_' << specIndex << '_' << charge << '_' << rank;
+    std::string psmId=id.str();
+  
+    //Remove modifications
+    for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
+      if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos
+	      && modifiedAA.find(peptideSequence[ix])==string::npos){
+	if (ptmMap.count(peptideSequence[ix])==0) {
+	  cerr << "Peptide sequence " << peptideWithFlank << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
+	  exit(-1);
+	}
+	peptideSequence.erase(ix,1);
+      }  
+    }
+    std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
+  
+    //Register the ptms
+    for(unsigned int ix=0;ix<peptideS.size();++ix) {
+      if (aaAlphabet.find(peptideS[ix])==string::npos) {
+	int accession = ptmMap[peptideS[ix]];
+	std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
+	std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(um_p,ix));
+	peptide_p->modification().push_back(mod_p);      
+	peptideS.erase(ix,1);      
+      }  
+    }
+  
+    //Calculate peptide mass
+    //calculatedMassToCharge=Reader::calculatePepMAss(peptideWithFlank,charge); //NOTE With flanks
+    calculatedMass=Reader::calculatePepMAss(peptideNoFlank,charge); //NOTE Without flanks
+    
+    //Mass in the msgfdb file is mass/charge NOTE Not sure if this is correct, might be something else
+    calculatedMassToCharge=calculatedMass/charge;
+  
+    //Push_back the DeNovoScore and msgfscore
+    f_seq.push_back(deNovoScore);
+    f_seq.push_back(MSGFScore);
+
+    f_seq.push_back( observedMassCharge ); // Observed mass
+    f_seq.push_back( peptideLength(peptideWithFlank)); // Peptide length
+    int nxtFeat = 8;
+    for (int c = minCharge; c
+    <= maxCharge; c++)
+      f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
+
+    if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
+      f_seq.push_back( Enzyme::isEnzymatic(peptideWithFlank.at(0),peptideWithFlank.at(2)) ? 1.0 : 0.0);
+      f_seq.push_back(Enzyme::isEnzymatic(peptideWithFlank.at(peptideWithFlank.size() - 3),peptideWithFlank.at(peptideWithFlank.size() - 1)) ? 1.0 : 0.0);
+      f_seq.push_back( (double)Enzyme::countEnzymatic(peptideNoFlank) );
+    }
+  
+    //Calculate difference between observed and calculated mass
+    dM =MassHandler::massDiff(observedMassCharge*charge, calculatedMass,
+                                   charge, peptideNoFlank);
+    f_seq.push_back( dM ); // obs - calc mass
+    f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems 
+    
+    if (po.calcPTMs) 
+    {
+      f_seq.push_back(cntPTMs(peptideWithFlank));
+    }
+    if (po.pngasef) 
+    {
+      f_seq.push_back(isPngasef(peptideWithFlank,isDecoy));
+    }
+    if (po.calcAAFrequencies) {
+      computeAAFrequencies(peptideWithFlank, f_seq);
+    }
+  
+    percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
 	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
-  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
+    std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
-  for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
-  {
-    std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
-    psm_p->occurence().push_back(oc_p);
-  }
-  
-  database->savePsm(scan, psm_p);
-  
-  
-  //NOTE code to print out all features to a tab file for plotting
-  //Doesn't print aa freqs and tda1
-  /**
-  ofstream fileOut;
-  if(isDecoy){
-    fileOut.open("out_decoy.txt", std::ios_base::app);
-  }else
-  {
-    fileOut.open("out_target.txt", std::ios_base::app);
-  }
-  if (fileOut.is_open())
-  {
-    fileOut << observedMassCharge << "\t" << pmError << "\t" << charge << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << specProb << "\t" << pValue << "\t" << EFDR << "\t" << peptideLength(peptide);
-    fileOut << "\t"<<dM << "\t"<< (dM < 0 ? -dM : dM)<<"\t"<<cntPTMs(peptide)<<"\t"<<isPngasef(peptide,isDecoy)<<"\n";
-    fileOut.close();
-  }
-  else{
-    cout << "Unable to open file";
-    exit(-1);
-  }**/
+    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i )
+    {
+      std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
+      psm_p->occurence().push_back(oc_p);
+    }
+    database->savePsm(specIndex, psm_p);
 
+  }//End of if(rank<po.hitsPerSpectrum)
+  }//End of if psmUsed
 }
 
 void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
@@ -376,9 +459,17 @@ void msgfdbReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<Fra
   spos = fileId.find('.');
   if (spos != std::string::npos) fileId.erase(spos);
   
+  if(!idCounterMap.empty())
+  {
+    idCounterMap.clear();
+  }
+  
   //Read file line by line, each line is one psm. Tab delimated
   while (getline(msgfdbIn, line)) {
-    readPSM(line,isDecoy,fileId, database, column_names);
+    readPSM(line,isDecoy,fileId, database, column_names, idCounterMap);
   }
+  
+  //Clear map
+  idCounterMap.clear();
 }
 

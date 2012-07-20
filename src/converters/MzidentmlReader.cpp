@@ -150,7 +150,7 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
 }
 
 
-void MzidentmlReader::getMaxMinCharge(string fn)
+void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
 {
 
   ifstream ifs;
@@ -335,6 +335,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   
   //FIXME IMPORTANT fix, here I take only 1 peptide per PSM but the option -m might tell me to take more,
   //FIXME I have to modify this loop to obtain more PSMs in that case
+  //Get rid of unprintables in proteinName?
   BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
   {
     std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
@@ -375,7 +376,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
   double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
   std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
-  assert(peptideSeqWithFlanks.size() >= po.peptidelength );
+  assert(peptideSeq.size() >= po.peptidelength );
   unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
   double dM = MassHandler::massDiff(observed_mass,theoretic_mass,charge, peptideSeq );
   std::map<char,int> ptmMap = po.ptmScheme;

@@ -92,11 +92,6 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "ms2-file",
       "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
       "filename");**/
-  cmd.defineOption("M",
-      "isotope",
-      "Mass difference calculated to closest isotope mass rather than to the average mass.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("p",
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
@@ -106,6 +101,26 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "Pattern used to identify the decoy PSMs",
       "",
       "pattern");
+  /** new parameters for reading the fasta to obtain the proteins **/
+  //TODO conflict proably between reader and tandem, have to check. Its because tandem can output missed cleavages
+  /**
+  cmd.defineOption("F",
+      "databases",
+      "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
+      "",
+      "filename");
+  cmd.defineOption("c",
+      "cleavages",
+      "Number of allowed miss cleavages used in the search engine (default 0).",
+      "",
+      "number");
+  **/
+  cmd.defineOption("l",
+      "length",
+      "Minimum peptide length allowed used in the search engine (default 6).",
+      "",
+      "number");
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -155,10 +170,6 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   /**if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }**/
-  if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
-    parseOptions.monoisotopic = true;
-  }
   if (cmd.optionSet("p")) {
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
@@ -175,6 +186,26 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   {
     parseOptions.reversedFeaturePattern = cmd.options["P"];
   }
+  if (cmd.optionSet("F"))
+  {
+    std::vector<std::string> strs;
+    boost::split(strs, cmd.options["F"], boost::is_any_of(","));
+    strs.push_back("");
+    parseOptions.targetDb = strs[0];
+    parseOptions.decoyDb = strs[1];
+    parseOptions.readProteins = true;
+  }
+  
+  if (cmd.optionSet("c"))
+  {
+    parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
+  }
+  
+  if (cmd.optionSet("l"))
+  {
+    parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
   if (cmd.arguments.size() > 0)
   {
     targetFN = cmd.arguments[0];
@@ -222,7 +253,11 @@ int tandem2Pin::run() {
   }
   
   //initialize reader
-  parseOptions.peptidelength = 6;
+  /** these three should be parameters **/
+  parseOptions.minmass = 400;
+  parseOptions.maxmass = 6000;
+  parseOptions.maxpeplength = 40;
+  /** these three should be parameters **/
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;

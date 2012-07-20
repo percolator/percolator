@@ -27,6 +27,12 @@
 using namespace std;
 using namespace xercesc;
 
+typedef map<std::string,double> spectraMapType;
+typedef map<std::string,double> domainMapType;
+typedef map<std::string,std::string> domainMapStringType;
+typedef pair<domainMapType, domainMapStringType> domainPairType;
+typedef map<std::string, set<std::string> > peptideProteinMapType;
+
 class tandemReader: public Reader
 {
 
@@ -42,19 +48,34 @@ public:
   
   virtual bool checkIsMeta(std::string file);
  
-  virtual void getMaxMinCharge(std::string fn);
+  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
   
 private:
+  //Variables
+  std::vector<bool> defaultNameSpaceVect;
+  bool defaultNameSpace;
+  bool x_score;
+  bool y_score;
+  bool z_score;
+  bool a_score;
+  bool b_score;
+  bool c_score;
+  bool firstPSM;
+  
+  //Functions
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
-  std::vector<std::string> split(const std::string &s, char delim);
-  bool fixedXML;
+  std::vector<std::string> split(const std::string &s, char delim); 
   
-  void remove_endl(std::string s);
+  void readSpectra(const tandem_ns::group &groupObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,std::string fn);
   
-  void readPSM(std::string line,bool isDecoy,std::string fileId,
-	       boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names);
+  peptideProteinMapType getPeptideProteinMap(const tandem_ns::group &groupObj);
+  
+  domainPairType readDomain(tandem_ns::peptide peptideObj);
+  
+  void createPSM(spectraMapType spectraMap, domainMapType domainMap, domainMapStringType domainMapString, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
+		 set<std::string> proteinOccuranceSet, string psmId, int spectraId);
 };
 
 #endif //TANDEMREADER_H
