@@ -16,6 +16,7 @@
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
+
 #ifdef WIN32
 // #ifndef uint32_t
 // #define uint32_t unsigned long
@@ -24,16 +25,15 @@
 // #define uint64_t unsigned long long
 // #endif
 #else
-
-#include <stdint.h>
+  #include <stdint.h>
 #endif
+
 #include <vector>
 #include <map>
 #include <iostream>
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
-
 #include "percolator_out.hxx"
 
 class SetHandler;
@@ -42,9 +42,8 @@ class ScoreHolder {
   public:
     double score; // ,q,pep;
     PSMDescription* pPSM;
-    //  const double * featVec;
     int label;
-    /* this container holds the psms for each peptide, they have be unique */
+    /* this container holds the psms for each peptide, they have to be unique */
     std::vector<std::string> psms_list;
     
     ScoreHolder() :
@@ -74,19 +73,27 @@ inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
-struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return __x.pPSM->getPeptide() < __y.pPSM->getFullPeptide();
-  }
-};
-
-struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
+//NOTE this is the old comparison function which lexicOrderProb was based on but
+// 	both used the whole peptide sequence including the flanks (N,C) to compare two PSMs
+//	which is incorrect because an alphabetically smaller peptide might have a lower score than
+//	its neighbour having both the same sequence (with no flanks) 
+//	but when weedingout we take the first non-redundant peptide for every psm
+/**struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return ( (__x.pPSM->getPeptide() < __y.pPSM->getFullPeptide() ) 
     || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label != __y.label) )
     || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label == __y.label)
+      && (__x.score > __y.score) ) );
+  }
+};**/
+
+struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool
+  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return ( (__x.pPSM->getPeptideSequence() < __y.pPSM->getPeptideSequence() ) 
+    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label != __y.label) )
+    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label == __y.label)
       && (__x.score > __y.score) ) );
   }
 };
