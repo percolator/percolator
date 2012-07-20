@@ -324,9 +324,10 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       {
         myPsm->proteinIds.insert( oc.proteinId() );
         // adding n-term and c-term residues to peptide
+	//NOTE they residues for the peptide in the PSMs are always the same for every protein
         myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
-
       }
+      
       myPsm->id = psm.id();
       myPsm->scan = scanNumber;
       myPsm->expMass = psm.experimentalMassToCharge();

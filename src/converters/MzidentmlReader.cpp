@@ -89,7 +89,7 @@ bool MzidentmlReader::checkIsMeta(string file)
   std::string line;
   getline(fileIn, line);
   fileIn.close();
-  //NOTE this is not a correct way to check if it is meta for mzident FIXME
+  //NOTE this is not the best way to check if it is meta for mzident 
   if (line.find("<?xml") != std::string::npos)
   {
     isMeta = false;
@@ -153,7 +153,6 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
 void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
 {
 
-  bool foundFirstChargeState = false;
   ifstream ifs;
   ifs.exceptions (ifstream::badbit | ifstream::failbit);
   try
@@ -171,23 +170,12 @@ void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
     {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
-    
-    ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+
+    for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr, doc->getDocumentElement()->getTagName()); doc = p.next ()) 
     {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-      
-      assert(specIdResult.SpectrumIdentificationItem().size() > 0);
-      ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
-      
       BOOST_FOREACH( const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )
       {
-	if ( ! foundFirstChargeState ) 
-	{
-	  minCharge = item.chargeState();
-	  maxCharge = item.chargeState();
-	  foundFirstChargeState = true;
-	}
 	minCharge = std::min(item.chargeState(),minCharge);
 	maxCharge = std::max(item.chargeState(),maxCharge);
       }
@@ -209,15 +197,13 @@ void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
   catch(std::exception e){
     cerr << e.what() <<endl;
   }
-  
-  assert( foundFirstChargeState );
+  ifs.close();
   return;
 }
 
 void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
   namespace xml = xsd::cxx::xml;
-  int scanNumber=0;
   scanNumberMapType scanNumberMap;
   
   try
@@ -250,21 +236,21 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     {
       //PEPTIDE
       mzIdentML_ns::SequenceCollectionType::Peptide_type *pept = new mzIdentML_ns::SequenceCollectionType::Peptide_type(peptide);
-      peptideMap.insert( std::make_pair(peptide.id(), pept));      
+      peptideMap.insert( std::make_pair(peptide.id(), pept) );      
     }
     
     BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::DBSequence_type &protein, sequenceCollection.DBSequence() ) 
     {
       //PROTEIN
       mzIdentML_ns::SequenceCollectionType::DBSequence_type *prot = new mzIdentML_ns::SequenceCollectionType::DBSequence_type(protein);
-      proteinMap.insert( std::make_pair(protein.id(), prot));      
+      proteinMap.insert( std::make_pair(protein.id(), prot) );      
     }
     
     BOOST_FOREACH( const ::mzIdentML_ns::PeptideEvidenceType &peptideE, sequenceCollection.PeptideEvidence() ) 
     {
       //PEPTIDE EVIDENCE
       ::mzIdentML_ns::PeptideEvidenceType *peptE = new mzIdentML_ns::PeptideEvidenceType(peptideE);
-      peptideEvidenceMap.insert(std::make_pair(peptideE.id(),peptE)); 
+      peptideEvidenceMap.insert( std::make_pair(peptideE.id(),peptE) ); 
     }
     
     //NOTE wouldnt be  better to use the get tag by Name to jump to Spectrum collection?
@@ -273,8 +259,6 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
     
-    ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
-    assert( specIdResult.SpectrumIdentificationItem().size() > 0 );
     unsigned scanNumber = 0;
     for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
     {
@@ -290,7 +274,7 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     }
     
     cleanHashMaps();
-
+    ifs.close();
   }
   catch (const xercesc::DOMException& e)
   {
@@ -309,6 +293,8 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     cerr << "io failure" << endl;
     exit(-1);
   }
+  
+  return;
 }
 
 void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
