@@ -157,7 +157,6 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
 {
   push_backFeatureDescription("hyperscore");
   push_backFeatureDescription("nextscore");
-  push_backFeatureDescription("ProteinExpectedValue");
   push_backFeatureDescription("DomainExpectedValue");
   
   
@@ -537,20 +536,21 @@ peptideProteinMapType tandemReader::getPeptideProteinMap(const tandem_ns::group 
   return(peptideProteinMap);
 }
 
-domainPairType tandemReader::readDomain(tandem_ns::peptide peptideObj){ //FIXME Run once not for each domain, check that stuff is the same
+domainPairType tandemReader::readDomain(tandem_ns::peptide peptideObj){
   //NOTE This function only reads features, no new ones are calculated
   //NOTE Error checks for the attributes should be in readSpectra
+  //NOTE there are several domainObjects in peptide but the domain objects should have the exact same scores and features but the sequence, pre and post might be slightly different.
   domainMapStringType domainMapString;
   domainMapType domainMap;
   
-  //NOTE there are several domainObjects in peptide but they should have exactly the same values on the features. Only the position of the peptide and modifications varies.
-  //tandem_ns::peptide::domain_sequence domainSeq;
-  //tandem_ns::peptide::domain_iterator iter=domainSeq.begin();
-  //tandem_ns::domain domainObj=*iter;
+  tandem_ns::peptide::domain_sequence domainSeq=peptideObj.domain();
+  tandem_ns::peptide::domain_iterator iter=domainSeq.begin();
+  tandem_ns::domain domainObj=*iter;
   
-  BOOST_FOREACH(const tandem_ns::domain &domainObj, peptideObj.domain()) //Domain
-  {
-    
+  bool first=true;
+  domainMapStringType domainMapString2;
+  domainMapType domainMap2;
+  
   //Describes the region of the protein’s sequence that was identified.
   domainMap["expect"]=domainObj.expect();	//the expectation value for the peptide identification
   domainMap["calculatedMass"]=domainObj.mh();	//the calculated peptide mass + a proton
@@ -707,8 +707,6 @@ domainPairType tandemReader::readDomain(tandem_ns::peptide peptideObj){ //FIXME 
     aaObj.type();
     aaObj.at();
   }
-  
-  } //End of boost domain
     
   domainPairType temp_pair=make_pair(domainMap,domainMapString);	
   return(temp_pair);
@@ -770,7 +768,7 @@ void tandemReader::createPSM(spectraMapType spectraMap, domainMapType domainMap,
   f_seq.push_back(domainMap["nextScore"]);
 
   //Expect
-  f_seq.push_back(domainMap["domainExpect"]);
+  f_seq.push_back(domainMap["expect"]);
   
   //Ion related features
   f_seq.push_back(spectraMap["sumI"]);
@@ -778,28 +776,28 @@ void tandemReader::createPSM(spectraMapType spectraMap, domainMapType domainMap,
   
   if(a_score)
   {
-    f_seq.push_back(domainMap["aScore"]/domainMapString["peptideNoFlank"].size());
+    f_seq.push_back(domainMap["aIons"]/domainMapString["peptideNoFlank"].size());
   }
   if(b_score)
   {
-    f_seq.push_back(domainMap["bScore"]/domainMapString["peptideNoFlank"].size());
+    f_seq.push_back(domainMap["bIons"]/domainMapString["peptideNoFlank"].size());
   }
   if(c_score)
   {
-    f_seq.push_back(domainMap["cScore"]/domainMapString["peptideNoFlank"].size());
+    f_seq.push_back(domainMap["cIons"]/domainMapString["peptideNoFlank"].size());
   }
   
   if(x_score)
   {
-    f_seq.push_back(domainMap["xScore"]/domainMapString["peptideNoFlank"].size());
+    f_seq.push_back(domainMap["xIons"]/domainMapString["peptideNoFlank"].size());
   }
   if(y_score)
   {
-    f_seq.push_back(domainMap["yScore"]/domainMapString["peptideNoFlank"].size());
+    f_seq.push_back(domainMap["yIons"]/domainMapString["peptideNoFlank"].size());
   }
   if(z_score)
   {
-    f_seq.push_back(domainMap["zScore"]/domainMapString["peptideNoFlank"].size());
+    f_seq.push_back(domainMap["zIons"]/domainMapString["peptideNoFlank"].size());
   }
   
   //Hyperscore constants
@@ -857,6 +855,32 @@ void tandemReader::createPSM(spectraMapType spectraMap, domainMapType domainMap,
   }
   
   database->savePsm(spectraId, psm_p);
+  
+  /**
+    ofstream fileOut;
+    if(isDecoy){
+      std::string tmp="tab__out_decoy_tandem.txt";
+      fileOut.open(tmp.c_str(), std::ios_base::app);
+    }
+    else
+    {
+      std::string tmp="tab__out_target_tandem.txt";
+      fileOut.open(tmp.c_str(), std::ios_base::app);
+    }
+    if (fileOut.is_open())
+    {
+      fileOut << domainMap["hyperScore"] << "\t" << domainMap["nextScore"] << "\t" << domainMap["expect"] << "\t" << spectraMap["sumI"] << "\t" << spectraMap["maxI"] << "\t" << domainMap["massDiff"];
+      fileOut << "\t" << domainMap["absMassDiff"] << "\t" << domainMap["missedCleavages"] << "\t" << domainMap["bIons"]/domainMapString["peptideNoFlank"].size() << "\t" << domainMap["yIons"]/domainMapString["peptideNoFlank"].size();
+      fileOut << "\t" << spectraMap["a0"] << "\t" << spectraMap["a1"] << "\t" <<spectraMap["charge"] << "\n";
+      fileOut.close();
+    }
+    else
+    {
+      cout << "Unable to open file";
+      exit(-1);
+    }
+  **/
+  
 }
 
 void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
