@@ -427,30 +427,6 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
       psm_p->occurence().push_back(oc_p);
     }
     database->savePsm(specIndex, psm_p);
-  
-    //NOTE code to print out some features to a tab file, remove for release
-    /**
-    ofstream fileOut;
-    if(isDecoy){
-      std::string tmp="tab_"+fileId+"_out_decoy.txt";
-      fileOut.open(tmp.c_str(), std::ios_base::app);
-    }
-    else
-    {
-      std::string tmp="tab_"+fileId+"_out_target.txt";
-      fileOut.open(tmp.c_str(), std::ios_base::app);
-    }
-    if (fileOut.is_open())
-    {
-      fileOut << observedMassCharge << "\t" << charge << "\t" << deNovoScore << "\t" << MSGFScore << "\t" << pValue << "\t" << peptideLength(peptideWithFlank);
-      fileOut << "\t"<<dM << "\t" << (dM < 0 ? -dM : dM) << "\n";
-      fileOut.close();
-    }
-    else
-    {
-      cout << "Unable to open file";
-      exit(-1);
-    }**/
 
   }//End of if(rank<po.hitsPerSpectrum)
   }//End of if psmUsed

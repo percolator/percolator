@@ -841,8 +841,6 @@ void tandemReader::createPSM(spectraMapType spectraMap, domainMapType domainMap,
     computeAAFrequencies(domainMapString["peptideWithFlank"], f_seq);
   }
   
-  //TODO x!tandems new stuff
-  
   //Save the psm
   percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (features_p,  peptide_p,psmId, isDecoy, spectraMap["parenIonMass"], domainMap["calculatedMass"], spectraMap["charge"]);
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
@@ -855,32 +853,6 @@ void tandemReader::createPSM(spectraMapType spectraMap, domainMapType domainMap,
   }
   
   database->savePsm(spectraId, psm_p);
-  
-  /**
-    ofstream fileOut;
-    if(isDecoy){
-      std::string tmp="tab__out_decoy_tandem.txt";
-      fileOut.open(tmp.c_str(), std::ios_base::app);
-    }
-    else
-    {
-      std::string tmp="tab__out_target_tandem.txt";
-      fileOut.open(tmp.c_str(), std::ios_base::app);
-    }
-    if (fileOut.is_open())
-    {
-      fileOut << domainMap["hyperScore"] << "\t" << domainMap["nextScore"] << "\t" << domainMap["expect"] << "\t" << spectraMap["sumI"] << "\t" << spectraMap["maxI"] << "\t" << domainMap["massDiff"];
-      fileOut << "\t" << domainMap["absMassDiff"] << "\t" << domainMap["missedCleavages"] << "\t" << domainMap["bIons"]/domainMapString["peptideNoFlank"].size() << "\t" << domainMap["yIons"]/domainMapString["peptideNoFlank"].size();
-      fileOut << "\t" << spectraMap["a0"] << "\t" << spectraMap["a1"] << "\t" <<spectraMap["charge"] << "\n";
-      fileOut.close();
-    }
-    else
-    {
-      cout << "Unable to open file";
-      exit(-1);
-    }
-  **/
-  
 }
 
 void tandemReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
