@@ -1,10 +1,28 @@
-/* Some Notes about the code
+/* Some Notes about the code and X!Tandem
  * 
  * The defaultNameSpace bool
  * It is used to check if the tandem xml file has a default namespace declared named http://www.thegpm.org/TANDEM/2011.12.01.1
  * The bool is set to true if it has. Normal tandem files doesn't have it declared this namespace declared and the code wont work properly if it has
  * beacuse of that the xsd file doesn't have the targetnamespace declared:
  * targetNamespace="http://www.thegpm.org/TANDEM/2011.12.01.1"
+ * 
+ * Its possiblet that tandem always outputs one hit per spectrum but even if its multiple hits tandemReader can handle it.
+ * 
+ * 
+ * 
+ * The xsd and xml
+ * The xml is correct but has some weird things to it. The xsd is a bit to general and xml files that shouldnt be ok can still be validated.
+ * Therefore its important to check somethings while parsing. For instance the a0 and a1 constans should only be allowed to appear once but the xsd
+ * allows them to appear several times so the code has to check if they appear more than once. The xml file also has some elements that are named 
+ * group that actually are complety different which means they have to be in the same xsd element. This creates further possiblitys for wrong xml
+ * files to get through.
+ * 
+ * It also has no deafult namespace declared and to avoid ambiougs types with the other xsd files a default namespace is made when compiling
+ * and using codesynthesis is the makelist using the -namespace-map option
+ * 
+ * There are some elements that are mixed content in the xml which is not obivous that they are mixed content. Like peptide, but also domain is
+ * mixed content cause of the \n string when there is no aa element within the domain element. The text in mixed content can't be acessed using
+ * codesynthesis but can be using dom. See the codesynthesis manual about keeping dom assoication.
  * 
  */
 
@@ -20,6 +38,8 @@ string schema_minor = "";
 
 tandemReader::tandemReader(ParseOptions po):Reader(po)
 {
+  //NOTE these are used in getMaxMinCharge so when the first time the file is parsed it looks if ceartain features are present or not.
+  //So the proggram knows if they should be added to the feature descriptions or not.
   x_score=false;
   y_score=false;
   z_score=false;
@@ -84,6 +104,7 @@ void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const s
 }
 */
 
+//Checks validity of the file and also if the defaultNameSpace is declared or not.
 bool tandemReader::checkValidity(const std::string file)
 {
   bool isvalid;
@@ -160,6 +181,7 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
   push_backFeatureDescription("DomainExpectedValue");
   
   
+  //The bools are set in getMaxMinCharge
   //Ion features
   push_backFeatureDescription("SpectraSumIon");
   push_backFeatureDescription("SpectraMaxIon");
@@ -237,6 +259,7 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
   }
 }
 
+//Get max and min chage but also check what type of a,b,c,x,y,z score/ions are present
 void tandemReader::getMaxMinCharge(const std::string fn, bool isDecoy){
   
   int nTot = 0, charge = 0;
@@ -363,13 +386,14 @@ void tandemReader::getMaxMinCharge(const std::string fn, bool isDecoy){
   return;
 }
 
+//Get the groupObject which contains one spectra but might contain several psm. All psms are read, features calculated and the psm saved.
 void tandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,std::string fn){
   
-  //TODO check so stuff is used
   std::ostringstream id;
   std::string fileId, protId, proteinName;
   int rank=0, spectraId;
-  bool a0Found=false, a1Found=false;
+  bool a0Found=false, a1Found=false; //The xml file is not made in a good way so the xsd accepts several attributes of the a0 and a1 type while really only one should be allowed.
+				      //These bools are set to true when they are found and if they get found again the program quits.
   
   std::set<std::string> usedPeptides;
   spectraMapType spectraMap;
@@ -499,7 +523,7 @@ void tandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,boo
   
 }
 
-
+//Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
 peptideProteinMapType tandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj){
   peptideProteinMapType peptideProteinMap;
   string proteinName;
@@ -536,6 +560,7 @@ peptideProteinMapType tandemReader::getPeptideProteinMap(const tandem_ns::group 
   return(peptideProteinMap);
 }
 
+//Reads the domain element and returns a pair of two maps, one with doubles and one with strings
 domainPairType tandemReader::readDomain(tandem_ns::peptide peptideObj){
   //NOTE This function only reads features, no new ones are calculated
   //NOTE Error checks for the attributes should be in readSpectra
@@ -713,6 +738,7 @@ domainPairType tandemReader::readDomain(tandem_ns::peptide peptideObj){
 }
 
 
+//Calculates some features then creates the psm and saves it
 void tandemReader::createPSM(spectraMapType spectraMap, domainMapType domainMap, domainMapStringType domainMapString, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
 		 set<std::string> proteinOccuranceSet, string psmId, int spectraId){
 

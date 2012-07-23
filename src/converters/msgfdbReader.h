@@ -24,7 +24,7 @@
 typedef pair<std::string, int> psmIdentPairType;
 typedef pair<std::string, int> peptideDecoyKey;
 typedef map<peptideDecoyKey, int> counterMapType;
-typedef map<peptideDecoyKey, std::vector<std::string> > peptideProteinMapType;
+typedef map<peptideDecoyKey, set<std::string> > peptideProteinMapType;
 
 class msgfdbReader: public Reader
 {

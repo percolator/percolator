@@ -1,3 +1,15 @@
+/* Some Notes about the code and msgfdb
+ * 
+ * Their is almost always one protein per peptide in the output but not alwyas
+ * 
+ * Some times msgfdb reports more hits than allowed by the -n option. Might be good to keep in mind.
+ * 
+ * Msgfdb doesn't report calculated mass so the program it calculates it but there is somekind of error.
+ * The diffrenece between observed and calculated is to big. 
+ * 
+ */
+
+
 #include "msgfdbReader.h"
 
 msgfdbReader::msgfdbReader(ParseOptions po):Reader(po)
@@ -29,6 +41,7 @@ std::vector<std::string> msgfdbReader::split(const std::string &s, char delim) {
 }
 
 
+//Check validity of the file
 bool msgfdbReader::checkValidity(const std::string file)
 {
   bool isvalid = true;
@@ -49,7 +62,7 @@ bool msgfdbReader::checkValidity(const std::string file)
   if (line.find("SpecIndex") != std::string::npos && line.find("MSGF") != std::string::npos) //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
   {
     std::vector<std::string> column_names=split(line,'\t');
-    if(!(column_names.size()==13||column_names.size()==14||column_names.size()==15))//Check that the size is corrrect, it should have length 14 or 15
+    if(!(column_names.size()==13||column_names.size()==14||column_names.size()==15))//Check that the size is corrrect, it should have length 13,14 or 15 depending on settings used in msgfdb
     { 
       std::cerr << "The file " << file << " has the wrong number of columns: "<< column_names.size() << ". Should be 13,14 or 15" << std::endl;
       std::cerr << "depending on which msgfdb options were used." << std::endl;
@@ -66,6 +79,7 @@ bool msgfdbReader::checkValidity(const std::string file)
   return isvalid;
 }
 
+//Check if its a meta file
 bool msgfdbReader::checkIsMeta(string file)
 {
   bool ismeta;
@@ -132,6 +146,7 @@ void  msgfdbReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAl
   }
 }
 
+//Get max and min charge. Also makes an map of peptide with an set of associated proteinIDs
 void msgfdbReader::getMaxMinCharge(const std::string fn, bool isDecoy){
   
   int n = 0, charge = 0;
@@ -168,27 +183,17 @@ void msgfdbReader::getMaxMinCharge(const std::string fn, bool isDecoy){
     
     if(peptideProteinMap.count(peptideDecoyPair)==0) //Check if already present
     {
-      vector<std::string> tmpVector;
-      tmpVector.push_back(proteinID);
-      peptideProteinMap[peptideDecoyPair]=tmpVector;
+      set<std::string> tmpSet;
+      tmpSet.insert(proteinID);
+      peptideProteinMap[peptideDecoyPair]=tmpSet;
       
     }
     else
     {
-      bool found=false;
-      vector<std::string> tmpVector=peptideProteinMap[peptideDecoyPair];
-      
-      for(int i=0; i<tmpVector.size();i++) //Check if its already
+      set<std::string> tmpSet=peptideProteinMap[peptideDecoyPair];
+      if(tmpSet.insert(proteinID).second)
       {
-	if(tmpVector[i]==proteinID) 
-	{
-	  found=true;
-	}
-      }
-      if(!found)
-      {
-	tmpVector.push_back(proteinID);
-	peptideProteinMap[peptideDecoyPair]=tmpVector;
+	peptideProteinMap[peptideDecoyPair]=tmpSet;
       }
     }
   }
@@ -202,11 +207,12 @@ void msgfdbReader::getMaxMinCharge(const std::string fn, bool isDecoy){
   return;
 }
 
+//Reads the psm from line, calculates features and then saves it.
 void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
 			   boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names, counterMapType &idCounterMap){
   
   std::ostringstream id,keyStream,psmIdentStream;
-  std::vector< std::string > proteinIds;
+  set< std::string > proteinIds;
   bool tda1=false, ndef=false, psmUsed=false;
   int rank;
   double calculatedMassToCharge, calculatedMass, dM;
@@ -236,6 +242,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   }
   
   //Variables related to the MSGFDB file type 
+  //NOTE not all of these are actually used
   std::string specFile=boost::lexical_cast<std::string>(psm_vector.at(0));
   double specIndex=boost::lexical_cast<double>(psm_vector.at(1));
   double scan=boost::lexical_cast<double>(psm_vector.at(2));
@@ -268,6 +275,8 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
   try{
     flankN=tmp_vect.at(0);
     flankC=tmp_vect.at(2);
+    //Sometimes the flank is odd letters like ? _ replace them with -
+    //NOTE the split function might sometimes messing things upp if the flank is something odd and not in the list in split.
     if(flankN.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
     {
       flankN="-";
@@ -379,7 +388,8 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     //calculatedMassToCharge=Reader::calculatePepMAss(peptideWithFlank,charge); //NOTE With flanks
     calculatedMass=Reader::calculatePepMAss(peptideNoFlank,charge); //NOTE Without flanks
     
-    //Mass in the msgfdb file is mass/charge NOTE Not sure if this is correct, might be something else
+    //Mass in the msgfdb file is mass/charge
+    //NOTE The mass difference is behaving strange, there is somethign wrong somewhere with the mass.
     calculatedMassToCharge=calculatedMass/charge;
   
     //Push_back the DeNovoScore and msgfscore
@@ -419,7 +429,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
 	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
     std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
 
-    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i )
+    for ( set< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i )
     {
       std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
       psm_p->occurence().push_back(oc_p);
