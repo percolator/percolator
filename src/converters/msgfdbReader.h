@@ -44,9 +44,11 @@ public:
   virtual void getMaxMinCharge(std::string fn, bool isDecoy);
   
   virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
+  
   const char* flankN;
   
 private:
+  
   std::set< psmIdentPairType > usedPSMs;
   counterMapType idCounterMap;
   peptideProteinMapType peptideProteinMap;
@@ -56,7 +58,8 @@ private:
 
   
   void readPSM(std::string line,bool isDecoy,std::string fileId,
-	       boost::shared_ptr<FragSpectrumScanDatabase> database, std::vector<std::string> column_names, counterMapType &idCounterMap);
+	       boost::shared_ptr<FragSpectrumScanDatabase> database, 
+	       std::vector<std::string> column_names, counterMapType &idCounterMap);
 };
 
 #endif //MSGFDBREADER_H

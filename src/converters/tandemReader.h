@@ -74,7 +74,8 @@ private:
   
   domainPairType readDomain(tandem_ns::peptide peptideObj);
   
-  void createPSM(spectraMapType spectraMap, domainMapType domainMap, domainMapStringType domainMapString, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
+  void createPSM(spectraMapType spectraMap, domainMapType domainMap, 
+		 domainMapStringType domainMapString, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
 		 set<std::string> proteinOccuranceSet, string psmId, int spectraId);
 };
 

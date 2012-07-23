@@ -47,7 +47,8 @@ class FeatureNames {
     void setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
 
     void insertFeature(const string& featureName) {
-      featureNames.push_back(featureName);
+      if(std::find(featureNames.begin(), featureNames.end(), featureName)==featureNames.end())
+	featureNames.push_back(featureName);
     }
     void setFeatures(string& line, size_t skip, size_t numFeatures);
 

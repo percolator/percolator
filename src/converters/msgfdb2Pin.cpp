@@ -173,6 +173,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   /**if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }**/
+  
   if (cmd.optionSet("M")) {
     MassHandler::setMonoisotopicMass(true);
     parseOptions.monoisotopic = true;

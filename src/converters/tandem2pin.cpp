@@ -63,11 +63,13 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
       "level");
+  
   /**cmd.defineOption("u",
       "unitnorm",
       "Use unit normalization [0-1] instead of standard deviation normalization",
       "",
       TRUE_IF_SET);**/
+  
   cmd.defineOption("a",
       "aa-freq",
       "Calculate amino acid frequency features",
@@ -88,10 +90,12 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
       "",
       TRUE_IF_SET);
+  
   /**cmd.defineOption("2",
       "ms2-file",
       "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
       "filename");**/
+  
   cmd.defineOption("p",
       "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
@@ -101,9 +105,9 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "Pattern used to identify the decoy PSMs",
       "",
       "pattern");
+  
   /** new parameters for reading the fasta to obtain the proteins **/
-  //TODO conflict proably between reader and tandem, have to check. Its because tandem can output missed cleavages
-  /**
+  
   cmd.defineOption("F",
       "databases",
       "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
@@ -114,7 +118,6 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
       "Number of allowed miss cleavages used in the search engine (default 0).",
       "",
       "number");
-  **/
   cmd.defineOption("l",
       "length",
       "Minimum peptide length allowed used in the search engine (default 6).",
@@ -170,6 +173,7 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   /**if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }**/
+  
   if (cmd.optionSet("p")) {
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));

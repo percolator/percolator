@@ -41,12 +41,6 @@ using namespace std;
 #include <boost/algorithm/string.hpp>
 
 
-/** Compare function to use to get unique peptides from a list of PSMs**/
-
-inline bool mycmp(const ScoreHolder &a,const ScoreHolder &b) {
-  return (boost::iequals(a.pPSM->getPeptideSequence(),b.pPSM->getPeptideSequence()) && (a.label == b.label));
-}
-
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
 }
@@ -66,11 +60,10 @@ inline double truncateTo(double truncateMe, const char* length) {
 }
 
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator sh){
-  // peptide sequence
-  string peptide = sh->pPSM->getPeptide();
-  ::percolatorOutNs::aa_term_t n_xml = peptide.substr(0, 1);
-  ::percolatorOutNs::aa_term_t c_xml = peptide.substr(peptide.size()-1, peptide.size());
-  ::percolatorOutNs::aa_seq_t seq_xml = peptide.substr(2, peptide.size()-4);
+
+  ::percolatorOutNs::aa_term_t n_xml = sh->pPSM->getFlankN();
+  ::percolatorOutNs::aa_term_t c_xml = sh->pPSM->getFlankC();
+  ::percolatorOutNs::aa_seq_t seq_xml = sh->pPSM->getPeptideSequence();
   ::percolatorOutNs::peptide_seq peptide_seq_xml (seq_xml);
   peptide_seq_xml.c(c_xml); // optional fields
   peptide_seq_xml.n(n_xml);
@@ -113,78 +106,96 @@ std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::
   return p;
 }
 
-ostream& operator<<(ostream& os, const ScoreHolder& sh) {
+ostream& operator<<(ostream& os, const ScoreHolder& sh) 
+{
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
+  
   os << "    <psm p:psm_id=\"" << sh.pPSM->id << "\"";
-  if (Scores::isOutXmlDecoys()) {
+  
+  if (Scores::isOutXmlDecoys()) 
+  {
     if(sh.label != 1)
       os << " p:decoy=\"true\"";
-    else os << " p:decoy=\"false\"";
+    else 
+      os << " p:decoy=\"false\"";
   }
+  
   os << ">" << endl;
-  os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
-  os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
-  os << "      <pep>" << scientific << sh.pPSM->pep << "</pep>" << endl;
-  if(Scores::getShowExpMass()) {
-    os << "      <exp_mass>" << fixed << setprecision (4) 
-    << sh.pPSM->expMass << "</exp_mass>" << endl;
+  os << "      <svm_score>"   << fixed 	<< sh.score 	<< "</svm_score>" << endl;
+  os << "      <q_value>" 	<< scientific << sh.pPSM->q 	<< "</q_value>" << endl;
+  os << "      <pep>" 	       << scientific << sh.pPSM->pep << "</pep>" << endl;
+  
+  if(Scores::getShowExpMass()) 
+  {
+    os << "      <exp_mass>" << fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
   }   
-  os << "      <calc_mass>" << fixed << setprecision (3)
-            << sh.pPSM->calcMass << "</calc_mass>" << endl;
-  if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\""
-      << PSMDescription::unnormalize(sh.pPSM->retentionTime)
-  << "\" predicted=\""
-  << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
-  << endl;
-  string peptide = sh.pPSM->getPeptide();
-  if (peptide.size() > 0) {
-	  string n = peptide.substr(0, 1);
-	  string c = peptide.substr(peptide.size()-1, peptide.size());
-	  string centpep = peptide.substr(2, peptide.size()-4);
-	  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\""
-			  << centpep << "\"/>" << endl;
+  
+  os << "      <calc_mass>" << fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
+  
+  if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\"" 
+				  << PSMDescription::unnormalize(sh.pPSM->retentionTime)
+				  << "\" predicted=\""
+				  << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
+				  << endl;
+
+  if (sh.pPSM->getPeptideSequence().size() > 0) 
+  {
+	  string n = sh.pPSM->getFlankN();
+	  string c = sh.pPSM->getFlankC();
+	  string centpep = sh.pPSM->getPeptideSequence();
+	  
+	  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
   }
-  for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
-  != sh.pPSM->proteinIds.end(); ++pid) {
-    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-    << "</protein_id>" << endl;
+  
+  for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid != sh.pPSM->proteinIds.end(); ++pid) {
+   
+    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid) << "</protein_id>" << endl;
   }
+  
   os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
   os << "    </psm>" << endl;
   return os;
 }
 
-ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
+ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) 
+{
   if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
     return os;
   }
-  string peptide_id =
-      sh.pPSM->getPeptide().substr(2, sh.pPSM->getPeptide().size()-4);
+  
+  string peptide_id = sh.pPSM->getPeptideSequence();
+  
   os << "    <peptide p:peptide_id=\"" << peptide_id << "\"";
-  if (Scores::isOutXmlDecoys()) {
+  
+  if (Scores::isOutXmlDecoys()) 
+  {
     if(sh.label != 1)
       os << " p:decoy=\"true\"";
-    else os << " p:decoy=\"false\"";
+    else 
+      os << " p:decoy=\"false\"";
   }
+  
   os << ">" << endl;
-  os << "      <svm_score>" << fixed << sh.score << "</svm_score>" << endl;
-  os << "      <q_value>" << sh.pPSM->q << "</q_value>" << endl;
-  os << "      <pep>" << scientific << sh.pPSM->pep << "</pep>" << endl;
-  if(Scores::getShowExpMass()) {
-    os << "      <exp_mass>" << fixed << setprecision (4)
-            << sh.pPSM->expMass << "</exp_mass>" << endl;
+  os << "      <svm_score>" << fixed       << sh.score     << "</svm_score>" << endl;
+  os << "      <q_value>"   << scientific  << sh.pPSM->q   << "</q_value>" << endl;
+  os << "      <pep>" 	     << scientific  << sh.pPSM->pep << "</pep>" << endl;
+  
+  if(Scores::getShowExpMass()) 
+  {
+    os << "      <exp_mass>" << fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
   }
-  os << "      <calc_mass>" << fixed << setprecision (3)
-            << sh.pPSM->calcMass << "</calc_mass>" << endl;
-  for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid
-  != sh.pPSM->proteinIds.end(); ++pid) {
-    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid)
-    << "</protein_id>" << endl;
+  os << "      <calc_mass>" << fixed << setprecision (3)  << sh.pPSM->calcMass << "</calc_mass>" << endl;
+  
+  for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid != sh.pPSM->proteinIds.end(); ++pid) 
+  {
+    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pid) << "</protein_id>" << endl;
   }
+  
   os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
   os << "      <psm_ids>" << endl;
+  
   // output all psms that contain the peptide
   vector<string> s = sh.psms_list;
   BOOST_FOREACH(string psm, sh.psms_list){
@@ -192,6 +203,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   }
   os << "      </psm_ids>" << endl;
   os << "    </peptide>" << endl;
+  
   return os;
 }
 
@@ -451,20 +463,17 @@ void Scores::normalizeScores(double fdr) {
     }
   }
 
-  assert(it != scores.end());
-  //assert(q1>median);
-  
-  //NOTE why the assert works but the if does not ..
-  if(abs(q1) > abs(median)){
-    cerr << "Error in the input data: too good separation between target "
-         << "and decoy PSMs.\n";
-    exit(0);
+  if(q1 <= median){
+    cerr << "\nWARNING the input data has too good separation between target "
+         << "and decoy PSMs.\n" << std::endl;
   }
-  
-  double diff = q1-median;
-  for (it = scores.begin(); it != scores.end(); ++it) {
-    it->score -= q1;
-    it->score /= diff;
+  else
+  {
+    double diff = q1-median;
+    for (it = scores.begin(); it != scores.end(); ++it) {
+      it->score -= q1;
+      it->score /= diff;
+    }
   }
 }
 
@@ -589,7 +598,8 @@ void Scores::weedOutRedundant() {
    for(;current!=scores.end(); current++){
      // compare pointer's peptide with previousPeptide
      string currentPeptide = current->pPSM->getPeptideSequence();
-     if(boost::equals(currentPeptide,previousPeptide) 
+     if(currentPeptide.compare(previousPeptide) == 0 
+     //if(boost::equals(currentPeptide,previousPeptide) 
        && (previousLabel == current->label)) {
        // if the peptide is a duplicate
        vector<ScoreHolder>::iterator last = --uniquePeptideScores.end();
@@ -727,16 +737,4 @@ unsigned Scores::getQvaluesBelowLevel(double level) {
   }
   
   return hits;
-}
-
-std::vector<std::string> Scores::getPeptides(std::string proteinName)
-{
-  std::vector<std::string> peptides;
-  for (size_t ix = 0; ix < scores.size(); ix++)
-  {
-    if(scores[ix].pPSM->proteinIds.find(proteinName) != scores[ix].pPSM->proteinIds.end())
-      peptides.push_back(scores[ix].pPSM->getPeptideSequence());
-      //std::cerr << "adding peptide " << scores[ix].pPSM->getPeptideSequence() << std::endl;
-  }
-  return peptides;
 }

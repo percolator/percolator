@@ -389,8 +389,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     f_seq.push_back( observedMassCharge ); // Observed mass
     f_seq.push_back( peptideLength(peptideWithFlank)); // Peptide length
     int nxtFeat = 8;
-    for (int c = minCharge; c
-    <= maxCharge; c++)
+    for (int c = minCharge; c <= maxCharge; c++)
       f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
 
     if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
@@ -400,8 +399,7 @@ void msgfdbReader::readPSM(std::string line,bool isDecoy,std::string fileId,
     }
   
     //Calculate difference between observed and calculated mass
-    dM =MassHandler::massDiff(observedMassCharge*charge, calculatedMass,
-                                   charge, peptideNoFlank);
+    dM =MassHandler::massDiff(observedMassCharge*charge, calculatedMass, charge, peptideNoFlank);
     f_seq.push_back( dM ); // obs - calc mass
     f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems 
     

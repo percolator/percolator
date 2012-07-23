@@ -234,7 +234,20 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     for (register unsigned int j = 0; j < m; j++) {
       buff >> featureRow[j];
     }
-    buff >> myPsm->peptide;
+    
+    std::string peptide_seq = "";
+    buff >> peptide_seq;
+    
+    //NOTE to check if the peptide sequence contains flanks or not
+    if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.')
+    {
+      std::cerr << "ERROR: the peptide sequence " << peptide_seq << " \
+      does not contain one or two of its flaking amino acids\n" << std::endl;
+      exit(-1);
+    }
+    
+    myPsm->peptide = peptide_seq;
+
     while (!!buff) {
       buff >> tmp;
       if (tmp.size() > 0) {
@@ -284,14 +297,16 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
 {
   bool isDecoy;
   switch (label) {
-  case 1: { isDecoy = false; break; };
-  case -1: { isDecoy = true; break; };
-  default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
+    case 1: { isDecoy = false; break; };
+    case -1: { isDecoy = true; break; };
+    default:  { std::cerr << "ERROR : class DataSet has not been initiated\
+		to neither target nor decoy label\"" << std::endl; } 
   }
   
   if(psm.isDecoy() != isDecoy)
   {
-    std::cerr << "ERROR: adding PSM " << psm.id() << " to the dataset.\nThe label isDecoy of the decoy is not the same in the dataset." << std::endl;
+    std::cerr << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
+    The label isDecoy of the decoy is not the same in the dataset." << std::endl;
     exit(-1);
   }
   else
@@ -316,7 +331,8 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
 
       if(psm.occurence().size() <= 0)
       {
-	std::cerr << "ERROR: adding PSM " << psm.id() << " to the dataset.\nThe PSM does not contain protein occurences." << std::endl;
+	std::cerr << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
+	The PSM does not contain protein occurences." << std::endl;
 	exit(-1);
       }
 

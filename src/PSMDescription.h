@@ -25,7 +25,9 @@ using namespace std;
 #include "Enzyme.h"
 
 class PSMDescription {
+  
   public:
+    
     PSMDescription();
     PSMDescription(const string peptide, const double retTime);
     PSMDescription(double ort, double prt) {
@@ -44,15 +46,35 @@ class PSMDescription {
       return retentionFeatures;
     }
     static vector<double*> getRetFeatures(vector<PSMDescription> & psms);
-    string& getPeptide() {
+    
+    /*string& getPeptide() {
       return peptide;
-    }
+    }*/
+    
     string& getFullPeptide() {
       return getAParent()->peptide;
     }
-    string getPeptideSequence() {
+    
+    string getPeptideSequence()
+    {
       return peptide.substr(2, peptide.size()-4);
     }
+    
+    string& getFullPeptideSequence()
+    {
+      return peptide;
+    }
+    
+    string getFlankN()
+    {
+      return peptide.substr(0, 1);
+    }
+    
+    string getFlankC()
+    {
+      return peptide.substr(peptide.size()-1, peptide.size()); 
+    }
+    
     PSMDescription* getAParent() {
       if (parentFragment) {
         return parentFragment->getAParent();
@@ -91,7 +113,6 @@ class PSMDescription {
     ;
 
     static double normDiv, normSub;
-
     double q, pep, p;
     double* features;
     double* retentionFeatures;
@@ -113,7 +134,6 @@ inline bool const operator<(PSMDescription const& one,
 
 inline bool operator==(PSMDescription const& one,
                        PSMDescription const& other) {
-  //   return one.peptide == other.peptide;
   if (one.peptide == other.peptide) {
     return true;
   } else {
@@ -133,10 +153,5 @@ inline ostream& operator<<(ostream& out, PSMDescription& psm) {
   out << endl;
   return out;
 }
-/*
- inline bool operator!=(const PSMDescription& one, const PSMDescription& other){
- return one.peptide != other.peptide;
- }
- */
 
 #endif /*PSMDESCRIPTION_H_*/

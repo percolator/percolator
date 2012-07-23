@@ -72,40 +72,14 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
-
-//NOTE this is the old comparison function which lexicOrderProb was based on but
-// 	both used the whole peptide sequence including the flanks (N,C) to compare two PSMs
-//	which is incorrect because an alphabetically smaller peptide might have a lower score than
-//	its neighbour having both the same sequence (with no flanks) 
-//	but when weedingout we take the first non-redundant peptide for every psm
-/**struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->getPeptide() < __y.pPSM->getFullPeptide() ) 
-    || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label != __y.label) )
-    || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label == __y.label)
-      && (__x.score > __y.score) ) );
-  }
-};**/
-
+	
 struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return ( (__x.pPSM->getPeptideSequence() < __y.pPSM->getPeptideSequence() ) 
-    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label != __y.label) )
+    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label > __y.label) )
     || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label == __y.label)
       && (__x.score > __y.score) ) );
-  }
-};
-
-
-struct lexicEq : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    string xPept = __x.pPSM->getPeptideSequence();
-    string yPept = __y.pPSM->getPeptideSequence();
-    if(xPept.compare(yPept) == 0) return true;
-    else return false;
   }
 };
 
@@ -150,6 +124,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
 class AlgIn;
 
 class Scores {
+  
   public:
     Scores();
     ~Scores();
@@ -188,9 +163,6 @@ class Scores {
       return pi0;
     }
     
-    /** Return a list of peptides that are matching the given protein name **/
-    std::vector<std::string> getPeptides(std::string proteinName);
-    
     /** Return the scores whose q value is less or equal than the threshold given**/
     unsigned getQvaluesBelowLevel(double level);
     
@@ -227,7 +199,9 @@ class Scores {
     double pi0;
     double targetDecoySizeRatio;
     vector<ScoreHolder> scores;
+    
   protected:
+    
     vector<double> w_vec;
     int totalNumberOfDecoys, totalNumberOfTargets, posNow;
     std::map<const double*, ScoreHolder*> scoreMap;

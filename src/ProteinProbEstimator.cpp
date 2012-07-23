@@ -520,7 +520,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level)
     unsigned nP = 0;
     for (std::map<const std::string,Protein*>::const_iterator myP = proteins.begin(); 
 	 myP != proteins.end(); ++myP) {
-	 if(myP->second->getQ() <= level && !myP->second->getIsDecoy()) nP++;
+	 if(myP->second->getQ() < level && !myP->second->getIsDecoy()) nP++;
     }
     return nP;
 }
@@ -530,7 +530,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level)
     unsigned nP = 0;
     for (std::map<const std::string,Protein*>::const_iterator myP = proteins.begin(); 
 	 myP != proteins.end(); ++myP) {
-	 if(myP->second->getQ() <= level && myP->second->getIsDecoy()) nP++;
+	 if(myP->second->getQ() < level && myP->second->getIsDecoy()) nP++;
     }
     return nP;
 }
@@ -859,17 +859,29 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
 
 	  os << "    <protein p:protein_id=\"" << myP->second->getName() << "\"";
   
-	  if (outputDecoys) {
-	    if(myP->second->getIsDecoy()) os << " p:decoy=\"true\"";
-	    else  os << " p:decoy=\"false\"";
+	  if (outputDecoys) 
+	  {
+	    if(myP->second->getIsDecoy()) 
+	      os << " p:decoy=\"true\"";
+	    else  
+	      os << " p:decoy=\"false\"";
 	  }
+	  
 	  os << ">" << endl;
-	  os << "      <pep>" << myP->second->getPEP() << "</pep>" << endl;
+	  os << "      <pep>" << scientific << myP->second->getPEP() << "</pep>" << endl;
+	  
 	  if(ProteinProbEstimator::getOutputEmpirQval())
-	    os << "      <q_value_emp>" << myP->second->getQemp() << "</q_value_emp>\n";
-	  os << "      <q_value>" << myP->second->getQ() << "</q_value>\n";
+	  {
+	    os << "      <q_value_emp>" << scientific << myP->second->getQemp() << "</q_value_emp>\n";
+	  }
+	  
+	  os << "      <q_value>" << scientific << myP->second->getQ() << "</q_value>\n";
+	  
 	  if(ProteinProbEstimator::getOutputEmpirQval())
-	    os << "      <p_value>" << myP->second->getP() << "</p_value>\n";
+	  {
+	    os << "      <p_value>" << scientific << myP->second->getP() << "</p_value>\n";
+	  }
+	  
 	  std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
 	  for(std::vector<Protein::Peptide*>::const_iterator peptIt = peptides.begin(); 
 	      peptIt != peptides.end(); peptIt++)
@@ -886,8 +898,6 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN){
     
   os << "  </proteins>" << endl << endl;
   os.close();
-  
-  FreeAll(myvec);
 }
 
 

@@ -720,7 +720,8 @@ void Caller::readFiles() {
       }
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
-	std::cerr << "\nERROR : options -Q and -A are activated but the number of proteins found in the inpu file is zero.\n" << std::endl;
+	std::cerr << "\nERROR : options -Q and -A are activated but the number of proteins found in the inpu file is zero.\n\
+		       Did you run converters with the flag -F ?\n" << std::endl;
 	exit(-1);
       }
       
@@ -745,8 +746,9 @@ void Caller::readFiles() {
       XMLString::release(&tmpStr);
     }
   } else if (tabInput) {
-    //NOTE should check the tab input gets loaded correctly
     pCheck = new SanityCheck();
+    //NOTE here percolator read the whole file twice, one time to get the decoy PSMs and another time to get the 
+    // 	   target PSMs. This could be done in one iteration.
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
