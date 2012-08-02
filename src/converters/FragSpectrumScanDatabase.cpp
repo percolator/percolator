@@ -1,5 +1,5 @@
 #include "FragSpectrumScanDatabase.h"
-#include <MSToolkitTypes.h>
+//#include <MSToolkitTypes.h>
  
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :

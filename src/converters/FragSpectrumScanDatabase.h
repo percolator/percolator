@@ -74,19 +74,19 @@ class FragSpectrumScanDatabase {
     
     void savePsm(unsigned int scanNr, auto_ptr<peptideSpectrumMatch> psm_p );
     
-    virtual std::string toString(){};
+    virtual std::string toString() = 0;
     
-    virtual void putFSS(fragSpectrumScan & fss ){};
+    virtual void putFSS(fragSpectrumScan & fss )= 0;
     
-    virtual bool init(std::string filename){};
+    virtual bool init(std::string filename) = 0;
     
-    virtual auto_ptr<fragSpectrumScan> getFSS( unsigned int scanNr ){};
+    virtual auto_ptr<fragSpectrumScan> getFSS( unsigned int scanNr ) = 0;
     
-    virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize){};
+    virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize) = 0;
     
-    virtual void print(serializer & ser ){};
+    virtual void print(serializer & ser ) = 0;
     
-    virtual void terminte(){};
+    virtual void terminte() = 0;
     
     std::string id;
   

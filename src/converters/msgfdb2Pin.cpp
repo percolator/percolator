@@ -23,7 +23,7 @@ string msgfdb2Pin::greeter() {
   ostringstream oss;
   oss << "\nmsgfdb2pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Copyright (c) 2010 Lukas Käll. All rights reserved." << endl;
+  oss << "Copyright (c) 2012 Lukas Käll. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
   oss << "Department of Biochemistry and Biophysics at the Stockholm University."
       << endl;
@@ -64,11 +64,6 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
       "level");
-  /**cmd.defineOption("u",
-      "unitnorm",
-      "Use unit normalization [0-1] instead of standard deviation normalization",
-      "",
-      TRUE_IF_SET);**/
   cmd.defineOption("a",
       "aa-freq",
       "Calculate amino acid frequency features",
@@ -89,10 +84,10 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
       "",
       TRUE_IF_SET);
-  /**cmd.defineOption("2",
+  cmd.defineOption("2",
       "ms2-file",
       "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
-      "filename");**/
+      "filename");
   cmd.defineOption("M",
       "isotope",
       "Mass difference calculated to closest isotope mass rather than to the average mass.",
@@ -115,12 +110,27 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "filename");
   cmd.defineOption("c",
       "cleavages",
-      "Number of allowed miss cleavages used in the search engine (default 0).",
+      "Number of allowed miss cleavages used in the search engine (default 0)(Only valid when using option -F).",
       "",
       "number");
   cmd.defineOption("l",
-      "length",
-      "Minimum peptide length allowed used in the search engine (default 6).",
+      "min-length",
+      "Minimum peptide length allowed used in the search engine (default 6)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("t",
+      "max-length",
+      "Maximum peptide length allowed used in the search engine (default 40)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("w",
+      "min-mass",
+      "Minimum peptide mass allowed used in the search engine (default 400)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("x",
+      "max-mass",
+      "Maximum peptide mass allowed used in the search engine (default 6000)(Only valid when using option -F).",
       "",
       "number");
   
@@ -170,12 +180,11 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
     parseOptions.hitsPerSpectrum=m;
   }
 
-  /**if (cmd.optionSet("2")) {
+  if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
-  }**/
+  }
   
   if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
     parseOptions.monoisotopic = true;
   }
   if (cmd.optionSet("p")) {
@@ -213,6 +222,21 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("l"))
   {
     parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
+  if (cmd.optionSet("t"))
+  {
+    parseOptions.maxpeplength = cmd.getInt("l",6,100);
+  }
+  
+  if (cmd.optionSet("w"))
+  {
+    parseOptions.minmass = cmd.getInt("l",100,1000);
+  }
+  
+  if (cmd.optionSet("x"))
+  {
+    parseOptions.maxmass = cmd.getInt("l",100,10000);
   }
   
   if (cmd.arguments.size() > 0)
@@ -262,17 +286,12 @@ int msgfdb2Pin::run() {
   }
   
   //initialize reader
-  /** these three should be parameters **/
-  parseOptions.minmass = 400;
-  parseOptions.maxmass = 6000;
-  parseOptions.maxpeplength = 40;
-  /** these three should be parameters **/
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = xmlOutputFN;
-  reader = new msgfdbReader(parseOptions);
+  reader = new msgfdbReader(&parseOptions);
   
   reader->init();
   reader->print(xmlOutputStream);

@@ -102,6 +102,41 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
       "Mass difference calculated to closest isotope mass rather than to the average mass.",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("2",
+      "ms2-file",
+      "File containing spectra and retention time. The file could be in mzXML, MS2 or compressed MS2 file.",
+      "filename");
+  /** new parameters for reading the fasta to obtain the proteins **/
+  cmd.defineOption("F",
+      "databases",
+      "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
+      "",
+      "filename");
+  cmd.defineOption("c",
+      "cleavages",
+      "Number of allowed miss cleavages used in the search engine (default 0)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("l",
+      "min-length",
+      "Minimum peptide length allowed used in the search engine (default 6)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("t",
+      "max-length",
+      "Maximum peptide length allowed used in the search engine (default 40)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("w",
+      "min-mass",
+      "Minimum peptide mass allowed used in the search engine (default 400)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("x",
+      "max-mass",
+      "Maximum peptide mass allowed used in the search engine (default 6000)(Only valid when using option -F).",
+      "",
+      "number");
   
   cmd.parseArgs(argc, argv);
   
@@ -141,7 +176,11 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
-
+  
+  if (cmd.optionSet("2")) {
+    spectrumFile = cmd.options["2"];
+  }
+  
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
@@ -158,7 +197,6 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
   }
 
   if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
     parseOptions.monoisotopic = true;
   }
   if (cmd.optionSet("p")) {
@@ -171,6 +209,41 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
         cerr << "Interpreting " << strs[ix][0] << " as modification UNIMOD:" << parseOptions.ptmScheme[strs[ix][0]] << endl; 
       }
     }
+  }
+  
+  if (cmd.optionSet("F"))
+  {
+    std::vector<std::string> strs;
+    boost::split(strs, cmd.options["F"], boost::is_any_of(","));
+    strs.push_back("");
+    parseOptions.targetDb = strs[0];
+    parseOptions.decoyDb = strs[1];
+    parseOptions.readProteins = true;
+  }
+  
+  if (cmd.optionSet("c"))
+  {
+    parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
+  }
+  
+  if (cmd.optionSet("l"))
+  {
+    parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
+  if (cmd.optionSet("t"))
+  {
+    parseOptions.maxpeplength = cmd.getInt("l",6,100);
+  }
+  
+  if (cmd.optionSet("w"))
+  {
+    parseOptions.minmass = cmd.getInt("l",100,1000);
+  }
+  
+  if (cmd.optionSet("x"))
+  {
+    parseOptions.maxmass = cmd.getInt("l",100,10000);
   }
   
   if (cmd.optionSet("P")) 
@@ -225,13 +298,12 @@ int Mzidentml2pin::run()
   }
   
   //initialize reader
-  parseOptions.peptidelength = 6;
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = xmlOutputFN;
-  reader = new MzidentmlReader(parseOptions);
+  reader = new MzidentmlReader(&parseOptions);
   
   reader->init();
   reader->print(xmlOutputStream);

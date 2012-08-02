@@ -66,7 +66,7 @@ public:
   BasicBigraph(double __psmthreshold, double __peptidethreshold, double __proteinthreshold, double __peptideprior);
   virtual ~BasicBigraph();
   
-  void read(Scores* fullset);
+  void read(Scores* fullset, bool multiple_labeled_peptides = false);
   void prune();
   void printGraph();
   void printProteinWeights() const;

@@ -110,12 +110,27 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "filename");
   cmd.defineOption("c",
       "cleavages",
-      "Number of allowed miss cleavages used in the search engine (default 0).",
+      "Number of allowed miss cleavages used in the search engine (default 0)(Only valid when using option -F).",
       "",
       "number");
   cmd.defineOption("l",
-      "length",
-      "Minimum peptide length allowed used in the search engine (default 6).",
+      "min-length",
+      "Minimum peptide length allowed used in the search engine (default 6)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("t",
+      "max-length",
+      "Maximum peptide length allowed used in the search engine (default 40)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("w",
+      "min-mass",
+      "Minimum peptide mass allowed used in the search engine (default 400)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("x",
+      "max-mass",
+      "Maximum peptide mass allowed used in the search engine (default 6000)(Only valid when using option -F).",
       "",
       "number");
   
@@ -168,7 +183,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     spectrumFile = cmd.options["2"];
   }
   if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
     parseOptions.monoisotopic = true;
   }
   if (cmd.optionSet("p")) {
@@ -206,6 +220,21 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("l"))
   {
     parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
+  if (cmd.optionSet("t"))
+  {
+    parseOptions.maxpeplength = cmd.getInt("l",6,100);
+  }
+  
+  if (cmd.optionSet("w"))
+  {
+    parseOptions.minmass = cmd.getInt("l",100,1000);
+  }
+  
+  if (cmd.optionSet("x"))
+  {
+    parseOptions.maxmass = cmd.getInt("l",100,10000);
   }
   
   if (cmd.arguments.size() > 0)
@@ -255,17 +284,12 @@ int Sqt2Pin::run() {
   }
   
   //initialize reader
-  /** these three should be parameters **/
-  parseOptions.minmass = 400;
-  parseOptions.maxmass = 6000;
-  parseOptions.maxpeplength = 40;
-  /** these three should be parameters **/
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = xmlOutputFN;
-  reader = new SqtReader(parseOptions);
+  reader = new SqtReader(&parseOptions);
   
   reader->init();
   reader->print(xmlOutputStream);

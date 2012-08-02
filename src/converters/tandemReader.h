@@ -38,21 +38,22 @@ class tandemReader: public Reader
 
 public:
   
-  tandemReader(ParseOptions po);
+  tandemReader(ParseOptions* po);
   
   virtual ~tandemReader();
   
-  virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  virtual void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(const std::string file);
+  virtual bool checkValidity(const std::string &file);
   
-  virtual bool checkIsMeta(std::string file);
+  virtual bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
+  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
+  virtual void addFeatureDescriptions(bool doEnzyme);
   
 private:
+  
   //Variables
   std::vector<bool> defaultNameSpaceVect;
   bool defaultNameSpace;
@@ -65,18 +66,18 @@ private:
   bool firstPSM;
   
   //Functions
-  std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
-  std::vector<std::string> split(const std::string &s, char delim); 
   
-  void readSpectra(const tandem_ns::group &groupObj,bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database,std::string fn);
+  void readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
+		   boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn);
   
   peptideProteinMapType getPeptideProteinMap(const tandem_ns::group &groupObj);
   
   domainPairType readDomain(tandem_ns::peptide peptideObj);
   
-  void createPSM(spectraMapType spectraMap, domainMapType domainMap, 
-		 domainMapStringType domainMapString, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
-		 set<std::string> proteinOccuranceSet, string psmId, int spectraId);
+  void createPSM(spectraMapType &spectraMap,domainMapType &domainMap,
+		  domainMapStringType &domainMapString, 
+		  bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
+		  const set<std::string> &proteinOccuranceSet,const string &psmId, int spectraId);
 };
 
 #endif //TANDEMREADER_H

@@ -21,31 +21,30 @@
 
 #include "Reader.h"
 
-typedef pair<std::string, int> psmIdentPairType;
-typedef pair<std::string, int> peptideDecoyKey;
-typedef map<peptideDecoyKey, int> counterMapType;
-typedef map<peptideDecoyKey, set<std::string> > peptideProteinMapType;
+typedef std::pair<std::string, int> psmIdentPairType;
+typedef std::pair<std::string, int> peptideDecoyKey;
+typedef std::map<peptideDecoyKey, int> counterMapType;
+typedef std::map<peptideDecoyKey, set<std::string> > peptideProteinMapType;
 
 class msgfdbReader: public Reader
 {
 
 public:
   
-  msgfdbReader(ParseOptions po);
+  msgfdbReader(ParseOptions *po);
   
   virtual ~msgfdbReader();
   
-  virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  virtual void read(const std::string &fn, bool isDecoy,
+		    boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(const std::string file);
+  virtual bool checkValidity(const std::string &file);
   
-  virtual bool checkIsMeta(std::string file);
+  virtual bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
+  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
-  
-  const char* flankN;
+  virtual void addFeatureDescriptions(bool doEnzyme);
   
 private:
   
@@ -56,8 +55,7 @@ private:
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
   std::vector<std::string> split(const std::string &s, char delim);
 
-  
-  void readPSM(std::string line,bool isDecoy,std::string fileId,
+  void readPSM(const std::string &line,bool isDecoy,const std::string &fileId,
 	       boost::shared_ptr<FragSpectrumScanDatabase> database, 
 	       std::vector<std::string> column_names, counterMapType &idCounterMap);
 };

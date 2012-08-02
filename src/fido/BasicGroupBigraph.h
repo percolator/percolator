@@ -113,14 +113,14 @@ class BasicGroupBigraph : public BasicBigraph
   
   virtual ~BasicGroupBigraph();
   
-  void read(Scores* fullset)
+  /*void read(Scores* fullset)
   {
      BasicBigraph::read(fullset);
      if(groupProtein)
 	groupProteins();
      else
        trivialGroupProteins();
-  }
+  }*/
    
     // for partitioning
   void refreshCache()

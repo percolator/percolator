@@ -55,7 +55,8 @@
 #include <map>
 #include <set>
 #include <assert.h>
-#include <boost/thread.hpp> 
+//NOTE this is a version of the code to work with threads
+//#include <boost/thread.hpp> 
 #include <math.h>
 #include <cmath>
 #ifdef __APPLE__
@@ -110,8 +111,9 @@ public:
   
 private:
   
-  /** estimates the FDR of bin i **/
-  void estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy);
+  //NOTE this is a version of the code to work with threads
+  /** estimates the FDR of bin i 
+  void estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy);**/
 
   /**bins proteins according to the lenght**/
   void binProteinsEqualDeepth();
@@ -127,13 +129,15 @@ private:
   /** variables **/
   unsigned nbins;
   double targetDecoyRatio;
-  double fptol;
+  //NOTE this is a version of the code to work with threads
+  //double fptol;
+  //std::set<std::string> *target;
+  //std::set<std::string> *decoy;
   bool binequalDeepth;
   std::string decoy_prefix;
   std::map<unsigned,std::set<std::string> > binnedProteins;
   std::multimap<double,std::string> groupedProteins;
   std::vector<double> lenghts; 
-  std::set<std::string> *target;
-  std::set<std::string> *decoy;
+
 };
 #endif /* PROTEINFDRESTIMATOR_H_ */

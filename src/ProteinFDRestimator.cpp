@@ -177,7 +177,8 @@ void ProteinFDRestimator::groupProteinsGene()
   /**not implemented yet**/
 }
 
-void ProteinFDRestimator::estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy) 
+//NOTE this is a version of the code to work with threads
+/*void ProteinFDRestimator::estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy) 
 { 
   unsigned  numberTP = countProteins(i,target);
   unsigned  numberFP = countProteins(i,decoy);
@@ -187,7 +188,7 @@ void ProteinFDRestimator::estimateFDRthread(unsigned i,const std::set<std::strin
       std::cerr << "\nEstimating FDR for bin " << i << " in thread " << boost::this_thread::get_id() << " with " << numberFP << " Decoy proteins, " 
 	  << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
   fptol += fp;
-} 
+} */
 
 double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, const std::set<std::string> &__decoy)
 {   
@@ -211,17 +212,38 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, c
     }
     
     if(VERB > 2)
-      std::cerr << "\nThere are : " << __target.size() << " target proteins and " << __decoy.size() << " decoys proteins that contains high confident PSMs\n" << std::endl;    
+    {
+      std::cerr << "\nThere are : " << __target.size() << " target proteins and " << __decoy.size() 
+      << " decoys proteins that contains high confident PSMs\n" << std::endl;    
+    }
 
-    fptol = 0.0;
+    //NOTE this is a version of the code to work with threads
+    /*fptol = 0.0;
     boost::thread t[nbins]; 
     
     for(unsigned i = 0; i < nbins; i++)
     {
        t[i] = boost::thread(boost::bind(&ProteinFDRestimator::estimateFDRthread,this,i,__target,__decoy)); 
        t[i].join();
-    }
+    }*/
     
+    double fptol = 0.0;
+    for(unsigned i = 0; i < nbins; i++)
+    {
+      unsigned numberTP = countProteins(i,__target);
+      unsigned numberFP = countProteins(i,__decoy);
+      unsigned N = getBinProteins(i);
+      double fp = estimatePi0HG(N,numberTP,targetDecoyRatio*numberFP);
+      
+      if(VERB > 2)
+      {
+	  std::cerr << "\nEstimating FDR for bin " << i << " with " << numberFP << " Decoy proteins, "
+         << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
+      }
+
+      fptol += fp;
+    }
+  
     time_t procStart;
     clock_t procStartClock = clock();
     time(&procStart);
@@ -252,6 +274,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     nr_bins += (unsigned)((residues - residues%nbins) / nbins);
     residues = residues % nbins; 
   }*/
+  
   std::vector<double> values;
   for(unsigned i = 0; i <= nbins; i++)
   {
@@ -261,8 +284,10 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     if(VERB > 2)
       std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;
   }
+  
   //there are some elements at the end that are <= nbins that could not be fitted
   //FIXME I think it fails if it enters here in some scenarios
+  
   if(residues > 0)
   {
     values.back() = lenghts.back();

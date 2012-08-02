@@ -64,6 +64,8 @@ public:
   void setPruneProteins(bool __pruneProteins);
   bool getSeparateProteins();
   void setSeparateProteins(bool __separateProteins);
+  void setMultipleLabeledPeptides(bool __multiple_labeled_peptides);
+  bool getMultipleLabeledPeptides();
   void read(Scores* fullset);
   //NOTE to clone object
   //GroupPowerBigraph *clone();
@@ -81,6 +83,7 @@ private:
   bool noseparate;
   bool noprune;
   bool trivialgruping;
+  bool multiple_labeled_peptides;
   double ProteinThreshold;
   double PeptideThreshold;
   double PsmThreshold;

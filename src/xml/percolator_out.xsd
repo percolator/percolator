@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-xmlns="http://per-colator.com/percolator_out/13" 
-targetNamespace="http://per-colator.com/percolator_out/13"
+xmlns="http://per-colator.com/percolator_out/14" 
+targetNamespace="http://per-colator.com/percolator_out/14"
 elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 <!-- define some general types -->
@@ -26,7 +26,8 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 	<xsd:simpleType name="aa_seq_t">
 	  <xsd:restriction base="xsd:string">
-	    <xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])?[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])?[A-Z]+)"/>
+	    <xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])*[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])*[A-Z]+)"/>
+	    <!--xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])?[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])?[A-Z]+)"/>-->
 	  </xsd:restriction>
 	</xsd:simpleType>
 	
@@ -230,8 +231,8 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 <xsd:element name="protein">
   <xsd:complexType>
     <xsd:sequence>
-      <xsd:element ref="pep" minOccurs="0" maxOccurs="1"/>
-      <xsd:element ref="q_value" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="pep" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="q_value" minOccurs="1" maxOccurs="1"/>
       <xsd:element ref="q_value_emp" minOccurs="0" maxOccurs="1"/>
       <xsd:element ref="p_value" minOccurs="0" maxOccurs="1"/>
       <xsd:element ref="peptide_seq" maxOccurs="unbounded"/>

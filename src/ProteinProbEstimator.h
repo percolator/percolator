@@ -19,6 +19,7 @@
 #define PROTEINPROBESTIMATOR_H_
 
 #include "GroupPowerBigraph.h"
+#include "PosteriorEstimator.h"
 #include "Globals.h"
 #include <boost/algorithm/string.hpp>
 #include <functional>
@@ -252,18 +253,14 @@ class ProteinProbEstimator {
     /** PROTEIN FDR ESTIMATOR PARAMETERS **/
     
     /* Default configuration (changeable by functions)
-     * min peptide lenght = 6
-     * min mass = 400
-     * max mass = 6000
      * decoy prefix = random
-     * num missed cleavages = 0
      * number of bins = 10
      * target decoy ratio = 1.0
      * binning mode = equal deepth
      * correct identical sequences = true
-     * max peptide length = 40
      * use average mass = false
      */
+    
     const static bool correct_identical_sequences = true;
     const static bool binning_equal_deepth = true;
     const static double target_decoy_ratio = 1.0;
@@ -277,6 +274,7 @@ class ProteinProbEstimator {
     /** reduce the tree of proteins to increase the speed of computation of alpha,beta,gamma **/
     /** using the reduced tree increase the speed x10 and it does not have effect in the protein probabilities
      * for big files, for smaller files it gives less conservative results. */
+    //NOTE depecrated, I moved this parameter to the percolator input parameters
     //const static bool reduceTree = false;
     
     /** compute peptide level prior probability instead of using default = 0.1 **/
@@ -286,16 +284,18 @@ class ProteinProbEstimator {
     /** threshold used for fido to remove poor PSMs **/
     const static double psmThreshold = 0.0;
     const static double reduced_psmThreshold = 0.15;
-    /** threshold used for fido to classify a psm as very low confidence **/
+    /** threshold used for fido to classify a peptide as very low confidence **/
     const static double peptideThreshold = 0.001;
     const static double reduced_peptideThreshold = 0.1;
-    /** threshold used for fido to classify a psm as very low confidence and prune it **/
+    /** threshold used for fido to classify a protein as very low confidence and prune it **/
     const static double proteinThreshold = 0.01;
     const static double reduced_proteinThreshold = 0.1;
     /** default value for peptide prior probability used in fido to compute the peptide likehood **/
     const static double peptidePrior = 0.1;
     /** number of maximum of tree configurations allowed in fido **/
     const static double max_allow_configurations = 18;
+    /** allow the presence of peptides with the same sequence but different label (target/decoy) **/
+    const static bool allow_multiple_labeled_peptides = false;
     
     /** GRID SEARCH PARAMETERS **/
     
@@ -424,6 +424,9 @@ class ProteinProbEstimator {
        
     /** estimate prior probabilities for peptide level **/
     double estimatePriors();
+    
+    /** this function generates a vector of pair protein pep and label **/
+    void getCombinedList(std::vector<std::pair<double , bool> > &combined);
     
     /** variables **/
     std::set<string> truePosSet, falsePosSet;

@@ -27,8 +27,7 @@ class MassHandler {
     static void setMonoisotopicMass(bool mi) {
       monoisotopic = mi;
     }
-    static double massDiff(double observedMass, double calculatedMass,
-                           unsigned int charge, const string& peptide);
+    static double massDiff(double observedMass, double calculatedMass, unsigned int charge);
     static bool monoisotopic;
 };
 

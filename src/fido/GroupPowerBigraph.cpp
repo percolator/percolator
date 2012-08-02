@@ -155,7 +155,7 @@ void GroupPowerBigraph::read(Scores* fullset){
   bb.setPeptideThreshold(PeptideThreshold);
   bb.setPsmThreshold(PsmThreshold);
   bb.setProteinThreshold(ProteinThreshold);
-  bb.read(fullset);
+  bb.read(fullset,multiple_labeled_peptides);
 
   if(!noseparate)
   {
@@ -337,9 +337,12 @@ void GroupPowerBigraph::setSeparateProteins(bool __separateProteins)
   noseparate = __separateProteins;
 }
 
+bool GroupPowerBigraph::getMultipleLabeledPeptides()
+{
+  return multiple_labeled_peptides;
+}
 
-
-
-
-
-
+void GroupPowerBigraph::setMultipleLabeledPeptides(bool __multiple_labeled_peptides)
+{
+  multiple_labeled_peptides = __multiple_labeled_peptides;
+}

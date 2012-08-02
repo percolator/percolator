@@ -20,21 +20,37 @@ BasicBigraph::~BasicBigraph()
 }
 
 
-void BasicBigraph::read(Scores* fullset){
-  
+void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides)
+{
   string pepName, protName;
   double value =  -10;
   int pepIndex = -1;
   StringTable PSMNames, proteinNames;
 
   vector<ScoreHolder>::iterator psm = fullset->begin();
-  for (; psm!= fullset->end(); ++psm) {
+  for (; psm!= fullset->end(); ++psm) 
+  {
     // e peptide_string
     pepName = psm->pPSM->peptide;
-    if ( pepName[1] == '.' ) {
+    
+    if ( pepName[1] == '.' ) 
+    {
     // trim off the cleavage events
       pepName = pepName.substr(2, pepName.size()-4 );
     }
+    //NOTE fido will keep only one peptide in the case that a target and a decoy peptide
+    //	    contain the same sequence
+    //     this is a bit of a tricky situation because for separate target-decoy searches
+    //	    two unique peptides ( target and decoy ) might have the same sequence, therefore
+    //	   fido assumes that peptide is connected to the correspondent target and decoy proteins
+    //	   however, this is not the real situation. This scenario is not common but as a very rough
+    //    and quick wordaround I am appending a * to all the decoy peptides to distinguish them
+    //    from the target peptides. 
+    if(psm->isDecoy() && multiple_labeled_peptides)
+    {
+      pepName += "*";
+    }
+    
     if ( PSMNames.lookup(pepName) == -1 ){
       add(PSMsToProteins, PSMNames, pepName);
     }
@@ -42,7 +58,8 @@ void BasicBigraph::read(Scores* fullset){
 
     // r proteins
     set<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
-    for (; pid!= psm->pPSM->proteinIds.end(); ++pid) {
+    for (; pid!= psm->pPSM->proteinIds.end(); ++pid) 
+    {
       protName = getRidOfUnprintablesAndUnicode(*pid);
       if ( proteinNames.lookup(protName) == -1 ){
 	add(proteinsToPSMs, proteinNames, protName);

@@ -148,7 +148,7 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
     //NOTE lets create a smaller tree to estimate the parameters faster
     if(VERB > 1)
     {
-      std::cerr << "Reducing tree of proteins to increase speed.." << std::endl;
+      std::cerr << "Reducing the tree of proteins to increase the speed of the grid search.." << std::endl;
     }
     proteinGraph->setProteinThreshold(reduced_proteinThreshold);
     proteinGraph->setPsmThreshold(reduced_psmThreshold);
@@ -156,12 +156,14 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
     proteinGraph->setGroupProteins(true);
     proteinGraph->setSeparateProteins(false);
     proteinGraph->setPruneProteins(false);
+    proteinGraph->setMultipleLabeledPeptides(false);
   }
   else
   {
     proteinGraph->setProteinThreshold(proteinThreshold);
     proteinGraph->setPsmThreshold(psmThreshold);
     proteinGraph->setPeptideThreshold(peptideThreshold);
+    proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
   }
   
   proteinGraph->read(peptideScores);
@@ -178,7 +180,7 @@ void ProteinProbEstimator::run(){
   { 
     /** MAYUS method for estimation of Protein FDR **/
     
-    std::cerr << "\nEstimating Protein FDR ... " << std::endl;
+    std::cerr << "Estimating Protein FDR ... " << std::endl;
     
     fastReader = new ProteinFDRestimator();
     fastReader->setDecoyPrefix(decoyPattern);
@@ -197,7 +199,7 @@ void ProteinProbEstimator::run(){
     if(fptol == -1)
     {
       fdr = 1.0;
-      std::cerr << "\nThere was an error estimating the Protein FDR..\n" << std::endl;
+      std::cerr << "There was an error estimating the Protein FDR..\n" << std::endl;
     }
     else
     {	
@@ -206,7 +208,7 @@ void ProteinProbEstimator::run(){
       if(fdr <= 0 || fdr >= 1.0) fdr = 1.0;
       
       if(VERB > 1)
-	std::cerr << "\nEstimated Protein FDR at ( " << psmThresholdMayu << ") PSM FDR is : " << fdr << " with " 
+	std::cerr << "Estimated Protein FDR at ( " << psmThresholdMayu << ") PSM FDR is : " << fdr << " with " 
 	<< fptol << " expected number of false positives proteins\n" << std::endl;
     }
     
@@ -217,7 +219,7 @@ void ProteinProbEstimator::run(){
   {
     if(VERB > 1) 
     {
-      std::cerr << "\nThe parameters for the model will be estimated by grid search.\n" << std::endl;
+      std::cerr << "The parameters for the model will be estimated by grid search.\n" << std::endl;
     }
     
     gridSearch(alpha,gamma,beta);
@@ -226,18 +228,18 @@ void ProteinProbEstimator::run(){
     clock_t procStartClock = clock();
     time(&procStart);
     double diff = difftime(procStart, startTime);
-    if (VERB > 1) cerr << "\nEstimating the parameters took : "
+    if (VERB > 1) cerr << "Estimating the parameters took : "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall time\n" << endl;
+      << " cpu seconds or " << diff << " seconds wall time" << endl;
   }
 
   if(VERB > 1) 
   {
-      cerr << "\nThe following parameters have been chosen:\n";
+      cerr << "The following parameters have been chosen:\n";
       cerr << "gamma = " << gamma << endl;
       cerr << "alpha = " << alpha << endl;
       cerr << "beta  = " << beta << endl;
-      cerr << "\nProtein level probabilities will now be estimated\n";
+      cerr << "\nProtein level probabilities will now be estimated";
   }
 
 
@@ -250,6 +252,7 @@ void ProteinProbEstimator::run(){
     proteinGraph->setGroupProteins(groupProteins);
     proteinGraph->setSeparateProteins(noseparate);
     proteinGraph->setPruneProteins(noprune);
+    proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
     proteinGraph->read(peptideScores);
   }
   
@@ -261,6 +264,15 @@ void ProteinProbEstimator::run(){
   
   if(usePi0 && !mayufdr && ProteinProbEstimator::getOutputEmpirQval())
   {
+    //NOTE no idea why this does not work, I do not need to inport the functions
+    // getPValues and estimatePio from PosteriorEstimator but I get extrange behaviour 
+    // when I invoke them from here
+    /*std::vector<pair<double, bool> > combined;
+    pvalues.clear();
+    getCombinedList(combined);
+    PosteriorEstimator::getPValues(combined, pvalues);
+    pi0 = PosteriorEstimator::estimatePi0(pvalues);*/
+    
     estimatePValues();
     pi0 = estimatePi0();
     if(pi0 <= 0.0 || pi0 > 1.0) pi0 = *qvalues.rbegin();
@@ -275,7 +287,7 @@ void ProteinProbEstimator::run(){
 
   if(VERB > 1)
   {
-    std::cerr << "\nThe number of Proteins idenfified at q-value = 0.01 is : " << getQvaluesBelowLevel(0.01) << std::endl;
+    std::cerr << "\nThe number of proteins identified at q-value = 0.01 is : " << getQvaluesBelowLevel(0.01) << std::endl;
   }
   
   time_t procStart;
@@ -365,10 +377,8 @@ void ProteinProbEstimator::print(ostream& myout) {
   }
 }
 
-void ProteinProbEstimator::estimatePValues()
+void ProteinProbEstimator::getCombinedList(std::vector<std::pair<double , bool> > &combined)
 {
-  // assuming combined sorted in best hit first order
-  std::vector<std::pair<double , bool> > combined;
   for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin();
        it != pepProteins.end(); it++)
   {
@@ -382,6 +392,14 @@ void ProteinProbEstimator::estimatePValues()
 	combined.push_back(std::make_pair<double,bool>(prob,isdecoy));
       }
   }
+  return;
+}
+
+void ProteinProbEstimator::estimatePValues()
+{
+  // assuming combined sorted in best hit first order
+  std::vector<std::pair<double , bool> > combined;
+  getCombinedList(combined);
   pvalues.clear();
   std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
   size_t nDecoys = 0, posSame = 0, negSame = 0;

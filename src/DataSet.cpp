@@ -367,10 +367,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       }
 
       // myPsm.peptide = psmIter->peptide().peptideSequence();
-      myPsm->massDiff = MassHandler::massDiff(psm.experimentalMassToCharge() ,
-			psm.calculatedMassToCharge(),
-			psm.chargeState(),
-			myPsm->peptide.substr(2, myPsm->peptide.size() - 4));
+      myPsm->massDiff = MassHandler::massDiff(psm.experimentalMassToCharge() ,psm.calculatedMassToCharge(),psm.chargeState());
 
       if (calcDOC) 
       {

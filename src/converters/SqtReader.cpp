@@ -1,6 +1,6 @@
 #include "SqtReader.h"
 
-SqtReader::SqtReader(ParseOptions po):Reader(po)
+SqtReader::SqtReader(ParseOptions *po):Reader(po)
 {
 }
 
@@ -31,7 +31,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
   std::string protein;
   std::vector< std::string > proteinIds;
-  std::map<char,int> ptmMap = po.ptmScheme; 
+  std::map<char,int> ptmMap = po->ptmScheme; 
 
   while (getline(instr, line)) 
   {
@@ -93,7 +93,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
           peptide.replace(peptide.size()-1, 1, "-");
         }
         // difference between observed and calculated mass
-        double dM = MassHandler::massDiff(observedMassCharge, calculatedMassToCharge,charge, peptide.substr(2, peptide.size()- 4));
+        double dM = massDiff(observedMassCharge, calculatedMassToCharge,charge);
 	
         f_seq.push_back( log(max(1.0, rSp))); // rank by Sp
         f_seq.push_back( 0.0 ); // delt5Cn (leave until last M line)
@@ -117,15 +117,15 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         f_seq.push_back( log(max(1.0, nSM)));
         f_seq.push_back( dM ); // obs - calc mass
         f_seq.push_back( abs(dM) ); // abs only defined for integers on some systems
-        if (po.calcPTMs) 
+        if (po->calcPTMs) 
 	{
 	  f_seq.push_back(cntPTMs(peptide));
 	}
-	if (po.pngasef) 
+	if (po->pngasef) 
 	{
 	  f_seq.push_back(isPngasef(peptide, isDecoy));
 	}
-        if (po.calcAAFrequencies) 
+        if (po->calcAAFrequencies) 
 	{
           computeAAFrequencies(peptide, f_seq);
         }
@@ -153,14 +153,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
     f_seq[1] = (xcorr - lastXcorr) / xcorr;
     f_seq[2] = (xcorr - otherXcorr) / xcorr;
   }
-
-  if (!isfinite(f_seq[2])) std::cerr << in;
-
-  if(peptide.size()-4<po.peptidelength)
-  {
-    std::cerr << "The peptide: " << peptide << " is shorter than the specified minium length." << std::endl;
-    exit(-1);
-  }
   
   percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1);
@@ -170,11 +162,14 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   std::string peptideS = peptideSequence;
   for(unsigned int ix=0;ix<peptideSequence.size();++ix) 
   {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos && ambiguousAA.find(peptideSequence[ix])==string::npos && modifiedAA.find(peptideSequence[ix])==string::npos)
+    if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
+	ambiguousAA.find(peptideSequence[ix])==string::npos && 
+	additionalAA.find(peptideSequence[ix])==string::npos)
     {
       if (ptmMap.count(peptideSequence[ix])==0) 
       {
-	cerr << "Peptide sequence " << peptide << " contains modification " << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
+	std::cerr << "Peptide sequence " << peptide << " contains modification " 
+	<< peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         exit(-1);
       }
       peptideSequence.erase(ix,1);
@@ -184,7 +179,9 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) 
   {
-    if (aaAlphabet.find(peptideS[ix])==string::npos) 
+    if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
+	ambiguousAA.find(peptideSequence[ix])==string::npos && 
+	additionalAA.find(peptideSequence[ix])==string::npos)
     {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
@@ -194,15 +191,15 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
     }  
   }
   
-  if(po.iscombined)
+  if(po->iscombined)
   {
-    //NOTE when combine search the PSM will take the identity of its first ranked Peptide
-    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+    //NOTE when combine search the PSM will take the identity of its first ranked protein
+    isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
   }
   
-  percolatorInNs::peptideSpectrumMatch* tmp_psm = new percolatorInNs::peptideSpectrumMatch (
-	features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
-  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  psm_p(tmp_psm);
+  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  
+  psm_p(new percolatorInNs::peptideSpectrumMatch
+  (features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge));
 
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
   {
@@ -211,10 +208,9 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   }
   
   database->savePsm(scan, psm_p);
-  
 }
 
-void SqtReader::getMaxMinCharge(string fn, bool isDecoy)
+void SqtReader::getMaxMinCharge(const std::string &fn, bool isDecoy)
 {
   int charge = 0;
   std::string line;
@@ -246,7 +242,7 @@ void SqtReader::getMaxMinCharge(string fn, bool isDecoy)
 }
 
 
-void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database) 
+void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
 
   std::string ptmAlphabet;
@@ -260,6 +256,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
   std::istringstream lineParse;
   std::ifstream sqtIn;
   sqtIn.open(fn.c_str(), std::ios::in);
+  
   if (!sqtIn) 
   {
     std::cerr << "Could not open file " << fn << std::endl;
@@ -279,12 +276,12 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
       ms = 0;
     }
      
-    if (look && line[0] == 'L' && ms < po.hitsPerSpectrum) 
+    if (look && line[0] == 'L' && ms < po->hitsPerSpectrum) 
     {
 	lineParse.clear();
 	lineParse.str(line);
 	lineParse >> tmp >> prot;
-	if( !isDecoy || (po.reversedFeaturePattern == "" || ( (line.find(po.reversedFeaturePattern, 0) != std::string::npos) ) ) )
+	if( !isDecoy || (po->reversedFeaturePattern == "" || ( (line.find(po->reversedFeaturePattern, 0) != std::string::npos) ) ) )
 	{
 	  ++ms;
 	  ++n;
@@ -350,7 +347,9 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
     {
       ++lines;
       buff << line << std::endl;
-     if ((int)theMs.size() < po.hitsPerSpectrum && ( !isDecoy || ( po.reversedFeaturePattern == "" || ((line.find(po.reversedFeaturePattern, 0) != std::string::npos)))))
+     if ((int)theMs.size() < po->hitsPerSpectrum && 
+       ( !isDecoy || ( po->reversedFeaturePattern == "" || 
+       ((line.find(po->reversedFeaturePattern, 0) != std::string::npos)))))
       {
 	  theMs.insert(ms - 1);
       }
@@ -363,7 +362,7 @@ void SqtReader::read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSp
   sqtIn.close();
 }
 
-void  SqtReader::readSectionS( std::string record,std::set<int> & theMs, bool isDecoy,
+void  SqtReader::readSectionS(const std::string &record,std::set<int> & theMs, bool isDecoy,
 			       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
   std::set<int>::const_iterator it;
@@ -376,7 +375,7 @@ void  SqtReader::readSectionS( std::string record,std::set<int> & theMs, bool is
   return;
 }
 
-bool SqtReader::checkValidity(const std::string file)
+bool SqtReader::checkValidity(const std::string &file)
 {
   bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
@@ -401,7 +400,7 @@ bool SqtReader::checkValidity(const std::string file)
   return isvalid;
 }
 
-bool SqtReader::checkIsMeta(string file)
+bool SqtReader::checkIsMeta(const std::string &file)
 {
   //NOTE assuming the file has been tested before
   bool isMeta;
@@ -420,7 +419,7 @@ bool SqtReader::checkIsMeta(string file)
   return isMeta;
 }
 
-void SqtReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet) 
+void SqtReader::addFeatureDescriptions(bool doEnzyme) 
 {
   push_backFeatureDescription("lnrSp");
   push_backFeatureDescription("deltLCn");
@@ -447,139 +446,20 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphab
   push_backFeatureDescription("lnNumSP");
   push_backFeatureDescription("dM");
   push_backFeatureDescription("absdM");
-  if (po.calcPTMs) 
+  if (po->calcPTMs) 
   {
     push_backFeatureDescription("ptm");
   }
-  if (po.pngasef) 
+  if (po->pngasef) 
   {
     push_backFeatureDescription("PNGaseF");
   }
-  if (po.calcAAFrequencies)
+  if (po->calcAAFrequencies)
   {
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
     {
       std::string temp = boost::lexical_cast<std::string>(*it)+"-Freq";
       push_backFeatureDescription(temp.c_str());
-    }
-  }
-  
-  //NOTE this is not being filled up later in the PSM
-  /**if (po.calcQuadraticFeatures) 
-  {
-    for (int f1 = 1; f1 < f_seq.featureDescription().size(); ++f1) 
-    {
-      for (int f2 = 0; f2 < f1; ++f2) 
-      {
-        std::ostringstream feat;
-        feat << "f" << f1 + 1 << "*" << "f" << f2 + 1;
-        push_backFeatureDescription(feat.str().c_str());
-      }
-    }
-  }**/
-}
-
-void SqtReader::readRetentionTime(string filename) 
-{
-  MSReader r;
-  Spectrum s;
-  r.setFilter(MS2);
-  char* cstr = new char[filename.size() + 1];
-  strcpy(cstr, filename.c_str());
-  // read first spectrum
-  r.readFile(cstr, s);
-  while(s.getScanNumber() != 0)
-  {
-    // check whether an EZ lines is available
-    if(s.sizeEZ() != 0)
-    {
-      // for each EZ line (each psm)
-      for(int i = 0; i<s.sizeEZ(); i++)
-      {
-        // save experimental mass and retention time
-        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).mh);
-        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).pRTime);
-      }
-    }
-    // if no EZ line is available, check for an RTime lines
-    else if((double)s.getRTime() != 0)
-    {
-      scan2rt[s.getScanNumber()].push_back(s.getRTime());
-    }
-    // if neither EZ nor I lines are available
-    else
-    {
-      cout << "The ms2 in input does not appear to contain retention time "
-          << "information. Please run without -2 option.";
-      exit(-1);
-    }
-    // read next scan
-    r.readFile(NULL, s);
-  }
-  delete[] cstr;
-}
-
-void SqtReader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database)
-{
-  // for each spectra from the ms2 file
-  typedef std::map<int, vector<double> > map_t;
-  BOOST_FOREACH(map_t::value_type& i, scan2rt)
-  {
-    // scan number
-    int scanNr = i.first;
-    // related retention times
-    vector<double>* rTimes = &(i.second);
-    if(database->getFSS(scanNr).get()!=0)
-    {
-      fragSpectrumScan fss = *(database->getFSS(scanNr));
-      fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq = fss.peptideSpectrumMatch();
-      // retention time to be stored
-      double storeMe = 0;
-      // if rTimes only contains one element
-      if(rTimes->size()==1)
-      {
-        // take that as retention time
-        storeMe = rTimes->at(0);
-      }
-      else
-      {
-        // else, take retention time of psm that has observed mass closest to
-        // theoretical mass (smallest massDiff)
-        double massDiff = std::numeric_limits<double>::max(); // + infinity
-        for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i = psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i) 
-	{
-          // skip decoy
-          if(psmIter_i->isDecoy() != true)
-	  {
-            double cm = psmIter_i->calculatedMassToCharge();
-            double em = psmIter_i->experimentalMassToCharge();
-            // if a psm with observed mass closer to theoretical mass is found
-            if(abs(cm-em) < massDiff)
-	    {
-              // update massDiff
-              massDiff = abs(cm-em);
-              // get corresponding retention time
-              vector<double>::const_iterator r = rTimes->begin();
-              for(; r<rTimes->end(); r=r+2)
-	      {
-                double rrr = *r;
-                double exm = psmIter_i->experimentalMassToCharge();
-                if(*r==psmIter_i->experimentalMassToCharge())
-		{
-                  storeMe = *(r+1);
-                  r = rTimes->end();
-                }
-              }
-            }
-          }
-        }
-      }
-      // store retention time for all psms in fss
-      for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter = psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) 
-      {
-        psmIter->observedTime().set(storeMe);
-      }
-      database->putFSS(fss);
     }
   }
 }

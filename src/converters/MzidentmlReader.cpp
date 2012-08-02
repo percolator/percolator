@@ -4,16 +4,15 @@ static const XMLCh sequenceCollectionStr[] = { chLatin_S, chLatin_e, chLatin_q, 
 						  chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e, 
 						  chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
 
-MzidentmlReader::MzidentmlReader(ParseOptions po):Reader(po)
+const std::map<string,int> MzidentmlReader::hashparams = 
+      boost::assign::map_list_of("sequest:PeptideRankSp", 0) ("sequest:deltacn", 1)
+				  ("sequest:xcorr", 2) ("sequest:PeptideSp", 3)
+				  ("sequest:matched ions", 4) ("sequest:total ions", 5)
+				  ("sequest:PeptideIdnumber", 6) ("sequest:PeptideNumber", 7);
+				  
+MzidentmlReader::MzidentmlReader(ParseOptions *po):Reader(po)
 {
-  hashparams["sequest:PeptideRankSp"] = 0;
-  hashparams["sequest:deltacn"] = 1;
-  hashparams["sequest:xcorr"] = 2;
-  hashparams["sequest:PeptideSp"] = 3;
-  hashparams["sequest:matched ions"] = 4;
-  hashparams["sequest:total ions"] = 5;
-  hashparams["sequest:PeptideIdnumber"] = 6;
-  hashparams["sequest:PeptideNumber"] = 7;
+  
 }
 
 MzidentmlReader::~MzidentmlReader()
@@ -37,7 +36,6 @@ void MzidentmlReader::cleanHashMaps()
       delete iter2->second; iter2->second=0;
     }
     
-        
     peptideEvidenceMapType::iterator iter3;
     for(iter3 = peptideEvidenceMap.begin(); iter3 != peptideEvidenceMap.end(); ++iter3) 
     { 
@@ -45,7 +43,7 @@ void MzidentmlReader::cleanHashMaps()
     }
 }
 
-bool MzidentmlReader::checkValidity(string file)
+bool MzidentmlReader::checkValidity(const std::string &file)
 {
   bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
@@ -58,7 +56,6 @@ bool MzidentmlReader::checkValidity(string file)
     std::cerr << "Could not read file " << file << std::endl;
     exit(-1);
   }
-  //TODO here I should check that the file is xml and has the tag <MzIdentML id="SEQUEST_use_case"
   if (line.find("<?xml") == std::string::npos) {
     std::cerr << "ERROR : the input file is not xml format " << file << std::endl;
     exit(-1);
@@ -81,7 +78,7 @@ bool MzidentmlReader::checkValidity(string file)
   return isvalid;
 }
 
-bool MzidentmlReader::checkIsMeta(string file)
+bool MzidentmlReader::checkIsMeta(const std::string &file)
 {
   //NOTE assuming the file has been tested before
   bool isMeta;
@@ -101,7 +98,7 @@ bool MzidentmlReader::checkIsMeta(string file)
   return isMeta;
 }
 
-void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlphabet)
+void MzidentmlReader::addFeatureDescriptions(bool doEnzyme)
 {
   //NOTE from now lets assume the features all always SEQUEST features, ideally I would create my list of features from the 
   //     features description of the XSD
@@ -129,16 +126,16 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
   push_backFeatureDescription("dM");
   push_backFeatureDescription("absdM");
   
-  if (po.calcPTMs) 
+  if (po->calcPTMs) 
   {
     push_backFeatureDescription("ptm");
   }
-  if (po.pngasef) 
+  if (po->pngasef) 
   {
     push_backFeatureDescription("PNGaseF");
   }
 
-  if (po.calcAAFrequencies)
+  if (po->calcAAFrequencies)
   {
     for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
     {
@@ -150,7 +147,7 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme, const string& aaAlph
 }
 
 
-void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
+void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy)
 {
 
   ifstream ifs;
@@ -165,7 +162,6 @@ void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
     string schema_minor = "";
     xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
     
-    //NOTE wouldnt be  better to use the get tag by Name to jump this?
     for (doc = p.next(); doc.get() != 0 && !XMLString::equals(spectrumIdentificationResultStr,doc->getDocumentElement()->getTagName()); doc = p.next ()) 
     {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
@@ -201,7 +197,7 @@ void MzidentmlReader::getMaxMinCharge(string fn, bool isDecoy)
   return;
 }
 
-void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database) 
+void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
   namespace xml = xsd::cxx::xml;
   scanNumberMapType scanNumberMap;
@@ -216,10 +212,12 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     string scheme_namespace = MZIDENTML_NAMESPACE;
     string schema_major = "";
     string schema_minor = "";
-    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
+    xml_schema::dom::auto_ptr<DOMDocument> doc 
+    (p.start (ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
     
     //NOTE wouldnt be  better to use the get tag by Name to jump SequenceCollenction directly?
-    while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, doc->getDocumentElement ()->getTagName())) 
+    while (doc.get () != 0 && ! XMLString::equals( sequenceCollectionStr, 
+	   doc->getDocumentElement ()->getTagName())) 
     {
       doc = p.next ();// Let's skip some sub trees that we are not interested, e.g. AuditCollection
     }
@@ -235,14 +233,16 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
     BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide() ) 
     {
       //PEPTIDE
-      mzIdentML_ns::SequenceCollectionType::Peptide_type *pept = new mzIdentML_ns::SequenceCollectionType::Peptide_type(peptide);
+      mzIdentML_ns::SequenceCollectionType::Peptide_type *pept =
+      new mzIdentML_ns::SequenceCollectionType::Peptide_type(peptide);
       peptideMap.insert( std::make_pair(peptide.id(), pept) );      
     }
     
     BOOST_FOREACH( const mzIdentML_ns::SequenceCollectionType::DBSequence_type &protein, sequenceCollection.DBSequence() ) 
     {
       //PROTEIN
-      mzIdentML_ns::SequenceCollectionType::DBSequence_type *prot = new mzIdentML_ns::SequenceCollectionType::DBSequence_type(protein);
+      mzIdentML_ns::SequenceCollectionType::DBSequence_type *prot =
+      new mzIdentML_ns::SequenceCollectionType::DBSequence_type(protein);
       proteinMap.insert( std::make_pair(protein.id(), prot) );      
     }
     
@@ -253,18 +253,20 @@ void MzidentmlReader::read(const std::string fn, bool isDecoy, boost::shared_ptr
       peptideEvidenceMap.insert( std::make_pair(peptideE.id(),peptE) ); 
     }
     
-    //NOTE wouldnt be  better to use the get tag by Name to jump to Spectrum collection?
-    for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+    for (doc = p.next (); doc.get () != 0 && !XMLString::equals( spectrumIdentificationResultStr,
+      doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
     {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
     
     unsigned scanNumber = 0;
-    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
+    for (; doc.get () != 0 && XMLString::equals( spectrumIdentificationResultStr, 
+      doc->getDocumentElement ()->getTagName() ); doc = p.next ()) 
     {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
-      ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
+      ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge 
+      = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
       
       BOOST_FOREACH( const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )  
       {
@@ -302,39 +304,24 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
 				  bool isDecoy,unsigned useScanNumber,boost::shared_ptr<FragSpectrumScanDatabase> database) 
 {
   
-
-
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
  
-  if ( ! item.calculatedMassToCharge().present() ) 
+  if (!item.calculatedMassToCharge().present() ) 
   { 
     std::cerr << "error: calculatedMassToCharge attribute is needed for percolator" << std::endl; 
-    exit(EXIT_FAILURE); 
+    exit(-1); 
   }
   
   std::string peptideSeq =  peptideMap[item.peptide_ref().get()]->PeptideSequence();
-  std::string peptideId = item.peptide_ref().get();
-  
-  /*std::vector<mzIdentML_ns::PeptideEvidenceType *> peptide_evidences;
-  std::transform(peptideEvidenceMap_peptideid.lower_bound(peptideId),peptideEvidenceMap_peptideid.upper_bound(peptideId),
-		 std::inserter(peptide_evidences,peptide_evidences.begin()), RetrieveValue());*/
-  
+  std::string peptideId = item.peptide_ref().get();  
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
   
-  //NOTE I should notify the authors of mzIdentML this bug
-  /*if(item.PeptideEvidenceRef().size() != peptide_evidences.size())
-  {
-    std::cerr << "Warning : something extrange happened, the number of Peptide Evidences of PSM "
-              << boost::lexical_cast<string>(item.id()) << " found in the Spectrum tag does not "
-	      << "correspond to the number of evidences found in the PeptideEvidence tag." << std::endl;
-  }*/
-  
-  
   //FIXME IMPORTANT fix, here I take only 1 peptide per PSM but the option -m might tell me to take more,
   //FIXME I have to modify this loop to obtain more PSMs in that case
+  //NOTE I might be able to get the PeptideEVidence and the protein out of the PSM object
   //Get rid of unprintables in proteinName?
   BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
   {
@@ -347,21 +334,11 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     std::string proteinName = boost::lexical_cast<string>(proteinObj->accession());
     proteinIds.push_back(proteinName);
   }
-  
-  /*BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceType *pepEv, peptide_evidences)
-  {
-    __flankN = boost::lexical_cast<string>(pepEv->pre());
-    __flankC = boost::lexical_cast<string>(pepEv->post());
-    std::string proteinid = boost::lexical_cast<string>(pepEv->dBSequence_ref());
-    mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
-    std::string proteinName = boost::lexical_cast<string>(proteinObj->accession());
-    proteinIds.push_back(proteinName);
-  }*/
    
-  if(po.iscombined && !po.reversedFeaturePattern.empty())
+  if(po->iscombined && !po->reversedFeaturePattern.empty())
   {
     //NOTE taking the highest ranked PSM protein for combined search
-    isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
+    isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
   }
   
   double rank = item.rank();
@@ -376,10 +353,9 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
   double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
   std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
-  assert(peptideSeq.size() >= po.peptidelength );
   unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
-  double dM = MassHandler::massDiff(observed_mass,theoretic_mass,charge, peptideSeq );
-  std::map<char,int> ptmMap = po.ptmScheme;
+  double dM = massDiff(observed_mass,theoretic_mass,charge);
+  std::map<char,int> ptmMap = po->ptmScheme;
   std::string psmid = boost::lexical_cast<string>(item.id()) + "_" + boost::lexical_cast<string>(useScanNumber) + "_" + 
 		       boost::lexical_cast<string>(charge) + "_" + boost::lexical_cast<string>(rank);
   
@@ -387,15 +363,22 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   {
     if ( cv.value().present() )
     {
-      //NOTE this is risky, check for key fail so I know some new parameter are included
-      switch(hashparams[std::string(cv.name().c_str())])
+      std::string param_name(cv.name().c_str());
+      if(hashparams.count(param_name))
       {
-	case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;  
+	switch(hashparams.at(param_name))
+	{
+	  case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	  case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	  case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	  case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	  case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	  case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;  
+	}
+      }
+      else
+      {
+	std::cerr << "ERROR : an unmapped parameter " << param_name << " has been found." << std::endl;
       }
     }
   }
@@ -422,15 +405,15 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   f_seq.push_back( dM ); 
   f_seq.push_back( abs(dM) ); 
   
-  if (po.calcPTMs ) 
+  if (po->calcPTMs ) 
   { 
     f_seq.push_back(cntPTMs(peptideSeqWithFlanks)); 
   }
-  if (po.pngasef ) 
+  if (po->pngasef ) 
   { 
     f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy)); 
   }
-  if (po.calcAAFrequencies ) 
+  if (po->calcAAFrequencies ) 
   { 
     computeAAFrequencies(peptideSeqWithFlanks, f_seq); 
   }
@@ -442,11 +425,14 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   std::string peptideS = peptideSeq;
   for(unsigned int ix=0;ix<peptideSeq.size();++ix) 
   {
-    if (aaAlphabet.find(peptideSeq[ix])==string::npos && ambiguousAA.find(peptideSeq[ix])==string::npos && modifiedAA.find(peptideSeq[ix])==string::npos)
+    if (aaAlphabet.find(peptideSeq[ix])==string::npos && 
+        ambiguousAA.find(peptideSeq[ix])==string::npos && 
+        additionalAA.find(peptideSeq[ix])==string::npos)
     {
       if (ptmMap.count(peptideSeq[ix])==0) 
       {
-	cerr << "Peptide sequence " << peptideSeqWithFlanks << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << endl;
+	std::cerr << "Peptide sequence " << peptideSeqWithFlanks 
+	<< " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
         exit(-1);
       }
       peptideSeq.erase(ix,1);
@@ -457,7 +443,9 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) 
   {
-    if (aaAlphabet.find(peptideS[ix])==string::npos) 
+    if (aaAlphabet.find(peptideSeq[ix])==string::npos && 
+        ambiguousAA.find(peptideSeq[ix])==string::npos && 
+        additionalAA.find(peptideSeq[ix])==string::npos)
     {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));

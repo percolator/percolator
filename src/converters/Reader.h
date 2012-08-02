@@ -35,12 +35,12 @@
 #include <vector>
 #include "Globals.h"
 #include "config.h"
-#include "MassHandler.h"
 #include "FeatureNames.h"
 #include "percolator_in.hxx"
 #include "parseoptions.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp> 
+#include <boost/assign.hpp>
 #include "MSReader.h"
 #include "Spectrum.h"
 #include <assert.h>
@@ -95,30 +95,33 @@ class Reader
 
 public:
   
-  Reader(ParseOptions po);
+  Reader(ParseOptions *po);
   virtual ~Reader();
   
-  void translateFileToXML(const std::string fn,bool isDecoy,unsigned int lineNumber_par,bool isMeta = false);
+  void translateFileToXML(const std::string &fn,bool isDecoy,
+			  unsigned int lineNumber_par,bool isMeta = false);
 
-  string getRidOfUnprintables(std::string inpString);
+  std::string getRidOfUnprintables(const std::string &inpString);
   
-  virtual void read(const std::string fn,bool is_decoy,boost::shared_ptr<FragSpectrumScanDatabase> database){};
+  virtual void read(const std::string &fn,bool is_decoy,
+		    boost::shared_ptr<FragSpectrumScanDatabase> database) = 0;
       
-  virtual bool checkValidity(std::string file){};
+  virtual bool checkValidity(const std::string &file) = 0;
   
-  virtual bool checkIsMeta(std::string file){};
+  virtual bool checkIsMeta(const std::string &file) = 0;
   
-  virtual void getMaxMinCharge(std::string fn, bool isDecoy){};
+  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy) = 0;
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet){};
+  virtual void addFeatureDescriptions(bool doEnzyme) = 0;
   
-  virtual void readRetentionTime(std::string filename){};
+  void readRetentionTime(const std::string &filename);
 	
-  virtual void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database){};
+  void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   void push_backFeatureDescription(const char *str);
 
-  void computeAAFrequencies(const string& pep,percolatorInNs::features::feature_sequence & f_seq);
+  void computeAAFrequencies(const string& pep,
+			    percolatorInNs::features::feature_sequence & f_seq);
   
   double calculatePepMAss(const std::string &pepsequence,double charge = 2);
 
@@ -134,14 +137,19 @@ public:
   
   double isPngasef(const string& peptide, bool isDecoy );
   
-  void readProteins(std::string filenameTarget,std::string fileNamedecoy);
+  void readProteins(const std::string &filenameTarget, const std::string &fileNamedecoy);
   
-  void parseDataBase(const char* seqfile, bool isDecoy,bool isCombined, unsigned &proteins_counter);
+  void parseDataBase(const char* seqfile, bool isDecoy,bool isCombined, 
+		     unsigned &proteins_counter);
   
-  unsigned calculateProtLengthTrypsin(std::string protsequence,
+  unsigned calculateProtLengthTrypsin(const std::string &protsequence,
 				      std::set<std::string> &peptides,double &totalMass);
   
-  void read_from_fasta(istream & buffer, std::string &name , std::string &seq); 
+  void read_from_fasta(istream &buffer, std::string &name , std::string &seq); 
+  
+  double massDiff(double observedMass, double calculatedMass,unsigned int charge);
+  
+  bool checkPeptideFlanks(const std::string &pep);
   
 private:
   
@@ -153,13 +161,16 @@ protected:
    static const std::string aaAlphabet;
    static const std::string ambiguousAA;
    static const std::string modifiedAA;
+   static const std::string additionalAA;
+   static const std::map<unsigned,double> ptmMass;
+   
    std::vector<boost::shared_ptr<FragSpectrumScanDatabase> > databases;
-   //NOTE as soon as I get the program working these 2 guys have to be smart pointers
+   //NOTE I should make these two guys pointers
    ::percolatorInNs::experiment::fragSpectrumScan_sequence fss;
    ::percolatorInNs::featureDescriptions f_seq;
    int maxCharge;
    int minCharge;
-   ParseOptions po;
+   ParseOptions *po;
    std::map<char, double> massMap_;
    std::map<int, vector<double> > scan2rt;
    std::vector<Protein*> proteins;

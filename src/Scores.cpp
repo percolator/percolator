@@ -462,19 +462,28 @@ void Scores::normalizeScores(double fdr) {
       }
     }
   }
-
-  if(q1 <= median){
-    cerr << "\nWARNING the input data has too good separation between target "
+  //NOTE perhaps I should also check when q1 and median are both negatives
+  //NOTE in such cases the normalization could give negative scores which would
+  //     cause an assertion to fail in qvality
+  if(q1 <= median || it == scores.end()){
+    cerr << "\nERROR the input data has too good separation between target "
          << "and decoy PSMs.\n" << std::endl;
+    exit(-1);
   }
-  else
+   
+  double diff = q1-median;
+  for (it = scores.begin(); it != scores.end(); ++it) 
   {
-    double diff = q1-median;
-    for (it = scores.begin(); it != scores.end(); ++it) {
-      it->score -= q1;
-      it->score /= diff;
+    it->score -= q1;
+    it->score /= diff;
+    if(it->score <= 0 && VERB > 3)
+    {
+      std::cerr << "\nWARNING the score of the PSM " << it->pPSM->id << " is less or equal than zero "
+	         << "after normalization.\n" << std::endl;
+      //exit(-1);
     }
   }
+  
 }
 
 int Scores::calcScores(vector<double>& w, double fdr) {

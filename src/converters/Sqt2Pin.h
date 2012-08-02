@@ -27,19 +27,14 @@ using namespace std;
 class Sqt2Pin {
 
  public:
+   
 	Sqt2Pin();
-	
 	virtual ~Sqt2Pin();
-	
 	std::string greeter();
-	
 	std::string extendedGreeter();
-	
 	bool parseOpt(int argc, char **argv);
-	
 	int run();
 	
-
  private:
   
 	ParseOptions parseOptions;

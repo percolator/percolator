@@ -34,6 +34,7 @@ public:
 	int run();
 
 protected:
+  
 	ParseOptions parseOptions;
 	std::string targetFN;
 	std::string decoyFN;

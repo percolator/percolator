@@ -25,29 +25,26 @@ class SqtReader: public Reader
 
 public:
   
-  SqtReader(ParseOptions po);
+  SqtReader(ParseOptions *po);
   
   virtual ~SqtReader();
   
-  virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  virtual void read(const std::string &fn, bool isDecoy,
+		    boost::shared_ptr<FragSpectrumScanDatabase> database);
 
-  void readSectionS(std::string record,std::set<int> & theMs, bool isDecoy,
+  void readSectionS(const std::string &record,std::set<int> &theMs, bool isDecoy,
 	            std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database);
 
   void readPSM(bool isDecoy, const std::string &in,int match, 
 	       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(const std::string file);
+  virtual bool checkValidity(const std::string &file);
   
-  virtual bool checkIsMeta(std::string file);
+  virtual bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
+  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void readRetentionTime(std::string filename);
-	
-  virtual void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database);
-  
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
+  virtual void addFeatureDescriptions(bool doEnzyme);
 };
 
 #endif // SQTREADER_H

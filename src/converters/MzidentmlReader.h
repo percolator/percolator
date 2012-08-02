@@ -46,19 +46,19 @@ class MzidentmlReader: public Reader
 
 public:
 
-  MzidentmlReader(ParseOptions po);
+  MzidentmlReader(ParseOptions *po);
   
   virtual ~MzidentmlReader();
   
-  virtual void read(const std::string fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  virtual void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(std::string file);
+  virtual bool checkValidity(const std::string &file);
   
-  virtual bool checkIsMeta(std::string file);
+  virtual bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(std::string fn, bool isDecoy);
+  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void addFeatureDescriptions(bool doEnzyme,const std::string& aaAlphabet);
+  virtual void addFeatureDescriptions(bool doEnzyme);
   
   void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
 		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
@@ -71,11 +71,8 @@ private :
     
     peptideMapType peptideMap;
     proteinMapType proteinMap;
-    //peptideEvidenceMapType_peptideid peptideEvidenceMap_peptideid;
     peptideEvidenceMapType peptideEvidenceMap;
-    map<string,int> hashparams;
-    //static const XMLCh sequenceCollectionStr[];
-  
+    static const std::map<string,int> hashparams;
 };
 
 #endif // MZIDENTMLREADER_H

@@ -328,7 +328,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("Q",
       "protein-fdr",
       "Estimate Protein False Discovery Rate using Mayu's method, the FDR estimated will be used in the estimation of the empirical q-values. \
-       (Only valid if option -A is active)(The pin file must contain a list of proteins with their respectives lenghts, check sqt2pin -F)",
+       (Only valid if option -A is active)(The pin file must contain a list of proteins with their respectives lenghts, check -F option in converters)",
       "",
       TRUE_IF_SET);
   cmd.defineOption("P",
@@ -389,8 +389,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     
     if(mayusfdr && usePi0)
     {
-      std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used together to estimate Protein Probabilities." << std::endl;
-      exit(0);
+      std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used "
+      "together to estimate Protein Probabilities." << std::endl;
+      exit(-1);
     }
   
     if (cmd.optionSet("d"))  depth = (cmd.getInt("d", 0, 3));
@@ -436,6 +437,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("n")) {
     selectedCneg = cmd.getDouble("n", 0.0, 1e127);
+    if(selectedCpos == 0)
+    {
+      std::cerr << "WARNING, the positive penalty(cpos) is 0, therefore both the positive and negative penalties are going "
+		 "to be cros-validated. The option --Cneg has to be used to together with the option --Cpos" << std::endl;
+    }
   }
   if (cmd.optionSet("J")) {
     tabFN = cmd.options["J"];
@@ -575,7 +581,7 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
  * of target and decoy psms
  *
  * @param numFeatures number of features to train on
- * @param numSpectra nuymber of spectra per set (same for both target and decoy)
+ * @param numSpectra number of spectra per set (same for both target and decoy)
  * @param featureNames array of names of individual features
  * @param pi0
  */
@@ -681,7 +687,6 @@ void Caller::readFiles() {
       for (doc = p.next(); doc.get()!= 0 && 
 	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
-	//NOTE I should process the PSMs here and call targetSet->readPsm or decoySet->redPsm accordingly
         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
 	BOOST_FOREACH(const percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch())
 	{
@@ -720,7 +725,7 @@ void Caller::readFiles() {
       }
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
-	std::cerr << "\nERROR : options -Q and -A are activated but the number of proteins found in the inpu file is zero.\n\
+	std::cerr << "\nERROR : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
 		       Did you run converters with the flag -F ?\n" << std::endl;
 	exit(-1);
       }
@@ -1269,5 +1274,3 @@ int Caller::run() {
   writeXML();
   return 0;
 }
-
-

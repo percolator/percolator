@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-xmlns="http://per-colator.com/percolator_in/12" 
+xmlns="http://per-colator.com/percolator_in/13" 
 elementFormDefault="qualified" 
-targetNamespace="http://per-colator.com/percolator_in/12">
+targetNamespace="http://per-colator.com/percolator_in/13">
   <xs:element name="experiment">
     <xs:annotation>
       <xs:documentation>One experiment corresponds, roughly, to one
@@ -30,21 +30,6 @@ targetNamespace="http://per-colator.com/percolator_in/12">
 	    <xs:sequence>
 	      <xs:element minOccurs="1" maxOccurs="1" name="target_database" type="xs:string"/>
 	      <xs:element minOccurs="1" maxOccurs="1" name="decoy_database" type="xs:string"/>
-	      <xs:element minOccurs="1" maxOccurs="1" name="parameters">
-	      <xs:annotation>
-		<xs:documentation>Some parameters used to search the spectra.</xs:documentation>
-	      </xs:annotation>
-		<xs:complexType>
-		  <xs:sequence>
-		    <xs:element minOccurs="1" maxOccurs="1" name="miss_cleavages" type="xs:int"/>
-		    <xs:element minOccurs="1" maxOccurs="1" name="min_peptide_length" type="xs:int"/>
-		    <xs:element minOccurs="1" maxOccurs="1" name="max_peptide_mass" type="xs:int"/>
-		    <xs:element minOccurs="1" maxOccurs="1" name="min_peptide_mass" type="xs:int"/>
-		    <xs:element minOccurs="1" maxOccurs="1" name="max_peptide_length" type="xs:int"/>
-		    <xs:element minOccurs="1" maxOccurs="1" name="avg_mass" type="xs:boolean"/>
-		    </xs:sequence>
-		</xs:complexType>
-	      </xs:element>
 	    </xs:sequence>
 	  </xs:complexType>
         </xs:element>
@@ -215,27 +200,21 @@ targetNamespace="http://per-colator.com/percolator_in/12">
           </xs:complexType>
 	</xs:element>
 	  <!--Start of definition of the tag proteins-->
-	  <!--<xs:element name="proteins" minOccurs="0" maxOccurs="1">
+	<xs:element minOccurs="0" maxOccurs="unbounded" name="protein">
+	    <xs:annotation>
+	      <xs:documentation>A protein presented in the database.</xs:documentation>
+	    </xs:annotation>
 	    <xs:complexType>
-	      <xs:sequence>-->
-		<xs:element minOccurs="0" maxOccurs="unbounded" name="protein">
-		  <xs:annotation>
-		    <xs:documentation>A protein presented in the database.</xs:documentation>
-		  </xs:annotation>
-		  <xs:complexType>
-		    <xs:sequence>
-		      <xs:element name="name" type="xs:string" />
-		      <xs:element name="length" type="xs:double" />
-		      <xs:element name="totalMass" type="xs:double" />   
-		      <xs:element name="sequence" type="aa_seq_t" />
-		    </xs:sequence>
-		    <xs:attribute name="id" use="required" type="xs:double"/>
-		    <xs:attribute name="isDecoy" use="required" type="xs:boolean"/>
-		  </xs:complexType>
-		</xs:element>
-	      <!--</xs:sequence>
+	      <xs:sequence>
+		<xs:element name="name" type="xs:string" />
+		<xs:element name="length" type="xs:double" />
+		<xs:element name="totalMass" type="xs:double" />   
+		<xs:element name="sequence" type="aa_seq_t" />
+	      </xs:sequence>
+	      <xs:attribute name="id" use="required" type="xs:double"/>
+	      <xs:attribute name="isDecoy" use="required" type="xs:boolean"/>
 	    </xs:complexType>
-	  </xs:element>-->
+	</xs:element>
 	<!--End of definition of the tag proteins--> 
       </xs:sequence>
     </xs:complexType>
@@ -260,7 +239,8 @@ targetNamespace="http://per-colator.com/percolator_in/12">
   </xs:simpleType>
   <xs:simpleType name="aa_seq_t">
     <xs:restriction base="xs:string">
-      <xs:pattern value="([A-Z][#*@]?)+"/>
+      <xs:pattern value="([A-Z][#*@]*)+"/>
+      <!--xs:pattern value="([A-Z][#*@]?)+"/>  this r.exp only allows one modification in a row-->
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="aa_term_t">

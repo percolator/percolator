@@ -426,7 +426,7 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
   if(pi0s.size()==0){
     cerr << "Error in the input data: too good separation between target "
         << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
-    exit(0);
+    exit(-1);
   }
   double minPi0 = *min_element(pi0s.begin(), pi0s.end());
   // Initialize the vector mse with zeroes.
