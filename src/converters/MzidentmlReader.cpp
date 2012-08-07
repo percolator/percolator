@@ -100,8 +100,6 @@ bool MzidentmlReader::checkIsMeta(const std::string &file)
 
 void MzidentmlReader::addFeatureDescriptions(bool doEnzyme)
 {
-  //NOTE from now lets assume the features all always SEQUEST features, ideally I would create my list of features from the 
-  //     features description of the XSD
   push_backFeatureDescription("lnrSp");
   push_backFeatureDescription("deltCn");
   push_backFeatureDescription("Xcorr");
@@ -160,14 +158,17 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy)
     string scheme_namespace = MZIDENTML_NAMESPACE;
     string schema_major = "";
     string schema_minor = "";
-    xml_schema::dom::auto_ptr<DOMDocument> doc (p.start (ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
+    xml_schema::dom::auto_ptr<DOMDocument> doc 
+    (p.start (ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
     
-    for (doc = p.next(); doc.get() != 0 && !XMLString::equals(spectrumIdentificationResultStr,doc->getDocumentElement()->getTagName()); doc = p.next ()) 
+    for (doc = p.next(); doc.get() != 0 
+      && !XMLString::equals(spectrumIdentificationResultStr,doc->getDocumentElement()->getTagName()); doc = p.next ()) 
     {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
 
-    for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr, doc->getDocumentElement()->getTagName()); doc = p.next ()) 
+    for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr, 
+      doc->getDocumentElement()->getTagName()); doc = p.next ()) 
     {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement ());
       BOOST_FOREACH( const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem() )
@@ -443,9 +444,9 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) 
   {
-    if (aaAlphabet.find(peptideSeq[ix])==string::npos && 
-        ambiguousAA.find(peptideSeq[ix])==string::npos && 
-        additionalAA.find(peptideSeq[ix])==string::npos)
+    if (aaAlphabet.find(peptideS[ix])==string::npos && 
+        ambiguousAA.find(peptideS[ix])==string::npos && 
+        additionalAA.find(peptideS[ix])==string::npos)
     {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
@@ -455,7 +456,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     }  
   }
   
-  ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch(features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
+  ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch
+  (features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
   std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
   
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
@@ -464,10 +466,6 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     psm_p->occurence().push_back(oc_p);
   }
   
-  /*std::cerr << " Saved PSM " << psmid << " " << isDecoy << " " << observed_mass << " " << theoretic_mass 
-	    << " " << charge << " " << peptideSeqWithFlanks << " " << proteinIds.front() << " " << deltaCN << " " << xCorr << std::endl;*/
-  
   database->savePsm(useScanNumber, psm_p);
-  
   return;
 }

@@ -436,4 +436,3 @@ void ProteinFDRestimator::setTargetDecoyRatio(double __ratio)
 {
   targetDecoyRatio = __ratio;
 }
-

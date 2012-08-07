@@ -197,13 +197,12 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
 			   boost::shared_ptr<FragSpectrumScanDatabase> database, 
 			   std::vector<std::string> column_names, counterMapType &idCounterMap){
   
-  std::ostringstream id,keyStream,psmIdentStream;
+  std::ostringstream id,keyStream;
   set< std::string > proteinIds;
   bool tda1=false, ndef=false, psmUsed=false;
   int rank;
   double calculatedMassToCharge, calculatedMass, dM;
   peptideDecoyKey keyCounter, peptideDecoyPair;
-  psmIdentPairType psmIdentPair;
   percolatorInNs::occurence::flankN_type flankN;
   percolatorInNs::occurence::flankC_type flankC;
   std::string peptideSequence, peptideS, peptideNoFlank;
@@ -213,19 +212,10 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
   std::map<char,int> ptmMap = po->ptmScheme;
   
   std::vector<std::string> psm_vector=split(line,'\t');
-  if(psm_vector.size()!=column_names.size())
-  {
-    std::cerr << "One row or more in " << fileId << " has the wrong number of columns: "
-    << psm_vector.size() << ". Should be " << column_names.size() << std::endl;
-    exit(-1);
-  }
   if(column_names.size()>13)
   {
-    ndef=true; //This means that msgfdb was used with default value to the -n optioner or with -tda 1
-    if(column_names.at(13)=="FDR") //If this is true then the -tda 1 option was used in msgfb
-    {
-      tda1=true;
-    }
+    ndef = true; //This means that msgfdb was used with default value to the -n optioner or with -tda 1
+    tda1 = column_names.at(13) =="FDR"; //If this is true then the -tda 1 option was used in msgfb
   }
   
   //Variables related to the MSGFDB file type 
@@ -248,7 +238,6 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
   double PepFDR;//Used if tda1 option was used
   double FDR; 	//Used if tda1 option was not used in msgfb
   
-  
   if(tda1)
   {//if -tda 1 option is was used in msgfdb there is one more feature and FDR is sligtly different
     EFDR =				boost::lexical_cast<double>(psm_vector.at(13));
@@ -260,37 +249,33 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
   }
   
   //Get the flanks/termini and remove them from the peptide sequence
-  std::vector<std::string> tmp_vect=split(peptideWithFlank,'.');
-  try{
-    flankN=tmp_vect.at(0);
-    flankC=tmp_vect.at(2);
+  std::vector<std::string> tmp_vect = split(peptideWithFlank,'.');
+  try
+  {
+    flankN = tmp_vect.at(0);
+    flankC = tmp_vect.at(2);
     //Sometimes the flank is odd letters like ? _ replace them with -
     //NOTE the split function might sometimes messing things upp if the flank is something odd and not in the list in split.
     if(flankN.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
     {
-      flankN="-";
+      flankN = "-";
     }
     if(flankC.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==std::string::npos)
     {
-      flankC="-";
+      flankC = "-";
     }
 
-    peptideSequence=tmp_vect.at(1);
-    peptideS = peptideSequence;
+    peptideSequence = tmp_vect.at(1);
+    peptideS = peptideNoFlank = peptideSequence;
   }
-  catch(exception e){
+  catch(exception e)
+  {
     std::cerr << "There is a problem with the peptide string: " << peptideWithFlank << " SpecIndex: " << specIndex << std::endl;
     exit(-1);
   }
-  
-  peptideNoFlank=flankN + " ." + peptideWithFlank + "." + flankC;
-
   //Get rid of unprinatables in proteinID and make list of proteinIDs
   proteinID = getRidOfUnprintables(proteinID);
-  
-  psmIdentStream.str("");
-  psmIdentStream << specIndex << "_" << peptideWithFlank;
-  
+  peptideWithFlank = flankN + "." + peptideNoFlank + "." + flankC;
   //If its a combined filed isDecoy will be false when this function is called so it has to adjusted based on pattern
   //Also the keys for the maps will be always be false if its combined filed
   if(po->iscombined)
@@ -298,54 +283,47 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
     isDecoy = proteinID.find(po->reversedFeaturePattern, 0) != std::string::npos;
     //Key for the map with peptides and proteins
     peptideDecoyPair = make_pair (peptideWithFlank,0);
-    //Key for the map with psms and if the psm has been used or not
-    psmIdentPair = make_pair (psmIdentStream.str(),0);
   }
   else
   {
     //Key for the map with peptides and proteins
     if(isDecoy) peptideDecoyPair = make_pair (peptideWithFlank,1);
     if(!isDecoy) peptideDecoyPair = make_pair (peptideWithFlank,0);
-    
-    //Key for the map with psms and if the psm has been used or not
-    if(isDecoy) psmIdentPair = make_pair (psmIdentStream.str(),1);
-    if(!isDecoy) psmIdentPair = make_pair (psmIdentStream.str(),0);
   }
-  //If the if statment is not true the function is done beacause this psm, decoy combination has already been put in to the database
-  //NOTE is this really needed?
-  if(usedPSMs.insert(psmIdentPair).second) 
+
+  proteinIds = peptideProteinMap[peptideDecoyPair]; //Get all proteins associated with this peptide
+  
+  //Get rank from map aka number of hits from the same spectra so far
+  keyStream.str("");
+  keyStream << specIndex;
+  if(isDecoy) keyCounter = make_pair (keyStream.str(),1);
+  if(!isDecoy) keyCounter = make_pair (keyStream.str(),0);
+  
+  if(idCounterMap.count(keyCounter)==0)
   {
+    idCounterMap[keyCounter] = 1;
+  }
+  else
+  {
+    idCounterMap[keyCounter]++;
+  }
   
-    proteinIds = peptideProteinMap[peptideDecoyPair]; //Get all proteins associated with this peptide
+  rank = idCounterMap[keyCounter];
+    
+  if(rank <= po->hitsPerSpectrum)
+  {
+    //Create id
+    id.str("");
+    id << fileId << '_' << specIndex << '_' << charge << '_' << rank;
+    std::string psmId = id.str();
   
-    //Get rank from map aka number of hits from the same spectra so far
-    keyStream.str("");
-    keyStream << specIndex;
-    if(isDecoy) keyCounter = make_pair (keyStream.str(),1);
-    if(!isDecoy) keyCounter = make_pair (keyStream.str(),0);
-    if(idCounterMap.count(keyCounter)==0)
+    //Remove modifications
+    for(unsigned int ix=0;ix<peptideSequence.size();++ix) 
     {
-      idCounterMap[keyCounter] = 1;
-    }
-    else
-    {
-      idCounterMap[keyCounter]++;
-    }
-  
-    if(rank <= po->hitsPerSpectrum)
-    {
-      //Create id
-      id.str("");
-      id << fileId << '_' << specIndex << '_' << charge << '_' << rank;
-      std::string psmId = id.str();
-  
-      //Remove modifications
-      for(unsigned int ix=0;ix<peptideSequence.size();++ix) 
+      if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
+	  ambiguousAA.find(peptideSequence[ix])==string::npos && 
+	  additionalAA.find(peptideSequence[ix])==string::npos)
       {
-	if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
-	    ambiguousAA.find(peptideSequence[ix])==string::npos && 
-	    additionalAA.find(peptideSequence[ix])==string::npos)
-	{
 	  if (ptmMap.count(peptideSequence[ix])==0) {
 	    cerr << "Peptide sequence " << peptideWithFlank << " contains modification " 
 	    << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
@@ -354,13 +332,14 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
 	  peptideSequence.erase(ix,1);
 	}  
       }
-      std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
+      std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType(peptideSequence));
   
       //Register the ptms
-      for(unsigned int ix=0;ix<peptideS.size();++ix) {
-	if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
-	    ambiguousAA.find(peptideSequence[ix])==string::npos && 
-	    additionalAA.find(peptideSequence[ix])==string::npos)
+    for(unsigned int ix=0;ix<peptideS.size();++ix) 
+    {
+	if (aaAlphabet.find(peptideS[ix])==string::npos && 
+	    ambiguousAA.find(peptideS[ix])==string::npos && 
+	    additionalAA.find(peptideS[ix])==string::npos)
 	{
 	  int accession = ptmMap[peptideS[ix]];
 	  std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
@@ -371,16 +350,14 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
       }
   
       //Calculate peptide mass
-      calculatedMass = calculatePepMAss(peptideNoFlank,charge); 
-      //Mass in the msgfdb file is mass/charge
-      //NOTE The mass difference is behaving strange, there is somethign wrong somewhere with the mass.
+      calculatedMass = calculatePepMAss(peptideNoFlank); 
       calculatedMassToCharge = calculatedMass/charge;
   
       //Push_back the DeNovoScore and msgfscore
       f_seq.push_back(deNovoScore);
       f_seq.push_back(MSGFScore);
-      f_seq.push_back( observedMassCharge ); // Observed mass
-      f_seq.push_back( peptideLength(peptideWithFlank)); // Peptide length
+      f_seq.push_back(observedMassCharge); // Observed mass
+      f_seq.push_back(peptideLength(peptideNoFlank)); // Peptide length
       int nxtFeat = 8;
       for (int c = minCharge; c <= maxCharge; c++)
 	f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
@@ -394,7 +371,7 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
       //Calculate difference between observed and calculated mass
       dM = massDiff(observedMassCharge*charge, calculatedMass, charge);
       f_seq.push_back( dM ); // obs - calc mass
-      f_seq.push_back( (dM < 0 ? -dM : dM)); // abs only defined for integers on some systems 
+      f_seq.push_back( abs(dM) ); 
     
       if (po->calcPTMs) 
       {
@@ -421,8 +398,7 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
       database->savePsm(specIndex, psm_p);
 
     }//End of if(rank<po.hitsPerSpectrum)
-  }//End of if psmUsed
-}
+ }
 
 void msgfdbReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database)
 {

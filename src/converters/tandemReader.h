@@ -27,10 +27,6 @@
 using namespace std;
 using namespace xercesc;
 
-typedef map<std::string,double> spectraMapType;
-typedef map<std::string,double> domainMapType;
-typedef map<std::string,std::string> domainMapStringType;
-typedef pair<domainMapType, domainMapStringType> domainPairType;
 typedef map<std::string, set<std::string> > peptideProteinMapType;
 
 class tandemReader: public Reader
@@ -55,8 +51,6 @@ public:
 private:
   
   //Variables
-  std::vector<bool> defaultNameSpaceVect;
-  bool defaultNameSpace;
   bool x_score;
   bool y_score;
   bool z_score;
@@ -66,18 +60,14 @@ private:
   bool firstPSM;
   
   //Functions
-  
   void readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 		   boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn);
   
-  peptideProteinMapType getPeptideProteinMap(const tandem_ns::group &groupObj);
+  void getPeptideProteinMap(const tandem_ns::group &groupObj,peptideProteinMapType &peptideProteinMap);
   
-  domainPairType readDomain(tandem_ns::peptide peptideObj);
-  
-  void createPSM(spectraMapType &spectraMap,domainMapType &domainMap,
-		  domainMapStringType &domainMapString, 
-		  bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
-		  const set<std::string> &proteinOccuranceSet,const string &psmId, int spectraId);
+  void createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
+		  double sumI,double maxI,bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
+		  const peptideProteinMapType &peptideProteinMap,const string &psmId, int spectraId);
 };
 
 #endif //TANDEMREADER_H

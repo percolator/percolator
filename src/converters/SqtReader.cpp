@@ -179,9 +179,9 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   // Register the ptms
   for(unsigned int ix=0;ix<peptideS.size();++ix) 
   {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
-	ambiguousAA.find(peptideSequence[ix])==string::npos && 
-	additionalAA.find(peptideSequence[ix])==string::npos)
+    if (aaAlphabet.find(peptideS[ix])==string::npos && 
+	ambiguousAA.find(peptideS[ix])==string::npos && 
+	additionalAA.find(peptideS[ix])==string::npos)
     {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
@@ -256,48 +256,11 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
   std::istringstream lineParse;
   std::ifstream sqtIn;
   sqtIn.open(fn.c_str(), std::ios::in);
-  
   if (!sqtIn) 
   {
     std::cerr << "Could not open file " << fn << std::endl;
     exit(-1);
   }
-  
-  bool look = false;
-  unsigned int scanExtra;
-  while (getline(sqtIn, line)) 
-  {
-    if (line[0] == 'S' && sqtIn.peek() != 'S') 
-    {
-      lineParse.clear();
-      lineParse.str(line);
-      lineParse >> tmp >> tmp >> scanExtra >> charge;
-      look = true;
-      ms = 0;
-    }
-     
-    if (look && line[0] == 'L' && ms < po->hitsPerSpectrum) 
-    {
-	lineParse.clear();
-	lineParse.str(line);
-	lineParse >> tmp >> prot;
-	if( !isDecoy || (po->reversedFeaturePattern == "" || ( (line.find(po->reversedFeaturePattern, 0) != std::string::npos) ) ) )
-	{
-	  ++ms;
-	  ++n;
-	}
-    }
-  }
-
-  if (n <= 0) 
-  {
-    std::cerr << "The file " << fn << " does not contain any records"
-        << std::endl;
-    sqtIn.close();
-    exit(-1);
-  }
-  sqtIn.clear();
-  sqtIn.seekg(0, std::ios::beg);
 
   std::string seq;
   fileId = fn;

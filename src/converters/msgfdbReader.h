@@ -21,7 +21,6 @@
 
 #include "Reader.h"
 
-typedef std::pair<std::string, int> psmIdentPairType;
 typedef std::pair<std::string, int> peptideDecoyKey;
 typedef std::map<peptideDecoyKey, int> counterMapType;
 typedef std::map<peptideDecoyKey, set<std::string> > peptideProteinMapType;
@@ -48,7 +47,6 @@ public:
   
 private:
   
-  std::set< psmIdentPairType > usedPSMs;
   counterMapType idCounterMap;
   peptideProteinMapType peptideProteinMap;
   
