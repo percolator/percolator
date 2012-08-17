@@ -75,8 +75,6 @@ class Set : public Array<int>
 Set operator &(Set lhs, const Set & rhs);
 Set operator |(Set lhs, const Set & rhs);
 
-//ostream & operator <<(ostream & os, const Set & rhs);
-//istream & operator >>(istream & is, Set & rhs);
 
 #endif
 

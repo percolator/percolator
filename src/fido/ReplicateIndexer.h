@@ -5,6 +5,7 @@
 #define _ReplicateIndexer_h
 
 #include "HashTable.h"
+#include "Set.h"
 
 template <typename T>
 class ReplicateIndexer

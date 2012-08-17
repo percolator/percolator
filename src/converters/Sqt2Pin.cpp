@@ -1,16 +1,13 @@
-#include <boost/algorithm/string.hpp>
 #include "Sqt2Pin.h"
-#include <ssl.h>
+
 
 Sqt2Pin::Sqt2Pin() {
-  tmpDirs = std::vector<char*>();
-  tmpFNs = std::vector<std::string>();
+ 
 }
 
 Sqt2Pin::~Sqt2Pin() {
-  //deleting temporary folder(s)
-  for(int i=0; i<tmpDirs.size(); i++)
-    rmdir(tmpDirs[i]);
+  if(reader)
+    delete reader;
 }
 
 string Sqt2Pin::extendedGreeter() {
@@ -27,7 +24,7 @@ string Sqt2Pin::greeter() {
   ostringstream oss;
   oss << "\nsqt2pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Copyright (c) 2010 Lukas Käll. All rights reserved." << endl;
+  oss << "Copyright (c) 2012 Lukas Käll. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
   oss << "Department of Biochemistry and Biophysics at the Stockholm University."
       << endl;
@@ -44,7 +41,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   call = callStream.str();
   ostringstream intro, endnote;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt" << endl << endl;
+  intro << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt " << endl << endl;
   intro << "Where output.xml is where the output will be written (ensure to have read and " << endl;
   intro << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
   intro << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
@@ -67,11 +64,6 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
       "level");
-  cmd.defineOption("u",
-      "unitnorm",
-      "Use unit normalization [0-1] instead of standard deviation normalization",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("a",
       "aa-freq",
       "Calculate amino acid frequency features",
@@ -82,46 +74,11 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "Calculate feature for number of post-translational modifications",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("Q",
-      "quadratic",
-      "Calculate quadratic feature terms",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("y",
-      "notryptic",
-      "Turn off calculation of tryptic/chymo-tryptic features.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("c",
-      "chymo",
-      "Replace tryptic features with chymo-tryptic features.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("t",
-      "thermolysin",
-      "Replace tryptic features with thermlysinic features.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("k",
-      "proteinasek",
-      "Replace tryptic features with proteinase-k features.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("n",
-      "pepsin",
-      "Replace tryptic features with peptic features.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("e",
-      "elastase",
-      "Replace tryptic features with elastase features.",
+      "enzyme",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
       "",
-      TRUE_IF_SET);
-  cmd.defineOption("l",
-      "lys-n",
-      "Replace tryptic features with Lys-N features.",
-      "",
-      TRUE_IF_SET);
+      "trypsin");
   cmd.defineOption("N",
       "PNGaseF",
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
@@ -137,10 +94,46 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("p",
-		   "psm-annotation",
+      "psm-annotation",
       "An anotation scheme used to convert the psms from the search. An example if Q# was used to describe pyro-glu formation (UNIMOD:28), and S* and T* was used to describe phosphorylation (UNIMOD:21), we would use the option -p *:21:#:28",
       "Scheme");
-
+  cmd.defineOption("P",
+      "pattern",
+      "Pattern used to identify the decoy PSMs",
+      "",
+      "pattern");
+  /** new parameters for reading the fasta to obtain the proteins **/
+  cmd.defineOption("F",
+      "databases",
+      "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
+      "",
+      "filename");
+  cmd.defineOption("c",
+      "cleavages",
+      "Number of allowed miss cleavages used in the search engine (default 0)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("l",
+      "min-length",
+      "Minimum peptide length allowed used in the search engine (default 6)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("t",
+      "max-length",
+      "Maximum peptide length allowed used in the search engine (default 40)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("w",
+      "min-mass",
+      "Minimum peptide mass allowed used in the search engine (default 400)(Only valid when using option -F).",
+      "",
+      "number");
+  cmd.defineOption("x",
+      "max-mass",
+      "Maximum peptide mass allowed used in the search engine (default 6000)(Only valid when using option -F).",
+      "",
+      "number");
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -151,35 +144,27 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
-  if (cmd.optionSet("Y")) {
-    tmpFNs.push_back(cmd.options["Y"]);
-  }
+
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
-  if (cmd.optionSet("Q")) {
-    parseOptions.calcQuadraticFeatures=true;
-  }
-  if (cmd.optionSet("y")) {
-    Enzyme::setEnzyme(Enzyme::NO_ENZYME);
-  }
   if (cmd.optionSet("e")) {
-    Enzyme::setEnzyme(Enzyme::ELASTASE);
-  }
-  if (cmd.optionSet("c")) {
-    Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
-  }
-  if (cmd.optionSet("t")) {
-    Enzyme::setEnzyme(Enzyme::THERMOLYSIN);
-  }
-  if (cmd.optionSet("k")) {
-    Enzyme::setEnzyme(Enzyme::PROTEINASEK);
-  }
-  if (cmd.optionSet("n")) {
-    Enzyme::setEnzyme(Enzyme::PEPSIN);
-  }
-  if (cmd.optionSet("l")) {
-    Enzyme::setEnzyme(Enzyme::LYSN);
+    if( cmd.options["e"] == "no enzyme") 
+      Enzyme::setEnzyme(Enzyme::NO_ENZYME); 
+    else if( cmd.options["e"] == "elastase") 
+      Enzyme::setEnzyme(Enzyme::ELASTASE); 
+    else if( cmd.options["e"] == "chymotrypsin")
+      Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
+    else if( cmd.options["e"] == "thermolysin")
+      Enzyme::setEnzyme(Enzyme::THERMOLYSIN);
+    else if( cmd.options["e"] == "proteinasek")
+      Enzyme::setEnzyme(Enzyme::PROTEINASEK);
+    else if( cmd.options["e"] == "pepsin")
+      Enzyme::setEnzyme(Enzyme::PEPSIN);
+    else if( cmd.options["e"] == "trypsin") 
+      Enzyme::setEnzyme(Enzyme::TRYPSIN);
+    else  
+      Enzyme::setEnzyme(Enzyme::TRYPSIN);
   }
   if (cmd.optionSet("N")) {
     parseOptions.pngasef=true;
@@ -194,12 +179,11 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     int m = cmd.getInt("m", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
   }
-
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }
   if (cmd.optionSet("M")) {
-    MassHandler::setMonoisotopicMass(true);
+    parseOptions.monoisotopic = true;
   }
   if (cmd.optionSet("p")) {
     std::vector<std::string> strs;
@@ -213,8 +197,71 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     }
   }
   
-  if (cmd.arguments.size() > 0) targetFN = cmd.arguments[0];
-  if (cmd.arguments.size() > 1) decoyFN = cmd.arguments[1];
+  if (cmd.optionSet("P")) 
+  {
+    parseOptions.reversedFeaturePattern = cmd.options["P"];
+  }
+  
+  if (cmd.optionSet("F"))
+  {
+    std::vector<std::string> strs;
+    boost::split(strs, cmd.options["F"], boost::is_any_of(","));
+    strs.push_back("");
+    parseOptions.targetDb = strs[0];
+    parseOptions.decoyDb = strs[1];
+    parseOptions.readProteins = true;
+  }
+  
+  if (cmd.optionSet("c"))
+  {
+    parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
+  }
+  
+  if (cmd.optionSet("l"))
+  {
+    parseOptions.peptidelength = cmd.getInt("l",4,20);
+  }
+  
+  if (cmd.optionSet("t"))
+  {
+    parseOptions.maxpeplength = cmd.getInt("l",6,100);
+  }
+  
+  if (cmd.optionSet("w"))
+  {
+    parseOptions.minmass = cmd.getInt("l",100,1000);
+  }
+  
+  if (cmd.optionSet("x"))
+  {
+    parseOptions.maxmass = cmd.getInt("l",100,10000);
+  }
+  
+  if (cmd.arguments.size() > 0)
+  {
+    targetFN = cmd.arguments[0];
+  }
+  if (cmd.arguments.size() > 1) 
+  {
+    decoyFN = cmd.arguments[1];
+  }
+  if(targetFN == "" && decoyFN == "")
+  {
+    std::cerr << "Error, one of the input files is missing.\n"; 
+    exit(-1); 
+  }
+  else if(targetFN != "" && decoyFN == "")
+  {
+    parseOptions.iscombined = true;
+    if(parseOptions.reversedFeaturePattern == "")
+    {
+      parseOptions.reversedFeaturePattern = "random";
+    }
+  }
+  else
+  {
+    parseOptions.iscombined = false;
+  }
   
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -223,99 +270,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       exit(-1); // ...error
   }
   
-  
   return true;
-}
-
-void Sqt2Pin::readRetentionTime(string filename) {
-  MSReader r;
-  Spectrum s;
-  r.setFilter(MS2);
-  char* cstr = new char[filename.size() + 1];
-  strcpy(cstr, filename.c_str());
-  // read first spectrum
-  r.readFile(cstr, s);
-  while(s.getScanNumber() != 0){
-    // check whether an EZ lines is available
-    if(s.sizeEZ() != 0){
-      // for each EZ line (each psm)
-      for(int i = 0; i<s.sizeEZ(); i++){
-        // save experimental mass and retention time
-        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).mh);
-        scan2rt[s.getScanNumber()].push_back(s.atEZ(i).pRTime);
-      }
-    }
-    // if no EZ line is available, check for an RTime lines
-    else if((double)s.getRTime() != 0){
-      scan2rt[s.getScanNumber()].push_back(s.getRTime());
-    }
-    // if neither EZ nor I lines are available
-    else{
-      cout << "The ms2 in input does not appear to contain retention time "
-          << "information. Please run without -2 option.";
-      exit(-1);
-    }
-    // read next scan
-    r.readFile(NULL, s);
-  }
-  delete[] cstr;
-}
-
-void Sqt2Pin::storeRetentionTime(FragSpectrumScanDatabase* database){
-  // for each spectra from the ms2 file
-  typedef std::map<int, vector<double> > map_t;
-  BOOST_FOREACH(map_t::value_type& i, scan2rt){
-    // scan number
-    int scanNr = i.first;
-    // related retention times
-    vector<double>* rTimes = &(i.second);
-    if(database->getFSS(scanNr).get()!=0){
-      fragSpectrumScan fss = *(database->getFSS(scanNr));
-      fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq =
-          fss.peptideSpectrumMatch();
-      // retention time to be stored
-      double storeMe = 0;
-      // if rTimes only contains one element
-      if(rTimes->size()==1){
-        // take that as retention time
-        storeMe = rTimes->at(0);
-      }
-      else{
-        // else, take retention time of psm that has observed mass closest to
-        // theoretical mass (smallest massDiff)
-        double massDiff = std::numeric_limits<double>::max(); // + infinity
-        for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i =
-            psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i) {
-          // skip decoy
-          if(psmIter_i->isDecoy() != true){
-            double cm = psmIter_i->calculatedMassToCharge();
-            double em = psmIter_i->experimentalMassToCharge();
-            // if a psm with observed mass closer to theoretical mass is found
-            if(abs(cm-em) < massDiff){
-              // update massDiff
-              massDiff = abs(cm-em);
-              // get corresponding retention time
-              vector<double>::const_iterator r = rTimes->begin();
-              for(; r<rTimes->end(); r=r+2){
-                double rrr = *r;
-                double exm = psmIter_i->experimentalMassToCharge();
-                if(*r==psmIter_i->experimentalMassToCharge()){
-                  storeMe = *(r+1);
-                  r = rTimes->end();
-                }
-              }
-            }
-          }
-        }
-      }
-      // store retention time for all psms in fss
-      for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter =
-          psmSeq.begin(); psmIter != psmSeq.end(); ++psmIter) {
-        psmIter->observedTime().set(storeMe);
-      }
-      database->putFSS(fss);
-    }
-  }
 }
 
 int Sqt2Pin::run() {
@@ -327,134 +282,18 @@ int Sqt2Pin::run() {
     cerr << "Please invoke sqt2pin with a valid -o option" << endl;
     exit(-1);
   }
-  xercesc::XMLPlatformUtils::Initialize ();
-
-  // initializing xercesc objects corresponding to pin element...
-  // ... <featureDescriptions>
-  std::auto_ptr<percolatorInNs::featureDescriptions>
-  fdes_p (new ::percolatorInNs::featureDescriptions());
-
-  // ... <process_info>
-  percolatorInNs::process_info::command_line_type command_line = call;
-  std::auto_ptr<percolatorInNs::process_info>
-  proc_info (new ::percolatorInNs::process_info(command_line));
-
-  // ... <experiment>
-  std::auto_ptr< ::percolatorInNs::experiment >
-  ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
-
-  int maxCharge = -1;
-  int minCharge = 10000;
-
-  std::cerr << "Reading input from sqt file(s):\n";
- 
-  vector<FragSpectrumScanDatabase*> databases;
-
   
-  if (targetFN != "" && parseOptions.reversedFeaturePattern.empty() ) {
-    // First we only search for the maxCharge and minCharge.
-    // This done by passing the argument justSearchMaxMinCharge
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
-        0, tmpDirs, tmpFNs);
-    SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  SqtReader::justSearchMaxMinCharge, databases,
-        0, tmpDirs, tmpFNs);
-    // Now we do full parsing of the Sqt file, and translating it to XML
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge,  SqtReader::fullParsing, databases,
-        0, tmpDirs, tmpFNs);
-    SqtReader::translateSqtFileToXML(decoyFN, ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::fullParsing, databases,
-        0, tmpDirs, tmpFNs);
-
-  } else {
-    // First we only search for the maxCharge and minCharge.
-    //This done by passing the argument justSearchMaxMinCharge
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), false /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::justSearchMaxMinCharge, databases,
-        0, tmpDirs, tmpFNs);
-    // Now we do full parsing of the Sqt file, and translating it to XML
-    SqtReader::translateSqtFileToXML(targetFN,ex_p->featureDescriptions(),
-        ex_p->fragSpectrumScan(), true /* is_decoy */, parseOptions,
-        &maxCharge, &minCharge, SqtReader::fullParsing, databases,
-        0, tmpDirs, tmpFNs);
-  }
-
-  // read retention time if sqt2pin was invoked with -2 option
-  if (spectrumFile.size() > 0) {
-    readRetentionTime(spectrumFile);
-    databases[0]->initRTime(&scan2rt);
-    storeRetentionTime(databases[0]);
-  }
-
-  xercesc::XMLPlatformUtils::Terminate();
-
-  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-  string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
-      string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
-      " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
-      " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
-      " https://github.com/percolator/percolator/raw/pin-" + schema_major +
-      "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
-  if (xmlOutputFN == "") cout << headerStr;
-  else {
-    xmlOutputStream << headerStr;
-    cerr <<  "The output will be written to " << xmlOutputFN << endl;
-  }
-
-  string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
-  if (xmlOutputFN == "") cout << enzymeStr;
-  else xmlOutputStream << enzymeStr;
-
-  string commandLine = "\n<process_info>\n" +
-      string("  <command_line>") + call.substr(0,call.length()-1)
-      + "</command_line>\n" + "</process_info>\n";
-  if (xmlOutputFN == "") cout << commandLine;
-  else xmlOutputStream << commandLine;
-
-  xercesc::XMLPlatformUtils::Initialize ();
-
-  cerr << "\nWriting output:\n";
-  // print to cout (or populate xml file)
-  // print features
-  {
-    serializer ser;
-    if (xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",
-        ex_p->featureDescriptions());
-  }
-
-  // print fragSpecturmScans
-  std::cerr << "Databases : " << databases.size() << std::endl;
-  for(int i=0; i<databases.size();i++) {
-    serializer ser;
-    if (xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-    if(VERB>1){
-      cerr << "outputting content of " << databases[i]->id
-          << " (and correspondent decoy file)\n";
-    }
-    databases[i]->print(ser);
-    databases[i]->terminte();
-  }
-
-  // print closing tag
-  if (xmlOutputFN == "") std::cout << "</experiment>" << std::endl;
-  else {
-    xmlOutputStream << "</experiment>" << std::endl;
-    xmlOutputStream.close();
-  }
-
-  xercesc::XMLPlatformUtils::Terminate();
-
+  //initialize reader
+  parseOptions.targetFN = targetFN;
+  parseOptions.decoyFN = decoyFN;
+  parseOptions.call = call;
+  parseOptions.spectrumFN = spectrumFile;
+  parseOptions.xmlOutputFN = xmlOutputFN;
+  reader = new SqtReader(&parseOptions);
+  
+  reader->init();
+  reader->print(xmlOutputStream);
+  
   cerr << "\nAll the input files have been successfully processed"<< endl;
 
   return 0;
@@ -470,4 +309,3 @@ int main(int argc, char** argv) {
   Globals::clean();
   return retVal;
 }
-

@@ -4,17 +4,15 @@
 
 set(CMAKE_CXX_FLAGS "-O3")
 set(CMAKE_C_FLAGS "-O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 IF(APPLE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
-  
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mmacosx-version-min=10.5")
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mmacosx-version-min=10.5")
-  
   set(LINK_FLAGS "-mmacosx-version-min=10.5")
 ENDIF(APPLE)
 
@@ -29,7 +27,9 @@ MESSAGE( STATUS "Checking packages:" )
 
 find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
 if(XERCESC_FOUND)
-  message(STATUS "Package Xerces-C++ found: ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
+  message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
+  message(STATUS "       Version: ${XERCESC_VERSION}")
 else(XERCESC_FOUND)
   message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
 endif(XERCESC_FOUND)
@@ -42,25 +42,26 @@ else(XSD_FOUND)
   message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
-  
+
+if(APPLE)
+  SET(Boost_USE_STATIC_LIBS   ON)
+endif(APPLE)
+set(BOOST_MIN_VERSION "1.46.0")
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
-			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47")
-find_package(Boost COMPONENTS filesystem system REQUIRED)
-if(Boost_FOUND)
-  message(STATUS "Package Boost-${Boost_VERSION} found : ${Boost_INCLUDE_DIR}")
-else(Boost_FOUND)
-  message(FATAL_ERROR "The package Boost has not been found")
-endif(Boost_FOUND)  
+			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
+			       "1.48" "1.48.0" "1.49" "1.49.0")
+find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
+#find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
 
-find_package(Pthreads)
-if(PTHREADS_FOUND)
-  message(STATUS  "Pthreads found")
-else(PTHREADS_FOUND)
-  message(FATAL_ERROR "The package Pthreads has not been found")
-endif()
+# find_package(Pthreads)
+# if(PTHREADS_FOUND)
+#   message(STATUS  "Pthreads found")
+# else(PTHREADS_FOUND)
+#   message(FATAL_ERROR "The package Pthreads has not been found")
+# endif()
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -92,8 +93,6 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_definitions(-D_NO_CEPHES -DOLD_BOOST -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_POSIX_SOURCE -D_POSIX_C_SOURCE -D_NOSQLITE)
-
 
 ###############################################################################
 # COMPILE INTERNAL LIBRARIES
@@ -113,12 +112,16 @@ include_directories(. fido)
 # PERCOLATOR
 ###############################################################################
 
-add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp ProteinProbEstimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp)
+add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp 
+								  SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp 
+								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
+								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
+								  PackedMatrix.cpp Matrix.cpp)
 
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)
 
-IF(MINGW OR WIN32)
+IF(MINGW OR WIN32 OR APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
 ENDIF()
 
@@ -126,14 +129,22 @@ if(MINGW OR WIN32)
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
-
+if(PROFILING)
+  set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set(CMAKE_CXX_FLAGS "-Wall -g -pg -fprofile-arcs -ftest-coverage")
+  MESSAGE( STATUS "Profiling mode activated")
+endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido pthread ${PTHREADS_LIBRARIES} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW AND NOT WIN32)
-  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  if(APPLE)
+     install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+  else(APPLE)
+    install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
+  endif(APPLE)
 endif()
 
 ###############################################################################

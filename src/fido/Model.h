@@ -37,6 +37,13 @@ class Model
     alpha = a;
     beta = b;
   }
+  
+  void setAlphaBetaGamma(double a, double b, double g)
+  {
+    alpha = a;
+    beta = b;
+    gamma = g;
+  }
 
   double associatedEmission() const
   {
@@ -50,16 +57,12 @@ class Model
 
   double probabilityNoEmissionFrom(int numActiveProts) const
   {
-    //    return (1-spontaneousEmission())*pow( (1-associatedEmission()), numActiveProts);
-
     // using log for greater precision
     return pow(2.0, log2( 1-spontaneousEmission() )+numActiveProts * log2(1-associatedEmission()) );
   }
 
   double probabilityProteins( int totalProts, int activeProts ) const
   {
-    //    return Combinatorics::binomial(totalProts, activeProts) * pow(gamma, activeProts) * pow(1-gamma, totalProts-activeProts);
-
     // using log for greater precision
     return pow(2.0, Combinatorics::logBinomial(totalProts, activeProts) + activeProts*log2(gamma) + (totalProts-activeProts) * log2(1-gamma) );
   }

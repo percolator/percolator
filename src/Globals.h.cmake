@@ -31,29 +31,43 @@ limitations under the License.
 #ifndef PIN_VERSION_MAJOR
 #define PIN_VERSION_MAJOR @PIN_VERSION_MAJOR@
 #endif
+
 #ifndef POUT_VERSION_MAJOR
 #define POUT_VERSION_MAJOR @POUT_VERSION_MAJOR@
 #endif
+
 #ifndef PIN_VERSION_MINOR
 #define PIN_VERSION_MINOR @PIN_VERSION_MINOR@
 #endif
+
 #ifndef POUT_VERSION_MINOR
 #define POUT_VERSION_MINOR @POUT_VERSION_MINOR@
 #endif
 
+#ifndef PERCOLATOR_IN_NAMESPACE
+  #define PERCOLATOR_IN_NAMESPACE "@percolator-in-namespace@"
+#endif
+
+#ifndef PERCOLATOR_OUT_NAMESPACE
+  #define PERCOLATOR_OUT_NAMESPACE "@percolator-out-namespace@"
+#endif
 
 #ifndef WRITABLE_DIR
 #define WRITABLE_DIR "@WRITABLE_DIR@"
 #endif
+
 #ifndef PIN_SCHEMA_LOCATION
 #define PIN_SCHEMA_LOCATION "@PIN_SCHEMA_LOCATION@"
 #endif
+
 #ifndef POUT_SCHEMA_LOCATION
 #define POUT_SCHEMA_LOCATION "@POUT_SCHEMA_LOCATION@"
 #endif
+
 #ifndef ELUDE_MODELS_PATH
 #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
 #endif
+
 #ifndef TEMP_DIR
 #define TEMP_DIR "@TEMP_DIR@"
 #endif

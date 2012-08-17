@@ -3,6 +3,12 @@
 
 #include "BasicGroupBigraph.h"
 
+BasicGroupBigraph::~BasicGroupBigraph()
+{
+
+}
+
+
 void BasicGroupBigraph::printProteinWeights() const
 {
   Array<double> sorted = proteinsToPSMs.weights;
@@ -36,7 +42,16 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups)
   for (k=0; k<groups.size(); k++)
     {
       groupProtNames[k] = proteinsToPSMs.names[ groups[k] ];
-      originalN[k] = Counter( groups[k].size() );
+      
+      if(!trivialGrouping)
+      { 
+         originalN[k] = Counter( groups[k].size() );
+      }
+      else
+      {
+	  // each group is either present or absent
+         originalN[k] = Counter( 1 );
+      }
     }
 
   // remove all but the first of each group from the graph
@@ -101,7 +116,7 @@ double BasicGroupBigraph::probabilityEEpsilon(const Model & m, int indexEpsilon)
 {
   double tot = 0.0;
   int a = numberAssociatedProteins(indexEpsilon);
-  
+
   for (int k=0; k <= a; k++)
     {
       tot += probabilityEEpsilonGivenActiveAssociatedProteins(m, k) * probabilityNumberAssociatedProteins(m, a, k);
@@ -135,8 +150,6 @@ double BasicGroupBigraph::likelihoodNGivenD(const Model & m, const Array<Counter
       double probEGivenD = PSMsToProteins.weights[k];
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
       double probE = PeptidePrior;
-      // NOTE peptidePrior is 0.07
-      //      double probE = .5;
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
@@ -156,8 +169,6 @@ double BasicGroupBigraph::logLikelihoodNGivenD(const Model & m, const Array<Coun
       double probEGivenD = PSMsToProteins.weights[k];
       double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
       double probE = PeptidePrior;
-      // NOTE peptidePrior is 0.07
-      //      double probE = .5;
       double termE = probEGivenD / probE * probEGivenN;
       double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
       double term = termE + termNotE;
@@ -199,9 +210,6 @@ double BasicGroupBigraph::probabilityNNu(const Model & m, const Counter & nNu) c
 
 double BasicGroupBigraph::probabilityNGivenD(const Model & m, const Array<Counter> & n) const
 {
-  // working version, but numerically unstable
-  //  double like = likelihoodNGivenD(m, n) * probabilityN(m, n) / likelihoodConstantCachedFunctor(m, this);
-  // log version
   double logLike= logLikelihoodNGivenD(m,n) + log2(probabilityN(m,n)) - logLikelihoodConstantCachedFunctor(m,this);
   return pow(2.0, logLike);
 }
@@ -256,10 +264,9 @@ Array<double> BasicGroupBigraph::probabilityEGivenD(const Model & m)
 
   for (Counter::start(n); Counter::inRange(n); Counter::advance(n))
     {
-      // NOTE: should this be logged?
-      Vector term = pow(2.0, logLikelihoodNGivenD(m, n) - logLikelihoodConstantCachedFunctor(m, this) ) * Vector( eCorrection(m, n) );
-      //Vector term = likelihoodNGivenD(m, n)/likelihoodConstantCachedFunctor(m, this) * Vector( eCorrection(m, n) );
-
+      //Vector term = pow(2.0, logLikelihoodNGivenD(m, n) - logLikelihoodConstantCachedFunctor(m, this) ) * Vector( eCorrection(m, n) );
+      Vector term = probabilityNGivenD(m, n) * Vector( eCorrection(m, n) );
+      
       if ( result.size() == 0 )
 	{
 	  result = term;
@@ -279,19 +286,21 @@ Array<double> BasicGroupBigraph::eCorrection(const Model & m, const Array<Counte
 
   for (int k=0; k<result.size(); k++)
     {
-      // NOTE: check this
-
-      double probEGivenD = PSMsToProteins.weights[k];
-      double probEGivenN = probabilityEEpsilonGivenN(m, k, n);
-      double probE = PeptidePrior;
-      // NOTE peptidePrior is 0.07
-      //      double probE = .5;
-      double termE = probEGivenD / probE * probEGivenN;
-      double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
-      double term = termE + termNotE;
+      result[k] = eCorrectionEpsilon(k, m, n);
     }
 
   return result;
+}
+
+double BasicGroupBigraph::eCorrectionEpsilon(int indexEpsilon, const Model & m, const Array<Counter> & n)
+{
+  double probEGivenD = PSMsToProteins.weights[indexEpsilon];
+  double probEGivenN = probabilityEEpsilonGivenN(m, indexEpsilon, n);
+  double probE = PeptidePrior;
+  double termE = probEGivenD / probE * probEGivenN;
+  double termNotE = (1-probEGivenD) / (1-probE) * (1-probEGivenN);
+  double term = termE + termNotE;
+  return termE / term;
 }
 
 Array<double> BasicGroupBigraph::probabilityRGivenD(const Model & m)
@@ -301,7 +310,6 @@ Array<double> BasicGroupBigraph::probabilityRGivenD(const Model & m)
 
   for (Counter::start(n); Counter::inRange(n); Counter::advance(n))
     {
-
       Vector term = probabilityNGivenD(m, n) * Vector( probabilityRGivenN(n) );
 
       if ( result.size() == 0 )
@@ -366,11 +374,6 @@ Array<double> BasicGroupBigraph::probabilityEOverAllAlphaBeta(const GridModel & 
     }
 
   return result;
-}
-
-double BasicGroupBigraph::likelihoodAlphaBetaGivenD(const GridModel & gm) const
-{
-  return likelihoodConstantCachedFunctor(gm, this);
 }
 
 double BasicGroupBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & gm) const

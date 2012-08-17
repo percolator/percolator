@@ -734,10 +734,8 @@ double* RTModel::fillFeaturesIndex(const string& peptide,
 }
 
 void RTModel::calcRetentionFeatures(PSMDescription& psm) {
-  string peptide = psm.getPeptide();
-  string::size_type pos1 = peptide.find('.');
-  string::size_type pos2 = peptide.find('.', ++pos1);
-  string pep = peptide.substr(pos1, pos2 - pos1);
+
+  string pep = psm.getPeptideSequence();
   double* features = psm.getRetentionFeatures();
   // if there is memory allocated
   if (psm.getRetentionFeatures()) {
@@ -1594,10 +1592,7 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription> & psms) {
   }
   // calculate the aa features for all the psms
   for (it = psms.begin(); it != psms.end(); ++it) {
-    string peptide = it->getPeptide();
-    string::size_type pos1 = peptide.find('.');
-    string::size_type pos2 = peptide.find('.', ++pos1);
-    string pep = peptide.substr(pos1, pos2 - pos1);
+    string pep = it->getPeptideSequence();
     double* features = it->getRetentionFeatures();
     // amino acids
     features = fillAAFeatures(inhouseIndexAlphabet, pep, features);

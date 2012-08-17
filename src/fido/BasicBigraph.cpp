@@ -3,27 +3,54 @@
 
 #include "BasicBigraph.h"
 
-BasicBigraph::BasicBigraph() :
-  ProteinIdentifier()
+BasicBigraph::BasicBigraph(): PsmThreshold(0.0),PeptideThreshold(1e-3),ProteinThreshold(1e-3),PeptidePrior(0.1)
 {
   //
 }
 
+BasicBigraph::BasicBigraph(double __psmthreshold, double __peptidethreshold, double __proteinthreshold, double __peptideprior):
+  PsmThreshold(__psmthreshold),PeptideThreshold(__peptidethreshold),ProteinThreshold(__proteinthreshold),PeptidePrior(__peptideprior)
+{
 
-void BasicBigraph::read(Scores* fullset){
+}
+
+BasicBigraph::~BasicBigraph()
+{
+
+}
+
+
+void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides)
+{
   string pepName, protName;
   double value =  -10;
   int pepIndex = -1;
   StringTable PSMNames, proteinNames;
 
   vector<ScoreHolder>::iterator psm = fullset->begin();
-  for (; psm!= fullset->end(); ++psm) {
+  for (; psm!= fullset->end(); ++psm) 
+  {
     // e peptide_string
     pepName = psm->pPSM->peptide;
-    if ( pepName[1] == '.' ) {
+    
+    if ( pepName[1] == '.' ) 
+    {
     // trim off the cleavage events
       pepName = pepName.substr(2, pepName.size()-4 );
     }
+    //NOTE fido will keep only one peptide in the case that a target and a decoy peptide
+    //	    contain the same sequence
+    //     this is a bit of a tricky situation because for separate target-decoy searches
+    //	    two unique peptides ( target and decoy ) might have the same sequence, therefore
+    //	   fido assumes that peptide is connected to the correspondent target and decoy proteins
+    //	   however, this is not the real situation. This scenario is not common but as a very rough
+    //    and quick wordaround I am appending a * to all the decoy peptides to distinguish them
+    //    from the target peptides. 
+    if(psm->isDecoy() && multiple_labeled_peptides)
+    {
+      pepName += "*";
+    }
+    
     if ( PSMNames.lookup(pepName) == -1 ){
       add(PSMsToProteins, PSMNames, pepName);
     }
@@ -31,7 +58,8 @@ void BasicBigraph::read(Scores* fullset){
 
     // r proteins
     set<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
-    for (; pid!= psm->pPSM->proteinIds.end(); ++pid) {
+    for (; pid!= psm->pPSM->proteinIds.end(); ++pid) 
+    {
       protName = getRidOfUnprintablesAndUnicode(*pid);
       if ( proteinNames.lookup(protName) == -1 ){
 	add(proteinsToPSMs, proteinNames, protName);
@@ -39,12 +67,15 @@ void BasicBigraph::read(Scores* fullset){
       connect(PSMNames, pepName, proteinNames, protName);
     }
     // p probability of the peptide match to the spectrum
-    value = 1- psm->pPSM->pep;
+    value = 1 - psm->pPSM->pep;
     PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
  }
 
   PSMsToProteins.names = PSMNames.getItemsByNumber();
   proteinsToPSMs.names = proteinNames.getItemsByNumber();
+  
+  //NOTE this function is assigning PeptideThreshold probablity to all the PSMs with a prob below PeptideThreshold
+  /**pseudoCountPSMs();**/
 }
 
 void BasicBigraph::printGraphStats() const
@@ -76,27 +107,15 @@ void BasicBigraph::saveSeveredProteins()
 
 void BasicBigraph::prune()
 {
-  
   removePoorPSMs();
   removePoorProteins();
   saveSeveredProteins();
   reindex();
-  //  floorLowPSMs();
   markSectionPartitions();
   cloneMultipleMarkedPSMs();
   reindex();
 }
 
-void BasicBigraph::floorLowPSMs()
-{
-  for (int k=0; k<PSMsToProteins.size(); k++)
-    {
-      if ( PSMsToProteins.weights[k] <= PeptideThreshold )
-	{
-	  PSMsToProteins.weights[k] = 0.0;
-	}
-    }
-}
 
 void BasicBigraph::cloneMultipleMarkedPSMs()
 {
@@ -238,7 +257,7 @@ void BasicBigraph::removePoorPSMs()
   int k;
   for (k=0; k<PSMsToProteins.size(); k++)
     {
-      if ( PSMsToProteins.weights[k] < BasicBigraph::PsmThreshold  )
+      if ( PSMsToProteins.weights[k] < PsmThreshold  )
 	{
 	  disconnectPSM(k);
 	}
@@ -388,4 +407,55 @@ Array<BasicBigraph> BasicBigraph::partitionSections()
     }
 
   return result;
+}
+
+void BasicBigraph::pseudoCountPSMs()
+{
+  for (int k=0; k<PSMsToProteins.size(); k++)
+    {
+      if ( PSMsToProteins.weights[k] < PeptideThreshold )
+	{
+	  PSMsToProteins.weights[k] = PeptideThreshold;
+	}
+    }  
+}
+
+void BasicBigraph::setPsmThreshold(double __psm_threshold)
+{
+  PsmThreshold = __psm_threshold;
+}
+
+void BasicBigraph::setPeptideThreshold(double __peptide_threshold)
+{
+  PeptideThreshold = __peptide_threshold;
+}
+
+void BasicBigraph::setProteinThreshold(double __protein_threshold)
+{
+  ProteinThreshold = __protein_threshold;
+}
+
+void BasicBigraph::setPeptidePrior(double __peptide_prior)
+{
+  PeptidePrior = __peptide_prior;
+}
+
+double BasicBigraph::getPeptidePrior()
+{
+  return PeptidePrior;
+}
+
+double BasicBigraph::getPeptideThreshold()
+{
+  return PeptideThreshold;
+}
+
+double BasicBigraph::getProteinThreshold()
+{
+  return ProteinThreshold;
+}
+
+double BasicBigraph::getPsmThreshold()
+{
+  return PsmThreshold; 
 }

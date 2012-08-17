@@ -54,7 +54,8 @@ class CommandLineParser {
       defineOption(shortOpt, longOpt, help, helpType, VALUE, defaultVal);
     }
     void parseArgs(int argc, char** argv);
-    bool optionSet(string dest) {
+    inline bool optionSet(string dest) {
+      //return (options.find(dest) != options.end());
       return (options[dest].length() > 0);
     }
     double getDouble(string dest, double lower, double upper);

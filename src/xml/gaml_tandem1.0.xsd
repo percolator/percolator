@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="http://www.bioml.com/gaml/"  xmlns="http://www.bioml.com/gaml/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" version="1.0">
+	<xsd:annotation>
+		<xsd:documentation>Schema for GAML data in the tandem output xml file. This is version 1.0 of the xsd schema.</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="trace">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="attribute" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element ref="Xdata" maxOccurs="unbounded"/>
+				<xsd:element ref="Ydata" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:attribute name="label" type="name" use="optional"/>
+			<xsd:attribute name="id" type="name" use="optional"/>
+			<xsd:attribute name="type" type="xsd:string" use="required"/>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="attribute">
+  		<xsd:complexType>
+        	<xsd:simpleContent>
+        		<xsd:extension base="xsd:double">
+        			<xsd:attribute name="type" type="xsd:string" use="required">
+        			</xsd:attribute>
+        		</xsd:extension>
+        	</xsd:simpleContent>
+        	</xsd:complexType>
+        </xsd:element>
+	<xsd:element name="Xdata">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="values"/>
+			</xsd:sequence>
+			<xsd:attribute name="units" type="units" use="required"/>
+			<xsd:attribute name="label" type="label" use="optional"/>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Ydata">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="values"/>
+			</xsd:sequence>
+			<xsd:attribute name="units" type="units" use="required"/>
+			<xsd:attribute name="label" type="label" use="optional"/>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="values">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:string">
+					<xsd:attribute name="format" use="required">
+						<xsd:simpleType>
+							<xsd:restriction base="xsd:NMTOKEN">
+								<xsd:enumeration value="FLOAT32"/>
+								<xsd:enumeration value="FLOAT64"/>
+								<xsd:enumeration value="ASCII"/>
+							</xsd:restriction>
+						</xsd:simpleType>
+					</xsd:attribute>
+					<xsd:attribute name="byteorder" use="required">
+						<xsd:simpleType>
+							<xsd:restriction base="xsd:NMTOKEN">
+								<xsd:enumeration value="INTEL"/>
+							</xsd:restriction>
+						</xsd:simpleType>
+					</xsd:attribute>
+					<xsd:attribute name="numvalues" use="optional">
+						<xsd:simpleType>
+							<xsd:restriction base="xsd:positiveInteger"/>
+						</xsd:simpleType>
+					</xsd:attribute>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:simpleType name="group">
+		<xsd:restriction base="xsd:string"/>
+	</xsd:simpleType>
+	<xsd:simpleType name="label">
+		<xsd:restriction base="xsd:string"/>
+	</xsd:simpleType>
+	<xsd:simpleType name="name">
+		<xsd:restriction base="xsd:string"/>
+	</xsd:simpleType>
+	<xsd:simpleType name="units">
+		<xsd:restriction base="xsd:string"/>
+	</xsd:simpleType>
+</xsd:schema>

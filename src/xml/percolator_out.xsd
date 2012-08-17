@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-xmlns="http://per-colator.com/percolator_out/13" 
-targetNamespace="http://per-colator.com/percolator_out/13"
+xmlns="http://per-colator.com/percolator_out/14" 
+targetNamespace="http://per-colator.com/percolator_out/14"
 elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 <!-- define some general types -->
@@ -26,7 +26,8 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 	<xsd:simpleType name="aa_seq_t">
 	  <xsd:restriction base="xsd:string">
-	    <xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])?[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])?[A-Z]+)"/>
+	    <xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])*[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])*[A-Z]+)"/>
+	    <!--xsd:pattern value="([A-Z]+(\[UNIMOD:[0-9]+\])?[A-Z]*)|([A-Z]*(\[UNIMOD:[0-9]+\])?[A-Z]+)"/>-->
 	  </xsd:restriction>
 	</xsd:simpleType>
 	
@@ -46,6 +47,13 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
       <xsd:element name="pi_0_psms" type="probability_t" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="pi_0_peptides" type="probability_t" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="pi_0_proteins" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="fdr_proteins" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="alpha" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="beta" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="gamma" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="psms_qlevel" type="xsd:double" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="peptides_qlevel" type="xsd:double" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="proteins_qlevel" type="xsd:double" minOccurs="0" maxOccurs="1"/>
       <xsd:element minOccurs="0" name="average_delta_mass" type="xsd:double"/>
       <xsd:element minOccurs="0" name="average_pi" type="xsd:double"/>
       <xsd:element maxOccurs="unbounded" minOccurs="0" name="comment">
@@ -69,6 +77,12 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 <xsd:element name="q_value" type="probability_t">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">The PSMs q-value, i.e. the expected fraction of incorrect identifications up to this PSM score</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+<xsd:element name="q_value_emp" type="probability_t">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The Protein empirical q-value, i.e. the expected fraction of incorrect identifications up to this Protein score</xsd:documentation>
   </xsd:annotation>
 </xsd:element>
 
@@ -217,8 +231,10 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
 <xsd:element name="protein">
   <xsd:complexType>
     <xsd:sequence>
-      <xsd:element ref="pep" minOccurs="0" maxOccurs="1"/>
-      <xsd:element ref="q_value"/>
+      <xsd:element ref="pep" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="q_value" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="q_value_emp" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="p_value" minOccurs="0" maxOccurs="1"/>
       <xsd:element ref="peptide_seq" maxOccurs="unbounded"/>
     </xsd:sequence>
     <xsd:attribute ref="protein_id" use="required"/>

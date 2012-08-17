@@ -92,6 +92,17 @@ int CommandLineParser::getInt(string dest, int lower, int upper) {
 void CommandLineParser::defineOption(string shortOpt, string longOpt,
                                      string help, string helpType,
                                      OptionOption typ, string dfault) {
+  
+  //NOTE brute force to check if the option is already defined
+  for(std::vector<Option>::const_iterator it = opts.begin();
+      it != opts.end(); it++)
+      {
+	if((*it).shortOpt == shortOpt || (*it).longOpt == longOpt)
+	{
+	  std::cerr << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::cerr;
+	  exit(-1);
+	}
+      }
   opts.insert(opts.begin(), Option("-" + shortOpt,
                                    "--" + longOpt,
                                    shortOpt,

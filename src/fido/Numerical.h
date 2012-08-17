@@ -24,6 +24,11 @@ class Numerical
       epsilon = eps;
     }
 
+  virtual ~Numerical()
+    {
+      
+    }
+    
   bool isPos(double d);
   bool isNonpos(double d);
   bool isNeg(double d);
@@ -43,14 +48,11 @@ class Numerical
   }
   static double logAdd(double logA, double logB)
   {
-    // returns log(a*b)
     if ( logA < logB )
     {
       return logAdd(logB, logA);
     }
-
     // assume logA <= logB
-
     // when one of the terms is very small, then just use the other term
     if ( isinf(logA) && logA < 0 )
       return logB;

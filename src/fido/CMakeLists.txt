@@ -1,6 +1,6 @@
 include_directories(${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
-file(GLOB FIDO_SOURCES Set.cpp Vector.cpp PackedVector.cpp Numerical.cpp Matrix.cpp PackedMatrix.cpp GramSchmidt.cpp LPSolver.cpp ForwardSampler.cpp Random.cpp ProteinIdentifier.cpp BasicBigraph.cpp BasicGroupBigraph.cpp GroupPowerBigraph.cpp PivdoSplitter.cpp)
+file(GLOB FIDO_SOURCES Set.cpp Vector.cpp Numerical.cpp Random.cpp BasicBigraph.cpp BasicGroupBigraph.cpp GroupPowerBigraph.cpp)
 add_library(fido ${FIDO_SOURCES})
 

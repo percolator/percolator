@@ -16,6 +16,7 @@
  *******************************************************************************/
 #ifndef SCORES_H_
 #define SCORES_H_
+
 #ifdef WIN32
 // #ifndef uint32_t
 // #define uint32_t unsigned long
@@ -24,16 +25,15 @@
 // #define uint64_t unsigned long long
 // #endif
 #else
-
-#include <stdint.h>
+  #include <stdint.h>
 #endif
+
 #include <vector>
 #include <map>
 #include <iostream>
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
-
 #include "percolator_out.hxx"
 
 class SetHandler;
@@ -42,9 +42,8 @@ class ScoreHolder {
   public:
     double score; // ,q,pep;
     PSMDescription* pPSM;
-    //  const double * featVec;
     int label;
-    /* this container holds the psms for each peptide, they have be unique */
+    /* this container holds the psms for each peptide, they have to be unique */
     std::vector<std::string> psms_list;
     
     ScoreHolder() :
@@ -73,32 +72,14 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
-
-struct lexicOrder : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return __x.pPSM->getPeptide() < __y.pPSM->getFullPeptide();
-  }
-};
-
+	
 struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->getPeptide() < __y.pPSM->getFullPeptide() ) 
-    || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label != __y.label) )
-    || ( (__x.pPSM->getPeptide() == __y.pPSM->getFullPeptide()) && (__x.label == __y.label)
+    return ( (__x.pPSM->getPeptideSequence() < __y.pPSM->getPeptideSequence() ) 
+    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label > __y.label) )
+    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label == __y.label)
       && (__x.score > __y.score) ) );
-  }
-};
-
-
-struct lexicEq : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    string xPept = __x.pPSM->getPeptideSequence();
-    string yPept = __y.pPSM->getPeptideSequence();
-    if(xPept.compare(yPept) == 0) return true;
-    else return false;
   }
 };
 
@@ -106,6 +87,7 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
   for (int jj = 0; jj < inpString.size(); jj++) {
     signed char ch = inpString[jj];
+    //NOTE signed char ranges -128 to 127
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
       outputs += ch;
     }
@@ -142,6 +124,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
 class AlgIn;
 
 class Scores {
+  
   public:
     Scores();
     ~Scores();
@@ -180,9 +163,6 @@ class Scores {
       return pi0;
     }
     
-    /** Return a list of peptides that are matching the given protein name **/
-    std::vector<std::string> getPeptides(std::string proteinName);
-    
     /** Return the scores whose q value is less or equal than the threshold given**/
     unsigned getQvaluesBelowLevel(double level);
     
@@ -219,7 +199,9 @@ class Scores {
     double pi0;
     double targetDecoySizeRatio;
     vector<ScoreHolder> scores;
+    
   protected:
+    
     vector<double> w_vec;
     int totalNumberOfDecoys, totalNumberOfTargets, posNow;
     std::map<const double*, ScoreHolder*> scoreMap;

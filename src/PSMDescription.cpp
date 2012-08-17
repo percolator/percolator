@@ -57,42 +57,42 @@ bool PSMDescription::isSubPeptide(string& child, string& parent) {
   return parent.length() > child.length();
 }
 
-void PSMDescription::checkFragmentPeptides(
-                                           vector<PSMDescription>::reverse_iterator other,
-                                           vector<PSMDescription>::reverse_iterator theEnd) {
+void PSMDescription::checkFragmentPeptides(vector<PSMDescription*>::reverse_iterator other,
+                                           vector<PSMDescription*>::reverse_iterator theEnd) {
   for (; other != theEnd; ++other) {
-    if (abs(retentionTime - other->retentionTime) > 0.02) {
+    if (abs(retentionTime - (*other)->retentionTime) > 0.02) {
       return;
     }
-    if (isSubPeptide(peptide, other->getFullPeptide())) {
+    if (isSubPeptide(peptide, (*other)->getFullPeptide())) {
       if (parentFragment == NULL
           || parentFragment->getFullPeptide().length()
-              < other->getFullPeptide().length()) {
-        parentFragment = other->getAParent();
+              < (*other)->getFullPeptide().length()) {
+        parentFragment = (*other)->getAParent();
         //        cerr << parentFragment->getFullPeptide() << " " << peptide << endl;
       }
     }
-    if (isSubPeptide(other->peptide, getFullPeptide())) {
-      if (other->parentFragment == NULL
-          || other->parentFragment->peptide.length()
+    if (isSubPeptide((*other)->peptide, getFullPeptide())) {
+      if ((*other)->parentFragment == NULL
+          || (*other)->parentFragment->peptide.length()
               < getFullPeptide().length()) {
-        other->parentFragment = getAParent();
+        (*other)->parentFragment = getAParent();
         //          cerr << getFullPeptide() << " " << getFullPeptide().length() << " " << other->peptide << " " << other->peptide.length() << endl;
       }
     }
   }
 }
 
-void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<
-    int, double>& scan2rt) {
-  vector<PSMDescription>::iterator psm = psms.begin();
+
+void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, double>& scan2rt) 
+{
+  vector<PSMDescription*>::iterator psm = psms.begin();
   if (scan2rt.size() == 0) {
-    if (psm->retentionTime > 0) {
+    if ((*psm)->retentionTime > 0) {
       if (normDiv < 0) {
         double minRT = 1e10, maxRT = -1;
         for (; psm != psms.end(); ++psm) {
-          minRT = min(minRT, psm->retentionTime);
-          maxRT = max(maxRT, psm->retentionTime);
+          minRT = min(minRT, (*psm)->retentionTime);
+          maxRT = max(maxRT, (*psm)->retentionTime);
         }
         psm = psms.begin();
         normDiv = (maxRT - minRT) / 2.;
@@ -102,20 +102,19 @@ void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<
         }
       }
       for (; psm != psms.end(); ++psm) {
-        psm->retentionTime = (psm->retentionTime - normSub) / normDiv;
+        (*psm)->retentionTime = ((*psm)->retentionTime - normSub) / normDiv;
         if (psm == psms.begin()) {
           continue;
         }
-        vector<PSMDescription>::reverse_iterator rpsm(psm);
-        psm->checkFragmentPeptides(rpsm, psms.rend());
+	vector<PSMDescription*>::reverse_iterator rpsm(psm);
+        (*psm)->checkFragmentPeptides(rpsm, psms.rend());
       }
     } else {
       if (VERB > 1) {
         cerr << "Approximating retention time with scan number." << endl;
       }
       if (normDiv < 0) {
-        double minRT = (double)psm->scan, diffRT = psms.rbegin()->scan
-            - psm->scan;
+        double minRT = (double)(*psm)->scan, diffRT = (*psms.rbegin())->scan - (*psm)->scan;
         normDiv = diffRT / 2.;
         normSub = minRT + normDiv;
         if (normDiv == 0.0) {
@@ -123,18 +122,17 @@ void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<
         }
       }
       for (; psm != psms.end(); ++psm) {
-        psm->retentionTime = ((double)psm->scan - normSub) / normDiv;
+        (*psm)->retentionTime = ((double)(*psm)->scan - normSub) / normDiv;
         if (psm == psms.begin()) {
           continue;
         }
-        vector<PSMDescription>::reverse_iterator rpsm(psm);
-        psm->checkFragmentPeptides(rpsm, psms.rend());
+	vector<PSMDescription*>::reverse_iterator rpsm(psm);
+        (*psm)->checkFragmentPeptides(rpsm, psms.rend());
       }
     }
   } else {
     if (normDiv < 0) {
-      double minRT = scan2rt.begin()->second, diffRT =
-          scan2rt.rbegin()->second - minRT;
+      double minRT = scan2rt.begin()->second, diffRT = scan2rt.rbegin()->second - minRT;
       normDiv = diffRT / 2.;
       normSub = minRT + normDiv;
       if (normDiv == 0.0) {
@@ -142,13 +140,13 @@ void PSMDescription::setRetentionTime(vector<PSMDescription>& psms, map<
       }
     }
     for (; psm != psms.end(); ++psm) {
-      assert(scan2rt.count(psm->scan) > 0);
-      psm->retentionTime = (scan2rt[psm->scan] - normSub) / normDiv;
+      assert(scan2rt.count((*psm)->scan) > 0);
+      (*psm)->retentionTime = (scan2rt[(*psm)->scan] - normSub) / normDiv;
       if (psm == psms.begin()) {
         continue;
       }
-      vector<PSMDescription>::reverse_iterator rpsm(psm);
-      psm->checkFragmentPeptides(rpsm, psms.rend());
+      vector<PSMDescription*>::reverse_iterator rpsm(psm);
+      (*psm)->checkFragmentPeptides(rpsm, psms.rend());
     }
   }
 }
@@ -167,8 +165,7 @@ void PSMDescription::setPSMSet(vector<PSMDescription> & psms) {
   }
 }
 
-vector<double*> PSMDescription::getRetFeatures(
-                                               vector<PSMDescription> & psms) {
+vector<double*> PSMDescription::getRetFeatures(vector<PSMDescription> & psms) {
   vector<double*> features;
   for (int i = 0; i < psms.size(); ++i) {
     features.push_back(psms[i].getRetentionFeatures());

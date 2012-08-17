@@ -26,8 +26,7 @@ MassHandler::~MassHandler() {
 
 bool MassHandler::monoisotopic = false;
 
-double MassHandler::massDiff(double observedMass, double calculatedMass,
-                             unsigned int charge, const string& peptide) {
+double MassHandler::massDiff(double observedMass, double calculatedMass, unsigned int charge) {
   assert(charge > 0);
   double dm = observedMass - calculatedMass;
   if (monoisotopic) {
