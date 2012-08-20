@@ -34,6 +34,9 @@
 using namespace std;
 using namespace xercesc;
 
+const unsigned int Caller::xval_fold = 3;
+const double requiredIncreaseOver2Iterations = 0.01d;
+
 /** some constants to be used to compare xml strings **/
 
 //databases
@@ -65,8 +68,6 @@ static const XMLCh fragSpectrumScanStr[] = { chLatin_f, chLatin_r,
       
 /** some constants to be used to compare xml strings **/
       
-const unsigned int Caller::xval_fold = 3;
-
 Caller::Caller() :
         pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
         forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
@@ -855,7 +856,8 @@ int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
       estTP += xv_process_one_bin(set,w,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);   
     }
   } else {
-    // Use limited internal cross validation
+    // Use limited internal cross validation, i.e take the cpos and cfrac values of the first bin 
+    // and use it for the subsequent bins 
     estTP += xv_process_one_bin(0,w,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);
     vector<double> cp(1),cf(1);
     cp[0]=best_cpos; cf[0]= best_cfrac;
@@ -888,12 +890,17 @@ void Caller::train(vector<vector<double> >& w) {
         printWeights(cerr, w[set]);
       }
     }
+    if (foundPositives>0 && foundPositivesOldOld>0 && quickValidation) {
+      if ((double)(foundPositives-foundPositivesOldOld)<=(foundPositivesOldOld*requiredIncreaseOver2Iterations)) {
+        if (VERB > 1) {
+          cerr << "Performance increase over the last two iterations indicate that the algorithm has converged" << endl;
+          cerr << "(" << foundPositives << " vs " << foundPositivesOldOld << ")" << endl;
+        }
+        break;
+      }
+    }    
     foundPositivesOldOld=foundPositivesOld;    
     foundPositivesOld=foundPositives;
-    if (foundPositives>0 && foundPositivesOldOld>0) {
-      if ((double)(foundPositives-foundPositivesOldOld)<=(foundPositivesOldOld*0.05d))
-        break;
-    }    
   }
   if (VERB == 2) {
     cerr

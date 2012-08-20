@@ -121,13 +121,11 @@ void Reader::init()
   
   if (!po->iscombined) 
   {
-    std::cerr << "Reading input from files: " <<  std::endl;
     translateFileToXML(po->targetFN, false /* is_decoy */,0,isMeta);
     translateFileToXML(po->decoyFN, true /* is_decoy */,0,isMeta);
   } 
   else 
   {
-    std::cerr << "Reading input from a combined (target-decoy) file .." << std::endl;
     translateFileToXML(po->targetFN, false /* is_decoy */,0,isMeta);
   }
 
@@ -160,7 +158,8 @@ void Reader::print(ofstream &xmlOutputStream)
   else 
   {
     xmlOutputStream << headerStr;
-    cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
+    if (VERB>2)
+      cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
   }
 
   string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
@@ -189,7 +188,8 @@ void Reader::print(ofstream &xmlOutputStream)
   else 
     xmlOutputStream << commandLine;
 
-  cerr << "\nWriting output:\n";
+  if(VERB>2)
+     cerr << "\nWriting output:\n";
   // print to cout (or populate xml file)
   // print features
   {
@@ -200,12 +200,13 @@ void Reader::print(ofstream &xmlOutputStream)
   }
 
   // print fragSpecturmScans
+  if (VERB>2)
   std::cerr << "Databases : " << databases.size() << std::endl;
   for(int i=0; i<databases.size();i++) {
     serializer ser;
     if (po->xmlOutputFN == "") ser.start (std::cout);
     else ser.start (xmlOutputStream);
-    if(VERB>1){
+    if(VERB>2){
       cerr << "outputting content of " << databases[i]->id
           << " (and correspondent decoy file)\n";
     }
@@ -318,7 +319,8 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned in
     
     } else {
       // we hopefully found a meta file
-      std::cerr << "Found a meta file" << std::endl;
+      if (VERB>1)
+        std::cerr << "Found a meta file: " << fn <<std::endl;
       unsigned int lineNumber=0;
       std::string line2;
       std::ifstream meta(fn.data(), std::ios::in);
@@ -462,7 +464,8 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     filebuf fb;
     fb.open (seqfile,ios::in);
     istream buffer(&fb);
-    std::cerr << "Reading fasta file : " << seqfile << std::endl;
+    if (VERB>1)
+      std::cerr << "Reading fasta file : " << seqfile << std::endl;
     if (!buffer.eof()) {
 	  wchar_t c;
 	  while (!buffer.eof()) {
@@ -496,7 +499,8 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     }
     else
     {
-      std::cerr <<  "Error reading combined database : " << seqfile <<  std::endl;
+      if (VERB>1)
+        std::cerr <<  "Error reading combined database : " << seqfile <<  std::endl;
       exit(-1);
     }
   

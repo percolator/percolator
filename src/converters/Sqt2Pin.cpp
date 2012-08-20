@@ -294,7 +294,8 @@ int Sqt2Pin::run() {
   reader->init();
   reader->print(xmlOutputStream);
   
-  cerr << "\nAll the input files have been successfully processed"<< endl;
+  if (VERB>2)
+    cerr << "\nAll the input files have been successfully processed"<< endl;
 
   return 0;
 }
