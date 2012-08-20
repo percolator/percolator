@@ -122,7 +122,7 @@ void BaseSpline::iterativeReweightedLeastSquares() {
       if (VERB > 2) {
         cerr << "step size:" << step << endl;
       }
-    } while ((step > stepEpsilon || step <= 0.0) && (++iter < 20));
+    } while ((step > stepEpsilon || step < 0.0) && (++iter < 20));
     double p1 = 1 - tao;
     double p2 = tao;
     pair<double, double> res =

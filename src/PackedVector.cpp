@@ -153,8 +153,7 @@ void PackedVector::displayVector() const {
 }
 
 double packedNorm(const PackedVector & vec){
-  //return sqrt(vec.packedDotProd(vec));
-  return sqrt(vec*vec);
+  return sqrt(vec.packedDotProd(vec));
 }
 
 bool operator == (const PackedVector & lhs, const PackedVector & rhs){
