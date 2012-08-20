@@ -72,7 +72,7 @@ Caller::Caller() :
         forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
         xmlInputFN(""), xmlOutputFN(""), weightFN(""),
         tabInput(false), readStdIn(false),
-        docFeatures(false), reportPerformanceEachIteration(false),
+        docFeatures(false), quickValidation(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
         schemaValidation(true), hasProteins(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
@@ -171,11 +171,16 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("t",
       "testFDR",
       "False discovery rate threshold for evaluating best cross validation result and the reported end result. Default is 0.01.",
-      "value");
+      "value"); 
   cmd.defineOption("i",
       "maxiter",
       "Maximal number of iterations",
       "number");
+  cmd.defineOption("x",
+      "quick-validation",
+      "Quicker execution by reduced internal cross-validation.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("f",
       "train-ratio",
       "Fraction of the negative data set to be used as train set when only providing one negative set, \
@@ -340,7 +345,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "protein-results",
       "Output tab delimited protein probabilities results to a file instead of stdout",
       "filename");
-  cmd.defineOption("RT",
+  cmd.defineOption("T",
       "reduce-tree",
       "Reduce the tree of proteins in order to estimate alpha,beta and gamma faster.(Only valid if option -A is active).",
       "",
@@ -380,7 +385,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool noseparate = cmd.optionSet("E");
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
-    bool reduceTree = cmd.optionSet("RT");
+    bool reduceTree = cmd.optionSet("T");
     
     if (cmd.optionSet("PR")) {
       proteinFN = cmd.options["PR"];
@@ -475,8 +480,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("R")) {
     reportPerformanceEachIteration = true;
   }
-  if (cmd.optionSet("i")) {
-    niter = cmd.getInt("i", 0, 100000000);
+  if (cmd.optionSet("x")) {
+    quickValidation=true;
   }
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
@@ -760,101 +765,120 @@ void Caller::readFiles() {
   } 
 }
 
+/* Train one of the crossvalidation bins */
+
+int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, bool updateDOC, vector<double>& cpos_vec, 
+                               vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
+options * pOptions) {
+  int bestTP = 0;
+  if (VERB > 2) {
+    cerr << "cross calidation - fold " << set + 1 << " out of "
+         << xval_fold << endl;
+  }
+  vector<double> ww = w[set];
+  vector<double> bestW = w[set];
+  xv_train[set].calcScores(ww, selectionfdr);
+  if (docFeatures && updateDOC) {
+    xv_train[set].recalculateDescriptionOfGood(selectionfdr);
+  }
+  xv_train[set].generateNegativeTrainingSet(*svmInput, 1.0);
+  xv_train[set].generatePositiveTrainingSet(*svmInput, selectionfdr, 1.0);
+  if (VERB > 2) {
+    cerr << "Calling with " << svmInput->positives << " positives and "
+         << svmInput->negatives << " negatives\n";
+  }
+  struct vector_double* Outputs = new vector_double;
+  Outputs->vec = new double[svmInput->positives + svmInput->negatives];
+  Outputs->d = svmInput->positives + svmInput->negatives;
+  vector<double>::iterator cpos, cfrac;
+  for (cpos = cpos_vec.begin(); cpos != cpos_vec.end(); cpos++) {
+    for (cfrac = cfrac_vec.begin(); cfrac != cfrac_vec.end(); cfrac++) {
+      if (VERB > 2) cerr << "-cross validation with cpos=" << *cpos
+          << ", cfrac=" << *cfrac << endl;
+      int tp = 0;
+      for (int ix = 0; ix < pWeights->d; ix++) {
+        pWeights->vec[ix] = 0;
+      }
+      for (int ix = 0; ix < Outputs->d; ix++) {
+        Outputs->vec[ix] = 0;
+      }
+      svmInput->setCost(*cpos, (*cpos) * (*cfrac));
+      L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+      for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+        ww[i] = pWeights->vec[i];
+      }
+      tp = xv_train[set].calcScores(ww, test_fdr);
+      if (VERB > 2) {
+        cerr << "- cross validation estimates " << tp
+             << " target PSMs over " << test_fdr * 100 << "% FDR level"
+             << endl;
+      }
+      if (tp >= bestTP) {
+        if (VERB > 2) {
+          cerr << "Better than previous result, store this" << endl;
+        }
+        bestTP = tp;
+        bestW = ww;
+        best_cpos = *cpos;
+        best_cfrac = *cfrac;
+      }
+    }
+    if (VERB > 2) cerr << "cross validation estimates " << bestTP
+        / (xval_fold - 1) << " target PSMs with q<" << test_fdr
+        << " for hyperparameters Cpos=" << best_cpos << ", Cneg="
+        << best_cfrac * best_cpos << endl;
+  }
+  w[set]=bestW;
+  delete[] Outputs->vec;
+  delete Outputs;
+  return bestTP;
+}
+
 /**
  * cross validation step
  */
 int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
   // Setup
-  struct options* Options = new options;
-  Options->lambda = 1.0;
-  Options->lambda_u = 1.0;
-  Options->epsilon = EPSILON;
-  Options->cgitermax = CGITERMAX;
-  Options->mfnitermax = MFNITERMAX;
-  struct vector_double* Weights = new vector_double;
-  Weights->d = FeatureNames::getNumFeatures() + 1;
-  Weights->vec = new double[Weights->d];
-  vector<vector<double> > best_w(xval_fold);
+  struct options* pOptions = new options;
+  pOptions->lambda = 1.0;
+  pOptions->lambda_u = 1.0;
+  pOptions->epsilon = EPSILON;
+  pOptions->cgitermax = CGITERMAX;
+  pOptions->mfnitermax = MFNITERMAX;
+  struct vector_double* pWeights = new vector_double;
+  pWeights->d = FeatureNames::getNumFeatures() + 1;
+  pWeights->vec = new double[pWeights->d];
   int estTP = 0;
-  for (unsigned int set = 0; set < xval_fold; ++set) {
-    int bestTP = 0;
-    double best_cpos = 1, best_cneg = 1;
-    if (VERB > 2) {
-      cerr << "cross calidation - fold " << set + 1 << " out of "
-          << xval_fold << endl;
+  double best_cpos = 1, best_cfrac = 1;
+  if (!quickValidation) {
+    for (unsigned int set = 0; set < xval_fold; ++set) {
+      estTP += xv_process_one_bin(set,w,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);   
     }
-    vector<double> ww = w[set];
-    xv_train[set].calcScores(ww, selectionfdr);
-    if (docFeatures && updateDOC) {
-      xv_train[set].recalculateDescriptionOfGood(selectionfdr);
+  } else {
+    // Use limited internal cross validation
+    estTP += xv_process_one_bin(0,w,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);
+    vector<double> cp(1),cf(1);
+    cp[0]=best_cpos; cf[0]= best_cfrac;
+    for (unsigned int set = 1; set < xval_fold; ++set) {
+      estTP += xv_process_one_bin(set,w,updateDOC, cp, cf, best_cpos, best_cfrac, pWeights, pOptions);   
     }
-    xv_train[set].generateNegativeTrainingSet(*svmInput, 1.0);
-    xv_train[set].generatePositiveTrainingSet(*svmInput, selectionfdr, 1.0);
-    if (VERB > 2) {
-      cerr << "Calling with " << svmInput->positives << " positives and "
-          << svmInput->negatives << " negatives\n";
-    }
-    struct vector_double* Outputs = new vector_double;
-    Outputs->vec = new double[svmInput->positives + svmInput->negatives];
-    Outputs->d = svmInput->positives + svmInput->negatives;
-    vector<double>::iterator cpos, cfrac;
-    for (cpos = xv_cposs.begin(); cpos != xv_cposs.end(); cpos++) {
-      for (cfrac = xv_cfracs.begin(); cfrac != xv_cfracs.end(); cfrac++) {
-        if (VERB > 2) cerr << "-cross validation with cpos=" << *cpos
-            << ", cfrac=" << *cfrac << endl;
-        int tp = 0;
-        for (int ix = 0; ix < Weights->d; ix++) {
-          Weights->vec[ix] = 0;
-        }
-        for (int ix = 0; ix < Outputs->d; ix++) {
-          Outputs->vec[ix] = 0;
-        }
-        svmInput->setCost(*cpos, (*cpos) * (*cfrac));
-        L2_SVM_MFN(*svmInput, Options, Weights, Outputs);
-        for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-          ww[i] = Weights->vec[i];
-        }
-        tp = xv_train[set].calcScores(ww, test_fdr);
-        if (VERB > 2) {
-          cerr << "- cross validation estimates " << tp
-              << " target PSMs over " << test_fdr * 100 << "% FDR level"
-              << endl;
-        }
-        if (tp >= bestTP) {
-          if (VERB > 2) {
-            cerr << "Better than previous result, store this" << endl;
-          }
-          bestTP = tp;
-          best_w[set] = ww;
-          best_cpos = *cpos;
-          best_cneg = (*cpos) * (*cfrac);
-        }
-      }
-      if (VERB > 2) cerr << "cross validation estimates " << bestTP
-          / (xval_fold - 1) << " target PSMs with q<" << test_fdr
-          << " for hyperparameters Cpos=" << best_cpos << ", Cneg="
-          << best_cneg << endl;
-    }
-    estTP += bestTP;
-    delete[] Outputs->vec;
-    delete Outputs;
   }
-  w = best_w;
-  delete[] Weights->vec;
-  delete Weights;
-  delete Options;
+  delete[] pWeights->vec;
+  delete pWeights;
+  delete pOptions;
   return estTP / (xval_fold - 1);
 }
 
 void Caller::train(vector<vector<double> >& w) {
   // iterate
+  int foundPositivesOldOld=0, foundPositivesOld=0, foundPositives=0; 
   for (unsigned int i = 0; i < niter; i++) {
     if (VERB > 1) {
       cerr << "Iteration " << i + 1 << " :\t";
     }
-    int tar = xv_step(w, true);
+    foundPositives = xv_step(w, true);
     if (VERB > 1) {
-      cerr << "After the iteration step, " << tar
+      cerr << "After the iteration step, " << foundPositives
           << " target PSMs with q<" << selectionfdr
           << " were estimated by cross validation" << endl;
     }
@@ -864,6 +888,12 @@ void Caller::train(vector<vector<double> >& w) {
         printWeights(cerr, w[set]);
       }
     }
+    foundPositivesOldOld=foundPositivesOld;    
+    foundPositivesOld=foundPositives;
+    if (foundPositives>0 && foundPositivesOldOld>0) {
+      if ((double)(foundPositives-foundPositivesOldOld)<=(foundPositivesOldOld*0.05d))
+        break;
+    }    
   }
   if (VERB == 2) {
     cerr
@@ -871,16 +901,16 @@ void Caller::train(vector<vector<double> >& w) {
     << endl;
     printWeights(cerr, w[0]);
   }
-  int tar = 0;
+  foundPositives = 0;
   for (size_t set = 0; set < xval_fold; ++set) {
     if (docFeatures) {
       xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
       xv_test[set].setDOCFeatures();
     }
-    tar += xv_test[set].calcScores(w[set], test_fdr);
+    foundPositives += xv_test[set].calcScores(w[set], test_fdr);
   }
   if (VERB > 0) {
-    cerr << "After all training done, " << tar << " target PSMs with q<"
+    cerr << "After all training done, " << foundPositives << " target PSMs with q<"
         << test_fdr << " were found when measuring on the test set"
         << endl;
   }

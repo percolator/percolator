@@ -69,6 +69,11 @@ class Caller {
     Caller(bool uniquePeptides);
     virtual ~Caller();
     void train(vector<vector<double> >& w);
+    int xv_process_one_bin(unsigned int set, vector<vector<double> >& w, 
+                           bool updateDOC, vector<double>& cpos_vec, 
+			   vector<double>& cfrac_vec, double& best_cpos, 
+                           double &best_cfrac, vector_double* pWeights,
+                           options * pOptions);
     int xv_step(vector<vector<double> >& w, bool updateDOC = false);
     static string greeter();
     string extendedGreeter();
@@ -132,6 +137,7 @@ class Caller {
     bool outputAll;
     bool tabInput;
     bool docFeatures;
+    bool quickValidation;
     bool reportPerformanceEachIteration;
     bool reportUniquePeptides;
     bool calculateProteinLevelProb;
