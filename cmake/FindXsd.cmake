@@ -7,20 +7,20 @@
 # XSD_FOUND, If false, don't try to use it.
 
 FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
+  ${CMAKE_PREFIX_PATH}
+  ${CMAKE_PREFIX_PATH}/include
+  $ENV{XSDDIR}
+  $ENV{XSDDIR}/include
   "[HKEY_CURRENT_USER\\software\\xsd\\include]"
   "[HKEY_CURRENT_USER]\\xsd\\include]"
   /usr/local/include
   /usr/include
-  $ENV{XSDDIR}/include
-  ${CMAKE_PREFIX_PATH}/include
   "C:/Program Files/CodeSynthesis XSD 3.3/include"
   "D:/Program Files/CodeSynthesis XSD 3.3/include"
   "[HKEY_CURRENT_USER\\software\\xsd]"
   "[HKEY_CURRENT_USER]\\xsd]"
   /usr/local
   /usr
-  $ENV{XSDDIR}
-  ${CMAKE_PREFIX_PATH}
   "C:/Program Files/CodeSynthesis XSD 3.3"
   "D:/Program Files/CodeSynthesis XSD 3.3"
 )
@@ -30,11 +30,13 @@ FIND_PROGRAM(XSD_EXECUTABLE
   NAMES 
     xsd xsdcxx
   PATHS
+    ${CMAKE_PREFIX_PATH}
+    ${CMAKE_PREFIX_PATH}/bin
+    $ENV{XSDDIR}/bin
     "[HKEY_CURRENT_USER\\xsd\\bin]"
     /usr/local/bin
     /usr/bin
-    ${CMAKE_PREFIX_PATH}/bin
-    "[HKEY_CURRENT_USER\\xsd\\bin]" $ENV{XSDDIR}/bin
+    "[HKEY_CURRENT_USER\\xsd\\bin]"
     "C:/Program Files/CodeSynthesis XSD 3.3/bin"
     "D:/Program Files/CodeSynthesis XSD 3.3/bin"
 )
