@@ -438,11 +438,11 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std
    * They do not consider protein containing both decoy and target psms
    * Also, mayu estimates q as the empirical (target-decoy) q value.
    * Percolator estimates q as the empirical (target-decoy) q value and adjusted by pi0
-   * Mayu extract the list of TP and FP proteins from PSM level whereas percolator
+   * Mayu extracts the list of TP and FP proteins from PSM level whereas percolator
    * extract the list of TP and FP proteins from peptide level, this avoids redundancy and
    * gives a better calibration since peptide level q values are re-adjusted in percolator.
-   * This creates sometimes a difference in the number of TP and FP proteins which causes a difference
-   * in the estimated protein FDR
+   * This creates sometimes a difference in the number of TP and FP proteins between percolator and Mayus 
+   * which causes a slight difference in the estimated protein FDR
    */
   for (std::map<std::string,Protein*>::const_iterator it = proteins.begin();
        it != proteins.end(); it++)
@@ -782,19 +782,19 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
     
     case 1:
       gamma_search = boost::assign::list_of(0.1)(0.25)(0.5);
-      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.025)(0.035)(0.05);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.025)(0.035)(0.05);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36);
       break;
       
     case 2:
       gamma_search = boost::assign::list_of(0.1)(0.5);
-      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.030)(0.05);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.030)(0.05);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.16)(0.25)(0.36);
       break;
     
     default:
       gamma_search = boost::assign::list_of(0.5);
-      beta_search = boost::assign::list_of(0.0)(0.01)(0.15)(0.030)(0.05);
+      beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.030)(0.05);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.16)(0.25)(0.36);
   }
 

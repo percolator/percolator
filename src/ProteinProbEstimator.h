@@ -258,7 +258,6 @@ class ProteinProbEstimator {
      * target decoy ratio = 1.0
      * binning mode = equal deepth
      * correct identical sequences = true
-     * use average mass = false
      */
     
     const static bool correct_identical_sequences = true;
