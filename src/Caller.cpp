@@ -35,7 +35,7 @@ using namespace std;
 using namespace xercesc;
 
 const unsigned int Caller::xval_fold = 3;
-const double requiredIncreaseOver2Iterations = 0.01d;
+const double requiredIncreaseOver2Iterations = 0.01;
 
 /** some constants to be used to compare xml strings **/
 
@@ -413,7 +413,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   if (cmd.optionSet("e")) {
-    readStdIn = true;
+
+    /*readStdIn = true;
     string str = "";
     try
     {
@@ -435,7 +436,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     catch (boost::filesystem::filesystem_error &e)
     {
       std::cerr << e.what() << std::endl;
-    }	
+    }*/
   }
   
   if (cmd.optionSet("p")) {

@@ -49,12 +49,13 @@ endif(APPLE)
 set(BOOST_MIN_VERSION "1.46.0")
 SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
-			       "1.48" "1.48.0" "1.49" "1.49.0")
+			       "1.48" "1.48.0" "1.49" "1.49.0", "1.51", "1.51.0")
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 #find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
+MESSAGE(STATUS "boost found at ${Boost_INCLUDE_DIRS}")
 
 # find_package(Pthreads)
 # if(PTHREADS_FOUND)
@@ -135,6 +136,8 @@ if(PROFILING)
   MESSAGE( STATUS "Profiling mode activated")
 endif()
  
+MESSAGE(STATUS "linking boost from ${Boost_LIBRARIES}")
+
 # SET LIBRARIES FOR PERCOLATOR
 target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  

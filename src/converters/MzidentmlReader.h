@@ -66,13 +66,18 @@ public:
   
   void cleanHashMaps();
   
+  enum inputFormat_t {sequest, msgfplus};  //sequest or msgfplus
+  inputFormat_t inputFormat;
+  
   
 private :
     
     peptideMapType peptideMap;
     proteinMapType proteinMap;
     peptideEvidenceMapType peptideEvidenceMap;
-    static const std::map<string,int> hashparams;
+    static const std::map<string,int> sequestFeatures;
+    static const std::map<string,int> msgfplusFeatures;
+    static const std::map<string,int> inputFileType;  //Sequest or MS-GF+
 };
 
 #endif // MZIDENTMLREADER_H
