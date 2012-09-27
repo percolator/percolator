@@ -55,8 +55,6 @@ find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
-MESSAGE(STATUS "boost found at ${Boost_INCLUDE_DIRS}")
-
 # find_package(Pthreads)
 # if(PTHREADS_FOUND)
 #   message(STATUS  "Pthreads found")
@@ -136,7 +134,6 @@ if(PROFILING)
   MESSAGE( STATUS "Profiling mode activated")
 endif()
  
-MESSAGE(STATUS "linking boost from ${Boost_LIBRARIES}")
 
 # SET LIBRARIES FOR PERCOLATOR
 target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
