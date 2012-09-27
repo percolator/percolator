@@ -44,6 +44,7 @@ static double maxLambda = 0.5;
 bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
 bool PosteriorEstimator::competition = false;
+bool PosteriorEstimator::includeNegativesInResult = false;
 
 pair<double, bool> make_my_pair(double d, bool b) {
   return make_pair(d, b);
@@ -93,7 +94,7 @@ double mymin(double a, double b) {
 void PosteriorEstimator::estimatePEP(
                                      vector<pair<double, bool> >& combined,
                                      double pi0, vector<double>& peps,
-                                     bool includeNegativesInResult) {
+				       bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
   LogisticRegression lr;
@@ -105,7 +106,7 @@ void PosteriorEstimator::estimatePEP(
       xvals.push_back(elem->first);
       ++nTargets;
     } else {
-      if (includeNegativesInResult) {
+      if (include_negative) {
         xvals.push_back(elem->first);
       }
       ++nDecoys;
@@ -233,9 +234,15 @@ void PosteriorEstimator::finishStandalone(
   }
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem)
-    if (elem->second) {
+  {
+    if (!includeNegativesInResult && elem->second) {
       xvals.push_back(elem->first);
     }
+    else if(includeNegativesInResult)
+    {
+      xvals.push_back(elem->first);
+    }
+  }
   vector<double>::iterator xval = xvals.begin();
   vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
   if (resultFileName.empty()) {
@@ -334,8 +341,11 @@ void PosteriorEstimator::getQValues(double pi0, const vector<pair<double,
       ++nDecoys;
     } else {
       ++nTargets;
-      q.push_back(((double)nDecoys) / (double)nTargets);
+      if(!includeNegativesInResult)
+	q.push_back(((double)nDecoys) / (double)nTargets);
     }
+    if(includeNegativesInResult)
+      q.push_back(((double)nDecoys) / (double)nTargets);
     ++myPair;
   }
   double factor = pi0 * ((double)nTargets / (double)nDecoys);
@@ -517,7 +527,7 @@ int PosteriorEstimator::run() {
     cerr << "Selecting pi_0=" << pi0 << endl;
   }
   // Logistic regression on the data
-  estimatePEP(combined, pi0, peps);
+  estimatePEP(combined, pi0, peps,includeNegativesInResult);
   finishStandalone(combined, peps, pvals, pi0);
   return 0;
 }
@@ -580,9 +590,15 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   cmd.defineOption("g",
                    "generalized",
                    "Generalized target decoy competition, situations where PSMs known to more frequently be incorrect are mixed in with the correct PSMs",
-				   "",
-				   TRUE_IF_SET);
-	cmd.parseArgs(argc, argv);
+		    "",
+		    TRUE_IF_SET);
+  cmd.defineOption("d",
+                   "include-negative",
+                   "Include negative hits (decoy) probabilities in the results",
+		    "",
+		    TRUE_IF_SET);
+  
+  cmd.parseArgs(argc, argv);
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
   }
@@ -603,6 +619,9 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("g")) {
     PosteriorEstimator::setGeneralized(true);
+  }
+  if (cmd.optionSet("d")) {
+    PosteriorEstimator::setNegative(true);
   }
   if (cmd.arguments.size() > 2) {
     cerr << "Too many arguments given" << endl;

@@ -290,7 +290,7 @@ class ProteinProbEstimator {
     const static double proteinThreshold = 0.01;
     const static double reduced_proteinThreshold = 0.1;
     /** default value for peptide prior probability used in fido to compute the peptide likehood **/
-    const static double peptidePrior = 0.1;
+    const static double peptidePrior = 0.1; 
     /** number of maximum of tree configurations allowed in fido **/
     const static double max_allow_configurations = 18;
     /** allow the presence of peptides with the same sequence but different label (target/decoy) **/
@@ -308,7 +308,8 @@ class ProteinProbEstimator {
     const static bool updateRocN = true;
     /** threshold to compute the N of the roc curve function **/
     const static double thresholdRoc = 0.05;  
-    
+    /** activate the optimization of the parameters to see the best boundaries**/
+    const static bool optimize = false;
     
     /** GENERAL PARAMETERS **/
     
@@ -410,6 +411,7 @@ class ProteinProbEstimator {
     double getFDR_divergence(const std::vector<double> &estFDR, const std::vector<double> &empFDR, double THRESH);
     void getROC(const std::vector<std::vector<string> > &names,std::vector<unsigned> &numberFP,std::vector<unsigned> &numberTP);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
+    void gridSearchOptimize(double step=0.01, double gamma_limit=1.0, double beta_limit=0.5, double alpa_limit=0.5);
     
     /** functions to count number of target and decoy proteins **/
     unsigned countTargets(const std::vector<std::string> &proteinList);

@@ -72,6 +72,10 @@ limitations under the License.
 #define TEMP_DIR "@TEMP_DIR@"
 #endif
 
+#ifndef LOG_FILE
+#define LOG_FILE "@LOG_FILE@"
+#endif
+
 #ifdef WIN32
 #ifndef isfinite
 #define isfinite _finite
@@ -88,12 +92,14 @@ limitations under the License.
 
 #include <time.h>
 #include <string>
+#include "Logger.h"
 
 class Globals {
   public:
     virtual ~Globals();
     static Globals* getInstance();
     static void clean();
+    static Logger* getLogger();
     int getVerbose() {
       return verbose;
     }
@@ -109,10 +115,12 @@ class Globals {
     clock_t checkTimeClock;
     bool timeCheckPoint;
     void checkTime(const std::string& message);
+    
   private:
     Globals();
     int verbose;
     static Globals* glob;
+    static Logger *log;
 };
 
 #endif /*GLOBALS_H_*/

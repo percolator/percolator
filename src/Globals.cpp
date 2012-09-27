@@ -19,12 +19,14 @@
 #include <iostream>
 
 Globals* Globals::glob = 0;
+Logger* Globals::log = 0;
 
 Globals::~Globals() {
 }
 
 Globals::Globals() {
   //    assert(!glob);
+  
   glob = this;
   verbose = 2;
   timeCheckPoint = false;
@@ -35,6 +37,23 @@ Globals* Globals::getInstance() {
     new Globals();
   }
   return glob;
+}
+
+Logger* Globals::getLogger()
+{
+  if(!log)
+  {
+    std::string fileLog = std::string(LOG_FILE);
+    if(!fileLog.empty())
+    {
+      log = new Logger(fileLog.c_str());
+    }
+    else
+    {
+      log = new Logger();
+    }
+  }
+  return log;
 }
 
 void Globals::checkTime(const std::string& message){
@@ -51,4 +70,9 @@ void Globals::clean() {
     delete glob;
   }
   glob = 0;
+  if(log)
+  {
+    delete log;
+  }
+  log = 0;
 }

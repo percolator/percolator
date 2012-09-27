@@ -222,7 +222,10 @@ void ProteinProbEstimator::run(){
       std::cerr << "The parameters for the model will be estimated by grid search.\n" << std::endl;
     }
     
-    gridSearch(alpha,gamma,beta);
+    if(optimize)
+      gridSearchOptimize(); 
+    else
+      gridSearch(alpha,gamma,beta);
     
     time_t procStart;
     clock_t procStartClock = clock();
@@ -853,6 +856,83 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   alpha = alpha_best;
   beta = beta_best;
   gamma = gamma_best;
+}
+
+
+
+void ProteinProbEstimator::gridSearchOptimize(double step, double gamma_limit, double beta_limit, double alpa_limit)
+{
+ 
+  double gamma_best, alpha_best, beta_best;
+  gamma_best = alpha_best = beta_best = -1.0;
+  double best_objective = -100000000;
+  std::vector<std::vector<std::string> > names;
+  std::vector<double> probs,empq,estq;
+  std::vector<unsigned> numberFP,numberTP;  
+  std::vector<double> gamma_search,beta_search,alpha_search;
+  
+  std::ofstream file_log;
+  file_log.open("file_log_optimization.txt");
+  
+  for (double i = 0.0; i < gamma_limit; i+=step)
+  {
+    for (double j = 0.0; j < beta_limit; j+=step)
+    {
+      for (double k = 0.0; k < alpa_limit; k+=step)
+      {
+	double gamma_local = i;
+	double alpha_local = j;
+	double beta_local = k;
+	
+	if(VERB > 2)
+	{
+	  std::cerr << "Grid searching Alpha= " << alpha_local << " Beta= " << beta_local << " Gamma= " 
+	  << gamma_local << std::endl;
+	}
+	
+	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
+	proteinGraph->getProteinProbs();
+	proteinGraph->getProteinProbsAndNames(names,probs);
+	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
+	getROC(names,numberFP,numberTP);
+	
+	double rocR = getROC_N(numberFP, numberTP, rocN);
+	double fdr_mse = getFDR_divergence(estq, empq, threshold);
+	double current_objective = (lambda * rocR) - fabs(((1-lambda) * (fdr_mse)));
+	
+	if (current_objective > best_objective)
+	{
+	  best_objective = current_objective;
+	  gamma_best = gamma_local;
+	  alpha_best = alpha_local;
+	  beta_best = beta_local;
+	}
+        
+        unsigned nproteins = estq.size();
+	//nproteins = std::count_if(estq.begin(),estq.end(),std::bind2nd(std::less<double>(), 0.1));
+	
+	if(VERB > 2)
+	{
+	  std::cerr << "Roc " << rocN <<" , MSE and objective function value " << " : " << rocR << " " 
+	  << fabs(fdr_mse) << " " << current_objective << std::endl;
+	  std::cerr << " Total of proteins at q=0.05 " << nproteins << std::endl;
+	}
+	
+	file_log << "Alpha=" << alpha_local << " Beta=" << beta_local << " Gamma=" << gamma_local << " Score= " << current_objective << " Proteins(q<=0.05)=" << nproteins << std::endl;
+      }
+    }
+  }
+  
+  alpha = alpha_best;
+  beta = beta_best;
+  gamma = gamma_best;
+  
+  file_log.close();
+  
+  if(VERB > 1)
+  {
+    std::cerr << "The best alpha,beta and gamma are : " << alpha << "," << beta << "," << gamma << std::endl;
+  }
 }
 
 

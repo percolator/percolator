@@ -33,7 +33,7 @@ class PosteriorEstimator {
     int run();
     static void estimatePEP(vector<pair<double, bool> >& combined,
                             double pi0, vector<double>& peps,
-                            bool includeNegativesInResult = false);
+			      bool include_negative = false);
     static void estimatePEPGeneralized(vector<pair<double, bool> >& combined,
                             vector<double>& peps);
     static void estimate(vector<pair<double, bool> >& combined,
@@ -56,6 +56,9 @@ class PosteriorEstimator {
 		competition = general;
 		assert(!(general && pvalInput));
     }
+    static void setNegative(bool negative) {
+	        includeNegativesInResult = negative;
+    }
 protected:
     void finishStandalone(vector<pair<double, bool> >& combined,
                           const vector<double>& peps,
@@ -67,7 +70,7 @@ protected:
                         vector<unsigned int>& negatives, vector<
                             unsigned int> & sizes);
     string targetFile, decoyFile;
-    static bool reversed, pvalInput, competition;
+    static bool reversed, pvalInput, competition,includeNegativesInResult;
     string resultFileName;
 };
 

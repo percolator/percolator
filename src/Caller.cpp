@@ -30,12 +30,13 @@
 #include <fcntl.h>
 #endif
 #include <boost/filesystem.hpp>
+#include "Logger.h"
 
 using namespace std;
 using namespace xercesc;
 
 const unsigned int Caller::xval_fold = 3;
-const double requiredIncreaseOver2Iterations = 0.01d;
+const double requiredIncreaseOver2Iterations = 0.01;
 
 /** some constants to be used to compare xml strings **/
 
@@ -677,7 +678,7 @@ void Caller::readFiles() {
 
       if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) 
       {
-	//NOTE I am not doing anything with calibration
+	//NOTE the calibration should define the initial direction
         //percolatorInNs::calibration calibration(*doc->getDocumentElement());
         doc = p.next();
       };
@@ -1137,7 +1138,10 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
   
   Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
-    cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
+    //Logger log("log.txt");
+    //log << "Selecting pi_0=" << fullset.getPi0() << "\n";// << std::endl;
+    //Globals::getInstance()->log << "Selecting pi_0=" << fullset.getPi0() << "\n";// << std::endl;
+    std:cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
   }
   if (VERB > 0 && writeOutput) {
     cerr << "Calibrating statistics - calculating q values" << endl;

@@ -102,7 +102,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       "Pattern used to identify the decoy PSMs",
       "",
       "pattern");
-  /** new parameters for reading the fasta to obtain the proteins **/
+  /** new parameters for reading the fasta database to obtain the proteins **/
   cmd.defineOption("F",
       "databases",
       "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
@@ -204,6 +204,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   
   if (cmd.optionSet("F"))
   {
+    //NOTE I do not like this, I should make two parameters, one for target db and another one for decoy db
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["F"], boost::is_any_of(","));
     strs.push_back("");

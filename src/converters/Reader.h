@@ -129,7 +129,7 @@ public:
   
   void init();
   
-  void print(ofstream &xmlOutputStream);
+  void print( ofstream &xmlOutputStream);
   
   unsigned int peptideLength(const string& pep);
   

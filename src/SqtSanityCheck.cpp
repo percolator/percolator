@@ -71,13 +71,13 @@ bool SqtSanityCheck::validateDirection(vector<vector<double> >& w) {
     if (w[set][3] < 0) {
       ok = false;
       if (VERB > 1) {
-        cerr << "Warning weight for XCorr negative" << endl;
+        cerr << "Warning weight for XCorr negative in training set " << set + 1 << endl;
       }
     }
     if (w[set][2] < 0) {
       ok = false;
       if (VERB > 1) {
-        cerr << "Warning weight for deltaCn negative" << endl;
+        cerr << "Warning weight for deltaCn negative in training set " << set + 1 << endl;
       }
     }
   }

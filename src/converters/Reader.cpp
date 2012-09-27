@@ -6,6 +6,7 @@ const std::string Reader::ambiguousAA("BZJX");
 const std::string Reader::modifiedAA("#@*");
 const std::string Reader::additionalAA("UO");
 
+//THIS MAP SHOULD BE CREATED FROM THE UNIMOD PTMS xml document
 const std::map<unsigned, double> Reader::ptmMass = 
       boost::assign::map_list_of(35, 0.0) (21, 0.0) (28, 0.0) (4, 0.0)
 				  (1, 0.0) (214, 0.0) (39, 0.0) (7, 0.0)
@@ -201,7 +202,8 @@ void Reader::print(ofstream &xmlOutputStream)
 
   // print fragSpecturmScans
   if (VERB>2)
-  std::cerr << "Databases : " << databases.size() << std::endl;
+    std::cerr << "Databases : " << databases.size() << std::endl;
+  
   for(int i=0; i<databases.size();i++) {
     serializer ser;
     if (po->xmlOutputFN == "") ser.start (std::cout);
@@ -466,9 +468,11 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     istream buffer(&fb);
     if (VERB>1)
       std::cerr << "Reading fasta file : " << seqfile << std::endl;
-    if (!buffer.eof()) {
+    if (!buffer.eof()) 
+    {
 	  wchar_t c;
-	  while (!buffer.eof()) {
+	  while (!buffer.eof()) 
+	  {
 	    c = buffer.peek();
 	    if( c == '>' )
 	    {
@@ -605,12 +609,12 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   stringstream buf;
   char c = buffer.peek();
 
-   while (!buffer.eof() and (c == ' ' or c == '\n')) {   
+   while (!buffer.eof() and (c == ' ' || c == '\n')) {   
       buffer.ignore(1);
       if (!buffer.eof()) c = buffer.peek();
    }
    
-   if (!buffer.eof() and c != '>') {
+   if (!buffer.eof() && c != '>') {
       stringstream ss;
       ss << "next character is " << c;
       std::cerr << "ERROR parsing fasta " << "Incorrect format " << ss.str() << std::endl;
@@ -625,7 +629,7 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   {
     long int pos1 = name.find(' ');
     long int pos2 = name.find('\t');
-    if (pos1 != -1 and pos2 != -1)
+    if (pos1 != -1 && pos2 != -1)
       pos = pos1 < pos2 ? pos1 : pos2;
     else if (pos1 != -1)
       pos = pos1;
@@ -643,12 +647,12 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   string temp;
   char char_temp;
   
-  while (!buffer.eof() and (buffer.peek() != '>')) {
+  while (!buffer.eof() && (buffer.peek() != '>')) {
     
     buffer >> temp;
     for (string::iterator iter = temp.begin(); iter != temp.end(); iter++) {
 
-      if ((*iter >= 'A') and (*iter <= 'Z'))
+      if ( ((*iter >= 'A') && (*iter <= 'Z')) || (modifiedAA.find(*iter) != std::string::npos) )
       {
 	buf << *iter;
       }
@@ -661,8 +665,8 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   
     c = buffer.peek();
 
-    while (!buffer.eof() and (c == ' ' or c == '\n' or c == '\r')) {
-    
+    while (!buffer.eof() && (c == ' ' || c == '\n' || c == '\r')) 
+    {
       buffer.ignore(1);
       if (!buffer.eof()) c = buffer.peek();
     }
