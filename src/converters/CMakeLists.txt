@@ -355,7 +355,7 @@ endif()
 # include and link code from percolator
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
-add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../serializer.cxx ../parser.cxx)
+add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp)
 
 #COMPILING 
 add_subdirectory(MSToolkit)
