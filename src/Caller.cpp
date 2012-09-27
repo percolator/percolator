@@ -414,7 +414,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   if (cmd.optionSet("e")) {
-    readStdIn = true;
+
+    /*readStdIn = true;
     string str = "";
     try
     {
@@ -436,7 +437,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     catch (boost::filesystem::filesystem_error &e)
     {
       std::cerr << e.what() << std::endl;
-    }	
+    }*/
   }
   
   if (cmd.optionSet("p")) {

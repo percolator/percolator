@@ -52,7 +52,7 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
   intro << "the decoy MzIdentML-file. Small data sets may be merged by replace the mzid-files with" << endl;
   intro << "meta files. Meta files are text files containing the paths of mzid-files, one" << endl;
   intro << "path per line. For successful result, the different runs should be generated" << endl;
-  intro << "under similar condition." << endl;
+  intro << "under similar conditions." << endl;
 
   // init
   CommandLineParser cmd(intro.str());
@@ -168,13 +168,6 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
 
   if (cmd.optionSet("N")) {
     parseOptions.pngasef=true;
-  }
-  
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
-  }
-  if (VERB > 0) {
-    cerr << extendedGreeter();
   }
   
   if (cmd.optionSet("2")) {
