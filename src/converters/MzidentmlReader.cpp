@@ -131,13 +131,13 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme) {
     push_backFeatureDescription("RawScore");
     push_backFeatureDescription("DeNovoScore");
     push_backFeatureDescription("SpecEValue");
-    push_backFeatureDescription("EValue");
+    push_backFeatureDescription("lnEValue");
     //The below are from element userParam
     push_backFeatureDescription("IsotopeError");
-    push_backFeatureDescription("ExplainedIonCurrentRatio");
-    push_backFeatureDescription("NTermIonCurrentRatio");
-    push_backFeatureDescription("CTermIonCurrentRatio");
-    push_backFeatureDescription("MS2IonCurrent");
+    push_backFeatureDescription("lnExplainedIonCurrentRatio");
+    push_backFeatureDescription("lnNTermIonCurrentRatio");
+    push_backFeatureDescription("lnCTermIonCurrentRatio");
+    push_backFeatureDescription("lnMS2IonCurrent");
   }
   push_backFeatureDescription("Mass");
   push_backFeatureDescription("PepLen");
@@ -463,15 +463,15 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
         }*/
       }
     }
-    //Add +1 to some features to avoid log(0)
+    //Add a small number to some logged features to avoid log(0)
     f_seq.push_back(RawScore);
-    f_seq.push_back(log(DeNovoScore+1));
+    f_seq.push_back(DeNovoScore);
     f_seq.push_back(SpecEValue);
-    f_seq.push_back(EValue);
+    f_seq.push_back(log(EValue));
     f_seq.push_back(IsotopeError);
-    f_seq.push_back(log(ExplainedIonCurrentRatio+1));
-    f_seq.push_back(log(NTermIonCurrentRatio+1));
-    f_seq.push_back(log(CTermIonCurrentRatio+1));
+    f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
+    f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
+    f_seq.push_back(log(CTermIonCurrentRatio+0.0001));
     f_seq.push_back(log(MS2IonCurrent));
   }
 
