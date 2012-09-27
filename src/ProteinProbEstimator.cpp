@@ -918,7 +918,7 @@ void ProteinProbEstimator::gridSearchOptimize(double step, double gamma_limit, d
 	  std::cerr << " Total of proteins at q=0.05 " << nproteins << std::endl;
 	}
 	
-	file_log << "Alpha=" << alpha_local << " Beta=" << beta_local << " Gamma=" << gamma_local << " Score= " << current_objective << " Proteins(q<=0.05)=" << nproteins << std::endl;
+	file_log << "Alpha=" << alpha_local << " Beta=" << beta_local << " Gamma=" << gamma_local << " Score= " << current_objective << " Proteins(q<=0.05)=" << nproteins << " MSE score " << fdr_mse << " ROC score" << rocR << std::endl;
       }
     }
   }
