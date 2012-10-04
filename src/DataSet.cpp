@@ -181,7 +181,6 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
   getline(is, line);
   getline(is, line);
   unsigned int m = 0, n = ixs.size();
-  numSpectra = n;
   istringstream buff(line);
   double a;
   buff >> tmp >> tmp; // remove id and label

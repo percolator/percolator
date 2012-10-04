@@ -224,9 +224,9 @@ IF(MINGW)
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libxerces-c*.dll")
              
-  file(COPY "${MING_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_thread*.dll")
+  #file(COPY "${MING_PATH}/bin/"
+             #DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
+             #FILES_MATCHING PATTERN "boost_thread*.dll")
 
   file(COPY "${MING_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
