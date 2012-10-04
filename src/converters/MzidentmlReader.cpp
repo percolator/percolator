@@ -27,6 +27,8 @@ const std::map<string, int> MzidentmlReader::msgfplusFeatures =
                                   ("CTermIonCurrentRatio", 7)
                                   ("MS2IonCurrent", 8);
 
+const double MzidentmlReader::neutron = 1.0033548378;  //The difference between C12 and C13
+
 MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {
 
 }
@@ -125,12 +127,17 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme) {
     push_backFeatureDescription("Xcorr");
     push_backFeatureDescription("Sp");
     push_backFeatureDescription("IonFrac");
+    push_backFeatureDescription("Mass");
+    push_backFeatureDescription("PepLen");
+    push_backFeatureDescription("dM");
+    push_backFeatureDescription("absdM");
   } 
   else if (inputFormat == msgfplus) 
   {
     push_backFeatureDescription("RawScore");
     push_backFeatureDescription("DeNovoScore");
-    push_backFeatureDescription("SpecEValue");
+    push_backFeatureDescription("ScoreRatio");
+    push_backFeatureDescription("lnSpecEValue");
     push_backFeatureDescription("lnEValue");
     //The below are from element userParam
     push_backFeatureDescription("IsotopeError");
@@ -138,9 +145,12 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme) {
     push_backFeatureDescription("lnNTermIonCurrentRatio");
     push_backFeatureDescription("lnCTermIonCurrentRatio");
     push_backFeatureDescription("lnMS2IonCurrent");
+    push_backFeatureDescription("Mass");
+    push_backFeatureDescription("PepLen");
+    push_backFeatureDescription("dM");
+    push_backFeatureDescription("absdM");
   }
-  push_backFeatureDescription("Mass");
-  push_backFeatureDescription("PepLen");
+
   for (int charge = minCharge; charge <= maxCharge; ++charge) {
     std::ostringstream cname;
     cname << "Charge" << charge;
@@ -152,9 +162,6 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme) {
     push_backFeatureDescription("enzC");
     push_backFeatureDescription("enzInt");
   }
-
-  push_backFeatureDescription("dM");
-  push_backFeatureDescription("absdM");
 
   if (po->calcPTMs) {
     push_backFeatureDescription("ptm");
@@ -353,7 +360,6 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
   std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
   unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
-  double dM = massDiff(observed_mass, theoretic_mass, charge);
   std::map<char, int> ptmMap = po->ptmScheme;
   std::string psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
@@ -369,6 +375,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     double Sp = 0.0;
     double ionMatched = 0.0;
     double ionTotal = 0.0;
+    double dM = massDiff(observed_mass, theoretic_mass, charge);
+
 
     BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) 
     {
@@ -400,6 +408,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     f_seq.push_back(ionMatched / ionTotal);
     f_seq.push_back(observed_mass);
     f_seq.push_back(peptideLength(peptideSeqWithFlanks));
+    f_seq.push_back(dM);
+    f_seq.push_back(abs(dM));
   }
   //----------------
   //----if MS-GF PLUS
@@ -410,7 +420,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     double DeNovoScore = 0.0;
     double SpecEValue = 0.0;
     double EValue = 0.0;
-    int IsotopeError = 0.0;
+    int IsotopeError = 0;
     double ExplainedIonCurrentRatio = 0.0;
     double NTermIonCurrentRatio = 0.0;
     double CTermIonCurrentRatio = 0.0;
@@ -463,20 +473,28 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
         }*/
       }
     }
+    
+    //The raw theoretical mass from MSGF+ is often of the wrong isotope
+    double dM = massDiff(observed_mass, theoretic_mass, charge);
+    
     //Add a small number to some logged features to avoid log(0)
     f_seq.push_back(RawScore);
     f_seq.push_back(DeNovoScore);
-    f_seq.push_back(SpecEValue);
-    f_seq.push_back(log(EValue));
+    f_seq.push_back(RawScore / DeNovoScore);  // Score ratio
+    f_seq.push_back(-log(SpecEValue));
+    f_seq.push_back(-log(EValue));
     f_seq.push_back(IsotopeError);
     f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
     f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
     f_seq.push_back(log(CTermIonCurrentRatio+0.0001));
     f_seq.push_back(log(MS2IonCurrent));
-  }
-
     f_seq.push_back(observed_mass);
     f_seq.push_back(peptideLength(peptideSeqWithFlanks));
+    f_seq.push_back(dM);
+    f_seq.push_back(abs(dM));
+  }
+
+
   
     for (int c = minCharge; c <= maxCharge; c++) {
       f_seq.push_back(charge == c ? 1.0 : 0.0); // Charge
@@ -486,9 +504,6 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
       f_seq.push_back(Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3), peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1)) ? 1.0 : 0.0);
       f_seq.push_back((double) Enzyme::countEnzymatic(peptideSeq));
     }
-
-    f_seq.push_back(dM);
-    f_seq.push_back(abs(dM));
 
     if (po->calcPTMs) {
       f_seq.push_back(cntPTMs(peptideSeqWithFlanks));

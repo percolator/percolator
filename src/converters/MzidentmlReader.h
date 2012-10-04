@@ -78,6 +78,7 @@ private :
     static const std::map<string,int> sequestFeatures;
     static const std::map<string,int> msgfplusFeatures;
     static const std::map<string,int> inputFileType;  //Sequest or MS-GF+
+    static const double neutron;
 };
 
 #endif // MZIDENTMLREADER_H
