@@ -34,6 +34,9 @@ PSMDescription::PSMDescription(const string pep, const double retTime) :
 }
 
 PSMDescription::~PSMDescription() {
+ if(parentFragment) delete parentFragment;
+ if(features) delete []features;
+ if(retentionFeatures) delete []retentionFeatures;
 }
 
 double PSMDescription::normDiv = -1.0;

@@ -177,18 +177,6 @@ void ProteinFDRestimator::groupProteinsGene()
   /**not implemented yet**/
 }
 
-//NOTE this is a version of the code to work with threads
-/*void ProteinFDRestimator::estimateFDRthread(unsigned i,const std::set<std::string> &target, const std::set<std::string> &decoy) 
-{ 
-  unsigned  numberTP = countProteins(i,target);
-  unsigned  numberFP = countProteins(i,decoy);
-  unsigned  N = getBinProteins(i);
-  double fp = estimatePi0HG(N,numberTP,targetDecoyRatio*numberFP);
-  if(VERB > 2)
-      std::cerr << "\nEstimating FDR for bin " << i << " in thread " << boost::this_thread::get_id() << " with " << numberFP << " Decoy proteins, " 
-	  << numberTP << " Target proteins, and " << N << " Total Proteins in the bin " << " with exp fp " << fp << std::endl;
-  fptol += fp;
-} */
 
 double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, const std::set<std::string> &__decoy)
 {   
@@ -217,16 +205,6 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, c
       << " decoys proteins that contains high confident PSMs\n" << std::endl;    
     }
 
-    //NOTE this is a version of the code to work with threads
-    /*fptol = 0.0;
-    boost::thread t[nbins]; 
-    
-    for(unsigned i = 0; i < nbins; i++)
-    {
-       t[i] = boost::thread(boost::bind(&ProteinFDRestimator::estimateFDRthread,this,i,__target,__decoy)); 
-       t[i].join();
-    }*/
-    
     double fptol = 0.0;
     for(unsigned i = 0; i < nbins; i++)
     {

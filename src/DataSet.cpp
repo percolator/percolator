@@ -344,6 +344,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       }
       
       myPsm->id = psm.id();
+      myPsm->charge = psm.chargeState();
       myPsm->scan = scanNumber;
       myPsm->expMass = psm.experimentalMassToCharge();
       myPsm->calcMass = psm.calculatedMassToCharge();

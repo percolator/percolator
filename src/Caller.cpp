@@ -352,6 +352,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Reduce the tree of proteins in order to estimate alpha,beta and gamma faster.(Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("TDC",
+      "target-decoy-competition",
+      "Use target decoy competition to infer the peptides.(Only valid if option -A is active).",
+      "",
+      TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -388,6 +393,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
     bool reduceTree = cmd.optionSet("T");
+    target_decoy_competition = cmd.optionSet("TDC");
     
     if (cmd.optionSet("PR")) {
       proteinFN = cmd.options["PR"];
@@ -557,12 +563,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
-/**
- * for each feature, print raw and normalized weights after training
- *
- * @param weightStream stream to which the weights will be written
- * @param w vector containing the normalized weights
- */
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
   << "# first line contains normalized weights, second line the raw weights"
@@ -584,15 +584,6 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << endl;
 }
 
-/**
- * Instantiates the sanityCheck and sets sizes and feature tables for the sets
- * of target and decoy psms
- *
- * @param numFeatures number of features to train on
- * @param numSpectra number of spectra per set (same for both target and decoy)
- * @param featureNames array of names of individual features
- * @param pi0
- */
 void Caller::filelessSetup(const unsigned int numFeatures,
     const unsigned int numSpectra,
     char** featureNames, double pi0) {
@@ -606,11 +597,6 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
-/**
- * reads Percolator's input from file: stores enzyme info, feature names and
- * psm info (targetSet and decoySet) and initializes the appropriate
- * sanityCheck.
- */
 void Caller::readFiles() {
   
   if (xmlInputFN.size() != 0) 
@@ -1124,32 +1110,39 @@ void Caller::writeXML(){
   os.close();
 }
 
-void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
+void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
     clock_t& procStartClock, vector<vector<double> >& w, double& diff){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
   // peptide run and the option was switched off
+  
   bool writeOutput = (isUniquePeptideRun == reportUniquePeptides);
+  
   if (reportUniquePeptides && VERB > 0 && writeOutput) {
     cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM "
         "for each unique peptide." << endl;
   }
+  
   bool makeUnique = isUniquePeptideRun && reportUniquePeptides;
-  fullset.merge(xv_test, selectionfdr, makeUnique);
+  if(isUniquePeptideRun)
+  {
+    fullset->weedOutRedundant();
+  }
+  else
+  {
+    fullset->merge(xv_test, selectionfdr);
+  }
   
   Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
-    //Logger log("log.txt");
-    //log << "Selecting pi_0=" << fullset.getPi0() << "\n";// << std::endl;
-    //Globals::getInstance()->log << "Selecting pi_0=" << fullset.getPi0() << "\n";// << std::endl;
-    std:cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
+    std:cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
   }
   if (VERB > 0 && writeOutput) {
     cerr << "Calibrating statistics - calculating q values" << endl;
   }
-  int foundPSMs = fullset.calcQ(test_fdr);
+  int foundPSMs = fullset->calcQ(test_fdr);
   Globals::getInstance()->checkTime("calculate q-values");
-  fullset.calcPep();
+  fullset->calcPep();
   Globals::getInstance()->checkTime("calculate PEP values");
   if (VERB > 0 && docFeatures && writeOutput) {
     cerr << "For the cross validation sets the average deltaMass are ";
@@ -1192,26 +1185,67 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     weightStream.close();
   }
   if (resultFN.empty() && writeOutput) {
-    normal.print(fullset);
+    normal.print(*fullset);
   } else {
     if(writeOutput){
       ofstream targetStream(resultFN.data(), ios::out);
-      normal.print(fullset, targetStream);
+      normal.print(*fullset, targetStream);
       targetStream.close();
     }
   }
   if (!decoyOut.empty() && writeOutput) {
     ofstream decoyStream(decoyOut.data(), ios::out);
-    shuffled.print(fullset, decoyStream);
+    shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
   // set pi_0 value (to be outputted)
   if(isUniquePeptideRun) {
-    pi_0_peptides = fullset.getPi0();
+    pi_0_peptides = fullset->getPi0();
   }
   else {
-    pi_0_psms = fullset.getPi0();
-    numberQpsms = fullset.getQvaluesBelowLevel(0.01);
+    pi_0_psms = fullset->getPi0();
+    numberQpsms = fullset->getQvaluesBelowLevel(0.01);
+  }
+}
+
+
+void Caller::calculatePSMProbTDC(bool isUniquePeptideRun,Scores *fullset)
+{
+   
+  if(!isUniquePeptideRun)
+  {
+    fullset->merge(xv_test, selectionfdr,false); 
+    fullset->weedOutRedundantTDC();
+    if(VERB > 0)
+    {
+      std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
+      << fullset->negSize() << " decoy PSMs" << std::endl;
+    }
+  }
+  else
+  {
+    fullset->weedOutRedundant();
+  }
+  Globals::getInstance()->checkTime("merge sets");
+  if (VERB > 0 && isUniquePeptideRun) {
+    std:cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
+  }
+  if (VERB > 0 && isUniquePeptideRun) {
+    cerr << "Calibrating statistics - calculating q values" << endl;
+  }
+  int foundPSMs = fullset->calcQ(test_fdr);
+  Globals::getInstance()->checkTime("calculate q-values");
+  fullset->calcPep();
+  Globals::getInstance()->checkTime("calculate PEP values");
+  if (VERB > 0) {
+    cerr << "New pi_0 estimate on merged list gives " << foundPSMs
+        << (isUniquePeptideRun ? " peptides" : " PSMs") << " over q="
+        << test_fdr << endl;
+  }
+  if (VERB > 0) {
+    cerr
+    << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
+    << endl;
   }
 }
 
@@ -1287,30 +1321,53 @@ int Caller::run() {
   }
 
   // calculate psms level probabilities
-  bool isUniquePeptideRun = false; //(this is not the unique peptides run)
-  calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
+  
+  Scores *psm_set = 0;
+  if(calculateProteinLevelProb && target_decoy_competition) psm_set = new Scores(fullset);
+  
+  //PSM probabilities TDA
+  calculatePSMProb(false, &fullset, procStart, procStartClock, w, diff);
   if (xmlOutputFN.size() > 0){
     writeXML_PSMs();
   }
-  // calculate unique peptides level probabilities
+  
+  // calculate unique peptides level probabilities TDA
+  
   if(reportUniquePeptides){
-    isUniquePeptideRun = true; //(this is the unique peptides run)
-    calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
+    calculatePSMProb(true, &fullset, procStart, procStartClock, w, diff);
     if (xmlOutputFN.size() > 0){
       writeXML_Peptides();
     }
   }
   // calculate protein level probabilities
   if(calculateProteinLevelProb){
-    if (VERB > 0){
+
+    if (VERB > 0)
+    {
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
-    protEstimator->initialize(&fullset);
+    if(VERB > 0 && target_decoy_competition)
+    {
+      std::cerr << "Using Target Decoy Competition to compute peptide level probabilities.." << std::endl;
+    }
+    
+    if(target_decoy_competition)
+    {
+      calculatePSMProbTDC(false, psm_set);
+      calculatePSMProbTDC(true, psm_set);
+      protEstimator->initialize(psm_set);
+    }
+    else
+    {
+      protEstimator->initialize(&fullset);
+    }
     protEstimator->run();
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins();
     }
+    
+    if(target_decoy_competition && psm_set) delete psm_set;
   }
   // write output to file
   writeXML();
