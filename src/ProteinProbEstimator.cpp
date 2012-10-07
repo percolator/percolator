@@ -908,11 +908,6 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
 }
 
 
-void ProteinProbEstimator::OptimizationFunction()
-{
-  
-}
-
 void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &names,
 					  const std::vector<double> &probabilities, double &auc1,
 					  double &auc2,double &auc3)
