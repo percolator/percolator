@@ -89,10 +89,8 @@ class Caller {
     Scores* getFullSet() {
       return &fullset;
     }
-    
-    void calculatePSMProbTDC(bool uniquePeptideRun, Scores *fullset);
     void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
-        clock_t& procStartClock, vector<vector<double> >& w, double& diff);
+        clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC = false);
     int run();
     SetHandler* getSetHandler(SetHandlerType sh) {
       switch (sh) {

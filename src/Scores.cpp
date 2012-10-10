@@ -222,28 +222,6 @@ Scores::Scores() {
 Scores::~Scores() {
 }
 
-Scores::Scores(const Scores &other) 
-{
-  this->pi0 = other.pi0;
-  this->scores = other.scores;
-  this->targetDecoySizeRatio = other.targetDecoySizeRatio;
-  this->totalNumberOfDecoys = other.totalNumberOfDecoys;
-  this->totalNumberOfTargets = other.totalNumberOfTargets;
-  this->posNow = other.posNow;
-  this->doc = other.doc;
-  this->w_vec = other.w_vec;
-  
-  //NOTE deep copy of map of pointers to object (this can be done in a better way)
-  //NOTE not sure I should copy this or not
-  /*vector<ScoreHolder>::const_iterator it;
-  for (it = other.scores.begin(); it != other.scores.end(); it++) 
-  {
-      double *features = new double[sizeof(it->pPSM->features) / sizeof(double)];
-      memcpy(features,it->pPSM->features,sizeof(it->pPSM->features) / sizeof(double));
-      this->scoreMap[features] = (*it).clone();
-  }*/
-}
-
 void Scores::merge(vector<Scores>& sv, double fdr, bool computePi0) {
   scores.clear();
   for (vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) 

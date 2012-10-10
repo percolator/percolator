@@ -144,9 +144,6 @@ class Scores {
   public:
     Scores();
     ~Scores();
-    
-    Scores(const Scores &other);
-    
     void merge(vector<Scores>& sv, double fdr=0.01, bool computePi0 = true);
     double calcScore(const double* features) const;
     vector<ScoreHolder>::iterator begin() {

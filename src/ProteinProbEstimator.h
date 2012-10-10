@@ -271,17 +271,15 @@ class ProteinProbEstimator {
     const static bool trivialGrouping = false;
     /** compute peptide level prior probability instead of using default = 0.1 **/
     const static bool computePriors = false;
-    /** use normal area instead of squared area when estimating the MSE FDR divergence **/
-    const static bool conservative = true;
     /** threshold used for fido to remove poor PSMs **/
     const static double psmThreshold = 0.0;
-    const static double reduced_psmThreshold = 0.15;
+    const static double reduced_psmThreshold = 0.2;
     /** threshold used for fido to classify a peptide as very low confidence **/
     const static double peptideThreshold = 0.001;
-    const static double reduced_peptideThreshold = 0.1;
+    const static double reduced_peptideThreshold = 0.2;
     /** threshold used for fido to classify a protein as very low confidence and prune it **/
-    const static double proteinThreshold = 0.01;
-    const static double reduced_proteinThreshold = 0.1;
+    const static double proteinThreshold = 0.01; 
+    const static double reduced_proteinThreshold = 0.2;
     /** default value for peptide prior probability used in fido to compute the peptide likehood **/
     const static double peptidePrior = 0.1; 
     /** number of maximum of tree configurations allowed in fido **/
@@ -294,7 +292,7 @@ class ProteinProbEstimator {
     /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
     const static double lambda = 0.15;
     /** threshold used in the MSE FDR divergence function to meassure separation between empirical and estimated q values*/
-    const static double threshold = 0.05;
+    /*const static double threshold = 0.05; included as a parameter*/
     /** number of false positives allowed while estiaming the ROC curve score **/
     /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
     const static unsigned default_rocN = 50;
@@ -322,7 +320,9 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 std::string decoyPattern = "random", bool mayufdr = false,bool outputDecoys = false, 
-			 bool tabDelimitedOut = false, std::string proteinFN = "", bool reduceTree = false);
+			 bool tabDelimitedOut = false, std::string proteinFN = "", bool reduceTree = false, bool truncate = true,
+			 double mse_threshold = 0.05
+			);
     
     virtual ~ProteinProbEstimator();
     
@@ -448,6 +448,7 @@ class ProteinProbEstimator {
     bool tabDelimitedOut;
     bool outputDecoys;
     bool reduceTree;
+    bool truncate;
     double pi0;
     double fdr;
     unsigned int numberDecoyProteins;
@@ -457,6 +458,7 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
+    double threshold;
     std::string decoyPattern;
     std::string proteinFN;
 };

@@ -76,7 +76,7 @@ Caller::Caller() :
         tabInput(false), readStdIn(false),
         docFeatures(false), quickValidation(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
-        schemaValidation(true), hasProteins(false),
+        schemaValidation(true), hasProteins(false), target_decoy_competition(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
@@ -354,10 +354,20 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("TDC",
       "target-decoy-competition",
-      "Use target decoy competition to infer the peptides.(Only valid if option -A is active).",
+      "Use target decoy competition mode on the PSMs.(recommended when using -A).",
       "",
       TRUE_IF_SET);
-
+  cmd.defineOption("MSE",
+      "mse-rocN-threshold",
+      "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search (recommended 0.05 for normal size datasets and 0.1 for big size datasets).(Only valid if option -A is active).",
+      "",
+      "value");
+  cmd.defineOption("NT",
+      "no-truncation",
+      "Proteins with a very low score (< 0.001) will not be truncated (assigned 0.0 probability).(Only valid if option -A is active).",
+      "",
+      FALSE_IF_SET);
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
@@ -379,6 +389,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     double alpha = -1;
     double beta = -1;
     double gamma = -1;
+    double mse_threshold = 0.05;
     bool gridSearch = true;
     unsigned depth = 3;
     std::string decoyWC = "random";
@@ -393,7 +404,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
     bool reduceTree = cmd.optionSet("T");
-    target_decoy_competition = cmd.optionSet("TDC");
+    bool truncate = cmd.optionSet("NT");
     
     if (cmd.optionSet("PR")) {
       proteinFN = cmd.options["PR"];
@@ -411,12 +422,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
+    if (cmd.optionSet("MSE")) mse_threshold = cmd.getDouble("MSE",0.001,1.0);
     
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
-					       outputDecoys,tabDelimitedOut,proteinFN,reduceTree);
+					       outputDecoys,tabDelimitedOut,proteinFN,reduceTree,truncate,mse_threshold);
   }
   
   if (cmd.optionSet("e")) {
@@ -530,6 +542,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   {
     showExpMass = true;
     Scores::setShowExpMass(showExpMass);
+  }
+  if (cmd.optionSet("TDC")) {
+    target_decoy_competition = true; 
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -1111,7 +1126,7 @@ void Caller::writeXML(){
 }
 
 void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
-    clock_t& procStartClock, vector<vector<double> >& w, double& diff){
+    clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
   // peptide run and the option was switched off
@@ -1124,6 +1139,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   
   bool makeUnique = isUniquePeptideRun && reportUniquePeptides;
+  
   if(isUniquePeptideRun)
   {
     fullset->weedOutRedundant();
@@ -1131,6 +1147,15 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   else
   {
     fullset->merge(xv_test, selectionfdr);
+    if(TDC)
+    {
+       fullset->weedOutRedundantTDC();
+	if(VERB > 0)
+	{
+	  std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
+	  << fullset->negSize() << " decoy PSMs" << std::endl;
+	}
+    }
   }
   
   Globals::getInstance()->checkTime("merge sets");
@@ -1208,47 +1233,6 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
 }
 
-
-void Caller::calculatePSMProbTDC(bool isUniquePeptideRun,Scores *fullset)
-{
-   
-  if(!isUniquePeptideRun)
-  {
-    fullset->merge(xv_test, selectionfdr,false); 
-    fullset->weedOutRedundantTDC();
-    if(VERB > 0)
-    {
-      std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
-      << fullset->negSize() << " decoy PSMs" << std::endl;
-    }
-  }
-  else
-  {
-    fullset->weedOutRedundant();
-  }
-  Globals::getInstance()->checkTime("merge sets");
-  if (VERB > 0 && isUniquePeptideRun) {
-    std:cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
-  }
-  if (VERB > 0 && isUniquePeptideRun) {
-    cerr << "Calibrating statistics - calculating q values" << endl;
-  }
-  int foundPSMs = fullset->calcQ(test_fdr);
-  Globals::getInstance()->checkTime("calculate q-values");
-  fullset->calcPep();
-  Globals::getInstance()->checkTime("calculate PEP values");
-  if (VERB > 0) {
-    cerr << "New pi_0 estimate on merged list gives " << foundPSMs
-        << (isUniquePeptideRun ? " peptides" : " PSMs") << " over q="
-        << test_fdr << endl;
-  }
-  if (VERB > 0) {
-    cerr
-    << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
-    << endl;
-  }
-}
-
 int Caller::run() {
   time(&startTime);
   startClock = clock();
@@ -1322,19 +1306,15 @@ int Caller::run() {
 
   // calculate psms level probabilities
   
-  Scores *psm_set = 0;
-  if(calculateProteinLevelProb && target_decoy_competition) psm_set = new Scores(fullset);
-  
-  //PSM probabilities TDA
-  calculatePSMProb(false, &fullset, procStart, procStartClock, w, diff);
+  //PSM probabilities TDA or TDC
+  calculatePSMProb(false, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
   if (xmlOutputFN.size() > 0){
     writeXML_PSMs();
   }
   
-  // calculate unique peptides level probabilities TDA
-  
+  // calculate unique peptides level probabilities WOTE
   if(reportUniquePeptides){
-    calculatePSMProb(true, &fullset, procStart, procStartClock, w, diff);
+    calculatePSMProb(true, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
     if (xmlOutputFN.size() > 0){
       writeXML_Peptides();
     }
@@ -1347,27 +1327,13 @@ int Caller::run() {
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
-    if(VERB > 0 && target_decoy_competition)
-    {
-      std::cerr << "Using Target Decoy Competition to compute peptide level probabilities.." << std::endl;
-    }
-    
-    if(target_decoy_competition)
-    {
-      calculatePSMProbTDC(false, psm_set);
-      calculatePSMProbTDC(true, psm_set);
-      protEstimator->initialize(psm_set);
-    }
-    else
-    {
-      protEstimator->initialize(&fullset);
-    }
+
+    protEstimator->initialize(&fullset);
     protEstimator->run();
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins();
     }
-    
-    if(target_decoy_competition && psm_set) delete psm_set;
+
   }
   // write output to file
   writeXML();

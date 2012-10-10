@@ -75,7 +75,7 @@ double areaSq(double x1, double y1, double x2, double y2) {
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
 			  bool __dogridSearch, unsigned __depth,std::string __decoyPattern, bool __mayufdr,bool __outputDecoys, 
-			  bool __tabDelimitedOut, std::string __proteinFN, bool __reduceTree) 
+			  bool __tabDelimitedOut, std::string __proteinFN, bool __reduceTree, bool __truncate, double __threshold) 
 {
   peptideScores = 0;
   proteinGraph = 0;
@@ -101,6 +101,8 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   proteinFN = __proteinFN;
   rocN = default_rocN; 
   reduceTree = __reduceTree;
+  truncate = __truncate;
+  threshold = __threshold;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator()
@@ -146,6 +148,9 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
     std::cerr << "The estimated peptide level prior probability is : " << peptidePrior_local << std::endl;
   }
   
+  double local_protein_threshold = proteinThreshold;
+  if(!truncate) local_protein_threshold = 0.0;
+  
   proteinGraph = new GroupPowerBigraph (alpha,beta,gamma,groupProteins,noseparate,noprune);
   proteinGraph->setMaxAllowedConfigurations(max_allow_configurations);
   proteinGraph->setPeptidePrior(peptidePrior_local);
@@ -167,7 +172,7 @@ bool ProteinProbEstimator::initialize(Scores* fullset){
   }
   else
   {
-    proteinGraph->setProteinThreshold(proteinThreshold);
+    proteinGraph->setProteinThreshold(local_protein_threshold);
     proteinGraph->setPsmThreshold(psmThreshold);
     proteinGraph->setPeptideThreshold(peptideThreshold);
     proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
@@ -256,7 +261,9 @@ void ProteinProbEstimator::run(){
   if(dogridSearch && reduceTree)
   {
     //NOTE lets create the tree again with all the members
-    proteinGraph->setProteinThreshold(proteinThreshold);
+    double local_protein_threshold = proteinThreshold;
+    if(!truncate) local_protein_threshold = 0.0;
+    proteinGraph->setProteinThreshold(local_protein_threshold);
     proteinGraph->setPsmThreshold(psmThreshold);
     proteinGraph->setPeptideThreshold(peptideThreshold);
     proteinGraph->setGroupProteins(groupProteins);
@@ -316,11 +323,18 @@ void ProteinProbEstimator::run(){
 double ProteinProbEstimator::estimatePriors()
 {
   /* Compute a priori probabilities of peptide presence */
-  /* it is the mean of the probabilities, maybe one prior for each charge */
+  /* prior = the mean of the probabilities, maybe one prior for each charge *
+   * prior2 = assuming a peptide is present if only if the protein is present and counting
+   * the size of protein and prior protein probabily in the computation
+   * prior3 = the ratio of confident peptides among all the peptides */
+  
   double prior_peptide = 0.0;
   double prior_peptide2 = 0.0;
+  double prior_peptide3 = 0.0;
+  unsigned confident_peptides = 0.0;
   unsigned total_peptides = 0;
-  double prior = 0.0;
+  double prior, prior2, prior3;
+  prior = prior2 = prior3 = 0.0;
   for (vector<ScoreHolder>::iterator psm = peptideScores->begin(); psm!= peptideScores->end(); ++psm) 
   {
     if(!psm->isDecoy())
@@ -337,15 +351,24 @@ double ProteinProbEstimator::estimatePriors()
       }
       /* update computed prior */
       prior_peptide += prior;
+      if(psm->pPSM->q <= 0.1) ++confident_peptides;
       prior_peptide2 += psm->pPSM->pep;
       ++total_peptides;
     }
   }
-  //prior = prior_peptide2 / (double)total_peptides;
-  prior = prior_peptide / (double)total_peptides;
+  
+  prior = prior_peptide2 / (double)total_peptides;
+  prior2 = prior_peptide / (double)total_peptides;
+  prior3 = (double)(confident_peptides/total_peptides);
+  
   if(prior > 0.99) prior = 0.99;
   if(prior < 0.01) prior = 0.01;
-  return prior;
+  if(prior2 > 0.99) prior2 = 0.99;
+  if(prior2 < 0.01) prior2 = 0.01;
+  if(prior3 > 0.99) prior3 = 0.99;
+  if(prior3 < 0.01) prior3 = 0.01;
+  
+  return prior3;
 }
 
 
