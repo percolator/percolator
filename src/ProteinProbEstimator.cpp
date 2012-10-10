@@ -1010,17 +1010,19 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
 
   unsigned normalizer = (tp * fp);
   
-  auc2 /= normalizer;
-  auc3 /= normalizer;
-  
-  unsigned s0 = 0;
-  for(unsigned i = 0; i < ranked_list.size(); i++)
+  if(normalizer != 0)
   {
+    auc2 /= normalizer;
+    auc3 /= normalizer;
+  
+    unsigned s0 = 0;
+    for(unsigned i = 0; i < ranked_list.size(); i++)
+    {
       if(!ranked_list[i]) s0 += i;
+    }
+  
+    auc1 = ( (s0 - (tp * ((tp + 1)/2)) ) / (tp * fp) );
   }
-  
-  auc1 = ( (s0 - (tp * ((tp + 1)/2)) ) / (tp * fp) );
-  
   return;
 }
 
@@ -1184,11 +1186,13 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR, const s
 
   double normalizer1 = abs(estFDR.back() - estFDR.front());
   
-  mse1 /= (double)(estFDR.size());
-  mse2 /= normalizer1;
-  mse3 /= normalizer1;
-  mse4 /= normalizer1;
-  
+  if(estFDR.size() > 0) mse1 /= (double)(estFDR.size());
+  if(normalizer1 != 0)
+  {
+    mse2 /= normalizer1;
+    mse3 /= normalizer1;
+    mse4 /= normalizer1;
+  } 
   return;
 }
 
