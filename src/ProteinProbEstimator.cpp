@@ -837,18 +837,17 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	proteinGraph->getProteinProbsAndNames(names,probs);
 	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
 	
-	double roc1, roc2, roc3;
-	getROC_AUC(names,probs,roc1,roc2,roc3);
-	double mse1, mse2, mse3, mse4;
-	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
+	double roc, mse;
+	getROC_AUC(names,probs,roc);
+	getFDR_MSE(estq,empq,mse);
 	
-	double current_objective = (lambda * roc2) - fabs(((1-lambda) * (mse2)));
+	double current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
 	
 	if(VERB > 2)
 	{
 	  std::cerr << "Grid searching Alpha= " << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
-	  std::cerr << "The ROC AUC estimated values are : " << roc1 << "," << roc2 << "," << roc3 <<  std::endl;
-	  std::cerr << "The MSE FDR estimated values are : " <<  mse1 << "," << mse2 << "," << mse3 << "," << mse4  << std::endl;
+	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
+	  std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
 	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
 	}  
 	if (current_objective > best_objective)
@@ -881,7 +880,7 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
   std::vector<double> gamma_search,beta_search,alpha_search;
   
   double alpha_step = 0.01;
-  double beta_step = 0.0001;
+  double beta_step = 0.01;
   double gamma_step = 0.1;
   
   for (double i = 0.0; i < gamma_limit; i+=gamma_step)
@@ -899,18 +898,17 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
 	proteinGraph->getProteinProbsAndNames(names,probs);
 	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
 	
-	double roc1, roc2, roc3;
-	getROC_AUC(names,probs,roc1,roc2,roc3);
-	double mse1, mse2, mse3, mse4;
-	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
+	double roc, mse;
+	getROC_AUC(names,probs,roc);
+	getFDR_MSE(estq,empq,mse);
 	
-	double current_objective = (lambda * roc2) - fabs(((1-lambda) * (mse2)));
+	double current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
 	
 	if(VERB > 2)
 	{
 	  std::cerr << "Grid searching Alpha= " << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
-	  std::cerr << "The ROC AUC estimated values are : " << roc1 << "," << roc2 << "," << roc3 <<  std::endl;
-	  std::cerr << "The MSE FDR estimated values are : " <<  mse1 << "," << mse2 << "," << mse3 << "," << mse4  << std::endl;
+	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
+	  std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
 	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
 	}  
 	if (current_objective > best_objective)
@@ -932,8 +930,7 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
 
 
 void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &names,
-					  const std::vector<double> &probabilities, double &auc1,
-					  double &auc2,double &auc3)
+					  const std::vector<double> &probabilities, double &auc)
 {
   /* Estimate ROC auc1 area as : (So - no(no + 1) / 2) / (no*n1)
    * where no = number of target
@@ -967,7 +964,7 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
   unsigned prev_tp,prev_fp,tp,fp;
   prev_tp = prev_fp = tp = fp = 0;
   double prev_prob = -1;
-  auc1 = auc2 = auc3 = 0.0;
+  auc = 0.0;
   
   //assuming names and probabilities same size
   for (unsigned k=0; k < names.size() && fp <= rocN; k++)
@@ -978,8 +975,8 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
       //if ties activated count groups as 1 protein
       if(tiesAsOneProtein)
       {
-	if(tpChange && !fpChange) ranked_list.push_back(false);
-	if(!tpChange && fpChange) ranked_list.push_back(true);
+	//if(tpChange && !fpChange) ranked_list.push_back(false);
+	//if(!tpChange && fpChange) ranked_list.push_back(true);
 	if(tpChange) tpChange = 1;
 	if(fpChange) fpChange = 1;
       }
@@ -998,11 +995,11 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
       if(prev_prob != -1 && fp != 0 && fp != prev_fp)
       {
 	double trapezoid = trapezoid_area(fp,prev_fp,tp,prev_tp);
-	double area_segment = area(prev_fp,prev_tp,fp,tp);
+	//double area_segment = area(prev_fp,prev_tp,fp,tp);
 	prev_fp = fp;
 	prev_tp = tp;
-	auc2 += trapezoid;
-	auc3 += area_segment;
+	auc += trapezoid;
+	//auc += area_segment;
       }   
       
       prev_prob = prob;
@@ -1012,16 +1009,15 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
   
   if(normalizer != 0)
   {
-    auc2 /= normalizer;
-    auc3 /= normalizer;
+    auc /= normalizer;
   
-    unsigned s0 = 0;
+    /*unsigned s0 = 0;
     for(unsigned i = 0; i < ranked_list.size(); i++)
     {
       if(!ranked_list[i]) s0 += i;
     }
   
-    auc1 = ( (s0 - (tp * ((tp + 1)/2)) ) / (tp * fp) );
+    auc1 = ( (s0 - (tp * ((tp + 1)/2)) ) / (tp * fp) );*/
   }
   return;
 }
@@ -1135,8 +1131,7 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 }
 
 
-void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,
-				        double &mse1, double &mse2, double &mse3, double &mse4)
+void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse)
 {
   /* Estimate MSE mse1 as : 1/N multiply by the SUM from k=1 to N of (estFDR(k) - empFDR(k))^2 */
   
@@ -1170,29 +1165,24 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR, const s
    */
   
   Vector diff = Vector(estFDR) - Vector(empFDR);
-  mse1 = mse2 = mse3 = mse4 = 0.0;
-  
+  mse = 0.0;
+  double mse_sum = 0.0;
   for(unsigned k = 0; k<diff.size()-1; k++)
   {
     if(estFDR[k] != estFDR[k+1])
     {
-      mse2 += trapezoid_area(estFDR[k],estFDR[k+1],diff[k],diff[k+1]);
-      mse3 += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1]);
-      mse4 += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1]);
+      mse += trapezoid_area(estFDR[k],estFDR[k+1],diff[k],diff[k+1]);
+      //mse += area(estFDR[k], diff[k], estFDR[k+1], diff[k+1]);
+      //mse += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1]);
     }
     
-    mse1 += pow(diff[k],2);
+    mse_sum += pow(diff[k],2);
   }
 
   double normalizer1 = abs(estFDR.back() - estFDR.front());
-  
-  if(estFDR.size() > 0) mse1 /= (double)(estFDR.size());
-  if(normalizer1 != 0)
-  {
-    mse2 /= normalizer1;
-    mse3 /= normalizer1;
-    mse4 /= normalizer1;
-  } 
+  if(estFDR.size() > 0) mse_sum /= (double)(estFDR.size());
+  if(normalizer1 != 0) mse /= normalizer1;
+  mse += mse_sum;
   return;
 }
 
