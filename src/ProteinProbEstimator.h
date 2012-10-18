@@ -403,9 +403,9 @@ class ProteinProbEstimator {
 					const std::vector<double> &probabilities,
 					std::vector<double> &empq,
 					std::vector<double> &estq);
-    void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse);
+    void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse1, double &mse2, double &mse3, double &mse4);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
-    void gridSearchOptimize(double gamma_limit=0.5, double beta_limit=0.1, double alpa_limit=0.5);
+    void gridSearchOptimize(double gamma_limit=0.5, double beta_limit=0.1, double alpha_limit=0.5);
     
     /** functions to count number of target and decoy proteins **/
     unsigned countTargets(const std::vector<std::string> &proteinList);
