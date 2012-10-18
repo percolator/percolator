@@ -876,30 +876,31 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
   gamma_best = alpha_best = beta_best = -1.0;
   double best_objective = -100000000;
   std::vector<std::vector<std::string> > names;
-  std::vector<double> probs,empq,estq,empq_unique_probs,estq_unique_probs;
-  std::vector<unsigned> numberFP,numberTP;  
-  std::vector<double> gamma_search,beta_search,alpha_search;
+  std::vector<double> probs,empq,estq; 
   
-  double alpha_step = 0.05;
+  double alpha_step = 0.01;
   double beta_step = 0.01;
   double gamma_step = 0.1;
   bool first_beta = false;
   for (double i = 0.0; i < gamma_limit; i+=gamma_step)
   {
     first_beta = true;
+    double gamma_local = i;
+    
     for (double j = log10(beta_step); j < log10(beta_limit); j+=beta_step)
     {
-      for (double k = log10(alpha_step); k < log10(alpha_limit); k+=alpha_step)
-      {
-	double gamma_local = i;
-	double beta_local = pow(10,j);
-	//NOTE this is horrible code but it works
-	if(first_beta)
+      double beta_local = pow(10,j);
+	//NOTE this is horrible code but it works for testing
+      if(first_beta)
 	{
 	  beta_local = 0.0;
 	  j -= beta_step;
 	  first_beta = false;
 	}
+	
+      for (double k = log10(alpha_step); k < log10(alpha_limit); k+=alpha_step)
+      {
+	
 	double alpha_local = pow(10,k);
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
