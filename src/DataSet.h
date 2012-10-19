@@ -80,9 +80,10 @@ class DataSet {
       isotopeMass = on;
     }
     
-    static void setNumFeatures(bool doc);
-
-    //const double* getFeatures(const int pos) const;
+    static unsigned getNumFeatures()
+    {
+      return featureNames.getNumFeatures();
+    }
     
     int inline getSize() const {
       return numSpectra;

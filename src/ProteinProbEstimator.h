@@ -320,8 +320,8 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 std::string decoyPattern = "random", bool mayufdr = false,bool outputDecoys = false, 
-			 bool tabDelimitedOut = false, std::string proteinFN = "", bool reduceTree = false, bool truncate = true,
-			 double mse_threshold = 0.05
+			 bool tabDelimitedOut = false, std::string proteinFN = "", std::string proteinDecoyFN = "",  
+			 bool reduceTree = false, bool truncate = true, double mse_threshold = 0.05
 			);
     
     virtual ~ProteinProbEstimator();
@@ -352,7 +352,7 @@ class ProteinProbEstimator {
     /** compute pi0 from the set of pvalues**/
     double estimatePi0(const unsigned int numBoot = 100);
     /** print a tab delimited list of proteins probabilities in a file or stdout**/
-    void print(ostream& myout);
+    void print(ostream& myout, bool decoy=false);
     
     /** add proteins read from the database **/
     void addProteinDb(const percolatorInNs::protein &protein);
@@ -374,6 +374,7 @@ class ProteinProbEstimator {
     void setOutputDecoys(bool outputDecoys);
     void setTabDelimitedOutput(bool tabDelimitedOut);
     void setProteinFN(std::string proteinFN);
+    void setProteinDecoyFN(std::string proteinDecoyFN);
     bool getTiesAsOneProtein();
     bool getUsePio();
     bool getOutputEmpirQval();
@@ -386,6 +387,7 @@ class ProteinProbEstimator {
     bool getOutputDecoys();
     bool getTabDelimitedOutput();
     std::string getProteinFN();
+    std::string getProteinDecoyFN();
     std::string getDecoyPatter();
     double getFDR();
     double getPi0();
@@ -459,6 +461,7 @@ class ProteinProbEstimator {
     double threshold;
     std::string decoyPattern;
     std::string proteinFN;
+    std::string proteinDecoyFN;
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

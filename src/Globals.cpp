@@ -25,8 +25,6 @@ Globals::~Globals() {
 }
 
 Globals::Globals() {
-  //    assert(!glob);
-  
   glob = this;
   verbose = 2;
   timeCheckPoint = false;

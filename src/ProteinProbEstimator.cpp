@@ -54,8 +54,7 @@ double squareAntiderivativeAt(double m, double b, double xVal)
   return (u*xVal*xVal*xVal/3.0 + v*xVal*xVal/2.0 + t*xVal);
 }
 
-double 
-area(double x1, double y1, double x2, double y2)
+double area(double x1, double y1, double x2, double y2)
 {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
@@ -76,7 +75,8 @@ double areaSq(double x1, double y1, double x2, double y2) {
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
 			  bool __dogridSearch, unsigned __depth,std::string __decoyPattern, bool __mayufdr,bool __outputDecoys, 
-			  bool __tabDelimitedOut, std::string __proteinFN, bool __reduceTree, bool __truncate, double __threshold) 
+			  bool __tabDelimitedOut, std::string __proteinFN, std::string __proteinDecoyFN, 
+			  bool __reduceTree, bool __truncate, double __threshold) 
 {
   peptideScores = 0;
   proteinGraph = 0;
@@ -100,6 +100,7 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   outputDecoys = __outputDecoys;
   tabDelimitedOut = __tabDelimitedOut;
   proteinFN = __proteinFN;
+  proteinDecoyFN = __proteinDecoyFN;
   rocN = default_rocN; 
   reduceTree = __reduceTree;
   truncate = __truncate;
@@ -308,11 +309,20 @@ void ProteinProbEstimator::run(){
     << " cpu seconds or " << diff << " seconds wall time" << endl;
   
 
-   if(tabDelimitedOut && !proteinFN.empty())
+   if(tabDelimitedOut) 
    {
-      ofstream proteinOut(proteinFN.data(), ios::out);
-      print(proteinOut);
-      proteinOut.close();
+      if(!proteinFN.empty())
+      {
+	ofstream proteinOut(proteinFN.data(), ios::out);
+	print(proteinOut,false);
+	proteinOut.close();
+      }
+      if(!proteinDecoyFN.empty())
+      {
+	ofstream proteinOut(proteinDecoyFN.data(), ios::out);
+	print(proteinOut,true);
+	proteinOut.close();
+      }
    }
    else
    {
@@ -374,7 +384,7 @@ double ProteinProbEstimator::estimatePriors()
 
 
 
-void ProteinProbEstimator::print(ostream& myout) {
+void ProteinProbEstimator::print(ostream& myout, bool decoy) {
   
   std::vector<std::pair<std::string,Protein*> > myvec(proteins.begin(), proteins.end());
   std::sort(myvec.begin(), myvec.end(), IntCmpProb());
@@ -386,7 +396,7 @@ void ProteinProbEstimator::print(ostream& myout) {
   for (std::vector<std::pair<std::string,Protein*> > ::const_iterator myP = myvec.begin(); 
 	 myP != myvec.end(); myP++) 
   {
-    if( (!outputDecoys && !myP->second->getIsDecoy()) || (outputDecoys))
+    if( (decoy && myP->second->getIsDecoy()) || (!decoy && !myP->second->getIsDecoy()))
     {
       myout << myP->second->getName() << "\t" << myP->second->getQ() << "\t" << myP->second->getPEP() << "\t";
       std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
@@ -872,17 +882,22 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_limit, double alpha_limit)
 {
  
+  if(VERB > 1)
+  {
+    std::cerr << "Running super grid search..." << std::endl;
+  }
+  
   double gamma_best, alpha_best, beta_best;
   gamma_best = alpha_best = beta_best = -1.0;
   double best_objective = -100000000;
   std::vector<std::vector<std::string> > names;
   std::vector<double> probs,empq,estq; 
   
-  double alpha_step = 0.01;
-  double beta_step = 0.01;
+  double alpha_step = 0.05;
+  double beta_step = 0.025;
   double gamma_step = 0.1;
   bool first_beta = false;
-  for (double i = 0.0; i <= gamma_limit; i+=gamma_step)
+  for (double i = 0.1; i <= gamma_limit; i+=gamma_step)
   {
     first_beta = true;
     double gamma_local = i;
@@ -1418,6 +1433,11 @@ void ProteinProbEstimator::setProteinFN(std::string __proteinFN)
   proteinFN = __proteinFN;
 }
 
+void ProteinProbEstimator::setProteinDecoyFN(std::string __proteinDecoyFN)
+{
+  proteinDecoyFN = __proteinDecoyFN;
+}
+
 void ProteinProbEstimator::setTabDelimitedOutput(bool __tabDelimitedOut)
 {
   tabDelimitedOut = __tabDelimitedOut;
@@ -1506,7 +1526,13 @@ string ProteinProbEstimator::getProteinFN()
   return proteinFN;
 }
 
+string ProteinProbEstimator::getProteinDecoyFN()
+{
+  return proteinDecoyFN;
+}
+
 bool ProteinProbEstimator::getTabDelimitedOutput()
 {
   return tabDelimitedOut;
 }
+

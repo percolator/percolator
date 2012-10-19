@@ -36,6 +36,7 @@ class Logger
     inline void activate_file_log(){file_log = true;}
     inline void disactivate_file_log(){file_log = false;}
     
+    // overload << to send x to cerr and file_log is activated
     template<class T>
     Logger& operator<<(const T& x) 
     {
@@ -43,8 +44,23 @@ class Logger
        if(file_log) std_log << x;
        return *this;
     }
-  
+    
+    // this is the type of std::cout/std::cerr
+    typedef std::basic_ostream<char, std::char_traits<char> > CoutType;
+
+    // this is the function signature of std::endl
+    typedef CoutType& (*StandardEndLine)(CoutType&);
+
+    // define an operator<< to take in std::endl
+    Logger& operator<<(StandardEndLine manip)
+    {
+        manip(std::cerr);
+	if(file_log) manip(std_log);
+        return *this;
+    }
+
   private:
+    
     bool file_log;
     std::ofstream std_log;
   

@@ -347,6 +347,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "protein-results",
       "Output tab delimited protein probabilities results to a file instead of stdout",
       "filename");
+  cmd.defineOption("PRD",
+      "protein-results-decoy",
+      "Output tab delimited decoy protein probabilities results to a file instead of stdout",
+      "filename");
   cmd.defineOption("T",
       "reduce-tree",
       "Reduce the tree of proteins in order to estimate alpha,beta and gamma faster.(Only valid if option -A is active).",
@@ -394,6 +398,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     unsigned depth = 3;
     std::string decoyWC = "random";
     std::string proteinFN = "";
+    std::string proteinDecoyFN = "";
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
@@ -411,9 +416,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       tabDelimitedOut = true;
     }
     
+    if (cmd.optionSet("PRD")) {
+      proteinDecoyFN = cmd.options["PRD"];
+      tabDelimitedOut = true;
+    }
+    
     if(mayusfdr && usePi0)
     {
-      std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used "
+      std::cerr << "ERROR : Pi0(option I) and Protein FDR(option Q) cannot be used "
       "together to estimate Protein Probabilities." << std::endl;
       exit(-1);
     }
@@ -428,7 +438,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
-					       outputDecoys,tabDelimitedOut,proteinFN,reduceTree,truncate,mse_threshold);
+					       outputDecoys,tabDelimitedOut,proteinFN,proteinDecoyFN,reduceTree,truncate,mse_threshold);
   }
   
   if (cmd.optionSet("e")) {
@@ -466,7 +476,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(selectedCpos == 0)
     {
       std::cerr << "WARNING, the positive penalty(cpos) is 0, therefore both the positive and negative penalties are going "
-		 "to be cros-validated. The option --Cneg has to be used to together with the option --Cpos" << std::endl;
+		 "to be cros-validated. The option --Cneg has to be used together with the option --Cpos" << std::endl;
     }
   }
   if (cmd.optionSet("J")) {
@@ -722,14 +732,14 @@ void Caller::readFiles() {
 	 ++readProteins;
       }
       
-      if(targetSet->getSize() == 0)
+      if(targetSet->getSize() <= ((targetSet->getNumFeatures() * 5) / 0.1))
       {
-	std::cerr << "\nERROR : the number of target PSMs found is zero.\n" << std::endl;
+	std::cerr << "\nERROR : the number of target PSMs read is too small.\n" << std::endl;
 	exit(-1);
       }
-      if(decoySet->getSize() == 0)
+      if(decoySet->getSize() <= (targetSet->getNumFeatures() * 5))
       {
-	std::cerr << "\nERROR : the number of decoy PSMs found is zero.\n" << std::endl;
+	std::cerr << "\nERROR : the number of decoy PSMs read is too small.\n" << std::endl;
 	exit(-1);
       }
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
@@ -1138,8 +1148,6 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
         "for each unique peptide." << endl;
   }
   
-  bool makeUnique = isUniquePeptideRun && reportUniquePeptides;
-  
   if(isUniquePeptideRun)
   {
     fullset->weedOutRedundant();
@@ -1213,13 +1221,24 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     normal.print(*fullset);
   } else {
     if(writeOutput){
-      ofstream targetStream(resultFN.data(), ios::out);
+      ofstream targetStream(("peptides_"+resultFN).data(), ios::out);
+      normal.print(*fullset, targetStream);
+      targetStream.close();
+    }
+    else
+    {
+      ofstream targetStream(("psms_"+resultFN).data(), ios::out);
       normal.print(*fullset, targetStream);
       targetStream.close();
     }
   }
   if (!decoyOut.empty() && writeOutput) {
-    ofstream decoyStream(decoyOut.data(), ios::out);
+    ofstream decoyStream(("peptides_"+decoyOut).data(), ios::out);
+    shuffled.print(*fullset, decoyStream);
+    decoyStream.close();
+  }
+  else if(!decoyOut.empty()) {
+    ofstream decoyStream(("psms_"+decoyOut).data(), ios::out);
     shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
@@ -1234,6 +1253,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
 }
 
 int Caller::run() {
+
   time(&startTime);
   startClock = clock();
   if (VERB > 0) {
