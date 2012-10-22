@@ -313,13 +313,13 @@ void ProteinProbEstimator::run(){
    {
       if(!proteinFN.empty())
       {
-	ofstream proteinOut(proteinFN.data(), ios::out);
+	ofstream proteinOut(("proteins_"+proteinFN).data(), ios::out);
 	print(proteinOut,false);
 	proteinOut.close();
       }
       if(!proteinDecoyFN.empty())
       {
-	ofstream proteinOut(proteinDecoyFN.data(), ios::out);
+	ofstream proteinOut(("proteins_"+proteinDecoyFN).data(), ios::out);
 	print(proteinOut,true);
 	proteinOut.close();
       }
@@ -893,8 +893,8 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
   std::vector<std::vector<std::string> > names;
   std::vector<double> probs,empq,estq; 
   
-  double alpha_step = 0.05;
-  double beta_step = 0.025;
+  double alpha_step = 0.025;
+  double beta_step = 0.01;
   double gamma_step = 0.1;
   bool first_beta = false;
   for (double i = 0.1; i <= gamma_limit; i+=gamma_step)

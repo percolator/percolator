@@ -343,30 +343,22 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if the label that idenfifies the decoys in the database \
        is not the default (by default : ramdom) (Only valid if option -A  is active).",
       "value");
-  cmd.defineOption("PR",
-      "protein-results",
-      "Output tab delimited protein probabilities results to a file instead of stdout",
-      "filename");
-  cmd.defineOption("PRD",
-      "protein-results-decoy",
-      "Output tab delimited decoy protein probabilities results to a file instead of stdout",
-      "filename");
   cmd.defineOption("T",
       "reduce-tree",
       "Reduce the tree of proteins in order to estimate alpha,beta and gamma faster.(Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("TDC",
+  cmd.defineOption("Y",
       "target-decoy-competition",
       "Use target decoy competition mode on the PSMs.(recommended when using -A).",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("MSE",
+  cmd.defineOption("H",
       "mse-rocN-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search (recommended 0.05 for normal size datasets and 0.1 for big size datasets).(Only valid if option -A is active).",
       "",
       "value");
-  cmd.defineOption("NT",
+  cmd.defineOption("W",
       "no-truncation",
       "Proteins with a very low score (< 0.001) will not be truncated (assigned 0.0 probability).(Only valid if option -A is active).",
       "",
@@ -376,6 +368,14 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.parseArgs(argc, argv);
   // now query the parsing results
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
+  
+  if (cmd.optionSet("B")) {
+    decoyOut = cmd.options["B"];
+  }
+  
+  if (cmd.optionSet("r")) {
+    resultFN = cmd.options["r"];
+  }
   
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -397,8 +397,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool gridSearch = true;
     unsigned depth = 3;
     std::string decoyWC = "random";
-    std::string proteinFN = "";
-    std::string proteinDecoyFN = "";
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
@@ -409,17 +407,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
     bool reduceTree = cmd.optionSet("T");
-    bool truncate = cmd.optionSet("NT");
+    bool truncate = cmd.optionSet("W");
     
-    if (cmd.optionSet("PR")) {
-      proteinFN = cmd.options["PR"];
-      tabDelimitedOut = true;
-    }
-    
-    if (cmd.optionSet("PRD")) {
-      proteinDecoyFN = cmd.options["PRD"];
-      tabDelimitedOut = true;
-    }
+    if (!resultFN.empty() || !decoyOut.empty()) tabDelimitedOut = true;
     
     if(mayusfdr && usePi0)
     {
@@ -432,13 +422,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
-    if (cmd.optionSet("MSE")) mse_threshold = cmd.getDouble("MSE",0.001,1.0);
+    if (cmd.optionSet("H")) mse_threshold = cmd.getDouble("H",0.001,1.0);
     
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
-					       outputDecoys,tabDelimitedOut,proteinFN,proteinDecoyFN,reduceTree,truncate,mse_threshold);
+					       outputDecoys,tabDelimitedOut,resultFN,decoyOut,reduceTree,truncate,mse_threshold);
   }
   
   if (cmd.optionSet("e")) {
@@ -499,9 +489,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     double frac = cmd.getDouble("f", 0.0, 1.0);
     trainRatio = frac;
   }
-  if (cmd.optionSet("r")) {
-    resultFN = cmd.options["r"];
-  }
   if (cmd.optionSet("u")) {
     Normalizer::setType(Normalizer::UNI);
   }
@@ -525,9 +512,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("S")) {
     Scores::setSeed(cmd.getInt("S", 1, 20000));
-  }
-  if (cmd.optionSet("B")) {
-    decoyOut = cmd.options["B"];
   }
   if (cmd.optionSet("K")) {
     DescriptionOfCorrect::setKlammer(true);
@@ -553,7 +537,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     showExpMass = true;
     Scores::setShowExpMass(showExpMass);
   }
-  if (cmd.optionSet("TDC")) {
+  if (cmd.optionSet("Y")) {
     target_decoy_competition = true; 
   }
   // if there are no arguments left...
@@ -732,15 +716,13 @@ void Caller::readFiles() {
 	 ++readProteins;
       }
       
-      if(targetSet->getSize() <= ((targetSet->getNumFeatures() * 5) / 0.1))
+      if(targetSet->getSize() <= (targetSet->getNumFeatures() * 5))
       {
-	std::cerr << "\nERROR : the number of target PSMs read is too small.\n" << std::endl;
-	exit(-1);
+	std::cerr << "\nWARNING : the number of target PSMs read is too small.\n" << std::endl;
       }
       if(decoySet->getSize() <= (targetSet->getNumFeatures() * 5))
       {
-	std::cerr << "\nERROR : the number of decoy PSMs read is too small.\n" << std::endl;
-	exit(-1);
+	std::cerr << "\nWARNING : the number of decoy PSMs read is too small.\n" << std::endl;
       }
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
@@ -1221,24 +1203,24 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     normal.print(*fullset);
   } else {
     if(writeOutput){
-      ofstream targetStream(("peptides_"+resultFN).data(), ios::out);
+      ofstream targetStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+resultFN).data(), ios::out);
       normal.print(*fullset, targetStream);
       targetStream.close();
     }
     else
     {
-      ofstream targetStream(("psms_"+resultFN).data(), ios::out);
+      ofstream targetStream(("PSMs_"+resultFN).data(), ios::out);
       normal.print(*fullset, targetStream);
       targetStream.close();
     }
   }
   if (!decoyOut.empty() && writeOutput) {
-    ofstream decoyStream(("peptides_"+decoyOut).data(), ios::out);
+    ofstream decoyStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+decoyOut).data(), ios::out);
     shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
   else if(!decoyOut.empty()) {
-    ofstream decoyStream(("psms_"+decoyOut).data(), ios::out);
+    ofstream decoyStream(("PSMs_"+decoyOut).data(), ios::out);
     shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
@@ -1254,6 +1236,27 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
 
 int Caller::run() {
 
+  std::string fileLog = std::string(LOG_FILE);
+  streambuf* save_sbuf_cerr;
+  streambuf* save_sbuf_ferr;
+  ofstream ferr;
+  if(!fileLog.empty())
+  { 
+    try
+    {
+      ferr.open (fileLog.c_str());
+      assert (ferr);
+      save_sbuf_cerr = std::cerr.rdbuf();
+      assert (save_sbuf_cerr);
+      save_sbuf_ferr = ferr.rdbuf();
+      assert (save_sbuf_ferr);
+      std::cerr.rdbuf(save_sbuf_ferr);
+    }catch (const std::exception& e)
+    {
+       std::cerr << "ERROR: " << e.what() << " redirecting cerr buffer.." << std::endl;
+    }
+  }
+  
   time(&startTime);
   startClock = clock();
   if (VERB > 0) {
@@ -1357,5 +1360,13 @@ int Caller::run() {
   }
   // write output to file
   writeXML();
+  
+  if(ferr.is_open())
+  {
+    std::cerr.rdbuf(save_sbuf_cerr);
+    std::cerr.flush();
+    ferr.close();
+  }
+  
   return 0;
 }
