@@ -1236,9 +1236,11 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
 
 int Caller::run() {  
   
-  int ret = Globals::getInstance()->redirectBuffer();
-  if(ret) return ret;
-  
+  if(Globals::getInstance()->getLogFile() != ""){
+    int ret = Globals::getInstance()->redirectBuffer();
+    if(ret) return ret;
+  }
+
   time(&startTime);
   startClock = clock();
   if (VERB > 0) {
