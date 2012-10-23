@@ -124,6 +124,7 @@ class Globals {
     void setLogFile(const std::string& filename);
     void initLogger();
     int redirectBuffer();
+    void unredirectBuffer();
     
   private:
     Globals();

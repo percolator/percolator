@@ -22,18 +22,11 @@
 Globals* Globals::glob = 0;
 
 Globals::~Globals() {
-  
-  if(buffer_redirected)
-  {
-    std::cerr.rdbuf(save_sbuf_cerr);
-    std::cerr.flush();
-    ferr.close();
-  }
-  else if (log) {
+  unredirectBuffer();
+  if (log) {
     delete log;
     log = 0;
   }
-  
 }
 
 Globals::Globals() {
@@ -112,6 +105,20 @@ int Globals::redirectBuffer()
   {
     std::cerr << "ERROR: trying to redirect cerr buffer to an empty file, have you called Globals::setLogFile?." << std::endl;
     return -1;
+  }
+}
+
+void Globals::unredirectBuffer() {
+  if(buffer_redirected)
+  {
+    std::cerr.rdbuf(save_sbuf_cerr);
+    std::cerr.flush();
+    ferr.close();
+    buffer_redirected = false;
+  }
+  else if(log)
+  {
+    log->disactivate_file_log();
   }
 }
 
