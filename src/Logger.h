@@ -29,7 +29,6 @@ class Logger
   
     Logger();
     Logger(const char* file);
-
     virtual ~Logger();
     
     void attach_file(const char* file);

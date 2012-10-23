@@ -95,7 +95,7 @@ IF(XERCESC_INCLUDE_DIR)
   ENDIF(XERCESC_LIBRARIES)
 ENDIF(XERCESC_INCLUDE_DIR)
 
-if( XVERMAJ AND ${XVERMAJ} LESS 3)
+if(${XVERMAJ} LESS 3)
   message(FATAL_ERROR "The version of Xerces-c found : " ${XERCESC_VERSION} " is too old ")
 endif()
 

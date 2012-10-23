@@ -1234,28 +1234,10 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
 }
 
-int Caller::run() {
-
-  std::string fileLog = std::string(LOG_FILE);
-  streambuf* save_sbuf_cerr;
-  streambuf* save_sbuf_ferr;
-  ofstream ferr;
-  if(!fileLog.empty())
-  { 
-    try
-    {
-      ferr.open (fileLog.c_str());
-      assert (ferr);
-      save_sbuf_cerr = std::cerr.rdbuf();
-      assert (save_sbuf_cerr);
-      save_sbuf_ferr = ferr.rdbuf();
-      assert (save_sbuf_ferr);
-      std::cerr.rdbuf(save_sbuf_ferr);
-    }catch (const std::exception& e)
-    {
-       std::cerr << "ERROR: " << e.what() << " redirecting cerr buffer.." << std::endl;
-    }
-  }
+int Caller::run() {  
+  
+  int ret = Globals::getInstance()->redirectBuffer();
+  if(ret) return ret;
   
   time(&startTime);
   startClock = clock();
@@ -1359,14 +1341,6 @@ int Caller::run() {
 
   }
   // write output to file
-  writeXML();
-  
-  if(ferr.is_open())
-  {
-    std::cerr.rdbuf(save_sbuf_cerr);
-    std::cerr.flush();
-    ferr.close();
-  }
-  
+  writeXML();  
   return 0;
 }

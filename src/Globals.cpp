@@ -17,17 +17,32 @@
 
 #include "Globals.h"
 #include <iostream>
+#include <tcutil.h>
 
 Globals* Globals::glob = 0;
-Logger* Globals::log = 0;
 
 Globals::~Globals() {
+  
+  if(buffer_redirected)
+  {
+    std::cerr.rdbuf(save_sbuf_cerr);
+    std::cerr.flush();
+    ferr.close();
+  }
+  else if (log) {
+    delete log;
+    log = 0;
+  }
+  
 }
 
 Globals::Globals() {
   glob = this;
   verbose = 2;
   timeCheckPoint = false;
+  fileLog = std::string(LOG_FILE);
+  log = 0;
+  buffer_redirected = false;
 }
 
 Globals* Globals::getInstance() {
@@ -37,21 +52,34 @@ Globals* Globals::getInstance() {
   return glob;
 }
 
-Logger* Globals::getLogger()
-{
-  if(!log)
+Logger* Globals::getLogger() {
+  if(buffer_redirected)
   {
-    std::string fileLog = std::string(LOG_FILE);
-    if(!fileLog.empty())
-    {
-      log = new Logger(fileLog.c_str());
-    }
-    else
-    {
-      log = new Logger();
-    }
+    std::cerr << "ERROR: cerr buffer is already being redirected.." << std::endl;
+    exit(-1);
+  }
+  else if (!log) {
+    initLogger();
   }
   return log;
+}
+
+void Globals::initLogger() {
+  if(!fileLog.empty())
+  {
+    log = new Logger(fileLog.c_str());
+  }
+  else if(!log)
+  {
+    log = new Logger();
+  }
+}
+void Globals::setLogFile(const std::string& filename) {
+  if (!log) {
+    initLogger();
+  }
+  log->attach_file(filename.c_str());
+  fileLog = filename;
 }
 
 void Globals::checkTime(const std::string& message){
@@ -63,14 +91,33 @@ void Globals::checkTime(const std::string& message){
   }
 }
 
+int Globals::redirectBuffer()
+{
+  if(!fileLog.empty())
+  { 
+    try
+    {
+      ferr.open (fileLog.c_str());
+      save_sbuf_cerr = std::cerr.rdbuf();
+      std::cerr.rdbuf(ferr.rdbuf());
+      buffer_redirected = true;
+      return 0;
+    }catch (const std::exception& e)
+    {
+       std::cerr << "ERROR: " << e.what() << " redirecting cerr buffer.." << std::endl;
+       return -1;
+    }
+  }
+  else
+  {
+    std::cerr << "ERROR: trying to redirect cerr buffer to an empty file, have you called Globals::setLogFile?." << std::endl;
+    return -1;
+  }
+}
+
 void Globals::clean() {
   if (glob) {
     delete glob;
   }
   glob = 0;
-  if(log)
-  {
-    delete log;
-  }
-  log = 0;
 }
