@@ -136,7 +136,7 @@ void MzidentmlReader::addFeatureDescriptions(bool doEnzyme) {
   {
     push_backFeatureDescription("RawScore");
     push_backFeatureDescription("DeNovoScore");
-    push_backFeatureDescription("ScoreRatio");
+    push_backFeatureDescription("ScoreDiff");
     push_backFeatureDescription("lnSpecEValue");
     push_backFeatureDescription("lnEValue");
     //The below are from element userParam
@@ -329,12 +329,13 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
-
+  std::string psmid = "";
   //FIXME IMPORTANT fix, here I take only 1 peptide per PSM but the option -m might tell me to take more,
   //FIXME I have to modify this loop to obtain more PSMs in that case
   //NOTE I might be able to get the PeptideEVidence and the protein out of the PSM object
   //Get rid of unprintables in proteinName?
-
+  try
+  {
   BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef()) {
     std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
     ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
@@ -361,7 +362,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
   unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
   std::map<char, int> ptmMap = po->ptmScheme;
-  std::string psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
+  psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
   
   //----------------
@@ -474,13 +475,15 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
       }
     }
     
+    
     //The raw theoretical mass from MSGF+ is often of the wrong isotope
-    double dM = massDiff(observed_mass, theoretic_mass, charge);
+    double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
+    //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
     
     //Add a small number to some logged features to avoid log(0)
     f_seq.push_back(RawScore);
     f_seq.push_back(DeNovoScore);
-    f_seq.push_back(RawScore / DeNovoScore);  // Score ratio
+    f_seq.push_back(DeNovoScore - RawScore);  // Score difference (score ratio could become -inf)
     f_seq.push_back(-log(SpecEValue));
     f_seq.push_back(-log(EValue));
     f_seq.push_back(IsotopeError);
@@ -557,5 +560,24 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     }
 
     database->savePsm(useScanNumber, psm_p);
+    
+    
+}
+
+  
+  // Try-Catch statement to find potential errors among the features.
+  catch(std::exception const& e)
+  {
+    std::cerr << "There was error parsing PSM: " << psmid << "The error was: " << e.what() << std::endl;
+    exit(-1);
+  }
+  catch(...)
+  {
+    std::cerr << "Unknown error..." << std::endl;
+    exit(-1);
+  }
+    
+    
+    
     return;
   }
