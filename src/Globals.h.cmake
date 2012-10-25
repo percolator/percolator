@@ -89,17 +89,23 @@ limitations under the License.
 #endif
 
 #define VERB (Globals::getInstance()->getVerbose())
+#define STD_CERR (*(Globals::getInstance()->getLogger())) 
 
 #include <time.h>
 #include <string>
 #include "Logger.h"
 
 class Globals {
+
   public:
     virtual ~Globals();
     static Globals* getInstance();
     static void clean();
-    static Logger* getLogger();
+    Logger* getLogger();
+    
+    std::string& getLogFile(){
+      return fileLog;
+    }
     int getVerbose() {
       return verbose;
     }
@@ -115,12 +121,20 @@ class Globals {
     clock_t checkTimeClock;
     bool timeCheckPoint;
     void checkTime(const std::string& message);
+    void setLogFile(const std::string& filename);
+    void initLogger();
+    int redirectBuffer();
+    void unredirectBuffer();
     
   private:
     Globals();
     int verbose;
     static Globals* glob;
-    static Logger *log;
+    Logger *log;
+    std::string fileLog;
+    bool buffer_redirected;
+    streambuf* save_sbuf_cerr;
+    ofstream ferr;
 };
 
 #endif /*GLOBALS_H_*/

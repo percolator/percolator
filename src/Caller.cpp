@@ -76,7 +76,7 @@ Caller::Caller() :
         tabInput(false), readStdIn(false),
         docFeatures(false), quickValidation(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
-        schemaValidation(true), hasProteins(false),
+        schemaValidation(true), hasProteins(false), target_decoy_competition(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 }
@@ -343,20 +343,39 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if the label that idenfifies the decoys in the database \
        is not the default (by default : ramdom) (Only valid if option -A  is active).",
       "value");
-  cmd.defineOption("PR",
-      "protein-results",
-      "Output tab delimited protein probabilities results to a file instead of stdout",
-      "filename");
   cmd.defineOption("T",
       "reduce-tree",
       "Reduce the tree of proteins in order to estimate alpha,beta and gamma faster.(Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
-
+  cmd.defineOption("Y",
+      "target-decoy-competition",
+      "Use target decoy competition mode on the PSMs.(recommended when using -A).",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("H",
+      "mse-rocN-threshold",
+      "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search (recommended 0.05 for normal size datasets and 0.1 for big size datasets).(Only valid if option -A is active).",
+      "",
+      "value");
+  cmd.defineOption("W",
+      "no-truncation",
+      "Proteins with a very low score (< 0.001) will not be truncated (assigned 0.0 probability).(Only valid if option -A is active).",
+      "",
+      FALSE_IF_SET);
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
   if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
+  
+  if (cmd.optionSet("B")) {
+    decoyOut = cmd.options["B"];
+  }
+  
+  if (cmd.optionSet("r")) {
+    resultFN = cmd.options["r"];
+  }
   
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -374,10 +393,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     double alpha = -1;
     double beta = -1;
     double gamma = -1;
+    double mse_threshold = 0.05;
     bool gridSearch = true;
     unsigned depth = 3;
     std::string decoyWC = "random";
-    std::string proteinFN = "";
     bool tiesAsOneProtein = cmd.optionSet("g");
     bool usePi0 = cmd.optionSet("I");
     bool outputEmpirQVal = cmd.optionSet("q");
@@ -388,15 +407,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool tabDelimitedOut = false;
     bool outputDecoys = cmd.optionSet("Z");
     bool reduceTree = cmd.optionSet("T");
+    bool truncate = cmd.optionSet("W");
     
-    if (cmd.optionSet("PR")) {
-      proteinFN = cmd.options["PR"];
-      tabDelimitedOut = true;
-    }
+    if (!resultFN.empty() || !decoyOut.empty()) tabDelimitedOut = true;
     
     if(mayusfdr && usePi0)
     {
-      std::cerr << "ERROR : Pi0(option I) and Mayus FDR(option Q) cannot be used "
+      std::cerr << "ERROR : Pi0(option I) and Protein FDR(option Q) cannot be used "
       "together to estimate Protein Probabilities." << std::endl;
       exit(-1);
     }
@@ -405,12 +422,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
+    if (cmd.optionSet("H")) mse_threshold = cmd.getDouble("H",0.001,1.0);
     
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
-					       outputDecoys,tabDelimitedOut,proteinFN,reduceTree);
+					       outputDecoys,tabDelimitedOut,resultFN,decoyOut,reduceTree,truncate,mse_threshold);
   }
   
   if (cmd.optionSet("e")) {
@@ -448,7 +466,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(selectedCpos == 0)
     {
       std::cerr << "WARNING, the positive penalty(cpos) is 0, therefore both the positive and negative penalties are going "
-		 "to be cros-validated. The option --Cneg has to be used to together with the option --Cpos" << std::endl;
+		 "to be cros-validated. The option --Cneg has to be used together with the option --Cpos" << std::endl;
     }
   }
   if (cmd.optionSet("J")) {
@@ -470,9 +488,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("f")) {
     double frac = cmd.getDouble("f", 0.0, 1.0);
     trainRatio = frac;
-  }
-  if (cmd.optionSet("r")) {
-    resultFN = cmd.options["r"];
   }
   if (cmd.optionSet("u")) {
     Normalizer::setType(Normalizer::UNI);
@@ -498,9 +513,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("S")) {
     Scores::setSeed(cmd.getInt("S", 1, 20000));
   }
-  if (cmd.optionSet("B")) {
-    decoyOut = cmd.options["B"];
-  }
   if (cmd.optionSet("K")) {
     DescriptionOfCorrect::setKlammer(true);
   }
@@ -524,6 +536,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   {
     showExpMass = true;
     Scores::setShowExpMass(showExpMass);
+  }
+  if (cmd.optionSet("Y")) {
+    target_decoy_competition = true; 
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -557,12 +572,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
-/**
- * for each feature, print raw and normalized weights after training
- *
- * @param weightStream stream to which the weights will be written
- * @param w vector containing the normalized weights
- */
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
   << "# first line contains normalized weights, second line the raw weights"
@@ -584,15 +593,6 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << endl;
 }
 
-/**
- * Instantiates the sanityCheck and sets sizes and feature tables for the sets
- * of target and decoy psms
- *
- * @param numFeatures number of features to train on
- * @param numSpectra number of spectra per set (same for both target and decoy)
- * @param featureNames array of names of individual features
- * @param pi0
- */
 void Caller::filelessSetup(const unsigned int numFeatures,
     const unsigned int numSpectra,
     char** featureNames, double pi0) {
@@ -606,11 +606,6 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
-/**
- * reads Percolator's input from file: stores enzyme info, feature names and
- * psm info (targetSet and decoySet) and initializes the appropriate
- * sanityCheck.
- */
 void Caller::readFiles() {
   
   if (xmlInputFN.size() != 0) 
@@ -721,15 +716,13 @@ void Caller::readFiles() {
 	 ++readProteins;
       }
       
-      if(targetSet->getSize() == 0)
+      if(targetSet->getSize() <= (targetSet->getNumFeatures() * 5))
       {
-	std::cerr << "\nERROR : the number of target PSMs found is zero.\n" << std::endl;
-	exit(-1);
+	std::cerr << "\nWARNING : the number of target PSMs read is too small.\n" << std::endl;
       }
-      if(decoySet->getSize() == 0)
+      if(decoySet->getSize() <= (targetSet->getNumFeatures() * 5))
       {
-	std::cerr << "\nERROR : the number of decoy PSMs found is zero.\n" << std::endl;
-	exit(-1);
+	std::cerr << "\nWARNING : the number of decoy PSMs read is too small.\n" << std::endl;
       }
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
@@ -1124,32 +1117,47 @@ void Caller::writeXML(){
   os.close();
 }
 
-void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
-    clock_t& procStartClock, vector<vector<double> >& w, double& diff){
+void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
+    clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
   // peptide run and the option was switched off
+  
   bool writeOutput = (isUniquePeptideRun == reportUniquePeptides);
+  
   if (reportUniquePeptides && VERB > 0 && writeOutput) {
     cerr << "Tossing out \"redundant\" PSMs keeping only the best scoring PSM "
         "for each unique peptide." << endl;
   }
-  bool makeUnique = isUniquePeptideRun && reportUniquePeptides;
-  fullset.merge(xv_test, selectionfdr, makeUnique);
+  
+  if(isUniquePeptideRun)
+  {
+    fullset->weedOutRedundant();
+  }
+  else
+  {
+    fullset->merge(xv_test, selectionfdr);
+    if(TDC)
+    {
+       fullset->weedOutRedundantTDC();
+	if(VERB > 0)
+	{
+	  std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
+	  << fullset->negSize() << " decoy PSMs" << std::endl;
+	}
+    }
+  }
   
   Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
-    //Logger log("log.txt");
-    //log << "Selecting pi_0=" << fullset.getPi0() << "\n";// << std::endl;
-    //Globals::getInstance()->log << "Selecting pi_0=" << fullset.getPi0() << "\n";// << std::endl;
-    std:cerr << "Selecting pi_0=" << fullset.getPi0() << endl;
+    std:cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
   }
   if (VERB > 0 && writeOutput) {
     cerr << "Calibrating statistics - calculating q values" << endl;
   }
-  int foundPSMs = fullset.calcQ(test_fdr);
+  int foundPSMs = fullset->calcQ(test_fdr);
   Globals::getInstance()->checkTime("calculate q-values");
-  fullset.calcPep();
+  fullset->calcPep();
   Globals::getInstance()->checkTime("calculate PEP values");
   if (VERB > 0 && docFeatures && writeOutput) {
     cerr << "For the cross validation sets the average deltaMass are ";
@@ -1192,30 +1200,47 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     weightStream.close();
   }
   if (resultFN.empty() && writeOutput) {
-    normal.print(fullset);
+    normal.print(*fullset);
   } else {
     if(writeOutput){
-      ofstream targetStream(resultFN.data(), ios::out);
-      normal.print(fullset, targetStream);
+      ofstream targetStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+resultFN).data(), ios::out);
+      normal.print(*fullset, targetStream);
+      targetStream.close();
+    }
+    else
+    {
+      ofstream targetStream(("PSMs_"+resultFN).data(), ios::out);
+      normal.print(*fullset, targetStream);
       targetStream.close();
     }
   }
   if (!decoyOut.empty() && writeOutput) {
-    ofstream decoyStream(decoyOut.data(), ios::out);
-    shuffled.print(fullset, decoyStream);
+    ofstream decoyStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+decoyOut).data(), ios::out);
+    shuffled.print(*fullset, decoyStream);
+    decoyStream.close();
+  }
+  else if(!decoyOut.empty()) {
+    ofstream decoyStream(("PSMs_"+decoyOut).data(), ios::out);
+    shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
   // set pi_0 value (to be outputted)
   if(isUniquePeptideRun) {
-    pi_0_peptides = fullset.getPi0();
+    pi_0_peptides = fullset->getPi0();
   }
   else {
-    pi_0_psms = fullset.getPi0();
-    numberQpsms = fullset.getQvaluesBelowLevel(0.01);
+    pi_0_psms = fullset->getPi0();
+    numberQpsms = fullset->getQvaluesBelowLevel(0.01);
   }
 }
 
-int Caller::run() {
+int Caller::run() {  
+  
+  if(Globals::getInstance()->getLogFile() != ""){
+    int ret = Globals::getInstance()->redirectBuffer();
+    if(ret) return ret;
+  }
+
   time(&startTime);
   startClock = clock();
   if (VERB > 0) {
@@ -1287,32 +1312,37 @@ int Caller::run() {
   }
 
   // calculate psms level probabilities
-  bool isUniquePeptideRun = false; //(this is not the unique peptides run)
-  calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
+  
+  //PSM probabilities TDA or TDC
+  calculatePSMProb(false, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
   if (xmlOutputFN.size() > 0){
     writeXML_PSMs();
   }
-  // calculate unique peptides level probabilities
+  
+  // calculate unique peptides level probabilities WOTE
   if(reportUniquePeptides){
-    isUniquePeptideRun = true; //(this is the unique peptides run)
-    calculatePSMProb(isUniquePeptideRun, procStart, procStartClock, w, diff);
+    calculatePSMProb(true, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
     if (xmlOutputFN.size() > 0){
       writeXML_Peptides();
     }
   }
   // calculate protein level probabilities
   if(calculateProteinLevelProb){
-    if (VERB > 0){
+
+    if (VERB > 0)
+    {
       cerr << "\nCalculating protein level probabilities with Fido\n";
       cerr << ProteinProbEstimator::printCopyright();
     }
+
     protEstimator->initialize(&fullset);
     protEstimator->run();
     if (xmlOutputFN.size() > 0){
       writeXML_Proteins();
     }
+
   }
   // write output to file
-  writeXML();
+  writeXML();  
   return 0;
 }

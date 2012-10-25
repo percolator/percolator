@@ -89,8 +89,8 @@ class Caller {
     Scores* getFullSet() {
       return &fullset;
     }
-    void calculatePSMProb(bool uniquePeptideRun, time_t& procStart,
-        clock_t& procStartClock, vector<vector<double> >& w, double& diff);
+    void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
+        clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC = false);
     int run();
     SetHandler* getSetHandler(SetHandlerType sh) {
       switch (sh) {
@@ -144,6 +144,7 @@ class Caller {
     bool schemaValidation;
     bool showExpMass;
     bool hasProteins;
+    bool target_decoy_competition;
     double test_fdr;
     double selectionfdr;
     double selectedCpos;

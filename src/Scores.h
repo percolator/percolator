@@ -17,14 +17,7 @@
 #ifndef SCORES_H_
 #define SCORES_H_
 
-#ifdef WIN32
-// #ifndef uint32_t
-// #define uint32_t unsigned long
-// #endif
-// #ifndef uint64_t
-// #define uint64_t unsigned long long
-// #endif
-#else
+#ifndef WIN32
   #include <stdint.h>
 #endif
 
@@ -39,30 +32,32 @@ using namespace std;
 class SetHandler;
 
 class ScoreHolder {
+  
   public:
     double score; // ,q,pep;
     PSMDescription* pPSM;
     int label;
-    /* this container holds the psms for each peptide, they have to be unique */
     std::vector<std::string> psms_list;
     
     ScoreHolder() :
       score(0.0), label(0), pPSM(NULL), psms_list () {
       ;
     }
+    
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
       score(s), label(l), pPSM(psm), psms_list () {
-      ;
     }
     virtual ~ScoreHolder() {
-      ;
     }
+    
     pair<double, bool> toPair() {
       return pair<double, bool> (score, label > 0);
     }
+    
     bool isTarget() {
       return label != -1;
     }
+    
     bool isDecoy() {
       return label == -1;
     }
@@ -82,6 +77,27 @@ struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
       && (__x.score > __y.score) ) );
   }
 };
+
+struct OrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool
+  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return ( (__x.pPSM->getPeptideSequence() < __y.pPSM->getPeptideSequence() ) 
+    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.score > __y.score) ) );
+  }
+};
+
+
+struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool
+  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return ( (__x.pPSM->scan < __y.pPSM->scan ) 
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->charge < __y.pPSM->charge) )
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->charge == __y.pPSM->charge) && (__x.pPSM->expMass < __y.pPSM->expMass) )
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->charge == __y.pPSM->charge) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+       && (__x.score > __y.score) ) );
+  }
+};
+
 
 inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
@@ -112,7 +128,7 @@ class ScoreHolderPeptide: public ScoreHolder {
       ScoreHolder(s, l, psm) {
     	;
     }
-    virtual ~ScoreHolderPeptide() {
+    virtual ~ScoreHolderPeptide()  {
       ;
     }
 };
@@ -128,7 +144,7 @@ class Scores {
   public:
     Scores();
     ~Scores();
-    void merge(vector<Scores>& sv, double fdr=0.01, bool reportUniquePeptides = false);
+    void merge(vector<Scores>& sv, double fdr=0.01, bool computePi0 = true);
     double calcScore(const double* features) const;
     vector<ScoreHolder>::iterator begin() {
       return scores.begin();
@@ -148,7 +164,8 @@ class Scores {
         const double cpos);
     void generateNegativeTrainingSet(AlgIn& data, const double cneg);
     void normalizeScores(double fdr=0.01);
-    void weedOutRedundant();
+    void weedOutRedundant(bool computePi0 = true);
+    void weedOutRedundantTDC(bool computePi0 = true);
     void printRetentionTime(ostream& outs, double fdr);
     int getInitDirection(const double fdr, vector<double>& direction,
         bool findDirection);

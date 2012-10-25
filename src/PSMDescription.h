@@ -35,6 +35,7 @@ class PSMDescription {
       predictedTime = prt;
       retentionFeatures = NULL;
     }
+    
     virtual ~PSMDescription();
     void clear() {
       proteinIds.clear();
@@ -46,10 +47,6 @@ class PSMDescription {
       return retentionFeatures;
     }
     static vector<double*> getRetFeatures(vector<PSMDescription> & psms);
-    
-    /*string& getPeptide() {
-      return peptide;
-    }*/
     
     string& getFullPeptide() {
       return getAParent()->peptide;
@@ -82,6 +79,7 @@ class PSMDescription {
         return this;
       }
     }
+    
     double getUnnormalizedRetentionTime() {
       return unnormalize(retentionTime);
     }
@@ -113,6 +111,7 @@ class PSMDescription {
     ;
 
     static double normDiv, normSub;
+    unsigned charge;
     double q, pep, p;
     double* features;
     double* retentionFeatures;

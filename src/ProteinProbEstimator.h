@@ -269,26 +269,17 @@ class ProteinProbEstimator {
     
     /** when grouping proteins discard all possible combinations for each group*/
     const static bool trivialGrouping = false;
-    
-    /** reduce the tree of proteins to increase the speed of computation of alpha,beta,gamma **/
-    /** using the reduced tree increase the speed x10 and it does not have effect in the protein probabilities
-     * for big files, for smaller files it gives less conservative results. */
-    //NOTE depecrated, I moved this parameter to the percolator input parameters
-    //const static bool reduceTree = false;
-    
     /** compute peptide level prior probability instead of using default = 0.1 **/
     const static bool computePriors = false;
-    /** use normal area instead of squared area when estimating the MSE FDR divergence **/
-    const static bool conservative = true;
     /** threshold used for fido to remove poor PSMs **/
     const static double psmThreshold = 0.0;
-    const static double reduced_psmThreshold = 0.15;
+    const static double reduced_psmThreshold = 0.2;
     /** threshold used for fido to classify a peptide as very low confidence **/
     const static double peptideThreshold = 0.001;
-    const static double reduced_peptideThreshold = 0.1;
+    const static double reduced_peptideThreshold = 0.2;
     /** threshold used for fido to classify a protein as very low confidence and prune it **/
-    const static double proteinThreshold = 0.01;
-    const static double reduced_proteinThreshold = 0.1;
+    const static double proteinThreshold = 0.01; 
+    const static double reduced_proteinThreshold = 0.2;
     /** default value for peptide prior probability used in fido to compute the peptide likehood **/
     const static double peptidePrior = 0.1; 
     /** number of maximum of tree configurations allowed in fido **/
@@ -301,7 +292,7 @@ class ProteinProbEstimator {
     /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
     const static double lambda = 0.15;
     /** threshold used in the MSE FDR divergence function to meassure separation between empirical and estimated q values*/
-    const static double threshold = 0.05;
+    /*const static double threshold = 0.05; included as a parameter*/
     /** number of false positives allowed while estiaming the ROC curve score **/
     /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
     const static unsigned default_rocN = 50;
@@ -314,11 +305,11 @@ class ProteinProbEstimator {
     /** GENERAL PARAMETERS **/
     
     /** threshold used to estimate the protein FDR **/
-    const static double psmThresholdMayu = 0.05;
+    const static double psmThresholdMayu = 0.90;
     /** whether to use the decoy prefix(faster) to check if a protein is decoy or not **/
     const static bool useDecoyPrefix = true;
     /** whether to count decoy proteins when estimated q values or not **/
-    const static bool countDecoyQvalue = false;
+    const static bool countDecoyQvalue = true;
     /** protein prior probability used to estimate the peptide prior probabilities **/
     const static double prior_protein = 0.5;
     
@@ -329,7 +320,9 @@ class ProteinProbEstimator {
 			 bool usePi0 = false, bool outputEmpirQVal = false, bool groupProteins = false, 
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 std::string decoyPattern = "random", bool mayufdr = false,bool outputDecoys = false, 
-			 bool tabDelimitedOut = false, std::string proteinFN = "", bool reduceTree = false);
+			 bool tabDelimitedOut = false, std::string proteinFN = "", std::string proteinDecoyFN = "",  
+			 bool reduceTree = false, bool truncate = true, double mse_threshold = 0.05
+			);
     
     virtual ~ProteinProbEstimator();
     
@@ -359,7 +352,7 @@ class ProteinProbEstimator {
     /** compute pi0 from the set of pvalues**/
     double estimatePi0(const unsigned int numBoot = 100);
     /** print a tab delimited list of proteins probabilities in a file or stdout**/
-    void print(ostream& myout);
+    void print(ostream& myout, bool decoy=false);
     
     /** add proteins read from the database **/
     void addProteinDb(const percolatorInNs::protein &protein);
@@ -381,6 +374,7 @@ class ProteinProbEstimator {
     void setOutputDecoys(bool outputDecoys);
     void setTabDelimitedOutput(bool tabDelimitedOut);
     void setProteinFN(std::string proteinFN);
+    void setProteinDecoyFN(std::string proteinDecoyFN);
     bool getTiesAsOneProtein();
     bool getUsePio();
     bool getOutputEmpirQval();
@@ -393,6 +387,7 @@ class ProteinProbEstimator {
     bool getOutputDecoys();
     bool getTabDelimitedOutput();
     std::string getProteinFN();
+    std::string getProteinDecoyFN();
     std::string getDecoyPatter();
     double getFDR();
     double getPi0();
@@ -403,15 +398,16 @@ class ProteinProbEstimator {
   private:
     
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
-    double getROC_N(const std::vector<unsigned> &fpArray, const std::vector<unsigned> &tpArray, int N);
+
+    void getROC_AUC(const std::vector<std::vector<string> > &names,
+		       const std::vector<double> &probabilities, double &auc);
     void getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names,
-					   const std::vector<double> &probabilities,
-					   std::vector<double> &empq,
-					   std::vector<double> &estq);
-    double getFDR_divergence(const std::vector<double> &estFDR, const std::vector<double> &empFDR, double THRESH);
-    void getROC(const std::vector<std::vector<string> > &names,std::vector<unsigned> &numberFP,std::vector<unsigned> &numberTP);
+					const std::vector<double> &probabilities,
+					std::vector<double> &empq,
+					std::vector<double> &estq);
+    void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse1, double &mse2, double &mse3, double &mse4);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
-    void gridSearchOptimize(double step=0.05, double gamma_limit=0.9, double beta_limit=0.9, double alpa_limit=0.9);
+    void gridSearchOptimize(double gamma_limit=0.5, double beta_limit=0.1, double alpha_limit=0.5);
     
     /** functions to count number of target and decoy proteins **/
     unsigned countTargets(const std::vector<std::string> &proteinList);
@@ -452,6 +448,7 @@ class ProteinProbEstimator {
     bool tabDelimitedOut;
     bool outputDecoys;
     bool reduceTree;
+    bool truncate;
     double pi0;
     double fdr;
     unsigned int numberDecoyProteins;
@@ -461,8 +458,10 @@ class ProteinProbEstimator {
     double gamma;
     double alpha;
     double beta;
+    double threshold;
     std::string decoyPattern;
     std::string proteinFN;
+    std::string proteinDecoyFN;
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

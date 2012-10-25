@@ -25,12 +25,19 @@ Logger::Logger()
 
 Logger::Logger(const char* file)
 {
-   std_log.open(file);
-   if (!(std_log.is_open())) {
+  attach_file(file);
+}
+
+void Logger::attach_file(const char* file)
+{
+  std_log.flush();
+  std_log.close();
+  std_log.open(file);
+  if (!(std_log.is_open())) {
        std::cerr << "[]: Couldn't open file \"" << file << "\" for logging.\n";
        this->~Logger(); /* Destroy the object */
-   }
-   file_log = true;
+  }
+  file_log = true;
 }
 
 Logger::~Logger()
