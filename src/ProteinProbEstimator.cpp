@@ -893,8 +893,8 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
   std::vector<std::vector<std::string> > names;
   std::vector<double> probs,empq,estq; 
   
-  double alpha_step = 0.025;
-  double beta_step = 0.01;
+  double alpha_step = 0.05;
+  double beta_step = 0.001;
   double gamma_step = 0.1;
   bool first_beta = false;
   for (double i = 0.1; i <= gamma_limit; i+=gamma_step)

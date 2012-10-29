@@ -87,11 +87,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
           cerr << line << endl;
           exit(-1);
         }
-        // replacing "*" with "-" at the terminal ends of a peptide
-        if(peptide.compare(peptide.size()-1, 1, "*") == 0)
-	{
-          peptide.replace(peptide.size()-1, 1, "-");
-        }
+        
         // difference between observed and calculated mass
         double dM = massDiff(observedMassCharge, calculatedMassToCharge,charge);
 	

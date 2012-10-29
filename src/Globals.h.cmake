@@ -72,10 +72,6 @@ limitations under the License.
 #define TEMP_DIR "@TEMP_DIR@"
 #endif
 
-#ifndef LOG_FILE
-#define LOG_FILE "@LOG_FILE@"
-#endif
-
 #ifdef WIN32
 #ifndef isfinite
 #define isfinite _finite
@@ -103,7 +99,7 @@ class Globals {
     static void clean();
     Logger* getLogger();
     
-    std::string& getLogFile(){
+    const std::string& getLogFile(){
       return fileLog;
     }
     int getVerbose() {

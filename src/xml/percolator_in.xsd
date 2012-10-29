@@ -245,7 +245,8 @@ targetNamespace="http://per-colator.com/percolator_in/13">
   </xs:simpleType>
   <xs:simpleType name="aa_term_t">
     <xs:restriction base="xs:string">
-      <xs:pattern value="[A-Z\-]"/>
+      <!-- <xs:pattern value="[A-Z\-]"/> this r.exp only allows A-Z and - characters -->
+      <xs:pattern value="[A-Z\-\*]"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="peptideType">

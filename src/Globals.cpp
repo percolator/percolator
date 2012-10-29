@@ -33,7 +33,7 @@ Globals::Globals() {
   glob = this;
   verbose = 2;
   timeCheckPoint = false;
-  fileLog = std::string(LOG_FILE);
+  fileLog = std::string("");
   log = 0;
   buffer_redirected = false;
 }

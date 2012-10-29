@@ -716,19 +716,11 @@ void Caller::readFiles() {
 	 ++readProteins;
       }
       
-      if(targetSet->getSize() <= (targetSet->getNumFeatures() * 5))
-      {
-	std::cerr << "\nWARNING : the number of target PSMs read is too small.\n" << std::endl;
-      }
-      if(decoySet->getSize() <= (targetSet->getNumFeatures() * 5))
-      {
-	std::cerr << "\nWARNING : the number of decoy PSMs read is too small.\n" << std::endl;
-      }
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
-	std::cerr << "\nERROR : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
+	std::cerr << "\nWARNING : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
 		       Did you run converters with the flag -F ?\n" << std::endl;
-	exit(-1);
+	Caller::protEstimator->setMayusFDR(false);
       }
       
       pCheck = SanityCheck::initialize(otherCall);
@@ -927,6 +919,17 @@ void Caller::fillFeatureSets() {
         << " negatives, size ratio=" << fullset.targetDecoySizeRatio
         << " and pi0=" << fullset.pi0 << endl;
   }
+  
+  //check for the minimum recommended number of positive and negative hits
+  if(fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5))
+  {
+    std::cerr << "\nWARNING : the number of positive samples read is too small to perform a correct clasification.\n" << std::endl;
+  }
+  if(fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5))
+  {
+    std::cerr << "\nWARNING : the number of negative samples read is too small to perform a correct clasification.\n" << std::endl;
+  }
+  
   //Normalize features
   set<DataSet*> all;
   all.insert(normal.getSubsets().begin(), normal.getSubsets().end());
@@ -1235,11 +1238,6 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
 }
 
 int Caller::run() {  
-  
-  if(Globals::getInstance()->getLogFile() != ""){
-    int ret = Globals::getInstance()->redirectBuffer();
-    if(ret) return ret;
-  }
 
   time(&startTime);
   startClock = clock();
