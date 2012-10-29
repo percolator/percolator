@@ -17,7 +17,6 @@
 
 #include "Globals.h"
 #include <iostream>
-#include <tcutil.h>
 
 Globals* Globals::glob = 0;
 
