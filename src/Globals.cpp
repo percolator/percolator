@@ -104,7 +104,8 @@ int Globals::redirectBuffer()
   }
   else
   {
-    std::cerr << "ERROR: trying to redirect cerr buffer to an empty file, have you called Globals::setLogFile or defined LOG_FILE?." << std::endl;
+    std::cerr << "ERROR: trying to redirect cerr buffer to an empty file,"
+	      <<  "have you called Globals::setLogFile or defined LOG_FILE?." << std::endl;
     return -1;
   }
 }

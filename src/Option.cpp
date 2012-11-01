@@ -99,7 +99,7 @@ void CommandLineParser::defineOption(string shortOpt, string longOpt,
       {
 	if((*it).shortOpt == shortOpt || (*it).longOpt == longOpt)
 	{
-	  std::cerr << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::cerr;
+	  std::cerr << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
 	  exit(-1);
 	}
       }

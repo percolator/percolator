@@ -7,6 +7,7 @@ msgfdb2Pin::msgfdb2Pin() {
 msgfdb2Pin::~msgfdb2Pin() {
   if(reader)
     delete reader;
+  reader = 0;
 }
 
 string msgfdb2Pin::extendedGreeter() {

@@ -44,19 +44,19 @@ MzidentmlReader::~MzidentmlReader() {
 void MzidentmlReader::cleanHashMaps() {
   peptideMapType::iterator iter;
   for (iter = peptideMap.begin(); iter != peptideMap.end(); ++iter) {
-    delete iter->second;
+    if(iter->second) delete iter->second;
     iter->second = 0;
   }
 
   proteinMapType::iterator iter2;
   for (iter2 = proteinMap.begin(); iter2 != proteinMap.end(); ++iter2) {
-    delete iter2->second;
+    if(iter2->second) delete iter2->second;
     iter2->second = 0;
   }
 
   peptideEvidenceMapType::iterator iter3;
   for (iter3 = peptideEvidenceMap.begin(); iter3 != peptideEvidenceMap.end(); ++iter3) {
-    delete iter3->second;
+    if(iter3->second) delete iter3->second;
     iter3->second = 0;
   }
 }
@@ -183,7 +183,8 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
 
   ifstream ifs;
   ifs.exceptions(ifstream::badbit | ifstream::failbit);
-  try {
+  try 
+  {
     ifs.open(fn.c_str());
     parser p;
     string schemaDefinition = MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
@@ -228,7 +229,8 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
   namespace xml = xsd::cxx::xml;
   scanNumberMapType scanNumberMap;
 
-  try {
+  try 
+  {
     ifstream ifs;
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
@@ -282,14 +284,18 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 
     unsigned scanNumber = 0;
     for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr,
-            doc->getDocumentElement()->getTagName()); doc = p.next()) {
+            doc->getDocumentElement()->getTagName()); doc = p.next()) 
+    {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
-      ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge
-              = specIdResult.SpectrumIdentificationItem()[0].experimentalMassToCharge();
-
-      BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) {
-        createPSM(item, experimentalMassToCharge, isDecoy, ++scanNumber, database);
+      unsigned numberHitsSpectra = 0;
+      BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) 
+      {
+	if(numberHitsSpectra++ <= po->hitsPerSpectrum)
+	{
+	  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = item.experimentalMassToCharge();
+	  createPSM(item, experimentalMassToCharge, isDecoy, ++scanNumber, database);
+	}
       }
 
     }
@@ -330,172 +336,174 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   std::string __flankN = "";
   std::string __flankC = "";
   std::string psmid = "";
-  //FIXME IMPORTANT fix, here I take only 1 peptide per PSM but the option -m might tell me to take more,
-  //FIXME I have to modify this loop to obtain more PSMs in that case
-  //NOTE I might be able to get the PeptideEVidence and the protein out of the PSM object
-  //Get rid of unprintables in proteinName?
+
   try
   {
-  BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef()) {
-    std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
-    ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
-    __flankN = boost::lexical_cast<string > (pepEv->pre());
-    __flankC = boost::lexical_cast<string > (pepEv->post());
-    if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
-    if (__flankC == "?") {__flankC = "-";}
-    std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
-    mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
-    std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
-    proteinIds.push_back(proteinName);
-  }
-
-  if (po->iscombined && !po->reversedFeaturePattern.empty()) {
-    //NOTE taking the highest ranked PSM protein for combined search
-    isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
-  }
   
-  double rank = item.rank();
-  double PI = boost::lexical_cast<double>(item.calculatedPI().get());
-  int charge = item.chargeState();
-  double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
-  double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
-  std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
-  unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
-  std::map<char, int> ptmMap = po->ptmScheme;
-  psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
+    BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef()) 
+    {
+      std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
+      ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
+      //NOTE check that there are not quimera peptides
+      if( peptideId != std::string(pepEv->peptide_ref()))
+      {
+	std::cerr << "ERROR: The PSM " << boost::lexical_cast<string > (item.id()) << " contains different peptide sequences. "
+		  << peptideMap[ref_id]->PeptideSequence() << " and " << peptideSeq << std::endl;
+	exit(-1);
+      }
+      __flankN = boost::lexical_cast<string > (pepEv->pre());
+      __flankC = boost::lexical_cast<string > (pepEv->post());
+      if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
+      if (__flankC == "?") {__flankC = "-";}
+      std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
+      mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
+      std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
+      proteinIds.push_back(proteinName);
+    }
+
+    if (po->iscombined && !po->reversedFeaturePattern.empty()) {
+      //NOTE taking the highest ranked PSM protein for combined search
+      isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
+    }
+  
+    double rank = item.rank();
+    double PI = boost::lexical_cast<double>(item.calculatedPI().get());
+    int charge = item.chargeState();
+    double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
+    double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
+    std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
+    unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
+    std::map<char, int> ptmMap = po->ptmScheme;
+    psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
   
-  //----------------
-  //----if SEQUEST
-  //----------------
-  if (inputFormat == sequest)
-  {
-    double lnrSP = 0.0;
-    double deltaCN = 0.0;
-    double xCorr = 0.0;
-    double Sp = 0.0;
-    double ionMatched = 0.0;
-    double ionTotal = 0.0;
-    double dM = massDiff(observed_mass, theoretic_mass, charge);
+   //----------------
+   //----if SEQUEST
+   //----------------
+    if (inputFormat == sequest)
+    {
+      double lnrSP = 0.0;
+      double deltaCN = 0.0;
+      double xCorr = 0.0;
+      double Sp = 0.0;
+      double ionMatched = 0.0;
+      double ionTotal = 0.0;
+      double dM = massDiff(observed_mass, theoretic_mass, charge);
 
 
-    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) 
-    {
-      if (cv.value().present()) 
+      BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) 
       {
-        std::string param_name(cv.name().c_str());
-        if (sequestFeatures.count(param_name)) 
-        {
-          switch (sequestFeatures.at(param_name)) 
-          {
-            case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str()); break;
-            case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
-            case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
-            case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
-            case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
-            case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;
-          }
-        } 
-        else 
-        {
-          std::cerr << "ERROR : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
-        }
+	if (cv.value().present()) 
+	{
+	  std::string param_name(cv.name().c_str());
+	  if (sequestFeatures.count(param_name)) 
+	  {
+	    switch (sequestFeatures.at(param_name)) 
+	    {
+	      case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+	      case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	      case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	      case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	      case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	      case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	    }
+	  } 
+	  else 
+	  {
+	    std::cerr << "ERROR : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
+	  }
+	}
       }
+      f_seq.push_back(log(max(1.0, lnrSP)));
+      f_seq.push_back(deltaCN);
+      f_seq.push_back(xCorr);
+      f_seq.push_back(Sp);
+      f_seq.push_back(ionMatched / ionTotal);
+      f_seq.push_back(observed_mass);
+      f_seq.push_back(peptideLength(peptideSeqWithFlanks));
+      f_seq.push_back(dM);
+      f_seq.push_back(abs(dM));
     }
-    f_seq.push_back(log(max(1.0, lnrSP)));
-    f_seq.push_back(deltaCN);
-    f_seq.push_back(xCorr);
-    f_seq.push_back(Sp);
-    f_seq.push_back(ionMatched / ionTotal);
-    f_seq.push_back(observed_mass);
-    f_seq.push_back(peptideLength(peptideSeqWithFlanks));
-    f_seq.push_back(dM);
-    f_seq.push_back(abs(dM));
-  }
-  //----------------
-  //----if MS-GF PLUS
-  //----------------
-  else if (inputFormat == msgfplus)  
-  {
-    double RawScore = 0.0;
-    double DeNovoScore = 0.0;
-    double SpecEValue = 0.0;
-    double EValue = 0.0;
-    int IsotopeError = 0;
-    double ExplainedIonCurrentRatio = 0.0;
-    double NTermIonCurrentRatio = 0.0;
-    double CTermIonCurrentRatio = 0.0;
-    double MS2IonCurrent = 0.0;
+   //----------------
+   //----if MS-GF PLUS
+   //----------------
+    else if (inputFormat == msgfplus)  
+    {
+      double RawScore = 0.0;
+      double DeNovoScore = 0.0;
+      double SpecEValue = 0.0;
+      double EValue = 0.0;
+      int IsotopeError = 0;
+      double ExplainedIonCurrentRatio = 0.0;
+      double NTermIonCurrentRatio = 0.0;
+      double CTermIonCurrentRatio = 0.0;
+      double MS2IonCurrent = 0.0;
 
-    //Read through cvParam elements
-    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) 
-    {
-      if (cv.value().present()) 
+      //Read through cvParam elements
+      BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) 
       {
-        std::string param_name(cv.name().c_str());
-        if (msgfplusFeatures.count(param_name)) 
-        {
-          switch (msgfplusFeatures.at(param_name)) 
-          {
-            case 0: RawScore = boost::lexical_cast<double>(cv.value().get().c_str()); break;
-            case 1: DeNovoScore = boost::lexical_cast<double>(cv.value().get().c_str());break;
-            case 2: SpecEValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
-            case 3: EValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
-          }
-        } 
-        else 
-        {
-          std::cerr << "ERROR : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
-        }
+	if (cv.value().present()) 
+	{
+	  std::string param_name(cv.name().c_str());
+	  if (msgfplusFeatures.count(param_name)) 
+	  {
+	    switch (msgfplusFeatures.at(param_name)) 
+	    {
+	      case 0: RawScore = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+	      case 1: DeNovoScore = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	      case 2: SpecEValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	      case 3: EValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	    }
+	  } 
+	  else 
+	  {
+	    std::cerr << "ERROR : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
+	  }
+	}
       }
-    }
     
-    //Read through userParam elements
-    BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) 
-    {
-      if (up.value().present()) 
+      //Read through userParam elements
+      BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) 
       {
-        std::string param_name(up.name().c_str());
-        if (msgfplusFeatures.count(param_name)) 
-        {
-          switch (msgfplusFeatures.at(param_name)) 
-          {
-            case 4: IsotopeError = boost::lexical_cast<double>(up.value().get().c_str()); break;
-            case 5: ExplainedIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
-            case 6: NTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
-            case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
-            case 8: MS2IonCurrent = boost::lexical_cast<double>(up.value().get().c_str());break;
-          }
-        }
-        /*
-        else 
-        {
-          std::cerr << "ERROR : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
-        }*/
+	if (up.value().present()) 
+	{
+	  std::string param_name(up.name().c_str());
+	  if (msgfplusFeatures.count(param_name)) 
+	  {
+	    switch (msgfplusFeatures.at(param_name)) 
+	    {
+	      case 4: IsotopeError = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	      case 5: ExplainedIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
+	      case 6: NTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
+	      case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
+	      case 8: MS2IonCurrent = boost::lexical_cast<double>(up.value().get().c_str());break;
+	    }
+	  }
+	}
       }
-    }
     
     
-    //The raw theoretical mass from MSGF+ is often of the wrong isotope
-    double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
-    //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
+      //The raw theoretical mass from MSGF+ is often of the wrong isotope
+      double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
+      //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
     
-    //Add a small number to some logged features to avoid log(0)
-    f_seq.push_back(RawScore);
-    f_seq.push_back(DeNovoScore);
-    f_seq.push_back(DeNovoScore - RawScore);  // Score difference (score ratio could become -inf)
-    f_seq.push_back(-log(SpecEValue));
-    f_seq.push_back(-log(EValue));
-    f_seq.push_back(IsotopeError);
-    f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
-    f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
-    f_seq.push_back(log(CTermIonCurrentRatio+0.0001));
-    f_seq.push_back(log(MS2IonCurrent));
-    f_seq.push_back(observed_mass);
-    f_seq.push_back(peptideLength(peptideSeqWithFlanks));
-    f_seq.push_back(dM);
-    f_seq.push_back(abs(dM));
-  }
+      //Add a small number to some logged features to avoid log(0)
+      f_seq.push_back(RawScore);
+      f_seq.push_back(DeNovoScore);
+      f_seq.push_back(DeNovoScore - RawScore);  // Score difference (score ratio could become -inf)
+      f_seq.push_back(-log(SpecEValue));
+      f_seq.push_back(-log(EValue));
+      f_seq.push_back(IsotopeError);
+      f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
+      f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
+      f_seq.push_back(log(CTermIonCurrentRatio+0.0001));
+      f_seq.push_back(log(MS2IonCurrent));
+      f_seq.push_back(observed_mass);
+      f_seq.push_back(peptideLength(peptideSeqWithFlanks));
+      f_seq.push_back(dM);
+      f_seq.push_back(abs(dM));
+      
+    } //END IF MSGF+
 
 
   
@@ -560,15 +568,11 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     }
 
     database->savePsm(useScanNumber, psm_p);
-    
-    
-}
-
-  
+  }
   // Try-Catch statement to find potential errors among the features.
   catch(std::exception const& e)
   {
-    std::cerr << "There was error parsing PSM: " << psmid << "The error was: " << e.what() << std::endl;
+    std::cerr << "There was error parsing PSM: " << boost::lexical_cast<string > (item.id()) << "The error was: " << e.what() << std::endl;
     exit(-1);
   }
   catch(...)
@@ -577,7 +581,5 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     exit(-1);
   }
     
-    
-    
-    return;
-  }
+  return;
+}

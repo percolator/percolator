@@ -50,7 +50,8 @@ bool FragSpectrumScanDatabaseLeveldb::init(std::string fileName)
 
 void FragSpectrumScanDatabaseLeveldb::terminte()
 {
-  delete(bdb);
+  if(bdb) delete(bdb);
+  bdb = 0;
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLeveldb::deserializeFSSfromBinary( char * value, int valueSize ) 

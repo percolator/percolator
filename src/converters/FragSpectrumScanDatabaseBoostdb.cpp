@@ -25,8 +25,13 @@ bool FragSpectrumScanDatabaseBoostdb::init(std::string fileName) {
 
 void FragSpectrumScanDatabaseBoostdb::terminte()
 {
-  bdb->clear();
-  delete bdb;
+  
+  if(bdb)
+  {
+    bdb->clear();
+    delete bdb;
+  }
+  bdb = 0;
 }
 
 std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseBoostdb::getFSS( unsigned int scanNr ) 

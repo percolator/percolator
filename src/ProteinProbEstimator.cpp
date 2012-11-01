@@ -111,14 +111,20 @@ ProteinProbEstimator::~ProteinProbEstimator()
 {
   
   if(proteinGraph)
+  {
     delete proteinGraph;
+  }
+  proteinGraph = 0;
   
   FreeAll(qvalues);
   FreeAll(qvaluesEmp);
   FreeAll(pvalues);
   
   if(mayufdr && fastReader)
+  {
     delete fastReader;
+  }
+  fastReader = 0;
   
   for(std::multimap<double,std::vector<std::string> >::iterator it = pepProteins.begin();
       it != pepProteins.end(); it++)
@@ -896,27 +902,15 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
   double alpha_step = 0.05;
   double beta_step = 0.001;
   double gamma_step = 0.1;
-  bool first_beta = false;
   for (double i = 0.1; i <= gamma_limit; i+=gamma_step)
   {
-    first_beta = true;
-    double gamma_local = i;
-    
     for (double j = log10(beta_step); j <= log10(beta_limit); j+=beta_step)
     {
-      double beta_local = pow(10,j);
-	//NOTE this is horrible code but it works for testing
-      if(first_beta)
-	{
-	  beta_local = 0.0;
-	  j -= beta_step;
-	  first_beta = false;
-	}
-	
       for (double k = log10(alpha_step); k <= log10(alpha_limit); k+=alpha_step)
       {
-	
+	double gamma_local = i;
 	double alpha_local = pow(10,k);
+	double beta_local = pow(10,j) - beta_step; //to include 0.0 in the search
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();

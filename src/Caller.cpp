@@ -102,6 +102,7 @@ Caller::~Caller() {
     rmdir(xmlInputDir);
     delete xmlInputDir;
   }
+  xmlInputDir = NULL;
 }
 
 string Caller::extendedGreeter() {
