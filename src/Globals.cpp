@@ -48,7 +48,7 @@ Logger* Globals::getLogger() {
   if(buffer_redirected)
   {
     std::cerr << "ERROR: cerr buffer is already being redirected.." << std::endl;
-    exit(-1);
+    return NULL;
   }
   else if (!log) {
     initLogger();
@@ -102,7 +102,8 @@ int Globals::redirectBuffer()
   }
   else
   {
-    std::cerr << "ERROR: trying to redirect cerr buffer to an empty file, have you called Globals::setLogFile or defined LOG_FILE?." << std::endl;
+    std::cerr << "ERROR: trying to redirect cerr buffer to an empty file,"
+	      <<  "have you called Globals::setLogFile or defined LOG_FILE?." << std::endl;
     return -1;
   }
 }

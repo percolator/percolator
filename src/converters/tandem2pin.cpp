@@ -7,6 +7,7 @@ tandem2Pin::tandem2Pin() {
 tandem2Pin::~tandem2Pin() {
   if(reader)
     delete reader;
+  reader = 0;
 }
 
 string tandem2Pin::extendedGreeter() {

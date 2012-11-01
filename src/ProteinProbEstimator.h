@@ -300,7 +300,7 @@ class ProteinProbEstimator {
     /** threshold to compute the N of the roc curve function **/
     const static double thresholdRoc = 0.05;  
     /** activate the optimization of the parameters to see the best boundaries**/
-    const static bool optimize = false;
+    const static bool optimize = true;
     
     /** GENERAL PARAMETERS **/
     

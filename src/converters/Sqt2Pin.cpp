@@ -8,6 +8,7 @@ Sqt2Pin::Sqt2Pin() {
 Sqt2Pin::~Sqt2Pin() {
   if(reader)
     delete reader;
+  reader = 0;
 }
 
 string Sqt2Pin::extendedGreeter() {
