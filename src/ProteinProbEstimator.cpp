@@ -913,16 +913,16 @@ void ProteinProbEstimator::gridSearchOptimize()
   
   for (double i = gamma_init; i <= gamma_limit; i+=gamma_step)
   {
-    double gamma_local = i;
+    long double gamma_local = i;
     
     for (double j = log10(beta_init); j <= log10(beta_limit + beta_init + beta_step); j+=beta_step)
     {
-      double beta_local = pow(10,j) - beta_init; //to include 0.0 in the searching
+      long double beta_local = pow(10,j) - beta_init; //to include 0.0 and values very close to 0.0 in the searching
       
       for (double k = log10(alpha_init); k <= log10(alpha_limit + alpha_step); k+=alpha_step)
       {
 	
-	double alpha_local = pow(10,k);
+	long double alpha_local = pow(10,k);
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();
@@ -937,7 +937,8 @@ void ProteinProbEstimator::gridSearchOptimize()
 	
 	if(VERB > 2)
 	{
-	  std::cerr << "Grid searching Alpha= " << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
+	  std::cerr << "Grid searching Alpha= " << scientific << alpha_local << " Beta= " 
+	  << scientific << beta_local << " Gamma= "  << scientific << gamma_local << std::endl;
 	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
 	  std::cerr << "The MSE FDR estimated values are : " <<  mse1 << "," << mse2 << "," << mse3 << "," << mse4 << std::endl;
 	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
