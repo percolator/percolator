@@ -50,6 +50,18 @@ void Enzyme::setEnzyme(EnzymeType enz) {
     case LYSN:
       theEnzyme = new LysN();
       return;
+    case LYSC:
+      theEnzyme = new LysC();
+      return;
+    case ARGC:
+      theEnzyme = new ArgC();
+      return;
+    case ASPN:
+      theEnzyme = new AspN();
+      return;
+    case GLUC:
+      theEnzyme = new GluC();
+      return;
     case NO_ENZYME:
       theEnzyme = new Enzyme();
       return;
@@ -76,6 +88,16 @@ void Enzyme::setEnzyme(std::string enzyme) {
       theEnzyme = new Pepsin();
   } else if (boost::iequals(enzyme,Elastase::getString())) {
       theEnzyme = new Elastase();
+  } else if (boost::iequals(enzyme,LysN::getString())) {
+      theEnzyme = new LysN();
+  } else if (boost::iequals(enzyme,LysC::getString())) {
+      theEnzyme = new LysC();
+  } else if (boost::iequals(enzyme,ArgC::getString())) {
+      theEnzyme = new ArgC();
+  } else if (boost::iequals(enzyme,AspN::getString())) {
+      theEnzyme = new AspN();
+  } else if (boost::iequals(enzyme,GluC::getString())) {
+      theEnzyme = new GluC();
   } else if (boost::iequals(enzyme,Enzyme::getString())) {
       theEnzyme = new Enzyme();
   } else if (boost::iequals(enzyme,Trypsin::getString())) {

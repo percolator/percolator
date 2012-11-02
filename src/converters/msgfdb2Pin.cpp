@@ -77,7 +77,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("e",
       "enzyme",
-      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
       "",
       "trypsin");
   cmd.defineOption("N",

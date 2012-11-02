@@ -77,7 +77,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("e",
       "enzyme",
-      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"trypsin\" default=\"trypsin\"",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
       "",
       "trypsin");
   cmd.defineOption("N",
@@ -149,7 +149,8 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
-  if (cmd.optionSet("e")) {
+  //option e has been changed, see above
+  /*if (cmd.optionSet("e")) {
     if( cmd.options["e"] == "no enzyme") 
       Enzyme::setEnzyme(Enzyme::NO_ENZYME); 
     else if( cmd.options["e"] == "elastase") 
@@ -166,7 +167,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       Enzyme::setEnzyme(Enzyme::TRYPSIN);
     else  
       Enzyme::setEnzyme(Enzyme::TRYPSIN);
-  }
+  }*/
   if (cmd.optionSet("N")) {
     parseOptions.pngasef=true;
   }

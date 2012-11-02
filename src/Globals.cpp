@@ -17,6 +17,7 @@
 
 #include "Globals.h"
 #include <iostream>
+#include <cstdlib>
 
 Globals* Globals::glob = 0;
 
@@ -48,7 +49,8 @@ Logger* Globals::getLogger() {
   if(buffer_redirected)
   {
     std::cerr << "ERROR: cerr buffer is already being redirected.." << std::endl;
-    return NULL;
+    //return NULL;
+    exit(-1);
   }
   else if (!log) {
     initLogger();
