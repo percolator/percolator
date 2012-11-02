@@ -885,7 +885,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 }
 
 
-void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_limit, double alpha_limit)
+void ProteinProbEstimator::gridSearchOptimize()
 {
  
   if(VERB > 1)
@@ -900,17 +900,29 @@ void ProteinProbEstimator::gridSearchOptimize(double gamma_limit, double beta_li
   std::vector<double> probs,empq,estq; 
   
   double alpha_step = 0.05;
-  double beta_step = 0.001;
-  double gamma_step = 0.1;
-  for (double i = 0.1; i <= gamma_limit; i+=gamma_step)
+  double beta_step = 0.05;
+  double gamma_step = 0.05;
+  
+  double beta_init = 0.0001;
+  double alpha_init = 0.001;
+  double gamma_init = 0.1;
+  
+  double gamma_limit = 0.5;
+  double beta_limit = 0.05;
+  double alpha_limit = 0.5;
+  
+  for (double i = gamma_init; i <= gamma_limit; i+=gamma_step)
   {
-    for (double j = log10(beta_step); j <= log10(beta_limit); j+=beta_step)
+    double gamma_local = i;
+    
+    for (double j = log10(beta_init); j <= log10(beta_limit + beta_init + beta_step); j+=beta_step)
     {
-      for (double k = log10(alpha_step); k <= log10(alpha_limit); k+=alpha_step)
+      double beta_local = pow(10,j) - beta_init; //to include 0.0 in the searching
+      
+      for (double k = log10(alpha_init); k <= log10(alpha_limit + alpha_step); k+=alpha_step)
       {
-	double gamma_local = i;
+	
 	double alpha_local = pow(10,k);
-	double beta_local = pow(10,j) - beta_step; //to include 0.0 in the search
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();

@@ -293,6 +293,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
       {
 	if(numberHitsSpectra++ <= po->hitsPerSpectrum)
 	{
+	  assert(item.experimentalMassToCharge());
 	  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = item.experimentalMassToCharge();
 	  createPSM(item, experimentalMassToCharge, isDecoy, ++scanNumber, database);
 	}
@@ -347,18 +348,27 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
       //NOTE check that there are not quimera peptides
       if( peptideId != std::string(pepEv->peptide_ref()))
       {
-	std::cerr << "ERROR: The PSM " << boost::lexical_cast<string > (item.id()) << " contains different peptide sequences. "
-		  << peptideMap[ref_id]->PeptideSequence() << " and " << peptideSeq << std::endl;
-	exit(-1);
+	std::cerr << "WARNING: The PSM " << boost::lexical_cast<string > (item.id()) << " contains different quimera peptide sequences. "
+		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq 
+		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       }
-      __flankN = boost::lexical_cast<string > (pepEv->pre());
-      __flankC = boost::lexical_cast<string > (pepEv->post());
-      if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
-      if (__flankC == "?") {__flankC = "-";}
-      std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
-      mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
-      std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
-      proteinIds.push_back(proteinName);
+      else
+      {
+	__flankN = boost::lexical_cast<string > (pepEv->pre());
+	__flankC = boost::lexical_cast<string > (pepEv->post());
+	if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
+	if (__flankC == "?") {__flankC = "-";}
+	std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
+	mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
+	std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
+	proteinIds.push_back(proteinName);
+      }
+    }
+    
+    if(__flankC.empty() || __flankN.empty())
+    {
+      std::cerr << "ERROR: The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed..\n" << std::endl;
+      exit(-1);
     }
 
     if (po->iscombined && !po->reversedFeaturePattern.empty()) {
