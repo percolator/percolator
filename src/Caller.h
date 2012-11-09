@@ -29,7 +29,7 @@
 #include <string>
 #include <memory>
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+  #include "config.h"
 #endif
 #include "Option.h"
 #include "SanityCheck.h"

@@ -804,14 +804,19 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   double best_objective = -100000000;
   std::vector<std::vector<std::string> > names;
   std::vector<double> probs,empq,estq;
-  std::vector<double> gamma_search,beta_search,alpha_search;
+  std::vector<long double> gamma_search,beta_search,alpha_search;
 
   switch(depth)
   {
     case 0:
-      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
+      
+      gamma_search = boost::assign::list_of(0.1)(0.15)(0.20)(0.25)(0.30)(0.35)(0.40)(0.45)(0.5);
+      beta_search = boost::assign::list_of(0.0)(0.0001)(0.0002)(0.0005)(0.001)(0.002)(0.005)(0.01)(0.01)(0.02);
+      alpha_search = boost::assign::list_of(0.001)(0.002)(0.005)(0.01)(0.02)(0.05)(0.1)(0.2)(0.3)(0.4)(0.5);
+	    
+      /*gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
       beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.025)(0.035)(0.05)(0.1);
-      alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);
+      alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);*/
       break;
     
     case 1:
@@ -845,9 +850,9 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
     {
       for (unsigned int k = 0; k < beta_search.size(); k++)
       {
-	double gamma_local = gamma_search[i];
-	double alpha_local = alpha_search[j];
-	double beta_local = beta_search[k];
+	long double gamma_local = gamma_search[i];
+	long double alpha_local = alpha_search[j];
+	long double beta_local = beta_search[k];
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();
@@ -862,7 +867,8 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	
 	if(VERB > 2)
 	{
-	  std::cerr << "Grid searching Alpha= " << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
+	  std::cerr << "Grid searching Alpha= " << scientific << alpha_local << " Beta= " 
+	  << scientific << beta_local << " Gamma= "  << scientific << gamma_local << std::endl;
 	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
 	  std::cerr << "The MSE FDR estimated values are : " <<  mse1 << "," << mse2 << "," << mse3 << "," << mse4 << std::endl;
 	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
@@ -937,11 +943,13 @@ void ProteinProbEstimator::gridSearchOptimize()
 	
 	if(VERB > 2)
 	{
-	  std::cerr << "Grid searching Alpha= " << scientific << alpha_local << " Beta= " 
-	  << scientific << beta_local << " Gamma= "  << scientific << gamma_local << std::endl;
+	  std::cerr.precision(6);
+	  std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
+	  std::cerr.unsetf(std::ios::floatfield);
 	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
 	  std::cerr << "The MSE FDR estimated values are : " <<  mse1 << "," << mse2 << "," << mse3 << "," << mse4 << std::endl;
 	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
+	  
 	}    
 	if (current_objective > best_objective)
 	{

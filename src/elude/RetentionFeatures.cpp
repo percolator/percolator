@@ -692,7 +692,7 @@ int RetentionFeatures::ComputeRetentionFeatures(vector<PSMDescription> &psms) {
 
 /* computes the retention features for one psm */
 int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
-  string peptide = psm.getPeptide();
+  string peptide = psm.getFullPeptideSequence();
   string::size_type pos1 = peptide.find('.');
   string::size_type pos2 = peptide.find('.', ++pos1);
   string pep = peptide.substr(pos1, pos2 - pos1);

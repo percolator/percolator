@@ -99,6 +99,26 @@ if(${XVERMAJ} LESS 3)
   message(FATAL_ERROR "The version of Xerces-c found : " ${XERCESC_VERSION} " is too old ")
 endif()
 
+# include(CheckCXXSourceCompiles)
+# set(CMAKE_REQUIRED_INCLUDES ${XERCESC_INCLUDE_DIR})
+# set(CMAKE_REQUIRED_LIBRARIES ${XERCESC_LIBRARIES})
+# CHECK_CXX_SOURCE_COMPILES("    #include <xercesc/dom/DOM.hpp>
+# 				 #include <xercesc/util/XMLString.hpp>
+# 				 #include <xercesc/parsers/XercesDOMParser.hpp>
+# 				 #include <xercesc/sax/HandlerBase.hpp>
+# 				 #include <xercesc/util/PlatformUtils.hpp>
+#                                using namespace xercesc;
+# 				 int main(int /*argc*/, char** /*argv*/)
+# 				 {
+# 			           xercesc::XMLPlatformUtils::Initialize();
+# 				   return 0;
+# 			         }" 
+# 			        HAS_XERCESC_XDR_C)
+#     IF(NOT HAS_XERCESC_XDR_C)
+#       MESSAGE(FATAL_ERROR "Cannot compile Xerces-c code")
+#     ENDIF()
+# ENDIF()
+
 MARK_AS_ADVANCED(
   XERCESC_INCLUDE_DIR
   XERCESC_LIBRARIES

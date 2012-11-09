@@ -1,20 +1,4 @@
-###############################################################################
-# SET COMPILER OPTIONS
-###############################################################################
 
-set(CMAKE_CXX_FLAGS "-O3")
-set(CMAKE_C_FLAGS "-O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-IF(APPLE)
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mmacosx-version-min=10.5")
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mmacosx-version-min=10.5")
-  set(LINK_FLAGS "-mmacosx-version-min=10.5")
-ENDIF(APPLE)
 
 ###############################################################################
 # FIND EXTERNAL LIBRARIES REQUIRED BY PERCOLATOR
@@ -43,24 +27,10 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
-if(APPLE)
-  SET(Boost_USE_STATIC_LIBS   ON)
-endif(APPLE)
-set(BOOST_MIN_VERSION "1.46.0")
-SET (Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
-			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
-			       "1.48" "1.48.0" "1.49" "1.49.0", "1.51", "1.51.0")
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
-#find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
-# find_package(Pthreads)
-# if(PTHREADS_FOUND)
-#   message(STATUS  "Pthreads found")
-# else(PTHREADS_FOUND)
-#   message(FATAL_ERROR "The package Pthreads has not been found")
-# endif()
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -108,7 +78,7 @@ include_directories(. fido)
 
 
 #############################################################################
-# PERCOLATOR
+# COMPILE PERCOLATOR
 ###############################################################################
 
 add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp 	ResultHolder.cpp 
@@ -120,11 +90,9 @@ add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx seriali
 # COMPILE PERCOLATOR
 add_executable(percolator main.cpp)
 
-IF(MINGW OR WIN32 OR APPLE)
+if(MINGW OR WIN32 OR APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
-ENDIF()
-
-if(MINGW OR WIN32)
+elif(MINGW OR WIN32)
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
 
@@ -134,7 +102,6 @@ if(PROFILING)
   MESSAGE( STATUS "Profiling mode activated")
 endif()
  
-
 # SET LIBRARIES FOR PERCOLATOR
 target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
  
@@ -148,7 +115,7 @@ IF(NOT MINGW AND NOT WIN32)
 endif()
 
 ###############################################################################
-# COMPILE QUALITY
+# COMPILE QVALITY
 ###############################################################################
 
 add_subdirectory(qvality)

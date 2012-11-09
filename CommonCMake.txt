@@ -1,0 +1,125 @@
+macro(my_set variable default options)
+  if(NOT DEFINED ${variable})
+    set(${variable} ${default} CACHE STRING ${options} FORCE)
+  endif(NOT DEFINED ${variable})
+endmacro(my_set)
+
+# STORE NEWLY SET VARIABLES IN *.h.cmake FILES
+macro(load_config_files location)
+  file(GLOB_RECURSE configurefiles RELATIVE ${location} ${location}/*.cmake )
+  foreach(i ${configurefiles})
+    string(REPLACE ".cmake" "" myReplFile "${i}")
+    configure_file(${location}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+  endforeach()
+endmacro()
+
+# useful macro
+macro(my_find_program progname)
+  find_program(${progname}_EXECUTABLE ${progname})
+  if(NOT ${progname}_EXECUTABLE)
+    message(FATAL_ERROR  "${progname} not found" )
+  endif(NOT ${progname}_EXECUTABLE)
+endmacro(my_find_program)
+
+function(get_arch TARGET_ARCH)
+  # Detect machine architecture, on UNIX:
+  if(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
+	execute_process(COMMAND dpkg --print-architecture
+			 OUTPUT_VARIABLE TARGET_ARCH
+			 OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture: ${TARGET_ARCH}")
+  endif(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
+  if(APPLE AND NOT DEFINED ${TARGET_ARCH})
+	execute_process(COMMAND uname -m
+			 OUTPUT_VARIABLE TARGET_ARCH
+			 OUTPUT_STRIP_TRAILING_WHITESPACE)
+	message(STATUS "Architecture: ${TARGET_ARCH}")
+  endif(APPLE AND NOT DEFINED ${TARGET_ARCH})
+endfunction()
+
+###############################################################################
+# SET GLOBAL VARIABLES
+###############################################################################
+
+IF(WIN32) 
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib") 
+    set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/lib/include ${CMAKE_SOURCE_DIR}/lib/include/log4cxx)
+    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
+    set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
+    set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}\\\\")
+    set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}\\\\")
+    set(TEMP_DIR "%TEMP%\\\\")
+    add_definitions(-D_WIN32)
+ELSEIF(UNIX)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".la" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
+    set(CMAKE_INCLUDE_PATH /usr/include ${CMAKE_INCLUDE_PATH})
+    set(CMAKE_LIBRARY_PATH /usr/lib /usr/lib64 ${CMAKE_LIBRARY_PATH})
+    set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
+    set(PIN_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
+    set(POUT_SCHEMA_LOCATION "${WRITABLE_DIR}xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}/")
+    set(TEMP_DIR "/tmp/")
+ENDIF(WIN32)
+
+# VERSION AND NAMESPACES
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "00")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(PIN_VERSION_MAJOR "1")
+set(PIN_VERSION_MINOR "3")
+set(POUT_VERSION_MAJOR "1")
+set(POUT_VERSION_MINOR "4")
+set(MZIDENTML_VERSION_MAJOR "1")
+set(MZIDENTML_VERSION_MINOR "1")
+set(GAML_TANDEM_VERSION_MAJOR "1")
+set(GAML_TANDEM_VERSION_MINOR "0")
+set(TANDEM_VERSION "2011.12.01.1")
+
+set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
+set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
+set(mzIdentML-namespace "http://psidev.info/psi/pi/mzIdentML/${MZIDENTML_VERSION_MAJOR}.${MZIDENTML_VERSION_MINOR}")
+set(gaml_tandem-namespace "http://www.bioml.com/gaml/")
+set(tandem-namespace "http://www.thegpm.org/TANDEM/${TANDEM_VERSION}")
+
+# STATIC/DYNAMIC LIBRARY INCLUSION
+if(MINGW OR WIN32 OR APPLE)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
+else(MINGW OR WIN32 OR APPLE)
+  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
+endif()
+
+if(APPLE)
+  SET(Boost_USE_STATIC_LIBS   ON)
+endif(APPLE)
+
+set(BOOST_MIN_VERSION "1.46.0")
+set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
+			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
+			       "1.48" "1.48.0" "1.49" "1.49.0" "1.50.0" "1.50" "1.51.0" "1.51")
+
+###############################################################################
+# SET LOCATION OF MODULE FINDERS
+###############################################################################
+
+#set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
+
+###############################################################################
+# SET COMPILER OPTIONS
+###############################################################################
+
+set(CMAKE_CXX_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
+set(CMAKE_C_FLAGS "-O3 -Wno-unused-result -Wno-overflow")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -Wno-unused-result -Wno-overflow")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -Wno-unused-result -Wno-overflow")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wno-unused-result -Wno-overflow")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wno-unused-result -Wno-overflow")
+IF(APPLE)
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mmacosx-version-min=10.5")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mmacosx-version-min=10.5")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mmacosx-version-min=10.5")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mmacosx-version-min=10.5")
+  set(LINK_FLAGS "-mmacosx-version-min=10.5")
+ENDIF(APPLE)

@@ -22,12 +22,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#ifndef __stdcall
- #define __stdcall
-#endif
+  #ifndef __stdcall
+    #define __stdcall
+  #endif
 #endif
 #ifdef _WIN32
-#include <fcntl.h>
+  #include <fcntl.h>
 #endif
 #include <boost/filesystem.hpp>
 #include "Logger.h"
