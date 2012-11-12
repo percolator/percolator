@@ -39,12 +39,9 @@ get_arch(${TARGET_ARCH})
 if(MINGW OR WIN32) # windows
   set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\models\\\\")
-  set(TEMP_DIR "%TEMP%\\\\")
-  add_definitions(-D_WIN32)
 else() # linux
   set(ELUDE_WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/elude/")
   set(ELUDE_MODELS_PATH ${CMAKE_INSTALL_PREFIX}/share/elude/models/)
-  set(TEMP_DIR "/tmp/")
 endif()
 
 
@@ -87,6 +84,7 @@ ENDIF()
 
 if(APPLE)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET elude PROPERTY MACOSX_BUNDLE ON) 
 endif(APPLE)
 
 ###############################################################################

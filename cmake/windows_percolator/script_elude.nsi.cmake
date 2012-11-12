@@ -72,7 +72,7 @@
 !insertmacro MUI_PAGE_WELCOME
 Page custom PageReinstall PageLeaveReinstall
 # ; License page
-# !insertmacro MUI_PAGE_LICENSE "license.txt"   ; text file with license terms
+!insertmacro MUI_PAGE_LICENSE "license.txt"   ; text file with license terms
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"  ; readme.txt file for user
@@ -163,7 +163,7 @@ InstallDirRegKey HKCU "Software\Elude" ""
 ShowInstDetails show
 ShowUnInstDetails show
 ReserveFile NSIS.InstallOptions.ini
-ReserveFile "${NSISDIR}\Plugins\InstallOptions.dll"
+ReserveFile "${NSISDIR}\InstallOptions.dll"
 
 ##############################################################################
 # #
@@ -294,15 +294,6 @@ Section -AdditionalIcons
   SetShellVarContext all		; scope is "All Users"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
-
-
-# ; Installer section descriptions
-# ;--------------------------------
-# !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-# !insertmacro MUI_DESCRIPTION_TEXT ${SEC01} "Elude essentials."
-# !insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} "Elude program group."
-# !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Desktop shortcut for Elude."
-# !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Section -Post
    ;Uninstaller file.
@@ -471,12 +462,7 @@ Function .onInit
 FunctionEnd
 
 Section Uninstall
-  Delete "$INSTDIR\${PRODUCT_NAME}.url"
-  Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\${PROGICON}"
-  Delete "$INSTDIR\${PROGICON2}"
-  Delete "$INSTDIR\${PROGICON3}"
-  Delete "$INSTDIR\license.txt"
+  Delete "$INSTDIR\*"
 
   SetShellVarContext all
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk"

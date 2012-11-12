@@ -8,7 +8,8 @@
 !define MING_LIB "@MING_PATH@/lib"
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
-!define NSI_PATH "${SOURCE_PATH}/admin/win/nsi"
+!define ROOT_PATH "@PERCOLATOR_SOURCE_DIR@"
+!define NSI_PATH "${ROOT_PATH}/admin/win/nsi"
 
 ;-----------------------------------------------------------------------------
 ; Installer version
@@ -72,7 +73,7 @@
 !insertmacro MUI_PAGE_WELCOME
 Page custom PageReinstall PageLeaveReinstall
 # ; License page
-# !insertmacro MUI_PAGE_LICENSE "license.txt"   ; text file with license terms
+!insertmacro MUI_PAGE_LICENSE "$INSTDIR\license.txt"   ; text file with license terms
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\readme.txt"  ; readme.txt file for user
@@ -150,7 +151,6 @@ Page custom PageReinstall PageLeaveReinstall
 
 ;--------------------------------
 UninstPage custom un.UnPageUserAppData un.UnPageUserAppDataLeave
-# !insertmacro MUI_LANGUAGE "English"
 
 ; MUI end ------
 
@@ -266,12 +266,12 @@ SectionEnd
 
 Section "Pin Xml Schema" SecPinXml
   SetOutPath "@PIN_SCHEMA_LOCATION@"
-  file @CMAKE_SOURCE_DIR@/src/xml/percolator_in.xsd
+  file $SOURCE_PATH/src/xml/percolator_in.xsd
 SectionEnd
 
 Section "Pout Xml Schema" SecPoutXml
   SetOutPath "@POUT_SCHEMA_LOCATION@"
-  file @CMAKE_SOURCE_DIR@/src/xml/percolator_out.xsd
+  file $SOURCE_PATH/src/xml/percolator_out.xsd
 SectionEnd
 
 Section "Start Menu Program Group" SEC_START_MENU
@@ -282,10 +282,10 @@ Section "Start Menu Program Group" SEC_START_MENU
   SetShellVarContext all
   RMDir /r "$SMPROGRAMS\Percolator"
   CreateDirectory "$SMPROGRAMS\Percolator"
-# CreateShortCut "$SMPROGRAMS\Percolator\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
+  CreateShortCut "$SMPROGRAMS\Percolator\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
   CreateShortCut "$SMPROGRAMS\Percolator\Percolator.lnk" "$INSTDIR\percolator.exe"
   CreateShortCut "$SMPROGRAMS\Percolator\Percolator.lnk" "$INSTDIR\qvality.exe"
-# CreateShortCut "$SMPROGRAMS\Percolator\Release notes.lnk" "$INSTDIR\NOTES.txt"
+  CreateShortCut "$SMPROGRAMS\Percolator\Release notes.lnk" "$INSTDIR\NOTES.txt"
   CreateShortCut "$SMPROGRAMS\Percolator\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   SetShellVarContext current
 SectionEnd
@@ -305,20 +305,6 @@ Section "Additional Icons" SEC_ADD_ICONS
   SetShellVarContext all		; scope is "All Users"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
-
-# LangString Desc_Section1 ${LANG_ENGLISH} "Percolator essentials."
-# LangString Desc_Section2 ${LANG_ENGLISH} "Percolator program group."
-# LangString Desc_Section3 ${LANG_ENGLISH} "Desktop shortcut for Percolator."
-# LangString Desc_Section4 ${LANG_ENGLISH} "Additional Icons for Percolator."
-# 
-# ; Installer section descriptions
-# ;--------------------------------
-# !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC01} ${Desc_Section1}
-#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_START_MENU} ${Desc_Section2}
-#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} ${Desc_Section3}
-#   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_ADD_ICONS} ${Desc_Section4}
-# !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Section -Post
    ;Uninstaller file.
@@ -493,19 +479,7 @@ Function .onInit
 FunctionEnd
 
 Section Uninstall
-  Delete "$INSTDIR\${PRODUCT_NAME}.url"
-  Delete "$INSTDIR\uninst.exe"
-  Delete "$INSTDIR\readme.txt"
-  Delete "$INSTDIR\boost_filesystem-gcc45-mt-1_46_1.dll"
-  Delete "$INSTDIR\boost_system-gcc45-mt-1_46_1.dll"
-  Delete "$INSTDIR\libgcc_s_sjlj-1.dll"
-  Delete "$INSTDIR\libstdc++-6.dll"
-  Delete "$INSTDIR\libxerces-c-3-0.dll"
-  Delete "$INSTDIR\${PROGICON}"
-  Delete "$INSTDIR\${PROGICON2}"
-  Delete "$INSTDIR\${PROGICON3}"
-  Delete "$INSTDIR\license.txt"
-
+  Delete "$INSTDIR\*"
   SetShellVarContext all
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk"
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk"

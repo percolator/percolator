@@ -330,6 +330,10 @@ if(APPLE)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET msgfdb2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET mzidentml2pin PROPERTY MACOSX_BUNDLE ON)
+  set_property(TARGET sqt2pin PROPERTY MACOSX_BUNDLE ON)
+  set_property(TARGET tandem2pin PROPERTY MACOSX_BUNDLE ON)
+  set_property(TARGET msgfdb2pin PROPERTY MACOSX_BUNDLE ON) 
 endif(APPLE)
 
 #necessary dlls for the windows exe

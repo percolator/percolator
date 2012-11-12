@@ -92,6 +92,7 @@ add_executable(percolator main.cpp)
 
 if(MINGW OR WIN32 OR APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
+  set_property(TARGET percolator MACOSX_BUNDLE ON)
 elif(MINGW OR WIN32)
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
 endif()
