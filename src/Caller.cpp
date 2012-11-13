@@ -459,8 +459,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     selectedCneg = cmd.getDouble("n", 0.0, 1e127);
     if(selectedCpos == 0)
     {
-      std::cerr << "WARNING, the positive penalty(cpos) is 0, therefore both the positive and negative penalties are going "
-		 "to be cros-validated. The option --Cneg has to be used together with the option --Cpos" << std::endl;
+      std::cerr << "Warning : the positive penalty(cpos) is 0, therefore both the "  
+		 << "positive and negative penalties are going "
+		 << "to be cros-validated. The option --Cneg has to be used together "
+		 << "with the option --Cpos" << std::endl;
     }
   }
   if (cmd.optionSet("J")) {
@@ -709,7 +711,7 @@ int Caller::readFiles() {
       
       if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
-	std::cerr << "\nWARNING : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
+	std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
 		       Did you run converters with the flag -F ?\n" << std::endl;
 	Caller::protEstimator->setMayusFDR(false);
       }
@@ -917,11 +919,11 @@ void Caller::fillFeatureSets() {
   //check for the minimum recommended number of positive and negative hits
   if(fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5))
   {
-    std::cerr << "\nWARNING : the number of positive samples read is too small to perform a correct clasification.\n" << std::endl;
+    std::cerr << "Warning : the number of positive samples read is too small to perform a correct clasification.\n" << std::endl;
   }
   if(fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5))
   {
-    std::cerr << "\nWARNING : the number of negative samples read is too small to perform a correct clasification.\n" << std::endl;
+    std::cerr << "Warning : the number of negative samples read is too small to perform a correct clasification.\n" << std::endl;
   }
   
   //Normalize features

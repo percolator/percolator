@@ -66,18 +66,19 @@ bool MzidentmlReader::checkValidity(const std::string &file) {
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
     ostringstream temp;
-    temp << "Could not open file " << file << std::endl;
+    temp << "Error : can not open file " << file << std::endl;
     throw MyException(temp.str());
   }
   std::string line;
   if (!getline(fileIn, line)) {
     ostringstream temp;
-    temp << "Could not read file " << file << std::endl;
+    temp << "Error : can not read file " << file << std::endl;
     throw MyException(temp.str());
   }
   if (line.find("<?xml") == std::string::npos) {
+    fileIn.close();
     ostringstream temp;
-    temp << "ERROR : the input file is not xml format " << file << std::endl;
+    temp << "Error : the input file is not xml format " << file << std::endl;
     throw MyException(temp.str());
   } 
   else //Test whether Sequest or MS-GF+ format
@@ -97,8 +98,9 @@ bool MzidentmlReader::checkValidity(const std::string &file) {
       inputFormat = msgfplus;
 
     } else {
+      fileIn.close();
       ostringstream temp;
-      temp << "ERROR : the input file is not MzIdentML - Sequest or MSGF+ format " << file << std::endl;
+      temp << "Error : the input file is not MzIdentML - Sequest or MSGF+ format " << file << std::endl;
       throw MyException(temp.str());
     }
 
@@ -232,10 +234,9 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
 void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database) {
   namespace xml = xsd::cxx::xml;
   scanNumberMapType scanNumberMap;
-
+  ifstream ifs;
   try 
   {
-    ifstream ifs;
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
     parser p;
@@ -310,9 +311,11 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
   } 
   catch (const xercesc::DOMException& e) 
   {
+    cleanHashMaps();
+    ifs.close();
     char * tmpStr = XMLString::transcode(e.getMessage());
     ostringstream temp;
-    temp << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;
+    temp << "Error : xercesc_3_1::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
     throw MyException(temp.str());
   } 
@@ -328,8 +331,10 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   percolatorInNs::features::feature_sequence & f_seq = features_p->feature();
 
   if (!item.calculatedMassToCharge().present()) {
-    std::cerr << "error: calculatedMassToCharge attribute is needed for percolator" << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Error: calculatedMassToCharge attribute not found in PSM " 
+    << boost::lexical_cast<string > (item.id())  << std::endl;
+    throw MyException(temp.str());
   }
 
   std::string peptideSeq = peptideMap[item.peptide_ref().get()]->PeptideSequence();
@@ -369,7 +374,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     if(__flankC.empty() || __flankN.empty())
     {
       ostringstream temp;
-      temp << "ERROR: The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed..\n" << std::endl;
+      temp << "Error : The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed." << std::endl;
       throw MyException(temp.str());
     }
 
@@ -422,7 +427,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
 	  } 
 	  else 
 	  {
-	    std::cerr << "ERROR : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
+	    std::cerr << "Error  : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
 	  }
 	}
       }
@@ -469,7 +474,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
 	  } 
 	  else 
 	  {
-	    std::cerr << "ERROR : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
+	    std::cerr << "Error  : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
 	  }
 	}
       }
@@ -549,7 +554,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
               additionalAA.find(peptideSeq[ix]) == string::npos) {
         if (ptmMap.count(peptideSeq[ix]) == 0) {
 	   ostringstream temp;
-          temp << "Peptide sequence " << peptideSeqWithFlanks
+          temp << "Error : Peptide sequence " << peptideSeqWithFlanks
                   << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
           throw MyException(temp.str());
         }
@@ -586,7 +591,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   catch(std::exception const& e)
   {
     ostringstream temp;
-    temp << "There was error parsing PSM: " << boost::lexical_cast<string > (item.id()) << "The error was: " << e.what() << std::endl;
+    temp << "Error : parsing PSM: " << boost::lexical_cast<string > (item.id()) 
+    << "\nThe error was: " << e.what() << std::endl;
     throw MyException(temp.str());
   }
  

@@ -45,6 +45,7 @@ static double COARSE_GRID_GAMMA[] = { pow(2., -15), pow(2., -13),
                                       pow(2., -5), pow(2., -3), pow(2., -1),
                                       pow(2., 1), pow(2., 3), pow(2., 5) };
 static double COARSE_GRID_C[] = { pow(2., -5), pow(2., -3), pow(2., -1),
+
                                   pow(2., 1), pow(2., 3), pow(2., 5), pow(2.,
                                                                        7),
                                   pow(2., 9), pow(2., 11), pow(2., 13) };
@@ -565,73 +566,6 @@ double* RTModel::fillAAFeatures(const string& alphabet, const string& pep,
   return feat + alphabet.size();
 }
 
-///////////////////
-// EXPERIMENTAL
-///////////////////
-
-/*
- // calculate the number of small aa
- double RTModel::noSmallAA(const string& peptide)
- {
- string smallAA = "TDNGASP";
- double noOccurences = 0.0;
-
- for(unsigned int ix = 0; ix < peptide.size(); ++ix)
- if (smallAA.find(peptide[ix]) != string::npos)
- noOccurences ++;
-
- //cout << "No small aa " << noOccurences << endl;
- return noOccurences;
- }
-
- // calculate the number of consecutive aliphatic aa
- double RTModel::noConsecAliphatic(const string& peptide)
- {
- string aliphaticAA = "IVLAPM";
- double noOccurences = 0.0;
- size_t isAl1, isAl2;
-
- for(unsigned int ix = 0; ix < (peptide.size() - 1); ++ix)
- {
- // are the current aa and his neighbour aliphatic?
- isAl1 = aliphaticAA.find(peptide[ix]);
- isAl2 = aliphaticAA.find(peptide[ix + 1]);
- if ((isAl1 != string::npos) && (isAl2 != string::npos))
- noOccurences++;
- }
-
- //cout << "No consec aliphatic " << noOccurences << endl;
- return noOccurences;
- }
-
- //calculate the number of aa that are c beta branched
- double RTModel::noBBranchedAA(const string& peptide)
- {
- string bbBranched = "VIT";
- double noOccurences = 0.0;
-
- for(unsigned int ix = 0; ix < peptide.size(); ++ix)
- if (bbBranched.find(peptide[ix]) != string::npos)
- noOccurences ++;
-
- //cout << "No Branched aa " << noOccurences << endl;
- return noOccurences;
- }
-
- // calculate no of consec letters
- double RTModel::noConsecRepeats(const string& peptide, const char& letter)
- {
- double noRepeats = 0.0;
-
- for(unsigned int ix = 0; ix < (peptide.size() - 1); ++ix)
- {
- if (peptide[ix] == letter && peptide[ix + 1] == letter)
- noRepeats++;
- }
-
- cout << "No consec " << letter << letter << ":" << noRepeats << endl;
- return noRepeats;
- }*/
 // calculate the number of hydrophobic aa
 double RTModel::noHydrophobicAA(const string& peptide) {
   string hydrophobicAA = "AILMFWYVC";
@@ -806,87 +740,6 @@ void RTModel::calcRetentionFeatures(PSMDescription& psm) {
   }
   //cout << psm << endl;
 }
-//////////////////
-//////////////////
-
-/*
- // features for a hydrophobicity index
- double* RTModel::fillFeaturesIndex(const string& peptide, const float *index, double *features)
- {
- *(features++) = indexSum(index, peptide);
- *(features++) = indexAvg(index, peptide);
- *(features++) = indexN(index, peptide);
- *(features++) = indexC(index, peptide);
- *(features++) = indexNearestNeigbourPos(index, peptide);
- *(features++) = indexNearestNeigbourNeg(index, peptide);
- features = indexPartialSum(index, peptide, 5, features);
- features = indexPartialSum(index, peptide, 2, features);
- features = amphipathicityHelix(index, peptide, features);
- features = hydrophobicMoment(index, peptide, 100, 11, features);
- features = hydrophobicMoment(index, peptide, 180, 11, features);
-
- return features;
- }
-
- // calculate the retention features
-
- void RTModel::calcRetentionFeatures(PSMDescription &psm)
- {
- string peptide = psm.getPeptide();
- string::size_type pos1 = peptide.find('.');
- string::size_type pos2 = peptide.find('.',++pos1);
- string pep = peptide.substr(pos1,pos2-pos1);
-
- double *features = psm.getRetentionFeatures();
-
- // if there is memory allocated
- if (psm.getRetentionFeatures())
- {
- if (selected_features & 1 << 0)
- features = fillFeaturesIndex(pep, krokhin_index, features);
-
- if (selected_features & 1 << 1)
- features = fillFeaturesIndex(pep, krokhin100_index, features);
-
- if (selected_features & 1 << 2)
- features = fillFeaturesIndex(pep, krokhinC2_index, features);
-
- if (selected_features & 1 << 3)
- // EXPERIMENTAL
- features = fillFeaturesIndex(pep, krokhinTFA_index, features);
- //features = fillFeaturesIndex(pep, Luna_120_index, features);
- //features = fillFeaturesIndex(pep, TFA_index, features);
-
- if (selected_features & 1 << 4)
- features = fillFeaturesIndex(pep, kytedoolittle_index, features);
-
-
- if (selected_features & 1 << 5)
- features = fillFeaturesIndex(pep, hessa_index, features);
-
- if (selected_features & 1 << 6)
- *(features++) = pep.size();
-
- if (selected_features & 1 << 7)
- *(features++) = getNoPtms(pep);
-
- // number of each type of ptm
- if (selected_features & 1 << 8)
- features = fillPTMFeatures(pep, features);
-
- // bulkiness
- if (selected_features & 1 << 9)
- *(features++) = (pep);
-
- // no of consecutive KRDENQ
- if (selected_features & 1 << 10)
- *(features++) = noConsecKRDENQ(pep);
-
- // amino acids
- if (selected_features & 1 << 11)
- features = fillAAFeatures(pep, features);
- }
- }*/
 
 // calculate the retention features for a vector of PSMs
 void RTModel::calcRetentionFeatures(vector<PSMDescription> &psms) {
@@ -975,18 +828,8 @@ int RTModel::getSelect(int sel_features, int max, size_t* finalNumFeatures) {
 // train the SVM
 void RTModel::trainRetention(vector<PSMDescription>& trainset,
                              const double C, const double gamma,
-                             const double epsilon, int noPsms) {
-  /*int minFeat = minimumNumRTFeatures();
-   //if we have in total less than 500 PSMs, we use only a subset of features
-   if ((noPsms>500) || (noFeaturesToCalc <= minFeat))
-   {
-   numRTFeat = noFeaturesToCalc;
-   }
-   else
-   {
-   selected_features = getSelect(selected_features, minFeat, &numRTFeat);
-   cout << "Not enough data. Only a subset of features is used to train  the model" << endl;
-   }*/
+                             const double epsilon, int noPsms) 
+{
   // initialize the parameters of the SVM
   svm_parameter param;
   param.svm_type = EPSILON_SVR;
@@ -1017,8 +860,10 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset,
   // build a model by training the SVM on the given training set
   char const *err_msg = svm_check_parameter(&data, &param);
   if (err_msg != NULL) {
+    delete[] data.x;
+    delete[] data.y;
     ostringstream temp;
-    temp << "ERROR: Incorrect parameters for the SVR." << endl
+    temp << "Error : Incorrect parameters for the SVR." << endl
 	 << err_msg << endl << "Execution aborted."<< endl;
     throw MyException(temp.str());
   }
@@ -1403,9 +1248,11 @@ void RTModel::trainIndexRetention(vector<PSMDescription>& trainset,
   // build a model by training the SVM on the given training set
   char const *err_msg = svm_check_parameter(&data, &param);
   if (err_msg != NULL) {
+    delete[] data.x;
+    delete[] data.y;
     ostringstream temp;
     temp
-          << "ERROR: Incorrect parameters for the SVR." << endl
+          << "Error : Incorrect parameters for the SVR." << endl
           << err_msg << endl << "Execution aborted."<< endl;
     
     throw MyException(temp.str());

@@ -142,38 +142,38 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
   }
 }
 
-double DataSet::isPngasef(const string& peptide) {
-  bool isDecoy;
-  switch (label) {
-    case 1: { isDecoy = false; break; };
-    case -1: { isDecoy = true; break; };
-    default:  { throw MyException("ERROR : class DataSet has not been initiated\
-		to neither target nor decoy label\n");} 
-  }
-  return isPngasef( peptide, isDecoy);
-}
-
-double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
-  size_t next_pos = 0, pos;
-  while ((pos = peptide.find("N*", next_pos)) != string::npos) {
-    next_pos = pos + 1;
-    if (! isDecoy) {
-      pos += 3;
-      if (peptide[pos] == '#') {
-        pos += 1;
-      }
-    } else {
-      pos -= 2;
-      if (peptide[pos] == '#') {
-        pos -= 1;
-      }
-    }
-    if (peptide[pos] == 'T' || peptide[pos] == 'S') {
-      return 1.0;
-    }
-  }
-  return 0.0;
-}
+// double DataSet::isPngasef(const string& peptide) {
+//   bool isDecoy;
+//   switch (label) {
+//     case 1: { isDecoy = false; break; };
+//     case -1: { isDecoy = true; break; };
+//     default:  { throw MyException("ERROR : class DataSet has not been initiated\
+// 		to neither target nor decoy label\n");} 
+//   }
+//   return isPngasef( peptide, isDecoy);
+// }
+// 
+// double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
+//   size_t next_pos = 0, pos;
+//   while ((pos = peptide.find("N*", next_pos)) != string::npos) {
+//     next_pos = pos + 1;
+//     if (! isDecoy) {
+//       pos += 3;
+//       if (peptide[pos] == '#') {
+//         pos += 1;
+//       }
+//     } else {
+//       pos -= 2;
+//       if (peptide[pos] == '#') {
+//         pos -= 1;
+//       }
+//     }
+//     if (peptide[pos] == 'T' || peptide[pos] == 'S') {
+//       return 1.0;
+//     }
+//   }
+//   return 0.0;
+// }
 
 void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
   string tmp, line;
@@ -198,7 +198,8 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     buff.clear();
   }
   if (m < 1) {
-    throw MyException("To few features in Tab data file");
+    is.close();
+    throw MyException("Error : Reading tab file, too few features present.");
   }
   if (calcDOC) {
     m -= 2;
@@ -240,9 +241,10 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     //NOTE to check if the peptide sequence contains flanks or not
     if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.')
     {
+      is.close();
       ostringstream temp;
-      temp << "ERROR: the peptide sequence " << peptide_seq << " \
-      does not contain one or two of its flaking amino acids\n" << std::endl;
+      temp << "Error : Reading tab file, the peptide sequence " << peptide_seq << " \
+      does not contain one or two of its flaking amino acids." << std::endl;
       throw MyException(temp.str());
     }
     
@@ -299,17 +301,16 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
   switch (label) {
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
-    default:  { throw MyException("ERROR : class DataSet has not been initiated\
+    default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
 		to neither target nor decoy label\n");}  
   }
   
   if(psm.isDecoy() != isDecoy)
   {
     ostringstream temp;
-    temp << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
-    The label isDecoy of the decoy is not the same in the dataset." << std::endl;
+    temp << "Error : adding PSM " << psm.id() << " to the dataset.\n\
+    The label isDecoy of the PSM is not the same in the dataset." << std::endl;
     throw MyException(temp.str());
-    
   }
   else
   {
@@ -334,7 +335,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       if(psm.occurence().size() <= 0)
       {
 	ostringstream temp;
-	temp << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
+	temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
 	The PSM does not contain protein occurences." << std::endl;
 	throw MyException(temp.str());
       }
@@ -343,7 +344,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       {
         myPsm->proteinIds.insert( oc.proteinId() );
         // adding n-term and c-term residues to peptide
-	//NOTE they residues for the peptide in the PSMs are always the same for every protein
+	//NOTE the residues for the peptide in the PSMs are always the same for every protein
         myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
       }
       

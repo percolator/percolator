@@ -66,14 +66,14 @@ bool tandemReader::checkValidity(const std::string &file)
   if (!fileIn) 
   {
     ostringstream temp;
-    temp << "Could not open file " << file << std::endl;
+    temp << "Error : can not open file " << file << std::endl;
     throw MyException(temp.str());
   }
   std::string line,line_xml,line_bioml;
   if (!getline(fileIn, line)) 
   {
     ostringstream temp;
-    temp << "Could not read file " << file << std::endl;
+    temp << "Error : can not read file " << file << std::endl;
     throw MyException(temp.str());
   }
   
@@ -221,7 +221,7 @@ void tandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   if (!ifs)
   {
     ostringstream temp;
-    temp << "Could not open file " << fn << std::endl;
+    temp << "Error : can not open file " << fn << std::endl;
     throw MyException(temp.str());
   }
   parser p;
@@ -297,12 +297,14 @@ void tandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
     }
   }catch (const xml_schema::exception& e)
   {
+    ifs.close();
     ostringstream temp;
     temp << "ERROR parsing the xml file: " << fn << endl;
     temp << e << endl;
     throw MyException(temp.str());
   }
   
+  ifs.close();
   if(nTot<=0)
   {
     ostringstream temp;
@@ -310,7 +312,7 @@ void tandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
     throw MyException(temp.str());
   }
   
-  ifs.close();
+  
   return;
 }
 
@@ -342,7 +344,7 @@ void tandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
   else
   {
     ostringstream temp;
-    temp << "A required attribute is not present in the group/spectra element in file: " << fn << endl;
+    temp << "Error : A required attribute is not present in the group/spectra element in file: " << fn << endl;
     throw MyException(temp.str());
   }
   
@@ -472,7 +474,7 @@ void tandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
       if (ptmMap.count(peptide[ix])==0) 
       {
 	ostringstream temp;
-	temp << "Peptide sequence " << peptide
+	temp << "Error : Peptide sequence " << peptide
 	<< " contains modification " << peptide[ix] << " that is not specified by a \"-p\" argument" << endl;
 	throw MyException(temp.str());
       }

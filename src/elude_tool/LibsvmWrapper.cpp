@@ -42,8 +42,10 @@ svm_model* libsvm_wrapper::TrainModel(const std::vector<PSMDescription> &psms, c
   // build a model by training the SVM on the given training set
   char const *error_message = svm_check_parameter(&data, &parameter);
   if (error_message != NULL) {
+    delete[] data.x;
+    delete[] data.y;
     ostringstream temp;
-    temp << "ERROR: Incorrect parameters for the SVR. Execution aborted. " << endl;
+    temp << "Error : Incorrect parameters for the SVR. Execution aborted. " << endl;
     throw MyException(temp.str());
   }
   svr_model = svm_train(&data, &parameter);

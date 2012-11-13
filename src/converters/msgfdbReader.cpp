@@ -37,14 +37,14 @@ bool msgfdbReader::checkValidity(const std::string &file)
   if (!fileIn) 
   {
     ostringstream temp;
-    temp << "Could not open file " << file << std::endl;
+    temp << "Error : can not open file " << file << std::endl;
     throw MyException(temp.str());
   }
   std::string line;
   if (!getline(fileIn, line)) 
   {
     ostringstream temp;
-    temp << "Could not read file " << file << std::endl;
+    temp << "Error : can not read file " << file << std::endl;
     throw MyException(temp.str());
   }
   fileIn.close();
@@ -56,7 +56,7 @@ bool msgfdbReader::checkValidity(const std::string &file)
     if(!(column_names.size()==13||column_names.size()==14||column_names.size()==15))
     { 
       ostringstream temp;
-      std::cerr << "The file " << file << " has the wrong number of columns: "
+      temp << "Error : The file " << file << " has a wrong number of columns: "
 		 << column_names.size() << ". Should be 13,14 or 15 "  
 		 << "depending on which msgfdb options were used." << std::endl;
       throw MyException(temp.str());
@@ -150,7 +150,7 @@ void msgfdbReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   msgfdbIn.open(fn.c_str(), std::ios::in);
   if (!msgfdbIn) {
     ostringstream temp;
-    temp << "Could not open file " << fn << std::endl;
+    temp << "Error : can not open file " << fn << std::endl;
     throw MyException(temp.str());
   }
   
@@ -186,15 +186,15 @@ void msgfdbReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
       peptideProteinMap[peptideDecoyPair].insert(proteinID);
     }
   }
+  
+  msgfdbIn.close();
   if (n <= 0) 
   {
     ostringstream temp;
-    std::cerr << "The file " << fn << " does not contain any records"<< std::endl;
-    msgfdbIn.close();
+    std::cerr << "Error : The file " << fn << " does not contain any records"<< std::endl;
     throw MyException(temp.str());
   }
 
-  msgfdbIn.close();
   return;
 }
 
@@ -277,7 +277,8 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
   catch(const std::exception &e)
   {
     ostringstream temp;
-    temp << "There is a problem with the peptide string: " << peptideWithFlank << " SpecIndex: " << specIndex << std::endl;
+    temp << "Error : There is a problem with the peptide string: " 
+	  << peptideWithFlank << " SpecIndex: " << specIndex << std::endl;
     throw MyException(temp.str());
   }
   //Get rid of unprinatables in proteinID and make list of proteinIDs
@@ -333,7 +334,7 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
       {
 	  if (ptmMap.count(peptideSequence[ix])==0) {
 	    ostringstream temp;
-	    temp << "Peptide sequence " << peptideWithFlank << " contains modification " 
+	    temp << "Error : Peptide sequence " << peptideWithFlank << " contains modification " 
 	    << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
 	    throw MyException(temp.str());
 	  }
@@ -417,7 +418,7 @@ void msgfdbReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<Fr
   msgfdbIn.open(fn.c_str(), std::ios::in);
   if (!msgfdbIn) {
     ostringstream temp;
-    temp << "Could not open file " << fn << std::endl;
+    temp << "Error : can not open file " << fn << std::endl;
     throw MyException(temp.str());
   }
   //The first row contains the names of the columns

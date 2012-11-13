@@ -467,7 +467,7 @@ void Scores::normalizeScores(double fdr) {
   if(q1 <= median || it == scores.end())
   {
     ostringstream temp;
-    temp << "\nERROR the input data has too good separation between target "
+    temp << "Error : the input data has too good separation between target "
          << "and decoy PSMs.\n" << std::endl;
     throw MyException(temp.str());
   }

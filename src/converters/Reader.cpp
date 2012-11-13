@@ -74,7 +74,7 @@ void Reader::init()
     else
     {
       ostringstream temp;
-      temp << "ERROR : one of the input files is a metafile whereas"
+      temp << "Error : one of the input files is a metafile whereas"
 		<< " the other one is not a metaFile. " << std::endl;
       throw MyException(temp.str());
     }
@@ -405,7 +405,7 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
     else
     {
       ostringstream temp;
-      temp << "ERROR: estimating peptide mass, the amino acid " 
+      temp << "Error: estimating peptide mass, the amino acid " 
       << pepsequence[i] << " is not valid." << std::endl;
       throw MyException(temp.str());
     }
@@ -439,6 +439,7 @@ unsigned int Reader::cntPTMs(const string& pep) {
   return len;
 }
 
+//NOTE this should return bool and the converts to double
 double Reader::isPngasef(const string& peptide, bool isDecoy ) {
   size_t next_pos = 0, pos;
   while ((pos = peptide.find("N*", next_pos)) != string::npos) {
@@ -507,8 +508,9 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     }
     else
     {
+      fb.close();
       ostringstream temp;
-      temp <<  "Error reading combined database : " << seqfile <<  std::endl;
+      temp <<  "Error : reading combined database : " << seqfile <<  std::endl;
       throw MyException(temp.str());
     }
   
@@ -525,8 +527,10 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
   
   if(proteins_counter == 0)
   {
-    std::cerr << "Error parsing the database, the database given does not contain " << type << " proteins\n" << std::endl;
-    exit(-1);
+    ostringstream temp;
+    std::cerr << "Error : parsing the database, the database given does not contain " 
+    << type << " proteins\n" << std::endl;
+    throw MyException(temp.str());
   }
   else if(VERB > 2)
   {
@@ -599,9 +603,10 @@ void Reader::readProteins(const string &filenameTarget,const string &fileNamedec
       parseDataBase(fileNamedecoy.c_str(),true,false,proteins_counter);
     }
     else
-    {  
-      std::cerr << "\nError database file/s could not be loaded\n" << std::endl;
-      exit(-1);
+    {
+      ostringstream temp;
+      std::cerr << "\nError : database file/s could not be loaded\n" << std::endl;
+      throw MyException(temp.str());
     }
 }
 
@@ -621,7 +626,7 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
    if (!buffer.eof() && c != '>') {
       stringstream ss;
       ss << "next character is " << c;
-      ss << "ERROR parsing fasta " << "Incorrect format " << ss.str() << std::endl;
+      ss << "Error : parsing fasta file " << "Incorrect format " << ss.str() << std::endl;
       throw MyException(ss.str());
    }
    
@@ -663,7 +668,7 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
       else
       {
 	ostringstream temp;
-	temp << "ERROR parsing fasta " << "Incorrect fasta sequence character " << *iter << std::endl;
+	temp << "Error : parsing fasta file " << "Incorrect fasta sequence character " << *iter << std::endl;
 	throw MyException(temp.str());
       }
     }
@@ -808,8 +813,9 @@ void Reader::readRetentionTime(const std::string &filename)
     // if neither EZ nor I lines are available
     else
     {
+      delete[] cstr;
       ostringstream temp;
-      temp << "The ms2 in input does not appear to contain retention time "
+      temp << "Error : The ms2 in input file does not appear to contain retention time "
           << "information. Please run without -2 option." << std::endl;
       throw MyException(temp.str());
     }

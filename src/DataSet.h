@@ -103,12 +103,12 @@ class DataSet {
     void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
-    static double isPngasef(const string& peptide, bool isDecoy );
+//     static double isPngasef(const string& peptide, bool isDecoy );
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
 
   protected:
     
-    double isPngasef(const string& peptide);
+//     double isPngasef(const string& peptide);
     static bool calcDOC;
     static bool isotopeMass;
     static string reversedFeaturePattern;

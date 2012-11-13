@@ -386,15 +386,14 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
     alphabet.push_back(aa);
   }
   retention_features_.set_amino_acids_alphabet(alphabet);
+  fclose(fp);
   if (number_features != retention_features_.GetTotalNumberFeatures()) {
     ostringstream temp;
     temp << "Error: The number of features used to train the model does not match "
          << "with the current settings. Execution aborted." << endl;
-    
-    fclose(fp);
     throw MyException(temp.str());
   }
-  fclose(fp);
+  
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;
   }

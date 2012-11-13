@@ -151,7 +151,7 @@ void SetHandler::readTab(const string& dataFN, const int setLabel) {
   ifstream labelStream(dataFN.c_str(), ios::out);
   if (!labelStream) {
     ostringstream temp;
-    temp << "Can not open file " << dataFN << endl;
+    temp << "Error : Can not open file " << dataFN << endl;
     throw MyException(temp.str());
   }
   vector<unsigned int> ixs;
@@ -175,7 +175,7 @@ void SetHandler::readTab(const string& dataFN, const int setLabel) {
   ifstream dataStream(dataFN.c_str(), ios::out);
   if (!dataStream) {
     ostringstream temp;
-    temp << "Can not open file " << dataFN << endl;
+    temp << "Error : Can not open file " << dataFN << endl;
     throw MyException(temp.str());
   }
   dataStream >> tmp >> tmp;

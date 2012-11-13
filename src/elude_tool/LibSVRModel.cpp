@@ -130,7 +130,7 @@ double LibSVRModel::PredictRT(const int &number_features, double *features) {
   }
   else {
     ostringstream temp;
-    temp << "ERROR: No SVR model available. Execution aborted." << endl;
+    temp << "Error : No SVR model available. Execution aborted." << endl;
     throw MyException(temp.str());
   }
 }
