@@ -57,6 +57,7 @@
 #include "percolator_in.hxx"
 #include "ProteinProbEstimator.h"
 
+
 class Caller {
   public:
     enum SetHandlerType {
@@ -80,7 +81,7 @@ class Caller {
     bool parseOptions(int argc, char **argv);
     void printWeights(ostream & weightStream, vector<double>& w);
     void readWeights(istream & weightStream, vector<double>& w);
-    void readFiles();
+    int readFiles();
     void filelessSetup(const unsigned int numFeatures,
                        const unsigned int numSpectra, char** fetureNames,
                        double pi0);

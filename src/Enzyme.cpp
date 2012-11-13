@@ -104,8 +104,9 @@ void Enzyme::setEnzyme(std::string enzyme) {
       theEnzyme = new Trypsin();
   }
   else {
-    std::cerr << "The selected enzyme have no corresponding class" << std::endl;
-    std::exit(-1);
+    ostringstream temp;
+    temp << "The selected enzyme have no corresponding class" << std::endl;
+    throw MyException(temp.str());
   }
 }
 

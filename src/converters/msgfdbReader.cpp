@@ -36,14 +36,16 @@ bool msgfdbReader::checkValidity(const std::string &file)
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) 
   {
-    std::cerr << "Could not open file " << file << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Could not open file " << file << std::endl;
+    throw MyException(temp.str());
   }
   std::string line;
   if (!getline(fileIn, line)) 
   {
-    std::cerr << "Could not read file " << file << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Could not read file " << file << std::endl;
+    throw MyException(temp.str());
   }
   fileIn.close();
   //NOTE there doesn't seem to be any good way to check if the file is from msgfdb
@@ -53,9 +55,11 @@ bool msgfdbReader::checkValidity(const std::string &file)
     std::vector<std::string> column_names = split(line,'\t');
     if(!(column_names.size()==13||column_names.size()==14||column_names.size()==15))
     { 
-      std::cerr << "The file " << file << " has the wrong number of columns: "<< column_names.size() << ". Should be 13,14 or 15 "  
+      ostringstream temp;
+      std::cerr << "The file " << file << " has the wrong number of columns: "
+		 << column_names.size() << ". Should be 13,14 or 15 "  
 		 << "depending on which msgfdb options were used." << std::endl;
-      exit(-1);
+      throw MyException(temp.str());
     }
     else
     {
@@ -145,8 +149,9 @@ void msgfdbReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   std::ifstream msgfdbIn;
   msgfdbIn.open(fn.c_str(), std::ios::in);
   if (!msgfdbIn) {
-    std::cerr << "Could not open file " << fn << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Could not open file " << fn << std::endl;
+    throw MyException(temp.str());
   }
   
   getline(msgfdbIn, line); //First line is column names which is of no intrest for max and min charge
@@ -183,9 +188,10 @@ void msgfdbReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   }
   if (n <= 0) 
   {
+    ostringstream temp;
     std::cerr << "The file " << fn << " does not contain any records"<< std::endl;
     msgfdbIn.close();
-    exit(-1);
+    throw MyException(temp.str());
   }
 
   msgfdbIn.close();
@@ -268,10 +274,11 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
     peptideSequence = tmp_vect.at(1);
     peptideS = peptideNoFlank = peptideSequence;
   }
-  catch(exception e)
+  catch(const std::exception &e)
   {
-    std::cerr << "There is a problem with the peptide string: " << peptideWithFlank << " SpecIndex: " << specIndex << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "There is a problem with the peptide string: " << peptideWithFlank << " SpecIndex: " << specIndex << std::endl;
+    throw MyException(temp.str());
   }
   //Get rid of unprinatables in proteinID and make list of proteinIDs
   proteinID = getRidOfUnprintables(proteinID);
@@ -325,9 +332,10 @@ void msgfdbReader::readPSM(const std::string &line,bool isDecoy,const std::strin
 	  additionalAA.find(peptideSequence[ix])==string::npos)
       {
 	  if (ptmMap.count(peptideSequence[ix])==0) {
-	    cerr << "Peptide sequence " << peptideWithFlank << " contains modification " 
+	    ostringstream temp;
+	    temp << "Peptide sequence " << peptideWithFlank << " contains modification " 
 	    << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
-	    exit(-1);
+	    throw MyException(temp.str());
 	  }
 	  peptideSequence.erase(ix,1);
 	}  
@@ -408,8 +416,9 @@ void msgfdbReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<Fr
   std::ifstream msgfdbIn;
   msgfdbIn.open(fn.c_str(), std::ios::in);
   if (!msgfdbIn) {
-    std::cerr << "Could not open file " << fn << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Could not open file " << fn << std::endl;
+    throw MyException(temp.str());
   }
   //The first row contains the names of the columns
   getline(msgfdbIn, line);

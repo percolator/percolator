@@ -20,21 +20,28 @@
 #include "EludeCaller.h"
 
 int main(int argc, char** argv) {
+  
   EludeCaller* eCaller = new EludeCaller();
-  int retVal = 0;
-  if (eCaller->ParseOptions(argc, argv)) {
-    eCaller->Run();
+  int retVal = -1;
+  
+  try
+  {
+    if (eCaller->ParseOptions(argc, argv)) {
+      retVal = eCaller->Run();
+    }
   }
+  catch (const std::exception& e) 
+  {
+    std::cerr << e.what() << endl;
+    retVal = -1;
+  }
+  catch(...)
+  {
+    std::cerr << "Unknown exception, contact the developer.." << std::endl;
+    retVal = -1;
+  } 
+
   delete eCaller;
   Globals::clean();
   return retVal;
 }
-
-/*
-#include <iostream>
-#include "RetentionFeatures.h"
-
-int main(int argc, char** argv) {
-
-  return 0;
-}*/

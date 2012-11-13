@@ -73,8 +73,10 @@ void Reader::init()
     }
     else
     {
-      std::cerr << "ERROR : one of the input files is a metafile whereas the other one is not a metaFile. " << std::endl;
-      exit(-1);
+      ostringstream temp;
+      temp << "ERROR : one of the input files is a metafile whereas"
+		<< " the other one is not a metaFile. " << std::endl;
+      throw MyException(temp.str());
     }
   }
   else
@@ -402,8 +404,10 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
     }
     else
     {
-      std::cerr << "ERROR: estimating peptide mass, the amino acid " << pepsequence[i] << " is not valid." << std::endl;
-      exit(-1);
+      ostringstream temp;
+      temp << "ERROR: estimating peptide mass, the amino acid " 
+      << pepsequence[i] << " is not valid." << std::endl;
+      throw MyException(temp.str());
     }
   }
   
@@ -503,9 +507,9 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     }
     else
     {
-      if (VERB>1)
-        std::cerr <<  "Error reading combined database : " << seqfile <<  std::endl;
-      exit(-1);
+      ostringstream temp;
+      temp <<  "Error reading combined database : " << seqfile <<  std::endl;
+      throw MyException(temp.str());
     }
   
     buffer.clear();
@@ -513,7 +517,7 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     
   }catch(const std::exception &e)
   {
-    e.what();
+    throw MyException(std::string(e.what()));
   }
   
   std::string type = isDecoy ?  "target" : "decoy";
@@ -617,8 +621,8 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
    if (!buffer.eof() && c != '>') {
       stringstream ss;
       ss << "next character is " << c;
-      std::cerr << "ERROR parsing fasta " << "Incorrect format " << ss.str() << std::endl;
-      exit(-1);
+      ss << "ERROR parsing fasta " << "Incorrect format " << ss.str() << std::endl;
+      throw MyException(ss.str());
    }
    
   buffer.getline(b, BUFFER_LEN);
@@ -658,8 +662,9 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
       }
       else
       {
-	std::cerr << "ERROR parsing fasta " << "Incorrect fasta sequence character " << *iter << std::endl;
-	exit(-1);
+	ostringstream temp;
+	temp << "ERROR parsing fasta " << "Incorrect fasta sequence character " << *iter << std::endl;
+	throw MyException(temp.str());
       }
     }
   
@@ -803,9 +808,10 @@ void Reader::readRetentionTime(const std::string &filename)
     // if neither EZ nor I lines are available
     else
     {
-      std::cerr << "The ms2 in input does not appear to contain retention time "
+      ostringstream temp;
+      temp << "The ms2 in input does not appear to contain retention time "
           << "information. Please run without -2 option." << std::endl;
-      exit(-1);
+      throw MyException(temp.str());
     }
     // read next scan
     r.readFile(NULL, s);

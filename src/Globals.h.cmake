@@ -19,29 +19,31 @@ limitations under the License.
 #define GLOBALS_H_
 
 #ifndef VERSION_MAJOR
-#define VERSION_MAJOR "@CPACK_PACKAGE_VERSION_MAJOR@"
+  #define VERSION_MAJOR "@CPACK_PACKAGE_VERSION_MAJOR@"
 #endif
+
 #ifndef VERSION_MINOR
-#define VERSION_MINOR "@CPACK_PACKAGE_VERSION_MINOR@"
+   #define VERSION_MINOR "@CPACK_PACKAGE_VERSION_MINOR@"
 #endif
+
 #ifndef VERSION
-#define VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
+  #define VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
 #endif
 
 #ifndef PIN_VERSION_MAJOR
-#define PIN_VERSION_MAJOR @PIN_VERSION_MAJOR@
+  #define PIN_VERSION_MAJOR @PIN_VERSION_MAJOR@
 #endif
 
 #ifndef POUT_VERSION_MAJOR
-#define POUT_VERSION_MAJOR @POUT_VERSION_MAJOR@
+  #define POUT_VERSION_MAJOR @POUT_VERSION_MAJOR@
 #endif
 
 #ifndef PIN_VERSION_MINOR
-#define PIN_VERSION_MINOR @PIN_VERSION_MINOR@
+  #define PIN_VERSION_MINOR @PIN_VERSION_MINOR@
 #endif
 
 #ifndef POUT_VERSION_MINOR
-#define POUT_VERSION_MINOR @POUT_VERSION_MINOR@
+  #define POUT_VERSION_MINOR @POUT_VERSION_MINOR@
 #endif
 
 #ifndef PERCOLATOR_IN_NAMESPACE
@@ -53,36 +55,53 @@ limitations under the License.
 #endif
 
 #ifndef WRITABLE_DIR
-#define WRITABLE_DIR "@WRITABLE_DIR@"
+  #define WRITABLE_DIR "@WRITABLE_DIR@"
 #endif
 
 #ifndef PIN_SCHEMA_LOCATION
-#define PIN_SCHEMA_LOCATION "@PIN_SCHEMA_LOCATION@"
+  #define PIN_SCHEMA_LOCATION "@PIN_SCHEMA_LOCATION@"
 #endif
 
 #ifndef POUT_SCHEMA_LOCATION
-#define POUT_SCHEMA_LOCATION "@POUT_SCHEMA_LOCATION@"
+  #define POUT_SCHEMA_LOCATION "@POUT_SCHEMA_LOCATION@"
 #endif
 
 #ifndef ELUDE_MODELS_PATH
-#define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
+  #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
 #endif
 
-#ifndef TEMP_DIR
-#define TEMP_DIR "@TEMP_DIR@"
-#endif
 
 #ifdef WIN32
-#ifndef isfinite
-#define isfinite _finite
-#endif
-#define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
-#define D_DARRAY(name) _freea(name);
-#include <float.h>
+  #ifndef isfinite
+    #define isfinite _finite
+  #endif
+  #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
+  #define D_DARRAY(name) _freea(name);
+  #include <float.h>
 #else
-#define C_DARRAY(name,nelem) double name[nelem];
-#define D_DARRAY(name)
+  #define C_DARRAY(name,nelem) double name[nelem];
+  #define D_DARRAY(name)
 #endif
+
+#ifdef _WIN32
+  #ifndef __stdcall
+    #define __stdcall
+  #endif
+#endif
+#ifdef _WIN32
+  #include <fcntl.h>
+#endif
+
+#ifdef __APPLE__
+  #ifdef __INTEL_COMPILER
+    #define isnan(x) _isnan(x)
+    #define isinf(x) _isinf(x)
+  #else
+    #define isinf(x) std::isinf(x)
+    #define isnan(x) std::isnan(x)
+  #endif
+#endif
+
 
 #define VERB (Globals::getInstance()->getVerbose())
 #define STD_CERR (*(Globals::getInstance()->getLogger())) 
@@ -90,10 +109,16 @@ limitations under the License.
 #include <time.h>
 #include <string>
 #include "Logger.h"
+#include "MyException.h"
+
+
+
 
 class Globals {
 
+  
   public:
+    
     virtual ~Globals();
     static Globals* getInstance();
     static void clean();

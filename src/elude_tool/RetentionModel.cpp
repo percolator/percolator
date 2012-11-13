@@ -333,10 +333,9 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   }
   FILE* fp = fopen(file_name.c_str(), "r");
   if (fp == NULL) {
-    if (VERB >= 2) {
-      cerr << "Error: Unable to open " << file_name << ". Execution aborted" << endl;
-    }
-    exit(1);
+    ostringstream temp;
+    temp << "Error: Unable to open " << file_name << ". Execution aborted" << endl;
+    throw MyException(temp.str());
   }
   if (svr_model_) {
     delete svr_model_;
@@ -388,12 +387,12 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   }
   retention_features_.set_amino_acids_alphabet(alphabet);
   if (number_features != retention_features_.GetTotalNumberFeatures()) {
-    if (VERB >= 2) {
-      cerr << "Error: The number of features used to train the model does not match "
-           << "with the current settings. Execution aborted." << endl;
-    }
+    ostringstream temp;
+    temp << "Error: The number of features used to train the model does not match "
+         << "with the current settings. Execution aborted." << endl;
+    
     fclose(fp);
-    exit(1);
+    throw MyException(temp.str());
   }
   fclose(fp);
   if (VERB >= 4) {

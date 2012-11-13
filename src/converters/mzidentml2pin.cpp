@@ -254,7 +254,7 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
   if(targetFN == "" && decoyFN == "")
   {
     std::cerr << "Error, one of the input files is missing.\n"; 
-    exit(-1); 
+    return 0; 
   }
   else if(targetFN != "" && decoyFN == "")
   {
@@ -272,7 +272,7 @@ bool Mzidentml2pin::parseOpt(int argc, char **argv)
   if (cmd.arguments.size() == 0) {
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
-      exit(-1); // ...error
+      return 0; // ...error
   }
   
   
@@ -287,7 +287,7 @@ int Mzidentml2pin::run()
   if(!xmlOutputStream && xmlOutputFN != ""){
     cerr << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
     cerr << "Please invoke mzidentml2pin with a valid -o option" << endl;
-    exit(-1);
+    return 0;
   }
   
   //initialize reader
@@ -304,15 +304,29 @@ int Mzidentml2pin::run()
   if (VERB>2)
     cerr << "\nAll the input files have been successfully processed"<< endl;
 
-  return 0;
+  return true;
 }
 
 int main(int argc, char** argv) {
   Mzidentml2pin* pMzidentml2pin = new Mzidentml2pin();
   int retVal = -1;
-  if (pMzidentml2pin->parseOpt(argc, argv)) {
-    retVal = pMzidentml2pin->run();
+  
+  try
+  {
+    if (pMzidentml2pin->parseOpt(argc, argv)) {
+      retVal = pMzidentml2pin->run();
+    }
   }
+  catch (const std::exception& e) 
+  {
+    std::cerr << e.what() << endl;
+    retVal = -1;
+  }
+  catch(...)
+  {
+    std::cerr << "Unknown exception, contact the developer.." << std::endl;
+  }  
+  
   delete pMzidentml2pin;
   Globals::clean();
   return retVal;

@@ -46,8 +46,9 @@ bool FragSpectrumScanDatabaseTokyoDB::init(std::string fileName)
   assert(ret);
   if(!tcbdbopen(bdb, fileName.c_str(), BDBOWRITER | BDBOTRUNC | BDBOREADER | BDBOCREAT )){
     int errorcode = tcbdbecode(bdb);
-    fprintf(stderr, "open error: %s\n", tcbdberrmsg(errorcode));
-    exit(EXIT_FAILURE);
+    ostringstream temp;
+    temp << "Tokyo Cabinet file open error: " << tcbdberrmsg(errorcode) << std::endl;
+    throw MyException(temp);
   }
   ret = unlink( fileName.c_str() );
   assert(! ret);
@@ -140,8 +141,9 @@ void FragSpectrumScanDatabaseTokyoDB::putFSS( ::percolatorInNs::fragSpectrumScan
   if(!tcbdbput(bdb, ( const char * ) &key, keySize, buf.data (), buf.size () ))
   {
     int  errorcode = tcbdbecode(bdb);
-    fprintf(stderr, "put error: %s\n", tcbdberrmsg(errorcode));
-    exit(EXIT_FAILURE);
+    ostringstream temp;
+    temp << "Tokyo Cabinet insertion error: " << tcbdberrmsg(errorcode) << std::endl;
+    throw MyException(temp);
   }
   buf.size(0);
 }

@@ -91,10 +91,9 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
   }
   ifstream in(file_name.c_str(), ios::in);
   if (in.fail()) {
-    if (VERB >= 1) {
-      cerr << "Error: Unable to open " << file_name << ". Execution aborted. " << endl;
-    }
-    exit(1);
+    ostringstream temp;
+    temp << "Error: Unable to open " << file_name << ". Execution aborted. " << endl;
+    throw MyException(temp.str());
   }
   string peptide_sequence;
   vector<string> amino_acids;
@@ -138,11 +137,11 @@ double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescript
   }
   double *feat_pointer = new double[no_records * no_features];
   if (!feat_pointer) {
-    if (VERB >= 1) {
-      cerr << "Error: Unable to allocate the feature table. Execution aborted."
+    ostringstream temp;
+    cerr << "Error: Unable to allocate the feature table. Execution aborted."
            << endl;
-    }
-    exit(1);
+    
+    throw MyException(temp.str());
   } else {
     double *ptr = feat_pointer;
     for (int i = 0; i < no_records; i++, ptr += no_features) {

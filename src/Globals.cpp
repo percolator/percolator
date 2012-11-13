@@ -49,8 +49,7 @@ Logger* Globals::getLogger() {
   if(buffer_redirected)
   {
     std::cerr << "ERROR: cerr buffer is already being redirected.." << std::endl;
-    //return NULL;
-    exit(-1);
+    return NULL;
   }
   else if (!log) {
     initLogger();

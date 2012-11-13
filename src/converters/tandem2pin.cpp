@@ -243,7 +243,7 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   if(targetFN == "" && decoyFN == "")
   {
     std::cerr << "Error, one of the input files is missing.\n"; 
-    exit(-1); 
+    return 0; 
   }
   else if(targetFN != "" && decoyFN == "")
   {
@@ -262,7 +262,7 @@ bool tandem2Pin::parseOpt(int argc, char **argv) {
   if (cmd.arguments.size() == 0) {
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
-      exit(-1); // ...error
+      return 0; // ...error
   }
   
   return true;
@@ -275,7 +275,7 @@ int tandem2Pin::run() {
   if(!xmlOutputStream && xmlOutputFN != ""){
     cerr << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
     cerr << "Please invoke tandem2pin with a valid -o option" << endl;
-    exit(-1);
+    return 0;
   }
   
   //initialize reader
@@ -292,15 +292,29 @@ int tandem2Pin::run() {
   if (VERB>2)
     cerr << "\nAll the input files have been successfully processed"<< endl;
 
-  return 0;
+  return true;
 }
 
 int main(int argc, char** argv) {
   tandem2Pin* ptandem2Pin = new tandem2Pin();
   int retVal = -1;
-  if (ptandem2Pin->parseOpt(argc, argv)) {
-    retVal = ptandem2Pin->run();
+  
+  try
+  {
+    if (ptandem2Pin->parseOpt(argc, argv)) {
+      retVal = ptandem2Pin->run();
+    }
   }
+  catch (const std::exception& e) 
+  {
+    std::cerr << e.what() << endl;
+    retVal = -1;
+  }
+  catch(...)
+  {
+    std::cerr << "Unknown exception, contact the developer.." << std::endl;
+  }  
+  
   delete ptandem2Pin;
   Globals::clean();
   return retVal;

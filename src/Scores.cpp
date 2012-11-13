@@ -464,10 +464,12 @@ void Scores::normalizeScores(double fdr) {
   //NOTE perhaps I should also check when q1 and median are both negatives
   //NOTE in such cases the normalization could give negative scores which would
   //     cause an assertion to fail in qvality
-  if(q1 <= median || it == scores.end()){
-    cerr << "\nERROR the input data has too good separation between target "
+  if(q1 <= median || it == scores.end())
+  {
+    ostringstream temp;
+    temp << "\nERROR the input data has too good separation between target "
          << "and decoy PSMs.\n" << std::endl;
-    exit(-1);
+    throw MyException(temp.str());
   }
    
   double diff = q1-median;
@@ -479,7 +481,6 @@ void Scores::normalizeScores(double fdr) {
     {
       std::cerr << "\nWARNING the score of the PSM " << it->pPSM->id << " is less or equal than zero "
 	         << "after normalization.\n" << std::endl;
-      //exit(-1);
     }
   }
   

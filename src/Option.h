@@ -19,6 +19,8 @@
 #include<string>
 #include<map>
 #include<vector>
+#include "MyException.h"
+
 using namespace std;
 
 typedef enum {

@@ -436,7 +436,7 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
   if(pi0s.size()==0){
     cerr << "Error in the input data: too good separation between target "
         << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
-    exit(-1);
+    return -1;
   }
   double minPi0 = *min_element(pi0s.begin(), pi0s.end());
   // Initialize the vector mse with zeroes.
@@ -522,14 +522,21 @@ int PosteriorEstimator::run() {
 	finishStandaloneGeneralized(combined, peps);
 	return 0;
   } 
+  
   double pi0 = estimatePi0(pvals);
+  if(pi0 < 0) //NOTE there was an error
+  {
+    return 0;
+  }
+  
   if (VERB > 1) {
     cerr << "Selecting pi_0=" << pi0 << endl;
   }
   // Logistic regression on the data
   estimatePEP(combined, pi0, peps,includeNegativesInResult);
   finishStandalone(combined, peps, pvals, pi0);
-  return 0;
+  
+  return true;
 }
 
 string PosteriorEstimator::greeter() {

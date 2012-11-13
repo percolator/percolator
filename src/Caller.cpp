@@ -21,16 +21,8 @@
 #include <boost/lexical_cast.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef _WIN32
-  #ifndef __stdcall
-    #define __stdcall
-  #endif
-#endif
-#ifdef _WIN32
-  #include <fcntl.h>
-#endif
 #include <boost/filesystem.hpp>
-#include "Logger.h"
+
 
 using namespace std;
 using namespace xercesc;
@@ -383,7 +375,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       cerr
       << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
       << "are needed to calculate protein level ones.";
-      exit(0);
+      return 0;
     }
     reportUniquePeptides = false;
   }
@@ -416,7 +408,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     {
       std::cerr << "ERROR : Pi0(option I) and Protein FDR(option Q) cannot be used "
       "together to estimate Protein Probabilities." << std::endl;
-      exit(-1);
+      return 0;
     }
   
     if (cmd.optionSet("d"))  depth = (cmd.getInt("d", 0, 3));
@@ -456,6 +448,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     catch (boost::filesystem::filesystem_error &e)
     {
       std::cerr << e.what() << std::endl;
+      return 0;
     }
   }
   
@@ -546,7 +539,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(!cmd.optionSet("j") && !cmd.optionSet("e") ){ // unless the input comes from -j option or -e option
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
-      exit(-1); // ...error
+      return 0; // ...error
     }
   }
   // if there is one argument left...
@@ -555,19 +548,19 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(cmd.optionSet("j")){ // and if the tab input is also present
       cerr << "Error: use one of either pin or tab-delimited input format.";
       cerr << "\nInvoke with -h option for help.\n";
-      exit(-1); // ...error
+      return 0; // ...error
     }
     if(cmd.optionSet("e")){ // if stdin pin file is present
       cerr << "Error: the pin file has already been given as stdinput argument.";
       cerr << "\nInvoke with -h option for help.\n";
-      exit(-1); // ...error
+      return 0; // ...error
     }
   }
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
     cerr << "Error: too many arguments.";
     cerr << "\nInvoke with -h option for help\n";
-    exit(-1); // ...error
+    return 0; // ...error
   }
 
   return true;
@@ -607,7 +600,7 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
-void Caller::readFiles() {
+int Caller::readFiles() {
   
   if (xmlInputFN.size() != 0) 
   {
@@ -629,10 +622,6 @@ void Caller::readFiles() {
       std::ifstream xmlInStream;
       xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
       xmlInStream.open(xmlInputFN.c_str());
-      if (!xmlInStream) {
-        cerr << "Can not open file " << xmlInputFN << endl;
-        exit(EXIT_FAILURE);
-      }
 
       string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
       string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
@@ -647,9 +636,10 @@ void Caller::readFiles() {
       // the enzyme element is a subelement but CodeSynthesis Xsd does not
       // generate a class for it. (I am trying to find a command line option
       // that overrides this decision). As for now special treatment is needed
-      char* value = XMLString::transcode(
-          doc->getDocumentElement()->getTextContent());
+      char* value = XMLString::transcode(doc->getDocumentElement()->getTextContent());
+      
       if(VERB > 1) std::cerr << "enzyme=" << value << std::endl;
+      
       Enzyme::setEnzyme(value);
       XMLString::release(&value);
       doc = p.next();
@@ -735,14 +725,15 @@ void Caller::readFiles() {
 
     catch (const xml_schema::exception& e) {
       std::cerr << e << endl;
-      exit(EXIT_FAILURE);
+      return 0;
     } catch (const std::ios_base::failure&) {
       std::cerr << "unable to open or read failure" << std::endl;
-      exit(EXIT_FAILURE);
+      return 0;
     } catch (const xercesc::DOMException& e) {
       char * tmpStr = XMLString::transcode(e.getMessage());
       std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;
       XMLString::release(&tmpStr);
+      return 0;
     }
   } else if (tabInput) {
     pCheck = new SanityCheck();
@@ -752,6 +743,8 @@ void Caller::readFiles() {
     shuffled.readTab(forwardTabInputFN, -1);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
   } 
+  
+  return true;
 }
 
 /* Train one of the crossvalidation bins */
@@ -1256,9 +1249,13 @@ int Caller::run() {
     }
     tmpInputFile.close();
   }
+  
   // Reading input files (pin or temporary file)
-  readFiles();
+  
+  if(!readFiles()) return 0;
+  
   fillFeatureSets();
+  
   // terminate xercesc
   if(xmlInputFN.size() != 0){
     xercesc::XMLPlatformUtils::Terminate();

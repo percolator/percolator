@@ -1017,12 +1017,10 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset,
   // build a model by training the SVM on the given training set
   char const *err_msg = svm_check_parameter(&data, &param);
   if (err_msg != NULL) {
-    if (VERB >= 1) {
-      cerr
-          << "ERROR: Incorrect parameters for the SVR." << endl
-          << err_msg << endl << "Execution aborted."<< endl;
-    }
-    exit(-1);
+    ostringstream temp;
+    temp << "ERROR: Incorrect parameters for the SVR." << endl
+	 << err_msg << endl << "Execution aborted."<< endl;
+    throw MyException(temp.str());
   }
   svm_model* m = svm_train(&data, &param);
   // save the model in the current object
@@ -1405,12 +1403,12 @@ void RTModel::trainIndexRetention(vector<PSMDescription>& trainset,
   // build a model by training the SVM on the given training set
   char const *err_msg = svm_check_parameter(&data, &param);
   if (err_msg != NULL) {
-    if (VERB >= 1) {
-      cerr
+    ostringstream temp;
+    temp
           << "ERROR: Incorrect parameters for the SVR." << endl
           << err_msg << endl << "Execution aborted."<< endl;
-    }
-    exit(-1);
+    
+    throw MyException(temp.str());
   }
   svm_model* m = svm_train(&data, &param);
   // save the model in the current object
@@ -1675,10 +1673,9 @@ void RTModel::setGridType(const GridType& g) {
     grids.gridEpsilon.assign(COARSE_GRID_EPSILON, COARSE_GRID_EPSILON
         + sizeof(COARSE_GRID_EPSILON) / sizeof(COARSE_GRID_EPSILON[0]));
   } else {
-    if (VERB >= 2) {
-      cerr << g << "is unknown. Execution aborted." << endl;
-    }
-    exit(-1);
+    ostringstream temp;
+    temp << g << "is unknown. Execution aborted." << endl;
+    throw MyException(temp.str());
   }
 }
 

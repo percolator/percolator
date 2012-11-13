@@ -37,6 +37,7 @@ static SetHandler::Iterator* decoy3 = NULL;
 
 Caller* getCaller() {
   if (pCaller == NULL) {
+    
     cerr << "Object pCaller not properly assigned" << endl;
     exit(-1);
   }

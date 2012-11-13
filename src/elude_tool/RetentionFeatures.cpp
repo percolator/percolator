@@ -78,24 +78,23 @@ double RetentionFeatures::GetIndexValue(const string &aa, const map<string, doub
     return index_value->second;
   } else {
     if (!ignore_ptms_) {
-      if (VERB >= 1) {
-        cerr << "Error: Could not find the index value for " << aa << endl;
-        cerr << "Execution aborted" << endl;
-      }
-      exit(1);
+      ostringstream temp;
+      temp << "Error: Could not find the index value for " << aa << endl;
+      temp << "Execution aborted" << endl;
+      throw MyException(temp.str());
     }
     index_value = index.find(aa.substr(0, 1));
     if (index_value != index.end()) {
       if (VERB >= 5) {
-        cerr << "Warning: Could not find the index value for " << aa << ". Use index value for " << aa[0] << " instead" << endl;
+        cerr << "Warning: Could not find the index value for " << aa 
+	     << ". Use index value for " << aa[0] << " instead" << endl;
       }
       return index_value->second;
     } else {
-      if (VERB >= 1) {
-        cerr << "Error: Could not find the index value for " << aa << endl;
-        cerr << "Execution aborted" << endl;
-      }
-      exit(1);
+      ostringstream temp;
+      temp << "Error: Could not find the index value for " << aa << endl;
+      temp << "Execution aborted" << endl;
+      throw MyException(temp.str());
     }
   }
 }
@@ -687,7 +686,7 @@ int RetentionFeatures::ComputeRetentionFeatures(vector<PSMDescription> &psms) {
   for( ; it != psms.end(); ++it) {
     ComputeRetentionFeatures(*it);
   }
-  return 0;
+  return 0; //NOTE why returns value if its not used?
 }
 
 /* computes the retention features for one psm */
@@ -710,10 +709,9 @@ int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
       features = FillAAFeatures(pep, features);
     }
   } else {
-    if (VERB >= 1) {
-      cerr << "Error: Memory not allocated for the retention features. Execution aborted." << endl;
-    }
-    exit(1);
+    ostringstream temp;
+    temp << "Error: Memory not allocated for the retention features. Execution aborted." << endl;
+    throw MyException(temp.str());
   }
   return 0;
 }

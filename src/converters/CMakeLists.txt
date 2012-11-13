@@ -275,20 +275,24 @@ include_directories(MSToolkit/RAMP MSToolkit )
 # include and link code from percolator
 include_directories(${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
-add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp)
+add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} 
+	    ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp ../MyException.cpp)
 
 # compile converter base files
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(LEVELDB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp 
+	       FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
 elseif(TOKYODB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp 
+	       FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
 elseif(BOOSTDB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp
+	       FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
 endif()
 
 target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})

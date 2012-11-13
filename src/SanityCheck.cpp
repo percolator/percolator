@@ -102,7 +102,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
 bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   if (!pTestset) {
     cerr << "SanityCheck wrongly configured" << endl;
-    exit(-1);
+    return false;
   }
   int overFDR = 0;
   for (size_t set = 0; set < w.size(); ++set) {

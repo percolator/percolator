@@ -24,11 +24,27 @@ using namespace std;
 
 
 int main(int argc, char** argv) {
+  
   Caller* pCaller = new Caller();
   int retVal = -1;
-  if (pCaller->parseOptions(argc, argv)) {
-    retVal = pCaller->run();
+  
+  try
+  {
+    if (pCaller->parseOptions(argc, argv)) {
+      retVal = pCaller->run();
+    }
   }
+  catch (const std::exception& e) 
+  {
+    std::cerr << e.what() << endl;
+    retVal = -1;
+  }
+  catch(...)
+  {
+    std::cerr << "Unknown exception, contact the developer.." << std::endl;
+    retVal = -1;
+  }
+  
   delete pCaller;
   Globals::clean();
   return retVal;

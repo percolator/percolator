@@ -5,6 +5,7 @@
 #define _Matrix_H
 
 #include "Vector.h"
+#include "MyException.h"
 
 class Matrix
 {

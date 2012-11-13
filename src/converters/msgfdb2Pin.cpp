@@ -251,7 +251,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   if(targetFN == "" && decoyFN == "")
   {
     std::cerr << "Error, one of the input files is missing.\n"; 
-    exit(-1); 
+    return 0; 
   }
   else if(targetFN != "" && decoyFN == "")
   {
@@ -270,7 +270,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   if (cmd.arguments.size() == 0) {
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
-      exit(-1); // ...error
+      return 0; // ...error
   }
   
   return true;
@@ -283,7 +283,7 @@ int msgfdb2Pin::run() {
   if(!xmlOutputStream && xmlOutputFN != ""){
     cerr << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
     cerr << "Please invoke msgfdb2pin with a valid -o option" << endl;
-    exit(-1);
+    return 0;
   }
   
   //initialize reader
@@ -300,15 +300,29 @@ int msgfdb2Pin::run() {
   if (VERB>2)
     cerr << "\nAll the input files have been successfully processed"<< endl;
 
-  return 0;
+  return true;
 }
 
 int main(int argc, char** argv) {
   msgfdb2Pin* pmsgfdb2Pin = new msgfdb2Pin();
   int retVal = -1;
-  if (pmsgfdb2Pin->parseOpt(argc, argv)) {
-    retVal = pmsgfdb2Pin->run();
+  
+  try
+  {
+    if (pmsgfdb2Pin->parseOpt(argc, argv)) {
+      retVal = pmsgfdb2Pin->run();
+    }
   }
+  catch (const std::exception& e) 
+  {
+    std::cerr << e.what() << endl;
+    retVal = -1;
+  }
+  catch(...)
+  {
+    std::cerr << "Unknown exception, contact the developer.." << std::endl;
+  }  
+
   delete pmsgfdb2Pin;
   Globals::clean();
   return retVal;

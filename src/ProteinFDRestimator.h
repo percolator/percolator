@@ -55,19 +55,9 @@
 #include <map>
 #include <set>
 #include <assert.h>
-//NOTE this is a version of the code to work with threads
-//#include <boost/thread.hpp> 
 #include <math.h>
 #include <cmath>
-#ifdef __APPLE__
-#ifdef __INTEL_COMPILER
-  #define isnan(x) _isnan(x)
-  #define isinf(x) _isinf(x)
-#else
-  #define isinf(x) std::isinf(x)
-  #define isnan(x) std::isnan(x)
-#endif
-#endif
+
 
 template <typename T>
 void FreeAll( T & t ) {

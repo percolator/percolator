@@ -145,9 +145,10 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
 double DataSet::isPngasef(const string& peptide) {
   bool isDecoy;
   switch (label) {
-  case 1: { isDecoy = false; break; };
-  case -1: { isDecoy = true; break; };
-  default:  { fprintf(stderr,"programming error 123234123\n"); exit(EXIT_FAILURE); } 
+    case 1: { isDecoy = false; break; };
+    case -1: { isDecoy = true; break; };
+    default:  { throw MyException("ERROR : class DataSet has not been initiated\
+		to neither target nor decoy label\n");} 
   }
   return isPngasef( peptide, isDecoy);
 }
@@ -197,8 +198,7 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     buff.clear();
   }
   if (m < 1) {
-    cerr << "To few features in Tab data file";
-    exit(-1);
+    throw MyException("To few features in Tab data file");
   }
   if (calcDOC) {
     m -= 2;
@@ -240,9 +240,10 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     //NOTE to check if the peptide sequence contains flanks or not
     if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.')
     {
-      std::cerr << "ERROR: the peptide sequence " << peptide_seq << " \
+      ostringstream temp;
+      temp << "ERROR: the peptide sequence " << peptide_seq << " \
       does not contain one or two of its flaking amino acids\n" << std::endl;
-      exit(-1);
+      throw MyException(temp.str());
     }
     
     myPsm->peptide = peptide_seq;
@@ -298,15 +299,17 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
   switch (label) {
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
-    default:  { std::cerr << "ERROR : class DataSet has not been initiated\
-		to neither target nor decoy label\"" << std::endl; } 
+    default:  { throw MyException("ERROR : class DataSet has not been initiated\
+		to neither target nor decoy label\n");}  
   }
   
   if(psm.isDecoy() != isDecoy)
   {
-    std::cerr << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
+    ostringstream temp;
+    temp << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
     The label isDecoy of the decoy is not the same in the dataset." << std::endl;
-    exit(-1);
+    throw MyException(temp.str());
+    
   }
   else
   {
@@ -330,9 +333,10 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
 
       if(psm.occurence().size() <= 0)
       {
-	std::cerr << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
+	ostringstream temp;
+	temp << "ERROR: adding PSM " << psm.id() << " to the dataset.\n\
 	The PSM does not contain protein occurences." << std::endl;
-	exit(-1);
+	throw MyException(temp.str());
       }
 
       BOOST_FOREACH( const percolatorInNs::occurence & oc,  psm.occurence() )  

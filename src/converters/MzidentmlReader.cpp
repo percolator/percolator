@@ -65,17 +65,20 @@ bool MzidentmlReader::checkValidity(const std::string &file) {
   bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
-    std::cerr << "Could not open file " << file << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Could not open file " << file << std::endl;
+    throw MyException(temp.str());
   }
   std::string line;
   if (!getline(fileIn, line)) {
-    std::cerr << "Could not read file " << file << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Could not read file " << file << std::endl;
+    throw MyException(temp.str());
   }
   if (line.find("<?xml") == std::string::npos) {
-    std::cerr << "ERROR : the input file is not xml format " << file << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "ERROR : the input file is not xml format " << file << std::endl;
+    throw MyException(temp.str());
   } 
   else //Test whether Sequest or MS-GF+ format
   {
@@ -94,8 +97,9 @@ bool MzidentmlReader::checkValidity(const std::string &file) {
       inputFormat = msgfplus;
 
     } else {
-      std::cerr << "ERROR : the input file is not MzIdentML - Sequest or MSGF+ format " << file << std::endl;
-      exit(-1);
+      ostringstream temp;
+      temp << "ERROR : the input file is not MzIdentML - Sequest or MSGF+ format " << file << std::endl;
+      throw MyException(temp.str());
     }
 
   }
@@ -303,18 +307,15 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 
     cleanHashMaps();
     ifs.close();
-  } catch (const xercesc::DOMException& e) {
+  } 
+  catch (const xercesc::DOMException& e) 
+  {
     char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;
+    ostringstream temp;
+    temp << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
-    exit(-1);
-  } catch (const xml_schema::exception& e) {
-    cerr << e << endl;
-    exit(-1);
-  } catch (const ios_base::failure&) {
-    cerr << "io failure" << endl;
-    exit(-1);
-  }
+    throw MyException(temp.str());
+  } 
 
   return;
 }
@@ -367,8 +368,9 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
     
     if(__flankC.empty() || __flankN.empty())
     {
-      std::cerr << "ERROR: The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed..\n" << std::endl;
-      exit(-1);
+      ostringstream temp;
+      temp << "ERROR: The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed..\n" << std::endl;
+      throw MyException(temp.str());
     }
 
     if (po->iscombined && !po->reversedFeaturePattern.empty()) {
@@ -546,9 +548,10 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
               ambiguousAA.find(peptideSeq[ix]) == string::npos &&
               additionalAA.find(peptideSeq[ix]) == string::npos) {
         if (ptmMap.count(peptideSeq[ix]) == 0) {
-          std::cerr << "Peptide sequence " << peptideSeqWithFlanks
+	   ostringstream temp;
+          temp << "Peptide sequence " << peptideSeqWithFlanks
                   << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
-          exit(-1);
+          throw MyException(temp.str());
         }
         peptideSeq.erase(ix, 1);
       }
@@ -582,14 +585,10 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
   // Try-Catch statement to find potential errors among the features.
   catch(std::exception const& e)
   {
-    std::cerr << "There was error parsing PSM: " << boost::lexical_cast<string > (item.id()) << "The error was: " << e.what() << std::endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "There was error parsing PSM: " << boost::lexical_cast<string > (item.id()) << "The error was: " << e.what() << std::endl;
+    throw MyException(temp.str());
   }
-  catch(...)
-  {
-    std::cerr << "Unknown error..." << std::endl;
-    exit(-1);
-  }
-    
+ 
   return;
 }

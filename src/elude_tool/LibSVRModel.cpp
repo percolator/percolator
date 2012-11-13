@@ -129,10 +129,9 @@ double LibSVRModel::PredictRT(const int &number_features, double *features) {
     return libsvm_wrapper::PredictRT(svr_, number_features, features);
   }
   else {
-    if (VERB >= 1) {
-      cerr << "ERROR: No SVR model available. Execution aborted." << endl;
-    }
-    exit(1);
+    ostringstream temp;
+    temp << "ERROR: No SVR model available. Execution aborted." << endl;
+    throw MyException(temp.str());
   }
 }
 
@@ -273,10 +272,10 @@ int LibSVRModel::LoadModel(FILE *fp) {
   } else if (type == 2) {
     kernel_ = RBF_SVR;
   } else {
-    if (VERB >= 2) {
-      cerr << "Error: Kernel type " << type << " is not supported. "
+    ostringstream temp;
+    temp << "Error: Kernel type " << type << " is not supported. "
            << "Execution aborted." << endl;
-    }
-    exit(1);
+    
+    throw MyException(temp.str());
   }
 }

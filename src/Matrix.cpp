@@ -224,8 +224,9 @@ Matrix ShermanMorrison(const Matrix & mat, const Vector & u, const Vector & v)
 
   if ( Vector::sparseChecker.isZero(coef) )
     {
-      cerr << "Sherman morrison has a division by a very small amount; still LI?" << endl;
-      exit(1);
+      ostringstream temp;
+      temp << "Sherman morrison has a division by a very small amount; still LI?" << endl;
+      throw MyException(temp.str());
     }
 
   // performance note: the outer product should be more efficient,

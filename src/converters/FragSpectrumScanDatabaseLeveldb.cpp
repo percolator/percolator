@@ -42,7 +42,6 @@ bool FragSpectrumScanDatabaseLeveldb::init(std::string fileName)
   leveldb::Status status = leveldb::DB::Open(options, fileName.c_str(), &bdb);
   if (!status.ok()){ 
     std::cerr << status.ToString() << endl;
-    exit(EXIT_FAILURE);
   }
   bool ret = status.ok();
   return ret;
@@ -127,8 +126,7 @@ void FragSpectrumScanDatabaseLeveldb::putFSS( ::percolatorInNs::fragSpectrumScan
   leveldb::Status status = bdb->Put(write_options,s1,s2);
   if(!status.ok())
   {
-    std::cerr << status.ToString() << endl;
-    exit(EXIT_FAILURE);
+    throw MyException(status.ToString());
   }
   buf.size(0);
 }

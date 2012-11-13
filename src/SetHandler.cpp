@@ -150,8 +150,9 @@ void SetHandler::readTab(const string& dataFN, const int setLabel) {
   }
   ifstream labelStream(dataFN.c_str(), ios::out);
   if (!labelStream) {
-    cerr << "Can not open file " << dataFN << endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Can not open file " << dataFN << endl;
+    throw MyException(temp.str());
   }
   vector<unsigned int> ixs;
   ixs.clear();
@@ -173,8 +174,9 @@ void SetHandler::readTab(const string& dataFN, const int setLabel) {
   labelStream.close();
   ifstream dataStream(dataFN.c_str(), ios::out);
   if (!dataStream) {
-    cerr << "Can not open file " << dataFN << endl;
-    exit(-1);
+    ostringstream temp;
+    temp << "Can not open file " << dataFN << endl;
+    throw MyException(temp.str());
   }
   dataStream >> tmp >> tmp;
   dataStream.get(); // removed enumrator, label and tab

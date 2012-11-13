@@ -70,21 +70,24 @@ double CommandLineParser::getDouble(string dest, double lower,
                                     double upper) {
   double val;
   from_string<double> (val, options[dest]);
-  if (!from_string<double> (val, options[dest]) || (val < lower || val
-      > upper)) {
-    cerr << "-" << dest << " option requires a float between " << lower
+  if (!from_string<double> (val, options[dest]) || (val < lower || val > upper)) 
+  {
+    ostringstream temp;
+    temp << "-" << dest << " option requires a float between " << lower
         << " and " << upper << endl;
-    exit(-1);
+    throw MyException(temp.str());
   }
   return val;
 }
 
 int CommandLineParser::getInt(string dest, int lower, int upper) {
   int val;
-  if (!from_string<int> (val, options[dest]) || val < lower || val > upper) {
-    cerr << "-" << dest << " option requires an integer between " << lower
+  if (!from_string<int> (val, options[dest]) || val < lower || val > upper) 
+  {
+    ostringstream temp;
+    temp << "-" << dest << " option requires an integer between " << lower
         << " and " << upper << endl;
-    exit(-1);
+    throw MyException(temp.str());
   }
   return val;
 }
@@ -99,8 +102,9 @@ void CommandLineParser::defineOption(string shortOpt, string longOpt,
       {
 	if((*it).shortOpt == shortOpt || (*it).longOpt == longOpt)
 	{
-	  std::cerr << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
-	  exit(-1);
+	  ostringstream temp;
+	  temp << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
+	  throw MyException(temp.str());
 	}
       }
   opts.insert(opts.begin(), Option("-" + shortOpt,
@@ -126,8 +130,9 @@ void CommandLineParser::parseArgs(int argc, char** argv) {
 }
 
 void CommandLineParser::error(string msg) {
-  cerr << header << endl << msg << endl;
-  exit(1);
+  ostringstream temp;
+  temp << header << endl << msg << endl;
+  throw MyException(temp.str());
 }
 
 void CommandLineParser::help() {
