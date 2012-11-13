@@ -1,1 +1,1 @@
-add_library (RAMP ramp_base64.cpp ramp.cpp)
+add_library (RAMP STATIC ramp_base64.cpp ramp.cpp)

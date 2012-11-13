@@ -35,7 +35,11 @@ MESSAGE( STATUS )
 
 
 # Detect machine architecture, on UNIX:
-get_arch(${TARGET_ARCH})
+get_arch("${TARGET_ARCH}")
+
+# STORE NEWLY SET VARIABLES IN *.h.cmake FILES
+load_config_files("${CMAKE_CURRENT_SOURCE_DIR}/../")
+load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 
 ###############################################################################
 # COMPILING

@@ -57,7 +57,7 @@ MESSAGE( STATUS
 MESSAGE( STATUS )
 
 # Detect machine architecture, on UNIX:
-get_arch(${TARGET_ARCH})
+get_arch("${TARGET_ARCH}")
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(MINGW OR WIN32) # windows
@@ -126,7 +126,7 @@ else(BOOSTDB)
   find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 endif()
 include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_INCLUDE_DIRS})
+#link_directories(${Boost_INCLUDE_DIRS})
 
 find_package(Pthreads)
 if(PTHREADS_FOUND)
@@ -134,6 +134,7 @@ if(PTHREADS_FOUND)
 else(PTHREADS_FOUND)
   message(FATAL_ERROR "The package Pthreads has not been not found")
 endif()
+include_directories(${PTHREAD_INCLUDE_DIR})
 
 if(MINGW AND NOT BOOSTDB)
   find_package(XDR)
@@ -267,13 +268,18 @@ endforeach()
 # COMPILING
 ###############################################################################
 
+# include MSToolkit 
+add_subdirectory(MSToolkit)
+include_directories(MSToolkit/RAMP MSToolkit )
+
 # include and link code from percolator
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
+include_directories(${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp)
 
-#COMPILING 
-add_subdirectory(MSToolkit)
+# compile converter base files
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(LEVELDB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
 	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
@@ -285,34 +291,34 @@ elseif(BOOSTDB)
 	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
 endif()
 
-include_directories(. MSToolkit/RAMP MSToolkit )
+target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+if(MINGW)
+  if(LEVELDB)
+    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${LDB_LIBRARIES})
+  elseif(TOKYODB)
+    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} 
+			      ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES})
+  elseif(BOOSTDB)
+    target_link_libraries(converters ${MINGWLIB})
+  endif()
+else(MINGW)
+  if(LEVELDB)
+    target_link_libraries(converters ${LDB_LIBRARIES})
+  elseif(TOKYODB)
+    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${TokyoCabinet_LIBRARIES})
+  endif()
+endif()
+
+##create the main executables
 add_executable(mzidentml2pin mzidentml2pin.cpp )
 add_executable(sqt2pin Sqt2Pin.cpp )
 add_executable(tandem2pin tandem2pin.cpp )
 add_executable(msgfdb2pin msgfdb2Pin.cpp )
 
-set(converters_libs converters perclibrary_part MSToolkit RAMP ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-if(MINGW)
-  if(LEVELDB)
-    set(conveters_libs "${converters_libs} -L${MINGWLIB} ${XDR_LIBRARIES} ${LDB_LIBRARIES}")
-  elseif(TOKYODB)
-    set(conveters_libs "${converters_libs} -L${MINGWLIB} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} 
-	${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES}")
-  elseif(BOOSTDB)
-    set(conveters_libs "${converters_libs} -L${MINGWLIB}")
-  endif()
-else(MINGW)
-  if(LEVELDB)
-    set(conveters_libs "${converters_libs} ${LDB_LIBRARIES}")
-  elseif(TOKYODB)
-    set(conveters_libs "${converters_libs} -L${MINGWLIB} ${XDR_LIBRARIES} ${TokyoCabinet_LIBRARIES}")
-  endif()
-endif()
-
-target_link_libraries(mzidentml2pin ${converters_libs})
-target_link_libraries(sqt2pin ${converters_libs})
-target_link_libraries(tandem2pin ${converters_libs})
-target_link_libraries(msgfdb2pin ${converters_libs})
+target_link_libraries(mzidentml2pin converters perclibrary_part MSToolkit )
+target_link_libraries(sqt2pin converters perclibrary_part MSToolkit )
+target_link_libraries(tandem2pin converters perclibrary_part MSToolkit )
+target_link_libraries(msgfdb2pin converters perclibrary_part MSToolkit )
 
 IF(MINGW OR WIN32)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)

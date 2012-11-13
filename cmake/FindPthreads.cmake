@@ -62,7 +62,7 @@ FIND_PATH(PTHREADS_INCLUDE_DIR
 	  $ENV{PTHREAD_INCLUDE_PATH}
 	  )
 
-message(STATUS "${PTHREADS_INCLUDE_DIR}")
+#message(STATUS "${PTHREADS_INCLUDE_DIR}")
 #
 # Find the library
 #
@@ -100,7 +100,7 @@ FIND_LIBRARY(PTHREADS_LIBRARY NAMES ${names}
 	/usr/i686-pc-mingw32/lib/
 	C:/MinGW/lib/
 	/mingw/lib  )
-message(STATUS "${PTHREADS_LIBRARY}")
+#message(STATUS "${PTHREADS_LIBRARY}")
 
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(Pthreads DEFAULT_MSG
