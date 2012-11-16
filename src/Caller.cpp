@@ -347,7 +347,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("H",
-      "mse-rocN-threshold",
+      "grid-search-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search (recommended 0.05 for normal size datasets and 0.1 for big size datasets).(Only valid if option -A is active).",
       "",
       "value");
@@ -356,6 +356,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Proteins with a very low score (< 0.001) will not be truncated (assigned 0.0 probability).(Only valid if option -A is active).",
       "",
       FALSE_IF_SET);
+  cmd.defineOption("MSE",
+      "no-mae",
+      "MAE will not be used to compute the FDR divergence, the MSE will be used instead.",
+      "",
+      FALSE_IF_SET);
+  
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -386,7 +392,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     double alpha = -1;
     double beta = -1;
     double gamma = -1;
-    double mse_threshold = 0.05;
+    double threshold = 0.05;
     bool gridSearch = true;
     unsigned depth = 3;
     std::string decoyWC = "random";
@@ -401,6 +407,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool outputDecoys = cmd.optionSet("Z");
     bool reduceTree = cmd.optionSet("T");
     bool truncate = cmd.optionSet("W");
+    bool mse = cmd.optionSet("MSE");
     
     if (!resultFN.empty() || !decoyOut.empty()) tabDelimitedOut = true;
     
@@ -415,13 +422,13 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("a"))  alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  gamma = cmd.getDouble("G", 0.00, 1.0);
-    if (cmd.optionSet("H")) mse_threshold = cmd.getDouble("H",0.001,1.0);
+    if (cmd.optionSet("H")) threshold = cmd.getDouble("H",0.001,1.0);
     
     if(alpha != -1 && beta != -1 && gamma != - 1) gridSearch = false;
 
     protEstimator = new ProteinProbEstimator(alpha,beta,gamma,tiesAsOneProtein,usePi0,outputEmpirQVal,
 					       grouProteins,noseparate,noprune,gridSearch,depth,decoyWC,mayusfdr,
-					       outputDecoys,tabDelimitedOut,resultFN,decoyOut,reduceTree,truncate,mse_threshold);
+					       outputDecoys,tabDelimitedOut,resultFN,decoyOut,reduceTree,truncate,threshold,mse);
   }
   
   if (cmd.optionSet("e")) {

@@ -21,7 +21,8 @@
 
 /** Helper functions **/
 
-template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
+template<class T> 
+void bootstrap(const vector<T>& in, vector<T>& out,
                                  size_t max_size = 1000) {
   out.clear();
   double n = in.size();
@@ -71,12 +72,49 @@ double areaSq(double x1, double y1, double x2, double y2) {
   else return area;
 }
 
+double Round(double dbVal, int nPlaces /* = 0 */)
+{
+    const double dbShift = pow(10.0, nPlaces);
+    return  floor(dbVal * dbShift + 0.5) / dbShift; 
+}
     
+// get the number of decimal places
+int GetDecimalPlaces(double dbVal)
+{
+    static const int MAX_DP = 10;
+    static const double THRES = pow(0.1, MAX_DP);
+    if (dbVal == 0.0)
+        return 0;
+    int nDecimal = 0;
+    while (dbVal - floor(dbVal) > THRES && nDecimal < MAX_DP)
+    {
+        dbVal *= 10.0;
+        nDecimal++;
+    }
+    return nDecimal;
+}
+
+
+template <class Iter,class Type>
+Type kahan_summation(Iter begin, Iter end) {
+  Type result = 0.f;
+
+  Type c = 0.f;
+  for(;begin != end; ++begin) {
+    Type y = *begin - c;
+    Type t = result + y;
+    c = (t - result) - y;
+    result = t;
+  }
+  return result;
+}
+
+
 ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, double gamma_par ,bool __tiesAsOneProtein
 			 ,bool __usePi0, bool __outputEmpirQVal, bool __groupProteins, bool __noseparate, bool __noprune, 
 			  bool __dogridSearch, unsigned __depth,std::string __decoyPattern, bool __mayufdr,bool __outputDecoys, 
 			  bool __tabDelimitedOut, std::string __proteinFN, std::string __proteinDecoyFN, 
-			  bool __reduceTree, bool __truncate, double __threshold) 
+			  bool __reduceTree, bool __truncate, double __threshold, bool __mse) 
 {
   peptideScores = 0;
   proteinGraph = 0;
@@ -105,6 +143,7 @@ ProteinProbEstimator::ProteinProbEstimator(double alpha_par, double beta_par, do
   reduceTree = __reduceTree;
   truncate = __truncate;
   threshold = __threshold;
+  mse = __mse;
 }
 
 ProteinProbEstimator::~ProteinProbEstimator()
@@ -243,7 +282,7 @@ void ProteinProbEstimator::run(){
     }
     
     if(optimize)
-      gridSearchOptimize(); 
+      gridSearchOptimize(alpha,gamma,beta); 
     else
       gridSearch(alpha,gamma,beta);
     
@@ -806,17 +845,19 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   std::vector<double> probs,empq,estq;
   std::vector<long double> gamma_search,beta_search,alpha_search;
 
+  double roc, mse1,mse2,mse3,mse4,current_objective;
+  
   switch(depth)
   {
     case 0:
       
-      gamma_search = boost::assign::list_of(0.1)(0.15)(0.20)(0.25)(0.30)(0.35)(0.40)(0.45)(0.5);
+      /*gamma_search = boost::assign::list_of(0.1)(0.15)(0.20)(0.25)(0.30)(0.35)(0.40)(0.45)(0.5);
       beta_search = boost::assign::list_of(0.0)(0.0001)(0.0002)(0.0005)(0.001)(0.002)(0.005)(0.01)(0.01)(0.02);
-      alpha_search = boost::assign::list_of(0.001)(0.002)(0.005)(0.01)(0.02)(0.05)(0.1)(0.2)(0.3)(0.4)(0.5);
+      alpha_search = boost::assign::list_of(0.001)(0.002)(0.005)(0.01)(0.02)(0.05)(0.1)(0.2)(0.3)(0.4)(0.5);*/
 	    
-      /*gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
+      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
       beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.025)(0.035)(0.05)(0.1);
-      alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);*/
+      alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);
       break;
     
     case 1:
@@ -859,16 +900,16 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	proteinGraph->getProteinProbsAndNames(names,probs);
 	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
 	
-	double roc, mse1,mse2,mse3,mse4;
 	getROC_AUC(names,probs,roc);
 	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
 	
-	double current_objective = (lambda * roc) - fabs(((1-lambda) * (mse2)));
+	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse4 ? mse : mse2)));
 	
 	if(VERB > 2)
 	{
-	  std::cerr << "Grid searching Alpha= " << scientific << alpha_local << " Beta= " 
-	  << scientific << beta_local << " Gamma= "  << scientific << gamma_local << std::endl;
+	  std::cerr.precision(10);
+	  std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
+	  std::cerr.unsetf(std::ios::floatfield);
 	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
 	  std::cerr << "The MSE FDR estimated values are : " <<  mse1 << "," << mse2 << "," << mse3 << "," << mse4 << std::endl;
 	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
@@ -891,7 +932,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 }
 
 
-void ProteinProbEstimator::gridSearchOptimize()
+void ProteinProbEstimator::gridSearchOptimize(double __alpha,double __gamma,double __beta)
 {
  
   if(VERB > 1)
@@ -904,12 +945,13 @@ void ProteinProbEstimator::gridSearchOptimize()
   double best_objective = -100000000;
   std::vector<std::vector<std::string> > names;
   std::vector<double> probs,empq,estq; 
+  double roc,mse1,mse2,mse3,mse4,current_objective;
   
   double alpha_step = 0.05;
   double beta_step = 0.05;
   double gamma_step = 0.05;
   
-  double beta_init = 0.0001;
+  double beta_init = 0.00001;
   double alpha_init = 0.001;
   double gamma_init = 0.1;
   
@@ -917,33 +959,49 @@ void ProteinProbEstimator::gridSearchOptimize()
   double beta_limit = 0.05;
   double alpha_limit = 0.5;
   
-  for (double i = gamma_init; i <= gamma_limit; i+=gamma_step)
+  if(__alpha != -1)
   {
-    long double gamma_local = i;
+    alpha_init = alpha_limit = __alpha;
+  }
+  
+  if(__beta != -1)
+  {
+    beta_init = beta_limit = __beta;
+  }
+  
+  if(__gamma != -1)
+  {
+    gamma_init = gamma_limit = __gamma;
+  }
+  
+  //NOTE very annoying the residue error of the floats that get acummulated in every iteration
+  
+  for (double i = gamma_init; i <= gamma_limit; i+=gamma_step)
+  { 
+    double gamma_local = i;
     
-    for (double j = log10(beta_init); j <= log10(beta_limit + beta_init + beta_step); j+=beta_step)
+    for (double j = log10(beta_init); j <= Round(log10(beta_limit),2); j+=beta_step)
     {
-      long double beta_local = pow(10,j) - beta_init; //to include 0.0 and values very close to 0.0 in the searching
+      double original = pow(10,j);
+      double beta_local = original - beta_init;
       
-      for (double k = log10(alpha_init); k <= log10(alpha_limit + alpha_step); k+=alpha_step)
+      for (double k = log10(alpha_init); k <= Round(log10(alpha_limit),2); k+=alpha_step)
       {
-	
-	long double alpha_local = pow(10,k);
+       
+	double alpha_local = pow(10,k);
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();
 	proteinGraph->getProteinProbsAndNames(names,probs);
 	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-	
-	double roc, mse1,mse2,mse3,mse4;
 	getROC_AUC(names,probs,roc);
 	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
 	
-	double current_objective = (lambda * roc) - fabs(((1-lambda) * (mse2)));
+	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse4 ? mse : mse2)));
 	
 	if(VERB > 2)
 	{
-	  std::cerr.precision(6);
+	  std::cerr.precision(10);
 	  std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
 	  std::cerr.unsetf(std::ios::floatfield);
 	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
@@ -1015,8 +1073,6 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
       //if ties activated count groups as 1 protein
       if(tiesAsOneProtein)
       {
-	//if(tpChange && !fpChange) ranked_list.push_back(false);
-	//if(!tpChange && fpChange) ranked_list.push_back(true);
 	if(tpChange) tpChange = 1;
 	if(fpChange) fpChange = 1;
       }
@@ -1050,14 +1106,6 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
   if(normalizer != 0)
   {
     auc /= normalizer;
-  
-    /*unsigned s0 = 0;
-    for(unsigned i = 0; i < ranked_list.size(); i++)
-    {
-      if(!ranked_list[i]) s0 += i;
-    }
-  
-    auc1 = ( (s0 - (tp * ((tp + 1)/2)) ) / (tp * fp) );*/
   }
   return;
 }
@@ -1171,7 +1219,9 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 }
 
 
-void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse1, double &mse2, double &mse3, double &mse4)
+void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR, 
+				      const std::vector<double> &empFDR,double &mse1, 
+				      double &mse2, double &mse3, double &mse4)
 {
   /* Estimate MSE mse1 as : 1/N multiply by the SUM from k=1 to N of (estFDR(k) - empFDR(k))^2 */
   

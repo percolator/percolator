@@ -354,7 +354,8 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
       //NOTE check that there are not quimera peptides
       if( peptideId != std::string(pepEv->peptide_ref()))
       {
-	std::cerr << "WARNING: The PSM " << boost::lexical_cast<string > (item.id()) << " contains different quimera peptide sequences. "
+	std::cerr << "WARNING: The PSM " << boost::lexical_cast<string > (item.id()) 
+		  << " contains different quimera peptide sequences. "
 		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq 
 		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       }
@@ -465,7 +466,7 @@ void MzidentmlReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItem
 	  if (msgfplusFeatures.count(param_name)) 
 	  {
 	    switch (msgfplusFeatures.at(param_name)) 
-	    {
+	    {  
 	      case 0: RawScore = boost::lexical_cast<double>(cv.value().get().c_str()); break;
 	      case 1: DeNovoScore = boost::lexical_cast<double>(cv.value().get().c_str());break;
 	      case 2: SpecEValue = boost::lexical_cast<double>(cv.value().get().c_str());break;

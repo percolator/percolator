@@ -10,7 +10,7 @@ include("CommonCMake.txt")
 # PREPARING TO INSTALL
 ###############################################################################
 
-my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
+my_set(CMAKE_BUILD_TYPE "Debug" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")
 
 # PRINT VARIBALES TO STDOUT

@@ -288,11 +288,14 @@ class ProteinProbEstimator {
     /** number of false positives allowed while estiaming the ROC curve score **/
     /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
     const static unsigned default_rocN = 50;
-    const static bool updateRocN = true;
+    const static bool updateRocN = false;
     /** threshold to compute the N of the roc curve function **/
     const static double thresholdRoc = 0.05;  
     /** activate the optimization of the parameters to see the best boundaries**/
     const static bool optimize = false;
+    /** use MSE or MAE to compute the FDR divergence **/
+    //const static bool MSE = false; included as a parameter
+    
     
     /** GENERAL PARAMETERS **/
     
@@ -313,7 +316,7 @@ class ProteinProbEstimator {
 			 bool noseparate = false, bool noprune = false, bool dogridSearch = true, unsigned depth = 3,
 			 std::string decoyPattern = "random", bool mayufdr = false,bool outputDecoys = false, 
 			 bool tabDelimitedOut = false, std::string proteinFN = "", std::string proteinDecoyFN = "",  
-			 bool reduceTree = false, bool truncate = true, double mse_threshold = 0.05
+			 bool reduceTree = false, bool truncate = true, double mse_threshold = 0.05, bool mse = false
 			);
     
     virtual ~ProteinProbEstimator();
@@ -399,7 +402,7 @@ class ProteinProbEstimator {
 					std::vector<double> &estq);
     void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse1, double &mse2, double &mse3, double &mse4);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
-    void gridSearchOptimize();
+    void gridSearchOptimize(double alpha = -1, double gamma = -1, double  beta = -1);
     
     /** functions to count number of target and decoy proteins **/
     unsigned countTargets(const std::vector<std::string> &proteinList);
@@ -441,6 +444,7 @@ class ProteinProbEstimator {
     bool outputDecoys;
     bool reduceTree;
     bool truncate;
+    bool mse;
     double pi0;
     double fdr;
     unsigned int numberDecoyProteins;
