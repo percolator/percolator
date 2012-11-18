@@ -507,7 +507,7 @@ void ProteinProbEstimator::estimatePValues()
 }
 
 void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
-						  std::set<std::string> &numberFP)
+						     std::set<std::string> &numberFP)
 {
   /* The original paper of Mayu describes a protein as :
    * FP = if only if all its peptides with q <= threshold are decoy
@@ -855,7 +855,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
       beta_search = boost::assign::list_of(0.0)(0.0001)(0.0002)(0.0005)(0.001)(0.002)(0.005)(0.01)(0.01)(0.02);
       alpha_search = boost::assign::list_of(0.001)(0.002)(0.005)(0.01)(0.02)(0.05)(0.1)(0.2)(0.3)(0.4)(0.5);*/
 	    
-      gamma_search = boost::assign::list_of(0.1)(0.25)(0.5)(0.75);
+      gamma_search = boost::assign::list_of(0.1)(0.25)(0.4)(0.5);
       beta_search = boost::assign::list_of(0.0)(0.01)(0.015)(0.025)(0.035)(0.05)(0.1);
       alpha_search = boost::assign::list_of(0.01)(0.04)(0.09)(0.16)(0.25)(0.36)(0.5);
       break;
