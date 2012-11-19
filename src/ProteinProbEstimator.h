@@ -400,7 +400,8 @@ class ProteinProbEstimator {
 					const std::vector<double> &probabilities,
 					std::vector<double> &empq,
 					std::vector<double> &estq);
-    void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse1, double &mse2, double &mse3, double &mse4);
+    void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,
+		    double &mse1, double &mse2, double &mse3, double &mse4);
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
     void gridSearchOptimize(double alpha = -1, double gamma = -1, double  beta = -1);
     

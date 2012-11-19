@@ -32,6 +32,7 @@ MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
 MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
 MESSAGE( STATUS "SERIALIZE = ${SERIALIZE}")
+MESSAGE( STATUS "PROFILING = ${PROFILING}")
 
 if("${SERIALIZE}" STREQUAL "LevelDB")
   message( STATUS "Using LevelDB Serialization scheme")
@@ -335,6 +336,21 @@ IF(MINGW OR WIN32)
   set_target_properties(msgfdb2pin PROPERTIES LINK_FLAGS "-static-libgcc")
 ENDIF()
 
+
+if(PROFILING AND UNIX)
+  set_target_properties(mzidentml2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set_target_properties(sqt2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set_target_properties(tandem2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set_target_properties(msgfdb2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}-O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+endif()
+
+
 if(APPLE)
   set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
@@ -345,6 +361,7 @@ if(APPLE)
   set_property(TARGET tandem2pin PROPERTY MACOSX_BUNDLE ON)
   set_property(TARGET msgfdb2pin PROPERTY MACOSX_BUNDLE ON) 
 endif(APPLE)
+
 
 #necessary dlls for the windows exe
 IF(MINGW)

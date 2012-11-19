@@ -984,6 +984,7 @@ void ProteinProbEstimator::gridSearchOptimize(double __alpha,double __gamma,doub
     {
       double original = pow(10,j);
       double beta_local = original - beta_init;
+      if(beta_local > 0.0) beta_local = original;
       
       for (double k = log10(alpha_init); k <= Round(log10(alpha_limit),2); k+=alpha_step)
       {

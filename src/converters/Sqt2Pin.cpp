@@ -150,7 +150,7 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
     xmlOutputFN = cmd.options["o"];
   }
   //option e has been changed, see above
-  /*if (cmd.optionSet("e")) {
+  if (cmd.optionSet("e")) {
     if( cmd.options["e"] == "no enzyme") 
       Enzyme::setEnzyme(Enzyme::NO_ENZYME); 
     else if( cmd.options["e"] == "elastase") 
@@ -165,9 +165,19 @@ bool Sqt2Pin::parseOpt(int argc, char **argv) {
       Enzyme::setEnzyme(Enzyme::PEPSIN);
     else if( cmd.options["e"] == "trypsin") 
       Enzyme::setEnzyme(Enzyme::TRYPSIN);
+    else if( cmd.options["e"] == "lys-n") 
+      Enzyme::setEnzyme(Enzyme::LYSN);
+    else if( cmd.options["e"] == "lys-c") 
+      Enzyme::setEnzyme(Enzyme::LYSC);
+    else if( cmd.options["e"] == "arg-c") 
+      Enzyme::setEnzyme(Enzyme::ARGC);
+    else if( cmd.options["e"] == "asp-n") 
+      Enzyme::setEnzyme(Enzyme::ASPN);
+    else if( cmd.options["e"] == "glu-c") 
+      Enzyme::setEnzyme(Enzyme::GLUC);
     else  
       Enzyme::setEnzyme(Enzyme::TRYPSIN);
-  }*/
+  }
   if (cmd.optionSet("N")) {
     parseOptions.pngasef=true;
   }
