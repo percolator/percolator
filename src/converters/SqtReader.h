@@ -29,7 +29,7 @@ public:
   
   virtual ~SqtReader();
   
-  virtual void read(const std::string &fn, bool isDecoy,
+  void read(const std::string &fn, bool isDecoy,
 		    boost::shared_ptr<FragSpectrumScanDatabase> database);
 
   void readSectionS(const std::string &record,std::set<int> &theMs, bool isDecoy,
@@ -38,13 +38,13 @@ public:
   void readPSM(bool isDecoy, const std::string &in,int match, 
 	       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(const std::string &file);
+  bool checkValidity(const std::string &file);
   
-  virtual bool checkIsMeta(const std::string &file);
+  bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
+  void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void addFeatureDescriptions(bool doEnzyme);
+  void addFeatureDescriptions(bool doEnzyme);
 };
 
 #endif // SQTREADER_H

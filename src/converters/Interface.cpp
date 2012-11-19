@@ -1,16 +1,34 @@
-#include "msgfdb2Pin.h"
+/*******************************************************************************
+ Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
 
-msgfdb2Pin::msgfdb2Pin() {
-  
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ *******************************************************************************/
+
+#include "Interface.h"
+
+
+Interface::Interface()
+{
+
 }
 
-msgfdb2Pin::~msgfdb2Pin() {
-  if(reader)
-    delete reader;
-  reader = 0;
+Interface::~Interface()
+{
+
 }
 
-string msgfdb2Pin::extendedGreeter() {
+string Interface::extendedGreeter() {
   ostringstream oss;
   char* host = getenv("HOSTNAME");
   oss << greeter();
@@ -20,9 +38,9 @@ string msgfdb2Pin::extendedGreeter() {
   return oss.str();
 }
 
-string msgfdb2Pin::greeter() {
+string Interface::greeter() {
   ostringstream oss;
-  oss << "\nmsgfdb2pin version " << VERSION << ", ";
+  oss << "\nsqt2pin version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Copyright (c) 2012 Lukas Käll. All rights reserved." << endl;
   oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
@@ -31,7 +49,8 @@ string msgfdb2Pin::greeter() {
   return oss.str();
 }
 
-bool msgfdb2Pin::parseOpt(int argc, char **argv) {
+bool Interface::parseOpt(int argc, char **argv,const std::string &usage) 
+{
   ostringstream callStream;
   callStream << argv[0];
   for (int i = 1; i < argc; i++) {
@@ -40,14 +59,8 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   callStream << endl;
   call = callStream.str();
   ostringstream intro, endnote;
-  intro << greeter() << endl << "Usage:" << endl;
-  intro << "   msgfdb2pin [options] -o output.xml target_file decoy_file " << endl << endl;
-  intro << "Where output.xml is where the output will be written (ensure to have read and " << endl;
-  intro << "write access on the file).target_file is the target msgfdb-file, and decoy_file is" << endl;
-  intro << "the decoy msgfdb-file. Small data sets may be merged by replace the msgfdb-files with" << endl;
-  intro << "meta files. Meta files are text files containing the paths of msgfdb-files, one" << endl;
-  intro << "path per line. For successful result, the different runs should be generated" << endl;
-  intro << "under similar condition." << endl;
+  intro << greeter() << endl;
+  intro << usage;
 
   // init
   CommandLineParser cmd(intro.str());
@@ -56,10 +69,9 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "outputXML",
       "save output in an XML file",
       "filename");
-  //TODO Add an option for which feature should be used for matches per spectra sorting
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum, in the order of apperance.",
+      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
       "number");
   cmd.defineOption("v",
       "verbose",
@@ -103,7 +115,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       "Pattern used to identify the decoy PSMs",
       "",
       "pattern");
-  /** new parameters for reading the fasta to obtain the proteins **/
+  /** new parameters for reading the fasta database to obtain the proteins **/
   cmd.defineOption("F",
       "databases",
       "Link to the fasta database/s used in the search against the spectra file/s <target.fasta,[decoy.fasta]> (Including this option will add the proteins to the generated pin file).",
@@ -149,6 +161,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   if (cmd.optionSet("o")) {
     xmlOutputFN = cmd.options["o"];
   }
+  //option e has been changed, see above
   if (cmd.optionSet("e")) {
     if( cmd.options["e"] == "no enzyme") 
       Enzyme::setEnzyme(Enzyme::NO_ENZYME); 
@@ -164,6 +177,16 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
       Enzyme::setEnzyme(Enzyme::PEPSIN);
     else if( cmd.options["e"] == "trypsin") 
       Enzyme::setEnzyme(Enzyme::TRYPSIN);
+    else if( cmd.options["e"] == "lys-n") 
+      Enzyme::setEnzyme(Enzyme::LYSN);
+    else if( cmd.options["e"] == "lys-c") 
+      Enzyme::setEnzyme(Enzyme::LYSC);
+    else if( cmd.options["e"] == "arg-c") 
+      Enzyme::setEnzyme(Enzyme::ARGC);
+    else if( cmd.options["e"] == "asp-n") 
+      Enzyme::setEnzyme(Enzyme::ASPN);
+    else if( cmd.options["e"] == "glu-c") 
+      Enzyme::setEnzyme(Enzyme::GLUC);
     else  
       Enzyme::setEnzyme(Enzyme::TRYPSIN);
   }
@@ -180,11 +203,9 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
     int m = cmd.getInt("m", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
   }
-
   if (cmd.optionSet("2")) {
     spectrumFile = cmd.options["2"];
   }
-  
   if (cmd.optionSet("M")) {
     parseOptions.monoisotopic = true;
   }
@@ -207,6 +228,7 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   
   if (cmd.optionSet("F"))
   {
+    //NOTE I do not like this, I should make two parameters, one for target db and another one for decoy db
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["F"], boost::is_any_of(","));
     strs.push_back("");
@@ -270,60 +292,9 @@ bool msgfdb2Pin::parseOpt(int argc, char **argv) {
   if (cmd.arguments.size() == 0) {
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
-      return 0; // ...error
+      return 0;
   }
   
   return true;
 }
 
-int msgfdb2Pin::run() {
-  // Content of msgfdb files is merged: preparing to write it to xml file
-  ofstream xmlOutputStream;
-  xmlOutputStream.open(xmlOutputFN.c_str());
-  if(!xmlOutputStream && xmlOutputFN != ""){
-    cerr << "ERROR: invalid path to output file: " << xmlOutputFN << endl;
-    cerr << "Please invoke msgfdb2pin with a valid -o option" << endl;
-    return 0;
-  }
-  
-  //initialize reader
-  parseOptions.targetFN = targetFN;
-  parseOptions.decoyFN = decoyFN;
-  parseOptions.call = call;
-  parseOptions.spectrumFN = spectrumFile;
-  parseOptions.xmlOutputFN = xmlOutputFN;
-  reader = new msgfdbReader(&parseOptions);
-  
-  reader->init();
-  reader->print(xmlOutputStream);
-  
-  if (VERB>2)
-    cerr << "\nAll the input files have been successfully processed"<< endl;
-
-  return true;
-}
-
-int main(int argc, char** argv) {
-  msgfdb2Pin* pmsgfdb2Pin = new msgfdb2Pin();
-  int retVal = -1;
-  
-  try
-  {
-    if (pmsgfdb2Pin->parseOpt(argc, argv)) {
-      retVal = pmsgfdb2Pin->run();
-    }
-  }
-  catch (const std::exception& e) 
-  {
-    std::cerr << e.what() << endl;
-    retVal = -1;
-  }
-  catch(...)
-  {
-    std::cerr << "Unknown exception, contact the developer.." << std::endl;
-  }  
-
-  delete pmsgfdb2Pin;
-  Globals::clean();
-  return retVal;
-}

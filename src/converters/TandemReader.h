@@ -29,24 +29,24 @@ using namespace xercesc;
 
 typedef map<std::string, set<std::string> > peptideProteinMapType;
 
-class tandemReader: public Reader
+class TandemReader: public Reader
 {
 
 public:
   
-  tandemReader(ParseOptions* po);
+  TandemReader(ParseOptions* po);
   
-  virtual ~tandemReader();
+  virtual ~TandemReader();
   
-  virtual void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(const std::string &file);
+  bool checkValidity(const std::string &file);
   
-  virtual bool checkIsMeta(const std::string &file);
+  bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
+  void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void addFeatureDescriptions(bool doEnzyme);
+  void addFeatureDescriptions(bool doEnzyme);
   
 private:
   

@@ -15,40 +15,40 @@
 
  *******************************************************************************/
 
-#ifndef SQT2PIN_H_
-#define SQT2PIN_H_
+#ifndef MSGFPLUS2PIN_H_
+#define MSGFPLUS2PIN_H_
 
-#include "SqtReader.h"
+#include "MsgfplusReader.h"
 #include "Interface.h"
 
 using namespace std;
 
-class Sqt2Pin : public Interface {
+class Msgfplus2pin : public Interface {
 
  public:
    
-	Sqt2Pin();
-	virtual ~Sqt2Pin();
+	Msgfplus2pin();
+	virtual ~Msgfplus2pin();
 	static std::string Usage()
 	{
-	  ostringstream endnote;
+	  std::stringstream endnote;
 	  endnote << "Usage:" << endl;
-	  endnote << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt " << endl << endl;
-	  endnote << "Where output.xml is where the output will be written (ensure to have read and " << endl;
-	  endnote << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
-	  endnote << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
-	  endnote << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;
+	  endnote << "   Msgfplus2pin [options] target.mzid decoy.mzid" << endl << endl;
+	  endnote << "Target.mzid [MSGF+] is the target MzIdentML-file, and decoy.mzid [MSGF+] is" << endl;
+	  endnote << "the decoy MzIdentML-file. Small data sets may be merged by replace the mzid-files with" << endl;
+	  endnote << "meta files. Meta files are text files containing the paths of mzid-files, one" << endl;
 	  endnote << "path per line. For successful result, the different runs should be generated" << endl;
-	  endnote << "under similar condition." << endl;
+	  endnote << "under similar conditions." << endl;
 	  return endnote.str();
 	}
 	int run();
 	
  private:
   
-	SqtReader *reader;
+	MsfgplusReader *reader;
 };
 
 int main(int argc, char **argv);
 
-#endif /* SQT2PIN_H_ */
+#endif /* MSGFPLUS2PIN_H_ */
+

@@ -23,6 +23,17 @@ Reader::Reader(ParseOptions *__po)
   initMassMap(po->monoisotopic);
 }
 
+Reader::Reader()
+{
+  po = 0;
+  tmpDirs = std::vector<char*>();
+  tmpFNs = std::vector<std::string>();
+  maxCharge = -1;
+  minCharge = 10000;
+  initMassMap(po->monoisotopic);
+}
+
+
 Reader::~Reader()
 {
   for(int i=0; i<tmpDirs.size(); i++)

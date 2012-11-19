@@ -1,26 +1,22 @@
-#include "Sqt2Pin.h"
+#include "Tandem2Pin.h"
 
-
-Sqt2Pin::Sqt2Pin() {
- 
+Tandem2Pin::Tandem2Pin() {
+  
 }
 
-Sqt2Pin::~Sqt2Pin() {
+Tandem2Pin::~Tandem2Pin() {
   if(reader)
     delete reader;
   reader = 0;
 }
 
-
-int Sqt2Pin::run() {
-  
-  // Content of sqt files is merged: preparing to write it to xml file
-  
+int Tandem2Pin::run() {
+  // Content of tandem files is merged: preparing to write it to xml file
   ofstream xmlOutputStream;
   xmlOutputStream.open(xmlOutputFN.c_str());
   if(!xmlOutputStream && xmlOutputFN != ""){
     cerr << "Error: invalid path to output file: " << xmlOutputFN << endl;
-    cerr << "Please invoke sqt2pin with a valid -o option" << endl;
+    cerr << "Please invoke tandem2pin with a valid -o option" << endl;
     return 0;
   }
   
@@ -30,7 +26,7 @@ int Sqt2Pin::run() {
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = xmlOutputFN;
-  reader = new SqtReader(&parseOptions);
+  reader = new TandemReader(&parseOptions);
   
   reader->init();
   reader->print(xmlOutputStream);
@@ -40,15 +36,15 @@ int Sqt2Pin::run() {
 
   return true;
 }
+
 int main(int argc, char** argv) {
-  
-  Sqt2Pin* pSqt2Pin = new Sqt2Pin();
+  Tandem2Pin* ptandem2Pin = new Tandem2Pin();
   int retVal = -1;
   
   try
   {
-    if (pSqt2Pin->parseOpt(argc, argv, Sqt2Pin::Usage())) {
-      retVal = pSqt2Pin->run();
+    if (ptandem2Pin->parseOpt(argc, argv, Tandem2Pin::Usage())) {
+      retVal = ptandem2Pin->run();
     }
   }
   catch (const std::exception& e) 
@@ -60,8 +56,8 @@ int main(int argc, char** argv) {
   {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
   }  
-    
-  delete pSqt2Pin;
+  
+  delete ptandem2Pin;
   Globals::clean();
   return retVal;
 }

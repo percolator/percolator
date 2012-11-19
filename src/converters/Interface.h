@@ -15,35 +15,36 @@
 
  *******************************************************************************/
 
-#ifndef TANDEM2PIN_H_
-#define TANDEM2PIN_H_
+#ifndef INTERFACE_H_
+#define INTERFACE_H_
 
-#include "tandemReader.h"
 #include "Option.h"
 #include "config.h"
-#include <string>
+#include "parseoptions.h"
+#include "Enzyme.h"
+#include "Globals.h"
+#include "boost/lexical_cast.hpp"
 
 using namespace std;
 
-class tandem2Pin {
-public:
-	tandem2Pin();
-	virtual ~tandem2Pin();
-	std::string greeter();
-	std::string extendedGreeter();
-	bool parseOpt(int argc, char **argv);
-	int run();
+class Interface {
 
-protected:
+ public:
+   
+	Interface();
+	virtual ~Interface();
+	virtual std::string greeter();
+	virtual std::string extendedGreeter();
+	virtual bool parseOpt(int argc, char **argv,const std::string &usage);
+	
+ protected:
+  
 	ParseOptions parseOptions;
 	std::string targetFN;
 	std::string decoyFN;
 	std::string xmlOutputFN;
 	std::string call;
 	std::string spectrumFile;
-	tandemReader *reader;
 };
 
-int main(int argc, char **argv);
-
-#endif /* TANDEM2PIN_H_ */
+#endif /* INTERFACE_H_ */

@@ -96,6 +96,9 @@ class Reader
 public:
   
   Reader(ParseOptions *po);
+  
+  Reader();
+  
   virtual ~Reader();
   
   void translateFileToXML(const std::string &fn,bool isDecoy,
@@ -127,9 +130,9 @@ public:
 
   void initMassMap(bool useAvgMass);
   
-  void init();
+  virtual void init();
   
-  void print( ofstream &xmlOutputStream);
+  virtual void print( ofstream &xmlOutputStream);
   
   unsigned int peptideLength(const string& pep);
   

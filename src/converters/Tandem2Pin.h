@@ -15,40 +15,43 @@
 
  *******************************************************************************/
 
-#ifndef SQT2PIN_H_
-#define SQT2PIN_H_
+#ifndef TANDEM2PIN_H_
+#define TANDEM2PIN_H_
 
-#include "SqtReader.h"
+#include "TandemReader.h"
 #include "Interface.h"
+#include <string>
 
 using namespace std;
 
-class Sqt2Pin : public Interface {
+class Tandem2Pin : public Interface {
 
- public:
-   
-	Sqt2Pin();
-	virtual ~Sqt2Pin();
+  public:
+    
+	Tandem2Pin();
+	virtual ~Tandem2Pin();
+
 	static std::string Usage()
 	{
 	  ostringstream endnote;
 	  endnote << "Usage:" << endl;
-	  endnote << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt " << endl << endl;
+	  endnote << "   tandem2pin [options] -o output.xml target_file decoy_file " << endl << endl;
 	  endnote << "Where output.xml is where the output will be written (ensure to have read and " << endl;
-	  endnote << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
-	  endnote << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
-	  endnote << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;
+	  endnote << "write access on the file).target_file is the target X!tandem-file, and decoy_file is" << endl;
+	  endnote << "the decoy X!tandem-file. Small data sets may be merged by replace the X!tandem-files with" << endl;
+	  endnote << "meta files. Meta files are text files containing the paths of X!tandem-files, one" << endl;
 	  endnote << "path per line. For successful result, the different runs should be generated" << endl;
 	  endnote << "under similar condition." << endl;
 	  return endnote.str();
 	}
+
 	int run();
-	
- private:
-  
-	SqtReader *reader;
+
+  private:
+
+	TandemReader *reader;
 };
 
 int main(int argc, char **argv);
 
-#endif /* SQT2PIN_H_ */
+#endif /* TANDEM2PIN_H_ */

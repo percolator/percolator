@@ -15,35 +15,31 @@
 
  *******************************************************************************/
 
-#ifndef MSGFDB2PIN_H_
-#define MSGFDB2PIN_H_
+#ifndef MSGFPLUSREADER_H
+#define MSGFPLUSREADER_H
 
-#include "msgfdbReader.h"
-#include "Option.h"
-#include "config.h"
+#include "MzidentmlReader.h"
 
-using namespace std;
 
-class msgfdb2Pin {
-public:
-	msgfdb2Pin();
-	virtual ~msgfdb2Pin();
-	std::string greeter();
-	std::string extendedGreeter();
-	bool parseOpt(int argc, char **argv);
-	int run();
+class MsfgplusReader : public MzidentmlReader
+{
 
-protected:
+
+  public:
   
-	ParseOptions parseOptions;
-	std::string targetFN;
-	std::string decoyFN;
-	std::string xmlOutputFN;
-	std::string call;
-	std::string spectrumFile;
-	msgfdbReader *reader;
+    MsfgplusReader(ParseOptions *po);
+  
+    virtual ~MsfgplusReader();
+    bool checkValidity(const std::string &file);
+    void addFeatureDescriptions(bool doEnzyme);
+    void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
+		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
+		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database );
+  
+  protected :
+    
+    static const std::map<string,int> msgfplusFeatures;
+    static const double neutron;
 };
 
-int main(int argc, char **argv);
-
-#endif /* MSGFDB2PIN_H_ */
+#endif // MSGFPLUSREADER_H

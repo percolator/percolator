@@ -1,4 +1,4 @@
-#include "tandemReader.h"
+#include "TandemReader.h"
 
 static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
 static const XMLCh groupTypeStr[] = { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull};
@@ -8,7 +8,7 @@ static const std::string scheme_namespace; //Will be set in checkValidity based 
 static const std::string schema_major = "";
 static const std::string schema_minor = "";
 
-tandemReader::tandemReader(ParseOptions *po):Reader(po)
+TandemReader::TandemReader(ParseOptions *po):Reader(po)
 {
   x_score = false;
   y_score = false;
@@ -19,7 +19,7 @@ tandemReader::tandemReader(ParseOptions *po):Reader(po)
   firstPSM = true;
 }
 
-tandemReader::~tandemReader()
+TandemReader::~TandemReader()
 {
 
 }
@@ -59,7 +59,7 @@ void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const s
 */
 
 //Checks validity of the file and also if the defaultNameSpace is declared or not.
-bool tandemReader::checkValidity(const std::string &file)
+bool TandemReader::checkValidity(const std::string &file)
 {
   bool isvalid;
   std::ifstream fileIn(file.c_str(), std::ios::in);
@@ -101,7 +101,7 @@ bool tandemReader::checkValidity(const std::string &file)
   return isvalid;
 }
 
-bool tandemReader::checkIsMeta(const std::string &file)
+bool TandemReader::checkIsMeta(const std::string &file)
 {
   bool ismeta;
   std::string line;
@@ -122,7 +122,7 @@ bool tandemReader::checkIsMeta(const std::string &file)
 }
 
 
-void  tandemReader::addFeatureDescriptions(bool doEnzyme) 
+void TandemReader::addFeatureDescriptions(bool doEnzyme) 
 {
   push_backFeatureDescription("hyperscore");
   push_backFeatureDescription("deltaScore");  //hypercore - abs(nextscore);
@@ -208,7 +208,7 @@ void  tandemReader::addFeatureDescriptions(bool doEnzyme)
 }
 
 //Get max and min chage but also check what type of a,b,c,x,y,z score/ions are present
-void tandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
+void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   
   int nTot = 0, charge = 0;
   
@@ -318,7 +318,7 @@ void tandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
 
 //Get the groupObject which contains one spectra but might contain several psm. 
 //All psms are read, features calculated and the psm saved.
-void tandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
+void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 			       boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn){
   
   std::ostringstream id;
@@ -382,7 +382,7 @@ void tandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 }
 
 //Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
-void tandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,peptideProteinMapType &peptideProteinMap)
+void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,peptideProteinMapType &peptideProteinMap)
 {
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein())
   {
@@ -401,7 +401,7 @@ void tandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,peptide
 }
 
 //Calculates some features then creates the psm and saves it
-void tandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
+void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
 			      double sumI,double maxI,bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
 			      const peptideProteinMapType &peptideProteinMap,const string &psmId, int spectraId)
 {
@@ -578,7 +578,7 @@ void tandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   database->savePsm(spectraId, psm_p);
 }
 
-void tandemReader::read(const std::string &fn, bool isDecoy,
+void TandemReader::read(const std::string &fn, bool isDecoy,
 			boost::shared_ptr<FragSpectrumScanDatabase> database)
 {
   std::string line, tmp, prot;

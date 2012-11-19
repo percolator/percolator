@@ -1,18 +1,18 @@
-#include "Sqt2Pin.h"
+#include "Sequest2Pin.h"
 
 
-Sqt2Pin::Sqt2Pin() {
+Sequest2Pin::Sequest2Pin() {
  
 }
 
-Sqt2Pin::~Sqt2Pin() {
+Sequest2Pin::~Sequest2Pin() {
   if(reader)
     delete reader;
   reader = 0;
 }
 
 
-int Sqt2Pin::run() {
+int Sequest2Pin::run() {
   
   // Content of sqt files is merged: preparing to write it to xml file
   
@@ -30,7 +30,7 @@ int Sqt2Pin::run() {
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = xmlOutputFN;
-  reader = new SqtReader(&parseOptions);
+  reader = new SequestReader(&parseOptions);
   
   reader->init();
   reader->print(xmlOutputStream);
@@ -42,13 +42,13 @@ int Sqt2Pin::run() {
 }
 int main(int argc, char** argv) {
   
-  Sqt2Pin* pSqt2Pin = new Sqt2Pin();
+  Sequest2Pin* pSequest2Pin = new Sequest2Pin();
   int retVal = -1;
   
   try
   {
-    if (pSqt2Pin->parseOpt(argc, argv, Sqt2Pin::Usage())) {
-      retVal = pSqt2Pin->run();
+    if (pSequest2Pin->parseOpt(argc, argv, Sequest2Pin::Usage())) {
+      retVal = pSequest2Pin->run();
     }
   }
   catch (const std::exception& e) 
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
   }  
     
-  delete pSqt2Pin;
+  delete pSequest2Pin;
   Globals::clean();
   return retVal;
 }

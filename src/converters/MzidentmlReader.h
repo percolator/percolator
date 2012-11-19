@@ -21,7 +21,6 @@
 #include <Reader.h>
 #include "FragSpectrumScanDatabase.h"
 #include "parser.hxx"
-//TODO this version of the program only works for 1.1.0
 #include "mzIdentML1.1.0.hxx"
 
 using namespace std;
@@ -50,35 +49,30 @@ public:
   
   virtual ~MzidentmlReader();
   
-  virtual void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  virtual bool checkValidity(const std::string &file);
+  virtual bool checkValidity(const std::string &file) = 0;
   
-  virtual bool checkIsMeta(const std::string &file);
+  bool checkIsMeta(const std::string &file);
  
-  virtual void getMaxMinCharge(const std::string &fn, bool isDecoy);
+  void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
-  virtual void addFeatureDescriptions(bool doEnzyme);
+  virtual void addFeatureDescriptions(bool doEnzyme) = 0;
   
-  void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
+  virtual void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
 		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
-		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database );
+		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database ) = 0;
+
+  void init() { Reader::init(); };
+  void print( ofstream &xmlOutputStream) { Reader::print(xmlOutputStream); };
   
   void cleanHashMaps();
   
-  enum inputFormat_t {sequest, msgfplus};  //sequest or msgfplus
-  inputFormat_t inputFormat;
-  
-  
-private :
+ protected :
     
     peptideMapType peptideMap;
     proteinMapType proteinMap;
     peptideEvidenceMapType peptideEvidenceMap;
-    static const std::map<string,int> sequestFeatures;
-    static const std::map<string,int> msgfplusFeatures;
-    static const std::map<string,int> inputFileType;  //Sequest or MS-GF+
-    static const double neutron;
 };
 
 #endif // MZIDENTMLREADER_H

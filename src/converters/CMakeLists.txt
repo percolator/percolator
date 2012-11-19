@@ -284,16 +284,16 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(LEVELDB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp 
-	       FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseLeveldb.cpp)
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp 
+	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabaseLeveldb.cpp)
 elseif(TOKYODB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp 
-	       FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseTokyodb.cpp)
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp 
+	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabaseTokyodb.cpp)
 elseif(BOOSTDB)
   add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp msgfdbReader.cpp tandemReader.cpp
-	       FragSpectrumScanDatabase.cpp FragSpectrumScanDatabaseBoostdb.cpp)
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp
+	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabaseBoostdb.cpp)
 endif()
 
 target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
@@ -315,33 +315,33 @@ else(MINGW)
 endif()
 
 ##create the main executables
-add_executable(mzidentml2pin mzidentml2pin.cpp )
+add_executable(msgfplus2pin Msgfplus2Pin.cpp )
 add_executable(sqt2pin Sqt2Pin.cpp )
-add_executable(tandem2pin tandem2pin.cpp )
-add_executable(msgfdb2pin msgfdb2Pin.cpp )
+add_executable(tandem2pin Tandem2Pin.cpp )
+add_executable(sequest2pin Sequest2Pin.cpp )
 
-target_link_libraries(mzidentml2pin converters perclibrary_part MSToolkit )
+target_link_libraries(msgfplus2pin converters perclibrary_part MSToolkit )
 target_link_libraries(sqt2pin converters perclibrary_part MSToolkit )
 target_link_libraries(tandem2pin converters perclibrary_part MSToolkit )
-target_link_libraries(msgfdb2pin converters perclibrary_part MSToolkit )
+target_link_libraries(sequest2pin converters perclibrary_part MSToolkit )
 
 IF(MINGW OR WIN32)
-  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(mzidentml2pin PROPERTIES LINK_FLAGS "-static-libgcc")
+  set_property(TARGET msgfplus2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(msgfplus2pin PROPERTIES LINK_FLAGS "-static-libgcc")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc")
   set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-static-libgcc")
-  set_property(TARGET msgfdb2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(msgfdb2pin PROPERTIES LINK_FLAGS "-static-libgcc")
+  set_property(TARGET sequest2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(sequest2pin PROPERTIES LINK_FLAGS "-static-libgcc")
 ENDIF()
 
 
 if(PROFILING AND UNIX)
-  set_target_properties(mzidentml2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set_target_properties(msgfplus2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
   set_target_properties(sqt2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
   set_target_properties(tandem2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
-  set_target_properties(msgfdb2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+  set_target_properties(sequest2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}-O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
@@ -352,14 +352,14 @@ endif()
 
 
 if(APPLE)
-  set_property(TARGET mzidentml2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET msgfplus2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_property(TARGET msgfdb2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_property(TARGET mzidentml2pin PROPERTY MACOSX_BUNDLE ON)
+  set_property(TARGET sequest2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET msgfplus2pin PROPERTY MACOSX_BUNDLE ON)
   set_property(TARGET sqt2pin PROPERTY MACOSX_BUNDLE ON)
   set_property(TARGET tandem2pin PROPERTY MACOSX_BUNDLE ON)
-  set_property(TARGET msgfdb2pin PROPERTY MACOSX_BUNDLE ON) 
+  set_property(TARGET sequest2pin PROPERTY MACOSX_BUNDLE ON) 
 endif(APPLE)
 
 
@@ -455,15 +455,15 @@ add_subdirectory(data/system_tests/converters)
 
 IF(NOT MINGW)
   if(APPLE)
-    install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+    install(TARGETS msgfplus2pin EXPORT msgfplus2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
     install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-    install(TARGETS tandem2pin EXPORT mzidentml2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-    install(TARGETS msgfdb2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+    install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
   else(APPLE)
-    install(TARGETS mzidentml2pin EXPORT mzidentml2pin  DESTINATION ./bin)
+    install(TARGETS msgfplus2pin EXPORT msgfplus2pin  DESTINATION ./bin)
     install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
-    install(TARGETS tandem2pin EXPORT mzidentml2pin  DESTINATION ./bin)
-    install(TARGETS msgfdb2pin EXPORT sqt2pin DESTINATION ./bin)
+    install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION ./bin)
+    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION ./bin)
   endif(APPLE)
   
   install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
