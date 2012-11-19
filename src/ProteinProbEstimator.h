@@ -283,16 +283,21 @@ class ProteinProbEstimator {
     
     /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
     const static double lambda = 0.15;
+    
     /** threshold used in the MSE FDR divergence function to meassure separation between empirical and estimated q values*/
     /*const static double threshold = 0.05; included as a parameter*/
+    
     /** number of false positives allowed while estiaming the ROC curve score **/
     /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
     const static unsigned default_rocN = 50;
-    const static bool updateRocN = false;
+    const static bool updateRocN = true;
+    
     /** threshold to compute the N of the roc curve function **/
-    const static double thresholdRoc = 0.05;  
+    //const static double thresholdRoc = 0.05; using same threshold as FDR divergence
+    
     /** activate the optimization of the parameters to see the best boundaries**/
     const static bool optimize = false;
+    
     /** use MSE or MAE to compute the FDR divergence **/
     //const static bool MSE = false; included as a parameter
     

@@ -60,16 +60,24 @@ double area(double x1, double y1, double x2, double y2)
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
   double area =  antiderivativeAt(m, b, x2) - antiderivativeAt(m, b, x1);
-  if(isnan(area)) return 0;
-  else return area;
+  
+  //NOTE what to do with NaN??
+  //if(isnan(area)) return 0;
+  //else return area;
+  
+  return area;
 }
 
 double areaSq(double x1, double y1, double x2, double y2) {
   double m = (y2-y1)/(x2-x1);
   double b = y1-m*x1;
   double area = squareAntiderivativeAt(m, b, x2) - squareAntiderivativeAt(m, b, x1);
-  if(isnan(area)) return 0;
-  else return area;
+  
+  //NOTE what to do with NaN??
+  //if(isnan(area)) return 0;
+  //else return area;
+  
+  return area;
 }
 
 double Round(double dbVal, int nPlaces /* = 0 */)
@@ -1162,7 +1170,7 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	if(empFDR < previousEmpQ) empFDR = previousEmpQ;
 	else previousEmpQ = empFDR;
 	
-	if(estFDR <= thresholdRoc && updateRocN)
+	if(estFDR <= threshold && updateRocN)
 	{ 
 	  rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
 	}
@@ -1204,7 +1212,7 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	    if(empFDR < previousEmpQ) empFDR = previousEmpQ;
 	    else previousEmpQ = empFDR;
 	    
-	    if(estFDR <= thresholdRoc && updateRocN)
+	    if(estFDR <= threshold && updateRocN)
 	    {
 	      rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
 	    }
