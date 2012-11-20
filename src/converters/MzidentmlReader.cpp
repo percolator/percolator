@@ -5,6 +5,10 @@ static const XMLCh sequenceCollectionStr[] = {chLatin_S, chLatin_e, chLatin_q, c
   chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull};
 
 
+static string schemaDefinition = MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
+static string scheme_namespace = MZIDENTML_NAMESPACE;
+static string schema_major = boost::lexical_cast<string>(MZIDENTML_VERSION_MAJOR);
+static string schema_minor = boost::lexical_cast<string>(MZIDENTML_VERSION_MINOR);
 
 MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {
 
@@ -64,10 +68,6 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   {
     ifs.open(fn.c_str());
     parser p;
-    string schemaDefinition = MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
-    string scheme_namespace = MZIDENTML_NAMESPACE;
-    string schema_major = "";
-    string schema_minor = "";
     bool schemaVal = true;
     xml_schema::dom::auto_ptr<DOMDocument> doc
             (p.start(ifs, fn.c_str(), schemaVal, schemaDefinition, schema_major, schema_minor, scheme_namespace));
@@ -112,10 +112,6 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
     parser p;
-    string schemaDefinition = MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
-    string scheme_namespace = MZIDENTML_NAMESPACE;
-    string schema_major = "";
-    string schema_minor = "";
     xml_schema::dom::auto_ptr<DOMDocument> doc
             (p.start(ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
 

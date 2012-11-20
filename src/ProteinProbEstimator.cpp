@@ -514,7 +514,7 @@ void ProteinProbEstimator::estimatePValues()
 		 std::bind2nd(std::divides<double> (),(double)nDecoys));
 }
 
-void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
+void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold, std::set<std::string> &numberTP, 
 						     std::set<std::string> &numberFP)
 {
   /* The original paper of Mayu describes a protein as :
@@ -543,9 +543,9 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double threshold, std::set<std
 	itP != peptides.end(); itP++)
       {
 	Protein::Peptide *p = *itP;
-	if(p->q <= threshold && p->isdecoy)
+	if(p->q <= psm_threshold && p->isdecoy)
 	  ++num_decoy_confident;
-	if(p->q <= threshold && !p->isdecoy)
+	if(p->q <= psm_threshold && !p->isdecoy)
 	  ++num_target_confident;
       }
       if(num_decoy_confident > 0)
@@ -895,23 +895,25 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
   
   for (unsigned int i = 0; i < gamma_search.size(); i++)
   {
+    double gamma_local = gamma_search[i];
+    
     for (unsigned int j = 0; j < alpha_search.size(); j++)
     {
+      double alpha_local = alpha_search[j];
+      
       for (unsigned int k = 0; k < beta_search.size(); k++)
       {
-	long double gamma_local = gamma_search[i];
-	long double alpha_local = alpha_search[j];
-	long double beta_local = beta_search[k];
+
+	double beta_local = beta_search[k];
 	
 	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
 	proteinGraph->getProteinProbs();
 	proteinGraph->getProteinProbsAndNames(names,probs);
 	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-	
 	getROC_AUC(names,probs,roc);
 	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
 	
-	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse4 ? mse : mse2)));
+	current_objective = fabs((lambda * roc) - fabs(((1-lambda) * (mse ? mse4 : mse2))));
 	
 	if(VERB > 2)
 	{
@@ -1006,7 +1008,7 @@ void ProteinProbEstimator::gridSearchOptimize(double __alpha,double __gamma,doub
 	getROC_AUC(names,probs,roc);
 	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
 	
-	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse4 ? mse : mse2)));
+	current_objective = fabs((lambda * roc) - fabs(((1-lambda) * (mse ? mse4 : mse2))));
 	
 	if(VERB > 2)
 	{
@@ -1085,14 +1087,6 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
 	if(tpChange) tpChange = 1;
 	if(fpChange) fpChange = 1;
       }
-      else
-      {
-	for(unsigned i=0; i<names[k].size(); i++)
-	{
-	    std::string protein = names[k][i];
-	    ranked_list.push_back(isDecoy(protein));
-	}
-      }
 
       tp += tpChange;
       fp += fpChange;
@@ -1100,11 +1094,9 @@ void ProteinProbEstimator::getROC_AUC(const std::vector<std::vector<string> > &n
       if(prev_prob != -1 && fp != 0 && fp != prev_fp)
       {
 	double trapezoid = trapezoid_area(fp,prev_fp,tp,prev_tp);
-	//double area_segment = area(prev_fp,prev_tp,fp,tp);
 	prev_fp = fp;
 	prev_tp = tp;
 	auc += trapezoid;
-	//auc += area_segment;
       }   
       
       prev_prob = prob;
@@ -1134,9 +1126,11 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
   double TargetDecoyRatio = (double)numberTargetProteins / (double)numberDecoyProteins;
   double previousEmpQ = 0.0;
   double previousEstQ = 0.0;
-  if(updateRocN) rocN = 0;
+  
+  if(updateRocN) rocN = 50;
+  
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
-  for (int k=0; (k<names.size() && estFDR <= threshold); k++)
+  for (int k=0; (k<names.size() && (estFDR <= threshold || empFDR <= threshold)); k++)
     {
       double prob = probabilities[k];
 
@@ -1144,12 +1138,12 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
       {
 	unsigned tpChange = countTargets(names[k]);
 	unsigned fpChange = names[k].size() - tpChange;
+	
 	fpCount += (double)fpChange;
 	tpCount += (double)tpChange;
 	
 	if(countDecoyQvalue)
 	{
-	  //NOTE in case I want to count target and decoys while estimateing qvalue from PEP
 	  totalFDR += (prob) * (double)(tpChange + fpChange);
 	  estFDR = totalFDR / (tpCount + fpCount);
 	}
@@ -1170,10 +1164,11 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	if(empFDR < previousEmpQ) empFDR = previousEmpQ;
 	else previousEmpQ = empFDR;
 	
-	if(estFDR <= threshold && updateRocN)
+	if(updateRocN)
 	{ 
 	  rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
 	}
+	
 	estq.push_back(estFDR);
 	empq.push_back(empFDR);
 
@@ -1183,6 +1178,7 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	for(unsigned i=0; i<names[k].size(); i++)
 	{
 	    std::string protein = names[k][i];
+	    
 	    if(isDecoy(protein))
 	    {
 	      fpCount++;
@@ -1193,16 +1189,18 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	    }
 	    
 	    totalFDR += (prob);
+	    
 	    if(countDecoyQvalue)
 	    {
 	      estFDR = totalFDR / (tpCount + fpCount);
 	    }
-	    else
+	    else if(tpCount)
 	    {
 	      estFDR = totalFDR / (tpCount);
 	    }
 	    
 	    if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
+	    
 	    if(empFDR > 1.0 || isnan(empFDR) || isinf(empFDR)) empFDR = 1.0;
 	    if(estFDR > 1.0 || isnan(estFDR) || isinf(estFDR)) estFDR = 1.0;
 	    
@@ -1212,10 +1210,11 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
 	    if(empFDR < previousEmpQ) empFDR = previousEmpQ;
 	    else previousEmpQ = empFDR;
 	    
-	    if(estFDR <= threshold && updateRocN)
+	    if(updateRocN)
 	    {
 	      rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
 	    }
+	    
 	    estq.push_back(estFDR);
 	    empq.push_back(empFDR);
 	    
@@ -1285,11 +1284,15 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
   
   if(estFDR.size() > 0) mse1 /= (double)(estFDR.size());
   
-  if(normalizer1 != 0)
+  if(normalizer1)
   {
     mse2 /= normalizer1;
     mse3 /= normalizer1;
     mse4 /= normalizer1;
+  }
+  else if(diff.size() == 1)
+  {
+    mse2 = mse3 = mse4 = 1.0;
   }
   
   return;

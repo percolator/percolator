@@ -4,9 +4,9 @@ static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, ch
 static const XMLCh groupTypeStr[] = { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull};
 static const XMLCh groupModelStr[] = { chLatin_m, chLatin_o, chLatin_d, chLatin_e, chLatin_l, chNull};
 static const std::string schemaDefinition = TANDEM_SCHEMA_LOCATION + string("tandem2011.12.01.1.xsd");
-static const std::string scheme_namespace; //Will be set in checkValidity based on the bool defaultNameSpace
-static const std::string schema_major = "";
-static const std::string schema_minor = "";
+static const std::string scheme_namespace = TANDEM_NAMESPACE;
+static const std::string schema_major = boost::lexical_cast<string>(TANDEM_VERSION);
+static const std::string schema_minor = boost::lexical_cast<string>(TANDEM_VERSION);
 
 TandemReader::TandemReader(ParseOptions *po):Reader(po)
 {

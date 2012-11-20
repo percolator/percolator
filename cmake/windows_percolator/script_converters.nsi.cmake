@@ -8,9 +8,6 @@
 !define BUILD_PATH "@CMAKE_BINARY_DIR@"
 !define SOURCE_PATH "@CMAKE_SOURCE_DIR@"
 !define NSI_PATH "@PERCOLATOR_SOURCE_DIR@/admin/win/nsi"
-!define LEVELDB "@LEVELDB@"
-!define TOKYODB "@TOKYODB@"
-!define BOOSTDB "@BOOSTDB@"
 
 ;-----------------------------------------------------------------------------
 ; Installer version
