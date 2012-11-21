@@ -186,7 +186,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     }
   
     double rank = item.rank();
-    double PI = boost::lexical_cast<double>(item.calculatedPI().get());
+    //double PI = boost::lexical_cast<double>(item.calculatedPI().get());
     int charge = item.chargeState();
     double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
