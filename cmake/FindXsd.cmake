@@ -8,6 +8,7 @@
 
 FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   ${CMAKE_PREFIX_PATH}
+  ${CMAKE_PREFIX_PATH}/xsd
   ${CMAKE_PREFIX_PATH}/include
   $ENV{XSDDIR}
   $ENV{XSDDIR}/include
@@ -25,13 +26,13 @@ FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx PATH_SUFFIXES libxsd PATHS
   "D:/Program Files/CodeSynthesis XSD 3.3"
 )
 
-
 FIND_PROGRAM(XSD_EXECUTABLE 
   NAMES 
     xsd xsdcxx
   PATHS
     ${CMAKE_PREFIX_PATH}
     ${CMAKE_PREFIX_PATH}/bin
+    ${CMAKE_PREFIX_PATH}/xsd/bin
     $ENV{XSDDIR}/bin
     "[HKEY_CURRENT_USER\\xsd\\bin]"
     /usr/local/bin

@@ -91,13 +91,14 @@ IF(XERCESC_INCLUDE_DIR)
       STRING(REGEX REPLACE "\n *#define XERCES_VERSION_MINOR +" "" XVERMIN ${XVERMIN})
       STRING(REGEX REPLACE "\n *#define XERCES_VERSION_REVISION +" "" XVERREV ${XVERREV})
       SET(XERCESC_VERSION ${XVERMAJ}.${XVERMIN}.${XVERREV})
+      if(${XVERMAJ} LESS 3)
+	message(FATAL_ERROR "The version of Xerces-c found : " ${XERCESC_VERSION} " is too old ")
+      endif()
     ENDIF ( ${XERCESC_XVERHPPPATH} STREQUAL XERCESC_XVERHPPPATH-NOTFOUND )   
   ENDIF(XERCESC_LIBRARIES)
 ENDIF(XERCESC_INCLUDE_DIR)
 
-if(${XVERMAJ} LESS 3)
-  message(FATAL_ERROR "The version of Xerces-c found : " ${XERCESC_VERSION} " is too old ")
-endif()
+
 
 # include(CheckCXXSourceCompiles)
 # set(CMAKE_REQUIRED_INCLUDES ${XERCESC_INCLUDE_DIR})

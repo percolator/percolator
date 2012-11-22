@@ -913,7 +913,7 @@ void ProteinProbEstimator::gridSearch(double __alpha,double __gamma,double __bet
 	getROC_AUC(names,probs,roc);
 	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
 	
-	current_objective = fabs((lambda * roc) - fabs(((1-lambda) * (mse ? mse4 : mse2))));
+	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse ? mse4 : mse2)));
 	
 	if(VERB > 2)
 	{
@@ -1008,7 +1008,7 @@ void ProteinProbEstimator::gridSearchOptimize(double __alpha,double __gamma,doub
 	getROC_AUC(names,probs,roc);
 	getFDR_MSE(estq,empq,mse1,mse2,mse3,mse4);
 	
-	current_objective = fabs((lambda * roc) - fabs(((1-lambda) * (mse ? mse4 : mse2))));
+	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse ? mse4 : mse2)));
 	
 	if(VERB > 2)
 	{
@@ -1290,7 +1290,7 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
     mse3 /= normalizer1;
     mse4 /= normalizer1;
   }
-  else if(diff.size() == 1)
+  else //if(diff.size() == 1)
   {
     mse2 = mse3 = mse4 = 1.0;
   }
