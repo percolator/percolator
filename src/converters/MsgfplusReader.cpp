@@ -160,17 +160,17 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq 
 		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       }
-      else
-      {
-	__flankN = boost::lexical_cast<string > (pepEv->pre());
-	__flankC = boost::lexical_cast<string > (pepEv->post());
-	if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
-	if (__flankC == "?") {__flankC = "-";}
-	std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
-	mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
-	std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
-	proteinIds.push_back(proteinName);
-      }
+      //else
+      //{
+      __flankN = boost::lexical_cast<string > (pepEv->pre());
+      __flankC = boost::lexical_cast<string > (pepEv->post());
+      if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
+      if (__flankC == "?") {__flankC = "-";}
+      std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
+      mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
+      std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
+      proteinIds.push_back(proteinName);
+      //}
     }
     
     if(__flankC.empty() || __flankN.empty())

@@ -164,7 +164,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
       unsigned numberHitsSpectra = 0;
       BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) 
       {
-	if(numberHitsSpectra++ <= po->hitsPerSpectrum)
+	if(++numberHitsSpectra <= po->hitsPerSpectrum)
 	{
 	  assert(item.experimentalMassToCharge());
 	  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = item.experimentalMassToCharge();
