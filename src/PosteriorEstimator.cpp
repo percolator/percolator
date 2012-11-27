@@ -142,7 +142,8 @@ void PosteriorEstimator::estimatePEP(
 
 void PosteriorEstimator::estimatePEPGeneralized(
                                      vector<pair<double, bool> >& combined,
-                                     vector<double>& peps) {
+                                     vector<double>& peps,
+				       bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
   LogisticRegression lr;
@@ -154,6 +155,9 @@ void PosteriorEstimator::estimatePEPGeneralized(
     if (elem->second) {
       ++nTargets;
     } else {
+      if (include_negative) {
+        xvals.push_back(elem->first);
+      }
       ++nDecoys;
     }
   }
@@ -235,7 +239,8 @@ void PosteriorEstimator::finishStandalone(
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem)
   {
-    if (!includeNegativesInResult && elem->second) {
+    if (!includeNegativesInResult && elem->second) 
+    {
       xvals.push_back(elem->first);
     }
     else if(includeNegativesInResult)
@@ -247,13 +252,15 @@ void PosteriorEstimator::finishStandalone(
   vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
   if (resultFileName.empty()) {
     cout << "Score\tPEP\tq-value" << endl;
-    for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
+    for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+    {
       cout << *xval << "\t" << *pep << "\t" << *qv << endl;
     }
   } else {
     ofstream resultstream(resultFileName.c_str());
     resultstream << "Score\tPEP\tq-value" << endl;
-    for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
+    for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+    {
       resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
     }
     resultstream.close();
@@ -267,18 +274,29 @@ void PosteriorEstimator::finishStandaloneGeneralized(
 	getQValuesFromPEP(peps, q);
 	vector<pair<double, bool> >::const_iterator elem = combined.begin();
 	for (; elem != combined.end(); ++elem)
-			xvals.push_back(elem->first);
+	{
+	  if (!includeNegativesInResult && elem->second) 
+	  {
+	    xvals.push_back(elem->first);
+	  }
+	  else if(includeNegativesInResult)
+	  {
+	    xvals.push_back(elem->first);
+	  }
+	}
 	vector<double>::iterator xval = xvals.begin();
 	vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
 	if (resultFileName.empty()) {
 		cout << "Score\tPEP\tq-value" << endl;
-		for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
+		for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+		{
 			cout << *xval << "\t" << *pep << "\t" << *qv << endl;
 		}
 	} else {
 		ofstream resultstream(resultFileName.c_str());
 		resultstream << "Score\tPEP\tq-value" << endl;
-		for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
+		for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+		{
 			resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
 		}
 		resultstream.close();
@@ -504,12 +522,11 @@ int PosteriorEstimator::run() {
       cerr << "Reversing all scores" << endl;
     }
   }
-  if (reversed)
-  // sorting in ascending order
+  if (reversed) // sorting in ascending order
   {
     sort(combined.begin(), combined.end());
-  } else
-  // sorting in decending order
+  } 
+  else	// sorting in decending order
   {
     sort(combined.begin(), combined.end(), greater<pair<double, bool> > ());
   }
@@ -518,9 +535,9 @@ int PosteriorEstimator::run() {
   }
   vector<double> peps;
   if (competition) {
-    estimatePEPGeneralized(combined, peps);
-	finishStandaloneGeneralized(combined, peps);
-	return 0;
+    estimatePEPGeneralized(combined, peps,includeNegativesInResult);
+    finishStandaloneGeneralized(combined, peps);
+    return true;
   } 
   
   double pi0 = estimatePi0(pvals);

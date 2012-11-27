@@ -21,9 +21,11 @@ MESSAGE( STATUS
 MESSAGE( STATUS "Building PERCOLATOR-CONVERTERS:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "Indicate the type of XML serialization scheme : 
-		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" or -DSERIALIZE=\"LevelDB\".
-		  By setting up the variable SERIALIZE to either Boost or TokyoCabined or LevelDB 
-		  you will chose the serialization scheme that will be used to build Converters.
+		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" 
+		  or -DSERIALIZE=\"LevelDB\".
+		  By setting up the variable SERIALIZE to either Boost 
+		  or TokyoCabined or LevelDB you will chose the serialization 
+		  scheme that will be used to build Converters.
 		  Boost serialization option will be used as default if no option is given.")
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
