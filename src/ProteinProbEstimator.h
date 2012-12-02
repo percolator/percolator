@@ -397,15 +397,14 @@ class ProteinProbEstimator {
      /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
 
     void getROC_AUC(const std::vector<std::vector<string> > &names,
-		       const std::vector<double> &probabilities, double &auc);
+		     const std::vector<double> &probabilities, double &auc);
+    
     void getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names,
-					const std::vector<double> &probabilities,
-					std::vector<double> &empq,
-					std::vector<double> &estq);
+					  const std::vector<double> &probabilities,
+					  std::vector<double> &empq,
+					  std::vector<double> &estq);
     
     void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,
-		    double &mse1, double &mse2, double &mse3, double &mse4);
-    void getFDR_MSE_Old(const std::vector<double> &estFDR, const std::vector<double> &empFDR,
 		    double &mse1, double &mse2, double &mse3, double &mse4);
     
     void gridSearch(double alpha = -1, double gamma = -1, double  beta = -1);
@@ -419,7 +418,8 @@ class ProteinProbEstimator {
     
     /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
      * this function is used to estimate the protein FDR**/
-    void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, std::set<std::string> &numberFP);
+    void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
+				  std::set<std::string> &numberFP);
        
     /** estimate prior probabilities for peptide level **/
     double estimatePriors();

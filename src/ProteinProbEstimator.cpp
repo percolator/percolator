@@ -1132,7 +1132,7 @@ void ProteinProbEstimator::getEstimated_and_Empirical_FDR(const std::vector<std:
   if(updateRocN) rocN = 50;
   
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
-  for (int k=0; (k<names.size() && (estFDR <= threshold || empFDR <= threshold)); k++)
+  for (int k=0; (k<names.size() && (estFDR <= threshold)); k++)
     {
       double prob = probabilities[k];
 
@@ -1266,9 +1266,7 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
    * Total Area = Total Area / range of X
    */
   
-  if(
-     ((*min_element(estFDR.begin(),estFDR.end()) > threshold) 
-     && (*min_element(empFDR.begin(),empFDR.end()) > threshold))
+  if(   (*min_element(estFDR.begin(),estFDR.end()) >= threshold) 
      || (estFDR.size() != empFDR.size()) 
      || (estFDR.empty() || empFDR.empty())
      || (((*max_element(estFDR.begin(),estFDR.end()) <= 0.0) 
@@ -1294,7 +1292,7 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
       y1 = x1 - empFDR[k];
       y2 = x2 - empFDR[k+1];
     }
-    else if(estFDR[k] <= threshold)
+    else //if(estFDR[k] <= threshold)
     {
       //empFDR is above threshold, penalize the area positive
       x1 = estFDR[k];
@@ -1302,23 +1300,20 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
       y1 = x1;
       y2 = x2;
     }
-    else if(empFDR[k] <= threshold)
+    /* //NOTE trying to handle the case when few estFDR values are below
+     * threshold specially when those values are almots as high as threshold
+    /*else 
     {
       //estFDR is above threshold, penalize the area negative
       x1 = empFDR[k];
       x2 = empFDR[k+1];
       y1 = (x1 * -1.0);
       y2 = (x2 * -1.0);
-    }
-    else
-    {
-      //at some point both estFDR and empFDR are above threshold
-      //strange case, do nothng
-      x1 = x2 = y1 = y2 = 0.0;
-    }
-
+    }*/
+    
     if( x1 != x2 && x2 != 0 && y2 != 0 ) //if there is an area
     {
+      x2 = min(x2,threshold); //in case x2 is above threshold
       mse2 += trapezoid_area(x1,x2,y1,y2);
       mse3 += abs(area(x1, y1, x2, y2));
       mse4 += areaSq(x1, y1, x2, y2);
@@ -1329,7 +1324,7 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
 
   mse1 += pow(y2,2); //last element of diff between vectors
   
-  double normalizer1 = std::min(abs(estFDR.back() - estFDR.front()),threshold); //normalize by x axis range (threshold on top always)
+  double normalizer1 = abs(std::min(estFDR.back(),threshold) - estFDR.front()); //normalize by x axis range (threshold on top always)
   double normalizer2 = (double)estFDR.size(); //normalize by the number of elements
   
   mse1 /= normalizer2;
@@ -1340,83 +1335,6 @@ void ProteinProbEstimator::getFDR_MSE(const std::vector<double> &estFDR,
   return;
 }
 
-void ProteinProbEstimator::getFDR_MSE_Old(const std::vector<double> &estFDR,
-					    const std::vector<double> &empFDR,double &mse1,
-					    double &mse2, double &mse3, double &mse4)
-{
-  /* Estimate MSE mse1 as : 1/N multiply by the SUM from k=1 to N of (estFDR(k) - empFDR(k))^2 */
-  
-  /* Estimate MSE mse2 area as : sum trapezoid area of each segment (integral of the absolute value)
-  * A_segment(i) = abs(X1-Xo) * abs((y1 + y2 ) / 2)
-  * Where yo = estimated FDR at segment i
-  * Where y1 = estimated FDR at segment i + 1
-  * Where Xo = empirical FDR at segment i
-  * Where X1 = empirical FDR at segment i + 1
-  * Total Area = Total Area / range of X
-  */
-  
-  /* Estimate MSE mse3 area as : sum trapezoid area with antiderivatives of each segment (absolute value of the integral)
-  * A_segment(i) = ((yo - m*Xo)*X1 + m/2 * X1^2) - ((yo - m*Xo)*Xo - m/2 * X2^2))
-  * Where yo = estimated FDR at segment i
-  * Where y1 = estimated FDR at segment i + 1
-  * Where Xo = empirical FDR at segment i
-  * Where X2 = empirical FDR at segment i + 1
-  * Where m = (y1 - y0) / (X1 - X0)
-  * Total Area = abs(Total Area / range of X)
-  */
-  
- /* Estimate MSE mse4 area as : sum trapezoid squared area with antiderivatives of each segment
-  * A_segment(i) = ((yo - m*Xo)*X1 + m/2 * X1^2) - ((yo - m*Xo)*Xo - m/2 * X2^2))
-  * Where yo = estimated FDR at segment i
-  * Where y1 = estimated FDR at segment i + 1
-  * Where Xo = empirical FDR at segment i
-  * Where X2 = empirical FDR at segment i + 1
-  * Where m = (y1 - y0) / (X1 - X0)
-  * Total Area = Total Area / range of X
-  */
-  
-  if(
-     ((*min_element(estFDR.begin(),estFDR.end()) > threshold) 
-     && (*min_element(empFDR.begin(),empFDR.end()) > threshold))
-     || (estFDR.size() != empFDR.size()) 
-     || (estFDR.empty() || empFDR.empty())
-     || (((*max_element(estFDR.begin(),estFDR.end()) <= 0.0) 
-     && (*max_element(empFDR.begin(),empFDR.end()) <= 0.0)))
-    )
-  {
-    //no elements into the confidence interval or vectors empty 
-    //or differnt size or all zeroes 
-    mse1 = mse2 = mse3 = mse4 = 1.0;
-    return;
-  }
-  
-  Vector diff = Vector(estFDR) - Vector(empFDR); //exclude zeroes
-  mse1 = mse2 = mse3 = 0.0, mse4 = 0.0;
-  
-  for(unsigned k = 0; k<diff.size()-1; k++)
-  {
-    if(estFDR[k] != estFDR[k+1]) 
-    {
-      mse2 += trapezoid_area(estFDR[k],estFDR[k+1],diff[k],diff[k+1]);
-      mse3 += abs(area(estFDR[k], diff[k], estFDR[k+1], diff[k+1]));
-      mse4 += areaSq(estFDR[k], diff[k], estFDR[k+1], diff[k+1]);
-    }
-    
-    mse1 += pow(diff[k],2);
-  }
-
-  mse1 += pow(diff[diff.size()-1],2); //last element
-  
-  double normalizer1 = std::min(abs(estFDR.back() - estFDR.front()),threshold); //normalize by x axis range (threshold on top always)
-  double normalizer2 = (double)diff.size(); //normalize by the number of elements
-  
-  mse1 /= normalizer2;
-  mse2 /= normalizer1;
-  mse3 /= normalizer1;
-  mse4 /= normalizer1;
-  
-  return;
-}
 
 unsigned ProteinProbEstimator::countTargets(const std::vector<std::string> &proteinList)
 {
