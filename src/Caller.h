@@ -56,6 +56,7 @@
 #include <xercesc/util/PlatformUtils.hpp>
 #include "percolator_in.hxx"
 #include "ProteinProbEstimator.h"
+#include "FidoInterface.h"
 
 
 class Caller {
@@ -92,6 +93,9 @@ class Caller {
     }
     void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
         clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC = false);
+    
+    void calculateProteinProbabilitiesFido();
+    
     int run();
     SetHandler* getSetHandler(SetHandlerType sh) {
       switch (sh) {
@@ -163,6 +167,22 @@ class Caller {
     double pi_0_psms;
     double pi_0_peptides;
     double numberQpsms;
+    /*fido parameters*/
+    double fido_alpha;
+    double fido_beta;
+    double fido_gamma;
+    bool fido_grouProteins; 
+    bool fido_noprune;
+    bool fido_noseparate;
+    bool fido_reduceTree;
+    bool fido_truncate;
+    unsigned fido_depth;
+    double fido_mse_threshold;
+    /* general protein probabilities options */
+    bool tiesAsOneProtein;
+    bool usePi0;
+    bool outputEmpirQVal;
+    std::string decoy_prefix;
 };
 
 #endif /*CALLER_H_*/

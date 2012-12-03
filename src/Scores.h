@@ -202,6 +202,9 @@ class Scores {
     inline static void setOutXmlDecoys(bool decoys_out) {
       outxmlDecoys = decoys_out;
     }
+    inline static bool getOutXmlDecoys() {
+      return outxmlDecoys;
+    }
     inline static void setSeed(uint32_t s) {
       seed = s;
     }
