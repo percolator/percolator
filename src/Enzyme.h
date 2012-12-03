@@ -1,6 +1,6 @@
 
 /*******************************************************************************
- Copyright 2006-2009 Lukas Käll <lukas.kall@cbr.su.se>
+ Copyright 2006-2012 Lukas Käll <lukas.kall@scilifelab.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.

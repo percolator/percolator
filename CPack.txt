@@ -41,7 +41,7 @@ file(GLOB_RECURSE TILD_FILES "*~*") # To be ignored by Cpack
 set(CPACK_SOURCE_IGNORE_FILES "/CVS/;/.svn/;/.swp$/;cscope.*;/.git/;${CMAKE_CURRENT_BINARY_DIR}/;/.bzr/;/.settings/;${DOT_FILES_BEGIN};${TILD_FILES}")
 
 # PACKAGING OPTIONS: DEB
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@cbr.su.se>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Lukas Käll <lukas.kall@scilifelab.se>")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${TARGET_ARCH})
 
 
