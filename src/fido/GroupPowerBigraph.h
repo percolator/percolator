@@ -67,6 +67,7 @@ public:
   void setMultipleLabeledPeptides(bool __multiple_labeled_peptides);
   bool getMultipleLabeledPeptides();
   void read(Scores* fullset);
+  void read(istream & is);
   //NOTE to clone object
   //GroupPowerBigraph *clone();
 private:

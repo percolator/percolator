@@ -186,6 +186,43 @@ void GroupPowerBigraph::read(Scores* fullset){
   initialize();
 }
 
+void GroupPowerBigraph::read(istream & is){
+  
+  BasicBigraph bb;
+  bb.setPeptidePrior(PeptidePrior);
+  bb.setPeptideThreshold(PeptideThreshold);
+  bb.setPsmThreshold(PsmThreshold);
+  bb.setProteinThreshold(ProteinThreshold);
+  bb.read(is,multiple_labeled_peptides);
+
+  if(!noseparate)
+  {
+    severedProteins = Array<string>();
+    Array<BasicBigraph> subBasic;
+    subBasic = Array<BasicBigraph>();
+    
+    if(!noprune)
+      subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
+    else
+      subBasic = iterativePartitionSubgraphs(bb, -1);
+
+    subgraphs = Array<BasicGroupBigraph>(subBasic.size());
+
+    for (int k=0; k<subBasic.size(); k++)
+      {
+	subgraphs[k] = BasicGroupBigraph(subBasic[k],groupProteins,trivialgruping);
+      }
+  }
+  else
+  {
+    bb.prune();
+    severedProteins = Array<string>();
+    severedProteins.append( bb.severedProteins );
+    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,groupProteins,trivialgruping));
+  }
+  
+  initialize();
+}
 
 void GroupPowerBigraph::initialize()
 {

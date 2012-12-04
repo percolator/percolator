@@ -404,7 +404,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     fido_reduceTree = cmd.optionSet("T");
     fido_truncate = cmd.optionSet("W");
     if (cmd.optionSet("P"))  decoy_prefix = cmd.options["P"];
-    if (cmd.optionSet("d"))  fido_depth = (cmd.getInt("d", 0, 3));
+    if (cmd.optionSet("d"))  fido_depth = cmd.getInt("d", 0, 3);
     if (cmd.optionSet("a"))  fido_alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  fido_beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  fido_gamma = cmd.getDouble("G", 0.00, 1.0);
@@ -1188,7 +1188,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   if (resultFN.empty() && writeOutput) {
     normal.print(*fullset);
-  } else {
+  } else if(!resultFN.empty()) {
     if(writeOutput){
       ofstream targetStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+resultFN).data(), ios::out);
       normal.print(*fullset, targetStream);

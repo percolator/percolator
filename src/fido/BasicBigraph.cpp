@@ -78,6 +78,90 @@ void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides)
   /**pseudoCountPSMs();**/
 }
 
+
+void BasicBigraph::read(istream & is,bool multiple_labeled_peptides)
+{
+  char instr;
+  string pepName, protName;
+  double value =  -10;
+
+  int pepIndex = -1;
+  int chargeState = 0;
+  int state = 'e';
+
+  StringTable PSMNames, proteinNames;
+
+  while ( is >> instr )
+    {
+
+      if ( instr == 'e' && (state == 'e' || state == 'p') )
+	{
+	  if ( state == 'p' )
+	    {
+	      cerr << "Warning: no peptide score for peptide entry " << pepName << ", using last score (" << value << ")" << endl;
+	      value = -1;
+	      if ( value == -10 )
+		{
+		  throw MyException("Error: No previous peptide entry to use");
+		}
+	      PSMsToProteins.weights[ pepIndex ] = max(value, PSMsToProteins.weights[ pepIndex ]);
+	    }
+	  
+	  is >> pepName;
+	 
+	  //pepName = cleanPeptideSequence(pepName);
+	  
+	  if ( PSMNames.lookup(pepName) == -1 )
+	    {
+	      add(PSMsToProteins, PSMNames, pepName);
+	    }
+	  
+	  pepIndex = PSMNames.lookup(pepName);
+
+	  state = 'c';
+
+	}
+      else if ( instr == 'c' && state == 'c' )
+	{
+	  state = 'r';
+	}
+      else if ( instr == 'r' && ( state == 'c' || state == 'r' || state == 'p' ) )
+	{
+	  is >> protName;
+
+	  if ( proteinNames.lookup(protName) == -1 )
+	    add(proteinsToPSMs, proteinNames, protName);
+
+	  connect(PSMNames, pepName, proteinNames, protName);
+
+	  state = 'p';
+	}
+      else if ( instr == 'p' && state == 'p' )
+	{
+	  is >> value;
+	  // this option scores peptides using only the best match
+	  PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
+	  state = 'e';
+	}
+      else if ( instr == '#' )
+	{
+	  // comment line
+	  string garbage;
+	  getline(is, garbage);
+	}
+      else
+	{
+	  throw MyException("");
+	}
+    }
+
+  PSMsToProteins.names = PSMNames.getItemsByNumber();
+  proteinsToPSMs.names = proteinNames.getItemsByNumber();
+
+  //NOTE this function is assigning PeptideThreshold probablity to all the PSMs with a prob below PeptideThreshold
+  /**pseudoCountPSMs();**/
+}
+
 void BasicBigraph::printGraphStats() const
 {
   cout << "There are \t" << PSMsToProteins.size() << " PSMs" << endl;

@@ -63,10 +63,12 @@ class BasicBigraph
 public:
   
   BasicBigraph();
-  BasicBigraph(double __psmthreshold, double __peptidethreshold, double __proteinthreshold, double __peptideprior);
+  BasicBigraph(double __psmthreshold, double __peptidethreshold, 
+	       double __proteinthreshold, double __peptideprior);
   virtual ~BasicBigraph();
   
   void read(Scores* fullset, bool multiple_labeled_peptides = false);
+  void read(istream & is, bool multiple_labeled_peptides = false);
   void prune();
   void printGraph();
   void printProteinWeights() const;
@@ -93,7 +95,8 @@ public:
 protected:
   
   void add(GraphLayer & gl, StringTable & st, const string & item);
-  void connect(const StringTable & PSMNames, const string & pepStr, const StringTable & proteinNames, const string & protStr);
+  void connect(const StringTable & PSMNames, const string & pepStr, 
+	       const StringTable & proteinNames, const string & protStr);
   void disconnectProtein(int k);
   void disconnectPSM(int k);
   void pseudoCountPSMs();
@@ -107,7 +110,6 @@ protected:
   void cloneMultipleMarkedPSMs();
   void clonePSM(int pepIndex);
   void saveSeveredProteins();
-  string cleanPeptideSequence(string pepSeq) const;
   
   BasicBigraph buildSubgraph(const Set & connectedProteins, const Set & connectedPSMs);
   void traceConnected(int index, GraphLayer & gl, int sectionNumber);
