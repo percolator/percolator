@@ -1,0 +1,48 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x14\x00c\x00o\x00n\x00v\x00e\x00r\x00t\x00e\x00r\x00s)
+
+[CMake]
+Build Directory Count=1
+CMakeDir=/usr/share/cmake-2.8/Modules
+Current Build Directory Index=0
+ProjectRootRelative=./
+
+[CMake][CMake Build Directory 0]
+Build Directory Path=file:///scratch/newhome/Projects/src/percolator_2.05_v2/converter_build
+Build Type=
+CMake Binary=file:///usr/bin/cmake
+Install Directory=file:///scratch/newhome
+
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=New Native Application Configuration
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=-M -o pin.xml target_01.mzid decoy_01.mzid
+Debugger Shell=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+Display Demangle Names=true
+Display Static Members=false
+EnvironmentGroup=default
+Executable=
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+GDB Path=file:///usr/bin/gdb
+Project Target=converters,mzidentml2pin
+Remote GDB Config Script=
+Remote GDB Run Script=
+Remote GDB Shell Script=
+Use External Terminal=false
+Working Directory=file:///scratch/newhome/Projects/test_mzidentml
+isExecutable=false
+
+[MakeBuilder]
+Number Of Jobs=1
+
+[Project]
+VersionControlSupport=kdevgit

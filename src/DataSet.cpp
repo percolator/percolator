@@ -316,6 +316,8 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
   {
       PSMDescription  *myPsm = new PSMDescription();
       string mypept = psm.peptide().peptideSequence();
+      
+      //TODO  when there is more than one PTM the second one will be wrongly located
       for (::percolatorInNs::peptideType::modification_const_iterator modIter = psm.peptide().modification().begin(); 
 	   modIter != psm.peptide().modification().end(); ++modIter) 
       {
