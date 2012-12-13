@@ -1,10 +1,12 @@
 #ifndef PEPTIDE_H_
 #define PEPTIDE_H_
 
-#include "misc.h"
-#include "parameters.h"
+#include "phos_loc_misc.h"
+#include "phos_loc_parameters.h"
 #include <string>
 #include <vector>
+
+namespace phos_loc {
 
 class Peptide {
  public:
@@ -30,6 +32,8 @@ class Peptide {
     location_mods_.assign(mods.begin(), mods.end());
   }
 
+  bool IsContainingAA(char aa, size_t start, size_t len) const;
+  bool IsContainingMod(unsigned short mod_id, size_t start, size_t len) const;
   void ClearVarMods() { location_mods_.clear(); }
   void AddVarMod(unsigned char aa_idx, unsigned char mod_id) {
     location_mods_.push_back(LocationMod(aa_idx, mod_id));
@@ -51,5 +55,7 @@ class Peptide {
   std::vector<double> nterm_ladder_;  // accumulative N-term AA ladder masses
   std::vector<double> cterm_ladder_;
 };
+
+} // namespace phos_loc
 
 #endif // PEPTIDE_H_

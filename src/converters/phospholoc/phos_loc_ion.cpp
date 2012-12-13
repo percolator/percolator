@@ -1,4 +1,6 @@
-#include "ion.h"
+#include "phos_loc_ion.h"
+
+namespace phos_loc {
 
 Ion::Ion()
     : cleavage_site_(0),
@@ -53,3 +55,5 @@ std::string Ion::GetIonLabel() const {
   std::string label(s);
   return label;
 }
+
+} // namespace phos_loc

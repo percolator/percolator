@@ -1,4 +1,6 @@
-#include "spectrum.h"
+#include "phos_loc_spectrum.h"
+
+namespace phos_loc {
 
 Spectrum::Spectrum()
     : scan_num1_(0),
@@ -7,14 +9,17 @@ Spectrum::Spectrum()
       retention_time_(0),
       retention_time_apex_(0),
       total_ion_current_(0),
-      activation_type_(CID),
+      activation_type_(CAD_CID),
       format_(DTA),
       file_path_("") {
 }
 
-Spectrum::Spectrum(const std::string& dta_file_path, MassType precursor_mass_t)
+Spectrum::Spectrum(const std::string& dta_file_path,
+                   ActivationType activation_type,
+                   MassType precursor_mass_t)
     : file_path_(dta_file_path) {
   ReadDtaFile(dta_file_path, precursor_mass_t);
+  activation_type_ = activation_type;
 }
 
 Spectrum::Spectrum(const Spectrum& spec)
@@ -26,6 +31,7 @@ Spectrum::Spectrum(const Spectrum& spec)
       retention_time_apex_(spec.retention_time_apex_),
       peaks_(spec.peaks_),
       base_peak_(spec.base_peak_),
+      window_bounds_(spec.window_bounds_),
       total_ion_current_(spec.total_ion_current_),
       activation_type_(spec.activation_type_),
       format_(spec.format_),
@@ -45,6 +51,7 @@ Spectrum& Spectrum::operator=(const Spectrum& spec) {
     retention_time_apex_ = spec.retention_time_apex_;
     peaks_ = spec.peaks_;
     base_peak_ = spec.base_peak_;
+    window_bounds_ = spec.window_bounds_;
     total_ion_current_ = spec.total_ion_current_;
     activation_type_ = spec.activation_type_;
     format_ = spec.format_;
@@ -74,6 +81,44 @@ void Spectrum::Preprocess(PreprocessMethod prep_method, double* prep_paras,
     RemovePhosphoLossPeaks(tolerance);
     SplitPeaksIntoWindows(prep_paras[0], prep_paras[1], (int) prep_paras[2]);
   }
+}
+
+double Spectrum::MinMass(int peak_depth) const {
+  double min_mz = 2147483647;
+  for (std::vector<Peak>::const_iterator it = peaks_.begin();
+       it != peaks_.end(); ++it) {
+    if (it->rank() < peak_depth) {
+      min_mz = it->m_over_z();
+      break;
+    }
+  }
+  return min_mz;
+}
+
+double Spectrum::MaxMass(int peak_depth) const {
+  double max_mz = 0;
+  for (std::vector<Peak>::const_reverse_iterator it = peaks_.rbegin();
+       it != peaks_.rend(); ++it) {
+    if (it->rank() < peak_depth) {
+      max_mz = it->m_over_z();
+      break;
+    }
+  }
+  return max_mz;
+}
+
+int Spectrum::NumPeaksInWindow(int peak_depth,
+                               double lower_bnd, double upper_bnd) const {
+  double num_pks = 0;
+  std::vector<Peak>::const_iterator it = peaks_.begin();
+  while (it->m_over_z() < lower_bnd && it != peaks_.end())
+    ++it;
+  while (it->m_over_z() < upper_bnd && it != peaks_.end()) {
+    if (it->rank() < peak_depth)
+      ++num_pks;
+    ++it;
+  }
+  return num_pks;
 }
 
 void Spectrum::ReadDtaFile(const std::string& dta_file_path,
@@ -145,12 +190,12 @@ double Spectrum::CalcLossMZ(double neutral_loss) {
 void Spectrum::RemovePhosphoLossPeaks(Tolerance tol) {
   std::vector<double> neutral_peak_mz;
   MassType mt = tol.mass_type;
-  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHOLOSS[mt] + H2O[mt]));
-  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHOLOSS[mt] + H2O[mt] - C13ISOTOPE));
-  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHOLOSS[mt] + H2O[mt] - 2*C13ISOTOPE));
-  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHOLOSS[mt]));
-  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHOLOSS[mt] - C13ISOTOPE));
-  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHOLOSS[mt] - 2*C13ISOTOPE));
+  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHO_LOSS[mt] + H2O[mt]));
+  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHO_LOSS[mt] + H2O[mt] - C13ISOTOPE));
+  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHO_LOSS[mt] + H2O[mt] - 2*C13ISOTOPE));
+  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHO_LOSS[mt]));
+  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHO_LOSS[mt] - C13ISOTOPE));
+  neutral_peak_mz.push_back(CalcLossMZ(PHOSPHO_LOSS[mt] - 2*C13ISOTOPE));
   neutral_peak_mz.push_back(CalcLossMZ(H2O[mt] + H2O[mt]));
   neutral_peak_mz.push_back(CalcLossMZ(H2O[mt]));
 
@@ -208,6 +253,11 @@ void Spectrum::SplitPeaksIntoWindows(double start_mz, double win_width,
     ++start_peak_idx;
 
   int curr_win_id = 0;
+  if (peaks_[0].m_over_z() > start_mz) {
+    curr_win_id = (int) ((peaks_[0].m_over_z() - start_mz) / win_width);
+  }
+  int start_win_id = curr_win_id;
+
   std::vector<Peak> new_peaks;
   std::vector<Peak> win_peaks;
   for (std::vector<Peak>::const_iterator it = peaks_.begin() + start_peak_idx;
@@ -226,8 +276,11 @@ void Spectrum::SplitPeaksIntoWindows(double start_mz, double win_width,
   RankAndFilterPeaksInSingleWindow(win_peaks, curr_win_id, max_num_peaks_per_win);
   new_peaks.insert(new_peaks.end(), win_peaks.begin(), win_peaks.end());
   win_peaks.clear();
+  ++curr_win_id;
   peaks_.clear();
   peaks_.assign(new_peaks.begin(), new_peaks.end());
+
+  InitWindowBounds(start_mz, win_width, start_win_id, curr_win_id);
 }
 
 void Spectrum::RankAndFilterPeaksInSingleWindow(std::vector<Peak>& win_peaks,
@@ -243,3 +296,13 @@ void Spectrum::RankAndFilterPeaksInSingleWindow(std::vector<Peak>& win_peaks,
   win_peaks.erase(win_peaks.begin()+max_num, win_peaks.end());
   std::sort(win_peaks.begin(), win_peaks.end(), LessPeakMZ);
 }
+
+void Spectrum::InitWindowBounds(double start_mz, double window_width,
+                                int start_win_id, int end_win_id) {
+  window_bounds_.push_back(start_mz + start_win_id * window_width);
+  for (int i = start_win_id; i < end_win_id; ++i) {
+    window_bounds_.push_back(start_mz + (i + 1) * window_width);
+  }
+}
+
+} // namespace phos_loc

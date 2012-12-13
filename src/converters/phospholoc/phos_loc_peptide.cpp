@@ -1,4 +1,6 @@
-#include "peptide.h"
+#include "phos_loc_peptide.h"
+
+namespace phos_loc {
 
 Peptide::Peptide()
     : nterm_aa_('\0'),
@@ -55,20 +57,45 @@ Peptide& Peptide::operator=(const Peptide& peptide) {
 Peptide::~Peptide() {
 }
 
+bool Peptide::IsContainingAA(char aa, size_t start, size_t len) const {
+  std::string partial_seq = sequence_.substr(start, len);
+  size_t found = partial_seq.find(aa);
+  return (found != std::string::npos);
+}
+
+bool Peptide::IsContainingMod(unsigned short mod_id,
+                              size_t start, size_t len) const {
+  for (std::vector<LocationMod>::const_iterator it = location_mods_.begin();
+       it != location_mods_.end(); ++it) {
+    if (it->mod_id != mod_id)
+      continue;
+    if (it->aa_idx >= start && it->aa_idx < start + len)
+      return true;
+  }
+  return false;
+}
+
 void Peptide::InitVarModMass(double* var_mod_mass, bool is_fragment,
                              const Parameters& paras) {
+  std::map<unsigned short, int>::const_iterator it_m;
   if (is_fragment)
     for (std::vector<LocationMod>::const_iterator it = location_mods_.begin();
-         it != location_mods_.end(); ++it)
-      var_mod_mass[it->aa_idx] +=
-          paras.variable_mods_[it->mod_id].mass_shift(
-              paras.frag_tolerance_.mass_type);
+         it != location_mods_.end(); ++it) {
+      it_m = paras.mod_id_map_.find(it->mod_id);
+      if (it_m != paras.mod_id_map_.end())
+        var_mod_mass[it->aa_idx] +=
+            paras.variable_mods_[it_m->second].mass_shift(
+                paras.frag_tolerance_.mass_type);
+    }
   else
     for (std::vector<LocationMod>::const_iterator it = location_mods_.begin();
-         it != location_mods_.end(); ++it)
-      var_mod_mass[it->aa_idx] +=
-          paras.variable_mods_[it->mod_id].mass_shift(
-              paras.pep_tolerance_.mass_type);
+         it != location_mods_.end(); ++it) {
+      it_m = paras.mod_id_map_.find(it->mod_id);
+      if (it_m != paras.mod_id_map_.end())
+        var_mod_mass[it->aa_idx] +=
+            paras.variable_mods_[it_m->second].mass_shift(
+                paras.pep_tolerance_.mass_type);
+    }
 }
 
 void Peptide::InitMolecularMass(const Parameters& paras) {
@@ -109,3 +136,4 @@ void Peptide::InitCtermLadder(const Parameters& paras) {
   delete[] var_mod_mass;
 }
 
+} // namespace phos_loc

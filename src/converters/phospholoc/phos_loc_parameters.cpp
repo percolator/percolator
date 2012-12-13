@@ -1,4 +1,6 @@
-#include "parameters.h"
+#include "phos_loc_parameters.h"
+
+namespace phos_loc {
 
 Parameters::Parameters()
     : pep_tolerance_(3, 0, DA_TOL, MONO),
@@ -6,18 +8,13 @@ Parameters::Parameters()
       frag_tolerance_(0.5, 0, DA_TOL, MONO),
       preproc_method_(TOPN_WINDOW),
       spectra_format_(DTA),
-      instrument_(ESI_TRAP) {
-  //fixed_mods_.push_back(std::string("Carbamidomethyl"));
-  variable_mods_.push_back(std::string("Phospho"));
-  preproc_parameters_[0] = -1; // starting m/z, -1 means the lowest m/z
-  preproc_parameters_[1] = 100; // window width
+      instrument_(ESI_TRAP),
+      activation_type_(HCD) {
+  AddVariableModification(Modification("Phospho"));
+  preproc_parameters_[0] = 50; // starting m/z, -1 means the lowest m/z; 50.0
+  preproc_parameters_[1] = 100.0; // window width
   preproc_parameters_[2] = 10; // top-N per window
-  specified_ion_types_.push_back(std::string("b"));
-  //specified_ion_types_.push_back(std::string("c"));
-  specified_ion_types_.push_back(std::string("y"));
-  //specified_ion_types_.push_back(std::string("z"));
-  //specified_ion_types_.push_back(std::string("z+h"));
-  //specified_ion_types_.push_back(std::string("z+2h"));
+  SetFragmentIonTypes();
   InitAminoAcidMass();
 }
 
@@ -42,6 +39,38 @@ void Parameters::Print() {
   fprintf(stderr, "\n");
 }
 
+void Parameters::AddVariableModification(const Modification& mod) {
+  std::pair<std::map<unsigned short, int>::iterator, bool> res;
+  res = mod_id_map_.insert(std::pair<unsigned short, int>(
+          mod.unimod_id(), variable_mods_.size()));
+  if (res.second)
+    variable_mods_.push_back(mod);
+}
+
+void Parameters::SetFragmentIonTypes() {
+  switch (activation_type_) {
+    case CAD_CID:
+      specified_ion_types_.push_back(std::string("b"));
+      specified_ion_types_.push_back(std::string("y"));
+      break;
+    case ECD_ETD:
+      specified_ion_types_.push_back(std::string("c"));
+      specified_ion_types_.push_back(std::string("z"));
+      specified_ion_types_.push_back(std::string("z+h"));
+      break;
+    case HCD:
+      specified_ion_types_.push_back(std::string("b"));
+      specified_ion_types_.push_back(std::string("b-phospho"));
+      specified_ion_types_.push_back(std::string("y"));
+      specified_ion_types_.push_back(std::string("y-phospho"));
+      break;
+    default:
+      specified_ion_types_.push_back(std::string("b"));
+      specified_ion_types_.push_back(std::string("y"));
+      break;
+  }
+}
+
 void Parameters::InitAminoAcidMass() {
   for (int i = 0; i < LENGTH_AMINO_ACID_TABLE; ++i) {
     amino_acid_mass_[i][AVERAGE] = AMINO_ACID_MASS[i][AVERAGE];
@@ -54,3 +83,5 @@ void Parameters::InitAminoAcidMass() {
     }
   }
 }
+
+} // namespace phos_loc

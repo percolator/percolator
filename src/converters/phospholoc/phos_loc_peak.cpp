@@ -1,5 +1,6 @@
-#include "peak.h"
+#include "phos_loc_peak.h"
 
+namespace phos_loc {
 
 Peak::Peak()
     : m_over_z_(0),
@@ -34,3 +35,5 @@ Peak& Peak::operator=(const Peak& peak) {
   }
   return *this;
 }
+
+} // namespace phos_loc

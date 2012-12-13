@@ -1,8 +1,10 @@
 #ifndef PHOSPHORS_H_
 #define PHOSPHORS_H_
 
-#include "match.h"
+#include "phos_loc_match.h"
 #include <cmath>
+
+namespace phos_loc {
 
 class PhosphoRS {
  public:
@@ -89,5 +91,7 @@ class PhosphoRS {
 
   DISALLOW_COPY_AND_ASSIGN(PhosphoRS);
 };
+
+} // namespace phos_loc
 
 #endif // PHOSPHORS_H_

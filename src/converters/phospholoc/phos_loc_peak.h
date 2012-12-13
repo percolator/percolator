@@ -1,8 +1,10 @@
 #ifndef PEAK_H_
 #define PEAK_H_
 
-#include "misc.h"
+#include "phos_loc_misc.h"
 #include <vector>
+
+namespace phos_loc {
 
 class Ion;
 
@@ -32,5 +34,7 @@ class Peak {
   int rank_;  // 'rank' of this peak intensity in 'window_id'
   int window_id_;
 };
+
+} // namespace phos_loc
 
 #endif // PEAK_H_

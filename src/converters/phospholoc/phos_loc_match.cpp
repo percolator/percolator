@@ -1,4 +1,6 @@
-#include "match.h"
+#include "phos_loc_match.h"
+
+namespace phos_loc {
 
 Match::Match() {
 
@@ -9,6 +11,7 @@ Match::Match(const Spectrum& spec, const IonSeries& ions,
     : spectrum_(spec),
       ion_series_(ions),
       frag_tol_(tol) {
+  FindAllPeakIonMatches();
 }
 
 Match::Match(const Match& match)
@@ -16,7 +19,8 @@ Match::Match(const Match& match)
       ion_series_(match.ion_series_),
       frag_tol_(match.frag_tol_),
       peak_to_ions_(match.peak_to_ions_),
-      ion_to_peaks_(match.ion_to_peaks_) {
+      ion_to_peaks_(match.ion_to_peaks_),
+      ion_match_matrix_(match.ion_match_matrix_) {
 }
 
 Match::~Match() {
@@ -51,8 +55,26 @@ void Match::FindAllPeakIonMatches() {
   }
 }
 
+int Match::NumAllPeaks(std::vector<int>& peak_depths) const {
+  int num_peaks = 0;
+  for (std::vector<int>::const_iterator it = peak_depths.begin();
+       it != peak_depths.end(); ++it) {
+    num_peaks += *it;
+  }
+  return num_peaks;
+}
+
 double Match::ProbabilityOfAPeakIonMatch(int peak_depth, double window_width) const {
   return frag_tol_.value * 2 * peak_depth / window_width;
+}
+
+// for PhosphoRS
+double Match::ProbabilityOfAPeakIonMatch(std::vector<int>& peak_depths) const {
+  int num_peaks = NumAllPeaks(peak_depths);
+  double min_mz = spectrum_.MinMass(peak_depths.front());
+  double max_mz = spectrum_.MaxMass(peak_depths.back());
+  double average_tol = frag_tol_.value;
+  return average_tol * 2 * num_peaks / (max_mz - min_mz);
 }
 
 double Match::PeptideScoreForAscore(int peak_depth, int lower_site,
@@ -61,7 +83,7 @@ double Match::PeptideScoreForAscore(int peak_depth, int lower_site,
   int num_pred_ions = GetNumPredictedIons(lower_site, upper_site);
   int num_match_ions = GetNumMatchedIons(peak_depth, lower_site, upper_site);
   if (num_match_ions == 0) return 1.0;
-  return utils::CumulativeBinomialProbability(num_pred_ions, num_match_ions, p);
+  return phos_loc::CumulativeBinomialProbability(num_pred_ions, num_match_ions, p);
 }
 
 double Match::PeptideScoreForAscore(int peak_depth, double window_width) const {
@@ -69,7 +91,49 @@ double Match::PeptideScoreForAscore(int peak_depth, double window_width) const {
   int num_pred_ions = GetNumPredictedIons();
   int num_match_ions = GetNumMatchedIons(peak_depth);
   if (num_match_ions == 0) return 1.0;
-  return utils::CumulativeBinomialProbability(num_pred_ions, num_match_ions, p);
+  return phos_loc::CumulativeBinomialProbability(num_pred_ions, num_match_ions, p);
+}
+
+double Match::PeptideScoreForPhosphoRS(int peak_depth, double lower_bnd,
+                                       double upper_bnd) const {
+  int num_pks = spectrum_.NumPeaksInWindow(peak_depth, lower_bnd, upper_bnd);
+  double p = ProbabilityOfAPeakIonMatch(num_pks, upper_bnd - lower_bnd);
+  int num_pred_ions;
+  // int num_pred_ions = GetNumPredictedIons(lower_bnd, upper_bnd);
+  switch (spectrum_.activation_type()) {
+    case CAD_CID:
+      num_pred_ions = 8;
+      break;
+    case ECD_ETD:
+      num_pred_ions = 6;
+      break;
+    case HCD:
+      num_pred_ions = 16;
+      break;
+    default:
+      num_pred_ions = 16;
+      break;
+  }
+  int num_match_ions = GetNumMatchedIons(peak_depth, lower_bnd, upper_bnd);
+  if (num_match_ions == 0) return 1.0;
+  return phos_loc::CumulativeBinomialProbability(num_pred_ions, num_match_ions, p);
+}
+
+double Match::PeptideScoreForPhosphoRS(
+    std::vector<int>& optimal_peak_depths) const {
+  std::vector<double> win_bounds = spectrum().window_bounds();
+  int num_match_ions = 0;
+  for (size_t i = 1; i < win_bounds.size(); ++i) {
+    num_match_ions += GetNumMatchedIons(optimal_peak_depths[i-1],
+                                        win_bounds[i-1], win_bounds[i]);
+  }
+  int num_pred_ions = GetNumPredictedIons();
+  double p = ProbabilityOfAPeakIonMatch(optimal_peak_depths);
+  if (num_match_ions == 0)
+    return 1.0;
+  else
+    return phos_loc::CumulativeBinomialProbability(num_pred_ions,
+                                                num_match_ions, p);
 }
 
 void Match::Print() {
@@ -175,20 +239,17 @@ void Match::InsertMatchedIonForPeaks(int ion_idx, std::vector<int>& peak_indexes
 }
 
 int Match::GetNumMatchedIons(int peak_depth, int lower_site, int upper_site) const {
-  if (lower_site > upper_site) {
-    double swap = lower_site;
-    lower_site = upper_site;
-    upper_site = swap;
-  }
+  if (lower_site > upper_site)
+    std::swap(lower_site, upper_site);
   int num_matches = 0;
   std::map<IonType, std::vector<std::vector<int> > >::const_iterator it;
-  for (it = ion_match_matrix_.begin(); it != ion_match_matrix_.begin(); ++it) {
+  for (it = ion_match_matrix_.begin(); it != ion_match_matrix_.end(); ++it) {
     size_t lower_idx = lower_site;
     size_t upper_idx = upper_site;
     if (it->first.ion_category() == CTERM_IONS) {
       int pep_len = ion_series_.peptide().sequence().size();
-      lower_idx = pep_len - upper_site - 2;
-      upper_idx = pep_len - lower_site - 2;
+      lower_idx = pep_len - upper_site - 1;
+      upper_idx = pep_len - lower_site - 1;
     }
     for (std::vector<std::vector<int> >::size_type i = lower_idx;
          i < upper_idx; ++i) {
@@ -219,15 +280,36 @@ int Match::GetNumMatchedIons(int peak_depth) const {
   return num_matches;
 }
 
-int Match::GetNumPredictedIons(int lower_site, int upper_site) const {
-  if (lower_site > upper_site) {
-    double swap = lower_site;
-    lower_site = upper_site;
-    upper_site = swap;
+int Match::GetNumMatchedIons(int peak_depth, double lower_bnd, double upper_bnd) const {
+  if (lower_bnd > upper_bnd)
+    std::swap(lower_bnd, upper_bnd);
+  int num_matches = 0;
+  std::map<int, std::vector<int> >::const_iterator it;
+  for (it = peak_to_ions_.begin(); it != peak_to_ions_.end(); ++it) {
+    double mz = spectrum_.peaks().at(it->first).m_over_z();
+    int rk = spectrum_.peaks().at(it->first).rank();
+    if (mz < lower_bnd) continue;
+    if (mz < upper_bnd) {
+      if ((rk < peak_depth) && (!it->second.empty()))
+        num_matches += it->second.size();
+    }
+    else {
+      break;
+    }
   }
-  return ion_match_matrix_.size() * (upper_site - lower_site);
+  return num_matches;
+}
+
+int Match::GetNumPredictedIons(int lower_site, int upper_site) const {
+  return ion_series_.GetNumPredictedIons(lower_site, upper_site);
 }
 
 int Match::GetNumPredictedIons() const {
   return ion_series_.GetNumPredictedIons();
 }
+
+int Match::GetNumPredictedIons(double lower_bnd, double upper_bnd) const {
+  return ion_series_.GetNumPredictedIons(lower_bnd, upper_bnd);
+}
+
+} // namespace phos_loc

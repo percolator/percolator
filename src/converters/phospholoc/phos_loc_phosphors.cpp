@@ -1,4 +1,6 @@
-#include "phosphors.h"
+#include "phos_loc_phosphors.h"
+
+namespace phos_loc {
 
 PhosphoRS::PhosphoRS() {
 }
@@ -84,7 +86,6 @@ void PhosphoRS::InitPhosphoRS(
   // get the indexes of input phospho-sites combs in 'all_phospho_site_combinations_'
   MapInputSiteCombinationsInAll();
   // find optimal peak depth for each m/z window separately
-  // ???
   SelectOptimalPeakDepthsForAllWindows();
   // start scoring
   InitPeptideScoresAndSequenceProbs();
@@ -119,7 +120,7 @@ void PhosphoRS::SetAllPhosphoSiteCombinations(
     std::vector<int> comb(potential_phospho_sites.begin(),
                           potential_phospho_sites.begin() + actual_mod_num);
     all_phospho_site_combinations_.push_back(comb);
-  } while (utils::NextCombination(potential_phospho_sites.begin(),
+  } while (phos_loc::NextCombination(potential_phospho_sites.begin(),
                                   potential_phospho_sites.begin() + actual_mod_num,
                                   potential_phospho_sites.end()));
 }
@@ -319,3 +320,5 @@ void PhosphoRS::InitPhosphoSiteProbabilities() {
     }
   }
 }
+
+} // namespace phos_loc

@@ -1,7 +1,9 @@
 #ifndef ION_H_
 #define ION_H_
 
-#include "ion_type.h"
+#include "phos_loc_ion_type.h"
+
+namespace phos_loc {
 
 class Ion {
  public:
@@ -30,6 +32,7 @@ class Ion {
   void set_m_over_z(double mz) { m_over_z_ = mz; }
   void set_intensity(double intensity) { intensity_ = intensity; }
 
+  bool NotValid() const { return  m_over_z_ < 0; }
   std::string GetIonLabel() const;
 
  protected:
@@ -39,5 +42,7 @@ class Ion {
   double m_over_z_;
   double intensity_;
 };
+
+} // namespace phos_loc
 
 #endif // ION_H_

@@ -13,19 +13,22 @@
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
 
+namespace phos_loc {
+
 const int LENGTH_AMINO_ACID_TABLE = 26;
-// http://www.unimod.org/masses.html
-const double PROTON = 1.00727647012;
-const double ELECTRON = 0.00054857990313;
-const double NEUTRON = 1.00866490414;
-const double C13ISOTOPE = 1.003354826;  // carbon isotope spacing
-const double HYDROGEN[2] = {1.00794, 1.007825035};
-const double CARBON[2] = {12.0107, 12};
-const double NITROGEN[2] = {14.0067, 14.003074002};
-const double OXYGEN[2] = {15.9994, 15.99491463};
-const double H2O[2] = {18.01528, 18.0105647};
-const double NH3[2] = {17.03052, 17.026549107};
-const double PHOSPHOLOSS[2] = {97.9952, 97.976896};
+const double PROTON = 1.007276466812; // 1.00727647012
+const double ELECTRON = 0.00054857990946; // 0.00054857990313
+const double NEUTRON = 1.00866491600; // 1.00866490414
+const double C13ISOTOPE = 1.0033548378; // 1.003354826
+const double HYDROGEN[2] = {1.00794, 1.00782503207}; // 1.007825035
+const double CARBON[2] = {12.0107, 12.0000000};
+const double NITROGEN[2] = {14.0067, 14.0030740048}; // 14.003074002
+const double OXYGEN[2] = {15.9994, 15.99491461956}; // 15.99491463
+const double H2O[2] = {18.01528, 18.0105646837}; // 18.0105647
+const double NH3[2] = {17.03052, 17.02654910101}; // 17.026549107
+const double PHOSPHO_LOSS[2] = {97.9952, 97.976896};
+const double NOT_VALID_MASS = -32768.0;
+const unsigned short UNIMOD_PHOSPHO_ID = 21;
 
 // maximum number of variable modification types that can be considered
 const int MAX_NUM_VAR_MOD_TYPES = 20;
@@ -86,12 +89,16 @@ enum IonTypeCode {
   B_ITC,
   B_NH3_ITC,
   B_H2O_ITC,
+  B_NL1_ITC,  // for neutral loss of PTM
+  B_NL2_ITC,
   C_ITC,
   C_H_ITC,    // c-H
   X_ITC,
   Y_ITC,
   Y_NH3_ITC,
   Y_H2O_ITC,
+  Y_NL1_ITC,  // for neutral loss of PTM
+  Y_NL2_ITC,
   Z_ITC,
   Z__H_ITC,   // z+H
   Z__2H_ITC,  // z+2H
@@ -177,8 +184,8 @@ struct Precursor {
 };
 
 enum ActivationType {
-  CID = 0,
-  ETD,
+  CAD_CID = 0,
+  ECD_ETD,
   HCD,
   NUM_ACTIVATION_TYPES
 };
@@ -223,11 +230,13 @@ enum InstrumentType {
 // used to specify variable modifications in a peptide
 struct LocationMod {
   unsigned char aa_idx; // index of the modified amino acid in a peptide
-  unsigned char mod_id; // index of the modification in Parameters.variable_mods_
-  LocationMod(unsigned char aaidx, unsigned char modid)
+  unsigned short mod_id; // unimod id
+  LocationMod(unsigned char aaidx, unsigned short modid)
       : aa_idx(aaidx),
         mod_id(modid) {
   }
 };
+
+} // namespace phos_loc
 
 #endif // MISC_H_

@@ -1,19 +1,22 @@
 #ifndef SPECTRUM_H_
 #define SPECTRUM_H_
 
-#include "misc.h"
-#include "peak.h"
+#include "phos_loc_misc.h"
+#include "phos_loc_peak.h"
 #include <string>
 #include <vector>
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
 
+namespace phos_loc {
 
 class Spectrum {
  public:
   Spectrum();
-  Spectrum(const std::string& dta_file_path, MassType precursor_mass_t = MONO);
+  Spectrum(const std::string& dta_file_path,
+           ActivationType activation_type,
+           MassType precursor_mass_t = MONO);
   Spectrum(const Spectrum& spec);
   virtual ~Spectrum();
 
@@ -29,6 +32,7 @@ class Spectrum {
   double retention_time_apex() const { return retention_time_apex_; }
   const std::vector<Peak>& peaks() const { return peaks_; }
   Peak base_peak() const { return base_peak_; }
+  const std::vector<double>& window_bounds() const { return window_bounds_; }
   double total_ion_current() const { return total_ion_current_; }
   ActivationType activation_type() const { return activation_type_; }
   SpectraFormat format() const { return format_; }
@@ -51,6 +55,9 @@ class Spectrum {
   void Print();
   void Preprocess(PreprocessMethod prep_method, double* prep_paras,
                   Tolerance tolerance);
+  double MinMass(int peak_depth) const;
+  double MaxMass(int peak_depth) const;
+  int NumPeaksInWindow(int peak_depth, double lower_bnd, double upper_bnd) const;
 
  private:
   void ReadDtaFile(const std::string& dta_file_path,
@@ -67,6 +74,8 @@ class Spectrum {
                              int max_num_peaks_per_win);
   void RankAndFilterPeaksInSingleWindow(std::vector<Peak>& win_peaks,
                                         int win_id, int max_num_peaks_per_win);
+  void InitWindowBounds(double start_mz, double window_width,
+                        int start_win_id, int end_win_id);
 
  protected:
   Precursor precursor_;
@@ -77,10 +86,13 @@ class Spectrum {
   double retention_time_apex_;
   std::vector<Peak> peaks_;
   Peak base_peak_;
+  std::vector<double> window_bounds_;
   double total_ion_current_;
   ActivationType activation_type_;
   SpectraFormat format_;
   std::string file_path_;
 };
+
+} // namespace phos_loc
 
 #endif // SPECTRUM_H_

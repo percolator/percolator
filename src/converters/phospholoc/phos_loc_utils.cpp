@@ -1,6 +1,6 @@
-#include "utils.h"
+#include "phos_loc_utils.h"
 
-namespace utils {
+namespace phos_loc {
 
 
 template bool NextCombination<std::vector<int>::iterator>(
@@ -58,24 +58,42 @@ unsigned int NChooseK(unsigned int n, unsigned int k) {
   return result;
 }
 
+double LogNChooseK(unsigned int n, unsigned int k) {
+  if (k > n) return -1000000000;
+  if (k * 2 > n) k = n - k;
+  if (k == 0) return 0;
+
+  double result = log10(n);
+  for (unsigned int i = 2; i <= k; ++i) {
+    result += log10((double) (n-i+1) / (double) i);
+  }
+  return result;
+}
+
 double BinomialPMF(unsigned int num_trials,
-                   unsigned int num_successes,
-                   double prob_success) {
-  return NChooseK(num_trials, num_successes) * pow(prob_success, num_successes) *
-      pow(1 - prob_success, num_trials - num_successes);
+                    unsigned int num_successes,
+                    double prob_success) {
+  // double prob = NChooseK(num_trials, num_successes) * pow(prob_success, num_successes) *
+  //     pow(1 - prob_success, num_trials - num_successes);
+  double prob = LogNChooseK(num_trials, num_successes) +
+                 num_successes * log10(prob_success) +
+                 (num_trials - num_successes) * log10(1-prob_success);
+  prob = pow(10, prob);
+  return prob;
 }
 
 // Pr(X>=x)
 double CumulativeBinomialProbability(unsigned int num_trials,
-                                     unsigned int num_successes,
-                                     double prob_success) {
+                                      unsigned int num_successes,
+                                      double prob_success) {
   if (num_successes == 0)
     return 1.0;
   double cum_prob = 0;
   for (unsigned int k = num_successes; k <= num_trials; ++k) {
-    cum_prob += BinomialPMF(num_trials, k, prob_success);
+    double d = BinomialPMF(num_trials, k, prob_success);
+    cum_prob += d;
   }
   return cum_prob;
 }
 
-} // namespace utils
+} // namespace phos_loc

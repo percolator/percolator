@@ -1,8 +1,10 @@
 #ifndef ASCORE_H_
 #define ASCORE_H_
 
-#include "match.h"
+#include "phos_loc_match.h"
 #include <set>
+
+namespace phos_loc {
 
 class Ascore {
  public:
@@ -12,24 +14,20 @@ class Ascore {
          const Parameters& paras);
   virtual ~Ascore();
 
-  double GetPeptideScore(std::vector<LocationMod>& input_var_mod_comb,
-                         const Parameters& paras);
-  double GetLocalPeptideScore(std::vector<LocationMod>& input_var_mod_comb,
-                              const Parameters& paras);
-
+  double GetPeptideScore(std::vector<int>& phospho_locs);
+  double GetPhosphoSiteScore(std::vector<int>& phospho_locs);
 
  private:
   void InitAscore(const Spectrum& spec,
                   const std::string pep_seq,
                   std::vector<std::vector<LocationMod> >& input_var_mod_combs,
                   const Parameters& paras);
-  std::vector<int> GetPhosphoedLocations(const std::vector<LocationMod>& loc_mods,
-                                         const std::vector<Modification>& var_mods);
+  std::vector<int> GetPhosphoedLocations(
+      const std::vector<LocationMod>& loc_mods);
   std::vector<int> GetPotentialPhosphoSites(const std::string& pep_seq);
   void SetAllPhosphoSiteCombinations(std::vector<int>& potential_phospho_sites,
                                      int actual_mod_num);
   void ResetPhosphoedSites(const std::vector<int>& one_site_comb,
-                           const std::vector<Modification>& var_mods,
                            std::vector<LocationMod>& loc_mods);
   void MapInputSiteCombinationsInAll();
   void InitAllPeptideScores(const Parameters& paras);
@@ -44,9 +42,9 @@ class Ascore {
   std::vector<double> CalculatePhosphoSiteProbabilities(
       std::vector<int>& curr_phospho_site_comb, int index_in_all);
   void InitPhosphoSiteProbabilities();
-  void InitLocalPepScores();
+  void InitPhosphoSiteScores();
   template<typename T>
-  bool IsEqual(std::vector<T>& v1, std::vector<T>& v2);
+  bool AreEqualVectors(std::vector<T>& v1, std::vector<T>& v2);
   struct GreaterScore {
     GreaterScore(std::vector<double>& scr)
         : scores(scr) {
@@ -58,8 +56,9 @@ class Ascore {
   };
 
  private:
-  // all phospho-PSMs containing all phospho-site combinations
+  // all phospho-PSMs corresponding to all possible phospho-site combinations
   std::vector<Match> pep_spec_matches_;
+  // all possible phospho-site combinations
   std::vector<std::vector<int> > all_phospho_site_combinations_;
   // peptide scores [-log10(cumulative binomial prob)] for all phospho-site
   // combinations and peak depths, one row containing all peak depths for one comb
@@ -80,5 +79,7 @@ class Ascore {
 
   DISALLOW_COPY_AND_ASSIGN(Ascore);
 };
+
+} // namespace phos_loc
 
 #endif // ASCORE_H_

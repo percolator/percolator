@@ -1,15 +1,17 @@
 #ifndef MATCH_H_
 #define MATCH_H_
 
-#include "peptide.h"
-#include "ion_series.h"
-#include "spectrum.h"
-#include "parameters.h"
-#include "utils.h"
+#include "phos_loc_peptide.h"
+#include "phos_loc_ion_series.h"
+#include "phos_loc_spectrum.h"
+#include "phos_loc_parameters.h"
+#include "phos_loc_utils.h"
 #include <vector>
 #include <map>
 #include <cmath>
 #include <algorithm>
+
+namespace phos_loc {
 
 class Match {
  public:
@@ -33,10 +35,15 @@ class Match {
 
   std::vector<int> PeaksForSingleIon(int start_peak_idx, double ion_mz);
   void FindAllPeakIonMatches();
+  int NumAllPeaks(std::vector<int>& peak_depths) const;
   double ProbabilityOfAPeakIonMatch(int peak_depth, double window_width) const;
+  double ProbabilityOfAPeakIonMatch(std::vector<int>& peak_depths) const;
   double PeptideScoreForAscore(int peak_depth, int lower_site,
                                int upper_site, double window_width = 100) const;
   double PeptideScoreForAscore(int peak_depth, double window_width = 100) const;
+  double PeptideScoreForPhosphoRS(int peak_depth, double lower_bnd,
+                                  double upper_bnd) const;
+  double PeptideScoreForPhosphoRS(std::vector<int>& optimal_peak_depths) const;
   void Print();
 
  private:
@@ -49,8 +56,10 @@ class Match {
                                 bool only_keep_highest = true);
   int GetNumMatchedIons(int peak_depth, int lower_site, int upper_site) const;
   int GetNumMatchedIons(int peak_depth) const;
+  int GetNumMatchedIons(int peak_depth, double lower_bnd, double upper_bnd) const;
   int GetNumPredictedIons(int lower_site, int upper_site) const;
   int GetNumPredictedIons() const;
+  int GetNumPredictedIons(double lower_bnd, double upper_bnd) const;
 
   Spectrum spectrum_;
   IonSeries ion_series_;
@@ -64,5 +73,7 @@ class Match {
   // corresponding to IonSeries.ion_matrix_
   std::map<IonType, std::vector<std::vector<int> > > ion_match_matrix_;
 };
+
+} // namespace phos_loc
 
 #endif // MATCH_H_

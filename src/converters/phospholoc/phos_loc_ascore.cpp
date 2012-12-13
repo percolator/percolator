@@ -1,5 +1,7 @@
-#include "ascore.h"
-#include "match.h"
+#include "phos_loc_ascore.h"
+#include "phos_loc_match.h"
+
+namespace phos_loc {
 
 Ascore::Ascore() {
 }
@@ -13,33 +15,31 @@ Ascore::Ascore(const Spectrum& spec, const std::string& pep_seq,
 Ascore::~Ascore() {
 }
 
-double Ascore::GetPeptideScore(std::vector<LocationMod>& input_var_mod_comb,
-                               const Parameters& paras) {
-  std::vector<int> phospho_locs = GetPhosphoedLocations(input_var_mod_comb,
-                                                        paras.variable_mods_);
+double Ascore::GetPeptideScore(std::vector<int>& phospho_locs) {
   int idx = -1;
   for (std::vector<std::vector<int> >::size_type i = 0;
        i < all_phospho_site_combinations_.size(); ++i) {
-    if (IsEqual(phospho_locs, all_phospho_site_combinations_[i]))
+    if (AreEqualVectors(phospho_locs, all_phospho_site_combinations_[i])) {
       idx = i;
+      break;
+    }
   }
-  if (idx != -1)
+  if (idx >= 0)
     return weigthed_average_pep_scores_[idx];
   else
     return 0.0;
 }
 
-double Ascore::GetLocalPeptideScore(std::vector<LocationMod>& input_var_mod_comb,
-                                    const Parameters& paras){
-  std::vector<int> phospho_locs = GetPhosphoedLocations(input_var_mod_comb,
-                                                        paras.variable_mods_);
+double Ascore::GetPhosphoSiteScore(std::vector<int>& phospho_locs) {
   int idx = -1;
   for (std::vector<std::vector<int> >::size_type i = 0;
        i < input_phospho_site_combinations_.size(); ++i) {
-    if (IsEqual(phospho_locs, input_phospho_site_combinations_[i]))
+    if (AreEqualVectors(phospho_locs, input_phospho_site_combinations_[i])) {
       idx = i;
+      break;
+    }
   }
-  if (idx != -1)
+  if (idx >= 0)
     return local_pep_scores_[idx];
   else
     return 0.0;
@@ -51,8 +51,7 @@ void Ascore::InitAscore(
     std::vector<std::vector<LocationMod> >& input_var_mod_combs,
     const Parameters& paras) {
   // set all phospho-site combinations
-  std::vector<int> phospho_locs = GetPhosphoedLocations(input_var_mod_combs[0],
-                                                        paras.variable_mods_);
+  std::vector<int> phospho_locs = GetPhosphoedLocations(input_var_mod_combs[0]);
   int num_phospho_sites = phospho_locs.size();
   std::vector<int> potential_sites = GetPotentialPhosphoSites(pep_seq);
   SetAllPhosphoSiteCombinations(potential_sites, num_phospho_sites);
@@ -61,7 +60,7 @@ void Ascore::InitAscore(
   for (std::vector<std::vector<int> >::const_iterator it =
            all_phospho_site_combinations_.begin();
        it != all_phospho_site_combinations_.end(); ++it) {
-    ResetPhosphoedSites(*it, paras.variable_mods_, loc_mods);
+    ResetPhosphoedSites(*it, loc_mods);
     IonSeries ion_series(pep_seq, loc_mods, paras, spec.precursor().charge);
     Match psm(spec, ion_series, paras.frag_tolerance_);
     pep_spec_matches_.push_back(psm);
@@ -70,8 +69,7 @@ void Ascore::InitAscore(
   for (std::vector<std::vector<LocationMod> >::const_iterator it =
            input_var_mod_combs.begin();
        it != input_var_mod_combs.end(); ++it) {
-    phospho_locs = GetPhosphoedLocations(input_var_mod_combs[0],
-                                         paras.variable_mods_);
+    phospho_locs = GetPhosphoedLocations(input_var_mod_combs[0]);
     input_phospho_site_combinations_.push_back(phospho_locs);
   }
   // get the indexes of input phospho-sites combs in 'all_phospho_site_combinations_'
@@ -82,16 +80,15 @@ void Ascore::InitAscore(
   SortWeightedAveragePeptideScores();
   // calculate local peptide scores for each phospho-peptide in search result
   InitPhosphoSiteProbabilities();
-  InitLocalPepScores();
+  InitPhosphoSiteScores();
 }
 
 std::vector<int> Ascore::GetPhosphoedLocations(
-    const std::vector<LocationMod>& loc_mods,
-    const std::vector<Modification>& var_mods) {
+    const std::vector<LocationMod>& loc_mods) {
   std::vector<int> phosphoed_locs;
   for (std::vector<LocationMod>::const_iterator it = loc_mods.begin();
        it != loc_mods.end(); ++it) {
-    if (var_mods[it->mod_id].name() == "Phospho")
+    if (it->mod_id == UNIMOD_PHOSPHO_ID)
       phosphoed_locs.push_back(it->aa_idx);
   }
   return phosphoed_locs;
@@ -112,26 +109,22 @@ void Ascore::SetAllPhosphoSiteCombinations(
     std::vector<int> comb(potential_phospho_sites.begin(),
                           potential_phospho_sites.begin() + actual_mod_num);
     all_phospho_site_combinations_.push_back(comb);
-  } while (utils::NextCombination(potential_phospho_sites.begin(),
+  } while (phos_loc::NextCombination(potential_phospho_sites.begin(),
                                   potential_phospho_sites.begin() + actual_mod_num,
                                   potential_phospho_sites.end()));
 }
 
 void Ascore::ResetPhosphoedSites(const std::vector<int>& one_site_comb,
-                                 const std::vector<Modification>& var_mods,
                                  std::vector<LocationMod>& loc_mods) {
   std::vector<LocationMod> new_loc_mods;
-  int phospho_idx;
   for (std::vector<LocationMod>::const_iterator it = loc_mods.begin();
        it != loc_mods.end(); ++it) {
-    if (var_mods[it->mod_id].name() != "Phospho")
+    if (it->mod_id != UNIMOD_PHOSPHO_ID)
       new_loc_mods.push_back(*it);
-    else
-      phospho_idx = it->mod_id;
   }
   for (std::vector<int>::const_iterator it = one_site_comb.begin();
        it != one_site_comb.end(); ++it) {
-    new_loc_mods.push_back(LocationMod(*it, phospho_idx));
+    new_loc_mods.push_back(LocationMod(*it, UNIMOD_PHOSPHO_ID));
   }
   loc_mods.clear();
   loc_mods.assign(new_loc_mods.begin(), new_loc_mods.end());
@@ -143,7 +136,7 @@ void Ascore::MapInputSiteCombinationsInAll() {
        it != input_phospho_site_combinations_.end(); ++it) {
     for (std::vector<std::vector<int> >::size_type i = 0;
          i < all_phospho_site_combinations_.size(); ++i) {
-      if (IsEqual(*it, all_phospho_site_combinations_[i])) {
+      if (AreEqualVectors(*it, all_phospho_site_combinations_[i])) {
         indexes_in_all_.push_back(i);
         break;
       }
@@ -159,7 +152,7 @@ void Ascore::InitAllPeptideScores(const Parameters& paras) {
          peak_depth <= paras.preproc_parameters_[2]; ++peak_depth) {
       double prob = it->PeptideScoreForAscore(peak_depth,
                                               paras.preproc_parameters_[1]);
-      logprobs.push_back(-log10(prob));
+      logprobs.push_back(-10*log10(prob));
     }
     pep_scores_.push_back(logprobs);
   }
@@ -207,7 +200,7 @@ std::vector<std::pair<int, int> > Ascore::GetCompetingPhosphoSites(
                             curr_site_set.begin(), curr_site_set.end(),
                             std::inserter(diff, diff.begin()));
         std::pair<int, int> pr(*it_y, *(diff.begin()));
-        competing_sites.push_back(pr);
+        competing_sites.push_back(pr); // comb index, competing site
         break;
       }
     }
@@ -246,9 +239,9 @@ std::vector<double> Ascore::CalculatePhosphoSiteProbabilities(
   for (std::vector<int>::size_type i = 0;
        i < curr_phospho_site_comb.size(); ++i) {
     int peak_depth = SelectPeakDepth(pep_scores_[index_in_all],
-                                     pep_scores_[competing_sites[i].second]);
+                                     pep_scores_[competing_sites[i].first]);
     double prob = pep_spec_matches_[index_in_all].PeptideScoreForAscore(
-        peak_depth, curr_phospho_site_comb[i], competing_sites[i].first);
+        peak_depth, curr_phospho_site_comb[i], competing_sites[i].second);
     probs.push_back(prob);
   }
   return probs;
@@ -263,22 +256,25 @@ void Ascore::InitPhosphoSiteProbabilities() {
   }
 }
 
-void Ascore::InitLocalPepScores() {
+void Ascore::InitPhosphoSiteScores() {
   for (std::vector<std::vector<double> >::const_iterator it =
            phospho_site_probabilities_.begin();
        it != phospho_site_probabilities_.end(); ++it) {
-    double product = 1;
+    double sumlog = 0;
     for (std::vector<double>::const_iterator it_y = it->begin();
          it_y != it->end(); ++it_y) {
-      product *= (*it_y);
+      sumlog += (-10*log10(*it_y));
     }
-    local_pep_scores_.push_back(1 - product);
+    sumlog /= it->size();
+    local_pep_scores_.push_back(sumlog);
   }
 }
 
 template<typename T>
-bool Ascore::IsEqual(std::vector<T>& v1, std::vector<T>& v2) {
+bool Ascore::AreEqualVectors(std::vector<T>& v1, std::vector<T>& v2) {
   std::sort(v1.begin(), v1.end());
   std::sort(v2.begin(), v2.end());
   return v1 == v2;
 }
+
+} // namespace phos_loc

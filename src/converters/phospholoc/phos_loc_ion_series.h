@@ -1,11 +1,13 @@
 #ifndef IONSERIES_H_
 #define IONSERIES_H_
 
-#include "peptide.h"
-#include "ion.h"
+#include "phos_loc_peptide.h"
+#include "phos_loc_ion.h"
 #include <vector>
 #include <map>
 #include <algorithm>
+
+namespace phos_loc {
 
 class IonSeries {
  public:
@@ -31,6 +33,8 @@ class IonSeries {
   const std::vector<Ion>& sorted_ions() const { return sorted_ions_; };
 
   int GetNumPredictedIons() const { return sorted_ions_.size(); };
+  int GetNumPredictedIons(int lower_site, int upper_site) const;
+  int GetNumPredictedIons(double lower_bnd, double upper_bnd) const;
 
  private:
   void InitIonMatrix(const Parameters& paras, int precursor_charge);
@@ -43,5 +47,7 @@ class IonSeries {
   std::map<IonType, std::vector<Ion> > ion_matrix_;
   std::vector<Ion> sorted_ions_;
 };
+
+} // namespace phos_loc
 
 #endif // IONSERIES_H_
