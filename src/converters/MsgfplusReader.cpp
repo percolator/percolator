@@ -123,6 +123,29 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 
 }
 
+std::string MsfgplusReader::decoratePeptide(const ::mzIdentML_ns::PeptideType & peptide) {
+  std::list<std::pair<int,std::string> > mods;
+  std::string peptideSeq = peptide.PeptideSequence();
+  BOOST_FOREACH(const ::mzIdentML_ns::ModificationType &mod_ref, peptide.Modification()){
+    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
+      if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
+        ostringstream errs;
+        errs << "Error: current implimentation can only handle UNIMOD accessions " 
+	     << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
+        throw MyException(errs.str());
+      }
+      std::string modstr = '[' + boost::lexical_cast<string > (cv_ref.accession()) + ']';
+      int pos = boost::lexical_cast<int>(mod_ref.location()); 
+      mods.push_back(std::pair<int,std::string>(pos,modstr));
+    }
+  }
+  mods.sort(greater<std::pair<int,std::string> >());
+  std::list<std::pair<int,std::string> >::const_iterator it;
+  for(it=mods.begin();it!=mods.end();++it) {
+    peptideSeq.insert(it->first,it->second);
+  }
+  return peptideSeq;
+}
 
 void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
         ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
@@ -138,7 +161,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     throw MyException(temp.str());
   }
 
-  std::string peptideSeq = peptideMap[item.peptide_ref().get()]->PeptideSequence();
+  std::string peptideSeq = decoratePeptide(*peptideMap[item.peptide_ref().get()]);
   std::string peptideId = item.peptide_ref().get();
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
