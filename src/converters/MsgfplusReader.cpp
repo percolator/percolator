@@ -123,7 +123,6 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 
 }
 
-
 void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
         ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
         bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database) {
@@ -192,7 +191,6 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
-    std::map<char, int> ptmMap = po->ptmScheme;
     psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
 
@@ -297,27 +295,28 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       if (aaAlphabet.find(peptideSeq[ix]) == string::npos &&
               ambiguousAA.find(peptideSeq[ix]) == string::npos &&
               additionalAA.find(peptideSeq[ix]) == string::npos) {
-        if (ptmMap.count(peptideSeq[ix]) == 0) {
-	   ostringstream temp;
-          temp << "Error : Peptide sequence " << peptideSeqWithFlanks
-                  << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
-          throw MyException(temp.str());
-        }
-        peptideSeq.erase(ix, 1);
+         peptideSeq.erase(ix, 1);
       }
     }
 
     std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
     // Register the ptms
-    for (unsigned int ix = 0; ix < peptideS.size(); ++ix) {
-      if (aaAlphabet.find(peptideS[ix]) == string::npos &&
-              ambiguousAA.find(peptideS[ix]) == string::npos &&
-              additionalAA.find(peptideS[ix]) == string::npos) {
-        int accession = ptmMap[peptideS[ix]];
-        std::auto_ptr< percolatorInNs::uniMod > um_p(new percolatorInNs::uniMod(accession));
-        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(um_p, ix));
+    BOOST_FOREACH(const ::mzIdentML_ns::ModificationType &mod_ref, peptideMap[item.peptide_ref().get()]->Modification()){
+      BOOST_FOREACH(const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
+        if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
+          ostringstream errs;
+          errs << "Error: current implimentation can only handle UNIMOD accessions " 
+	       << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
+          throw MyException(errs.str());
+        }
+	int mod_acc = boost::lexical_cast<int>(cv_ref.accession());
+	int mod_loc = boost::lexical_cast<int>(mod_ref.location());
+	std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(mod_acc, mod_loc));
+	// 	std::auto_ptr< percolatorInNs::uniMod > um_p(new percolatorInNs::uniMod(cv_ref.accession()));
+	//	std::auto_ptr< percolatorInNs::location > loca_p(new percolatorInNs::location(mod_ref.location()));
+	// std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(um_p, loca_p));
+	//        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType((int)cv_ref.accession(), (int)mod_ref.location()));
         peptide_p->modification().push_back(mod_p);
-        peptideS.erase(ix, 1);
       }
     }
 
