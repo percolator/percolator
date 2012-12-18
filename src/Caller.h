@@ -171,7 +171,8 @@ class Caller {
     double fido_alpha;
     double fido_beta;
     double fido_gamma;
-    bool fido_grouProteins; 
+    bool fido_nogrouProteins; 
+    bool fido_trivialGrouping;
     bool fido_noprune;
     bool fido_noseparate;
     bool fido_reduceTree;

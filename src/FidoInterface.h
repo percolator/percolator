@@ -24,9 +24,7 @@ class FidoInterface : public ProteinProbEstimator
 {
       
     /** FIDO PARAMETERS **/
-    
-    /** when grouping proteins discard all possible combinations for each group*/
-    const static bool trivialGrouping = false;
+
     /** compute peptide level prior probability instead of using default = 0.1 **/
     const static bool computePriors = false;
     /** threshold used for fido to remove poor PSMs **/
@@ -61,10 +59,10 @@ class FidoInterface : public ProteinProbEstimator
 
   public:
 
-    FidoInterface(double __alpha = -1,double __beta = -1,double __gamma = -1,bool __groupProteins = false, 
-		   bool __noseparate = false, bool __noprune = false, unsigned __depth = 3,bool __reduceTree = false, 
+    FidoInterface(double __alpha = -1,double __beta = -1,double __gamma = -1,bool __nogroupProteins = false, 
+		   bool __noseparate = false, bool __noprune = false, unsigned __depth = 0,bool __reduceTree = false, 
 		   bool __truncate = true, double mse_threshold = 0.1,bool tiesAsOneProtein = false, bool usePi0 = false, 
-		   bool outputEmpirQVal = false, std::string decoyPattern = "random");
+		   bool outputEmpirQVal = false, std::string decoyPattern = "random",bool trivialGrouping = false);
 
     virtual ~FidoInterface();
     
@@ -104,11 +102,11 @@ class FidoInterface : public ProteinProbEstimator
     bool truncate;
     unsigned int depth;
     mutable unsigned int rocN;
-    bool groupProteins;
+    bool nogroupProteins;
     bool noseparate;
     bool noprune;
     bool dogridSearch;
-    
+    bool trivialGrouping;
     GroupPowerBigraph* proteinGraph;
 };
 

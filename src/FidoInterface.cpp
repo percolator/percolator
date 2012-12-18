@@ -77,16 +77,17 @@ int GetDecimalPlaces(double dbVal)
 }
 
 
-FidoInterface::FidoInterface(double __alpha,double __beta,double __gamma,bool __groupProteins, 
+FidoInterface::FidoInterface(double __alpha,double __beta,double __gamma,bool __nogroupProteins, 
 			      bool __noseparate, bool __noprune, unsigned __depth,bool __reduceTree, 
 			      bool __truncate, double mse_threshold,bool tiesAsOneProtein, bool usePi0, 
-			      bool outputEmpirQVal, std::string decoyPattern)
+			      bool outputEmpirQVal, std::string decoyPattern,bool __trivialGrouping)
 			      :ProteinProbEstimator(tiesAsOneProtein,usePi0,outputEmpirQVal,decoyPattern)
 {
   alpha = __alpha;
   beta = __beta;
   gamma = __gamma;
-  groupProteins = __groupProteins;
+  trivialGrouping = __trivialGrouping;
+  nogroupProteins = __nogroupProteins;
   noseparate = __noseparate;
   noprune = __noprune;
   depth = __depth;
@@ -121,9 +122,9 @@ void FidoInterface::run()
   }
   
   double local_protein_threshold = proteinThreshold;
-  if(!truncate) local_protein_threshold = 0.0;
+  if(truncate) local_protein_threshold = 0.0;
   
-  proteinGraph = new GroupPowerBigraph (alpha,beta,gamma,groupProteins,noseparate,noprune);
+  proteinGraph = new GroupPowerBigraph (alpha,beta,gamma,nogroupProteins,noseparate,noprune,trivialGrouping);
   proteinGraph->setMaxAllowedConfigurations(max_allow_configurations);
   proteinGraph->setPeptidePrior(peptidePrior_local);
   
@@ -137,9 +138,10 @@ void FidoInterface::run()
     proteinGraph->setProteinThreshold(reduced_proteinThreshold);
     proteinGraph->setPsmThreshold(reduced_psmThreshold);
     proteinGraph->setPeptideThreshold(reduced_peptideThreshold);
-    proteinGraph->setGroupProteins(true);
+    proteinGraph->setGroupProteins(false);
     proteinGraph->setSeparateProteins(false);
     proteinGraph->setPruneProteins(false);
+    proteinGraph->setTrivialGrouping(true);
     proteinGraph->setMultipleLabeledPeptides(false);
   }
   else
@@ -204,13 +206,14 @@ void FidoInterface::computeProbabilities()
   {
     //NOTE lets create the tree again with all the members
     double local_protein_threshold = proteinThreshold;
-    if(!truncate) local_protein_threshold = 0.0;
+    if(truncate) local_protein_threshold = 0.0;
     proteinGraph->setProteinThreshold(local_protein_threshold);
     proteinGraph->setPsmThreshold(psmThreshold);
     proteinGraph->setPeptideThreshold(peptideThreshold);
-    proteinGraph->setGroupProteins(groupProteins);
+    proteinGraph->setGroupProteins(nogroupProteins);
     proteinGraph->setSeparateProteins(noseparate);
     proteinGraph->setPruneProteins(noprune);
+    proteinGraph->setTrivialGrouping(trivialGrouping);
     proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
     proteinGraph->read(peptideScores);
   }
@@ -221,7 +224,7 @@ void FidoInterface::computeProbabilities()
   proteinGraph->getProteinProbsPercolator(pepProteins);
 }
 
-
+//NOTE almost entirely duplicated of computeProbabilities, it could be refactored
 void FidoInterface::computeProbabilitiesFromFile(ifstream &fin)
 {
   
@@ -274,11 +277,11 @@ void FidoInterface::computeProbabilitiesFromFile(ifstream &fin)
   {
     //NOTE lets create the tree again with all the members
     double local_protein_threshold = proteinThreshold;
-    if(!truncate) local_protein_threshold = 0.0;
+    if(truncate) local_protein_threshold = 0.0;
     proteinGraph->setProteinThreshold(local_protein_threshold);
     proteinGraph->setPsmThreshold(psmThreshold);
     proteinGraph->setPeptideThreshold(peptideThreshold);
-    proteinGraph->setGroupProteins(groupProteins);
+    proteinGraph->setGroupProteins(nogroupProteins);
     proteinGraph->setSeparateProteins(noseparate);
     proteinGraph->setPruneProteins(noprune);
     proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
@@ -305,27 +308,33 @@ void FidoInterface::gridSearch()
   switch(depth)
   {
     case 0:    
-      gamma_search = boost::assign::list_of(0.4)(0.45)(0.5);
-      beta_search = boost::assign::list_of(0.0)(0.0001)(0.001);
-      alpha_search = boost::assign::list_of(0.001)(0.01)(0.05)(0.1)(0.15)(0.2)(0.25)(0.3)(0.35)(0.4)(0.45)(0.5);
+      gamma_search = boost::assign::list_of(0.5);
+      beta_search = boost::assign::list_of(0.001);
+      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
       break;
     
     case 1:
-      gamma_search = boost::assign::list_of(0.4)(0.45)(0.5);
-      beta_search = boost::assign::list_of(0.0);
-      alpha_search = boost::assign::list_of(0.001)(0.01)(0.05)(0.1)(0.15)(0.2)(0.25)(0.3)(0.35)(0.4)(0.45)(0.5);
+      gamma_search = boost::assign::list_of(0.1)(0.5)(0.9);
+      beta_search = boost::assign::list_of(0.001);
+      for (double k = 0.002; k <= 0.4; k*=4)
+      {
+       alpha_search.push_back(k);
+      }
       break;
       
     case 2:
-      gamma_search = boost::assign::list_of(0.4)(0.45);
-      beta_search = boost::assign::list_of(0.0);
-      alpha_search = boost::assign::list_of(0.001)(0.01)(0.05)(0.1)(0.15)(0.2)(0.25)(0.3)(0.35)(0.4)(0.45)(0.5);
+      gamma_search = boost::assign::list_of(0.1)(0.3)(0.5)(0.75)(0.9);
+       beta_search = boost::assign::list_of(0.001);
+      for (double k = 0.001; k <= 0.4; k*=2)
+      {
+       alpha_search.push_back(k);
+      }
       break;
     
     default:
-      gamma_search = boost::assign::list_of(0.4);
-      beta_search = boost::assign::list_of(0.0);
-      alpha_search = boost::assign::list_of(0.001)(0.01)(0.05)(0.1)(0.15)(0.2)(0.25)(0.3)(0.35)(0.4)(0.45)(0.5);
+      gamma_search = boost::assign::list_of(0.5);
+      beta_search = boost::assign::list_of(0.001);
+      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
   }
 
   if(alpha != -1)

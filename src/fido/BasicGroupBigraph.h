@@ -94,33 +94,33 @@ class BasicGroupBigraph : public BasicBigraph
 
  public:
    
-  BasicGroupBigraph(bool __groupProtein = false, bool __trivialGrouping = false) :
+  BasicGroupBigraph(bool __nogroupProtein = false, bool __trivialGrouping = false) :
     logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-    groupProtein(__groupProtein),trivialGrouping(__trivialGrouping)
+    nogroupProtein(__nogroupProtein),trivialGrouping(__trivialGrouping)
   {
   }
 
-  BasicGroupBigraph(const BasicBigraph & rhs,bool __groupProtein = false, bool __trivialGrouping = false) :
+  BasicGroupBigraph(const BasicBigraph & rhs,bool __nogroupProtein = false, bool __trivialGrouping = false) :
   BasicBigraph(rhs),   
   logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-  groupProtein(__groupProtein),trivialGrouping(__trivialGrouping)
+  nogroupProtein(__nogroupProtein),trivialGrouping(__trivialGrouping)
   {
-    if(groupProtein)
-      groupProteins();
-    else
+    if(nogroupProtein)
       trivialGroupProteins();
+    else
+      groupProteins();
   }
   
   virtual ~BasicGroupBigraph();
   
-  /*void read(Scores* fullset)
+  void read(Scores* fullset)
   {
      BasicBigraph::read(fullset);
-     if(groupProtein)
+     if(nogroupProtein)
 	groupProteins();
      else
        trivialGroupProteins();
-  }*/
+  }
    
     // for partitioning
   void refreshCache()
@@ -151,7 +151,7 @@ private:
   Array<Counter> originalN;
   Array<Array<string> > groupProtNames;
   Array<double> probabilityR;
-  bool groupProtein;
+  bool nogroupProtein;
   bool trivialGrouping;
  
   // protected construction functions
