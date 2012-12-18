@@ -38,7 +38,6 @@ class MsfgplusReader : public MzidentmlReader
   
   protected :
     
-    std::string decoratePeptide(const ::mzIdentML_ns::PeptideType & peptide);
     static const std::map<string,int> msgfplusFeatures;
     static const double neutron;
 };

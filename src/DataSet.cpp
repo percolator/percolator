@@ -295,6 +295,26 @@ void DataSet::initFeatureTables(const unsigned int numFeat, bool __regressionTab
   psms.clear();
 }
 
+
+// Convert a peptide with or without modifications into a string
+std::string DataSet::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
+  std::list<std::pair<int,std::string> > mods;
+  std::string peptideSeq = peptide.peptideSequence();
+  BOOST_FOREACH(const ::percolatorInNs::modificationType &mod_ref, peptide.modification()){
+    std::stringstream ss;
+    ss << "[UNIMOD:" << mod_ref.uniMod().accession() << "]";
+    mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+  }
+  mods.sort(greater<std::pair<int,std::string> >());
+  std::list<std::pair<int,std::string> >::const_iterator it;
+  for(it=mods.begin();it!=mods.end();++it) {
+    peptideSeq.insert(it->first,it->second);
+  }
+  return peptideSeq;
+}
+
+
+
 void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber)
 {
   bool isDecoy;
@@ -315,24 +335,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
   else
   {
       PSMDescription  *myPsm = new PSMDescription();
-      string mypept = psm.peptide().peptideSequence();
-      
-      //TODO  when there is more than one PTM the second one will be wrongly located
-      for (::percolatorInNs::peptideType::modification_const_iterator modIter = psm.peptide().modification().begin(); 
-	   modIter != psm.peptide().modification().end(); ++modIter) 
-      {
-        int loc = modIter->location();
-        size_t found;
-        found=mypept.find('[');
-        while(found != string::npos || found < loc) {
-          size_t f2 = mypept.find(']',found+1);
-          loc += f2-found+1;
-          found=mypept.find('[',f2+1);
-        }
-        std::stringstream ss;
-        ss << "[UNIMOD:" << modIter->uniMod().accession() << "]";
-	mypept.insert(loc,ss.str());
-      }
+      string mypept = decoratePeptide(psm.peptide());
 
       if(psm.occurence().size() <= 0)
       {

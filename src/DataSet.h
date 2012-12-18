@@ -108,6 +108,7 @@ class DataSet {
 
   protected:
     
+    inline string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
 //     double isPngasef(const string& peptide);
     static bool calcDOC;
     static bool isotopeMass;
