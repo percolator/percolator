@@ -20,9 +20,10 @@ class GroupPowerBigraph
 public:
   
  GroupPowerBigraph(double __alpha, double __beta, double __gamma, 
-		   bool __groupProteins = false, bool __noseparate = false , bool __noprune = false) :
+		   bool __nogroupProteins = false, bool __noseparate = false , 
+		   bool __noprune = false, bool __trivialGrouping = false) :
   gm(__alpha,__beta,__gamma),
-  groupProteins(__groupProteins), 
+  nogroupProteins(__nogroupProteins), 
   noseparate(__noseparate), 
   noprune(__noprune),
   LOG_MAX_ALLOWED_CONFIGURATIONS(18),
@@ -30,7 +31,7 @@ public:
   PeptideThreshold(1e-3),
   ProteinThreshold(1e-3),
   PeptidePrior(0.1),
-  trivialgruping(false)
+  trivialgruping(__trivialGrouping)
   {
     setAlphaBetaGamma(__alpha, __beta, __gamma);
   }
@@ -80,7 +81,7 @@ private:
   Model gm;
   Numerical zeroChecker;
   int numberClones;
-  bool groupProteins;
+  bool nogroupProteins;
   bool noseparate;
   bool noprune;
   bool trivialgruping;

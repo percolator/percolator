@@ -76,12 +76,13 @@ Caller::Caller() :
     fido_alpha = -1;
     fido_beta = -1;
     fido_gamma = -1;
-    fido_grouProteins = false; 
+    fido_nogrouProteins = false; 
     fido_noprune = false;
     fido_noseparate = false;
     fido_reduceTree = false;
     fido_truncate = false;
-    fido_depth = 3;
+    fido_trivialGrouping = false;
+    fido_depth = 0;
     fido_mse_threshold = 0.1;
     /* general protein probabilities options */
     tiesAsOneProtein = false;
@@ -320,9 +321,9 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("N",
-      "fido-group-proteins", 		   
-      "activates the grouping of proteins with similar connectivity, \
-       for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 can be grouped as one protein \
+      "fido-no-group-proteins", 		   
+      "disactivates the grouping of proteins with similar connectivity, \
+       for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 will not be grouped as one protein \
        (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
@@ -339,8 +340,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("d",
       "fido-gridsearch-depth",
-      "Setting depth 0 or 1 or 2 or 3 from high depth to low depth(less computational time) \
-       of the grid search for the estimation Alpha,Beta and Gamma parameters for fido(Only valid if option -A is active). Default value is 3",
+      "Setting depth 0 or 1 or 2 from low depth to high depth(less computational time) \
+       of the grid search for the estimation Alpha,Beta and Gamma parameters for fido(Only valid if option -A is active). Default value is 0",
       "value");
   cmd.defineOption("P",
       "pattern",
@@ -363,11 +364,15 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       "value");
   cmd.defineOption("W",
-      "fido-no-truncation",
-      "Proteins with a very low score (< 0.001) will not be truncated (assigned 0.0 probability).(Only valid if option -A is active).",
+      "fido-truncation",
+      "Proteins with a very low score (< 0.001) will be truncated (assigned 0.0 probability).(Only valid if option -A is active).",
       "",
-      FALSE_IF_SET);
-  
+      TRUE_IF_SET);
+  cmd.defineOption("Q",
+      "fido-protein-group-level-inference",
+      "Uses protein group level inference, each cluster of proteins is either present or not, therefore when grouping proteins discard all possible combinations for each group.(Only valid if option -A is active and -N is inactive).",
+      "",
+      TRUE_IF_SET);
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -398,13 +403,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     tiesAsOneProtein = cmd.optionSet("g");
     usePi0 = cmd.optionSet("I");
     outputEmpirQVal = cmd.optionSet("q");
-    fido_grouProteins = cmd.optionSet("N"); 
+    fido_nogrouProteins = cmd.optionSet("N"); 
     fido_noprune = cmd.optionSet("C");
     fido_noseparate = cmd.optionSet("E");
     fido_reduceTree = cmd.optionSet("T");
     fido_truncate = cmd.optionSet("W");
+    fido_trivialGrouping = cmd.optionSet("Q");
     if (cmd.optionSet("P"))  decoy_prefix = cmd.options["P"];
-    if (cmd.optionSet("d"))  fido_depth = cmd.getInt("d", 0, 3);
+    if (cmd.optionSet("d"))  fido_depth = cmd.getInt("d", 0, 2);
     if (cmd.optionSet("a"))  fido_alpha = cmd.getDouble("a", 0.00, 1.0);
     if (cmd.optionSet("b"))  fido_beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  fido_gamma = cmd.getDouble("G", 0.00, 1.0);
@@ -1230,9 +1236,9 @@ void Caller::calculateProteinProbabilitiesFido()
   startClock = clock();  
 
 
-  protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_grouProteins,fido_noseparate,
+  protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_nogrouProteins,fido_noseparate,
 				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
-				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix);
+				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
   
   if (VERB > 0)
   {

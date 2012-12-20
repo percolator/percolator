@@ -43,14 +43,15 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups)
     {
       groupProtNames[k] = proteinsToPSMs.names[ groups[k] ];
       
-      if(!trivialGrouping)
+      if(trivialGrouping)
       { 
-         originalN[k] = Counter( groups[k].size() );
+	 // each group is either present or absent
+         originalN[k] = Counter( 1 );
+         
       }
       else
       {
-	  // each group is either present or absent
-         originalN[k] = Counter( 1 );
+	  originalN[k] = Counter( groups[k].size() );
       }
     }
 

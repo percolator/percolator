@@ -120,7 +120,7 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
 
   for (int k=0; k<preResult.size(); k++)
     {
-      BasicGroupBigraph bgb = BasicGroupBigraph(preResult[k],groupProteins,trivialgruping);
+      BasicGroupBigraph bgb = BasicGroupBigraph(preResult[k],nogroupProteins/*,trivialgruping*/);
       double logNumConfig = bgb.logNumberOfConfigurations();
       if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && 
 	log2(bgb.PSMsToProteins.size())+log2(bgb.getOriginalN()[0].size+1) <= LOG_MAX_ALLOWED_CONFIGURATIONS )
@@ -157,13 +157,13 @@ void GroupPowerBigraph::read(Scores* fullset){
   bb.setProteinThreshold(ProteinThreshold);
   bb.read(fullset,multiple_labeled_peptides);
 
-  if(!noseparate)
+  if(!(bool)(noseparate))
   {
     severedProteins = Array<string>();
     Array<BasicBigraph> subBasic;
     subBasic = Array<BasicBigraph>();
     
-    if(!noprune)
+    if(!(bool)(noprune))
       subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
     else
       subBasic = iterativePartitionSubgraphs(bb, -1);
@@ -172,7 +172,7 @@ void GroupPowerBigraph::read(Scores* fullset){
 
     for (int k=0; k<subBasic.size(); k++)
       {
-	subgraphs[k] = BasicGroupBigraph(subBasic[k],groupProteins,trivialgruping);
+	subgraphs[k] = BasicGroupBigraph(subBasic[k],nogroupProteins,trivialgruping);
       }
   }
   else
@@ -180,7 +180,7 @@ void GroupPowerBigraph::read(Scores* fullset){
     bb.prune();
     severedProteins = Array<string>();
     severedProteins.append( bb.severedProteins );
-    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,groupProteins,trivialgruping));
+    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,nogroupProteins,trivialgruping));
   }
   
   initialize();
@@ -195,13 +195,13 @@ void GroupPowerBigraph::read(istream & is){
   bb.setProteinThreshold(ProteinThreshold);
   bb.read(is,multiple_labeled_peptides);
 
-  if(!noseparate)
+  if(!(bool)(noseparate))
   {
     severedProteins = Array<string>();
     Array<BasicBigraph> subBasic;
     subBasic = Array<BasicBigraph>();
     
-    if(!noprune)
+    if(!(bool)(noprune))
       subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
     else
       subBasic = iterativePartitionSubgraphs(bb, -1);
@@ -210,7 +210,7 @@ void GroupPowerBigraph::read(istream & is){
 
     for (int k=0; k<subBasic.size(); k++)
       {
-	subgraphs[k] = BasicGroupBigraph(subBasic[k],groupProteins,trivialgruping);
+	subgraphs[k] = BasicGroupBigraph(subBasic[k],nogroupProteins,trivialgruping);
       }
   }
   else
@@ -218,7 +218,7 @@ void GroupPowerBigraph::read(istream & is){
     bb.prune();
     severedProteins = Array<string>();
     severedProteins.append( bb.severedProteins );
-    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,groupProteins,trivialgruping));
+    subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,nogroupProteins,trivialgruping));
   }
   
   initialize();
@@ -338,7 +338,7 @@ bool GroupPowerBigraph::getTrivialGrouping()
 {
   return trivialgruping;
 }
-
+ 
 void GroupPowerBigraph::setTrivialGrouping(bool __trivialgruping)
 {
   trivialgruping = __trivialgruping;
@@ -346,7 +346,7 @@ void GroupPowerBigraph::setTrivialGrouping(bool __trivialgruping)
 
 bool GroupPowerBigraph::getGrouProteins()
 {
-  return groupProteins;
+  return nogroupProteins;
 }
 
 bool GroupPowerBigraph::getPruneProteins()
@@ -361,7 +361,7 @@ bool GroupPowerBigraph::getSeparateProteins()
 
 void GroupPowerBigraph::setGroupProteins(bool __groupProteins)
 {
-  groupProteins = __groupProteins;
+  nogroupProteins = __groupProteins;
 }
 
 void GroupPowerBigraph::setPruneProteins(bool __pruneProteins)
