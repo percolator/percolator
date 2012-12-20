@@ -7,7 +7,7 @@ const std::map<string, int> MsfgplusReader::msgfplusFeatures =
                                   ("MS-GF:SpecEValue", 2)
                                   ("MS-GF:EValue", 3)
                                   //The below features are on user specified element userParam
-                                  ("IsotopeError", 4) 
+                                  ("IsotopeError", 4)
                                   ("ExplainedIonCurrentRatio", 5)
                                   ("NTermIonCurrentRatio", 6)
                                   ("CTermIonCurrentRatio", 7)
@@ -26,7 +26,7 @@ MsfgplusReader::~MsfgplusReader() {
 }
 
 bool MsfgplusReader::checkValidity(const std::string &file) {
-  
+
   bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
   if (!fileIn) {
@@ -48,7 +48,7 @@ bool MsfgplusReader::checkValidity(const std::string &file) {
     temp << "Error : the input file is not xml format " << file << std::endl;
     isvalid = false;
     throw MyException(temp.str());
-  } 
+  }
   else //Test whether Sequest or MS-GF+ format
   {
     std::string line2, line3;
@@ -56,7 +56,7 @@ bool MsfgplusReader::checkValidity(const std::string &file) {
     getline(fileIn, line3);
 
     if ((line2[1] != '!' && line2.find("MS-GF+") != std::string::npos && line2.find("MzIdentML") != std::string::npos)
-         || (line3[1] != '!' && line3.find("MS-GF+") != std::string::npos && line3.find("MzIdentML") != std::string::npos)) 
+         || (line3[1] != '!' && line3.find("MS-GF+") != std::string::npos && line3.find("MzIdentML") != std::string::npos))
     {
       if(VERB > 2)
 	std::cerr << "MzIdentML - MSGF+ format" << std::endl;
@@ -76,7 +76,7 @@ bool MsfgplusReader::checkValidity(const std::string &file) {
 
 
 
-void MsfgplusReader::addFeatureDescriptions(bool doEnzyme) 
+void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 {
 
   push_backFeatureDescription("RawScore");
@@ -124,7 +124,7 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 }
 
 void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
-        ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
+        ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
         bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database) {
 
   std::auto_ptr< percolatorInNs::features > features_p(new percolatorInNs::features());
@@ -132,7 +132,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 
   if (!item.calculatedMassToCharge().present()) {
     ostringstream temp;
-    temp << "Error: calculatedMassToCharge attribute not found in PSM " 
+    temp << "Error: calculatedMassToCharge attribute not found in PSM "
     << boost::lexical_cast<string > (item.id())  << std::endl;
     throw MyException(temp.str());
   }
@@ -146,17 +146,17 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 
   try
   {
-  
-    BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef()) 
+
+    BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
     {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
       //NOTE check that there are not quimera peptides
       if( peptideId != std::string(pepEv->peptide_ref()))
       {
-	std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id()) 
+	std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
 		  << " contains different quimera peptide sequences. "
-		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq 
+		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
 		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       }
       //else
@@ -171,7 +171,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       proteinIds.push_back(proteinName);
       //}
     }
-    
+
     if(__flankC.empty() || __flankN.empty())
     {
       ostringstream temp;
@@ -183,7 +183,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       //NOTE taking the highest ranked PSM protein for combined search
       isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
     }
-  
+
     double rank = item.rank();
     //double PI = boost::lexical_cast<double>(item.calculatedPI().get());
     int charge = item.chargeState();
@@ -205,37 +205,37 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     double MS2IonCurrent = 0.0;
 
     //Read through cvParam elements
-    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) 
+    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam())
     {
-	if (cv.value().present()) 
+	if (cv.value().present())
 	{
 	  std::string param_name(cv.name().c_str());
-	  if (msgfplusFeatures.count(param_name)) 
+	  if (msgfplusFeatures.count(param_name))
 	  {
-	    switch (msgfplusFeatures.at(param_name)) 
-	    {  
+	    switch (msgfplusFeatures.at(param_name))
+	    {
 	      case 0: RawScore = boost::lexical_cast<double>(cv.value().get().c_str()); break;
 	      case 1: DeNovoScore = boost::lexical_cast<double>(cv.value().get().c_str());break;
 	      case 2: SpecEValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
 	      case 3: EValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
 	    }
-	  } 
-	  else 
+	  }
+	  else
 	  {
 	    std::cerr << "Error  : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
 	  }
 	}
     }
-    
+
       //Read through userParam elements
-    BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) 
+    BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam())
     {
-	if (up.value().present()) 
+	if (up.value().present())
 	{
 	  std::string param_name(up.name().c_str());
-	  if (msgfplusFeatures.count(param_name)) 
+	  if (msgfplusFeatures.count(param_name))
 	  {
-	    switch (msgfplusFeatures.at(param_name)) 
+	    switch (msgfplusFeatures.at(param_name))
 	    {
 	      case 4: IsotopeError = boost::lexical_cast<double>(up.value().get().c_str()); break;
 	      case 5: ExplainedIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
@@ -246,8 +246,8 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	  }
 	}
     }
-    
-    
+
+
     //The raw theoretical mass from MSGF+ is often of the wrong isotope
     double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
     //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
@@ -266,7 +266,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     f_seq.push_back(peptideLength(peptideSeqWithFlanks));
     f_seq.push_back(dM);
     f_seq.push_back(abs(dM));
-  
+
     for (int c = minCharge; c <= maxCharge; c++) {
       f_seq.push_back(charge == c ? 1.0 : 0.0); // Charge
     }
@@ -289,7 +289,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     percolatorInNs::occurence::flankN_type flankN = peptideSeqWithFlanks.substr(0, 1);
     percolatorInNs::occurence::flankC_type flankC = peptideSeqWithFlanks.substr(peptideSeqWithFlanks.size() - 1, 1);
 
-    // Strip peptide from termini and modifications 
+    // Strip peptide from termini and modifications
     std::string peptideS = peptideSeq;
     for (unsigned int ix = 0; ix < peptideSeq.size(); ++ix) {
       if (aaAlphabet.find(peptideSeq[ix]) == string::npos &&
@@ -305,17 +305,18 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       BOOST_FOREACH(const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
         if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
           ostringstream errs;
-          errs << "Error: current implimentation can only handle UNIMOD accessions " 
+          errs << "Error: current implimentation can only handle UNIMOD accessions "
 	       << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
           throw MyException(errs.str());
         }
-	int mod_acc = boost::lexical_cast<int>(cv_ref.accession());
-	int mod_loc = boost::lexical_cast<int>(mod_ref.location());
-	std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(mod_acc, mod_loc));
-	// 	std::auto_ptr< percolatorInNs::uniMod > um_p(new percolatorInNs::uniMod(cv_ref.accession()));
-	//	std::auto_ptr< percolatorInNs::location > loca_p(new percolatorInNs::location(mod_ref.location()));
-	// std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(um_p, loca_p));
-	//        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType((int)cv_ref.accession(), (int)mod_ref.location()));
+        cerr <<  cv_ref.accession() << endl;
+        int mod_acc = boost::lexical_cast<int>(cv_ref.accession());
+        int mod_loc = boost::lexical_cast<int>(mod_ref.location());
+        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(mod_acc, mod_loc));
+        // 	std::auto_ptr< percolatorInNs::uniMod > um_p(new percolatorInNs::uniMod(cv_ref.accession()));
+        //	std::auto_ptr< percolatorInNs::location > loca_p(new percolatorInNs::location(mod_ref.location()));
+        // std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(um_p, loca_p));
+        //        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType((int)cv_ref.accession(), (int)mod_ref.location()));
         peptide_p->modification().push_back(mod_p);
       }
     }
@@ -335,10 +336,10 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
   catch(std::exception const& e)
   {
     ostringstream temp;
-    temp << "Error : parsing PSM: " << boost::lexical_cast<string > (item.id()) 
+    temp << "Error : parsing PSM: " << boost::lexical_cast<string > (item.id())
     << "\nThe error was: " << e.what() << std::endl;
     throw MyException(temp.str());
   }
- 
+
   return;
 }
