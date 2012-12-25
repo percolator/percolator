@@ -35,7 +35,7 @@ DataSet::DataSet() {
 }
 
 DataSet::~DataSet() {
- 
+
   for(unsigned i = 0; i < psms.size(); i++)
   {
     if(psms[i]->features)
@@ -43,17 +43,17 @@ DataSet::~DataSet() {
       delete[] psms[i]->features;
       psms[i]->features = NULL;
     }
-    
+
     if(psms[i]->retentionFeatures)
     {
       delete[] psms[i]->retentionFeatures;
       psms[i]->retentionFeatures = NULL;
     }
-    
+
     delete psms[i];
     psms[i] = NULL;
   }
-  
+
 }
 
 PSMDescription* DataSet::getNext(int& pos) {
@@ -107,7 +107,7 @@ void DataSet::print_features() {
   }
 }
 
-void DataSet::print_10features() 
+void DataSet::print_10features()
 {
   cerr << DataSet::getFeatureNames().getFeatureNames() << endl;
   for (int i = 0; i < 10; i++) {
@@ -118,7 +118,7 @@ void DataSet::print_10features()
   }
 }
 
-void DataSet::print(Scores& test, vector<ResultHolder> &outList) 
+void DataSet::print(Scores& test, vector<ResultHolder> &outList)
 {
   ostringstream out;
   size_t ix = 0;
@@ -148,11 +148,11 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
 //     case 1: { isDecoy = false; break; };
 //     case -1: { isDecoy = true; break; };
 //     default:  { throw MyException("ERROR : class DataSet has not been initiated\
-// 		to neither target nor decoy label\n");} 
+// 		to neither target nor decoy label\n");}
 //   }
 //   return isPngasef( peptide, isDecoy);
 // }
-// 
+//
 // double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
 //   size_t next_pos = 0, pos;
 //   while ((pos = peptide.find("N*", next_pos)) != string::npos) {
@@ -219,7 +219,7 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
       getline(is, line);
       ix++;
     }
-    
+
     PSMDescription  *myPsm = new PSMDescription();
     buff.str(line);
     buff.clear();
@@ -234,10 +234,10 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     for (register unsigned int j = 0; j < m; j++) {
       buff >> featureRow[j];
     }
-    
+
     std::string peptide_seq = "";
     buff >> peptide_seq;
-    
+
     //NOTE to check if the peptide sequence contains flanks or not
     if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.')
     {
@@ -247,7 +247,7 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
       does not contain one or two of its flaking amino acids." << std::endl;
       throw MyException(temp.str());
     }
-    
+
     myPsm->peptide = peptide_seq;
 
     while (!!buff) {
@@ -262,7 +262,7 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
       featureRow[m + 1] = abs(psms[i]->massDiff);
       featureRow[m + 2] = 0;
     }
-    
+
     psms.push_back(myPsm);
     ++numSpectra;
   }
@@ -322,9 +322,9 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
     default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
-		to neither target nor decoy label\n");}  
+		to neither target nor decoy label\n");}
   }
-  
+
   if(psm.isDecoy() != isDecoy)
   {
     ostringstream temp;
@@ -345,41 +345,41 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
 	throw MyException(temp.str());
       }
 
-      BOOST_FOREACH( const percolatorInNs::occurence & oc,  psm.occurence() )  
+      BOOST_FOREACH( const percolatorInNs::occurence & oc,  psm.occurence() )
       {
         myPsm->proteinIds.insert( oc.proteinId() );
         // adding n-term and c-term residues to peptide
 	//NOTE the residues for the peptide in the PSMs are always the same for every protein
         myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
       }
-      
+
       myPsm->id = psm.id();
       myPsm->charge = psm.chargeState();
       myPsm->scan = scanNumber;
-      myPsm->expMass = psm.experimentalMassToCharge();
-      myPsm->calcMass = psm.calculatedMassToCharge();
+      myPsm->expMass = psm.experimentalMass();
+      myPsm->calcMass = psm.calculatedMass();
       if ( psm.observedTime().present() ) {
         myPsm->retentionTime = psm.observedTime().get();
       }
 
       const ::percolatorInNs::features::feature_sequence & featureS = psm.features().feature();
       int featureNum = 0;
-      
+
       myPsm->features = new double[FeatureNames::getNumFeatures()];
-      if (regresionTable) 
+      if (regresionTable)
       {
 	myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
       }
-      
+
       for ( ::percolatorInNs::features::feature_const_iterator featureIter = featureS.begin(); featureIter != featureS.end(); featureIter++ ) {
         myPsm->features[featureNum]=*featureIter;
         featureNum++;
       }
 
       // myPsm.peptide = psmIter->peptide().peptideSequence();
-      myPsm->massDiff = MassHandler::massDiff(psm.experimentalMassToCharge() ,psm.calculatedMassToCharge(),psm.chargeState());
+      myPsm->massDiff = MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
 
-      if (calcDOC) 
+      if (calcDOC)
       {
         DescriptionOfCorrect::calcRegressionFeature(*myPsm);
         myPsm->features[featureNum++] = abs( myPsm->pI - 6.5);
@@ -387,7 +387,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
         myPsm->features[featureNum++] = 0;
         myPsm->features[featureNum++] = 0;
       }
-      
+
       psms.push_back(myPsm);
       ++numSpectra;
   }

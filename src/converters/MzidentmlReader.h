@@ -46,30 +46,30 @@ class MzidentmlReader: public Reader
 public:
 
   MzidentmlReader(ParseOptions *po);
-  
+
   virtual ~MzidentmlReader();
-  
+
   void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
-  
+
   virtual bool checkValidity(const std::string &file) = 0;
-  
+
   bool checkIsMeta(const std::string &file);
- 
+
   void getMaxMinCharge(const std::string &fn, bool isDecoy);
-  
+
   virtual void addFeatureDescriptions(bool doEnzyme) = 0;
-  
-  virtual void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
-		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
+
+  virtual void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
+		  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
 		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database ) = 0;
 
   void init() { Reader::init(); };
   void print( ofstream &xmlOutputStream) { Reader::print(xmlOutputStream); };
-  
+
   void cleanHashMaps();
-  
+
  protected :
-    
+
     peptideMapType peptideMap;
     proteinMapType proteinMap;
     peptideEvidenceMapType peptideEvidenceMap;

@@ -160,14 +160,14 @@ targetNamespace="http://per-colator.com/percolator_in/13">
                       <xs:documentation>The clock time when the scan observed, i.e. the observed retention time given in minutes.</xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
-                  <xs:attribute name="experimentalMassToCharge" use="required" type="xs:double">
+                  <xs:attribute name="experimentalMass" use="required" type="xs:double">
                     <xs:annotation>
-                      <xs:documentation>The measured mass to charge ratio of the current scan.</xs:documentation>
+                      <xs:documentation>The measured mass of the current scan.</xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
-                  <xs:attribute name="calculatedMassToCharge" use="required" type="xs:double">
+                  <xs:attribute name="calculatedMass" use="required" type="xs:double">
                     <xs:annotation>
-                      <xs:documentation>The precursor m/z ratio as calculated from the peptides amino acid sequence.</xs:documentation>
+                      <xs:documentation>The precursor mass as calculated from the peptides amino acid sequence.</xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
                   <xs:attribute name="chargeState" use="required" type="xs:int"/>
@@ -186,10 +186,9 @@ targetNamespace="http://per-colator.com/percolator_in/13">
 		determination of the current scan.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="experimentalMassToCharge" type="xs:double">
+            <xs:attribute name="experimentalMass" type="xs:double">
               <xs:annotation>
-                <xs:documentation>The measured mass to charge
-		ratio of the current scan.</xs:documentation>
+                <xs:documentation>The measured mass of the current scan.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
             <xs:attribute name="totalIonCurrent" type="xs:double">

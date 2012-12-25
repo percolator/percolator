@@ -26,17 +26,17 @@ class SequestReader : public MzidentmlReader
 
 
   public:
-  
+
     SequestReader(ParseOptions *po);
     virtual ~SequestReader();
     bool checkValidity(const std::string &file);
     void addFeatureDescriptions(bool doEnzyme);
-    void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
-		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
+    void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
+		  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
 		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database );
-  
+
    protected :
-    
+
     static const std::map<string,int> sequestFeatures;
 };
 

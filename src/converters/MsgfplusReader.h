@@ -26,18 +26,18 @@ class MsfgplusReader : public MzidentmlReader
 
 
   public:
-  
+
     MsfgplusReader(ParseOptions *po);
-  
+
     virtual ~MsfgplusReader();
     bool checkValidity(const std::string &file);
     void addFeatureDescriptions(bool doEnzyme);
-    void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
-		  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge,
+    void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
+		  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
 		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database );
-  
+
   protected :
-    
+
     static const std::map<string,int> msgfplusFeatures;
     static const double neutron;
 };

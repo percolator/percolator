@@ -10,6 +10,8 @@ static string scheme_namespace = MZIDENTML_NAMESPACE;
 static string schema_major = boost::lexical_cast<string>(MZIDENTML_VERSION_MAJOR);
 static string schema_minor = boost::lexical_cast<string>(MZIDENTML_VERSION_MINOR);
 
+static double proton_mass = 1.00727663d;
+
 MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {
 
 }
@@ -49,7 +51,7 @@ bool MzidentmlReader::checkIsMeta(const std::string &file) {
   std::string line;
   getline(fileIn, line);
   fileIn.close();
-  //NOTE this is not the best way to check if it is meta for mzident 
+  //NOTE this is not the best way to check if it is meta for mzident
   if (line.find("<?xml") != std::string::npos) {
     isMeta = false;
   } else {
@@ -64,7 +66,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
 
   ifstream ifs;
   ifs.exceptions(ifstream::badbit | ifstream::failbit);
-  try 
+  try
   {
     ifs.open(fn.c_str());
     parser p;
@@ -102,12 +104,12 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   return;
 }
 
-void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database) 
+void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database)
 {
   namespace xml = xsd::cxx::xml;
   scanNumberMapType scanNumberMap;
   ifstream ifs;
-  try 
+  try
   {
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
@@ -157,18 +159,19 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 
     unsigned scanNumber = 0;
     for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr,
-            doc->getDocumentElement()->getTagName()); doc = p.next()) 
+            doc->getDocumentElement()->getTagName()); doc = p.next())
     {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       unsigned numberHitsSpectra = 0;
-      BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) 
+      BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem())
       {
 	if(++numberHitsSpectra <= po->hitsPerSpectrum)
 	{
 	  assert(item.experimentalMassToCharge());
-	  ::percolatorInNs::fragSpectrumScan::experimentalMassToCharge_type experimentalMassToCharge = item.experimentalMassToCharge();
-	  createPSM(item, experimentalMassToCharge, isDecoy, ++scanNumber, database);
+      int charge = item.chargeState();
+	  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass = item.experimentalMassToCharge()*charge - proton_mass*charge;
+	  createPSM(item, experimentalMass, isDecoy, ++scanNumber, database);
 	}
       }
 
@@ -176,8 +179,8 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 
     cleanHashMaps();
     ifs.close();
-  } 
-  catch (const xercesc::DOMException& e) 
+  }
+  catch (const xercesc::DOMException& e)
   {
     cleanHashMaps();
     ifs.close();
@@ -186,7 +189,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
     temp << "Error : xercesc_3_1::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
     throw MyException(temp.str());
-  } 
+  }
 
   return;
 }
