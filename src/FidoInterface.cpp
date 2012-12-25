@@ -743,7 +743,7 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
       y1 = x1 - empFDR[k];
       y2 = x2 - empFDR[k+1];
     }
-    else //if(estFDR[k] <= threshold)
+    else 
     {
       //empFDR is above threshold, penalize the area positive
       x1 = estFDR[k];
@@ -751,16 +751,6 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
       y1 = x1;
       y2 = x2;
     }
-    /* //NOTE trying to handle the case when few estFDR values are below
-     * threshold specially when those values are almots as high as threshold
-    /*else 
-    {
-      //estFDR is above threshold, penalize the area negative
-      x1 = empFDR[k];
-      x2 = empFDR[k+1];
-      y1 = (x1 * -1.0);
-      y2 = (x2 * -1.0);
-    }*/
     
     if( x1 != x2 && x2 != 0 && y2 != 0 ) //if there is an area
     {
