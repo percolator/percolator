@@ -85,8 +85,8 @@ void LogisticRegression::initg() {
     assert(isfinite(p));
     assert(isfinite(g[ix]));
   }
-  //#define OUTPUT_DEBUG_FILES
-#undef OUTPUT_DEBUG_FILES
+#define OUTPUT_DEBUG_FILES
+//#undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.bins", ios::out), xvalFile("xvals.bins", ios::out);
   ostream_iterator<double> xvalIt(xvalFile, "\n");

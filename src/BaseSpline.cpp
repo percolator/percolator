@@ -26,13 +26,6 @@
 
 using namespace std;
 
-#ifndef PERFORMANCE
-//#define PERFORMANCE
-clock_t start, finish;
-#define START start=clock();
-#define STOP(what) {finish=clock(); cout<< (finish - start) / 1000 << " ms: " << what <<  endl;}
-#endif
-
 class SplinePredictor {
     BaseSpline* bs;
   public:
@@ -46,6 +39,8 @@ class SplinePredictor {
 
 double BaseSpline::convergeEpsilon = 1e-4;
 double BaseSpline::stepEpsilon = 1e-8;
+double BaseSpline::weightSlope = 1e1;
+double BaseSpline::scaleAlpha = 1;
 
 double BaseSpline::splineEval(double xx) {
   xx = transf(xx);
@@ -84,45 +79,14 @@ double BaseSpline::splineEval(double xx) {
 
 static double tao = 2 / (1 + sqrt(5.0)); // inverse of golden section
 
-void BaseSpline::iterativeReweightedLeastSquares() {
-#ifdef PERFORMANCE
-  testPerformance();
-#endif
+void BaseSpline::roughnessPenaltyIRLS_Old() {
   Numerical epsilon = Numerical(1e-15);
   unsigned int n = x.size(), alphaIter = 0;
   initiateQR();
-  double alpha = .05, step = 0.0, cv = 1e100;
+  double alpha = .05, cv = 1e100;
   initg();
   do {
-    int iter = 0;
-    do {
-      g = gnew;
-      calcPZW();
-      PackedMatrix diag = PackedMatrix::packedDiagonalMatrix(PackedVector(n, 1) / w).packedMultiply(alpha);
-      PackedMatrix aWiQ = (diag).packedMultiply(Q);
-      PackedMatrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
-#ifdef PERFORMANCE
-      START
-#endif
-      gamma = Qt.packedMultiply(z);
-#ifdef PERFORMANCE
-      STOP("matrix-vector multiplication")
-#endif
-#ifdef PERFORMANCE
-      START
-#endif
-      solveInPlace(M,gamma);
-#ifdef PERFORMANCE
-      STOP("solving system")
-#endif
-      gnew = z.packedSubtract(aWiQ.packedMultiply(gamma));
-      limitg();
-      PackedVector difference = g.packedSubtract(gnew);
-      step = packedNorm(difference) / n;
-      if (VERB > 2) {
-        cerr << "step size:" << step << endl;
-      }
-    } while ((step > stepEpsilon || step < 0.0) && (++iter < 20));
+    iterativeReweightedLeastSquares(alpha);
     double p1 = 1 - tao;
     double p2 = tao;
     pair<double, double> res =
@@ -147,6 +111,47 @@ void BaseSpline::iterativeReweightedLeastSquares() {
   if (VERB > 2) {
     cerr << "Alpha selected to be " << alpha << endl;
   }
+  g = gnew;
+}
+
+void BaseSpline::roughnessPenaltyIRLS() {
+  Numerical epsilon = Numerical(1e-15);
+  initiateQR();
+  initg();
+  double p1 = 1 - tao;
+  double p2 = tao;
+  double alpha = alphaLinearSearchBA(0.0,
+                          1.0,
+                          p1,
+                          p2,
+                          evaluateSlope(-scaleAlpha*log(p1)),
+                          evaluateSlope(-scaleAlpha*log(p2)));
+  if (VERB > 2) {
+    cerr << "Alpha selected to be " << alpha << endl;
+  }
+  iterativeReweightedLeastSquares(alpha);
+}
+
+void BaseSpline::iterativeReweightedLeastSquares(double alpha) {
+  double step = 0.0;
+  int iter = 0;
+  unsigned int n = x.size();
+  do {
+    g = gnew;
+    calcPZW();
+    PackedMatrix diag = PackedMatrix::packedDiagonalMatrix(PackedVector(n, 1) / w).packedMultiply(alpha);
+    PackedMatrix aWiQ = (diag).packedMultiply(Q);
+    PackedMatrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
+    gamma = Qt.packedMultiply(z);
+    solveInPlace(M,gamma);
+    gnew = z.packedSubtract(aWiQ.packedMultiply(gamma));
+    limitg();
+    PackedVector difference = g.packedSubtract(gnew);
+    step = packedNorm(difference) / n;
+    if (VERB > 2) {
+      cerr << "step size:" << step << endl;
+    }
+  } while ((step > stepEpsilon || step < 0.0) && (++iter < 20));
   g = gnew;
 }
 
@@ -178,11 +183,47 @@ pair<double, double> BaseSpline::alphaLinearSearch(double min_p,
           << " taken in consideration" << endl;
     }
   }
-  if ((oldCV - min(cv1, cv2)) / oldCV < 1e-6 || (abs(p2 - p1) < 1e-10)) {
+  if ((oldCV - min(cv1, cv2)) / oldCV < 1e-3 || (abs(p2 - p1) < 1e-10)) {
     return (cv1 > cv2 ? make_pair(-log(p2), cv2)
         : make_pair(-log(p1), cv1));
   }
   return alphaLinearSearch(min_p, max_p, p1, p2, cv1, cv2);
+}
+
+double BaseSpline::alphaLinearSearchBA(double min_p,
+                                       double max_p,
+                                       double p1, double p2,
+                                       double cv1, double cv2) {
+  // Minimize Slope score
+  // Use neg log of 0<p<1 so that we allow for searches 0<alpha<inf
+  double oldCV = 0.0d;
+  if (cv2 < cv1) {
+    // keep point 2
+    min_p = p1;
+    p1 = p2;
+    p2 = min_p + tao * (max_p - min_p);
+    oldCV = cv1;
+    cv1 = cv2;
+    cv2 = evaluateSlope(-scaleAlpha*log(p2));
+    if (VERB > 3) {
+      cerr << "New point with alpha=" << -scaleAlpha*log(p2) << ", giving slopeScore=" << cv2 << endl;
+    }
+  } else {
+    // keep point 1
+    max_p = p2;
+    p2 = p1;
+    p1 = min_p + (1 - tao) * (max_p - min_p);
+    oldCV = cv2;
+    cv2 = cv1;
+    cv1 = evaluateSlope(-scaleAlpha*log(p1));
+    if (VERB > 3) {
+      cerr << "New point with alpha=" << -scaleAlpha*log(p1) << ", giving slopeScore=" << cv1 << endl;
+    }
+  }
+  if ((oldCV - min(cv1, cv2)) / oldCV < 1e-5 || (abs(p2 - p1) < 1e-10)) {
+    return (cv1 < cv2 ? -scaleAlpha*log(p1) : -scaleAlpha*log(p2));
+  }
+  return alphaLinearSearchBA(min_p, max_p, p1, p2, cv1, cv2);
 }
 
 void BaseSpline::initiateQR() {
@@ -216,6 +257,39 @@ void BaseSpline::initiateQR() {
   Qt = PackedMatrix(n-2,n);
   Qt = Qt.packedTranspose(Q);
 }
+
+double BaseSpline::evaluateSlope(double alpha) {
+  // Calculate a spline for current alpha
+  iterativeReweightedLeastSquares(alpha);
+  // Find highest point (we only want to evaluate things to the right of that point)
+  int n = g.numberEntries();
+  int mixg=1; // Ignore 0 and n-1
+  double maxg = g[mixg];
+  for (int ix=mixg;ix<n-1;++ix) {
+    assert(ix=g.index(ix)); //This should be a filled vector
+    if (g[ix]>=maxg) {
+      maxg = g[ix];
+      mixg = ix;
+    }
+  }
+  double maxSlope = -10e6;
+  int slopeix=-1;
+  for (int ix=mixg+1;ix<n-2; ++ix) {
+    double slope=g[ix-1]-g[ix];
+    if (slope>maxSlope) {
+      maxSlope = slope;
+      slopeix = ix;
+    }
+  }
+  // Now score the fit based on a linear combination between
+  // The bump area and alpha
+
+  if (VERB > 2) {
+    cerr << "mixg=" << mixg << ", maxg=" << maxg << ", maxBA=" << maxSlope << " at ix=" << slopeix << ", alpha=" << alpha << endl;
+  }
+  return maxSlope*weightSlope + alpha;
+}
+
 
 double BaseSpline::crossValidation(double alpha) {
   int n = R.numRows();
@@ -488,18 +562,10 @@ void BaseSpline::testPerformance(){
         M2[i].packedAddElement(j, 2 * i + j);
       }
     }
-    START
     M1.packedMultiply(s);
-    STOP("matrix-constant multiplication")
-    START
     M1.packedMultiply(v);
-    STOP("matrix-vector multiplication")
-    START
     M1.packedAdd(M2);
-    STOP("matrix-matrix addition")
-    START
     M1.packedMultiply(M2);
-    STOP("matrix-matrix multiplication")
     cout << endl;
   }
 }

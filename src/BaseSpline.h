@@ -33,7 +33,11 @@ class BaseSpline {
     double splineEval(double xx);
     static double convergeEpsilon;
     static double stepEpsilon;
-    void iterativeReweightedLeastSquares();
+    static double weightSlope;
+    static double scaleAlpha;
+    void roughnessPenaltyIRLS();
+    void roughnessPenaltyIRLS_Old();
+    void iterativeReweightedLeastSquares(double alpha);
     void predict(const vector<double>& x, vector<double>& predict);
     void setData(const vector<double>& x);
     double predict(double xx) {
@@ -41,9 +45,7 @@ class BaseSpline {
     }
     static void solveInPlace(PackedMatrix& mat, PackedVector& res);
   protected:
-    virtual void calcPZW() {
-      ;
-    }
+    virtual void calcPZW() {;}
     virtual void initg() {
       int n = x.size();
       g = PackedVector(n);
@@ -52,17 +54,17 @@ class BaseSpline {
       z = PackedVector(n,0.5);
       gamma = PackedVector(n-2);
     }
-    virtual void limitg() {
-      ;
-    }
-    virtual void limitgamma() {
-      ;
-    }
+    virtual void limitg() {;}
+    virtual void limitgamma() {;}
     void initiateQR();
     double crossValidation(double alpha);
+    double evaluateSlope(double alpha);
     pair<double, double> alphaLinearSearch(double min_p, double max_p,
                                            double p1, double p2,
                                            double cv1, double cv2);
+    double alphaLinearSearchBA(double min_p, double max_p,
+                               double p1, double p2,
+                               double cv1, double cv2);
     void testPerformance();
     Transform transf;
 

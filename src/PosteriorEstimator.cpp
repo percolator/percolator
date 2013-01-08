@@ -112,8 +112,8 @@ void PosteriorEstimator::estimatePEP(
       ++nDecoys;
     }
   lr.predict(xvals, peps);
-  //#define OUTPUT_DEBUG_FILES
-#undef OUTPUT_DEBUG_FILES
+#define OUTPUT_DEBUG_FILES
+//#undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
   ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
@@ -162,8 +162,6 @@ void PosteriorEstimator::estimatePEPGeneralized(
     }
   }
   lr.predict(xvals, peps);
-  //#define OUTPUT_DEBUG_FILES
-#undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
   ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
@@ -217,7 +215,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
   vector<unsigned int> negatives, sizes;
   binData(combined, medians, negatives, sizes);
   lr.setData(medians, negatives, sizes);
-  lr.iterativeReweightedLeastSquares();
+  lr.roughnessPenaltyIRLS();
   // restore sorting order
   if (!reversed) {
     reverse(combined.begin(), combined.end());
@@ -239,7 +237,7 @@ void PosteriorEstimator::finishStandalone(
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem)
   {
-    if (!includeNegativesInResult && elem->second) 
+    if (!includeNegativesInResult && elem->second)
     {
       xvals.push_back(elem->first);
     }
@@ -252,14 +250,14 @@ void PosteriorEstimator::finishStandalone(
   vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
   if (resultFileName.empty()) {
     cout << "Score\tPEP\tq-value" << endl;
-    for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+    for (; xval != xvals.end(); ++xval, ++pep, ++qv)
     {
       cout << *xval << "\t" << *pep << "\t" << *qv << endl;
     }
   } else {
     ofstream resultstream(resultFileName.c_str());
     resultstream << "Score\tPEP\tq-value" << endl;
-    for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+    for (; xval != xvals.end(); ++xval, ++pep, ++qv)
     {
       resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
     }
@@ -275,7 +273,7 @@ void PosteriorEstimator::finishStandaloneGeneralized(
 	vector<pair<double, bool> >::const_iterator elem = combined.begin();
 	for (; elem != combined.end(); ++elem)
 	{
-	  if (!includeNegativesInResult && elem->second) 
+	  if (!includeNegativesInResult && elem->second)
 	  {
 	    xvals.push_back(elem->first);
 	  }
@@ -288,14 +286,14 @@ void PosteriorEstimator::finishStandaloneGeneralized(
 	vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
 	if (resultFileName.empty()) {
 		cout << "Score\tPEP\tq-value" << endl;
-		for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+		for (; xval != xvals.end(); ++xval, ++pep, ++qv)
 		{
 			cout << *xval << "\t" << *pep << "\t" << *qv << endl;
 		}
 	} else {
 		ofstream resultstream(resultFileName.c_str());
 		resultstream << "Score\tPEP\tq-value" << endl;
-		for (; xval != xvals.end(); ++xval, ++pep, ++qv) 
+		for (; xval != xvals.end(); ++xval, ++pep, ++qv)
 		{
 			resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
 		}
@@ -387,7 +385,7 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double> & q) {
 	int nP = 0;
 	double sum = 0.0;
-	// assuming pep sorted in decending order ?? sure?? //TOFIX 
+	// assuming pep sorted in decending order ?? sure?? //TOFIX
 	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
 		sum += *myP;
 		q.push_back(sum / (double)nP);
@@ -525,7 +523,7 @@ int PosteriorEstimator::run() {
   if (reversed) // sorting in ascending order
   {
     sort(combined.begin(), combined.end());
-  } 
+  }
   else	// sorting in decending order
   {
     sort(combined.begin(), combined.end(), greater<pair<double, bool> > ());
@@ -538,21 +536,21 @@ int PosteriorEstimator::run() {
     estimatePEPGeneralized(combined, peps,includeNegativesInResult);
     finishStandaloneGeneralized(combined, peps);
     return true;
-  } 
-  
+  }
+
   double pi0 = estimatePi0(pvals);
   if(pi0 < 0) //NOTE there was an error
   {
     return 0;
   }
-  
+
   if (VERB > 1) {
     cerr << "Selecting pi_0=" << pi0 << endl;
   }
   // Logistic regression on the data
   estimatePEP(combined, pi0, peps,includeNegativesInResult);
   finishStandalone(combined, peps, pvals, pi0);
-  
+
   return true;
 }
 
@@ -621,7 +619,7 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "Include negative hits (decoy) probabilities in the results",
 		    "",
 		    TRUE_IF_SET);
-  
+
   cmd.parseArgs(argc, argv);
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
