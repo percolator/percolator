@@ -81,9 +81,10 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 
   push_backFeatureDescription("RawScore");
   push_backFeatureDescription("DeNovoScore");
-  push_backFeatureDescription("ScoreDiff");
-  push_backFeatureDescription("lnSpecEValue");
+  push_backFeatureDescription("ScoreRatio");
+  push_backFeatureDescription("Energy");
   push_backFeatureDescription("lnEValue");
+  push_backFeatureDescription("lnSpecEValue");
   //The below are from element userParam
   push_backFeatureDescription("IsotopeError");
   push_backFeatureDescription("lnExplainedIonCurrentRatio");
@@ -191,6 +192,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
+
     psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
 
@@ -251,12 +253,13 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     //The raw theoretical mass from MSGF+ is often of the wrong isotope
     double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
     //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
-         //Add a small number to some logged features to avoid log(0)
+    //Add a small number to some logged features to avoid log(0)
     f_seq.push_back(RawScore);
     f_seq.push_back(DeNovoScore);
-    f_seq.push_back(DeNovoScore - RawScore);  // Score difference (score ratio could become -inf)
-    f_seq.push_back(-log(SpecEValue));
+    f_seq.push_back(RawScore / (DeNovoScore+0.0001));  // ScoreRatio
+    f_seq.push_back(DeNovoScore - RawScore);  // Score difference, or Energy
     f_seq.push_back(-log(EValue));
+    f_seq.push_back(-log(SpecEValue));
     f_seq.push_back(IsotopeError);
     f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
     f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
