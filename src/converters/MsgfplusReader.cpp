@@ -309,7 +309,7 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	       << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
           throw MyException(errs.str());
         }
-        cerr <<  cv_ref.accession() << endl;
+        // cerr <<  cv_ref.accession() << endl;
         int mod_acc = boost::lexical_cast<int>(cv_ref.accession().substr(7));  // Only covert text after "UNIMOD:"
         int mod_loc = boost::lexical_cast<int>(mod_ref.location());
         std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(mod_acc, mod_loc));
