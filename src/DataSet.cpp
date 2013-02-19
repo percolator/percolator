@@ -176,7 +176,6 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
 // }
 
 void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
-  cerr << "Point 1" << endl;
   string tmp, line;
   is.clear();
   is.seekg(0, ios::beg);
@@ -184,7 +183,6 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
   getline(is, line);
   unsigned int m = 0, n = ixs.size();
   istringstream buff(line);
-  cerr << "Point 2" << endl;
   double a;
   buff >> tmp >> tmp; // remove id and label
   while (true) {
@@ -199,7 +197,7 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     }
     buff.clear();
   }
-  cerr << "Point 3" << endl;
+
   if (m < 1) {
     is.close();
     throw MyException("Error : Reading tab file, too few features present.");
@@ -207,34 +205,29 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
   if (calcDOC) {
     m -= 2;
   }
-  cerr << "Point 4" << endl;
+
   initFeatureTables((calcDOC ? m + DescriptionOfCorrect::numDOCFeatures(): m),calcDOC);
   if (calcDOC) {
     getFeatureNames().setDocFeatNum(m);
   }
   string seq;
-  cerr << "Point 5" << endl;
   is.clear();
   is.seekg(0, ios::beg);
   getline(is, line); // id line
   unsigned int ix = 0;
   getline(is, line);
-  cerr << "Point 6 (begin for and while loop)" << endl;
   for (unsigned int i = 0; i < n; i++) {
-    cerr << " For-loop, point 1" << endl;
     while (ix < ixs[i]) {
       getline(is, line);
       ix++;
     }
     PSMDescription  *myPsm = new PSMDescription();
     buff.str(line);
-    cerr << " For-loop, point 2" << endl;
     buff.clear();
     buff >> myPsm->id;
     buff >> tmp; // get rid of label
     double *featureRow = new double[m];
     myPsm->features = featureRow;
-    cerr << " For-loop, point 2" << endl;
     if (calcDOC) {
       buff >> myPsm->retentionTime;
       buff >> myPsm->massDiff;
@@ -242,7 +235,6 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     for (register unsigned int j = 0; j < m; j++) {
       buff >> featureRow[j];
     }
-    cerr << " For-loop, point 3" << endl;
     std::string peptide_seq = "";
     buff >> peptide_seq;
     cerr << peptide_seq << endl;
@@ -255,7 +247,6 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
       does not contain one or two of its flaking amino acids." << std::endl;
       throw MyException(temp.str());
     }
-    cerr << " For-loop, point 4" << endl;
     myPsm->peptide = peptide_seq;
 
     while (!!buff) {
@@ -264,17 +255,14 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
         myPsm->proteinIds.insert(tmp);
       }
     }
-    cerr << " For-loop, point 5" << endl;
     if (calcDOC) {
       DescriptionOfCorrect::calcRegressionFeature(*psms[i]);
       featureRow[m] = abs(psms[i]->pI - 6.5);
       featureRow[m + 1] = abs(psms[i]->massDiff);
       featureRow[m + 2] = 0;
     }
-    cerr << " For-loop, point 6" << endl;
     psms.push_back(myPsm);
     ++numSpectra;
-    cerr << " For-loop, point 7" << endl;
   }
 }
 
