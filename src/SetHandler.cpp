@@ -191,7 +191,9 @@ void SetHandler::readTab(const string& dataFN, const int setLabel) {
   }
   DataSet* theSet = new DataSet();
   theSet->setLabel(setLabel > 0 ? 1 : -1);
+  cerr << "Point readTabData" << endl;
   theSet->readTabData(dataStream, ixs);
+  cerr << "Point dataStream.close()" << endl;
   dataStream.close();
   subsets.push_back(theSet);
   setSet();

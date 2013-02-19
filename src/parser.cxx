@@ -21,6 +21,21 @@
 #include "parser.hxx"
 #include "Globals.h"
 
+
+#include <string>
+#include <memory>   // std::auto_ptr
+#include <cstddef>  // std::size_t
+
+#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/util/XercesVersion.hpp>
+
+#include <xercesc/sax/ErrorHandler.hpp>
+#include <xercesc/sax/SAXParseException.hpp>
+
+#include <xercesc/validators/common/Grammar.hpp>
+#include <xercesc/framework/XMLGrammarPoolImpl.hpp>
+
+
 using namespace std;
 using namespace xercesc;
 namespace xml = xsd::cxx::xml;
@@ -65,7 +80,7 @@ private:
   // SAX parser.
   //
   bool clean_;
-  auto_ptr<SAX2XMLReader> parser_;
+  //auto_ptr<SAX2XMLReader> parser_;
   XMLPScanToken token_;
   tree::error_handler<char> error_handler_;
   xml::sax::bits::error_handler_proxy<char> error_proxy_;
@@ -79,37 +94,100 @@ private:
   DOMImplementation& dom_impl_;
   xml::dom::auto_ptr<DOMDocument> doc_;
   DOMElement* cur_;
+   MemoryManager* mm_;// (XMLPlatformUtils::fgMemoryManager);
+    auto_ptr<XMLGrammarPool> gp_; // (new XMLGrammarPoolImpl (mm));
+ auto_ptr<SAX2XMLReader> parser_; // (create_parser (gp.get ()));
+
+
 };
 
+
+class error_handler: public ErrorHandler
+{
+public:
+  error_handler () : failed_ (false) {}
+
+  bool
+  failed () const { return failed_; }
+
+  enum severity {s_warning, s_error, s_fatal};
+
+  virtual void
+  warning (const SAXParseException&);
+
+  virtual void
+  error (const SAXParseException&);
+
+  virtual void
+  fatalError (const SAXParseException&);
+
+  virtual void
+  resetErrors () { failed_ = false; }
+
+  void
+  handle (const SAXParseException&, severity);
+
+private:
+  bool failed_;
+};
+
+
 const XMLCh ls[] = {chLatin_L, chLatin_S, chNull};
+
+
+auto_ptr<SAX2XMLReader>
+create_parser (XMLGrammarPool* pool)
+{
+  auto_ptr<SAX2XMLReader> parser (
+    pool
+    ? XMLReaderFactory::createXMLReader (XMLPlatformUtils::fgMemoryManager,
+                                         pool)
+    : XMLReaderFactory::createXMLReader ());
+
+  // Commonly useful configuration.
+  //
+  parser->setFeature (XMLUni::fgSAX2CoreNameSpaces, true);
+  parser->setFeature (XMLUni::fgSAX2CoreNameSpacePrefixes, true);
+  parser->setFeature (XMLUni::fgSAX2CoreValidation, true);
+
+  // Enable validation.
+  //
+  parser->setFeature (XMLUni::fgXercesSchema, true);
+  parser->setFeature (XMLUni::fgXercesSchemaFullChecking, true);
+  parser->setFeature (XMLUni::fgXercesValidationErrorAsFatal, true);
+
+  // Use the loaded grammar during parsing.
+  //
+  parser->setFeature (XMLUni::fgXercesUseCachedGrammarInParse, true);
+
+  // Don't load schemas from any other source (e.g., from XML document's
+  // xsi:schemaLocation attributes).
+  //
+  parser->setFeature (XMLUni::fgXercesLoadSchema, false);
+
+  // Xerces-C++ 3.1.0 is the first version with working multi import
+  // support.
+  //
+#if _XERCES_VERSION >= 30100
+  parser->setFeature (XMLUni::fgXercesHandleMultipleImports, true);
+#endif
+
+  return parser;
+}
+
+
 
 parser_impl::
 parser_impl ()
     : clean_ (true),
-      parser_ (XMLReaderFactory::createXMLReader ()),
+      mm_(XMLPlatformUtils::fgMemoryManager),
+      gp_(new XMLGrammarPoolImpl (mm_)),
       error_proxy_ (error_handler_),
       dom_impl_ (*DOMImplementationRegistry::getDOMImplementation (ls))
 {
-  parser_->setFeature (XMLUni::fgSAX2CoreNameSpaces, true);
-  parser_->setFeature (XMLUni::fgSAX2CoreNameSpacePrefixes, true);
-  parser_->setFeature (XMLUni::fgXercesValidationErrorAsFatal, true);
-  parser_->setFeature (XMLUni::fgXercesSchemaFullChecking, false);
 
-  // Xerces-C++ 3.1.0 is the first version with working multi import
-  // support. It also allows us to disable buffering in the parser
-  // so that the date is parsed and returned as soon as it is
-  // available.
-  //
-#if _XERCES_VERSION >= 30100
-  parser_->setFeature (XMLUni::fgXercesHandleMultipleImports, true);
-
-  XMLSize_t lwm = 0;
-  parser_->setProperty (XMLUni::fgXercesLowWaterMark, &lwm);
-#endif
-
-  parser_->setErrorHandler (&error_proxy_);
-  parser_->setContentHandler (this);
 }
+
 
 xml::dom::auto_ptr<DOMDocument> parser_impl::
 start (istream& is, const string& id, bool val, string schemaDefinition,
@@ -120,53 +198,59 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
   depth_ = 0;
   doc_.reset ();
   error_handler_.reset ();
-
   if (!clean_)
     parser_->parseReset (token_);
   else
     clean_ = false;
-
   isrc_.reset (new xml::sax::std_input_source (is, id));
 
-  parser_->setFeature (XMLUni::fgSAX2CoreValidation, val);
-  parser_->setFeature (XMLUni::fgXercesSchema, val);
+  int r (0);
 
-  // if local copy of the schema is available, use it for validation...
-  ifstream inp(schemaDefinition.c_str());
-  if(inp && val){
-    //NOTE this is horrible code and not generic
-    schemaNamespace.append(schema_major);
-    schemaNamespace.append(schema_minor);
-    schemaNamespace.append(" ");
-    string schemaLocation;
-    
-    if(noNameSpace)
+  while (true)
+  {
+    int i (1);
+
+    // Load the schemas into the grammar pool.
+    //
     {
-      schemaLocation = schemaDefinition;
+      auto_ptr<SAX2XMLReader> parser (create_parser (gp_.get ()));
+      error_handler eh;
+      parser->setErrorHandler (&eh);
+
+      string s (schemaDefinition);
+      size_t n (s.size ());
+
+      if (!parser->loadGrammar (s.c_str (), Grammar::SchemaGrammarType, true))
+      {
+        cerr << s << ": error: unable to load" << endl;
+        r = 1;
+        break;
+      }
+      if (eh.failed ())
+      {
+        r = 1;
+        break;
+      }
+
+      if (r != 0)
+        break;
     }
-    else
-    {
-      schemaLocation = schemaNamespace.append(schemaDefinition);
-    }
-    
-    XMLCh* propertyValue = XMLString::transcode(schemaLocation.c_str());
-    ArrayJanitor<XMLCh> janValue(propertyValue);
-    if(noNameSpace)
-    {
-      parser_->setProperty(XMLUni::fgXercesSchemaExternalNoNameSpaceSchemaLocation, propertyValue);
-    }
-    else
-    {
-      parser_->setProperty(XMLUni::fgXercesSchemaExternalSchemaLocation, propertyValue);
-    }
-  }
-  // ... otherwise send a warning
-  else {
-    cerr << "WARNING: no valid local xml schema is available to validate the input.\n";
-    cerr << "If further errors are encountered, please reinstall Percolator.\n";
-  }
-  
-  // Start parsing. The first document that we return is a "carcase"
+    // Lock the grammar pool. This is necessary if we plan to use the
+    // same grammar pool in multiple threads (this way we can reuse the
+    // same grammar in multiple parsers). Locking the pool disallows any
+    // modifications to the pool, such as an attempt by one of the threads
+    // to cache additional schemas.
+    //
+    gp_->lockPool ();
+
+    // Parse the XML documents.
+    //
+    parser_ =create_parser (gp_.get ());  
+    error_handler eh;
+    parser_->setErrorHandler (&eh);  
+    parser_->setContentHandler (this);
+
+  // Start parsing. The first document that we return is a "carcase"  
   // of the complete document. That is, the root element with all the
   // attributes but without any content.
   //
@@ -182,8 +266,55 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
   if (!r)
     return xml::dom::auto_ptr<DOMDocument> (0);
 
+      if (eh.failed ())
+      {
+        r = 1;
+        break;
+      }
+    break;
+  }
   return doc_;
 }
+
+
+void error_handler::
+warning (const SAXParseException& e)
+{
+  handle (e, s_warning);
+}
+
+void error_handler::
+error (const SAXParseException& e)
+{
+  failed_ = true;
+  handle (e, s_error);
+}
+
+void error_handler::
+fatalError (const SAXParseException& e)
+{
+  failed_ = true;
+  handle (e, s_fatal);
+}
+
+void error_handler::
+handle (const SAXParseException& e, severity s)
+{
+  const XMLCh* xid (e.getPublicId ());
+
+  if (xid == 0)
+    xid = e.getSystemId ();
+
+  char* id (XMLString::transcode (xid));
+  char* msg (XMLString::transcode (e.getMessage ()));
+
+  cerr << id << ":" << e.getLineNumber () << ":" << e.getColumnNumber ()
+       << " " << (s == s_warning ? "warning: " : "error: ") << msg << endl;
+
+  XMLString::release (&id);
+  XMLString::release (&msg);
+}
+
 
 xml::dom::auto_ptr<DOMDocument> parser_impl::
 next ( )
