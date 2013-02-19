@@ -113,7 +113,7 @@ void PosteriorEstimator::estimatePEP(
     }
   lr.predict(xvals, peps);
 #define OUTPUT_DEBUG_FILES
-//#undef OUTPUT_DEBUG_FILES
+#undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
   ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
