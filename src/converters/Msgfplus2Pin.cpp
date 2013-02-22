@@ -36,7 +36,7 @@ int Msgfplus2pin::run() {
   reader->init();
   reader->print(xmlOutputStream);
 
-  return true;
+  return 0;
 }
 int main(int argc, char** argv) {
 
