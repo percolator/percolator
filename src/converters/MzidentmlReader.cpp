@@ -164,6 +164,20 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       unsigned numberHitsSpectra = 0;
+
+      //Find scan number from the cvParam element in spetrumIdentificationResults
+      BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, specIdResult.cvParam()) {
+    	std::string param_name(cv.name().c_str());
+    	std::string expected_name("scan number(s)");
+    	if (param_name == expected_name) {
+    	  scanNumber = boost::lexical_cast<unsigned>(cv.value().get().c_str());
+    	}
+    	else {
+          std::cerr << "No scan number was found for a PSM, it was set to 999999" << std::endl;
+          scanNumber = 999999;
+    	}
+    }
+
       BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem())
       {
 	if(++numberHitsSpectra <= po->hitsPerSpectrum)
@@ -171,7 +185,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 	  assert(item.experimentalMassToCharge());
       int charge = item.chargeState();
 	  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass = item.experimentalMassToCharge()*charge - proton_mass*charge;
-	  createPSM(item, experimentalMass, isDecoy, ++scanNumber, database);
+	  createPSM(item, experimentalMass, isDecoy, scanNumber, database);
 	}
       }
 
