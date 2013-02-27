@@ -40,11 +40,11 @@ string Interface::extendedGreeter() {
 
 string Interface::greeter() {
   ostringstream oss;
-  oss << "\nsqt2pin version " << VERSION << ", ";
+  oss << "\nPin-converter version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Copyright (c) 2012 Lukas Käll. All rights reserved." << endl;
-  oss << "Written by Lukas Käll (lukask@cbr.su.se) in the" << endl;
-  oss << "Department of Biochemistry and Biophysics at the Stockholm University."
+  oss << "Copyright (c) 2013 Lukas Käll. All rights reserved." << endl;
+  oss << "Written by Lukas Käll (lukas.kall@scilifelab.se) in the" << endl;
+  oss << "School of Biotechnology at KTH - Royal Institute of Technology, Stockholm."
       << endl;
   return oss.str();
 }
@@ -71,7 +71,7 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
       "filename");
   cmd.defineOption("m",
       "matches",
-      "Maximal number of matches to take in consideration per spectrum when using sqt-files",
+      "Maximal number of matches to take in consideration per spectrum",
       "number");
   cmd.defineOption("v",
       "verbose",
