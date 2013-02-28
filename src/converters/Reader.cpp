@@ -805,7 +805,7 @@ void Reader::readRetentionTime(const std::string &filename)
   r.readFile(cstr, s);
   while(s.getScanNumber() != 0)
   {
-    // check whether an EZ lines is available
+    // check whether an EZ line is available
     if(s.sizeEZ() != 0)
     {
       // for each EZ line (each psm)
@@ -877,16 +877,24 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
               massDiff = abs(cm-em);
               // get corresponding retention time
               vector<double>::const_iterator r = rTimes->begin();
-              for(; r<rTimes->end(); r=r+2)
+
+              // Loop over alternatives EZ-lines, choose the one with the smallest mass difference
+              double altMassDiff = std::numeric_limits<double>::max();  // + infinity
+              for(; r<rTimes->end(); r=r+2)  // Loops over the EZ-line mh values (rounded to one or two decimals...)
 	      {
-                double rrr = *r;
-                double exm = psmIter_i->experimentalMass();
-                if(*r==psmIter_i->experimentalMass())
-		{
-                  storeMe = *(r+1);
-                  r = rTimes->end();
+                double rrr = *r;  //mass+h
+                double exm = psmIter_i->experimentalMass();  //actually masstocharge
+                //FIXME: as rrr is m+h and exm is m/z, this ugly fix loops through many charges
+                double rrr_mz;
+                for(int charge = 1; charge<7; charge++) {
+                  rrr_mz = (rrr + (charge-1)*1.007276466) / charge;
+                  if(abs(rrr_mz-exm) < altMassDiff) {
+                    altMassDiff = abs(rrr_mz-exm);
+                    storeMe = *(r+1);
+                  }
                 }
               }
+              r = rTimes->end();
             }
           }
         }
