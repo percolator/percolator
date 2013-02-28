@@ -222,10 +222,6 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	      case 3: EValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
 	    }
 	  }
-	  else
-	  {
-	    std::cerr << "Error  : an unmapped MS-GF+ parameter " << param_name << " was not found." << std::endl;
-	  }
 	}
     }
 

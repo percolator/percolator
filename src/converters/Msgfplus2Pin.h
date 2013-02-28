@@ -33,12 +33,14 @@ class Msgfplus2pin : public Interface {
 	{
 	  std::stringstream endnote;
 	  endnote << "Usage:" << endl;
-	  endnote << "   Msgfplus2pin [options] target.mzid decoy.mzid" << endl << endl;
-	  endnote << "Target.mzid [MSGF+] is the target MzIdentML-file, and decoy.mzid [MSGF+] is" << endl;
-	  endnote << "the decoy MzIdentML-file. Small data sets may be merged by replace the mzid-files with" << endl;
-	  endnote << "meta files. Meta files are text files containing the paths of mzid-files, one" << endl;
-	  endnote << "path per line. For successful result, the different runs should be generated" << endl;
-	  endnote << "under similar conditions." << endl;
+	  endnote << "   msgfplus2pin [options] target.mzid decoy.mzid" << endl << endl;
+	  endnote << "target.mzid and decoy.mzid are MzIdentML-files of MS-GF+ from" << endl;
+	  endnote << "separate target and decoy searches. Internal MS-GF+ target/decoy" << endl;
+	  endnote << "analysis should be turned off, and the addFeatures options turned on." << endl;
+	  endnote << "Multiple MzIdentML-files can be merged by replacing target and decoy" << endl;
+	  endnote << "filepaths with meta files. Meta files are text files containing the" << endl;
+	  endnote << "the paths of mzid-files, one path per line. For successful results," << endl;
+	  endnote << "the different runs should be generated under similar conditions." << endl;
 	  return endnote.str();
 	}
 	int run();
