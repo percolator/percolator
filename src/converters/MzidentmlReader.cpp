@@ -10,7 +10,7 @@ static string scheme_namespace = MZIDENTML_NAMESPACE;
 static string schema_major = boost::lexical_cast<string>(MZIDENTML_VERSION_MAJOR);
 static string schema_minor = boost::lexical_cast<string>(MZIDENTML_VERSION_MINOR);
 
-static double proton_mass = 1.00727663d;
+static double proton_mass = 1.00727663;
 
 MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {
 
