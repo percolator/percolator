@@ -19,6 +19,12 @@ else(XERCESC_FOUND)
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
+if(APPLE)
+  find_package(CURL REQUIRED) # XERCESC depends on curl
+  target_link_libraries( CURL_LIBRARIES)
+endif(APPLE)
+
+
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
@@ -28,6 +34,11 @@ endif(XSD_FOUND)
 include_directories(${XSD_INCLUDE_DIR})
 
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
+if(Boost_FOUND)
+  message(STATUS "Package Boost found at: ${Boost_INCLUDE_DIRS}")
+else(Boost_FOUND)
+  message(FATAL_ERROR "Boost has not been found")
+endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
@@ -100,7 +111,7 @@ if(APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
   set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
 elseif(MINGW OR WIN32)
-  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc")
+  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl -Bstatic -static-libgcc -lcurl")
 endif()
 
 if(PROFILING AND UNIX)

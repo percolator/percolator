@@ -196,7 +196,7 @@ double BaseSpline::alphaLinearSearchBA(double min_p,
                                        double cv1, double cv2) {
   // Minimize Slope score
   // Use neg log of 0<p<1 so that we allow for searches 0<alpha<inf
-  double oldCV = 0.0d;
+  double oldCV = 0.0;
   if (cv2 < cv1) {
     // keep point 2
     min_p = p1;

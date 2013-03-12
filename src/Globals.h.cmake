@@ -96,9 +96,9 @@ limitations under the License.
   #ifdef __INTEL_COMPILER
     #define isnan(x) _isnan(x)
     #define isinf(x) _isinf(x)
-  #else
-    #define isinf(x) std::isinf(x)
-    #define isnan(x) std::isnan(x)
+//  #else
+//    #define isinf(x) std::isinf(x)
+//    #define isnan(x) x!=x
   #endif
 #endif
 

@@ -200,7 +200,7 @@ double ProteinProbEstimator::estimatePriors()
       {
 	unsigned index = std::distance(psm->pPSM->proteinIds.begin(), protIt);
 	tmp_prior = (tmp_prior * prior_protein * (size - index)) / (index + 1);
-	prior +=  pow(-1,index) * tmp_prior;
+	prior +=  pow(-1.0,(int)index) * tmp_prior;
       }
       /* update computed prior */
       prior_peptide += prior;
