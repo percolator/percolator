@@ -157,26 +157,36 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
 
-    unsigned scanNumber;
+    unsigned scanNumber = 0;
+    bool useRankedScanNumbers = false;  	/* True scan numbers are used,
+    										if they can't be found, use ranked scan numbers from 1 and up. */
     for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr,
-            doc->getDocumentElement()->getTagName()); doc = p.next())
-    {
+            doc->getDocumentElement()->getTagName()); doc = p.next()) {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       unsigned numberHitsSpectra = 0;
 
       //Find scan number from the cvParam element in spetrumIdentificationResults
-      scanNumber = 0;
-      BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, specIdResult.cvParam()) {
-    	std::string param_name(cv.name().c_str());
-    	std::string expected_name("scan number(s)");
-    	if (param_name == expected_name) {
-    	  scanNumber = boost::lexical_cast<unsigned>(cv.value().get().c_str());
-    	}
+      if(!useRankedScanNumbers) {
+    	  bool foundScanNumber = false;  // Indicates whether a proper scan number was found
+    	  BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, specIdResult.cvParam()) {
+    		  std::string param_name(cv.name().c_str());
+    		  std::string expected_name("scan number(s)");
+    		  if (param_name == expected_name) {
+    			  scanNumber = boost::lexical_cast<unsigned>(cv.value().get().c_str());
+    			  foundScanNumber = true;
+    		  }
+    	  }
+    	  if(!foundScanNumber || scanNumber == 0) {
+    		  std::cerr << "No scan number was found for a PSM (or it equaled 0), scans are ranked from 1 and up" << std::endl;
+    		  useRankedScanNumbers = true;
+    	  }
       }
-      if (scanNumber == 0) {
-      	 std::cerr << "No scan number was found for a PSM, it was set to 0" << std::endl;
+      // If no scan numbers were found, or a scan of 0 was found, just rank them
+      if(useRankedScanNumbers) {
+    	  ++scanNumber;
       }
+
 
       BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem())
       {
