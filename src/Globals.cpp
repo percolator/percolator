@@ -32,7 +32,6 @@ Globals::~Globals() {
 Globals::Globals() {
   glob = this;
   verbose = 2;
-  timeCheckPoint = false;
   fileLog = std::string("");
   log = 0;
   buffer_redirected = false;
@@ -73,15 +72,6 @@ void Globals::setLogFile(const std::string& filename) {
   }
   log->attach_file(filename.c_str());
   fileLog = filename;
-}
-
-void Globals::checkTime(const std::string& message){
-  if(timeCheckPoint){
-    clock_t current = clock();
-    std::cerr << "time required to " << message << ": " <<
-        (current-checkTimeClock)/1000000 << " sec\n";
-    checkTimeClock = clock(); // reset
-  }
 }
 
 int Globals::redirectBuffer()
