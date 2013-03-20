@@ -19,10 +19,9 @@ else(XERCESC_FOUND)
 endif(XERCESC_FOUND)
 include_directories(${XERCESC_INCLUDE_DIR})
 
-if(APPLE)
+if(APPLE OR MINGW)
   find_package(CURL REQUIRED) # XERCESC depends on curl
-  target_link_libraries( CURL_LIBRARIES)
-endif(APPLE)
+endif()
 
 
 find_package(Xsd REQUIRED) # CODESYNTHESIS
@@ -111,7 +110,8 @@ if(APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
   set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
 elseif(MINGW OR WIN32)
-  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl -Bstatic -static-libgcc -lcurl")
+#  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
+  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
 endif()
 
 if(PROFILING AND UNIX)
@@ -125,7 +125,7 @@ if(PROFILING AND UNIX)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
  
 # INSTALL PERCOLATOR
 IF(NOT MINGW AND NOT WIN32)

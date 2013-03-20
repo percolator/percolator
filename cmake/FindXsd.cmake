@@ -14,7 +14,8 @@ PATHS
 PATH_SUFFIXES
   include
   libxsd
-  xsd 
+  xsd
+  NO_CMAKE_FIND_ROOT_PATH
 )
 
 FIND_PROGRAM(XSD_EXECUTABLE 

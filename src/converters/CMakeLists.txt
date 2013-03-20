@@ -329,15 +329,14 @@ target_link_libraries(sequest2pin converters perclibrary_part MSToolkit )
 
 IF(MINGW OR WIN32)
   set_property(TARGET msgfplus2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(msgfplus2pin PROPERTIES LINK_FLAGS "-static-libgcc")
+  set_target_properties(msgfplus2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-static-libgcc")
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
   set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-static-libgcc")
+  set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
   set_property(TARGET sequest2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(sequest2pin PROPERTIES LINK_FLAGS "-static-libgcc")
+  set_target_properties(sequest2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
 ENDIF()
-
 
 if(PROFILING AND UNIX)
   set_target_properties(msgfplus2pin PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
@@ -370,70 +369,70 @@ IF(MINGW)
 
   file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin")
 
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_serialization*.dll")
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libxerces-c*.dll")
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libgcc_s_sjlj*.dll")
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libstdc++*.dll")
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libsqlite3*.dll")    
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_system*.dll")         
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_filesystem*.dll")          
-  file(COPY "${MING_PATH}/bin/"
+  file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libz*.dll")
 
   if(LEVELDB)
   
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_interprocess*.dlll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_date_time*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "boost_thread*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libleveldb*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libportablexdr*.dll")
 
   elseif(TOKYODB)
   
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "zlib*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libtokyocabinet*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "pthreadGC2*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libgnurx*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "glob*.dll")
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libportablexdr*.dll")    
-    file(COPY "${MING_PATH}/bin/"
+    file(COPY "${MINGW_PATH}/bin/"
              DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
              FILES_MATCHING PATTERN "libbz*.dll")
              
