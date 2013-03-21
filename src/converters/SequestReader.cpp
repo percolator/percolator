@@ -118,7 +118,8 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
 
 void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
         ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
-        bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database) {
+        bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
+        const std::string & fn) {
 
   std::auto_ptr< percolatorInNs::features > features_p(new percolatorInNs::features());
   percolatorInNs::features::feature_sequence & f_seq = features_p->feature();

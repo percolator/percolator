@@ -195,7 +195,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 	  assert(item.experimentalMassToCharge());
       int charge = item.chargeState();
 	  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass = item.experimentalMassToCharge()*charge - proton_mass*charge;
-	  createPSM(item, experimentalMass, isDecoy, scanNumber, database);
+	  createPSM(item, experimentalMass, isDecoy, scanNumber, database, fn);
 	}
       }
 

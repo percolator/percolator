@@ -33,7 +33,8 @@ class SequestReader : public MzidentmlReader
     void addFeatureDescriptions(bool doEnzyme);
     void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
 		  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
-		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database );
+		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
+		   const std::string & fn);
 
    protected :
 
