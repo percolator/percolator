@@ -126,7 +126,8 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 
 void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
         ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
-        bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database) {
+        bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
+        const std::string &fn) {
 
   std::auto_ptr< percolatorInNs::features > features_p(new percolatorInNs::features());
   percolatorInNs::features::feature_sequence & f_seq = features_p->feature();
@@ -193,7 +194,24 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
 
-    psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
+    // Old psmid, didn't include filename
+    //psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
+    //        boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
+
+    // Make a PSM id, from filename, item_id, scan_number, charge and rank (perhaps a bit long...)
+    std::string fileId = fn;
+    size_t spos = fileId.rfind('/');
+    if (spos != std::string::npos)
+    {
+      fileId.erase(0, spos + 1);
+    }
+    spos = fileId.find('.');
+    if (spos != std::string::npos)
+    {
+      fileId.erase(spos);
+    }
+    std::string psmid = fileId + "_" + boost::lexical_cast<string > (item.id()) + "_" +
+    		boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
 
     double RawScore = 0.0;
