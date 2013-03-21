@@ -40,19 +40,25 @@ if("${SERIALIZE}" STREQUAL "LevelDB")
   message( STATUS "Using LevelDB Serialization scheme")
   add_definitions(-D__LEVELDB__)
   set(LEVELDB TRUE)
+  set(SERDB "Level")
 elseif("${SERIALIZE}" STREQUAL "Boost")
   message( STATUS "Using Boost Serialization scheme")
   add_definitions(-D__BOOSTDB__)
   set(BOOSTDB TRUE)
+  set(SERDB "Boost")
 elseif("${SERIALIZE}" STREQUAL "TokyoCabinet")
   message( STATUS "Using Tokyo Cabinet Serialization scheme")
   add_definitions(-D__TOKYODB__)
   set(TOKYODB TRUE)
+  set(SERDB "Tokyo")
 else()
   message( STATUS "Using default Serialization scheme : Boost Serialization scheme")
   add_definitions(-D__BOOSTDB__)
   set(BOOSTDB TRUE)
+  set(SERDB "Boost")
 endif()
+
+
 
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
@@ -199,33 +205,37 @@ endif()
 ###############################################################################
 
 if(BOOSTDB AND NOT TOKYODB AND NOT LEVELDB)
-  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx 
-       --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive )
+  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive )
 else()
   set( xdr_flags --generate-insertion XDR --generate-extraction XDR  )
 endif()
 
+
+message(STATUS "Generating classes from xsd-schema using CodeSynthesis")
 # RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
-set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
+set(perc_in_xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 set(percolator_in xml/percolator_in.xsd)
 add_custom_command(
-  OUTPUT ${xsdfiles_in}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  
+  OUTPUT ${perc_in_xsdfiles}   
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags} --root-element-all  
   --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 # RUN CODESYNTHESIS TO GENERATE xsdfiles for pout (percolator output)
-set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
+set(perc_out_xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
 set(percolator_out xml/percolator_out.xsd)
 add_custom_command(
-  OUTPUT ${xsdfiles_out}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  
+  OUTPUT ${perc_out_xsdfiles}   
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags} --root-element-all  
   --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+ADD_CUSTOM_TARGET(generate_perc_xsdfiles DEPENDS ${perc_in_xsdfiles} ${perc_out_xsdfiles})
+
 
 # RUN CODESYNTHESIS on mzIdentML1.1.0.xsd
 set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.hxx )
@@ -241,6 +251,7 @@ add_custom_command(
 # RUN CODESYNTHESIS on gaml_tandem.xsd
 set(gaml_tandemxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/gaml_tandem1.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/gaml_tandem1.0.hxx )
 set(gaml_tandem_in xml/gaml_tandem1.0.xsd)
+message(STATUS "Generating ${gaml_tandemxsdfiles}")
 add_custom_command(
   OUTPUT ${gaml_tandemxsdfiles}  
   COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
@@ -248,6 +259,7 @@ add_custom_command(
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${gaml_tandem_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
 
 # RUN CODESYNTHESIS on tandem.xsd
 set(tandemxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/tandem2011.12.01.1.cxx ${CMAKE_CURRENT_BINARY_DIR}/tandem2011.12.01.1.hxx )
@@ -262,7 +274,7 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-foreach( i ${xsdfiles_in} ${xsdfiles_out} ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles})
+foreach( i ${perc_in_xsdfiles} ${perc_out_xsdfiles} ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles})
   set_source_files_properties( ${i} PROPERTIES GENERATED true)
 endforeach()
 
@@ -278,27 +290,22 @@ include_directories(MSToolkit/RAMP MSToolkit )
 # include and link code from percolator
 include_directories(${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
-add_library(perclibrary_part STATIC ${xsdfiles_in} ${xsdfiles_out} 
+add_library(perclibrary_part STATIC ${perc_in_xsdfiles} ${perc_out_xsdfiles} 
 	    ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp ../MyException.cpp)
 
 # compile converter base files
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-if(LEVELDB)
-  add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
+
+message( STATUS "Using FragSpectrumScanDatabase${SERDB}db.cpp")
+add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
 	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp 
-	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabaseLeveldb.cpp)
-elseif(TOKYODB)
-  add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp 
-	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabaseTokyodb.cpp)
-elseif(BOOSTDB)
-  add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp
-	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabaseBoostdb.cpp)
-endif()
+	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabase${SERDB}db.cpp)
+
+ADD_DEPENDENCIES(converters generate_perc_xsdfiles)
 
 target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+
 if(MINGW)
   if(LEVELDB)
     target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${LDB_LIBRARIES})
@@ -328,13 +335,13 @@ target_link_libraries(tandem2pin converters perclibrary_part MSToolkit )
 target_link_libraries(sequest2pin converters perclibrary_part MSToolkit )
 
 IF(MINGW OR WIN32)
-  set_property(TARGET msgfplus2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+#  set_property(TARGET msgfplus2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(msgfplus2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+#  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+#  set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_property(TARGET sequest2pin PROPERTY LINK_SEARCH_END_STATIC ON)
+#  set_property(TARGET sequest2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(sequest2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
 ENDIF()
 
