@@ -139,9 +139,6 @@ class Globals {
     void incVerbose() {
       verbose++;
     }
-    clock_t checkTimeClock;
-    bool timeCheckPoint;
-    void checkTime(const std::string& message);
     void setLogFile(const std::string& filename);
     void initLogger();
     int redirectBuffer();

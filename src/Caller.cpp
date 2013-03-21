@@ -277,16 +277,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "skip validation of input file against xml schema.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("c",
-      "clock",
-      "check time performance",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("M",
-      "exp-mass",
-      "include the experimental mass in the output file",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("A",
       "protein",
       "output protein level probabilities",
@@ -517,16 +507,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("s")) {
     schemaValidation = false;
   }
-  if (cmd.optionSet("c")) {
-    Globals* g = Globals::getInstance();
-    g->timeCheckPoint = true;
-    g->checkTimeClock = clock();
-  }
-  if (cmd.optionSet("M"))
-  {
-    showExpMass = true;
-    Scores::setShowExpMass(showExpMass);
-  }
+  showExpMass = true;
+  Scores::setShowExpMass(showExpMass);
   if (cmd.optionSet("Y")) {
     target_decoy_competition = true; 
   }
@@ -1141,7 +1123,6 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     }
   }
   
-  Globals::getInstance()->checkTime("merge sets");
   if (VERB > 0 && writeOutput) {
     std:cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
   }
@@ -1149,9 +1130,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     cerr << "Calibrating statistics - calculating q values" << endl;
   }
   int foundPSMs = fullset->calcQ(test_fdr);
-  Globals::getInstance()->checkTime("calculate q-values");
   fullset->calcPep();
-  Globals::getInstance()->checkTime("calculate PEP values");
   if (VERB > 0 && docFeatures && writeOutput) {
     cerr << "For the cross validation sets the average deltaMass are ";
     for (size_t ix = 0; ix < xv_test.size(); ix++) {
@@ -1302,7 +1281,6 @@ int Caller::run() {
   if(readStdIn){
     remove(xmlInputFN.c_str());
   }
-  Globals::getInstance()->checkTime("read input");
   if(VERB > 2){
     std::cerr << "FeatureNames::getNumFeatures(): "<< FeatureNames::getNumFeatures() << endl;
   }
@@ -1339,7 +1317,6 @@ int Caller::run() {
   if (!pCheck->validateDirection(w)) {
     fullset.calcScores(w[0]);
   }
-  Globals::getInstance()->checkTime("train");
   if (VERB > 0) {
     cerr << "Merging results from " << xv_test.size() << " datasets"
         << endl;
