@@ -236,7 +236,7 @@ Function PageLeaveReinstall
       ExecWait '$R1 _?=$INSTDIR'
       IfErrors no_remove_uninstaller
       IfFileExists "$INSTDIR\sqt2pin.exe" no_remove_uninstaller
-      IfFileExists "$INSTDIR\mzidentml2pin.exe" no_remove_uninstaller
+      IfFileExists "$INSTDIR\msgfplus2pin.exe" no_remove_uninstaller
       Delete $R1
       RMDir $INSTDIR
    no_remove_uninstaller:
@@ -255,7 +255,9 @@ Section "MainSection" SEC01
    SetDetailsPrint listonly
    SetOutPath "$INSTDIR"
    File "${BUILD_PATH}\sqt2pin.exe"
-   File "${BUILD_PATH}\mzidentml2pin.exe"
+   File "${BUILD_PATH}\msgfplus2pin.exe"
+   File "${NSI_PATH}\percolator.ico"
+   ;MINGW
    File "${BUILD_PATH}\\nsi_bin\\*.*" 
 
    ;License & release notes.
@@ -273,7 +275,7 @@ Section "Start Menu Program Group" SEC_START_MENU
   RMDir /r "$SMPROGRAMS\Converters"
   CreateDirectory "$SMPROGRAMS\Converters"
   CreateShortCut "$SMPROGRAMS\Converters\Sqt2pin.lnk" "$INSTDIR\Sqt2pin.exe"
-  CreateShortCut "$SMPROGRAMS\Converters\mzidentml2pin.lnk" "$INSTDIR\mzidentml2pin.exe"
+  CreateShortCut "$SMPROGRAMS\Converters\msgfplus2pin.lnk" "$INSTDIR\msgfplus2pin.exe"
   CreateShortCut "$SMPROGRAMS\Converters\Uninstall.lnk" "$INSTDIR\uninstall.exe"
   SetShellVarContext current
 SectionEnd
@@ -284,7 +286,7 @@ Section "Desktop Shortcut" SEC_DESKTOP
       DetailPrint "Creating Desktop Shortcuts"
       SetDetailsPrint listonly
       CreateShortCut "$DESKTOP\Sqt2pin.lnk" "$INSTDIR\Sqt2pin.exe"
-      CreateShortCut "$DESKTOP\mzidentml2pin.lnk" "$INSTDIR\mzidentml2pin.exe"
+      CreateShortCut "$DESKTOP\msgfplus2pin.lnk" "$INSTDIR\msgfplus2pin.exe"
 SectionEnd
 
 Section -AdditionalIcons
@@ -339,10 +341,10 @@ Section -Post
    ; Register Converters:// protocol handler
    WriteRegStr HKCR "Converters" "" "URL: Converters Protocol"
    WriteRegStr HKCR "Converters\DefaultIcon" "" $INSTDIR\Sqt2pin.exe,1
-   WriteRegStr HKCR "Converters\DefaultIcon" "" $INSTDIR\mzidentml2pin.exe,1
+   WriteRegStr HKCR "Converters\DefaultIcon" "" $INSTDIR\msgfplus2pin.exe,1
    WriteRegStr HKCR "Converters\shell" "" "open"
    WriteRegStr HKCR "Converters\shell\open\command" "" "$INSTDIR\Sqt2pin.exe %1"
-   WriteRegStr HKCR "Converters\shell\open\command" "" "$INSTDIR\mzidentml2pin.exe %1"
+   WriteRegStr HKCR "Converters\shell\open\command" "" "$INSTDIR\msgfplus2pin.exe %1"
 
    SetDetailsPrint textonly
    DetailPrint "Finsihed."
@@ -389,7 +391,7 @@ Function un.UnPageUserAppDataLeave
 FunctionEnd
 
 Section Uninstall
-   IfFileExists "$INSTDIR\mzidentml2pin.exe" percolator_installed
+   IfFileExists "$INSTDIR\msgfplus2pin.exe" percolator_installed
       MessageBox MB_YESNO "It does not appear that Converters is installed in the directory '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" IDYES percolator_installed
       Abort "Uninstall aborted by user"
    percolator_installed:
@@ -414,16 +416,16 @@ Section Uninstall
 
    ;Desktop shortcut.
    !ifdef OPTION_SECTION_SC_DESKTOP
-      IfFileExists "$DESKTOP\mzidentml2pin.lnk" 0 +2
-         Delete "$DESKTOP\mzidentml2pin.lnk"
+      IfFileExists "$DESKTOP\msgfplus2pin.lnk" 0 +2
+         Delete "$DESKTOP\msgfplus2pin.lnk"
       IfFileExists "$DESKTOP\Sqt2pin.lnk" 0 +2
          Delete "$DESKTOP\Sqt2pin.lnk"
    !endif
 
    ;Quick Launch shortcut.
    !ifdef OPTION_SECTION_SC_QUICK_LAUNCH
-      IfFileExists "$QUICKLAUNCH\mzidentml2pin.lnk" 0 +2
-         Delete "$QUICKLAUNCH\mzidentml2pin.lnk"
+      IfFileExists "$QUICKLAUNCH\msgfplus2pin.lnk" 0 +2
+         Delete "$QUICKLAUNCH\msgfplus2pin.lnk"
       IfFileExists "$QUICKLAUNCH\Sqt2pin.lnk" 0 +2
          Delete "$QUICKLAUNCH\Sqt2pin.lnk"
    !endif
