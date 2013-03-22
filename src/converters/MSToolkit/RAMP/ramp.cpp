@@ -53,7 +53,8 @@
 #include <inttypes.h>
 #else
 // local copies of stuff in TPP's sysdepend.h, and empty macro versions of some stuff as well
-#ifdef _MSC_VER
+#ifdef WIN32
+ //ifdef _MSC_VER
 typedef unsigned long uint32_t;
 typedef unsigned __int64 uint64_t;
 #define S_ISDIR(mode) ((mode)&_S_IFDIR)
