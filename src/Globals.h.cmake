@@ -30,6 +30,15 @@ limitations under the License.
   #define VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
 #endif
 
+#ifndef VERSION_NAME
+  #define VERSION_NAME "v@CPACK_PACKAGE_VERSION_MAJOR@-@CPACK_PACKAGE_VERSION_MINOR@"
+#endif
+
+#ifndef LVERSION_NAME
+  #define LVERSION_NAME L"v@CPACK_PACKAGE_VERSION_MAJOR@-@CPACK_PACKAGE_VERSION_MINOR@"
+#endif
+
+
 #ifndef PIN_VERSION_MAJOR
   #define PIN_VERSION_MAJOR @PIN_VERSION_MAJOR@
 #endif
@@ -148,7 +157,7 @@ class Globals {
     void initLogger();
     int redirectBuffer();
     void unredirectBuffer();
-    
+    const std::string getXMLDir();    
   private:
     Globals();
     int verbose;

@@ -125,7 +125,7 @@ add_subdirectory(data/system_tests/)
 if(APPLE)
   install(TARGETS elude EXPORT ELUDE DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!
 else(APPLE)
-  install(TARGETS elude EXPORT ELUDE DESTINATION ./bin)
+  install(TARGETS elude EXPORT ELUDE DESTINATION bin)
 endif(APPLE)
 
 
