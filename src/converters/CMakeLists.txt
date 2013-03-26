@@ -70,16 +70,17 @@ get_arch("${TARGET_ARCH}")
 
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(MINGW OR WIN32) # windows
-  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
-  set(MZIDENTML_SCHEMA_LOCATION "${WRITABLE_DIR}xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
-  set(GAML_TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-gaml_tandem-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}\\\\")
-  set(TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-tandem-${TANDEM_VERSION}\\\\")
+#  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
+  set(WRITABLE_DIR "xml/")
+  set(MZIDENTML_SCHEMA_LOCATION "xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
+  set(GAML_TANDEM_SCHEMA_LOCATION "xml-gaml_tandem-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}\\\\")
+  set(TANDEM_SCHEMA_LOCATION "xml-tandem-${TANDEM_VERSION}\\\\")
   add_definitions(-D_WIN32)
 else() # linux
   set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/converters/")
-  set(MZIDENTML_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}/")
-  set(GAML_TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${TANDEM_VERSION}/")
-  set(TANDEM_SCHEMA_LOCATION "${WRITABLE_DIR}xml-${TANDEM_VERSION}/")
+  set(MZIDENTML_SCHEMA_LOCATION "xml-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}/")
+  set(GAML_TANDEM_SCHEMA_LOCATION "xml-${TANDEM_VERSION}/")
+  set(TANDEM_SCHEMA_LOCATION "xml-${TANDEM_VERSION}/")
 endif()
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
@@ -372,79 +373,6 @@ endif(APPLE)
 
 
 #necessary dlls for the windows exe
-IF(MINGW)
-
-  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin")
-
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_serialization*.dll")
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libxerces-c*.dll")
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libgcc_s_sjlj*.dll")
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libstdc++*.dll")
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libsqlite3*.dll")    
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_system*.dll")         
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_filesystem*.dll")          
-  file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libz*.dll")
-
-  if(LEVELDB)
-  
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_interprocess*.dlll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_date_time*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "boost_thread*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libleveldb*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libportablexdr*.dll")
-
-  elseif(TOKYODB)
-  
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "zlib*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libtokyocabinet*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "pthreadGC2*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libgnurx*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "glob*.dll")
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libportablexdr*.dll")    
-    file(COPY "${MINGW_PATH}/bin/"
-             DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/nsi_bin/"
-             FILES_MATCHING PATTERN "libbz*.dll")
-             
-  endif()
-endif()
 ###############################################################################
 # TESTING
 ###############################################################################
@@ -459,28 +387,31 @@ add_subdirectory(data/system_tests/converters)
 # INSTALLING
 ###############################################################################
 
-IF(NOT MINGW)
-  if(APPLE)
+
+
+if(APPLE)
     install(TARGETS msgfplus2pin EXPORT msgfplus2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
     install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
     install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
     install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-  else(APPLE)
-    install(TARGETS msgfplus2pin EXPORT msgfplus2pin  DESTINATION ./bin)
-    install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin)
-    install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION ./bin)
-    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION ./bin)
-  endif(APPLE)
+else(APPLE)
+    install(TARGETS msgfplus2pin EXPORT msgfplus2pin  DESTINATION bin)
+    install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION bin)
+    install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION bin)
+    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION bin)
+endif(APPLE)
   
-  install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-  install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-  install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-elseif(MINGW)
-  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" COMMAND makensis 
-		      "${PERCOLATOR_SOURCE_DIR}/cmake/windows_converter/script_converters.nsi" DEPENDS sqt2pin mzidentml2pin tandem2pin msgfdb2pin) 
-  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/converters-${PACKAGE_VERSION}-win32.exe" )
-endif()
-  
+install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${WRITABLE_DIR}/${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${WRITABLE_DIR}/${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${WRITABLE_DIR}/${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+
+
+if( MINGW )
+    message( STATUS "    Installing system-libraries: MinGW DLLs." )
+    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll ${MINGW_PATH}/bin/libboost_serialization.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll  )
+    include( InstallRequiredSystemLibraries )
+endif( MINGW )
+
 
 ###############################################################################
 # PACKAGING

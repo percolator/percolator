@@ -5,7 +5,7 @@ static const XMLCh sequenceCollectionStr[] = {chLatin_S, chLatin_e, chLatin_q, c
   chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull};
 
 
-static string schemaDefinition = MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
+static string schemaDefinition = Globals::getInstance()->getXMLDir()+MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
 static string scheme_namespace = MZIDENTML_NAMESPACE;
 static string schema_major = boost::lexical_cast<string>(MZIDENTML_VERSION_MAJOR);
 static string schema_minor = boost::lexical_cast<string>(MZIDENTML_VERSION_MINOR);

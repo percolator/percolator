@@ -601,7 +601,7 @@ int Caller::readFiles() {
       xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
       xmlInStream.open(xmlInputFN.c_str());
 
-      string schemaDefinition= PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
+      string schemaDefinition= Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
       string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
       string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
       parser p;

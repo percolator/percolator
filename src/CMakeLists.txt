@@ -128,12 +128,10 @@ endif()
 target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
  
 # INSTALL PERCOLATOR
-IF(NOT MINGW AND NOT WIN32)
-  if(APPLE)
-     install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-  else(APPLE)
-    install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin) # Important to use relative path here (used by CPack)!
-  endif(APPLE)
+if(APPLE)
+  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+else()
+  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
 endif()
 
 ###############################################################################
@@ -141,3 +139,4 @@ endif()
 ###############################################################################
 
 add_subdirectory(qvality)
+
