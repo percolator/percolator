@@ -30,11 +30,7 @@ class PSMDescription {
     
     PSMDescription();
     PSMDescription(const string peptide, const double retTime);
-    PSMDescription(double ort, double prt) {
-      retentionTime = ort;
-      predictedTime = prt;
-      retentionFeatures = NULL;
-    }
+    PSMDescription(double ort, double prt);
     
     virtual ~PSMDescription();
     void clear() {

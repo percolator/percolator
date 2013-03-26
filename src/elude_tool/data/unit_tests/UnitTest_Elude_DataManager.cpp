@@ -27,16 +27,14 @@
 #include "Globals.h"
 #include "Enzyme.h"
 
-#define PATH_TO_DATA string("")
-#define PATH_TO_WRITABLE string("")
 
 class DataManagerTest : public ::testing::Test {
  protected:
    virtual void SetUp() {
-     train_file1 = PATH_TO_DATA + "elude/standalone/train.txt";
-     train_file2 = PATH_TO_DATA  + "elude/standalone/train_1.txt";
-     test_file1 = PATH_TO_DATA  + "elude/standalone/test_2.txt";
-     tmp_file = PATH_TO_WRITABLE + "tmp.txt";
+	 train_file1 = string(PATH_TO_DATA) + "/standalone/train.txt";
+     train_file2 = string(PATH_TO_DATA)  + "/standalone/train_1.txt";
+     test_file1 = string(PATH_TO_DATA)  + "/standalone/test_2.txt";
+     tmp_file = string(PATH_TO_WRITABLE) + "tmp.txt";
      string tmp[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
      basic_alphabet.insert(tmp, tmp + 20);
      Globals::getInstance()->setVerbose(1);

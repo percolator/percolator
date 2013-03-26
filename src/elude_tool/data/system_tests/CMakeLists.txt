@@ -1,7 +1,10 @@
 # SETTING VARIBALES THAT WILL BE OF USE IN THE TEST SCRIPTS
-set(pathToBinaries ${CMAKE_INSTALL_PREFIX}/bin)
+#set(pathToBinaries ${CMAKE_INSTALL_PREFIX}/bin)
+#set(pathToData ${CMAKE_SOURCE_DIR}/data)
+#set(pathToWritable ${ELUDE_WRITABLE_DIR})
+set(pathToBinaries ${CMAKE_BINARY_DIR})
 set(pathToData ${CMAKE_SOURCE_DIR}/data)
-set(pathToWritable ${ELUDE_WRITABLE_DIR})
+set(pathToWritable ${CMAKE_BINARY_DIR}/Testing)
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )

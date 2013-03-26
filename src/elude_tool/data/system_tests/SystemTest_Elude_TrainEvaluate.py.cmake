@@ -15,6 +15,7 @@ out_path = "@pathToWritable@"
 # the predictions are checked
 def TrainTestContextData():
   print "Running EludeTrainEvaluateTest::TrainTestContextData..."
+  print "!!!!!", pathToData, "\n", out_path, "\n", pathToBinaries, "\n!!!!!!!"
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
  

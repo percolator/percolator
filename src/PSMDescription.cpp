@@ -30,13 +30,18 @@ PSMDescription::PSMDescription() :
 PSMDescription::PSMDescription(const string pep, const double retTime) :
   q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
       retentionTime(retTime), predictedTime(0.), massDiff(0.), pI(0.),
-      scan(0), id(""), peptide(pep) {
+      scan(0), id(""), peptide(pep), parentFragment(NULL) {
+}
+
+PSMDescription::PSMDescription(double ort, double prt) :
+	q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
+	      retentionTime(ort), predictedTime(prt), massDiff(0.), pI(0.),
+	      scan(0), id(""), peptide(""), parentFragment(NULL) {
 }
 
 PSMDescription::~PSMDescription() {
  if(parentFragment) delete parentFragment;
  if(features) delete []features;
- if(retentionFeatures) delete []retentionFeatures;
 }
 
 double PSMDescription::normDiv = -1.0;
