@@ -44,15 +44,15 @@ Globals* Globals::getInstance() {
   return glob;
 }
 
-#ifdef _WIN32
+#if defined (__WIN32__) || defined (__MINGW__)
 #include <windows.h>
 #include <tchar.h>
 #endif
 
 const std::string Globals::getXMLDir() {
   std::string out = WRITABLE_DIR;
-#ifdef _WIN32
 
+#if defined (__WIN32__) || defined (__MINGW__)
   std::wstring keyName = L"Software\\Percolator\\percolator-";
   keyName += LVERSION_NAME;
   HKEY hKey;
