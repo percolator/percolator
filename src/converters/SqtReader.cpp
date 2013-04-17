@@ -144,11 +144,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
       
     }
   }
-
-  if (xcorr > 0) {
-    f_seq[1] = (xcorr - lastXcorr) / xcorr;
-    f_seq[2] = (xcorr - otherXcorr) / xcorr;
-  }
+  f_seq[1] = (xcorr - lastXcorr) / std::max(1.0,xcorr);
+  f_seq[2] = (xcorr - otherXcorr) / std::max(1.0,xcorr);
   
   percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1);

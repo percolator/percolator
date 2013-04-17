@@ -58,15 +58,11 @@ set(TANDEM_VERSION "2011.12.01.1")
 
 IF(MINGW OR WIN32) 
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-#    set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib") 
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/lib/include)
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
-#    set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\percolator\\\\")
     set(WRITABLE_DIR "xml/")
     add_definitions(-D_WIN32)
 ELSE(MINGW OR WIN32)
-#    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".la" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-#    set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
     set(CMAKE_INCLUDE_PATH /usr/include ${CMAKE_INCLUDE_PATH})
     set(CMAKE_LIBRARY_PATH /usr/lib /usr/lib64 ${CMAKE_LIBRARY_PATH})
     set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
@@ -74,7 +70,6 @@ ENDIF(MINGW OR WIN32)
 
 set(PIN_SCHEMA_LOCATION "xml-pin-${PIN_VERSION_MAJOR}-${PIN_VERSION_MINOR}/")
 set(POUT_SCHEMA_LOCATION "xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}/")
-
 
 IF(MINGW)
   IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -89,7 +84,7 @@ set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINO
 set(percolator-in-namespace http://per-colator.com/percolator_in/${PIN_VERSION_MAJOR}${PIN_VERSION_MINOR})
 set(percolator-out-namespace http://per-colator.com/percolator_out/${POUT_VERSION_MAJOR}${POUT_VERSION_MINOR})
 set(mzIdentML-namespace "http://psidev.info/psi/pi/mzIdentML/${MZIDENTML_VERSION_MAJOR}.${MZIDENTML_VERSION_MINOR}")
-set(gaml_tandem-namespace "http://www.bioml.com/gaml/")
+set(gaxml_tandem-namespace "http://www.bioml.com/gaml/")
 set(tandem-namespace "http://www.thegpm.org/TANDEM/${TANDEM_VERSION}")
 
 #STATIC/DYNAMIC LIBRARY INCLUSION

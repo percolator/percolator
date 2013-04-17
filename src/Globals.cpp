@@ -69,6 +69,7 @@ const std::string Globals::getXMLDir() {
     char DefChar = ' ';
     WideCharToMultiByte(CP_ACP,0,szBuffer,-1, szcBuffer,512,&DefChar, NULL);
     out = szcBuffer;
+    out += "\\..";
     out += WRITABLE_DIR;
   }
 #endif

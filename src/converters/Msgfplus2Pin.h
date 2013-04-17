@@ -33,7 +33,7 @@ class Msgfplus2pin : public Interface {
 	{
 	  std::stringstream endnote;
 	  endnote << "Usage:" << endl;
-	  endnote << "   msgfplus2pin [options] target.mzid decoy.mzid" << endl << endl;
+	  endnote << "   msgf2pin [options] target.mzid decoy.mzid" << endl << endl;
 	  endnote << "target.mzid and decoy.mzid are MzIdentML-files of MS-GF+ from" << endl;
 	  endnote << "separate target and decoy searches. Internal MS-GF+ target/decoy" << endl;
 	  endnote << "analysis should be turned off, and the addFeatures options turned on." << endl;

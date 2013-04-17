@@ -35,9 +35,12 @@ elseif(MINGW)
         set(CPACK_SET_DESTDIR FALSE)
 	set(CPACK_GENERATOR "NSIS") # Distribution packaging formats ("make package")
         set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-win32")
+        set(CPACK_NSIS_PACKAGE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")
         set(CPACK_NSIS_MODIFY_PATH "ON")
         set(CPACK_PACKAGE_ICON "${PERCOLATOR_SOURCE_DIR}/admin/win/nsi/page_header.bmp")
         set(CPACK_NSIS_MUI_ICON "${PERCOLATOR_SOURCE_DIR}/admin/win/nsi/percolator.ico")
+        set(CPACK_NSIS_CONTACT "Lukas Kall <lukas.kall@scilifelab.se>")
+
 endif()
 
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}")

@@ -21,7 +21,7 @@ int Msgfplus2pin::run() {
   xmlOutputStream.open(xmlOutputFN.c_str());
   if(!xmlOutputStream && xmlOutputFN != ""){
     cerr << "Error: invalid path to output file: " << xmlOutputFN << endl;
-    cerr << "Please invoke msgfplus2pin with a valid -o option" << endl;
+    cerr << "Please invoke msgf2pin with a valid -o option" << endl;
     return 0;
   }
 
