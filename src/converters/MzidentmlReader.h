@@ -56,6 +56,7 @@ public:
   bool checkIsMeta(const std::string &file);
 
   void getMaxMinCharge(const std::string &fn, bool isDecoy);
+  virtual void searchEngineSpecificParsing(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, int itemCount);
 
   virtual void addFeatureDescriptions(bool doEnzyme) = 0;
 
