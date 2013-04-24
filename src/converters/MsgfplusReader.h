@@ -21,26 +21,28 @@
 #include "MzidentmlReader.h"
 
 
-class MsfgplusReader : public MzidentmlReader
+
+
+class MsgfplusReader : public MzidentmlReader
 {
-
-
   public:
+    MsgfplusReader(ParseOptions *po);
 
-    MsfgplusReader(ParseOptions *po);
-
-    virtual ~MsfgplusReader();
+    virtual ~MsgfplusReader();
     bool checkValidity(const std::string &file);
+    virtual void searchEngineSpecificParsing(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, int itemCount);
     void addFeatureDescriptions(bool doEnzyme);
     void createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
 		  ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
 		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
 		   const std::string & fn);
+    double rescaleFragmentFeature(double featureValue, int NumMatchedMainIons);
 
   protected :
-
+	bool useFragmentSpectrumFeatures;  // Whether to use MS-GF+ high resolution fragmentation spectra features, default = false
+	int numMatchedIonLimit;  // The number of matched ions required for accurate fragment feature calculation (default 7)
     static const std::map<string,int> msgfplusFeatures;
-    static const double neutron;
+    const double neutron;  //The difference between C12 and C13
 };
 
 #endif // MSGFPLUSREADER_H

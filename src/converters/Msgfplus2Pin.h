@@ -47,7 +47,7 @@ class Msgfplus2pin : public Interface {
 	
  private:
   
-	MsfgplusReader *reader;
+	MsgfplusReader *reader;
 };
 
 int main(int argc, char **argv);

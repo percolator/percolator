@@ -1,31 +1,31 @@
 #include "MsgfplusReader.h"
 
-
-const std::map<string, int> MsfgplusReader::msgfplusFeatures =
+const std::map<string, int> MsgfplusReader::msgfplusFeatures =
         boost::assign::map_list_of("MS-GF:RawScore", 0)
                                   ("MS-GF:DeNovoScore", 1)
                                   ("MS-GF:SpecEValue", 2)
                                   ("MS-GF:EValue", 3)
-                                  //The below features are on user specified element userParam
+                                  //All below features are on user specified element userParam
                                   ("IsotopeError", 4)
                                   ("ExplainedIonCurrentRatio", 5)
                                   ("NTermIonCurrentRatio", 6)
                                   ("CTermIonCurrentRatio", 7)
-                                  ("MS2IonCurrent", 8);
+                                  ("MS2IonCurrent", 8)
+								  ("MeanRelErrorTop7", 9)
+								  ("StdevRelErrorTop7", 10)
+							      ("NumMatchedMainIons", 11);
 
-const double MsfgplusReader::neutron = 1.0033548378;  //The difference between C12 and C13
-
-MsfgplusReader::MsfgplusReader(ParseOptions *po) : MzidentmlReader(po) {
-
+MsgfplusReader::MsgfplusReader(ParseOptions *po) :
+		MzidentmlReader(po),
+		useFragmentSpectrumFeatures(false),
+		neutron(1.0033548378),
+		numMatchedIonLimit(7) {
 }
 
-MsfgplusReader::~MsfgplusReader() {
-
-
-
+MsgfplusReader::~MsgfplusReader() {
 }
 
-bool MsfgplusReader::checkValidity(const std::string &file) {
+bool MsgfplusReader::checkValidity(const std::string &file) {
 
   bool isvalid = true;
   std::ifstream fileIn(file.c_str(), std::ios::in);
@@ -74,9 +74,27 @@ bool MsfgplusReader::checkValidity(const std::string &file) {
   return isvalid;
 }
 
+void MsgfplusReader::searchEngineSpecificParsing(
+	const ::mzIdentML_ns::SpectrumIdentificationItemType & item, const int itemCount) {
+	// itemCount is which order the item is in the mzid-file, read through userParam elements
+	// First, check whether fragmentation spectrum features are present
+	if (!useFragmentSpectrumFeatures) {
+    	std::string param_name;
+    	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
+    		if (up.value().present()) {
+    			std::string param_name(up.name().c_str());
+    			// Check whether the mzid-file seem to include features for fragment spectra resolution and accuracy
+    			if (param_name == "MeanRelErrorTop7") {  // If one fragmentSpectrum feature is found
+    				useFragmentSpectrumFeatures = true;
+    				std::cerr << "Uses features for fragment spectra mass errors" << std::endl;
+    			}
+    		}
+    	}
+    }
+}
 
 
-void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
+void MsgfplusReader::addFeatureDescriptions(bool doEnzyme)
 {
 
   push_backFeatureDescription("RawScore");
@@ -96,11 +114,16 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
   push_backFeatureDescription("dM");
   push_backFeatureDescription("absdM");
 
+  if (useFragmentSpectrumFeatures) {
+	  push_backFeatureDescription("MeanErrorTop7");
+	  push_backFeatureDescription("sqMeanErrorTop7");
+	  push_backFeatureDescription("StdevErrorTop7");
+  }
+
   for (int charge = minCharge; charge <= maxCharge; ++charge) {
     std::ostringstream cname;
     cname << "Charge" << charge;
     push_backFeatureDescription(cname.str().c_str());
-
   }
   if (doEnzyme) {
     push_backFeatureDescription("enzN");
@@ -124,7 +147,16 @@ void MsfgplusReader::addFeatureDescriptions(bool doEnzyme)
 
 }
 
-void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
+
+double MsgfplusReader::rescaleFragmentFeature(double featureValue, int NumMatchedMainIons) {
+	// Rescale the fragment features to penalize features calculated by few ions
+	int numerator = (1+numMatchedIonLimit)*(1+numMatchedIonLimit);
+	int denominator = (1+std::min(NumMatchedMainIons, numMatchedIonLimit))*(1+std::min(NumMatchedMainIons, numMatchedIonLimit));
+	return featureValue * ((double)numerator/denominator);
+}
+
+
+void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
         ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
         bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
         const std::string &fn) {
@@ -153,11 +185,11 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
-      //NOTE check that there are not quimera peptides
+      //NOTE check that there are not chimeric peptides
       if( peptideId != std::string(pepEv->peptide_ref()))
       {
 	std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
-		  << " contains different quimera peptide sequences. "
+		  << " contains different chimeric peptide sequences. "
 		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
 		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       }
@@ -223,6 +255,10 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     double NTermIonCurrentRatio = 0.0;
     double CTermIonCurrentRatio = 0.0;
     double MS2IonCurrent = 0.0;
+    // fragmentFeatureValues
+    double MeanErrorTop7 = 0.0;
+    double StdevErrorTop7 = 0.0;
+    int NumMatchedMainIons = 0;
 
     //Read through cvParam elements
     BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam())
@@ -243,10 +279,11 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	}
     }
 
-      //Read through userParam elements
+    //Read through userParam elements
     BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam())
     {
-	if (up.value().present())
+    // If a feature has a value NaN, the default values from initialization is used
+	if (up.value().present() && boost::lexical_cast<string > (up.value().get().c_str()) != "NaN")
 	{
 	  std::string param_name(up.name().c_str());
 	  if (msgfplusFeatures.count(param_name))
@@ -258,11 +295,28 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	      case 6: NTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
 	      case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
 	      case 8: MS2IonCurrent = boost::lexical_cast<double>(up.value().get().c_str());break;
+	      case 9: MeanErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	      case 10: // Stdev sometimes equals 0, use the mean error in that case
+	    	  if (boost::lexical_cast<string > (up.value().get().c_str()) == "0.0") StdevErrorTop7 = MeanErrorTop7;
+	    	  else StdevErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	      case 11: NumMatchedMainIons = boost::lexical_cast<int>(up.value().get().c_str()); break;
 	    }
 	  }
 	}
+	else
+	{
+	  std::cerr << "PSM: " << boost::lexical_cast<string > (item.id()) << " has feature with value NaN, ";
+	  std::cerr << "use the default value for that feature." << std::endl;
+	}
     }
 
+    // If MeanErrorAll is 0.0, it was not updated, it was probably missing in the file.
+    if (MeanErrorTop7 == 0.0) {
+    	// Skip this PSM
+    	std::cerr << "PSM " << boost::lexical_cast<string > (item.id()) << " seems to miss a feature (MeanRelErrorAll) ";
+    	std::cerr << "and was discarded." << std::endl;
+    	return;
+    }
 
     //The raw theoretical mass from MSGF+ is often of the wrong isotope
     double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
@@ -283,6 +337,12 @@ void MsfgplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     f_seq.push_back(peptideLength(peptideSeqWithFlanks));
     f_seq.push_back(dM);
     f_seq.push_back(abs(dM));
+
+    if (useFragmentSpectrumFeatures) {
+    	f_seq.push_back(rescaleFragmentFeature(MeanErrorTop7, NumMatchedMainIons));
+    	f_seq.push_back(rescaleFragmentFeature(MeanErrorTop7*MeanErrorTop7, NumMatchedMainIons));  // squared
+    	f_seq.push_back(rescaleFragmentFeature(StdevErrorTop7, NumMatchedMainIons));
+    }
 
     for (int c = minCharge; c <= maxCharge; c++) {
       f_seq.push_back(charge == c ? 1.0 : 0.0); // Charge

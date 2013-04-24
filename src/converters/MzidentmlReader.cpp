@@ -63,7 +63,6 @@ bool MzidentmlReader::checkIsMeta(const std::string &file) {
 
 
 void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
-
   ifstream ifs;
   ifs.exceptions(ifstream::badbit | ifstream::failbit);
   try
@@ -78,14 +77,17 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
             && !XMLString::equals(spectrumIdentificationResultStr, doc->getDocumentElement()->getTagName()); doc = p.next()) {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
     }
-
+    // For each SpectrumIdentificationResult
+    int itemCount = 1;
     for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr,
             doc->getDocumentElement()->getTagName()); doc = p.next()) {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
-
+      // For each SpectrumIdentificationItem
       BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) {
         minCharge = std::min(item.chargeState(), minCharge);
         maxCharge = std::max(item.chargeState(), maxCharge);
+        searchEngineSpecificParsing(item, itemCount);  // Virtual function that potentially checks the features
+        ++itemCount;
       }
     }
   } catch (ifstream::failure e) {
@@ -96,12 +98,16 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
     XMLString::release(&tmpStr);
 
   } catch (const xml_schema::exception& e) {
-    cerr << e << endl;
+    cerr << "XML schema exception in getMaxMinCharge: " << e << endl;
   } catch (std::exception e) {
-    cerr << e.what() << endl;
+    cerr << "Some unknown exception in getMaxMinCharge: " << e.what() << endl;
   }
   ifs.close();
   return;
+}
+
+void MzidentmlReader::searchEngineSpecificParsing(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, int itemCount) {
+	return;  // Empty function
 }
 
 void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database)
