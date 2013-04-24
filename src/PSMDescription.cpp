@@ -40,8 +40,6 @@ PSMDescription::PSMDescription(double ort, double prt) :
 }
 
 PSMDescription::~PSMDescription() {
- if(parentFragment) delete parentFragment;
- if(features) delete []features;
 }
 
 double PSMDescription::normDiv = -1.0;
