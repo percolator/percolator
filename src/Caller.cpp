@@ -268,7 +268,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Output tab delimited results for decoys into a file",
       "filename");
   cmd.defineOption("U",
-      "unique-peptides",
+      "only-psms",
       "Do not remove redundant peptides, keep all PSMS and exclude peptide level probabilities.",
       "",
       FALSE_IF_SET);
