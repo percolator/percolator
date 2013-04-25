@@ -96,9 +96,11 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
     char * tmpStr = XMLString::transcode(e.getMessage());
     std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
-
   } catch (const xml_schema::exception& e) {
     cerr << "XML schema exception in getMaxMinCharge: " << e << endl;
+  } catch (MyException e) {
+	cerr << e.what() << endl;
+	exit(1);
   } catch (std::exception e) {
     cerr << "Some unknown exception in getMaxMinCharge: " << e.what() << endl;
   }
@@ -107,6 +109,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
 }
 
 void MzidentmlReader::searchEngineSpecificParsing(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, int itemCount) {
+	// itemCount is which order the item is in the mzid-file, read through userParam elements
 	return;  // Empty function
 }
 

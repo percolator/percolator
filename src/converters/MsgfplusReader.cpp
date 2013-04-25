@@ -18,6 +18,7 @@ const std::map<string, int> MsgfplusReader::msgfplusFeatures =
 MsgfplusReader::MsgfplusReader(ParseOptions *po) :
 		MzidentmlReader(po),
 		useFragmentSpectrumFeatures(false),
+		additionalMsgfFeatures(false),
 		neutron(1.0033548378),
 		numMatchedIonLimit(7) {
 }
@@ -76,10 +77,27 @@ bool MsgfplusReader::checkValidity(const std::string &file) {
 
 void MsgfplusReader::searchEngineSpecificParsing(
 	const ::mzIdentML_ns::SpectrumIdentificationItemType & item, const int itemCount) {
-	// itemCount is which order the item is in the mzid-file, read through userParam elements
-	// First, check whether fragmentation spectrum features are present
+	// First, check whether addFeatures was set to 1, in MS-GF+
+	if (!additionalMsgfFeatures) {
+    	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
+    		if (up.value().present()) {
+    			std::string param_name(up.name().c_str());
+    			// Check whether the mzid-file seem to include the additional features
+    			if (param_name == "ExplainedIonCurrentRatio") {  // If one additional feature is found
+    				additionalMsgfFeatures = true;
+    			}
+    		}
+    	}
+    	if (!additionalMsgfFeatures) {  // If no additional features were found in first PSM
+    		ostringstream temp;
+    		temp << "Error: No features for learning were found in the mzid-file."
+    		<< " Run MS-GF+ with the addFeatures option set to 1." << std::endl;
+    		throw MyException(temp.str());
+    	}
+    }
+
+	// Check whether fragmentation spectrum features are present
 	if (!useFragmentSpectrumFeatures) {
-    	std::string param_name;
     	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
     		if (up.value().present()) {
     			std::string param_name(up.name().c_str());
