@@ -71,8 +71,8 @@ if( MINGW )
     include( InstallRequiredSystemLibraries )
 endif( MINGW )
 
-install(FILES src/xml/percolator_in.xsd DESTINATION xml/${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
-install(FILES src/xml/percolator_out.xsd DESTINATION xml/${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+install(FILES src/xml/percolator_in.xsd DESTINATION share/xml/${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
+install(FILES src/xml/percolator_out.xsd DESTINATION share/xml/${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 
 # NSIS package options
 # Requires NSIS for creating the package 
