@@ -32,7 +32,7 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
-find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
+find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system math REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost found at: ${Boost_INCLUDE_DIRS}")
 else(Boost_FOUND)
