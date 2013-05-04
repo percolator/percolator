@@ -32,7 +32,7 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
-find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system math REQUIRED)
+find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system numeric REQUIRED)
 if(Boost_FOUND)
   message(STATUS "Package Boost found at: ${Boost_INCLUDE_DIRS}")
 else(Boost_FOUND)
@@ -82,7 +82,7 @@ add_custom_command(
 
 add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp 	ResultHolder.cpp 
 								  SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp 
-								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
+								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp KernelLogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp )
 

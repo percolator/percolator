@@ -97,8 +97,8 @@ void PosteriorEstimator::estimatePEP(
 				       bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
-  LogisticRegression lr;
-  estimate(combined, lr);
+  KernelLogisticRegression klr;
+  estimate(combined, klr);
   vector<double> xvals(0);
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem)
@@ -111,7 +111,7 @@ void PosteriorEstimator::estimatePEP(
       }
       ++nDecoys;
     }
-  lr.predict(xvals, peps);
+  klr.predict(xvals, peps);
 #define OUTPUT_DEBUG_FILES
 #undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
@@ -146,8 +146,8 @@ void PosteriorEstimator::estimatePEPGeneralized(
 				       bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
-  LogisticRegression lr;
-  estimate(combined, lr);
+  KernelLogisticRegression klr;
+  estimate(combined, klr);
   vector<double> xvals(0);
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem) {
@@ -161,7 +161,7 @@ void PosteriorEstimator::estimatePEPGeneralized(
       ++nDecoys;
     }
   }
-  lr.predict(xvals, peps);
+  klr.predict(xvals, peps);
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
   ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
@@ -206,7 +206,7 @@ void PosteriorEstimator::estimatePEPGeneralized(
 
 
 void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
-                                  LogisticRegression& lr) {
+                                  KernelLogisticRegression& klr) {
   // switch sorting order
   if (!reversed) {
     reverse(combined.begin(), combined.end());
@@ -214,8 +214,8 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
   vector<double> medians;
   vector<unsigned int> negatives, sizes;
   binData(combined, medians, negatives, sizes);
-  lr.setData(medians, negatives, sizes);
-  lr.roughnessPenaltyIRLS();
+  klr.setData(medians, negatives, sizes);
+  klr.IRLSKernelLogisticRegression();
   // restore sorting order
   if (!reversed) {
     reverse(combined.begin(), combined.end());

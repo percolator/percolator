@@ -38,7 +38,7 @@ class PosteriorEstimator {
 					 vector<double>& peps,
 					 bool include_negative = false);
     static void estimate(vector<pair<double, bool> >& combined,
-                         LogisticRegression& lr);
+                         KernelLogisticRegression& klr);
     static void getPValues(const vector<pair<double, bool> >& combined,
                            vector<double>& p);
     static void getQValues(double pi0,
