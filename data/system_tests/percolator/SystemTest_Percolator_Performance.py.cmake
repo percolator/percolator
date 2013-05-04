@@ -1,4 +1,4 @@
-# Mattia Tomasoni - Percolator Project
+1;2c# Mattia Tomasoni - Percolator Project
 # Script that tests the performances of percolator
 # Parameters: none
 
@@ -96,15 +96,15 @@ psmFile="/tmp/PERCOLATOR_psm.txt"
 peptideFile="/tmp/PERCOLATOR_peptide.txt"
 proteinFile="/tmp/PERCOLATOR_protein.txt"
 # number of significant psms within boundaries
-success=checkNumberOfSignificant("psms",psmFile,615)
+success=checkNumberOfSignificant("psms",psmFile,283)
 # number of significant peptrides within boundaries
-success=checkNumberOfSignificant("peptides",peptideFile,412)
+success=checkNumberOfSignificant("peptides",peptideFile,221)
 # number of significant proteins within boundaries
-success=checkNumberOfSignificant("proteins",proteinFile,153)
+#success=checkNumberOfSignificant("proteins",proteinFile,153)
 # psm: pi0 within boundaries
-success=checkPi0("psms",psmFile,0.8797)
+success=checkPi0("psms",psmFile,0.8912)
 # peptides: pi0 within boundaries
-success=checkPi0("peptides",peptideFile,0.9197)
+success=checkPi0("peptides",peptideFile,0.9165)
 # psm: pep within boundaries
 expected=[2.61748e-13,3.26564e-09,7.28959e-08]
 success = checkPep("psms",psmFile, expected);
@@ -113,7 +113,6 @@ expected=[4.47324e-14,3.52218e-09,1.7545e-07]
 success = checkPep("peptides",peptideFile, expected);
 # performance increase with -D 4 option
 success = performanceD4On()
-
 
 # if no errors were encountered, succeed
 if success==True:
