@@ -136,7 +136,7 @@ void PosteriorEstimator::estimatePEP(
       crap = true;
     }
   }
-  partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
+  //partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
 }
 
 

@@ -10,9 +10,6 @@
 #define PI 3.14159265
 #include "Globals.h"
 
-#include <boost/numeric/ublas/blas.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/vector.hpp>
 #include "KernelLogisticRegression.h"
 
 extern "C"{
@@ -20,10 +17,6 @@ extern "C"{
 #include <atlas/cblas.h>
 }
 
-namespace ublas = boost::numeric::ublas;
-namespace ublas1 = boost::numeric::ublas::blas_1;
-namespace ublas2 = boost::numeric::ublas::blas_2;
-namespace ublas3 = boost::numeric::ublas::blas_3;
 using namespace std;
 
 const double KernelLogisticRegression::gRange = 35.0;
@@ -75,48 +68,47 @@ double KernelLogisticRegression::kernel(double x1, double x2,double h) {
 void KernelLogisticRegression::IRLSKernelLogisticRegression()
 {
         double step = 0.0,beta_old=0.0,gamma=1.0,h=bandwidth;
-        int iter = 0,nrhs=1;
+        int iter = 0,nrhs=1,incx=1,noncoef=0;
 	size_t N=x.size();
-        ublas::vector<double> ones(N),xi(N),zeta(N),alphas_ublas(N),g(N),z(N);
-        ublas::matrix<double> M(N,N),K(N,N),identity(N,N),w(N,N);
+        vector<double> ones(N),g(N),z(N);
+        vector<double> K(N*N),identity(N*N),w(N*N);
 	double p,mu,sigma;
 	beta=0;
         for (int i = 0; i<N; i++){
-                identity(i,i)=1;
-                ones(i)=1;
-		alphas_ublas(i)=0;
+                identity[i*N+i]=1;
+                ones[i]=1;
+		alphas.push_back(0);
                 for (int j=0;j<N;j++){
-                        K(i , j )= kernel(x[i],x[j],h);
+                        K[i*N+j]= kernel(x[i],x[j],h);
                 }
         }
         do {
-                ublas2::gmv(g,0,gamma,K,alphas_ublas);//g=K*alphas + 0*g
+                cblas_dgemv(CblasRowMajor,CblasNoTrans,N, N,1.0,&K[0],N,&alphas[0],incx,0.0,&g[0],incx);//g=K*alphas + 0*g
  		for (int ix = 0; ix < N; ix++){
-                	g(ix) = g(ix)+beta;
-			assert(isfinite(z(ix)));
-                	p = 1 / (1 + exp(-g(ix)));
+                	g[ix] = g[ix]+beta;
+			assert(isfinite(g[ix]));
+                	p = 1 / (1 + exp(-g[ix]));
+			assert(isfinite(p));
                 	mu = m[ix] * p;
-			if (mu == 0){sigma =1;}
+			if (mu == 0){sigma =1.0;}
 			else{sigma = mu * (1-p);}
-                	w(ix,ix)= 1/sigma;
-                	z(ix)= g(ix) + (((double)y[ix]) -mu ) / sigma;
-                	assert(isfinite(z(ix)));
+                	w[ix*N+ix]= 1/sigma;
+                	z[ix]= g[ix] + (((double)y[ix]) -mu ) / sigma;
+                	assert(isfinite(z[ix]));
                 }
-
-                M=K;
-                ublas3::gmm(M,gamma,gamma,identity,w);//M = I*w+gamma*K
-                ublas::matrix<double> M1 = M;
-                xi = ones;
-                clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M1(0,0), N,&xi(0),N);
-                zeta = z;
-                clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M(0,0), N,&zeta(0),N);
-                beta = ublas1::dot(ones,zeta)/ublas1::dot(ones,xi);
-                ublas2::gmv(xi,-beta,gamma,identity,zeta);//xi=I*zeta-beta*xi
-                alphas_ublas = xi;
+                vector<double> M=K;
+                cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans, N,N,N,1,&identity[0],N,&w[0],N,gamma,&M[0],N);//M = I*w+gamma*K
+                vector<double> M1 = M;
+                vector<double> xi = ones;
+                clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M1[0], N,&xi[0],N);
+                vector<double> zeta = z;
+                clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M[0], N,&zeta[0],N);
+                beta = cblas_ddot(N, &ones[0],incx,&zeta[0],incx)/cblas_ddot(N, &ones[0],incx,&xi[0],incx);
+		cblas_dgemv(CblasRowMajor,CblasNoTrans,N, N,1.0,&identity[0],N,&zeta[0],incx,-beta,&xi[0],incx);//xi=I*zeta-beta*xi
+                alphas = xi;
                 step = (beta_old-beta)*(beta_old-beta);
                 beta_old = beta;
         }while((step > stepEpsilon || step <0.0) && (++iter < 100) );
-	for (int i = 0; i<N; i++){ alphas.push_back(alphas_ublas(i));}
 }
 
 //calculate all peps of vector xx and stored in vector predict.
