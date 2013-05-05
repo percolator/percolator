@@ -70,7 +70,7 @@ canPercRunThis("tab",flg,"",False,False)
 
 # running percolator on pin.xml with -D 4 option (description of correct features)
 print("(*) running percolator with description of correct features option...")
-canPercRunThis("D4on","-D 4 -U","percolator/rt/pin.xml")
+canPercRunThis("D4on","-D 4 -U","percolator/pin/pin.xml")
 
 # if no errors were encountered, succeed
 if success == True:
