@@ -111,7 +111,7 @@ void PosteriorEstimator::estimatePEP(
       }
       ++nDecoys;
     }
-  klr.predict(xvals, peps);
+  klr.predict(xvals, peps);//here peps are the estimate of g.
 #define OUTPUT_DEBUG_FILES
 #undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
