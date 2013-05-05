@@ -269,23 +269,37 @@ targetNamespace="http://per-colator.com/percolator_in/13">
 
   <xs:complexType name="modificationType" abstract="false">
     <xs:annotation>
-      <xs:documentation>A molecule modification specification. If n modifications have been found on a peptide, there should be n instances of Modification. If multiple modifications are provided as cvParams, it is assumed that the modification is ambiguous i.e. one modification or another. If no CVParams are provided it is assumed that the delta has not been matched to a known modification. A neutral loss should be defined as an additional CVParam within Modification. If more complex information should be given about neutral losses (such as presence/absence on particular product ions), this can additionally be encoded within the FragmentationArray.</xs:documentation>
+      <xs:documentation>A molecule modification specification. </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-    <xs:element name="uniMod">
-      <xs:complexType>
-      <xs:attribute name="accession" use="required" type="xs:int">
-        <xs:annotation>
-          <xs:documentation> UNIMOD accession number e.g. UNIMOD:35 will have 35 in this field</xs:documentation>
-        </xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="name" type="xs:string">
-        <xs:annotation>
-          <xs:documentation> UNIMOD name e.g. Oxidation</xs:documentation>
-        </xs:annotation>
-      </xs:attribute>
-      </xs:complexType>
-    </xs:element>
+      <xs:element name="uniMod" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="accession" use="required" type="xs:int">
+            <xs:annotation>
+              <xs:documentation> UNIMOD accession number e.g. UNIMOD:35 will have 35 in this field</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="name" type="xs:string">
+            <xs:annotation>
+              <xs:documentation> UNIMOD name e.g. Oxidation</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="freeMod" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="moniker" use="required" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>Representation of the modification in the peptide sequence that will apear in brackets, e.g. -18, or phospho</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="name" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>Descriptive name of the modification e.g. Oxidation</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
     </xs:sequence>
     <xs:attribute name="location" use="required" type="xs:int">
     <xs:annotation>

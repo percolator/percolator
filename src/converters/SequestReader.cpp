@@ -278,10 +278,11 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
               ambiguousAA.find(peptideS[ix]) == string::npos &&
               additionalAA.find(peptideS[ix]) == string::npos) {
         int accession = ptmMap[peptideS[ix]];
-        std::auto_ptr< percolatorInNs::uniMod > um_p(new percolatorInNs::uniMod(accession));
-        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(um_p, ix));
-        peptide_p->modification().push_back(mod_p);
-        peptideS.erase(ix, 1);
+        std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
+        std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
+        mod_p->uniMod(um_p);
+        peptide_p->modification().push_back(mod_p);      
+        peptideS.erase(ix,1);      
       }
     }
 
