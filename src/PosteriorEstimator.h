@@ -20,7 +20,7 @@
 #include<vector>
 #include<string>
 #include<utility>
-#include "LogisticRegression.h"
+#include "KernelLogisticRegression.h"
 using namespace std;
 
 

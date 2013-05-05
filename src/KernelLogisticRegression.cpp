@@ -28,8 +28,8 @@ using namespace std;
 
 const double KernelLogisticRegression::gRange = 35.0;
 double KernelLogisticRegression::bandwidth = 0.9;
-double KernelLogisticRegression::Epsilon = 1e-8;
-
+double KernelLogisticRegression::stepEpsilon = 1e-8;
+double KernelLogisticRegression::convergeEpsilon=1e-4;
 
 
 class Predictor {
@@ -42,7 +42,7 @@ class Predictor {
 	}
 };
 
-void KernelLogisticRegression::setDatafromBase(const vector<double>& xx) {
+void KernelLogisticRegression::setData(const vector<double>& xx) {
 // copy from Basespline.cpp, reset x.
   x.clear();
   double minV = *min_element(xx.begin(), xx.end());
@@ -77,20 +77,32 @@ void KernelLogisticRegression::IRLSKernelLogisticRegression()
         double step = 0.0,beta_old=0.0,gamma=1.0,h=bandwidth;
         int iter = 0,nrhs=1;
 	size_t N=x.size();
-        ublas::vector<double> ones(N),xi(N),zeta(N);
-        ublas::matrix<double> M(N,N),K(N,N),identity(N,N);
-
+        ublas::vector<double> ones(N),xi(N),zeta(N),alphas_ublas(N),g(N),z(N);
+        ublas::matrix<double> M(N,N),K(N,N),identity(N,N),w(N,N);
+	double p,mu,sigma;
+	beta=0;
         for (int i = 0; i<N; i++){
                 identity(i,i)=1;
                 ones(i)=1;
-		alphas(i)=0;
+		alphas_ublas(i)=0;
                 for (int j=0;j<N;j++){
                         K(i , j )= kernel(x[i],x[j],h);
                 }
         }
         do {
-                g =  ublas2::gmv(g,0,gamma,K,alphas);
-                calcPZW();
+                ublas2::gmv(g,0,gamma,K,alphas_ublas);//g=K*alphas + 0*g
+ 		for (int ix = 0; ix < N; ix++){
+                	g(ix) = g(ix)+beta;
+			assert(isfinite(z(ix)));
+                	p = 1 / (1 + exp(-g(ix)));
+                	mu = m[ix] * p;
+			if (mu == 0){sigma =1;}
+			else{sigma = mu * (1-p);}
+                	w(ix,ix)= 1/sigma;
+                	z(ix)= g(ix) + (((double)y[ix]) -mu ) / sigma;
+                	assert(isfinite(z(ix)));
+                }
+
                 M=K;
                 ublas3::gmm(M,gamma,gamma,identity,w);//M = I*w+gamma*K
                 ublas::matrix<double> M1 = M;
@@ -100,31 +112,12 @@ void KernelLogisticRegression::IRLSKernelLogisticRegression()
                 clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M(0,0), N,&zeta(0),N);
                 beta = ublas1::dot(ones,zeta)/ublas1::dot(ones,xi);
                 ublas2::gmv(xi,-beta,gamma,identity,zeta);//xi=I*zeta-beta*xi
-                alphas = xi;
+                alphas_ublas = xi;
                 step = (beta_old-beta)*(beta_old-beta);
                 beta_old = beta;
-        }while((step > Epsilon || step <0.0) && (++iter < 20) );
+        }while((step > stepEpsilon || step <0.0) && (++iter < 100) );
+	for (int i = 0; i<N; i++){ alphas.push_back(alphas_ublas(i));}
 }
-
-
-void KernelLogisticRegression::calcPZW(){//same as the function in LogisticRegression.cpp
-        size_t N= y.size();
-        for (int ix = 0; ix < N; ix++){
-                g(ix) = g(ix)+beta;
-                double e = exp(g(ix));
-                assert(isfinite(e));
-                Numerical num(1e-15);
-                double p = min(max(e / (1 + e), num.epsilon), 1- num.epsilon);
-                assert(isfinite(p));
-                double mu = m[ix] * p;
-                double sigma = mu * (1-p);
-                w(ix,ix)= max(1/sigma, num.epsilon);
-                assert(isfinite(w(ix,ix)));
-                z(ix)= min(gRange, max(-gRange, g(ix) + (((double)y[ix]) -mu ) / sigma));
-                assert(isfinite(z(ix)));
-                }
-}
-
 
 //calculate all peps of vector xx and stored in vector predict.
 void KernelLogisticRegression::predict(const vector<double> &xx, 
@@ -133,13 +126,16 @@ void KernelLogisticRegression::predict(const vector<double> &xx,
 	transform( xx.begin(),xx.end(),back_inserter(predict),Predictor(this));
 } 
 
-double KernelLogisticRegression::PEPeval(double xx){
-        size_t N=x.size();
+double KernelLogisticRegression::predict(double xx){
+        xx = transf(xx);
+	size_t N=x.size();
         double gx=beta,ker1=0;
         for(int i =0; i<N; i++){
                 ker1= kernel(xx, x[i],bandwidth);
                 gx = gx+alphas[i]*ker1;
         }
-        double pep = exp(gx);
+        double pep = gx;
         return pep;
 }
+
+

@@ -93,7 +93,7 @@ double mymin(double a, double b) {
 
 void PosteriorEstimator::estimatePEP(
                                      vector<pair<double, bool> >& combined,
-                                     double pi0, vector<double>& peps,
+                                    double pi0,vector<double>& peps,
 				       bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
@@ -122,7 +122,7 @@ void PosteriorEstimator::estimatePEP(
 #endif
   double factor = pi0 * ((double)nTargets / (double)nDecoys);
   double top = min(1.0, factor
-      * exp(*max_element(peps.begin(), peps.end())));
+      *exp(*max_element(peps.begin(), peps.end())));
   vector<double>::iterator pep = peps.begin();
   bool crap = false;
   for (; pep != peps.end(); ++pep) {
@@ -142,7 +142,7 @@ void PosteriorEstimator::estimatePEP(
 
 void PosteriorEstimator::estimatePEPGeneralized(
                                      vector<pair<double, bool> >& combined,
-                                     vector<double>& peps,
+                                       vector<double>& peps,
 				       bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
@@ -188,7 +188,7 @@ void PosteriorEstimator::estimatePEPGeneralized(
     }
   }
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
-  double high = *max_element(peps.begin(), peps.end());
+/*  double high = *max_element(peps.begin(), peps.end());
   double low = *min_element(peps.begin(), peps.end());
   assert(high>low);
 
@@ -200,7 +200,7 @@ void PosteriorEstimator::estimatePEPGeneralized(
   pep = peps.begin();
   for (; pep != peps.end(); ++pep) {
     *pep = (*pep - low)/(high-low);
-  }
+  }*/
 }
 
 
@@ -214,7 +214,9 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
   vector<double> medians;
   vector<unsigned int> negatives, sizes;
   binData(combined, medians, negatives, sizes);
+  
   klr.setData(medians, negatives, sizes);
+
   klr.IRLSKernelLogisticRegression();
   // restore sorting order
   if (!reversed) {
@@ -628,10 +630,10 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
     noIntevals = cmd.getInt("n", 1, INT_MAX);
   }
   if (cmd.optionSet("c")) {
-    BaseSpline::convergeEpsilon = cmd.getDouble("c", 0.0, 1.0);
+    KernelLogisticRegression::convergeEpsilon = cmd.getDouble("c", 0.0, 1.0);
   }
   if (cmd.optionSet("s")) {
-    BaseSpline::stepEpsilon = cmd.getDouble("s", 0.0, 1.0);
+    KernelLogisticRegression::stepEpsilon = cmd.getDouble("s", 0.0, 1.0);
   }
   if (cmd.optionSet("o")) {
     resultFileName = cmd.options["o"];
