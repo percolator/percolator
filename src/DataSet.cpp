@@ -300,8 +300,14 @@ std::string DataSet::decoratePeptide(const ::percolatorInNs::peptideType& peptid
   std::string peptideSeq = peptide.peptideSequence();
   BOOST_FOREACH(const ::percolatorInNs::modificationType &mod_ref, peptide.modification()){
     std::stringstream ss;
-    ss << "[UNIMOD:" << mod_ref.uniMod().accession() << "]";
-    mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    if (mod_ref.uniMod().present()) {
+      ss << "[UNIMOD:" << mod_ref.uniMod().get().accession() << "]";
+      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    }
+    if (mod_ref.freeMod().present()) {
+      ss << "[" << mod_ref.freeMod().get().moniker() << "]";
+      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    }
   }
   mods.sort(greater<std::pair<int,std::string> >());
   std::list<std::pair<int,std::string> >::const_iterator it;
