@@ -32,10 +32,6 @@ else(XSD_FOUND)
 endif(XSD_FOUND)  
 include_directories(${XSD_INCLUDE_DIR})
 
-find_package(BLAS REQUIRED)
-include_directories(${BLAS_INCLUDE_DIRS})
-link_directories(${BLAS_INCLUDE_DIRS})
-
 find_package(LAPACK REQUIRED)
 include_directories(${LAPACK_INCLUDE_DIRS})
 link_directories(${LAPACK_INCLUDE_DIRS})
