@@ -25,7 +25,7 @@ double KernelLogisticRegression::stepEpsilon = 1e-8;
 double KernelLogisticRegression::convergeEpsilon=1e-4;
 
 
-class Predictor {
+class Predictor { 
 	KernelLogisticRegression* bs;
 	public:
 	Predictor(KernelLogisticRegression* b){
@@ -61,7 +61,7 @@ void KernelLogisticRegression::setData(const vector<double>& xx) {
 double KernelLogisticRegression::kernel(double x1, double x2,double h) {
         double ker;
         double u = (x1-x2)/h;
-        ker = 1/sqrt(2* PI )*exp(-u*u/2);//Guassian kernel. could be fixed.
+        ker = 1/sqrt(2* PI )*exp(-u*u/2);//Guassian kernel. could be changed.
         return ker;
 }
 
@@ -83,6 +83,7 @@ void KernelLogisticRegression::IRLSKernelLogisticRegression()
                 }
         }
         do {
+		//blas subroutine:  http://www.netlib.org/blas/dgemv.f
                 cblas_dgemv(CblasRowMajor,CblasNoTrans,N, N,1.0,&K[0],N,&alphas[0],incx,0.0,&g[0],incx);//g=K*alphas + 0*g
  		for (int ix = 0; ix < N; ix++){
                 	g[ix] = g[ix]+beta;
@@ -97,9 +98,11 @@ void KernelLogisticRegression::IRLSKernelLogisticRegression()
                 	assert(isfinite(z[ix]));
                 }
                 vector<double> M=K;
+		//blas subroutine: http://www.netlib.org/blas/dgemm.f
                 cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans, N,N,N,1,&identity[0],N,&w[0],N,gamma,&M[0],N);//M = I*w+gamma*K
                 vector<double> M1 = M;
                 vector<double> xi = ones;
+		//lapack subroutine:  http://www.netlib.org/lapack/double/dposv.f 
                 clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M1[0], N,&xi[0],N);
                 vector<double> zeta = z;
                 clapack_dposv(CblasRowMajor,CblasUpper,N,nrhs,&M[0], N,&zeta[0],N);
@@ -111,7 +114,7 @@ void KernelLogisticRegression::IRLSKernelLogisticRegression()
         }while((step > stepEpsilon || step <0.0) && (++iter < 100) );
 }
 
-//calculate all peps of vector xx and stored in vector predict.
+//calculate all peps of vector xx and stored in vector predict. from BaseSpline.cpp
 void KernelLogisticRegression::predict(const vector<double> &xx, 
 					vector<double> & predict){
 	predict.clear();
