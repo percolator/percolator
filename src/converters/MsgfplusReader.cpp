@@ -244,11 +244,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
 
-    // Old psmid, didn't include filename
-    //psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
-    //        boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
-
-    // Make a PSM id, from filename, item_id, scan_number, charge and rank (perhaps a bit long...)
+    // Make a PSM id, from filename, item_id, scan_number, charge and rank
     std::string fileId = fn;
     size_t spos = fileId.rfind('/');
     if (spos != std::string::npos)
@@ -314,7 +310,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	      case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
 	      case 8: MS2IonCurrent = boost::lexical_cast<double>(up.value().get().c_str());break;
 	      case 9: MeanErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
-	      case 10: // Stdev sometimes equals 0, use the mean error in that case
+	      case 10: // Stdev could equal 0, use the mean error in that case
 	    	  if (boost::lexical_cast<string > (up.value().get().c_str()) == "0.0") StdevErrorTop7 = MeanErrorTop7;
 	    	  else StdevErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
 	      case 11: NumMatchedMainIons = boost::lexical_cast<int>(up.value().get().c_str()); break;
@@ -331,8 +327,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     // If MeanErrorAll is 0.0, it was not updated, it was probably missing in the file.
     if (MeanErrorTop7 == 0.0) {
     	// Skip this PSM
-    	std::cerr << "PSM " << boost::lexical_cast<string > (item.id()) << " seems to miss a feature (MeanRelErrorAll) ";
-    	std::cerr << "and was discarded." << std::endl;
     	return;
     }
 
