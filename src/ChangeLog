@@ -1,3 +1,7 @@
+v2.05
+* Added support for MSGF+ files, using the parser msgf2pin
+* Enabled windows 64-bit executables througnh MinGW64
+	
 v2.04
 * Incorporated new version of Fido to estimate Protein Probabilities
 * Added new parameters to use when estimating Protein Probabilities :
