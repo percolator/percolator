@@ -6,12 +6,13 @@ branch="branch-2-05"
 # chkconfig sshd on
 # usermod lukask -a -G wheel
 
-sudo yum install git gcc gcc-c++ cmake wget rpm-build 
-sudo yum install tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel 
+sudo yum install -y git gcc gcc-c++ cmake wget rpm-build 
+sudo yum install -y tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel 
 
-src=~/src${post}
-build=~/build${post}
+src=/tmp/src${post}
+build=/tmp/build${post}
 
+rm -fr ${src} ${build}
 mkdir -p ${src} ${build}
 
 
