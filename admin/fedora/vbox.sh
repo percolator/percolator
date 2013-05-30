@@ -5,5 +5,6 @@
 pass="my_pass"
 host="fedora"
 
-ssh fedora 'echo ' ${pass} ' | sudo -Sv && bash -s' < rpm_build.sh
-ssh fedora 'echo ' ${pass} ' | sudo -Sv && bash -s' < mingw64_build.sh
+ssh ${host} 'echo ' ${pass} ' | sudo -Sv && bash -s' < mingw64_build.sh
+ssh ${host} 'echo ' ${pass} ' | sudo -Sv && bash -s' < rpm_build.sh
+

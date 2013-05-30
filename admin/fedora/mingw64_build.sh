@@ -3,7 +3,7 @@
 post="_mingw64"
 branch="branch-2-05"
 
-sudo yum install -y cmake wget mingw-w64-tools mingw-binutils-generic
+sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic
 sudo yum install -y mingw64-tokyocabinet mingw64-boost mingw64-sqlite mingw64-zlib
 
 src=/tmp/src${post}
