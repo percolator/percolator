@@ -3,14 +3,16 @@
 post="_mingw64"
 branch="branch-2-05"
 
-sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic
-sudo yum install -y mingw64-tokyocabinet mingw64-boost mingw64-sqlite mingw64-zlib
+sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
+sudo yum install -y mingw64-boost mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
 
 src=/tmp/src${post}
 build=/tmp/build${post}
+release=${home}/rel
+
 
 rm -fr ${src} ${build}
-mkdir -p ${src} ${build}
+mkdir -p ${src} ${build} ${rel}
 
 
 cd ${src}
@@ -33,8 +35,7 @@ cd ${build}
 
 tar xvzf ${src}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-transcoder-windows --en
-able-shared --host=x86_64-w64-mingw32
+./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
 cd src/
 make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
 sudo make install
@@ -44,14 +45,16 @@ sudo make install
 cd  ${src}
 git clone git://github.com/percolator/percolator.git
 cd percolator
-git checkout ${branch}
+git checkout --track origin/${branch}
 
 mkdir -p ${build}/percolator
 cd ${build}/percolator
 
 
-mingw64-cmake -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator
+mingw64-cmake -DCMAKE_PREFIX_PATH="${src}/${xsd}/;${src}/${xer}/src/"  ${src}/percolator
 make -j4 package
+
+cp per*.exe ${rel}
  
 
 mkdir -p ${build}/converters
@@ -59,3 +62,5 @@ cd ${build}/converters
 
 mingw64-cmake -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
+
+cp per*.exe ${rel}

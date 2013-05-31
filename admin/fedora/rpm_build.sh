@@ -11,10 +11,11 @@ sudo yum install -y tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel
 
 src=/tmp/src${post}
 build=/tmp/build${post}
+release=${home}/rel
+
 
 rm -fr ${src} ${build}
-mkdir -p ${src} ${build}
-
+mkdir -p ${src} ${build} ${rel}
 
 cd ${src}
 
@@ -47,13 +48,14 @@ ranlib libxerces-c.a
 cd  ${src}
 git clone git://github.com/percolator/percolator.git
 cd percolator
-git checkout ${branch}
+git checkout--track origin/${branch}
 
 mkdir -p ${build}/percolator
 cd ${build}/percolator
 
 cmake -DTARGET_ARCH=amd64 -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/"  ${src}/percolator
 make -j4 package
+cp per*.rpm ${rel}
  
 
 
@@ -61,3 +63,4 @@ mkdir -p ${build}/converters
 cd ${build}/converters
 cmake -DTARGET_ARCH=amd64 -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
+cp per*.rpm ${rel}
