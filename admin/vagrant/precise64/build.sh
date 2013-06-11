@@ -37,6 +37,7 @@ function pkg_mng()
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
 
+sudo apt-get update;
 pkg_mng "g++";
 pkg_mng "make";
 pkg_mng "cmake";
