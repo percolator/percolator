@@ -11,12 +11,8 @@ Instuctions:
 .copy 'vagrantfile' and 'script.sh' to the folder X.
 .change branch value in script.sh to desired branch you want to be built.
 .$ vagrant up
+.a folder named 'build' is created containing built files. downloaded source folder will be there too.
 .use '$vagrant halt' to turn off the VM and preserving installed packages OR use '$vagrant destraoy' to completely reset the VM.
 
 -----------------------------------------------------------------------------
-Outputs:
 
-these outputs all exist in the folder X:
-. a folder containing source code
-. folder 'build' which contains two filders 'percolator' and 'converters' consisting of outputs of cmake and make from percolator and converters.
-. folder 'release' containing only released packages of percolator and converters. 
