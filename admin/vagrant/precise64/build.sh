@@ -38,7 +38,7 @@ cur_dir=$PWD; #if there is no /vagrant
 #-----clone-----
 rm -rf $src_dir;
 echo -n "Cloning Percolator branch:$branch.....";
- git clone git://github.com/percolator/percolator --branch $branch;
+ git clone https://github.com/percolator/percolator.git --branch $branch;
 ######percolator########
 #-----cmake-----
 rm -rf build;mkdir build;mkdir build/percolator;mkdir build/converters;
