@@ -1,7 +1,7 @@
 #!/bin/bash
 
-branch="branch-2-05";
-src_dir="percolator";
+src_dir="/vagrant/src";
+build_dir="/vagrant/build";
 
 function pkg_mng()
 {
@@ -33,18 +33,13 @@ pkg_mng "leveldb-doc";
 pkg_mng "zlib1g-dev";
 
 #------------------------------------------------------------------------
-cd /vagrant; 
-cur_dir=$PWD; #if there is no /vagrant
-#-----clone-----
-rm -rf $src_dir;
-echo -n "Cloning Percolator branch:$branch.....";
- git clone https://github.com/percolator/percolator.git --branch $branch;
+mkdir $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
+
 ######percolator########
 #-----cmake-----
-rm -rf build;mkdir build;mkdir build/percolator;mkdir build/converters;
-cd $cur_dir/build/percolator;
+cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-if (cmake $cur_dir/$src_dir) > /dev/null ;
+if (cmake $src_dir/percolator) > /dev/null ;
 then echo "Done";
 else echo "Cmake was unsuccessful!";return 1; fi;
 #-----make------
@@ -53,10 +48,10 @@ if (make -j2 package) > /dev/null;
 then echo "Done";
 else echo "make was unsuccessful!";return 1; fi;
 #######converters########
-cd $cur_dir/build/converters
+cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-if (cmake $cur_dir/$src_dir/src/converters) > /dev/null ;
+if (cmake $src_dir/percolator/src/converters) > /dev/null ;
 then echo "Done";
 else echo "Cmake was unsuccessful!";return 1; fi;
 #-----make------
@@ -65,9 +60,4 @@ if (make -j2 package) > /dev/null;
 then echo "Done";
 else echo "make was unsuccessful!";return 1; fi;
 ###########################
-#-----release-----
-cd $cur_dir;mkdir release;
-cp $cur_dir/build/percolator/per*.rpm release/
-cp $cur_dir/build/percolator/per*.deb release/
-cp $cur_dir/build/converters/per*.rpm release/
-cp $cur_dir/build/converters/per*.deb release/
+

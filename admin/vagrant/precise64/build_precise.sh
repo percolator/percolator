@@ -4,8 +4,8 @@ branch="branch-2-05";
 release="$HOME/release";
 #---------------------------------------------------------------------------------------
 tmp_dir="/tmp/tmp";
-builder="rpm_build.sh";
-fedora_box_url="http://www.nada.kth.se/~alinar/fedora64.box";
+builder="precise64_build.sh";
+precise_box_url="http://files.vagrantup.com/precise64.box";
 #---------------------------------------------------------------------------------------
 # making directories and copy builder:
 rm -rf ${tmp_dir}; mkdir ${tmp_dir};
@@ -26,8 +26,8 @@ cat <<EOF > Vagrantfile
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora64"
-  config.vm.box_url = "${fedora_box_url}"
+  config.vm.box = "precise64"
+  config.vm.box_url = "$precise_box_url"
   config.vm.provision :shell, :path => "${builder}"
 end
 EOF
@@ -38,8 +38,8 @@ vagrant up
 
 #---------------------------------------------------------------------------------------
 # release:
-cp ${tmp_dir}/build/percolator/per*.rpm ${release};
-cp ${tmp_dir}/build/converters/per*.rpm ${release};
+cp ${tmp_dir}/build/percolator/per*.deb ${release};
+cp ${tmp_dir}/build/converters/per*.deb ${release};
 
 #---------------------------------------------------------------------------------------
 vagrant destroy -f

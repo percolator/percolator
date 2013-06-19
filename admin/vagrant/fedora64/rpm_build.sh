@@ -1,14 +1,9 @@
 #!/bin/bash
 
 post="Fedora"
-branch="branch-2-05"
-src_sf="/share-dir"
-build_sf="/share-dir/build"
-src="/src"
-build="/build"
+src="/vagrant/src"
+build="/vagrant/build"
 
-rm -rf $src;mkdir $src;cp -r $src_sf/* $src;
-rm -rf $build
 
 # chkconfig sshd on
 # usermod lukask -a -G wheel
@@ -51,15 +46,11 @@ cd ${build}/percolator
 cmake -DTARGET_ARCH=amd64 -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/"  ${src}/percolator
 make -j4 package
 #cp per*.rpm ${rel}
- 
-
 
 mkdir -p ${build}/converters
 cd ${build}/converters
 cmake -DTARGET_ARCH=amd64 -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
-make -j4 package 
-
-mkdir $build_sf;cp -r $build/* $build_sf
+make -j4 package
 
 #cp per*.rpm ${rel}

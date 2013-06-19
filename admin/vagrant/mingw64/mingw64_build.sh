@@ -1,19 +1,14 @@
 #!/bin/bash
 
 post="_mingw64"
-branch="branch-2-05"
+src="/vagrant/src"
+build="/vagrant/build"
+
 
 yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
 yum install -y mingw64-boost mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
-src_sf="/share-dir"
-build_sf="/share-dir/build"
-src="/src"
-build="/build"
 
 #release=${home}/rel
-
-rm -rf $src;mkdir $src;cp -r $src_sf/* $src;
-rm -rf $build
 
 cd ${src}
 
@@ -58,5 +53,4 @@ cd ${build}/converters
 mingw64-cmake -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
 
-mkdir $build_sf;cp -r $build/* $build_sf
 #cp per*.exe ${rel}
