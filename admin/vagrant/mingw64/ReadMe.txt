@@ -2,7 +2,7 @@ description:
 these scripts make cross-compilation using mingw64 in a fedora64 vm and release WIN32 exe packages of percolator and converters.
 
 Prerequisite:
-. vagrant
+. vagrant 1.2.2
 . VirtualBox
 . git
 . openssh

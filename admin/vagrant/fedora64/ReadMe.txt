@@ -1,5 +1,5 @@
 Prerequisite:
-. vagrant
+. vagrant 1.2.2
 . VirtualBox
 . git
 . openssh
