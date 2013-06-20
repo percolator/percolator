@@ -9,6 +9,6 @@ Prerequisite:
 
 Instructions:
 1. in build_master.sh set release value to the desired path and branch value to the desired branch.
-3. $ bash build_master.sh
+2. $ bash build_master.sh
 
 

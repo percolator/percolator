@@ -10,6 +10,6 @@ Prerequisites:
 Instructions:
 1. in build_win.sh set release value to the desired path and branch value to the desired 
 branch.
-3. $ bash build_win.sh
+2. $ bash build_win.sh
 
 
