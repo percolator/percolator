@@ -1,12 +1,22 @@
 #!/bin/bash
 
-post="_mingw64"
-src="/vagrant/src"
-build="/vagrant/build"
+# managing input arguments
+
+if [ $# -eq 2 ];
+then src=$1;build=$2;
+elif [ $# -eq 1 ];
+then sudo yum install git;
+tmp_dir="$(mktemp -d --tmpdir mingw_tmp_XXXX)";
+mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
+src="${tmp_dir}/src";build="${tmp_dir}/build";
+git clone --branch "$1" https://github.com/percolator/percolator.git ${src}/percolator;
+else echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
+return 1;
+fi;
 
 
-yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
-yum install -y mingw64-boost mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
+sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
+sudo yum install -y mingw64-boost mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
 
 #release=${home}/rel
 
@@ -53,4 +63,5 @@ cd ${build}/converters
 mingw64-cmake -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
 
+echo "build directory is : "$build_dir"";
 #cp per*.exe ${rel}

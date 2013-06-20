@@ -1,39 +1,30 @@
 #!/bin/bash
 
-src_dir="/vagrant/src";
-build_dir="/vagrant/build";
+# managing input arguments
 
-function pkg_mng()
-{
-	echo -n "installing the package $1 ...";
-	(sudo apt-get -y install $1) > /dev/null;
-	if [ $? -eq 0 ] 
-	then echo "$1 is installed."; return 0;
-	else echo "$1 could not be installed."; return 1;
-	fi;
-}
+if [ $# -eq 2 ];
+then src_dir=$1;build_dir=$2;
+elif [ $# -eq 1 ];
+then sudo apt-get install git;
+tmp_dir="$(mktemp -d --tmpdir precise_tmp_XXXX)";
+mkdir "$tmp_dir"/src;mkdir "$tmp_dir"/build;
+src_dir=""$tmp_dir"/src";build_dir=""$tmp_dir"/build";
+git clone --branch "$1" https://github.com/percolator/percolator.git "$src_dir"/percolator;
+else echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
+return 1;
+fi;
+
+#------------------------------------------------------------------------
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
 
 sudo apt-get update;
-pkg_mng "g++";
-pkg_mng "make";
-pkg_mng "cmake";
-pkg_mng "rpm";
-pkg_mng "git";
-pkg_mng "xsdcxx";
-pkg_mng "libxerces-c-dev";
-pkg_mng "libboost-dev";
-pkg_mng "libboost-filesystem-dev";
-pkg_mng "libboost-system-dev";
-pkg_mng "libboost-thread-dev";
-pkg_mng "libsqlite3-dev";
-pkg_mng "libleveldb-dev";
-pkg_mng "leveldb-doc";
-pkg_mng "zlib1g-dev";
+sudo apt-get -y install g++ make cmake rpm;
+sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-dev;
+sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libleveldb-dev leveldb-doc zlib1g-dev;
 
 #------------------------------------------------------------------------
-mkdir $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
+mkdir -p $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
 
 ######percolator########
 #-----cmake-----
@@ -60,4 +51,4 @@ if (make -j2 package) > /dev/null;
 then echo "Done";
 else echo "make was unsuccessful!";return 1; fi;
 ###########################
-
+echo "build directory is : "$build_dir"";

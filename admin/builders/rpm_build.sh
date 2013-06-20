@@ -1,17 +1,24 @@
 #!/bin/bash
 
-post="Fedora"
-src="/vagrant/src"
-build="/vagrant/build"
+# managing input arguments
 
+if [ $# -eq 2 ];
+then src=$1;build=$2;
+elif [ $# -eq 1 ];
+then sudo yum install git;
+tmp_dir="$(mktemp -d --tmpdir rpm_tmp_XXXX)";
+mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
+src="${tmp_dir}/src";build="${tmp_dir}/build";
+git clone --branch "$1" https://github.com/percolator/percolator.git ${src}/percolator;
+else echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
+return 1;
+fi;
 
 # chkconfig sshd on
 # usermod lukask -a -G wheel
 
-yum install -y gcc 
-yum install -y gcc-c++ 
-yum install -y cmake wget rpm-build
-yum install -y tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel 
+sudo yum install -y gcc gcc-c++ cmake wget rpm-build
+sudo yum install -y tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel 
 
 cd ${src}
 # download and patch xsd
@@ -53,4 +60,5 @@ cmake -DTARGET_ARCH=amd64 -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${buil
 make -j4 package
 make -j4 package
 
+echo "build directory is : "$build_dir"";
 #cp per*.rpm ${rel}
