@@ -3,9 +3,9 @@
 # managing input arguments
 
 if [ $# -eq 2 ];
-then src=$1;build=$2;
+then src=$1;build=$2;mkdir -p ${build};
 elif [ $# -eq 1 ];
-then sudo yum install git;
+then sudo yum git;
 tmp_dir="$(mktemp -d --tmpdir mingw_tmp_XXXX)";
 mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
 src="${tmp_dir}/src";build="${tmp_dir}/build";
@@ -36,6 +36,7 @@ xer=xerces-c-3.1.1
 
 wget http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
 
+mkdir -p ${build}
 cd ${build}
 
 tar xvzf ${src}/${xer}.tar.gz 
@@ -43,7 +44,7 @@ cd ${xer}/
 ./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
 cd src/
 make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
-make install
+sudo make install
 
 # download, compile and link percolator
 
