@@ -35,7 +35,7 @@ cat <<EOF > Vagrantfile
 Vagrant.configure("2") do |config|
   config.vm.box = "precise64"
   config.vm.box_url = "${precise_box_url}"
-  config.vm.provision :shell, :inline => "export HOME=/home/vagrant;sudo -u vagrant bash /vagrant/${builder} /vagrant/src /vagrant/build${post}"
+  config.vm.provision :shell, :inline => "su vagrant -c 'bash /vagrant/${builder} /vagrant/src /vagrant/build${post}'"
 end
 EOF
 #-----------------end of Vagrantfile content--------

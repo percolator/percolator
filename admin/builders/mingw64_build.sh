@@ -3,15 +3,16 @@
 # managing input arguments
 
 if [ $# -eq 2 ];
-then src=$1;build=$2;mkdir -p ${build};
+  then src=$1;build=$2;mkdir -p ${build};
 elif [ $# -eq 1 ];
-then sudo yum git;
-tmp_dir="$(mktemp -d --tmpdir mingw_tmp_XXXX)";
-mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
-src="${tmp_dir}/src";build="${tmp_dir}/build";
-git clone --branch "$1" https://github.com/percolator/percolator.git ${src}/percolator;
-else echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
-return 1;
+  then sudo yum git;
+  tmp_dir="$(mktemp -d --tmpdir mingw_tmp_XXXX)";
+  mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
+  src="${tmp_dir}/src";build="${tmp_dir}/build";
+  git clone --branch "$1" https://github.com/percolator/percolator.git ${src}/percolator;
+else 
+  echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
+  exit 1;
 fi;
 
 
@@ -64,5 +65,5 @@ cd ${build}/converters
 mingw64-cmake -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
 
-echo "build directory is : "$build_dir"";
+echo "build directory is : ${build}";
 #cp per*.exe ${rel}
