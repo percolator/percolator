@@ -35,10 +35,10 @@ cat <<EOF > Vagrantfile
 Vagrant.configure("2") do |config|
   config.vm.box = "fedora18"
   config.vm.box_url = "${fedora_box_url}"
-  config.vm.provision :shell, :inline => "sudo -u vagrant bash /vagrant/${builder} /vagrant/src /vagrant/build${post}"
+  config.vm.provision :shell, :inline => "su vagrant -c 'bash /vagrant/${builder} /vagrant/src /vagrant/build${post}'"
 end
 EOF
-#-----------------end of Vagrantfile content--------
+#-----------------end of Vagrantfile content-------
 
 #---------------------------------------------------------------------------------------
 vagrant up
@@ -46,7 +46,9 @@ vagrant up
 #---------------------------------------------------------------------------------------
 # release:
 cp ${tmp_dir}/build${post}/percolator/per*.rpm ${release};
+cp ${tmp_dir}/build${post}/percolator/per*.deb ${release};
 cp ${tmp_dir}/build${post}/converters/per*.rpm ${release};
+cp ${tmp_dir}/build${post}/converters/per*.deb ${release};
 
 #---------------------------------------------------------------------------------------
 vagrant destroy -f
