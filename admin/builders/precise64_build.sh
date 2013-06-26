@@ -31,7 +31,7 @@ mkdir -p $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-if cmake $src_dir/percolator;
+if cmake -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
 then echo "Done";
 else echo "Cmake was unsuccessful!";fi;
 #-----make------
@@ -43,7 +43,7 @@ else echo "make was unsuccessful!";fi;
 cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-if cmake $src_dir/percolator/src/converters;
+if cmake -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator/src/converters;
 then echo "Done";
 else echo "Cmake was unsuccessful!";fi;
 #-----make------

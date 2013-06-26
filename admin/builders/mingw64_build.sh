@@ -26,8 +26,8 @@ cd ${src}
 # download and patch xsd
 
 xsd=xsd-3.3.0-x86_64-linux-gnu
-wget http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/${xsd}.tar.bz2
-tar xvjf ${xsd}.tar.bz2
+wget --quiet http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/${xsd}.tar.bz2
+tar xjf ${xsd}.tar.bz2
 sed -i 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
 sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
 sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
@@ -35,12 +35,12 @@ sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extra
 # download, compile and link xerces
 xer=xerces-c-3.1.1
 
-wget http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
+wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
 
 mkdir -p ${build}
 cd ${build}
 
-tar xvzf ${src}/${xer}.tar.gz 
+tar xzf ${src}/${xer}.tar.gz 
 cd ${xer}/
 ./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
 cd src/
