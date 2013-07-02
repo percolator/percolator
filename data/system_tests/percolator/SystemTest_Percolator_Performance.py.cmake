@@ -92,9 +92,9 @@ def performanceD4On():
     success = False
   return success
 
-psmFile="/tmp/PERCOLATOR_psm.txt"
-peptideFile="/tmp/PERCOLATOR_peptide.txt"
-proteinFile="/tmp/PERCOLATOR_protein.txt"
+psmFile="/tmp/PERCOLATOR_psms.txt"
+peptideFile="/tmp/PERCOLATOR_peptides.txt"
+proteinFile="/tmp/PERCOLATOR_proteins.txt"
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,283)
 # number of significant peptrides within boundaries
