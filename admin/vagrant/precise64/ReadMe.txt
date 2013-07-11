@@ -1,0 +1,11 @@
+Prerequisites:
+* vagrant 1.2.2
+* VirtualBox
+* git
+* openssh
+
+Instructions:
+1. in build_precise.sh set release value to the desired path and branch value to the desired branch.
+2. $ bash build_precise.sh
+
+
