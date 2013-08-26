@@ -20,7 +20,7 @@ usage: $0
 
 If no branch and source_directory is provided, the same source
 code will be used.
-Make sure Vagrant and VirtualBox are up to date.
+Make sure that Vagrant and VirtualBox are up to date.
 EOF
 }
 #--------------------------------------------------------
@@ -29,7 +29,7 @@ EOF
 #Default values:
 
 multi_platform=0
-while getopts “hb:s:r:m:” OPTION
+while getopts “hb:s:r:p:” OPTION
 do
      case $OPTION in
          h)
@@ -74,7 +74,7 @@ do
 						arr=$(echo $OPTARG | tr "," "\n")
 						multi_platform=1
 					else
-						echo "Machine $OPTARG is not defined."
+						echo "Platform $OPTARG is undefined."
 						exit 1
 					fi
 				esac
@@ -102,8 +102,8 @@ if [ $multi_platform == 1 ]
 				then
 				arg=$arg"-r $release " 
 		fi
-		arg=$arg"-m $x"
-		# run the same script with one machine.
+		arg=$arg"-p $x"
+		# run the same script with one platform.
 		bash $0 $arg
 	done
 	exit 0;
