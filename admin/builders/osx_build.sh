@@ -36,17 +36,19 @@ sed -i -e 's/xdr_int8_t/xdr_char/g' ${extr} ${inse}
 sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
 #------------------------------------------
 xer=xerces-c-3.1.1
-
-#curl -O http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
-
-#mkdir -p ${build}
-#cd ${build}
-#tar xzf ${src}/${xer}.tar.gz 
-#cd ${xer}/
-#./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" 
-#cd src/
-#make
-#sudo make install
+mkdir -p ${build}
+cd ${build}
+if [ -d /usr/local/include/xercesc ]
+	then
+	echo "Xerces is already installed."
+else
+	curl -O http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
+	tar xzf ${src}/${xer}.tar.gz 
+	cd ${xer}/
+	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" 
+	make
+	sudo make install
+fi
 
 #-------------------------------------------
 mkdir -p ${build}/percolator
