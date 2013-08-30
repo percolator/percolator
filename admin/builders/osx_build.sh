@@ -1,4 +1,10 @@
 #!/bin/bash
+# Requirements are:
+#	Command line tools
+#	MacPorts
+#	CMake
+#----------------------------------------
+
 current_path=$PWD
 Ppath="$(dirname ${BASH_SOURCE})"
 cd ${Ppath}
