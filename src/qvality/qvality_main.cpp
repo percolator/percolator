@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     try
     {
      if (pCaller->parseOptions(argc, argv)) {
-       retVal=pCaller->run();
+     	if (pCaller->run()) retVal=0;
      }
     } 
     catch (const std::exception& e) 
