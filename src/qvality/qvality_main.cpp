@@ -14,28 +14,29 @@
  limitations under the License.
 
  *******************************************************************************/
+#include <cstdlib>
 #include "Option.h"
 #include "Globals.h"
 #include "PosteriorEstimator.h"
 
 int main(int argc, char** argv) {
     PosteriorEstimator* pCaller = new PosteriorEstimator();
-    int retVal = -1;
+    int retVal = EXIT_FAILURE;
     try
     {
      if (pCaller->parseOptions(argc, argv)) {
-     	if (pCaller->run()) retVal=0;
+     	if (pCaller->run()) retVal=EXIT_SUCCESS;
      }
     } 
     catch (const std::exception& e) 
     {
       std::cerr << e.what() << endl;
-      retVal = -1;
+      retVal = EXIT_FAILURE;
     }
     catch(...)
     {
       std::cerr << "Unknown exception, contact the developer.." << std::endl;
-      retVal = -1;
+      retVal = EXIT_FAILURE;
     }
     delete pCaller;
     Globals::clean();
