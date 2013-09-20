@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Execute this inside a VirtualBox image to turn it ino a vagrant box.
+# The execution should be followed by:
+# 1. Exportning the VirtualBox using vbox's export facilities into a .ovf
+#    the export will as well include a vmdk-file with the disc image
+# 2. Execute a echo '{"provider":"virtualbox"}' > metadata.json
+# 3. Copy a Vagratfile to the same directory
+# 3. Tar your files into a common .box file, i.e. tar cf my.box * 
 
 sudo groupadd admin
 
