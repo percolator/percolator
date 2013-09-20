@@ -84,7 +84,7 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, libboost-math-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem1.46.1, libxerces-c3.1")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, boost-filesystem (>=1.46), boost-system, boost-math")
 
