@@ -42,7 +42,8 @@ cd ${build}
 
 tar xzf ${src}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
+./configure --disable-network --disable-threads --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
+#./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
 cd src/
 make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
 sudo make install
