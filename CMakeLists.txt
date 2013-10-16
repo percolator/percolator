@@ -86,7 +86,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processo
 include("CPack.txt")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem1.46.1, libxerces-c3.1")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, boost-filesystem (>=1.46), boost-system, boost-math")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c, boost-filesystem (>=1.46), boost-system, boost-math")
 
 
 include(CPack)
