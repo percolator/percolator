@@ -57,7 +57,7 @@ cd ${build}/percolator
 mingw64-cmake -DCMAKE_PREFIX_PATH="${src}/${xsd}/;${src}/${xer}/src/"  ${src}/percolator
 make -j4 package
 
-#cp per*.exe ${rel}
+cp per*.exe ${rel}
  
 
 mkdir -p ${build}/converters
@@ -67,4 +67,4 @@ mingw64-cmake -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/pe
 make -j4 package
 
 echo "build directory is : ${build}";
-#cp per*.exe ${rel}
+cp per*.exe ${rel}
