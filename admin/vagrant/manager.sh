@@ -164,8 +164,8 @@ vagrant up
 #---------------------------------------------------------------------------------------
 # release:
 mkdir -p ${release};
-cp ${tmp_dir}/build_${post}/percolator/{per*.rpm,per*.deb,*.exe,*.dmg} ${release} 2>/dev/null;
-cp ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,*.exe,*.dmg} ${release} 2>/dev/null;
+cp -v ${tmp_dir}/build_${post}/percolator/{per*.rpm,per*.deb,*.exe,*.dmg} ${release} 2>/dev/null;
+cp -v ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,*.exe,*.dmg} ${release} 2>/dev/null;
 #---------------------------------------------------------------------------------------
 vagrant destroy -f
 #---------------------------------------------------------------------------------------
