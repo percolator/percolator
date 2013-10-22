@@ -15,6 +15,9 @@ else
   exit 1;
 fi;
 
+echo "Building the Percolator packages with src=${src} and build=${build}"
+
+
 #------------------------------------------------------------------------
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
@@ -31,7 +34,7 @@ mkdir -p $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-if cmake -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
+if cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" $src_dir/percolator;
 then echo "Done";
 else echo "Cmake was unsuccessful!";fi;
 #-----make------
@@ -43,7 +46,7 @@ else echo "make was unsuccessful!";fi;
 cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-if cmake -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator/src/converters;
+if cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 then echo "Done";
 else echo "Cmake was unsuccessful!";fi;
 #-----make------
@@ -52,4 +55,4 @@ if make -j2 package;
 then echo "Done";
 else echo "make was unsuccessful!";fi;
 ###########################
-echo "build directory is : "$build_dir"";
+echo "build directory was : "$build_dir"";
