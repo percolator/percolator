@@ -625,13 +625,13 @@ int Caller::readFiles() {
       //checking if database is present to jump it
       if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName()))
       {
-	//NOTE I dont really need this info, do I? good to have it though
-	/*
-	std::auto_ptr< ::percolatorInNs::databases > 
-	databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
-	*/
-	doc = p.next();
-	Caller::hasProteins = true;
+        //NOTE I dont really need this info, do I? good to have it though
+        /*
+          std::auto_ptr< ::percolatorInNs::databases > 
+	      databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
+        */
+        doc = p.next();
+        Caller::hasProteins = true;
       }
       
       // read process_info element
@@ -1175,24 +1175,24 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     normal.print(*fullset);
   } else if(!resultFN.empty()) {
     if(writeOutput){
-      ofstream targetStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+resultFN).data(), ios::out);
+      ofstream targetStream((resultFN+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
       normal.print(*fullset, targetStream);
       targetStream.close();
     }
     else
     {
-      ofstream targetStream(("PSMs_"+resultFN).data(), ios::out);
+      ofstream targetStream((resultFN+".psms").data(), ios::out);
       normal.print(*fullset, targetStream);
       targetStream.close();
     }
   }
   if (!decoyOut.empty() && writeOutput) {
-    ofstream decoyStream(((reportUniquePeptides ? "peptides_" : "PSMs_")+decoyOut).data(), ios::out);
+    ofstream decoyStream((decoyOut+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
     shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
   else if(!decoyOut.empty()) {
-    ofstream decoyStream(("PSMs_"+decoyOut).data(), ios::out);
+    ofstream decoyStream((decoyOut+".psms").data(), ios::out);
     shuffled.print(*fullset, decoyStream);
     decoyStream.close();
   }
