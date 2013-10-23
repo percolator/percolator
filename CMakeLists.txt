@@ -1,4 +1,4 @@
-###############################################################################
+#############################################################################
 # NAME AND VERSION
 ###############################################################################
 cmake_minimum_required (VERSION 2.6)
@@ -44,6 +44,9 @@ load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 ###############################################################################
 # COMPILING
 ###############################################################################
+if( APPLE )
+     add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
+endif( APPLE )
 
 add_subdirectory(src)
 
@@ -74,7 +77,6 @@ endif( MINGW )
 install(FILES src/xml/percolator_in.xsd DESTINATION ${XML_REL_PATH}/${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 
-
 # ###############################################################################
 # # PACKAGING
 # ###############################################################################
@@ -82,9 +84,9 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, libboost-math-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem1.46.1, libxerces-c3.1")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, boost-filesystem (>=1.46), boost-system, boost-math")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c, boost-filesystem (>=1.46), boost-system, boost-math")
 
 
 include(CPack)

@@ -2,6 +2,7 @@
 
 # managing input arguments
 
+
 if [ $# -eq 2 ];
   then src=$1;build=$2;
 elif [ $# -eq 1 ];
@@ -14,6 +15,8 @@ else
   echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
   exit 1;
 fi;
+
+echo "Building the Percolator packages with src=${src} and build=${build}"
 
 # chkconfig sshd on
 # usermod lukask -a -G wheel
@@ -40,7 +43,8 @@ mkdir ${build}
 cd ${build}
 tar xzf ${src}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-transcoder-gnuiconv --enable-static
+#./configure --disable-network --disable-threads --enable-transcoder-gnuiconv --enable-static
+./configure --disable-network --disable-threads --enable-static
 cd src/
 make -j4
 ln -s .libs/libxerces-c.a .
@@ -51,13 +55,13 @@ ranlib libxerces-c.a
 mkdir -p ${build}/percolator
 cd ${build}/percolator
 
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/"  ${src}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/"  ${src}/percolator
 make -j4 package
 #cp per*.rpm ${rel}
 
 mkdir -p ${build}/converters
 cd ${build}/converters
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/" ${src}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
 make -j4 package
 
