@@ -650,6 +650,17 @@ int Caller::readFiles() {
 
       percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
 
+      //I want to get the initial values that are present in feature descriptions
+      vector<double> init_values;
+      BOOST_FOREACH( const ::percolatorInNs::featureDescription & descr,  featureDescriptions.featureDescription() ) {
+          if(descr.initialValue().present()){
+              if(VERB >2){
+                  std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
+              }
+              init_values.push_back(descr.initialValue().get());
+          }
+      }
+      
       FeatureNames& feNames = DataSet::getFeatureNames();
       feNames.setFromXml(featureDescriptions, docFeatures);
       targetSet->initFeatureTables(feNames.getNumFeatures(), docFeatures);
@@ -694,6 +705,7 @@ int Caller::readFiles() {
       
       pCheck = SanityCheck::initialize(otherCall);
       assert(pCheck);
+      pCheck->addDefaultWeights(init_values);
       normal.push_back_dataset(targetSet);
       shuffled.push_back_dataset(decoySet);
       normal.setSet();

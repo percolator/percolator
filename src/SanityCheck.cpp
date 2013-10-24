@@ -38,6 +38,7 @@ SanityCheck::~SanityCheck() {
 bool SanityCheck::overRule = false;
 string SanityCheck::initWeightFN = "";
 int SanityCheck::initDefaultDir = 0;
+vector<double> SanityCheck::default_weights = vector<double>();
 
 /**
  * Returns an instance of the appropriate sanity check based on information
@@ -83,13 +84,35 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
 }
 
 void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
+    
+  //If I have not been given a initial direction
   if (!initDefaultDir) {
-    // Set init direction to be the most discriminative direction
-    for (size_t set = 0; set < w.size(); ++set) {
-      (*pTrainset)[set].getInitDirection(fdr, w[set], true);
-    }
+      //if the default_weights from pin.xml are not present
+      if(default_weights.size() == 0) {
+        // Set init direction to be the most discriminative direction
+        for (size_t set = 0; set < w.size(); ++set) {
+            (*pTrainset)[set].getInitDirection(fdr, w[set], true);
+        }
+      }
+      else
+      {
+          // I want to assign the default vector that is present in the pin.xml file
+          for (size_t set = 0; set < w.size(); ++set) {
+              for (size_t ix = 0; ix < w[set].size(); ix++) {
+                  w[set][ix] = 0;
+                  //TOFIX relaying in insertion order...very bad
+                  if(ix < default_weights.size()){
+                      //std::cerr << "I am setting the initial weith to " << default_weights[ix] << std::endl;
+                      w[set][ix] = default_weights[ix];
+                  }
+                      
+              }
+          }
+          
+      }
     
   } else {
+     
     for (size_t set = 0; set < w.size(); ++set) {
       for (size_t ix = 0; ix < w[set].size(); ix++) {
         w[set][ix] = 0;

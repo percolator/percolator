@@ -45,6 +45,9 @@ public:
   void getMaxMinCharge(const std::string &fn, bool isDecoy);
   
   void addFeatureDescriptions(bool doEnzyme);
+  
+protected:
+    static const std::map<string,double> sqtFeaturesDefaultValue;
 };
 
 #endif // SQTREADER_H

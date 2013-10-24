@@ -1,5 +1,20 @@
 #include "SqtReader.h"
 
+
+//default score vector //TODO move this to a file or input parameter                          
+const std::map<string,double> SqtReader::sqtFeaturesDefaultValue =
+boost::assign::map_list_of("lnrSp", 0.0)
+("deltLCn",1.61)
+("deltCn", 0.0)
+("Xcorr", 1.1)
+("Sp", 0.0)
+("IonFrac", 0.0)
+("Mass", 0.0)
+("PepLen", -0.573)
+("Charge1", 0.0335)
+("Charge2", 0.149)
+("Charge3", -0.156);
+
 SqtReader::SqtReader(ParseOptions *po):Reader(po)
 {
 }
@@ -384,22 +399,29 @@ bool SqtReader::checkIsMeta(const std::string &file)
 
 void SqtReader::addFeatureDescriptions(bool doEnzyme) 
 {
-  push_backFeatureDescription("lnrSp");
-  push_backFeatureDescription("deltLCn");
-  push_backFeatureDescription("deltCn");
-  push_backFeatureDescription("Xcorr");
-  push_backFeatureDescription("Sp");
-  push_backFeatureDescription("IonFrac");
-  push_backFeatureDescription("Mass");
-  push_backFeatureDescription("PepLen");
+  push_backFeatureDescription("lnrSp","",sqtFeaturesDefaultValue.at("lnrSp"));
+  push_backFeatureDescription("deltLCn","",sqtFeaturesDefaultValue.at("deltLCn"));
+  push_backFeatureDescription("deltCn","",sqtFeaturesDefaultValue.at("deltCn"));
+  push_backFeatureDescription("Xcorr","",sqtFeaturesDefaultValue.at("Xcorr"));
+  push_backFeatureDescription("Sp","",sqtFeaturesDefaultValue.at("Sp"));
+  push_backFeatureDescription("IonFrac","",sqtFeaturesDefaultValue.at("IonFrac"));
+  push_backFeatureDescription("Mass","",sqtFeaturesDefaultValue.at("Mass"));
+  push_backFeatureDescription("PepLen","",sqtFeaturesDefaultValue.at("PepLen"));
 
   for (int charge = minCharge; charge <= maxCharge; charge++) 
   {
     std::ostringstream cname;
     cname << "Charge" << charge;
+    double value = 0.0;
+    //UGLY!!
+    if(charge == 1 || charge == 2 || charge == 3)  {
+         value = sqtFeaturesDefaultValue.at(cname.str());
+    }
     push_backFeatureDescription(cname.str().c_str());
 
   }
+  
+  //the rest of the values will have a default of 0.0
   if (doEnzyme) 
   {
     push_backFeatureDescription("enzN");

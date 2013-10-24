@@ -1,19 +1,37 @@
 #include "MsgfplusReader.h"
 
 const std::map<string, int> MsgfplusReader::msgfplusFeatures =
-        boost::assign::map_list_of("MS-GF:RawScore", 0)
-                                  ("MS-GF:DeNovoScore", 1)
-                                  ("MS-GF:SpecEValue", 2)
-                                  ("MS-GF:EValue", 3)
-                                  //All below features are on user specified element userParam
-                                  ("IsotopeError", 4)
-                                  ("ExplainedIonCurrentRatio", 5)
-                                  ("NTermIonCurrentRatio", 6)
-                                  ("CTermIonCurrentRatio", 7)
-                                  ("MS2IonCurrent", 8)
-								  ("MeanRelErrorTop7", 9)
-								  ("StdevRelErrorTop7", 10)
-							      ("NumMatchedMainIons", 11);
+boost::assign::map_list_of("MS-GF:RawScore", 0)
+("MS-GF:DeNovoScore", 1)
+("MS-GF:SpecEValue", 2)
+("MS-GF:EValue", 3)
+//All below features are on user specified element userParam
+("IsotopeError", 4)
+("ExplainedIonCurrentRatio", 5)
+("NTermIonCurrentRatio", 6)
+("CTermIonCurrentRatio", 7)
+("MS2IonCurrent", 8)
+("MeanRelErrorTop7", 9)
+("StdevRelErrorTop7", 10)
+("NumMatchedMainIons", 11);
+
+//default score vector //TODO move this to a file or input parameter                          
+const std::map<string,double> MsgfplusReader::msgfplusFeaturesDefaultValue =
+boost::assign::map_list_of("RawScore", 0.0)
+("DeNovoScore",-1.0)
+("ScoreRatio", 0.0)
+("Energy", -2.0)
+("lnEValue", 6.0)
+("lnSpecEValue", 10.0)
+("IsotopeError", -2.5)
+("lnExplainedIonCurrentRatio", 0.0)
+("lnNTermIonCurrentRatio", 0.0)
+("lnCTermIonCurrentRatio", 0.0)
+("lnMS2IonCurrent", 0.0)
+("Mass", 0.0)
+("PepLen", 0.0)
+("dM", 0.0)
+("absdM", -1.0);
 
 MsgfplusReader::MsgfplusReader(ParseOptions *po) :
 		MzidentmlReader(po),
@@ -60,7 +78,7 @@ bool MsgfplusReader::checkValidity(const std::string &file) {
          || (line3[1] != '!' && line3.find("MS-GF+") != std::string::npos && line3.find("MzIdentML") != std::string::npos))
     {
       if(VERB > 2)
-	std::cerr << "MzIdentML - MSGF+ format" << std::endl;
+        std::cerr << "MzIdentML - MSGF+ format" << std::endl;
       isvalid = true;
     } else {
       fileIn.close();
@@ -115,23 +133,25 @@ void MsgfplusReader::searchEngineSpecificParsing(
 void MsgfplusReader::addFeatureDescriptions(bool doEnzyme)
 {
 
-  push_backFeatureDescription("RawScore");
-  push_backFeatureDescription("DeNovoScore");
-  push_backFeatureDescription("ScoreRatio");
-  push_backFeatureDescription("Energy");
-  push_backFeatureDescription("lnEValue");
-  push_backFeatureDescription("lnSpecEValue");
+  push_backFeatureDescription("RawScore","",msgfplusFeaturesDefaultValue.at("RawScore"));
+  push_backFeatureDescription("DeNovoScore","",msgfplusFeaturesDefaultValue.at("DeNovoScore"));
+  push_backFeatureDescription("ScoreRatio","",msgfplusFeaturesDefaultValue.at("ScoreRatio"));
+  push_backFeatureDescription("Energy","",msgfplusFeaturesDefaultValue.at("Energy"));
+  push_backFeatureDescription("lnEValue","",msgfplusFeaturesDefaultValue.at("lnEValue"));
+  push_backFeatureDescription("lnSpecEValue","",msgfplusFeaturesDefaultValue.at("lnSpecEValue"));
   //The below are from element userParam
-  push_backFeatureDescription("IsotopeError");
-  push_backFeatureDescription("lnExplainedIonCurrentRatio");
-  push_backFeatureDescription("lnNTermIonCurrentRatio");
-  push_backFeatureDescription("lnCTermIonCurrentRatio");
-  push_backFeatureDescription("lnMS2IonCurrent");
-  push_backFeatureDescription("Mass");
-  push_backFeatureDescription("PepLen");
-  push_backFeatureDescription("dM");
-  push_backFeatureDescription("absdM");
+  push_backFeatureDescription("IsotopeError","",msgfplusFeaturesDefaultValue.at("IsotopeError"));
+  push_backFeatureDescription("lnExplainedIonCurrentRatio","",msgfplusFeaturesDefaultValue.at("lnExplainedIonCurrentRatio"));
+  push_backFeatureDescription("lnNTermIonCurrentRatio","",msgfplusFeaturesDefaultValue.at("lnNTermIonCurrentRatio"));
+  push_backFeatureDescription("lnCTermIonCurrentRatio","",msgfplusFeaturesDefaultValue.at("lnCTermIonCurrentRatio"));
+  push_backFeatureDescription("lnMS2IonCurrent","",msgfplusFeaturesDefaultValue.at("lnMS2IonCurrent"));
+  push_backFeatureDescription("Mass","",msgfplusFeaturesDefaultValue.at("Mass"));
+  push_backFeatureDescription("PepLen","",msgfplusFeaturesDefaultValue.at("PepLen"));
+  push_backFeatureDescription("dM","",msgfplusFeaturesDefaultValue.at("dM"));
+  push_backFeatureDescription("absdM","",msgfplusFeaturesDefaultValue.at("absdM"));
 
+  //the rest of the features will get default value 0.0
+  
   if (useFragmentSpectrumFeatures) {
 	  push_backFeatureDescription("MeanErrorTop7");
 	  push_backFeatureDescription("sqMeanErrorTop7");

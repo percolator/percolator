@@ -42,7 +42,8 @@ class MsgfplusReader : public MzidentmlReader
 	bool useFragmentSpectrumFeatures;  // Whether to use MS-GF+ high resolution fragmentation spectrum features, default = false
 	bool additionalMsgfFeatures;  // Whether the additional features are present in mzid-file, default = false
 	int numMatchedIonLimit;  // The number of matched ions required for accurate fragment feature calculation (default 7)
-    static const std::map<string,int> msgfplusFeatures;
+    static const std::map<string,int> msgfplusFeatures; //aux container to map feature name to index
+    static const std::map<string,double> msgfplusFeaturesDefaultValue; //aux container to map feature index to feature default value
     const double neutron;  //The difference between C12 and C13
 };
 

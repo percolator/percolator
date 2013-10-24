@@ -136,7 +136,6 @@ else(BOOSTDB)
   find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 endif()
 include_directories(${Boost_INCLUDE_DIRS})
-#link_directories(${Boost_INCLUDE_DIRS})
 
 find_package(Pthreads)
 if(PTHREADS_FOUND)

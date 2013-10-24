@@ -349,15 +349,18 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned in
       meta.close();
     }
   }
-void Reader::push_backFeatureDescription(const char * str) {
+  
+void Reader::push_backFeatureDescription(const char * str, const char *description, double initvalue) {
 
   percolatorInNs::featureDescriptions::featureDescription_sequence  &fd_sequence =  f_seq.featureDescription();
   std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
+  //adds initial value and description to the description object
+  f_p->initialValue(initvalue);
+  f_p->description(description);
   assert(f_p.get());
   fd_sequence.push_back(f_p);
   return;
 }
-
 
 string Reader::getRidOfUnprintables(const string &inpString) {
   string outputs = "";

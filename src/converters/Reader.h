@@ -121,7 +121,7 @@ public:
 	
   void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database);
   
-  void push_backFeatureDescription(const char *str);
+  void push_backFeatureDescription(const char *str, const char *description = "", double initvalue = 0.0);
 
   void computeAAFrequencies(const string& pep,
 			    percolatorInNs::features::feature_sequence & f_seq);

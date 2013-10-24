@@ -41,6 +41,15 @@ class SanityCheck {
     static void setOverrule(bool orl) {
       overRule = orl;
     }
+    
+    static void addDefaultWeights(vector<double> __default_weights) {
+        default_weights = __default_weights;
+    }
+    
+    static vector<double>& getDefaultWeights() {
+        return default_weights;
+    }
+    
   protected:
     virtual void getDefaultDirection(vector<vector<double> >& w);
     int initPositives;
@@ -51,6 +60,8 @@ class SanityCheck {
     // positive integer = feature number,
     // negative integer = lower score better
     vector<Scores> *pTestset, *pTrainset;
+    //this vector is meant to have the initial directions givn in the pin.xml
+    static vector<double> default_weights;
 };
 
 #endif /*SANITYCHECK_H_*/

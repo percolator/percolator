@@ -77,22 +77,22 @@ targetNamespace="http://per-colator.com/percolator_in/13">
                   <xs:attribute name="name" use="required" type="xs:string">
                     <xs:annotation>
                        <xs:documentation>One word name of the feature
-			    associated with each peptide-spectrum
-			    match. An example value is 'XCorr'.
-			</xs:documentation>
+                        associated with each peptide-spectrum
+                        match. An example value is 'XCorr'.
+                        </xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
                   <xs:attribute name="description" type="xs:string">
                     <xs:annotation>
                        <xs:documentation>Free text descriptions of the feature
-			  associated with each peptide-spectrum match.
+                        associated with each peptide-spectrum match.
 	                </xs:documentation>
                     </xs:annotation>
                   </xs:attribute>                  
-		  <xs:attribute name="initialValue" type="xs:double">
+                    <xs:attribute name="initialValue" type="xs:double">
                     <xs:annotation>
                        <xs:documentation>Initial value for the feature in the vector of weights.
-		        </xs:documentation>
+                       </xs:documentation>
                     </xs:annotation>
                   </xs:attribute>
                 </xs:complexType>
