@@ -23,7 +23,7 @@ echo "Building the Percolator packages with src=${src} and build=${build}"
 echo "Checking necessary packages for building percolator...";
 
 sudo apt-get update;
-sudo apt-get -y install g++ make cmake rpm;
+sudo apt-get -y install g++ make cmake rpm fakeroot;
 sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-dev;
 #sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libleveldb-dev leveldb-doc zlib1g-dev;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev;
