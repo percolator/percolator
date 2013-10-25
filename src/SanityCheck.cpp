@@ -100,9 +100,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
           for (size_t set = 0; set < w.size(); ++set) {
               for (size_t ix = 0; ix < w[set].size(); ix++) {
                   w[set][ix] = 0;
-                  //TOFIX relaying in insertion order...very bad
                   if(ix < default_weights.size()){
-                      //std::cerr << "I am setting the initial weith to " << default_weights[ix] << std::endl;
                       w[set][ix] = default_weights[ix];
                   }
                       

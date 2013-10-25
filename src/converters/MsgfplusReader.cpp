@@ -1,5 +1,6 @@
 #include "MsgfplusReader.h"
 
+//NOTE ugly hack to get the order of the values of the features according to their names
 const std::map<string, int> MsgfplusReader::msgfplusFeatures =
 boost::assign::map_list_of("MS-GF:RawScore", 0)
 ("MS-GF:DeNovoScore", 1)

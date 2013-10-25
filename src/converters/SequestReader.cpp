@@ -2,14 +2,14 @@
 
 
 const std::map<string, int> SequestReader::sequestFeatures =
-        boost::assign::map_list_of("sequest:PeptideRankSp", 0)
-                                  ("sequest:deltacn", 1)
-                                  ("sequest:xcorr", 2)
-                                  ("sequest:PeptideSp", 3)
-                                  ("sequest:matched ions", 4)
-                                  ("sequest:total ions", 5)
-                                  ("sequest:PeptideIdnumber", 6)
-                                  ("sequest:PeptideNumber", 7);
+boost::assign::map_list_of("sequest:PeptideRankSp", 0)
+("sequest:deltacn", 1)
+("sequest:xcorr", 2)
+("sequest:PeptideSp", 3)
+("sequest:matched ions", 4)
+("sequest:total ions", 5)
+("sequest:PeptideIdnumber", 6)
+("sequest:PeptideNumber", 7);
 
 
 

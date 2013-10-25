@@ -703,6 +703,8 @@ int Caller::readFiles() {
 	Caller::protEstimator->setMayusFDR(false);
       }*/
       
+      //maybe better to do :
+      //SanityCheck::addDefaultWeights(init_values);
       pCheck = SanityCheck::initialize(otherCall);
       assert(pCheck);
       pCheck->addDefaultWeights(init_values);
