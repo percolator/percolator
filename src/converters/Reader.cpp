@@ -321,7 +321,6 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned in
 	{
 	  database->init("");
 	}
-
 	databases.resize(lineNumber_par+1);
 	databases[lineNumber_par]=database;
 	assert(databases.size()==lineNumber_par+1);
@@ -331,7 +330,6 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned in
       }
 
       read(fn,isDecoy,databases[lineNumber_par]);
-
     } else {
       // we hopefully found a meta file
       if (VERB>1)

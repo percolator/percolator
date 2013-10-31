@@ -320,7 +320,6 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
 //All psms are read, features calculated and the psm saved.
 void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 			       boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn){
-  
   std::ostringstream id;
   std::string fileId, proteinName;
   int rank = 0, spectraId;
@@ -329,9 +328,9 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
   double sumI = 0.0;
   double maxI = 0.0;
   double fI = 0.0;
+  spectraId = boost::lexical_cast<int>(groupObj.id());
   peptideProteinMapType peptideProteinMap;
   getPeptideProteinMap(groupObj,peptideProteinMap); 
-  
   if(groupObj.mh().present() && groupObj.z().present() && groupObj.sumI().present() && 
     groupObj.maxI().present() && groupObj.fI().present()&& groupObj.id().present())
   {
@@ -347,12 +346,11 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
     temp << "Error : A required attribute is not present in the group/spectra element in file: " << fn << endl;
     throw MyException(temp.str());
   }
-  
   //Loop through the protein objects
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein())
   {
     proteinName = getRidOfUnprintables(protObj.label());
-    spectraId = boost::lexical_cast<int>(protObj.id());
+    //spectraId = boost::lexical_cast<int>(protObj.id());
 
     tandem_ns::peptide peptideObj=protObj.peptide();
     for(tandem_ns::peptide::domain_iterator iter = peptideObj.domain().begin();
@@ -378,6 +376,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 	createPSM(domain, parenIonMass, charge, sumI, maxI, isDecoy, database, peptideProteinMap, psmId, spectraId);
       }//End of if rank<=po.hitsPerSpectrum
     }
+
   } //End of boost protein
 }
 
@@ -409,7 +408,6 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   std::map<char,int> ptmMap = po->ptmScheme;
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
-  
   double expect_value = boost::lexical_cast<double>(domain.expect());
   double calculated_mass = boost::lexical_cast<double>(domain.mh());
   double mass_diff = boost::lexical_cast<double>(domain.delta());
@@ -418,8 +416,14 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   double missed_cleavages = boost::lexical_cast<unsigned>(domain.missed_cleavages());
   std::string peptide = boost::lexical_cast<std::string>(domain.seq());
   std::string pre = boost::lexical_cast<std::string>(domain.pre());
+  if(pre=="[") {
+	  pre = "-";
+  }
   std::string flankN = boost::lexical_cast<std::string>(pre.at(pre.size()-1));
   std::string post = boost::lexical_cast<std::string>(domain.post());
+  if(post=="]") {
+	 post = "-";
+  }
   std::string flankC = boost::lexical_cast<std::string>(post.at(0));
   std::string fullpeptide = flankN + "." + peptide + "." + flankC;
   double xscore,xions,yscore,yions,zscore,zions,ascore,aions,bscore,bions,cscore,cions;
@@ -481,6 +485,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
       peptide.erase(ix,1);
     }  
   }
+
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptide) );
   
   //Register the ptms (modifications)
@@ -498,7 +503,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
       peptideS.erase(ix,1);      
     }  
   }
-  
+
   //Push back the main scores
   f_seq.push_back(hyperscore);
   f_seq.push_back(hyperscore - next_hyperscore);
@@ -529,16 +534,19 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
     f_seq.push_back(zions / peptide.size());
   }
   //Mass
+
   f_seq.push_back(parenIonMass);
   f_seq.push_back(mass_diff);
   f_seq.push_back(abs(mass_diff));
   //peptide length
-  f_seq.push_back(peptideLength(peptide));
+  f_seq.push_back(peptideLength(fullpeptide));
+
   //Charge
   for (int c = minCharge; c <= maxCharge; c++) 
   {
     f_seq.push_back( charge == c ? 1.0 : 0.0);
   }
+
   //Enzyme
   if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) 
   {
@@ -546,11 +554,13 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
     f_seq.push_back(Enzyme::isEnzymatic(fullpeptide.at(fullpeptide.size() - 3),fullpeptide.at(fullpeptide.size() - 1)) ? 1.0 : 0.0);
     f_seq.push_back( (double)Enzyme::countEnzymatic(peptide) );
   }
+
   //PTM
   if (po->calcPTMs) 
   {
     f_seq.push_back(cntPTMs(fullpeptide));
   }
+
   //PNGA
   if (po->pngasef) 
   {
@@ -561,7 +571,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   {
     computeAAFrequencies(fullpeptide, f_seq);
   }
-  
+
   //Save the psm
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  
   psm_p(new percolatorInNs::peptideSpectrumMatch 
@@ -575,7 +585,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
     std::auto_ptr< percolatorInNs::occurence >  oc_p(new percolatorInNs::occurence (*it,flankN, flankC)); 
     psm_p->occurence().push_back(oc_p);
   }
-  
+
   database->savePsm(spectraId, psm_p);
 }
 
@@ -602,14 +612,12 @@ void TandemReader::read(const std::string &fn, bool isDecoy,
   
   //tandem_ns::bioml biomlObj=biomlObj(*doc->getDocumentElement()); 
   //NOTE the root of the element, doesn't have any useful attributes
-  
   //Loops over the group elements which are the spectra and the last 3 are the input parameters
   for (doc = p.next(); doc.get() != 0; doc = p.next ()) 
   {
     //NOTE cant acess mixed content using codesynthesis, need to keep dom assoication. See the manual for tree parser and : 
     //http://www.codesynthesis.com/pipermail/xsd-users/2008-October/002005.html
     //Not implementet here
-    
     //Check that the tag name is group and that its not the inputput parameters
     if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) 
       && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr))) 
