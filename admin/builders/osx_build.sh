@@ -48,10 +48,12 @@ if [ -d /usr/local/include/xercesc ]
 	then
 	echo "Xerces is already installed."
 else
+        cd ${src}
 	curl -O http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
+        cd ${build}
 	tar xzf ${src}/${xer}.tar.gz 
 	cd ${xer}/
-	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" 
+	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-network --disable-threads
 	make
 	sudo make install
 fi
@@ -66,7 +68,7 @@ make package
 mkdir -p ${build}/converters
 cd ${build}/converters
 
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  -DSERIALIZE="TokyoCabinet" ${src}/percolator/src/converters
 make package
 #--------------------------------------------
 mkdir -p ${release}
