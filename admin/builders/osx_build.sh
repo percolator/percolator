@@ -60,13 +60,13 @@ fi
 mkdir -p ${build}/percolator
 cd ${build}/percolator
 
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator
 make package
 
 mkdir -p ${build}/converters
 cd ${build}/converters
 
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator/src/converters
 make package
 #--------------------------------------------
 mkdir -p ${release}

@@ -44,10 +44,6 @@ load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 ###############################################################################
 # COMPILING
 ###############################################################################
-if( APPLE )
-     add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
-endif( APPLE )
-
 add_subdirectory(src)
 
 ###############################################################################
