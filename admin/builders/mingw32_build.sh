@@ -25,8 +25,8 @@ cd ${src}
 
 # download and patch xsd
 
-xsd=xsd-3.3.0-i686-linux-gnu
-wget --quiet http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/i686/${xsd}.tar.bz2
+xsd=xsd-3.3.0-x86_64-linux-gnu
+wget --quiet http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/${xsd}.tar.bz2
 tar xjf ${xsd}.tar.bz2
 sed -i 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
 sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
