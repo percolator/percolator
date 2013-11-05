@@ -58,7 +58,7 @@ if(UNIX)
       endif(LINUX_ISSUE MATCHES "Fedora")
       # Red Hat case
       if(LINUX_ISSUE MATCHES "Red")
-        string(REGEX MATCH "Red Hat" ${LINUX_ISSUE}")
+        string(REGEX MATCH "Red Hat" "${LINUX_ISSUE}")
         set(LINUX_NAME "RHEL_${CMAKE_MATCH_1}")  
         set(CPACK_GENERATOR "RPM")      
       endif(LINUX_ISSUE MATCHES "Red")
