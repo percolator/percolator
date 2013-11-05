@@ -53,7 +53,7 @@ mkdir -p ${build}/percolator
 cd ${build}/percolator
 
 
-mingw32-cmake -DCMAKE_PREFIX_PATH="${src}/${xsd}/;${src}/${xer}/src/"  ${src}/percolator
+mingw32-cmake -DCMAKE_PREFIX_PATH="${src}/${xsd}/;${src}/${xer}/src/" -DCMAKE_BUILD_TYPE=Release ${src}/percolator
 make -j4 package
 
 cp per*.exe ${rel}
@@ -62,7 +62,7 @@ cp per*.exe ${rel}
 mkdir -p ${build}/converters
 cd ${build}/converters
 
-mingw32-cmake -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
+mingw32-cmake -DSERIALIZE="Boost" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
 
 echo "build directory is : ${build}";

@@ -55,13 +55,13 @@ ranlib libxerces-c.a
 mkdir -p ${build}/percolator
 cd ${build}/percolator
 
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/"  ${src}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/"  ${src}/percolator
 make -j4 package
 #cp per*.rpm ${rel}
 
 mkdir -p ${build}/converters
 cd ${build}/converters
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/" ${src}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build}/${xer}/src;${src}/${xsd}/" ${src}/percolator/src/converters
 make -j4 package
 make -j4 package
 

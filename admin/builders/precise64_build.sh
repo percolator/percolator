@@ -34,7 +34,7 @@ mkdir -p $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
 
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
@@ -45,7 +45,7 @@ make -j2 package;
 cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 
 #-----make------
 echo -n "make converters (this will take few minutes).....";
