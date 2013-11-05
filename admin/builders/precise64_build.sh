@@ -51,7 +51,7 @@ cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet"
 echo -n "make converters (this will take few minutes).....";
 
 fakeroot make -j2;
-fakeroot make -j2 package;
+make -j2 package;
 
 ###########################
 echo "Finished buildscript execution";
