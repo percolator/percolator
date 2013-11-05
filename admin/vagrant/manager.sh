@@ -1,9 +1,8 @@
 #!/bin/bash
 
 current_path=$PWD;
-Ppath="$(dirname ${BASH_SOURCE})";
-cd ${Ppath};
-Spath=$PWD;
+cd $(dirname ${BASH_SOURCE});
+source_path=$PWD;
 #--------------------------------------------------------
 
 usage()
@@ -16,7 +15,7 @@ usage: $0
                   [-h] (print this message)
                   [-b branch]|[-s sourc_directory]
                   [-r release_directory]
-                  -p precise64|fedora18|win
+                  -p ubuntu|fedora|w32|w64
 
 If no branch and source_directory is provided, the same source
 code will be used.
@@ -47,23 +46,30 @@ do
              ;;
          p)
              case $OPTARG in
-               	precise64)
+               	ubuntu)
              	     	post="precise"
              		     builder="precise64_build.sh"
 					builder_adr="../builders/"
 					vagbox_name="precise64"
 					vagbox_url="http://files.vagrantup.com/precise64.box"
 					;;
-				fedora18)
+				fedora)
 					post="fedora"
 					builder="rpm_build.sh"
 					builder_adr="../builders/"
 					vagbox_name="fedora18"
 					vagbox_url="http://www.nada.kth.se/~alinar/fedora18.box"
 					;;
-				win)
-					post="mingw"
+				w64)
+					post="mingw64"
 					builder="mingw64_build.sh"
+					builder_adr="../builders/"
+					vagbox_name="fedora18"
+					vagbox_url="http://www.nada.kth.se/~alinar/fedora18.box"
+					;;
+				w32)
+					post="mingw32"
+					builder="mingw32_build.sh"
 					builder_adr="../builders/"
 					vagbox_name="fedora18"
 					vagbox_url="http://www.nada.kth.se/~alinar/fedora18.box"
@@ -122,8 +128,10 @@ if [ -z $src ]
 	then
 	if [ -z $branch ]
 		then
-		cp -R "$Spath"/../../* ${tmp_dir}/src/percolator
+                echo "Copying source code from ${source_path}"
+		cp -R ${source_path}/../../* ${tmp_dir}/src/percolator
 	else
+                echo "Cloning source code using the branch ${branch}"
 		git clone --branch ${branch} https://github.com/percolator/percolator.git ${tmp_dir}/src/percolator
 	fi
 else
@@ -135,6 +143,13 @@ if [ -z $release ]
 	mkdir ${tmp_dir}/${post}_release
 	release="${tmp_dir}/${post}_release"
 fi
+
+echo "Executing build procedure using:"
+echo "tmp_dir=${tmp_dir}" 
+echo "post=${post}" 
+echo "tmp_dir=${tmp_dir}" 
+
+
 #--------------------------------------------------------
 #########################################################
 #--------------------------------------------------------
@@ -169,4 +184,3 @@ cp -v ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,*.exe,*.dmg} ${rele
 #---------------------------------------------------------------------------------------
 vagrant destroy -f
 #---------------------------------------------------------------------------------------
-cd ${release};
