@@ -22,9 +22,15 @@ echo "Building the Percolator packages with src=${src_dir} and build=${build_dir
 echo "Checking necessary packages for building percolator...";
 
 sudo apt-get update;
-sudo apt-get -y install g++ make cmake rpm fakeroot;
+#sudo apt-get -y install g++ make cmake rpm fakeroot;
+sudo apt-get -y install g++ make rpm fakeroot emacsen-common;
+# Need a never copy of cmake
+# Remove the secion below once they updated cmake
+wget http://launchpadlibrarian.net/132461604/cmake_2.8.10.1-0ubuntu6_amd64.deb
+sudo dpkg -i cmake_2.8.10.1-0ubuntu6_amd64.deb
+rm cmake_2.8.10.1-0ubuntu6_amd64.deb
+# end of section to remove
 sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-dev;
-#sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libleveldb-dev leveldb-doc zlib1g-dev;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev;
 
 #------------------------------------------------------------------------
@@ -35,7 +41,6 @@ mkdir -p $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
 fakeroot -- cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
-
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 fakeroot -- make -j2;
