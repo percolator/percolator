@@ -30,15 +30,14 @@ fi
 echo "Building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
 whoami;
 
-# Install the right packages
 
-sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
-sudo yum install -y mingw64-boost mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
+# chkconfig sshd on
+# usermod lukask -a -G wheel
 
-#release=${home}/rel
+sudo yum install -y gcc gcc-c++ cmake wget rpm-build
+sudo yum install -y tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel 
 
 cd ${src_dir}
-
 # download and patch xsd
 
 xsd=xsd-3.3.0-x86_64-linux-gnu
@@ -53,34 +52,31 @@ xer=xerces-c-3.1.1
 
 wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
 
-mkdir -p ${build_dir}
+mkdir ${build_dir}
 cd ${build_dir}
-
 tar xzf ${src_dir}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
-#./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
+#./configure --disable-network --disable-threads --enable-transcoder-gnuiconv --enable-static
+./configure --disable-network --disable-threads --enable-static
 cd src/
-make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
-sudo make install
+make -j4
+ln -s .libs/libxerces-c.a .
+ranlib libxerces-c.a
 
 # download, compile and link percolator
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-
-mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/"  ${src_dir}/percolator
 make -j4 package
-
-cp per*.exe ${relese_dir}
- 
+cp per*.rpm ${release_dir}
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
-
-mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/" ${src}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
+make -j4 package
 make -j4 package
 
-echo "build directory is : ${build}";
-cp per*.exe ${relese_dir}
+echo "build directory is : "${build_dir}";
+cp -v per*.rpm ${release_dir}

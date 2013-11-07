@@ -1,40 +1,58 @@
 #!/bin/bash
 # managing input arguments
 
-if [ $# -eq 2 ];
-  then src_dir=$1;build_dir=$2;
-elif [ $# -eq 1 ];
-  then sudo apt-get install git;
-  tmp_dir="$(mktemp -d --tmpdir precise_tmp_XXXX)";
-  mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
-  src_dir="${tmp_dir}/src";build_dir="${tmp_dir}/build";
-  git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
-else 
-  echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
-  exit 1;
-fi;
+while getopts “s:b:r:t:” OPTION; do
+  case $OPTION in
+    s) src_dir=${OPTARG};;
+    t) branch=${OPTARG};;
+    r) release_dir=${OPTARG};;
+    b) build_dir=${OPTARG};;
+    \?) echo "Invalid option: -${OPTARG}" >&2;;
+  esac
+done
 
-echo "Building the Percolator packages with src=${src_dir} and build=${build_dir}"
+if [ -z ${build_dir} ]; then
+  build_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+fi
+if [ -z ${src_dir} ]; then
+  if [ -n  ${branch} ]; then
+    sudo apt-get install git;
+    src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+    git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
+  else
+    src_dir=$(dirname ${BASH_SOURCE})/../../../
+  fi
+fi
+if [ -z ${release_dir} ]; then
+  release_dir=${HOME}/release
+fi
 
+echo "Building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
+whoami;
 
 #------------------------------------------------------------------------
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
 
 sudo apt-get update;
+sudo apt-get upgrade;
 #sudo apt-get -y install g++ make cmake rpm fakeroot;
-sudo apt-get -y install g++ make rpm fakeroot emacsen-common;
+sudo apt-get -y install g++ make rpm fakeroot;
 # Need a never copy of cmake
 # Remove the secion below once they updated cmake
-wget http://launchpadlibrarian.net/132461604/cmake_2.8.10.1-0ubuntu6_amd64.deb
-sudo dpkg -i cmake_2.8.10.1-0ubuntu6_amd64.deb
-rm cmake_2.8.10.1-0ubuntu6_amd64.deb
+cd ${src_dir}
+wget -q http://www.cmake.org/files/v2.8/cmake-2.8.12.tar.gz
+tar xzf cmake-2.8.12.tar.gz
+cd cmake-2.8.12/
+./bootstrap;
+make -j2; 
+sudo make install;
 # end of section to remove
 sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-dev;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev;
 
 #------------------------------------------------------------------------
-mkdir -p $build_dir;mkdir $build_dir/percolator;mkdir $build_dir/converters;
+mkdir -p $build_dir/percolator $build_dir/converters;
 
 ######percolator########
 #-----cmake-----
@@ -44,7 +62,7 @@ fakeroot -- cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 fakeroot -- make -j2;
-fakeroot -- make -j2 package;
+make -j2 package;
 
 #######converters########
 cd $build_dir/converters
@@ -56,8 +74,9 @@ fakeroot -- cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_
 echo -n "make converters (this will take few minutes).....";
 
 fakeroot -- make -j2;
-fakeroot -- make -j2 package;
+make -j2 package;
 
 ###########################
+cp $build_dir/{percolator,converters}/*.deb ${release_dir};
 echo "Finished buildscript execution";
 echo "in build directory ${build_dir}";

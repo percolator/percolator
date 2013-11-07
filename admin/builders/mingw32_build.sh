@@ -1,27 +1,40 @@
 #!/bin/bash
 
 # managing input arguments
+while getopts “s:b:r:t:” OPTION; do
+  case $OPTION in
+    s) src_dir=${OPTARG};;
+    t) branch=${OPTARG};;
+    r) release_dir=${OPTARG};;
+    b) build_dir=${OPTARG};;
+    \?) echo "Invalid option: -${OPTARG}" >&2;;
+  esac
+done
 
-if [ $# -eq 2 ];
-  then src=$1;build=$2;mkdir -p ${build};
-elif [ $# -eq 1 ];
-  then sudo yum git;
-  tmp_dir="$(mktemp -d --tmpdir mingw32_tmp_XXXX)";
-  mkdir ${tmp_dir}/src;mkdir ${tmp_dir}/build;
-  src="${tmp_dir}/src";build="${tmp_dir}/build";
-  git clone --branch "$1" https://github.com/percolator/percolator.git ${src}/percolator;
-else 
-  echo "Please add either one argument as branch name or two arguments for your source directory containing percolator/ and build directory";
-  exit 1;
-fi;
+if [ -z ${build_dir} ]; then
+  build_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+fi
+if [ -z ${src_dir} ]; then
+  if [ -n  ${branch} ]; then
+    sudo apt-get install git;
+    src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+    git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
+  else
+    src_dir=$(dirname ${BASH_SOURCE})/../../../
+  fi
+fi
+if [ -z ${release_dir} ]; then
+  release_dir=${HOME}/release
+fi
+
+echo "Building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
+whoami;
 
 
 sudo yum install -y cmake wget mingw-w64-tools mingw32-gcc-c++ mingw32-filesystem mingw-binutils-generic mingw32-nsis
 sudo yum install -y mingw32-boost mingw32-sqlite mingw32-zlib mingw32-curl mingw32-pthreads
 
-#release=${home}/rel
-
-cd ${src}
+cd ${src_dir}
 
 # download and patch xsd
 
@@ -37,10 +50,10 @@ xer=xerces-c-3.1.1
 
 wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
 
-mkdir -p ${build}
-cd ${build}
+mkdir -p ${build_dir}
+cd ${build_dir}
 
-tar xzf ${src}/${xer}.tar.gz 
+tar xzf ${src_dir}/${xer}.tar.gz 
 cd ${xer}/
 ./configure --disable-network --disable-threads --enable-shared --host=i686-w64-mingw32 --prefix=/usr/i686-w64-mingw32/sys-root/mingw
 cd src/
@@ -49,21 +62,21 @@ sudo make install
 
 # download, compile and link percolator
 
-mkdir -p ${build}/percolator
-cd ${build}/percolator
+mkdir -p ${build_dir}/percolator
+cd ${build_dir}/percolator
 
 
-mingw32-cmake -DCMAKE_PREFIX_PATH="${src}/${xsd}/;${src}/${xer}/src/" -DCMAKE_BUILD_TYPE=Release ${src}/percolator
+mingw32-cmake -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/" -DCMAKE_BUILD_TYPE=Release ${src_dir}/percolator
 make -j4 package
 
-cp per*.exe ${rel}
+cp -v per*.exe ${release_dir}
  
 
-mkdir -p ${build}/converters
-cd ${build}/converters
+mkdir -p ${build_dir}/converters
+cd ${build_dir}/converters
 
-mingw32-cmake -DSERIALIZE="Boost" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src}/${xsd}/" ${src}/percolator/src/converters
+mingw32-cmake -DSERIALIZE="Boost" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
 make -j4 package
+cp -v per*.exe ${release_dir}
 
-echo "build directory is : ${build}";
-cp per*.exe ${rel}
+echo "build directory is : ${build_dir}";
