@@ -111,7 +111,7 @@ if(APPLE)
   set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
 elseif(MINGW OR WIN32)
 #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
-  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
+  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
 endif()
 
 if(PROFILING AND UNIX)

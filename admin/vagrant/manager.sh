@@ -10,14 +10,16 @@ builds percolator with converters packages by executing
 a builder file.
 
 usage: $0 
-                  [-h] (print this message)
-                  [-b branch]|[-s sourc_directory]
-                  [-r release_directory]
+                  [[-h]] [[-a]]
+                  [[-b branch]]|[[-s sourc_directory]]
+                  [[-r release_directory]]
                   -p ubuntu|fedora|w32|w64
 
-If no branch and source_directory is provided, the same source
-code will be used.
+If no branch and source_directory is provided, the source
+code from which the sourcecode is checked out from will be used.
 Make sure that Vagrant and VirtualBox are up to date.
+  -h     prints this help page
+  -a     keeps the vagrant box alive (i.e. do not call vagrant destroy)
 EOF
 }
 #--------------------------------------------------------
@@ -26,17 +28,17 @@ EOF
 #Default values:
 
 current_path=$PWD;
-cd $(dirname ${BASH_SOURCE});
-source_path=$PWD;
-multi_platform=0
+script_dir=$(dirname ${BASH_SOURCE});
+cd ${script_dir};
 builder_adr="../builders/"
 # boxes, might be overridden later on
 vagbox_name="fedora18"
 vagbox_url="http://www.nada.kth.se/~alinar/fedora18.box"
 
-while getopts “hb:s:r:p:” OPTION; do
+while getopts “hab:s:r:p:” OPTION; do
     case $OPTION in
         h)  usage;exit 1;;
+        a)  alive="1";;
         b)  branch=$OPTARG;;
         s)  src=$OPTARG;;
         r)  release=$OPTARG;;
@@ -51,8 +53,8 @@ while getopts “hb:s:r:p:” OPTION; do
                 w32) post="mingw32";;
                 *)
                      if [[ $OPTARG == *,* ]]; then
-                         arr=$(echo $OPTARG | tr "," "\n")
-                         multi_platform=1
+                         arr=$(echo $OPTARG | tr "," "\n");
+                         multi_platform="1";
                      else
                          echo "Platform $OPTARG is undefined."
                          exit 1
@@ -63,40 +65,36 @@ while getopts “hb:s:r:p:” OPTION; do
 done
 builder="${post}_build.sh"
 
-
 ######
-if [ $multi_platform == 1 ]; then
+if [[ ! -z $multi_platform ]]; then
+  [[ ! -z $branch ]] && arg=$arg"-b $branch "; 
+  [[ ! -z $src ]] && arg=$arg"-s $src "; 
+  [[ ! -z $release ]] && arg=$arg"-r $release "; 
   for x in $arr; do
-    arg=""
-    if [ ! -z $branch ]; then
-      arg=$arg"-b $branch " 
-    fi
-    if [ ! -z $src ]; then
-      arg=$arg"-s $src " 
-    fi
-    if [ ! -z $release ]; then 
-      arg=$arg"-r $release " 
-    fi
-    arg=$arg"-p $x"
-    # recusive call to this script, but specifying one platform.
-    bash $0 $arg
+    call_arg=$arg"-p $x";
+    echo "Recusive call: $0 $call_arg"
+    bash $0 $call_arg
   done
   exit 0;
 fi
-######
-if [ -z $post ]
-then
+if [[ -z $post ]]; then
     usage
     echo "Please select one or more platforms with -p option."
     exit 1
 fi
 ######
+
+echo "------------------------------------------------------------------------";
+echo "About to start up a build note using the builder script ${builder}";
+echo "------------------------------------------------------------------------";
+
+
 tmp_dir="$(mktemp -d --tmpdir tmp_${post}_XXXX)"
-mkdir ${tmp_dir}/src ${tmp_dir}/src/percolator
-if [ -z $src ]; then
-  if [ -z $branch ]; then
-    echo "Copying source code from ${source_path}"
-    cp -R ${source_path}/../../* ${tmp_dir}/src/percolator
+mkdir -p ${tmp_dir}/src/percolator
+if [[ -z $src ]]; then
+  if [[ -z $branch ]]; then
+    echo "Copying source code from ${script_dir} to ${tmp_dir}/src/percolator/"
+    cp -R ${script_dir}/../../* ${tmp_dir}/src/percolator/
   else
     echo "Cloning source code using the branch ${branch}"
     git clone --branch ${branch} https://github.com/percolator/percolator.git ${tmp_dir}/src/percolator
@@ -106,7 +104,7 @@ else
   cp -R ${src}/* ${tmp_dir}/src/percolator
 fi
 ######
-if [ -z $release ]; then
+if [[ -z $release ]]; then
   mkdir ${tmp_dir}/${post}_release
   release="${tmp_dir}/${post}_release"
 fi
@@ -135,6 +133,9 @@ cat <<EOF > Vagrantfile
 Vagrant.configure("2") do |config|
   config.vm.box = "${vagbox_name}"
   config.vm.box_url = "${vagbox_url}"
+  config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "4"]
+  end
   config.vm.provision :shell do |shell|
     shell.path = "${tmp_dir}/${builder}"
     shell.args = "-s /vagrant/src -r /vagrant/"
@@ -159,5 +160,8 @@ cp -v ${tmp_dir}/per*.{rpm,deb,exe,dmg} ${release};
 #cp -v ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};
 #---------------------------------------------------------------------------------------
 
-vagrant destroy -f
+if [[ -z ${alive} ]]; then
+  vagrant destroy -f
+fi
+
 #---------------------------------------------------------------------------------------

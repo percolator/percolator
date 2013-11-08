@@ -11,23 +11,23 @@ while getopts “s:b:r:t:” OPTION; do
   esac
 done
 
-if [ -z ${build_dir} ]; then
-  build_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+if [[ -z ${build_dir} ]]; then
+  build_dir="$(mktemp -d --tmpdir build_XXXX)";
 fi
-if [ -z ${src_dir} ]; then
-  if [ -n  ${branch} ]; then
+if [[ -z ${src_dir} ]]; then
+  if [[ -n  ${branch} ]]; then
     sudo apt-get install git;
-    src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+    src_dir="$(mktemp -d --tmpdir build_XXXX)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
     src_dir=$(dirname ${BASH_SOURCE})/../../../
   fi
 fi
-if [ -z ${release_dir} ]; then
+if [[ -z ${release_dir} ]]; then
   release_dir=${HOME}/release
 fi
 
-echo "Building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
+echo "The Builder $0 is building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
 whoami;
 
 
@@ -35,7 +35,7 @@ whoami;
 # usermod lukask -a -G wheel
 
 sudo yum install -y gcc gcc-c++ cmake wget rpm-build
-sudo yum install -y tokyocabinet-devel boost boost-devel sqlite-devel zlib-devel 
+sudo yum install -y tokyocabinet-devel boost-static boost-devel sqlite-devel zlib-devel 
 
 cd ${src_dir}
 # download and patch xsd
@@ -59,7 +59,7 @@ cd ${xer}/
 #./configure --disable-network --disable-threads --enable-transcoder-gnuiconv --enable-static
 ./configure --disable-network --disable-threads --enable-static
 cd src/
-make -j4
+make -j 4
 ln -s .libs/libxerces-c.a .
 ranlib libxerces-c.a
 
@@ -69,14 +69,15 @@ mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/"  ${src_dir}/percolator
-make -j4 package
+make -j 4;
+make -j 4 package;
 cp per*.rpm ${release_dir}
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
-make -j4 package
-make -j4 package
+make -j 4;
+make -j 4 package;
 
-echo "build directory is : "${build_dir}";
+echo "build directory was : ${build_dir}";
 cp -v per*.rpm ${release_dir}

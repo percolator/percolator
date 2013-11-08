@@ -11,31 +11,30 @@ while getopts “s:b:r:t:” OPTION; do
   esac
 done
 
-if [ -z ${build_dir} ]; then
-  build_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+if [[ -z ${build_dir} ]]; then
+  build_dir="$(mktemp -d --tmpdir build_XXXX)";
 fi
-if [ -z ${src_dir} ]; then
-  if [ -n  ${branch} ]; then
+if [[ -z ${src_dir} ]]; then
+  if [[ -n  ${branch} ]]; then
     sudo apt-get install git;
-    src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+    src_dir="$(mktemp -d --tmpdir src_XXXX)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
     src_dir=$(dirname ${BASH_SOURCE})/../../../
   fi
 fi
-if [ -z ${release_dir} ]; then
+if [[ -z ${release_dir} ]]; then
   release_dir=${HOME}/release
 fi
 
-echo "Building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
-whoami;
+echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
+d build=${build_dir} for the user"
 
 # Install the right packages
 
 sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
-sudo yum install -y mingw64-boost mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
+sudo yum install -y mingw64-boost-static mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
 
-#release=${home}/rel
 
 cd ${src_dir}
 
@@ -58,10 +57,10 @@ cd ${build_dir}
 
 tar xzf ${src_dir}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
+./configure --disable-network --disable-threads --enable-transcoder-windows --disable-static --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
 #./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
 cd src/
-make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
+make -j 4 libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" 
 sudo make install
 
 # download, compile and link percolator
@@ -71,16 +70,19 @@ cd ${build_dir}/percolator
 
 
 mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/"  ${src_dir}/percolator
-make -j4 package
+make -j 4;
+make -j 4 package;
 
-cp per*.exe ${relese_dir}
+cp -v per*.exe ${release_dir}
+echo "Cleaning up, to save disc space"
+rm -fr *
  
-
 mkdir -p ${build_dir}/converters
-cd ${build_dir}/converters
+cd  ${build_dir}/converters
 
-mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/" ${src}/percolator/src/converters
-make -j4 package
+mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
+make -j 4
+make -j 4 package;
 
 echo "build directory is : ${build}";
-cp per*.exe ${relese_dir}
+cp -v per*.exe ${release_dir}

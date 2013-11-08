@@ -10,7 +10,7 @@ Ppath="$(dirname ${BASH_SOURCE})"
 cd ${Ppath}
 Spath=$PWD
 
-if [ $1 ]
+if [[ $1 ]]
         then
         release=$1
 else 
@@ -44,7 +44,7 @@ sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
 xer=xerces-c-3.1.1
 mkdir -p ${build}
 cd ${build}
-if [ -d /usr/local/include/xercesc ]
+if [[ -d /usr/local/include/xercesc ]]
 	then
 	echo "Xerces is already installed."
 else

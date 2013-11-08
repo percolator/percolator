@@ -11,28 +11,29 @@ while getopts “s:b:r:t:” OPTION; do
   esac
 done
 
-if [ -z ${build_dir} ]; then
-  build_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+if [[ -z ${build_dir} ]]; then
+  build_dir="$(HOME)/build";
+#  build_dir="$(mktemp -d --tmpdir build_XXXX)";
 fi
-if [ -z ${src_dir} ]; then
-  if [ -n  ${branch} ]; then
+if [[ -z ${src_dir} ]]; then
+  if [[ -n  ${branch} ]]; then
     sudo apt-get install git;
-    src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
+    src_dir="$(mktemp -d --tmpdir src_XXXX)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
     src_dir=$(dirname ${BASH_SOURCE})/../../../
   fi
 fi
-if [ -z ${release_dir} ]; then
+if [[ -z ${release_dir} ]]; then
   release_dir=${HOME}/release
 fi
 
-echo "Building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
-whoami;
+echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
+d build=${build_dir} for the user"
 
 
 sudo yum install -y cmake wget mingw-w64-tools mingw32-gcc-c++ mingw32-filesystem mingw-binutils-generic mingw32-nsis
-sudo yum install -y mingw32-boost mingw32-sqlite mingw32-zlib mingw32-curl mingw32-pthreads
+sudo yum install -y mingw32-boost-static mingw32-sqlite mingw32-zlib mingw32-curl mingw32-pthreads
 
 cd ${src_dir}
 
@@ -55,7 +56,7 @@ cd ${build_dir}
 
 tar xzf ${src_dir}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-shared --host=i686-w64-mingw32 --prefix=/usr/i686-w64-mingw32/sys-root/mingw
+./configure --disable-network --disable-threads --enable-transcoder-windows --disable-static --enable-shared --host=i686-w64-mingw32 --prefix=/usr/i686-w64-mingw32/sys-root/mingw
 cd src/
 make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
 sudo make install
@@ -71,7 +72,6 @@ make -j4 package
 
 cp -v per*.exe ${release_dir}
  
-
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 

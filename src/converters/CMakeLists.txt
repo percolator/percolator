@@ -71,7 +71,7 @@ get_arch("${TARGET_ARCH}")
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(MINGW OR WIN32) # windows
 #  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
-  set(WRITABLE_DIR "xml/")
+  set(WRITABLE_DIR "xml\\\\")
   set(MZIDENTML_SCHEMA_LOCATION "xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
   set(GAML_TANDEM_SCHEMA_LOCATION "xml-gaml_tandem-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}\\\\")
   set(TANDEM_SCHEMA_LOCATION "xml-tandem-${TANDEM_VERSION}\\\\")
@@ -336,9 +336,9 @@ target_link_libraries(tandem2pin converters perclibrary_part MSToolkit )
 #target_link_libraries(sequest2pin converters perclibrary_part MSToolkit )
 
 IF(MINGW OR WIN32)
-  set_target_properties(msgf2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
+  set_target_properties(msgf2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
+  set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
 #  set_target_properties(sequest2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
 ENDIF()
 
@@ -404,7 +404,8 @@ install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${WRITABLE_DIR}/${TANDEM
 
 if( MINGW )
     message( STATUS "    Installing system-libraries: MinGW DLLs." )
-    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll ${MINGW_PATH}/bin/libboost_serialization.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll  )
+    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll ${MINGW_PATH}/bin/zlib1.dll  )
+#    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll ${MINGW_PATH}/bin/libboost_serialization.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll  )
     include( InstallRequiredSystemLibraries )
 endif( MINGW )
 
