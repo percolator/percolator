@@ -84,5 +84,5 @@ mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH
 make -j 4
 make -j 4 package;
 
-echo "build directory is : ${build}";
+echo "build directory is : ${build_dir}";
 cp -v per*.exe ${release_dir}
