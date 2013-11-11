@@ -93,16 +93,19 @@ set(gaxml_tandem-namespace "http://www.bioml.com/gaml/")
 set(tandem-namespace "http://www.thegpm.org/TANDEM/${TANDEM_VERSION}")
 
 #STATIC/DYNAMIC LIBRARY INCLUSION
+if(APPLE)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+endif()
 if(MINGW OR WIN32 OR APPLE)
+  OPTION(BUILD_SHARED_LIBS "build static binaries." OFF)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
 else(MINGW OR WIN32 OR APPLE)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
 
-#if(MINGW OR WIN32 OR APPLE)
+# Link Boost static and single threaded
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_MULTITHREADED OFF)  
-#endif(MINGW OR WIN32 OR APPLE)
 
 set(BOOST_MIN_VERSION "1.46.0")
 set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
@@ -124,9 +127,9 @@ if( APPLE )
 endif( APPLE )
 
 IF(APPLE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.5")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.5")
-  set(LINK_FLAGS "-mmacosx-version-min=10.5")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.7")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7 -stdlib=libc++ -L/usr/lib/ -lstdc++")
   add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
 ENDIF(APPLE)
 

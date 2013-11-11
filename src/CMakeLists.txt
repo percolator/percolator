@@ -107,6 +107,7 @@ include_directories(fido)
 add_executable(percolator main.cpp)
 
 if(APPLE)
+#  set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
   set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
 elseif(MINGW OR WIN32)
@@ -125,7 +126,7 @@ if(PROFILING AND UNIX)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido pthread ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} iconv stdc++)
  
 # INSTALL PERCOLATOR
 if(APPLE)

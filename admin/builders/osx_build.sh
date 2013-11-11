@@ -18,12 +18,12 @@ while getopts “s:b:r:t:” OPTION; do
 done
 
 if [[ -z ${build_dir} ]]; then
-  build_dir="$(mktemp -d --tmpdir build_XXXX)";
+  build_dir="$(mktemp -d -t build)";
 fi
 if [[ -z ${src_dir} ]]; then
   if [[ -n  ${branch} ]]; then
     sudo apt-get install git;
-    src_dir="$(mktemp -d --tmpdir src_XXXX)";
+    src_dir="$(mktemp -d -t src)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
     src_dir=$(dirname ${BASH_SOURCE})/../../../
@@ -37,11 +37,12 @@ echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for the user"
 whoami
 
-sudo port install tokyocabinet boost zlib
+sudo port install tokyocabinet bzip2 libiconv zlib pthread
+sudo port install boost -no_static -no_single
 
 #----------------------------------------
 xsd=xsd-3.3.0-i686-macosx
-cd ${src_dir}
+cd ${build_dir}
 curl -O http://www.codesynthesis.com/download/xsd/3.3/macosx/i686/${xsd}.tar.bz2
 tar -xjf ${xsd}.tar.bz2
 sed -i -e 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
@@ -62,13 +63,11 @@ if [[ -d /usr/local/include/xercesc ]]
 	then
 	echo "Xerces is already installed."
 else
-    cd ${src_dir}
 	curl -O http://apache.mirrors.spacedump.net/xerces/c/3/sources/${xer}.tar.gz
-    cd ${build_dir}
-	tar xzf ${src_dir}/${xer}.tar.gz
+	tar xzf ${xer}.tar.gz
 	cd ${xer}/
-	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-network --disable-threads
-	make
+	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --enable-static --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
+	make -j 2
 	sudo make install
 fi
 
@@ -76,15 +75,15 @@ fi
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/"  ${src_dir}/percolator
-make -j 2
+cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+make -j 2 "VERBOSE=1"
 make -j 2 package
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/"  -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
-make -j 2
+cmake -V  -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+make -j 2 "VERBOSE=1"
 make -j 2 package
 #--------------------------------------------
 mkdir -p ${release_dir}

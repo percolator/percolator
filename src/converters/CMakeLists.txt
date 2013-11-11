@@ -138,13 +138,16 @@ endif()
 include_directories(${Boost_INCLUDE_DIRS})
 #link_directories(${Boost_INCLUDE_DIRS})
 
-find_package(Pthreads)
-if(PTHREADS_FOUND)
-  message(STATUS  "Pthreads found")
-else(PTHREADS_FOUND)
-  message(FATAL_ERROR "The package Pthreads has not been not found")
-endif()
-include_directories(${PTHREAD_INCLUDE_DIR})
+
+FIND_PACKAGE ( Threads REQUIRED )
+
+#find_package(Pthreads)
+#if(PTHREADS_FOUND)
+#  message(STATUS  "Pthreads found")
+#else(PTHREADS_FOUND)
+#  message(FATAL_ERROR "The package Pthreads has not been not found")
+#endif()
+#include_directories(${PTHREAD_INCLUDE_DIR})
 
 if(MINGW AND NOT BOOSTDB)
   find_package(XDR)
@@ -200,6 +203,11 @@ if(TOKYODB AND MINGW)
   endif(PSAPI_FOUND)
 
 endif()
+if(TOKYODB AND APPLE)
+  find_package(BZip2 REQUIRED)
+endif()
+
+
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -305,8 +313,8 @@ add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tand
 
 ADD_DEPENDENCIES(converters generate_perc_xsdfiles)
 
-target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-
+#target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(converters ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 if(MINGW)
   if(LEVELDB)
     target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${LDB_LIBRARIES})
@@ -320,7 +328,7 @@ else(MINGW)
   if(LEVELDB)
     target_link_libraries(converters ${LDB_LIBRARIES})
   elseif(TOKYODB)
-    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${TokyoCabinet_LIBRARIES})
+    target_link_libraries(converters ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${XDR_LIBRARIES} ${TokyoCabinet_LIBRARIES})
   endif()
 endif()
 
@@ -357,6 +365,9 @@ endif()
 
 
 if(APPLE)
+  set_property(TARGET msgf2pin PROPERTY LINK_SEARCH_START_STATIC ON)
+  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_START_STATIC ON)
+  set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_START_STATIC ON)
   set_property(TARGET msgf2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
