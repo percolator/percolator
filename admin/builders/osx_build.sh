@@ -77,14 +77,14 @@ cd ${build_dir}/percolator
 
 cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2 "VERBOSE=1"
-make -j 2 package
+sudo make -j 2 package
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
 cmake -V  -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 2 "VERBOSE=1"
-make -j 2 package
+sudo make -j 2 package
 #--------------------------------------------
 mkdir -p ${release_dir}
 cp -v ${build_dir}/percolator/*.dmg ${release_dir}

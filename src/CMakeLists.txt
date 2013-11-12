@@ -107,9 +107,9 @@ include_directories(fido)
 add_executable(percolator main.cpp)
 
 if(APPLE)
-#  set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
+  set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
-  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
+#  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
 elseif(MINGW OR WIN32)
 #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
@@ -129,11 +129,11 @@ endif()
 target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} iconv stdc++)
  
 # INSTALL PERCOLATOR
-if(APPLE)
-  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-else()
+#if(APPLE)
+#  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+#else()
   install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
-endif()
+#endif()
 
 ###############################################################################
 # COMPILE QVALITY
