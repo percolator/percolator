@@ -38,16 +38,11 @@ MESSAGE( STATUS )
 get_arch("${TARGET_ARCH}")
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
-load_config_files("${CMAKE_CURRENT_SOURCE_DIR}/../")
 load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 
 ###############################################################################
 # COMPILING
 ###############################################################################
-if( APPLE )
-     add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
-endif( APPLE )
-
 add_subdirectory(src)
 
 ###############################################################################
@@ -70,7 +65,8 @@ endif()
 
 if( MINGW )
     message( STATUS "    Installing system-libraries: MinGW DLLs." )
-    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll)
+#    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll)
+    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libxerces-c-3-1.dll)
     include( InstallRequiredSystemLibraries )
 endif( MINGW )
 
@@ -84,7 +80,7 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem (>=1.46.1), libxerces-c3.1 (>=3.1.1)")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem-dev (>=1.46.1), libxerces-c3.1 (>=3.1.1)")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 # We assume static linkage to the xerces-c libraries for the rpms, if not uncomment next line

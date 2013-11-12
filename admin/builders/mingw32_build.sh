@@ -12,7 +12,8 @@ while getopts “s:b:r:t:” OPTION; do
 done
 
 if [[ -z ${build_dir} ]]; then
-  build_dir="$(mktemp -d --tmpdir build_XXXX)";
+  build_dir="$(HOME)/build";
+#  build_dir="$(mktemp -d --tmpdir build_XXXX)";
 fi
 if [[ -z ${src_dir} ]]; then
   if [[ -n  ${branch} ]]; then
@@ -30,11 +31,9 @@ fi
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for the user"
 
-# Install the right packages
 
-sudo yum install -y cmake wget mingw-w64-tools mingw64-filesystem mingw-binutils-generic mingw32-nsis
-sudo yum install -y mingw64-boost-static mingw64-sqlite mingw64-zlib mingw64-curl mingw64-pthreads
-
+sudo yum install -y cmake wget mingw-w64-tools mingw32-gcc-c++ mingw32-filesystem mingw-binutils-generic mingw32-nsis
+sudo yum install -y mingw32-boost-static mingw32-sqlite mingw32-zlib mingw32-curl mingw32-pthreads
 
 cd ${src_dir}
 
@@ -57,10 +56,9 @@ cd ${build_dir}
 
 tar xzf ${src_dir}/${xer}.tar.gz 
 cd ${xer}/
-./configure --disable-network --disable-threads --enable-transcoder-windows --disable-static --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
-#./configure --disable-network --disable-threads --enable-transcoder-windows --enable-shared --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/sys-root/mingw
+./configure --disable-network --disable-threads --enable-transcoder-windows --disable-static --enable-shared --host=i686-w64-mingw32 --prefix=/usr/i686-w64-mingw32/sys-root/mingw
 cd src/
-make -j 4 libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" 
+make libxerces_c_la_LDFLAGS="-release 3.1 -no-undefined" -j4
 sudo make install
 
 # download, compile and link percolator
@@ -69,20 +67,16 @@ mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
 
-mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/"  ${src_dir}/percolator
-make -j 4;
-make -j 4 package;
+mingw32-cmake -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/" -DCMAKE_BUILD_TYPE=Release ${src_dir}/percolator
+make -j4 package
 
 cp -v per*.exe ${release_dir}
-echo "Cleaning up, to save disc space"
-rm -fr *
  
 mkdir -p ${build_dir}/converters
-cd  ${build_dir}/converters
+cd ${build_dir}/converters
 
-mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
-make -j 4
-make -j 4 package;
+mingw32-cmake -DSERIALIZE="Boost" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
+make -j4 package
+cp -v per*.exe ${release_dir}
 
 echo "build directory is : ${build_dir}";
-cp -v per*.exe ${release_dir}

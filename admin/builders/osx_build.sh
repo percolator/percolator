@@ -5,29 +5,44 @@
 #	CMake
 #----------------------------------------
 
-current_path=$PWD
-Ppath="$(dirname ${BASH_SOURCE})"
-cd ${Ppath}
-Spath=$PWD
 
-if [ $1 ]
-        then
-        release=$1
-else 
-        release=$HOME/release
-fi 
+# managing input arguments
+while getopts “s:b:r:t:” OPTION; do
+  case $OPTION in
+    s) src_dir=${OPTARG};;
+    t) branch=${OPTARG};;
+    r) release_dir=${OPTARG};;
+    b) build_dir=${OPTARG};;
+    \?) echo "Invalid option: -${OPTARG}" >&2;;
+  esac
+done
 
-tmp_dir="$(mktemp -d /tmp/OSX_XXXX)"
-mkdir ${tmp_dir}/src ${tmp_dir}/build ${tmp_dir}/src/percolator
-src="${tmp_dir}/src";build="${tmp_dir}/build";
+if [[ -z ${build_dir} ]]; then
+  build_dir="$(mktemp -d -t build)";
+fi
+if [[ -z ${src_dir} ]]; then
+  if [[ -n  ${branch} ]]; then
+    sudo apt-get install git;
+    src_dir="$(mktemp -d -t src)";
+    git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
+  else
+    src_dir=$(dirname ${BASH_SOURCE})/../../../
+  fi
+fi
+if [[ -z ${release_dir} ]]; then
+  release_dir=${HOME}/release
+fi
 
-cp -R "${Spath}"/../../ ${src}/percolator/
+echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
+d build=${build_dir} for the user"
+whoami
 
-sudo port install tokyocabinet boost zlib
+sudo port install tokyocabinet bzip2 libiconv zlib pthread
+sudo port install boost -no_static -no_single
 
 #----------------------------------------
 xsd=xsd-3.3.0-i686-macosx
-cd ${src}
+cd ${build_dir}
 curl -O http://www.codesynthesis.com/download/xsd/3.3/macosx/i686/${xsd}.tar.bz2
 tar -xjf ${xsd}.tar.bz2
 sed -i -e 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
@@ -42,33 +57,36 @@ sed -i -e 's/xdr_int8_t/xdr_char/g' ${extr} ${inse}
 sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
 #------------------------------------------
 xer=xerces-c-3.1.1
-mkdir -p ${build}
-cd ${build}
-if [ -d /usr/local/include/xercesc ]
+mkdir -p ${build_dir}
+cd ${build_dir}
+if [[ -d /usr/local/include/xercesc ]]
 	then
 	echo "Xerces is already installed."
 else
-	curl -O http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
-	tar xzf ${src}/${xer}.tar.gz 
+	curl -O http://apache.mirrors.spacedump.net/xerces/c/3/sources/${xer}.tar.gz
+	tar xzf ${xer}.tar.gz
 	cd ${xer}/
-	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" 
-	make
+	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --enable-static --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
+	make -j 2
 	sudo make install
 fi
 
 #-------------------------------------------
-mkdir -p ${build}/percolator
-cd ${build}/percolator
 
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator
-make package
+mkdir -p ${build_dir}/percolator
+cd ${build_dir}/percolator
 
-mkdir -p ${build}/converters
-cd ${build}/converters
+cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+make -j 2 "VERBOSE=1"
+sudo make -j 2 package
 
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${src}/${xsd}/"  ${src}/percolator/src/converters
-make package
+mkdir -p ${build_dir}/converters
+cd ${build_dir}/converters
+
+cmake -V  -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+make -j 2 "VERBOSE=1"
+sudo make -j 2 package
 #--------------------------------------------
-mkdir -p ${release}
-cp ${build}/percolator/*.dmg ${release}
-cp ${build}/converters/*.dmg ${release}
+mkdir -p ${release_dir}
+cp -v ${build_dir}/percolator/*.dmg ${release_dir}
+cp -v ${build_dir}/converters/*.dmg ${release_dir}

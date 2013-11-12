@@ -71,13 +71,13 @@ get_arch("${TARGET_ARCH}")
 #SET USEFUL VARIABLES TO BE USED IN THE CODE
 if(MINGW OR WIN32) # windows
 #  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
-  set(WRITABLE_DIR "xml/")
+  set(WRITABLE_DIR "xml\\\\")
   set(MZIDENTML_SCHEMA_LOCATION "xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
   set(GAML_TANDEM_SCHEMA_LOCATION "xml-gaml_tandem-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}\\\\")
   set(TANDEM_SCHEMA_LOCATION "xml-tandem-${TANDEM_VERSION}\\\\")
   add_definitions(-D_WIN32)
 else() # linux
-  set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/converters/")
+  set(WRITABLE_DIR "${CMAKE_INSTALL_PREFIX}/share/percolator/")
   set(MZIDENTML_SCHEMA_LOCATION "xml-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}/")
   set(GAML_TANDEM_SCHEMA_LOCATION "xml-${TANDEM_VERSION}/")
   set(TANDEM_SCHEMA_LOCATION "xml-${TANDEM_VERSION}/")
@@ -137,13 +137,16 @@ else(BOOSTDB)
 endif()
 include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(Pthreads)
-if(PTHREADS_FOUND)
-  message(STATUS  "Pthreads found")
-else(PTHREADS_FOUND)
-  message(FATAL_ERROR "The package Pthreads has not been not found")
-endif()
-include_directories(${PTHREAD_INCLUDE_DIR})
+
+FIND_PACKAGE ( Threads REQUIRED )
+
+#find_package(Pthreads)
+#if(PTHREADS_FOUND)
+#  message(STATUS  "Pthreads found")
+#else(PTHREADS_FOUND)
+#  message(FATAL_ERROR "The package Pthreads has not been not found")
+#endif()
+#include_directories(${PTHREAD_INCLUDE_DIR})
 
 if(MINGW AND NOT BOOSTDB)
   find_package(XDR)
@@ -170,13 +173,6 @@ if(TOKYODB AND MINGW)
     message(FATAL_ERROR "The package Bzip2 has not been found")
   endif()
 
-  find_package(Regex)
-  if(REGEX_FOUND)
-    message(STATUS  "Regex found")
-  else(REGEX_FOUND)
-    message(FATAL_ERROR " The package Regex has not been found")
-  endif()
-
   find_package(ZLIB)
     if(ZLIB_FOUND)
     message(STATUS "Zlib found")
@@ -184,21 +180,14 @@ if(TOKYODB AND MINGW)
     message(FATAL_ERROR "The package Zlib has not been found")
   endif(ZLIB_FOUND)
 
-  find_package(Mman)
-    if(MMAN_FOUND)
-    message(STATUS "Mman found")
-  else(MMAN_FOUND)
-    message(FATAL_ERROR "The package Mman has not been found")
-  endif(MMAN_FOUND)
-
-  find_package(PSapi)
-    if(PSAPI_FOUND)
-    message(STATUS "PSapi found")
-  else(PSAPI_FOUND)
-    message(FATAL_ERROR "The package PSapi has not been found")
-  endif(PSAPI_FOUND)
+  find_package(Iconv REQUIRED)
 
 endif()
+if(TOKYODB AND APPLE)
+  find_package(BZip2 REQUIRED)
+endif()
+
+
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -304,14 +293,13 @@ add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tand
 
 ADD_DEPENDENCIES(converters generate_perc_xsdfiles)
 
-target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
-
+#target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(converters ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 if(MINGW)
   if(LEVELDB)
     target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${LDB_LIBRARIES})
   elseif(TOKYODB)
-    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} 
-			      ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES})
+    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${MMAN_LIBRARIES} ${PSAPI_LIBRARIES} ${GLOB_LIBRARIES} ${REGEX_LIBRARIES} ${TokyoCabinet_LIBRARIES})
   elseif(BOOSTDB)
     target_link_libraries(converters ${MINGWLIB})
   endif()
@@ -319,7 +307,7 @@ else(MINGW)
   if(LEVELDB)
     target_link_libraries(converters ${LDB_LIBRARIES})
   elseif(TOKYODB)
-    target_link_libraries(converters ${MINGWLIB} ${XDR_LIBRARIES} ${TokyoCabinet_LIBRARIES})
+    target_link_libraries(converters ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES} ${XDR_LIBRARIES} ${TokyoCabinet_LIBRARIES})
   endif()
 endif()
 
@@ -335,9 +323,9 @@ target_link_libraries(tandem2pin converters perclibrary_part MSToolkit )
 #target_link_libraries(sequest2pin converters perclibrary_part MSToolkit )
 
 IF(MINGW OR WIN32)
-  set_target_properties(msgf2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
-  set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
+  set_target_properties(msgf2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
+  set_target_properties(tandem2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
+  set_target_properties(sqt2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
 #  set_target_properties(sequest2pin PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -liconv")
 ENDIF()
 
@@ -356,13 +344,16 @@ endif()
 
 
 if(APPLE)
+  set_property(TARGET msgf2pin PROPERTY LINK_SEARCH_START_STATIC ON)
+  set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_START_STATIC ON)
+  set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_START_STATIC ON)
   set_property(TARGET msgf2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET sqt2pin PROPERTY LINK_SEARCH_END_STATIC ON)
   set_property(TARGET tandem2pin PROPERTY LINK_SEARCH_END_STATIC ON)
 #  set_property(TARGET sequest2pin PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_property(TARGET msgf2pin PROPERTY MACOSX_BUNDLE ON)
-  set_property(TARGET sqt2pin PROPERTY MACOSX_BUNDLE ON)
-  set_property(TARGET tandem2pin PROPERTY MACOSX_BUNDLE ON)
+#  set_property(TARGET msgf2pin PROPERTY MACOSX_BUNDLE ON)
+#  set_property(TARGET sqt2pin PROPERTY MACOSX_BUNDLE ON)
+#  set_property(TARGET tandem2pin PROPERTY MACOSX_BUNDLE ON)
 #  set_property(TARGET sequest2pin PROPERTY MACOSX_BUNDLE ON) 
 endif(APPLE)
 
@@ -384,17 +375,17 @@ add_subdirectory(data/system_tests/converters)
 
 
 
-if(APPLE)
-    install(TARGETS msgf2pin EXPORT msgf2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-    install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-    install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+#if(APPLE)
+#    install(TARGETS msgf2pin EXPORT msgf2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+#    install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+#    install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION ./bin BUNDLE DESTINATION ../Applications)
 #    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-else(APPLE)
+#else(APPLE)
     install(TARGETS msgf2pin EXPORT msgf2pin  DESTINATION bin)
     install(TARGETS sqt2pin EXPORT sqt2pin DESTINATION bin)
     install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION bin)
 #    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION bin)
-endif(APPLE)
+#endif(APPLE)
   
 install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${WRITABLE_DIR}/${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${WRITABLE_DIR}/${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
@@ -403,7 +394,8 @@ install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${WRITABLE_DIR}/${TANDEM
 
 if( MINGW )
     message( STATUS "    Installing system-libraries: MinGW DLLs." )
-    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll ${MINGW_PATH}/bin/libboost_serialization.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll  )
+    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll ${MINGW_PATH}/bin/zlib1.dll  )
+#    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll ${MINGW_PATH}/bin/libboost_serialization.dll ${MINGW_PATH}/bin/libbz2-1.dll ${MINGW_PATH}/bin/libsqlite3-0.dll  )
     include( InstallRequiredSystemLibraries )
 endif( MINGW )
 

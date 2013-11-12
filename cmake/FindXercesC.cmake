@@ -11,26 +11,12 @@ FIND_PATH(XERCESC_INCLUDE_DIR xercesc/dom/DOM.hpp xercesc/parsers/SAXParser.hpp
    HINTS
    "[HKEY_CURRENT_USER\\software\\xerces-c\\src]"
    "[HKEY_CURRENT_USER\\xerces-c\\src]"
+   $ENV{XERCESCROOT}/src
+   $ENV{XERCESCROOT}
    /usr/include
    /usr/local/include
-   $ENV{XERCESCROOT}/src
-   $ENV{XERCESCROOT}/include
-   $ENV{XERCESC_ROOT_DIR}/include
-   $ENV{CODESYNTH}/include
-   $ENV{XSDDIR}/include
-   ${XERCES_DIR}/include
-   $ENV{XERCES_DIR}/include
-   ${XERCESCROOT}/include
-   ${XERCESC_ROOT_DIR}/include
-   ${CODESYNTH}/include
-   ${XSDDIR}/include
    "[HKEY_CURRENT_USER\\software\\xsd\\include]"
    "[HKEY_CURRENT_USER]\\xsd\\include]"
-   "C:/Program Files/CodeSynthesis XSD 3.2/include"
-   "C:/Program Files/CodeSynthesis XSD 3.3/include"
-   "C:/Program Files (x86)/CodeSynthesis XSD 3.3/include"
-   "C:/Program Files/xercesc/include"
-   ${CMAKE_SOURCE_DIR}/../xsd/libxsd
    PATH_SUFFIXES xerces-c xercesc include
    )
 
@@ -38,25 +24,13 @@ FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c xerces-c_3 xerces-c_static_3 libxe
    HINTS
    "[HKEY_CURRENT_USER\\software\\xerces-c\\lib]"
    "[HKEY_CURRENT_USER\\xerces-c\\lib]"
-   "C:/Program Files/CodeSynthesis XSD 3.2/lib/vc-8.0"
-   "C:/Program Files/CodeSynthesis XSD 3.3/lib/vc-8.0"
-   "C:/Program Files (x86)/CodeSynthesis XSD 3.3/lib/vc-8.0"
-   "C:/Program Files/xercesc/lib"
-   "C:/Program Files/xercesc/bin"
+   $ENV{XERCESCROOT}/
+   $ENV{XERCESCROOT}/lib
+   $ENV{XERCESCROOT}/src
+   /usr/
    /usr/lib
    /usr/local/lib
-   $ENV{XERCESCROOT}/lib
-   $ENV{CODESYNTH}/lib
-   $ENV{XSDDIR}/lib
-   ${XERCES_DIR}/lib
-   $ENV{XERCES_DIR}/lib
-   ${XERCESCROOT}/lib
-   ${CODESYNTH}/lib
-   ${XSDDIR}/lib
-   ${XERCESC_ROOT_DIR}/lib
-   ${XERCESC_ROOT_DIR}/lib/vc-9.0
-   ${XERCESC_ROOT_DIR}/lib64/vc-9.0
-   PATH_SUFFIXES lib64 lib32 lib
+   PATH_SUFFIXES src lib64 lib32 lib
    )
 
 if( MSVC )

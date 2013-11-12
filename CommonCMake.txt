@@ -76,10 +76,13 @@ set(POUT_SCHEMA_LOCATION "xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}/"
 IF(MINGW)
   IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(MINGW64 1)
+    SET(MINGW_PATH /usr/x86_64-w64-mingw32/sys-root/mingw/)  
+    SET(MINGW_PACK_NAME win64)  
   ELSE()
     SET(MINGW32 1)
+    SET(MINGW_PATH /usr/i686-w64-mingw32/sys-root/mingw/)  
+    SET(MINGW_PACK_NAME win32)  
   ENDIF()
-  set(MINGW_PATH /usr/x86_64-w64-mingw32/sys-root/mingw/)  
 ENDIF(MINGW)
 
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
@@ -90,15 +93,19 @@ set(gaxml_tandem-namespace "http://www.bioml.com/gaml/")
 set(tandem-namespace "http://www.thegpm.org/TANDEM/${TANDEM_VERSION}")
 
 #STATIC/DYNAMIC LIBRARY INCLUSION
+if(APPLE)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+endif()
 if(MINGW OR WIN32 OR APPLE)
+  OPTION(BUILD_SHARED_LIBS "build static binaries." OFF)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
 else(MINGW OR WIN32 OR APPLE)
   OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
 
-if(MINGW OR WIN32 OR APPLE)
-  SET(Boost_USE_STATIC_LIBS   ON)
-endif(MINGW OR WIN32 OR APPLE)
+# Link Boost static and single threaded
+set(Boost_USE_STATIC_LIBS   ON)
+set(Boost_USE_MULTITHREADED OFF)  
 
 set(BOOST_MIN_VERSION "1.46.0")
 set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
@@ -116,10 +123,14 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 # SET COMPILER OPTIONS
 ###############################################################################
 
+if( APPLE )
+endif( APPLE )
+
 IF(APPLE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.5")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.5")
-  set(LINK_FLAGS "-mmacosx-version-min=10.5")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.7")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7 -lc++")
+  add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
 ENDIF(APPLE)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-overflow")

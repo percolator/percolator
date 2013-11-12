@@ -1,15 +1,12 @@
 Percolator and format converters software packages for postprocessing of
-shotgun proteomics data. Elude package for retention times prediction.
-June 2011
-Lukas Käll <lukas.kall@scilifelab.se>
+shotgun proteomics data.
 
-The latest releases of Percolator, its converters and Elude are available at
-the downloads page: https://github.com/percolator/percolator/downloads
-There you may find package for Linux and compiled executables for Win32. Source
-bundles are available to build from scratch if you are running a different
-system or if you do not have superuser privileges.
-
-
+The latest releases of Percolator, its converters and Elude are
+available at the downloads page:
+https://sourceforge.net/projects/percolator/files There you may find
+RedHat and Debian packages and os-x and windows installers. Source
+bundles are available if you would like to build the softwares from
+source using cmake.
 ***
 
 INSTALLING (from packages or installer)
@@ -29,9 +26,9 @@ Issue the following to install the necessary dependencies for Percolator:
 
 the following for the converters:
 
-  $ sudo apt-get install  libsqlite3-dev  libleveldb-dev leveldb-doc zlib1g-dev 
+  $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libtokyocabinet-dev
 or
-  $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libtokyocabinet8
+  $ sudo apt-get install  libsqlite3-dev  libleveldb-dev leveldb-doc zlib1g-dev 
 or
   $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libboost-serialization-dev
 
@@ -39,25 +36,21 @@ the following for Elude:
 
   $ sudo apt-get install libboost-dev
 
-NOTE that the packages Xercesc-c  might have to be installed manually depending on which
-platform/repository percolator is building on. In that case follow the links below to download build and install them :
+After installing the depenIn the directory where the package has been downloaded:
+  $ sudo dpkg --install [package].deb
+Note that the converters depend on Percolator, which must be installed first!
+
+
+
+
+The packages Xercesc-c  might have to be installed manually depending on which
+platform/repository percolator is building on. In that case follow the links below to download build and install them:
 
 http://xerces.apache.org/xerces-c/
 
-NOTE in case you need to build Xercesc-c from the source, it is recommendable to disable the net support by adding the flag :
+It is recommendable to disable the net support by adding the flag:
 
   --disable-network
-
-     It is also recommendable to remove previous installed versions of Xercesc-c in the system.
-  
-NOTE the package LevelDB might not be available for all the repositories. In that case download and install it
-from the following link :
-
-http://code.google.com/p/leveldb/
-
-Then, in the directory where the package has been downloaded:
-  $ sudo dpkg --install [package].deb
-Note that the converters depend on Percolator, which must be installed first!
 
 Fedora (15)
 All the external dependencies listed before are available to be downloaded and installed in the yum repository in Fedora.
@@ -71,28 +64,14 @@ Linux (other distributions)
 For other distributions you might have to manually build and install some of
 the libraries described before.
 
-Cross-Compilation (MinGW)
-Percolator, Converters and Elude are compatible with cross-compilation in Fedora, Ubuntu and Windows
-using MinGW. Note that all the dependencies listed before have to be cross-compiled and installed
-in the MinGW home folder.
-Converters are only able to be cross-compiled using the BOOST xml-serialization scheme. Support
-for tokyocabinet and leveldb will soon be added.
+Cross-Compilation (MinGW) 
 
-Windows
-The Percolator, Converters and Elude installers have been tested on Windows XP SP2, Windows
-Vista and Window 7. Download the Windows installer, double click it and follow the
-installation procedure. Once completed, open a DOS prompt and invoke Percolator
-from the directory where it was installed.
-
-
-PATCHES AND VERSIONED LIBRARIES
-
-A patch to fix a bug in the XSD binaries por MAC is included.
-A patch to fix a bug in the MinGW-PortableXDR for Fedora is included.
-An implementation of the Windows compatible version of Tokycabinet is 
-avaible in the repository ( Note that it is still in development process)
-An implementation of LevelDB compatible with different platforms is avaible
-to download in the repository.
+Percolator, Converters and Elude are
+compatible with cross-compilation under MInGW64. Note that all the
+dependencies listed before have to be cross-compiled and installed in
+the MinGW home folder.  Converters are only able to be cross-compiled
+using the BOOST xml-serialization scheme. Support for tokyocabinet and
+leveldb will soon be added.
 
 ***
 
