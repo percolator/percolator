@@ -1,180 +1,20 @@
-Percolator and format converters software packages for postprocessing of
-shotgun proteomics data.
+This repository holds the source code for percolator and format
+converters software packages; a software for postprocessing of shotgun
+proteomics data.
 
-The latest releases of Percolator, its converters and Elude are
-available at the downloads page:
-https://sourceforge.net/projects/percolator/files There you may find
-RedHat and Debian packages and os-x and windows installers. Source
-bundles are available if you would like to build the softwares from
-source using cmake.
-***
+While the source code is hosted at github, the binary downloads are
+now days hosted on sourceforge:
 
-INSTALLING (from packages or installer)
+https://sourceforge.net/projects/percolator/files
 
-Download the desired package (referred to as [package] in the instructions 
-below) from the downloads page mentioned above:
-  ".deb" packages are available for Debian distributions (such as Ubuntu)
-  ".rpm" packages are available for Red Hat (such as Fedora).
-  ".dmg" packages are available for Mac.
-  ".exe" windows installers.
-The converters depend on Percolator itself, which must be installed first!
+The same packages are also available at 
+http://www.nada.kth.se/~lukask/percolator_dist/
 
-Ubuntu (11.04)
-Issue the following to install the necessary dependencies for Percolator:
+The building procedure is cmake-based. Helper scripts for building on
+different platforms can be found in: admin/bilders/
 
-  $ sudo apt-get install libxerces-c-dev libboost-dev libboost-filesystem-dev libboost-system-dev libboost-thread-dev
+The cleanest way to build is to use the vagrant virtual machine
+system, which can be setup using the script: admin/vagrant/manager.sh
 
-the following for the converters:
-
-  $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libtokyocabinet-dev
-or
-  $ sudo apt-get install  libsqlite3-dev  libleveldb-dev leveldb-doc zlib1g-dev 
-or
-  $ sudo apt-get install  libsqlite3-dev  zlib1g-dev libboost-serialization-dev
-
-the following for Elude:
-
-  $ sudo apt-get install libboost-dev
-
-After installing the depenIn the directory where the package has been downloaded:
-  $ sudo dpkg --install [package].deb
-Note that the converters depend on Percolator, which must be installed first!
-
-
-
-
-The packages Xercesc-c  might have to be installed manually depending on which
-platform/repository percolator is building on. In that case follow the links below to download build and install them:
-
-http://xerces.apache.org/xerces-c/
-
-It is recommendable to disable the net support by adding the flag:
-
-  --disable-network
-
-Fedora (15)
-All the external dependencies listed before are available to be downloaded and installed in the yum repository in Fedora.
-Then the rpm package can be installed as usual : sudo rpm --install packagename.rpm
-
-Mac OSX
-All the external dependencies listed before are available to be downloaded and installed in the curl repository in Mac.
-Then the dmg can be installed as usual.
-
-Linux (other distributions)
-For other distributions you might have to manually build and install some of
-the libraries described before.
-
-Cross-Compilation (MinGW) 
-
-Percolator, Converters and Elude are
-compatible with cross-compilation under MInGW64. Note that all the
-dependencies listed before have to be cross-compiled and installed in
-the MinGW home folder.  Converters are only able to be cross-compiled
-using the BOOST xml-serialization scheme. Support for tokyocabinet and
-leveldb will soon be added.
-
-***
-
-BUILDING (from source bundle or the repository)
-
-*** READ THIS CAREFULLY: you MUST install the required libraries! ***
-The following instructions are for Ubuntu (versions 10.04, 10.10 and 11.04).
-Make, Cmake and a C++ compiler are required. To build Percolator, the following
-libraries are also needed: libxerces-c-dev, libboost-dev, libboost-filesystem-dev, libboost-thread-dev and libboost-system-dev. 
-To build the converters: libxerces-c-dev, libsqlite3-dev, libboost-dev, libboost-filesystem-dev,libboost-system-dev, libboost-serialization-dev or
-libleveldb-dev or libtokyocabinet-dev and zlib1g-dev. Note that tokyocabinet and leveldb are both optional libraries
-In addition, both need Code Synthesis XSD in
-it 3.3 version. 
-
-
-If the package Code Synthesis XSD is not available in the repository ( apt-get install xsdcxx ) for ubuntu systems, 
-you can either install it from the source :
-  http://www.codesynthesis.com/products/xsd/
-or use the binary version instead. You can always download the binaries version, places them in a directory 
-and indicate cmake where the binaries are located by using the flag :
-
-  -DCMAKE_PREFIX_PATH = /path-to-xsd-binaries
-
-NOTE The tool converters can be compiled using three different data engines [boost-serialization, tokycabinet or leveldb]. 
-This can be indicated by setting up the variable SERIALIZATION :
-  
-  -DSERIALIZATION="TokyoCabinet"
-  
-  or
-  
-  -DSERIALIZATION="LevelDB"
-  
-  or
-  
-  -DSERIALIZATION="Boost"
-  
-Originally, by default the boost-serialization version is taken.
-
-All the above is automatically installed by following the steps
-below; if you do note have superuser privileges, you will have to manually
-install the mentioned libraries. The same goes for older versions of Ubuntu and
-other operating systems (as explained above under "INSTALLING").
-The following instructions are written for Percolator, but the same procedure
-applies for both the converters and Elude. The converters depend on Percolator
-itself, which must be installed first!
-Download the latest [tar-ball].tar.gz and decompress it; we will refer to the 
-generated directory as "/path/to/source" (that would be the src/converters 
-subdirectory for the converters, and src/elude in case of Elude).
-We will also refer as "/path/to/build" as the build directory.
-
-We will now proceed to build percolator in "/path/to/build", but any directory where the
-user has read/write privileges can be chosen. Issue the following:
-  $ cd /path/to/build
-  $ cmake [-DCMAKE_INSTALL_PREFIX="/usr/local/bin"] \
-          [-DCMAKE_BUILD_TYPE="Debug" | "Release"] \
-          [-DCMAKE_PREFIX_PATH="/path/to/libraries"]
-          /path/to/source
-  $ make -j8; make install
-
-NOTE that all the params between [] are just optional
-
-DCMAKE_INSTALL_PREFIX = indicates where to install percolator
-CMAKE_BUILD_TYPE = indicates the type of building (Release by default)
-CMAKE_PREFIX_PATH = indicates and extra path to look for packages for example the binaries of XSD.
-
-In case percolator needs to be cross-compiled. Issue the following :
-  $ cd /path/to/build
-  $ cmake [-DCMAKE_INSTALL_PREFIX="/usr/local/bin"] \
-          [-DCMAKE_BUILD_TYPE="Debug" | "Release"] \
-          [-DCMAKE_PREFIX_PATH="/path/to/libraries"]
-          -G"Eclipse CDT4 - Unix Makefiles"
-          -DCMAKE_TOOLCHAIN_FILE="/path/to/source/cmake/windows_percolator/Toolchain-mingw32.cmake"
-          /path/to/source
-  $ make -j8; make install
-
-NOTE that all the params between [] are just optional : 
-NOTE that when cross compiling, all the dependencies have to be cross compiled under MinGW and located
-in the default MinGW directory.
-
-Advanced users (and developers) may clone the project with Git by issuing:
-$ git clone git://github.com/percolator/percolator
-This will create a directory called "percolator" that is to be used as
-/path/to/source in the instructions above
-
-
-***
-
-
-TESTING
-
-In order to be able to properly execute the tests, the following are require:
-  python 2.6 interpreter
-  xmllint.
-Those are not stated among the requirements in "BUILDING" since a working
-version of the software can be compiled without them. The following
-instructions are written for Percolator, but the same procedure applies for
-both the converters and Elude.
-Assuming Percolator has been installed as explained above, it can be
-automatically tested by issuing:
-  $ cd /path/to/build
-  $ make test
-If errors are encountered, the directory /tmp/percolatorBuild/Testing/ will
-contain log files that can be used to debug the problem.
-
-
-
+Lukas Käll
+12th November, 2013
