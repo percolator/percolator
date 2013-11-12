@@ -129,7 +129,7 @@ endif( APPLE )
 IF(APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.7")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7 -stdlib=libc++ -L/usr/lib/ -lstdc++")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.7 -lc++")
   add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
 ENDIF(APPLE)
 
