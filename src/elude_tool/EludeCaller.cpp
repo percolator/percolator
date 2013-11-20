@@ -260,7 +260,7 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
     linear_calibration_ = false;
   }
   if (cmd.optionSet("c")) {
-    double coverage = cmd.getDouble("r", 0.0, 1.0);
+    double coverage = cmd.getDouble("c", 0.0, 1.0);
     LTSRegression::setCoverage(coverage);
   }
   if (cmd.optionSet("u")) {
