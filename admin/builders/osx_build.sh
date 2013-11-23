@@ -17,6 +17,13 @@ while getopts “s:b:r:t:” OPTION; do
   esac
 done
 
+if [[ ! -d /opt/local/var/macports ]]
+  then
+  echo "Error: MacPorts is not installed."
+  echo "To install it please follow the instructions from http://www.macports.org/install.php."
+  exit 1
+fi
+
 if [[ -z ${build_dir} ]]; then
   build_dir="$(mktemp -d -t build)";
 fi
