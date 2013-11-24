@@ -17,6 +17,17 @@ while getopts “s:b:r:t:” OPTION; do
   esac
 done
 
+if [[ ! -d /opt/local/var/macports ]]
+  then
+  echo "Error: MacPorts is not installed."
+  echo "To install it please follow the instructions from http://www.macports.org/install.php."
+  exit 1
+fi
+
+# PackageMaker is also required. It is a part of Auxiliary Tools for Xcode packet that Apple provides for Developers.
+# You can find it here: https://developer.apple.com/downloads/index.action?name=packagemaker#
+# TODO: check if PackageMaker is installed
+
 if [[ -z ${build_dir} ]]; then
   build_dir="$(mktemp -d -t build)";
 fi
@@ -26,7 +37,8 @@ if [[ -z ${src_dir} ]]; then
     src_dir="$(mktemp -d -t src)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
-    src_dir=$(dirname ${BASH_SOURCE})/../../../
+    # Might not work if we have symlinks in the way
+    src_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../../" && pwd )
   fi
 fi
 if [[ -z ${release_dir} ]]; then
