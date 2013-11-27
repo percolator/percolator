@@ -24,6 +24,10 @@ limitations under the License.
 
 using namespace std;
 
+/*
+* MyException is an extension of std::exception that allows you to provide
+* error message through a string parameter.
+*/
 class MyException : public std::exception 
 {
 

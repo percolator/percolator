@@ -69,6 +69,14 @@ struct RetrieveValue
   }
 };
 
+/*
+* ProteinProbEstimator is a class that computes probabilities and statistics based
+* on provided proteins from the set of scored peptides from percolator.
+*
+* Here are some usefull abbreviations:
+* Mayu - a software package for the analysis of (large) mass
+*           spectrometry-based shotgun proteomics data sets.
+*/
  
 class ProteinProbEstimator {
   

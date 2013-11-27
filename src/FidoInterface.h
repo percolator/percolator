@@ -20,6 +20,20 @@
 #include "ProteinProbEstimator.h"
 #include "GroupPowerBigraph.h"
 
+/*
+* FidoInterface is a class that computes probabilities and statistics based
+* on provided proteins from the set of scored peptides from percolator. It
+* uses number of additional parameters to setup the calculations.
+*
+* Here are some usefull abbreviations:
+* AUC - Area Under Curve
+* FDR - False Discovery Rate
+* FIDO - ?
+* MSE - Mean Squared Error
+* PSM - ?
+* ROC - Receiver Operating Characteristic
+*/
+
 class FidoInterface : public ProteinProbEstimator
 {
       

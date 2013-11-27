@@ -43,6 +43,17 @@ struct gridInformation {
     vector<double> gridEpsilon;
 };
 
+/*
+* RTModel
+*
+* Here are some usefull abbreviations:
+* AA - Amino Acid
+* RTModel - ?
+* SVM - ?
+* SVR - Support Vector Regressor
+*/
+
+
 class RTModel {
   public:
     RTModel();
