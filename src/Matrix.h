@@ -32,7 +32,7 @@ public:
       cols = 0;
 
       if ( rhs.size() > 0 )
-	cols = rhs[0].size();
+        cols = rhs[0].size();
 
       rows = rhs;
     }

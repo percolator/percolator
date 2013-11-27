@@ -123,9 +123,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh)
   }
   
   os << ">" << endl;
-  os << "      <svm_score>"   << fixed 	<< sh.score 	<< "</svm_score>" << endl;
-  os << "      <q_value>" 	<< scientific << sh.pPSM->q 	<< "</q_value>" << endl;
-  os << "      <pep>" 	       << scientific << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <svm_score>"   << fixed  << sh.score     << "</svm_score>" << endl;
+  os << "      <q_value>"       << scientific << sh.pPSM->q     << "</q_value>" << endl;
+  os << "      <pep>"          << scientific << sh.pPSM->pep << "</pep>" << endl;
   
   if(Scores::getShowExpMass()) 
   {
@@ -135,18 +135,18 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh)
   os << "      <calc_mass>" << fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
   
   if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\"" 
-				  << PSMDescription::unnormalize(sh.pPSM->retentionTime)
-				  << "\" predicted=\""
-				  << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
-				  << endl;
+                                  << PSMDescription::unnormalize(sh.pPSM->retentionTime)
+                                  << "\" predicted=\""
+                                  << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
+                                  << endl;
 
   if (sh.pPSM->getPeptideSequence().size() > 0) 
   {
-	  string n = sh.pPSM->getFlankN();
-	  string c = sh.pPSM->getFlankC();
-	  string centpep = sh.pPSM->getPeptideSequence();
-	  
-	  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
+          string n = sh.pPSM->getFlankN();
+          string c = sh.pPSM->getFlankC();
+          string centpep = sh.pPSM->getPeptideSequence();
+          
+          os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
   }
   
   for (set<string>::const_iterator pid = sh.pPSM->proteinIds.begin(); pid != sh.pPSM->proteinIds.end(); ++pid) {
@@ -180,7 +180,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh)
   os << ">" << endl;
   os << "      <svm_score>" << fixed       << sh.score     << "</svm_score>" << endl;
   os << "      <q_value>"   << scientific  << sh.pPSM->q   << "</q_value>" << endl;
-  os << "      <pep>" 	     << scientific  << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <pep>"        << scientific  << sh.pPSM->pep << "</pep>" << endl;
   
   if(Scores::getShowExpMass()) 
   {
@@ -480,7 +480,7 @@ void Scores::normalizeScores(double fdr) {
     if(it->score <= 0 && VERB > 3)
     {
       std::cerr << "\nWARNING the score of the PSM " << it->pPSM->id << " is less or equal than zero "
-	         << "after normalization.\n" << std::endl;
+                 << "after normalization.\n" << std::endl;
     }
   }
   

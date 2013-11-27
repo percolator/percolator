@@ -33,10 +33,10 @@ class PosteriorEstimator {
     int run();
     static void estimatePEP(vector<pair<double, bool> >& combined,
                             double pi0, vector<double>& peps,
-			      bool include_negative = false);
+                              bool include_negative = false);
     static void estimatePEPGeneralized(vector<pair<double, bool> >& combined,
-					 vector<double>& peps,
-					 bool include_negative = false);
+                                         vector<double>& peps,
+                                         bool include_negative = false);
     static void estimate(vector<pair<double, bool> >& combined,
                          LogisticRegression& lr);
     static void getPValues(const vector<pair<double, bool> >& combined,
@@ -51,14 +51,14 @@ class PosteriorEstimator {
     static double estimatePi0(vector<double>& p,
                               const unsigned int numBoot = 100);
     static void setReversed(bool status) {
-		reversed = status;
+      reversed = status;
     }
     static void setGeneralized(bool general) {
-		competition = general;
-		assert(!(general && pvalInput));
+      competition = general;
+      assert(!(general && pvalInput));
     }
     static void setNegative(bool negative) {
-	        includeNegativesInResult = negative;
+      includeNegativesInResult = negative;
     }
 protected:
     void finishStandalone(vector<pair<double, bool> >& combined,

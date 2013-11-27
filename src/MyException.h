@@ -24,19 +24,19 @@ limitations under the License.
 
 using namespace std;
 
-  class MyException : public std::exception 
-  {
-  
-    public:
+class MyException : public std::exception 
+{
 
-      MyException(const std::string &ss);
-      MyException(const std::ostream &ss);
-      ~MyException() throw();
-      const char* what() const throw();
+  public:
 
-    protected:
-      
-      std::string msg;
-  };
+    MyException(const std::string &ss);
+    MyException(const std::ostream &ss);
+    ~MyException() throw();
+    const char* what() const throw();
+
+  protected:
+    
+    std::string msg;
+};
 
 #endif

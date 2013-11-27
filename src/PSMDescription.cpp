@@ -34,9 +34,9 @@ PSMDescription::PSMDescription(const string pep, const double retTime) :
 }
 
 PSMDescription::PSMDescription(double ort, double prt) :
-	q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
-	      retentionTime(ort), predictedTime(prt), massDiff(0.), pI(0.),
-	      scan(0), id(""), peptide(""), parentFragment(NULL) {
+  q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
+      retentionTime(ort), predictedTime(prt), massDiff(0.), pI(0.),
+      scan(0), id(""), peptide(""), parentFragment(NULL) {
 }
 
 PSMDescription::~PSMDescription() {

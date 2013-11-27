@@ -67,7 +67,7 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
-	
+        
 struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
@@ -126,7 +126,7 @@ class ScoreHolderPeptide: public ScoreHolder {
     }
     ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
       ScoreHolder(s, l, psm) {
-    	;
+        ;
     }
     virtual ~ScoreHolderPeptide()  {
       ;

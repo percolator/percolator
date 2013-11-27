@@ -21,7 +21,7 @@ void Matrix::add(const Vector & rhs)
   if ( numRows() > 0 && rhs.size() != numCols() )
     {
       cerr << "Cannot add vector with size " << rhs.size() <<
-	" to a matrix with " << numCols() << " columns" << endl;
+        " to a matrix with " << numCols() << " columns" << endl;
       throw MatrixIntegrityException();
     }
 
@@ -66,7 +66,7 @@ void Matrix::displayMatrix() const
     {
       cout << "col" << k;
       if ( k != numCols() - 1 )
-	cout << "\t";
+        cout << "\t";
     }
   cout << endl;
   for ( k=0; k<numRows(); k++)
@@ -81,7 +81,7 @@ void Matrix::verifyMatrixIntegrity() const
   for (int k=0; k<numRows(); k++)
     {
       if ( rows[k].size() != numCols() )
-	throw MatrixIntegrityException();
+        throw MatrixIntegrityException();
     }
 }
 
@@ -137,9 +137,9 @@ Matrix Matrix::transpose() const
   for (k=0; k<numRows(); k++)
     {
       for (j=0; j<numCols(); j++)
-	{
-	  resultArray[j][k] = rows[k][j];
-	}
+        {
+          resultArray[j][k] = rows[k][j];
+        }
     }
 
   return Matrix(resultArray);
@@ -174,10 +174,10 @@ Matrix operator *(const Matrix & lhs, const Matrix & rhs)
     {
       Array<double> nextRow( rhs.numCols() );
       for (j=0; j<rhsTrans.numRows(); j++)
-	{
-	  //	  nextRow[j] = lhs[k].unpack() * rhsTrans[j].unpack();
-	  nextRow[j] = lhs[k] * rhsTrans[j];
-	}
+        {
+          //      nextRow[j] = lhs[k].unpack() * rhsTrans[j].unpack();
+          nextRow[j] = lhs[k] * rhsTrans[j];
+        }
       result[k] = Vector(nextRow);
     }
 
@@ -273,7 +273,7 @@ Set Matrix::prec(double val) const
   for (int k=0; k<numRows(); k++)
     {
       if ( rows[k].prec(val) )
-	result.add( k );
+        result.add( k );
     }
 
   return result;
@@ -286,7 +286,7 @@ Set Matrix::succ(double val) const
   for (int k=0; k<numRows(); k++)
     {
       if ( rows[k].succ(val) )
-	result.add( k );
+        result.add( k );
     }
 
   return result;
@@ -299,7 +299,7 @@ Set Matrix::precEq(double val) const
   for (int k=0; k<numRows(); k++)
     {
       if ( rows[k].precEq(val) )
-	result.add( k );
+        result.add( k );
     }
 
   return result;
@@ -312,7 +312,7 @@ Set Matrix::succEq(double val) const
   for (int k=0; k<numRows(); k++)
     {
       if ( rows[k].succEq(val) )
-	result.add( k );
+        result.add( k );
     }
 
   return result;
@@ -388,10 +388,10 @@ void Matrix::eliminate(int k, Matrix & id)
   for (int i=k+1; i<numRows(); i++)
     {
       if ( fabs( rows[i][k] ) > fabs( rows[k][k] ) )
-	{
-	  swap(rows[i], rows[k]);
-	  swap(id.rows[i], id.rows[k]);
-	}
+        {
+          swap(rows[i], rows[k]);
+          swap(id.rows[i], id.rows[k]);
+        }
     }
 
   // first normalize rows[k] so that it's first element is 1
@@ -412,7 +412,7 @@ void Matrix::eliminate(int k, Matrix & id)
   for (int j=0; j<numRows() && j < id.numRows(); j++)
     {
       if ( j == k )
-	continue;
+        continue;
 
       //      int i = rows[k].leadingIndex();
 
@@ -420,10 +420,10 @@ void Matrix::eliminate(int k, Matrix & id)
 
       //      if ( mult != 0.0 )
       if ( Vector::sparseChecker.isNonzero(mult) )
-	{
-	  id.rows[j].addEqScaled( -mult, id.rows[k]);
-	  rows[j].addEqScaled( -mult, rows[k] );
-	}
+        {
+          id.rows[j].addEqScaled( -mult, id.rows[k]);
+          rows[j].addEqScaled( -mult, rows[k] );
+        }
     }
 }
 
@@ -433,10 +433,10 @@ void Matrix::eliminateRRE(int k, Matrix & id)
   for (int i=k+1; i<numRows(); i++)
     {
       if ( fabs( rows[i][k] ) > fabs( rows[k][k] ) )
-	{
-	  swap(rows[i], rows[k]);
-	  swap(id.rows[i], id.rows[k]);
-	}
+        {
+          swap(rows[i], rows[k]);
+          swap(id.rows[i], id.rows[k]);
+        }
     }
 
   // first normalize rows[k] so that it's first element is 1
@@ -457,7 +457,7 @@ void Matrix::eliminateRRE(int k, Matrix & id)
   for (int j=0; j<numRows() && j < id.numRows(); j++)
     {
       if ( j == k )
-	continue;
+        continue;
 
       //      int i = rows[k].leadingIndex();
 
@@ -468,10 +468,10 @@ void Matrix::eliminateRRE(int k, Matrix & id)
 
       //      if ( mult != 0.0 )
       if ( Vector::sparseChecker.isNonzero(mult) )
-	{
-	  id.rows[j].addEqScaled( -mult, id.rows[k] );
-	  rows[j].addEqScaled( -mult, rows[k] );
-	}
+        {
+          id.rows[j].addEqScaled( -mult, id.rows[k] );
+          rows[j].addEqScaled( -mult, rows[k] );
+        }
     }
 }
 
@@ -501,9 +501,9 @@ Array<Set> Matrix::transposeIndices() const
   for (int k=0; k<numRows(); k++)
     {
       for (Set::Iterator iter = rows[k].beginNonzero(); iter != rows[k].endNonzero(); iter++)
-	{
-	  transposedIndices[ *iter ].add(k);
-	}
+        {
+          transposedIndices[ *iter ].add(k);
+        }
     }
 
   return transposedIndices;
@@ -550,9 +550,9 @@ Matrix Matrix::transpose() const
   for (int k=0; k<numRows(); k++)
     {
       for (int j=0; j<numCols(); j++)
-	{
-	  result.rows[j][k] = (*this)[k][j];
-	}
+        {
+          result.rows[j][k] = (*this)[k][j];
+        }
     }
 
   return result;
@@ -594,9 +594,9 @@ double Matrix::maxMagnitude() const
       const Vector & row = rows[k];
 
       for (Set::Iterator iter = row.beginNonzero(); iter != row.endNonzero(); iter++)
-	{
-	  maxVal = ::max( maxVal, fabs(row[ *iter ]) );
-	}
+        {
+          maxVal = ::max( maxVal, fabs(row[ *iter ]) );
+        }
     }
 
   return maxVal;

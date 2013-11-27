@@ -148,7 +148,7 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
 //     case 1: { isDecoy = false; break; };
 //     case -1: { isDecoy = true; break; };
 //     default:  { throw MyException("ERROR : class DataSet has not been initiated\
-// 		to neither target nor decoy label\n");}
+//              to neither target nor decoy label\n");}
 //   }
 //   return isPngasef( peptide, isDecoy);
 // }
@@ -326,7 +326,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
     default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
-		to neither target nor decoy label\n");}
+                to neither target nor decoy label\n");}
   }
 
   if(psm.isDecoy() != isDecoy)
@@ -343,17 +343,17 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
 
       if(psm.occurence().size() <= 0)
       {
-	ostringstream temp;
-	temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
-	The PSM does not contain protein occurences." << std::endl;
-	throw MyException(temp.str());
+        ostringstream temp;
+        temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
+        The PSM does not contain protein occurences." << std::endl;
+        throw MyException(temp.str());
       }
 
       BOOST_FOREACH( const percolatorInNs::occurence & oc,  psm.occurence() )
       {
         myPsm->proteinIds.insert( oc.proteinId() );
         // adding n-term and c-term residues to peptide
-	//NOTE the residues for the peptide in the PSMs are always the same for every protein
+        //NOTE the residues for the peptide in the PSMs are always the same for every protein
         myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
       }
 
@@ -372,7 +372,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       myPsm->features = new double[FeatureNames::getNumFeatures()];
       if (regresionTable)
       {
-	myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
+        myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
       }
 
       for ( ::percolatorInNs::features::feature_const_iterator featureIter = featureS.begin(); featureIter != featureS.end(); featureIter++ ) {
