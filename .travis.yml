@@ -2,4 +2,4 @@ language: cpp
 compiler:
   - gcc
 # Change this to your needs
-script: ./admin/buliders/ubuntu64_build.sh
+script: ./admin/builders/ubuntu64_build.sh
