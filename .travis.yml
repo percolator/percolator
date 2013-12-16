@@ -1,6 +1,6 @@
 language: cpp
 compiler:
   - gcc
-before_script: mkdir ~/rel ~/build
+before_script: mkdir -p ~/rel ~/build
 # Change this to your needs
 script:  ./admin/builders/ubuntu64_build.sh -s .. -r ~/rel -b ~/build
