@@ -308,14 +308,14 @@ void FidoInterface::gridSearch()
   switch(depth)
   {
     case 0:    
-      gamma_search = boost::assign::list_of(0.5);
-      beta_search = boost::assign::list_of(0.001);
-      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
+      gamma_search = std::vector<long double>{0.5};
+      beta_search = std::vector<long double>{0.001};
+      alpha_search = std::vector<long double>{0.008,0.032,0.128};
       break;
     
     case 1:
-      gamma_search = boost::assign::list_of(0.1)(0.5)(0.9);
-      beta_search = boost::assign::list_of(0.001);
+      gamma_search = std::vector<long double>{0.1, 0.5, 0.9};
+      beta_search = std::vector<long double>{0.001};
       for (double k = 0.002; k <= 0.4; k*=4)
       {
        alpha_search.push_back(k);
@@ -323,8 +323,8 @@ void FidoInterface::gridSearch()
       break;
       
     case 2:
-      gamma_search = boost::assign::list_of(0.1)(0.3)(0.5)(0.75)(0.9);
-       beta_search = boost::assign::list_of(0.001);
+      gamma_search = std::vector<long double>{0.1, 0.3, 0.5, 0.75, 0.9};
+       beta_search = std::vector<long double>{0.001};
       for (double k = 0.001; k <= 0.4; k*=2)
       {
        alpha_search.push_back(k);
@@ -332,17 +332,17 @@ void FidoInterface::gridSearch()
       break;
     
     default:
-      gamma_search = boost::assign::list_of(0.5);
-      beta_search = boost::assign::list_of(0.001);
-      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
+      gamma_search = std::vector<long double>{0.5};
+      beta_search = std::vector<long double>{0.001};
+      alpha_search = std::vector<long double>{0.008,0.032,0.128};
   }
 
   if(alpha != -1)
-    alpha_search = boost::assign::list_of(alpha);
+    alpha_search = std::vector<long double>{alpha};
   if(beta != -1)
-    beta_search = boost::assign::list_of(beta);
+    beta_search = std::vector<long double>{beta};
   if(gamma != -1)
-    gamma_search = boost::assign::list_of(gamma);
+    gamma_search = std::vector<long double>{gamma};
   
   for (unsigned int i = 0; i < gamma_search.size(); i++)
   {
@@ -608,8 +608,8 @@ void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector
 
 	if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
 	
-	if(empFDR > 1.0 || isnan(empFDR) || isinf(empFDR)) empFDR = 1.0;
-	if(estFDR > 1.0 || isnan(estFDR) || isinf(estFDR)) estFDR = 1.0;
+	if(empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
+	if(estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
 	    
 	if(estFDR < previousEstQ) estFDR = previousEstQ;
 	else previousEstQ = estFDR;
@@ -656,8 +656,8 @@ void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector
 	    
 	    if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
 	    
-	    if(empFDR > 1.0 || isnan(empFDR) || isinf(empFDR)) empFDR = 1.0;
-	    if(estFDR > 1.0 || isnan(estFDR) || isinf(estFDR)) estFDR = 1.0;
+	    if(empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
+	    if(estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
 	    
 	    if(estFDR < previousEstQ) estFDR = previousEstQ;
 	    else previousEstQ = estFDR;

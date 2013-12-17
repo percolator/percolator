@@ -28,25 +28,25 @@ class FidoInterface : public ProteinProbEstimator
     /** compute peptide level prior probability instead of using default = 0.1 **/
     const static bool computePriors = false;
     /** threshold used for fido to remove poor PSMs **/
-    const static double psmThreshold = 0.0;
-    const static double reduced_psmThreshold = 0.2;
+    constexpr static double psmThreshold = 0.0;
+    constexpr static double reduced_psmThreshold = 0.2;
     /** threshold used for fido to classify a peptide as very low confidence **/
-    const static double peptideThreshold = 0.001;
-    const static double reduced_peptideThreshold = 0.2;
+    constexpr static double peptideThreshold = 0.001;
+    constexpr static double reduced_peptideThreshold = 0.2;
     /** threshold used for fido to classify a protein as very low confidence and prune it **/
-    const static double proteinThreshold = 0.01; 
-    const static double reduced_proteinThreshold = 0.2;
+    constexpr static double proteinThreshold = 0.01; 
+    constexpr static double reduced_proteinThreshold = 0.2;
     /** default value for peptide prior probability used in fido to compute the peptide likehood **/
-    const static double peptidePrior = 0.1; 
+    constexpr static double peptidePrior = 0.1; 
     /** number of maximum of tree configurations allowed in fido **/
-    const static double max_allow_configurations = 18;
+    constexpr static double max_allow_configurations = 18;
     /** allow the presence of peptides with the same sequence but different label (target/decoy) **/
     const static bool allow_multiple_labeled_peptides = false;
     
     /** GRID SEARCH PARAMETERS **/
     
     /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
-    const static double lambda = 0.15;
+    constexpr static double lambda = 0.15;
     
     /** number of false positives allowed while estiaming the ROC curve score **/
     /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/

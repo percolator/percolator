@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#include <math.h>
+#include <cmath>
 #include "Combinatorics.h"
 
 #include <iostream>

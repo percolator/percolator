@@ -64,11 +64,11 @@ void GroupPowerBigraph::getProteinProbsPercolator(std::multimap<double, std::vec
     if(pep < 0.0)pep = 0.0;
     if(pep > 1.0)pep = 1.0;
  
-    pepProteins.insert(std::make_pair<double,std::vector<std::string> >(pep,groupProtNames[ indices[k] ].getVector()));
+    pepProteins.insert(std::make_pair(pep,groupProtNames[ indices[k] ].getVector()));
   }
   if(severedProteins.size()!=0)
   {
-    pepProteins.insert(std::make_pair<double,std::vector<std::string> >(1.0,severedProteins.getVector()));
+    pepProteins.insert(std::make_pair(1.0,severedProteins.getVector()));
   }
  
   return;
@@ -260,7 +260,7 @@ pair<Array<Array<string> >, Array<double> > GroupPowerBigraph::getDescendingProt
   for (k=0; k<sorted.size(); k++)
     {
       double tmp = (double) sorted[k];
-      if ( isnan( tmp ) )
+      if ( std::isnan( tmp ) )
 	{
 	  cerr << "error: found nan in GroupPowerBigraph::getDescendingProteinWeights" << endl;
 	  cerr << "\tprotein " << groupProtNames[k] << endl;

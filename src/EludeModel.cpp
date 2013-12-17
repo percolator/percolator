@@ -221,11 +221,11 @@ int
                                                           17,
                                                           1,
                                                           1,
-                                                          ptmAlphabet.size(),
+                                                          static_cast<int>(ptmAlphabet.size()),
                                                           1,
                                                           2,
                                                           2,
-                                                          aaAlphabet.size() };
+                                                          static_cast<int>(aaAlphabet.size()) };
 // groups of features to be used
 // our_index = 1, krokhin = 2, peptide_length = 128, bulkiness = 1024, krdenq = 2048, hfeat = 4096, aa_feat = 8192
 //static int DEFAULT_FEATURE_GROUPS = 1 + 2 + 128 + 1024 + 2048 + 4096 + 8192;

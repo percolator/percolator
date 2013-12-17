@@ -143,7 +143,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
       length = (*it).second.second;
       previouSeqs.insert(targetSeq);
     }
-    groupedProteins.insert(std::make_pair<double,std::string>(length,targetName));
+    groupedProteins.insert(std::make_pair(length,targetName));
     lenghts.push_back(length);
   }
   
@@ -161,7 +161,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
       length = (*it2).second.second;
       previouSeqs.insert(decoySeq);
     }
-    groupedProteins.insert(std::make_pair<double,std::string>(length,decoyName));
+    groupedProteins.insert(std::make_pair(length,decoyName));
     lenghts.push_back(length);
   }
   
@@ -230,7 +230,7 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, c
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time\n" << std::endl;
     
-    if(isnan(fptol) || isinf(fptol) || fptol == 0)fptol = -1;
+    if(std::isnan(fptol) || std::isinf(fptol) || fptol == 0)fptol = -1;
     return fptol ;
 }
 
@@ -282,7 +282,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
     itup =  groupedProteins.upper_bound(upperbound);
     std::set<std::string> proteins;
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
-    binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
+    binnedProteins.insert(std::make_pair(i,proteins));
   }
 
   return;
@@ -319,7 +319,7 @@ void ProteinFDRestimator::binProteinsEqualWidth()
     itup =  groupedProteins.upper_bound(upperbound);
     std::set<std::string> proteins;
     std::transform(itlow, itup, std::inserter(proteins,proteins.begin()), RetrieveValue());
-    binnedProteins.insert(std::make_pair<unsigned,std::set<std::string> >(i,proteins));
+    binnedProteins.insert(std::make_pair(i,proteins));
   }
 
   return;
@@ -346,7 +346,7 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
   for(unsigned i = 0; i < logprob.size(); i++)
     finalprob += logprob[i] * i;
 
-  if(isnan(finalprob) || isinf(finalprob)) finalprob = 0.0;
+  if(std::isnan(finalprob) || std::isinf(finalprob)) finalprob = 0.0;
   return finalprob;
 
 }

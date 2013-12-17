@@ -236,7 +236,7 @@ void ProteinProbEstimator::getCombinedList(std::vector<std::pair<double , bool> 
       {
 	std::string proteinName = *itP;
 	bool isdecoy = proteins[proteinName]->getIsDecoy();
-	combined.push_back(std::make_pair<double,bool>(prob,isdecoy));
+	combined.push_back(std::make_pair(prob,isdecoy));
       }
   }
   return;
@@ -423,7 +423,7 @@ void ProteinProbEstimator::estimateQValues()
       }
       
       qvalue = (sum / (double)nP);
-      if(isnan(qvalue) || isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
+      if(std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
       qvalues.push_back(qvalue);
     }    
     else
@@ -447,7 +447,7 @@ void ProteinProbEstimator::estimateQValues()
 	  nP++;
 	}
 	qvalue = (sum / (double)nP);
-	if(isnan(qvalue) || isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
+	if(std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
 	qvalues.push_back(qvalue);
       }
     }
@@ -481,7 +481,7 @@ void ProteinProbEstimator::estimateQValuesEmp()
       nTargets += numTarget;
       
       if(nTargets) qvalue = (double)(nDecoys * pi0 * TargetDecoyRatio) / (double)nTargets;
-      if(isnan(qvalue) || isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
+      if(std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
       
       qvaluesEmp.push_back(qvalue);
       
@@ -508,7 +508,7 @@ void ProteinProbEstimator::estimateQValuesEmp()
 	 }
 	 
 	 if(nTargets) qvalue = (double)(nDecoys * pi0 * TargetDecoyRatio) / (double)nTargets;
-	 if(isnan(qvalue) || isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
+	 if(std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
 	 qvaluesEmp.push_back(qvalue);
       }
     }
@@ -562,7 +562,7 @@ void ProteinProbEstimator::setTargetandDecoysNames()
       if(proteins.find(*protIt) == proteins.end())
       {
 	Protein *newprotein = new Protein(*protIt,0.0,0.0,0.0,0.0,psm->isDecoy(),peptide);
-	proteins.insert(std::make_pair<std::string,Protein*>(*protIt,newprotein));
+	proteins.insert(std::make_pair(*protIt,newprotein));
 	
 	if(psm->isDecoy())
 	{
@@ -587,11 +587,11 @@ void ProteinProbEstimator::setTargetandDecoysNames()
 void ProteinProbEstimator::addProteinDb(const percolatorInNs::protein& protein)
 {
   if(protein.isDecoy())
-    decoyProteins.insert(std::make_pair<std::string,std::pair<std::string,double> >
-    (protein.name(),std::make_pair<std::string,double>(protein.sequence(),protein.length())));
+    decoyProteins.insert(std::make_pair
+    (protein.name(),std::make_pair(protein.sequence(),protein.length())));
   else
-    targetProteins.insert(std::make_pair<std::string,std::pair<std::string,double> >
-    (protein.name(),std::make_pair<std::string,double>(protein.sequence(),protein.length())));
+    targetProteins.insert(std::make_pair
+    (protein.name(),std::make_pair(protein.sequence(),protein.length())));
 }
 
 unsigned ProteinProbEstimator::countTargets(const std::vector<std::string> &proteinList)

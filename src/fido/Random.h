@@ -5,7 +5,7 @@
 #define _Random_H
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #include "Array.h"
 #include "Numerical.h"

@@ -349,7 +349,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
 	throw MyException(temp.str());
       }
 
-      BOOST_FOREACH( const percolatorInNs::occurence & oc,  psm.occurence() )
+      for( const auto & oc : psm.occurence() )
       {
         myPsm->proteinIds.insert( oc.proteinId() );
         // adding n-term and c-term residues to peptide

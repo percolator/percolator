@@ -20,7 +20,7 @@ if [[ -z ${src_dir} ]]; then
     src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
-    src_dir=$(dirname ${BASH_SOURCE} && pwd)/../../../
+    src_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../../../
   fi
 fi
 if [[ -z ${release_dir} ]]; then

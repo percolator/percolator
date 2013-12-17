@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <sstream>
 #include <algorithm>

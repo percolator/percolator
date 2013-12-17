@@ -5,7 +5,7 @@
 #define _Numerical_H
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <limits>
 
 using namespace std;
@@ -54,7 +54,7 @@ class Numerical
     }
     // assume logA <= logB
     // when one of the terms is very small, then just use the other term
-    if ( isinf(logA) && logA < 0 )
+    if ( std::isinf(logA) && logA < 0 )
       return logB;
 
     return log2( 1 + pow(2, logB-logA) ) + logA;
