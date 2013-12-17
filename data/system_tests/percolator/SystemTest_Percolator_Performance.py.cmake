@@ -7,6 +7,7 @@ import sys
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
+tmpDir = "@pathToData@"
 success = True
 
 print("PERCOLATOR PERFORMANCE")
@@ -92,9 +93,9 @@ def performanceD4On():
     success = False
   return success
 
-psmFile="/tmp/PERCOLATOR_psms.txt"
-peptideFile="/tmp/PERCOLATOR_peptides.txt"
-proteinFile="/tmp/PERCOLATOR_proteins.txt"
+psmFile=tmpDir+"/PERCOLATOR_psms.txt"
+peptideFile=tmpDir+"/PERCOLATOR_peptides.txt"
+proteinFile=tmpDir+"/PERCOLATOR_proteins.txt"
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,283)
 # number of significant peptrides within boundaries
