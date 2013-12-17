@@ -78,29 +78,30 @@ void Enzyme::setEnzyme(std::string enzyme) {
   }
   theEnzyme = NULL;
   
-  if (boost::iequals(enzyme,Chymotrypsin::getString())) {
+  std::transform(enzyme.begin(), enzyme.end(), enzyme.begin(), ::tolower);
+  if (enzyme == Chymotrypsin::getString()) {
       theEnzyme = new Chymotrypsin();
-  } else if (boost::iequals(enzyme,Thermolysin::getString())) {
+  } else if (enzyme == Thermolysin::getString()) {
       theEnzyme = new Thermolysin();
-  } else if (boost::iequals(enzyme,Proteinasek::getString())) {
+  } else if (enzyme == Proteinasek::getString()) {
       theEnzyme = new Proteinasek();
-  } else if (boost::iequals(enzyme,Pepsin::getString())) {
+  } else if (enzyme == Pepsin::getString()) {
       theEnzyme = new Pepsin();
-  } else if (boost::iequals(enzyme,Elastase::getString())) {
+  } else if (enzyme == Elastase::getString()) {
       theEnzyme = new Elastase();
-  } else if (boost::iequals(enzyme,LysN::getString())) {
+  } else if (enzyme == LysN::getString()) {
       theEnzyme = new LysN();
-  } else if (boost::iequals(enzyme,LysC::getString())) {
+  } else if (enzyme == LysC::getString()) {
       theEnzyme = new LysC();
-  } else if (boost::iequals(enzyme,ArgC::getString())) {
+  } else if (enzyme == ArgC::getString()) {
       theEnzyme = new ArgC();
-  } else if (boost::iequals(enzyme,AspN::getString())) {
+  } else if (enzyme == AspN::getString()) {
       theEnzyme = new AspN();
-  } else if (boost::iequals(enzyme,GluC::getString())) {
+  } else if (enzyme == GluC::getString()) {
       theEnzyme = new GluC();
-  } else if (boost::iequals(enzyme,Enzyme::getString())) {
+  } else if (enzyme == Enzyme::getString()) {
       theEnzyme = new Enzyme();
-  } else if (boost::iequals(enzyme,Trypsin::getString())) {
+  } else if (enzyme == Trypsin::getString()) {
       theEnzyme = new Trypsin();
   }
   else {

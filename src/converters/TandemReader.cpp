@@ -258,10 +258,10 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
 	if(firstPSM)
 	{
 	  //Check what type of scores/ions are present
-	  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) //Protein
+	  for (const auto &protObj : groupObj.protein()) //Protein
 	  {
 	    tandem_ns::protein::peptide_type peptideObj=protObj.peptide(); //Peptide
-	    BOOST_FOREACH(const tandem_ns::domain &domainObj, peptideObj.domain()) //Domain
+	    for (const auto &domainObj : peptideObj.domain()) //Domain
 	    {
 	      //x,y,z
 	      if(domainObj.x_score().present() && domainObj.x_ions().present())
@@ -289,8 +289,8 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
 	      {
 		c_score=true;
 	      }
-	    }//End of boost domain
-	  }//End of boost prot
+	    }//End of for domain
+	  }//End of for prot
 	  firstPSM=false;
 	}
       }
@@ -347,7 +347,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
     throw MyException(temp.str());
   }
   //Loop through the protein objects
-  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein())
+  for (const auto &protObj : groupObj.protein())
   {
     proteinName = getRidOfUnprintables(protObj.label());
     //spectraId = boost::lexical_cast<int>(protObj.id());
@@ -383,7 +383,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 //Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
 void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,peptideProteinMapType &peptideProteinMap)
 {
-  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein())
+  for (const auto &protObj : groupObj.protein())
   {
     std::string proteinName = getRidOfUnprintables(protObj.label());
     tandem_ns::peptide peptideObj = protObj.peptide();
@@ -460,7 +460,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
 
  //Information about mass modifications in the peptide
  //NOTE here I have all the modifications, I should modify the mass with them
-  BOOST_FOREACH(const tandem_ns::aa &aaObj, domain.aa())	
+  for (const auto &aaObj : domain.aa())	
   {
     aaObj.modified();
     aaObj.type();

@@ -24,7 +24,8 @@
 #include "Enzyme.h"
 #include "Globals.h"
 #include "boost/lexical_cast.hpp"
-
+#include "boost/algorithm/string/split.hpp"
+#include "boost/algorithm/string/classification.hpp"
 using namespace std;
 
 class Interface {

@@ -652,7 +652,7 @@ int Caller::readFiles() {
 
       //I want to get the initial values that are present in feature descriptions
       vector<double> init_values;
-      BOOST_FOREACH( const ::percolatorInNs::featureDescription & descr,  featureDescriptions.featureDescription() ) {
+      for( const auto & descr : featureDescriptions.featureDescription() ) {
           if(descr.initialValue().present()){
               if(VERB >2){
                   std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
@@ -671,7 +671,7 @@ int Caller::readFiles() {
 	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-	BOOST_FOREACH(const percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch())
+	for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch())
 	{
 	  if(psm.isDecoy())
 	  {

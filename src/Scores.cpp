@@ -198,7 +198,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh)
   
   // output all psms that contain the peptide
   vector<string> s = sh.psms_list;
-  BOOST_FOREACH(string psm, sh.psms_list){
+  for(string psm : sh.psms_list){
     os << "        <psm_id>" << psm << "</psm_id>" << endl;
   }
   os << "      </psm_ids>" << endl;

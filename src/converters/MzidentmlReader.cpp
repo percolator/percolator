@@ -83,7 +83,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
             doc->getDocumentElement()->getTagName()); doc = p.next()) {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       // For each SpectrumIdentificationItem
-      BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) {
+      for (const auto & item : specIdResult.SpectrumIdentificationItem()) {
         minCharge = std::min(item.chargeState(), minCharge);
         maxCharge = std::max(item.chargeState(), maxCharge);
         searchEngineSpecificParsing(item, itemCount);  // Virtual function that potentially checks the features
@@ -141,21 +141,21 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
 
     //NOTE probably I can get rid of these hash tables with a proper access to elements by tag and id
 
-    BOOST_FOREACH(const mzIdentML_ns::SequenceCollectionType::Peptide_type &peptide, sequenceCollection.Peptide()) {
+    for (const auto &peptide : sequenceCollection.Peptide()) {
       //PEPTIDE
       mzIdentML_ns::SequenceCollectionType::Peptide_type *pept =
               new mzIdentML_ns::SequenceCollectionType::Peptide_type(peptide);
       peptideMap.insert(std::make_pair(peptide.id(), pept));
     }
 
-    BOOST_FOREACH(const mzIdentML_ns::SequenceCollectionType::DBSequence_type &protein, sequenceCollection.DBSequence()) {
+    for (const auto &protein : sequenceCollection.DBSequence()) {
       //PROTEIN
       mzIdentML_ns::SequenceCollectionType::DBSequence_type *prot =
               new mzIdentML_ns::SequenceCollectionType::DBSequence_type(protein);
       proteinMap.insert(std::make_pair(protein.id(), prot));
     }
 
-    BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceType &peptideE, sequenceCollection.PeptideEvidence()) {
+    for (const auto &peptideE : sequenceCollection.PeptideEvidence()) {
       //PEPTIDE EVIDENCE
       ::mzIdentML_ns::PeptideEvidenceType *peptE = new mzIdentML_ns::PeptideEvidenceType(peptideE);
       peptideEvidenceMap.insert(std::make_pair(peptideE.id(), peptE));
@@ -178,7 +178,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
       //Find scan number from the cvParam element in spetrumIdentificationResults
       if(!useRankedScanNumbers) {
     	  bool foundScanNumber = false;  // Indicates whether a proper scan number was found
-    	  BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, specIdResult.cvParam()) {
+    	  for (const auto & cv : specIdResult.cvParam()) {
     		  std::string param_name(cv.name().c_str());
     		  std::string expected_name("scan number(s)");
     		  if (param_name == expected_name) {
@@ -197,7 +197,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_pt
       }
 
 
-      BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem())
+      for (const auto & item : specIdResult.SpectrumIdentificationItem())
       {
 	if(++numberHitsSpectra <= po->hitsPerSpectrum)
 	{

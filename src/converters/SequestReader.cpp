@@ -2,14 +2,14 @@
 
 
 const std::map<string, int> SequestReader::sequestFeatures =
-boost::assign::map_list_of("sequest:PeptideRankSp", 0)
-("sequest:deltacn", 1)
-("sequest:xcorr", 2)
-("sequest:PeptideSp", 3)
-("sequest:matched ions", 4)
-("sequest:total ions", 5)
-("sequest:PeptideIdnumber", 6)
-("sequest:PeptideNumber", 7);
+{{"sequest:PeptideRankSp", 0},
+{"sequest:deltacn", 1},
+{"sequest:xcorr", 2},
+{"sequest:PeptideSp", 3},
+{"sequest:matched ions", 4},
+{"sequest:total ions", 5},
+{"sequest:PeptideIdnumber", 6},
+{"sequest:PeptideNumber", 7}};
 
 
 
@@ -141,7 +141,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
   try
   {
 
-    BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
+    for (const auto &pepEv_ref : item.PeptideEvidenceRef())
     {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
@@ -198,7 +198,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     double dM = massDiff(observed_mass, theoretic_mass, charge);
 
 
-    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam())
+    for(const auto & cv : item.cvParam())
     {
 	if (cv.value().present())
 	{

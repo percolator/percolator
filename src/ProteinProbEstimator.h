@@ -20,14 +20,12 @@
 
 #include "PosteriorEstimator.h"
 #include "Globals.h"
-#include <boost/algorithm/string.hpp>
 #include <functional>
 #include <numeric>
 #include <iterator>
 #include "ProteinFDRestimator.h"
 #include "Protein.h"
 #include <vector>
-#include <boost/assign/list_of.hpp>
 #include <math.h>
 #include <cmath>
 #include "percolator_in.hxx"

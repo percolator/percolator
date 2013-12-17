@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <set>
 #include <map>
+#include <list>
 #include <utility>
 #include <vector>
 #include <string>
@@ -36,7 +37,6 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
-#include <boost/foreach.hpp>
 #include "percolator_in.hxx"
 using namespace std;
 

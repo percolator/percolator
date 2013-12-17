@@ -38,7 +38,7 @@ FeatureNames::~FeatureNames() {
 
 void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
   //assert(featureNames.empty());
-  BOOST_FOREACH( const ::percolatorInNs::featureDescription & descr,  fdes.featureDescription() ) {
+  for( const auto & descr : fdes.featureDescription() ) {
     featureNames.push_back(descr.name());
   }
 

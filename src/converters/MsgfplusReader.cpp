@@ -98,7 +98,7 @@ void MsgfplusReader::searchEngineSpecificParsing(
 	const ::mzIdentML_ns::SpectrumIdentificationItemType & item, const int itemCount) {
 	// First, check whether addFeatures was set to 1, in MS-GF+
 	if (!additionalMsgfFeatures) {
-    	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
+    	for (const auto & up : item.userParam()) {
     		if (up.value().present()) {
     			std::string param_name(up.name().c_str());
     			// Check whether the mzid-file seem to include the additional features
@@ -117,7 +117,7 @@ void MsgfplusReader::searchEngineSpecificParsing(
 
 	// Check whether fragmentation spectrum features are present
 	if (!useFragmentSpectrumFeatures) {
-    	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
+    	for (const auto & up : item.userParam()) {
     		if (up.value().present()) {
     			std::string param_name(up.name().c_str());
     			// Check whether the mzid-file seem to include features for fragment spectra resolution and accuracy
@@ -220,7 +220,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
   try
   {
 
-    BOOST_FOREACH(const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
+    for (const auto &pepEv_ref : item.PeptideEvidenceRef())
     {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
@@ -296,7 +296,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     int NumMatchedMainIons = 0;
 
     //Read through cvParam elements
-    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam())
+    for (const auto & cv : item.cvParam())
     {
 	if (cv.value().present())
 	{
@@ -315,7 +315,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     }
 
     //Read through userParam elements
-    BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam())
+    for (const auto & up : item.userParam())
     {
     // If a feature has a value NaN, the default values from initialization is used
 	if (up.value().present() && boost::lexical_cast<string > (up.value().get().c_str()) != "NaN")
@@ -411,8 +411,8 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 
     std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
     // Register the ptms
-    BOOST_FOREACH(const ::mzIdentML_ns::ModificationType &mod_ref, peptideMap[item.peptide_ref().get()]->Modification()){
-      BOOST_FOREACH(const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
+    for(const auto &mod_ref : peptideMap[item.peptide_ref().get()]->Modification()){
+      for (const auto &cv_ref : mod_ref.cvParam()) {
         if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
           ostringstream errs;
           errs << "Error: current implimentation can only handle UNIMOD accessions "

@@ -298,7 +298,7 @@ void DataSet::initFeatureTables(const unsigned int numFeat, bool __regressionTab
 std::string DataSet::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
   std::list<std::pair<int,std::string> > mods;
   std::string peptideSeq = peptide.peptideSequence();
-  BOOST_FOREACH(const ::percolatorInNs::modificationType &mod_ref, peptide.modification()){
+  for(const auto &mod_ref : peptide.modification()){
     std::stringstream ss;
     if (mod_ref.uniMod().present()) {
       ss << "[UNIMOD:" << mod_ref.uniMod().get().accession() << "]";

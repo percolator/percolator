@@ -19,7 +19,6 @@
 #define PROTEIN_H
 #include <vector>
 #include <string>
-#include <boost/algorithm/string.hpp>
 using namespace std;
 
 /** data container that will store all the information of the proteins, peptides, type, qvalues,pvalues etc..**/
@@ -169,7 +168,7 @@ class Protein {
     
     std::string name;
     double q, qemp, pep, p, pi0;
-    string id;
+    std::string id;
     bool isDecoy;
     std::vector<Peptide*> peptides;
     

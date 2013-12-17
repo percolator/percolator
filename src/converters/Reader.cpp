@@ -8,9 +8,9 @@ const std::string Reader::additionalAA("UO");
 
 //THIS MAP SHOULD BE CREATED FROM THE UNIMOD PTMS xml document
 const std::map<unsigned, double> Reader::ptmMass =
-      boost::assign::map_list_of(35, 0.0) (21, 0.0) (28, 0.0) (4, 0.0)
-				  (1, 0.0) (214, 0.0) (39, 0.0) (7, 0.0)
-				  (730, 0.0) (364, 0.0) (29, 0.0) (27, 0.0);
+      {{35, 0.0}, {21, 0.0}, {28, 0.0}, {4, 0.0},
+				  {1, 0.0}, {214, 0.0}, {39, 0.0}, {7, 0.0},
+				  {730, 0.0}, {364, 0.0}, {29, 0.0}, {27, 0.0}};
 
 
 Reader::Reader(ParseOptions *__po)
@@ -841,7 +841,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
 {
   // for each spectra from the ms2 file
   typedef std::map<int, vector<double> > map_t;
-  BOOST_FOREACH(map_t::value_type& i, scan2rt)
+  for (auto & i : scan2rt)
   {
     // scan number
     int scanNr = i.first;
