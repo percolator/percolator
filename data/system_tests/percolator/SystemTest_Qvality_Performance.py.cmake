@@ -16,7 +16,7 @@ print "QVALITY PERFORMANCE"
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
 print "(*): checking selected pi_0..."
-processFile = os.popen("grep \"Selecting pi_0\" " + tmpDir
+processFile = os.popen("grep \"Selecting pi_0\" " + tmpDir +
   "/qvalityOutput.txt")
 output = processFile.read()
 extracted = float(output[15:20])
