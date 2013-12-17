@@ -1,6 +1,9 @@
 language: cpp
 compiler:
   - gcc
-before_script: mkdir -p ~/my_rel ~/my_build
+before_script:
+  - cmake --version
+  - mkdir -p ~/my_rel ~/my_build
+  - ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
 # Change this to your needs
-script:  pwd && ls -hl && ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
+script:  cd ~/my_build/percolator && make test
