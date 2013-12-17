@@ -41,6 +41,13 @@ endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
+find_package(Iconv REQUIRED)
+if(ICONV_FOUND)
+  message(STATUS "Package Iconv found at: ${ICONV_INCLUDE_DIR}")
+else(ICONV_FOUND)
+  message(FATAL_ERROR "The package Iconv has not been found")
+endif(ICONV_FOUND)
+include_directories(${ICONV_INCLUDE_DIR})
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -126,7 +133,7 @@ if(PROFILING AND UNIX)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} iconv stdc++)
+target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} ${ICONV_LIBRARIES} stdc++)
  
 # INSTALL PERCOLATOR
 #if(APPLE)

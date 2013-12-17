@@ -20,11 +20,14 @@ if [[ -z ${src_dir} ]]; then
     src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
-    src_dir=$(dirname ${BASH_SOURCE})/../../../
+    src_dir=$(dirname ${BASH_SOURCE} && pwd)/../../../
   fi
 fi
 if [[ -z ${release_dir} ]]; then
   release_dir=${HOME}/release
+  if [ ! -d "${release_dir}" ]; then
+    mkdir ${release_dir}
+  fi
 fi
 
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
@@ -39,16 +42,20 @@ sudo apt-get update;
 sudo apt-get upgrade;
 #sudo apt-get -y install g++ make cmake rpm fakeroot;
 sudo apt-get -y install g++ make rpm fakeroot;
-# Need a never copy of cmake
-# Remove the secion below once they updated cmake
-cd ${src_dir}
-wget -q http://www.cmake.org/files/v2.8/cmake-2.8.12.tar.gz
-tar xzf cmake-2.8.12.tar.gz
-cd cmake-2.8.12/
-./bootstrap;
-make -j 4; 
-sudo make install;
-# end of section to remove
+cmake=cmake-2.8.12.1
+if [[ -s /usr/local/bin/cmake ]]
+  then
+  echo "Cmake is already installed."
+else
+  mkdir -p ${build_dir}
+  cd ${build_dir}
+  curl -O http://www.cmake.org/files/v2.8/${cmake}.tar.gz
+  tar -zxvf ${cmake}.tar.gz
+  cd ${cmake}
+  ./configure
+  make
+  sudo make install
+fi
 sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-dev;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev;
 
