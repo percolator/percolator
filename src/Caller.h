@@ -58,7 +58,14 @@
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
 
-
+/*
+* Main class that starts and controls the calculations.
+*
+* In addition to the calculation Caller also handles command line
+* initialization, parsing input parameters, handling output of the
+* calculation results.
+* 
+*/
 class Caller {
   public:
     enum SetHandlerType {
@@ -73,7 +80,7 @@ class Caller {
     void train(vector<vector<double> >& w);
     int xv_process_one_bin(unsigned int set, vector<vector<double> >& w, 
                            bool updateDOC, vector<double>& cpos_vec, 
-			   vector<double>& cfrac_vec, double& best_cpos, 
+                           vector<double>& cfrac_vec, double& best_cpos, 
                            double &best_cfrac, vector_double* pWeights,
                            options * pOptions);
     int xv_step(vector<vector<double> >& w, bool updateDOC = false);

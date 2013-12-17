@@ -48,7 +48,7 @@ class FeatureNames {
 
     void insertFeature(const string& featureName) {
       if(std::find(featureNames.begin(), featureNames.end(), featureName)==featureNames.end())
-	featureNames.push_back(featureName);
+        featureNames.push_back(featureName);
     }
     void setFeatures(string& line, size_t skip, size_t numFeatures);
 

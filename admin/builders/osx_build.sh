@@ -82,7 +82,21 @@ else
 	make -j 2
 	sudo make install
 fi
-
+#-------------------------------------------
+cmake=cmake-2.8.12.1
+if [[ -s /usr/local/bin/cmake ]]
+  then
+  echo "Cmake is already installed."
+else
+  mkdir -p ${build_dir}
+  cd ${build_dir}
+  curl -O http://www.cmake.org/files/v2.8/${cmake}.tar.gz
+  tar -zxvf ${cmake}.tar.gz
+  cd ${cmake}
+  ./configure
+  make
+  sudo make install
+fi
 #-------------------------------------------
 
 mkdir -p ${build_dir}/percolator

@@ -26,8 +26,8 @@
   }
 
   Protein::Protein(string namenew, double qnew, double qempnew, double pepnew, 
-		    double pnew, bool isdecoy_new, Protein::Peptide* __peptide)
-		    :name(namenew),q(qnew),qemp(qempnew),pep(pepnew),p(pnew),isDecoy(isdecoy_new)
+                    double pnew, bool isdecoy_new, Protein::Peptide* __peptide)
+                    :name(namenew),q(qnew),qemp(qempnew),pep(pepnew),p(pnew),isDecoy(isdecoy_new)
   {
     if(__peptide)
       peptides.push_back(__peptide);
@@ -37,6 +37,6 @@
   {
     for(unsigned i = 0; i < peptides.size(); i++)
       if(peptides[i])
-	delete peptides[i];
+        delete peptides[i];
   }
 

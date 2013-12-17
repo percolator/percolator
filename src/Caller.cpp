@@ -306,24 +306,24 @@ bool Caller::parseOptions(int argc, char **argv) {
       "", 
       TRUE_IF_SET);
   cmd.defineOption("q",
-      "empirical-protein-q", 		   
+      "empirical-protein-q",               
       "output empirical q-values and p-values (from target-decoy analysis) (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
   cmd.defineOption("N",
-      "fido-no-group-proteins", 		   
+      "fido-no-group-proteins",                    
       "disactivates the grouping of proteins with similar connectivity, \
        for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 will not be grouped as one protein \
        (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
   cmd.defineOption("E",
-      "fido-no-separate-proteins", 		   
+      "fido-no-separate-proteins",                 
       "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
       "",
       TRUE_IF_SET); 
   cmd.defineOption("C",
-      "fido-no-prune-proteins", 		   
+      "fido-no-prune-proteins",                    
       "it does not prune peptides with a very low score (~0.0) which means that if a peptide with a very low score is matching two proteins,\
        when we prune the peptide,it will be duplicated to generate two new protein groups (Only valid if option -A is active).",
       "",
@@ -380,8 +380,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
       cerr
-      << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
-      << "are needed to calculate protein level ones.";
+        << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
+        << "are needed to calculate protein level ones.";
       return 0;
     }
     reportUniquePeptides = false;
@@ -424,9 +424,9 @@ bool Caller::parseOptions(int argc, char **argv) {
       xmlInputDir[str.size()] = '\0';
       if(boost::filesystem::is_directory(dir))
       {
-	boost::filesystem::remove_all(dir);
+        boost::filesystem::remove_all(dir);
       }
-	
+        
       boost::filesystem::create_directory(dir);
     } 
     catch (boost::filesystem::filesystem_error &e)
@@ -444,9 +444,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(selectedCpos == 0)
     {
       std::cerr << "Warning : the positive penalty(cpos) is 0, therefore both the "  
-		 << "positive and negative penalties are going "
-		 << "to be cros-validated. The option --Cneg has to be used together "
-		 << "with the option --Cpos" << std::endl;
+                 << "positive and negative penalties are going "
+                 << "to be cros-validated. The option --Cneg has to be used together "
+                 << "with the option --Cpos" << std::endl;
     }
   }
   if (cmd.optionSet("J")) {
@@ -546,10 +546,10 @@ bool Caller::parseOptions(int argc, char **argv) {
 
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
-  << "# first line contains normalized weights, second line the raw weights"
-  << endl;
+    << "# first line contains normalized weights, second line the raw weights"
+    << endl;
   weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0"
-      << endl;
+    << endl;
   weightStream.precision(3);
   weightStream << w[0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
@@ -628,7 +628,7 @@ int Caller::readFiles() {
         //NOTE I dont really need this info, do I? good to have it though
         /*
           std::auto_ptr< ::percolatorInNs::databases > 
-	      databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
+              databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
         */
         doc = p.next();
         Caller::hasProteins = true;
@@ -643,7 +643,7 @@ int Caller::readFiles() {
 
       if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) 
       {
-	//NOTE the calibration should define the initial direction
+        //NOTE the calibration should define the initial direction
         //percolatorInNs::calibration calibration(*doc->getDocumentElement());
         doc = p.next();
       };
@@ -668,39 +668,39 @@ int Caller::readFiles() {
 
       // import info from xml: read Fragment Spectrum Scans
       for (doc = p.next(); doc.get()!= 0 && 
-	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
+        XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-	BOOST_FOREACH(const percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch())
-	{
-	  if(psm.isDecoy())
-	  {
-	    decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
-	  }
-	  else
-	  {
-	    targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
-	  }
-	}
+        BOOST_FOREACH(const percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch())
+        {
+          if(psm.isDecoy())
+          {
+            decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
+          }
+          else
+          {
+            targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
+          }
+        }
       }
 
       // import info from xml: read database proteins
       // only read them if they are present and the option of using mayusfdr is activated
       unsigned readProteins = 0;
       for (doc = p.next(); doc.get()!= 0 
-	&& Caller::hasProteins && Caller::calculateProteinLevelProb /*&& Caller::protEstimator->getMayuFdr()*/
-	&& XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
+        && Caller::hasProteins && Caller::calculateProteinLevelProb /*&& Caller::protEstimator->getMayuFdr()*/
+        && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         std::auto_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
-	 protEstimator->addProteinDb(*protein);
-	 ++readProteins;
+        protEstimator->addProteinDb(*protein);
+        ++readProteins;
       }
       
       /*if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
       {
-	std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
-		       Did you run converters with the flag -F ?\n" << std::endl;
-	Caller::protEstimator->setMayusFDR(false);
+        std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
+                       Did you run converters with the flag -F ?\n" << std::endl;
+        Caller::protEstimator->setMayusFDR(false);
       }*/
       
       //maybe better to do :
@@ -730,7 +730,7 @@ int Caller::readFiles() {
   } else if (tabInput) {
     pCheck = new SanityCheck();
     //NOTE here percolator read the whole file twice, one time to get the decoy PSMs and another time to get the 
-    // 	   target PSMs. This could be done in one iteration.
+    //     target PSMs. This could be done in one iteration.
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
@@ -743,7 +743,7 @@ int Caller::readFiles() {
 
 int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, bool updateDOC, vector<double>& cpos_vec, 
                                vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
-options * pOptions) {
+                                options * pOptions) {
   int bestTP = 0;
   if (VERB > 2) {
     cerr << "cross calidation - fold " << set + 1 << " out of "
@@ -877,8 +877,8 @@ void Caller::train(vector<vector<double> >& w) {
   }
   if (VERB == 2) {
     cerr
-    << "Obtained weights (only showing weights of first cross validation set)"
-    << endl;
+      << "Obtained weights (only showing weights of first cross validation set)"
+      << endl;
     printWeights(cerr, w[0]);
   }
   foundPositives = 0;
@@ -961,10 +961,10 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     xv_train.resize(xval_fold);
     xv_test.resize(xval_fold);
     if(xmlInputFN.size() > 0){
-    	// take advantage of spectrum information in xml input
-    	fullset.createXvalSetsBySpectrum(xv_train, xv_test, xval_fold);
+        // take advantage of spectrum information in xml input
+        fullset.createXvalSetsBySpectrum(xv_train, xv_test, xval_fold);
     } else {
-    	fullset.createXvalSets(xv_train, xv_test, xval_fold);
+        fullset.createXvalSets(xv_train, xv_test, xval_fold);
     }
 
     if (selectionfdr <= 0.0) {
@@ -1006,7 +1006,7 @@ void Caller::writeXML_PSMs() {
 
   os << "  <psms>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin();
-      psm != fullset.end(); ++psm) {
+        psm != fullset.end(); ++psm) {
       os << *psm;
   }
   os << "  </psms>" << endl << endl;
@@ -1021,7 +1021,7 @@ void Caller::writeXML_Peptides() {
   // append PEPTIDEs
   os << "  <peptides>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-  != fullset.end(); ++psm) {
+        != fullset.end(); ++psm) {
     os << (ScoreHolderPeptide)*psm;
   }
   os << "  </peptides>" << endl << endl;
@@ -1129,11 +1129,11 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     if(TDC)
     {
        fullset->weedOutRedundantTDC();
-	if(VERB > 0)
-	{
-	  std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
-	  << fullset->negSize() << " decoy PSMs" << std::endl;
-	}
+        if(VERB > 0)
+        {
+          std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
+            << fullset->negSize() << " decoy PSMs" << std::endl;
+        }
     }
   }
   
@@ -1163,8 +1163,8 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   if (VERB > 0 && writeOutput) {
     cerr
-    << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
-    << endl;
+      << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
+      << endl;
   }
   time_t end;
   time(&end);
@@ -1230,8 +1230,8 @@ void Caller::calculateProteinProbabilitiesFido()
 
 
   protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_nogrouProteins,fido_noseparate,
-				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
-				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
+                                      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
+                                      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
   
   if (VERB > 0)
   {
@@ -1252,8 +1252,8 @@ void Caller::calculateProteinProbabilitiesFido()
   if (VERB > 1) 
   {  
     cerr << "Estimating Protein Probabilities took : "
-    << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-    << " cpu seconds or " << diff_time << " seconds wall time" << endl;
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff_time << " seconds wall time" << endl;
   }
   
   protEstimator->printOut(resultFN,decoyOut);

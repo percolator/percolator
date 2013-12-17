@@ -31,6 +31,17 @@ using namespace std;
 
 class SetHandler;
 
+
+/*
+* ScoreHolder is a class that provides a way to assign score value to a
+* PSMDescription and have a way to compare PSMs based on the assigned
+* score value and output them into the stream.
+*
+* Here are some usefull abbreviations:
+* PSM - Peptide Spectrum Match
+*
+*/
+
 class ScoreHolder {
   
   public:
@@ -67,7 +78,7 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
-	
+        
 struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
@@ -126,7 +137,7 @@ class ScoreHolderPeptide: public ScoreHolder {
     }
     ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
       ScoreHolder(s, l, psm) {
-    	;
+        ;
     }
     virtual ~ScoreHolderPeptide()  {
       ;
@@ -138,6 +149,19 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
 
 
 class AlgIn;
+
+/*
+* Scores is a container of ScoreHolders that allows you to do a sorted merge
+* of vectors of ScoreHolder.
+*
+* Here are some usefull abbreviations:
+* DOC - Description Of Correct
+* FDR - False Discovery Rate
+* LCG - Linear Congruential Generator
+* Pi0 - ?
+* TDC - ?
+*
+*/
 
 class Scores {
   

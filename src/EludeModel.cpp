@@ -864,7 +864,7 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset,
     delete[] data.y;
     ostringstream temp;
     temp << "Error : Incorrect parameters for the SVR." << endl
-	 << err_msg << endl << "Execution aborted."<< endl;
+         << err_msg << endl << "Execution aborted."<< endl;
     throw MyException(temp.str());
   }
   svm_model* m = svm_train(&data, &param);

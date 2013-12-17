@@ -31,11 +31,11 @@ class Protein {
     struct Peptide{
       Peptide(std::string __name,bool __isdecoy,double __pep,double __q,double __empq)
       {
-	name = __name;
-	isdecoy = __isdecoy;
-	pep =__pep;
-	q = __q;
-	empq = __empq;
+        name = __name;
+        isdecoy = __isdecoy;
+        pep =__pep;
+        q = __q;
+        empq = __empq;
       }
       double pep;
       double q;
@@ -47,7 +47,7 @@ class Protein {
     Protein();
     
     Protein(std::string namenew,double qnew, double qempnew, double pepnew, 
-	    double pnew, bool isdecoy_new, Peptide *__peptide);
+            double pnew, bool isdecoy_new, Peptide *__peptide);
     
     ~Protein();
     
