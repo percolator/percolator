@@ -292,7 +292,7 @@ void DataSet::initFeatureTables(const unsigned int numFeat, bool __regressionTab
   psms.clear();
 }
 
-
+#if XML_SUPPORT
 // Convert a peptide with or without modifications into a string
 std::string DataSet::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
   std::list<std::pair<int,std::string> > mods;
@@ -315,8 +315,6 @@ std::string DataSet::decoratePeptide(const ::percolatorInNs::peptideType& peptid
   }
   return peptideSeq;
 }
-
-
 
 void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber)
 {
@@ -395,3 +393,4 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       ++numSpectra;
   }
 }
+#endif // XML_SUPPORT

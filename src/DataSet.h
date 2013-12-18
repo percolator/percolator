@@ -37,7 +37,9 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
-#include "percolator_in.hxx"
+#if XML_SUPPORT
+  #include "percolator_in.hxx"
+#endif //XML_SUPPORT
 using namespace std;
 
 using namespace std;
@@ -45,9 +47,11 @@ class Scores;
 class Normalizer;
 class ResultHolder;
 
+#if XML_SUPPORT
 namespace percolatorInNs { 
   class target_decoy;
 }
+#endif //XML_SUPPORT
 
 class DataSet {
   public:
@@ -56,7 +60,6 @@ class DataSet {
     void inline setLabel(int l) {
       label = l;
     }
-    void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
     
     void initFeatureTables(const unsigned int numFeatures,bool regresionTable = false);
     
@@ -100,15 +103,21 @@ class DataSet {
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
     static double isEnz(const char n, const char c);
-    void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
+    
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
 //     static double isPngasef(const string& peptide, bool isDecoy );
+#if XML_SUPPORT
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
+    // these functions seem not to be in use
+    //void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
+    //void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
+#endif //XML_SUPPORT
 
   protected:
-    
+#if XML_SUPPORT    
     inline string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
+#endif //XML_SUPPORT    
 //     double isPngasef(const string& peptide);
     static bool calcDOC;
     static bool isotopeMass;

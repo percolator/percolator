@@ -24,13 +24,16 @@
 
 
 using namespace std;
+#if XML_SUPPORT
 using namespace xercesc;
+#endif //XML_SUPPORT
 
 const unsigned int Caller::xval_fold = 3;
 const double requiredIncreaseOver2Iterations = 0.01;
 
 /** some constants to be used to compare xml strings **/
 
+#if XML_SUPPORT
 //databases
 static const XMLCh databasesStr[] = {
       chLatin_d, chLatin_a, chLatin_t, chLatin_a, chLatin_b, chLatin_a,
@@ -56,7 +59,7 @@ static const XMLCh fragSpectrumScanStr[] = { chLatin_f, chLatin_r,
       chLatin_a, chLatin_g, chLatin_S, chLatin_p, chLatin_e,
       chLatin_c, chLatin_t, chLatin_r, chLatin_u, chLatin_m,
       chLatin_S, chLatin_c, chLatin_a, chLatin_n, chNull };   
-      
+#endif //XML_SUPPORT      
       
 /** some constants to be used to compare xml strings **/
       
@@ -726,7 +729,7 @@ int Caller::readFiles() {
       return 0;
     }
   } else if (tabInput) {
-#endif XML_SUPPORT
+#endif //XML_SUPPORT
     pCheck = new SanityCheck();
     //NOTE here percolator read the whole file twice, one time to get the decoy PSMs and another time to get the 
     // 	   target PSMs. This could be done in one iteration.
@@ -735,7 +738,7 @@ int Caller::readFiles() {
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
 #if XML_SUPPORT
   } 
-#endif XML_SUPPORT  
+#endif //XML_SUPPORT  
   return true;
 }
 
@@ -1286,11 +1289,13 @@ int Caller::run() {
   if(!readFiles()) return 0;
   
   fillFeatureSets();
-  
+
+#if XML_SUPPORT
   // terminate xercesc
   if(xmlInputFN.size() != 0){
     xercesc::XMLPlatformUtils::Terminate();
   }
+#endif //XML_SUPPORT
   // delete temporary file if reading form stdin
   if(readStdIn){
     remove(xmlInputFN.c_str());

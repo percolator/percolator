@@ -12,6 +12,7 @@ include("${PERCOLATOR_SOURCE_DIR}/CommonCMake.txt")
 
 my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")
+my_set(XML_SUPPORT TRUE "Choose to support xml input (slower compilation).")
 
 # PRINT VARIABLES
 MESSAGE( STATUS )
@@ -29,6 +30,7 @@ MESSAGE( STATUS "Indicate the type of XML serialization scheme :
 		  Boost serialization option will be used as default if no option is given.")
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
+MESSAGE( STATUS "XML_SUPPORT = ${XML_SUPPORT}" )
 MESSAGE( STATUS "PERCOLATOR_SOURCE_DIR = ${PERCOLATOR_SOURCE_DIR}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )

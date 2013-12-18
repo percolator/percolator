@@ -36,6 +36,7 @@ FeatureNames::FeatureNames() {
 FeatureNames::~FeatureNames() {
 }
 
+#if XML_SUPPORT
 void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
   //assert(featureNames.empty());
   for( const auto & descr : fdes.featureDescription() ) {
@@ -64,6 +65,7 @@ void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fde
   }
   return;
 }
+#endif //XML_SUPPORT
 
 string FeatureNames::getFeatureNames(bool skipDOC) {
   int n = (skipDOC && docFeatNum > 0) ? docFeatNum
