@@ -12,6 +12,7 @@ include("CommonCMake.txt")
 
 my_set(CMAKE_BUILD_TYPE "Debug" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")
+my_set(XML_SUPPORT FALSE "Choose to support xml input (slower compilation).")
 
 # PRINT VARIBALES TO STDOUT
 MESSAGE( STATUS )
@@ -23,6 +24,7 @@ MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
+MESSAGE( STATUS "XML_SUPPORT = ${XML_SUPPORT}" )
 MESSAGE( STATUS "GOOGLE_TEST = ${GOOGLE_TEST}" )
 MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
@@ -80,7 +82,11 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 set(PACKAGE_NICKNAME "percolator")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem-dev (>=1.46.1), libxerces-c3.1 (>=3.1.1)")
+if (XML_SUPPORT)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem-dev (>=1.46.1), libxerces-c3.1 (>=3.1.1)")
+else (XML_SUPPORT)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem-dev (>=1.46.1)")
+endif (XML_SUPPORT)
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 # We assume static linkage to the xerces-c libraries for the rpms, if not uncomment next line

@@ -80,18 +80,17 @@ bool DataSet::writeTabData(ofstream& out, const string& lab) {
   }
   while ((pPSM = getNext(pos)) != NULL) {
     double* frow = pPSM->features;
-    out << psms[pos]->id << '\t' << lab;
+    out << pPSM->id << '\t' << lab;
     if (calcDOC) {
-      out << '\t' << psms[pos]->getUnnormalizedRetentionTime() << '\t'
-          << psms[pos]->massDiff;
+      out << '\t' << pPSM->getUnnormalizedRetentionTime() << '\t'
+          << pPSM->massDiff;
     }
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << frow[ix];
     }
-    out << "\t" << pPSM->peptide;
-    set<string>::const_iterator it = pPSM->proteinIds.begin();
-    for (; it != pPSM->proteinIds.end(); it++) {
-      out << "\t" << *it;
+    out << '\t' << pPSM->peptide;
+    for (const auto proteinId : pPSM->proteinIds) {
+      out << '\t' << proteinId;
     }
     out << endl;
   }

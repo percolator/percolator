@@ -44,15 +44,17 @@
 #include "Globals.h"
 #include "MassHandler.h"
 #include "Enzyme.h"
-#include "parser.hxx"
-#include "serializer.hxx"
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xsd/cxx/xml/string.hxx>
-#include <xercesc/parsers/XercesDOMParser.hpp>
-#include <xercesc/sax/HandlerBase.hpp>
-#include <xercesc/util/PlatformUtils.hpp>
-#include "percolator_in.hxx"
+#if XML_SUPPORT
+  #include "parser.hxx"
+  #include "serializer.hxx"
+  #include <xercesc/dom/DOM.hpp>
+  #include <xercesc/util/XMLString.hpp>
+  #include <xsd/cxx/xml/string.hxx>
+  #include <xercesc/parsers/XercesDOMParser.hpp>
+  #include <xercesc/sax/HandlerBase.hpp>
+  #include <xercesc/util/PlatformUtils.hpp>
+  #include "percolator_in.hxx"
+#endif
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
 

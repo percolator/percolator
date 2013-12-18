@@ -9,28 +9,29 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 MESSAGE( STATUS "Checking packages:" )
 
-find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
-if(XERCESC_FOUND)
-  message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
-  message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
-  message(STATUS "       Version: ${XERCESC_VERSION}")
-else(XERCESC_FOUND)
-  message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
-endif(XERCESC_FOUND)
-include_directories(${XERCESC_INCLUDE_DIR})
+if(XML_SUPPORT)
+  find_package(XercesC REQUIRED) # XSD DEPENDS ON ${XERCESC_FOUND}
+  if(XERCESC_FOUND)
+    message(STATUS "Found Xerces-C: ${XERCESC_LIBRARIES}")
+    message(STATUS "              : ${XERCESC_INCLUDE_DIR}")
+    message(STATUS "       Version: ${XERCESC_VERSION}")
+  else(XERCESC_FOUND)
+    message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
+  endif(XERCESC_FOUND)
+  include_directories(${XERCESC_INCLUDE_DIR})
 
-if(APPLE OR MINGW)
-  find_package(CURL REQUIRED) # XERCESC depends on curl
-endif()
+  if(APPLE OR MINGW)
+    find_package(CURL REQUIRED) # XERCESC depends on curl
+  endif()
 
-
-find_package(Xsd REQUIRED) # CODESYNTHESIS
-if(XSD_FOUND)
-  message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
-else(XSD_FOUND)
-  message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
-endif(XSD_FOUND)  
-include_directories(${XSD_INCLUDE_DIR})
+  find_package(Xsd REQUIRED) # CODESYNTHESIS
+  if(XSD_FOUND)
+    message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
+  else(XSD_FOUND)
+    message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
+  endif(XSD_FOUND)  
+  include_directories(${XSD_INCLUDE_DIR})
+endif(XML_SUPPORT)
 
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
@@ -48,51 +49,58 @@ else(ICONV_FOUND)
   message(FATAL_ERROR "The package Iconv has not been found")
 endif(ICONV_FOUND)
 include_directories(${ICONV_INCLUDE_DIR})
+link_directories(${ICONV_INCLUDE_DIRS})
 
 ###############################################################################
 # RUN CODESYNTHESIS
 ###############################################################################
 
-if(MINGW)
-  set( "" )
-else()
-  set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
-endif()
+if(XML_SUPPORT)
+  if(MINGW)
+    set( "" )
+  else()
+    set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
+  endif()
 
-# RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
-set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
-set(percolator_in xml/percolator_in.xsd)
-add_custom_command(
-  OUTPUT ${xsdfiles_in}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization  ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
+  # RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
+  set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
+  set(percolator_in xml/percolator_in.xsd)
+  add_custom_command(
+    OUTPUT ${xsdfiles_in}   
+    COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization  ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  )
 
-# RUN CODESYNTHESIS TO GENERATE xsdfiles for pout (percolator output)
-set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
-set(percolator_out xml/percolator_out.xsd)
-add_custom_command(
-  OUTPUT ${xsdfiles_out}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
-
-
-
+  # RUN CODESYNTHESIS TO GENERATE xsdfiles for pout (percolator output)
+  set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
+  set(percolator_out xml/percolator_out.xsd)
+  add_custom_command(
+    OUTPUT ${xsdfiles_out}   
+    COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  )
+endif(XML_SUPPORT)
 
 
 #############################################################################
 # COMPILE PERCOLATOR
 ###############################################################################
 
-add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp 	ResultHolder.cpp 
+if(XML_SUPPORT)
+  add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp 	ResultHolder.cpp 
 								  SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp 
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp )
-
+else(XML_SUPPORT)
+  add_library(perclibrary STATIC BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp 
+								  SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp Enzyme.cpp Globals.cpp Normalizer.cpp PercolatorCInterface.cpp 
+								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
+								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp )
+endif(XML_SUPPORT)
 								  
 								  
 ###############################################################################

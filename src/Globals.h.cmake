@@ -79,6 +79,9 @@ limitations under the License.
   #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
 #endif
 
+#ifndef XML_SUPPORT
+  #define XML_SUPPORT @XML_SUPPORT@
+#endif
 
 #ifdef WIN32
   #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));

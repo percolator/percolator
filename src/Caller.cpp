@@ -421,11 +421,9 @@ bool Caller::parseOptions(int argc, char **argv) {
       xmlInputDir = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), xmlInputDir);
       xmlInputDir[str.size()] = '\0';
-      if(boost::filesystem::is_directory(dir))
-      {
-	boost::filesystem::remove_all(dir);
+      if (boost::filesystem::is_directory(dir)) {
+	      boost::filesystem::remove_all(dir);
       }
-	
       boost::filesystem::create_directory(dir);
     } 
     catch (boost::filesystem::filesystem_error &e)
@@ -578,7 +576,8 @@ void Caller::filelessSetup(const unsigned int numFeatures,
 }
 
 int Caller::readFiles() {
-  
+
+#if XML_SUPPORT  
   if (xmlInputFN.size() != 0) 
   {
     unsigned int nrTargets;
@@ -670,17 +669,17 @@ int Caller::readFiles() {
 	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-	for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch())
-	{
-	  if(psm.isDecoy())
-	  {
-	    decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
-	  }
-	  else
-	  {
-	    targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
-	  }
-	}
+	      for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch())
+	      {
+	        if(psm.isDecoy())
+	        {
+	          decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
+	        }
+	        else
+	        {
+	          targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
+	        }
+	      }
       }
 
       // import info from xml: read database proteins
@@ -691,8 +690,8 @@ int Caller::readFiles() {
 	&& XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         std::auto_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
-	 protEstimator->addProteinDb(*protein);
-	 ++readProteins;
+        protEstimator->addProteinDb(*protein);
+        ++readProteins;
       }
       
       /*if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
@@ -727,14 +726,16 @@ int Caller::readFiles() {
       return 0;
     }
   } else if (tabInput) {
+#endif XML_SUPPORT
     pCheck = new SanityCheck();
     //NOTE here percolator read the whole file twice, one time to get the decoy PSMs and another time to get the 
     // 	   target PSMs. This could be done in one iteration.
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
+#if XML_SUPPORT
   } 
-  
+#endif XML_SUPPORT  
   return true;
 }
 
@@ -745,7 +746,7 @@ int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, boo
 options * pOptions) {
   int bestTP = 0;
   if (VERB > 2) {
-    cerr << "cross calidation - fold " << set + 1 << " out of "
+    cerr << "cross validation - fold " << set + 1 << " out of "
          << xval_fold << endl;
   }
   vector<double> ww = w[set];
