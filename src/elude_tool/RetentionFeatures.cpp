@@ -31,8 +31,6 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 
-using namespace boost::assign;
-
 /* maximum number of features */
 const int RetentionFeatures::kMaxNumberFeatures = 100;
 

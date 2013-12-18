@@ -107,8 +107,8 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
   }
 
   if (po->calcAAFrequencies) {
-    for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++) {
-      std::string temp = boost::lexical_cast<std::string > (*it) + "-Freq";
+    for (const auto aa : aaAlphabet) {
+      std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }
   }

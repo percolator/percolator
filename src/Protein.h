@@ -157,11 +157,11 @@ class Protein {
     }
     
     inline bool operator!=(const Protein& a,const Protein& b) {
-      return !boost::iequals(a.getName(),b.getName());
+      return !(a.getName() == b.getName());
     }
     
     inline bool operator==(const Protein& a,const Protein& b) {
-      return boost::iequals(a.getName(),b.getName());
+      return (a.getName() == b.getName());
     }*/
    
   private:

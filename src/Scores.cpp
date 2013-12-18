@@ -37,8 +37,6 @@ using namespace std;
 #include "PosteriorEstimator.h"
 #include "ssl.h"
 #include "MassHandler.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
@@ -71,12 +69,12 @@ std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::
   std::auto_ptr< ::percolatorOutNs::psm> p(new ::percolatorOutNs::psm(
       percolatorOutNs::psm::svm_score_type(truncateTo(sh->score,"6")),
       percolatorOutNs::psm::q_value_type(
-          boost::lexical_cast<std::string>(sh->pPSM->q)),
+          std::to_string(sh->pPSM->q)),
       percolatorOutNs::psm::pep_type(
-          boost::lexical_cast<std::string>(sh->pPSM->pep)),
+          std::to_string(sh->pPSM->pep)),
       peptide_seq_xml,
       percolatorOutNs::psm::p_value_type(
-          boost::lexical_cast<std::string>(sh->pPSM->p)),
+          std::to_string(sh->pPSM->p)),
       percolatorOutNs::psm::psm_id_type(sh->pPSM->id)
   ));
 

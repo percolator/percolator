@@ -18,7 +18,6 @@
 #include "Caller.h"
 #include "unistd.h"
 #include <iomanip>
-#include <boost/lexical_cast.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
@@ -602,8 +601,8 @@ int Caller::readFiles() {
       xmlInStream.open(xmlInputFN.c_str());
 
       string schemaDefinition= Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
-      string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
-      string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+      string schema_major = PIN_VERSION_MAJOR;
+      string schema_minor = PIN_VERSION_MINOR;
       parser p;
       xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
           xmlInStream, xmlInputFN.c_str(), Caller::schemaValidation,
@@ -1037,8 +1036,8 @@ void Caller::writeXML_Proteins() {
 void Caller::writeXML(){
   ofstream os;
   const string space = PERCOLATOR_OUT_NAMESPACE;
-  string schema_major = boost::lexical_cast<string>(POUT_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(POUT_VERSION_MINOR);
+  string schema_major = POUT_VERSION_MAJOR;
+  string schema_minor = POUT_VERSION_MINOR;
   const string schema = space +
       " https://github.com/percolator/percolator/raw/pout-" + schema_major +
       "-" + schema_minor + "/src/xml/percolator_out.xsd";
