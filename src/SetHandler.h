@@ -32,12 +32,12 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
 using namespace std;
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 namespace percolatorInNs { 
   class target_decoy;
 }

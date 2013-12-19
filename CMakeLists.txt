@@ -12,7 +12,10 @@ include("CommonCMake.txt")
 
 my_set(CMAKE_BUILD_TYPE "Debug" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")
-my_set(XML_SUPPORT FALSE "Choose to support xml input (slower compilation).")
+option(XML_SUPPORT "Choose to support xml input (slower compilation)." OFF)
+if(XML_SUPPORT)
+  add_definitions(-DXML_SUPPORT)
+endif(XML_SUPPORT)
 
 # PRINT VARIBALES TO STDOUT
 MESSAGE( STATUS )

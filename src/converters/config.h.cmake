@@ -55,8 +55,4 @@ limitations under the License.
   #define TANDEM_SCHEMA_LOCATION "@TANDEM_SCHEMA_LOCATION@"
 #endif
 
-#ifndef XML_SUPPORT
-  #define XML_SUPPORT @XML_SUPPORT@
-#endif
-
 #endif /*CONFIG_H_*/

@@ -37,7 +37,7 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
 using namespace std;
@@ -47,7 +47,7 @@ class Scores;
 class Normalizer;
 class ResultHolder;
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 namespace percolatorInNs { 
   class target_decoy;
 }
@@ -107,7 +107,7 @@ class DataSet {
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
 //     static double isPngasef(const string& peptide, bool isDecoy );
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
     // these functions seem not to be in use
     //void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
@@ -115,7 +115,7 @@ class DataSet {
 #endif //XML_SUPPORT
 
   protected:
-#if XML_SUPPORT    
+#ifdef XML_SUPPORT    
     inline string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
 #endif //XML_SUPPORT    
 //     double isPngasef(const string& peptide);

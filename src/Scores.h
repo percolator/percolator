@@ -27,7 +27,7 @@
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   #include "percolator_out.hxx"
 #endif //XML_SUPPORT
 
@@ -67,7 +67,7 @@ class ScoreHolder {
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 #endif //XML_SUPPORT
 ostream& operator<<(ostream& os, const ScoreHolder& sh);

@@ -24,7 +24,7 @@
 
 
 using namespace std;
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 using namespace xercesc;
 #endif //XML_SUPPORT
 
@@ -33,7 +33,7 @@ const double requiredIncreaseOver2Iterations = 0.01;
 
 /** some constants to be used to compare xml strings **/
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 //databases
 static const XMLCh databasesStr[] = {
       chLatin_d, chLatin_a, chLatin_t, chLatin_a, chLatin_b, chLatin_a,
@@ -580,7 +580,7 @@ void Caller::filelessSetup(const unsigned int numFeatures,
 
 int Caller::readFiles() {
 
-#if XML_SUPPORT  
+#ifdef XML_SUPPORT  
   if (xmlInputFN.size() != 0) 
   {
     unsigned int nrTargets;
@@ -736,7 +736,7 @@ int Caller::readFiles() {
     normal.readTab(forwardTabInputFN, 1);
     shuffled.readTab(forwardTabInputFN, -1);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   } 
 #endif //XML_SUPPORT  
   return true;
@@ -1290,7 +1290,7 @@ int Caller::run() {
   
   fillFeatureSets();
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   // terminate xercesc
   if(xmlInputFN.size() != 0){
     xercesc::XMLPlatformUtils::Terminate();

@@ -24,7 +24,7 @@
 #include <iostream>
 #include <assert.h>
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
 
@@ -44,7 +44,7 @@ class FeatureNames {
       }
     }
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
     void setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
 #endif //XML_SUPPORT
     void insertFeature(const string& featureName) {

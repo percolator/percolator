@@ -12,7 +12,10 @@ include("${PERCOLATOR_SOURCE_DIR}/CommonCMake.txt")
 
 my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")
-my_set(XML_SUPPORT TRUE "Choose to support xml input (slower compilation).")
+option(XML_SUPPORT "Choose to support xml input (slower compilation)." ON)
+if(XML_SUPPORT)
+  add_definitions(-DXML_SUPPORT)
+endif(XML_SUPPORT)
 
 # PRINT VARIABLES
 MESSAGE( STATUS )

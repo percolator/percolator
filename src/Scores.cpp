@@ -57,7 +57,7 @@ inline double truncateTo(double truncateMe, const char* length) {
   return atof(truncated);
 }
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator sh){
 
   ::percolatorOutNs::aa_term_t n_xml = sh->pPSM->getFlankN();

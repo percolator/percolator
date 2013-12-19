@@ -36,7 +36,7 @@ FeatureNames::FeatureNames() {
 FeatureNames::~FeatureNames() {
 }
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
   //assert(featureNames.empty());
   for( const auto & descr : fdes.featureDescription() ) {

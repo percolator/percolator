@@ -583,7 +583,7 @@ void ProteinProbEstimator::setTargetandDecoysNames()
   numberTargetProteins = truePosSet.size();
 }
 
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
 void ProteinProbEstimator::addProteinDb(const percolatorInNs::protein& protein)
 {
   if(protein.isDecoy())

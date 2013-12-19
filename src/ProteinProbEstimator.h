@@ -28,7 +28,7 @@
 #include <vector>
 #include <math.h>
 #include <cmath>
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
 #include "Scores.h"
@@ -145,7 +145,7 @@ class ProteinProbEstimator {
     std::map<const std::string,Protein*> getProteins();
     
     /** add proteins read from the database **/
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
     void addProteinDb(const percolatorInNs::protein &protein);
 #endif //XML_SUPPORT
     

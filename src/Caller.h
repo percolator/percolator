@@ -44,7 +44,7 @@
 #include "Globals.h"
 #include "MassHandler.h"
 #include "Enzyme.h"
-#if XML_SUPPORT
+#ifdef XML_SUPPORT
   #include "parser.hxx"
   #include "serializer.hxx"
   #include <xercesc/dom/DOM.hpp>
@@ -54,7 +54,7 @@
   #include <xercesc/sax/HandlerBase.hpp>
   #include <xercesc/util/PlatformUtils.hpp>
   #include "percolator_in.hxx"
-#endif
+#endif //XML_SUPPORT
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
 
