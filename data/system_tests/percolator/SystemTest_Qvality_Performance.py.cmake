@@ -1,3 +1,4 @@
+
 # Mattia Tomasoni - Percolator Project
 # Script that tests the performances of qvality
 # Parameters: none
@@ -7,6 +8,7 @@ import sys
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
+tmpDir = "@pathToData@"
 success = True
 
 print "QVALITY PERFORMANCE"
@@ -14,20 +16,20 @@ print "QVALITY PERFORMANCE"
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
 print "(*): checking selected pi_0..."
-processFile = os.popen("grep \"Selecting pi_0\" " + 
-  "/tmp/qvalityOutput.txt")
+processFile = os.popen("grep \"Selecting pi_0\" " + tmpDir +
+  "/qvalityOutput.txt")
 output = processFile.read()
 extracted = float(output[15:20])
 if extracted < 0.86 or extracted > 0.90:
   print "...TEST FAILED: selected pi_0=" + str(extracted) + " is outside of desired range (0.86, 0.90)"
-  print "check /tmp/qvalityOutput.txt for details" 
+  print "check qvalityOutput.txt for details" 
   success = False
 
 # the number of lines of stdout (after the line beginning with "Score") until 
 # q-value < 0.01 are counted and an error is reported if their number is greater
 # than 755+/-5%
 print "(*): checking values..."
-processFile = open("/tmp/qvalityOutput.txt")
+processFile = open(tmpDir + "/qvalityOutput.txt")
 line = processFile.readline()
 finished = False
 while (not finished): # reading line by line, looking for "Score"
@@ -54,7 +56,7 @@ while (not finished): # counting lines
     line = processFile.readline()
 if countLines < 717 or countLines > 793:
   print "...TEST FAILED: number of peptides=" + str(countLines) + " outside of desired range (717, 793)"
-  print "check /tmp/qvalityOutput.txt for details" 
+  print "check qvalityOutput.txt for details" 
   success = False
 
 # if no errors were encountered, succeed

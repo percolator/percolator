@@ -8,7 +8,8 @@ import tempfile
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
-tmpPath = tempfile.gettempdir()
+tmpPath = "@pathToData@"
+#tmpPath = tempfile.gettempdir()
 success = True
 
 print("PERCOLATOR CORRECTNESS")
