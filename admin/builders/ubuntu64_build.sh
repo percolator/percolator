@@ -66,7 +66,7 @@ mkdir -p $build_dir/percolator $build_dir/converters;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=TRUE $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
