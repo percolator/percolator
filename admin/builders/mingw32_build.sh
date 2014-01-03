@@ -12,7 +12,7 @@ while getopts “s:b:r:t:” OPTION; do
 done
 
 if [[ -z ${build_dir} ]]; then
-  build_dir="$(HOME)/build";
+  build_dir="${HOME}/build";
 #  build_dir="$(mktemp -d --tmpdir build_XXXX)";
 fi
 if [[ -z ${src_dir} ]]; then
