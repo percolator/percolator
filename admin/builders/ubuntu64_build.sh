@@ -41,7 +41,7 @@ echo "Checking necessary packages for building percolator...";
 sudo apt-get update;
 sudo apt-get upgrade;
 #sudo apt-get -y install g++ make cmake rpm fakeroot;
-sudo apt-get -y install g++ make rpm fakeroot;
+sudo apt-get -y install g++ make cmake rpm fakeroot;
 
 # Need a never copy of cmake
 # Remove the secion below once they updated cmake
@@ -68,7 +68,7 @@ mkdir -p $build_dir/percolator $build_dir/converters;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=TRUE $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;

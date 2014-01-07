@@ -34,8 +34,6 @@ PackedVector PackedVector::packedSubtract(const PackedVector & rhs) const{
       result.packedAddElement(iR, -rhs[kR]);
       kR++;
     }else {
-      double rr = values[kL];
-      double ff = rhs[kR];
       double res = values[kL] - rhs[kR];
       if ( sparseChecker.isNonzero(res) ) {
         result.packedAddElement(iL, res);

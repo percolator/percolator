@@ -40,6 +40,9 @@ SetHandler::~SetHandler() {
   }
 }
 
+/**
+ * Initialise without file input for @see PercolatorCInterface
+ */
 void SetHandler::filelessSetup(const unsigned int numFeatures,
                                const unsigned int numSpectra,
                                const int label) {
@@ -50,26 +53,30 @@ void SetHandler::filelessSetup(const unsigned int numFeatures,
   n_examples = numSpectra;
 }
 
-
-
-
+/**
+ * Insert DataSet object into this SetHandler
+ * @param ds pointer to DataSet to be inserted
+ */
 void SetHandler::push_back_dataset( DataSet * ds ) {
     subsets.push_back(ds);
 }
 
-
+/**
+ * Prints the results to a stream
+ * @param test Scores object to be printed
+ * @param myout stream to be printed to
+ */
 void SetHandler::print(Scores& test, ostream& myout) {
   vector<ResultHolder> outList(0);
   for (unsigned int setPos = 0; setPos < subsets.size(); setPos++) {
     subsets[setPos]->print(test, outList);
   }
   sort(outList.begin(), outList.end(), greater<ResultHolder> ());
-  vector<ResultHolder>::iterator it = outList.begin();
   myout
       << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds"
       << endl;
-  for (; it != outList.end(); ++it) {
-    myout << *it << endl;
+  for (const auto psmResult : outList) {
+    myout << psmResult << endl;
   }
 }
 

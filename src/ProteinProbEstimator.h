@@ -18,7 +18,6 @@
 #ifndef PROTEINPROBESTIMATOR_H_
 #define PROTEINPROBESTIMATOR_H_
 
-#include "PosteriorEstimator.h"
 #include "Globals.h"
 #include <functional>
 #include <numeric>

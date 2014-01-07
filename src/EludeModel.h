@@ -191,32 +191,38 @@ class RTModel {
     float our_index['Z' - 'A' + 1];
     static float Luna_120_index['Z' - 'A' + 1];
     static float TFA_index['Z' - 'A' + 1];
-    svm_model* index_model;
-    double c_index, eps_index;
-    static string inhouseIndexAlphabet;
-
-    // number of features to be calculated (depends on the selected features)
-    size_t noFeaturesToCalc;
+        
     // svr model
     svm_model* model;
+    svm_model* index_model;
+    
     // parameters for the SVR
     double c, gamma, epsilon;
-    // type of grid
-    GridType gType;
-    // type of evaluation for parameter calibration
-    EvaluationType eType;
-    // k for cross validation
-    size_t k;
+    double c_index, eps_index;
+    
+    // number of points and step for the fine grid
+    double stepFineGrid;
+    size_t noPointsFineGrid;
+    
     // file to save the steps of the calibration
     string calibrationFile;
     // save calibration data?
     bool saveCalibration;
-    struct gridInformation grids;
+    
+    // k for cross validation
+    size_t k;
+    // type of grid
+    GridType gType;
+    // type of evaluation for parameter calibration
+    EvaluationType eType;
     // features used (bit-wise operation are used to decode, for ex 2 means krokhin100_index)
     int selected_features;
-    // number of points and step for the fine grid
-    size_t noPointsFineGrid;
-    double stepFineGrid;
+    
+    struct gridInformation grids;
+    // number of features to be calculated (depends on the selected features)
+    size_t noFeaturesToCalc;
+
+    static string inhouseIndexAlphabet;
     // symbols for post-translational modifications
     static string ptmAlphabet;
     // true if klammer features are to be used

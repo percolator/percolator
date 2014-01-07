@@ -215,7 +215,7 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
     if (strs.size()<2) {cerr << "Scheme is malformated" << endl; return 0;}
     for(unsigned int ix=0; ix+1<strs.size(); ix+=2) {
-      parseOptions.ptmScheme[strs[ix][0]]=std::stoi(strs[ix+1]);   
+      parseOptions.ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);   
       if (VERB > 0) {
         cerr << "Interpreting " << strs[ix][0] << " as modification UNIMOD:" << parseOptions.ptmScheme[strs[ix][0]] << endl; 
       }

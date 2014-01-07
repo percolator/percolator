@@ -79,6 +79,10 @@ limitations under the License.
   #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
 #endif
 
+#ifndef M_PI // for some reason Windows removed the Pi constant from math.h
+  #define M_PI 3.14159265358979323846
+#endif
+
 #ifdef WIN32
   #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
   #define D_DARRAY(name) _freea(name);

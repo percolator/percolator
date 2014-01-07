@@ -84,13 +84,14 @@ private:
   bool nogroupProteins;
   bool noseparate;
   bool noprune;
-  bool trivialgruping;
   bool multiple_labeled_peptides;
-  double ProteinThreshold;
-  double PeptideThreshold;
-  double PsmThreshold;
-  double PeptidePrior;
   double LOG_MAX_ALLOWED_CONFIGURATIONS;
+  double PsmThreshold;
+  double PeptideThreshold;
+  double ProteinThreshold;
+  double PeptidePrior;
+  bool trivialgruping;
+  
   Array<std::string> severedProteins;
   Array<double> probabilityR;
   Array<Array<std::string> > groupProtNames;

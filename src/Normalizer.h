@@ -76,13 +76,13 @@ class Normalizer {
       cout << "There are " << numRetentionFeatures << endl;
     }
     void printSub() {
-      for (int i = 0; i < numRetentionFeatures; i++) {
+      for (unsigned int i = 0; i < numRetentionFeatures; i++) {
         cout << sub[i] << " ";
       }
       cout << endl;
     }
     void printDiv() {
-      for (int i = 0; i < numRetentionFeatures; i++) {
+      for (unsigned int i = 0; i < numRetentionFeatures; i++) {
         cout << div[i] << " ";
       }
       cout << endl;

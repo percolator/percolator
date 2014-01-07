@@ -37,8 +37,8 @@ class ScoreHolder {
   
   public:
     double score; // ,q,pep;
-    PSMDescription* pPSM;
     int label;
+    PSMDescription* pPSM;
     std::vector<std::string> psms_list;
     
     ScoreHolder() :
@@ -68,7 +68,7 @@ class ScoreHolder {
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
 #ifdef XML_SUPPORT
-std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
+std::unique_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
 #endif //XML_SUPPORT
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 	
@@ -105,7 +105,7 @@ struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bo
 
 inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
-  for (int jj = 0; jj < inpString.size(); jj++) {
+  for (unsigned int jj = 0; jj < inpString.size(); jj++) {
     signed char ch = inpString[jj];
     //NOTE signed char ranges -128 to 127
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
@@ -205,9 +205,6 @@ class Scores {
     }
     inline static void setOutXmlDecoys(bool decoys_out) {
       outxmlDecoys = decoys_out;
-    }
-    inline static bool getOutXmlDecoys() {
-      return outxmlDecoys;
     }
     inline static void setSeed(uint32_t s) {
       seed = s;

@@ -128,35 +128,45 @@ class Caller {
     SanityCheck * pCheck;
     AlgIn *svmInput;
     ProteinProbEstimator* protEstimator;
-    string xmlInputFN;
-    char* xmlInputDir;
-    bool readStdIn;
+    
     string forwardTabInputFN;
     string decoyWC;
     string resultFN;
     string tabFN;
+    
+    string xmlInputFN;
+    char* xmlInputDir;
     string weightFN;
-    string call;
-    string otherCall;
-    string decoyOut;
-    bool outputAll;
+    
     bool tabInput;
+    bool readStdIn;
+    
     bool docFeatures;
     bool quickValidation;
     bool reportPerformanceEachIteration;
+    
     bool reportUniquePeptides;
     bool calculateProteinLevelProb;
+    
     bool schemaValidation;
-    bool showExpMass;
     bool hasProteins;
     bool target_decoy_competition;
+    
     double test_fdr;
     double selectionfdr;
     double selectedCpos;
     double selectedCneg;
+    
     double threshTestRatio;
     double trainRatio;
     unsigned int niter;
+    
+    string call;
+    string otherCall;
+    string decoyOut;
+    bool outputAll;
+    bool showExpMass;
+    
     time_t startTime;
     clock_t startClock;
     const static unsigned int xval_fold;
@@ -184,6 +194,8 @@ class Caller {
     bool usePi0;
     bool outputEmpirQVal;
     std::string decoy_prefix;
+
+    
 };
 
 #endif /*CALLER_H_*/

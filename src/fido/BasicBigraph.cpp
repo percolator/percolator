@@ -86,7 +86,6 @@ void BasicBigraph::read(istream & is,bool multiple_labeled_peptides)
   double value =  -10;
 
   int pepIndex = -1;
-  int chargeState = 0;
   int state = 'e';
 
   StringTable PSMNames, proteinNames;

@@ -55,7 +55,7 @@
 // local copies of stuff in TPP's sysdepend.h, and empty macro versions of some stuff as well
 #ifdef WIN32
  //ifdef _MSC_VER
-typedef unsigned long uint32_t;
+//typedef unsigned long uint32_t;
 typedef unsigned __int64 uint64_t;
 #define S_ISDIR(mode) ((mode)&_S_IFDIR)
 #define strcasecmp stricmp

@@ -42,14 +42,6 @@ endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
 
-find_package(Iconv REQUIRED)
-if(ICONV_FOUND)
-  message(STATUS "Package Iconv found at: ${ICONV_INCLUDE_DIR}")
-else(ICONV_FOUND)
-  message(FATAL_ERROR "The package Iconv has not been found")
-endif(ICONV_FOUND)
-include_directories(${ICONV_INCLUDE_DIR})
-link_directories(${ICONV_INCLUDE_DIRS})
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -127,7 +119,7 @@ if(APPLE)
 #  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
 elseif(MINGW OR WIN32)
 #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
-  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc -static-libstdc++")
+  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc")
 endif()
 
 if(PROFILING AND UNIX)
@@ -141,7 +133,7 @@ if(PROFILING AND UNIX)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} ${ICONV_LIBRARIES} stdc++)
+target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
  
 # INSTALL PERCOLATOR
 #if(APPLE)

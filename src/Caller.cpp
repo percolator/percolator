@@ -28,12 +28,12 @@ using namespace std;
 using namespace xercesc;
 #endif //XML_SUPPORT
 
-const unsigned int Caller::xval_fold = 3;
-const double requiredIncreaseOver2Iterations = 0.01;
-
-/** some constants to be used to compare xml strings **/
+const unsigned int Caller::xval_fold = 3; /* number of folds for cross validation*/
+const double requiredIncreaseOver2Iterations = 0.01; /* checks cross validation convergence */
 
 #ifdef XML_SUPPORT
+/** some constants to be used to compare xml strings **/
+
 //databases
 static const XMLCh databasesStr[] = {
       chLatin_d, chLatin_a, chLatin_t, chLatin_a, chLatin_b, chLatin_a,
@@ -544,6 +544,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
+/**
+ * Prints the weights of the normalized vector to a stream
+ * @param weightStream stream where the weights are written to
+ * @param w normal vector
+ */
 void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream
   << "# first line contains normalized weights, second line the raw weights"
@@ -565,6 +570,9 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
   weightStream << endl;
 }
 
+/**
+ * Initialise without file input for @see PercolatorCInterface
+ */
 void Caller::filelessSetup(const unsigned int numFeatures,
     const unsigned int numSpectra,
     char** featureNames, double pi0) {
@@ -578,8 +586,10 @@ void Caller::filelessSetup(const unsigned int numFeatures,
   }
 }
 
+/**
+ * Reads in the files from XML (must be enabled at compile time) or tab format
+ */
 int Caller::readFiles() {
-
 #ifdef XML_SUPPORT  
   if (xmlInputFN.size() != 0) 
   {
@@ -742,8 +752,17 @@ int Caller::readFiles() {
   return true;
 }
 
-/* Train one of the crossvalidation bins */
-
+/** 
+ * Train one of the crossvalidation bins 
+ * @param set identification number of the bin that is processed
+ * @param w list of normal vectors (in the linear algebra sense) of the hyperplane from SVM, one for each bin
+ * @param updateDOC ???
+ * @param cpos_vec vector with soft margin parameter for positives
+ * @param cfrac_vec vector with soft margin parameter for fraction negatives / positives
+ * @param best_cpos best soft margin parameter for positives
+ * @param best_cfrac best soft margin parameter for fraction negatives / positives
+ * @param pWeights ???
+*/
 int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, bool updateDOC, vector<double>& cpos_vec, 
                                vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
 options * pOptions) {
@@ -752,8 +771,8 @@ options * pOptions) {
     cerr << "cross validation - fold " << set + 1 << " out of "
          << xval_fold << endl;
   }
-  vector<double> ww = w[set];
-  vector<double> bestW = w[set];
+  vector<double> ww = w[set]; // normal vector initial guess and result holder
+  vector<double> bestW = w[set]; // normal vector with highest true positive estimate
   xv_train[set].calcScores(ww, selectionfdr);
   if (docFeatures && updateDOC) {
     xv_train[set].recalculateDescriptionOfGood(selectionfdr);
@@ -764,9 +783,13 @@ options * pOptions) {
     cerr << "Calling with " << svmInput->positives << " positives and "
          << svmInput->negatives << " negatives\n";
   }
+  
+  // Create storage vector for SVM algorithm
   struct vector_double* Outputs = new vector_double;
   Outputs->vec = new double[svmInput->positives + svmInput->negatives];
   Outputs->d = svmInput->positives + svmInput->negatives;
+  
+  // Check all possible combinations of soft margin parameters for highest estimate of true positives
   vector<double>::iterator cpos, cfrac;
   for (cpos = cpos_vec.begin(); cpos != cpos_vec.end(); cpos++) {
     for (cfrac = cfrac_vec.begin(); cfrac != cfrac_vec.end(); cfrac++) {
@@ -780,7 +803,10 @@ options * pOptions) {
         Outputs->vec[ix] = 0;
       }
       svmInput->setCost(*cpos, (*cpos) * (*cfrac));
+      
+      // Call SVM algorithm (see ssl.cpp)
       L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+      
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
         ww[i] = pWeights->vec[i];
       }
@@ -811,8 +837,11 @@ options * pOptions) {
   return bestTP;
 }
 
-/**
- * cross validation step
+/** 
+ * Executes a cross validation step
+ * @param w list of the bins' normal vectors (in linear algebra sense) of the hyperplane from SVM
+ * @param updateDOC ???
+ * @return Estimation of number of true positives
  */
 int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
   // Setup
@@ -847,6 +876,10 @@ int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
   return estTP / (xval_fold - 1);
 }
 
+/** 
+ * Train the SVM using several cross validation iterations
+ * @param w list of normal vectors
+ */
 void Caller::train(vector<vector<double> >& w) {
   // iterate
   int foundPositivesOldOld=0, foundPositivesOld=0, foundPositives=0; 
@@ -896,10 +929,12 @@ void Caller::train(vector<vector<double> >& w) {
     cerr << "After all training done, " << foundPositives << " target PSMs with q<"
         << test_fdr << " were found when measuring on the test set"
         << endl;
-  }
-  
+  }  
 }
 
+/** 
+ * Fills in the features previously read from file and normalizes them
+ */
 void Caller::fillFeatureSets() {
   fullset.fillFeatures(normal, shuffled, reportUniquePeptides);
   if (VERB > 1) {
@@ -934,14 +969,13 @@ void Caller::fillFeatureSets() {
   vector<double*> featuresV, rtFeaturesV;
   double* features;
   PSMDescription* pPSM;
-  size_t ix;
   set<DataSet*>::iterator it;
   for (it = all.begin(); it != all.end(); ++it) {
     int ixPos = -1;
     while ((pPSM = (*it)->getNext(ixPos)) != NULL) {
       features = pPSM->features;
       featuresV.push_back(features);
-      if (features = pPSM->retentionFeatures) {
+      if ((features = pPSM->retentionFeatures)) {
         rtFeaturesV.push_back(features);
       }
     }
@@ -955,6 +989,13 @@ void Caller::fillFeatureSets() {
   pNorm->normalizeSet(featuresV, rtFeaturesV);
 }
 
+/** 
+ * Sets up the SVM classifier: 
+ * - divide dataset into training and test sets for each fold
+ * - set parameters (fdr, soft margin )
+ * @param w list of normal vectors
+ * @return number of positives for initial setup
+ */
 int Caller::preIterationSetup(vector<vector<double> >& w) {
   
   svmInput = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1); // One input set, to be reused multiple times
@@ -1001,6 +1042,9 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   }
 }
 
+/** 
+ * Subroutine of @see Caller::writeXML() for PSM output
+ */
 void Caller::writeXML_PSMs() {
   ofstream os;
   xmlOutputFN_PSMs = xmlOutputFN;
@@ -1016,6 +1060,8 @@ void Caller::writeXML_PSMs() {
   os.close();
 }
 
+/** Subroutine of @see Caller::writeXML() for peptide output
+ */
 void Caller::writeXML_Peptides() {
   ofstream os;
   xmlOutputFN_Peptides = xmlOutputFN;
@@ -1031,12 +1077,18 @@ void Caller::writeXML_Peptides() {
   os.close();
 }
 
+/** 
+ * Subroutine of @see Caller::writeXML() for protein output
+ */
 void Caller::writeXML_Proteins() {
   xmlOutputFN_Proteins = xmlOutputFN;
   xmlOutputFN_Proteins.append("writeXML_Proteins");
-  protEstimator->writeOutputToXML(xmlOutputFN_Proteins, Scores::getOutXmlDecoys());
+  protEstimator->writeOutputToXML(xmlOutputFN_Proteins, Scores::isOutXmlDecoys());
 }
 
+/** 
+ * Writes the output of percolator to an pout XML file
+ */
 void Caller::writeXML(){
   ofstream os;
   const string space = PERCOLATOR_OUT_NAMESPACE;
@@ -1109,6 +1161,14 @@ void Caller::writeXML(){
   os.close();
 }
 
+/** Calculates the PSM and/or peptide probabilities
+ * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities
+ * @param procStart clock time when process started
+ * @param procStartClock clock associated with procStart
+ * @param w list of normal vectors
+ * @param diff runtime of the calculations
+ * @param TDC ???
+ */
 void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
     clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC){
   // write output (cerr or xml) if this is the unique peptide run and the
@@ -1141,7 +1201,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   
   if (VERB > 0 && writeOutput) {
-    std:cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
+    std::cerr << "Selecting pi_0=" << fullset->getPi0() << endl;
   }
   if (VERB > 0 && writeOutput) {
     cerr << "Calibrating statistics - calculating q values" << endl;
@@ -1223,7 +1283,8 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
 }
 
-
+/** Calculates the protein probabilites by calling Fido and directly writes the results to XML
+ */
 void Caller::calculateProteinProbabilitiesFido()
 {
   time_t startTime;
@@ -1265,6 +1326,13 @@ void Caller::calculateProteinProbabilitiesFido()
   }
 }
 
+/** Executes the flow of the percolator process:
+ * 1. reads in the input file
+ * 2. trains the SVM
+ * 3. calculate PSM probabilities
+ * 4. (optional) calculate peptide probabilities
+ * 5. (optional) calculate protein probabilities
+ */
 int Caller::run() {  
 
   time(&startTime);
@@ -1317,6 +1385,8 @@ int Caller::run() {
   if (VERB > 1) cerr << "Reading in data and feature calculation took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
+  
+  // Do the SVM training
   if (VERB > 0) {
     cerr << "---Training with Cpos";
     if (selectedCpos > 0) {

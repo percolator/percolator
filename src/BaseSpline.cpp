@@ -81,7 +81,7 @@ static double tao = 2 / (1 + sqrt(5.0)); // inverse of golden section
 
 void BaseSpline::roughnessPenaltyIRLS_Old() {
   Numerical epsilon = Numerical(1e-15);
-  unsigned int n = x.size(), alphaIter = 0;
+  unsigned int alphaIter = 0;
   initiateQR();
   double alpha = .05, cv = 1e100;
   initg();
@@ -415,7 +415,7 @@ void BaseSpline::solveInPlace(PackedMatrix& mat, PackedVector& res) {
   PackedVector nonEmpty;
   int col, row, rowPos;
   for (col = 0; col < nCol; col++) {
-    int stop = 1;
+    //int stop = 1;
     //if(col==stop-1){
 //      cout << "*********************"<<endl;
 //      cout << col << endl;
@@ -456,8 +456,8 @@ void BaseSpline::solveInPlace(PackedMatrix& mat, PackedVector& res) {
         maxRowPos = rowPos;
       }
     }
-    int imaxRow = maxRow;
-    int imaxRowPos = maxRowPos;
+    //int imaxRow = maxRow;
+    //int imaxRowPos = maxRowPos;
 //    if(col==stop-1){
 //      cout << "imaxRow " << imaxRow << endl;
 //      cout << "imaxRowPos " << imaxRowPos << endl<<endl;

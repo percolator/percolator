@@ -80,6 +80,7 @@ bool ProteinProbEstimator::initialize(Scores* fullset)
 {  
   peptideScores = fullset;
   setTargetandDecoysNames();
+  return true;
 }
 
 void ProteinProbEstimator::computeFDR()
@@ -181,7 +182,6 @@ double ProteinProbEstimator::estimatePriors()
   
   double prior_peptide = 0.0;
   double prior_peptide2 = 0.0;
-  double prior_peptide3 = 0.0;
   unsigned confident_peptides = 0.0;
   unsigned total_peptides = 0;
   double prior, prior2, prior3;
@@ -324,7 +324,7 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
 {
   std::vector<double> pBoot, lambdas, pi0s, mse;
   std::vector<double>::iterator start;
-  int numLambda = 100;
+  unsigned int numLambda = 100;
   double maxLambda = 0.5;
   size_t n = pvalues.size();
   // Calculate pi0 for different values for lambda

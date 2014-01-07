@@ -113,10 +113,10 @@ protected:
   
   BasicBigraph buildSubgraph(const Set & connectedProteins, const Set & connectedPSMs);
   void traceConnected(int index, GraphLayer & gl, int sectionNumber);
-  
-  double ProteinThreshold;
-  double PeptideThreshold;
+
   double PsmThreshold;
+  double PeptideThreshold;
+  double ProteinThreshold;
   double PeptidePrior;
   
 public:

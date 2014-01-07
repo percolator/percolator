@@ -128,14 +128,10 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
       continue;
     }
     double score = pSH->score;
-    double q = (*psm)->q;
-    double pep = (*psm)->pep;
-    set<string> prots = (*psm)->proteinIds;
-    set<string>::const_iterator it = (*psm)->proteinIds.begin();
-    for (; it != (*psm)->proteinIds.end(); it++) {
-      out << "\t" << *it;
+    for (const auto proteinId : (*psm)->proteinIds) {
+      out << "\t" << proteinId;
     }
-    ResultHolder rh(score, q, pep, (*psm)->id, (*psm)->peptide, out.str());
+    ResultHolder rh(score, (*psm)->q, (*psm)->pep, (*psm)->id, (*psm)->peptide, out.str());
     outList.push_back(rh);
     out.str("");
   }

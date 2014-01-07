@@ -28,6 +28,7 @@
 #include <string>
 #include <math.h>
 #include <map>
+#include <memory>
 using namespace std;
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -58,7 +59,7 @@ inline double truncateTo(double truncateMe, const char* length) {
 }
 
 #ifdef XML_SUPPORT
-std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator sh){
+std::unique_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator sh){
 
   ::percolatorOutNs::aa_term_t n_xml = sh->pPSM->getFlankN();
   ::percolatorOutNs::aa_term_t c_xml = sh->pPSM->getFlankC();
@@ -67,7 +68,7 @@ std::auto_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::
   peptide_seq_xml.c(c_xml); // optional fields
   peptide_seq_xml.n(n_xml);
   //psm
-  std::auto_ptr< ::percolatorOutNs::psm> p(new ::percolatorOutNs::psm(
+  std::unique_ptr< ::percolatorOutNs::psm> p(new ::percolatorOutNs::psm(
       percolatorOutNs::psm::svm_score_type(truncateTo(sh->score,"6")),
       percolatorOutNs::psm::q_value_type(
           std::to_string(sh->pPSM->q)),
@@ -263,6 +264,11 @@ double Scores::calcScore(const double* feat) const {
   return score;
 }
 
+/**
+ * Returns the ScoreHolder object associated with a list of features
+ * @param d array of features
+ * @return pointer to ScoreHolder
+ */
 ScoreHolder* Scores::getScoreHolder(const double* d) {
   if (scoreMap.size() == 0) {
     vector<ScoreHolder>::iterator it;
@@ -305,6 +311,12 @@ uint32_t Scores::lcg_rand() {
   return seed;
 }
 
+/**
+ * Divides the PSMs from pin file into xval_fold cross-validation sets
+ * @param train vector containing the training sets of PSMs
+ * @param test vector containing the test sets of PSMs
+ * @param xval_fold: number of folds in train and test
+ */
 void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
     const unsigned int xval_fold) {
   train.resize(xval_fold);
@@ -358,18 +370,19 @@ void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
 /**
  * Divides the PSMs from pin file into xval_fold cross-validation sets based on
  * their spectrum scan number
- * train, test: vectors containing folders for PSMs
- * xval_fold: number of folders in train and test
+ * @param train vector containing the training sets of PSMs
+ * @param test vector containing the test sets of PSMs
+ * @param xval_fold: number of folds in train and test
  */
 void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
     test, const unsigned int xval_fold) {
-  // set the number of cross validation folders for train and test to xval_fold
+  // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold);
   test.resize(xval_fold);
-  // remain keeps track of residual space available in each folder
+  // remain keeps track of residual space available in each fold
   vector<size_t> remain(xval_fold);
-  // set values for remain: being empty, each folder is assigned (tot number of
-  // scores / tot number of folders)
+  // set values for remain: being empty, each fold is assigned (tot number of
+  // scores / tot number of folds)
   size_t fold = xval_fold, ix = scores.size();
   while (fold--) {
     remain[fold] = ix / (fold + 1);
@@ -384,7 +397,7 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
     spectraScores.insert(pair<unsigned int,ScoreHolder>(sc.pPSM->scan, sc));
   }
 
-  // put scores into the folders; choose a folder (at random) and change it only
+  // put scores into the folds; choose a fold (at random) and change it only
   // when scores from a new spectra are encountered
   // note: this works because multimap is an ordered container!
   unsigned int previousSpectrum = spectraScores.begin()->first;
@@ -392,12 +405,12 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin();
       it != spectraScores.end(); ++it) {
     // if current score is from a different spectra than the one encountered in
-    // the previous iteration, choose new folder
+    // the previous iteration, choose new fold
     
-    //NOTE what if the folder if full but previousSpectrum is the same as current spectrum??
+    //NOTE what if the fold is full but previousSpectrum is the same as current spectrum??
     if(previousSpectrum != (*it).first){
       randIndex = lcg_rand() % xval_fold;
-      // allow only indexes of folders that are non-full
+      // allow only indexes of folds that are non-full
       while(remain[randIndex] == 0){
         randIndex = lcg_rand() % xval_fold;
       }
@@ -410,7 +423,7 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
         train[i].scores.push_back((*it).second);
       }
     }
-    // update number of free position for used folder
+    // update number of free position for used fold
     --remain[randIndex];
     // set previous spectrum to current one for next iteration
     previousSpectrum = (*it).first;
@@ -486,6 +499,12 @@ void Scores::normalizeScores(double fdr) {
   
 }
 
+/**
+ * Calculates the SVM cost/score of each PSM and sorts them
+ * @param w normal vector used for SVM cost
+ * @param fdr FDR threshold specified by user (default 0.01)
+ * @return number of true positives
+ */
 int Scores::calcScores(vector<double>& w, double fdr) {
   w_vec = w;
   const double* features;
@@ -511,15 +530,17 @@ int Scores::calcScores(vector<double>& w, double fdr) {
 }
 
 /**
- * calculates the q-value for each psm in scores: the q-value is the minimal
+ * Calculates the q-value for each psm in scores: the q-value is the minimal
  * FDR of any set that includes the particular psm
+ * @param fdr FDR threshold specified by user (default 0.01)
+ * @return number of true positives
  */
 int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys+totalNumberOfTargets==size());
   vector<ScoreHolder>::iterator it;
 
   int targets = 0, decoys = 0;
-  double efp = 0.0, q;
+  double efp = 0.0, q; // estimated false positives, q value
   
   // NOTE check this
   for (it = scores.begin(); it != scores.end(); it++) {
@@ -603,7 +624,7 @@ void Scores::weedOutRedundant(bool computePi0) {
    
    vector<ScoreHolder> uniquePeptideScores = vector<ScoreHolder>();
    string previousPeptide;
-   int previousLabel;
+   int previousLabel = 0;
    // run a pointer down the scores list
    vector<ScoreHolder>::iterator current = scores.begin();
    for(;current!=scores.end(); current++){
@@ -780,8 +801,6 @@ double Scores::estimatePi0() {
       mem_fun_ref(&ScoreHolder::toPair));
   // Estimate pi0
   PosteriorEstimator::getPValues(combined, pvals);
-  int pval_s = pvals.size();
-  int comb_s = combined.size();
   pi0 = PosteriorEstimator::estimatePi0(pvals);
   return pi0;
 }
@@ -801,13 +820,11 @@ void Scores::calcPep() {
 }
 
 unsigned Scores::getQvaluesBelowLevel(double level) {
-  
   unsigned hits = 0;
-  
-  for (size_t ix = 0; ix < scores.size(); ix++) {
-    if(scores[ix].isTarget() && scores[ix].pPSM->q < level)
+  for (const auto score : scores) {
+    if (score.isTarget() && score.pPSM->q < level) {
       hits++;
+    }
   }
-  
   return hits;
 }

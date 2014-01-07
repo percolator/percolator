@@ -151,6 +151,15 @@ private:
   Array<Counter> originalN;
   Array<Array<string> > groupProtNames;
   Array<double> probabilityR;
+  
+  
+  // cache functors
+  // note that these will need to be updated if the object is copied
+  LastCachedMemberFunction<BasicGroupBigraph, double, Model> logLikelihoodConstantCachedFunctor;
+  
+  double logLikelihoodAlphaBetaGivenD(const GridModel & gm) const;
+  double likelihoodAlphaBetaGivenD(const GridModel & gm) const;  
+  
   bool nogroupProtein;
   bool trivialGrouping;
  
@@ -191,13 +200,6 @@ private:
   // for unknown alpha, beta
   double probabilityEEpsilonOverAllAlphaBeta(const GridModel & gm, int indexEpsilon) const;
   Array<double> probabilityEOverAllAlphaBeta(const GridModel & gm) const;
-
-  // cache functors
-  // note that these will need to be updated if the object is copied
-  LastCachedMemberFunction<BasicGroupBigraph, double, Model> logLikelihoodConstantCachedFunctor;
-  
-  double logLikelihoodAlphaBetaGivenD(const GridModel & gm) const;
-  double likelihoodAlphaBetaGivenD(const GridModel & gm) const;  
   
 };
 

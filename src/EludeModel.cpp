@@ -348,7 +348,7 @@ double* RTModel::amphipathicityHelix(const float* index,
     *(features++) = cst;
   } else {
     // min (maximum) - initialized with the max(min) possible value
-    for (int i = 4; i <= (peptide.length() - 5); ++i) {
+    for (unsigned int i = 4; i <= (peptide.length() - 5); ++i) {
       hWindow = index[peptide[i] - 'A'] + (cos300 * (index[peptide[i - 3]
           - 'A'] + index[peptide[i + 3] - 'A'])) + (cos400
           * (index[peptide[i - 4] - 'A'] + index[peptide[i + 4] - 'A']));
@@ -929,7 +929,7 @@ double RTModel::computeKfoldCV(const vector<PSMDescription> & psms,
                                const double gamma, const double epsilon,
                                const double c) {
   vector<PSMDescription> train, test;
-  int noPsms;
+  unsigned int noPsms;
   // sum of prediction errors
   double sumPEs, PEk;
   noPsms = psms.size();
@@ -937,11 +937,11 @@ double RTModel::computeKfoldCV(const vector<PSMDescription> & psms,
   if (VERB > 2) {
     cerr << k << " fold cross validation..." << endl;
   }
-  for (int i = 0; i < k; ++i) {
+  for (unsigned int i = 0; i < k; ++i) {
     train.clear();
     test.clear();
     // get training and testing sets
-    for (int j = 0; j < noPsms; ++j) {
+    for (unsigned int j = 0; j < noPsms; ++j) {
       if ((j % k) == i) {
         test.push_back(psms[j]);
       } else {
@@ -965,7 +965,7 @@ double RTModel::computeSimpleEvaluation(
                                         const double epsilon,
                                         const double c) {
   vector<PSMDescription> train, test;
-  int noPsms;
+  unsigned int noPsms;
   double ms;
   // how many parts will the data be split in
   size_t test_frac;
@@ -1013,7 +1013,7 @@ void RTModel::trainSVM(vector<PSMDescription> & psms) {
   }
   // calibrate parameters using the grid (if gType = FINE_GRID, this will be followed by a fine grid search)
   ofstream calFile;
-  double gamma, epsilon, c;
+  double gamma = 0.0, epsilon = 0.0, c = 0.0;
   double bestError = 1e100, error;
   vector<double>::iterator it1, it2, it3;
   int totalIterations = grids.gridGamma.size() * grids.gridC.size()
@@ -1077,7 +1077,7 @@ void RTModel::trainSVM(vector<PSMDescription> & psms) {
         << gamma << ", " << epsilon << ", " << c << ") with Error = "
         << bestError << endl;
     // define the fine grid
-    for (int i = -noPointsFineGrid; i <= noPointsFineGrid; ++i) {
+    for (int i = -noPointsFineGrid; (i < 0) || static_cast<unsigned int>(i) <= noPointsFineGrid; ++i) {
       offset = pow(2., stepFineGrid * i);
       fGridC.push_back(c * offset);
       fGridGamma.push_back(gamma * offset);
@@ -1269,7 +1269,7 @@ void RTModel::trainIndexRetention(vector<PSMDescription>& trainset,
 double RTModel::computeKfoldCVIndex(const vector<PSMDescription> & psms,
                                     const double epsilon, const double c) {
   vector<PSMDescription> train, test;
-  int noPsms;
+  unsigned int noPsms;
   // sum of prediction errors
   double sumPEs, PEk;
   noPsms = psms.size();
@@ -1278,11 +1278,11 @@ double RTModel::computeKfoldCVIndex(const vector<PSMDescription> & psms,
     cerr << k << " fold cross validation on " << noPsms << " psms..."
         << endl;
   }
-  for (int i = 0; i < k; ++i) {
+  for (unsigned int i = 0; i < k; ++i) {
     train.clear();
     test.clear();
     // get training and testing sets
-    for (int j = 0; j < noPsms; ++j) {
+    for (unsigned int j = 0; j < noPsms; ++j) {
       if ((j % k) == i) {
         test.push_back(psms[j]);
       } else {
@@ -1325,12 +1325,10 @@ double RTModel::estimateIndexRT(double* features) {
 // the C is given as parameter
 void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription> & psms,
                                           const double C) {
-  int noPsms = psms.size();
   if (VERB >= 2) {
     cerr << "Building the hydrophobicity model with c = ..." << C << endl;
   }
   // calibrate only epsilon
-  double epsilon;
   double bestError = 1e100, error;
   vector<double>::iterator it3;
   int totalIterations = grids.gridEpsilon.size();
@@ -1373,7 +1371,6 @@ void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription> & psms,
 
 // train the Support Vector Regressor for hydrophobicity
 void RTModel::trainIndexSVR(vector<PSMDescription> & psms) {
-  int noPsms = psms.size();
   double
       GRID_C[13] = { pow(2., -6), pow(2., -5), pow(2., -4), pow(2., -3),
                      pow(2., -2), pow(2., -1), pow(2., 0), pow(2., 1), pow(2.,
@@ -1388,7 +1385,6 @@ void RTModel::trainIndexSVR(vector<PSMDescription> & psms) {
     cerr << endl << "Training hydrophobicity index..." << endl;
   }
   // calibrate parameters using the normal grid
-  double epsilon, c;
   double bestError = 1e100, error;
   vector<double>::iterator it2, it3;
   int totalIterations = grid_c.size() * grid_e.size();
@@ -1470,7 +1466,7 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription> & psms) {
         - background;
   }
   cerr << "------------------------------" << endl;
-  for (int i = 0; i < psms.size(); ++i)
+  for (unsigned int i = 0; i < psms.size(); ++i)
     for (int j = 0; j < noFeat; ++j) {
       psms[i].getRetentionFeatures()[j] = 0.0;
     }
@@ -1569,18 +1565,18 @@ void RTModel::saveSVRModel(const string modelFile,
   fp << "numNormalizedFeat " << (*numRetFeatures) << endl;
   fp << "SelectedFeat " << selected_features << endl;
   fp << "sub " << normSub;
-  for (int i = 0; i < (*numRetFeatures); i++) {
+  for (unsigned int i = 0; i < (*numRetFeatures); i++) {
     fp << " " << sub[i];
   }
   fp << endl;
   fp << "div " << normDiv;
-  for (int i = 0; i < (*numRetFeatures); i++) {
+  for (unsigned int i = 0; i < (*numRetFeatures); i++) {
     fp << " " << div[i];
   }
   fp << endl;
   if (selected_features & 1 << 0) {
     fp << "alphabet " << inhouseIndexAlphabet.length();
-    for (int i = 0; i < inhouseIndexAlphabet.length(); ++i) {
+    for (unsigned int i = 0; i < inhouseIndexAlphabet.length(); ++i) {
       fp << " " << inhouseIndexAlphabet[i] << " "
           << our_index[inhouseIndexAlphabet[i] - 'A'];
     }
@@ -1616,13 +1612,13 @@ void RTModel::loadSVRModel(const string modelFile,
   // sub
   double* sub = theNormalizer->getSub();
   fp >> label >> PSMDescription::normSub;
-  for (int i = 0; i < numRtFeat; ++i) {
+  for (unsigned int i = 0; i < numRtFeat; ++i) {
     fp >> sub[i];
   }
   // div
   double* div = theNormalizer->getDiv();
   fp >> label >> PSMDescription::normDiv;
-  for (int i = 0; i < numRtFeat; ++i) {
+  for (unsigned int i = 0; i < numRtFeat; ++i) {
     fp >> div[i];
   }
   // our index
@@ -1690,7 +1686,7 @@ void RTModel::printInhouseIndex(string& filename) {
 void RTModel::printPsms(string& filename, vector<PSMDescription> & psms) {
   ofstream out;
   out.open(filename.c_str());
-  for (int i = 0; i < psms.size(); ++i) {
+  for (unsigned int i = 0; i < psms.size(); ++i) {
     out << psms[i] << endl;
   }
   out.close();

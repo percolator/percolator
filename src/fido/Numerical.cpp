@@ -45,5 +45,5 @@ bool Numerical::isInequal(double a, double b)
 
 bool Numerical::isDifferentSign(double a, double b)
 {
-  return isPos(a) && isNeg(b) || isNeg(a) && isPos(b);
+  return (isPos(a) && isNeg(b)) || (isNeg(a) && isPos(b));
 }
