@@ -47,9 +47,6 @@ class SetHandler {
   
   protected:
     vector<DataSet*> subsets;
-    vector<const double*> examples;
-    double* labels;
-    double* c_vec;
     int n_examples;
     
   public:
@@ -64,8 +61,6 @@ class SetHandler {
     /*void modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
                const string& greet, bool dtaSelect);*/
     
-    void generateTrainingSet(const double fdr, const double cpos,
-                             const double cneg, Scores& sc);
     void setSet();
     void fillTestSet(SetHandler& trainSet, const string& shuffled2FN = "");
     void createXvalSets(vector<SetHandler>& train,
@@ -80,9 +75,6 @@ class SetHandler {
     static void writeTab(const string& dataFN, const SetHandler& norm,
                          const SetHandler& shuff);
     int const getLabel(int setPos);
-    inline int const getTrainingSetSize() {
-      return examples.size();
-    }
     void print(Scores& test, ostream& myout = cout);
     inline int const getSize() {
       return n_examples;
@@ -92,15 +84,6 @@ class SetHandler {
     }
     vector<DataSet*> & getSubsets() {
       return subsets;
-    }
-    vector<const double*> * getTrainingSet() {
-      return &examples;
-    }
-    inline const double* getLabels() {
-      return labels;
-    }
-    inline const double* getC() {
-      return c_vec;
     }
     class Iterator {
       public:

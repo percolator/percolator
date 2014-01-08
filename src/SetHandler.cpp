@@ -19,19 +19,9 @@
 
 SetHandler::SetHandler() {
   n_examples = 0;
-  labels = NULL;
-  c_vec = NULL;
 }
 
 SetHandler::~SetHandler() {
-  if (labels) {
-    delete[] labels;
-  }
-  labels = NULL;
-  if (c_vec) {
-    delete[] c_vec;
-  }
-  c_vec = NULL;
   for (unsigned int ix = 0; ix < subsets.size(); ix++) {
     if (subsets[ix] != NULL) {
       delete subsets[ix];
@@ -80,30 +70,6 @@ void SetHandler::print(Scores& test, ostream& myout) {
   }
 }
 
-void SetHandler::generateTrainingSet(const double fdr, const double cpos,
-                                     const double cneg, Scores& sc) {
-  double tp = 0, fp = 0;
-  unsigned int ix = 0;
-  examples.clear();
-  bool underCutOff = true;
-  vector<ScoreHolder>::const_iterator it;
-  for (it = sc.begin(); it != sc.end(); it++) {
-    if (it->label == -1) {
-      fp++;
-    } else {
-      tp++;
-    }
-    if (underCutOff && fdr < (fp / (tp + fp))) {
-      underCutOff = false;
-    }
-    if (it->label == -1 || underCutOff) {
-      examples.push_back(it->pPSM->features);
-      labels[ix] = it->label;
-      c_vec[ix++] = (it->label != -1 ? cpos : cneg);
-    }
-  }
-}
-
 PSMDescription* SetHandler::getNext(int& setPos, int& ixPos) {
   PSMDescription* features = subsets[setPos]->getNext(ixPos);
   if (features) {
@@ -130,12 +96,6 @@ void SetHandler::setSet() {
   int i = 0, j = -1;
   while (getNext(i, j)) {
     n_examples++;
-  }
-  if (!labels) {
-    labels = new double[n_examples];
-  }
-  if (!c_vec) {
-    c_vec = new double[n_examples];
   }
   if (VERB > 3) {
     cerr << "Set up a SetHandler with " << subsets.size()
