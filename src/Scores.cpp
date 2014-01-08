@@ -821,7 +821,7 @@ void Scores::calcPep() {
 
 unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
-  for (const auto &score : scores) {
+  for (auto &score : scores) {
     if (score.isTarget() && score.pPSM->q < level) {
       hits++;
     }
