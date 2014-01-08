@@ -57,56 +57,39 @@ class DataSet {
   public:
     DataSet();
     virtual ~DataSet();
-    void inline setLabel(int l) {
-      label = l;
-    }
     
-    void initFeatureTables(const unsigned int numFeatures,bool regresionTable = false);
+    bool initFeatures(const unsigned int numFeatures);
+    void initFeatureTables(const unsigned int numFeatures, bool regressionTable = false);
     
-    static FeatureNames& getFeatureNames() {
-      return featureNames;
-    }
+    void inline setLabel(int l) { label = l; }
+    int inline getLabel() const { return label; }
     
-    static void setCalcDoc(bool on) {
-      calcDOC = on;
-    }
-    static bool getCalcDoc() {
-      return calcDOC;
-    }
+    void inline setSize(int n) { numSpectra = n; }
+    int inline getSize() const { return numSpectra; }
     
-    static void setIsotopeMass(bool on) {
-      isotopeMass = on;
-    }
+    static void setCalcDoc(bool on) { calcDOC = on; }
+    static bool getCalcDoc() { return calcDOC; }
     
-    static unsigned getNumFeatures()
-    {
-      return featureNames.getNumFeatures();
-    }
+    static void setIsotopeMass(bool on) { isotopeMass = on; }
     
-    int inline getSize() const {
-      return numSpectra;
-    }
-    
-    const int inline  getLabel() const {
-      return label;
-    }
-    
+    static FeatureNames& getFeatureNames() { return featureNames; }
+    static unsigned getNumFeatures() { return featureNames.getNumFeatures(); }
+
     PSMDescription* getNext(int& pos);
     
-    void setRetentionTime(map<int, double>& scan2rt) {
-      PSMDescription::setRetentionTime(psms, scan2rt);
-    }
+    void setRetentionTime(map<int, double>& scan2rt) { PSMDescription::setRetentionTime(psms, scan2rt); }
     
-    bool writeTabData(ofstream& out, const string& lab);
-    void readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
+    bool writeTabData(ofstream& out, const string& label);
+    //void readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
-    static double isEnz(const char n, const char c);
     
+    static double isEnz(const char n, const char c);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
 //     static double isPngasef(const string& peptide, bool isDecoy );
+    void readPsm(ifstream & dataStream, const std::string line);
 #ifdef XML_SUPPORT
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
     // these functions seem not to be in use
@@ -134,7 +117,7 @@ class DataSet {
     bool doPattern;
     bool matchPattern;
     static FeatureNames featureNames;
-    bool regresionTable;
+    bool regressionTable;
 };
 
 #endif /*DATASET_H_*/

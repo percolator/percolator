@@ -17,16 +17,14 @@
 
 #include "SetHandler.h"
 
-SetHandler::SetHandler() {
-  n_examples = 0;
-}
+SetHandler::SetHandler() {}
 
 SetHandler::~SetHandler() {
-  for (unsigned int ix = 0; ix < subsets.size(); ix++) {
-    if (subsets[ix] != NULL) {
-      delete subsets[ix];
+  for (auto & subset : subsets) {
+    if (subset != NULL) {
+      delete subset;
     }
-    subsets[ix] = NULL;
+    subset = NULL;
   }
 }
 
@@ -35,12 +33,14 @@ SetHandler::~SetHandler() {
  */
 void SetHandler::filelessSetup(const unsigned int numFeatures,
                                const unsigned int numSpectra,
-                               const int label) {
-  DataSet* pSet = new DataSet();
-  pSet->setLabel(label);
-  pSet->initFeatureTables(numFeatures);
-  subsets.push_back(pSet);
-  n_examples = numSpectra;
+                               const set<int> labels) {
+  for (auto label : labels) {
+    DataSet* pSet = new DataSet();
+    pSet->setLabel(label);
+    pSet->setSize(numSpectra);
+    pSet->initFeatureTables(numFeatures);
+    subsets.push_back(pSet);
+  }
 }
 
 /**
@@ -48,7 +48,8 @@ void SetHandler::filelessSetup(const unsigned int numFeatures,
  * @param ds pointer to DataSet to be inserted
  */
 void SetHandler::push_back_dataset( DataSet * ds ) {
-    subsets.push_back(ds);
+  label2subset[ds->getLabel()] = subsets.size();  
+  subsets.push_back(ds);
 }
 
 /**
@@ -56,10 +57,12 @@ void SetHandler::push_back_dataset( DataSet * ds ) {
  * @param test Scores object to be printed
  * @param myout stream to be printed to
  */
-void SetHandler::print(Scores& test, ostream& myout) {
+void SetHandler::print(Scores& test, int label, ostream& myout) {
   vector<ResultHolder> outList(0);
-  for (unsigned int setPos = 0; setPos < subsets.size(); setPos++) {
-    subsets[setPos]->print(test, outList);
+  for (auto & subset : subsets) {
+    if (subset->getLabel() == label) {
+      subset->print(test, outList);
+    }
   }
   sort(outList.begin(), outList.end(), greater<ResultHolder> ());
   myout
@@ -68,18 +71,6 @@ void SetHandler::print(Scores& test, ostream& myout) {
   for (const auto &psmResult : outList) {
     myout << psmResult << endl;
   }
-}
-
-PSMDescription* SetHandler::getNext(int& setPos, int& ixPos) {
-  PSMDescription* features = subsets[setPos]->getNext(ixPos);
-  if (features) {
-    return features;
-  }
-  if (++setPos >= ((signed int)subsets.size())) {
-    return NULL;
-  }
-  ixPos = -1;
-  return subsets[setPos]->getNext(ixPos);
 }
 
 /*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
@@ -91,81 +82,78 @@ int const SetHandler::getLabel(int setPos) {
   return subsets[setPos]->getLabel();
 }
 
-void SetHandler::setSet() {
-  n_examples = 0;
-  int i = 0, j = -1;
-  while (getNext(i, j)) {
-    n_examples++;
-  }
-  if (VERB > 3) {
-    cerr << "Set up a SetHandler with " << subsets.size()
-        << " DataSet:s and " << n_examples << " examples" << endl;
-    if (VERB > 4) {
-      for (unsigned int i = 0; i < subsets.size(); i++) {
-        cerr << "First 10 lines of " << i + 1 << " set with "
-            << subsets[i]->getLabel() << " label" << endl;
-        subsets[i]->print_10features();
-      }
-    }
-  }
-}
-
-void SetHandler::readTab(const string& dataFN, const int setLabel) {
+void SetHandler::readTab(const string& dataFN) {
   if (VERB > 1) {
     cerr << "Reading Tab delimited input from datafile " << dataFN
         << endl;
   }
-  ifstream labelStream(dataFN.c_str(), ios::out);
-  if (!labelStream) {
-    ostringstream temp;
-    temp << "Error : Can not open file " << dataFN << endl;
-    throw MyException(temp.str());
-  }
-  vector<unsigned int> ixs;
-  ixs.clear();
-  string tmp, line;
-  int label;
-  unsigned int ix = 0;
-  getline(labelStream, tmp); // Id row
-  while (true) {
-    labelStream >> tmp >> label;
-    getline(labelStream, tmp); // read rest of line
-    if (!labelStream) {
-      break;
-    }
-    if (label == setLabel) {
-      ixs.push_back(ix);
-    }
-    ++ix;
-  }
-  labelStream.close();
+  
+  // fill in the feature names from the first line
   ifstream dataStream(dataFN.c_str(), ios::out);
   if (!dataStream) {
     ostringstream temp;
     temp << "Error : Can not open file " << dataFN << endl;
     throw MyException(temp.str());
   }
-  dataStream >> tmp >> tmp;
-  dataStream.get(); // removed enumrator, label and tab
+  string tmp, line;
   getline(dataStream, line);
   istringstream iss(line);
   int skip = (DataSet::getCalcDoc() ? 2 : 0);
   while (iss.good()) {
     iss >> tmp;
-    if (skip-- <= 0) {
+    if (skip-- <= -2) { // removes enumerator, label and if present DOC features
       DataSet::getFeatureNames().insertFeature(tmp);
     }
   }
-  DataSet* theSet = new DataSet();
-  theSet->setLabel(setLabel > 0 ? 1 : -1);
-  theSet->readTabData(dataStream, ixs);
+  
+  // count number of features from first PSM
+  getline(dataStream, line);
+  unsigned int numFeatures = 0;
+  iss.clear();
+  iss.str(line);
+  double a;
+  iss >> tmp >> tmp; // remove id and label
+  while (iss.good()) {
+    iss >> tmp;
+    ++numFeatures;
+  }
+  
+  DataSet * targetSet = new DataSet();
+  assert(targetSet);
+  targetSet->setLabel(1);
+  DataSet * decoySet = new DataSet();
+  assert(decoySet);
+  decoySet->setLabel(-1);
+  
+  if (!targetSet->initFeatures(numFeatures) || !decoySet->initFeatures(numFeatures)) {
+    dataStream.close();
+    throw MyException("Error : Reading tab file, too few features present.");
+  }
+
+  // read in the data
+  string seq;
+  int label;
+  bool readError = false;
+  dataStream.seekg(0, std::ios::beg);
+  getline(dataStream, line); // skip over column names
+  while (getline(dataStream, line)) {
+    iss.clear();
+    iss.str(line);
+    iss >> tmp >> label;
+    if (label == 1) {
+      targetSet->readPsm(dataStream, line);
+    } else if (label == -1) {
+      decoySet->readPsm(dataStream, line);
+    }
+  }
   dataStream.close();
-  subsets.push_back(theSet);
-  setSet();
+
+  
+  push_back_dataset(targetSet);
+  push_back_dataset(decoySet);
 }
 
-void SetHandler::writeTab(const string& dataFN, const SetHandler& norm,
-                          const SetHandler& shuff) {
+void SetHandler::writeTab(const string& dataFN) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\t";
   if (DataSet::getCalcDoc()) {
@@ -173,16 +161,8 @@ void SetHandler::writeTab(const string& dataFN, const SetHandler& norm,
   }
   dataStream << DataSet::getFeatureNames().getFeatureNames(true)
       << "\tPeptide\tProteins" << endl;
-  string str;
-  for (int setPos = 0; setPos < (signed int)norm.subsets.size(); setPos++) {
-    norm.subsets[setPos]->writeTabData(dataStream,
-                                       norm.subsets[setPos]->getLabel()
-                                           == -1 ? "-1" : "1");
-  }
-  for (int setPos = 0; setPos < (signed int)shuff.subsets.size(); setPos++) {
-    shuff.subsets[setPos]->writeTabData(dataStream,
-                                        shuff.subsets[setPos]->getLabel()
-                                            == -1 ? "-1" : "1");
+  for (auto & subset : subsets) {
+    subset->writeTabData(dataStream, subset->getLabel() == -1 ? "-1" : "1");
   }
   dataStream.close();
 }

@@ -18,6 +18,7 @@
 #include "Caller.h"
 #include "unistd.h"
 #include <iomanip>
+#include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
@@ -577,8 +578,7 @@ void Caller::filelessSetup(const unsigned int numFeatures,
     char** featureNames, double pi0) {
   pCheck = new SanityCheck();
   assert(pCheck);
-  normal.filelessSetup(numFeatures, numSpectra, 1);
-  shuffled.filelessSetup(numFeatures, numSpectra, -1);
+  setHandler.filelessSetup(numFeatures, numSpectra, std::set<int>{-1,1});
   for (unsigned int ix = 0; ix < numFeatures; ix++) {
     string fn = featureNames[ix];
     DataSet::getFeatureNames().insertFeature(fn);
@@ -591,10 +591,7 @@ void Caller::filelessSetup(const unsigned int numFeatures,
 int Caller::readFiles() {
 #ifdef XML_SUPPORT  
   if (xmlInputFN.size() != 0) 
-  {
-    unsigned int nrTargets;
-    unsigned int nrDecoys;
-    
+  {    
     xercesc::XMLPlatformUtils::Initialize();
     
     DataSet * targetSet = new DataSet();
@@ -718,10 +715,8 @@ int Caller::readFiles() {
       pCheck = SanityCheck::initialize(otherCall);
       assert(pCheck);
       pCheck->addDefaultWeights(init_values);
-      normal.push_back_dataset(targetSet);
-      shuffled.push_back_dataset(decoySet);
-      normal.setSet();
-      shuffled.setSet();
+      setHandler.push_back_dataset(targetSet);
+      setHandler.push_back_dataset(decoySet);
       xmlInStream.close();
     }
 
@@ -742,8 +737,7 @@ int Caller::readFiles() {
     pCheck = new SanityCheck();
     //NOTE here percolator read the whole file twice, one time to get the decoy PSMs and another time to get the 
     // 	   target PSMs. This could be done in one iteration.
-    normal.readTab(forwardTabInputFN, 1);
-    shuffled.readTab(forwardTabInputFN, -1);
+    setHandler.readTab(forwardTabInputFN);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
 #ifdef XML_SUPPORT
   } 
@@ -935,7 +929,7 @@ void Caller::train(vector<vector<double> >& w) {
  * Fills in the features previously read from file and normalizes them
  */
 void Caller::fillFeatureSets() {
-  fullset.fillFeatures(normal, shuffled, reportUniquePeptides);
+  fullset.fillFeatures(setHandler, reportUniquePeptides);
   if (VERB > 1) {
     cerr << "Train/test set contains " << fullset.posSize()
         << " positives and " << fullset.negSize()
@@ -955,15 +949,14 @@ void Caller::fillFeatureSets() {
   
   //Normalize features
   set<DataSet*> all;
-  all.insert(normal.getSubsets().begin(), normal.getSubsets().end());
-  all.insert(shuffled.getSubsets().begin(), shuffled.getSubsets().end());
+  all.insert(setHandler.getSubsets().begin(), setHandler.getSubsets().end());
   if (docFeatures) {
     for (set<DataSet*>::iterator myset = all.begin(); myset != all.end(); ++myset) {
       (*myset)->setRetentionTime(scan2rt);
     }
   }
   if (tabFN.length() > 0) {
-    SetHandler::writeTab(tabFN, normal, shuffled);
+    setHandler.writeTab(tabFN);
   }
   vector<double*> featuresV, rtFeaturesV;
   double* features;
@@ -1243,28 +1236,28 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     weightStream.close();
   }
   if (resultFN.empty() && writeOutput) {
-    normal.print(*fullset);
+    setHandler.print(*fullset, NORMAL);
   } else if(!resultFN.empty()) {
     if(writeOutput){
       ofstream targetStream((resultFN+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
-      normal.print(*fullset, targetStream);
+      setHandler.print(*fullset, NORMAL, targetStream);
       targetStream.close();
     }
     else
     {
       ofstream targetStream((resultFN+".psms").data(), ios::out);
-      normal.print(*fullset, targetStream);
+      setHandler.print(*fullset, NORMAL, targetStream);
       targetStream.close();
     }
   }
   if (!decoyOut.empty() && writeOutput) {
     ofstream decoyStream((decoyOut+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
-    shuffled.print(*fullset, decoyStream);
+    setHandler.print(*fullset, SHUFFLED, decoyStream);
     decoyStream.close();
   }
   else if(!decoyOut.empty()) {
     ofstream decoyStream((decoyOut+".psms").data(), ios::out);
-    shuffled.print(*fullset, decoyStream);
+    setHandler.print(*fullset, SHUFFLED, decoyStream);
     decoyStream.close();
   }
   // set pi_0 value (to be outputted)

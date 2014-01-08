@@ -57,7 +57,7 @@ void pcInitiate(NSet sets, unsigned int numFeat, unsigned int numSpectra,
       = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED));
   if (nset > 2) {
     cerr
-      << "This version of percolator only suport 1 decoy set. Pecolator was called with nset="
+      << "This version of percolator only supports 1 decoy set. Percolator was called with nset="
       << nset << endl;
   }
 }

@@ -62,7 +62,7 @@
 class Caller {
   public:
     enum SetHandlerType {
-      NORMAL = 0, SHUFFLED, SHUFFLED_TEST, SHUFFLED_THRESHOLD
+      NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
     };
     
   public:
@@ -100,9 +100,9 @@ class Caller {
     SetHandler* getSetHandler(SetHandlerType sh) {
       switch (sh) {
         case NORMAL:
-          return &normal;
+          return NULL;
         case SHUFFLED:
-          return &shuffled;
+          return NULL;
         case SHUFFLED_TEST:
           return NULL;
         case SHUFFLED_THRESHOLD:
@@ -172,7 +172,8 @@ class Caller {
     const static unsigned int xval_fold;
     vector<Scores> xv_train, xv_test;
     vector<double> xv_cposs, xv_cfracs;
-    SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
+    //SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
+    SetHandler setHandler;
     map<int, double> scan2rt;
     double pi_0_psms;
     double pi_0_peptides;

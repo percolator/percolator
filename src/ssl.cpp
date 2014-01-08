@@ -15,8 +15,6 @@
 #include <ctype.h>
 using namespace std;
 #include "Globals.h"
-#include "DataSet.h"
-#include "SetHandler.h"
 #include "ssl.h"
 
 #define VERBOSE 1

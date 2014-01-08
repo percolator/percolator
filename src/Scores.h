@@ -158,7 +158,7 @@ class Scores {
     }
     int calcScores(vector<double>& w, double fdr = 0.01);
     int calcQ(double fdr = 0.01);
-    void fillFeatures(SetHandler& norm, SetHandler& shuff, bool);
+    void fillFeatures(SetHandler& setHandler, bool);
     void createXvalSets(vector<Scores>& train, vector<Scores>& test,
         const unsigned int xval_fold);
     void createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>& test,

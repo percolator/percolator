@@ -54,45 +54,47 @@ class SetHandler {
     SetHandler();
     virtual ~SetHandler();
     void filelessSetup(const unsigned int numFeatures,
-                       const unsigned int numSpectra, const int label);
+                       const unsigned int numSpectra, const set<int> label);
 
     void push_back_dataset( DataSet * ds );
 
     /*void modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
                const string& greet, bool dtaSelect);*/
-    
-    void setSet();
+
     void fillTestSet(SetHandler& trainSet, const string& shuffled2FN = "");
     void createXvalSets(vector<SetHandler>& train,
                         vector<SetHandler>& test,
                         const unsigned int xval_fold);
-    
-    PSMDescription* getNext(int&, int&);
-    
+       
     //const double* getFeatures(const int setPos, const int ixPos) const;
     
-    void readTab(const string& dataFN, const int label);
-    static void writeTab(const string& dataFN, const SetHandler& norm,
-                         const SetHandler& shuff);
+    void readTab(const string& dataFN);
+    void writeTab(const string& dataFN);
     int const getLabel(int setPos);
-    void print(Scores& test, ostream& myout = cout);
+    void print(Scores& test, int label, ostream& myout = cout);
     inline int const getSize() {
       return n_examples;
     }
-    inline DataSet* getSubSet(int ix) {
+    inline DataSet* getSubset(int ix) {
       return (subsets[ix]);
     }
     vector<DataSet*> & getSubsets() {
       return subsets;
     }
+    map<int,unsigned int> label2subset;
     class Iterator {
       public:
-        Iterator(SetHandler* s) :
-          sh(s), set(0), ix(-1) {
-          ;
+        Iterator(SetHandler* s) : sh(s), set(0), ix(-1) {}
+        Iterator(SetHandler* s, int label) : sh(s), ix(-1) {
+          if (s->label2subset.count(label)) {
+            set = s->label2subset[label];
+          } else {
+            set = 0;
+          }
         }
+            
         PSMDescription* getNext() {
-          return sh->getNext(set, ix);
+          return sh->getSubset(set)->getNext(ix);
         }
       private:
         SetHandler* sh;

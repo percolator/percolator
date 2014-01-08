@@ -283,10 +283,10 @@ ScoreHolder* Scores::getScoreHolder(const double* d) {
   return NULL;
 }
 
-void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUniquePeptides) {
+void Scores::fillFeatures(SetHandler& setHandler, bool reportUniquePeptides) {
   scores.clear();
   PSMDescription* pPSM;
-  SetHandler::Iterator shuffIter(&shuff), normIter(&norm);
+  SetHandler::Iterator shuffIter(&setHandler, -1), normIter(&setHandler, 1);
   if(reportUniquePeptides){ // if unique peptides
     while ((pPSM = normIter.getNext()) != NULL)
       scores.push_back(ScoreHolderPeptide(.0, 1, pPSM));
@@ -298,9 +298,9 @@ void Scores::fillFeatures(SetHandler& norm, SetHandler& shuff, bool reportUnique
     while ((pPSM = shuffIter.getNext()) != NULL)
       scores.push_back(ScoreHolder(.0, -1, pPSM));
   }
-  totalNumberOfTargets = norm.getSize();
-  totalNumberOfDecoys = shuff.getSize();
-  targetDecoySizeRatio = norm.getSize() / (double)shuff.getSize();
+  totalNumberOfTargets = setHandler.getSubset(0)->getSize();
+  totalNumberOfDecoys = setHandler.getSubset(1)->getSize();
+  targetDecoySizeRatio = totalNumberOfTargets / totalNumberOfDecoys;
 }
 
 // Park–Miller random number generator

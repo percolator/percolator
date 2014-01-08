@@ -15,12 +15,8 @@
 
  *******************************************************************************/
 #include <cstdlib>
-#include "DataSet.h"
-#include "Scores.h"
-#include "SetHandler.h"
 #include "Caller.h"
 #include "Globals.h"
-#include "Caller.h"
 using namespace std;
 
 
