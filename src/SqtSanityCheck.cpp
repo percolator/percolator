@@ -31,7 +31,7 @@ const string SqtSanityCheck::fingerPrint = "sqt";
 
 void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   // Set init direction to be the most discriminative direction
-  int numFeatures = FeatureNames::getNumFeatures();
+  unsigned int numFeatures = FeatureNames::getNumFeatures();
   for (size_t set = 0; set < w.size(); ++set) {
     for (unsigned int ix = 0; ix < numFeatures + 1; ++ix) {
       w[set][ix] = 0;

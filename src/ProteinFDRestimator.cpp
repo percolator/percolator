@@ -329,7 +329,6 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
 {
   std::vector<double> logprob;
   double finalprob = 0;
-  double fdr = 0;
   for(unsigned fp = 0; fp <= cf; fp++)
   {
     unsigned tp = targets - fp;

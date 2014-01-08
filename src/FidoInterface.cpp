@@ -583,7 +583,7 @@ void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector
   if(updateRocN) rocN = 50;
   
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
-  for (int k=0; (k<names.size() && (estFDR <= threshold)); k++)
+  for (unsigned int k=0; (k<names.size() && (estFDR <= threshold)); k++)
     {
       double prob = probabilities[k];
 

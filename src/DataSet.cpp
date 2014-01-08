@@ -24,8 +24,6 @@ const string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
 string DataSet::ptmAlphabet = "#*@";
 FeatureNames DataSet::featureNames;
 
-static char buf[4096];
-
 DataSet::DataSet() {
   numSpectra = 0;
   sqtFN = "";
@@ -89,7 +87,7 @@ bool DataSet::writeTabData(ofstream& out, const string& lab) {
       out << '\t' << frow[ix];
     }
     out << '\t' << pPSM->peptide;
-    for (const auto proteinId : pPSM->proteinIds) {
+    for (const auto &proteinId : pPSM->proteinIds) {
       out << '\t' << proteinId;
     }
     out << endl;
@@ -128,7 +126,7 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
       continue;
     }
     double score = pSH->score;
-    for (const auto proteinId : (*psm)->proteinIds) {
+    for (const auto &proteinId : (*psm)->proteinIds) {
       out << "\t" << proteinId;
     }
     ResultHolder rh(score, (*psm)->q, (*psm)->pep, (*psm)->id, (*psm)->peptide, out.str());
@@ -137,44 +135,47 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList)
   }
 }
 
-// double DataSet::isPngasef(const string& peptide) {
-//   bool isDecoy;
-//   switch (label) {
-//     case 1: { isDecoy = false; break; };
-//     case -1: { isDecoy = true; break; };
-//     default:  { throw MyException("ERROR : class DataSet has not been initiated\
-// 		to neither target nor decoy label\n");}
-//   }
-//   return isPngasef( peptide, isDecoy);
-// }
+/*
+double DataSet::isPngasef(const string& peptide) {
+  bool isDecoy;
+  switch (label) {
+    case 1: { isDecoy = false; break; };
+    case -1: { isDecoy = true; break; };
+    default:  { throw MyException("ERROR : class DataSet has not been initiated\
+		to neither target nor decoy label\n");}
+  }
+  return isPngasef( peptide, isDecoy);
+}
 //
-// double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
-//   size_t next_pos = 0, pos;
-//   while ((pos = peptide.find("N*", next_pos)) != string::npos) {
-//     next_pos = pos + 1;
-//     if (! isDecoy) {
-//       pos += 3;
-//       if (peptide[pos] == '#') {
-//         pos += 1;
-//       }
-//     } else {
-//       pos -= 2;
-//       if (peptide[pos] == '#') {
-//         pos -= 1;
-//       }
-//     }
-//     if (peptide[pos] == 'T' || peptide[pos] == 'S') {
-//       return 1.0;
-//     }
-//   }
-//   return 0.0;
-// }
+double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
+  size_t next_pos = 0, pos;
+  while ((pos = peptide.find("N*", next_pos)) != string::npos) {
+    next_pos = pos + 1;
+    if (! isDecoy) {
+      pos += 3;
+      if (peptide[pos] == '#') {
+        pos += 1;
+      }
+    } else {
+      pos -= 2;
+      if (peptide[pos] == '#') {
+        pos -= 1;
+      }
+    }
+    if (peptide[pos] == 'T' || peptide[pos] == 'S') {
+      return 1.0;
+    }
+  }
+  return 0.0;
+}
+*/
 
 void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
+  // count number of features
   string tmp, line;
   is.clear();
   is.seekg(0, ios::beg);
-  getline(is, line);
+  getline(is, line); // skip over line with column names
   getline(is, line);
   unsigned int m = 0, n = ixs.size();
   istringstream buff(line);
@@ -206,6 +207,8 @@ void DataSet::readTabData(ifstream& is, const vector<unsigned int>& ixs) {
     getFeatureNames().setDocFeatNum(m);
   }
   string seq;
+  
+  // read in the data
   is.clear();
   is.seekg(0, ios::beg);
   getline(is, line); // id line

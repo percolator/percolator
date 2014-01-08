@@ -107,7 +107,7 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
   }
 
   if (po->calcAAFrequencies) {
-    for (const auto aa : aaAlphabet) {
+    for (const auto &aa : aaAlphabet) {
       std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }

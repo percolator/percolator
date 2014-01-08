@@ -58,9 +58,9 @@ void Normalizer::normalize(const double* in, double* out, size_t offset,
 
 void Normalizer::unNormalizeSet(vector<double*> & rtFeaturesV) {
   double* features;
-  for (int i = 0; i < rtFeaturesV.size(); ++i) {
+  for (unsigned int i = 0; i < rtFeaturesV.size(); ++i) {
     features = rtFeaturesV[i];
-    for (int j = 0; j < numRetentionFeatures; ++j) {
+    for (unsigned int j = 0; j < numRetentionFeatures; ++j) {
       features[j] = (features[j] * div[j]) + sub[j];
     }
   }

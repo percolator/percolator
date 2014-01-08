@@ -117,6 +117,7 @@ private:
   double estimatePi0HG(unsigned N,unsigned TP,unsigned FP);
   
   /** variables **/
+  std::string decoy_prefix;
   unsigned nbins;
   double targetDecoyRatio;
   //NOTE this is a version of the code to work with threads
@@ -124,7 +125,6 @@ private:
   //std::set<std::string> *target;
   //std::set<std::string> *decoy;
   bool binequalDeepth;
-  std::string decoy_prefix;
   std::map<unsigned,std::set<std::string> > binnedProteins;
   std::multimap<double,std::string> groupedProteins;
   std::vector<double> lenghts; 

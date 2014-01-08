@@ -75,7 +75,7 @@ void SetHandler::print(Scores& test, ostream& myout) {
   myout
       << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds"
       << endl;
-  for (const auto psmResult : outList) {
+  for (const auto &psmResult : outList) {
     myout << psmResult << endl;
   }
 }
@@ -152,7 +152,7 @@ void SetHandler::setSet() {
 
 void SetHandler::readTab(const string& dataFN, const int setLabel) {
   if (VERB > 1) {
-    cerr << "Reading Tab delimetered input from datafile " << dataFN
+    cerr << "Reading Tab delimited input from datafile " << dataFN
         << endl;
   }
   ifstream labelStream(dataFN.c_str(), ios::out);

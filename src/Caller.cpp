@@ -64,10 +64,9 @@ static const XMLCh fragSpectrumScanStr[] = { chLatin_f, chLatin_r,
 /** some constants to be used to compare xml strings **/
       
 Caller::Caller() :
-        pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
+        xmlOutputFN(""), pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
         forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
-        xmlInputFN(""), xmlOutputFN(""), weightFN(""),
-        tabInput(false), readStdIn(false),
+        xmlInputFN(""), weightFN(""), tabInput(false), readStdIn(false),
         docFeatures(false), quickValidation(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), calculateProteinLevelProb(false),
         schemaValidation(true), hasProteins(false), target_decoy_competition(false),
@@ -756,7 +755,7 @@ int Caller::readFiles() {
  * Train one of the crossvalidation bins 
  * @param set identification number of the bin that is processed
  * @param w list of normal vectors (in the linear algebra sense) of the hyperplane from SVM, one for each bin
- * @param updateDOC ???
+ * @param updateDOC boolean deciding to calculate retention features @see DescriptionOfCorrect
  * @param cpos_vec vector with soft margin parameter for positives
  * @param cfrac_vec vector with soft margin parameter for fraction negatives / positives
  * @param best_cpos best soft margin parameter for positives
@@ -840,7 +839,7 @@ options * pOptions) {
 /** 
  * Executes a cross validation step
  * @param w list of the bins' normal vectors (in linear algebra sense) of the hyperplane from SVM
- * @param updateDOC ???
+ * @param updateDOC boolean deciding to calculate retention features @see DescriptionOfCorrect
  * @return Estimation of number of true positives
  */
 int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
@@ -992,7 +991,7 @@ void Caller::fillFeatureSets() {
 /** 
  * Sets up the SVM classifier: 
  * - divide dataset into training and test sets for each fold
- * - set parameters (fdr, soft margin )
+ * - set parameters (fdr, soft margin)
  * @param w list of normal vectors
  * @return number of positives for initial setup
  */
@@ -1060,7 +1059,8 @@ void Caller::writeXML_PSMs() {
   os.close();
 }
 
-/** Subroutine of @see Caller::writeXML() for peptide output
+/** 
+ * Subroutine of @see Caller::writeXML() for peptide output
  */
 void Caller::writeXML_Peptides() {
   ofstream os;
@@ -1167,14 +1167,13 @@ void Caller::writeXML(){
  * @param procStartClock clock associated with procStart
  * @param w list of normal vectors
  * @param diff runtime of the calculations
- * @param TDC ???
+ * @param TDC boolean for target decoy competition
  */
 void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
     clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
   // peptide run and the option was switched off
-  
   bool writeOutput = (isUniquePeptideRun == reportUniquePeptides);
   
   if (reportUniquePeptides && VERB > 0 && writeOutput) {
@@ -1182,20 +1181,15 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
         "for each unique peptide." << endl;
   }
   
-  if(isUniquePeptideRun)
-  {
+  if (isUniquePeptideRun) {
     fullset->weedOutRedundant();
-  }
-  else
-  {
+  } else {
     fullset->merge(xv_test, selectionfdr);
-    if(TDC)
-    {
-       fullset->weedOutRedundantTDC();
-	if(VERB > 0)
-	{
-	  std::cerr << "Target Decoy Competition yielded " << fullset->posSize() << " target PSMs and " 
-	  << fullset->negSize() << " decoy PSMs" << std::endl;
+    if (TDC) {
+      fullset->weedOutRedundantTDC();
+	    if(VERB > 0) {
+	      std::cerr << "Target Decoy Competition yielded " << fullset->posSize() 
+	        << " target PSMs and " << fullset->negSize() << " decoy PSMs" << std::endl;
 	}
     }
   }

@@ -676,9 +676,9 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
    */
    
    vector<ScoreHolder> uniquePSMs = vector<ScoreHolder>();
-   unsigned previousSpectra;
-   unsigned previousCharge;
-   double previousExpMass;
+   unsigned previousSpectra = 0;
+   unsigned previousCharge = 0;
+   double previousExpMass = 0.0;
    //int previousLabel;
    // run a pointer down the scores list
    vector<ScoreHolder>::iterator current = scores.begin();
@@ -821,7 +821,7 @@ void Scores::calcPep() {
 
 unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
-  for (const auto score : scores) {
+  for (const auto &score : scores) {
     if (score.isTarget() && score.pPSM->q < level) {
       hits++;
     }
