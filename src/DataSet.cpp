@@ -187,15 +187,13 @@ void DataSet::readPsm(ifstream & dataStream, const std::string line) {
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
   }
-  std::cerr << "TMP1 = " << m << std::endl;
   for (register unsigned int j = 0; j < m; j++) {
     buff >> featureRow[j];
   }
   std::string peptide_seq = "";
   buff >> peptide_seq;
-  cerr << peptide_seq << endl;
+  //cerr << peptide_seq << endl;
   
-  std::cerr << "TMP2 = " << peptide_seq << std::endl;
   //NOTE to check if the peptide sequence contains flanks or not
   if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.')
   {

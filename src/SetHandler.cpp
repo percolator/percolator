@@ -114,9 +114,10 @@ void SetHandler::readTab(const string& dataFN) {
   double a;
   iss >> tmp >> tmp; // remove id and label
   while (iss.good()) {
-    iss >> tmp;
+    iss >> a;
     ++numFeatures;
   }
+  --numFeatures; // last one failed
   
   DataSet * targetSet = new DataSet();
   assert(targetSet);
