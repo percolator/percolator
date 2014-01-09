@@ -49,6 +49,8 @@ class SetHandler {
     vector<DataSet*> subsets;
     int n_examples;
     
+    unsigned int getSubsetIndexFromLabel(int label);
+    
   public:
     
     SetHandler();
@@ -70,40 +72,34 @@ class SetHandler {
     
     void readTab(const string& dataFN);
     void writeTab(const string& dataFN);
-    int const getLabel(int setPos);
     void print(Scores& test, int label, ostream& myout = cout);
-    inline int const getSize() {
-      return n_examples;
+    void fillFeatures(vector<ScoreHolder> &scores, int label);
+    void fillFeaturesPeptide(vector<ScoreHolder> &scores, int label);
+
+    int const getLabel(int setPos);
+    inline int const getSize() { return n_examples; }
+    inline int getSizeFromLabel(int label) {
+      return (subsets[getSubsetIndexFromLabel(label)]->getSize());
     }
-    inline DataSet* getSubset(int ix) {
-      return (subsets[ix]);
+    
+    vector<DataSet*> & getSubsets() { return subsets; }
+    inline DataSet* getSubset(unsigned int ix) { return (subsets[ix]); }
+    inline DataSet* getSubsetFromLabel(int label) {
+      return (subsets[getSubsetIndexFromLabel(label)]);
     }
-    vector<DataSet*> & getSubsets() {
-      return subsets;
-    }
-    map<int,unsigned int> label2subset;
+    
     class Iterator {
       public:
-        Iterator(SetHandler* s) : sh(s), set(0), ix(-1) {}
-        Iterator(SetHandler* s, int label) : sh(s), ix(-1) {
-          if (s->label2subset.count(label)) {
-            set = s->label2subset[label];
-          } else {
-            set = 0;
-          }
-        }
+        Iterator(SetHandler* s, int l) : sh(s), label(l), ix(-1) {}
             
         PSMDescription* getNext() {
-          return sh->getSubset(set)->getNext(ix);
+          return sh->getSubsetFromLabel(label)->getNext(ix);
         }
       private:
         SetHandler* sh;
-        int set;
+        int label;
         int ix;
     };
-    Iterator getIterator() {
-      return Iterator(this);
-    }
 };
 
 #endif /*SETHANDLER_H_*/

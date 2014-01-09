@@ -43,12 +43,18 @@ void SetHandler::filelessSetup(const unsigned int numFeatures,
   }
 }
 
+unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
+  for (unsigned int ix = 0; ix < subsets.size(); ++ix) {
+    if (subsets[ix]->getLabel() == label) return ix;
+  }
+  std::cerr << "Error: No DataSet found with label " << label << std::endl;
+}
+
 /**
  * Insert DataSet object into this SetHandler
  * @param ds pointer to DataSet to be inserted
  */
 void SetHandler::push_back_dataset( DataSet * ds ) {
-  label2subset[ds->getLabel()] = subsets.size();  
   subsets.push_back(ds);
 }
 
@@ -71,6 +77,14 @@ void SetHandler::print(Scores& test, int label, ostream& myout) {
   for (const auto &psmResult : outList) {
     myout << psmResult << endl;
   }
+}
+
+void SetHandler::fillFeatures(vector<ScoreHolder> &scores, int label) {
+  subsets[getSubsetIndexFromLabel(label)]->fillFeatures(scores);
+}
+
+void SetHandler::fillFeaturesPeptide(vector<ScoreHolder> &scores, int label) {
+  subsets[getSubsetIndexFromLabel(label)]->fillFeaturesPeptide(scores);
 }
 
 /*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
@@ -105,11 +119,11 @@ void SetHandler::readTab(const string& dataFN) {
       DataSet::getFeatureNames().insertFeature(tmp);
     }
   }
+  iss.clear(); // clear the error bit
   
   // count number of features from first PSM
   getline(dataStream, line);
   unsigned int numFeatures = 0;
-  iss.clear();
   iss.str(line);
   double a;
   iss >> tmp >> tmp; // remove id and label
@@ -118,6 +132,7 @@ void SetHandler::readTab(const string& dataFN) {
     ++numFeatures;
   }
   --numFeatures; // last one failed
+  iss.clear(); // clear the error bit
   
   DataSet * targetSet = new DataSet();
   assert(targetSet);
@@ -132,14 +147,12 @@ void SetHandler::readTab(const string& dataFN) {
   }
 
   // read in the data
-  string seq;
   int label;
-  bool readError = false;
   dataStream.seekg(0, std::ios::beg);
   getline(dataStream, line); // skip over column names
   while (getline(dataStream, line)) {
-    iss.clear();
     iss.str(line);
+    iss.clear();
     iss >> tmp >> label;
     if (label == 1) {
       targetSet->readPsm(dataStream, line);
@@ -148,7 +161,6 @@ void SetHandler::readTab(const string& dataFN) {
     }
   }
   dataStream.close();
-
   
   push_back_dataset(targetSet);
   push_back_dataset(decoySet);
@@ -163,7 +175,7 @@ void SetHandler::writeTab(const string& dataFN) {
   dataStream << DataSet::getFeatureNames().getFeatureNames(true)
       << "\tPeptide\tProteins" << endl;
   for (auto & subset : subsets) {
-    subset->writeTabData(dataStream, subset->getLabel() == -1 ? "-1" : "1");
+    subset->writeTabData(dataStream);
   }
   dataStream.close();
 }

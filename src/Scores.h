@@ -34,35 +34,21 @@ using namespace std;
 class SetHandler;
 
 class ScoreHolder {
-  
   public:
     double score; // ,q,pep;
     int label;
     PSMDescription* pPSM;
     std::vector<std::string> psms_list;
     
-    ScoreHolder() :
-      score(0.0), label(0), pPSM(NULL), psms_list () {
-      ;
-    }
-    
+    ScoreHolder() : score(0.0), label(0), pPSM(NULL), psms_list () {}
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), label(l), pPSM(psm), psms_list () {
-    }
-    virtual ~ScoreHolder() {
-    }
+      score(s), label(l), pPSM(psm), psms_list () {}
+    virtual ~ScoreHolder() {}
     
-    pair<double, bool> toPair() {
-      return pair<double, bool> (score, label > 0);
-    }
+    pair<double, bool> toPair() { return pair<double, bool> (score, label > 0); }
     
-    bool isTarget() {
-      return label != -1;
-    }
-    
-    bool isDecoy() {
-      return label == -1;
-    }
+    bool isTarget() { return label != -1; }
+    bool isDecoy() { return label == -1; }
 };
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
@@ -120,26 +106,15 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
  */
 class ScoreHolderPeptide: public ScoreHolder {
   public:
-    ScoreHolderPeptide() :
-      ScoreHolder(){
-      ;
-    }
-    ScoreHolderPeptide(ScoreHolder& sh) :
-      ScoreHolder(sh){
-      ;
-    }
+    ScoreHolderPeptide() : ScoreHolder() {}
+    ScoreHolderPeptide(ScoreHolder& sh) : ScoreHolder(sh) {}
     ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
-      ScoreHolder(s, l, psm) {
-    	;
-    }
-    virtual ~ScoreHolderPeptide()  {
-      ;
-    }
+      ScoreHolder(s, l, psm) {}
+    virtual ~ScoreHolderPeptide() {}
 };
 
 // overloading output operator for class ScoreHolderPeptide
 ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
-
 
 class AlgIn;
 
@@ -149,76 +124,59 @@ class Scores {
     Scores();
     ~Scores();
     void merge(vector<Scores>& sv, double fdr=0.01, bool computePi0 = true);
+    
+    vector<ScoreHolder>::iterator begin() { return scores.begin(); }
+    vector<ScoreHolder>::iterator end() { return scores.end(); }
+    
     double calcScore(const double* features) const;
-    vector<ScoreHolder>::iterator begin() {
-      return scores.begin();
-    }
-    vector<ScoreHolder>::iterator end() {
-      return scores.end();
-    }
     int calcScores(vector<double>& w, double fdr = 0.01);
     int calcQ(double fdr = 0.01);
+    void recalculateDescriptionOfGood(const double fdr);
+    void calcPep();
+    double estimatePi0();
+    
     void fillFeatures(SetHandler& setHandler, bool);
+    
+    int getInitDirection(const double fdr, vector<double>& direction,
+        bool findDirection);
     void createXvalSets(vector<Scores>& train, vector<Scores>& test,
         const unsigned int xval_fold);
     void createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>& test,
         const unsigned int xval_fold);
-    void recalculateDescriptionOfGood(const double fdr);
+    
     void generatePositiveTrainingSet(AlgIn& data, const double fdr,
         const double cpos);
     void generateNegativeTrainingSet(AlgIn& data, const double cneg);
+    
     void normalizeScores(double fdr=0.01);
+    
     void weedOutRedundant(bool computePi0 = true);
     void weedOutRedundantTDC(bool computePi0 = true);
-    void printRetentionTime(ostream& outs, double fdr);
-    int getInitDirection(const double fdr, vector<double>& direction,
-        bool findDirection);
-    ScoreHolder* getScoreHolder(const double* d);
-    DescriptionOfCorrect& getDOC() {
-      return doc;
-    }
-    void setDOCFeatures();
-    void calcPep();
-    double estimatePi0();
-    double getPi0() {
-      return pi0;
-    }
     
-    /** Return the scores whose q value is less or equal than the threshold given**/
+    void printRetentionTime(ostream& outs, double fdr);
     unsigned getQvaluesBelowLevel(double level);
     
-    void fill(string& fn);
-    inline unsigned int size() {
-      return (totalNumberOfTargets + totalNumberOfDecoys);
-    }
-    inline unsigned int posSize() {
-      return (totalNumberOfTargets);
-    }
-    inline unsigned int posNowSize() {
-      return (posNow);
-    }
-    inline unsigned int negSize() {
-      return (totalNumberOfDecoys);
-    }
-    inline static bool isOutXmlDecoys() {
-      return outxmlDecoys;
-    }
-    inline static void setOutXmlDecoys(bool decoys_out) {
-      outxmlDecoys = decoys_out;
-    }
-    inline static void setSeed(uint32_t s) {
-      seed = s;
-    }
-    inline static void setShowExpMass(bool expmass) {
-      showExpMass = expmass;
-    }
-    inline static bool getShowExpMass() {
-      return showExpMass;
-    }
+    void setDOCFeatures();
     
+    void fill(string& fn);
+    
+    ScoreHolder* getScoreHolder(const double* d);
+    DescriptionOfCorrect& getDOC() { return doc; }
+    inline double getPi0() { return pi0; }
+    inline double getTargetDecoySizeRatio() { return targetDecoySizeRatio; }
+    inline unsigned int size() { return (totalNumberOfTargets + totalNumberOfDecoys); }
+    inline unsigned int posSize() { return (totalNumberOfTargets); }
+    inline unsigned int posNowSize() { return (posNow); }
+    inline unsigned int negSize() { return (totalNumberOfDecoys); }
+    
+    inline static bool isOutXmlDecoys() { return outxmlDecoys; }
+    inline static void setOutXmlDecoys(bool decoys_out) { outxmlDecoys = decoys_out; }
+    inline static void setShowExpMass(bool expmass) { showExpMass = expmass; }
+    inline static bool getShowExpMass() { return showExpMass; }
+    
+    inline static void setSeed(uint32_t s) { seed = s; }
     uint32_t lcg_rand();
-    double pi0;
-    double targetDecoySizeRatio;
+    
     vector<ScoreHolder> scores;
     
   protected:
@@ -230,6 +188,8 @@ class Scores {
     static bool outxmlDecoys;
     static uint32_t seed;
     static bool showExpMass;
+    double pi0;
+    double targetDecoySizeRatio;
 };
 
 #endif /*SCORES_H_*/

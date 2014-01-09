@@ -735,8 +735,6 @@ int Caller::readFiles() {
   } else if (tabInput) {
 #endif //XML_SUPPORT
     pCheck = new SanityCheck();
-    //NOTE here percolator read the whole file twice, one time to get the decoy PSMs and another time to get the 
-    // 	   target PSMs. This could be done in one iteration.
     setHandler.readTab(forwardTabInputFN);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
 #ifdef XML_SUPPORT
@@ -764,6 +762,7 @@ options * pOptions) {
     cerr << "cross validation - fold " << set + 1 << " out of "
          << xval_fold << endl;
   }
+  
   vector<double> ww = w[set]; // normal vector initial guess and result holder
   vector<double> bestW = w[set]; // normal vector with highest true positive estimate
   xv_train[set].calcScores(ww, selectionfdr);
@@ -933,44 +932,32 @@ void Caller::fillFeatureSets() {
   if (VERB > 1) {
     cerr << "Train/test set contains " << fullset.posSize()
         << " positives and " << fullset.negSize()
-        << " negatives, size ratio=" << fullset.targetDecoySizeRatio
-        << " and pi0=" << fullset.pi0 << endl;
+        << " negatives, size ratio=" << fullset.getTargetDecoySizeRatio()
+        << " and pi0=" << fullset.getPi0() << endl;
   }
   
   //check for the minimum recommended number of positive and negative hits
-  if(fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5))
-  {
+  if(fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
     std::cerr << "Warning : the number of positive samples read is too small to perform a correct clasification.\n" << std::endl;
   }
-  if(fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5))
-  {
+  if(fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
     std::cerr << "Warning : the number of negative samples read is too small to perform a correct clasification.\n" << std::endl;
   }
   
   //Normalize features
-  set<DataSet*> all;
-  all.insert(setHandler.getSubsets().begin(), setHandler.getSubsets().end());
   if (docFeatures) {
-    for (set<DataSet*>::iterator myset = all.begin(); myset != all.end(); ++myset) {
-      (*myset)->setRetentionTime(scan2rt);
+    for (auto &subset : setHandler.getSubsets()) {
+      subset->setRetentionTime(scan2rt);
     }
   }
   if (tabFN.length() > 0) {
     setHandler.writeTab(tabFN);
   }
   vector<double*> featuresV, rtFeaturesV;
-  double* features;
   PSMDescription* pPSM;
-  set<DataSet*>::iterator it;
-  for (it = all.begin(); it != all.end(); ++it) {
-    int ixPos = -1;
-    while ((pPSM = (*it)->getNext(ixPos)) != NULL) {
-      features = pPSM->features;
-      featuresV.push_back(features);
-      if ((features = pPSM->retentionFeatures)) {
-        rtFeaturesV.push_back(features);
-      }
-    }
+  for (auto &subset : setHandler.getSubsets()) {
+    subset->fillFeatures(featuresV);
+    subset->fillRtFeatures(rtFeaturesV);
   }
   pNorm = Normalizer::getNormalizer();
 
@@ -1019,9 +1006,9 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
     if (selectedCpos > 0 && selectedCneg > 0) {
       xv_cfracs.push_back(selectedCneg / selectedCpos);
     } else {
-      xv_cfracs.push_back(1.0 * fullset.targetDecoySizeRatio);
-      xv_cfracs.push_back(3.0 * fullset.targetDecoySizeRatio);
-      xv_cfracs.push_back(10.0 * fullset.targetDecoySizeRatio);
+      xv_cfracs.push_back(1.0 * fullset.getTargetDecoySizeRatio());
+      xv_cfracs.push_back(3.0 * fullset.getTargetDecoySizeRatio());
+      xv_cfracs.push_back(10.0 * fullset.getTargetDecoySizeRatio());
       if (VERB > 0) {
         cerr << "selecting cneg by cross validation" << endl;
       }
@@ -1107,8 +1094,7 @@ void Caller::writeXML(){
   os << "    <pi_0_psms>" << pi_0_psms << "</pi_0_psms>" << endl;
   if(reportUniquePeptides)
     os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
-  if(calculateProteinLevelProb)
-  {  
+  if(calculateProteinLevelProb) {  
     if(usePi0)
       os << "    <pi_0_proteins>" << protEstimator->getPi0() << "</pi_0_proteins>" << endl;
     /*if(protEstimator->getMayuFdr())
@@ -1183,7 +1169,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
 	    if(VERB > 0) {
 	      std::cerr << "Target Decoy Competition yielded " << fullset->posSize() 
 	        << " target PSMs and " << fullset->negSize() << " decoy PSMs" << std::endl;
-	}
+	    }
     }
   }
   
@@ -1237,14 +1223,12 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   if (resultFN.empty() && writeOutput) {
     setHandler.print(*fullset, NORMAL);
-  } else if(!resultFN.empty()) {
-    if(writeOutput){
+  } else if (!resultFN.empty()) {
+    if (writeOutput) {
       ofstream targetStream((resultFN+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
       setHandler.print(*fullset, NORMAL, targetStream);
       targetStream.close();
-    }
-    else
-    {
+    } else {
       ofstream targetStream((resultFN+".psms").data(), ios::out);
       setHandler.print(*fullset, NORMAL, targetStream);
       targetStream.close();
@@ -1254,8 +1238,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     ofstream decoyStream((decoyOut+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
     setHandler.print(*fullset, SHUFFLED, decoyStream);
     decoyStream.close();
-  }
-  else if(!decoyOut.empty()) {
+  } else if(!decoyOut.empty()) {
     ofstream decoyStream((decoyOut+".psms").data(), ios::out);
     setHandler.print(*fullset, SHUFFLED, decoyStream);
     decoyStream.close();
@@ -1263,8 +1246,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   // set pi_0 value (to be outputted)
   if(isUniquePeptideRun) {
     pi_0_peptides = fullset->getPi0();
-  }
-  else {
+  } else {
     pi_0_psms = fullset->getPi0();
     numberQpsms = fullset->getQvaluesBelowLevel(0.01);
   }
@@ -1272,8 +1254,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
 
 /** Calculates the protein probabilites by calling Fido and directly writes the results to XML
  */
-void Caller::calculateProteinProbabilitiesFido()
-{
+void Caller::calculateProteinProbabilitiesFido() {
   time_t startTime;
   clock_t startClock;
   time(&startTime);
@@ -1284,8 +1265,7 @@ void Caller::calculateProteinProbabilitiesFido()
 				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
 				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
   
-  if (VERB > 0)
-  {
+  if (VERB > 0) {
     cerr << "\nCalculating protein level probabilities with Fido\n";
     cerr << protEstimator->printCopyright();
   }
@@ -1300,15 +1280,14 @@ void Caller::calculateProteinProbabilitiesFido()
   time(&procStart);
   double diff_time = difftime(procStart, startTime);
   
-  if (VERB > 1) 
-  {  
+  if (VERB > 1) {  
     cerr << "Estimating Protein Probabilities took : "
     << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
     << " cpu seconds or " << diff_time << " seconds wall time" << endl;
   }
   
   protEstimator->printOut(resultFN,decoyOut);
-  if (xmlOutputFN.size() > 0){
+  if (xmlOutputFN.size() > 0) {
       writeXML_Proteins();
   }
 }

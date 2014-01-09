@@ -20,11 +20,10 @@
 bool DataSet::isotopeMass = false;
 bool DataSet::calcDOC = false;
 const string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
-
 string DataSet::ptmAlphabet = "#*@";
 FeatureNames DataSet::featureNames;
 
-DataSet::DataSet() : numSpectra(0), sqtFN(""), pattern(""), doPattern(false), matchPattern(true) {}
+DataSet::DataSet() : numSpectra(0) {}
 
 DataSet::~DataSet() {
   for(auto psm : psms)
@@ -57,22 +56,20 @@ PSMDescription* DataSet::getNext(int& pos) {
   return &feature[pos];
 }*/
 
-bool DataSet::writeTabData(ofstream& out, const string& label) {
-  int pos = -1;
-  PSMDescription* pPSM = NULL;
+bool DataSet::writeTabData(ofstream& out) {
   unsigned int nf = FeatureNames::getNumFeatures();
   if (calcDOC) {
     nf -= DescriptionOfCorrect::numDOCFeatures();
   }
-  while ((pPSM = getNext(pos)) != NULL) {
-    double* frow = pPSM->features;
+  for (const auto &pPSM : psms) {
+    double* featureRow = pPSM->features;
     out << pPSM->id << '\t' << label;
     if (calcDOC) {
       out << '\t' << pPSM->getUnnormalizedRetentionTime() << '\t'
           << pPSM->massDiff;
     }
     for (unsigned int ix = 0; ix < nf; ix++) {
-      out << '\t' << frow[ix];
+      out << '\t' << featureRow[ix];
     }
     out << '\t' << pPSM->peptide;
     for (const auto &proteinId : pPSM->proteinIds) {
@@ -92,8 +89,7 @@ void DataSet::print_features() {
   }
 }
 
-void DataSet::print_10features()
-{
+void DataSet::print_10features() {
   cerr << DataSet::getFeatureNames().getFeatureNames() << endl;
   for (int i = 0; i < 10; i++) {
     for (unsigned int j = 0; j < FeatureNames::getNumFeatures(); j++) {
@@ -103,24 +99,42 @@ void DataSet::print_10features()
   }
 }
 
-void DataSet::print(Scores& test, vector<ResultHolder> &outList)
-{
+void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
   ostringstream out;
-  size_t ix = 0;
-  vector<PSMDescription*>::const_iterator psm = psms.begin();
-  for (; psm != psms.end(); psm++, ix++) {
-    ScoreHolder* pSH = test.getScoreHolder((*psm)->features);
+  for (const auto &psm : psms) {
+    ScoreHolder* pSH = test.getScoreHolder(psm->features);
     if (pSH == NULL) {
       continue;
     }
-    double score = pSH->score;
-    for (const auto &proteinId : (*psm)->proteinIds) {
+    for (const auto &proteinId : psm->proteinIds) {
       out << "\t" << proteinId;
     }
-    ResultHolder rh(score, (*psm)->q, (*psm)->pep, (*psm)->id, (*psm)->peptide, out.str());
-    outList.push_back(rh);
+    outList.push_back(ResultHolder(pSH->score, psm->q, psm->pep, psm->id, psm->peptide, out.str()));
     out.str("");
   }
+}
+
+// TODO: find a way to make these four functions generic
+void DataSet::fillFeatures(vector<ScoreHolder> &scores) {
+  for (const auto &psm : psms)
+    scores.push_back(ScoreHolder(.0, label, psm));
+}
+    
+void DataSet::fillFeaturesPeptide(vector<ScoreHolder> &scores) {
+  for (const auto &psm : psms)
+    scores.push_back(ScoreHolderPeptide(.0, label, psm));
+}
+
+void DataSet::fillFeatures(vector<double*> &features) {
+  for (const auto &psm : psms)
+    features.push_back(psm->features);
+}
+
+void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
+  double* features;
+  for (const auto &psm : psms)
+    if ((features = psm->retentionFeatures))
+        rtFeatures.push_back(features);
 }
 
 /*
@@ -173,30 +187,36 @@ bool DataSet::initFeatures(unsigned int numFeatures) {
   return true;
 }
 
+/**
+ * Read in psm details from a string out of tab delimited file
+ * @param dataStream filestream of tab delimited file, only passed to close on exception
+ * TODO: remove dataStream parameter and return int with type of error to handle upstream.
+ * @param line tab delimited string containing the psm details
+ */
 void DataSet::readPsm(ifstream & dataStream, const std::string line) {
   istringstream buff(line);
-  string seq, tmp;
-  unsigned int m = FeatureNames::getNumFeatures();
+  string tmp;
+  unsigned int numFeatures = FeatureNames::getNumFeatures();
   
   PSMDescription  *myPsm = new PSMDescription();
+  buff.clear();
   buff >> myPsm->id;
   buff >> tmp; // get rid of label
-  double *featureRow = new double[m];
+  double *featureRow = new double[numFeatures];
   myPsm->features = featureRow;
   if (calcDOC) {
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
   }
-  for (register unsigned int j = 0; j < m; j++) {
+  for (register unsigned int j = 0; j < numFeatures; j++) {
     buff >> featureRow[j];
   }
   std::string peptide_seq = "";
   buff >> peptide_seq;
   //cerr << peptide_seq << endl;
   
-  //NOTE to check if the peptide sequence contains flanks or not
-  if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.')
-  {
+  // check if the peptide sequence contains flanks
+  if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
     dataStream.close();
     ostringstream temp;
     temp << "Error : Reading tab file, the peptide sequence " << peptide_seq << " \
@@ -213,9 +233,9 @@ void DataSet::readPsm(ifstream & dataStream, const std::string line) {
   }
   if (calcDOC) {
     DescriptionOfCorrect::calcRegressionFeature(*myPsm);
-    featureRow[m] = abs(myPsm->pI - 6.5);
-    featureRow[m + 1] = abs(myPsm->massDiff);
-    featureRow[m + 2] = 0;
+    featureRow[numFeatures] = abs(myPsm->pI - 6.5);
+    featureRow[numFeatures + 1] = abs(myPsm->massDiff);
+    featureRow[numFeatures + 2] = 0;
   }
   psms.push_back(myPsm);
   ++numSpectra;
@@ -290,7 +310,7 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
     PSMDescription  *myPsm = new PSMDescription();
     string mypept = decoratePeptide(psm.peptide());
 
-    if(psm.occurence().size() <= 0) {
+    if (psm.occurence().size() <= 0) {
 	    ostringstream temp;
 	    temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
 	    The PSM does not contain protein occurences." << std::endl;
@@ -313,24 +333,21 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
       myPsm->retentionTime = psm.observedTime().get();
     }
 
-    const ::percolatorInNs::features::feature_sequence & featureS = psm.features().feature();
-    int featureNum = 0;
-
     myPsm->features = new double[FeatureNames::getNumFeatures()];
     if (regressionTable) {
-myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
+      myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
     }
-
-    for ( ::percolatorInNs::features::feature_const_iterator featureIter = featureS.begin(); featureIter != featureS.end(); featureIter++ ) {
-      myPsm->features[featureNum]=*featureIter;
+    
+    unsigned int featureNum = 0;
+    for (const auto & feature : psm.features().feature()) {
+      myPsm->features[featureNum] = feature;
       featureNum++;
     }
 
     // myPsm.peptide = psmIter->peptide().peptideSequence();
     myPsm->massDiff = MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
 
-    if (calcDOC)
-    {
+    if (calcDOC) {
       DescriptionOfCorrect::calcRegressionFeature(*myPsm);
       myPsm->features[featureNum++] = abs( myPsm->pI - 6.5);
       myPsm->features[featureNum++] = abs( myPsm->massDiff);

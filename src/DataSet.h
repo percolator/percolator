@@ -18,18 +18,17 @@
 #define DATASET_H_
 
 #include <string>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include <vector>
 #include <set>
 #include <map>
 #include <list>
 #include <utility>
-#include <vector>
-#include <string>
 #include "Scores.h"
 #include "ResultHolder.h"
 #include "MassHandler.h"
@@ -41,11 +40,6 @@
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
 using namespace std;
-
-using namespace std;
-class Scores;
-class Normalizer;
-class ResultHolder;
 
 #ifdef XML_SUPPORT
 namespace percolatorInNs { 
@@ -79,16 +73,22 @@ class DataSet {
     
     void setRetentionTime(map<int, double>& scan2rt) { PSMDescription::setRetentionTime(psms, scan2rt); }
     
-    bool writeTabData(ofstream& out, const string& label);
+    bool writeTabData(ofstream& out);
     //void readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
     
+    void fillFeatures(vector<ScoreHolder> &scores);
+    void fillFeaturesPeptide(vector<ScoreHolder> &scores);
+    void fillFeatures(vector<double*> &features);
+    void fillRtFeatures(vector<double*> &rtFeatures);
+    
     static double isEnz(const char n, const char c);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
 //     static double isPngasef(const string& peptide, bool isDecoy );
+
     void readPsm(ifstream & dataStream, const std::string line);
 #ifdef XML_SUPPORT
     void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
@@ -104,18 +104,14 @@ class DataSet {
 //     double isPngasef(const string& peptide);
     static bool calcDOC;
     static bool isotopeMass;
-    static string reversedFeaturePattern;
     const static string aaAlphabet;
     static string ptmAlphabet;
     const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
+    
     vector<PSMDescription*> psms;
     int label;
     int numSpectra;
-    string sqtFN;
-    string pattern;
     string fileId;
-    bool doPattern;
-    bool matchPattern;
     static FeatureNames featureNames;
     bool regressionTable;
 };

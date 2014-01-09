@@ -97,20 +97,7 @@ class Caller {
     void calculateProteinProbabilitiesFido();
     
     int run();
-    SetHandler* getSetHandler(SetHandlerType sh) {
-      switch (sh) {
-        case NORMAL:
-          return NULL;
-        case SHUFFLED:
-          return NULL;
-        case SHUFFLED_TEST:
-          return NULL;
-        case SHUFFLED_THRESHOLD:
-          return NULL;
-        default:
-          return NULL;
-      }
-    }
+    SetHandler* getSetHandler() { return &setHandler; }
     string xmlOutputFN;
     string xmlOutputFN_PSMs;
     string xmlOutputFN_Peptides;

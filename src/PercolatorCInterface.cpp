@@ -37,7 +37,6 @@ static SetHandler::Iterator* decoy3 = NULL;
 
 Caller* getCaller() {
   if (pCaller == NULL) {
-    
     cerr << "Object pCaller not properly assigned" << endl;
     exit(-1);
   }
@@ -51,10 +50,8 @@ void pcInitiate(NSet sets, unsigned int numFeat, unsigned int numSpectra,
   nset = sets;
   numFeatures = numFeat;
   pCaller->filelessSetup(numFeatures, numSpectra, featureNames, pi0);
-  normal
-      = new SetHandler::Iterator(pCaller->getSetHandler(Caller::NORMAL));
-  decoy1
-      = new SetHandler::Iterator(pCaller->getSetHandler(Caller::SHUFFLED));
+  normal = new SetHandler::Iterator(pCaller->getSetHandler(), Caller::NORMAL);
+  decoy1 = new SetHandler::Iterator(pCaller->getSetHandler(), Caller::SHUFFLED);
   if (nset > 2) {
     cerr
       << "This version of percolator only supports 1 decoy set. Percolator was called with nset="
@@ -120,7 +117,7 @@ void pcExecute() {
  * as the features were inserted */
 void pcGetScores(double* scoreArr, double* qArr) {
   int ix = 0;
-  SetHandler::Iterator iter(pCaller->getSetHandler(Caller::NORMAL));
+  SetHandler::Iterator iter(pCaller->getSetHandler(), Caller::NORMAL);
   while (PSMDescription* pPSM = iter.getNext()) {
     ScoreHolder* pSh =
         pCaller->getFullSet()->getScoreHolder(pPSM->features);

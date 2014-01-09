@@ -285,22 +285,18 @@ ScoreHolder* Scores::getScoreHolder(const double* d) {
 
 void Scores::fillFeatures(SetHandler& setHandler, bool reportUniquePeptides) {
   scores.clear();
-  PSMDescription* pPSM;
-  SetHandler::Iterator shuffIter(&setHandler, -1), normIter(&setHandler, 1);
   if(reportUniquePeptides){ // if unique peptides
-    while ((pPSM = normIter.getNext()) != NULL)
-      scores.push_back(ScoreHolderPeptide(.0, 1, pPSM));
-    while ((pPSM = shuffIter.getNext()) != NULL)
-      scores.push_back(ScoreHolderPeptide(.0, -1, pPSM));
-  } else{
-    while ((pPSM = normIter.getNext()) != NULL)
-      scores.push_back(ScoreHolder(.0, 1, pPSM));
-    while ((pPSM = shuffIter.getNext()) != NULL)
-      scores.push_back(ScoreHolder(.0, -1, pPSM));
+    setHandler.fillFeaturesPeptide(scores,1);
+    setHandler.fillFeaturesPeptide(scores,-1);
+  } else {
+    setHandler.fillFeatures(scores,1);
+    setHandler.fillFeatures(scores,-1);
   }
-  totalNumberOfTargets = setHandler.getSubset(0)->getSize();
-  totalNumberOfDecoys = setHandler.getSubset(1)->getSize();
-  targetDecoySizeRatio = totalNumberOfTargets / totalNumberOfDecoys;
+  std::cerr << "Scores " << scores.size() << std::endl;
+  totalNumberOfTargets = setHandler.getSizeFromLabel(1);
+  totalNumberOfDecoys = setHandler.getSizeFromLabel(-1);
+  std::cerr << "Target - Decoy = " << totalNumberOfTargets << " - " << totalNumberOfDecoys << std::endl;
+  targetDecoySizeRatio = (double)totalNumberOfTargets / totalNumberOfDecoys;
 }
 
 // Park–Miller random number generator
