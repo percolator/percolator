@@ -23,7 +23,6 @@
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
 
-
 using namespace std;
 #ifdef XML_SUPPORT
 using namespace xercesc;
@@ -74,23 +73,23 @@ Caller::Caller() :
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 
-    /*fido parameters*/
-    fido_alpha = -1;
-    fido_beta = -1;
-    fido_gamma = -1;
-    fido_nogrouProteins = false; 
-    fido_noprune = false;
-    fido_noseparate = false;
-    fido_reduceTree = false;
-    fido_truncate = false;
-    fido_trivialGrouping = false;
-    fido_depth = 0;
-    fido_mse_threshold = 0.1;
-    /* general protein probabilities options */
-    tiesAsOneProtein = false;
-    usePi0 = false;
-    outputEmpirQVal = false;  
-    decoy_prefix = "random";
+  /*fido parameters*/
+  fido_alpha = -1;
+  fido_beta = -1;
+  fido_gamma = -1;
+  fido_nogrouProteins = false; 
+  fido_noprune = false;
+  fido_noseparate = false;
+  fido_reduceTree = false;
+  fido_truncate = false;
+  fido_trivialGrouping = false;
+  fido_depth = 0;
+  fido_mse_threshold = 0.1;
+  /* general protein probabilities options */
+  tiesAsOneProtein = false;
+  usePi0 = false;
+  outputEmpirQVal = false;  
+  decoy_prefix = "random";
 }
 
 Caller::~Caller() {
@@ -522,6 +521,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // if there is one argument left...
   if (cmd.arguments.size() == 1) {
+#ifdef XML_SUPPORT 
     xmlInputFN = cmd.arguments[0]; // then it's the pin input
     if(cmd.optionSet("j")){ // and if the tab input is also present
       cerr << "Error: use one of either pin or tab-delimited input format.";
@@ -533,6 +533,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error
     }
+#else //XML_SUPPORT
+    tabInput = true;
+    forwardTabInputFN = cmd.arguments[0]; // then it's the tab input
+#endif //XML_SUPPORT
   }
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
@@ -571,27 +575,11 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
 }
 
 /**
- * Initialise without file input for @see PercolatorCInterface
- */
-void Caller::filelessSetup(const unsigned int numFeatures,
-    const unsigned int numSpectra,
-    char** featureNames, double pi0) {
-  pCheck = new SanityCheck();
-  assert(pCheck);
-  setHandler.filelessSetup(numFeatures, numSpectra, std::set<int>{-1,1});
-  for (unsigned int ix = 0; ix < numFeatures; ix++) {
-    string fn = featureNames[ix];
-    DataSet::getFeatureNames().insertFeature(fn);
-  }
-}
-
-/**
  * Reads in the files from XML (must be enabled at compile time) or tab format
  */
-int Caller::readFiles() {
-#ifdef XML_SUPPORT  
-  if (xmlInputFN.size() != 0) 
-  {    
+int Caller::readFiles() { 
+  if (xmlInputFN.size() != 0) {    
+#ifdef XML_SUPPORT 
     xercesc::XMLPlatformUtils::Initialize();
     
     DataSet * targetSet = new DataSet();
@@ -732,14 +720,17 @@ int Caller::readFiles() {
       XMLString::release(&tmpStr);
       return 0;
     }
-  } else if (tabInput) {
-#endif //XML_SUPPORT
+#else //XML_SUPPORT
+    std::cerr << "Warning: Compiler flag XML_SUPPORT was off, trying to process input as tab delimited file" << std::endl;
     pCheck = new SanityCheck();
     setHandler.readTab(forwardTabInputFN);
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
-#ifdef XML_SUPPORT
+#endif //XML_SUPPORT
+  } else if (tabInput) {
+    pCheck = new SanityCheck();
+    setHandler.readTab(forwardTabInputFN);
+    std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
   } 
-#endif //XML_SUPPORT  
   return true;
 }
 
@@ -752,11 +743,12 @@ int Caller::readFiles() {
  * @param cfrac_vec vector with soft margin parameter for fraction negatives / positives
  * @param best_cpos best soft margin parameter for positives
  * @param best_cfrac best soft margin parameter for fraction negatives / positives
- * @param pWeights ???
+ * @param pWeights results vector from the SVM algorithm
+ * @param pOptions options for the SVM algorithm
 */
 int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, bool updateDOC, vector<double>& cpos_vec, 
                                vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
-options * pOptions) {
+                               options * pOptions) {
   int bestTP = 0;
   if (VERB > 2) {
     cerr << "cross validation - fold " << set + 1 << " out of "
@@ -781,12 +773,11 @@ options * pOptions) {
   Outputs->vec = new double[svmInput->positives + svmInput->negatives];
   Outputs->d = svmInput->positives + svmInput->negatives;
   
-  // Check all possible combinations of soft margin parameters for highest estimate of true positives
-  vector<double>::iterator cpos, cfrac;
-  for (cpos = cpos_vec.begin(); cpos != cpos_vec.end(); cpos++) {
-    for (cfrac = cfrac_vec.begin(); cfrac != cfrac_vec.end(); cfrac++) {
-      if (VERB > 2) cerr << "-cross validation with cpos=" << *cpos
-          << ", cfrac=" << *cfrac << endl;
+  // Find combination of soft margin parameters with highest estimate of true positives
+  for (const auto cpos : cpos_vec) {
+    for (const auto cfrac : cfrac_vec) {
+      if (VERB > 2) cerr << "-cross validation with cpos=" << cpos
+          << ", cfrac=" << cfrac << endl;
       int tp = 0;
       for (int ix = 0; ix < pWeights->d; ix++) {
         pWeights->vec[ix] = 0;
@@ -794,7 +785,7 @@ options * pOptions) {
       for (int ix = 0; ix < Outputs->d; ix++) {
         Outputs->vec[ix] = 0;
       }
-      svmInput->setCost(*cpos, (*cpos) * (*cfrac));
+      svmInput->setCost(cpos, (cpos) * (cfrac));
       
       // Call SVM algorithm (see ssl.cpp)
       L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
@@ -814,8 +805,8 @@ options * pOptions) {
         }
         bestTP = tp;
         bestW = ww;
-        best_cpos = *cpos;
-        best_cfrac = *cfrac;
+        best_cpos = cpos;
+        best_cfrac = cfrac;
       }
     }
     if (VERB > 2) cerr << "cross validation estimates " << bestTP
@@ -1292,7 +1283,8 @@ void Caller::calculateProteinProbabilitiesFido() {
   }
 }
 
-/** Executes the flow of the percolator process:
+/** 
+ * Executes the flow of the percolator process:
  * 1. reads in the input file
  * 2. trains the SVM
  * 3. calculate PSM probabilities
@@ -1319,9 +1311,8 @@ int Caller::run() {
   }
   
   // Reading input files (pin or temporary file)
-  
   if(!readFiles()) return 0;
-  
+  // Copy feature data to Scores object
   fillFeatureSets();
 
 #ifdef XML_SUPPORT

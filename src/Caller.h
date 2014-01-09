@@ -44,6 +44,8 @@
 #include "Globals.h"
 #include "MassHandler.h"
 #include "Enzyme.h"
+#include "ProteinProbEstimator.h"
+#include "FidoInterface.h"
 #ifdef XML_SUPPORT
   #include "parser.hxx"
   #include "serializer.hxx"
@@ -55,9 +57,6 @@
   #include <xercesc/util/PlatformUtils.hpp>
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
-#include "ProteinProbEstimator.h"
-#include "FidoInterface.h"
-
 
 class Caller {
   public:
@@ -83,9 +82,7 @@ class Caller {
     void printWeights(ostream & weightStream, vector<double>& w);
     void readWeights(istream & weightStream, vector<double>& w);
     int readFiles();
-    void filelessSetup(const unsigned int numFeatures,
-                       const unsigned int numSpectra, char** fetureNames,
-                       double pi0);
+    
     void fillFeatureSets();
     int preIterationSetup(vector<vector<double> >& w);
     Scores* getFullSet() {

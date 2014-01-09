@@ -29,20 +29,10 @@ SetHandler::~SetHandler() {
 }
 
 /**
- * Initialise without file input for @see PercolatorCInterface
+ * Gets the vector index of the DataSet matching the label
+ * @param label DataSet label
+ * @return index of matching DataSet
  */
-void SetHandler::filelessSetup(const unsigned int numFeatures,
-                               const unsigned int numSpectra,
-                               const set<int> labels) {
-  for (auto label : labels) {
-    DataSet* pSet = new DataSet();
-    pSet->setLabel(label);
-    pSet->setSize(numSpectra);
-    pSet->initFeatureTables(numFeatures);
-    subsets.push_back(pSet);
-  }
-}
-
 unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
   for (unsigned int ix = 0; ix < subsets.size(); ++ix) {
     if (subsets[ix]->getLabel() == label) return ix;
@@ -96,7 +86,7 @@ int const SetHandler::getLabel(int setPos) {
   return subsets[setPos]->getLabel();
 }
 
-void SetHandler::readTab(const string& dataFN) {
+int SetHandler::readTab(const string& dataFN) {
   if (VERB > 1) {
     cerr << "Reading Tab delimited input from datafile " << dataFN
         << endl;
@@ -126,12 +116,11 @@ void SetHandler::readTab(const string& dataFN) {
   unsigned int numFeatures = 0;
   iss.str(line);
   double a;
-  iss >> tmp >> tmp; // remove id and label
+  iss >> tmp >> tmp >> a; // remove id and label, then test third column
   while (iss.good()) {
-    iss >> a;
     ++numFeatures;
+    iss >> a;
   }
-  --numFeatures; // last one failed
   iss.clear(); // clear the error bit
   
   DataSet * targetSet = new DataSet();
@@ -164,6 +153,7 @@ void SetHandler::readTab(const string& dataFN) {
   
   push_back_dataset(targetSet);
   push_back_dataset(decoySet);
+  return 1;
 }
 
 void SetHandler::writeTab(const string& dataFN) {

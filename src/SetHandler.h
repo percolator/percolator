@@ -22,7 +22,6 @@
 #include <sstream>
 #include <algorithm>
 #include <map>
-#include <set>
 #include <vector>
 #include <string>
 #include "ResultHolder.h"
@@ -31,17 +30,7 @@
 #include "Scores.h"
 #include "Globals.h"
 #include "PSMDescription.h"
-
-#ifdef XML_SUPPORT
-  #include "percolator_in.hxx"
-#endif //XML_SUPPORT
 using namespace std;
-
-#ifdef XML_SUPPORT
-namespace percolatorInNs { 
-  class target_decoy;
-}
-#endif //XML_SUPPORT
 
 class SetHandler {
   
@@ -55,8 +44,6 @@ class SetHandler {
     
     SetHandler();
     virtual ~SetHandler();
-    void filelessSetup(const unsigned int numFeatures,
-                       const unsigned int numSpectra, const set<int> label);
 
     void push_back_dataset( DataSet * ds );
 
@@ -70,7 +57,7 @@ class SetHandler {
        
     //const double* getFeatures(const int setPos, const int ixPos) const;
     
-    void readTab(const string& dataFN);
+    int readTab(const string& dataFN);
     void writeTab(const string& dataFN);
     void print(Scores& test, int label, ostream& myout = cout);
     void fillFeatures(vector<ScoreHolder> &scores, int label);

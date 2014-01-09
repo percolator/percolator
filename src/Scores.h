@@ -27,11 +27,6 @@
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
-#ifdef XML_SUPPORT
-  #include "percolator_out.hxx"
-#endif //XML_SUPPORT
-
-class SetHandler;
 
 class ScoreHolder {
   public:
@@ -50,13 +45,10 @@ class ScoreHolder {
     bool isTarget() { return label != -1; }
     bool isDecoy() { return label == -1; }
 };
+ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
-#ifdef XML_SUPPORT
-std::unique_ptr< ::percolatorOutNs::psm> returnXml_PSM(const vector<ScoreHolder>::iterator);
-#endif //XML_SUPPORT
-ostream& operator<<(ostream& os, const ScoreHolder& sh);
 	
 struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
@@ -88,7 +80,6 @@ struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bo
   }
 };
 
-
 inline string getRidOfUnprintablesAndUnicode(string inpString) {
   string outputs = "";
   for (unsigned int jj = 0; jj < inpString.size(); jj++) {
@@ -116,6 +107,7 @@ class ScoreHolderPeptide: public ScoreHolder {
 // overloading output operator for class ScoreHolderPeptide
 ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
 
+class SetHandler;
 class AlgIn;
 
 class Scores {
