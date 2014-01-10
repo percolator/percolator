@@ -40,10 +40,10 @@ class ScoreHolder {
       score(s), label(l), pPSM(psm), psms_list () {}
     virtual ~ScoreHolder() {}
     
-    pair<double, bool> toPair() { return pair<double, bool> (score, label > 0); }
+    pair<double, bool> toPair() const { return pair<double, bool> (score, label > 0); }
     
-    bool isTarget() { return label != -1; }
-    bool isDecoy() { return label == -1; }
+    bool isTarget() const { return label != -1; }
+    bool isDecoy() const { return label == -1; }
 };
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
@@ -140,6 +140,7 @@ class Scores {
         const double cpos);
     void generateNegativeTrainingSet(AlgIn& data, const double cneg);
     
+    void recalculateSizes();
     void normalizeScores(double fdr=0.01);
     
     void weedOutRedundant(bool computePi0 = true);
