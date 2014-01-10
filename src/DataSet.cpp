@@ -63,7 +63,7 @@ bool DataSet::writeTabData(ofstream& out) {
   }
   for (const auto &pPSM : psms) {
     double* featureRow = pPSM->features;
-    out << pPSM->id << '\t' << label;
+    out << pPSM->id << '\t' << label << '\t' << pPSM->scan;
     if (calcDOC) {
       out << '\t' << pPSM->getUnnormalizedRetentionTime() << '\t'
           << pPSM->massDiff;
@@ -202,6 +202,7 @@ void DataSet::readPsm(ifstream & dataStream, const std::string line) {
   buff.clear();
   buff >> myPsm->id;
   buff >> tmp; // get rid of label
+  buff >> myPsm->scan;
   double *featureRow = new double[numFeatures];
   myPsm->features = featureRow;
   if (calcDOC) {

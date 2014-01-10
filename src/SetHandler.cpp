@@ -107,7 +107,7 @@ int SetHandler::readTab(const string& dataFN) {
   int skip = (DataSet::getCalcDoc() ? 2 : 0);
   while (iss.good()) {
     iss >> tmp;
-    if (skip-- <= -2) { // removes enumerator, label and if present DOC features
+    if (skip-- <= -3) { // removes enumerator, label, scannr and if present DOC features
       DataSet::getFeatureNames().insertFeature(tmp);
     }
   }
@@ -118,7 +118,7 @@ int SetHandler::readTab(const string& dataFN) {
   unsigned int numFeatures = 0;
   iss.str(line);
   double a;
-  iss >> tmp >> tmp >> a; // remove id and label, then test third column
+  iss >> tmp >> tmp >> tmp >> a; // remove id, label and scannr, then test third column
   while (iss.good()) {
     ++numFeatures;
     iss >> a;
@@ -160,7 +160,7 @@ int SetHandler::readTab(const string& dataFN) {
 
 void SetHandler::writeTab(const string& dataFN) {
   ofstream dataStream(dataFN.data(), ios::out);
-  dataStream << "SpecId\tLabel\t";
+  dataStream << "SpecId\tLabel\tScanNr\t";
   if (DataSet::getCalcDoc()) {
     dataStream << "RT\tdM\t";
   }
