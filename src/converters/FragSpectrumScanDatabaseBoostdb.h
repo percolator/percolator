@@ -39,11 +39,13 @@ public:
   
   virtual bool init(std::string fileName);
   
-  virtual void terminte();
+  virtual void terminate();
   
   virtual std::auto_ptr< ::percolatorInNs::fragSpectrumScan> getFSS( unsigned int scanNr );
   
   virtual void print(serializer & ser);
+  
+  virtual void printTab(ofstream &tabOutputStream);
   
   virtual void putFSS( ::percolatorInNs::fragSpectrumScan & fss );
   

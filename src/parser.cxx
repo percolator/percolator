@@ -80,11 +80,11 @@ private:
   // SAX parser.
   //
   bool clean_;
-  //auto_ptr<SAX2XMLReader> parser_;
+  //std::auto_ptr<SAX2XMLReader> parser_;
   XMLPScanToken token_;
   tree::error_handler<char> error_handler_;
   xml::sax::bits::error_handler_proxy<char> error_proxy_;
-  auto_ptr<xml::sax::std_input_source> isrc_;
+  std::auto_ptr<xml::sax::std_input_source> isrc_;
 
   size_t depth_;
   size_t docDepth_;
@@ -94,9 +94,9 @@ private:
   DOMImplementation& dom_impl_;
   xml::dom::auto_ptr<DOMDocument> doc_;
   DOMElement* cur_;
-   MemoryManager* mm_;// (XMLPlatformUtils::fgMemoryManager);
-    auto_ptr<XMLGrammarPool> gp_; // (new XMLGrammarPoolImpl (mm));
- auto_ptr<SAX2XMLReader> parser_; // (create_parser (gp.get ()));
+  MemoryManager* mm_;// (XMLPlatformUtils::fgMemoryManager);
+  std::auto_ptr<XMLGrammarPool> gp_; // (new XMLGrammarPoolImpl (mm));
+  std::auto_ptr<SAX2XMLReader> parser_; // (create_parser (gp.get ()));
 
 
 };
@@ -135,10 +135,10 @@ private:
 const XMLCh ls[] = {chLatin_L, chLatin_S, chNull};
 
 
-auto_ptr<SAX2XMLReader>
+std::auto_ptr<SAX2XMLReader>
 create_parser (XMLGrammarPool* pool)
 {
-  auto_ptr<SAX2XMLReader> parser (
+  std::auto_ptr<SAX2XMLReader> parser (
     pool
     ? XMLReaderFactory::createXMLReader (XMLPlatformUtils::fgMemoryManager,
                                          pool)
@@ -213,7 +213,7 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
     // Load the schemas into the grammar pool.
     //
     {
-      auto_ptr<SAX2XMLReader> parser (create_parser (gp_.get ()));
+      std::auto_ptr<SAX2XMLReader> parser (create_parser (gp_.get ()));
       error_handler eh;
       parser->setErrorHandler (&eh);
 

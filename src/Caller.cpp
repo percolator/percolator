@@ -24,14 +24,13 @@
 #include <boost/filesystem.hpp>
 
 using namespace std;
-#ifdef XML_SUPPORT
-using namespace xercesc;
-#endif //XML_SUPPORT
 
 const unsigned int Caller::xval_fold = 3; /* number of folds for cross validation*/
 const double requiredIncreaseOver2Iterations = 0.01; /* checks cross validation convergence */
 
 #ifdef XML_SUPPORT
+using namespace xercesc;
+
 /** some constants to be used to compare xml strings **/
 
 //databases
@@ -618,11 +617,10 @@ int Caller::readFiles() {
       doc = p.next();
 
       //checking if database is present to jump it
-      if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName()))
-      {
+      if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
         //NOTE I dont really need this info, do I? good to have it though
         /*
-          std::auto_ptr< ::percolatorInNs::databases > 
+          std::unique_ptr< ::percolatorInNs::databases > 
 	      databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
         */
         doc = p.next();
@@ -636,8 +634,7 @@ int Caller::readFiles() {
       doc = p.next();
 
 
-      if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) 
-      {
+      if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) {
 	//NOTE the calibration should define the initial direction
         //percolatorInNs::calibration calibration(*doc->getDocumentElement());
         doc = p.next();
@@ -647,9 +644,9 @@ int Caller::readFiles() {
 
       //I want to get the initial values that are present in feature descriptions
       vector<double> init_values;
-      for( const auto & descr : featureDescriptions.featureDescription() ) {
-          if(descr.initialValue().present()){
-              if(VERB >2){
+      for (const auto & descr : featureDescriptions.featureDescription()) {
+          if (descr.initialValue().present()) {
+              if (VERB >2) {
                   std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
               }
               init_values.push_back(descr.initialValue().get());
@@ -666,14 +663,10 @@ int Caller::readFiles() {
 	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
         percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-	      for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch())
-	      {
-	        if(psm.isDecoy())
-	        {
+	      for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch()) {
+	        if (psm.isDecoy()) {
 	          decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
-	        }
-	        else
-	        {
+	        } else {
 	          targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
 	        }
 	      }
@@ -686,7 +679,7 @@ int Caller::readFiles() {
 	&& Caller::hasProteins && Caller::calculateProteinLevelProb /*&& Caller::protEstimator->getMayuFdr()*/
 	&& XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
       {
-        std::auto_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
+        std::unique_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
         protEstimator->addProteinDb(*protein);
         ++readProteins;
       }
@@ -706,9 +699,7 @@ int Caller::readFiles() {
       setHandler.push_back_dataset(targetSet);
       setHandler.push_back_dataset(decoySet);
       xmlInStream.close();
-    }
-
-    catch (const xml_schema::exception& e) {
+    } catch (const xml_schema::exception& e) {
       std::cerr << e << endl;
       return 0;
     } catch (const std::ios_base::failure&) {
@@ -720,6 +711,8 @@ int Caller::readFiles() {
       XMLString::release(&tmpStr);
       return 0;
     }
+    
+    xercesc::XMLPlatformUtils::Terminate();
 #else //XML_SUPPORT
     std::cerr << "Warning: Compiler flag XML_SUPPORT was off, trying to process input as tab delimited file" << std::endl;
     pCheck = new SanityCheck();
@@ -1309,13 +1302,7 @@ int Caller::run() {
   if(!readFiles()) return 0;
   // Copy feature data to Scores object
   fillFeatureSets();
-
-#ifdef XML_SUPPORT
-  // terminate xercesc
-  if(xmlInputFN.size() != 0){
-    xercesc::XMLPlatformUtils::Terminate();
-  }
-#endif //XML_SUPPORT
+  
   // delete temporary file if reading form stdin
   if(readStdIn){
     remove(xmlInputFN.c_str());

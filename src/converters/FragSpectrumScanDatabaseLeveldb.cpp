@@ -47,7 +47,7 @@ bool FragSpectrumScanDatabaseLeveldb::init(std::string fileName)
   return ret;
 }
 
-void FragSpectrumScanDatabaseLeveldb::terminte()
+void FragSpectrumScanDatabaseLeveldb::terminate()
 {
   if(bdb) delete(bdb);
   bdb = 0;

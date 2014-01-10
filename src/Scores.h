@@ -35,15 +35,15 @@ class ScoreHolder {
     PSMDescription* pPSM;
     std::vector<std::string> psms_list;
     
-    ScoreHolder() : score(0.0), label(0), pPSM(NULL), psms_list () {}
-    ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
+    ScoreHolder() : score(0.0), label(0), pPSM(nullptr), psms_list () {}
+    ScoreHolder(const double& s, const int& l, PSMDescription* psm = nullptr) :
       score(s), label(l), pPSM(psm), psms_list () {}
     virtual ~ScoreHolder() {}
     
     pair<double, bool> toPair() const { return pair<double, bool> (score, label > 0); }
     
-    bool isTarget() const { return label != -1; }
-    bool isDecoy() const { return label == -1; }
+    inline bool isTarget() const { return label != -1; }
+    inline bool isDecoy() const { return label == -1; }
 };
 ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
@@ -99,7 +99,7 @@ class ScoreHolderPeptide: public ScoreHolder {
   public:
     ScoreHolderPeptide() : ScoreHolder() {}
     ScoreHolderPeptide(ScoreHolder& sh) : ScoreHolder(sh) {}
-    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
+    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = nullptr) :
       ScoreHolder(s, l, psm) {}
     virtual ~ScoreHolderPeptide() {}
 };

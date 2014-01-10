@@ -33,7 +33,8 @@ int Sqt2Pin::run() {
   reader = new SqtReader(&parseOptions);
   
   reader->init();
-  reader->print(xmlOutputStream);
+  //reader->print(xmlOutputStream);
+  reader->printTab(xmlOutputStream);
   
   if (VERB>2)
     cerr << "\nAll the input files have been successfully processed"<< endl;

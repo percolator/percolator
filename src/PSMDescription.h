@@ -33,40 +33,16 @@ class PSMDescription {
     PSMDescription(double ort, double prt);
     
     virtual ~PSMDescription();
-    void clear() {
-      proteinIds.clear();
-    }
-    double* getFeatures() {
-      return features;
-    }
-    double* getRetentionFeatures() {
-      return retentionFeatures;
-    }
+    void clear() { proteinIds.clear(); }
+    double* getFeatures() { return features; }
+    double* getRetentionFeatures() { return retentionFeatures; }
     static vector<double*> getRetFeatures(vector<PSMDescription> & psms);
     
-    string& getFullPeptide() {
-      return getAParent()->peptide;
-    }
-    
-    string getPeptideSequence()
-    {
-      return peptide.substr(2, peptide.size()-4);
-    }
-    
-    string& getFullPeptideSequence()
-    {
-      return peptide;
-    }
-    
-    string getFlankN()
-    {
-      return peptide.substr(0, 1);
-    }
-    
-    string getFlankC()
-    {
-      return peptide.substr(peptide.size()-1, peptide.size()); 
-    }
+    string& getFullPeptide() { return getAParent()->peptide; }
+    string getPeptideSequence() { return peptide.substr(2, peptide.size()-4); }
+    string& getFullPeptideSequence() { return peptide; }
+    string getFlankN() { return peptide.substr(0, 1); }    
+    string getFlankC() { return peptide.substr(peptide.size()-1, peptide.size()); }
     
     PSMDescription* getAParent() {
       if (parentFragment) {
@@ -76,9 +52,7 @@ class PSMDescription {
       }
     }
     
-    double getUnnormalizedRetentionTime() {
-      return unnormalize(retentionTime);
-    }
+    double getUnnormalizedRetentionTime() { return unnormalize(retentionTime); }
     static bool isSubPeptide(string& child, string& parent);
     bool isNotEnzymatic() {
       return !(Enzyme::isEnzymatic(peptide[0], peptide[2])
@@ -98,13 +72,8 @@ class PSMDescription {
     // normalize retention times for a  set of peptides
     static void normalizeRetentionTimes(vector<PSMDescription> & psms);
     friend ostream& operator<<(ostream& out, PSMDescription& psm);
-    double getRetentionTime() const {
-      return retentionTime;
-    }
-    double getPredictedRetentionTime() {
-      return predictedTime;
-    }
-    ;
+    double getRetentionTime() const { return retentionTime; }
+    double getPredictedRetentionTime() { return predictedTime; }
 
     static double normDiv, normSub;
     unsigned charge;

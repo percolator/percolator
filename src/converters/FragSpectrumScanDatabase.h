@@ -24,6 +24,7 @@
 #include <cstddef>  // size_t
 #include <cstring>  // memcpy
 #include <map>
+#include <list>
 #include <string>
 #include <iostream>
 #include "Globals.h"
@@ -85,8 +86,11 @@ class FragSpectrumScanDatabase {
     virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize) = 0;
     
     virtual void print(serializer & ser ) = 0;
+    virtual void printTab(ofstream &tabOutputStream) = 0;
+    void printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ofstream &tabOutputStream);
+    std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
     
-    virtual void terminte() = 0;
+    virtual void terminate() = 0;
     
     std::string id;
   

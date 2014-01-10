@@ -226,7 +226,7 @@ void Reader::print(ofstream &xmlOutputStream)
           << " (and correspondent decoy file)\n";
     }
     databases[i]->print(ser);
-    databases[i]->terminte();
+    databases[i]->terminate();
   }
 
   if(po->readProteins && !proteins.empty())
@@ -264,6 +264,34 @@ void Reader::print(ofstream &xmlOutputStream)
   xercesc::XMLPlatformUtils::Terminate();
 
 }
+
+void Reader::printTab(ofstream &tabOutputStream) {
+  if (VERB>2)
+    cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
+
+  if (VERB>2)
+    cerr << "\nWriting output:\n";
+  // print to cout (or populate xml file)
+  
+  // print column names
+  tabOutputStream << "SpecId\tLabel\tScanNr";
+  for( const auto & descr : f_seq.featureDescription() ) {
+    tabOutputStream << "\t" << descr.name();
+  }
+  tabOutputStream << "\tPeptide\tProteins" << std::endl;
+  
+  // print fragSpecturmScans
+  if (VERB>2)
+    std::cerr << "Databases : " << databases.size() << std::endl;
+
+  for(const auto &database : databases) {
+    database->printTab(tabOutputStream);
+    database->terminate();
+  }
+  
+  tabOutputStream.close();
+}
+
 
 
 void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned int lineNumber_par, bool isMeta)

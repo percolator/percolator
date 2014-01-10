@@ -133,6 +133,7 @@ public:
   virtual void init();
   
   virtual void print( ofstream &xmlOutputStream);
+  void printTab(ofstream &tabOutputStream);
   
   unsigned int peptideLength(const string& pep);
   

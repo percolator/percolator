@@ -418,9 +418,9 @@ set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 if(TOKYODB)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
-				      libtokyocabinet-dev, zlib1g-dev, libsqlite3-dev , percolator (>=2.01)")
+				      libtokyocabinet-dev, zlib1g-dev, libsqlite3-dev , percolator")
   set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, boost-devel, boost-filesystem (>=1.46), boost-system, tokyocabinet-devel, 
-				   zlib-devel, sqlite3-devel, percolator(>=2.01)")
+				   zlib-devel, sqlite3-devel, percolator")
 elseif(LEVELDB)
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c-dev, libboost-dev, libboost-filesystem-dev (>=1.46), libboost-system-dev, 
 			             leveldb-dev, zlib1g-dev, libsqlite3-dev , percolator (>=2.01)")

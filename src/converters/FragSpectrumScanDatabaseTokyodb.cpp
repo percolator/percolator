@@ -55,7 +55,7 @@ bool FragSpectrumScanDatabaseTokyoDB::init(std::string fileName)
   return ret;
 }
 
-void FragSpectrumScanDatabaseTokyoDB::terminte()
+void FragSpectrumScanDatabaseTokyoDB::terminate()
 {
   tcbdbdel(bdb);   
 }
@@ -122,6 +122,31 @@ void FragSpectrumScanDatabaseTokyoDB::print(serializer & ser)
     {
       std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
+      free(value);
+    }
+    free(key);
+    tcbdbcurnext(cursor);
+  }
+  tcbdbcurdel(cursor);
+}
+
+void FragSpectrumScanDatabaseTokyoDB::printTab(ofstream &tabOutputStream) {
+  BDBCUR *cursor;
+  char *key;
+  assert(bdb);
+  cursor = tcbdbcurnew(bdb);
+  assert(cursor);
+  tcbdbcurfirst(cursor);
+  // using tcbdbcurkey3 is probably faster
+  int keySize;
+  int valueSize;
+  while (( key = static_cast< char * > ( tcbdbcurkey(cursor,&keySize)) ) != 0 ) 
+  {
+    char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
+    if(value)
+    {
+      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
+      printTabFss(fss, tabOutputStream);
       free(value);
     }
     free(key);

@@ -51,7 +51,7 @@ private:
   xml::dom::auto_ptr<DOMWriter> serializer_;
 #endif
 
-  auto_ptr<xml::dom::ostream_format_target> oft_;
+  std::auto_ptr<xml::dom::ostream_format_target> oft_;
 
   tree::error_handler<char> error_handler_;
   xml::dom::bits::error_handler_proxy<char> error_proxy_;
