@@ -351,7 +351,7 @@ void Scores::recalculateSizes() {
   totalNumberOfTargets = 0;
   totalNumberOfDecoys = 0;
   for (const auto &sh : scores) {
-    if (sh.label == 1) {
+    if (sh.isTarget()) {
       ++totalNumberOfTargets;
     } else {
       ++totalNumberOfDecoys;
@@ -371,7 +371,7 @@ void Scores::normalizeScores(double fdr) {
   for (; it != scores.end(); ++it) {
     if (it->pPSM->q < fdr)
       q1 = it->score;
-    if (it->label == -1) {
+    if (it->isDecoy()) {
       if(++decoys==medianIndex) {
         median = it->score;
         break;
@@ -408,7 +408,6 @@ void Scores::normalizeScores(double fdr) {
  */
 int Scores::calcScores(vector<double>& w, double fdr) {
   w_vec = w;
-  const double* features;
   unsigned int ix;
   for (auto &sh : scores) {
     sh.score = calcScore(sh.pPSM->features);
@@ -441,11 +440,10 @@ int Scores::calcQ(double fdr) {
   
   // NOTE check this
   for (auto &sh : scores) {
-    if (sh.label != -1) {
+    if (sh.isTarget()) {
       targets++;
       sh.pPSM->p = (decoys+(double)1)/(totalNumberOfDecoys+(double)1);
-    }
-    if (sh.label == -1) {
+    } else {
       decoys++;
       efp = pi0 * decoys * targetDecoySizeRatio;
       sh.pPSM->p = (decoys)/(double)(totalNumberOfDecoys);
@@ -474,7 +472,7 @@ int Scores::calcQ(double fdr) {
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
   unsigned int ix2 = 0;
   for (const auto &sh : scores) {
-    if (sh.label == -1) {
+    if (sh.isDecoy()) {
       data.vals[ix2] = sh.pPSM->features;
       data.Y[ix2] = -1;
       data.C[ix2++] = cneg;
@@ -487,7 +485,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     const double cpos) {
   unsigned int ix2 = data.negatives, p = 0;
   for (const auto &sh : scores) {
-    if (sh.label == 1) {
+    if (sh.isTarget()) {
       if (fdr < sh.pPSM->q) {
         posNow = p;
         break;
@@ -612,11 +610,11 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
 void Scores::recalculateDescriptionOfGood(const double fdr) {
   doc.clear();
   unsigned int ix1 = 0;
-  for (ix1 = 0; ix1 < size(); ix1++) {
-    if (scores[ix1].label == 1) {
+  for (const auto &sh : scores) {
+    if (sh.isTarget()) {
       //      if (fdr>scores[ix1].pPSM->q) {
-      if (0.0 >= scores[ix1].pPSM->q) {
-        doc.registerCorrect(*scores[ix1].pPSM);
+      if (0.0 >= sh.pPSM->q) {
+        doc.registerCorrect(*(sh.pPSM));
       }
     }
   }
@@ -636,20 +634,18 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
   bool lowBest = false;
   if (findDirection) {
     for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
-      vector<ScoreHolder>::iterator it = scores.begin();
-      while (it != scores.end()) {
-        it->score = it->pPSM->features[featNo];
-        it++;
+      for (auto &sh : scores) {
+        sh.score = sh.pPSM->features[featNo];
       }
       sort(scores.begin(), scores.end());
+      // check once in forward direction (high scores are good) and once in backward
       for (int i = 0; i < 2; i++) {
         int positives = 0, decoys = 0;
         double efp = 0.0, q;
-        for (it = scores.begin(); it != scores.end(); it++) {
-          if (it->label != -1) {
+        for (const auto &sh : scores) {
+          if (sh.isTarget()) {
             positives++;
-          }
-          if (it->label == -1) {
+          } else {
             decoys++;
             efp = pi0 * decoys * targetDecoySizeRatio;
           }
@@ -659,8 +655,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction, bool f
             q = pi0;
           }
           if (fdr <= q) {
-            if (positives > bestPositives && scores.begin()->score
-                != it->score) {
+            if (positives > bestPositives && scores.begin()->score != sh.score) {
               bestPositives = positives;
               bestFeature = featNo;
               lowBest = (i == 0);

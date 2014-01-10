@@ -945,7 +945,6 @@ void Caller::fillFeatureSets() {
     setHandler.writeTab(tabFN);
   }
   vector<double*> featuresV, rtFeaturesV;
-  PSMDescription* pPSM;
   for (auto &subset : setHandler.getSubsets()) {
     subset->fillFeatures(featuresV);
     subset->fillRtFeatures(rtFeaturesV);

@@ -37,7 +37,9 @@ unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
   for (unsigned int ix = 0; ix < subsets.size(); ++ix) {
     if (subsets[ix]->getLabel() == label) return ix;
   }
-  std::cerr << "Error: No DataSet found with label " << label << std::endl;
+  ostringstream temp;
+  temp << "Error: No DataSet found with label " << label << std::endl;
+  throw MyException(temp.str());
 }
 
 /**
