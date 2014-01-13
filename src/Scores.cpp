@@ -59,13 +59,13 @@ inline double truncateTo(double truncateMe, const char* length) {
 }
 
 ostream& operator<<(ostream& os, const ScoreHolder& sh) {
-  if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
+  if (sh.isDecoy() && !Scores::isOutXmlDecoys()) {
     return os;
   }
   
   os << "    <psm p:psm_id=\"" << sh.pPSM->id << "\"";
   if (Scores::isOutXmlDecoys()) {
-    if (sh.label != 1)
+    if (sh.isDecoy())
       os << " p:decoy=\"true\"";
     else 
       os << " p:decoy=\"false\"";
@@ -106,13 +106,13 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
 }
 
 ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
-  if (sh.label != 1 && !Scores::isOutXmlDecoys()) {
+  if (sh.isDecoy() && !Scores::isOutXmlDecoys()) {
     return os;
   }
   
   os << "    <peptide p:peptide_id=\"" << sh.pPSM->getPeptideSequence() << "\"";
   if (Scores::isOutXmlDecoys()) {
-    if (sh.label != 1)
+    if (sh.isDecoy())
       os << " p:decoy=\"true\"";
     else 
       os << " p:decoy=\"false\"";
@@ -182,12 +182,11 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool computePi0) {
 }
 
 void Scores::printRetentionTime(ostream& outs, double fdr) {
-  vector<ScoreHolder>::iterator it;
-  for (it = scores.begin(); it != scores.end() && it->pPSM->q <= fdr; ++it) {
-    if (it->label != -1) outs
-        << PSMDescription::unnormalize(it->pPSM->retentionTime) << "\t"
-        << PSMDescription::unnormalize(doc.estimateRT(it->pPSM->retentionFeatures))
-    << "\t" << it->pPSM->peptide << endl;
+  for (auto &sh : scores) {
+    if (sh.isTarget()) outs
+        << PSMDescription::unnormalize(sh.pPSM->retentionTime) << "\t"
+        << PSMDescription::unnormalize(doc.estimateRT(sh.pPSM->retentionFeatures))
+    << "\t" << sh.pPSM->peptide << endl;
   }
 }
 

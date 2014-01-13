@@ -44,7 +44,7 @@ public:
   
   virtual void print(serializer & ser);
   
-  virtual void printTab(ofstream &tabOutputStream) {}
+  virtual void printTab(ofstream &tabOutputStream);
   
   virtual void putFSS( ::percolatorInNs::fragSpectrumScan & fss );
   

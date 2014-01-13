@@ -113,6 +113,18 @@ void FragSpectrumScanDatabaseLeveldb::print(serializer & ser)
 
 }
 
+void FragSpectrumScanDatabaseLeveldb::printTab(ofstream &tabOutputStream) {
+  assert(bdb);
+  leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
+  for (it->SeekToFirst(); it->Valid(); it->Next()) {
+    char *retvalue = const_cast<char*>(it->value().data());
+    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,it->value().size()));
+    printTabFss(fss, tabOutputStream);
+  }
+  delete it;
+}
+
+
 void FragSpectrumScanDatabaseLeveldb::putFSS( ::percolatorInNs::fragSpectrumScan & fss ) 
 {
   assert(bdb);

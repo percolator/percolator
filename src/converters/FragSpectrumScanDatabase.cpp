@@ -48,7 +48,6 @@ void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::frag
       //NOTE the residues for the peptide in the PSMs are always the same for every protein
       if (isFirst) {
         tabOutputStream << '\t' << oc.flankN() << "." << decoratePeptide(psm.peptide()) << "." << oc.flankC();
-      } else {
         isFirst = false;
       }
       tabOutputStream << '\t' << oc.proteinId();

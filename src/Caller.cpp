@@ -206,11 +206,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("j",
       "tab-in",
       "Input files are given as a tab delimited file. In this case the only argument should be a file name \
-      of the data file. The tab delimited fields should be id <tab> label <tab> feature1 \
+      of the data file. The tab delimited fields should be id <tab> label <tab> scannr <tab> feature1 \
       <tab> ... <tab> featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM \
       Labels are interpreted as 1 -- positive set \
       and test set, -1 -- negative set.\
-      When the --doc option the first and second feature (third and fourth column) should contain \
+      When the --doc option the first and second feature (fourth and fifth column) should contain \
       the retention time and difference between observed and calculated mass",
       "filename");
   cmd.defineOption("w",
