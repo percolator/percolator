@@ -511,7 +511,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
-    if(!cmd.optionSet("j") && !cmd.optionSet("e") ){ // unless the input comes from -j option or -e option
+    if(!cmd.optionSet("k") && !cmd.optionSet("e") ){ // unless the input comes from -j option or -e option
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
       return 0; // ...error

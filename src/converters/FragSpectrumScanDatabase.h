@@ -26,6 +26,7 @@
 #include <map>
 #include <list>
 #include <string>
+#include <algorithm>
 #include <iostream>
 #include "Globals.h"
 #include "serializer.hxx"

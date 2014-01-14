@@ -50,7 +50,9 @@ void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::frag
         tabOutputStream << '\t' << oc.flankN() << "." << decoratePeptide(psm.peptide()) << "." << oc.flankC();
         isFirst = false;
       }
-      tabOutputStream << '\t' << oc.proteinId();
+      std::string proteinId = oc.proteinId();
+      std::replace(proteinId.begin(), proteinId.end(), ' ', '-');
+      tabOutputStream << '\t' << proteinId;
     }
     tabOutputStream << std::endl;
   }
