@@ -130,7 +130,7 @@ void FragSpectrumScanDatabaseTokyoDB::print(serializer & ser)
   tcbdbcurdel(cursor);
 }
 
-void FragSpectrumScanDatabaseTokyoDB::printTab(ofstream &tabOutputStream) {
+void FragSpectrumScanDatabaseTokyoDB::printTab(ostream &tabOutputStream) {
   BDBCUR *cursor;
   char *key;
   assert(bdb);

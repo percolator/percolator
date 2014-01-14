@@ -44,9 +44,10 @@ class Interface {
 	ParseOptions parseOptions;
 	std::string targetFN;
 	std::string decoyFN;
-	std::string xmlOutputFN;
+	std::string outputFN;
 	std::string call;
 	std::string spectrumFile;
+	bool xmlOutput;
 };
 
 #endif /* INTERFACE_H_ */

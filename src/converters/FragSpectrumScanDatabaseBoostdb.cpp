@@ -63,7 +63,7 @@ void FragSpectrumScanDatabaseBoostdb::print(serializer & ser)
 
 }
 
-void FragSpectrumScanDatabaseBoostdb::printTab(ofstream &tabOutputStream) {
+void FragSpectrumScanDatabaseBoostdb::printTab(ostream &tabOutputStream) {
   mapdb::const_iterator it;
   for (it = bdb->begin(); it != bdb->end(); it++) {
     std::istringstream istr (it->second);

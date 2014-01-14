@@ -18,7 +18,7 @@
 #include "Interface.h"
 
 
-Interface::Interface()
+Interface::Interface() : xmlOutput(false)
 {
 
 }
@@ -66,8 +66,12 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   CommandLineParser cmd(intro.str());
 
   cmd.defineOption("o",
+      "outputTab",
+      "save output in a tab delimited file",
+      "filename");
+  cmd.defineOption("k",
       "outputXML",
-      "save output in an XML file",
+      "save output in the (deprecated) pin-xml format file",
       "filename");
   cmd.defineOption("m",
       "matches",
@@ -159,7 +163,11 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   }
 
   if (cmd.optionSet("o")) {
-    xmlOutputFN = cmd.options["o"];
+    outputFN = cmd.options["o"];
+  }
+  if (cmd.optionSet("k")) {
+    xmlOutput = true;
+    outputFN = cmd.options["k"];
   }
   //option e has been changed, see above
   if (cmd.optionSet("e")) {

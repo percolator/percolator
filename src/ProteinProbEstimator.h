@@ -85,8 +85,8 @@ class ProteinProbEstimator {
     
     const static bool correct_identical_sequences = true;
     const static bool binning_equal_deepth = true;
-    constexpr static double target_decoy_ratio = 1.0;
-    constexpr static unsigned number_bins = 10;
+    const static double target_decoy_ratio;
+    const static unsigned number_bins = 10;
     
     
     /** GENERAL PARAMETERS **/
@@ -94,13 +94,13 @@ class ProteinProbEstimator {
     /** compute global protein FDR using MAYU based implementation **/
     const static bool mayufdr = false;
     /** threshold used to estimate the protein FDR(pi0) **/
-    constexpr static double psmThresholdMayu = 0.90;
+    const static double psmThresholdMayu;
     /** whether to use the decoy prefix(faster) to check if a protein is decoy or not **/
     const static bool useDecoyPrefix = true;
     /** whether to count decoy proteins when estimated q values or not **/
     const static bool countDecoyQvalue = true;
     /** protein prior probability used to estimate the peptide prior probabilities **/
-    constexpr static double prior_protein = 0.5;
+    const static double prior_protein;
     
     
     /******************************************************************************************************************/

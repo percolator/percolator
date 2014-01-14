@@ -17,6 +17,15 @@
 
 #include "FidoInterface.h"
 
+const double FidoInterface::psmThreshold = 0.0;
+const double FidoInterface::reduced_psmThreshold = 0.2;
+const double FidoInterface::peptideThreshold = 0.001;
+const double FidoInterface::reduced_peptideThreshold = 0.2;
+const double FidoInterface::proteinThreshold = 0.01; 
+const double FidoInterface::reduced_proteinThreshold = 0.2;
+const double FidoInterface::peptidePrior = 0.1; 
+const double FidoInterface::max_allow_configurations = 18;
+const double FidoInterface::lambda = 0.15;
 
 double trapezoid_area(double x1, double x2, double y1, double y2)
 {

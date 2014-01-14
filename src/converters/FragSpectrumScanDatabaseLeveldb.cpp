@@ -113,7 +113,7 @@ void FragSpectrumScanDatabaseLeveldb::print(serializer & ser)
 
 }
 
-void FragSpectrumScanDatabaseLeveldb::printTab(ofstream &tabOutputStream) {
+void FragSpectrumScanDatabaseLeveldb::printTab(ostream &tabOutputStream) {
   assert(bdb);
   leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
   for (it->SeekToFirst(); it->Valid(); it->Next()) {

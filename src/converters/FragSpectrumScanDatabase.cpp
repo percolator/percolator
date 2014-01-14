@@ -29,7 +29,7 @@ bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par)
   scan2rt=scan2rt_par;
 }
 
-void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ofstream &tabOutputStream) {
+void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream) {
   int label = 0;
   for (const auto &psm : fss->peptideSpectrumMatch()) {
     if (psm.isDecoy()) {

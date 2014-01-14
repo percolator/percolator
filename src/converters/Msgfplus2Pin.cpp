@@ -17,10 +17,10 @@ int Msgfplus2pin::run() {
 
   // Content of sqt files is merged: preparing to write it to xml file
 
-  ofstream xmlOutputStream;
-  xmlOutputStream.open(xmlOutputFN.c_str());
-  if(!xmlOutputStream && xmlOutputFN != ""){
-    cerr << "Error: invalid path to output file: " << xmlOutputFN << endl;
+  ofstream outputStream;
+  outputStream.open(outputFN.c_str());
+  if(!outputStream && outputFN != ""){
+    cerr << "Error: invalid path to output file: " << outputFN << endl;
     cerr << "Please invoke msgf2pin with a valid -o option" << endl;
     return 0;
   }
@@ -30,11 +30,12 @@ int Msgfplus2pin::run() {
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
-  parseOptions.xmlOutputFN = xmlOutputFN;
+  parseOptions.xmlOutputFN = outputFN;
   reader = new MsgfplusReader(&parseOptions);
 
   reader->init();
-  reader->print(xmlOutputStream);
+  reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);
+  outputStream.close();
 
   return 0;
 }

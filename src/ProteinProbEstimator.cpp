@@ -19,6 +19,10 @@
 #include <fstream>
 #include "ProteinProbEstimator.h"
 
+
+const double ProteinProbEstimator::target_decoy_ratio = 1.0;
+const double ProteinProbEstimator::psmThresholdMayu = 0.90;
+const double ProteinProbEstimator::prior_protein = 0.5;
 /** Helper functions **/
 
 template<class T> 

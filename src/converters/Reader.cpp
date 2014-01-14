@@ -153,146 +153,111 @@ void Reader::init()
   xercesc::XMLPlatformUtils::Terminate();
 }
 
-void Reader::print(ofstream &xmlOutputStream)
-{
+void Reader::print(ostream &outputStream, bool xmlOutput) {  
+  if (xmlOutput) {
+    xercesc::XMLPlatformUtils::Initialize ();
 
-  xercesc::XMLPlatformUtils::Initialize ();
+    string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
+    string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
+    string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
+        string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
+        " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
+        " https://github.com/percolator/percolator/raw/pin-" + schema_major +
+        "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
 
-  string schema_major = boost::lexical_cast<string>(PIN_VERSION_MAJOR);
-  string schema_minor = boost::lexical_cast<string>(PIN_VERSION_MINOR);
-  string headerStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n" +
-      string("<experiment xmlns=\"") + PERCOLATOR_IN_NAMESPACE + "\"" +
-      " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
-      " xsi:schemaLocation=\"" + PERCOLATOR_IN_NAMESPACE +
-      " https://github.com/percolator/percolator/raw/pin-" + schema_major +
-      "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
-
-  if (po->xmlOutputFN == "")
-    cout << headerStr;
-  else
-  {
-    xmlOutputStream << headerStr;
-    if (VERB>2)
+    outputStream << headerStr;
+    if (VERB>2 && po->xmlOutputFN == "")
       cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
-  }
+    
+    string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
 
-  string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
+    outputStream << enzymeStr;
 
-  if (po->xmlOutputFN == "")
-    cout << enzymeStr;
-  else
-    xmlOutputStream << enzymeStr;
+    if(po->readProteins)
+    {
+      serializer ser;
+      ser.start (outputStream);
 
-  if(po->readProteins)
-  {
+      ::percolatorInNs::databases databases(po->targetDb,po->decoyDb);
+      ser.next ( PERCOLATOR_IN_NAMESPACE, "databases",databases);
+    }
+
+    string commandLine = "\n<process_info>\n" +
+        string("  <command_line>") + po->call.substr(0,po->call.length()-1)
+        + "</command_line>\n" + "</process_info>\n";
+
+    outputStream << commandLine;
+
+    if(VERB>2)
+       cerr << "\nWriting output:\n";
+    // print to cout (or populate xml file)
+    // print features
     serializer ser;
-    if (po->xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-
-    ::percolatorInNs::databases databases(po->targetDb,po->decoyDb);
-    ser.next ( PERCOLATOR_IN_NAMESPACE, "databases",databases);
-  }
-
-  string commandLine = "\n<process_info>\n" +
-      string("  <command_line>") + po->call.substr(0,po->call.length()-1)
-      + "</command_line>\n" + "</process_info>\n";
-
-  if (po->xmlOutputFN == "")
-    cout << commandLine;
-  else
-    xmlOutputStream << commandLine;
-
-  if(VERB>2)
-     cerr << "\nWriting output:\n";
-  // print to cout (or populate xml file)
-  // print features
-  {
-    serializer ser;
-    if (po->xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
+    ser.start (outputStream);
     ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",f_seq);
-  }
 
-  // print fragSpecturmScans
-  if (VERB>2)
-    std::cerr << "Databases : " << databases.size() << std::endl;
+    // print fragSpecturmScans
+    if (VERB>2)
+      std::cerr << "Databases : " << databases.size() << std::endl;
 
-  for(int i=0; i<databases.size();i++) {
-    serializer ser;
-    if (po->xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-    if(VERB>2){
-      cerr << "outputting content of " << databases[i]->id
-          << " (and correspondent decoy file)\n";
-    }
-    databases[i]->print(ser);
-    databases[i]->terminate();
-  }
-
-  if(po->readProteins && !proteins.empty())
-  {
-    if (po->xmlOutputFN == "") cout << "\n";
-    else xmlOutputStream << "\n";
-
-    serializer ser;
-    std::vector<Protein*>::const_iterator it;
-
-    if (po->xmlOutputFN == "") ser.start (std::cout);
-    else ser.start (xmlOutputStream);
-
-    for (it = proteins.begin(); it != proteins.end(); it++)
-    { //NOTE I should serialize in a Btree the object protein as the PSMs
-      //FIXME the serialization is creating a gap \o between elements
-      std::auto_ptr< ::percolatorInNs::protein> p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
-							(*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
-      ser.next(PERCOLATOR_IN_NAMESPACE, "protein", *p);
+    for(int i=0; i<databases.size();i++) {
+      serializer ser;
+      ser.start (outputStream);
+      if(VERB>2){
+        cerr << "outputting content of " << databases[i]->id
+            << " (and correspondent decoy file)\n";
+      }
+      databases[i]->print(ser);
+      databases[i]->terminate();
     }
 
-    if (po->xmlOutputFN == "") cout << "\n";
-    else  xmlOutputStream << "\n";
+    if(po->readProteins && !proteins.empty()) {
+      outputStream << "\n";
+
+      serializer ser;
+      std::vector<Protein*>::const_iterator it;
+      ser.start (outputStream);
+
+      for (it = proteins.begin(); it != proteins.end(); it++)
+      { //NOTE I should serialize in a Btree the object protein as the PSMs
+        //FIXME the serialization is creating a gap \o between elements
+        std::auto_ptr< ::percolatorInNs::protein> p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
+							  (*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
+        ser.next(PERCOLATOR_IN_NAMESPACE, "protein", *p);
+      }
+      outputStream << "\n";
+    }
+    
+    outputStream << "</experiment>" << std::endl;
+    // print closing tag
+
+    //xercesc::XMLPlatformUtils::Terminate();
+  } else {
+    if (VERB>2 && po->xmlOutputFN != "")
+      cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
+
+    if (VERB>2)
+      cerr << "\nWriting output:\n";
+      // print to cout (or populate xml file)
+      
+    // print column names
+    outputStream << "SpecId\tLabel\tScanNr";
+    for( const auto & descr : f_seq.featureDescription() ) {
+      outputStream << "\t" << descr.name();
+    }
+    outputStream << "\tPeptide\tProteins" << std::endl;
+    
+    // print fragSpecturmScans
+    if (VERB>2)
+      std::cerr << "Databases : " << databases.size() << std::endl;
+
+    for(const auto &database : databases) {
+      database->printTab(outputStream);
+      database->terminate();
+    }
   }
-
-  // print closing tag
-  if (po->xmlOutputFN == "")
-    std::cout << "</experiment>" << std::endl;
-  else
-  {
-    xmlOutputStream << "</experiment>" << std::endl;
-    xmlOutputStream.close();
-  }
-
-  xercesc::XMLPlatformUtils::Terminate();
-
 }
-
-void Reader::printTab(ofstream &tabOutputStream) {
-  if (VERB>2)
-    cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
-
-  if (VERB>2)
-    cerr << "\nWriting output:\n";
-  // print to cout (or populate xml file)
-  
-  // print column names
-  tabOutputStream << "SpecId\tLabel\tScanNr";
-  for( const auto & descr : f_seq.featureDescription() ) {
-    tabOutputStream << "\t" << descr.name();
-  }
-  tabOutputStream << "\tPeptide\tProteins" << std::endl;
-  
-  // print fragSpecturmScans
-  if (VERB>2)
-    std::cerr << "Databases : " << databases.size() << std::endl;
-
-  for(const auto &database : databases) {
-    database->printTab(tabOutputStream);
-    database->terminate();
-  }
-  
-  tabOutputStream.close();
-}
-
-
 
 void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned int lineNumber_par, bool isMeta)
   {

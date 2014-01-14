@@ -86,8 +86,8 @@ class FragSpectrumScanDatabase {
     virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize) = 0;
     
     virtual void print(serializer & ser ) = 0;
-    virtual void printTab(ofstream &tabOutputStream) = 0;
-    void printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ofstream &tabOutputStream);
+    virtual void printTab(ostream &tabOutputStream) = 0;
+    void printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream);
     std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
     
     virtual void terminate() = 0;

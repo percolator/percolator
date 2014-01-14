@@ -65,9 +65,6 @@ public:
 		   bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
 		   const std::string & fn) = 0;
 
-  void init() { Reader::init(); };
-  void print( ofstream &xmlOutputStream) { Reader::print(xmlOutputStream); };
-
   void cleanHashMaps();
 
  protected :

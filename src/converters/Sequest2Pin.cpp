@@ -16,10 +16,10 @@ int Sequest2Pin::run() {
   
   // Content of sqt files is merged: preparing to write it to xml file
   
-  ofstream xmlOutputStream;
-  xmlOutputStream.open(xmlOutputFN.c_str());
-  if(!xmlOutputStream && xmlOutputFN != ""){
-    cerr << "Error: invalid path to output file: " << xmlOutputFN << endl;
+  ofstream outputStream;
+  outputStream.open(outputFN.c_str());
+  if(!outputStream && outputFN != ""){
+    cerr << "Error: invalid path to output file: " << outputFN << endl;
     cerr << "Please invoke sqt2pin with a valid -o option" << endl;
     return 0;
   }
@@ -29,11 +29,12 @@ int Sequest2Pin::run() {
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
-  parseOptions.xmlOutputFN = xmlOutputFN;
+  parseOptions.xmlOutputFN = outputFN;
   reader = new SequestReader(&parseOptions);
   
   reader->init();
-  reader->print(xmlOutputStream);
+  reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);
+  outputStream.close();
   
   if (VERB>2)
     cerr << "\nAll the input files have been successfully processed"<< endl;
