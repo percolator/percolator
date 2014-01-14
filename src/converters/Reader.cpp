@@ -193,10 +193,11 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
        cerr << "\nWriting output:\n";
     // print to cout (or populate xml file)
     // print features
-    serializer ser;
-    ser.start (outputStream);
-    ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",f_seq);
-
+    { // brackets guarantee that xerces objects go out of scope before Terminate()
+      serializer ser;
+      ser.start (outputStream);
+      ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",f_seq);
+    }
     // print fragSpecturmScans
     if (VERB>2)
       std::cerr << "Databases : " << databases.size() << std::endl;
@@ -232,7 +233,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     outputStream << "</experiment>" << std::endl;
     // print closing tag
 
-    //xercesc::XMLPlatformUtils::Terminate();
+    xercesc::XMLPlatformUtils::Terminate();
   } else {
     if (VERB>2 && po->xmlOutputFN != "")
       cerr <<  "The output will be written to " << po->xmlOutputFN << endl;

@@ -35,7 +35,6 @@ int Sqt2Pin::run() {
   reader->init();
   reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);
   outputStream.close();
-  xercesc::XMLPlatformUtils::Terminate();
   
   if (VERB>2)
     cerr << "\nAll the input files have been successfully processed"<< endl;
