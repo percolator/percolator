@@ -148,7 +148,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
 
 bool Scores::outxmlDecoys = false;
 bool Scores::showExpMass = false;
-uint32_t Scores::seed = 1;
+unsigned int Scores::seed = 1;
 
 Scores::Scores() {
   pi0 = 1.0;
@@ -233,9 +233,9 @@ void Scores::fillFeatures(SetHandler& setHandler, bool reportUniquePeptides) {
 
 // Park–Miller random number generator
 // from wikipedia
-uint32_t Scores::lcg_rand() {
+unsigned int Scores::lcg_rand() {
   //uint64_t
-  seed = ((long unsigned int)seed * 279470273) % 4294967291;
+  seed = (seed * 279470273) % 4294967291;
   return seed;
 }
 

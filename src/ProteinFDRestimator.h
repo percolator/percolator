@@ -127,7 +127,7 @@ private:
   bool binequalDeepth;
   std::map<unsigned,std::set<std::string> > binnedProteins;
   std::multimap<double,std::string> groupedProteins;
-  std::vector<double> lenghts; 
+  std::vector<double> lengths; 
 
 };
 #endif /* PROTEINFDRESTIMATOR_H_ */

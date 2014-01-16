@@ -14,7 +14,6 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <vector>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
@@ -29,10 +28,10 @@
 
 string DescriptionOfCorrect::isoAlphabet = "DECYHKR";
 unsigned int DescriptionOfCorrect::docFeatures = 15;
-float DescriptionOfCorrect::pKiso[7] = { -3.86, -4.25, -8.33, -10.0, 6.0,
-                                         10.5, 12.4 }; // Lehninger
-float DescriptionOfCorrect::pKN = 9.69;
-float DescriptionOfCorrect::pKC = 2.34;
+float DescriptionOfCorrect::pKiso[7] = { -3.86f, -4.25f, -8.33f, -10.0f, 6.0f,
+                                         10.5f, 12.4f }; // Lehninger
+float DescriptionOfCorrect::pKN = 9.69f;
+float DescriptionOfCorrect::pKC = 2.34f;
 
 DescriptionOfCorrect::DescriptionOfCorrect() {
 }
@@ -59,7 +58,7 @@ void DescriptionOfCorrect::trainCorrect() {
   // Get rid of non enzymatic peptides
   remove_if(psms.begin(),
             psms.end(),
-            mem_fun_ref(&PSMDescription::isNotEnzymatic));
+            std::mem_fun_ref(&PSMDescription::isNotEnzymatic));
   // Get averages
   double piSum = 0.0, dMSum = 0.0;
   for (size_t ix = 0; ix < psms.size(); ++ix) {

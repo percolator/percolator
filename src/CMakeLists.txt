@@ -41,6 +41,9 @@ else(Boost_FOUND)
 endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_INCLUDE_DIRS})
+if(WIN32)
+  link_directories(${BOOST_LIBRARYDIR})
+endif(WIN32)
 
 
 ###############################################################################
@@ -117,7 +120,7 @@ if(APPLE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
   set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
 #  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
-elseif(MINGW OR WIN32)
+elseif(MINGW)
 #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
   set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc")
 endif()
@@ -133,7 +136,11 @@ if(PROFILING AND UNIX)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
+if(WIN32)
+  target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+else(WIN32)
+  target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
+endif()
  
 # INSTALL PERCOLATOR
 #if(APPLE)

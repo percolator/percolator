@@ -112,7 +112,7 @@ ProteinFDRestimator::~ProteinFDRestimator()
 {
   FreeAll(binnedProteins);
   FreeAll(groupedProteins);
-  FreeAll(lenghts);
+  FreeAll(lengths);
 }
 
 
@@ -122,7 +122,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
   std::map<std::string,std::pair<std::string,double> >::const_iterator it,it2;
   
   groupedProteins.clear();
-  lenghts.clear();
+  lengths.clear();
   it = targetProteins.begin();
   it2 = decoyProteins.begin();
   unsigned num_corrected = 0;
@@ -144,7 +144,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
       previouSeqs.insert(targetSeq);
     }
     groupedProteins.insert(std::make_pair(length,targetName));
-    lenghts.push_back(length);
+    lengths.push_back(length);
   }
   
   for(it2 = decoyProteins.begin(); it2 != decoyProteins.end(); it2++)
@@ -162,7 +162,7 @@ void ProteinFDRestimator::correctIdenticalSequences(const std::map<std::string,s
       previouSeqs.insert(decoySeq);
     }
     groupedProteins.insert(std::make_pair(length,decoyName));
-    lenghts.push_back(length);
+    lengths.push_back(length);
   }
   
   if(VERB > 2)
@@ -211,7 +211,7 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, c
       unsigned numberTP = countProteins(i,__target);
       unsigned numberFP = countProteins(i,__decoy);
       unsigned N = getBinProteins(i);
-      double fp = estimatePi0HG(N,numberTP,targetDecoyRatio*numberFP);
+      double fp = estimatePi0HG(N,numberTP,static_cast<unsigned int>(targetDecoyRatio*numberFP));
       
       if(VERB > 2)
       {
@@ -239,8 +239,8 @@ double ProteinFDRestimator::estimateFDR(const std::set<std::string> &__target, c
 void ProteinFDRestimator::binProteinsEqualDeepth()
 {
   //assuming lengths sorted from less to bigger
-  std::sort(lenghts.begin(),lenghts.end());
-  unsigned entries = lenghts.size();
+  std::sort(lengths.begin(),lengths.end());
+  unsigned entries = lengths.size();
   //integer divion and its residue
   unsigned nr_bins = (unsigned)((entries - entries%nbins) / nbins);
   unsigned residues = entries % nbins;
@@ -257,7 +257,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
   for(unsigned i = 0; i <= nbins; i++)
   {
     unsigned index = (unsigned)(nr_bins * i);
-    double value = lenghts[index];
+    double value = lengths[index];
     values.push_back(value);
     if(VERB > 2)
       std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;
@@ -268,7 +268,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
   
   if(residues > 0)
   {
-    values.back() = lenghts.back();
+    values.back() = lengths.back();
     if(VERB > 2)
       std::cerr << "\nValue of last bin is fixed to : " << values.back() << std::endl;
   }
@@ -291,11 +291,11 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
 void ProteinFDRestimator::binProteinsEqualWidth()
 {
   //assuming lengths sorted from less to bigger
-  std::sort(lenghts.begin(),lenghts.end());
-  double min = lenghts.front();
-  double max = lenghts.back();
+  std::sort(lengths.begin(),lengths.end());
+  double min = lengths.front();
+  double max = lengths.back();
   std::vector<double> values;
-  int span = abs(max - min);
+  double span = abs(max - min);
   double part = span / nbins;
   
   if(VERB > 2)
@@ -303,8 +303,8 @@ void ProteinFDRestimator::binProteinsEqualWidth()
   
   for(unsigned i = 0; i < nbins; i++)
   {
-    unsigned index = (unsigned) min + i*part;
-    double value = lenghts[index];
+    unsigned index = static_cast<unsigned>(min + i*part);
+    double value = lengths[index];
     values.push_back(value);
     if(VERB > 2)
       std::cerr << "\nValue of bin : " << i << " with index " << index << " is " << value << std::endl;

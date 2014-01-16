@@ -62,7 +62,7 @@ void SetHandler::print(Scores& test, int label, ostream& myout) {
       subset->print(test, outList);
     }
   }
-  sort(outList.begin(), outList.end(), greater<ResultHolder> ());
+  sort(outList.begin(), outList.end(), std::greater<ResultHolder> ());
   myout
       << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds"
       << endl;

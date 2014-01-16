@@ -19,7 +19,6 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "DescriptionOfCorrect.h"
-#include "Enzyme.h"
 
 PSMDescription::PSMDescription() :
   q(0.), pep(0.), features(NULL), retentionFeatures(NULL),

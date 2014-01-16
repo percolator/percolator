@@ -117,7 +117,7 @@ FidoInterface::~FidoInterface()
 
 void FidoInterface::run()
 {
-  dogridSearch = !(alpha != -1 && beta != -1 and gamma != -1);
+  dogridSearch = !(alpha != -1 && beta != -1 && gamma != -1);
   
   double peptidePrior_local = peptidePrior;
   if(computePriors)

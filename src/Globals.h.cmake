@@ -94,7 +94,7 @@ limitations under the License.
 
 #ifdef _WIN32
   #ifndef __stdcall
-    #define __stdcall
+    //#define __stdcall
   #endif
 #endif
 #ifdef _WIN32

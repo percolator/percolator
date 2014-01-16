@@ -167,8 +167,8 @@ class Scores {
     inline static void setShowExpMass(bool expmass) { showExpMass = expmass; }
     inline static bool getShowExpMass() { return showExpMass; }
     
-    inline static void setSeed(uint32_t s) { seed = s; }
-    uint32_t lcg_rand();
+    inline static void setSeed(unsigned int s) { seed = s; }
+    unsigned int lcg_rand();
     
     vector<ScoreHolder> scores;
     
@@ -179,7 +179,7 @@ class Scores {
     std::map<const double*, ScoreHolder*> scoreMap;
     DescriptionOfCorrect doc;
     static bool outxmlDecoys;
-    static uint32_t seed;
+    static unsigned int seed;
     static bool showExpMass;
     double pi0;
     double targetDecoySizeRatio;

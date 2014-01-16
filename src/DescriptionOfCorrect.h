@@ -16,8 +16,9 @@
  *******************************************************************************/
 #ifndef DESCRIPTIONOFCORRECT_H_
 #define DESCRIPTIONOFCORRECT_H_
-#include<string>
-#include<vector>
+#include <functional>
+#include <string>
+#include <vector>
 using namespace std;
 #include "EludeModel.h"
 

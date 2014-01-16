@@ -25,7 +25,7 @@ MyException::MyException(const string& ss)  : msg(ss)
 MyException::MyException(const ostream& ss)
 {
    ostringstream x;
-   x << ss;
+   x << ss.rdbuf();
    msg = std::string(x.str());
 }
 

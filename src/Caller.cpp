@@ -16,7 +16,9 @@
  *******************************************************************************/
 
 #include "Caller.h"
-#include "unistd.h"
+#ifndef _WIN32
+  #include "unistd.h"
+#endif
 #include <iomanip>
 #include <set>
 #include <sys/types.h>
@@ -109,7 +111,7 @@ Caller::~Caller() {
   }
   protEstimator = NULL;
   if(readStdIn) {
-    rmdir(xmlInputDir);
+    boost::filesystem::remove_all(xmlInputDir);
     delete xmlInputDir;
   }
   xmlInputDir = NULL;

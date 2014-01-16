@@ -14,6 +14,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <functional>
 #include "Streamable.h"
 
 //class Set;

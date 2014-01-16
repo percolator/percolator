@@ -186,7 +186,7 @@ double ProteinProbEstimator::estimatePriors()
   
   double prior_peptide = 0.0;
   double prior_peptide2 = 0.0;
-  unsigned confident_peptides = 0.0;
+  unsigned confident_peptides = 0;
   unsigned total_peptides = 0;
   double prior, prior2, prior3;
   prior = prior2 = prior3 = 0.0;
