@@ -587,7 +587,6 @@ int Caller::readFiles() {
     
     try {
       
-      namespace xml = xsd::cxx::xml;
       std::ifstream xmlInStream;
       xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
       xmlInStream.open(xmlInputFN.c_str());

@@ -51,7 +51,6 @@
   #include "serializer.hxx"
   #include <xercesc/dom/DOM.hpp>
   #include <xercesc/util/XMLString.hpp>
-  #include <xsd/cxx/xml/string.hxx>
   #include <xercesc/parsers/XercesDOMParser.hpp>
   #include <xercesc/sax/HandlerBase.hpp>
   #include <xercesc/util/PlatformUtils.hpp>

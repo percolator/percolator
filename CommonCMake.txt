@@ -62,7 +62,11 @@ IF(MINGW OR WIN32)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/lib/include)
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
-    set(WRITABLE_DIR ${XML_REL_PATH})
+    IF(WIN32)
+      set(WRITABLE_DIR ${CMAKE_INSTALL_PREFIX}/${XML_REL_PATH})
+    ELSE(WIN32)
+      set(WRITABLE_DIR ${XML_REL_PATH})
+    ENDIF(WIN32)
     add_definitions(-D_WIN32)
 ELSE(MINGW OR WIN32)
     set(CMAKE_INCLUDE_PATH /usr/include ${CMAKE_INCLUDE_PATH})
@@ -111,11 +115,6 @@ set(BOOST_MIN_VERSION "1.46.0")
 set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
 			       "1.48" "1.48.0" "1.49" "1.49.0" "1.50.0" "1.50" "1.51.0" "1.51")
-
-if(WIN32)  
-  set(BOOST_ROOT "C:\\local\\boost_1_55_0")
-  set(BOOST_LIBRARYDIR "C:\\local\\boost_1_55_0\\lib32-msvc-12.0")
-endif(WIN32)
 
 ###############################################################################
 # SET LOCATION OF MODULE FINDERS

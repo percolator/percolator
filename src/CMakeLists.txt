@@ -26,7 +26,7 @@ if(XML_SUPPORT)
 
   find_package(Xsd REQUIRED) # CODESYNTHESIS
   if(XSD_FOUND)
-    message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
+    message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}, ${XSD_EXECUTABLE}")
   else(XSD_FOUND)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
   endif(XSD_FOUND)  
@@ -51,7 +51,7 @@ endif(WIN32)
 ###############################################################################
 
 if(XML_SUPPORT)
-  if(MINGW)
+  if(MINGW OR WIN32)
     set( "" )
   else()
     set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )

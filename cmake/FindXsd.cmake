@@ -25,6 +25,7 @@ FIND_PROGRAM(XSD_EXECUTABLE
     $ENV{XSDDIR}/bin
     /usr/local/bin
     /usr/bin
+  NO_SYSTEM_ENVIRONMENT_PATH
 )
 
 
