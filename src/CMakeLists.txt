@@ -40,10 +40,6 @@ else(Boost_FOUND)
   message(FATAL_ERROR "Boost has not been found")
 endif(Boost_FOUND)
 include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_INCLUDE_DIRS})
-if(WIN32)
-  link_directories(${BOOST_LIBRARYDIR})
-endif(WIN32)
 
 
 ###############################################################################
@@ -136,9 +132,9 @@ if(PROFILING AND UNIX)
 endif()
  
 # SET LIBRARIES FOR PERCOLATOR
-if(WIN32)
+if(MSVC)
   target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
-else(WIN32)
+else(MSVC)
   target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
 endif()
  

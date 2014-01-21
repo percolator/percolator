@@ -4,14 +4,14 @@
 #include "Spectrum.h"
 #include "MSObject.h"
 #include <cstring>
-#include "zlib.h"
+#include <zlib.h>
 #include "ramp.h"
 #include "ramp_base64.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER2 // (MatthewThe): Disabled this since atlstr.h was not available in VS Express
 #include <atlstr.h>
 #import "C:\Xcalibur\system\programs\XRawfile2.dll"
 #endif
@@ -155,7 +155,7 @@ class MSReader {
   void writeSpecHeader(FILE* fileOut, bool text, Spectrum& s);
   
   //support for rawfiles
-  #ifdef _MSC_VER
+  #ifdef _MSC_VER2
   bool bRaw;
   long rawTotSpec;
   long rawCurSpec;

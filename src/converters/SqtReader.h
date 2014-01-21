@@ -19,6 +19,7 @@
 #define SQTREADER_H
 
 #include "Reader.h"
+#include <algorithm>
 
 class SqtReader: public Reader
 {

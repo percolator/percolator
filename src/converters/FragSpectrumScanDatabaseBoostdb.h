@@ -49,7 +49,7 @@ public:
   
   virtual void putFSS( ::percolatorInNs::fragSpectrumScan & fss );
   
-  virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize){};
+  virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize){throw MyException("deserializeFSSfromBinary is not implemented");};
   
 private:
  

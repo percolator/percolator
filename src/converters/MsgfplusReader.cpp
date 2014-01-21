@@ -190,7 +190,7 @@ void MsgfplusReader::addFeatureDescriptions(bool doEnzyme)
 double MsgfplusReader::rescaleFragmentFeature(double featureValue, int NumMatchedMainIons) {
 	// Rescale the fragment features to penalize features calculated by few ions
 	int numerator = (1+numMatchedIonLimit)*(1+numMatchedIonLimit);
-	int denominator = (1+std::min(NumMatchedMainIons, numMatchedIonLimit))*(1+std::min(NumMatchedMainIons, numMatchedIonLimit));
+	int denominator = (1+(std::min)(NumMatchedMainIons, numMatchedIonLimit))*(1+(std::min)(NumMatchedMainIons, numMatchedIonLimit));
 	return featureValue * ((double)numerator/denominator);
 }
 

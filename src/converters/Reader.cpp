@@ -624,7 +624,7 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   stringstream buf;
   char c = buffer.peek();
 
-   while (!buffer.eof() and (c == ' ' || c == '\n')) {
+   while (!buffer.eof() && (c == ' ' || c == '\n')) {
       buffer.ignore(1);
       if (!buffer.eof()) c = buffer.peek();
    }
@@ -857,7 +857,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
       {
         // else, take retention time of psm that has observed mass closest to
         // theoretical mass (smallest massDiff)
-        double massDiff = std::numeric_limits<double>::max(); // + infinity
+        double massDiff = DBL_MAX; // + infinity
         for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i = psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i)
 	{
           // skip decoy
@@ -874,7 +874,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
               vector<double>::const_iterator r = rTimes->begin();
 
               // Loop over alternatives EZ-lines, choose the one with the smallest mass difference
-              double altMassDiff = std::numeric_limits<double>::max();  // + infinity
+              double altMassDiff = DBL_MAX;  // + infinity
               for(; r<rTimes->end(); r=r+2)  // Loops over the EZ-line mh values (rounded to one or two decimals...)
 	      {
                 double rrr = *r;  //mass+h

@@ -159,8 +159,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
       
     }
   }
-  f_seq[1] = (xcorr - lastXcorr) / std::max(1.0,xcorr);
-  f_seq[2] = (xcorr - otherXcorr) / std::max(1.0,xcorr);
+  f_seq[1] = (xcorr - lastXcorr) / (std::max)(1.0,xcorr);
+  f_seq[2] = (xcorr - otherXcorr) / (std::max)(1.0,xcorr);
   
   percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1);
@@ -244,8 +244,8 @@ void SqtReader::getMaxMinCharge(const std::string &fn, bool isDecoy)
       lineParse.clear();
       lineParse.str(line);
       lineParse >> tmp >> tmp >> scanExtra >> charge;
-      minCharge = std::min(minCharge,charge);
-      maxCharge = std::max(maxCharge,charge);
+      minCharge = (std::min)(minCharge,charge);
+      maxCharge = (std::max)(maxCharge,charge);
     }
      
   }

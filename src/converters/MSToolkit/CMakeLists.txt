@@ -7,6 +7,11 @@ endif(SQLITE3_FOUND)
 include_directories(${SQLITE3_INCLUDE_DIR})
 
 find_package( ZLIB REQUIRED )
+if(ZLIB_FOUND)
+  message(STATUS "ZLIB found: ${ZLIB_INCLUDE_DIRS}, ${ZLIB_LIBRARIES}")
+else(ZLIB_FOUND)
+  message(FATAL_ERROR "The package ZLIB has not been found")
+endif(ZLIB_FOUND)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
 add_subdirectory(RAMP)

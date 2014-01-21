@@ -142,3 +142,10 @@ if(UNIX OR APPLE OR MINGW)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -std=c++0x")
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g")
 endif()
+
+if(MSVC)
+  add_definitions (/MP4 /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE)
+  # CMake automatically configures VS to use multi threading, 
+  # if boost would use single threading, the auto-linking process of boost would fail.
+  set(Boost_USE_MULTITHREADED ON)
+endif(MSVC)

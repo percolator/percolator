@@ -27,6 +27,7 @@ void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
 bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par) {
   // add pointer to retention times table (if any)
   scan2rt=scan2rt_par;
+  return true;
 }
 
 void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream) {

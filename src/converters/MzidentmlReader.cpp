@@ -84,8 +84,8 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       // For each SpectrumIdentificationItem
       for (const auto & item : specIdResult.SpectrumIdentificationItem()) {
-        minCharge = std::min(item.chargeState(), minCharge);
-        maxCharge = std::max(item.chargeState(), maxCharge);
+        minCharge = (std::min)(item.chargeState(), minCharge);
+        maxCharge = (std::max)(item.chargeState(), maxCharge);
         searchEngineSpecificParsing(item, itemCount);  // Virtual function that potentially checks the features
         ++itemCount;
       }

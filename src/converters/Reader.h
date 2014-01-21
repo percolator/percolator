@@ -32,6 +32,7 @@
 #include <set>
 #include <cmath>
 #include <algorithm>
+#include <limits>
 #include <vector>
 #include "Globals.h"
 #include "config.h"
