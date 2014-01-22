@@ -36,7 +36,7 @@ Reader::Reader()
 
 Reader::~Reader()
 {
-  for(int i=0; i<tmpDirs.size(); i++)
+  for(unsigned int i=0; i<tmpDirs.size(); i++)
   {
     if(boost::filesystem::is_directory(tmpDirs[i]))
     {
@@ -202,7 +202,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     if (VERB>2)
       std::cerr << "Databases : " << databases.size() << std::endl;
 
-    for(int i=0; i<databases.size();i++) {
+    for(unsigned int i=0; i<databases.size();i++) {
       serializer ser;
       ser.start (outputStream);
       if(VERB>2){
@@ -356,7 +356,7 @@ void Reader::push_backFeatureDescription(const char * str, const char *descripti
 
 string Reader::getRidOfUnprintables(const string &inpString) {
   string outputs = "";
-  for (int jj = 0; jj < inpString.size(); jj++) {
+  for (unsigned int jj = 0; jj < inpString.size(); jj++) {
     signed char ch = inpString[jj];
     if (((int)ch) >= 32 && ((int)ch) <= 128) {
       outputs += ch;
@@ -374,7 +374,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
   std::string completeAlphabet = aaAlphabet + ambiguousAA + additionalAA;
 
   std::vector< double > doubleV;
-  for ( int m = 0  ; m < aaSize ; m++ )  {
+  for (unsigned int m = 0  ; m < aaSize ; m++ )  {
     doubleV.push_back(0.0);
   }
   int len = 0;
@@ -384,7 +384,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
     len++;
   }
   assert(len>0);
-  for ( int m = 0  ; m < aaSize ; m++ )  {
+  for (unsigned int m = 0  ; m < aaSize ; m++ )  {
     doubleV[m] /= len;
   }
   std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
@@ -560,7 +560,7 @@ unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
     if( start == 0 || ( protsequence[start+1] != 'P'
       && ( protsequence[start] == 'K' || protsequence[start] == 'R' ) ) )
     {
-      int numMisCleavages = 0;
+      unsigned int numMisCleavages = 0;
       for(size_t end=start+1;( end<=length && numMisCleavages <= po->missed_cleavages );end++)
       {
 	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
@@ -660,7 +660,6 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   }
 
   string temp;
-  char char_temp;
 
   while (!buffer.eof() && (buffer.peek() != '>')) {
 
@@ -857,7 +856,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
       {
         // else, take retention time of psm that has observed mass closest to
         // theoretical mass (smallest massDiff)
-        double massDiff = DBL_MAX; // + infinity
+        double massDiff = (std::numeric_limits<double>::max)(); // + infinity
         for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i = psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i)
 	{
           // skip decoy
@@ -874,7 +873,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
               vector<double>::const_iterator r = rTimes->begin();
 
               // Loop over alternatives EZ-lines, choose the one with the smallest mass difference
-              double altMassDiff = DBL_MAX;  // + infinity
+              double altMassDiff = (std::numeric_limits<double>::max)();  // + infinity
               for(; r<rTimes->end(); r=r+2)  // Loops over the EZ-line mh values (rounded to one or two decimals...)
 	      {
                 double rrr = *r;  //mass+h

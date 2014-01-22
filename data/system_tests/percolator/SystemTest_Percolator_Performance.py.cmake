@@ -84,7 +84,7 @@ def performanceD4On():
   processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_D4on.txt")
   output = processFile.read()
   extracted_D4on = int(output[39:40])
-  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_D4off.txt")
+  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_psms.txt")
   output = processFile.read()
   extracted_D4off = int(output[39:40])
   if extracted_D4on < extracted_D4off:

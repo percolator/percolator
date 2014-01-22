@@ -75,6 +75,12 @@ if( MINGW )
     include( InstallRequiredSystemLibraries )
 endif( MINGW )
 
+if(WIN32)
+  message( STATUS "    Installing system-libraries: Win32 DLLs." )
+  set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_LIBRARIES} )
+  include( InstallRequiredSystemLibraries )
+endif(WIN32)
+
 install(FILES src/xml/percolator_in.xsd DESTINATION ${XML_REL_PATH}/${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 

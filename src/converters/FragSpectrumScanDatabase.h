@@ -27,7 +27,6 @@
 #include <list>
 #include <string>
 #include <algorithm>
-#include <iostream>
 #include "Globals.h"
 #include "serializer.hxx"
 #include <xercesc/util/PlatformUtils.hpp>
@@ -35,7 +34,6 @@
 #include <xsd/cxx/xml/string.hxx>
 #include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include <xercesc/util/XMLUni.hpp>
-#include <iostream>
 #include <xercesc/dom/DOM.hpp>
 #include <xsd/cxx/xml/string.hxx>
 #include <xsd/cxx/xml/dom/bits/error-handler-proxy.hxx>

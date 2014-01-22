@@ -608,7 +608,6 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
 
 void Scores::recalculateDescriptionOfGood(const double fdr) {
   doc.clear();
-  unsigned int ix1 = 0;
   for (const auto &sh : scores) {
     if (sh.isTarget()) {
       //      if (fdr>scores[ix1].pPSM->q) {

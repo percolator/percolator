@@ -38,8 +38,8 @@ MsgfplusReader::MsgfplusReader(ParseOptions *po) :
 		MzidentmlReader(po),
 		useFragmentSpectrumFeatures(false),
 		additionalMsgfFeatures(false),
-		neutron(1.0033548378),
-		numMatchedIonLimit(7) {
+		numMatchedIonLimit(7),
+		neutron(1.0033548378) {
 }
 
 MsgfplusReader::~MsgfplusReader() {

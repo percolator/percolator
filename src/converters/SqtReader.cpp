@@ -36,10 +36,9 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
 
   std::istringstream instr(in), linestr;
   std::ostringstream idbuild;
-  int ourPos;
   std::string line, tmp;
 
-  double mass, deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr = 0.0, nSM = 0.0, tstSM = 0.0;
+  double deltCn, tmpdbl, otherXcorr = 0.0, xcorr = 0.0, lastXcorr = 0.0, nSM = 0.0, tstSM = 0.0;
   bool gotL = true;
   int ms = 0;
   std::string peptide;
@@ -114,7 +113,6 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         f_seq.push_back( matched / expected ); // Fraction matched/expected ions
         f_seq.push_back( observedMassCharge ); // Observed mass
         f_seq.push_back(peptideLength(peptide)); // Peptide length
-        int nxtFeat = 8;
         for (int c = minCharge; c <= maxCharge; c++)
           f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
 
@@ -257,12 +255,9 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
 {
 
   std::string ptmAlphabet;
-  int label;
-  double *feature, *regressionFeature;
-  int numSpectra;
   std::string fileId;
   int charge;
-  int n = 0, ms = 0;
+  int ms = 0;
   std::string line, tmp, prot;
   std::istringstream lineParse;
   std::ifstream sqtIn;
@@ -287,10 +282,9 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
     fileId.erase(spos);
   }
   std::ostringstream buff, id;
-  int ix = 0, lines = 0;
+  int lines = 0;
   std::string scan;
   std::set<int> theMs;
-  unsigned int scanNr2;
 
   while (getline(sqtIn, line)) 
   {

@@ -327,7 +327,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
   unsigned charge = 0;
   double sumI = 0.0;
   double maxI = 0.0;
-  double fI = 0.0;
+  //double fI = 0.0;
   spectraId = boost::lexical_cast<int>(groupObj.id());
   peptideProteinMapType peptideProteinMap;
   getPeptideProteinMap(groupObj,peptideProteinMap); 
@@ -338,7 +338,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
     charge = boost::lexical_cast<unsigned>(groupObj.z().get()); 	//the parent ion charge from the spectrum
     sumI = boost::lexical_cast<double>(groupObj.sumI().get());	//the log10 value of the sum of all of the fragment ion intensities
     maxI = boost::lexical_cast<double>(groupObj.maxI().get());	//the maximum fragment ion intensity
-    fI = boost::lexical_cast<double>(groupObj.fI().get()); // 	constant to unnormalize
+    //fI = boost::lexical_cast<double>(groupObj.fI().get()); // 	constant to unnormalize
   }
   else
   {
@@ -408,12 +408,12 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   std::map<char,int> ptmMap = po->ptmScheme;
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
-  double expect_value = boost::lexical_cast<double>(domain.expect());
+  //double expect_value = boost::lexical_cast<double>(domain.expect());
   double calculated_mass = boost::lexical_cast<double>(domain.mh());
   double mass_diff = boost::lexical_cast<double>(domain.delta());
   double hyperscore = boost::lexical_cast<double>(domain.hyperscore());
   double next_hyperscore = boost::lexical_cast<double>(domain.nextscore());
-  double missed_cleavages = boost::lexical_cast<unsigned>(domain.missed_cleavages());
+  //double missed_cleavages = boost::lexical_cast<unsigned>(domain.missed_cleavages());
   std::string peptide = boost::lexical_cast<std::string>(domain.seq());
   std::string pre = boost::lexical_cast<std::string>(domain.pre());
   if(pre=="[") {
@@ -426,35 +426,35 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   }
   std::string flankC = boost::lexical_cast<std::string>(post.at(0));
   std::string fullpeptide = flankN + "." + peptide + "." + flankC;
-  double xscore,xions,yscore,yions,zscore,zions,ascore,aions,bscore,bions,cscore,cions;
+  double xions = 0.0,yions = 0.0,zions = 0.0,aions = 0.0,bions = 0.0,cions = 0.0;
   if(x_score)
   {
-    xscore = boost::lexical_cast<double>(domain.x_score());
+    //xscore = boost::lexical_cast<double>(domain.x_score());
     xions = boost::lexical_cast<double>(domain.x_ions());
   }
   if(y_score)
   {
-    yscore = boost::lexical_cast<double>(domain.y_score()); 
+    //yscore = boost::lexical_cast<double>(domain.y_score()); 
     yions = boost::lexical_cast<double>(domain.y_ions());
   }
   if(z_score)
   {
-    zscore = boost::lexical_cast<double>(domain.z_score());
+    //zscore = boost::lexical_cast<double>(domain.z_score());
     zions = boost::lexical_cast<double>(domain.z_ions());
   }
   if(a_score)
   {
-    ascore = boost::lexical_cast<double>(domain.a_score());
+    //ascore = boost::lexical_cast<double>(domain.a_score());
     aions = boost::lexical_cast<double>(domain.a_ions());
   }
   if(b_score)
   {
-    bscore = boost::lexical_cast<double>(domain.b_score());
+    //bscore = boost::lexical_cast<double>(domain.b_score());
     bions = boost::lexical_cast<double>(domain.b_ions());
   }
   if(c_score)
   {
-    cscore = boost::lexical_cast<double>(domain.c_score());
+    //cscore = boost::lexical_cast<double>(domain.c_score());
     cions = boost::lexical_cast<double>(domain.c_ions());
   }
 
@@ -595,7 +595,6 @@ void TandemReader::read(const std::string &fn, bool isDecoy,
   std::string line, tmp, prot;
   std::istringstream lineParse;
   std::ifstream tandemIn;
-  int spectraId;
   
   namespace xml = xsd::cxx::xml;
   
