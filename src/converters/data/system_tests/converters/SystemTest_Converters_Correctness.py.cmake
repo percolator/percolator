@@ -7,6 +7,7 @@ import sys
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
+pathToOutputData = "@pathToOutputData@"
 success = True
 
 print "CONVERTERS CORRECTNESS"
@@ -18,11 +19,12 @@ print "(*): running sqt2pin with no options to generate pin input..."
 processFile = os.popen("(" + os.path.join(pathToBinaries, "sqt2pin ") +
   os.path.join(pathToData, "converters/sqt2pin/target.sqt ") +
   os.path.join(pathToData, "converters/sqt2pin/reverse.sqt ") +
-  "2>&1) > /tmp/SQT2PIN_no_options.txt")
+  "2>&1) > " + os.path.join(pathToOutputData, "SQT2PIN_no_options.txt ") )
 exitStatus = processFile.close()
 if exitStatus is not None:
+  print ("(" + os.path.join(pathToBinaries, "sqt2pin ") + os.path.join(pathToData, "converters/sqt2pin/target.sqt ") + os.path.join(pathToData, "converters/sqt2pin/reverse.sqt ") + "2>&1) > " + os.path.join(pathToData, "SQT2PIN_no_options.txt ") )
   print "...TEST FAILED: sqt2pin with no options terminated with " + str(exitStatus) + " exit status"
-  print "check /tmp/SQT2PIN_no_options.txt for details" 
+  print "check " + os.path.join(pathToOutputData, "SQT2PIN_no_options.txt ") + " for details" 
   success = False
 
 # if no errors were encountered, succeed

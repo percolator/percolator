@@ -68,11 +68,14 @@ mkdir -p $build_dir/percolator $build_dir/converters;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
+
+sudo make install CMAKE_INSTALL_ALWAYS=1;
+ctest -VV;
 
 #######converters########
 cd $build_dir/converters
@@ -85,6 +88,9 @@ echo -n "make converters (this will take few minutes).....";
 
 make -j 4;
 make -j 4 package;
+
+sudo make install CMAKE_INSTALL_ALWAYS=1;
+ctest -VV;
 
 ###########################
 cp $build_dir/{percolator,converters}/*.deb ${release_dir};

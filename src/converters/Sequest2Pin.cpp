@@ -44,22 +44,23 @@ int Sequest2Pin::run() {
 int main(int argc, char** argv) {
   
   Sequest2Pin* pSequest2Pin = new Sequest2Pin();
-  int retVal = -1;
+  int retVal = EXIT_FAILURE;
   
   try
   {
     if (pSequest2Pin->parseOpt(argc, argv, Sequest2Pin::Usage())) {
-      retVal = pSequest2Pin->run();
+      if(pSequest2Pin->run()) retVal = EXIT_SUCCESS;
     }
   }
   catch (const std::exception& e) 
   {
     std::cerr << e.what() << endl;
-    retVal = -1;
+    retVal = EXIT_FAILURE;
   }
   catch(...)
   {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
+    retVal = EXIT_FAILURE;
   }  
     
   delete pSequest2Pin;

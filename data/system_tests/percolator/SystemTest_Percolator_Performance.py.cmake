@@ -7,6 +7,7 @@ import sys
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
+pathToOutputData = "@pathToOutputData@"
 tmpDir = "@pathToData@"
 success = True
 
@@ -93,19 +94,19 @@ def performanceD4On():
     success = False
   return success
 
-psmFile=tmpDir+"/PERCOLATOR_psms.txt"
-peptideFile=tmpDir+"/PERCOLATOR_peptides.txt"
-proteinFile=tmpDir+"/PERCOLATOR_proteins.txt"
+psmFile=pathToOutputData+"/PERCOLATOR_psms.txt"
+peptideFile=pathToOutputData+"/PERCOLATOR_peptides.txt"
+proteinFile=pathToOutputData+"/PERCOLATOR_proteins.txt"
 # number of significant psms within boundaries
-success=checkNumberOfSignificant("psms",psmFile,283)
+success=checkNumberOfSignificant("psms",psmFile,283) and success
 # number of significant peptrides within boundaries
-success=checkNumberOfSignificant("peptides",peptideFile,221)
+success=checkNumberOfSignificant("peptides",peptideFile,221) and success
 # number of significant proteins within boundaries
-#success=checkNumberOfSignificant("proteins",proteinFile,153)
+#success=checkNumberOfSignificant("proteins",proteinFile,153) and success
 # psm: pi0 within boundaries
-success=checkPi0("psms",psmFile,0.8912)
+success=checkPi0("psms",psmFile,0.8912) and success
 # peptides: pi0 within boundaries
-success=checkPi0("peptides",peptideFile,0.9165)
+success=checkPi0("peptides",peptideFile,0.9165) and success
 # psm: pep within boundaries
 expected=[2.61748e-13,3.26564e-09,7.28959e-08]
 #success = checkPep("psms",psmFile, expected);

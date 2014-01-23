@@ -75,10 +75,10 @@ set PYTHON_URL=http://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 if not exist "%PYTHON_DIR%" (
   echo "Downloading and installing Python"
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%PYTHON_URL%','%INSTALL_DIR%\python.msi')"
-  msiexec /i %INSTALL_DIR%\python.msi /quiet TARGETDIR=%INSTALL_DIR%\python
-  setlocal
-  set PATH=%PATH%;%INSTALL_DIR%\python
+  msiexec /i %INSTALL_DIR%\python.msi /quiet TARGETDIR=%INSTALL_DIR%\python  
 )
+setlocal
+set PATH=%PATH%;%INSTALL_DIR%\python
 
 ::: Needed for converters package and xml support in percolator package :::
 set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86-windows-vc-10.0
@@ -144,8 +144,8 @@ echo "cmake percolator....."
 echo "build percolator (this will take a few minutes)....."
 ::msbuild PERCOLATOR.sln /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE%
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 md "%BUILD_DIR%\converters"
 cd "%BUILD_DIR%\converters"
@@ -156,8 +156,8 @@ echo "cmake converters....."
 echo "build converters (this will take a few minutes)....."
 ::msbuild PERCOLATOR.sln /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE%
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 :::::::::::::::::::::::::::::::::::::::
 :::::::::::: END BUILD ::::::::::::::::

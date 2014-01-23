@@ -40,22 +40,23 @@ int Tandem2Pin::run() {
 
 int main(int argc, char** argv) {
   Tandem2Pin* ptandem2Pin = new Tandem2Pin();
-  int retVal = -1;
+  int retVal = EXIT_FAILURE;
   
   try
   {
     if (ptandem2Pin->parseOpt(argc, argv, Tandem2Pin::Usage())) {
-      retVal = ptandem2Pin->run();
+      if(ptandem2Pin->run()) retVal = EXIT_SUCCESS;
     }
   }
   catch (const std::exception& e) 
   {
     std::cerr << e.what() << endl;
-    retVal = -1;
+    retVal = EXIT_FAILURE;
   }
   catch(...)
   {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
+    retVal = EXIT_FAILURE;
   }  
   
   delete ptandem2Pin;

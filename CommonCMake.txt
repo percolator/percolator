@@ -57,9 +57,9 @@ set(GAML_TANDEM_VERSION_MINOR "0")
 set(TANDEM_VERSION "2011.12.01.1")
 
 IF(MSVC)
-  set(XML_REL_PATH "share/xml/percolator/")
-ELSE(MSVC)
   set(XML_REL_PATH "share/xml\\\\percolator/")
+ELSE(MSVC)
+  set(XML_REL_PATH "share/xml/percolator/")
 ENDIF(MSVC)
 
 IF(MINGW OR WIN32) 

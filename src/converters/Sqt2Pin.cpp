@@ -44,22 +44,23 @@ int Sqt2Pin::run() {
 int main(int argc, char** argv) {
   
   Sqt2Pin* pSqt2Pin = new Sqt2Pin();
-  int retVal = -1;
+  int retVal = EXIT_FAILURE;
   
   try
   {
     if (pSqt2Pin->parseOpt(argc, argv, Sqt2Pin::Usage())) {
-      retVal = pSqt2Pin->run();
+      if(pSqt2Pin->run()) retVal = EXIT_SUCCESS;
     }
   }
   catch (const std::exception& e) 
   {
     std::cerr << e.what() << endl;
-    retVal = -1;
+    retVal = EXIT_FAILURE;
   }
   catch(...)
   {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
+    retVal = EXIT_FAILURE;
   }      
   delete pSqt2Pin;
 

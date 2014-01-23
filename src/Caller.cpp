@@ -1367,5 +1367,5 @@ int Caller::run() {
   }
   // write output to file
   writeXML();  
-  return 0;
+  return 1;
 }

@@ -37,27 +37,28 @@ int Msgfplus2pin::run() {
   reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);
   outputStream.close();
 
-  return 0;
+  return true;
 }
 int main(int argc, char** argv) {
 
   Msgfplus2pin* pmsgfplus2pin = new Msgfplus2pin();
-  int retVal = -1;
+  int retVal = EXIT_FAILURE;
 
   try
   {
     if (pmsgfplus2pin->parseOpt(argc, argv, Msgfplus2pin::Usage())) {
-      retVal = pmsgfplus2pin->run();
+      if(pmsgfplus2pin->run()) retVal = EXIT_SUCCESS;
     }
   }
   catch (const std::exception& e)
   {
     std::cerr << e.what() << endl;
-    retVal = -1;
+    retVal = EXIT_FAILURE;
   }
   catch(...)
   {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
+    retVal = EXIT_FAILURE;
   }
 
   delete pmsgfplus2pin;
