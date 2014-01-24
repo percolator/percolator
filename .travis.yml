@@ -5,4 +5,4 @@ before_script:
   - mkdir -p ~/my_rel ~/my_build
   - ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
 # Change this to your needs
-script:  cd ~/my_build/percolator && make test ARGS="-V"
+script:  cd ~/my_build/percolator && sudo make install && make test ARGS="-V"
