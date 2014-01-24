@@ -37,7 +37,7 @@ if extracted < 0.86 or extracted > 0.90:
 # q-value < 0.01 are counted and an error is reported if their number is greater
 # than 755+/-5%
 print("(*): checking values...")
-processFile = open(tmpDir + "/qvalityOutput.txt")
+processFile = open(pathToOutputData + "/qvalityOutput.txt")
 line = processFile.readline()
 finished = False
 while (not finished): # reading line by line, looking for "Score"
