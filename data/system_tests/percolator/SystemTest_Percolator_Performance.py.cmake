@@ -103,7 +103,7 @@ psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
 peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
 proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
 # number of significant psms within boundaries
-success=checkNumberOfSignificant("psms",psmFile,301) and success
+success=checkNumberOfSignificant("psms",psmFile,283) and success
 # number of significant peptrides within boundaries
 success=checkNumberOfSignificant("peptides",peptideFile,221) and success
 # number of significant proteins within boundaries

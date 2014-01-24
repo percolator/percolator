@@ -74,9 +74,6 @@ echo -n "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
 
-sudo make install CMAKE_INSTALL_ALWAYS=1;
-ctest -VV;
-
 #######converters########
 cd $build_dir/converters
 #-----cmake-----
@@ -88,9 +85,6 @@ echo -n "make converters (this will take few minutes).....";
 
 make -j 4;
 make -j 4 package;
-
-sudo make install CMAKE_INSTALL_ALWAYS=1;
-ctest -VV;
 
 ###########################
 cp $build_dir/{percolator,converters}/*.deb ${release_dir};
