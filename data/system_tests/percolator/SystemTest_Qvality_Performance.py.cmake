@@ -5,30 +5,38 @@
 
 import os
 import sys
+import re
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
+pathToOutputData = "@pathToOutputData@"
 tmpDir = "@pathToData@"
 success = True
 
-print "QVALITY PERFORMANCE"
+print("QVALITY PERFORMANCE")
+
+def getLine(search_term,file):
+  for line in open(file, 'r'):
+    if line == None:
+      print('no matches found')
+      return ""
+    if re.search(search_term, line):
+      return line
 
 # the output line containing "Selecting pi_0" is extracted and if its value is 
 # outside of (0.86, 0.90) an error is reported
-print "(*): checking selected pi_0..."
-processFile = os.popen("grep \"Selecting pi_0\" " + tmpDir +
-  "/qvalityOutput.txt")
-output = processFile.read()
+print("(*): checking selected pi_0...")
+output = getLine("Selecting pi_0", os.path.join(pathToOutputData, "qvalityOutput.txt"))
 extracted = float(output[15:20])
 if extracted < 0.86 or extracted > 0.90:
-  print "...TEST FAILED: selected pi_0=" + str(extracted) + " is outside of desired range (0.86, 0.90)"
-  print "check qvalityOutput.txt for details" 
+  print("...TEST FAILED: selected pi_0=" + str(extracted) + " is outside of desired range (0.86, 0.90)")
+  print("check qvalityOutput.txt for details")
   success = False
 
 # the number of lines of stdout (after the line beginning with "Score") until 
 # q-value < 0.01 are counted and an error is reported if their number is greater
 # than 755+/-5%
-print "(*): checking values..."
+print("(*): checking values...")
 processFile = open(tmpDir + "/qvalityOutput.txt")
 line = processFile.readline()
 finished = False
@@ -55,14 +63,14 @@ while (not finished): # counting lines
     countLines = countLines + 1
     line = processFile.readline()
 if countLines < 717 or countLines > 793:
-  print "...TEST FAILED: number of peptides=" + str(countLines) + " outside of desired range (717, 793)"
-  print "check qvalityOutput.txt for details" 
+  print("...TEST FAILED: number of peptides=" + str(countLines) + " outside of desired range (717, 793)")
+  print("check qvalityOutput.txt for details")
   success = False
 
 # if no errors were encountered, succeed
 if success == True:
- print "...TEST SUCCEEDED"
+ print("...TEST SUCCEEDED")
  exit(0)
 else:
- print "...TEST FAILED"
+ print("...TEST FAILED")
  exit(1)

@@ -9,8 +9,6 @@ import tempfile
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
 pathToOutputData = "@pathToOutputData@"
-tmpPath = "@pathToData@"
-#tmpPath = tempfile.gettempdir()
 success = True
 
 print("PERCOLATOR CORRECTNESS")
@@ -19,30 +17,36 @@ print("PERCOLATOR CORRECTNESS")
 def validate(what,file):
   success = True
   print("(*) validating "+what+" output...")
-  processFile = os.popen("xmllint --noout --schema " + pathToData + "/../src/xml/percolator_out.xsd " + file)
+  outSchema = doubleQuote(os.path.join(pathToData,"../src/xml/percolator_out.xsd"))
+  processFile = os.popen("xmllint --noout --schema " + outSchema + " " + file)
   exitStatus = processFile.close()
   if exitStatus is not None:
-    print("...TEST FAILED: percolator (on "+what+" probabilities) produced an invalid output or terminated with " + os.strerror(exitStatus))
+    print("...TEST FAILED: percolator (on "+what+" probabilities) produced an invalid output")
     print("check "+file+" for details")
     success = False
   return success
 
 def canPercRunThis(testName,flags,testFile,testFileFlag="",checkValidXml=True):
   success = True
-  tmpName=os.path.join(pathToOutputData,"PERCOLATOR_"+testName)
-  readPath = os.path.join(pathToData, testFile)
-  processFile = os.popen("(" + os.path.join(pathToBinaries, "percolator ") + testFileFlag + " " + readPath 
-   + " -X " + tmpName + ".pout.xml " + flags + 
-  " 2>&1) > "+ tmpName +".txt")
+  outputPath = os.path.join(pathToOutputData,"PERCOLATOR_"+testName)
+  xmlOutput = doubleQuote(outputPath + ".pout.xml")
+  txtOutput = doubleQuote(outputPath + ".txt")
+  readPath = doubleQuote(os.path.join(pathToData, testFile))
+  percExe = doubleQuote(os.path.join(pathToBinaries, "percolator"))
+  processFile = os.popen(' '.join([percExe, testFileFlag, readPath, '-X', xmlOutput, flags, '>', txtOutput,'2>&1']))
   exitStatus = processFile.close()
   if exitStatus is not None:
-    # print("(" + os.path.join(pathToBinaries, "percolator ") + testFileFlag + " " + readPath  + " -X " + tmpName + ".pout.xml " + flags + " 2>&1) > "+ tmpName +".txt")
+    print(' '.join([percExe, testFileFlag, readPath, '-X', xmlOutput, flags, '2>&1 >', txtOutput]))
     print("...TEST FAILED: percolator ("+testName+") terminated with " + os.strerror(exitStatus) + " exit status")
-    print("check "+ tmpName +".txt for details") 
+    print("check "+ txtOutput +" for details") 
     success = False
   if checkValidXml:
-    success = success and validate(testName,tmpName +".pout.xml")
+    success = success and validate(testName,xmlOutput)
   return success
+
+# puts double quotes around the input string, needed for windows shell
+def doubleQuote(path):
+  return ''.join(['"',path,'"'])
 
 # running percolator to calculate psm probabilities
 print("(*) running percolator to calculate psm probabilities...")

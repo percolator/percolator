@@ -13,6 +13,7 @@ call "C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevC
 :::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+setlocal
 set INSTALL_DIR=C:\local
 md %INSTALL_DIR%
 
@@ -80,6 +81,22 @@ if not exist "%PYTHON_DIR%" (
 setlocal
 set PATH=%PATH%;%INSTALL_DIR%\python
 
+::: Needed for system tests :::
+set LIBXML_DIR=%INSTALL_DIR%\libxml2-2.7.8.win32
+set LIBXML_URL=http://xmlsoft.org/sources/win32/libxml2-2.7.8.win32.zip
+set ICONV_URL=http://sourceforge.net/projects/gettext/files/libiconv-win32/1.9.1/libiconv-1.9.1.bin.woe32.zip/download
+set GETTEXT_URL=http://ftp.gnu.org/gnu/gettext/gettext-runtime-0.13.1.bin.woe32.zip
+if not exist "%LIBXML_DIR%" (
+  echo "Downloading and installing LibXML"
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%LIBXML_URL%','%INSTALL_DIR%\libxml.zip')"
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%ICONV_URL%','%INSTALL_DIR%\iconv.zip')"
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%GETTEXT_URL%','%INSTALL_DIR%\gettext.zip')"
+  %ZIP_EXE% x %INSTALL_DIR%\libxml.zip -o%INSTALL_DIR% > NUL
+  %ZIP_EXE% x %INSTALL_DIR%\iconv.zip -o%LIBXML_DIR% > NUL
+  %ZIP_EXE% x %INSTALL_DIR%\gettext.zip -o%LIBXML_DIR% > NUL
+)
+set PATH=%PATH%;%LIBXML_DIR%\bin
+
 ::: Needed for converters package and xml support in percolator package :::
 set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86-windows-vc-10.0
 set XERCES_URL=http://apache.mirrors.spacedump.net//xerces/c/3/binaries/xerces-c-3.1.1-x86-windows-vc-10.0.zip
@@ -114,7 +131,7 @@ if not exist "%SQLITE_DIR%" (
 )
 set SQLITE_DIR=%SQLITE_DIR%;%INSTALL_DIR%\sqlite3\src
 
-::: Needed for converters package :::
+::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib
 set ZLIB_URL=http://zlib.net/zlib128-dll.zip
 if not exist "%ZLIB_DIR%" (
@@ -123,6 +140,7 @@ if not exist "%ZLIB_DIR%" (
   %ZIP_EXE% x %INSTALL_DIR%\zlib.zip -o%INSTALL_DIR%\zlib > NUL
 )
 set ZLIB_DIR=%ZLIB_DIR%;%INSTALL_DIR%\zlib\include
+set PATH=%PATH%;%ZLIB_DIR%
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: END INSTALL DEPENDENCIES ::::::::::::::::
@@ -133,6 +151,7 @@ set ZLIB_DIR=%ZLIB_DIR%;%INSTALL_DIR%\zlib\include
 :::::::::::::::::::::::::::::::::::::::::
 :::::::::::: START BUILD ::::::::::::::::
 :::::::::::::::::::::::::::::::::::::::::
+
 md "%BUILD_DIR%"
 
 md "%BUILD_DIR%\percolator"
@@ -140,12 +159,12 @@ cd "%BUILD_DIR%\percolator"
 
 ::::::: Building percolator :::::::
 echo "cmake percolator....."
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%"
+::%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%"
 echo "build percolator (this will take a few minutes)....."
 ::msbuild PERCOLATOR.sln /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE%
+msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 md "%BUILD_DIR%\converters"
 cd "%BUILD_DIR%\converters"
@@ -155,9 +174,9 @@ echo "cmake converters....."
 %CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\src\converters"
 echo "build converters (this will take a few minutes)....."
 ::msbuild PERCOLATOR.sln /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE%
+msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 :::::::::::::::::::::::::::::::::::::::
 :::::::::::: END BUILD ::::::::::::::::

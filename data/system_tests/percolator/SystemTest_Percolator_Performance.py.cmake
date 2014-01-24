@@ -4,24 +4,32 @@
 
 import os
 import sys
+import re
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
 pathToOutputData = "@pathToOutputData@"
-tmpDir = "@pathToData@"
 success = True
 
 print("PERCOLATOR PERFORMANCE")
+
+def getLine(search_term,file):
+  for line in open(file, 'r'):
+    if line == None:
+      print('no matches found')
+      return ""
+    if re.search(search_term, line):
+      return line
+    
 
 # check number of psms/peptides with q-value < 0.01 is withing 5% from expected
 def checkNumberOfSignificant(what,file,expected):
   success = True
   print("(*): checking number of significant "+what+" found...")
   if what=="proteins":
-    processFile = os.popen("grep \"The number of Proteins idenfified at q-value = 0.01 is :\" "+file)
+    output = getLine("The number of Proteins idenfified at q-value = 0.01 is :",file)
   else:
-    processFile = os.popen("grep \"New pi_0 estimate\" "+file)
-  output = processFile.read()
+    output = getLine("New pi_0 estimate",file)
   if what=="proteins":
     extracted = float(output[-3:])
   else:
@@ -36,8 +44,7 @@ def checkNumberOfSignificant(what,file,expected):
 def checkPi0(what,file,expected):
   success = True
   print("(*): checking pi_0 estimate for "+what+"...")
-  processFile = os.popen("grep \"Selecting pi_0\" "+file)
-  output = processFile.read()
+  output = getLine("Selecting pi_0",file)
   extracted = float(output[15:20])
   if extracted<expected-(5*expected/100) or extracted>expected+(5*expected/100):
     print("...TEST FAILED: "+what+" pi_0=" + str(extracted) + " is outside of desired range")
@@ -48,7 +55,7 @@ def checkPi0(what,file,expected):
 # check pep within 5% expected value
 def checkPep(what,file,expected):
   success=True
-  print "(*): checking posterior error probabilities for "+what+"..."
+  print("(*): checking posterior error probabilities for "+what+"...")
   processFile = open(file)
   psm_line=[]
   line = processFile.readline()
@@ -81,24 +88,22 @@ def checkPep(what,file,expected):
 # performance increase when description of correct features option is enabled
 def performanceD4On():
   success = True
-  print "(*): checking performance with description of correct features option..."
-  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_D4on.txt")
-  output = processFile.read()
+  print("(*): checking performance with description of correct features option...")
+  output = getLine("New pi_0", os.path.join(pathToOutputData,"PERCOLATOR_D4on.txt"))
   extracted_D4on = int(output[39:40])
-  processFile = os.popen("grep \"New pi_0\" " + "/tmp/PERCOLATOR_psms.txt")
-  output = processFile.read()
+  output = getLine("New pi_0", os.path.join(pathToOutputData,"PERCOLATOR_psms.txt"))
   extracted_D4off = int(output[39:40])
   if extracted_D4on < extracted_D4off:
     print("...TEST FAILED: percolator with -D 4 option performed worse than without it")
-    print("check /tmp/PERCOLATOR_D4on.txt and /tmp/PERCOLATOR_D4off.txt for details" )
+    print("check /tmp/PERCOLATOR_D4on.txt and /tmp/PERCOLATOR_psms.txt for details" )
     success = False
   return success
 
-psmFile=pathToOutputData+"/PERCOLATOR_psms.txt"
-peptideFile=pathToOutputData+"/PERCOLATOR_peptides.txt"
-proteinFile=pathToOutputData+"/PERCOLATOR_proteins.txt"
+psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
+peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
+proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
 # number of significant psms within boundaries
-success=checkNumberOfSignificant("psms",psmFile,283) and success
+success=checkNumberOfSignificant("psms",psmFile,301) and success
 # number of significant peptrides within boundaries
 success=checkNumberOfSignificant("peptides",peptideFile,221) and success
 # number of significant proteins within boundaries
