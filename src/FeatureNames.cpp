@@ -98,3 +98,20 @@ void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
   assert(featureNames.size() == numFields);
   setNumFeatures(featureNames.size());
 }
+
+int FeatureNames::getFeatureNumber(const string& featureName) {
+  for (unsigned int fnum = 0; fnum < featureNames.size(); ++fnum) {
+    // there is no good case insensitive string compare in c++ (trying to avoid boost dependencies)
+    if (featureNames[fnum].size() == featureName.size()) {
+      bool isEqual = true;
+      for (unsigned int i = 0; i < featureName.size(); ++i) {
+        if (std::tolower(featureName[i]) != std::tolower(featureNames[fnum][i])) {
+          isEqual = false;
+          break;
+        }
+      }
+      if (isEqual) return fnum + 1;
+    } 
+  }
+  return 0;
+}

@@ -224,8 +224,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("V",
       "default-direction",
-      "The most informative feature given as feature number, can be negated to indicate that a lower value is better.",
-      "featureNum");
+      "The most informative feature given as the feature name, can be negated to indicate that a lower value is better.",
+      "featureName");
   cmd.defineOption("v",
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
@@ -462,7 +462,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     SanityCheck::setInitWeightFN(cmd.options["W"]);
   }
   if (cmd.optionSet("V")) {
-    SanityCheck::setInitDefaultDir(cmd.getInt("V", -100, 100));
+    SanityCheck::setInitDefaultDirName(cmd.options["V"]);
   }
   if (cmd.optionSet("f")) {
     double frac = cmd.getDouble("f", 0.0, 1.0);
@@ -692,6 +692,7 @@ int Caller::readFiles() {
       pCheck = SanityCheck::initialize(otherCall);
       assert(pCheck);
       pCheck->addDefaultWeights(init_values);
+      pCheck->checkAndSetDefaultDir();
       setHandler.push_back_dataset(targetSet);
       setHandler.push_back_dataset(decoySet);
       xmlInStream.close();
@@ -713,11 +714,13 @@ int Caller::readFiles() {
     std::cerr << "Warning: Compiler flag XML_SUPPORT was off, trying to process input as tab delimited file" << std::endl;
     pCheck = new SanityCheck();
     setHandler.readTab(forwardTabInputFN);
+    pCheck->checkAndSetDefaultDir();
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
 #endif //XML_SUPPORT
   } else if (tabInput) {
     pCheck = new SanityCheck();
     setHandler.readTab(forwardTabInputFN);
+    pCheck->checkAndSetDefaultDir();
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
   } 
   return true;

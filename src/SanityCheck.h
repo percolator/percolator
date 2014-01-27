@@ -26,6 +26,7 @@ class SanityCheck {
     virtual ~SanityCheck();
     static SanityCheck* initialize(string otherCall);
     void readWeights(istream& weightStream, vector<double>& w);
+    void checkAndSetDefaultDir();
     int getInitDirection(vector<Scores>& testset,
                          vector<Scores> &trainset, Normalizer* pNorm,
                          vector<vector<double> >& w, double test_fdr);
@@ -37,6 +38,9 @@ class SanityCheck {
     }
     static void setInitDefaultDir(int dir) {
       initDefaultDir = dir;
+    }
+    static void setInitDefaultDirName(const string & dirName) {
+      initDefaultDirName = dirName;
     }
     static void setOverrule(bool orl) {
       overRule = orl;
@@ -56,6 +60,7 @@ class SanityCheck {
     double fdr;
     static bool overRule;
     static string initWeightFN;
+    static string initDefaultDirName;
     static int initDefaultDir; // Default Direction, 0=do not use,
     // positive integer = feature number,
     // negative integer = lower score better

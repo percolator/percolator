@@ -38,6 +38,7 @@ SanityCheck::~SanityCheck() {
 bool SanityCheck::overRule = false;
 string SanityCheck::initWeightFN = "";
 int SanityCheck::initDefaultDir = 0;
+string SanityCheck::initDefaultDirName = "";
 vector<double> SanityCheck::default_weights = vector<double>();
 
 /**
@@ -53,6 +54,20 @@ SanityCheck* SanityCheck::initialize(string otherCall){
   } else return new SanityCheck();
 }
 
+void SanityCheck::checkAndSetDefaultDir() {
+  if (!initDefaultDir && initDefaultDirName.size() > 0) {
+    int dir = 1;
+    if (initDefaultDirName[0] == '-') {
+      initDefaultDirName.erase(0,1);
+      dir = -1;
+    }
+    initDefaultDir = dir * DataSet::getFeatureNames().getFeatureNumber(initDefaultDirName);
+    if (initDefaultDir == 0) {
+      throw MyException("ERROR: Initial direction feature name not found");
+    }
+  }
+}
+
 int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   vector<Scores>& trainset,
                                   Normalizer* pNorm,
@@ -60,7 +75,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   double test_fdr) {
   pTestset = &testset;
   pTrainset = &trainset;
-  fdr = test_fdr; 
+  fdr = test_fdr;
   if (initWeightFN.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
     ifstream weightStream(initWeightFN.data(), ios::in);
@@ -87,30 +102,24 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     
   //If I have not been given a initial direction
   if (!initDefaultDir) {
-      //if the default_weights from pin.xml are not present
-      if(default_weights.size() == 0) {
-        // Set init direction to be the most discriminative direction
-        for (size_t set = 0; set < w.size(); ++set) {
-            (*pTrainset)[set].getInitDirection(fdr, w[set], true);
+    //if the default_weights from pin.xml are not present
+    if(default_weights.size() == 0) {
+      // Set init direction to be the most discriminative direction
+      for (size_t set = 0; set < w.size(); ++set) {
+        (*pTrainset)[set].getInitDirection(fdr, w[set], true);
+      }
+    } else {
+      // I want to assign the default vector that is present in the pin.xml file
+      for (size_t set = 0; set < w.size(); ++set) {
+        for (size_t ix = 0; ix < w[set].size(); ix++) {
+          w[set][ix] = 0;
+          if(ix < default_weights.size()){
+              w[set][ix] = default_weights[ix];
+          }          
         }
       }
-      else
-      {
-          // I want to assign the default vector that is present in the pin.xml file
-          for (size_t set = 0; set < w.size(); ++set) {
-              for (size_t ix = 0; ix < w[set].size(); ix++) {
-                  w[set][ix] = 0;
-                  if(ix < default_weights.size()){
-                      w[set][ix] = default_weights[ix];
-                  }
-                      
-              }
-          }
-          
-      }
-    
+    }
   } else {
-     
     for (size_t set = 0; set < w.size(); ++set) {
       for (size_t ix = 0; ix < w[set].size(); ix++) {
         w[set][ix] = 0;
