@@ -27,8 +27,8 @@
 #include "FeatureNames.h"
 #include "Scores.h"
 #include "ProteinProbEstimator.h"
+#include "SanityCheck.h"
 #ifdef XML_SUPPORT
-  #include "SanityCheck.h"
   #include "SqtSanityCheck.h"
   #include "FidoInterface.h"
   #include "Enzyme.h"

@@ -35,7 +35,8 @@ class FeatureNames {
   public:
     FeatureNames();
     virtual ~FeatureNames();
-    string getFeatureNames(bool skipDOC = false);
+    std::string getFeatureNames(bool skipDOC = false);
+    inline std::string getFeatureName(unsigned int index) { return featureNames.at(index); }
     static inline size_t getNumFeatures() {
       return numFeatures;
     }

@@ -88,7 +88,7 @@ int const SetHandler::getLabel(int setPos) {
   return subsets[setPos]->getLabel();
 }
 
-int SetHandler::readTab(const string& dataFN) {
+int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   if (VERB > 1) {
     cerr << "Reading Tab delimited input from datafile " << dataFN
         << endl;
@@ -113,12 +113,33 @@ int SetHandler::readTab(const string& dataFN) {
   }
   iss.clear(); // clear the error bit
   
-  // count number of features from first PSM
-  getline(dataStream, line);
-  unsigned int numFeatures = 0;
-  iss.str(line);
+  // check if first row contains the default weights
   double a;
-  iss >> tmp >> tmp >> tmp >> a; // remove id, label and scannr, then test third column
+  std::vector<double> init_values;
+  bool hasInitialValues = false;
+  getline(dataStream, line);
+  iss.str(line);
+  iss >> tmp; // read id
+  if (tmp == "DefaultDirection") {
+    hasInitialValues = true;
+    iss >> tmp >> tmp; // remove label and scannr
+    unsigned int ix = 0;
+    while (iss.good()) {
+      iss >> a;
+      if (VERB > 2) {
+        std::cerr << "Initial direction for " << DataSet::getFeatureNames().getFeatureName(ix) << " is " << a << std::endl;
+      }
+      init_values.push_back(a);
+      ix++;
+    }
+    iss.clear(); // clear the error bit
+    getline(dataStream, line); // move to the first PSM
+  }
+  
+  // count number of features from first PSM
+  unsigned int numFeatures = 0;
+  iss.str(line);  
+  iss >> tmp >> tmp >> tmp >> a; // remove id label and scannr, then test third column
   while (iss.good()) {
     ++numFeatures;
     iss >> a;
@@ -141,6 +162,7 @@ int SetHandler::readTab(const string& dataFN) {
   int label;
   dataStream.seekg(0, std::ios::beg);
   getline(dataStream, line); // skip over column names
+  if (hasInitialValues) getline(dataStream, line); // skip over initial values
   while (getline(dataStream, line)) {
     iss.str(line);
     iss.clear();
@@ -155,17 +177,29 @@ int SetHandler::readTab(const string& dataFN) {
   
   push_back_dataset(targetSet);
   push_back_dataset(decoySet);
+  
+  pCheck = new SanityCheck();
+  pCheck->checkAndSetDefaultDir();
+  if (hasInitialValues) pCheck->addDefaultWeights(init_values);
   return 1;
 }
 
-void SetHandler::writeTab(const string& dataFN) {
+void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\tScanNr\t";
   if (DataSet::getCalcDoc()) {
     dataStream << "RT\tdM\t";
   }
   dataStream << DataSet::getFeatureNames().getFeatureNames(true)
-      << "\tPeptide\tProteins" << endl;
+      << "\tPeptide\tProteins" << std::endl;
+  vector<double> initial_values = pCheck->getDefaultWeights();
+  if (initial_values.size() > 0) {
+    dataStream << "DefaultDirection\t-\t-";
+    for (const auto iv : initial_values) {
+      dataStream << '\t' << iv;
+    }
+    dataStream << std::endl;
+  }
   for (auto & subset : subsets) {
     subset->writeTabData(dataStream);
   }

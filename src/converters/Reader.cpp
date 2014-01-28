@@ -243,12 +243,21 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
       // print to cout (or populate xml file)
       
     // print column names
+    bool hasInitialValues;
     outputStream << "SpecId\tLabel\tScanNr";
     for( const auto & descr : f_seq.featureDescription() ) {
       outputStream << "\t" << descr.name();
+      if (descr.initialValue().get() != 0) hasInitialValues = true;
     }
     outputStream << "\tPeptide\tProteins" << std::endl;
     
+    if (hasInitialValues) {
+      outputStream << "DefaultDirection\t-\t-";
+      for( const auto & descr : f_seq.featureDescription() ) {
+        outputStream << "\t" << descr.initialValue().get();
+      }
+      outputStream << std::endl;
+    }
     // print fragSpecturmScans
     if (VERB>2)
       std::cerr << "Databases : " << databases.size() << std::endl;

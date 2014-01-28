@@ -189,7 +189,7 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
 
 void SanityCheck::resetDirection(vector<vector<double> >& w) {
   if (!overRule) {
-    cerr << "Reseting score vector, using default vector" << endl;
+    cerr << "Resetting score vector, using default vector" << endl;
     getDefaultDirection(w);
   }
 }

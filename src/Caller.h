@@ -118,7 +118,6 @@ class Caller {
     unsigned int niter;
     
     string call;
-    string otherCall;
     string decoyOut;
     bool outputAll;
     bool showExpMass;

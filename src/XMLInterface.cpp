@@ -87,12 +87,12 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     //I want to get the initial values that are present in feature descriptions
     std::vector<double> init_values;
     for (const auto & descr : featureDescriptions.featureDescription()) {
-        if (descr.initialValue().present()) {
-            if (VERB >2) {
-                std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
-            }
-            init_values.push_back(descr.initialValue().get());
+      if (descr.initialValue().present()) {
+        if (VERB >2) {
+          std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
         }
+        init_values.push_back(descr.initialValue().get());
+      }
     }
     
     FeatureNames& feNames = DataSet::getFeatureNames();

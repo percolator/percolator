@@ -31,6 +31,7 @@
 #include "Scores.h"
 #include "Globals.h"
 #include "PSMDescription.h"
+#include "SanityCheck.h"
 using namespace std;
 
 class SetHandler {
@@ -57,8 +58,8 @@ class SetHandler {
                         const unsigned int xval_fold);
        
     //const double* getFeatures(const int setPos, const int ixPos) const;  
-    int readTab(const string& dataFN);
-    void writeTab(const string& dataFN);
+    int readTab(const string& dataFN, SanityCheck *& pCheck);
+    void writeTab(const string& dataFN, SanityCheck * pCheck);
     void print(Scores& test, int label, ostream& myout = cout);
     void fillFeatures(vector<ScoreHolder> &scores, int label);
     void fillFeaturesPeptide(vector<ScoreHolder> &scores, int label);

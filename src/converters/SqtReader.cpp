@@ -4,8 +4,8 @@
 //default score vector //TODO move this to a file or input parameter                          
 const std::map<string,double> SqtReader::sqtFeaturesDefaultValue =
 boost::assign::map_list_of("lnrSp", 0.0)
-("deltLCn",1.61)
-("deltCn", 0.0)
+("deltLCn",0.0)
+("deltCn", 1.61)
 ("Xcorr", 1.1)
 ("Sp", 0.0)
 ("IonFrac", 0.0)
@@ -411,7 +411,7 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme)
     if(charge == 1 || charge == 2 || charge == 3)  {
          value = sqtFeaturesDefaultValue.at(cname.str());
     }
-    push_backFeatureDescription(cname.str().c_str());
+    push_backFeatureDescription(cname.str().c_str(),"",value);
 
   }
   

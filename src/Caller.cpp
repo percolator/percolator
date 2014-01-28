@@ -192,7 +192,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("V",
       "default-direction",
       "The most informative feature given as the feature name, can be negated to indicate that a lower value is better.",
-      "featureName");
+      "[-]?featureName");
   cmd.defineOption("v",
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all, default is 2",
@@ -545,7 +545,7 @@ int Caller::readFiles() {
     error = xmlInterface.readPin(setHandler, pCheck, protEstimator);
   } else if (tabInput) {
     pCheck = new SanityCheck();
-    error = setHandler.readTab(forwardTabInputFN);
+    error = setHandler.readTab(forwardTabInputFN, pCheck);
     pCheck->checkAndSetDefaultDir();
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
   } 
@@ -747,10 +747,10 @@ void Caller::fillFeatureSets() {
   
   //check for the minimum recommended number of positive and negative hits
   if(fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
-    std::cerr << "Warning : the number of positive samples read is too small to perform a correct clasification.\n" << std::endl;
+    std::cerr << "Warning : the number of positive samples read is too small to perform a correct classification.\n" << std::endl;
   }
   if(fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
-    std::cerr << "Warning : the number of negative samples read is too small to perform a correct clasification.\n" << std::endl;
+    std::cerr << "Warning : the number of negative samples read is too small to perform a correct classification.\n" << std::endl;
   }
   
   //Normalize features
@@ -760,7 +760,7 @@ void Caller::fillFeatureSets() {
     }
   }
   if (tabFN.length() > 0) {
-    setHandler.writeTab(tabFN);
+    setHandler.writeTab(tabFN, pCheck);
   }
   vector<double*> featuresV, rtFeaturesV;
   for (auto &subset : setHandler.getSubsets()) {
@@ -1009,7 +1009,7 @@ int Caller::run() {
   // Copy feature data to Scores object
   fillFeatureSets();
   
-  // delete temporary file if reading form stdin
+  // delete temporary file if reading from stdin
   if(readStdIn){
     remove(xmlInterface.getXmlInputFN().c_str());
   }
