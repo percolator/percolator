@@ -29,48 +29,16 @@ using namespace std;
 
 const unsigned int Caller::xval_fold = 3; /* number of folds for cross validation*/
 const double requiredIncreaseOver2Iterations = 0.01; /* checks cross validation convergence */
-
-#ifdef XML_SUPPORT
-using namespace xercesc;
-
-/** some constants to be used to compare xml strings **/
-
-//databases
-static const XMLCh databasesStr[] = {
-      chLatin_d, chLatin_a, chLatin_t, chLatin_a, chLatin_b, chLatin_a,
-      chLatin_s, chLatin_e, chLatin_s, chNull };
-     
-      
-//calibration
-static const XMLCh calibrationStr[] = { chLatin_c, chLatin_a,
-      chLatin_l, chLatin_i, chLatin_b, chLatin_r, chLatin_a,
-      chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull };
-
-//proteins
-static const XMLCh proteinsStr[] = { chLatin_p, chLatin_r,
-      chLatin_o, chLatin_t, chLatin_e, chLatin_i, chLatin_n,
-      chLatin_s, chNull };
-
-//protein      
-static const XMLCh proteinStr[] = { chLatin_p, chLatin_r,
-      chLatin_o, chLatin_t, chLatin_e, chLatin_i, chLatin_n, chNull };
-      
-//fragSpectrumScan 
-static const XMLCh fragSpectrumScanStr[] = { chLatin_f, chLatin_r,
-      chLatin_a, chLatin_g, chLatin_S, chLatin_p, chLatin_e,
-      chLatin_c, chLatin_t, chLatin_r, chLatin_u, chLatin_m,
-      chLatin_S, chLatin_c, chLatin_a, chLatin_n, chNull };   
-#endif //XML_SUPPORT      
       
 /** some constants to be used to compare xml strings **/
       
 Caller::Caller() :
-        xmlOutputFN(""), pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
+        pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
         forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
-        xmlInputFN(""), weightFN(""), tabInput(false), readStdIn(false),
-        docFeatures(false), quickValidation(false), reportPerformanceEachIteration(false),
-        reportUniquePeptides(true), calculateProteinLevelProb(false),
-        schemaValidation(true), hasProteins(false), target_decoy_competition(false),
+        weightFN(""), tabInput(false), readStdIn(false),
+        quickValidation(false), reportPerformanceEachIteration(false),
+        reportUniquePeptides(true),
+        schemaValidation(true), target_decoy_competition(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 
@@ -368,7 +336,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
-  if (cmd.optionSet("X")) xmlOutputFN = cmd.options["X"];
+  if (cmd.optionSet("X")) xmlInterface.setXmlOutputFN(cmd.options["X"]);
   
   if (cmd.optionSet("B")) {
     decoyOut = cmd.options["B"];
@@ -390,7 +358,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
   if (cmd.optionSet("A")) {
   
-    calculateProteinLevelProb = true;
+    ProteinProbEstimator::setCalcProteinLevelProb(true);
     tiesAsOneProtein = cmd.optionSet("g");
     usePi0 = cmd.optionSet("I");
     outputEmpirQVal = cmd.optionSet("q");
@@ -418,7 +386,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       boost::filesystem::path ph = boost::filesystem::unique_path();
       boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
       boost::filesystem::path file("pin-tmp.xml");
-      xmlInputFN = std::string((dir / file).string()); 
+      xmlInterface.setXmlInputFN(std::string((dir / file).string())); 
       str =  dir.string();
       xmlInputDir = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), xmlInputDir);
@@ -453,7 +421,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("k")) {
     tabInput = false;
-    xmlInputFN = cmd.options["k"];
+    xmlInterface.setXmlInputFN(cmd.options["k"]);
   }
   if (cmd.optionSet("w")) {
     weightFN = cmd.options["w"];
@@ -496,7 +464,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     DescriptionOfCorrect::setKlammer(true);
   }
   if (cmd.optionSet("D")) {
-    docFeatures = true;
     DataSet::setCalcDoc(true);
     DescriptionOfCorrect::setDocType(cmd.getInt("D", 0, 15));
   }
@@ -574,156 +541,16 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
  * Reads in the files from XML (must be enabled at compile time) or tab format
  */
 int Caller::readFiles() { 
-  if (xmlInputFN.size() != 0) {    
-#ifdef XML_SUPPORT 
-    xercesc::XMLPlatformUtils::Initialize();
-    
-    DataSet * targetSet = new DataSet();
-    assert(targetSet);
-    targetSet->setLabel(1);
-    DataSet * decoySet = new DataSet();
-    assert(decoySet);
-    decoySet->setLabel(-1);
-    
-    try {
-      
-      std::ifstream xmlInStream;
-      xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
-      xmlInStream.open(xmlInputFN.c_str());
-
-      string schemaDefinition= Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
-      string schema_major = PIN_VERSION_MAJOR;
-      string schema_minor = PIN_VERSION_MINOR;
-      parser p;
-      xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc(p.start(
-          xmlInStream, xmlInputFN.c_str(), Caller::schemaValidation,
-          schemaDefinition, schema_major, schema_minor));
-
-      doc = p.next();
-      // read enzyme element
-      // the enzyme element is a subelement but CodeSynthesis Xsd does not
-      // generate a class for it. (I am trying to find a command line option
-      // that overrides this decision). As for now special treatment is needed
-      char* value = XMLString::transcode(doc->getDocumentElement()->getTextContent());
-      
-      if(VERB > 1) std::cerr << "enzyme=" << value << std::endl;
-      
-      Enzyme::setEnzyme(value);
-      XMLString::release(&value);
-      doc = p.next();
-
-      //checking if database is present to jump it
-      if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
-        //NOTE I dont really need this info, do I? good to have it though
-        /*
-          std::unique_ptr< ::percolatorInNs::databases > 
-	      databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
-        */
-        doc = p.next();
-        Caller::hasProteins = true;
-      }
-      
-      // read process_info element
-      percolatorInNs::process_info
-      processInfo(*doc->getDocumentElement());
-      otherCall = processInfo.command_line();
-      doc = p.next();
-
-
-      if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) {
-	//NOTE the calibration should define the initial direction
-        //percolatorInNs::calibration calibration(*doc->getDocumentElement());
-        doc = p.next();
-      };
-
-      percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
-
-      //I want to get the initial values that are present in feature descriptions
-      vector<double> init_values;
-      for (const auto & descr : featureDescriptions.featureDescription()) {
-          if (descr.initialValue().present()) {
-              if (VERB >2) {
-                  std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
-              }
-              init_values.push_back(descr.initialValue().get());
-          }
-      }
-      
-      FeatureNames& feNames = DataSet::getFeatureNames();
-      feNames.setFromXml(featureDescriptions, docFeatures);
-      targetSet->initFeatureTables(feNames.getNumFeatures(), docFeatures);
-      decoySet->initFeatureTables(feNames.getNumFeatures(), docFeatures);
-
-      // import info from xml: read Fragment Spectrum Scans
-      for (doc = p.next(); doc.get()!= 0 && 
-	XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
-      {
-        percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-	      for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch()) {
-	        if (psm.isDecoy()) {
-	          decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
-	        } else {
-	          targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
-	        }
-	      }
-      }
-
-      // import info from xml: read database proteins
-      // only read them if they are present and the option of using mayusfdr is activated
-      unsigned readProteins = 0;
-      for (doc = p.next(); doc.get()!= 0 
-	&& Caller::hasProteins && Caller::calculateProteinLevelProb /*&& Caller::protEstimator->getMayuFdr()*/
-	&& XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
-      {
-        std::unique_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
-        protEstimator->addProteinDb(*protein);
-        ++readProteins;
-      }
-      
-      /*if(Caller::calculateProteinLevelProb && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
-      {
-	std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
-		       Did you run converters with the flag -F ?\n" << std::endl;
-	Caller::protEstimator->setMayusFDR(false);
-      }*/
-      
-      //maybe better to do :
-      //SanityCheck::addDefaultWeights(init_values);
-      pCheck = SanityCheck::initialize(otherCall);
-      assert(pCheck);
-      pCheck->addDefaultWeights(init_values);
-      pCheck->checkAndSetDefaultDir();
-      setHandler.push_back_dataset(targetSet);
-      setHandler.push_back_dataset(decoySet);
-      xmlInStream.close();
-    } catch (const xml_schema::exception& e) {
-      std::cerr << e << endl;
-      return 0;
-    } catch (const std::ios_base::failure&) {
-      std::cerr << "unable to open or read failure" << std::endl;
-      return 0;
-    } catch (const xercesc::DOMException& e) {
-      char * tmpStr = XMLString::transcode(e.getMessage());
-      std::cerr << "catch  xercesc::DOMException=" << tmpStr << std::endl;
-      XMLString::release(&tmpStr);
-      return 0;
-    }
-    
-    xercesc::XMLPlatformUtils::Terminate();
-#else //XML_SUPPORT
-    std::cerr << "Warning: Compiler flag XML_SUPPORT was off, trying to process input as tab delimited file" << std::endl;
-    pCheck = new SanityCheck();
-    setHandler.readTab(forwardTabInputFN);
-    pCheck->checkAndSetDefaultDir();
-    std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
-#endif //XML_SUPPORT
+  int error;
+  if (xmlInterface.getXmlInputFN().size() != 0) {    
+    error = xmlInterface.readPin(setHandler, pCheck, protEstimator);
   } else if (tabInput) {
     pCheck = new SanityCheck();
-    setHandler.readTab(forwardTabInputFN);
+    error = setHandler.readTab(forwardTabInputFN);
     pCheck->checkAndSetDefaultDir();
     std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
   } 
-  return true;
+  return error;
 }
 
 /** 
@@ -750,7 +577,7 @@ int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, boo
   vector<double> ww = w[set]; // normal vector initial guess and result holder
   vector<double> bestW = w[set]; // normal vector with highest true positive estimate
   xv_train[set].calcScores(ww, selectionfdr);
-  if (docFeatures && updateDOC) {
+  if (DataSet::getCalcDoc() && updateDOC) {
     xv_train[set].recalculateDescriptionOfGood(selectionfdr);
   }
   xv_train[set].generateNegativeTrainingSet(*svmInput, 1.0);
@@ -894,7 +721,7 @@ void Caller::train(vector<vector<double> >& w) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < xval_fold; ++set) {
-    if (docFeatures) {
+    if (DataSet::getCalcDoc()) {
       xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
       xv_test[set].setDOCFeatures();
     }
@@ -928,7 +755,7 @@ void Caller::fillFeatureSets() {
   }
   
   //Normalize features
-  if (docFeatures) {
+  if (DataSet::getCalcDoc()) {
     for (auto &subset : setHandler.getSubsets()) {
       subset->setRetentionTime(scan2rt);
     }
@@ -946,7 +773,7 @@ void Caller::fillFeatureSets() {
   pNorm->setSet(featuresV,
       rtFeaturesV,
       FeatureNames::getNumFeatures(),
-      docFeatures ? RTModel::totalNumRTFeatures() : 0);
+      DataSet::getCalcDoc() ? RTModel::totalNumRTFeatures() : 0);
   pNorm->normalizeSet(featuresV, rtFeaturesV);
 }
 
@@ -999,125 +826,6 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
   }
 }
 
-/** 
- * Subroutine of @see Caller::writeXML() for PSM output
- */
-void Caller::writeXML_PSMs() {
-  ofstream os;
-  xmlOutputFN_PSMs = xmlOutputFN;
-  xmlOutputFN_PSMs.append("writeXML_PSMs");
-  os.open(xmlOutputFN_PSMs.c_str(), ios::out);
-
-  os << "  <psms>" << endl;
-  for (vector<ScoreHolder>::iterator psm = fullset.begin();
-      psm != fullset.end(); ++psm) {
-      os << *psm;
-  }
-  os << "  </psms>" << endl << endl;
-  os.close();
-}
-
-/** 
- * Subroutine of @see Caller::writeXML() for peptide output
- */
-void Caller::writeXML_Peptides() {
-  ofstream os;
-  xmlOutputFN_Peptides = xmlOutputFN;
-  xmlOutputFN_Peptides.append("writeXML_Peptides");
-  os.open(xmlOutputFN_Peptides.c_str(), ios::out);
-  // append PEPTIDEs
-  os << "  <peptides>" << endl;
-  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-  != fullset.end(); ++psm) {
-    os << (ScoreHolderPeptide)*psm;
-  }
-  os << "  </peptides>" << endl << endl;
-  os.close();
-}
-
-/** 
- * Subroutine of @see Caller::writeXML() for protein output
- */
-void Caller::writeXML_Proteins() {
-  xmlOutputFN_Proteins = xmlOutputFN;
-  xmlOutputFN_Proteins.append("writeXML_Proteins");
-  protEstimator->writeOutputToXML(xmlOutputFN_Proteins, Scores::isOutXmlDecoys());
-}
-
-/** 
- * Writes the output of percolator to an pout XML file
- */
-void Caller::writeXML(){
-  ofstream os;
-  const string space = PERCOLATOR_OUT_NAMESPACE;
-  string schema_major = POUT_VERSION_MAJOR;
-  string schema_minor = POUT_VERSION_MINOR;
-  const string schema = space +
-      " https://github.com/percolator/percolator/raw/pout-" + schema_major +
-      "-" + schema_minor + "/src/xml/percolator_out.xsd";
-  os.open(xmlOutputFN.data(), ios::out | ios::binary);
-  os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-  os << "<percolator_output "
-      << endl << "xmlns=\""<< space << "\" "
-      << endl << "xmlns:p=\""<< space << "\" "
-      << endl << "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-      << endl << "xsi:schemaLocation=\""<< schema <<"\" "
-      << endl << "p:majorVersion=\"" << VERSION_MAJOR << "\" p:minorVersion=\""
-      << VERSION_MINOR << "\" p:percolator_version=\"Percolator version "
-      << VERSION << "\">\n"<< endl;
-  os << "  <process_info>" << endl;
-  os << "    <command_line>" << call << "</command_line>" << endl;
-
-  os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
-  os << "    <pi_0_psms>" << pi_0_psms << "</pi_0_psms>" << endl;
-  if(reportUniquePeptides)
-    os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
-  if(calculateProteinLevelProb) {  
-    if(usePi0)
-      os << "    <pi_0_proteins>" << protEstimator->getPi0() << "</pi_0_proteins>" << endl;
-    /*if(protEstimator->getMayuFdr())
-      os << "    <fdr_proteins>" << protEstimator->getFDR() << "</fdr_proteins>" << endl;*/
-    os << "    <alpha>" << protEstimator->getAlpha() <<"</alpha>" << endl;
-    os << "    <beta>"  << protEstimator->getBeta() <<"</beta>" << endl;
-    os << "    <gamma>" << protEstimator->getGamma() <<"</gamma>" << endl;
-  }
-  os << "    <psms_qlevel>" <<  numberQpsms <<"</psms_qlevel>" << endl;
-  if(reportUniquePeptides)
-    os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.01) << "</peptides_qlevel>" << endl;
-  if(calculateProteinLevelProb)
-    os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.01) << "</proteins_qlevel>" << endl;  
-  if (docFeatures) {
-    os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-                   << "</average_delta_mass>" << endl;
-    os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-                   << "</average_pi>" << endl;
-  }
-  os << "  </process_info>" << endl << endl;
-
-  // apppend PSMs
-  ifstream ifs_psms(xmlOutputFN_PSMs.data(), ios::in | ios::binary);
-  os << ifs_psms.rdbuf();
-  ifs_psms.close();
-  remove(xmlOutputFN_PSMs.c_str());
-  // append Peptides
-  if(reportUniquePeptides){
-    ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
-    os << ifs_peptides.rdbuf();
-    ifs_peptides.close();
-    remove(xmlOutputFN_Peptides.c_str());
-  }
-  // append Proteins
-  if(calculateProteinLevelProb){
-    ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
-    os << ifs_proteins.rdbuf();
-    ifs_proteins.close();
-    remove(xmlOutputFN_Proteins.c_str());
-  }
-
-  os << "</percolator_output>" << endl;
-  os.close();
-}
-
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities
  * @param procStart clock time when process started
@@ -1159,7 +867,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   int foundPSMs = fullset->calcQ(test_fdr);
   fullset->calcPep();
-  if (VERB > 0 && docFeatures && writeOutput) {
+  if (VERB > 0 && DataSet::getCalcDoc() && writeOutput) {
     cerr << "For the cross validation sets the average deltaMass are ";
     for (size_t ix = 0; ix < xv_test.size(); ix++) {
       cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
@@ -1223,10 +931,10 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   }
   // set pi_0 value (to be outputted)
   if(isUniquePeptideRun) {
-    pi_0_peptides = fullset->getPi0();
+    xmlInterface.setPi0Peptides(fullset->getPi0());
   } else {
-    pi_0_psms = fullset->getPi0();
-    numberQpsms = fullset->getQvaluesBelowLevel(0.01);
+    xmlInterface.setPi0Psms(fullset->getPi0());
+    xmlInterface.setNumberQpsms(fullset->getQvaluesBelowLevel(0.01));
   }
 }
 
@@ -1265,8 +973,8 @@ void Caller::calculateProteinProbabilitiesFido() {
   }
   
   protEstimator->printOut(resultFN,decoyOut);
-  if (xmlOutputFN.size() > 0) {
-      writeXML_Proteins();
+  if (xmlInterface.getXmlOutputFN().size() > 0) {
+      xmlInterface.writeXML_Proteins(protEstimator);
   }
 }
 
@@ -1288,7 +996,7 @@ int Caller::run() {
   // populate tmp input file with cin information if option is enabled
   if(readStdIn){
     ofstream tmpInputFile;
-    tmpInputFile.open(xmlInputFN.c_str());
+    tmpInputFile.open(xmlInterface.getXmlInputFN().c_str());
     while(cin) {
       char buffer[1000];
       cin.getline(buffer, 1000);
@@ -1304,7 +1012,7 @@ int Caller::run() {
   
   // delete temporary file if reading form stdin
   if(readStdIn){
-    remove(xmlInputFN.c_str());
+    remove(xmlInterface.getXmlInputFN().c_str());
   }
   if(VERB > 2){
     std::cerr << "FeatureNames::getNumFeatures(): "<< FeatureNames::getNumFeatures() << endl;
@@ -1353,22 +1061,22 @@ int Caller::run() {
   
   //PSM probabilities TDA or TDC
   calculatePSMProb(false, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
-  if (xmlOutputFN.size() > 0){
-    writeXML_PSMs();
+  if (xmlInterface.getXmlOutputFN().size() > 0){
+    xmlInterface.writeXML_PSMs(fullset);
   }
   
   // calculate unique peptides level probabilities WOTE
   if(reportUniquePeptides){
     calculatePSMProb(true, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
-    if (xmlOutputFN.size() > 0){
-      writeXML_Peptides();
+    if (xmlInterface.getXmlOutputFN().size() > 0){
+      xmlInterface.writeXML_Peptides(fullset);
     }
   }
   // calculate protein level probabilities with FIDO
-  if(calculateProteinLevelProb){
+  if(ProteinProbEstimator::getCalcProteinLevelProb()){
     calculateProteinProbabilitiesFido();
   }
   // write output to file
-  writeXML();  
+  xmlInterface.writeXML(fullset, protEstimator, call);  
   return 1;
 }

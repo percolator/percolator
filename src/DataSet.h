@@ -61,8 +61,8 @@ class DataSet {
     void inline setSize(int n) { numSpectra = n; }
     int inline getSize() const { return numSpectra; }
     
-    static void setCalcDoc(bool on) { calcDOC = on; }
-    static bool getCalcDoc() { return calcDOC; }
+    static inline void setCalcDoc(bool on) { calcDOC = on; }
+    static inline bool getCalcDoc() { return calcDOC; }
     
     static void setIsotopeMass(bool on) { isotopeMass = on; }
     

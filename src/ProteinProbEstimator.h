@@ -68,10 +68,14 @@ struct RetrieveValue
   }
 };
 
- 
+
 class ProteinProbEstimator {
   
   public:
+    
+    static inline void setCalcProteinLevelProb(bool on) { calcProteinLevelProb = on; }
+    static inline bool getCalcProteinLevelProb() { return calcProteinLevelProb; }
+    inline bool getUsePi0() { return usePi0; }
     
     /** PROTEIN FDR ESTIMATOR PARAMETERS **/
     
@@ -162,6 +166,8 @@ class ProteinProbEstimator {
     virtual double getAlpha() = 0;
     
   protected:
+  
+    static bool calcProteinLevelProb;
    
     /** functions to count number of target and decoy proteins **/
     unsigned countTargets(const std::vector<std::string> &proteinList);

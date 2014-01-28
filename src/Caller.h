@@ -40,22 +40,12 @@
 #include "Normalizer.h"
 #include "SanityCheck.h"
 #include "SetHandler.h"
+#include "XMLInterface.h"
 #include "ssl.h"
 #include "Globals.h"
 #include "MassHandler.h"
-#include "Enzyme.h"
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
-#ifdef XML_SUPPORT
-  #include "parser.hxx"
-  #include "serializer.hxx"
-  #include <xercesc/dom/DOM.hpp>
-  #include <xercesc/util/XMLString.hpp>
-  #include <xercesc/parsers/XercesDOMParser.hpp>
-  #include <xercesc/sax/HandlerBase.hpp>
-  #include <xercesc/util/PlatformUtils.hpp>
-  #include "percolator_in.hxx"
-#endif //XML_SUPPORT
 
 class Caller {
   public:
@@ -84,28 +74,16 @@ class Caller {
     
     void fillFeatureSets();
     int preIterationSetup(vector<vector<double> >& w);
-    Scores* getFullSet() {
-      return &fullset;
-    }
     void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
         clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC = false);
     
     void calculateProteinProbabilitiesFido();
     
     int run();
-    SetHandler* getSetHandler() { return &setHandler; }
-    string xmlOutputFN;
-    string xmlOutputFN_PSMs;
-    string xmlOutputFN_Peptides;
-    string xmlOutputFN_Proteins;
-    Scores fullset; //,thresholdset;
     
   protected:
     
-    void writeXML_PSMs();
-    void writeXML_Peptides();
-    void writeXML_Proteins();
-    void writeXML();
+    XMLInterface xmlInterface;
     
     Normalizer * pNorm;
     SanityCheck * pCheck;
@@ -117,14 +95,12 @@ class Caller {
     string resultFN;
     string tabFN;
     
-    string xmlInputFN;
     char* xmlInputDir;
     string weightFN;
     
     bool tabInput;
     bool readStdIn;
     
-    bool docFeatures;
     bool quickValidation;
     bool reportPerformanceEachIteration;
     
@@ -132,7 +108,6 @@ class Caller {
     bool calculateProteinLevelProb;
     
     bool schemaValidation;
-    bool hasProteins;
     bool target_decoy_competition;
     
     double test_fdr;
@@ -157,10 +132,8 @@ class Caller {
     vector<double> xv_cposs, xv_cfracs;
     //SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
     SetHandler setHandler;
+    Scores fullset; //,thresholdset;
     map<int, double> scan2rt;
-    double pi_0_psms;
-    double pi_0_peptides;
-    double numberQpsms;
     /*fido parameters*/
     double fido_alpha;
     double fido_beta;

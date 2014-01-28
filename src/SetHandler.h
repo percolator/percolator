@@ -56,8 +56,7 @@ class SetHandler {
                         vector<SetHandler>& test,
                         const unsigned int xval_fold);
        
-    //const double* getFeatures(const int setPos, const int ixPos) const;
-    
+    //const double* getFeatures(const int setPos, const int ixPos) const;  
     int readTab(const string& dataFN);
     void writeTab(const string& dataFN);
     void print(Scores& test, int label, ostream& myout = cout);
@@ -75,19 +74,6 @@ class SetHandler {
     inline DataSet* getSubsetFromLabel(int label) {
       return (subsets[getSubsetIndexFromLabel(label)]);
     }
-    
-    class Iterator {
-      public:
-        Iterator(SetHandler* s, int l) : sh(s), label(l), ix(-1) {}
-            
-        PSMDescription* getNext() {
-          return sh->getSubsetFromLabel(label)->getNext(ix);
-        }
-      private:
-        SetHandler* sh;
-        int label;
-        int ix;
-    };
 };
 
 #endif /*SETHANDLER_H_*/

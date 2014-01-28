@@ -48,10 +48,11 @@ vector<double> SanityCheck::default_weights = vector<double>();
 SanityCheck* SanityCheck::initialize(string otherCall){
   if(initWeightFN!="" || initDefaultDir!=0) {
     return new SanityCheck();
-  }
-  else if (otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
+  } else if (otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
     return new SqtSanityCheck();
-  } else return new SanityCheck();
+  } else {
+    return new SanityCheck();
+  }
 }
 
 void SanityCheck::checkAndSetDefaultDir() {
