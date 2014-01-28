@@ -37,8 +37,7 @@ Caller::Caller() :
         forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
         weightFN(""), tabInput(false), readStdIn(false),
         quickValidation(false), reportPerformanceEachIteration(false),
-        reportUniquePeptides(true),
-        schemaValidation(true), target_decoy_competition(false),
+        reportUniquePeptides(true), target_decoy_competition(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
 
@@ -471,7 +470,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     Scores::setOutXmlDecoys(true);
   }
   if (cmd.optionSet("s")) {
-    schemaValidation = false;
+    xmlInterface.setSchemaValidation(false);
   }
   showExpMass = true;
   Scores::setShowExpMass(showExpMass);

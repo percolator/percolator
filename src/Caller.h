@@ -105,9 +105,7 @@ class Caller {
     bool reportPerformanceEachIteration;
     
     bool reportUniquePeptides;
-    bool calculateProteinLevelProb;
     
-    bool schemaValidation;
     bool target_decoy_competition;
     
     double test_fdr;

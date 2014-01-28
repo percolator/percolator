@@ -53,6 +53,8 @@ class XMLInterface {
     inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN = outputFN; }
     inline std::string getXmlOutputFN() { return xmlOutputFN; }
     
+    inline void setSchemaValidation(bool on) { schemaValidation = on; }
+    
     int readPin(SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator);
     
     inline void setPi0Peptides(double pi0) { pi_0_peptides = pi0; }
