@@ -17,7 +17,7 @@
 
 #ifndef CALLER_H_
 #define CALLER_H_
-#include <time.h>
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -31,18 +31,15 @@
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif
+#include "Globals.h"
 #include "Option.h"
 #include "SanityCheck.h"
-#include "SqtSanityCheck.h"
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "Scores.h"
-#include "Normalizer.h"
-#include "SanityCheck.h"
 #include "SetHandler.h"
 #include "XMLInterface.h"
 #include "ssl.h"
-#include "Globals.h"
 #include "MassHandler.h"
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
@@ -91,7 +88,6 @@ class Caller {
     ProteinProbEstimator* protEstimator;
     
     string forwardTabInputFN;
-    string decoyWC;
     string resultFN;
     string tabFN;
     
@@ -119,8 +115,6 @@ class Caller {
     
     string call;
     string decoyOut;
-    bool outputAll;
-    bool showExpMass;
     
     time_t startTime;
     clock_t startClock;

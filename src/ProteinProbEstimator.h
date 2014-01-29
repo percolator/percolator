@@ -22,14 +22,12 @@
 #include <functional>
 #include <numeric>
 #include <iterator>
+#include <string>
 #include "ProteinFDRestimator.h"
 #include "Protein.h"
 #include <vector>
 #include <math.h>
 #include <cmath>
-#ifdef XML_SUPPORT
-  #include "percolator_in.hxx"
-#endif //XML_SUPPORT
 #include "Scores.h"
 
 /** set of helper functions to sort data structures and some operations overloaded **/
@@ -148,9 +146,7 @@ class ProteinProbEstimator {
     std::map<const std::string,Protein*> getProteins();
     
     /** add proteins read from the database **/
-#ifdef XML_SUPPORT
-    void addProteinDb(const percolatorInNs::protein &protein);
-#endif //XML_SUPPORT
+    void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
     
     /** print copyright of the author**/
     virtual string printCopyright() = 0;

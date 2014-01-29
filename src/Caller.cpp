@@ -34,7 +34,7 @@ const double requiredIncreaseOver2Iterations = 0.01; /* checks cross validation 
       
 Caller::Caller() :
         pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
-        forwardTabInputFN(""), decoyWC(""), resultFN(""), tabFN(""),
+        forwardTabInputFN(""), resultFN(""), tabFN(""),
         weightFN(""), tabInput(false), readStdIn(false),
         quickValidation(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), target_decoy_competition(false),
@@ -472,8 +472,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("s")) {
     xmlInterface.setSchemaValidation(false);
   }
-  showExpMass = true;
-  Scores::setShowExpMass(showExpMass);
+  Scores::setShowExpMass(true);
   if (cmd.optionSet("Y")) {
     target_decoy_competition = true; 
   }
@@ -540,15 +539,12 @@ void Caller::printWeights(ostream & weightStream, vector<double>& w) {
  * Reads in the files from XML (must be enabled at compile time) or tab format
  */
 int Caller::readFiles() { 
-  int error;
+  int error = 0;
   if (xmlInterface.getXmlInputFN().size() != 0) {    
     error = xmlInterface.readPin(setHandler, pCheck, protEstimator);
   } else if (tabInput) {
-    pCheck = new SanityCheck();
     error = setHandler.readTab(forwardTabInputFN, pCheck);
-    pCheck->checkAndSetDefaultDir();
-    std::cerr << "Features:\n" << DataSet::getFeatureNames().getFeatureNames() << std::endl;
-  } 
+  }
   return error;
 }
 
@@ -1005,12 +1001,14 @@ int Caller::run() {
   }
   
   // Reading input files (pin or temporary file)
-  if(!readFiles()) return 0;
+  if(!readFiles()) {
+    throw MyException("ERROR: Failed to read in file, check if the correct file-format was used.");
+  }
   // Copy feature data to Scores object
   fillFeatureSets();
   
   // delete temporary file if reading from stdin
-  if(readStdIn){
+  if(readStdIn) {
     remove(xmlInterface.getXmlInputFN().c_str());
   }
   if(VERB > 2){

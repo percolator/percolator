@@ -90,39 +90,67 @@ int const SetHandler::getLabel(int setPos) {
 
 int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   if (VERB > 1) {
-    cerr << "Reading Tab delimited input from datafile " << dataFN
-        << endl;
+    cerr << "Reading Tab delimited input from datafile " << dataFN << endl;
   }
   
-  // fill in the feature names from the first line
   ifstream dataStream(dataFN.c_str(), ios::out);
   if (!dataStream) {
     ostringstream temp;
-    temp << "Error : Can not open file " << dataFN << endl;
+    temp << "ERROR: Can not open file " << dataFN << endl;
     throw MyException(temp.str());
   }
-  string tmp, line;
+  string tmp, psmid, line;
+  
+  // First we need to find out the number of features
+  getline(dataStream, line); // skip feature name line
   getline(dataStream, line);
   istringstream iss(line);
+  iss >> psmid >> tmp >> tmp; // read id, label and scannr of second row
+  
+  // check if first row contains the default weights
+  bool hasInitialValues = false;
+  if (psmid == "DefaultDirection") { 
+    hasInitialValues = true;
+    getline(dataStream, line);
+    iss.str(line);
+    iss >> tmp >> tmp >> tmp; // remove id, label and scannr
+  }
+  
+  // count number of features from first PSM
+  double a;
+  unsigned int numFeatures = 0;
+  iss >> a; // test fourth column
+  while (iss.good()) {
+    ++numFeatures;
+    iss >> a;
+  }
+  iss.clear(); // clear the error bit
+  if (DataSet::getCalcDoc()) numFeatures -= 2;
+  
+  // read from start again
+  dataStream.seekg(0, std::ios::beg);
+  
+  // fill in the feature names from the first line
+  getline(dataStream, line); // save row with feature names for later parsing
+  iss.str(line);
+  FeatureNames& featureNames = DataSet::getFeatureNames();
   int skip = (DataSet::getCalcDoc() ? 2 : 0);
+  int numFeatLeft = static_cast<int>(numFeatures);
   while (iss.good()) {
     iss >> tmp;
-    if (skip-- <= -3) { // removes enumerator, label, scannr and if present DOC features
-      DataSet::getFeatureNames().insertFeature(tmp);
+    if (skip-- <= -3 && numFeatLeft-- > 0) { // removes enumerator, label, scannr and, if present, DOC features
+      featureNames.insertFeature(tmp);
     }
   }
   iss.clear(); // clear the error bit
+  assert(numFeatures == DataSet::getNumFeatures());
   
-  // check if first row contains the default weights
-  double a;
+  // fill in the default weights if present
   std::vector<double> init_values;
-  bool hasInitialValues = false;
-  getline(dataStream, line);
-  iss.str(line);
-  iss >> tmp; // read id
-  if (tmp == "DefaultDirection") {
-    hasInitialValues = true;
-    iss >> tmp >> tmp; // remove label and scannr
+  if (hasInitialValues) {
+    getline(dataStream, line);
+    iss.str(line);
+    iss >> tmp >> tmp >> tmp; // remove id, label and scannr
     unsigned int ix = 0;
     while (iss.good()) {
       iss >> a;
@@ -133,18 +161,15 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
       ix++;
     }
     iss.clear(); // clear the error bit
-    getline(dataStream, line); // move to the first PSM
   }
   
-  // count number of features from first PSM
-  unsigned int numFeatures = 0;
-  iss.str(line);  
-  iss >> tmp >> tmp >> tmp >> a; // remove id label and scannr, then test third column
-  while (iss.good()) {
-    ++numFeatures;
-    iss >> a;
+  if (numFeatures < 1) {
+    dataStream.close();
+    throw MyException("ERROR: Reading tab file, too few features present.");
+  } else if (hasInitialValues && init_values.size() > numFeatures) {
+    dataStream.close();
+    throw MyException("ERROR: Reading tab file, too many default values present.");
   }
-  iss.clear(); // clear the error bit
   
   DataSet * targetSet = new DataSet();
   assert(targetSet);
@@ -153,19 +178,12 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   assert(decoySet);
   decoySet->setLabel(-1);
   
-  if (!targetSet->initFeatures(numFeatures) || !decoySet->initFeatures(numFeatures)) {
-    dataStream.close();
-    throw MyException("Error : Reading tab file, too few features present.");
-  }
+  featureNames.initFeatures(DataSet::getCalcDoc());
 
   // read in the data
   int label;
-  dataStream.seekg(0, std::ios::beg);
-  getline(dataStream, line); // skip over column names
-  if (hasInitialValues) getline(dataStream, line); // skip over initial values
   while (getline(dataStream, line)) {
     iss.str(line);
-    iss.clear();
     iss >> tmp >> label;
     if (label == 1) {
       targetSet->readPsm(dataStream, line);

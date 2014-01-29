@@ -588,17 +588,13 @@ void ProteinProbEstimator::setTargetandDecoysNames()
   numberTargetProteins = truePosSet.size();
 }
 
-#ifdef XML_SUPPORT
-void ProteinProbEstimator::addProteinDb(const percolatorInNs::protein& protein)
+void ProteinProbEstimator::addProteinDb(bool isDecoy, std::string name, std::string sequence, double length)
 {
-  if(protein.isDecoy())
-    decoyProteins.insert(std::make_pair
-    (protein.name(),std::make_pair(protein.sequence(),protein.length())));
+  if(isDecoy)
+    decoyProteins.insert(std::make_pair(name,std::make_pair(sequence,length)));
   else
-    targetProteins.insert(std::make_pair
-    (protein.name(),std::make_pair(protein.sequence(),protein.length())));
+    targetProteins.insert(std::make_pair(name,std::make_pair(sequence,length)));
 }
-#endif //XML_SUPPORT
 
 unsigned ProteinProbEstimator::countTargets(const std::vector<std::string> &proteinList)
 {

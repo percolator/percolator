@@ -36,13 +36,7 @@ FeatureNames::FeatureNames() {
 FeatureNames::~FeatureNames() {
 }
 
-#ifdef XML_SUPPORT
-void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC ) {
-  //assert(featureNames.empty());
-  for( const auto & descr : fdes.featureDescription() ) {
-    featureNames.push_back(descr.name());
-  }
-
+void FeatureNames::initFeatures(bool calcDOC) {
   if (calcDOC) {
     docFeatNum = featureNames.size();
     featureNames.push_back("docpI");
@@ -52,7 +46,7 @@ void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fde
   }
   setNumFeatures(featureNames.size());
   if (VERB>2) {
-    std::cerr << "in FeatureNames::setFromXml\n";
+    std::cerr << "in FeatureNames::initFeatures\n";
   }
   if (VERB>1) {
     std::cerr << "Features:\n";
@@ -61,11 +55,10 @@ void FeatureNames::setFromXml( const ::percolatorInNs::featureDescriptions & fde
     std::cerr << "\n";
   }
   if (VERB>2) {
-    std::cerr << "end of FeatureNames::setFromXml\n";
+    std::cerr << "end of FeatureNames::initFeatures\n";
   }
   return;
 }
-#endif //XML_SUPPORT
 
 string FeatureNames::getFeatureNames(bool skipDOC) {
   int n = (skipDOC && docFeatNum > 0) ? docFeatNum
@@ -79,24 +72,6 @@ string FeatureNames::getFeatureNames(bool skipDOC) {
     }
   }
   return oss.str();
-}
-
-void FeatureNames::setFeatures(string& line, size_t skip, size_t numFields) {
-  if (!featureNames.empty()) {
-    return;
-  }
-  istringstream iss(line);
-  string tmp;
-  while (iss.good() && skip && --skip) {
-    iss >> tmp;
-  }
-  int remain = numFields;
-  while (iss.good() && remain && --remain) {
-    iss >> tmp;
-    featureNames.push_back(tmp);
-  }
-  assert(featureNames.size() == numFields);
-  setNumFeatures(featureNames.size());
 }
 
 int FeatureNames::getFeatureNumber(const string& featureName) {

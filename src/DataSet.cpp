@@ -41,17 +41,6 @@ DataSet::~DataSet() {
   }
 }
 
-PSMDescription* DataSet::getNext(int& pos) {
-  pos++;
-  if (pos < 0) {
-    pos = 0;
-  }
-  if (pos >= getSize()) {
-    return NULL;
-  }
-  return psms[pos];
-}
-
 /*const double* DataSet::getFeatures(const int pos) const {
   return &feature[pos];
 }*/
@@ -172,21 +161,6 @@ double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
 }
 */
 
-bool DataSet::initFeatures(unsigned int numFeatures) {
-  if (numFeatures < 1) {
-    return false;
-  }
-  if (calcDOC) {
-    numFeatures -= 2;
-  }
-
-  initFeatureTables((calcDOC ? numFeatures + DescriptionOfCorrect::numDOCFeatures(): numFeatures),calcDOC);
-  if (calcDOC) {
-    getFeatureNames().setDocFeatNum(numFeatures);
-  }
-  return true;
-}
-
 /**
  * Read in psm details from a string out of tab delimited file
  * @param dataStream filestream of tab delimited file, only passed to close on exception
@@ -198,48 +172,53 @@ void DataSet::readPsm(ifstream & dataStream, const std::string line) {
   string tmp;
   unsigned int numFeatures = FeatureNames::getNumFeatures();
   
-  PSMDescription  *myPsm = new PSMDescription();
-  buff.clear();
+  PSMDescription *myPsm = new PSMDescription();
   buff >> myPsm->id;
   buff >> tmp; // get rid of label
   buff >> myPsm->scan;
-  double *featureRow = new double[numFeatures];
-  myPsm->features = featureRow;
   if (calcDOC) {
+    numFeatures -= DescriptionOfCorrect::numDOCFeatures();
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
   }
+  double *featureRow = new double[numFeatures];
+  myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
     buff >> featureRow[j];
-  }
+  }  
   std::string peptide_seq = "";
   buff >> peptide_seq;
-  //cerr << peptide_seq << endl;
+  myPsm->peptide = peptide_seq;
   
-  // check if the peptide sequence contains flanks
-  if(peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
+  // do some error checking
+  if (!buff.good()) {
     dataStream.close();
     ostringstream temp;
-    temp << "Error : Reading tab file, the peptide sequence " << peptide_seq << " \
-    does not contain one or two of its flanking amino acids." << std::endl;
+    temp << "ERROR: Reading tab file, error reading PSM with id " << myPsm->id << ". Check if\
+    the line is formatted correctly." << std::endl;
+    throw MyException(temp.str());
+  } else if (peptide_seq.size() < 5) {
+    dataStream.close();
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq << "\
+    with PSM id " << myPsm->id << " is too short." << std::endl;
+    throw MyException(temp.str());
+  } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
+    dataStream.close();
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq << "\
+    with PSM id " << myPsm->id << " does not contain one or two of its flanking amino acids." << std::endl;
     throw MyException(temp.str());
   }
-  myPsm->peptide = peptide_seq;
-
+  
   while (!!buff) {
     buff >> tmp;
     if (tmp.size() > 0) {
       myPsm->proteinIds.insert(tmp);
     }
   }
-  if (calcDOC) {
-    DescriptionOfCorrect::calcRegressionFeature(*myPsm);
-    featureRow[numFeatures] = abs(myPsm->pI - 6.5);
-    featureRow[numFeatures + 1] = abs(myPsm->massDiff);
-    featureRow[numFeatures + 2] = 0;
-  }
-  psms.push_back(myPsm);
-  ++numSpectra;
+  
+  registerPsm(myPsm);
 }
 
 unsigned int DataSet::peptideLength(const string& pep) {
@@ -262,38 +241,7 @@ unsigned int DataSet::cntPTMs(const string& pep) {
   return len;
 }
 
-void DataSet::initFeatureTables(const unsigned int numFeat, bool __regressionTable)
-{
-  FeatureNames::setNumFeatures(numFeat);
-  regressionTable = __regressionTable;
-  psms.clear();
-}
-
-#ifdef XML_SUPPORT
-// Convert a peptide with or without modifications into a string
-std::string DataSet::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
-  std::list<std::pair<int,std::string> > mods;
-  std::string peptideSeq = peptide.peptideSequence();
-  for(const auto &mod_ref : peptide.modification()){
-    std::stringstream ss;
-    if (mod_ref.uniMod().present()) {
-      ss << "[UNIMOD:" << mod_ref.uniMod().get().accession() << "]";
-      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
-    }
-    if (mod_ref.freeMod().present()) {
-      ss << "[" << mod_ref.freeMod().get().moniker() << "]";
-      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
-    }
-  }
-  mods.sort(greater<std::pair<int,std::string> >());
-  std::list<std::pair<int,std::string> >::const_iterator it;
-  for(it=mods.begin();it!=mods.end();++it) {
-    peptideSeq.insert(it->first,it->second);
-  }
-  return peptideSeq;
-}
-
-void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber) {
+void DataSet::registerPsm(PSMDescription * myPsm) {
   bool isDecoy;
   switch (label) {
     case 1: { isDecoy = false; break; };
@@ -301,63 +249,16 @@ void DataSet::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned 
     default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
 		to neither target nor decoy label\n");}
   }
-
-  if (psm.isDecoy() != isDecoy) {
-    ostringstream temp;
-    temp << "Error : adding PSM " << psm.id() << " to the dataset.\n\
-    The label isDecoy of the PSM is not the same in the dataset." << std::endl;
-    throw MyException(temp.str());
-  } else {
-    PSMDescription  *myPsm = new PSMDescription();
-    string mypept = decoratePeptide(psm.peptide());
-
-    if (psm.occurence().size() <= 0) {
-	    ostringstream temp;
-	    temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
-	    The PSM does not contain protein occurences." << std::endl;
-	    throw MyException(temp.str());
-    }
-
-    for( const auto & oc : psm.occurence() ) {
-      myPsm->proteinIds.insert( oc.proteinId() );
-      // adding n-term and c-term residues to peptide
-      //NOTE the residues for the peptide in the PSMs are always the same for every protein
-      myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
-    }
-
-    myPsm->id = psm.id();
-    myPsm->charge = psm.chargeState();
-    myPsm->scan = scanNumber;
-    myPsm->expMass = psm.experimentalMass();
-    myPsm->calcMass = psm.calculatedMass();
-    if ( psm.observedTime().present() ) {
-      myPsm->retentionTime = psm.observedTime().get();
-    }
-
-    myPsm->features = new double[FeatureNames::getNumFeatures()];
-    if (regressionTable) {
-      myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
-    }
-    
-    unsigned int featureNum = 0;
-    for (const auto & feature : psm.features().feature()) {
-      myPsm->features[featureNum] = feature;
-      featureNum++;
-    }
-
-    // myPsm.peptide = psmIter->peptide().peptideSequence();
-    myPsm->massDiff = MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
-
-    if (calcDOC) {
-      DescriptionOfCorrect::calcRegressionFeature(*myPsm);
-      myPsm->features[featureNum++] = abs( myPsm->pI - 6.5);
-      myPsm->features[featureNum++] = abs( myPsm->massDiff);
-      myPsm->features[featureNum++] = 0;
-      myPsm->features[featureNum++] = 0;
-    }
-
-    psms.push_back(myPsm);
-    ++numSpectra;
+  
+  if (calcDOC) {
+    int featureNum = featureNames.getDocFeatNum();
+    myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
+    DescriptionOfCorrect::calcRegressionFeature(*myPsm);
+    myPsm->features[featureNum++] = abs( myPsm->pI - 6.5);
+    myPsm->features[featureNum++] = abs( myPsm->massDiff);
+    myPsm->features[featureNum++] = 0;
+    myPsm->features[featureNum++] = 0;
   }
+  psms.push_back(myPsm);
+  ++numSpectra;
 }
-#endif // XML_SUPPORT

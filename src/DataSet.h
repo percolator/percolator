@@ -36,24 +36,15 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
-#ifdef XML_SUPPORT
-  #include "percolator_in.hxx"
-#endif //XML_SUPPORT
+#include "DescriptionOfCorrect.h"
 using namespace std;
-
-#ifdef XML_SUPPORT
-namespace percolatorInNs { 
-  class target_decoy;
-}
-#endif //XML_SUPPORT
 
 class DataSet {
   public:
     DataSet();
     virtual ~DataSet();
     
-    bool initFeatures(const unsigned int numFeatures);
-    void initFeatureTables(const unsigned int numFeatures, bool regressionTable = false);
+    void initFeatureTables(const unsigned int numFeatures);
     
     void inline setLabel(int l) { label = l; }
     int inline getLabel() const { return label; }
@@ -68,13 +59,11 @@ class DataSet {
     
     static FeatureNames& getFeatureNames() { return featureNames; }
     static unsigned getNumFeatures() { return featureNames.getNumFeatures(); }
-
-    PSMDescription* getNext(int& pos);
     
     void setRetentionTime(map<int, double>& scan2rt) { PSMDescription::setRetentionTime(psms, scan2rt); }
     
     bool writeTabData(ofstream& out);
-    //void readTabData(ifstream& dataStream, const vector<unsigned int> &ixs);
+    
     void print_10features();
     void print_features();
     void print(Scores& test, vector<ResultHolder> & outList);
@@ -87,21 +76,13 @@ class DataSet {
     static double isEnz(const char n, const char c);
     static unsigned int peptideLength(const string& pep);
     static unsigned int cntPTMs(const string& pep);
-//     static double isPngasef(const string& peptide, bool isDecoy );
+    // static double isPngasef(const string& peptide, bool isDecoy );
 
     void readPsm(ifstream & dataStream, const std::string line);
-#ifdef XML_SUPPORT
-    void readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
-    // these functions seem not to be in use
-    //void readFragSpectrumScans( const ::percolatorInNs::fragSpectrumScan & fss);
-    //void readTargetDecoy(const ::percolatorInNs::target_decoy & td, unsigned int numFeatures );
-#endif //XML_SUPPORT
+    void registerPsm(PSMDescription * myPsm);
 
-  protected:
-#ifdef XML_SUPPORT    
-    inline string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
-#endif //XML_SUPPORT    
-//     double isPngasef(const string& peptide);
+  protected:   
+    // double isPngasef(const string& peptide);
     static bool calcDOC;
     static bool isotopeMass;
     const static string aaAlphabet;
@@ -113,7 +94,6 @@ class DataSet {
     int numSpectra;
     string fileId;
     static FeatureNames featureNames;
-    bool regressionTable;
 };
 
 #endif /*DATASET_H_*/

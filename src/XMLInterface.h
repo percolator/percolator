@@ -18,6 +18,7 @@
 #define XMLINTERFACE_H_
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <memory>
@@ -28,9 +29,8 @@
 #include "Scores.h"
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
+#include <boost/filesystem.hpp>
 #ifdef XML_SUPPORT
-  #include "SqtSanityCheck.h"
-  #include "FidoInterface.h"
   #include "Enzyme.h"
   
   #include "parser.hxx"
@@ -47,6 +47,7 @@ class XMLInterface {
   
   public:
     XMLInterface();
+    ~XMLInterface();
     
     inline void setXmlInputFN(std::string inputFN) { xmlInputFN = inputFN; }
     inline std::string getXmlInputFN() { return xmlInputFN; }
@@ -68,6 +69,7 @@ class XMLInterface {
     
   protected:
     std::string xmlInputFN;
+    
     bool schemaValidation;
     std::string otherCall;
     
@@ -81,44 +83,11 @@ class XMLInterface {
     double pi_0_peptides;
     double numberQpsms;
     
-};
-
 #ifdef XML_SUPPORT
-
-/** some constant strings to be used to compare xml strings **/
-
-//databases
-static const XMLCh databasesStr[] = {
-  xercesc::chLatin_d, xercesc::chLatin_a, xercesc::chLatin_t, xercesc::chLatin_a, 
-  xercesc::chLatin_b, xercesc::chLatin_a, xercesc::chLatin_s, xercesc::chLatin_e, 
-  xercesc::chLatin_s, xercesc::chNull };
-      
-//calibration
-static const XMLCh calibrationStr[] = { 
-  xercesc::chLatin_c, xercesc::chLatin_a, xercesc::chLatin_l, xercesc::chLatin_i, 
-  xercesc::chLatin_b, xercesc::chLatin_r, xercesc::chLatin_a, xercesc::chLatin_t, 
-  xercesc::chLatin_i, xercesc::chLatin_o, xercesc::chLatin_n, xercesc::chNull };
-
-//proteins
-static const XMLCh proteinsStr[] = { 
-  xercesc::chLatin_p, xercesc::chLatin_r, xercesc::chLatin_o, xercesc::chLatin_t, 
-  xercesc::chLatin_e, xercesc::chLatin_i, xercesc::chLatin_n, xercesc::chLatin_s, 
-  xercesc::chNull };
-
-//protein      
-static const XMLCh proteinStr[] = { 
-  xercesc::chLatin_p, xercesc::chLatin_r, xercesc::chLatin_o, xercesc::chLatin_t, 
-  xercesc::chLatin_e, xercesc::chLatin_i, xercesc::chLatin_n, xercesc::chNull };
-      
-//fragSpectrumScan 
-static const XMLCh fragSpectrumScanStr[] = { 
-  xercesc::chLatin_f, xercesc::chLatin_r, xercesc::chLatin_a, xercesc::chLatin_g, 
-  xercesc::chLatin_S, xercesc::chLatin_p, xercesc::chLatin_e, xercesc::chLatin_c, 
-  xercesc::chLatin_t, xercesc::chLatin_r, xercesc::chLatin_u, xercesc::chLatin_m,
-  xercesc::chLatin_S, xercesc::chLatin_c, xercesc::chLatin_a, xercesc::chLatin_n, 
-  xercesc::chNull };  
-      
+    PSMDescription * readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
+    std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
 #endif //XML_SUPPORT
-
+    
+};
 
 #endif /*XMLINTERFACE_H_*/

@@ -17,8 +17,55 @@
 
 #include "XMLInterface.h"
 
+#ifdef XML_SUPPORT
+
+/** some constant strings to be used to compare xml strings **/
+
+//databases
+static const XMLCh databasesStr[] = {
+  xercesc::chLatin_d, xercesc::chLatin_a, xercesc::chLatin_t, xercesc::chLatin_a, 
+  xercesc::chLatin_b, xercesc::chLatin_a, xercesc::chLatin_s, xercesc::chLatin_e, 
+  xercesc::chLatin_s, xercesc::chNull };
+      
+//calibration
+static const XMLCh calibrationStr[] = { 
+  xercesc::chLatin_c, xercesc::chLatin_a, xercesc::chLatin_l, xercesc::chLatin_i, 
+  xercesc::chLatin_b, xercesc::chLatin_r, xercesc::chLatin_a, xercesc::chLatin_t, 
+  xercesc::chLatin_i, xercesc::chLatin_o, xercesc::chLatin_n, xercesc::chNull };
+
+//proteins
+static const XMLCh proteinsStr[] = { 
+  xercesc::chLatin_p, xercesc::chLatin_r, xercesc::chLatin_o, xercesc::chLatin_t, 
+  xercesc::chLatin_e, xercesc::chLatin_i, xercesc::chLatin_n, xercesc::chLatin_s, 
+  xercesc::chNull };
+
+//protein      
+static const XMLCh proteinStr[] = { 
+  xercesc::chLatin_p, xercesc::chLatin_r, xercesc::chLatin_o, xercesc::chLatin_t, 
+  xercesc::chLatin_e, xercesc::chLatin_i, xercesc::chLatin_n, xercesc::chNull };
+      
+//fragSpectrumScan 
+static const XMLCh fragSpectrumScanStr[] = { 
+  xercesc::chLatin_f, xercesc::chLatin_r, xercesc::chLatin_a, xercesc::chLatin_g, 
+  xercesc::chLatin_S, xercesc::chLatin_p, xercesc::chLatin_e, xercesc::chLatin_c, 
+  xercesc::chLatin_t, xercesc::chLatin_r, xercesc::chLatin_u, xercesc::chLatin_m,
+  xercesc::chLatin_S, xercesc::chLatin_c, xercesc::chLatin_a, xercesc::chLatin_n, 
+  xercesc::chNull };  
+      
+#endif //XML_SUPPORT
+
 XMLInterface::XMLInterface() : xmlInputFN(""), schemaValidation(false), otherCall(""), xmlOutputFN(""), reportUniquePeptides(false) {}
 
+XMLInterface::~XMLInterface() {
+  // clean up temporary files in case of an exception
+  if (boost::filesystem::exists(xmlOutputFN_PSMs.c_str()))
+    remove(xmlOutputFN_PSMs.c_str());
+  if (boost::filesystem::exists(xmlOutputFN_Peptides.c_str()))
+    remove(xmlOutputFN_Peptides.c_str());
+  if (boost::filesystem::exists(xmlOutputFN_Proteins.c_str()))
+    remove(xmlOutputFN_Proteins.c_str());
+}
+  
 int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator) {    
 #ifdef XML_SUPPORT  
   DataSet * targetSet = new DataSet();
@@ -38,7 +85,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
     xmlInStream.open(xmlInputFN.c_str());
 
-    string schemaDefinition= Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
+    string schemaDefinition = Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
     parser p;
     xml_schema::dom::auto_ptr<DOMDocument> doc(p.start(
         xmlInStream, xmlInputFN.c_str(), schemaValidation,
@@ -61,20 +108,15 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     bool hasProteins = false;
     if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
       //NOTE I dont really need this info, do I? good to have it though
-      /*
-        std::unique_ptr< ::percolatorInNs::databases > 
-      databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
-      */
+      // std::unique_ptr< ::percolatorInNs::databases > databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
       doc = p.next();
       hasProteins = true;
     }
     
     // read process_info element
-    percolatorInNs::process_info
-    processInfo(*doc->getDocumentElement());
+    percolatorInNs::process_info processInfo(*doc->getDocumentElement());
     otherCall = processInfo.command_line();
     doc = p.next();
-
 
     if (XMLString::equals(calibrationStr,doc->getDocumentElement()->getTagName())) {
       //NOTE the calibration should define the initial direction
@@ -82,23 +124,20 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
       doc = p.next();
     };
 
-    percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
-
-    //I want to get the initial values that are present in feature descriptions
+    // get the feature names and initial values that are present in feature descriptions
     std::vector<double> init_values;
+    FeatureNames& featureNames = DataSet::getFeatureNames();
+    percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
     for (const auto & descr : featureDescriptions.featureDescription()) {
       if (descr.initialValue().present()) {
         if (VERB >2) {
           std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
         }
+        featureNames.insertFeature(descr.name());
         init_values.push_back(descr.initialValue().get());
       }
     }
-    
-    FeatureNames& feNames = DataSet::getFeatureNames();
-    feNames.setFromXml(featureDescriptions, DataSet::getCalcDoc());
-    targetSet->initFeatureTables(feNames.getNumFeatures(), DataSet::getCalcDoc());
-    decoySet->initFeatureTables(feNames.getNumFeatures(), DataSet::getCalcDoc());
+    featureNames.initFeatures(DataSet::getCalcDoc());
 
     // import info from xml: read Fragment Spectrum Scans
     for (doc = p.next(); doc.get()!= 0 && 
@@ -106,10 +145,11 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     {
       percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
       for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch()) {
+        PSMDescription *myPsm = readPsm(psm,fragSpectrumScan.scanNumber());
         if (psm.isDecoy()) {
-          decoySet->readPsm(psm,fragSpectrumScan.scanNumber());
+          decoySet->registerPsm(myPsm);
         } else {
-          targetSet->readPsm(psm,fragSpectrumScan.scanNumber());
+          targetSet->registerPsm(myPsm);
         }
       }
     }
@@ -121,12 +161,11 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
         && hasProteins && ProteinProbEstimator::getCalcProteinLevelProb() /*&& Caller::protEstimator->getMayuFdr()*/
         && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
     {
-      std::unique_ptr< ::percolatorInNs::protein > protein( new ::percolatorInNs::protein(*doc->getDocumentElement()));
-      protEstimator->addProteinDb(*protein);
+      ::percolatorInNs::protein protein(*doc->getDocumentElement());
+      protEstimator->addProteinDb(protein.isDecoy(), protein.name(), protein.sequence(), protein.length());
       ++readProteins;
     }
-    
-    /*if(ProteinProbEstimator::getCalcProteinLevelProb() && Caller::protEstimator->getMayuFdr() && readProteins <= 0)
+    /*if(ProteinProbEstimator::getCalcProteinLevelProb() && protEstimator->getMayuFdr() && readProteins <= 0)
     {
 std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
 	       Did you run converters with the flag -F ?\n" << std::endl;
@@ -164,8 +203,74 @@ Caller::protEstimator->setMayusFDR(false);
 #endif //XML_SUPPORT
 }
 
+
+#ifdef XML_SUPPORT
+// Convert a peptide with or without modifications into a string
+std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
+  std::list<std::pair<int,std::string> > mods;
+  std::string peptideSeq = peptide.peptideSequence();
+  for(const auto &mod_ref : peptide.modification()){
+    std::stringstream ss;
+    if (mod_ref.uniMod().present()) {
+      ss << "[UNIMOD:" << mod_ref.uniMod().get().accession() << "]";
+      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    }
+    if (mod_ref.freeMod().present()) {
+      ss << "[" << mod_ref.freeMod().get().moniker() << "]";
+      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    }
+  }
+  mods.sort(greater<std::pair<int,std::string> >());
+  std::list<std::pair<int,std::string> >::const_iterator it;
+  for(it=mods.begin();it!=mods.end();++it) {
+    peptideSeq.insert(it->first,it->second);
+  }
+  return peptideSeq;
+}
+
+PSMDescription * XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber) {
+  PSMDescription *myPsm = new PSMDescription();
+  string mypept = decoratePeptide(psm.peptide());
+
+  if (psm.occurence().size() <= 0) {
+    ostringstream temp;
+    temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
+    The PSM does not contain protein occurences." << std::endl;
+    throw MyException(temp.str());
+  }
+
+  for( const auto & oc : psm.occurence() ) {
+    myPsm->proteinIds.insert( oc.proteinId() );
+    // adding n-term and c-term residues to peptide
+    //NOTE the residues for the peptide in the PSMs are always the same for every protein
+    myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
+  }
+
+  myPsm->id = psm.id();
+  myPsm->charge = psm.chargeState();
+  myPsm->scan = scanNumber;
+  myPsm->expMass = psm.experimentalMass();
+  myPsm->calcMass = psm.calculatedMass();
+  if ( psm.observedTime().present() ) {
+    myPsm->retentionTime = psm.observedTime().get();
+  }
+
+  myPsm->features = new double[FeatureNames::getNumFeatures()];
+    
+  unsigned int featureNum = 0;
+  for (const auto & feature : psm.features().feature()) {
+    myPsm->features[featureNum] = feature;
+    featureNum++;
+  }
+
+  // myPsm.peptide = psmIter->peptide().peptideSequence();
+  myPsm->massDiff = MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
+  return myPsm;
+}
+#endif // XML_SUPPORT
+
 /** 
- * Subroutine of @see Caller::writeXML() for PSM output
+ * Subroutine of @see XMLInterface::writeXML() for PSM output
  */
 void XMLInterface::writeXML_PSMs(Scores & fullset) {
   ofstream os;
@@ -183,7 +288,7 @@ void XMLInterface::writeXML_PSMs(Scores & fullset) {
 }
 
 /** 
- * Subroutine of @see Caller::writeXML() for peptide output
+ * Subroutine of @see XMLInterface::writeXML() for peptide output
  */
 void XMLInterface::writeXML_Peptides(Scores & fullset) {
   reportUniquePeptides = true;
@@ -202,7 +307,7 @@ void XMLInterface::writeXML_Peptides(Scores & fullset) {
 }
 
 /** 
- * Subroutine of @see Caller::writeXML() for protein output
+ * Subroutine of @see XMLInterface::writeXML() for protein output
  */
 void XMLInterface::writeXML_Proteins(ProteinProbEstimator * protEstimator) {
   xmlOutputFN_Proteins = xmlOutputFN;
@@ -277,7 +382,6 @@ void XMLInterface::writeXML(Scores & fullset, ProteinProbEstimator * protEstimat
     ifs_proteins.close();
     remove(xmlOutputFN_Proteins.c_str());
   }
-
   os << "</percolator_output>" << endl;
   os.close();
 }

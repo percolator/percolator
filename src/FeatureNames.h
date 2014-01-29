@@ -24,10 +24,7 @@
 #include <iostream>
 #include <assert.h>
 #include <cctype>
-
-#ifdef XML_SUPPORT
-  #include "percolator_in.hxx"
-#endif //XML_SUPPORT
+#include <iterator>
 
 using namespace std;
 
@@ -46,14 +43,12 @@ class FeatureNames {
       }
     }
 
-#ifdef XML_SUPPORT
-    void setFromXml( const ::percolatorInNs::featureDescriptions & fdes, bool calcDOC );
-#endif //XML_SUPPORT
+    void initFeatures(bool calcDOC);
+    
     void insertFeature(const string& featureName) {
       if(std::find(featureNames.begin(), featureNames.end(), featureName)==featureNames.end())
 	      featureNames.push_back(featureName);
     }
-    void setFeatures(string& line, size_t skip, size_t numFeatures);
 
     int getFeatureNumber(const string& featureName);
 
