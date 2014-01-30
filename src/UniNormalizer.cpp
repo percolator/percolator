@@ -64,16 +64,16 @@ void UniNormalizer::setSet(vector<double*> & featuresV,
   vector<double*>::iterator it = featuresV.begin();
   for (; it != featuresV.end(); ++it) {
     features = *it;
-      for (ix = 0; ix < numFeatures; ix++) {
-        mins[ix] = min(features[ix], mins[ix]);
-        maxs[ix] = max(features[ix], maxs[ix]);
-      }
+    for (ix = 0; ix < numFeatures; ix++) {
+      mins[ix] = min(features[ix], mins[ix]);
+      maxs[ix] = max(features[ix], maxs[ix]);
+    }
   }
   for (it = rtFeaturesV.begin(); it != rtFeaturesV.end(); ++it) {
     features = *it;
     for (ix = numFeatures; ix < numFeatures + numRetentionFeatures; ++ix) {
-        mins[ix] = min(features[ix - numFeatures], mins[ix]);
-        maxs[ix] = max(features[ix - numFeatures], maxs[ix]);
+      mins[ix] = min(features[ix - numFeatures], mins[ix]);
+      maxs[ix] = max(features[ix - numFeatures], maxs[ix]);
     }
   }
   for (ix = 0; ix < numFeatures + numRetentionFeatures; ++ix) {

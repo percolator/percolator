@@ -123,14 +123,13 @@ class Scores {
     double calcScore(const double* features) const;
     int calcScores(vector<double>& w, double fdr = 0.01);
     int calcQ(double fdr = 0.01);
-    void recalculateDescriptionOfGood(const double fdr);
+    void recalculateDescriptionOfCorrect(const double fdr);
     void calcPep();
     double estimatePi0();
     
     void fillFeatures(SetHandler& setHandler, bool);
     
-    int getInitDirection(const double fdr, vector<double>& direction,
-        bool findDirection);
+    int getInitDirection(const double fdr, vector<double>& direction);
     void createXvalSets(vector<Scores>& train, vector<Scores>& test,
         const unsigned int xval_fold);
     void createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>& test,

@@ -46,7 +46,7 @@ vector<double> SanityCheck::default_weights = vector<double>();
  * contained in otherCall.
  */
 SanityCheck* SanityCheck::initialize(string otherCall){
-  if(initWeightFN!="" || initDefaultDir!=0) {
+  if(initWeightFN != "" || initDefaultDirName.size() > 0) {
     return new SanityCheck();
   } else if (otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
     return new SqtSanityCheck();
@@ -57,12 +57,12 @@ SanityCheck* SanityCheck::initialize(string otherCall){
 
 void SanityCheck::checkAndSetDefaultDir() {
   if (!initDefaultDir && initDefaultDirName.size() > 0) {
-    int dir = 1;
+    int sign = 1;
     if (initDefaultDirName[0] == '-') {
       initDefaultDirName.erase(0,1);
-      dir = -1;
+      sign = -1;
     }
-    initDefaultDir = dir * DataSet::getFeatureNames().getFeatureNumber(initDefaultDirName);
+    initDefaultDir = sign * DataSet::getFeatureNames().getFeatureNumber(initDefaultDirName);
     if (initDefaultDir == 0) {
       throw MyException("ERROR: Initial direction feature name not found");
     }
@@ -92,8 +92,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   }
   initPositives = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives
-        += (*pTrainset)[set].getInitDirection(fdr, w[set], false);
+    initPositives += (*pTrainset)[set].calcScores(w[set], fdr);
   }
   initPositives /= (int)(max<double> ((double)(w.size() - 1), 1.0));
   return initPositives;
@@ -107,7 +106,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     if(default_weights.size() == 0) {
       // Set init direction to be the most discriminative direction
       for (size_t set = 0; set < w.size(); ++set) {
-        (*pTrainset)[set].getInitDirection(fdr, w[set], true);
+        (*pTrainset)[set].getInitDirection(fdr, w[set]);
       }
     } else {
       // I want to assign the default vector that is present in the pin.xml file

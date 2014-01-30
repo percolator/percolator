@@ -606,7 +606,7 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
    else pi0 = 1.0;
 }
 
-void Scores::recalculateDescriptionOfGood(const double fdr) {
+void Scores::recalculateDescriptionOfCorrect(const double fdr) {
   doc.clear();
   for (const auto &sh : scores) {
     if (sh.isTarget()) {
@@ -626,57 +626,53 @@ void Scores::setDOCFeatures() {
   }
 }
 
-int Scores::getInitDirection(const double fdr, vector<double>& direction, bool findDirection) {
+int Scores::getInitDirection(const double fdr, vector<double>& direction) {
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
-  if (findDirection) {
-    for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
-      for (auto &sh : scores) {
-        sh.score = sh.pPSM->features[featNo];
-      }
-      sort(scores.begin(), scores.end());
-      // check once in forward direction (high scores are good) and once in backward
-      for (int i = 0; i < 2; i++) {
-        int positives = 0, decoys = 0;
-        double efp = 0.0, q;
-        for (const auto &sh : scores) {
-          if (sh.isTarget()) {
-            positives++;
-          } else {
-            decoys++;
-            efp = pi0 * decoys * targetDecoySizeRatio;
+  for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
+    for (auto &sh : scores) {
+      sh.score = sh.pPSM->features[featNo];
+    }
+    sort(scores.begin(), scores.end());
+    // check once in forward direction (high scores are good) and once in backward
+    for (int i = 0; i < 2; i++) {
+      int positives = 0, decoys = 0;
+      double efp = 0.0, q;
+      for (const auto &sh : scores) {
+        if (sh.isTarget()) {
+          positives++;
+        } else {
+          decoys++;
+          efp = pi0 * decoys * targetDecoySizeRatio;
+        }
+        if (positives) {
+          q = efp / (double)positives;
+        } else {
+          q = pi0;
+        }
+        if (fdr <= q) {
+          if (positives > bestPositives && scores.begin()->score != sh.score) {
+            bestPositives = positives;
+            bestFeature = featNo;
+            lowBest = (i == 0);
           }
-          if (positives) {
-            q = efp / (double)positives;
-          } else {
-            q = pi0;
+          if (i == 0) {
+            reverse(scores.begin(), scores.end());
           }
-          if (fdr <= q) {
-            if (positives > bestPositives && scores.begin()->score != sh.score) {
-              bestPositives = positives;
-              bestFeature = featNo;
-              lowBest = (i == 0);
-            }
-            if (i == 0) {
-              reverse(scores.begin(), scores.end());
-            }
-            break;
-          }
+          break;
         }
       }
     }
-    for (int ix = FeatureNames::getNumFeatures(); ix--;) {
-      direction[ix] = 0;
-    }
-    direction[bestFeature] = (lowBest ? -1 : 1);
-    if (VERB > 1) {
-      cerr << "Selected feature number " << bestFeature + 1
-          << " as initial search direction, could separate "
-          << bestPositives << " positives in that direction" << endl;
-    }
-  } else {
-    bestPositives = calcScores(direction, fdr);
+  }
+  for (int ix = FeatureNames::getNumFeatures(); ix--;) {
+    direction[ix] = 0;
+  }
+  direction[bestFeature] = (lowBest ? -1 : 1);
+  if (VERB > 1) {
+    cerr << "Selected feature number " << bestFeature + 1
+        << " as initial search direction, could separate "
+        << bestPositives << " positives in that direction" << endl;
   }
   return bestPositives;
 }

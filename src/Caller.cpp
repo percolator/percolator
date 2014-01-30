@@ -40,24 +40,6 @@ Caller::Caller() :
         reportUniquePeptides(true), target_decoy_competition(false),
         test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
         threshTestRatio(0.3), trainRatio(0.6), niter(10) {
-
-  /*fido parameters*/
-  fido_alpha = -1;
-  fido_beta = -1;
-  fido_gamma = -1;
-  fido_nogrouProteins = false; 
-  fido_noprune = false;
-  fido_noseparate = false;
-  fido_reduceTree = false;
-  fido_truncate = false;
-  fido_trivialGrouping = false;
-  fido_depth = 0;
-  fido_mse_threshold = 0.1;
-  /* general protein probabilities options */
-  tiesAsOneProtein = false;
-  usePi0 = false;
-  outputEmpirQVal = false;  
-  decoy_prefix = "random";
 }
 
 Caller::~Caller() {
@@ -358,10 +340,29 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("A")) {
   
     ProteinProbEstimator::setCalcProteinLevelProb(true);
+    
+    /*fido parameters*/
+    double fido_alpha = -1;
+    double fido_beta = -1;
+    double fido_gamma = -1;
+    bool fido_nogroupProteins = false; 
+    bool fido_trivialGrouping = false;
+    bool fido_noprune = false;
+    bool fido_noseparate = false;
+    bool fido_reduceTree = false;
+    bool fido_truncate = false;
+    unsigned fido_depth = 0;
+    double fido_mse_threshold = 0.1;
+    /* general protein probabilities options */
+    bool tiesAsOneProtein = false;
+    bool usePi0 = false;
+    bool outputEmpirQVal = false;
+    std::string decoy_prefix = "random";
+    
     tiesAsOneProtein = cmd.optionSet("g");
     usePi0 = cmd.optionSet("I");
     outputEmpirQVal = cmd.optionSet("q");
-    fido_nogrouProteins = cmd.optionSet("N"); 
+    fido_nogroupProteins = cmd.optionSet("N"); 
     fido_noprune = cmd.optionSet("C");
     fido_noseparate = cmd.optionSet("E");
     fido_reduceTree = cmd.optionSet("T");
@@ -373,7 +374,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("b"))  fido_beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  fido_gamma = cmd.getDouble("G", 0.00, 1.0);
     if (cmd.optionSet("H"))  fido_mse_threshold = cmd.getDouble("H",0.001,1.0);
-
+    
+    protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_nogroupProteins,fido_noseparate,
+				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
+				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
   }
   
   if (cmd.optionSet("e")) {
@@ -573,7 +577,7 @@ int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, boo
   vector<double> bestW = w[set]; // normal vector with highest true positive estimate
   xv_train[set].calcScores(ww, selectionfdr);
   if (DataSet::getCalcDoc() && updateDOC) {
-    xv_train[set].recalculateDescriptionOfGood(selectionfdr);
+    xv_train[set].recalculateDescriptionOfCorrect(selectionfdr);
   }
   xv_train[set].generateNegativeTrainingSet(*svmInput, 1.0);
   xv_train[set].generatePositiveTrainingSet(*svmInput, selectionfdr, 1.0);
@@ -637,7 +641,7 @@ int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, boo
 /** 
  * Executes a cross validation step
  * @param w list of the bins' normal vectors (in linear algebra sense) of the hyperplane from SVM
- * @param updateDOC boolean deciding to calculate retention features @see DescriptionOfCorrect
+ * @param updateDOC boolean deciding to recalculate retention features @see DescriptionOfCorrect
  * @return Estimation of number of true positives
  */
 int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
@@ -749,7 +753,7 @@ void Caller::fillFeatureSets() {
     std::cerr << "Warning : the number of negative samples read is too small to perform a correct classification.\n" << std::endl;
   }
   
-  //Normalize features
+  
   if (DataSet::getCalcDoc()) {
     for (auto &subset : setHandler.getSubsets()) {
       subset->setRetentionTime(scan2rt);
@@ -758,6 +762,8 @@ void Caller::fillFeatureSets() {
   if (tabFN.length() > 0) {
     setHandler.writeTab(tabFN, pCheck);
   }
+  
+  //Normalize features
   vector<double*> featuresV, rtFeaturesV;
   for (auto &subset : setHandler.getSubsets()) {
     subset->fillFeatures(featuresV);
@@ -941,11 +947,6 @@ void Caller::calculateProteinProbabilitiesFido() {
   time(&startTime);
   startClock = clock();  
 
-
-  protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_nogrouProteins,fido_noseparate,
-				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
-				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
-  
   if (VERB > 0) {
     cerr << "\nCalculating protein level probabilities with Fido\n";
     cerr << protEstimator->printCopyright();

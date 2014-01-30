@@ -93,7 +93,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     cerr << "Reading Tab delimited input from datafile " << dataFN << endl;
   }
   
-  ifstream dataStream(dataFN.c_str(), ios::out);
+  ifstream dataStream(dataFN.c_str(), ios::in);
   if (!dataStream) {
     ostringstream temp;
     temp << "ERROR: Can not open file " << dataFN << endl;

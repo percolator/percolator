@@ -125,23 +125,6 @@ class Caller {
     SetHandler setHandler;
     Scores fullset; //,thresholdset;
     map<int, double> scan2rt;
-    /*fido parameters*/
-    double fido_alpha;
-    double fido_beta;
-    double fido_gamma;
-    bool fido_nogrouProteins; 
-    bool fido_trivialGrouping;
-    bool fido_noprune;
-    bool fido_noseparate;
-    bool fido_reduceTree;
-    bool fido_truncate;
-    unsigned fido_depth;
-    double fido_mse_threshold;
-    /* general protein probabilities options */
-    bool tiesAsOneProtein;
-    bool usePi0;
-    bool outputEmpirQVal;
-    std::string decoy_prefix;
 
     
 };
