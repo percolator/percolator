@@ -38,8 +38,8 @@ whoami;
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
 
-sudo apt-get -y update;
-sudo apt-get -y upgrade;
+sudo apt-get update;
+sudo apt-get -o Dpkg::Options::="--force-confnew" upgrade;
 #sudo apt-get -y install g++ make cmake rpm fakeroot;
 sudo apt-get -y install g++ make cmake rpm fakeroot;
 
@@ -74,9 +74,6 @@ echo -n "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
 
-sudo make install;
-ctest -V;
-
 #######converters########
 cd $build_dir/converters
 #-----cmake-----
@@ -88,9 +85,6 @@ echo -n "make converters (this will take few minutes).....";
 
 make -j 4;
 make -j 4 package;
-
-sudo make install;
-ctest -V;
 
 ###########################
 cp $build_dir/{percolator,converters}/*.deb ${release_dir};

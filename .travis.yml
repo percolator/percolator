@@ -3,7 +3,6 @@ compiler:
   - gcc
 before_script:
   - mkdir -p ~/my_rel ~/my_build
-  - sudo service mysql stop
   - ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
 # Change this to your needs
 script:  cd ~/my_build/percolator && sudo make install && make test ARGS="-V"
