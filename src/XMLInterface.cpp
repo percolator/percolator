@@ -125,19 +125,24 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     };
 
     // get the feature names and initial values that are present in feature descriptions
-    std::vector<double> init_values;
     FeatureNames& featureNames = DataSet::getFeatureNames();
     percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
-    for (const auto & descr : featureDescriptions.featureDescription()) {
+    for (const auto & descr : featureDescriptions.featureDescription()) {    
+      featureNames.insertFeature(descr.name());
+    }
+    featureNames.initFeatures(DataSet::getCalcDoc());
+    
+    std::vector<double> init_values(FeatureNames::getNumFeatures());
+    unsigned int i = 0;
+    for (const auto & descr : featureDescriptions.featureDescription()) {    
       if (descr.initialValue().present()) {
         if (VERB >2) {
           std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
         }
-        featureNames.insertFeature(descr.name());
-        init_values.push_back(descr.initialValue().get());
+        init_values[i] = descr.initialValue().get();
       }
+      ++i;
     }
-    featureNames.initFeatures(DataSet::getCalcDoc());
 
     // import info from xml: read Fragment Spectrum Scans
     for (doc = p.next(); doc.get()!= 0 && 
