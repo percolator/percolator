@@ -173,8 +173,9 @@ void PSMDescription::setPSMSet(vector<PSMDescription> & psms) {
 
 vector<double*> PSMDescription::getRetFeatures(vector<PSMDescription> & psms) {
   vector<double*> features;
-  for (auto &psm : psms) {
-    features.push_back(psm.getRetentionFeatures());
+  vector<PSMDescription>::iterator psm;
+  for (psm = psms.begin(); psm != psms.end(); ++psm) {
+    features.push_back(psm->getRetentionFeatures());
   }
   return features;
 }

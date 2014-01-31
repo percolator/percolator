@@ -20,7 +20,7 @@
 SetHandler::SetHandler() {}
 
 SetHandler::~SetHandler() {
-  for (auto & subset : subsets) {
+  BOOST_FOREACH (DataSet * subset, subsets) {
     if (subset != NULL) {
       delete subset;
     }
@@ -57,7 +57,7 @@ void SetHandler::push_back_dataset( DataSet * ds ) {
  */
 void SetHandler::print(Scores& test, int label, ostream& myout) {
   vector<ResultHolder> outList(0);
-  for (auto & subset : subsets) {
+  BOOST_FOREACH (DataSet * subset, subsets) {
     if (subset->getLabel() == label) {
       subset->print(test, outList);
     }
@@ -66,7 +66,7 @@ void SetHandler::print(Scores& test, int label, ostream& myout) {
   myout
       << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds"
       << endl;
-  for (const auto &psmResult : outList) {
+  BOOST_FOREACH (const ResultHolder & psmResult, outList) {
     myout << psmResult << endl;
   }
 }
@@ -213,12 +213,12 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   vector<double> initial_values = pCheck->getDefaultWeights();
   if (initial_values.size() > 0) {
     dataStream << "DefaultDirection\t-\t-";
-    for (const auto iv : initial_values) {
+    BOOST_FOREACH (const double iv, initial_values) {
       dataStream << '\t' << iv;
     }
     dataStream << std::endl;
   }
-  for (auto & subset : subsets) {
+  BOOST_FOREACH (DataSet * subset, subsets) {
     subset->writeTabData(dataStream);
   }
   dataStream.close();

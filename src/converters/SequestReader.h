@@ -19,11 +19,10 @@
 #define SEQUESTREADER_H
 
 #include "MzidentmlReader.h"
+#include <boost/foreach.hpp>
+#include <boost/assign/list_of.hpp>
 
-
-class SequestReader : public MzidentmlReader
-{
-
+class SequestReader : public MzidentmlReader {
 
   public:
 

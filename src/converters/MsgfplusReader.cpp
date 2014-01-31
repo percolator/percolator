@@ -2,37 +2,37 @@
 
 //NOTE ugly hack to get the order of the values of the features according to their names
 const std::map<string, int> MsgfplusReader::msgfplusFeatures =
-boost::assign::map_list_of("MS-GF:RawScore", 0)
-("MS-GF:DeNovoScore", 1)
-("MS-GF:SpecEValue", 2)
-("MS-GF:EValue", 3)
-//All below features are on user specified element userParam
-("IsotopeError", 4)
-("ExplainedIonCurrentRatio", 5)
-("NTermIonCurrentRatio", 6)
-("CTermIonCurrentRatio", 7)
-("MS2IonCurrent", 8)
-("MeanRelErrorTop7", 9)
-("StdevRelErrorTop7", 10)
-("NumMatchedMainIons", 11);
+  boost::assign::map_list_of("MS-GF:RawScore", 0)
+    ("MS-GF:DeNovoScore", 1)
+    ("MS-GF:SpecEValue", 2)
+    ("MS-GF:EValue", 3)
+    //All below features are on user specified element userParam
+    ("IsotopeError", 4)
+    ("ExplainedIonCurrentRatio", 5)
+    ("NTermIonCurrentRatio", 6)
+    ("CTermIonCurrentRatio", 7)
+    ("MS2IonCurrent", 8)
+    ("MeanRelErrorTop7", 9)
+    ("StdevRelErrorTop7", 10)
+    ("NumMatchedMainIons", 11);
 
 //default score vector //TODO move this to a file or input parameter                          
 const std::map<string,double> MsgfplusReader::msgfplusFeaturesDefaultValue =
-boost::assign::map_list_of("RawScore", 0.0)
-("DeNovoScore",-1.0)
-("ScoreRatio", 0.0)
-("Energy", -2.0)
-("lnEValue", 6.0)
-("lnSpecEValue", 10.0)
-("IsotopeError", -2.5)
-("lnExplainedIonCurrentRatio", 0.0)
-("lnNTermIonCurrentRatio", 0.0)
-("lnCTermIonCurrentRatio", 0.0)
-("lnMS2IonCurrent", 0.0)
-("Mass", 0.0)
-("PepLen", 0.0)
-("dM", 0.0)
-("absdM", -1.0);
+  boost::assign::map_list_of("RawScore", 0.0)
+    ("DeNovoScore",-1.0)
+    ("ScoreRatio", 0.0)
+    ("Energy", -2.0)
+    ("lnEValue", 6.0)
+    ("lnSpecEValue", 10.0)
+    ("IsotopeError", -2.5)
+    ("lnExplainedIonCurrentRatio", 0.0)
+    ("lnNTermIonCurrentRatio", 0.0)
+    ("lnCTermIonCurrentRatio", 0.0)
+    ("lnMS2IonCurrent", 0.0)
+    ("Mass", 0.0)
+    ("PepLen", 0.0)
+    ("dM", 0.0)
+    ("absdM", -1.0);
 
 MsgfplusReader::MsgfplusReader(ParseOptions *po) :
 		MzidentmlReader(po),
@@ -98,7 +98,7 @@ void MsgfplusReader::searchEngineSpecificParsing(
 	const ::mzIdentML_ns::SpectrumIdentificationItemType & item, const int itemCount) {
 	// First, check whether addFeatures was set to 1, in MS-GF+
 	if (!additionalMsgfFeatures) {
-    	for (const auto & up : item.userParam()) {
+    	BOOST_FOREACH (const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
     		if (up.value().present()) {
     			std::string param_name(up.name().c_str());
     			// Check whether the mzid-file seem to include the additional features
@@ -117,7 +117,7 @@ void MsgfplusReader::searchEngineSpecificParsing(
 
 	// Check whether fragmentation spectrum features are present
 	if (!useFragmentSpectrumFeatures) {
-    	for (const auto & up : item.userParam()) {
+    	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
     		if (up.value().present()) {
     			std::string param_name(up.name().c_str());
     			// Check whether the mzid-file seem to include features for fragment spectra resolution and accuracy
@@ -220,7 +220,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
   try
   {
 
-    for (const auto &pepEv_ref : item.PeptideEvidenceRef())
+    BOOST_FOREACH (const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
     {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
@@ -296,53 +296,43 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     int NumMatchedMainIons = 0;
 
     //Read through cvParam elements
-    for (const auto & cv : item.cvParam())
-    {
-	if (cv.value().present())
-	{
-	  std::string param_name(cv.name().c_str());
-	  if (msgfplusFeatures.count(param_name))
-	  {
-	    switch (msgfplusFeatures.at(param_name))
-	    {
-	      case 0: RawScore = boost::lexical_cast<double>(cv.value().get().c_str()); break;
-	      case 1: DeNovoScore = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	      case 2: SpecEValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	      case 3: EValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
+    BOOST_FOREACH(const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) {
+	    if (cv.value().present()) {
+	      std::string param_name(cv.name().c_str());
+	      if (msgfplusFeatures.count(param_name)) {
+	        switch (msgfplusFeatures.at(param_name)) {
+	          case 0: RawScore = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+	          case 1: DeNovoScore = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	          case 2: SpecEValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	          case 3: EValue = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	        }
+	      }
 	    }
-	  }
-	}
     }
 
     //Read through userParam elements
-    for (const auto & up : item.userParam())
-    {
+    BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
     // If a feature has a value NaN, the default values from initialization is used
-	if (up.value().present() && boost::lexical_cast<string > (up.value().get().c_str()) != "NaN")
-	{
-	  std::string param_name(up.name().c_str());
-	  if (msgfplusFeatures.count(param_name))
-	  {
-	    switch (msgfplusFeatures.at(param_name))
-	    {
-	      case 4: IsotopeError = boost::lexical_cast<double>(up.value().get().c_str()); break;
-	      case 5: ExplainedIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
-	      case 6: NTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
-	      case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
-	      case 8: MS2IonCurrent = boost::lexical_cast<double>(up.value().get().c_str());break;
-	      case 9: MeanErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
-	      case 10: // Stdev could equal 0, use the mean error in that case
-	    	  if (boost::lexical_cast<string > (up.value().get().c_str()) == "0.0") StdevErrorTop7 = MeanErrorTop7;
-	    	  else StdevErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
-	      case 11: NumMatchedMainIons = boost::lexical_cast<int>(up.value().get().c_str()); break;
+	    if (up.value().present() && boost::lexical_cast<string > (up.value().get().c_str()) != "NaN") {
+	      std::string param_name(up.name().c_str());
+	      if (msgfplusFeatures.count(param_name)) {
+	        switch (msgfplusFeatures.at(param_name)) {
+	          case 4: IsotopeError = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	          case 5: ExplainedIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
+	          case 6: NTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
+	          case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
+	          case 8: MS2IonCurrent = boost::lexical_cast<double>(up.value().get().c_str());break;
+	          case 9: MeanErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	          case 10: // Stdev could equal 0, use the mean error in that case
+	        	  if (boost::lexical_cast<string > (up.value().get().c_str()) == "0.0") StdevErrorTop7 = MeanErrorTop7;
+	        	  else StdevErrorTop7 = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	          case 11: NumMatchedMainIons = boost::lexical_cast<int>(up.value().get().c_str()); break;
+	        }
+	      }
+	    } else {
+	      std::cerr << "PSM: " << boost::lexical_cast<string > (item.id()) << " has feature with value NaN, ";
+	      std::cerr << "use the default value for that feature." << std::endl;
 	    }
-	  }
-	}
-	else
-	{
-	  std::cerr << "PSM: " << boost::lexical_cast<string > (item.id()) << " has feature with value NaN, ";
-	  std::cerr << "use the default value for that feature." << std::endl;
-	}
     }
 
     // If MeanErrorAll is 0.0, it was not updated, it was probably missing in the file.
@@ -411,8 +401,8 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 
     std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
     // Register the ptms
-    for(const auto &mod_ref : peptideMap[item.peptide_ref().get()]->Modification()){
-      for (const auto &cv_ref : mod_ref.cvParam()) {
+    BOOST_FOREACH (const ::mzIdentML_ns::ModificationType &mod_ref, peptideMap[item.peptide_ref().get()]->Modification()){
+      BOOST_FOREACH (const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
         if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
           ostringstream errs;
           errs << "Error: current implimentation can only handle UNIMOD accessions "

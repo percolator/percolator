@@ -8,9 +8,9 @@ const std::string Reader::additionalAA("UO");
 
 //THIS MAP SHOULD BE CREATED FROM THE UNIMOD PTMS xml document
 const std::map<unsigned, double> Reader::ptmMass =
-      {{35, 0.0}, {21, 0.0}, {28, 0.0}, {4, 0.0},
-				  {1, 0.0}, {214, 0.0}, {39, 0.0}, {7, 0.0},
-				  {730, 0.0}, {364, 0.0}, {29, 0.0}, {27, 0.0}};
+     boost::assign::map_list_of(35, 0.0) (21, 0.0) (28, 0.0) (4, 0.0)
+                                (1, 0.0) (214, 0.0) (39, 0.0) (7, 0.0)
+                                (730, 0.0) (364, 0.0) (29, 0.0) (27, 0.0);
 
 
 Reader::Reader(ParseOptions *__po)
@@ -245,7 +245,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     // print column names
     bool hasInitialValues;
     outputStream << "SpecId\tLabel\tScanNr";
-    for( const auto & descr : f_seq.featureDescription() ) {
+    BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
       outputStream << "\t" << descr.name();
       if (descr.initialValue().get() != 0) hasInitialValues = true;
     }
@@ -253,7 +253,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     
     if (hasInitialValues) {
       outputStream << "DefaultDirection\t-\t-";
-      for( const auto & descr : f_seq.featureDescription() ) {
+      BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
         outputStream << "\t" << descr.initialValue().get();
       }
       outputStream << std::endl;
@@ -262,9 +262,9 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     if (VERB>2)
       std::cerr << "Databases : " << databases.size() << std::endl;
 
-    for(const auto &database : databases) {
-      database->printTab(outputStream);
-      database->terminate();
+    for(unsigned int i=0; i<databases.size();i++) {
+      databases[i]->printTab(outputStream);
+      databases[i]->terminate();
     }
   }
 }
@@ -843,7 +843,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
 {
   // for each spectra from the ms2 file
   typedef std::map<int, vector<double> > map_t;
-  for (auto & i : scan2rt)
+  BOOST_FOREACH(map_t::value_type& i, scan2rt)
   {
     // scan number
     int scanNr = i.first;

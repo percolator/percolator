@@ -23,6 +23,7 @@
 #include "parser.hxx"
 #include "tandem2011.12.01.1.hxx"
 #include "FragSpectrumScanDatabase.h"
+#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace xercesc;

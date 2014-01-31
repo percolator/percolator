@@ -30,6 +30,7 @@
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
   

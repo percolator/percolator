@@ -128,7 +128,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     std::vector<double> init_values;
     FeatureNames& featureNames = DataSet::getFeatureNames();
     percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
-    for (const auto & descr : featureDescriptions.featureDescription()) {
+    BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {
       if (descr.initialValue().present()) {
         if (VERB >2) {
           std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
@@ -144,7 +144,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
           XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
     {
       percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-      for (const auto &psm : fragSpectrumScan.peptideSpectrumMatch()) {
+      BOOST_FOREACH (const ::percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch()) {
         PSMDescription *myPsm = readPsm(psm,fragSpectrumScan.scanNumber());
         if (psm.isDecoy()) {
           decoySet->registerPsm(myPsm);
@@ -209,7 +209,7 @@ Caller::protEstimator->setMayusFDR(false);
 std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
   std::list<std::pair<int,std::string> > mods;
   std::string peptideSeq = peptide.peptideSequence();
-  for(const auto &mod_ref : peptide.modification()){
+  BOOST_FOREACH (const ::percolatorInNs::modificationType &mod_ref, peptide.modification()){
     std::stringstream ss;
     if (mod_ref.uniMod().present()) {
       ss << "[UNIMOD:" << mod_ref.uniMod().get().accession() << "]";
@@ -239,7 +239,7 @@ PSMDescription * XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatc
     throw MyException(temp.str());
   }
 
-  for( const auto & oc : psm.occurence() ) {
+  BOOST_FOREACH (const ::percolatorInNs::occurence & oc, psm.occurence()) {
     myPsm->proteinIds.insert( oc.proteinId() );
     // adding n-term and c-term residues to peptide
     //NOTE the residues for the peptide in the PSMs are always the same for every protein
@@ -258,7 +258,7 @@ PSMDescription * XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatc
   myPsm->features = new double[FeatureNames::getNumFeatures()];
     
   unsigned int featureNum = 0;
-  for (const auto & feature : psm.features().feature()) {
+  BOOST_FOREACH (const double feature, psm.features().feature()) {
     myPsm->features[featureNum] = feature;
     featureNum++;
   }

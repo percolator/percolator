@@ -20,7 +20,6 @@
  
 #include <memory>   // std::auto_ptr
 #include <iostream>
-#include <xercesc/dom/DOM.hpp>
 #include <cstddef>  // size_t
 #include <cstring>  // memcpy
 #include <map>
@@ -30,19 +29,17 @@
 #include "Globals.h"
 #include "serializer.hxx"
 #include <xercesc/util/PlatformUtils.hpp>
-#include <xercesc/dom/DOM.hpp>
-#include <xsd/cxx/xml/string.hxx>
-#include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include <xercesc/util/XMLUni.hpp>
 #include <xercesc/dom/DOM.hpp>
+#include <xercesc/dom/DOMElement.hpp>
 #include <xsd/cxx/xml/string.hxx>
+#include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include <xsd/cxx/xml/dom/bits/error-handler-proxy.hxx>
 #include <xsd/cxx/xml/dom/serialization-source.hxx>
 #include <xsd/cxx/tree/exceptions.hxx>
 #include <xsd/cxx/tree/error-handler.hxx>
-#include <xercesc/dom/DOMElement.hpp>
-#include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include "percolator_in.hxx"
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace std;

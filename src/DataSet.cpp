@@ -26,7 +26,7 @@ FeatureNames DataSet::featureNames;
 DataSet::DataSet() : numSpectra(0) {}
 
 DataSet::~DataSet() {
-  for(auto psm : psms)
+  BOOST_FOREACH (PSMDescription * psm, psms)
   {
     if(psm->features) {
       delete[] psm->features;
@@ -50,7 +50,7 @@ bool DataSet::writeTabData(ofstream& out) {
   if (calcDOC) {
     nf -= DescriptionOfCorrect::numDOCFeatures();
   }
-  for (const auto &pPSM : psms) {
+  BOOST_FOREACH (PSMDescription * pPSM, psms) {
     double* featureRow = pPSM->features;
     out << pPSM->id << '\t' << label << '\t' << pPSM->scan;
     if (calcDOC) {
@@ -61,7 +61,7 @@ bool DataSet::writeTabData(ofstream& out) {
       out << '\t' << featureRow[ix];
     }
     out << '\t' << pPSM->peptide;
-    for (const auto &proteinId : pPSM->proteinIds) {
+    BOOST_FOREACH (const std::string &proteinId, pPSM->proteinIds) {
       out << '\t' << proteinId;
     }
     out << endl;
@@ -90,12 +90,12 @@ void DataSet::print_10features() {
 
 void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
   ostringstream out;
-  for (const auto &psm : psms) {
+  BOOST_FOREACH (PSMDescription * psm, psms) {
     ScoreHolder* pSH = test.getScoreHolder(psm->features);
     if (pSH == NULL) {
       continue;
     }
-    for (const auto &proteinId : psm->proteinIds) {
+    BOOST_FOREACH (const std::string &proteinId, psm->proteinIds) {
       out << "\t" << proteinId;
     }
     outList.push_back(ResultHolder(pSH->score, psm->q, psm->pep, psm->id, psm->peptide, out.str()));
@@ -105,23 +105,23 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
 
 // TODO: find a way to make these four functions generic
 void DataSet::fillFeatures(vector<ScoreHolder> &scores) {
-  for (const auto &psm : psms)
+  BOOST_FOREACH (PSMDescription * psm, psms)
     scores.push_back(ScoreHolder(.0, label, psm));
 }
     
 void DataSet::fillFeaturesPeptide(vector<ScoreHolder> &scores) {
-  for (const auto &psm : psms)
+  BOOST_FOREACH (PSMDescription * psm, psms)
     scores.push_back(ScoreHolderPeptide(.0, label, psm));
 }
 
 void DataSet::fillFeatures(vector<double*> &features) {
-  for (const auto &psm : psms)
+  BOOST_FOREACH (PSMDescription * psm, psms)
     features.push_back(psm->features);
 }
 
 void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
   double* features;
-  for (const auto &psm : psms)
+  BOOST_FOREACH (PSMDescription * psm, psms)
     if ((features = psm->retentionFeatures))
         rtFeatures.push_back(features);
 }

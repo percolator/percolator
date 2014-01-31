@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
+#include <boost/foreach.hpp>
 #include "Globals.h"
 #include "config.h"
 #include "FeatureNames.h"
@@ -41,7 +42,8 @@
 #include "parseoptions.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp> 
-#include <boost/assign.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/foreach.hpp>
 #include "MSReader.h"
 #include "Spectrum.h"
 #include <assert.h>

@@ -238,64 +238,57 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
       if(XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) 
 	&& XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr)))  
       {
-	tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse to the codesynthesis object model
-	  
-	if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
-	{
-	  stringstream chargeStream (stringstream::in | stringstream::out);
-	  chargeStream << groupObj.z();
-	  chargeStream >> charge;
-	  if (minCharge > charge) minCharge = charge;
-	  if (maxCharge < charge) maxCharge = charge;
-	  nTot++;
-	}
-	else
-	{
-	  ostringstream temp;
-	  temp << "Missing charge(attribute z in group element) for one or more groups in: " << fn << endl;
-	  throw MyException(temp.str());
-	}
-	if(firstPSM)
-	{
-	  //Check what type of scores/ions are present
-	  for (const auto &protObj : groupObj.protein()) //Protein
-	  {
-	    tandem_ns::protein::peptide_type peptideObj=protObj.peptide(); //Peptide
-	    for (const auto &domainObj : peptideObj.domain()) //Domain
-	    {
-	      //x,y,z
-	      if(domainObj.x_score().present() && domainObj.x_ions().present())
+	      tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse to the codesynthesis object model
+	        
+	      if(groupObj.z().present()) //We are sure we are not in parameters group so z(the charge) has to be present.
 	      {
-		x_score=true;
+	        stringstream chargeStream (stringstream::in | stringstream::out);
+	        chargeStream << groupObj.z();
+	        chargeStream >> charge;
+	        if (minCharge > charge) minCharge = charge;
+	        if (maxCharge < charge) maxCharge = charge;
+	        nTot++;
 	      }
-	      if(domainObj.y_score().present() && domainObj.y_ions().present())
+	      else
 	      {
-		y_score=true;
+	        ostringstream temp;
+	        temp << "Missing charge(attribute z in group element) for one or more groups in: " << fn << endl;
+	        throw MyException(temp.str());
 	      }
-	      if(domainObj.z_score().present() && domainObj.z_ions().present())
+	      if(firstPSM)
 	      {
-		z_score=true;
+	        //Check what type of scores/ions are present
+	        BOOST_FOREACH (const tandem_ns::protein &protObj, groupObj.protein()) { //Protein
+	          tandem_ns::protein::peptide_type peptideObj=protObj.peptide(); //Peptide
+	          BOOST_FOREACH(const tandem_ns::domain &domainObj, peptideObj.domain()) { //Domain
+	            //x,y,z
+	            if (domainObj.x_score().present() && domainObj.x_ions().present()) {
+            		x_score=true;
+	            }
+	            if (domainObj.y_score().present() && domainObj.y_ions().present()) {
+            		y_score=true;
+	            }
+	            if (domainObj.z_score().present() && domainObj.z_ions().present()) {
+		            z_score=true;
+	            }
+	            //a,b,c
+	            if (domainObj.a_score().present() && domainObj.a_ions().present()) {
+            		a_score=true;
+	            }
+	            if (domainObj.b_score().present() && domainObj.b_ions().present()) {
+            		b_score=true;
+	            }
+	            if (domainObj.c_score().present() && domainObj.c_ions().present()) {
+            		c_score=true;
+	            }
+	          } //End of for domain
+	        } //End of for prot
+	        firstPSM=false;
 	      }
-	      //a,b,c
-	      if(domainObj.a_score().present() && domainObj.a_ions().present())
-	      {
-		a_score=true;
-	      }
-	      if(domainObj.b_score().present() && domainObj.b_ions().present())
-	      {
-		b_score=true;
-	      }
-	      if(domainObj.c_score().present() && domainObj.c_ions().present())
-	      {
-		c_score=true;
-	      }
-	    }//End of for domain
-	  }//End of for prot
-	  firstPSM=false;
-	}
       }
     }
-  }catch (const xml_schema::exception& e)
+  } 
+  catch (const xml_schema::exception& e)
   {
     ifs.close();
     ostringstream temp;
@@ -305,13 +298,11 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   }
   
   ifs.close();
-  if(nTot<=0)
-  {
+  if(nTot<=0) {
     ostringstream temp;
     temp << "The file " << fn << " does not contain any records" << std::endl;
     throw MyException(temp.str());
   }
-  
   
   return;
 }
@@ -347,7 +338,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
     throw MyException(temp.str());
   }
   //Loop through the protein objects
-  for (const auto &protObj : groupObj.protein())
+  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein())
   {
     proteinName = getRidOfUnprintables(protObj.label());
     //spectraId = boost::lexical_cast<int>(protObj.id());
@@ -383,7 +374,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
 //Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
 void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,peptideProteinMapType &peptideProteinMap)
 {
-  for (const auto &protObj : groupObj.protein())
+  BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein())
   {
     std::string proteinName = getRidOfUnprintables(protObj.label());
     tandem_ns::peptide peptideObj = protObj.peptide();
@@ -460,8 +451,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
 
  //Information about mass modifications in the peptide
  //NOTE here I have all the modifications, I should modify the mass with them
-  for (const auto &aaObj : domain.aa())	
-  {
+  BOOST_FOREACH(const tandem_ns::aa &aaObj, domain.aa()) {
     aaObj.modified();
     aaObj.type();
     aaObj.at();

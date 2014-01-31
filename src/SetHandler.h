@@ -25,6 +25,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <boost/foreach.hpp>
 #include "ResultHolder.h"
 #include "DataSet.h"
 #include "Normalizer.h"

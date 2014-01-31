@@ -19,9 +19,7 @@
 #define MSGFPLUSREADER_H
 
 #include "MzidentmlReader.h"
-
-
-
+#include <boost/foreach.hpp>
 
 class MsgfplusReader : public MzidentmlReader
 {

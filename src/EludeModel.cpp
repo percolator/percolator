@@ -1451,7 +1451,7 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription> & psms) {
   // train retention
   trainIndexSVR(psms);
   // calculate the weights of each aa
-  std::vector<std::vector<double>> a(noFeat + 1,std::vector<double>(noFeat));
+  std::vector< std::vector<double> > a(noFeat + 1,std::vector<double>(noFeat));
   for (int i = 0; i < noFeat + 1; ++i)
     for (int j = 0; j < noFeat; ++j)
       if (j == (i - 1)) {

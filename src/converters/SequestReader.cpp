@@ -2,26 +2,18 @@
 
 
 const std::map<string, int> SequestReader::sequestFeatures =
-{{"sequest:PeptideRankSp", 0},
-{"sequest:deltacn", 1},
-{"sequest:xcorr", 2},
-{"sequest:PeptideSp", 3},
-{"sequest:matched ions", 4},
-{"sequest:total ions", 5},
-{"sequest:PeptideIdnumber", 6},
-{"sequest:PeptideNumber", 7}};
+boost::assign::map_list_of("sequest:PeptideRankSp", 0)
+                                  ("sequest:deltacn", 1)
+                                  ("sequest:xcorr", 2)
+                                  ("sequest:PeptideSp", 3)
+                                  ("sequest:matched ions", 4)
+                                  ("sequest:total ions", 5)
+                                  ("sequest:PeptideIdnumber", 6)
+                                  ("sequest:PeptideNumber", 7);
 
+SequestReader::SequestReader(ParseOptions *po) : MzidentmlReader(po) {}
 
-
-SequestReader::SequestReader(ParseOptions *po) : MzidentmlReader(po) {
-
-}
-
-SequestReader::~SequestReader() {
-
-
-
-}
+SequestReader::~SequestReader() {}
 
 bool SequestReader::checkValidity(const std::string &file) {
 
@@ -107,7 +99,7 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
   }
 
   if (po->calcAAFrequencies) {
-    for (const auto &aa : aaAlphabet) {
+    BOOST_FOREACH (const char aa, aaAlphabet) {
       std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }
@@ -141,33 +133,29 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
   try
   {
 
-    for (const auto &pepEv_ref : item.PeptideEvidenceRef())
+    BOOST_FOREACH (const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
     {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
       //NOTE check that there are not quimera peptides
-      if( peptideId != std::string(pepEv->peptide_ref()))
-      {
-	std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
-		  << " contains different quimera peptide sequences. "
-		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
-		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
-      }
-      else
-      {
-	__flankN = boost::lexical_cast<string > (pepEv->pre());
-	__flankC = boost::lexical_cast<string > (pepEv->post());
-	if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
-	if (__flankC == "?") {__flankC = "-";}
-	std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
-	mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
-	std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
-	proteinIds.push_back(proteinName);
+      if (peptideId != std::string(pepEv->peptide_ref())) {
+	      std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
+		        << " contains different quimera peptide sequences. "
+		        << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
+		        << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
+      } else {
+	      __flankN = boost::lexical_cast<string > (pepEv->pre());
+	      __flankC = boost::lexical_cast<string > (pepEv->post());
+	      if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
+	      if (__flankC == "?") {__flankC = "-";}
+	      std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
+	      mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
+	      std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
+	      proteinIds.push_back(proteinName);
       }
     }
 
-    if(__flankC.empty() || __flankN.empty())
-    {
+    if(__flankC.empty() || __flankN.empty()) {
       ostringstream temp;
       temp << "Error : The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed." << std::endl;
       throw MyException(temp.str());
@@ -198,29 +186,22 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     double dM = massDiff(observed_mass, theoretic_mass, charge);
 
 
-    for(const auto & cv : item.cvParam())
-    {
-	if (cv.value().present())
-	{
-	  std::string param_name(cv.name().c_str());
-	  if (sequestFeatures.count(param_name))
-	  {
-	    switch (sequestFeatures.at(param_name))
-	    {
-	      case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str()); break;
-	      case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	      case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	      case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	      case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	      case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;
+    BOOST_FOREACH (const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) {
+	    if (cv.value().present()) {
+	      std::string param_name(cv.name().c_str());
+	      if (sequestFeatures.count(param_name)) {
+	        switch (sequestFeatures.at(param_name)) {
+	          case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+	          case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	          case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	          case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	          case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	          case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;
+	        }
+	      } else {
+	        std::cerr << "Error  : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
+	      }
 	    }
-	  }
-	  else
-	  {
-	    std::cerr << "Error  : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
-	  }
-
-	}
     }
 
     f_seq.push_back(log(max(1.0, lnrSP)));

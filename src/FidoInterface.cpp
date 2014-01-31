@@ -317,14 +317,14 @@ void FidoInterface::gridSearch()
   switch(depth)
   {
     case 0:    
-      gamma_search = std::vector<long double>{0.5};
-      beta_search = std::vector<long double>{0.001};
-      alpha_search = std::vector<long double>{0.008,0.032,0.128};
+      gamma_search = boost::assign::list_of(0.5);
+      beta_search = boost::assign::list_of(0.001);
+      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
       break;
     
     case 1:
-      gamma_search = std::vector<long double>{0.1, 0.5, 0.9};
-      beta_search = std::vector<long double>{0.001};
+      gamma_search = boost::assign::list_of(0.1)(0.5)(0.9);
+      beta_search = boost::assign::list_of(0.001);
       for (double k = 0.002; k <= 0.4; k*=4)
       {
        alpha_search.push_back(k);
@@ -332,8 +332,8 @@ void FidoInterface::gridSearch()
       break;
       
     case 2:
-      gamma_search = std::vector<long double>{0.1, 0.3, 0.5, 0.75, 0.9};
-       beta_search = std::vector<long double>{0.001};
+      gamma_search = boost::assign::list_of(0.1)(0.3)(0.5)(0.75)(0.9);
+      beta_search = boost::assign::list_of(0.001);
       for (double k = 0.001; k <= 0.4; k*=2)
       {
        alpha_search.push_back(k);
@@ -341,17 +341,17 @@ void FidoInterface::gridSearch()
       break;
     
     default:
-      gamma_search = std::vector<long double>{0.5};
-      beta_search = std::vector<long double>{0.001};
-      alpha_search = std::vector<long double>{0.008,0.032,0.128};
+      gamma_search = boost::assign::list_of(0.5);
+      beta_search = boost::assign::list_of(0.001);
+      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
   }
 
   if(alpha != -1)
-    alpha_search = std::vector<long double>{alpha};
+    alpha_search = boost::assign::list_of(alpha);
   if(beta != -1)
-    beta_search = std::vector<long double>{beta};
+    beta_search = boost::assign::list_of(beta);
   if(gamma != -1)
-    gamma_search = std::vector<long double>{gamma};
+    gamma_search = boost::assign::list_of(gamma);
   
   for (unsigned int i = 0; i < gamma_search.size(); i++)
   {

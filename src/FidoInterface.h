@@ -19,6 +19,7 @@
 #define FIDOINTERFACE_H
 #include "ProteinProbEstimator.h"
 #include "GroupPowerBigraph.h"
+#include <boost/assign/list_of.hpp>
 
 class FidoInterface : public ProteinProbEstimator
 {

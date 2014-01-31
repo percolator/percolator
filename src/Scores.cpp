@@ -96,7 +96,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
 	  os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
   }
   
-  for (const auto & pid : sh.pPSM->proteinIds) {
+  BOOST_FOREACH (const std::string & pid, sh.pPSM->proteinIds) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(pid) << "</protein_id>" << endl;
   }
   
@@ -129,7 +129,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   }
   os << "      <calc_mass>" << fixed << setprecision (3)  << sh.pPSM->calcMass << "</calc_mass>" << endl;
   
-  for (const auto &pid : sh.pPSM->proteinIds) {
+  BOOST_FOREACH (const std::string &pid, sh.pPSM->proteinIds) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(pid) << "</protein_id>" << endl;
   }
   
@@ -137,7 +137,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << "      <psm_ids>" << endl;
   
   // output all psms that contain the peptide
-  for(string psm : sh.psms_list){
+  BOOST_FOREACH (const std::string &psm, sh.psms_list){
     os << "        <psm_id>" << psm << "</psm_id>" << endl;
   }
   os << "      </psm_ids>" << endl;
@@ -182,7 +182,7 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool computePi0) {
 }
 
 void Scores::printRetentionTime(ostream& outs, double fdr) {
-  for (auto &sh : scores) {
+  BOOST_FOREACH (ScoreHolder &sh, scores) {
     if (sh.isTarget()) outs
         << PSMDescription::unnormalize(sh.pPSM->retentionTime) << "\t"
         << PSMDescription::unnormalize(doc.estimateRT(sh.pPSM->retentionFeatures))
@@ -206,8 +206,8 @@ double Scores::calcScore(const double* feat) const {
  */
 ScoreHolder* Scores::getScoreHolder(const double* d) {
   if (scoreMap.size() == 0) {
-    for (auto &score : scores) {
-      scoreMap[score.pPSM->features] = &score;
+    BOOST_FOREACH (ScoreHolder &sh, scores) {
+      scoreMap[sh.pPSM->features] = &sh;
     }
   }
   std::map<const double*, ScoreHolder*>::iterator res = scoreMap.find(d);
@@ -302,8 +302,8 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   // store possible spectra with relative scores
   multimap<unsigned int,ScoreHolder> spectraScores;
   // populate spectraScores
-  for (const auto &score : scores) {
-    spectraScores.insert(pair<unsigned int,ScoreHolder>(score.pPSM->scan, score));
+  BOOST_FOREACH (ScoreHolder &sh, scores) {
+    spectraScores.insert(pair<unsigned int,ScoreHolder>(sh.pPSM->scan, sh));
   }
 
   // put scores into the folds; choose a fold (at random) and change it only
@@ -311,9 +311,10 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   // note: this works because multimap is an ordered container!
   unsigned int previousSpectrum = spectraScores.begin()->first;
   size_t randIndex = lcg_rand() % xval_fold;
-  for (const auto &scanScorePair : spectraScores) {
-    const auto curScan = scanScorePair.first;
-    const auto score = scanScorePair.second;
+  for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin(); 
+        it != spectraScores.end(); ++it) {
+    const unsigned int curScan = (*it).first;
+    const ScoreHolder sh = (*it).second;
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
     
@@ -328,9 +329,9 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
     // insert
     for (unsigned int i = 0; i < xval_fold; i++) {
       if (i == randIndex) {
-        test[i].scores.push_back(score);
+        test[i].scores.push_back(sh);
       } else {
-        train[i].scores.push_back(score);
+        train[i].scores.push_back(sh);
       }
     }
     // update number of free position for used fold
@@ -349,7 +350,7 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
 void Scores::recalculateSizes() {
   totalNumberOfTargets = 0;
   totalNumberOfDecoys = 0;
-  for (const auto &sh : scores) {
+  BOOST_FOREACH (const ScoreHolder &sh, scores) {
     if (sh.isTarget()) {
       ++totalNumberOfTargets;
     } else {
@@ -388,7 +389,7 @@ void Scores::normalizeScores(double fdr) {
   }
    
   double diff = q1-median;
-  for (auto &sh : scores) {
+  BOOST_FOREACH (ScoreHolder &sh, scores) {
     sh.score -= q1;
     sh.score /= diff;
     if (sh.score <= 0 && VERB > 3) {
@@ -408,7 +409,7 @@ void Scores::normalizeScores(double fdr) {
 int Scores::calcScores(vector<double>& w, double fdr) {
   w_vec = w;
   unsigned int ix;
-  for (auto &sh : scores) {
+  BOOST_FOREACH (ScoreHolder &sh, scores) {
     sh.score = calcScore(sh.pPSM->features);
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
@@ -438,7 +439,7 @@ int Scores::calcQ(double fdr) {
   double efp = 0.0, q; // estimated false positives, q value
   
   // NOTE check this
-  for (auto &sh : scores) {
+  BOOST_FOREACH (ScoreHolder &sh, scores) {
     if (sh.isTarget()) {
       targets++;
       sh.pPSM->p = (decoys+(double)1)/(totalNumberOfDecoys+(double)1);
@@ -470,7 +471,7 @@ int Scores::calcQ(double fdr) {
 
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
   unsigned int ix2 = 0;
-  for (const auto &sh : scores) {
+  BOOST_FOREACH (const ScoreHolder &sh, scores) {
     if (sh.isDecoy()) {
       data.vals[ix2] = sh.pPSM->features;
       data.Y[ix2] = -1;
@@ -483,7 +484,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     const double cpos) {
   unsigned int ix2 = data.negatives, p = 0;
-  for (const auto &sh : scores) {
+  BOOST_FOREACH (const ScoreHolder &sh, scores) {
     if (sh.isTarget()) {
       if (fdr < sh.pPSM->q) {
         posNow = p;
@@ -608,7 +609,7 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
 
 void Scores::recalculateDescriptionOfCorrect(const double fdr) {
   doc.clear();
-  for (const auto &sh : scores) {
+  BOOST_FOREACH (const ScoreHolder &sh, scores) {
     if (sh.isTarget()) {
       //      if (fdr>scores[ix1].pPSM->q) {
       if (0.0 >= sh.pPSM->q) {
@@ -621,7 +622,7 @@ void Scores::recalculateDescriptionOfCorrect(const double fdr) {
 }
 
 void Scores::setDOCFeatures() {
-  for (const auto &sh : scores) {
+  BOOST_FOREACH (const ScoreHolder &sh, scores) {
     doc.setFeatures(*(sh.pPSM));
   }
 }
@@ -631,7 +632,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
   int bestFeature = -1;
   bool lowBest = false;
   for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
-    for (auto &sh : scores) {
+    BOOST_FOREACH (ScoreHolder &sh, scores) {
       sh.score = sh.pPSM->features[featNo];
     }
     sort(scores.begin(), scores.end());
@@ -639,7 +640,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
     for (int i = 0; i < 2; i++) {
       int positives = 0, decoys = 0;
       double efp = 0.0, q;
-      for (const auto &sh : scores) {
+      BOOST_FOREACH (ScoreHolder &sh, scores) {
         if (sh.isTarget()) {
           positives++;
         } else {
@@ -706,8 +707,8 @@ void Scores::calcPep() {
 
 unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
-  for (const auto &score : scores) {
-    if (score.isTarget() && score.pPSM->q < level) {
+  BOOST_FOREACH (ScoreHolder &sh, scores) {
+    if (sh.isTarget() && sh.pPSM->q < level) {
       hits++;
     }
   }

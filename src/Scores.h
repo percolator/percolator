@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <boost/foreach.hpp>
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
@@ -35,8 +36,8 @@ class ScoreHolder {
     PSMDescription* pPSM;
     std::vector<std::string> psms_list;
     
-    ScoreHolder() : score(0.0), label(0), pPSM(nullptr), psms_list () {}
-    ScoreHolder(const double& s, const int& l, PSMDescription* psm = nullptr) :
+    ScoreHolder() : score(0.0), label(0), pPSM(NULL), psms_list () {}
+    ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
       score(s), label(l), pPSM(psm), psms_list () {}
     virtual ~ScoreHolder() {}
     
@@ -99,7 +100,7 @@ class ScoreHolderPeptide: public ScoreHolder {
   public:
     ScoreHolderPeptide() : ScoreHolder() {}
     ScoreHolderPeptide(ScoreHolder& sh) : ScoreHolder(sh) {}
-    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = nullptr) :
+    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
       ScoreHolder(s, l, psm) {}
     virtual ~ScoreHolderPeptide() {}
 };

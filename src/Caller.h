@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <boost/foreach.hpp>
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif

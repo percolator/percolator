@@ -29,6 +29,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <boost/foreach.hpp>
 #include "Scores.h"
 #include "ResultHolder.h"
 #include "MassHandler.h"

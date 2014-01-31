@@ -592,8 +592,8 @@ int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, boo
   Outputs->d = svmInput->positives + svmInput->negatives;
   
   // Find combination of soft margin parameters with highest estimate of true positives
-  for (const auto cpos : cpos_vec) {
-    for (const auto cfrac : cfrac_vec) {
+  BOOST_FOREACH (const double cpos, cpos_vec) {
+    BOOST_FOREACH (const double cfrac, cfrac_vec) {
       if (VERB > 2) cerr << "-cross validation with cpos=" << cpos
           << ", cfrac=" << cfrac << endl;
       int tp = 0;
@@ -611,6 +611,7 @@ int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, boo
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
         ww[i] = pWeights->vec[i];
       }
+      // sub-optimal cross validation (better would be a set disjoint of the training set)
       tp = xv_train[set].calcScores(ww, test_fdr);
       if (VERB > 2) {
         cerr << "- cross validation estimates " << tp
@@ -755,7 +756,7 @@ void Caller::fillFeatureSets() {
   
   
   if (DataSet::getCalcDoc()) {
-    for (auto &subset : setHandler.getSubsets()) {
+    BOOST_FOREACH (DataSet * subset, setHandler.getSubsets()) {
       subset->setRetentionTime(scan2rt);
     }
   }
@@ -765,7 +766,7 @@ void Caller::fillFeatureSets() {
   
   //Normalize features
   vector<double*> featuresV, rtFeaturesV;
-  for (auto &subset : setHandler.getSubsets()) {
+  BOOST_FOREACH (DataSet * subset, setHandler.getSubsets()) {
     subset->fillFeatures(featuresV);
     subset->fillRtFeatures(rtFeaturesV);
   }
