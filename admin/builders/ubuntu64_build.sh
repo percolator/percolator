@@ -38,8 +38,8 @@ whoami;
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
 
-sudo apt-get -y update;
-sudo apt-get -y upgrade;
+sudo apt-get update;
+sudo apt-get upgrade;
 #sudo apt-get -y install g++ make cmake rpm fakeroot;
 sudo apt-get -y install g++ make cmake rpm fakeroot;
 
