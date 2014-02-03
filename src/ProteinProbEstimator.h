@@ -143,7 +143,7 @@ class ProteinProbEstimator {
     void setTargetandDecoysNames();
     
     /** return the data structure for the proteins **/
-    std::map<const std::string,Protein*> getProteins();
+    std::map<const std::string,Protein*> getProteins() { return proteins; }
     
     /** add proteins read from the database **/
     void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
