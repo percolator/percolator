@@ -1,4 +1,3 @@
-
 /*******************************************************************************
  Copyright 2006-2012 Lukas Käll <lukas.kall@scilifelab.se>
 
@@ -121,8 +120,8 @@ class Chymotrypsin : public Enzyme {
       return getString();
     }
     virtual bool isEnz(const char& n, const char& c) {
-      return (((n == 'F' || n == 'H' || n == 'W' || n == 'Y' || n == 'L'
-          || n == 'M') && c != 'P') || n == '-' || c == '-');
+      return (((n == 'F' || n == 'W' || n == 'Y' || n == 'L' )
+        && c != 'P') || n == '-' || c == '-');
     }
     virtual EnzymeType getET() {
       return CHYMOTRYPSIN;
