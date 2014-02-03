@@ -44,6 +44,7 @@
 #include "MassHandler.h"
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
+#include "CrossValidation.h"
 
 class Caller {
   public:
@@ -56,24 +57,15 @@ class Caller {
     Caller();
     Caller(bool uniquePeptides);
     virtual ~Caller();
-    void train(vector<vector<double> >& w);
-    int xv_process_one_bin(unsigned int set, vector<vector<double> >& w, 
-                           bool updateDOC, vector<double>& cpos_vec, 
-                           vector<double>& cfrac_vec, double& best_cpos, 
-                           double &best_cfrac, vector_double* pWeights,
-                           options * pOptions);
-    int xv_step(vector<vector<double> >& w, bool updateDOC = false);
+    
     static string greeter();
     string extendedGreeter();
     bool parseOptions(int argc, char **argv);
-    void printWeights(ostream & weightStream, vector<double>& w);
-    void readWeights(istream & weightStream, vector<double>& w);
     int readFiles();
     
     void fillFeatureSets();
-    int preIterationSetup(vector<vector<double> >& w);
     void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
-        clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC = false);
+        clock_t& procStartClock, double& diff, bool TDC = false);
     
     void calculateProteinProbabilitiesFido();
     
@@ -85,8 +77,9 @@ class Caller {
     
     Normalizer * pNorm;
     SanityCheck * pCheck;
-    AlgIn *svmInput;
     ProteinProbEstimator* protEstimator;
+    
+    CrossValidation crossValidation;
     
     string forwardTabInputFN;
     string resultFN;
@@ -98,30 +91,19 @@ class Caller {
     bool tabInput;
     bool readStdIn;
     
-    bool quickValidation;
-    bool reportPerformanceEachIteration;
-    
     bool reportUniquePeptides;
-    
     bool target_decoy_competition;
     
     double test_fdr;
-    double selectionfdr;
-    double selectedCpos;
-    double selectedCneg;
     
     double threshTestRatio;
     double trainRatio;
-    unsigned int niter;
     
     string call;
     string decoyOut;
     
     time_t startTime;
     clock_t startClock;
-    const static unsigned int xval_fold;
-    vector<Scores> xv_train, xv_test;
-    vector<double> xv_cposs, xv_cfracs;
     //SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
     SetHandler setHandler;
     Scores fullset; //,thresholdset;
