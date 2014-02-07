@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 #include <cctype>
 #include <iterator>
 

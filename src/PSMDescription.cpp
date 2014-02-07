@@ -112,7 +112,7 @@ void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, do
         if (psm == psms.begin()) {
           continue;
         }
-	vector<PSMDescription*>::reverse_iterator rpsm(psm);
+	      vector<PSMDescription*>::reverse_iterator rpsm(psm);
         (*psm)->checkFragmentPeptides(rpsm, psms.rend());
       }
     } else {
@@ -132,7 +132,7 @@ void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, do
         if (psm == psms.begin()) {
           continue;
         }
-	vector<PSMDescription*>::reverse_iterator rpsm(psm);
+	      vector<PSMDescription*>::reverse_iterator rpsm(psm);
         (*psm)->checkFragmentPeptides(rpsm, psms.rend());
       }
     }

@@ -567,10 +567,10 @@ void Caller::fillFeatureSets() {
  * @param procStartClock clock associated with procStart
  * @param w list of normal vectors
  * @param diff runtime of the calculations
- * @param TDC boolean for target decoy competition
+ * @param targetDecoyCompetition boolean for target decoy competition
  */
 void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
-    clock_t& procStartClock, double& diff, bool TDC){
+    clock_t& procStartClock, double& diff, bool targetDecoyCompetition){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
   // peptide run and the option was switched off
@@ -583,7 +583,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   
   if (isUniquePeptideRun) {
     fullset->weedOutRedundant();
-  } else if (TDC) {
+  } else if (targetDecoyCompetition) {
     fullset->weedOutRedundantTDC();
     if(VERB > 0) {
       std::cerr << "Target Decoy Competition yielded " << fullset->posSize() 
@@ -617,10 +617,8 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   diff = difftime(end, procStart);
   ostringstream timerValues;
   timerValues.precision(4);
-  timerValues << "Processing took "
-      << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC;
-  timerValues << " cpu seconds or " << diff << " seconds wall time"
-      << endl;
+  timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
+              << " cpu seconds or " << diff << " seconds wall time" << endl;
   if (VERB > 1 && writeOutput) {
     cerr << timerValues.str();
   }

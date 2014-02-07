@@ -21,7 +21,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <list>
 #include <memory>
+#include <cassert>
 #include "Globals.h"
 #include "SetHandler.h"
 #include "DataSet.h"
@@ -33,6 +35,7 @@
 #include <boost/foreach.hpp>
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
+  #include "MassHandler.h"
   
   #include "parser.hxx"
   #include "serializer.hxx"

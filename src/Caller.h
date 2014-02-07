@@ -21,7 +21,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <time.h>
 #include <cstdlib>
 #include <vector>
 #include <set>
@@ -34,16 +33,14 @@
 #endif
 #include "Globals.h"
 #include "Option.h"
-#include "SanityCheck.h"
-#include "DataSet.h"
-#include "Normalizer.h"
-#include "Scores.h"
 #include "SetHandler.h"
-#include "XMLInterface.h"
-#include "ssl.h"
-#include "MassHandler.h"
+#include "DataSet.h"
+#include "Scores.h"
+#include "SanityCheck.h"
+#include "Normalizer.h"
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
+#include "XMLInterface.h"
 #include "CrossValidation.h"
 
 class Caller {
@@ -65,7 +62,7 @@ class Caller {
     
     void fillFeatureSets();
     void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
-        clock_t& procStartClock, double& diff, bool TDC = false);
+        clock_t& procStartClock, double& diff, bool targetDecoyCompetition = false);
     
     void calculateProteinProbabilitiesFido();
     

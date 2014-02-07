@@ -216,8 +216,8 @@ int CrossValidation::xv_step(bool updateDOC) {
  * @param pOptions options for the SVM algorithm
 */
 int CrossValidation::xv_process_one_bin(unsigned int set, bool updateDOC, vector<double>& cpos_vec, 
-                               vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
-                               options * pOptions) {
+         vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
+         options * pOptions) {
   int bestTP = 0;
   if (VERB > 2) {
     cerr << "cross validation - fold " << set + 1 << " out of "
@@ -262,7 +262,8 @@ int CrossValidation::xv_process_one_bin(unsigned int set, bool updateDOC, vector
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
         ww[i] = pWeights->vec[i];
       }
-      // sub-optimal cross validation (better would be a set disjoint of the training set)
+      // sub-optimal cross validation (better would be to measure
+      // performance on a set disjoint of the training set)
       tp = xv_train[set].calcScores(ww, testFdr);
       if (VERB > 2) {
         cerr << "- cross validation estimates " << tp
