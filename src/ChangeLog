@@ -1,6 +1,17 @@
+v2.06
+* Modified the xxx2pin converters to output tab delimited files 
+  by default rather than pin xml-files  
+* Improved support for tab-delimited files, including fixed
+  columns for scan numbers, and fixed rows for default directions
+* Changed command line option for selecting default direction (-V)
+  to take feature name rather than feature number as input
+* Introduced a cmake flag XML_SUPPORT, governing the inclusion or 
+  exclusion of percolators pin-file XML dependencies. 
+* Native Windows compilation via Visual C++
+	
 v2.05
 * Added support for MSGF+ files, using the parser msgf2pin
-* Enabled windows 64-bit executables througnh MinGW64
+* Enabled windows 64-bit executables through MinGW64
 	
 v2.04
 * Incorporated new version of Fido to estimate Protein Probabilities
@@ -12,7 +23,7 @@ v2.04
         -D (--no-prune-proteins)
         -P (--deepness)
 * Added information to the pout file:
-	Number of PSMs,peptides and Proteins below at FDR 1%.
+	Number of PSMs, peptides and Proteins below at FDR 1%.
 	Pi0s calculated at PSM, peptide and protein level.
 	alpha,beta and gamma values for fido.
 * Corrected an error in the selection process of the highest
