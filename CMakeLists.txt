@@ -88,9 +88,9 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 # # PACKAGING
 # ###############################################################################
 # # PACKAGING OPTIONS: GENERAL
-if(XML_SUPPORT)
+if(NOT XML_SUPPORT)
   set(NICKNAME_SUFFIX "-noxml")
-endif(XML_SUPPORT)
+endif()
 set(PACKAGE_NICKNAME "percolator${NICKNAME_SUFFIX}")
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
