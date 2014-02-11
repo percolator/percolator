@@ -425,16 +425,16 @@ endif( MINGW )
 
 if(MSVC)
   message( STATUS "    Installing system-libraries: Win32 DLLs." )
-  # TODO: Some hacking is needed to install the right libraries/dlls, need to do this in a better way
-  list(REMOVE_ITEM Boost_LIBRARIES debug)
-  list(REMOVE_ITEM Boost_LIBRARIES optimized)
+  # TODO: Some hacking is needed to install the .dll instead of the .lib. CMake plans to include these DLL variables in the future
+  string(REPLACE "xerces-c_3.lib" "../bin/xerces-c_3_1.dll;" XERCESC_DLL_LIBRARIES ${XERCESC_LIBRARIES})
+  message( STATUS "      Installing Xerces DLL: ${XERCESC_DLL_LIBRARIES}")
   list(REMOVE_ITEM SQLITE3_LIBRARIES debug)
   list(REMOVE_ITEM SQLITE3_LIBRARIES optimized)
   string(REPLACE "sqlite3.lib" "sqlite3.dll;" SQLITE3_DLL_LIBRARIES ${SQLITE3_LIBRARIES})
-  message( STATUS "${SQLITE3_DLL_LIBRARIES}")
+  message( STATUS "      Installing Sqlite3 DLL: ${SQLITE3_DLL_LIBRARIES}")
   string(REPLACE "zdll.lib" "../zlib1.dll" ZLIB_DLL_LIBRARIES ${ZLIB_LIBRARIES})
-  message( STATUS "${ZLIB_DLL_LIBRARIES}")
-  set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_LIBRARIES} ${ZLIB_DLL_LIBRARIES} ${SQLITE3_DLL_LIBRARIES} )
+  message( STATUS "      Installing Zlib DLL: ${ZLIB_DLL_LIBRARIES}")
+  set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_DLL_LIBRARIES} ${ZLIB_DLL_LIBRARIES} ${SQLITE3_DLL_LIBRARIES} )
   include( InstallRequiredSystemLibraries )
 endif(MSVC)
 

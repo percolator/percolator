@@ -77,7 +77,10 @@ endif( MINGW )
 
 if( MSVC )
   message( STATUS "    Installing system-libraries: Win32 DLLs." )
-  set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_LIBRARIES} )
+  # TODO: Some hacking is needed to install the .dll instead of the .lib. CMake plans to include these DLL variables in the future
+  string(REPLACE "xerces-c_3.lib" "../bin/xerces-c_3_1.dll;" XERCESC_DLL_LIBRARIES ${XERCESC_LIBRARIES})
+  message( STATUS "      Installing Xerces DLL: ${XERCESC_DLL_LIBRARIES}")
+  set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_DLL_LIBRARIES} )
   include( InstallRequiredSystemLibraries )
 endif( MSVC )
 
@@ -88,7 +91,7 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 # # PACKAGING
 # ###############################################################################
 # # PACKAGING OPTIONS: GENERAL
-if(XML_SUPPORT)
+if( NOT XML_SUPPORT)
   set(NICKNAME_SUFFIX "-noxml")
 endif(XML_SUPPORT)
 set(PACKAGE_NICKNAME "percolator${NICKNAME_SUFFIX}")
