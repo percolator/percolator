@@ -85,10 +85,18 @@ fi
 
 #-------------------------------------------
 
+mkdir -p ${build_dir}/percolator-noxml
+cd ${build_dir}/percolator-noxml
+
+cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+make -j 2 "VERBOSE=1"
+sudo make -j 2 package
+
+
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/;/opt/local/;/usr/;/usr/local/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2 "VERBOSE=1"
 sudo make -j 2 package
 
@@ -100,5 +108,6 @@ make -j 2 "VERBOSE=1"
 sudo make -j 2 package
 #--------------------------------------------
 mkdir -p ${release_dir}
+cp -v ${build_dir}/percolator-noxml/*.dmg ${release_dir}
 cp -v ${build_dir}/percolator/*.dmg ${release_dir}
 cp -v ${build_dir}/converters/*.dmg ${release_dir}
