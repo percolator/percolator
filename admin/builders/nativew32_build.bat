@@ -201,7 +201,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 :::::::::::: END BUILD ::::::::::::::::
 :::::::::::::::::::::::::::::::::::::::
 
-
+copy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
 copy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
 copy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
 
