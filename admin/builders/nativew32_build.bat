@@ -163,6 +163,17 @@ set PATH=%PATH%;%ZLIB_DIR%
 
 if not exist "%BUILD_DIR%" (md "%BUILD_DIR%")
 
+if not exist "%BUILD_DIR%\percolator-noxml" (md "%BUILD_DIR%\percolator-noxml")
+cd /D "%BUILD_DIR%\percolator-noxml"
+
+::::::: Building percolator without xml support :::::::
+echo cmake percolator.....
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
+echo build percolator (this will take a few minutes).....
+msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 cd /D "%BUILD_DIR%\percolator"
 
@@ -173,6 +184,7 @@ echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+
 
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
