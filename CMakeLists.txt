@@ -91,7 +91,7 @@ install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHE
 # # PACKAGING
 # ###############################################################################
 # # PACKAGING OPTIONS: GENERAL
-if( NOT XML_SUPPORT)
+if(NOT XML_SUPPORT)
   set(NICKNAME_SUFFIX "-noxml")
 endif(XML_SUPPORT)
 set(PACKAGE_NICKNAME "percolator${NICKNAME_SUFFIX}")
