@@ -1,89 +1,65 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html>
+<html>
 
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Percolator : Semi-supervised learning for peptide identification from shotgun proteomics datasets " />
 
-	<title>percolator/percolator @ GitHub</title>
-	
-	<style type="text/css">
-		body {
-  		margin-top: 1.0em;
-  		background-color: #daefd7;
-		  font-family: "helvetica"; 
-  		color: #000000;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-		h1 { font-size: 3.8em; color: #251028; margin-bottom: 3px; }
-		h1 .small { font-size: 0.4em; }
-		h1 a { text-decoration: none }
-		h2 { font-size: 1.5em; color: #251028; }
-    h3 { text-align: center; color: #251028; }
-    a { color: #251028; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-		pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-	</style>
-	
-</head>
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-<body>
-  <a href="http://per-colator.com/percolator"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
-  
-  <div id="container">
+    <title>Percolator</title>
+  </head>
 
-    <div class="download">
-      <a href="http://github.com/percolator/percolator/downloads">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/percolator/percolator">View on GitHub</a>
+
+          <h1 id="project_title">Percolator</h1>
+          <h2 id="project_tagline">Semi-supervised learning for peptide identification from shotgun proteomics datasets </h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/percolator/percolator/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/percolator/percolator/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
     </div>
-      
-    <h1><a href="http://github.com/percolator/percolator">percolator</a> 
-      <span class="small">by <a href="http://github.com/percolator">percolator</a></span></h1>
 
-    <div class="description">
-      A proteomics assay post processor that separates correct from incorrect peptide-spectrum matches
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>This repository holds the source code for percolator and format
+converters software packages; a software for postprocessing of shotgun
+proteomics data.</p>
+
+<p>While the source code is hosted at github, the binary downloads are
+now days hosted on sourceforge:</p>
+
+<p><a href="https://sourceforge.net/projects/percolator/files">https://sourceforge.net/projects/percolator/files</a></p>
+
+<p>The building procedure is cmake-based. Helper scripts for building on
+different platforms can be found in: admin/bilders/</p>
+
+<p>The cleanest way to build is to use the vagrant virtual machine
+system, which can be setup using the script: admin/vagrant/manager.sh</p>
+
+<p>Lukas Käll
+12th November, 2013</p>
+      </section>
     </div>
-    <p><a href="/percolator/percolator/wiki/Home">Link to wiki</a> </p>
 
-    <p>The first step in analyzing an mass spectrometry assay is to match the harvested spectra against a target database using database search engines such as Sequest and Mascot, a process that renders list of peptide-spectrum matches. However, it is not trivial to assess the accuracy of these identifications.
-
-Percolator uses a semi-supervised machine learning to discriminate correct from incorrect peptide-spectrum matches, and calculates accurate statistics such as q-value (FDR) and posterior error probabilities.</p><h2>License</h2>
-<p>Apache 2.0</p>
-<h2>Contact</h2>
-<p>Lukas Käll (lukas.kall@cbr.su.com)
-<br/>      </p>
-
-
-    <h2>Download</h2>
-    <p>
-      You can download this project from
-      <a href="http://github.com/percolator/percolator/downloads">here</a>.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/percolator/percolator</pre>
-    </p>
-      
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/percolator/percolator">percolator/percolator</a>
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Percolator maintained by <a href="https://github.com/percolator">percolator</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
     </div>
+
     
-  </div>
 
-  <script type="text/javascript">
-var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
-<script type="text/javascript">
-try {
-var pageTracker = _gat._getTracker("UA-2878997-2");
-pageTracker._trackPageview();
-} catch(err) {}</script>
-</body>
+  </body>
 </html>
