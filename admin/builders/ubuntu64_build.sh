@@ -62,9 +62,18 @@ sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev;
 
 #------------------------------------------------------------------------
-mkdir -p $build_dir/percolator $build_dir/converters;
+mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters;
 
 ######percolator########
+#-----cmake-----
+cd $build_dir/percolator-noxml;
+echo -n "cmake percolator.....";
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+#-----make------
+echo -n "make percolator (this will take few minutes).....";
+make -j 4;
+make -j 4 package;
+
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
@@ -87,6 +96,6 @@ make -j 4;
 make -j 4 package;
 
 ###########################
-cp $build_dir/{percolator,converters}/*.deb ${release_dir};
+cp $build_dir/{percolator-noxml,percolator,converters}/*.deb ${release_dir};
 echo "Finished buildscript execution";
 echo "in build directory ${build_dir}";
