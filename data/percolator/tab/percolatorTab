@@ -1,5 +1,5 @@
 SpecId	Label	ScanNr	lnrSp	deltLCn	deltCn	Xcorr	Sp	IonFrac	Mass	PepLen	Charge1	Charge2	Charge3	Charge4	Charge5	enzN	enzC	enzInt	lnNumSP	dM	absdM	Peptide	Proteins
-DefaultDirection	-	-	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+DefaultDirection	-	-	0	0	1.61	1.1	0	0	0	-0.573	0.0335	0.149	-0.156
 trg_44_1_1	1	44	1.38629	0.7021	0.1136	0.744	43.2	0.3	681.227	6	1	0	0	0	0	0	0	0	5.97635	-0.0057	0.0057	I.SSCPAC.L	tr|A6ZWP0|A6ZWP0_YEAS7
 trg_117_1_1	1	117	1.38629	0.3165	0.0455	0.4117	44.1	0.375	681.23	5	1	0	0	0	0	0	0	0	5.23111	-0.0003	0.0003	D.YSHCD.T	tr|A6ZTR5|A6ZTR5_YEAS7
 trg_126_1_1	1	126	2.89037	0.2518	0.0463	0.4107	7.5	0.125	624.239	5	1	0	0	0	0	0	0	1	5.57973	-0.0024	0.0024	L.SRCDS.E	tr|A7A212|A7A212_YEAS7

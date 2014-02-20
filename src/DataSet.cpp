@@ -181,7 +181,7 @@ void DataSet::readPsm(ifstream & dataStream, const std::string line) {
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
   }
-  double *featureRow = new double[numFeatures];
+  double *featureRow = new double[FeatureNames::getNumFeatures()];
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
     buff >> featureRow[j];

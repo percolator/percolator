@@ -134,8 +134,10 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     
     std::vector<double> init_values(FeatureNames::getNumFeatures());
     unsigned int i = 0;
+    bool hasDefaultValues = false;
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {    
       if (descr.initialValue().present()) {
+        hasDefaultValues = true;
         if (VERB >2) {
           std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
         }
@@ -184,7 +186,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     //SanityCheck::addDefaultWeights(init_values);
     pCheck = SanityCheck::initialize(otherCall);
     assert(pCheck);
-    pCheck->addDefaultWeights(init_values);
+    if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
     pCheck->checkAndSetDefaultDir();
     xmlInStream.close();
   } catch (const xml_schema::exception& e) {

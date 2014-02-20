@@ -57,7 +57,6 @@ void FeatureNames::initFeatures(bool calcDOC) {
   if (VERB>2) {
     std::cerr << "end of FeatureNames::initFeatures\n";
   }
-  return;
 }
 
 string FeatureNames::getFeatureNames(bool skipDOC) {

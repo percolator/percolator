@@ -9,6 +9,7 @@ import re
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
 pathToOutputData = "@pathToOutputData@"
+xmlSupport = @xmlSupport@
 success = True
 
 print("PERCOLATOR PERFORMANCE")
@@ -27,7 +28,7 @@ def checkNumberOfSignificant(what,file,expected):
   success = True
   print("(*): checking number of significant "+what+" found...")
   if what=="proteins":
-    output = getLine("The number of Proteins idenfified at q-value = 0.01 is :",file)
+    output = getLine("The number of proteins idenfified at q-value = 0.01 is :",file)
   else:
     output = getLine("New pi_0 estimate",file)
   if what=="proteins":
@@ -99,27 +100,48 @@ def performanceD4On():
     success = False
   return success
 
-psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
-peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
-proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
+if xmlSupport:
+  print("- PERCOLATOR PIN XML FORMAT")
+
+  psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
+  peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
+  proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
+
+  # number of significant psms within boundaries
+  success=checkNumberOfSignificant("psms",psmFile,283) and success
+  # number of significant peptrides within boundaries
+  success=checkNumberOfSignificant("peptides",peptideFile,221) and success
+  # number of significant proteins within boundaries (old dataset)
+  #success=checkNumberOfSignificant("proteins",proteinFile,153) and success
+  # psm: pi0 within boundaries
+  success=checkPi0("psms",psmFile,0.8912) and success
+  # peptides: pi0 within boundaries
+  success=checkPi0("peptides",peptideFile,0.9165) and success
+  # psm: pep within boundaries (old dataset)
+  #expected=[2.61748e-13,3.26564e-09,7.28959e-08]
+  #success = checkPep("psms",psmFile, expected);
+  # peptide : pep within boundaries (old dataset)
+  #expected=[4.47324e-14,3.52218e-09,1.7545e-07]
+  #success = checkPep("peptides",peptideFile, expected);
+  # performance increase with -D 4 option
+  success = performanceD4On() and success
+
+print("- PERCOLATOR TAB FORMAT")
+
+psmFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_psms.txt")
+peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_peptides.txt")
+proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins.txt")
+
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,283) and success
 # number of significant peptrides within boundaries
 success=checkNumberOfSignificant("peptides",peptideFile,221) and success
-# number of significant proteins within boundaries
-#success=checkNumberOfSignificant("proteins",proteinFile,153) and success
 # psm: pi0 within boundaries
 success=checkPi0("psms",psmFile,0.8912) and success
 # peptides: pi0 within boundaries
 success=checkPi0("peptides",peptideFile,0.9165) and success
-# psm: pep within boundaries
-expected=[2.61748e-13,3.26564e-09,7.28959e-08]
-#success = checkPep("psms",psmFile, expected);
-# peptide : pep within boundaries
-expected=[4.47324e-14,3.52218e-09,1.7545e-07]
-#success = checkPep("peptides",peptideFile, expected);
 # performance increase with -D 4 option
-#success = performanceD4On()
+success = performanceD4On() and success
 
 # if no errors were encountered, succeed
 if success==True:
