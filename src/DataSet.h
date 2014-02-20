@@ -25,15 +25,10 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
-#include <set>
 #include <map>
-#include <list>
-#include <utility>
 #include <boost/foreach.hpp>
 #include "Scores.h"
 #include "ResultHolder.h"
-#include "MassHandler.h"
-#include "Enzyme.h"
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"

@@ -124,7 +124,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
       doc = p.next();
     };
 
-    // get the feature names and initial values that are present in feature descriptions
+    // read feature names and initial values that are present in feature descriptions
     FeatureNames& featureNames = DataSet::getFeatureNames();
     percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {    
@@ -134,8 +134,10 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     
     std::vector<double> init_values(FeatureNames::getNumFeatures());
     unsigned int i = 0;
+    bool hasDefaultValues = false;
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {    
       if (descr.initialValue().present()) {
+        hasDefaultValues = true;
         if (VERB >2) {
           std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
         }
@@ -144,7 +146,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
       ++i;
     }
 
-    // import info from xml: read Fragment Spectrum Scans
+    // read Fragment Spectrum Scans
     for (doc = p.next(); doc.get()!= 0 && 
           XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
     {
@@ -159,29 +161,32 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
       }
     }
 
-    // import info from xml: read database proteins
+    // read database proteins
     // only read them if they are present and the option of using mayusfdr is activated
     unsigned readProteins = 0;
-    for (doc = p.next(); doc.get()!= 0 
-        && hasProteins && ProteinProbEstimator::getCalcProteinLevelProb() /*&& Caller::protEstimator->getMayuFdr()*/
-        && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
-    {
-      ::percolatorInNs::protein protein(*doc->getDocumentElement());
-      protEstimator->addProteinDb(protein.isDecoy(), protein.name(), protein.sequence(), protein.length());
-      ++readProteins;
+    if (hasProteins && ProteinProbEstimator::getCalcProteinLevelProb()) {
+      assert(protEstimator); // should be initialized if -A flag was used (which also sets calcProteinLevelProb)
+      for (doc = p.next(); doc.get()!= 0 /*&& Caller::protEstimator->getMayuFdr()*/
+          && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
+      {
+        ::percolatorInNs::protein protein(*doc->getDocumentElement());
+        protEstimator->addProteinDb(protein.isDecoy(), protein.name(), protein.sequence(), protein.length());
+        ++readProteins;
+      }
     }
-    /*if(ProteinProbEstimator::getCalcProteinLevelProb() && protEstimator->getMayuFdr() && readProteins <= 0)
-    {
-std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
+    /*
+    if(ProteinProbEstimator::getCalcProteinLevelProb() && protEstimator->getMayuFdr() && readProteins <= 0) {
+      std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
 	       Did you run converters with the flag -F ?\n" << std::endl;
-Caller::protEstimator->setMayusFDR(false);
-    }*/
+      Caller::protEstimator->setMayusFDR(false);
+    }
+    */
     
     //maybe better to do :
     //SanityCheck::addDefaultWeights(init_values);
     pCheck = SanityCheck::initialize(otherCall);
     assert(pCheck);
-    pCheck->addDefaultWeights(init_values);
+    if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
     pCheck->checkAndSetDefaultDir();
     xmlInStream.close();
   } catch (const xml_schema::exception& e) {

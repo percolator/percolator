@@ -2,6 +2,11 @@
 set(pathToBinaries ${CMAKE_INSTALL_PREFIX}/bin)
 set(pathToData ${CMAKE_SOURCE_DIR}/data)
 set(pathToOutputData ${CMAKE_BINARY_DIR}/data)
+if(XML_SUPPORT)
+  set(xmlSupport True)
+else(XML_SUPPORT)
+  set(xmlSupport False)
+endif(XML_SUPPORT)
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 file(GLOB_RECURSE configurefiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cmake )

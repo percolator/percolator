@@ -49,14 +49,6 @@ class SetHandler {
     virtual ~SetHandler();
 
     void push_back_dataset( DataSet * ds );
-
-    /*void modifyFile(const string& fn, vector<DataSet*> & sets, Scores& sc,
-               const string& greet, bool dtaSelect);*/
-
-    void fillTestSet(SetHandler& trainSet, const string& shuffled2FN = "");
-    void createXvalSets(vector<SetHandler>& train,
-                        vector<SetHandler>& test,
-                        const unsigned int xval_fold);
        
     //const double* getFeatures(const int setPos, const int ixPos) const;  
     int readTab(const string& dataFN, SanityCheck *& pCheck);

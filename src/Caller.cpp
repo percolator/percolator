@@ -26,20 +26,13 @@
 #include <boost/filesystem.hpp>
 
 using namespace std;
-
-const unsigned int Caller::xval_fold = 3; /* number of folds for cross validation*/
-const double requiredIncreaseOver2Iterations = 0.01; /* checks cross validation convergence */
-      
-/** some constants to be used to compare xml strings **/
       
 Caller::Caller() :
-        pNorm(NULL), pCheck(NULL), svmInput(NULL), protEstimator(NULL),
+        pNorm(NULL), pCheck(NULL), protEstimator(NULL),
         forwardTabInputFN(""), resultFN(""), tabFN(""),
         weightFN(""), tabInput(false), readStdIn(false),
-        quickValidation(false), reportPerformanceEachIteration(false),
         reportUniquePeptides(true), target_decoy_competition(false),
-        test_fdr(0.01), selectionfdr(0.01), selectedCpos(0), selectedCneg(0),
-        threshTestRatio(0.3), trainRatio(0.6), niter(10) {
+        test_fdr(0.01), threshTestRatio(0.3), trainRatio(0.6) {
 }
 
 Caller::~Caller() {
@@ -51,10 +44,6 @@ Caller::~Caller() {
     delete pCheck;
   }
   pCheck = NULL;
-  if (svmInput) {
-    delete svmInput;
-  }
-  svmInput = NULL;
   if (protEstimator) {
     delete protEstimator;
   }
@@ -74,9 +63,7 @@ string Caller::extendedGreeter() {
   oss << "Started " << ctime(&startTime) << endl;
   oss.seekp(-1, ios_base::cur);
   if(host) oss << " on " << host << endl;
-  oss << "Hyperparameters fdr=" << selectionfdr;
-  oss << ", Cpos=" << selectedCpos << ", Cneg=" << selectedCneg
-      << ", maxNiter=" << niter << endl;
+  crossValidation.printParameters(oss);
   return oss.str();
 }
 
@@ -407,11 +394,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   if (cmd.optionSet("p")) {
-    selectedCpos = cmd.getDouble("p", 0.0, 1e127);
+    crossValidation.setSelectedCpos(cmd.getDouble("p", 0.0, 1e127));
   }
   if (cmd.optionSet("n")) {
-    selectedCneg = cmd.getDouble("n", 0.0, 1e127);
-    if(selectedCpos == 0)
+    crossValidation.setSelectedCneg(cmd.getDouble("n", 0.0, 1e127));
+    if(crossValidation.getSelectedCpos() == 0)
     {
       std::cerr << "Warning : the positive penalty(cpos) is 0, therefore both the "  
 		 << "positive and negative penalties are going "
@@ -446,19 +433,20 @@ bool Caller::parseOptions(int argc, char **argv) {
     SanityCheck::setOverrule(true);
   }
   if (cmd.optionSet("R")) {
-    reportPerformanceEachIteration = true;
+    crossValidation.setReportPerformanceEachIteration(true);
   }
   if (cmd.optionSet("x")) {
-    quickValidation=true;
+    crossValidation.setQuickValidation(true);
   }
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
   }
   if (cmd.optionSet("F")) {
-    selectionfdr = cmd.getDouble("F", 0.0, 1.0);
+    crossValidation.setSelectionFdr(cmd.getDouble("F", 0.0, 1.0));
   }
   if (cmd.optionSet("t")) {
     test_fdr = cmd.getDouble("t", 0.0, 1.0);
+    crossValidation.setTestFdr(test_fdr);
   }
   if (cmd.optionSet("S")) {
     Scores::setSeed(cmd.getInt("S", 1, 20000));
@@ -514,32 +502,6 @@ bool Caller::parseOptions(int argc, char **argv) {
 }
 
 /**
- * Prints the weights of the normalized vector to a stream
- * @param weightStream stream where the weights are written to
- * @param w normal vector
- */
-void Caller::printWeights(ostream & weightStream, vector<double>& w) {
-  weightStream
-  << "# first line contains normalized weights, second line the raw weights"
-  << endl;
-  weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0"
-      << endl;
-  weightStream.precision(3);
-  weightStream << w[0];
-  for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
-    weightStream << "\t" << fixed << setprecision(4) << w[ix];
-  }
-  weightStream << endl;
-  vector<double> ww(FeatureNames::getNumFeatures() + 1);
-  pNorm->unnormalizeweight(w, ww);
-  weightStream << ww[0];
-  for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
-    weightStream << "\t" << fixed << setprecision(4) << ww[ix];
-  }
-  weightStream << endl;
-}
-
-/**
  * Reads in the files from XML (must be enabled at compile time) or tab format
  */
 int Caller::readFiles() { 
@@ -552,187 +514,6 @@ int Caller::readFiles() {
   return error;
 }
 
-/** 
- * Train one of the crossvalidation bins 
- * @param set identification number of the bin that is processed
- * @param w list of normal vectors (in the linear algebra sense) of the hyperplane from SVM, one for each bin
- * @param updateDOC boolean deciding to calculate retention features @see DescriptionOfCorrect
- * @param cpos_vec vector with soft margin parameter for positives
- * @param cfrac_vec vector with soft margin parameter for fraction negatives / positives
- * @param best_cpos best soft margin parameter for positives
- * @param best_cfrac best soft margin parameter for fraction negatives / positives
- * @param pWeights results vector from the SVM algorithm
- * @param pOptions options for the SVM algorithm
-*/
-int Caller::xv_process_one_bin(unsigned int set, vector<vector<double> >& w, bool updateDOC, vector<double>& cpos_vec, 
-                               vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
-                               options * pOptions) {
-  int bestTP = 0;
-  if (VERB > 2) {
-    cerr << "cross validation - fold " << set + 1 << " out of "
-         << xval_fold << endl;
-  }
-  
-  vector<double> ww = w[set]; // normal vector initial guess and result holder
-  vector<double> bestW = w[set]; // normal vector with highest true positive estimate
-  xv_train[set].calcScores(ww, selectionfdr);
-  if (DataSet::getCalcDoc() && updateDOC) {
-    xv_train[set].recalculateDescriptionOfCorrect(selectionfdr);
-  }
-  xv_train[set].generateNegativeTrainingSet(*svmInput, 1.0);
-  xv_train[set].generatePositiveTrainingSet(*svmInput, selectionfdr, 1.0);
-  if (VERB > 2) {
-    cerr << "Calling with " << svmInput->positives << " positives and "
-         << svmInput->negatives << " negatives\n";
-  }
-  
-  // Create storage vector for SVM algorithm
-  struct vector_double* Outputs = new vector_double;
-  Outputs->vec = new double[svmInput->positives + svmInput->negatives];
-  Outputs->d = svmInput->positives + svmInput->negatives;
-  
-  // Find combination of soft margin parameters with highest estimate of true positives
-  BOOST_FOREACH (const double cpos, cpos_vec) {
-    BOOST_FOREACH (const double cfrac, cfrac_vec) {
-      if (VERB > 2) cerr << "-cross validation with cpos=" << cpos
-          << ", cfrac=" << cfrac << endl;
-      int tp = 0;
-      for (int ix = 0; ix < pWeights->d; ix++) {
-        pWeights->vec[ix] = 0;
-      }
-      for (int ix = 0; ix < Outputs->d; ix++) {
-        Outputs->vec[ix] = 0;
-      }
-      svmInput->setCost(cpos, (cpos) * (cfrac));
-      
-      // Call SVM algorithm (see ssl.cpp)
-      L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
-      
-      for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-        ww[i] = pWeights->vec[i];
-      }
-      // sub-optimal cross validation (better would be a set disjoint of the training set)
-      tp = xv_train[set].calcScores(ww, test_fdr);
-      if (VERB > 2) {
-        cerr << "- cross validation estimates " << tp
-             << " target PSMs over " << test_fdr * 100 << "% FDR level"
-             << endl;
-      }
-      if (tp >= bestTP) {
-        if (VERB > 2) {
-          cerr << "Better than previous result, store this" << endl;
-        }
-        bestTP = tp;
-        bestW = ww;
-        best_cpos = cpos;
-        best_cfrac = cfrac;
-      }
-    }
-    if (VERB > 2) cerr << "cross validation estimates " << bestTP
-        / (xval_fold - 1) << " target PSMs with q<" << test_fdr
-        << " for hyperparameters Cpos=" << best_cpos << ", Cneg="
-        << best_cfrac * best_cpos << endl;
-  }
-  w[set]=bestW;
-  delete[] Outputs->vec;
-  delete Outputs;
-  return bestTP;
-}
-
-/** 
- * Executes a cross validation step
- * @param w list of the bins' normal vectors (in linear algebra sense) of the hyperplane from SVM
- * @param updateDOC boolean deciding to recalculate retention features @see DescriptionOfCorrect
- * @return Estimation of number of true positives
- */
-int Caller::xv_step(vector<vector<double> >& w, bool updateDOC) {
-  // Setup
-  struct options* pOptions = new options;
-  pOptions->lambda = 1.0;
-  pOptions->lambda_u = 1.0;
-  pOptions->epsilon = EPSILON;
-  pOptions->cgitermax = CGITERMAX;
-  pOptions->mfnitermax = MFNITERMAX;
-  struct vector_double* pWeights = new vector_double;
-  pWeights->d = FeatureNames::getNumFeatures() + 1;
-  pWeights->vec = new double[pWeights->d];
-  int estTP = 0;
-  double best_cpos = 1, best_cfrac = 1;
-  if (!quickValidation) {
-    for (unsigned int set = 0; set < xval_fold; ++set) {
-      estTP += xv_process_one_bin(set,w,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);   
-    }
-  } else {
-    // Use limited internal cross validation, i.e take the cpos and cfrac values of the first bin 
-    // and use it for the subsequent bins 
-    estTP += xv_process_one_bin(0,w,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);
-    vector<double> cp(1),cf(1);
-    cp[0]=best_cpos; cf[0]= best_cfrac;
-    for (unsigned int set = 1; set < xval_fold; ++set) {
-      estTP += xv_process_one_bin(set,w,updateDOC, cp, cf, best_cpos, best_cfrac, pWeights, pOptions);   
-    }
-  }
-  delete[] pWeights->vec;
-  delete pWeights;
-  delete pOptions;
-  return estTP / (xval_fold - 1);
-}
-
-/** 
- * Train the SVM using several cross validation iterations
- * @param w list of normal vectors
- */
-void Caller::train(vector<vector<double> >& w) {
-  // iterate
-  int foundPositivesOldOld=0, foundPositivesOld=0, foundPositives=0; 
-  for (unsigned int i = 0; i < niter; i++) {
-    if (VERB > 1) {
-      cerr << "Iteration " << i + 1 << " :\t";
-    }
-    foundPositives = xv_step(w, true);
-    if (VERB > 1) {
-      cerr << "After the iteration step, " << foundPositives
-          << " target PSMs with q<" << selectionfdr
-          << " were estimated by cross validation" << endl;
-    }
-    if (VERB > 2) {
-      cerr << "Obtained weights" << endl;
-      for (size_t set = 0; set < xval_fold; ++set) {
-        printWeights(cerr, w[set]);
-      }
-    }
-    if (foundPositives>0 && foundPositivesOldOld>0 && quickValidation) {
-      if ((double)(foundPositives-foundPositivesOldOld)<=(foundPositivesOldOld*requiredIncreaseOver2Iterations)) {
-        if (VERB > 1) {
-          cerr << "Performance increase over the last two iterations indicate that the algorithm has converged" << endl;
-          cerr << "(" << foundPositives << " vs " << foundPositivesOldOld << ")" << endl;
-        }
-        break;
-      }
-    }    
-    foundPositivesOldOld=foundPositivesOld;    
-    foundPositivesOld=foundPositives;
-  }
-  if (VERB == 2) {
-    cerr
-    << "Obtained weights (only showing weights of first cross validation set)"
-    << endl;
-    printWeights(cerr, w[0]);
-  }
-  foundPositives = 0;
-  for (size_t set = 0; set < xval_fold; ++set) {
-    if (DataSet::getCalcDoc()) {
-      xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
-      xv_test[set].setDOCFeatures();
-    }
-    foundPositives += xv_test[set].calcScores(w[set], test_fdr);
-  }
-  if (VERB > 0) {
-    cerr << "After all training done, " << foundPositives << " target PSMs with q<"
-        << test_fdr << " were found when measuring on the test set"
-        << endl;
-  }  
-}
 
 /** 
  * Fills in the features previously read from file and normalizes them
@@ -779,54 +560,6 @@ void Caller::fillFeatureSets() {
   pNorm->normalizeSet(featuresV, rtFeaturesV);
 }
 
-/** 
- * Sets up the SVM classifier: 
- * - divide dataset into training and test sets for each fold
- * - set parameters (fdr, soft margin)
- * @param w list of normal vectors
- * @return number of positives for initial setup
- */
-int Caller::preIterationSetup(vector<vector<double> >& w) {
-  
-  svmInput = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1); // One input set, to be reused multiple times
-  assert( svmInput );
-
-  if (selectedCpos >= 0 && selectedCneg >= 0) {
-    xv_train.resize(xval_fold);
-    xv_test.resize(xval_fold);
-    
-  	fullset.createXvalSetsBySpectrum(xv_train, xv_test, xval_fold);
-
-    if (selectionfdr <= 0.0) {
-      selectionfdr = test_fdr;
-    }
-    if (selectedCpos > 0) {
-      xv_cposs.push_back(selectedCpos);
-    } else {
-      xv_cposs.push_back(10);
-      xv_cposs.push_back(1);
-      xv_cposs.push_back(0.1);
-      if (VERB > 0) {
-        cerr << "selecting cpos by cross validation" << endl;
-      }
-    }
-    if (selectedCpos > 0 && selectedCneg > 0) {
-      xv_cfracs.push_back(selectedCneg / selectedCpos);
-    } else {
-      xv_cfracs.push_back(1.0 * fullset.getTargetDecoySizeRatio());
-      xv_cfracs.push_back(3.0 * fullset.getTargetDecoySizeRatio());
-      xv_cfracs.push_back(10.0 * fullset.getTargetDecoySizeRatio());
-      if (VERB > 0) {
-        cerr << "selecting cneg by cross validation" << endl;
-      }
-    }
-    return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, test_fdr);
-  } else {
-    vector<Scores> myset(1, fullset);
-    cerr << "B" << endl;
-    return pCheck->getInitDirection(myset, myset, pNorm, w, test_fdr);
-  }
-}
 
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities
@@ -834,10 +567,10 @@ int Caller::preIterationSetup(vector<vector<double> >& w) {
  * @param procStartClock clock associated with procStart
  * @param w list of normal vectors
  * @param diff runtime of the calculations
- * @param TDC boolean for target decoy competition
+ * @param targetDecoyCompetition boolean for target decoy competition
  */
 void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& procStart,
-    clock_t& procStartClock, vector<vector<double> >& w, double& diff, bool TDC){
+    clock_t& procStartClock, double& diff, bool targetDecoyCompetition){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides option was switched on OR if this is not the unique
   // peptide run and the option was switched off
@@ -850,14 +583,11 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   
   if (isUniquePeptideRun) {
     fullset->weedOutRedundant();
-  } else {
-    fullset->merge(xv_test, selectionfdr);
-    if (TDC) {
-      fullset->weedOutRedundantTDC();
-	    if(VERB > 0) {
-	      std::cerr << "Target Decoy Competition yielded " << fullset->posSize() 
-	        << " target PSMs and " << fullset->negSize() << " decoy PSMs" << std::endl;
-	    }
+  } else if (targetDecoyCompetition) {
+    fullset->weedOutRedundantTDC();
+    if(VERB > 0) {
+      std::cerr << "Target Decoy Competition yielded " << fullset->posSize() 
+        << " target PSMs and " << fullset->negSize() << " decoy PSMs" << std::endl;
     }
   }
   
@@ -870,15 +600,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   int foundPSMs = fullset->calcQ(test_fdr);
   fullset->calcPep();
   if (VERB > 0 && DataSet::getCalcDoc() && writeOutput) {
-    cerr << "For the cross validation sets the average deltaMass are ";
-    for (size_t ix = 0; ix < xv_test.size(); ix++) {
-      cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
-    }
-    cerr << "and average pI are ";
-    for (size_t ix = 0; ix < xv_test.size(); ix++) {
-      cerr << xv_test[ix].getDOC().getAvgPI() << " ";
-    }
-    cerr << endl;
+    crossValidation.printDOC();
   }
   if (VERB > 0 && writeOutput) {
     cerr << "New pi_0 estimate on merged list gives " << foundPSMs
@@ -895,18 +617,14 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
   diff = difftime(end, procStart);
   ostringstream timerValues;
   timerValues.precision(4);
-  timerValues << "Processing took "
-      << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC;
-  timerValues << " cpu seconds or " << diff << " seconds wall time"
-      << endl;
+  timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
+              << " cpu seconds or " << diff << " seconds wall time" << endl;
   if (VERB > 1 && writeOutput) {
     cerr << timerValues.str();
   }
   if (weightFN.size() > 0) {
     ofstream weightStream(weightFN.data(), ios::out);
-    for (unsigned int ix = 0; ix < xval_fold; ++ix) {
-      printWeights(weightStream, w[ix]);
-    }
+    crossValidation.printAllWeights(weightStream, pNorm);
     weightStream.close();
   }
   if (resultFN.empty() && writeOutput) {
@@ -1016,13 +734,12 @@ int Caller::run() {
   if(VERB > 2){
     std::cerr << "FeatureNames::getNumFeatures(): "<< FeatureNames::getNumFeatures() << endl;
   }
-  vector<vector<double> > w(xval_fold,vector<double> (FeatureNames::getNumFeatures()+ 1)), ww;
-  int firstNumberOfPositives = preIterationSetup(w);
+  int firstNumberOfPositives = crossValidation.preIterationSetup(fullset, pCheck, pNorm);
   if (VERB > 0) {
     cerr << "Estimating " << firstNumberOfPositives << " over q="
         << test_fdr << " in initial direction" << endl;
   }
-  // Set up a first guess of w
+  
   time_t procStart;
   clock_t procStartClock = clock();
   time(&procStart);
@@ -1032,41 +749,19 @@ int Caller::run() {
       << " cpu seconds or " << diff << " seconds wall time" << endl;
   
   // Do the SVM training
-  if (VERB > 0) {
-    cerr << "---Training with Cpos";
-    if (selectedCpos > 0) {
-      cerr << "=" << selectedCpos;
-    } else {
-      cerr << " selected by cross validation";
-    }
-    cerr << ", Cneg";
-    if (selectedCneg > 0) {
-      cerr << "=" << selectedCneg;
-    } else {
-      cerr << " selected by cross validation";
-    }
-    cerr << ", fdr=" << selectionfdr << endl;
-  }
-  train(w);
-  if (!pCheck->validateDirection(w)) {
-    fullset.calcScores(w[0]);
-  }
-  if (VERB > 0) {
-    cerr << "Merging results from " << xv_test.size() << " datasets"
-        << endl;
-  }
-
+  crossValidation.train(pNorm);
+  crossValidation.postIterationProcessing(fullset, pCheck);
   // calculate psms level probabilities
   
   //PSM probabilities TDA or TDC
-  calculatePSMProb(false, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
+  calculatePSMProb(false, &fullset, procStart, procStartClock, diff, target_decoy_competition);
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(fullset);
   }
   
   // calculate unique peptides level probabilities WOTE
   if(reportUniquePeptides){
-    calculatePSMProb(true, &fullset, procStart, procStartClock, w, diff, target_decoy_competition);
+    calculatePSMProb(true, &fullset, procStart, procStartClock, diff, target_decoy_competition);
     if (xmlInterface.getXmlOutputFN().size() > 0){
       xmlInterface.writeXML_Peptides(fullset);
     }

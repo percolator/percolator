@@ -18,33 +18,32 @@
 #ifndef PROTEINPROBESTIMATOR_H_
 #define PROTEINPROBESTIMATOR_H_
 
-#include "Globals.h"
 #include <functional>
 #include <numeric>
 #include <iterator>
 #include <string>
+#include <vector>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include "Globals.h"
 #include "ProteinFDRestimator.h"
 #include "Protein.h"
-#include <vector>
-#include <math.h>
-#include <cmath>
 #include "Scores.h"
 
 /** set of helper functions to sort data structures and some operations overloaded **/
 
 struct IntCmpProb {
-    bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
-        return 
-	   (  (lhs.second->getPEP() < rhs.second->getPEP())
-	   || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
-	   || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
-	      && (lhs.second->getName() < rhs.second->getName()) )  
-      );
-    }
+  bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
+      return (  (lhs.second->getPEP() < rhs.second->getPEP())
+           || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
+           || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
+              && (lhs.second->getName() < rhs.second->getName()) )  
+    );
+  }
 };
   
-inline double myminfunc(double a, double b) 
-{
+inline double myminfunc(double a, double b) {
   return a > b ? b : a;
 }
 

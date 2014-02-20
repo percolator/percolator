@@ -15,7 +15,7 @@
 
  *******************************************************************************/
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -26,8 +26,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <math.h>
-#include <map>
+#include <cmath>
 #include <memory>
 using namespace std;
 #include "DataSet.h"
@@ -392,7 +391,7 @@ void Scores::normalizeScores(double fdr) {
   BOOST_FOREACH (ScoreHolder &sh, scores) {
     sh.score -= q1;
     sh.score /= diff;
-    if (sh.score <= 0 && VERB > 3) {
+    if (sh.score <= 0 && VERB > 3) { // Why do we warn for this, it happens for most of the data
       std::cerr << "\nWARNING the score of the PSM " << sh.pPSM->id << " is less or equal than zero "
 	         << "after normalization.\n" << std::endl;
     }
