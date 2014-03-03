@@ -101,6 +101,7 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
     outList.push_back(ResultHolder(pSH->score, psm->q, psm->pep, psm->id, psm->peptide, out.str()));
     out.str("");
   }
+  test.resetScoreMap();
 }
 
 // TODO: find a way to make these four functions generic

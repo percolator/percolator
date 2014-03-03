@@ -167,6 +167,8 @@ class Scores {
     inline static void setShowExpMass(bool expmass) { showExpMass = expmass; }
     inline static bool getShowExpMass() { return showExpMass; }
     
+    inline void resetScoreMap() { scoreMap.clear(); }
+    
     inline static void setSeed(unsigned long s) { seed = s; }
     unsigned long lcg_rand();
     
