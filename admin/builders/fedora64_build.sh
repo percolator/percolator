@@ -35,7 +35,7 @@ whoami;
 # usermod lukask -a -G wheel
 
 sudo yum install -y gcc gcc-c++ cmake wget rpm-build
-sudo yum install -y tokyocabinet-devel boost-static boost-devel sqlite-devel zlib-devel 
+sudo yum install -y tokyocabinet-devel boost-static boost-devel sqlite-devel zlib-devel bzip2-devel
 
 cd ${src_dir}
 # download and patch xsd

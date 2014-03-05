@@ -63,11 +63,18 @@ sudo make install
 
 # download, compile and link percolator
 
+mkdir -p ${build_dir}/percolator-noxml
+cd ${build_dir}/percolator-noxml
+
+mingw32-cmake -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/" -DXML_SUPPORT=OFF -DCMAKE_BUILD_TYPE=Release ${src_dir}/percolator
+make -j4 package
+
+cp -v per*.exe ${release_dir}
+
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-
-mingw32-cmake -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/" -DCMAKE_BUILD_TYPE=Release ${src_dir}/percolator
+mingw32-cmake -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/" -DXML_SUPPORT=ON -DCMAKE_BUILD_TYPE=Release ${src_dir}/percolator
 make -j4 package
 
 cp -v per*.exe ${release_dir}

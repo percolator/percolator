@@ -31,6 +31,8 @@ if(XML_SUPPORT)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
   endif(XSD_FOUND)  
   include_directories(${XSD_INCLUDE_DIR})
+  
+  FIND_PACKAGE ( Threads REQUIRED )
 endif(XML_SUPPORT)
 
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
@@ -134,9 +136,9 @@ endif()
  
 # SET LIBRARIES FOR PERCOLATOR
 if(MSVC)
-  target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
 else(MSVC)
-  target_link_libraries(percolator perclibrary fido ${CMAKE_THREAD_LIBS_INIT} ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
+  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
 endif()
  
 # INSTALL PERCOLATOR

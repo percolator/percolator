@@ -59,7 +59,7 @@ if [[ ${cmake_ok} -eq 0 ]]; then
 fi;
 # end of section to remove
 sudo apt-get -y install xsdcxx libxerces-c-dev libboost-dev libboost-filesystem-dev;
-sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev;
+sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
 
 #------------------------------------------------------------------------
 mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters;

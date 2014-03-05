@@ -65,16 +65,26 @@ sudo make install
 
 # download, compile and link percolator
 
-mkdir -p ${build_dir}/percolator
-cd ${build_dir}/percolator
+mkdir -p ${build_dir}/percolator-noxml
+cd ${build_dir}/percolator-noxml
 
-
-mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/"  ${src_dir}/percolator
+mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/"  ${src_dir}/percolator
 make -j 4;
 make -j 4 package;
 
 cp -v per*.exe ${release_dir}
-echo "Cleaning up, to save disc space"
+echo "Cleaning up, to save disk space"
+rm -fr *
+
+mkdir -p ${build_dir}/percolator
+cd ${build_dir}/percolator
+
+mingw64-cmake -DCMAKE_BUILD_TYPE=Release -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${src_dir}/${xsd}/;${src_dir}/${xer}/src/"  ${src_dir}/percolator
+make -j 4;
+make -j 4 package;
+
+cp -v per*.exe ${release_dir}
+echo "Cleaning up, to save disk space"
 rm -fr *
  
 mkdir -p ${build_dir}/converters

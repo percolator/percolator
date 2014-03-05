@@ -68,21 +68,21 @@ endif()
 ###############################################################################
 
 
-if( MINGW )
+if( MINGW AND XML_SUPPORT )
     message( STATUS "    Installing system-libraries: MinGW DLLs." )
 #    set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libgcc_s_sjlj-1.dll ${MINGW_PATH}/bin/libstdc++-6.dll ${MINGW_PATH}/bin/libxerces-c-3-1.dll ${MINGW_PATH}/bin/libboost_system.dll ${MINGW_PATH}/bin/libboost_filesystem.dll)
     set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${MINGW_PATH}/bin/libxerces-c-3-1.dll)
     include( InstallRequiredSystemLibraries )
-endif( MINGW )
+endif( MINGW AND XML_SUPPORT )
 
-if( MSVC )
+if( MSVC AND XML_SUPPORT )
   message( STATUS "    Installing system-libraries: Win32 DLLs." )
   # TODO: Some hacking is needed to install the .dll instead of the .lib. CMake plans to include these DLL variables in the future
   string(REPLACE "xerces-c_3.lib" "../bin/xerces-c_3_1.dll;" XERCESC_DLL_LIBRARIES ${XERCESC_LIBRARIES})
   message( STATUS "      Installing Xerces DLL: ${XERCESC_DLL_LIBRARIES}")
   set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_DLL_LIBRARIES} )
   include( InstallRequiredSystemLibraries )
-endif( MSVC )
+endif( MSVC AND XML_SUPPORT )
 
 install(FILES src/xml/percolator_in.xsd DESTINATION ${XML_REL_PATH}/${PIN_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 install(FILES src/xml/percolator_out.xsd DESTINATION ${XML_REL_PATH}/${POUT_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
@@ -99,15 +99,12 @@ set(PACKAGE_NICKNAME "percolator${NICKNAME_SUFFIX}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
 if (XML_SUPPORT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem-dev (>=1.46.1), libxerces-c3.1 (>=3.1.1)")
-else (XML_SUPPORT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-filesystem-dev (>=1.46.1)")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1 (>=3.1.1)")
+  # We assume static linkage to the xerces-c libraries for the rpms, if not uncomment next line
+  # set(CPACK_RPM_PACKAGE_DEPENDS "xerces-c (>=3.1.1)")
 endif (XML_SUPPORT)
-set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
+set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS} libc6, libgcc1")
 
-# We assume static linkage to the xerces-c libraries for the rpms, if not uncomment next line
-# set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c (>=3.1.1), boost-filesystem (>=1.46), boost-system (>=1.46), boost-math (>=1.46)")
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, boost-filesystem (>=1.46), boost-system (>=1.46), boost-math (>=1.46)")
 
 
 include(CPack)
