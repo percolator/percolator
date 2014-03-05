@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+xmlns="http://per-colator.com/percolator_in/13" 
+elementFormDefault="qualified" 
+targetNamespace="http://per-colator.com/percolator_in/13">
+  <xs:element name="experiment">
+    <xs:annotation>
+      <xs:documentation>One experiment corresponds, roughly, to one
+      LC/MS/MS experiment on a single biological sample.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" minOccurs="0" name="freeTextInformation">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="value" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="enzyme" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>The enzyme used to digest proteins in
+	      the sample.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+	<xs:element minOccurs="0" maxOccurs="1" name="databases">
+          <xs:annotation>
+            <xs:documentation>The databases used to search the spectra files against.</xs:documentation>
+          </xs:annotation>
+	  <xs:complexType>
+	    <xs:sequence>
+	      <xs:element minOccurs="1" maxOccurs="1" name="target_database" type="xs:string"/>
+	      <xs:element minOccurs="1" maxOccurs="1" name="decoy_database" type="xs:string"/>
+	    </xs:sequence>
+	  </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" name="calibration">
+          <xs:annotation>
+            <xs:documentation>These are the instrument specific
+	    parameters that contain the current
+	    calibration</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="calibrationParameter">
+                <xs:complexType>
+                  <xs:attribute name="name" use="required" type="xs:string"/>
+                  <xs:attribute name="value" use="required" type="xs:double"/>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="massType">
+                <xs:annotation>
+                  <xs:documentation>Was the search performed using
+		    monoisotopic or average mass?</xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                  <xs:restriction base="xs:token">
+                    <xs:enumeration value="monoisotopic"/>
+                    <xs:enumeration value="average"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="process_info">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="command_line" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="featureDescriptions">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="featureDescription" maxOccurs="unbounded"> 
+                <xs:complexType>
+                  <xs:attribute name="name" use="required" type="xs:string">
+                    <xs:annotation>
+                       <xs:documentation>One word name of the feature
+                        associated with each peptide-spectrum
+                        match. An example value is 'XCorr'.
+                        </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="description" type="xs:string">
+                    <xs:annotation>
+                       <xs:documentation>Free text descriptions of the feature
+                        associated with each peptide-spectrum match.
+	                </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>                  
+                    <xs:attribute name="initialValue" type="xs:double">
+                    <xs:annotation>
+                       <xs:documentation>Initial value for the feature in the vector of weights.
+                       </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element> 
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="fragSpectrumScan">
+          <xs:annotation>
+            <xs:documentation>One fragmentation spectrum</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="peptideSpectrumMatch">
+                <xs:annotation>
+                  <xs:documentation>A match between a charged spectrum and a peptide.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="features">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element maxOccurs="unbounded" name="feature" type="xs:double"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="peptide" type="peptideType"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="occurence">
+                      <xs:annotation>
+                        <xs:documentation>A list of occurences
+			(proteins) in which this peptide is a part.</xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:attribute name="proteinId" use="required" type="xs:string"/>
+                        <xs:attribute name="startPosition">
+                          <xs:annotation>
+                            <xs:documentation> The position of the most N-terminal residue of the peptide within the amino acid sequence of the protein.
+                            </xs:documentation>
+                          </xs:annotation>
+                          <xs:simpleType>
+                            <xs:restriction base="xs:int">
+                              <xs:minInclusive value="1"/>
+                            </xs:restriction>
+                          </xs:simpleType>
+                        </xs:attribute>
+                        <xs:attribute name="flankN" use="required" type="aa_term_t">
+                          <xs:annotation>
+                            <xs:documentation> The amino acid of the most N-terminal flanking residue of the peptide.
+                        </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="flankC" use="required" type="aa_term_t">
+                          <xs:annotation>
+                            <xs:documentation> The amino acid of the most C-terminal flanking residue of the peptide.
+                        </xs:documentation>
+                          </xs:annotation>
+                        </xs:attribute>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="id" use="required" type="xs:string"/>
+                  <xs:attribute name="isDecoy" use="required" type="xs:boolean">
+                    <xs:annotation>
+                      <xs:documentation> A boolean set to true for decoy PSMs and set to false for target PSMs.
+                        </xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="observedTime" type="xs:double">
+                    <xs:annotation>
+                      <xs:documentation>The clock time when the scan observed, i.e. the observed retention time given in minutes.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="experimentalMass" use="required" type="xs:double">
+                    <xs:annotation>
+                      <xs:documentation>The measured mass of the current scan.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="calculatedMass" use="required" type="xs:double">
+                    <xs:annotation>
+                      <xs:documentation>The precursor mass as calculated from the peptides amino acid sequence.</xs:documentation>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="chargeState" use="required" type="xs:int"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="scanNumber" use="required" type="xs:unsignedInt">
+              <xs:annotation>
+                <xs:documentation>An arbitrary number associated with this
+		  fragmentation scan. The  Need not be unique.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="precision" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The precision of the mass to charge
+		determination of the current scan.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="experimentalMass" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The measured mass of the current scan.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="totalIonCurrent" type="xs:double">
+              <xs:annotation>
+                <xs:documentation>The ion current of the precursor peptide.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+	</xs:element>
+	  <!--Start of definition of the tag proteins-->
+	<xs:element minOccurs="0" maxOccurs="unbounded" name="protein">
+	    <xs:annotation>
+	      <xs:documentation>A protein presented in the database.</xs:documentation>
+	    </xs:annotation>
+	    <xs:complexType>
+	      <xs:sequence>
+		<xs:element name="name" type="xs:string" />
+		<xs:element name="length" type="xs:double" />
+		<xs:element name="totalMass" type="xs:double" />   
+		<xs:element name="sequence" type="aa_seq_t" />
+	      </xs:sequence>
+	      <xs:attribute name="id" use="required" type="xs:double"/>
+	      <xs:attribute name="isDecoy" use="required" type="xs:boolean"/>
+	    </xs:complexType>
+	</xs:element>
+	<!--End of definition of the tag proteins--> 
+      </xs:sequence>
+    </xs:complexType>
+</xs:element>
+  <xs:simpleType name="probability_t">
+    <xs:annotation>
+      <xs:documentation>Probability (Double in [0-1] or NaN)</xs:documentation>
+    </xs:annotation>
+    <xs:union memberTypes="xs:double">
+      <xs:simpleType>
+        <xs:restriction base="xs:double">
+          <xs:enumeration value="NaN"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:double">
+          <xs:maxInclusive value="1.0"/>
+          <xs:minInclusive value="0.0"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+  <xs:simpleType name="aa_seq_t">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([A-Z][#*@]*)+"/>
+      <!--xs:pattern value="([A-Z][#*@]?)+"/>  this r.exp only allows one modification in a row-->
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="aa_term_t">
+    <xs:restriction base="xs:string">
+      <!-- <xs:pattern value="[A-Z\-]"/> this r.exp only allows A-Z and - characters -->
+      <xs:pattern value="[A-Z\-\*]"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="peptideType">
+    <xs:annotation>
+      <xs:documentation> One peptide (a sequence with modifications).</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="peptideSequence" type="aa_seq_t">
+        <xs:annotation>
+          <xs:documentation> The amino acid sequence of the peptide. If a substitution modification has been found, the original sequence should be reported. </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="modification" type="modificationType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="modificationType" abstract="false">
+    <xs:annotation>
+      <xs:documentation>A molecule modification specification. </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="uniMod" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="accession" use="required" type="xs:int">
+            <xs:annotation>
+              <xs:documentation> UNIMOD accession number e.g. UNIMOD:35 will have 35 in this field</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="name" type="xs:string">
+            <xs:annotation>
+              <xs:documentation> UNIMOD name e.g. Oxidation</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="freeMod" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="moniker" use="required" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>Representation of the modification in the peptide sequence that will apear in brackets, e.g. -18, or phospho</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="name" type="xs:string">
+            <xs:annotation>
+              <xs:documentation>Descriptive name of the modification e.g. Oxidation</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="location" use="required" type="xs:int">
+    <xs:annotation>
+      <xs:documentation>Location of the modification within the peptide - position in peptide sequence, counted from the N-terminus residue, starting at position 1. Specific modifications to the N-terminus should be given the location 0. Modification to the C-terminus should be given as peptide length + 1.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="residues" type="aa_seq_t">
+      <xs:annotation>
+        <xs:documentation>Specification of the residue (amino acid) on which the modification occurs. If multiple values are given, it is assumed that the exact residue modified is unknown i.e. the modification is to ONE of the residues listed. Multiple residues would usually only be specified for PMF data.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="avgMassDelta" type="xs:double">
+      <xs:annotation>
+        <xs:documentation> Atomic mass delta considering the natural distribution of isotopes in Daltons. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="monoisotopicMassDelta" type="xs:double">
+      <xs:annotation>
+        <xs:documentation> Atomic mass delta when assuming only the most common isotope of elements in Daltons. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+</xs:schema>
