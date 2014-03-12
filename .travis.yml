@@ -3,7 +3,7 @@ compiler:
   - gcc
 before_script:
   - sudo apt-get update
-  - sudo apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+  - sudo apt-get -o Dpkg::Options::="--force-confnew" upgrade
   - mkdir -p ~/my_rel ~/my_build
   - ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
 # Change this to your needs
