@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+xmlns="http://per-colator.com/percolator_out/15" 
+targetNamespace="http://per-colator.com/percolator_out/15"
+elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+<!-- define some general types -->
+<xsd:simpleType name="probability_t">
+  <xsd:annotation>
+    <xsd:documentation>Probability (Double in [0-1] or NaN)</xsd:documentation>
+  </xsd:annotation>
+  <xsd:union memberTypes="xsd:double">
+    <xsd:simpleType>
+      <xsd:restriction base="xsd:double">
+	      <xsd:enumeration value="NaN"/>
+      </xsd:restriction>
+    </xsd:simpleType>
+    <xsd:simpleType>
+      <xsd:restriction base="xsd:double">
+	      <xsd:maxInclusive value="1.0"/>
+	      <xsd:minInclusive value="0.0"/>
+      </xsd:restriction>
+    </xsd:simpleType>
+  </xsd:union>
+</xsd:simpleType>
+	<xsd:simpleType name="aa_seq_t">
+	  <xsd:restriction base="xsd:string">
+	    <xsd:pattern value="([A-Z]*(\[[^\]]+\])*[A-Z]*)*"/>
+	  </xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="aa_term_t">
+	  <xsd:restriction base="xsd:string">
+	    <xsd:pattern value="[A-Z\-]"/>
+	  </xsd:restriction>
+	</xsd:simpleType>
+<!-- end general types -->
+
+<!-- define process_info-->
+<xsd:element name="process_info">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element name="command_line" type="xsd:string"/>
+      <xsd:element name="other_command_line" type="xsd:string"/>
+      <xsd:element name="pi_0_psms" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="pi_0_peptides" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="pi_0_proteins" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="fdr_proteins" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="alpha" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="beta" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="gamma" type="probability_t" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="psms_qlevel" type="xsd:double" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="peptides_qlevel" type="xsd:double" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="proteins_qlevel" type="xsd:double" minOccurs="0" maxOccurs="1"/>
+      <xsd:element minOccurs="0" name="average_delta_mass" type="xsd:double"/>
+      <xsd:element minOccurs="0" name="average_pi" type="xsd:double"/>
+      <xsd:element maxOccurs="unbounded" minOccurs="0" name="comment">
+      <xsd:complexType>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+        <xsd:attribute name="value" type="xsd:string" use="required"/>
+      </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element><!-- end process_info-->
+
+
+<!-- define elements for psm and peptide-->
+<xsd:element name="svm_score" type="xsd:double">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The score stemming from the SVM. Higher score corresponds to a better PSM than a lower score.</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+<xsd:element name="q_value" type="probability_t">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The PSMs q-value, i.e. the expected fraction of incorrect identifications up to this PSM score</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+<xsd:element name="q_value_emp" type="probability_t">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The Protein empirical q-value, i.e. the expected fraction of incorrect identifications up to this Protein score</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+ <xsd:element name="pep" type="probability_t">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The PSMs posterior error probability, i.e. the probability that this PSM is incorrect.</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+ <xsd:element name="exp_mass" type="xsd:double">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The experimental (observed) mass of the PSM</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+ <xsd:element name="calc_mass" type="xsd:double">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The calculated mass of the PSM</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+<xsd:element name="retentionTime">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">This field contains the observed and predicted retention time in minutes</xsd:documentation>
+  </xsd:annotation>
+  <xsd:complexType>
+    <xsd:attribute name="predicted" type="xsd:double"/>
+    <xsd:attribute name="observed" type="xsd:double"/>
+  </xsd:complexType>
+</xsd:element>
+
+<xsd:element name="peptide_seq">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Peptide sequence of this PSM including the amino acids N- and C-terminal of the peptide in the proteins sequence.</xsd:documentation>
+  </xsd:annotation>
+  <xsd:complexType>
+    <xsd:attribute name="n" type="aa_term_t"/>
+    <xsd:attribute name="c" type="aa_term_t"/>
+    <xsd:attribute name="seq" type="aa_seq_t" use="required"/>
+  </xsd:complexType>
+</xsd:element>
+
+<xsd:element name="protein_id" type="xsd:string">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Protein identifier.</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+<xsd:element name="psm_ids">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">List of Psm for a particular peptide.</xsd:documentation>
+  </xsd:annotation>
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element name="psm_id" maxOccurs="unbounded" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element>
+
+<xsd:element name="p_value" type="probability_t">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">The PSMs p-value</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+<!-- end elements for psm and peptide-->
+
+<!-- define attributes for psm, peptide and protein-->
+<xsd:attribute name="psm_id" type="xsd:string">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Unique PSM identifier</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+
+<xsd:attribute name="peptide_id" type="aa_seq_t">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Unique peptiude identifier</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+
+<xsd:attribute name="decoy" type="xsd:boolean"/>
+
+<xsd:attribute name="protein_id" type="xsd:string">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Unique protein identifier</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+<!-- define attributes for psm, peptide and protein-->
+
+
+<!-- define psm-->
+<xsd:element name="psm">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="svm_score"/>
+      <xsd:element ref="q_value"/>
+      <xsd:element ref="pep"/>
+      <xsd:element ref="exp_mass" minOccurs="0"/>
+      <xsd:element ref="calc_mass" minOccurs="0"/>
+      <xsd:element ref="retentionTime" minOccurs="0"/>
+      <xsd:element ref="peptide_seq"/>
+      <xsd:element ref="protein_id" maxOccurs="unbounded"/>
+      <xsd:element ref="p_value"/>
+    </xsd:sequence>
+    <xsd:attribute ref="psm_id" use="required"/>
+    <xsd:attribute ref="decoy"/>
+  </xsd:complexType>
+</xsd:element>	<!-- end psm-->
+<!-- define psms-->
+<xsd:element name="psms">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="psm" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element><!-- end psms-->
+
+
+<!-- define peptide-->
+<xsd:element name="peptide">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="svm_score"/>
+      <xsd:element ref="q_value"/>
+      <xsd:element ref="pep"/>
+      <xsd:element ref="exp_mass" minOccurs="0"/>
+      <xsd:element ref="calc_mass" minOccurs="0"/>
+      <xsd:element ref="retentionTime" minOccurs="0"/>
+      <xsd:element ref="protein_id" maxOccurs="unbounded"/>
+      <xsd:element ref="p_value"/>
+      <xsd:element ref="psm_ids" minOccurs="1" maxOccurs="1"/>
+    </xsd:sequence>
+    <xsd:attribute ref="peptide_id" use="required"/>
+    <xsd:attribute ref="decoy"/>
+  </xsd:complexType>
+</xsd:element><!-- end peptide-->
+<!-- define peptides-->
+<xsd:element name="peptides">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="peptide" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element>
+
+<!-- define protein-->
+<xsd:element name="protein">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="pep" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="q_value" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="q_value_emp" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="p_value" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="peptide_seq" maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute ref="protein_id" use="required"/>
+    <xsd:attribute ref="decoy"/>
+  </xsd:complexType>
+</xsd:element><!-- end protein-->
+<!-- define proteins-->
+<xsd:element name="proteins">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="protein" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:element>
+
+<!-- define attributes of percolator_output-->
+<xsd:attribute name="percolator_version" type="xsd:string">
+  <xsd:annotation>
+    <xsd:documentation>Version of percolator</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+
+<xsd:attribute name="majorVersion" type="xsd:unsignedShort">
+  <xsd:annotation>
+    <xsd:documentation>Major version number</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+
+<xsd:attribute name="minorVersion" type="xsd:unsignedShort">
+  <xsd:annotation>
+    <xsd:documentation>Minor version number</xsd:documentation>
+  </xsd:annotation>
+</xsd:attribute>
+<!-- end attributes of percolator_output-->
+
+<!-- define percolator_output-->
+<xsd:element name="percolator_output">
+  <xsd:complexType>
+    <xsd:sequence>
+      <xsd:element ref="process_info" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="psms" minOccurs="1" maxOccurs="1"/>
+      <xsd:element ref="peptides" minOccurs="0" maxOccurs="1"/>
+      <xsd:element ref="proteins" minOccurs="0" maxOccurs="1"/>
+    </xsd:sequence>
+    <xsd:attribute ref="percolator_version"  use="required" />
+    <xsd:attribute ref="majorVersion" use="required" fixed="2"/>
+    <xsd:attribute ref="minorVersion" use="required" />
+  </xsd:complexType>
+</xsd:element><!-- end percolator_output-->
+  
+</xsd:schema>
