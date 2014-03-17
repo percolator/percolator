@@ -23,10 +23,9 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
     </xsd:simpleType>
   </xsd:union>
 </xsd:simpleType>
-
 	<xsd:simpleType name="aa_seq_t">
 	  <xsd:restriction base="xsd:string">
-	    <xsd:pattern value="(([A-Z]*(\[\S+?\])[A-Z]*)*)"/>
+	    <xsd:pattern value="([A-Z]*(\[[^\]]+\])*[A-Z]*)*"/>
 	  </xsd:restriction>
 	</xsd:simpleType>
 	
