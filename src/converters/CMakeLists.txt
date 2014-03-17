@@ -456,15 +456,4 @@ include("${PERCOLATOR_SOURCE_DIR}/CPack.txt")
 
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
-if(TOKYODB)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1 (>=3.1.1), libtokyocabinet-dev, zlib1g-dev, libsqlite3-dev")
-  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, tokyocabinet-devel, zlib-devel, sqlite3-devel")
-elseif(LEVELDB)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1 (>=3.1.1), leveldb-dev, zlib1g-dev, libsqlite3-dev")
-  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, leveldb-devel, zlib-devel, sqlite3-devel")
-elseif(BOOSTDB)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1 (>=3.1.1), zlib1g-dev, libsqlite3-dev")
-  set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS}, xerces-c-devel, zlib-devel, sqlite3-devel")
-endif()
-
 include(CPack)

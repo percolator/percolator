@@ -98,11 +98,7 @@ set(PACKAGE_NICKNAME "percolator${NICKNAME_SUFFIX}")
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
-if (XML_SUPPORT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxerces-c3.1 (>=3.1.1)")
-  # We assume static linkage to the xerces-c libraries for the rpms, if not uncomment next line
-  # set(CPACK_RPM_PACKAGE_DEPENDS "xerces-c (>=3.1.1)")
-endif (XML_SUPPORT)
+
 set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS} libc6, libgcc1")
 
 
