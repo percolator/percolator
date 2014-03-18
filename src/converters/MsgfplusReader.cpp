@@ -23,7 +23,7 @@ const std::map<string,double> MsgfplusReader::msgfplusFeaturesDefaultValue =
     ("ScoreRatio", 0.0)
     ("Energy", -2.0)
     ("lnEValue", 6.0)
-    ("lnSpecEValue", 10.0)
+    //("lnSpecEValue", 10.0)
     ("IsotopeError", -2.5)
     ("lnExplainedIonCurrentRatio", 0.0)
     ("lnNTermIonCurrentRatio", 0.0)
@@ -139,7 +139,7 @@ void MsgfplusReader::addFeatureDescriptions(bool doEnzyme)
   push_backFeatureDescription("ScoreRatio","",msgfplusFeaturesDefaultValue.at("ScoreRatio"));
   push_backFeatureDescription("Energy","",msgfplusFeaturesDefaultValue.at("Energy"));
   push_backFeatureDescription("lnEValue","",msgfplusFeaturesDefaultValue.at("lnEValue"));
-  push_backFeatureDescription("lnSpecEValue","",msgfplusFeaturesDefaultValue.at("lnSpecEValue"));
+  //push_backFeatureDescription("lnSpecEValue","",msgfplusFeaturesDefaultValue.at("lnSpecEValue")); // causes problems when used together with lnEValue
   //The below are from element userParam
   push_backFeatureDescription("IsotopeError","",msgfplusFeaturesDefaultValue.at("IsotopeError"));
   push_backFeatureDescription("lnExplainedIonCurrentRatio","",msgfplusFeaturesDefaultValue.at("lnExplainedIonCurrentRatio"));
@@ -405,14 +405,16 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       BOOST_FOREACH (const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
         if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
           ostringstream errs;
-          errs << "Error: current implimentation can only handle UNIMOD accessions "
+          errs << "Error: current implementation can only handle UNIMOD accessions "
 	       << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
           throw MyException(errs.str());
         }
         // cerr <<  cv_ref.accession() << endl;
-        int mod_acc = boost::lexical_cast<int>(cv_ref.accession().substr(7));  // Only covert text after "UNIMOD:"
+        int mod_acc = boost::lexical_cast<int>(cv_ref.accession().substr(7));  // Only convert text after "UNIMOD:"
         int mod_loc = boost::lexical_cast<int>(mod_ref.location());
-        std::auto_ptr< percolatorInNs::modificationType > mod_p(new percolatorInNs::modificationType(mod_acc, mod_loc));
+        std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(mod_acc));
+        std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(mod_loc));
+        mod_p->uniMod(um_p);
         peptide_p->modification().push_back(mod_p);
       }
     }
