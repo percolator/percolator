@@ -410,11 +410,17 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
           throw MyException(errs.str());
         }
         // cerr <<  cv_ref.accession() << endl;
-        int mod_acc = boost::lexical_cast<int>(cv_ref.accession().substr(7));  // Only convert text after "UNIMOD:"
         int mod_loc = boost::lexical_cast<int>(mod_ref.location());
-        std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(mod_acc));
         std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(mod_loc));
-        mod_p->uniMod(um_p);
+        if (cv_ref.accession() == "MS:1001460") {
+          std::string mod_acc = "unknown";  // Only convert text after "UNIMOD:"
+          std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(mod_acc));
+          mod_p->freeMod(fm_p);
+        } else {
+          int mod_acc = boost::lexical_cast<int>(cv_ref.accession().substr(7));  // Only convert text after "UNIMOD:"
+          std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(mod_acc));
+          mod_p->uniMod(um_p);
+        }
         peptide_p->modification().push_back(mod_p);
       }
     }
