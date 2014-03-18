@@ -52,11 +52,12 @@ class CrossValidation {
     double inline getSelectedCneg() { return selectedCneg; }
     void inline setSelectionFdr(double fdr) { selectionFdr = fdr; }
     double inline getSelectionFdr() { return selectionFdr; }
+    void inline setNiter(unsigned int n) { niter = n; }
+    unsigned int inline getNiter() { return niter; }
     
     void inline setTestFdr(double fdr) { testFdr = fdr; }
     void inline setQuickValidation(bool on) { quickValidation = on; }
     void inline setReportPerformanceEachIteration(bool on) { reportPerformanceEachIteration = on; }
-    unsigned int getNiter() { return niter; }
     
   protected:
     AlgIn *svmInput;

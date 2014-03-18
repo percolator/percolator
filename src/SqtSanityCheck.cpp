@@ -19,7 +19,7 @@
 #include "Globals.h"
 #include "SanityCheck.h"
 #include "SqtSanityCheck.h"
-
+#include "FeatureNames.h"
 
 SqtSanityCheck::SqtSanityCheck(){
 }
@@ -29,20 +29,18 @@ SqtSanityCheck::~SqtSanityCheck(){
 
 const string SqtSanityCheck::fingerPrint = "sqt";
 
-void SqtSanityCheck::getDefaultDirection(vector<vector<double> >& w) {
-  // Set init direction to be the most discriminative direction
+void SqtSanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
   unsigned int numFeatures = FeatureNames::getNumFeatures();
-  for (size_t set = 0; set < w.size(); ++set) {
-    for (unsigned int ix = 0; ix < numFeatures + 1; ++ix) {
-      w[set][ix] = 0;
-    }
-    if(numFeatures >= 2) w[set][2] = 1.61; // deltCn
-    if(numFeatures >= 3) w[set][3] = 1.1; // Xcorr
-    if(numFeatures >= 7) w[set][7] = -0.573; // Peptide length
-    if(numFeatures >= 8) w[set][8] = 0.0335; // Charge 1
-    if(numFeatures >= 9) w[set][9] = 0.149; // Charge 2
-    if(numFeatures >= 10) w[set][10] = -0.156; // Charge 3
+  for (unsigned int ix = 0; ix < numFeatures + 1; ++ix) {
+    wSet[ix] = 0;
   }
+  if(numFeatures >= 2) wSet[2] = 1.61; // deltCn
+  if(numFeatures >= 3) wSet[3] = 1.1; // Xcorr
+  if(numFeatures >= 7) wSet[7] = -0.573; // Peptide length
+  if(numFeatures >= 8) wSet[8] = 0.0335; // Charge 1
+  if(numFeatures >= 9) wSet[9] = 0.149; // Charge 2
+  if(numFeatures >= 10) wSet[10] = -0.156; // Charge 3
+  
   /*
 
    # first line contains normalized weights, second line the raw weights

@@ -92,9 +92,8 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   }
   initPositives = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives += (*pTrainset)[set].calcScores(w[set], fdr);
+    initPositives += (*pTestset)[set].calcScores(w[set], fdr);
   }
-  initPositives /= (int)(max<double> ((double)(w.size() - 1), 1.0));
   return initPositives;
 }
 
@@ -106,7 +105,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     if(default_weights.size() == 0) {
       // Set init direction to be the most discriminative direction
       for (size_t set = 0; set < w.size(); ++set) {
-        (*pTrainset)[set].getInitDirection(fdr, w[set]);
+        calcInitDirection(w[set], set);
       }
     } else {
       // I want to assign the default vector that is present in the pin.xml file
@@ -129,6 +128,10 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   }
 }
 
+void SanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
+  (*pTrainset)[set].getInitDirection(fdr, wSet);
+}
+
 bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   if (!pTestset) {
     cerr << "SanityCheck wrongly configured" << endl;
@@ -147,7 +150,7 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
     resetDirection(w);
     return false;
   }
-  if (initPositives >= overFDR) {
+  if (initPositives > overFDR) {
     cerr << "Less identifications (" << overFDR << " vs " << initPositives
         << ") after percolator processing than before processing" << endl;
     resetDirection(w);

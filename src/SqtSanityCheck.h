@@ -26,7 +26,7 @@ class SqtSanityCheck : public SanityCheck {
     virtual bool validateDirection(vector<vector<double> >& w);
     const static string fingerPrint;
   protected:
-    virtual void getDefaultDirection(vector<vector<double> >& w);
+    virtual void calcInitDirection(vector<double>& wSet, size_t set);
 };
 
 #endif /*SQTSANITYCHECK_H_*/

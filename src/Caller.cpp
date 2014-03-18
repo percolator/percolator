@@ -448,6 +448,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     test_fdr = cmd.getDouble("t", 0.0, 1.0);
     crossValidation.setTestFdr(test_fdr);
   }
+  if (cmd.optionSet("i")) {
+    crossValidation.setNiter(cmd.getInt("i", 0, 1000));
+  }
   if (cmd.optionSet("S")) {
     Scores::setSeed(cmd.getInt("S", 1, 20000));
   }

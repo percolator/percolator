@@ -30,6 +30,7 @@ class SanityCheck {
     int getInitDirection(vector<Scores>& testset,
                          vector<Scores> &trainset, Normalizer* pNorm,
                          vector<vector<double> >& w, double test_fdr);
+    
     virtual bool validateDirection(vector<vector<double> >& w);
     void resetDirection(vector<vector<double> >& w);
 
@@ -56,6 +57,7 @@ class SanityCheck {
     
   protected:
     virtual void getDefaultDirection(vector<vector<double> >& w);
+    virtual void calcInitDirection(vector<double>& wSet, size_t set);
     int initPositives;
     double fdr;
     static bool overRule;
