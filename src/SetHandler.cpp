@@ -143,6 +143,8 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     }
   }
   iss.clear(); // clear the error bit
+  
+  featureNames.initFeatures(DataSet::getCalcDoc());
   assert(numFeatures == DataSet::getNumFeatures());
   
   // fill in the default weights if present
@@ -177,8 +179,6 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   DataSet * decoySet = new DataSet();
   assert(decoySet);
   decoySet->setLabel(-1);
-  
-  featureNames.initFeatures(DataSet::getCalcDoc());
 
   // read in the data
   int label;

@@ -350,7 +350,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     f_seq.push_back(RawScore / (DeNovoScore+0.0001));  // ScoreRatio
     f_seq.push_back(DeNovoScore - RawScore);  // Score difference, or Energy
     f_seq.push_back(-log(EValue));
-    f_seq.push_back(-log(SpecEValue));
+    //f_seq.push_back(-log(SpecEValue));
     f_seq.push_back(IsotopeError);
     f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
     f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
