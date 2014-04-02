@@ -78,7 +78,7 @@ if(MINGW OR WIN32) # windows
 #  set(WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\converters\\\\")
   set(WRITABLE_DIR "xml\\\\")
   set(MZIDENTML_SCHEMA_LOCATION "xml-mzIdentML-${MZIDENTML_VERSION_MAJOR}-${MZIDENTML_VERSION_MINOR}\\\\")
-  set(GAML_TANDEM_SCHEMA_LOCATION "xml-gaml_tandem-${GAML_TANDEM_VERSION_MAJOR}-${GAML_TANDEM_VERSION_MINOR}\\\\")
+  set(GAML_TANDEM_SCHEMA_LOCATION "xml-tandem-${TANDEM_VERSION}\\\\")
   set(TANDEM_SCHEMA_LOCATION "xml-tandem-${TANDEM_VERSION}\\\\")
   add_definitions(-D_WIN32)
 else() # linux

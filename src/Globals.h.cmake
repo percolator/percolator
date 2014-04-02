@@ -160,7 +160,7 @@ class Globals {
     void initLogger();
     int redirectBuffer();
     void unredirectBuffer();
-    const std::string getXMLDir();    
+    const std::string getXMLDir(bool isConverter = false);    
   private:
     Globals();
     int verbose;
