@@ -68,25 +68,35 @@ void Reader::init()
 
   bool isMeta = false;
 
-  if(po->readProteins)
-  {
+  if (po->readProteins) {
     readProteins(po->targetDb,po->decoyDb);
   }
 
-  //check files are metafiles or not
-  if(!po->iscombined)
-  {
+  //check files exists and if they are metafiles or not
+  if (!po->iscombined) {
+    std::ifstream targetFileIn(po->targetFN.data(), std::ios::in);
+    std::ifstream decoyFileIn(po->targetFN.data(), std::ios::in);
+    if (!targetFileIn) {
+      targetFileIn.close();
+      decoyFileIn.close();
+      ostringstream temp;
+      temp << "Error : unable to open or read file " << po->targetFN << std::endl;
+      throw MyException(temp.str());
+    } else if (!decoyFileIn) {
+      targetFileIn.close();
+      decoyFileIn.close();
+      ostringstream temp;
+      temp << "Error : unable to open or read file " << po->decoyFN << std::endl;
+      throw MyException(temp.str());
+    }
     bool isMetaTarget = checkIsMeta(po->targetFN);
     bool isMetaDecoy = checkIsMeta(po->decoyFN);
-    if(isMetaTarget == isMetaDecoy)
-    {
+    if(isMetaTarget == isMetaDecoy) {
       isMeta = isMetaTarget;
-    }
-    else
-    {
+    } else {
       ostringstream temp;
       temp << "Error : one of the input files is a metafile whereas"
-		<< " the other one is not a metaFile. " << std::endl;
+		       << " the other one is not a metaFile. " << std::endl;
       throw MyException(temp.str());
     }
   }
@@ -96,33 +106,29 @@ void Reader::init()
   }
   //NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters.
   //     tandemReader for instance checks if a certain attribute is present or not.
-  if(isMeta)
-  {
+  if (isMeta) {
     std::string line;
     std::ifstream meta(po->targetFN.data(), std::ios::in);
     while (getline(meta, line)) {
       if (line.size() > 0 && line[0] != '#') {
-	 line.erase(std::remove(line.begin(),line.end(),' '),line.end());
-	 checkValidity(line);
-	 getMaxMinCharge(line,false);
+        line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+        checkValidity(line);
+        getMaxMinCharge(line,false);
       }
-     }
+    }
     meta.close();
-    if(!po->iscombined)
-    {
+    if(!po->iscombined) {
       meta.open(po->decoyFN.data(), std::ios::in);
       while (getline(meta, line)) {
-	if (line.size() > 0 && line[0] != '#') {
-	  line.erase(std::remove(line.begin(),line.end(),' '),line.end());
-	  checkValidity(line);
-	  getMaxMinCharge(line,true);
-	}
+        if (line.size() > 0 && line[0] != '#') {
+          line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+          checkValidity(line);
+          getMaxMinCharge(line,true);
+        }
       }
       meta.close();
     }
-   }
-  else
-  {
+  } else {
     checkValidity(po->targetFN);
     getMaxMinCharge(po->targetFN,false);
     if(!po->iscombined){
@@ -243,7 +249,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
       // print to cout (or populate xml file)
       
     // print column names
-    bool hasInitialValues;
+    bool hasInitialValues = false;
     outputStream << "SpecId\tLabel\tScanNr";
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
       outputStream << "\t" << descr.name();

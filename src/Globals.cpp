@@ -49,10 +49,11 @@ Globals* Globals::getInstance() {
 #include <tchar.h>
 #endif
 
-const std::string Globals::getXMLDir() {
+const std::string Globals::getXMLDir(bool isConverter) {
   std::string out = WRITABLE_DIR;
 #if defined (__WIN32__) || defined (__MINGW__) || defined (MINGW) || defined (_WIN32)
   std::wstring keyName = L"Software\\Percolator\\percolator-";
+  if (isConverter) keyName += L"converters-";
   keyName += LVERSION_NAME;
   HKEY hKey;
   RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyName.c_str(), 0, KEY_READ, &hKey);
@@ -73,6 +74,7 @@ const std::string Globals::getXMLDir() {
   } else {
     
     keyName = L"Software\\Wow6432Node\\Percolator\\percolator-";
+    if (isConverter) keyName += L"converters-";
     keyName += LVERSION_NAME;
     RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyName.c_str(), 0, KEY_READ, &hKey);
 
