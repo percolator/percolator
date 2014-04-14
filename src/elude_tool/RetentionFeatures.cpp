@@ -27,23 +27,26 @@
 #include <iostream>
 #include <algorithm>
 
+#include "boost/assign.hpp"
 #include "RetentionFeatures.h"
 #include "Globals.h"
 #include "PSMDescription.h"
+
+using namespace boost::assign;
 
 /* maximum number of features */
 const int RetentionFeatures::kMaxNumberFeatures = 100;
 
 /* define the Kyte Doolittle index */
-const map<string, double> RetentionFeatures::kKyteDoolittle = { {"A", 1.8}, {"C", 2.5}, {"D", -3.5}, {"E", -3.5}, {"F", 2.8},
-                                                                {"G", -0.4}, {"H", -3.2}, {"I", 4.5}, {"K", -3.9}, {"L", 3.8},
-                                                                {"M", 1.9}, {"N", -3.5}, {"P", -1.6}, {"Q", -3.5}, {"R", -4.5},
-                                                                {"S", -0.8}, {"T", -0.7}, {"V", 4.2}, {"W", -0.9}, {"Y", -1.3}};
+const map<string, double> RetentionFeatures::kKyteDoolittle = map_list_of ("A", 1.8) ("C", 2.5) ("D", -3.5) ("E", -3.5) ("F", 2.8)
+                                                                          ("G", -0.4) ("H", -3.2) ("I", 4.5) ("K", -3.9) ("L", 3.8)
+                                                                          ("M", 1.9) ("N", -3.5) ("P", -1.6) ("Q", -3.5) ("R", -4.5)
+                                                                          ("S", -0.8) ("T", -0.7) ("V", 4.2) ("W", -0.9) ("Y", -1.3);
 /* define the bulkiness */
-const map<string, double> RetentionFeatures::kBulkiness = { {"A", 11.5}, {"C", 13.46}, {"D", 11.68}, {"E", 13.57}, {"F", 19.80},
-                                                            {"G", 3.40}, {"H", 13.69}, {"I", 21.40}, {"K", 15.71}, {"L", 21.40},
-                                                            {"M", 16.25}, {"N", 12.82}, {"P", 17.43}, {"Q", 14.45}, {"R", 14.28},
-                                                            {"S", 9.47}, {"T", 15.77}, {"V", 21.57}, {"W", 21.67}, {"Y", 18.03}};
+const map<string, double> RetentionFeatures::kBulkiness = map_list_of ("A", 11.5) ("C", 13.46) ("D", 11.68) ("E", 13.57) ("F", 19.80)
+                                                                      ("G", 3.40) ("H", 13.69) ("I", 21.40) ("K", 15.71) ("L", 21.40)
+                                                                      ("M", 16.25) ("N", 12.82) ("P", 17.43) ("Q", 14.45) ("R", 14.28)
+                                                                      ("S", 9.47) ("T", 15.77) ("V", 21.57) ("W", 21.67) ("Y", 18.03);
 
 /* percentage of the amino acids from an index that are polar or hydrophobic */
 const double RetentionFeatures::kPercentageAA = 0.25;
@@ -712,6 +715,3 @@ int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
   }
   return 0;
 }
-
-
-
