@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright 2006-2010 Lukas Käll <lukas.kall@scilifelab.se>
+ Copyright 2006-2010 Lukas Kall <lukas.kall@scilifelab.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -96,7 +96,13 @@ class EludeCaller{
    /* given a list of ptms, build a set with all the amino acids present */
    std::set<std::string> GetAAAlphabet(const vector<PSMDescription> &psms) const;
    int AllocateRTFeatures(std::vector<PSMDescription> &psms);
-
+   /* function to train only the retention index */
+   map<string, double> TrainRetentionIndex(); 
+   /* function to write a retention index to a file */
+   int SaveRetentionIndexToFile(const string &file_name, const map<string, double> &index);
+   /* print the hydrophobicity index */
+   void PrintHydrophobicityIndex(const map<string, double> &index) const; 
+   
    /************ Accessors and mutators ************/
    inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
    inline std::vector<PSMDescription>& test_psms() { return test_psms_; }
@@ -165,6 +171,8 @@ class EludeCaller{
    bool remove_common_peptides_;
    /* ignore the ptms */
    bool ignore_ptms_;
+   /* only th ehydrophobicity index should be trained */
+   bool only_hydrophobicity_index_;
    /* train and test peptide-spectrum matches */
    std::vector<PSMDescription> train_psms_;
    std::vector<PSMDescription> test_psms_;
