@@ -25,6 +25,8 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <cctype>
+#include <locale>
 #include <boost/foreach.hpp>
 #include "ResultHolder.h"
 #include "DataSet.h"
@@ -42,6 +44,7 @@ class SetHandler {
     int n_examples;
     
     unsigned int getSubsetIndexFromLabel(int label);
+    static inline std::string &rtrim(std::string &s);
     
   public:
     

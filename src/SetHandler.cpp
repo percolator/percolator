@@ -104,7 +104,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   // First we need to find out the number of features
   getline(dataStream, line); // skip feature name line
   getline(dataStream, line);
-  istringstream iss(line);
+  istringstream iss(rtrim(line));
   iss >> psmid >> tmp >> tmp; // read id, label and scannr of second row
   
   // check if first row contains the default weights
@@ -112,7 +112,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   if (psmid == "DefaultDirection") { 
     hasInitialValues = true;
     getline(dataStream, line);
-    iss.str(line);
+    iss.str(rtrim(line));
     iss >> tmp >> tmp >> tmp; // remove id, label and scannr
   }
   
@@ -132,7 +132,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   
   // fill in the feature names from the first line
   getline(dataStream, line); // save row with feature names for later parsing
-  iss.str(line);
+  iss.str(rtrim(line));
   FeatureNames& featureNames = DataSet::getFeatureNames();
   int skip = (DataSet::getCalcDoc() ? 2 : 0);
   int numFeatLeft = static_cast<int>(numFeatures);
@@ -151,7 +151,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   std::vector<double> init_values;
   if (hasInitialValues) {
     getline(dataStream, line);
-    iss.str(line);
+    iss.str(rtrim(line));
     iss >> tmp >> tmp >> tmp; // remove id, label and scannr
     unsigned int ix = 0;
     while (iss.good()) {
@@ -183,7 +183,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   // read in the data
   int label;
   while (getline(dataStream, line)) {
-    iss.str(line);
+    iss.str(rtrim(line));
     iss >> tmp >> label;
     if (label == 1) {
       targetSet->readPsm(dataStream, line);
@@ -222,4 +222,9 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
     subset->writeTabData(dataStream);
   }
   dataStream.close();
+}
+
+std::string& SetHandler::rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+  return s;
 }

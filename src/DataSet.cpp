@@ -195,8 +195,13 @@ void DataSet::readPsm(ifstream & dataStream, const std::string line) {
   if (!buff.good()) {
     dataStream.close();
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM with id " << myPsm->id << ". Check if\
-    the line is formatted correctly." << std::endl;
+    if (peptide_seq.size() > 0) {
+      temp << "ERROR: Reading tab file, error reading PSM with id " << myPsm->id << ". Check if\
+      at least one protein is specified and that the line is formatted correctly." << std::endl;
+    } else {
+      temp << "ERROR: Reading tab file, error reading PSM with id " << myPsm->id << ". Check if\
+      the line is formatted correctly." << std::endl;
+    }
     throw MyException(temp.str());
   } else if (peptide_seq.size() < 5) {
     dataStream.close();
