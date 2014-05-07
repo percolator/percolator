@@ -33,8 +33,8 @@ class Sqt2Pin : public Interface {
 	{
 	  ostringstream endnote;
 	  endnote << "Usage:" << endl;
-	  endnote << "   sqt2pin [options] -o output.xml target.sqt decoy.sqt " << endl << endl;
-	  endnote << "Where output.xml is where the output will be written (ensure to have read and " << endl;
+	  endnote << "   sqt2pin [options] -o output.tsv target.sqt decoy.sqt " << endl << endl;
+	  endnote << "Where output.tsv is where the output will be written (ensure to have read and " << endl;
 	  endnote << "write access on the file).target.sqt is the target sqt-file, and decoy.sqt is" << endl;
 	  endnote << "the decoy sqt-file. Small data sets may be merged by replace the sqt-files with" << endl;
 	  endnote << "meta files. Meta files are text files containing the paths of sqt-files, one" << endl;

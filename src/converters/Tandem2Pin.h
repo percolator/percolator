@@ -35,8 +35,8 @@ class Tandem2Pin : public Interface {
 	{
 	  ostringstream endnote;
 	  endnote << "Usage:" << endl;
-	  endnote << "   tandem2pin [options] -o output.xml target_file decoy_file " << endl << endl;
-	  endnote << "Where output.xml is where the output will be written (ensure to have read and " << endl;
+	  endnote << "   tandem2pin [options] -o output.tsv target_file decoy_file " << endl << endl;
+	  endnote << "Where output.tsv is where the output will be written (ensure to have read and " << endl;
 	  endnote << "write access on the file).target_file is the target X!tandem-file, and decoy_file is" << endl;
 	  endnote << "the decoy X!tandem-file. Small data sets may be merged by replace the X!tandem-files with" << endl;
 	  endnote << "meta files. Meta files are text files containing the paths of X!tandem-files, one" << endl;
