@@ -75,7 +75,7 @@ class DataSet {
     static unsigned int cntPTMs(const string& pep);
     // static double isPngasef(const string& peptide, bool isDecoy );
 
-    void readPsm(ifstream & dataStream, const std::string line);
+    void readPsm(ifstream & dataStream, const std::string line, bool hasScanNr, unsigned int lineNr);
     void registerPsm(PSMDescription * myPsm);
 
   protected:   

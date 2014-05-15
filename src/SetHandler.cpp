@@ -99,13 +99,26 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     temp << "ERROR: Can not open file " << dataFN << endl;
     throw MyException(temp.str());
   }
-  string tmp, psmid, line;
+  std::string tmp, psmid, line;
+  istringstream iss;
   
-  // First we need to find out the number of features
-  getline(dataStream, line); // skip feature name line
+  std::string scanNrHeader;
+  bool hasScanNrColumn = true;
+  getline(dataStream, line); // line with feature names
+  iss.str(rtrim(line));
+  iss >> tmp >> tmp >> scanNrHeader; // read id, label and scannr of second row
+  std::transform(scanNrHeader.begin(), scanNrHeader.end(), scanNrHeader.begin(), ::tolower);
+  if (scanNrHeader != "scannr") {
+    hasScanNrColumn = false;
+    cerr << "\nWARNING: Tab delimited input does not contain ScanNr column,\n\
+         scan numbers will be assigned automatically.\n" << endl;
+  }
+  
   getline(dataStream, line);
-  istringstream iss(rtrim(line));
-  iss >> psmid >> tmp >> tmp; // read id, label and scannr of second row
+  iss.str(rtrim(line));
+  
+  iss >> psmid >> tmp; // read id and label of second row
+  if (hasScanNrColumn) iss >> tmp; // read scannr of second row
   
   // check if first row contains the default weights
   bool hasInitialValues = false;
@@ -113,13 +126,14 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     hasInitialValues = true;
     getline(dataStream, line);
     iss.str(rtrim(line));
-    iss >> tmp >> tmp >> tmp; // remove id, label and scannr
+    iss >> tmp >> tmp; // remove id and label
+    if (hasScanNrColumn) iss >> tmp; // remove scannr
   }
   
   // count number of features from first PSM
   double a;
   unsigned int numFeatures = 0;
-  iss >> a; // test fourth column
+  iss >> a; // test third/fourth column
   while (iss.good()) {
     ++numFeatures;
     iss >> a;
@@ -135,10 +149,11 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   iss.str(rtrim(line));
   FeatureNames& featureNames = DataSet::getFeatureNames();
   int skip = (DataSet::getCalcDoc() ? 2 : 0);
+  if (hasScanNrColumn) ++skip;
   int numFeatLeft = static_cast<int>(numFeatures);
   while (iss.good()) {
     iss >> tmp;
-    if (skip-- <= -3 && numFeatLeft-- > 0) { // removes enumerator, label, scannr and, if present, DOC features
+    if (skip-- <= -2 && numFeatLeft-- > 0) { // removes enumerator and label and, if present, scannr and DOC features
       featureNames.insertFeature(tmp);
     }
   }
@@ -152,7 +167,9 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   if (hasInitialValues) {
     getline(dataStream, line);
     iss.str(rtrim(line));
-    iss >> tmp >> tmp >> tmp; // remove id, label and scannr
+    iss >> tmp >> tmp; // remove id and label
+    if (hasScanNrColumn) iss >> tmp; // remove scannr
+    
     unsigned int ix = 0;
     while (iss.good()) {
       iss >> a;
@@ -182,14 +199,16 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
 
   // read in the data
   int label;
+  unsigned int lineNr = (hasInitialValues ? 3 : 2);
   while (getline(dataStream, line)) {
     iss.str(rtrim(line));
     iss >> tmp >> label;
     if (label == 1) {
-      targetSet->readPsm(dataStream, line);
+      targetSet->readPsm(dataStream, line, hasScanNrColumn, lineNr);
     } else if (label == -1) {
-      decoySet->readPsm(dataStream, line);
+      decoySet->readPsm(dataStream, line, hasScanNrColumn, lineNr);
     }
+    ++lineNr;
   }
   dataStream.close();
   

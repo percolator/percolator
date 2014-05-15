@@ -413,13 +413,17 @@ int Scores::calcScores(vector<double>& w, double fdr) {
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
   if (VERB > 3) {
-    cerr << "10 best scores and labels" << endl;
-    for (ix = 0; ix < 10; ix++) {
-      cerr << scores[ix].score << " " << scores[ix].label << endl;
-    }
-    cerr << "10 worst scores and labels" << endl;
-    for (ix = scores.size() - 10; ix < scores.size(); ix++) {
-      cerr << scores[ix].score << " " << scores[ix].label << endl;
+    if (scores.size() >= 10) {
+      cerr << "10 best scores and labels" << endl;
+      for (ix = 0; ix < 10; ix++) {
+        cerr << scores[ix].score << " " << scores[ix].label << endl;
+      }
+      cerr << "10 worst scores and labels" << endl;
+      for (ix = scores.size() - 10; ix < scores.size(); ix++) {
+        cerr << scores[ix].score << " " << scores[ix].label << endl;
+      }
+    } else {
+      cerr << "Too few scores to display top and bottom PSMs (" << scores.size() << " scores found)." << endl;
     }
   }
   return calcQ(fdr);
@@ -460,9 +464,11 @@ int Scores::calcQ(double fdr) {
       posNow = targets;
     }
   }
-  for (int ix = scores.size(); --ix;) {
-    if (scores[ix - 1].pPSM->q > scores[ix].pPSM->q) {
-      scores[ix - 1].pPSM->q = scores[ix].pPSM->q;
+  if (scores.size() > 0) {
+    for (int ix = scores.size(); --ix;) {
+      if (scores[ix - 1].pPSM->q > scores[ix].pPSM->q) {
+        scores[ix - 1].pPSM->q = scores[ix].pPSM->q;
+      }
     }
   }
   return posNow;

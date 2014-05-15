@@ -64,7 +64,9 @@ void SanityCheck::checkAndSetDefaultDir() {
     }
     initDefaultDir = sign * DataSet::getFeatureNames().getFeatureNumber(initDefaultDirName);
     if (initDefaultDir == 0) {
-      throw MyException("ERROR: Initial direction feature name not found");
+      ostringstream temp;
+      temp << "ERROR: Initial direction feature name \"" << initDefaultDirName << "\" not found" << std::endl;
+      throw MyException(temp.str());
     }
   }
 }
