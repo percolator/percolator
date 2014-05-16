@@ -145,7 +145,6 @@ endif()
 set(PACKAGE_NICKNAME "elude")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Elude software package for prediction of retention times in mass spectorometry experiments.")
 include("${PERCOLATOR_SOURCE_DIR}/CPack.txt")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev")
-set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1, boost-devel")
+set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 
 include(CPack)

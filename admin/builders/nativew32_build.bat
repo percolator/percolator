@@ -185,7 +185,6 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
-
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
 
@@ -197,6 +196,17 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
+if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
+cd /D "%BUILD_DIR%\elude"
+
+::::::: Building elude :::::::
+echo cmake elude.....
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
+echo build elude (this will take a few minutes).....
+msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+
 :::::::::::::::::::::::::::::::::::::::
 :::::::::::: END BUILD ::::::::::::::::
 :::::::::::::::::::::::::::::::::::::::
@@ -204,6 +214,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 copy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
 copy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
 copy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
+copy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 

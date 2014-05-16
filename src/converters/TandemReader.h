@@ -49,7 +49,7 @@ public:
   
   void addFeatureDescriptions(bool doEnzyme);
   
-private:
+protected:
   
   //Variables
   bool x_score;
@@ -69,6 +69,8 @@ private:
   void createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
 		  double sumI,double maxI,bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
 		  const peptideProteinMapType &peptideProteinMap,const string &psmId, int spectraId);
+  
+  static const std::map<string,double> tandemFeaturesDefaultValue;
 };
 
 #endif //TANDEMREADER_H

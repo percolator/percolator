@@ -1,5 +1,21 @@
 #include "TandemReader.h"
 
+//default score vector //TODO move this to a file or input parameter                          
+const std::map<string,double> TandemReader::tandemFeaturesDefaultValue =
+  boost::assign::map_list_of("hyperscore", 0.8)
+    ("deltaScore", 1.9)
+    ("frac_ion_b", 0.0)
+    ("frac_ion_y", 0.0)
+    ("Mass", 0.0)
+    ("dM", 0.0)
+    ("absdM", -0.03)
+    ("PepLen", 0.0)
+    ("Charge2", 0.0)
+    ("Charge3", 0.0)
+    ("enzN", 0.0)
+    ("enzC", 0.0)
+    ("enzInt", 0.0);
+
 static const XMLCh groupStr[] = { chLatin_g, chLatin_r, chLatin_o, chLatin_u, chLatin_p, chNull};
 static const XMLCh groupTypeStr[] = { chLatin_t, chLatin_y, chLatin_p, chLatin_e, chNull};
 static const XMLCh groupModelStr[] = { chLatin_m, chLatin_o, chLatin_d, chLatin_e, chLatin_l, chNull};
@@ -124,8 +140,8 @@ bool TandemReader::checkIsMeta(const std::string &file)
 
 void TandemReader::addFeatureDescriptions(bool doEnzyme) 
 {
-  push_backFeatureDescription("hyperscore");
-  push_backFeatureDescription("deltaScore");  //hypercore - abs(nextscore);
+  push_backFeatureDescription("hyperscore","",tandemFeaturesDefaultValue.at("hyperscore"));
+  push_backFeatureDescription("deltaScore","",tandemFeaturesDefaultValue.at("deltaScore"));  //hypercore - abs(nextscore);
   
   /* THESE FEATURES ARE NOT VALIDATED
   push_backFeatureDescription("DomainExpectedValue");
@@ -143,7 +159,7 @@ void TandemReader::addFeatureDescriptions(bool doEnzyme)
   if(b_score)
   {
     //push_backFeatureDescription("score_ion_b");
-    push_backFeatureDescription("frac_ion_b");
+    push_backFeatureDescription("frac_ion_b","",tandemFeaturesDefaultValue.at("frac_ion_b"));
   }
   if(c_score)
   {
@@ -159,7 +175,7 @@ void TandemReader::addFeatureDescriptions(bool doEnzyme)
   if(y_score)
   {
     //push_backFeatureDescription("score_ion_y");
-    push_backFeatureDescription("frac_ion_y");
+    push_backFeatureDescription("frac_ion_y","",tandemFeaturesDefaultValue.at("frac_ion_y"));
   }
   if(z_score)
   {
@@ -167,11 +183,11 @@ void TandemReader::addFeatureDescriptions(bool doEnzyme)
     push_backFeatureDescription("frac_ion_z");
   }
   
-  push_backFeatureDescription("Mass");
+  push_backFeatureDescription("Mass","",tandemFeaturesDefaultValue.at("Mass"));
   //Mass difference
-  push_backFeatureDescription("dM");
-  push_backFeatureDescription("absdM");
-  push_backFeatureDescription("PepLen");
+  push_backFeatureDescription("dM","",tandemFeaturesDefaultValue.at("dM"));
+  push_backFeatureDescription("absdM","",tandemFeaturesDefaultValue.at("absdM"));
+  push_backFeatureDescription("PepLen","",tandemFeaturesDefaultValue.at("PepLen"));
   
   for (int charge = minCharge; charge <= maxCharge; ++charge) 
   {
@@ -182,9 +198,9 @@ void TandemReader::addFeatureDescriptions(bool doEnzyme)
   }
   if (doEnzyme) 
   {
-    push_backFeatureDescription("enzN");
-    push_backFeatureDescription("enzC");
-    push_backFeatureDescription("enzInt");
+    push_backFeatureDescription("enzN","",tandemFeaturesDefaultValue.at("enzN"));
+    push_backFeatureDescription("enzC","",tandemFeaturesDefaultValue.at("enzC"));
+    push_backFeatureDescription("enzInt","",tandemFeaturesDefaultValue.at("enzInt"));
   }
   
   if (po->calcPTMs) 

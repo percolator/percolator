@@ -137,7 +137,9 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     bool hasDefaultValues = false;
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {    
       if (descr.initialValue().present()) {
-        hasDefaultValues = true;
+        if (descr.initialValue().get() != 0.0) {
+          hasDefaultValues = true;
+        }
         if (VERB >2) {
           std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
         }

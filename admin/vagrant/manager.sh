@@ -155,6 +155,7 @@ echo "Copying ready made packages from ${tmp_dir} to ${release}"
 
 mkdir -p ${release};
 cp -v ${tmp_dir}/per*.{rpm,deb,exe,dmg} ${release};
+cp -v ${tmp_dir}/elude*.{rpm,deb,exe,dmg} ${release};
 
 #cp -v ${tmp_dir}/build_${post}/percolator/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};
 #cp -v ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};

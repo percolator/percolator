@@ -67,15 +67,13 @@ ranlib libxerces-c.a
 
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
-
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF ${src_dir}/percolator
 make -j 4;
 make -j 4 package;
 cp per*.rpm ${release_dir}
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
-
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/"  ${src_dir}/percolator
 make -j 4;
 make -j 4 package;
@@ -86,6 +84,37 @@ cd ${build_dir}/converters
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
 make -j 4;
 make -j 4 package;
+cp per*.rpm ${release_dir}
+
+mkdir -p ${build_dir}/elude
+cd ${build_dir}/elude
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator/src/elude_tool
+make -j 4;
+make -j 4 package;
+cp elude*.rpm ${release_dir}
 
 echo "build directory was : ${build_dir}";
-cp -v per*.rpm ${release_dir}
+
+
+# Fixes permission denied /usr folders bug in CMake 2.8.11 on Fedora 18
+# This bug was fixed from version 2.8.12 on, so no need to run it there.
+cd ${release_dir}
+if [[ `cmake --version | cut -f3 -d' ' | awk -F'.' '{print $2*100+$3}'` -le "811" ]]; then
+  wget -q -O rpmrebuild.rpm http://sourceforge.net/projects/rpmrebuild/files/rpmrebuild/2.11/rpmrebuild-2.11-1.noarch.rpm/download 
+  sudo rpm -i rpmrebuild.rpm
+  rm rpmrebuild.rpm
+
+  backupdir=original_packages
+  mkdir $backupdir
+  mv *.rpm $backupdir
+  cd $backupdir
+  for rpm in *.rpm
+  do
+    rpmrebuild --package --change-spec-whole="sed '/%dir %attr(0755, root, root) \"\/usr\"/d' | sed '/%dir %attr(0755, root, root) \"\/usr\/bin\"/d' | sed '/%dir %attr(0755, root, root) \"\/usr\/share\"/d'" --directory=${release_dir} $rpm
+  done
+  
+  cd ${release_dir}
+  mv ./x86_64/*.rpm ./
+  rm -rf x86_64
+fi
+

@@ -102,9 +102,16 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   std::string tmp, psmid, line;
   istringstream iss;
   
+  getline(dataStream, line); // line with feature names
+  if (line.substr(0,5) == "<?xml") {
+    ostringstream temp;
+    temp << "ERROR: Cannot read Tab delimited input from datafile " << dataFN << ".\n" << \
+       "The input file seems to be in XML format, use the -k flag for XML input. " << endl;
+    throw MyException(temp.str());
+  }
+  
   std::string scanNrHeader;
   bool hasScanNrColumn = true;
-  getline(dataStream, line); // line with feature names
   iss.str(rtrim(line));
   iss >> tmp >> tmp >> scanNrHeader; // read id, label and scannr of second row
   std::transform(scanNrHeader.begin(), scanNrHeader.end(), scanNrHeader.begin(), ::tolower);
@@ -121,9 +128,10 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   if (hasScanNrColumn) iss >> tmp; // read scannr of second row
   
   // check if first row contains the default weights
-  bool hasInitialValues = false;
-  if (psmid == "DefaultDirection") { 
-    hasInitialValues = true;
+  bool hasInitialValueRow = false;
+  std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
+  if (psmid == "defaultdirection") { 
+    hasInitialValueRow = true;
     getline(dataStream, line);
     iss.str(rtrim(line));
     iss >> tmp >> tmp; // remove id and label
@@ -164,7 +172,8 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   
   // fill in the default weights if present
   std::vector<double> init_values;
-  if (hasInitialValues) {
+  bool hasDefaultValues = false;
+  if (hasInitialValueRow) {
     getline(dataStream, line);
     iss.str(rtrim(line));
     iss >> tmp >> tmp; // remove id and label
@@ -173,6 +182,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     unsigned int ix = 0;
     while (iss.good()) {
       iss >> a;
+      if (a != 0.0) hasDefaultValues = true;
       if (VERB > 2) {
         std::cerr << "Initial direction for " << DataSet::getFeatureNames().getFeatureName(ix) << " is " << a << std::endl;
       }
@@ -185,7 +195,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   if (numFeatures < 1) {
     dataStream.close();
     throw MyException("ERROR: Reading tab file, too few features present.");
-  } else if (hasInitialValues && init_values.size() > numFeatures) {
+  } else if (hasDefaultValues && init_values.size() > numFeatures) {
     dataStream.close();
     throw MyException("ERROR: Reading tab file, too many default values present.");
   }
@@ -199,14 +209,16 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
 
   // read in the data
   int label;
-  unsigned int lineNr = (hasInitialValues ? 3 : 2);
+  unsigned int lineNr = (hasInitialValueRow ? 3 : 2);
   while (getline(dataStream, line)) {
     iss.str(rtrim(line));
-    iss >> tmp >> label;
+    iss >> psmid >> label;
     if (label == 1) {
       targetSet->readPsm(dataStream, line, hasScanNrColumn, lineNr);
     } else if (label == -1) {
       decoySet->readPsm(dataStream, line, hasScanNrColumn, lineNr);
+    } else {
+      std::cerr << "Warning: the PSM with id " << psmid << " on line " << lineNr << " has a label not in {1,-1} and will be ignored." << std::endl;
     }
     ++lineNr;
   }
@@ -217,7 +229,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   
   pCheck = new SanityCheck();
   pCheck->checkAndSetDefaultDir();
-  if (hasInitialValues) pCheck->addDefaultWeights(init_values);
+  if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
   return 1;
 }
 
