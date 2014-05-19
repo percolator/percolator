@@ -87,16 +87,16 @@ def checkPep(what,file,expected):
   return success
 
 # performance increase when description of correct features option is enabled
-def performanceD4On():
+def performanceD4On(docFile, psmFile):
   success = True
   print("(*): checking performance with description of correct features option...")
-  output = getLine("New pi_0", os.path.join(pathToOutputData,"PERCOLATOR_D4on.txt"))
+  output = getLine("New pi_0", docFile)
   extracted_D4on = int(output[39:40])
-  output = getLine("New pi_0", os.path.join(pathToOutputData,"PERCOLATOR_psms.txt"))
+  output = getLine("New pi_0", psmFile)
   extracted_D4off = int(output[39:40])
   if extracted_D4on < extracted_D4off:
     print("...TEST FAILED: percolator with -D 4 option performed worse than without it")
-    print("check /tmp/PERCOLATOR_D4on.txt and /tmp/PERCOLATOR_psms.txt for details" )
+    print("check " + docFile + " and " + psmFile + " for details")
     success = False
   return success
 
@@ -106,9 +106,10 @@ if xmlSupport:
   psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
   peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
   proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
+  docFile = os.path.join(pathToOutputData,"PERCOLATOR_D4on.txt")
 
   # number of significant psms within boundaries
-  success=checkNumberOfSignificant("psms",psmFile,283) and success
+  success=checkNumberOfSignificant("psms",psmFile,292) and success
   # number of significant peptrides within boundaries
   success=checkNumberOfSignificant("peptides",peptideFile,221) and success
   # number of significant proteins within boundaries (old dataset)
@@ -124,24 +125,25 @@ if xmlSupport:
   #expected=[4.47324e-14,3.52218e-09,1.7545e-07]
   #success = checkPep("peptides",peptideFile, expected);
   # performance increase with -D 4 option
-  success = performanceD4On() and success
+  success = performanceD4On(docFile, psmFile) and success
 
 print("- PERCOLATOR TAB FORMAT")
 
 psmFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_psms.txt")
 peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_peptides.txt")
 proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins.txt")
+docFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_D4on.txt")
 
-# number of significant psms within boundaries
-success=checkNumberOfSignificant("psms",psmFile,283) and success
-# number of significant peptrides within boundaries
+# number of significant psms within boundaries (ubuntu=283, windows=301)
+success=checkNumberOfSignificant("psms",psmFile,292) and success
+# number of significant peptrides within boundaries (ubuntu=211, windows=225)
 success=checkNumberOfSignificant("peptides",peptideFile,221) and success
 # psm: pi0 within boundaries
 success=checkPi0("psms",psmFile,0.8912) and success
 # peptides: pi0 within boundaries
 success=checkPi0("peptides",peptideFile,0.9165) and success
 # performance increase with -D 4 option
-success = performanceD4On() and success
+success = performanceD4On(docFile, psmFile) and success
 
 # if no errors were encountered, succeed
 if success==True:

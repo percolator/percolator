@@ -29,7 +29,9 @@ using namespace std;
       
 Caller::Caller() :
         pNorm(NULL), pCheck(NULL), protEstimator(NULL),
-        forwardTabInputFN(""), resultFN(""), tabFN(""),
+        forwardTabInputFN(""), tabFN(""), psmResultFN(""), 
+        peptideResultFN(""), proteinResultFN(""), decoyPsmResultFN(""), 
+        decoyPeptideResultFN(""), decoyProteinResultFN(""),
         weightFN(""), tabInput(false), readStdIn(false),
         reportUniquePeptides(true), target_decoy_competition(false),
         test_fdr(0.01), threshTestRatio(0.3), trainRatio(0.6) {
@@ -98,6 +100,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "pout.xml is where the output will be written (ensure to have read and write access on the file)." << endl;
   // init
   CommandLineParser cmd(intro.str());
+  // available lower case letters: c, h, l, o, y, z
+  // available upper case letters: L
+  // N.B.: "W" is used twice, once for Fido and once for Percolator
   cmd.defineOption("X",
       "xmloutput",
       "path to file in xml-output format (pout)",
@@ -201,12 +206,20 @@ bool Caller::parseOptions(int argc, char **argv) {
       MAYBE,
       "15");
   cmd.defineOption("r",
-      "results",
-      "Output tab delimited results to a file instead of stdout",
+      "results-peptides",
+      "Output tab delimited results of peptides to a file instead of stdout (will be ignored if used with -U option)",
+      "filename");
+  cmd.defineOption("m",
+      "results-psms",
+      "Output tab delimited results of PSMs to a file instead of stdout",
       "filename");
   cmd.defineOption("B",
-      "decoy-results",
-      "Output tab delimited results for decoys into a file",
+      "decoy-results-peptides",
+      "Output tab delimited results for decoy peptides into a file (will be ignored if used with -U option)",
+      "filename");
+  cmd.defineOption("M",
+      "decoy-results-psms",
+      "Output tab delimited results for decoy PSMs into a file",
       "filename");
   cmd.defineOption("U",
       "only-psms",
@@ -277,7 +290,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("P",
       "pattern",
       "Define the text pattern to identify the decoy proteins and/or PSMs, set this up if the label that idenfifies the decoys in the database \
-       is not the default (by default : ramdom) (Only valid if option -A  is active).",
+       is not the default (by default : random) (Only valid if option -A  is active).",
       "value");
   cmd.defineOption("T",
       "fido-reduce-tree-in-gridsearch",
@@ -304,28 +317,45 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Uses protein group level inference, each cluster of proteins is either present or not, therefore when grouping proteins discard all possible combinations for each group.(Only valid if option -A is active and -N is inactive).",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("l",
+      "results-proteins",
+      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A is active)",
+      "filename");
+  cmd.defineOption("L",
+      "decoy-results-proteins",
+      "Output tab delimited results for decoy proteins into a file (Only valid if option -A is active)",
+      "filename");
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
   if (cmd.optionSet("X")) xmlInterface.setXmlOutputFN(cmd.options["X"]);
   
-  if (cmd.optionSet("B")) {
-    decoyOut = cmd.options["B"];
-  }
-  
-  if (cmd.optionSet("r")) {
-    resultFN = cmd.options["r"];
-  }
+  // filenames for outputting results to file
+  if (cmd.optionSet("m"))  psmResultFN = cmd.options["m"];
+  if (cmd.optionSet("M"))  decoyPsmResultFN = cmd.options["M"];
   
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
       cerr
-      << "The -U option cannot be used in conjunction with -A: peptide level statistics\n"
+      << "ERROR: The -U option cannot be used in conjunction with -A: peptide level statistics\n"
       << "are needed to calculate protein level ones.";
       return 0;
     }
+    if (cmd.optionSet("r")) {
+      cerr
+      << "WARNING: The -r option cannot be used in conjunction with -U: no peptide level statistics\n"
+      << "are calculated, ignoring -r option." << endl;
+    }
+    if (cmd.optionSet("B")) {
+      cerr
+      << "WARNING: The -B option cannot be used in conjunction with -U: no peptide level statistics\n"
+      << "are calculated, ignoring -B option." << endl;
+    }
     reportUniquePeptides = false;
+  } else {
+    if (cmd.optionSet("r"))  peptideResultFN = cmd.options["r"];
+    if (cmd.optionSet("B"))  decoyPeptideResultFN = cmd.options["B"];
   }
 
   if (cmd.optionSet("A")) {
@@ -365,6 +395,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("b"))  fido_beta = cmd.getDouble("b", 0.00, 1.0);
     if (cmd.optionSet("G"))  fido_gamma = cmd.getDouble("G", 0.00, 1.0);
     if (cmd.optionSet("H"))  fido_mse_threshold = cmd.getDouble("H",0.001,1.0);
+    if (cmd.optionSet("l"))  proteinResultFN = cmd.options["l"];
+    if (cmd.optionSet("L"))  decoyProteinResultFN = cmd.options["L"];
     
     protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_nogroupProteins,fido_noseparate,
 				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
@@ -638,32 +670,35 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun,Scores *fullset, time_t& p
     crossValidation.printAllWeights(weightStream, pNorm);
     weightStream.close();
   }
-  if (resultFN.empty() && writeOutput) {
-    setHandler.print(*fullset, NORMAL);
-  } else if (!resultFN.empty()) {
-    if (writeOutput) {
-      ofstream targetStream((resultFN+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
-      setHandler.print(*fullset, NORMAL, targetStream);
-      targetStream.close();
+  if (isUniquePeptideRun) {
+    if (peptideResultFN.empty()) {
+      setHandler.print(*fullset, NORMAL);
     } else {
-      ofstream targetStream((resultFN+".psms").data(), ios::out);
+      ofstream targetStream(peptideResultFN.data(), ios::out);
       setHandler.print(*fullset, NORMAL, targetStream);
       targetStream.close();
     }
-  }
-  if (!decoyOut.empty() && writeOutput) {
-    ofstream decoyStream((decoyOut+(reportUniquePeptides ? ".peptides" : ".psms")).data(), ios::out);
-    setHandler.print(*fullset, SHUFFLED, decoyStream);
-    decoyStream.close();
-  } else if(!decoyOut.empty()) {
-    ofstream decoyStream((decoyOut+".psms").data(), ios::out);
-    setHandler.print(*fullset, SHUFFLED, decoyStream);
-    decoyStream.close();
-  }
-  // set pi_0 value (to be outputted)
-  if(isUniquePeptideRun) {
+    if (!decoyPeptideResultFN.empty()) {
+      ofstream decoyStream(decoyPeptideResultFN.data(), ios::out);
+      setHandler.print(*fullset, SHUFFLED, decoyStream);
+      decoyStream.close();
+    }
+    // set pi_0 value (to be outputted)
     xmlInterface.setPi0Peptides(fullset->getPi0());
   } else {
+    if (psmResultFN.empty() && writeOutput) {
+      setHandler.print(*fullset, NORMAL);
+    } else if (!psmResultFN.empty()) {
+      ofstream targetStream(psmResultFN.data(), ios::out);
+      setHandler.print(*fullset, NORMAL, targetStream);
+      targetStream.close();
+    }
+    if (!decoyPsmResultFN.empty()) {
+      ofstream decoyStream(decoyPsmResultFN.data(), ios::out);
+      setHandler.print(*fullset, SHUFFLED, decoyStream);
+      decoyStream.close();
+    }
+    // set pi_0 value (to be outputted)
     xmlInterface.setPi0Psms(fullset->getPi0());
     xmlInterface.setNumberQpsms(fullset->getQvaluesBelowLevel(0.01));
   }
@@ -698,7 +733,7 @@ void Caller::calculateProteinProbabilitiesFido() {
     << " cpu seconds or " << diff_time << " seconds wall time" << endl;
   }
   
-  protEstimator->printOut(resultFN,decoyOut);
+  protEstimator->printOut(proteinResultFN, decoyProteinResultFN);
   if (xmlInterface.getXmlOutputFN().size() > 0) {
       xmlInterface.writeXML_Proteins(protEstimator);
   }

@@ -135,12 +135,12 @@ void ProteinProbEstimator::printOut(const std::string &proteinFN,
 				      const std::string &proteinDecoyFN) {
   if(!proteinFN.empty() || !proteinDecoyFN.empty()) {
     if(!proteinFN.empty()) {
-      ofstream proteinOut(("proteins_"+proteinFN).data(), ios::out);
+      ofstream proteinOut(proteinFN.data(), ios::out);
       print(proteinOut,false);
       proteinOut.close();	
     }
     if(!proteinDecoyFN.empty()) {
-      ofstream proteinOut(("proteins_"+proteinDecoyFN).data(), ios::out);
+      ofstream proteinOut(proteinDecoyFN.data(), ios::out);
       print(proteinOut,true);
       proteinOut.close();
     }

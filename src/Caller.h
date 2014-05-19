@@ -79,8 +79,10 @@ class Caller {
     CrossValidation crossValidation;
     
     string forwardTabInputFN;
-    string resultFN;
     string tabFN;
+    
+    string psmResultFN, peptideResultFN, proteinResultFN;
+    string decoyPsmResultFN, decoyPeptideResultFN, decoyProteinResultFN;
     
     char* xmlInputDir;
     string weightFN;
@@ -97,7 +99,6 @@ class Caller {
     double trainRatio;
     
     string call;
-    string decoyOut;
     
     time_t startTime;
     clock_t startClock;
