@@ -1,3 +1,36 @@
+v2.08
+* Added flags for writing results to explicit filenames instead of using suffixes (#104):
+```
+-r : target peptide results (is ignored with -U flag)
+-m : target PSM results
+-l : target protein result (only works with -A flag)
+
+-B : decoy peptide result (is ignored with -U flag)
+-M : decoy PSM result
+-L : decoy protein result (only works with -A flag)
+```
+* Restored redundant `-j` flag for tab delimited input for backwards compatibility (i.e. running percolator as `percolator -j tab_output` does not result in errors, but functionally does exactly the same as `percolator tab_output`) (#103)
+* Added backwards compatibility with tab delimited input format of percolator before v2.06 by allowing the scan number column to be missing (scan numbers will be assigned automatically). (#102)
+* Added more specific error reporting for problems with tab delimited input format. (#95, #96, #97)
+* Added default vector for tandem2pin converter (#94)
+* Added a fix for the RPM `/usr/bin` permission error in the fedora build script (#90)
+* Added a fix for Ubuntu 14.04 problem with XSD package (#100)
+
+v2.07.02
+* Fixed wrong xml directory reference in msgf2pin and tandem2pin on windows
+* Added warning message to converters if files are not present
+
+v2.07.01
+* Removed lnESpecValue column (rel 2.07 only removed the header and default value).
+* Fixed numFeatures assertion error.
+
+v2.07
+* Fixed missing PTMs bug in MSGF+ converter 
+* Removed `InSpecEValue` from MSGF+ converter, since it was causing problems when used together with `lnEValue`
+* Added functionality to score directly with provided default vector by setting number of iterations to zero (use flag `-i=0`)
+* Fixed percolator output with `-r` flag
+* Switched to static linking of external libraries
+
 v2.06
 * Modified the xxx2pin converters to output tab delimited files 
   by default rather than pin xml-files  
