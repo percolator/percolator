@@ -7,9 +7,6 @@ now days hosted on sourceforge:
 
 https://sourceforge.net/projects/percolator/files
 
-The same packages are also available at 
-http://www.nada.kth.se/~lukask/percolator_dist/
-
 The building procedure is cmake-based. Helper scripts for building on
 different platforms can be found in: admin/bilders/
 
