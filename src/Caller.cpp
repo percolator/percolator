@@ -328,6 +328,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
+  
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  }
+  
   // now query the parsing results
   if (cmd.optionSet("X")) xmlInterface.setXmlOutputFN(cmd.options["X"]);
   
@@ -343,14 +348,32 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0;
     }
     if (cmd.optionSet("r")) {
-      cerr
-      << "WARNING: The -r option cannot be used in conjunction with -U: no peptide level statistics\n"
-      << "are calculated, ignoring -r option." << endl;
+      if (!cmd.optionSet("m")) {
+        if (VERB > 0) {
+          cerr
+          << "WARNING: The -r option cannot be used in conjunction with -U: no peptide level statistics\n"
+          << "are calculated, redirecting PSM level statistics to provided file instead." << endl;
+        }
+        psmResultFN = cmd.options["r"];
+      } else {
+        cerr
+        << "WARNING: The -r option cannot be used in conjunction with -U: no peptide level statistics\n"
+        << "are calculated, ignoring -r option." << endl;
+      }
     }
     if (cmd.optionSet("B")) {
-      cerr
-      << "WARNING: The -B option cannot be used in conjunction with -U: no peptide level statistics\n"
-      << "are calculated, ignoring -B option." << endl;
+      if (!cmd.optionSet("M")) {
+        if (VERB > 0) {
+          cerr
+          << "WARNING: The -B option cannot be used in conjunction with -U: no peptide level statistics\n"
+          << "are calculated, redirecting decoy PSM level statistics to provided file instead." << endl;
+        }
+        decoyPsmResultFN = cmd.options["B"]; 
+      } else {
+        cerr
+        << "WARNING: The -B option cannot be used in conjunction with -U: no peptide level statistics\n"
+        << "are calculated, ignoring -B option." << endl;
+      }
     }
     reportUniquePeptides = false;
   } else {
@@ -477,9 +500,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("x")) {
     crossValidation.setQuickValidation(true);
-  }
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
   }
   if (cmd.optionSet("F")) {
     crossValidation.setSelectionFdr(cmd.getDouble("F", 0.0, 1.0));
