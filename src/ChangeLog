@@ -1,3 +1,6 @@
+v2.08.01
+* Changed behaviour of `-r` and `-B` (=peptide result file names for target and decoy) flags in combination with `-U` (=only PSM statistics) flag. The provided file names will now contain the PSM results, provided that the new `-m` and `-M` (=PSM result file names for target and decoy) flags are not given. This will allow backwards compatibility with percolator 2.04.
+
 v2.08
 * Added flags for writing results to explicit filenames instead of using suffixes (#104):
 ```
