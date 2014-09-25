@@ -66,7 +66,7 @@ if not exist "%BOOST_ROOT%" (
   :::::: end bug fix ::::::::
   cd /D "%BOOST_ROOT%"
   call bootstrap
-  bjam threading=multi --with-system --with-filesystem --with-serialization -d0
+  bjam address-model=64 threading=multi --with-system --with-filesystem --with-serialization -d0
 )
 set BOOST_LIB=%BOOST_ROOT%\stage\lib
 
@@ -107,8 +107,8 @@ if not exist "%LIBXML_DIR%" (
 set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
-set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86-windows-vc-10.0
-set XERCES_URL=http://apache.mirrors.spacedump.net//xerces/c/3/binaries/xerces-c-3.1.1-x86-windows-vc-10.0.zip
+set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86_64-windows-vc-10.0
+set XERCES_URL=http://apache.mirrors.spacedump.net//xerces/c/3/binaries/xerces-c-3.1.1-x86_64-windows-vc-10.0.zip
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%XERCES_URL%','%INSTALL_DIR%\xerces.zip')"
@@ -126,27 +126,24 @@ if not exist "%XSD_DIR%" (
 
 ::: Needed for converters package :::
 set SQLITE_DIR=%INSTALL_DIR%\sqlite3
-set SQLITE_SRC_URL=http://www.sqlite.org/2013/sqlite-amalgamation-3080200.zip
-set SQLITE_DLL_URL=http://www.sqlite.org/2013/sqlite-dll-win32-x86-3080200.zip
+set SQLITE_SRC_URL=http://www.sqlite.org/snapshot/sqlite-amalgamation32k-201409200035.zip
+set SQLITE_DLL_URL=http://www.sqlite.org/snapshot/sqlite-dll-win64-x64-201409200035.zip
 if not exist "%SQLITE_DIR%" (
   echo Downloading and installing SQLite3
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%SQLITE_SRC_URL%','%INSTALL_DIR%\sqlite_src.zip')"
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%SQLITE_DLL_URL%','%INSTALL_DIR%\sqlite_dll.zip')"
-  %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%" > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%\src" > NUL
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_dll.zip" -o"%SQLITE_DIR%" > NUL
-  cd /D "%SQLITE_DIR%"
-  lib /DEF:"%SQLITE_DIR%\sqlite3.def" /MACHINE:X86
-  ren sqlite-amalgamation-3080200 src
 )
 set SQLITE_DIR=%SQLITE_DIR%;%INSTALL_DIR%\sqlite3\src
 
 ::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib
-set ZLIB_URL=http://sourceforge.net/projects/libpng/files/zlib/1.2.8/zlib128-dll.zip/download
+set ZLIB_URL=http://win32builder.gnome.org/packages/3.6/zlib_1.2.7-1_win64.zip
 if not exist "%ZLIB_DIR%" (
-  echo Downloading and installing CodeSynthesis ZLIB
+  echo Downloading and installing ZLIB
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_URL%','%INSTALL_DIR%\zlib.zip')"
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%INSTALL_DIR%\zlib" > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" bin -o"%ZLIB_DIR%" > NUL
 )
 set ZLIB_DIR=%ZLIB_DIR%;%INSTALL_DIR%\zlib\include
 set PATH=%PATH%;%ZLIB_DIR%
@@ -168,7 +165,7 @@ cd /D "%BUILD_DIR%\percolator-noxml"
 
 ::::::: Building percolator without xml support :::::::
 echo cmake percolator.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
@@ -180,7 +177,7 @@ cd /D "%BUILD_DIR%\percolator"
 
 ::::::: Building percolator :::::::
 echo cmake percolator.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
@@ -192,7 +189,7 @@ cd /D "%BUILD_DIR%\converters"
 
 ::::::: Building converters :::::::
 echo cmake converters.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
@@ -204,7 +201,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 
 ::::::: Building elude (Not working at the moment, see https://github.com/percolator/percolator/issues/106)::::::: 
 ::echo cmake elude.....
-::%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
+::%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
 ::echo build elude (this will take a few minutes).....
 ::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
