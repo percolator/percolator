@@ -15,6 +15,7 @@ SHIFT
 GOTO parse
 :endparse
 
+
 :: use the VS command prompt settings to set-up paths for compiler and builder
 call "C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevCmd.bat"
 
@@ -23,7 +24,7 @@ call "C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevC
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 setlocal
-set INSTALL_DIR=C:\Program Files
+set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 
 set CMAKE_URL=http://www.cmake.org/files/v2.8/cmake-2.8.12.1-win32-x86.exe
@@ -44,7 +45,7 @@ set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 
 :: The windows binary release of boost 1.55 does not include the serialization library, therefore we built from source.
 :: If this bug is fixed in the next version, we can just grab the binaries (much faster, except for a bigger download)
-set BOOST_ROOT=%INSTALL_DIR%\boost_1_55_0
+set BOOST_ROOT=%INSTALL_DIR%\boost_1_55_0_x64
 set BOOST_URL=http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.7z/download
 if not exist "%BOOST_ROOT%" (
   echo Downloading and installing Boost, this can take a few minutes...
@@ -63,6 +64,7 @@ if not exist "%BOOST_ROOT%" (
   echo #include ^<algorithm^> > tmp.txt
   type "%BOOST_ROOT%\libs\serialization\src\basic_text_woprimitive.cpp" >> tmp.txt
   type tmp.txt > "%BOOST_ROOT%\libs\serialization\src\basic_text_woprimitive.cpp"
+  del tmp.txt
   :::::: end bug fix ::::::::
   cd /D "%BOOST_ROOT%"
   call bootstrap
@@ -85,10 +87,10 @@ set PYTHON_URL=http://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 if not exist "%PYTHON_DIR%" (
   echo Downloading and installing Python
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%PYTHON_URL%','%INSTALL_DIR%\python.msi')"
-  msiexec /i "%INSTALL_DIR%\python.msi" /quiet TARGETDIR="%INSTALL_DIR%\python"
+  msiexec /i "%INSTALL_DIR%\python.msi" /quiet TARGETDIR="%PYTHON_DIR%" /li "%INSTALL_DIR%\python_install.log"
 )
 setlocal
-set PATH=%PATH%;%INSTALL_DIR%\python
+set PATH=%PATH%;%PYTHON_DIR%
 
 ::: Needed for system tests :::
 set LIBXML_DIR=%INSTALL_DIR%\libxml2-2.7.8.win32
@@ -108,7 +110,7 @@ set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
 set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86_64-windows-vc-10.0
-set XERCES_URL=http://apache.mirrors.spacedump.net//xerces/c/3/binaries/xerces-c-3.1.1-x86_64-windows-vc-10.0.zip
+set XERCES_URL=http://apache.mirrors.spacedump.net/xerces/c/3/binaries/xerces-c-3.1.1-x86_64-windows-vc-10.0.zip
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%XERCES_URL%','%INSTALL_DIR%\xerces.zip')"
@@ -125,7 +127,7 @@ if not exist "%XSD_DIR%" (
 )
 
 ::: Needed for converters package :::
-set SQLITE_DIR=%INSTALL_DIR%\sqlite3
+set SQLITE_DIR=%INSTALL_DIR%\sqlite3_x64
 set SQLITE_SRC_URL=http://www.sqlite.org/snapshot/sqlite-amalgamation32k-201409200035.zip
 set SQLITE_DLL_URL=http://www.sqlite.org/snapshot/sqlite-dll-win64-x64-201409200035.zip
 if not exist "%SQLITE_DIR%" (
@@ -134,18 +136,43 @@ if not exist "%SQLITE_DIR%" (
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%SQLITE_DLL_URL%','%INSTALL_DIR%\sqlite_dll.zip')"
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%\src" > NUL
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_dll.zip" -o"%SQLITE_DIR%" > NUL
+  
+  ::: Generate lib from dll
+  setlocal enableDelayedExpansion
+  set DLL_BASE=%SQLITE_DIR%\sqlite3
+  set DEF_FILE=!DLL_BASE!.def
+  set write=0
+  echo EXPORTS> "!DEF_FILE!"
+  for /f "usebackq tokens=4" %%i in (`dumpbin /exports "!DLL_BASE!.dll"`) do if "!write!"=="1" (echo %%i >> "!DEF_FILE!") else (if %%i==name set write=1)
+  cd /D "%SQLITE_DIR%"
+  lib /DEF:"!DEF_FILE!" /MACHINE:X64
+  endlocal
 )
 set SQLITE_DIR=%SQLITE_DIR%;%INSTALL_DIR%\sqlite3\src
 
 ::: Needed for converters package and for system tests :::
-set ZLIB_DIR=%INSTALL_DIR%\zlib
-set ZLIB_URL=http://win32builder.gnome.org/packages/3.6/zlib_1.2.7-1_win64.zip
+set ZLIB_DIR=%INSTALL_DIR%\zlib_x64
+set ZLIB_SRC_URL=http://win32builder.gnome.org/packages/3.6/zlib-dev_1.2.7-1_win64.zip
+set ZLIB_DLL_URL=http://win32builder.gnome.org/packages/3.6/zlib_1.2.7-1_win64.zip
 if not exist "%ZLIB_DIR%" (
   echo Downloading and installing ZLIB
-  PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_URL%','%INSTALL_DIR%\zlib.zip')"
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" bin -o"%ZLIB_DIR%" > NUL
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_SRC_URL%','%INSTALL_DIR%\zlib_src.zip')"
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_DLL_URL%','%INSTALL_DIR%\zlib_dll.zip')"
+  %ZIP_EXE% x "%INSTALL_DIR%\zlib_src.zip" -o"%ZLIB_DIR%" > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\zlib_dll.zip" -o"%ZLIB_DIR%" > NUL
+  
+  ::: Generate lib from dll
+  setlocal enableDelayedExpansion
+  set DLL_BASE=%ZLIB_DIR%\bin\zlib1
+  set DEF_FILE=!DLL_BASE!.def
+  set write=0
+  echo EXPORTS> "!DEF_FILE!"
+  for /f "usebackq tokens=4" %%i in (`dumpbin /exports "!DLL_BASE!.dll"`) do if "!write!"=="1" (echo %%i >> "!DEF_FILE!") else (if %%i==name set write=1)
+  cd /D "%ZLIB_DIR%\bin"
+  lib /DEF:"!DEF_FILE!" /MACHINE:X64
+  endlocal
 )
-set ZLIB_DIR=%ZLIB_DIR%;%INSTALL_DIR%\zlib\include
+set ZLIB_DIR=%ZLIB_DIR%\bin;%ZLIB_DIR%\include
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::

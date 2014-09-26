@@ -108,7 +108,7 @@ set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
 set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86-windows-vc-10.0
-set XERCES_URL=http://apache.mirrors.spacedump.net//xerces/c/3/binaries/xerces-c-3.1.1-x86-windows-vc-10.0.zip
+set XERCES_URL=http://apache.mirrors.spacedump.net/xerces/c/3/binaries/xerces-c-3.1.1-x86-windows-vc-10.0.zip
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%XERCES_URL%','%INSTALL_DIR%\xerces.zip')"
@@ -146,9 +146,11 @@ set ZLIB_URL=http://sourceforge.net/projects/libpng/files/zlib/1.2.8/zlib128-dll
 if not exist "%ZLIB_DIR%" (
   echo Downloading and installing CodeSynthesis ZLIB
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_URL%','%INSTALL_DIR%\zlib.zip')"
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%INSTALL_DIR%\zlib" > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%ZLIB_DIR%" > NUL
+  if not exist "%ZLIB_DIR%\bin" (md "%ZLIB_DIR%\bin")
+  move %ZLIB_DIR%\zlib1.dll %ZLIB_DIR%\bin\zlib1.dll
 )
-set ZLIB_DIR=%ZLIB_DIR%;%INSTALL_DIR%\zlib\include
+set ZLIB_DIR=%ZLIB_DIR%;%ZLIB_DIR%\include
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
