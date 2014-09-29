@@ -23,7 +23,7 @@ call "C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevC
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 setlocal
-set INSTALL_DIR=C:\Program Files
+set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 
 set CMAKE_URL=http://www.cmake.org/files/v2.8/cmake-2.8.12.1-win32-x86.exe
@@ -85,7 +85,7 @@ set PYTHON_URL=http://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 if not exist "%PYTHON_DIR%" (
   echo Downloading and installing Python
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%PYTHON_URL%','%INSTALL_DIR%\python.msi')"
-  msiexec /i "%INSTALL_DIR%\python.msi" /quiet TARGETDIR="%INSTALL_DIR%\python"
+  msiexec /i "%INSTALL_DIR%\python.msi" /quiet TARGETDIR="%INSTALL_DIR%\python" /li "%INSTALL_DIR%\python_install.log"
 )
 setlocal
 set PATH=%PATH%;%INSTALL_DIR%\python
@@ -138,7 +138,7 @@ if not exist "%SQLITE_DIR%" (
   lib /DEF:"%SQLITE_DIR%\sqlite3.def" /MACHINE:X86
   ren sqlite-amalgamation-3080200 src
 )
-set SQLITE_DIR=%SQLITE_DIR%;%INSTALL_DIR%\sqlite3\src
+set SQLITE_DIR=%SQLITE_DIR%;%SQLITE_DIR%\src
 
 ::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib
@@ -147,8 +147,7 @@ if not exist "%ZLIB_DIR%" (
   echo Downloading and installing CodeSynthesis ZLIB
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_URL%','%INSTALL_DIR%\zlib.zip')"
   %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%ZLIB_DIR%" > NUL
-  if not exist "%ZLIB_DIR%\bin" (md "%ZLIB_DIR%\bin")
-  move %ZLIB_DIR%\zlib1.dll %ZLIB_DIR%\bin\zlib1.dll
+  move "%ZLIB_DIR%\zlib1.dll" "%ZLIB_DIR%\lib\zlib1.dll"
 )
 set ZLIB_DIR=%ZLIB_DIR%;%ZLIB_DIR%\include
 set PATH=%PATH%;%ZLIB_DIR%

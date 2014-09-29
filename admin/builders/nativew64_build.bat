@@ -45,7 +45,7 @@ set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 
 :: The windows binary release of boost 1.55 does not include the serialization library, therefore we built from source.
 :: If this bug is fixed in the next version, we can just grab the binaries (much faster, except for a bigger download)
-set BOOST_ROOT=%INSTALL_DIR%\boost_1_55_0_x64
+set BOOST_ROOT=%INSTALL_DIR%\boost_1_55_0
 set BOOST_URL=http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.7z/download
 if not exist "%BOOST_ROOT%" (
   echo Downloading and installing Boost, this can take a few minutes...
@@ -148,7 +148,7 @@ if not exist "%SQLITE_DIR%" (
   lib /DEF:"!DEF_FILE!" /MACHINE:X64
   endlocal
 )
-set SQLITE_DIR=%SQLITE_DIR%;%INSTALL_DIR%\sqlite3\src
+set SQLITE_DIR=%SQLITE_DIR%;%SQLITE_DIR%\src
 
 ::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib_x64
