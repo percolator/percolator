@@ -5,6 +5,7 @@ const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
 const std::string Reader::modifiedAA("#@*");
 const std::string Reader::additionalAA("UO");
+const std::string Reader::freqAA(aaAlphabet + ambiguousAA + additionalAA);
 
 //THIS MAP SHOULD BE CREATED FROM THE UNIMOD PTMS xml document
 const std::map<unsigned, double> Reader::ptmMass =
@@ -385,8 +386,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
   //the peptide has to include the flanks
   assert(checkPeptideFlanks(pep));
   // Overall amino acid composition features
-  string::size_type aaSize = aaAlphabet.size() + ambiguousAA.size() + additionalAA.size();
-  std::string completeAlphabet = aaAlphabet + ambiguousAA + additionalAA;
+  string::size_type aaSize = freqAA.size();
 
   std::vector< double > doubleV;
   for (unsigned int m = 0  ; m < aaSize ; m++ )  {
@@ -394,7 +394,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
   }
   int len = 0;
   for (string::const_iterator it = pep.begin() + 2; it != pep.end() - 2; it++) {
-    string::size_type pos = completeAlphabet.find(*it);
+    string::size_type pos = freqAA.find(*it);
     if (pos != string::npos) doubleV[pos]++;
     len++;
   }
@@ -410,24 +410,16 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
   double mass  =  0.0;
   assert(!checkPeptideFlanks(pepsequence));
 
-  for(unsigned i=0; i<pepsequence.length();i++)
-  {
-    if(aaAlphabet.find(pepsequence[i]) != string::npos ||
-       ambiguousAA.find(pepsequence[i]) != string::npos ||
-       additionalAA.find(pepsequence[i]) != string::npos )
-    {
+  for(unsigned i=0; i<pepsequence.length();i++) {
+    if (freqAA.find(pepsequence[i]) != string::npos) {
       mass += massMap_[pepsequence[i]];
-    }
-    else if(modifiedAA.find(pepsequence[i]) != std::string::npos)
-    {
+    } else if(modifiedAA.find(pepsequence[i]) != std::string::npos) {
       unsigned annotation = po->ptmScheme[pepsequence[i]];
       mass += ptmMass.at(annotation);
-    }
-    else
-    {
+    } else {
       ostringstream temp;
       temp << "Error: estimating peptide mass, the amino acid "
-      << pepsequence[i] << " is not valid." << std::endl;
+           << pepsequence[i] << " is not valid." << std::endl;
       throw MyException(temp.str());
     }
   }
@@ -435,8 +427,6 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
   mass = (mass + massMap_['o'] + (charge * massMap_['h']) + 1.00727649);
   return mass;
 }
-
-
 
 unsigned int Reader::peptideLength(const string& pep) {
   unsigned int len = 0;

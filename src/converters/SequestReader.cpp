@@ -99,7 +99,7 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
   }
 
   if (po->calcAAFrequencies) {
-    BOOST_FOREACH (const char aa, aaAlphabet) {
+    BOOST_FOREACH (const char aa, freqAA) {
       std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }
@@ -239,9 +239,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     // Strip peptide from termini and modifications
     std::string peptideS = peptideSeq;
     for (unsigned int ix = 0; ix < peptideSeq.size(); ++ix) {
-      if (aaAlphabet.find(peptideSeq[ix]) == string::npos &&
-              ambiguousAA.find(peptideSeq[ix]) == string::npos &&
-              additionalAA.find(peptideSeq[ix]) == string::npos) {
+      if (freqAA.find(peptideSeq[ix]) == string::npos) {
         if (ptmMap.count(peptideSeq[ix]) == 0) {
 	   ostringstream temp;
           temp << "Error : Peptide sequence " << peptideSeqWithFlanks
@@ -255,9 +253,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
     // Register the ptms
     for (unsigned int ix = 0; ix < peptideS.size(); ++ix) {
-      if (aaAlphabet.find(peptideS[ix]) == string::npos &&
-              ambiguousAA.find(peptideS[ix]) == string::npos &&
-              additionalAA.find(peptideS[ix]) == string::npos) {
+      if (freqAA.find(peptideS[ix]) == string::npos) {
         int accession = ptmMap[peptideS[ix]];
         std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
         std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));

@@ -1,8 +1,7 @@
 #include "Sqt2Pin.h"
 
-
 Sqt2Pin::Sqt2Pin() {
- 
+  reader = NULL;
 }
 
 Sqt2Pin::~Sqt2Pin() {

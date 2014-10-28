@@ -96,10 +96,10 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         double rSp, sp, matched, expected;
         linestr.seekg(0, ios::beg);
         if (!(linestr >> tmp >> tmp >> rSp >> calculatedMassToCharge >> tmp >> xcorr >> sp >> matched >> expected >> peptide)) 
-	{
-	  ostringstream temp;
-	  temp << "Error : can not parse the M line: " << line << endl;
-	  throw MyException(temp.str());
+	      {
+	        ostringstream temp;
+	        temp << "Error : can not parse the M line: " << line << endl;
+	        throw MyException(temp.str());
         }
         
         // difference between observed and calculated mass
@@ -116,26 +116,24 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         for (int c = minCharge; c <= maxCharge; c++)
           f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
 
-        if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) 
-	{
+        if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
           f_seq.push_back( Enzyme::isEnzymatic(peptide.at(0),peptide.at(2)) ? 1.0 : 0.0);
           f_seq.push_back( Enzyme::isEnzymatic(peptide.at(peptide.size() - 3),peptide.at(peptide.size() - 1)) ? 1.0 : 0.0);
           std::string peptid2 = peptide.substr(2, peptide.length() - 4);
           f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
         }
+        
         f_seq.push_back( log(max(1.0, nSM)));
         f_seq.push_back( dM ); // obs - calc mass
         f_seq.push_back( abs(dM) ); // abs only defined for integers on some systems
-        if (po->calcPTMs) 
-	{
-	  f_seq.push_back(cntPTMs(peptide));
-	}
-	if (po->pngasef) 
-	{
-	  f_seq.push_back(isPngasef(peptide, isDecoy));
-	}
-        if (po->calcAAFrequencies) 
-	{
+        
+        if (po->calcPTMs) {
+	        f_seq.push_back(cntPTMs(peptide));
+	      }
+	      if (po->pngasef) {
+	        f_seq.push_back(isPngasef(peptide, isDecoy));
+	      }
+        if (po->calcAAFrequencies) {
           computeAAFrequencies(peptide, f_seq);
         }
         gotL = false;
@@ -166,17 +164,12 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   // Strip peptide from termini and modifications 
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::string peptideS = peptideSequence;
-  for(unsigned int ix=0;ix<peptideSequence.size();++ix) 
-  {
-    if (aaAlphabet.find(peptideSequence[ix])==string::npos && 
-	ambiguousAA.find(peptideSequence[ix])==string::npos && 
-	additionalAA.find(peptideSequence[ix])==string::npos)
-    {
-      if (ptmMap.count(peptideSequence[ix])==0) 
-      {
-	ostringstream temp;
-	temp << "Error : Peptide sequence " << peptide << " contains modification " 
-	<< peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
+  for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
+    if (freqAA.find(peptideSequence[ix]) == string::npos) {
+      if (ptmMap.count(peptideSequence[ix]) == 0) {
+	      ostringstream temp;
+	      temp << "Error : Peptide sequence " << peptide << " contains modification " 
+	      << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         throw MyException(temp.str());
       }
       peptideSequence.erase(ix,1);
@@ -184,12 +177,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   }
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
   // Register the ptms
-  for(unsigned int ix=0;ix<peptideS.size();++ix) 
-  {
-    if (aaAlphabet.find(peptideS[ix])==string::npos && 
-	ambiguousAA.find(peptideS[ix])==string::npos && 
-	additionalAA.find(peptideS[ix])==string::npos)
-    {
+  for(unsigned int ix=0;ix<peptideS.size();++ix) {
+    if (freqAA.find(peptideS[ix])==string::npos) {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
@@ -435,9 +424,8 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme)
   }
   if (po->calcAAFrequencies)
   {
-    for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
-    {
-      std::string temp = boost::lexical_cast<std::string>(*it)+"-Freq";
+    BOOST_FOREACH (const char aa, freqAA) {
+      std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }
   }

@@ -2,7 +2,7 @@
 
 
 Msgfplus2pin::Msgfplus2pin() {
-
+  reader = NULL;
 }
 
 Msgfplus2pin::~Msgfplus2pin() {

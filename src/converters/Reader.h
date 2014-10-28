@@ -168,6 +168,7 @@ protected:
    static const std::string ambiguousAA;
    static const std::string modifiedAA;
    static const std::string additionalAA;
+   static const std::string freqAA;
    static const std::map<unsigned,double> ptmMass;
    
    std::vector<boost::shared_ptr<FragSpectrumScanDatabase> > databases;

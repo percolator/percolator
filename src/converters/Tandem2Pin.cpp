@@ -1,7 +1,7 @@
 #include "Tandem2Pin.h"
 
 Tandem2Pin::Tandem2Pin() {
-  
+  reader = NULL;
 }
 
 Tandem2Pin::~Tandem2Pin() {

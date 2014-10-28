@@ -281,7 +281,8 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   }
   if(targetFN == "" && decoyFN == "")
   {
-    std::cerr << "Error, one of the input files is missing.\n"; 
+    std::cerr << "Error: one of the input files is missing."; 
+    std::cerr << "\nInvoke with -h option for help\n";
     return 0; 
   }
   else if(targetFN != "" && decoyFN == "")
@@ -299,9 +300,9 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
-      cerr << "Error: too few arguments.";
-      cerr << "\nInvoke with -h option for help\n";
-      return 0;
+    std::cerr << "Error: too few arguments.";
+    std::cerr << "\nInvoke with -h option for help\n";
+    return 0;
   }
   
   return true;

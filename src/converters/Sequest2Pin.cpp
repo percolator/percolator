@@ -1,8 +1,7 @@
 #include "Sequest2Pin.h"
 
-
 Sequest2Pin::Sequest2Pin() {
- 
+  reader = NULL;
 }
 
 Sequest2Pin::~Sequest2Pin() {

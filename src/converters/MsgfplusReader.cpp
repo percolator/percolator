@@ -178,8 +178,8 @@ void MsgfplusReader::addFeatureDescriptions(bool doEnzyme)
   }
 
   if (po->calcAAFrequencies) {
-    for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++) {
-      std::string temp = boost::lexical_cast<std::string > (*it) + "-Freq";
+    BOOST_FOREACH (const char aa, freqAA) {
+      std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }
   }
@@ -392,9 +392,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     // Strip peptide from termini and modifications
     std::string peptideS = peptideSeq;
     for (unsigned int ix = 0; ix < peptideSeq.size(); ++ix) {
-      if (aaAlphabet.find(peptideSeq[ix]) == string::npos &&
-              ambiguousAA.find(peptideSeq[ix]) == string::npos &&
-              additionalAA.find(peptideSeq[ix]) == string::npos) {
+      if (freqAA.find(peptideSeq[ix]) == string::npos) {
          peptideSeq.erase(ix, 1);
       }
     }

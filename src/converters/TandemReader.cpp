@@ -215,9 +215,8 @@ void TandemReader::addFeatureDescriptions(bool doEnzyme)
   
   if (po->calcAAFrequencies)
   {
-    for (std::string::const_iterator it = aaAlphabet.begin(); it != aaAlphabet.end(); it++)
-    {
-      std::string temp = boost::lexical_cast<std::string>(*it)+"-Freq";
+    BOOST_FOREACH (const char aa, freqAA) {
+      std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
     }
   }
@@ -475,18 +474,13 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
 
   //Remove modifications
   std::string peptideS = peptide;
-  for(unsigned int ix=0;ix<peptide.size();++ix)
-  {
-    if (aaAlphabet.find(peptide[ix])==string::npos && 
-	ambiguousAA.find(peptide[ix])==string::npos && 
-	additionalAA.find(peptide[ix])==string::npos)
-    {
-      if (ptmMap.count(peptide[ix])==0) 
-      {
-	ostringstream temp;
-	temp << "Error : Peptide sequence " << peptide
-	<< " contains modification " << peptide[ix] << " that is not specified by a \"-p\" argument" << endl;
-	throw MyException(temp.str());
+  for(unsigned int ix=0;ix<peptide.size();++ix) {
+    if (freqAA.find(peptide[ix]) == string::npos) {
+      if (ptmMap.count(peptide[ix])==0) {
+	      ostringstream temp;
+	      temp << "Error : Peptide sequence " << peptide
+	           << " contains modification " << peptide[ix] << " that is not specified by a \"-p\" argument" << endl;
+	      throw MyException(temp.str());
       }
       peptide.erase(ix,1);
     }  
@@ -495,18 +489,14 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptide) );
   
   //Register the ptms (modifications)
-  for(unsigned int ix=0;ix<peptideS.size();++ix) 
-  {
-    if (aaAlphabet.find(peptideS[ix])==string::npos && 
-	ambiguousAA.find(peptideS[ix])==string::npos && 
-	additionalAA.find(peptideS[ix])==string::npos)
-    {
+  for(unsigned int ix=0;ix<peptideS.size();++ix) {
+    if (freqAA.find(peptideS[ix]) == string::npos) {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
       mod_p->uniMod(um_p);
       peptide_p->modification().push_back(mod_p);      
-      peptideS.erase(ix,1);      
+      peptideS.erase(ix,1);
     }  
   }
 
