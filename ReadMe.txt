@@ -8,7 +8,7 @@ now days hosted on sourceforge:
 https://sourceforge.net/projects/percolator/files
 
 The building procedure is cmake-based. Helper scripts for building on
-different platforms can be found in: admin/bilders/
+different platforms can be found in: admin/builders/
 
 The cleanest way to build is to use the vagrant virtual machine
 system, which can be setup using the script: admin/vagrant/manager.sh
