@@ -71,11 +71,8 @@
    
 using namespace std;
 
-class Protein
-{
-  
-public:
-  
+class Protein { 
+ public:
   Protein() {
    length = 0;
    totalMass = 0.0;
@@ -93,10 +90,8 @@ public:
   std::set<std::string> peptides;
 };
 
-class Reader
-{
-
-public:
+class Reader {
+ public:
   
   Reader(ParseOptions *po);
   
@@ -157,12 +152,12 @@ public:
   
   bool checkPeptideFlanks(const std::string &pep);
   
-private:
+ private:
   
    std::vector<char*> tmpDirs;
    std::vector<std::string> tmpFNs;
 
-protected:
+ protected:
   
    static const std::string aaAlphabet;
    static const std::string ambiguousAA;
@@ -171,7 +166,7 @@ protected:
    static const std::string freqAA;
    static const std::map<unsigned,double> ptmMass;
    
-   std::vector<boost::shared_ptr<FragSpectrumScanDatabase> > databases;
+   std::vector< boost::shared_ptr<FragSpectrumScanDatabase> > databases;
    //NOTE I should make these two guys pointers
    ::percolatorInNs::experiment::fragSpectrumScan_sequence fss;
    ::percolatorInNs::featureDescriptions f_seq;

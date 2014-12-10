@@ -89,8 +89,7 @@ void PSMDescription::checkFragmentPeptides(vector<PSMDescription*>::reverse_iter
 }
 
 
-void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, double>& scan2rt) 
-{
+void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, double>& scan2rt) {
   vector<PSMDescription*>::iterator psm = psms.begin();
   if (scan2rt.size() == 0) {
     if ((*psm)->retentionTime > 0) {

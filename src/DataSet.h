@@ -35,6 +35,10 @@
 #include "DescriptionOfCorrect.h"
 using namespace std;
 
+// Optional columns in tab delimited input
+enum OptionalField {
+  SCANNR, EXPMASS, CALCMASS
+};
 
 class DataSet {
   public:
@@ -75,7 +79,8 @@ class DataSet {
     static unsigned int cntPTMs(const string& pep);
     // static double isPngasef(const string& peptide, bool isDecoy );
 
-    void readPsm(ifstream & dataStream, const std::string line, bool hasScanNr, unsigned int lineNr);
+    void readPsm(const std::string line, const unsigned int lineNr,
+                 const std::vector<OptionalField>& optionalFields);
     void registerPsm(PSMDescription * myPsm);
 
   protected:   

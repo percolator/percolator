@@ -24,8 +24,7 @@ Reader::Reader(ParseOptions *__po)
   initMassMap(po->monoisotopic);
 }
 
-Reader::Reader()
-{
+Reader::Reader() {
   po = 0;
   tmpDirs = std::vector<char*>();
   tmpFNs = std::vector<std::string>();
@@ -35,22 +34,16 @@ Reader::Reader()
 }
 
 
-Reader::~Reader()
-{
-  for(unsigned int i=0; i<tmpDirs.size(); i++)
-  {
-    if(boost::filesystem::is_directory(tmpDirs[i]))
-    {
+Reader::~Reader() {
+  for (unsigned int i=0; i<tmpDirs.size(); i++) {
+    if (boost::filesystem::is_directory(tmpDirs[i])) {
       boost::filesystem::remove_all(tmpDirs[i]);
     }
     free(tmpDirs[i]);
   }
 }
 
-
-
-void Reader::init()
-{
+void Reader::init() {
   // initializing xercesc objects corresponding to pin element...
   xercesc::XMLPlatformUtils::Initialize ();
 
@@ -73,7 +66,7 @@ void Reader::init()
     readProteins(po->targetDb,po->decoyDb);
   }
 
-  //check files exists and if they are metafiles or not
+  // check files exists and if they are metafiles or not
   if (!po->iscombined) {
     std::ifstream targetFileIn(po->targetFN.data(), std::ios::in);
     std::ifstream decoyFileIn(po->targetFN.data(), std::ios::in);
@@ -92,7 +85,7 @@ void Reader::init()
     }
     bool isMetaTarget = checkIsMeta(po->targetFN);
     bool isMetaDecoy = checkIsMeta(po->decoyFN);
-    if(isMetaTarget == isMetaDecoy) {
+    if (isMetaTarget == isMetaDecoy) {
       isMeta = isMetaTarget;
     } else {
       ostringstream temp;
@@ -100,13 +93,11 @@ void Reader::init()
 		       << " the other one is not a metaFile. " << std::endl;
       throw MyException(temp.str());
     }
+  } else {
+    isMeta = checkIsMeta(po->targetFN);
   }
-  else
-  {
-    isMeta= checkIsMeta(po->targetFN);
-  }
-  //NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters.
-  //     tandemReader for instance checks if a certain attribute is present or not.
+  // NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters.
+  //      tandemReader for instance checks if a certain attribute is present or not.
   if (isMeta) {
     std::string line;
     std::ifstream meta(po->targetFN.data(), std::ios::in);
@@ -118,7 +109,7 @@ void Reader::init()
       }
     }
     meta.close();
-    if(!po->iscombined) {
+    if (!po->iscombined) {
       meta.open(po->decoyFN.data(), std::ios::in);
       while (getline(meta, line)) {
         if (line.size() > 0 && line[0] != '#') {
@@ -132,7 +123,7 @@ void Reader::init()
   } else {
     checkValidity(po->targetFN);
     getMaxMinCharge(po->targetFN,false);
-    if(!po->iscombined){
+    if (!po->iscombined){
       checkValidity(po->decoyFN);
       getMaxMinCharge(po->decoyFN,true);
     }
@@ -140,13 +131,10 @@ void Reader::init()
   //once I have max/min charge I can put in the features
   addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME);
 
-  if (!po->iscombined)
-  {
+  if (!po->iscombined) {
     translateFileToXML(po->targetFN, false /* is_decoy */,0,isMeta);
     translateFileToXML(po->decoyFN, true /* is_decoy */,0,isMeta);
-  }
-  else
-  {
+  } else {
     translateFileToXML(po->targetFN, false /* is_decoy */,0,isMeta);
   }
 
@@ -160,6 +148,7 @@ void Reader::init()
   xercesc::XMLPlatformUtils::Terminate();
 }
 
+// print to cout or populate xml/tab file
 void Reader::print(ostream &outputStream, bool xmlOutput) {  
   if (xmlOutput) {
     xercesc::XMLPlatformUtils::Initialize ();
@@ -181,8 +170,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
 
     outputStream << enzymeStr;
 
-    if(po->readProteins)
-    {
+    if (po->readProteins) {
       serializer ser;
       ser.start (outputStream);
 
@@ -193,174 +181,166 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     string commandLine = "\n<process_info>\n" +
         string("  <command_line>") + po->call.substr(0,po->call.length()-1)
         + "</command_line>\n" + "</process_info>\n";
-
     outputStream << commandLine;
-
-    if(VERB>2)
+    
+    if (VERB>2)
        cerr << "\nWriting output:\n";
-    // print to cout (or populate xml file)
-    // print features
+    
+    // print features (names + default values)
     { // brackets guarantee that xerces objects go out of scope before Terminate()
       serializer ser;
       ser.start (outputStream);
       ser.next ( PERCOLATOR_IN_NAMESPACE, "featureDescriptions",f_seq);
     }
-    // print fragSpecturmScans
+    
+    // print fragSpectrumScans
     if (VERB>2)
       std::cerr << "Databases : " << databases.size() << std::endl;
 
-    for(unsigned int i=0; i<databases.size();i++) {
+    for (unsigned int i=0; i<databases.size();i++) {
       serializer ser;
       ser.start (outputStream);
-      if(VERB>2){
+      if (VERB>2){
         cerr << "outputting content of " << databases[i]->id
             << " (and correspondent decoy file)\n";
       }
       databases[i]->print(ser);
       databases[i]->terminate();
     }
-
-    if(po->readProteins && !proteins.empty()) {
+    
+    // print proteins
+    if (po->readProteins && !proteins.empty()) {
       outputStream << "\n";
 
       serializer ser;
       std::vector<Protein*>::const_iterator it;
       ser.start (outputStream);
-
-      for (it = proteins.begin(); it != proteins.end(); it++)
-      { //NOTE I should serialize in a Btree the object protein as the PSMs
-        //FIXME the serialization is creating a gap \o between elements
-        std::auto_ptr< ::percolatorInNs::protein> p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
+      
+      // NOTE I should serialize in a Btree the object protein as the PSMs
+      // FIXME the serialization is creating a gap \o between elements
+      for (it = proteins.begin(); it != proteins.end(); it++) { 
+        std::auto_ptr< ::percolatorInNs::protein > p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
 							  (*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
         ser.next(PERCOLATOR_IN_NAMESPACE, "protein", *p);
       }
       outputStream << "\n";
     }
     
-    outputStream << "</experiment>" << std::endl;
     // print closing tag
+    outputStream << "</experiment>" << std::endl;
 
     xercesc::XMLPlatformUtils::Terminate();
-  } else {
+  } else { // tab delimited input files
     if (VERB>2 && po->xmlOutputFN != "")
       cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
-
+    
     if (VERB>2)
       cerr << "\nWriting output:\n";
-      // print to cout (or populate xml file)
-      
-    // print column names
+    
+    // print column headers
     bool hasInitialValues = false;
-    outputStream << "SpecId\tLabel\tScanNr";
+    outputStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass";
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
       outputStream << "\t" << descr.name();
       if (descr.initialValue().get() != 0) hasInitialValues = true;
     }
     outputStream << "\tPeptide\tProteins" << std::endl;
     
+    // print default values
     if (hasInitialValues) {
-      outputStream << "DefaultDirection\t-\t-";
+      outputStream << "DefaultDirection\t-\t-\t-\t-";
       BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
         outputStream << "\t" << descr.initialValue().get();
       }
       outputStream << std::endl;
     }
-    // print fragSpecturmScans
-    if (VERB>2)
+    
+    // print fragSpectrumScans
+    if (VERB > 2)
       std::cerr << "Databases : " << databases.size() << std::endl;
 
-    for(unsigned int i=0; i<databases.size();i++) {
+    for (unsigned int i = 0; i < databases.size(); i++) {
       databases[i]->printTab(outputStream);
       databases[i]->terminate();
     }
   }
 }
 
-void Reader::translateFileToXML(const std::string &fn, bool isDecoy, unsigned int lineNumber_par, bool isMeta)
-  {
+void Reader::translateFileToXML(const std::string &fn, bool isDecoy, 
+                                unsigned int lineNumber_par, bool isMeta) {
+  if (!isMeta) {
+    // there must be as many databases as lines in the metafile containing the
+    // files. If this is not the case, add a new one
+    if (databases.size() == lineNumber_par) {
+	    // initialize database
+	    std::auto_ptr<serialize_scheme> database(new serialize_scheme(fn));
 
-    if(!isMeta)
-    {
-      // there must be as many databases as lines in the metafile containing the
-      // files. If this is not the case, add a new one
-      if(databases.size()==lineNumber_par)
-      {
-	// initialize databese
-	std::auto_ptr<serialize_scheme> database(new serialize_scheme(fn));
+	    //NOTE this is actually not needed in case we compile with the boost-serialization scheme
+	    //indicate this with a flag and avoid the creating of temp files when using boost-serialization
+	    if (database->toString() != "FragSpectrumScanDatabaseBoostdb") {
+	      // create temporary directory to store the pointer to the database
+	      string tcf = "";
+	      char * tcd;
+	      string str;
 
-	//NOTE this is actually not needed in case we compile with the boost-serialization scheme
-	//indicate this with a flag and avoid the creating of temp files when using boost-serialization
-	if(database->toString() != "FragSpectrumScanDatabaseBoostdb")
-	{
-	  // create temporary directory to store the pointer to the database
-	  string tcf = "";
-	  char * tcd;
-	  string str;
+	      //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
+	      //boost filesystem when we dont use them
+	      try {
+	        boost::filesystem::path ph = boost::filesystem::unique_path();
+	        boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+	        boost::filesystem::path file("converters-tmp.tcb");
+	        tcf = std::string((dir / file).string());
+	        str =  dir.string();
+	        tcd = new char[str.size() + 1];
+	        std::copy(str.begin(), str.end(), tcd);
+	        tcd[str.size()] = '\0';
+	        if (boost::filesystem::is_directory(dir)) {
+	          boost::filesystem::remove_all(dir);
+	        }
 
-	  //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
-	  //boost filesystem when we dont use them
-	  try
-	  {
-	    boost::filesystem::path ph = boost::filesystem::unique_path();
-	    boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
-	    boost::filesystem::path file("converters-tmp.tcb");
-	    tcf = std::string((dir / file).string());
-	    str =  dir.string();
-	    tcd = new char[str.size() + 1];
-	    std::copy(str.begin(), str.end(), tcd);
-	    tcd[str.size()] = '\0';
-	    if(boost::filesystem::is_directory(dir))
-	    {
-	      boost::filesystem::remove_all(dir);
+	        boost::filesystem::create_directory(dir);
+	      } catch (boost::filesystem::filesystem_error &e) {
+	        std::cerr << e.what() << std::endl;
+	      }
+
+	      tmpDirs.resize(lineNumber_par+1);
+	      tmpDirs[lineNumber_par]=tcd;
+	      tmpFNs.resize(lineNumber_par+1);
+	      tmpFNs[lineNumber_par]=tcf;
+	      database->init(tmpFNs[lineNumber_par]);
+	    } else {
+	      database->init("");
 	    }
-
-	    boost::filesystem::create_directory(dir);
-	  }
-	  catch (boost::filesystem::filesystem_error &e)
-	  {
-	    std::cerr << e.what() << std::endl;
-	  }
-
-	  tmpDirs.resize(lineNumber_par+1);
-	  tmpDirs[lineNumber_par]=tcd;
-	  tmpFNs.resize(lineNumber_par+1);
-	  tmpFNs[lineNumber_par]=tcf;
-	  database->init(tmpFNs[lineNumber_par]);
-	}
-	else
-	{
-	  database->init("");
-	}
-	databases.resize(lineNumber_par+1);
-	databases[lineNumber_par]=database;
-	assert(databases.size()==lineNumber_par+1);
-      }
-      if (VERB>1){
-	std::cerr << "Reading " << fn << std::endl;
-      }
-
-      read(fn,isDecoy,databases[lineNumber_par]);
-    } else {
-      // we hopefully found a meta file
-      if (VERB>1)
-        std::cerr << "Found a meta file: " << fn <<std::endl;
-      unsigned int lineNumber=0;
-      std::string line2;
-      std::ifstream meta(fn.data(), std::ios::in);
-      while (getline(meta, line2)) {
-	if (line2.size() > 0 && line2[0] != '#') {
-	  line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());
-	  translateFileToXML(line2,isDecoy,lineNumber,false);
-	  lineNumber++;
-	}
-      }
-      meta.close();
+	    databases.resize(lineNumber_par+1);
+	    databases[lineNumber_par]=database;
+	    assert(databases.size()==lineNumber_par+1);
     }
+    if (VERB>1) {
+    	std::cerr << "Reading " << fn << std::endl;
+    }
+
+    read(fn,isDecoy,databases[lineNumber_par]);
+  } else {
+    // we hopefully found a meta file
+    if (VERB>1)
+      std::cerr << "Found a meta file: " << fn <<std::endl;
+      
+    unsigned int lineNumber=0;
+    std::string line2;
+    std::ifstream meta(fn.data(), std::ios::in);
+    while (getline(meta, line2)) {
+	    if (line2.size() > 0 && line2[0] != '#') {
+	      line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());
+	      translateFileToXML(line2,isDecoy,lineNumber,false);
+	      lineNumber++;
+	    }
+    }
+    meta.close();
   }
+}
   
 void Reader::push_backFeatureDescription(const char * str, const char *description, double initvalue) {
-
-  percolatorInNs::featureDescriptions::featureDescription_sequence  &fd_sequence =  f_seq.featureDescription();
+  percolatorInNs::featureDescriptions::featureDescription_sequence &fd_sequence = f_seq.featureDescription();
   std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
   //adds initial value and description to the description object
   f_p->initialValue(initvalue);
@@ -382,7 +362,6 @@ string Reader::getRidOfUnprintables(const string &inpString) {
 }
 
 void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::feature_sequence & f_seq ) {
-
   //the peptide has to include the flanks
   assert(checkPeptideFlanks(pep));
   // Overall amino acid composition features
@@ -405,8 +384,7 @@ void Reader::computeAAFrequencies(const string& pep,  percolatorInNs::features::
   std::copy(doubleV.begin(), doubleV.end(), std::back_inserter(f_seq));
 }
 
-double Reader::calculatePepMAss(const std::string &pepsequence,double charge)
-{
+double Reader::calculatePepMAss(const std::string &pepsequence,double charge) {
   double mass  =  0.0;
   assert(!checkPeptideFlanks(pepsequence));
 
@@ -474,51 +452,44 @@ double Reader::isPngasef(const string& peptide, bool isDecoy ) {
 }
 
 
-void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, unsigned &proteins_counter)
-{
-
-  try
-  {
+void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, unsigned &proteins_counter) {
+  try {
     filebuf fb;
     fb.open (seqfile,ios::in);
     istream buffer(&fb);
     if (VERB>1)
       std::cerr << "Reading fasta file : " << seqfile << std::endl;
-    if (!buffer.eof())
-    {
-	  wchar_t c;
-	  while (!buffer.eof())
-	  {
-	    c = buffer.peek();
-	    if( c == '>' )
-	    {
-	      std::string protein_name;
-	      std::string protein_seq;
-	      read_from_fasta(buffer,protein_name,protein_seq);
-	      //std::cerr << " Reading " << protein_name << " " << protein_seq << std::endl;
-	      if(isCombined) isDecoy = protein_name.find(po->reversedFeaturePattern,0) != std::string::npos;
-	      std::set<std::string> peptides;
-	      double totalMass = 0.0;
-	      //NOTE here I should check the enzyme and do the according digestion a switch
-	      //unsigned num_tryptic = calculateProtLengthElastase(protein_seq,peptides,totalMass);
-	      unsigned num_tryptic = calculateProtLengthTrypsin(protein_seq,peptides,totalMass);
-	      //unsigned num_tryptic = calculateProtLengthChymotrypsin(protein_seq,peptides,totalMass);
-	      //unsigned num_tryptic = calculateProtLengthThermolysin(protein_seq,peptides,totalMass);
-	      //unsigned num_tryptic = calculateProtLengthProteinasek(protein_seq,peptides,totalMass);
-	      Protein *tmp = new Protein();
-	      tmp->id = ++proteins_counter;
-	      tmp->name = protein_name;
-	      tmp->isDecoy = isDecoy;
-	      tmp->sequence = protein_seq;
-	      tmp->peptides = peptides;
-	      tmp->length = num_tryptic;
-	      tmp->totalMass = totalMass;
-	      proteins.push_back(tmp);
-	   }
-	 }
-    }
-    else
-    {
+    
+    if (!buffer.eof()) {
+	    wchar_t c;
+	    while (!buffer.eof()) {
+	      c = buffer.peek();
+	      if (c == '>') {
+	        std::string protein_name;
+	        std::string protein_seq;
+	        read_from_fasta(buffer,protein_name,protein_seq);
+	        //std::cerr << " Reading " << protein_name << " " << protein_seq << std::endl;
+	        if(isCombined) isDecoy = protein_name.find(po->reversedFeaturePattern,0) != std::string::npos;
+	        std::set<std::string> peptides;
+	        double totalMass = 0.0;
+	        //NOTE here I should check the enzyme and do the according digestion a switch
+	        //unsigned num_tryptic = calculateProtLengthElastase(protein_seq,peptides,totalMass);
+	        unsigned num_tryptic = calculateProtLengthTrypsin(protein_seq,peptides,totalMass);
+	        //unsigned num_tryptic = calculateProtLengthChymotrypsin(protein_seq,peptides,totalMass);
+	        //unsigned num_tryptic = calculateProtLengthThermolysin(protein_seq,peptides,totalMass);
+	        //unsigned num_tryptic = calculateProtLengthProteinasek(protein_seq,peptides,totalMass);
+	        Protein *tmp = new Protein();
+	        tmp->id = ++proteins_counter;
+	        tmp->name = protein_name;
+	        tmp->isDecoy = isDecoy;
+	        tmp->sequence = protein_seq;
+	        tmp->peptides = peptides;
+	        tmp->length = num_tryptic;
+	        tmp->totalMass = totalMass;
+	        proteins.push_back(tmp);
+        }
+      }
+    } else {
       fb.close();
       ostringstream temp;
       temp <<  "Error : reading combined database : " << seqfile <<  std::endl;
@@ -528,23 +499,19 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     buffer.clear();
     fb.close();
 
-  }catch(const std::exception &e)
-  {
+  } catch(const std::exception &e) {
     throw MyException(std::string(e.what()));
   }
 
   std::string type = isDecoy ?  "target" : "decoy";
-  if(po->iscombined) type = "target and decoy";
+  if (po->iscombined) type = "target and decoy";
 
-  if(proteins_counter == 0)
-  {
+  if (proteins_counter == 0) {
     ostringstream temp;
     std::cerr << "Error : parsing the database, the database given does not contain "
     << type << " proteins\n" << std::endl;
     throw MyException(temp.str());
-  }
-  else if(VERB > 2)
-  {
+  } else if(VERB > 2) {
     std::cerr << "\nRead " << proteins_counter << type << " proteins\n" << std::endl;
   }
 
@@ -552,46 +519,37 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
 }
 
 unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
-						set< string >& peptides, double& totalMass)
-{
+						set< string >& peptides, double& totalMass) {
   size_t length = protsequence.length();
 
   if (length>0 && protsequence[length-1]=='*') {
     --length;
   }
 
-  for(size_t start=0; start<length; start++)
-  {
-    if( start == 0 || ( protsequence[start+1] != 'P'
-      && ( protsequence[start] == 'K' || protsequence[start] == 'R' ) ) )
-    {
+  for (size_t start=0; start<length; start++) {
+    if (start == 0 || ( protsequence[start+1] != 'P'
+        && ( protsequence[start] == 'K' || protsequence[start] == 'R' ) ) ) {
       unsigned int numMisCleavages = 0;
-      for(size_t end=start+1;( end<=length && numMisCleavages <= po->missed_cleavages );end++)
-      {
-	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
-        if( (protsequence[end] == 'K' || protsequence[end] == 'R')
-	  && (protsequence[end+1] != 'P' || end == length ) )
-	{
-	   int begin = start + 1;
-	   int finish = end - start;
-	   if(start == 0)
-	   {
-	     begin--;
-	     finish++;
-	   }
-	   std::string peptide = protsequence.substr(begin,finish);
-	   if(peptide.size() >= po->peptidelength && peptide.size() <= po->maxpeplength)
-	   {
-	      double  mass = calculatePepMAss(peptide);
+      for(size_t end=start+1;( end<=length && numMisCleavages <= po->missed_cleavages );end++) {
+    	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
+        if ( (protsequence[end] == 'K' || protsequence[end] == 'R')
+	          && (protsequence[end+1] != 'P' || end == length ) ) {
+          int begin = start + 1;
+          int finish = end - start;
+          if (start == 0) {
+            begin--;
+            finish++;
+          }
+          std::string peptide = protsequence.substr(begin,finish);
+          if (peptide.size() >= po->peptidelength && peptide.size() <= po->maxpeplength) {
+	          double mass = calculatePepMAss(peptide);
 
-	      if((mass > po->minmass) && (mass < po->maxmass) )
-	      {
-		peptides.insert(peptide);
-		totalMass+=mass;
-	      }
-	   }
-
-	   numMisCleavages++;
+	          if ((mass > po->minmass) && (mass < po->maxmass) ) {
+		          peptides.insert(peptide);
+		          totalMass+=mass;
+	          }
+	        }
+          numMisCleavages++;
         }
       }
     }
@@ -600,46 +558,39 @@ unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
   return (unsigned)peptides.size();
 }
 
-void Reader::readProteins(const string &filenameTarget,const string &fileNamedecoy)
-{
-    unsigned proteins_counter = 0;
-    //NOTE improve the error testing cases
-    if(fileNamedecoy == "" && filenameTarget != "")
-    {
-      parseDataBase(filenameTarget.c_str(),false,true,proteins_counter);
-    }
-    else if(filenameTarget != "" && fileNamedecoy != "")
-    {
-      parseDataBase(filenameTarget.c_str(),false,false,proteins_counter);
-      parseDataBase(fileNamedecoy.c_str(),true,false,proteins_counter);
-    }
-    else
-    {
-      ostringstream temp;
-      std::cerr << "\nError : database file/s could not be loaded\n" << std::endl;
-      throw MyException(temp.str());
-    }
+void Reader::readProteins(const string &filenameTarget,const string &fileNamedecoy) {
+  unsigned proteins_counter = 0;
+  //NOTE improve the error testing cases
+  if (fileNamedecoy == "" && filenameTarget != "") {
+    parseDataBase(filenameTarget.c_str(),false,true,proteins_counter);
+  } else if(filenameTarget != "" && fileNamedecoy != "") {
+    parseDataBase(filenameTarget.c_str(),false,false,proteins_counter);
+    parseDataBase(fileNamedecoy.c_str(),true,false,proteins_counter);
+  } else {
+    ostringstream temp;
+    std::cerr << "\nError : database file/s could not be loaded\n" << std::endl;
+    throw MyException(temp.str());
+  }
 }
 
-void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &seq)
-{
+void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &seq) {
   std::string comment;
   char b[BUFFER_LEN+1];
   b[BUFFER_LEN] = '\0';
   stringstream buf;
   char c = buffer.peek();
 
-   while (!buffer.eof() && (c == ' ' || c == '\n')) {
-      buffer.ignore(1);
-      if (!buffer.eof()) c = buffer.peek();
-   }
+  while (!buffer.eof() && (c == ' ' || c == '\n')) {
+    buffer.ignore(1);
+    if (!buffer.eof()) c = buffer.peek();
+  }
 
-   if (!buffer.eof() && c != '>') {
-      stringstream ss;
-      ss << "next character is " << c;
-      ss << "Error : parsing fasta file " << "Incorrect format " << ss.str() << std::endl;
-      throw MyException(ss.str());
-   }
+  if (!buffer.eof() && c != '>') {
+    stringstream ss;
+    ss << "next character is " << c;
+    ss << "Error : parsing fasta file " << "Incorrect format " << ss.str() << std::endl;
+    throw MyException(ss.str());
+  }
 
   buffer.getline(b, BUFFER_LEN);
   name = string(b+1);
@@ -667,39 +618,31 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   string temp;
 
   while (!buffer.eof() && (buffer.peek() != '>')) {
-
     buffer >> temp;
     for (string::iterator iter = temp.begin(); iter != temp.end(); iter++) {
-
-      if ( ((*iter >= 'A') && (*iter <= 'Z')) || (modifiedAA.find(*iter) != std::string::npos) )
-      {
-	buf << *iter;
-      }
-      else
-      {
-	ostringstream temp;
-	temp << "Error : parsing fasta file " << "Incorrect fasta sequence character " << *iter << std::endl;
-	throw MyException(temp.str());
+      if ( ((*iter >= 'A') && (*iter <= 'Z')) || (modifiedAA.find(*iter) != std::string::npos) ) {
+	      buf << *iter;
+      } else {
+      	ostringstream temp;
+	      temp << "Error : parsing fasta file " << "Incorrect fasta sequence character " << *iter << std::endl;
+	      throw MyException(temp.str());
       }
     }
 
     c = buffer.peek();
 
-    while (!buffer.eof() && (c == ' ' || c == '\n' || c == '\r'))
-    {
+    while (!buffer.eof() && (c == ' ' || c == '\n' || c == '\r')) {
       buffer.ignore(1);
       if (!buffer.eof()) c = buffer.peek();
     }
- }
-
+  }
   seq = string(buf.str());
 
   return;
 
 }
 
-double Reader::massDiff(double observedMass, double calculatedMass,unsigned int charge)
-{
+double Reader::massDiff(double observedMass, double calculatedMass,unsigned int charge) {
   assert(charge > 0);
   double dm = observedMass - calculatedMass;
   if (po->monoisotopic) {
@@ -715,8 +658,7 @@ double Reader::massDiff(double observedMass, double calculatedMass,unsigned int 
   return dm / charge;
 }
 
-bool Reader::checkPeptideFlanks(const std::string &pep)
-{
+bool Reader::checkPeptideFlanks(const std::string &pep) {
   assert(pep.size() >= 4 );
   if(pep.at(1) == '.' && pep.at(pep.size() - 2) == '.')
     return true;
@@ -724,77 +666,70 @@ bool Reader::checkPeptideFlanks(const std::string &pep)
     return false;
 }
 
-void Reader::initMassMap(bool useAvgMass)
-{
-  if (useAvgMass) /*avg masses*/
-    {
-      massMap_['h'] =  1.00794;
-      massMap_['o'] = 15.9994;
-      massMap_['G'] = 57.05192;
-      massMap_['A'] = 71.07880;
-      massMap_['S'] = 87.07820;
-      massMap_['P'] = 97.11668;
-      massMap_['V'] = 99.13256;
-      massMap_['T'] = 101.10508;
-      massMap_['C'] = 103.13880;
-      massMap_['L'] = 113.15944;
-      massMap_['I'] = 113.15944;
-      massMap_['N'] = 114.10384;
-      massMap_['D'] = 115.08860;
-      massMap_['Q'] = 128.13072;
-      massMap_['K'] = 128.17408;
-      massMap_['E'] = 129.11548;
-      massMap_['M'] = 131.19256;
-      massMap_['H'] = 137.14108;
-      massMap_['F'] = 147.17656;
-      massMap_['R'] = 156.18748;
-      massMap_['Y'] = 163.17596;
-      massMap_['W'] = 186.21320;
+void Reader::initMassMap(bool useAvgMass) {
+  if (useAvgMass) { // avg masses
+    massMap_['h'] =  1.00794;
+    massMap_['o'] = 15.9994;
+    massMap_['G'] = 57.05192;
+    massMap_['A'] = 71.07880;
+    massMap_['S'] = 87.07820;
+    massMap_['P'] = 97.11668;
+    massMap_['V'] = 99.13256;
+    massMap_['T'] = 101.10508;
+    massMap_['C'] = 103.13880;
+    massMap_['L'] = 113.15944;
+    massMap_['I'] = 113.15944;
+    massMap_['N'] = 114.10384;
+    massMap_['D'] = 115.08860;
+    massMap_['Q'] = 128.13072;
+    massMap_['K'] = 128.17408;
+    massMap_['E'] = 129.11548;
+    massMap_['M'] = 131.19256;
+    massMap_['H'] = 137.14108;
+    massMap_['F'] = 147.17656;
+    massMap_['R'] = 156.18748;
+    massMap_['Y'] = 163.17596;
+    massMap_['W'] = 186.21320;
 
-      massMap_['U'] = 150.0588;
-      massMap_['O'] = 237.301;
-      massMap_['X'] = massMap_['L'];  /* treat X as L or I for no good reason */
-      massMap_['B'] = (massMap_['N'] + massMap_['D']) / 2.0;  /* treat B as average of N and D */
-      massMap_['Z'] = (massMap_['Q'] + massMap_['E']) / 2.0;  /* treat Z as average of Q and E */
+    massMap_['U'] = 150.0588;
+    massMap_['O'] = 237.301;
+    massMap_['X'] = massMap_['L'];  /* treat X as L or I for no good reason */
+    massMap_['B'] = (massMap_['N'] + massMap_['D']) / 2.0;  /* treat B as average of N and D */
+    massMap_['Z'] = (massMap_['Q'] + massMap_['E']) / 2.0;  /* treat Z as average of Q and E */
+  } else { /* monoisotopic masses */
+    massMap_['h'] =  1.0078250;
+    massMap_['o'] = 15.9949146;
+    massMap_['A'] = 71.0371136;
+    massMap_['C'] = 103.0091854;
+    massMap_['D'] = 115.0269428;
+    massMap_['E'] = 129.0425928;
+    massMap_['F'] = 147.0684136;
+    massMap_['G'] = 57.0214636;
+    massMap_['H'] = 137.0589116;
+    massMap_['I'] = 113.0840636;
+    massMap_['K'] = 128.0949626;
+    massMap_['L'] = 113.0840636;
+    massMap_['M'] = 131.0404854;
+    massMap_['N'] = 114.0429272;
+    massMap_['P'] = 97.0527636;
+    massMap_['Q'] = 128.0585772;
+    massMap_['R'] = 156.1011106;
+    massMap_['S'] = 87.0320282;
+    massMap_['T'] = 101.0476782;
+    massMap_['U'] = 149.90419;
+    massMap_['V'] = 99.0684136;
+    massMap_['W'] = 186.07931;
+    massMap_['Y'] = 163.06333;
 
-    }
-  else /* monoisotopic masses */
-    {
-      massMap_['h'] =  1.0078250;
-      massMap_['o'] = 15.9949146;
-      massMap_['A'] = 71.0371136;
-      massMap_['C'] = 103.0091854;
-      massMap_['D'] = 115.0269428;
-      massMap_['E'] = 129.0425928;
-      massMap_['F'] = 147.0684136;
-      massMap_['G'] = 57.0214636;
-      massMap_['H'] = 137.0589116;
-      massMap_['I'] = 113.0840636;
-      massMap_['K'] = 128.0949626;
-      massMap_['L'] = 113.0840636;
-      massMap_['M'] = 131.0404854;
-      massMap_['N'] = 114.0429272;
-      massMap_['P'] = 97.0527636;
-      massMap_['Q'] = 128.0585772;
-      massMap_['R'] = 156.1011106;
-      massMap_['S'] = 87.0320282;
-      massMap_['T'] = 101.0476782;
-      massMap_['U'] = 149.90419;
-      massMap_['V'] = 99.0684136;
-      massMap_['W'] = 186.07931;
-      massMap_['Y'] = 163.06333;
-
-      massMap_['U'] = 150.9536;
-      massMap_['O'] = 237.147;
-      massMap_['X'] = massMap_['L'];  /* treat X as L or I for no good reason */
-      massMap_['B'] = (massMap_['N'] + massMap_['D']) / 2.0;  /* treat B as average of N and D */
-      massMap_['Z'] = (massMap_['Q'] + massMap_['E']) / 2.0;  /* treat Z as average of Q and E */
-
-    }
+    massMap_['U'] = 150.9536;
+    massMap_['O'] = 237.147;
+    massMap_['X'] = massMap_['L'];  /* treat X as L or I for no good reason */
+    massMap_['B'] = (massMap_['N'] + massMap_['D']) / 2.0;  /* treat B as average of N and D */
+    massMap_['Z'] = (massMap_['Q'] + massMap_['E']) / 2.0;  /* treat Z as average of Q and E */
+  }
 }
 
-void Reader::readRetentionTime(const std::string &filename)
-{
+void Reader::readRetentionTime(const std::string &filename) {
   MSReader r;
   Spectrum s;
   r.setFilter(MS2);
@@ -802,27 +737,18 @@ void Reader::readRetentionTime(const std::string &filename)
   strcpy(cstr, filename.c_str());
   // read first spectrum
   r.readFile(cstr, s);
-  while(s.getScanNumber() != 0)
-  {
+  while (s.getScanNumber() != 0) {
     // check whether an EZ line is available
-    if(s.sizeEZ() != 0)
-    {
+    if (s.sizeEZ() != 0) {
       // for each EZ line (each psm)
-      for(int i = 0; i<s.sizeEZ(); i++)
-      {
+      for(int i = 0; i<s.sizeEZ(); i++) {
         // save experimental mass and retention time
         scan2rt[s.getScanNumber()].push_back(s.atEZ(i).mh);
         scan2rt[s.getScanNumber()].push_back(s.atEZ(i).pRTime);
       }
-    }
-    // if no EZ line is available, check for an RTime lines
-    else if((double)s.getRTime() != 0)
-    {
+    } else if((double)s.getRTime() != 0) { // if no EZ line is available, check for an RTime lines
       scan2rt[s.getScanNumber()].push_back(s.getRTime());
-    }
-    // if neither EZ nor I lines are available
-    else
-    {
+    } else { // if neither EZ nor I lines are available
       delete[] cstr;
       ostringstream temp;
       temp << "Error : The ms2 in input file does not appear to contain retention time "
@@ -835,43 +761,34 @@ void Reader::readRetentionTime(const std::string &filename)
   delete[] cstr;
 }
 
-void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database)
-{
+void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database) {
   // for each spectra from the ms2 file
   typedef std::map<int, vector<double> > map_t;
-  BOOST_FOREACH(map_t::value_type& i, scan2rt)
-  {
+  BOOST_FOREACH (map_t::value_type& i, scan2rt) {
     // scan number
     int scanNr = i.first;
     // related retention times
     vector<double>* rTimes = &(i.second);
-    if(database->getFSS(scanNr).get()!=0)
-    {
+    if (database->getFSS(scanNr).get()!=0) {
       fragSpectrumScan fss = *(database->getFSS(scanNr));
       fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq = fss.peptideSpectrumMatch();
       // retention time to be stored
       double storeMe = 0;
       // if rTimes only contains one element
-      if(rTimes->size()==1)
-      {
+      if (rTimes->size()==1) {
         // take that as retention time
         storeMe = rTimes->at(0);
-      }
-      else
-      {
+      } else {
         // else, take retention time of psm that has observed mass closest to
         // theoretical mass (smallest massDiff)
         double massDiff = (std::numeric_limits<double>::max)(); // + infinity
-        for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i = psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i)
-	{
+        for (fragSpectrumScan::peptideSpectrumMatch_iterator psmIter_i = psmSeq.begin(); psmIter_i != psmSeq.end(); ++psmIter_i) {
           // skip decoy
-          if(psmIter_i->isDecoy() != true)
-	  {
+          if (psmIter_i->isDecoy() != true) {
             double cm = psmIter_i->calculatedMass();
             double em = psmIter_i->experimentalMass();
             // if a psm with observed mass closer to theoretical mass is found
-            if(abs(cm-em) < massDiff)
-	    {
+            if (abs(cm-em) < massDiff) {
               // update massDiff
               massDiff = abs(cm-em);
               // get corresponding retention time
@@ -879,8 +796,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
 
               // Loop over alternatives EZ-lines, choose the one with the smallest mass difference
               double altMassDiff = (std::numeric_limits<double>::max)();  // + infinity
-              for(; r<rTimes->end(); r=r+2)  // Loops over the EZ-line mh values (rounded to one or two decimals...)
-	      {
+              for(; r<rTimes->end(); r=r+2) { // Loops over the EZ-line mh values (rounded to one or two decimals...)
                 double rrr = *r;  //mass+h
                 double exm = psmIter_i->experimentalMass();  //actually masstocharge
                 //FIXME: as rrr is m+h and exm is m/z, this ugly fix loops through many charges

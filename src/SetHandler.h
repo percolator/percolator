@@ -27,7 +27,9 @@
 #include <string>
 #include <cctype>
 #include <locale>
+
 #include <boost/foreach.hpp>
+
 #include "ResultHolder.h"
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -35,6 +37,7 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "SanityCheck.h"
+
 using namespace std;
 
 class SetHandler {

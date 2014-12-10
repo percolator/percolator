@@ -105,37 +105,60 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   getline(dataStream, line); // line with feature names
   if (line.substr(0,5) == "<?xml") {
     ostringstream temp;
-    temp << "ERROR: Cannot read Tab delimited input from datafile " << dataFN << ".\n" << \
+    temp << "ERROR: Cannot read Tab delimited input from datafile " << dataFN << ".\n" << 
        "The input file seems to be in XML format, use the -k flag for XML input. " << endl;
     throw MyException(temp.str());
   }
   
-  std::string scanNrHeader;
-  bool hasScanNrColumn = true;
+  // Checking for optional headers "ScanNr", "ExpMass" and "CalcMass"
+  std::string optionalHeader;
+  std::vector<OptionalField> optionalFields;
+  
   iss.str(rtrim(line));
-  iss >> tmp >> tmp >> scanNrHeader; // read id, label and scannr of second row
-  std::transform(scanNrHeader.begin(), scanNrHeader.end(), scanNrHeader.begin(), ::tolower);
-  if (scanNrHeader != "scannr") {
-    hasScanNrColumn = false;
-    cerr << "\nWARNING: Tab delimited input does not contain ScanNr column,\n\
-         scan numbers will be assigned automatically.\n" << endl;
+  iss >> tmp >> tmp; // discard id, label
+  bool hasScannr = false;
+  while (iss.good()) {
+    iss >> optionalHeader;
+    // transform to lower case for case insensitive matching
+    std::transform(optionalHeader.begin(), optionalHeader.end(), 
+                   optionalHeader.begin(), ::tolower);
+    if (optionalHeader == "scannr") {
+      optionalFields.push_back(SCANNR);
+      hasScannr = true;
+    } else if (optionalHeader == "expmass") {
+      optionalFields.push_back(EXPMASS);
+    } else if (optionalHeader == "calcmass") {
+      optionalFields.push_back(CALCMASS);
+    } else {
+      break;
+    }
+  }
+  int optionalFieldCount = static_cast<int>(optionalFields.size());
+  
+  if (!hasScannr) {
+    cerr << "\nWARNING: Tab delimited input does not contain ScanNr column," <<
+            "\n         scan numbers will be assigned automatically.\n" << endl;
   }
   
+  // parse second/third line for default direction and feature count
   getline(dataStream, line);
   iss.str(rtrim(line));
   
   iss >> psmid >> tmp; // read id and label of second row
-  if (hasScanNrColumn) iss >> tmp; // read scannr of second row
+  for (int i = 1; i <= optionalFieldCount; ++i) 
+    iss >> tmp; // discard optional fields
   
   // check if first row contains the default weights
   bool hasInitialValueRow = false;
   std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
   if (psmid == "defaultdirection") { 
     hasInitialValueRow = true;
+    // read in third line for feature count
     getline(dataStream, line);
     iss.str(rtrim(line));
     iss >> tmp >> tmp; // remove id and label
-    if (hasScanNrColumn) iss >> tmp; // remove scannr
+    for (int i = 1; i <= optionalFieldCount; ++i) 
+      iss >> tmp; // discard optional fields
   }
   
   // count number of features from first PSM
@@ -156,12 +179,12 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   getline(dataStream, line); // save row with feature names for later parsing
   iss.str(rtrim(line));
   FeatureNames& featureNames = DataSet::getFeatureNames();
-  int skip = (DataSet::getCalcDoc() ? 2 : 0);
-  if (hasScanNrColumn) ++skip;
+  int skip = 2 + optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0);
   int numFeatLeft = static_cast<int>(numFeatures);
   while (iss.good()) {
     iss >> tmp;
-    if (skip-- <= -2 && numFeatLeft-- > 0) { // removes enumerator and label and, if present, scannr and DOC features
+    // removes enumerator, label and if present optional fields and DOC features
+    if (skip-- <= 0 && numFeatLeft-- > 0) { 
       featureNames.insertFeature(tmp);
     }
   }
@@ -177,14 +200,17 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     getline(dataStream, line);
     iss.str(rtrim(line));
     iss >> tmp >> tmp; // remove id and label
-    if (hasScanNrColumn) iss >> tmp; // remove scannr
+    for (int i = 1; i <= optionalFieldCount; ++i) 
+      iss >> tmp; // discard optional fields
     
     unsigned int ix = 0;
     while (iss.good()) {
       iss >> a;
       if (a != 0.0) hasDefaultValues = true;
       if (VERB > 2) {
-        std::cerr << "Initial direction for " << DataSet::getFeatureNames().getFeatureName(ix) << " is " << a << std::endl;
+        std::cerr << "Initial direction for " << 
+                     DataSet::getFeatureNames().getFeatureName(ix) << " is " << 
+                     a << std::endl;
       }
       init_values.push_back(a);
       ix++;
@@ -193,10 +219,8 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   }
   
   if (numFeatures < 1) {
-    dataStream.close();
     throw MyException("ERROR: Reading tab file, too few features present.");
   } else if (hasDefaultValues && init_values.size() > numFeatures) {
-    dataStream.close();
     throw MyException("ERROR: Reading tab file, too many default values present.");
   }
   
@@ -214,15 +238,15 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     iss.str(rtrim(line));
     iss >> psmid >> label;
     if (label == 1) {
-      targetSet->readPsm(dataStream, line, hasScanNrColumn, lineNr);
+      targetSet->readPsm(line, lineNr, optionalFields);
     } else if (label == -1) {
-      decoySet->readPsm(dataStream, line, hasScanNrColumn, lineNr);
+      decoySet->readPsm(line, lineNr, optionalFields);
     } else {
-      std::cerr << "Warning: the PSM with id " << psmid << " on line " << lineNr << " has a label not in {1,-1} and will be ignored." << std::endl;
+      std::cerr << "Warning: the PSM with id " << psmid << " on line " << 
+          lineNr << " has a label not in {1,-1} and will be ignored." << std::endl;
     }
     ++lineNr;
   }
-  dataStream.close();
   
   push_back_dataset(targetSet);
   push_back_dataset(decoySet);
