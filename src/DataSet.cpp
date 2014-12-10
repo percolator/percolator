@@ -134,7 +134,7 @@ double DataSet::isPngasef(const string& peptide) {
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
     default:  { throw MyException("ERROR : class DataSet has not been initiated\
-		to neither target nor decoy label\n");}
+    to neither target nor decoy label\n");}
   }
   return isPngasef( peptide, isDecoy);
 }
@@ -286,7 +286,7 @@ void DataSet::registerPsm(PSMDescription * myPsm) {
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
     default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
-		to neither target nor decoy label\n");}
+    to neither target nor decoy label\n");}
   }
   
   if (calcDOC) {

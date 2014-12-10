@@ -43,6 +43,14 @@
 #include "XMLInterface.h"
 #include "CrossValidation.h"
 
+/*
+* Main class that starts and controls the calculations.
+*
+* In addition to the calculation Caller also handles command line
+* initialization, parsing input parameters, handling output of the
+* calculation results.
+* 
+*/
 class Caller {
   public:
     enum SetHandlerType {

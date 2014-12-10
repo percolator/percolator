@@ -21,22 +21,22 @@
 #include "DescriptionOfCorrect.h"
 
 PSMDescription::PSMDescription() :
-  q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
+      q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
       retentionTime(0.), predictedTime(0.), massDiff(0.), pI(0.), 
       expMass(0.), calcMass(0.), scan(0),
       id(""), peptide(""), parentFragment(NULL) {
 }
 
 PSMDescription::PSMDescription(const string pep, const double retTime) :
-  q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
+      q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
       retentionTime(retTime), predictedTime(0.), massDiff(0.), pI(0.),
       expMass(0.), calcMass(0.), scan(0), id(""), peptide(pep), parentFragment(NULL) {
 }
 
 PSMDescription::PSMDescription(double ort, double prt) :
-	q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
-	      retentionTime(ort), predictedTime(prt), massDiff(0.), pI(0.),
-	      expMass(0.), calcMass(0.), scan(0), id(""), peptide(""), parentFragment(NULL) {
+      q(0.), pep(0.), features(NULL), retentionFeatures(NULL),
+      retentionTime(ort), predictedTime(prt), massDiff(0.), pI(0.),
+      expMass(0.), calcMass(0.), scan(0), id(""), peptide(""), parentFragment(NULL) {
 }
 
 PSMDescription::~PSMDescription() {
@@ -111,7 +111,7 @@ void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, do
         if (psm == psms.begin()) {
           continue;
         }
-	      vector<PSMDescription*>::reverse_iterator rpsm(psm);
+        vector<PSMDescription*>::reverse_iterator rpsm(psm);
         (*psm)->checkFragmentPeptides(rpsm, psms.rend());
       }
     } else {
@@ -131,7 +131,7 @@ void PSMDescription::setRetentionTime(vector<PSMDescription*>& psms, map<int, do
         if (psm == psms.begin()) {
           continue;
         }
-	      vector<PSMDescription*>::reverse_iterator rpsm(psm);
+        vector<PSMDescription*>::reverse_iterator rpsm(psm);
         (*psm)->checkFragmentPeptides(rpsm, psms.rend());
       }
     }

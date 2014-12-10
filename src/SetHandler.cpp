@@ -276,7 +276,6 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   BOOST_FOREACH (DataSet * subset, subsets) {
     subset->writeTabData(dataStream);
   }
-  dataStream.close();
 }
 
 std::string& SetHandler::rtrim(std::string &s) {

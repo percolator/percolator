@@ -17,16 +17,9 @@
 
 #include "Interface.h"
 
+Interface::Interface() : xmlOutput(false), outputFN("") { }
 
-Interface::Interface() : xmlOutput(false)
-{
-
-}
-
-Interface::~Interface()
-{
-
-}
+Interface::~Interface() { }
 
 string Interface::extendedGreeter() {
   ostringstream oss;
@@ -73,6 +66,11 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
       "outputXML",
       "save output in the (deprecated) pin-xml format file",
       "filename");
+  cmd.defineOption("K",
+      "outputXMLstdout",
+      "output to stdout in the (deprecated) pin-xml format file",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("m",
       "matches",
       "Maximal number of matches to take in consideration per spectrum",
@@ -162,13 +160,13 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     cerr << extendedGreeter();
   }
 
-  if (cmd.optionSet("o")) {
-    outputFN = cmd.options["o"];
-  }
+  if (cmd.optionSet("o")) outputFN = cmd.options["o"];
   if (cmd.optionSet("k")) {
     xmlOutput = true;
     outputFN = cmd.options["k"];
   }
+  if (cmd.optionSet("K")) xmlOutput = true;
+  
   //option e has been changed, see above
   if (cmd.optionSet("e")) {
     if( cmd.options["e"] == "no_enzyme")
@@ -199,25 +197,16 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
       cerr << "Did not recognize choice of enzyme, uses Trypsin" << endl;
       Enzyme::setEnzyme(Enzyme::TRYPSIN);}
   }
-  if (cmd.optionSet("N")) {
-    parseOptions.pngasef=true;
-  }
-  if (cmd.optionSet("a")) {
-    parseOptions.calcAAFrequencies=true;
-  }
-  if (cmd.optionSet("b")) {
-    parseOptions.calcPTMs=true;
-  }
+  if (cmd.optionSet("N")) parseOptions.pngasef = true;
+  if (cmd.optionSet("a")) parseOptions.calcAAFrequencies = true;
+  if (cmd.optionSet("b")) parseOptions.calcPTMs = true;
   if (cmd.optionSet("m")) {
     int m = cmd.getInt("m", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
   }
-  if (cmd.optionSet("2")) {
-    spectrumFile = cmd.options["2"];
-  }
-  if (cmd.optionSet("M")) {
-    parseOptions.monoisotopic = true;
-  }
+  if (cmd.optionSet("2")) spectrumFile = cmd.options["2"];
+  if (cmd.optionSet("M")) parseOptions.monoisotopic = true;
+  
   if (cmd.optionSet("p")) {
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
@@ -230,13 +219,11 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     }
   }
   
-  if (cmd.optionSet("P")) 
-  {
+  if (cmd.optionSet("P")) {
     parseOptions.reversedFeaturePattern = cmd.options["P"];
   }
   
-  if (cmd.optionSet("F"))
-  {
+  if (cmd.optionSet("F")) {
     //NOTE I do not like this, I should make two parameters, one for target db and another one for decoy db
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["F"], boost::is_any_of(","));
@@ -246,55 +233,30 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     parseOptions.readProteins = true;
   }
   
-  if (cmd.optionSet("c"))
-  {
-    parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
-  }
+  if (cmd.optionSet("c")) parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
+  if (cmd.optionSet("l")) parseOptions.peptidelength = cmd.getInt("l",4,20);
+  if (cmd.optionSet("t")) parseOptions.maxpeplength = cmd.getInt("l",6,100);
+  if (cmd.optionSet("w")) parseOptions.minmass = cmd.getInt("l",100,1000);
+  if (cmd.optionSet("x")) parseOptions.maxmass = cmd.getInt("l",100,10000);
   
-  if (cmd.optionSet("l"))
-  {
-    parseOptions.peptidelength = cmd.getInt("l",4,20);
-  }
-  
-  if (cmd.optionSet("t"))
-  {
-    parseOptions.maxpeplength = cmd.getInt("l",6,100);
-  }
-  
-  if (cmd.optionSet("w"))
-  {
-    parseOptions.minmass = cmd.getInt("l",100,1000);
-  }
-  
-  if (cmd.optionSet("x"))
-  {
-    parseOptions.maxmass = cmd.getInt("l",100,10000);
-  }
-  
-  if (cmd.arguments.size() > 0)
-  {
+  if (cmd.arguments.size() > 0) {
     targetFN = cmd.arguments[0];
   }
-  if (cmd.arguments.size() > 1) 
-  {
+  
+  if (cmd.arguments.size() > 1) {
     decoyFN = cmd.arguments[1];
   }
-  if(targetFN == "" && decoyFN == "")
-  {
+  
+  if (targetFN == "" && decoyFN == "") {
     std::cerr << "Error: one of the input files is missing."; 
     std::cerr << "\nInvoke with -h option for help\n";
     return 0; 
-  }
-  else if(targetFN != "" && decoyFN == "")
-  {
+  } else if(targetFN != "" && decoyFN == "") {
     parseOptions.iscombined = true;
-    if(parseOptions.reversedFeaturePattern == "")
-    {
+    if(parseOptions.reversedFeaturePattern == "") {
       parseOptions.reversedFeaturePattern = "random";
     }
-  }
-  else
-  {
+  } else {
     parseOptions.iscombined = false;
   }
   

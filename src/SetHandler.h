@@ -40,6 +40,11 @@
 
 using namespace std;
 
+/*
+* SetHandler is a class that provides functionality to handle training,
+* testing, Xval data sets, reads/writes from/to a file, prints them.
+*
+*/
 class SetHandler {
   
   protected:

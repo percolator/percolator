@@ -12,18 +12,16 @@ Sequest2Pin::~Sequest2Pin() {
 
 
 int Sequest2Pin::run() {
-  
   // Content of sqt files is merged: preparing to write it to xml file
-  
   ofstream outputStream;
   outputStream.open(outputFN.c_str());
-  if(!outputStream && outputFN != ""){
+  if (!outputStream && outputFN != ""){
     cerr << "Error: invalid path to output file: " << outputFN << endl;
     cerr << "Please invoke sqt2pin with a valid -o option" << endl;
     return 0;
   }
   
-  //initialize reader
+  // initialize reader
   parseOptions.targetFN = targetFN;
   parseOptions.decoyFN = decoyFN;
   parseOptions.call = call;
@@ -36,7 +34,7 @@ int Sequest2Pin::run() {
   outputStream.close();
   
   if (VERB>2)
-    cerr << "\nAll the input files have been successfully processed"<< endl;
+    cerr << "\nAll input files have been successfully processed"<< endl;
 
   return true;
 }
@@ -45,19 +43,14 @@ int main(int argc, char** argv) {
   Sequest2Pin* pSequest2Pin = new Sequest2Pin();
   int retVal = EXIT_FAILURE;
   
-  try
-  {
+  try {
     if (pSequest2Pin->parseOpt(argc, argv, Sequest2Pin::Usage())) {
       if(pSequest2Pin->run()) retVal = EXIT_SUCCESS;
     }
-  }
-  catch (const std::exception& e) 
-  {
+  } catch (const std::exception& e) {
     std::cerr << e.what() << endl;
     retVal = EXIT_FAILURE;
-  }
-  catch(...)
-  {
+  } catch(...) {
     std::cerr << "Unknown exception, contact the developer.." << std::endl;
     retVal = EXIT_FAILURE;
   }  

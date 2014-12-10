@@ -65,7 +65,14 @@ struct RetrieveValue
   }
 };
 
-
+/*
+* ProteinProbEstimator is a class that computes probabilities and statistics based
+* on provided proteins from the set of scored peptides from percolator.
+*
+* Here are some usefull abbreviations:
+* Mayu - a software package for the analysis of (large) mass
+*           spectrometry-based shotgun proteomics data sets.
+*/
 class ProteinProbEstimator {
   
   public:
@@ -108,7 +115,7 @@ class ProteinProbEstimator {
     
     
     ProteinProbEstimator(bool tiesAsOneProtein = false, bool usePi0 = false, 
-			  bool outputEmpirQVal = false, std::string decoyPattern = "random");
+        bool outputEmpirQVal = false, std::string decoyPattern = "random");
     
     virtual ~ProteinProbEstimator();
     
@@ -123,7 +130,7 @@ class ProteinProbEstimator {
     
     /** print out the tab delimited list of proteins to std::cerr or the screen */
     void printOut(const std::string &proteinFN, 
-		   const std::string &proteinDecoyFN);
+       const std::string &proteinDecoyFN);
     
     /** initialize the estimation of the q values and p values **/
     void computeStatistics();
@@ -176,7 +183,7 @@ class ProteinProbEstimator {
     /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
      * this function is used to estimate the protein FDR**/
     void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
-				  std::set<std::string> &numberFP);
+          std::set<std::string> &numberFP);
        
     /** estimate prior probabilities for peptide level **/
     double estimatePriors();

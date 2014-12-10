@@ -24,6 +24,13 @@
 using namespace std;
 #include "Enzyme.h"
 
+/*
+* PSMDescription
+*
+* Here are some usefull abbreviations:
+* PSM - Peptide Spectrum Match
+*
+*/
 class PSMDescription {
   
   public:

@@ -87,10 +87,10 @@ int GetDecimalPlaces(double dbVal)
 
 
 FidoInterface::FidoInterface(double __alpha,double __beta,double __gamma,bool __nogroupProteins, 
-			      bool __noseparate, bool __noprune, unsigned __depth,bool __reduceTree, 
-			      bool __truncate, double mse_threshold,bool tiesAsOneProtein, bool usePi0, 
-			      bool outputEmpirQVal, std::string decoyPattern,bool __trivialGrouping)
-			      :ProteinProbEstimator(tiesAsOneProtein,usePi0,outputEmpirQVal,decoyPattern)
+            bool __noseparate, bool __noprune, unsigned __depth,bool __reduceTree, 
+            bool __truncate, double mse_threshold,bool tiesAsOneProtein, bool usePi0, 
+            bool outputEmpirQVal, std::string decoyPattern,bool __trivialGrouping)
+            :ProteinProbEstimator(tiesAsOneProtein,usePi0,outputEmpirQVal,decoyPattern)
 {
   alpha = __alpha;
   beta = __beta;
@@ -364,33 +364,33 @@ void FidoInterface::gridSearch()
       for (unsigned int k = 0; k < beta_search.size(); k++)
       {
 
-	double beta_local = beta_search[k];
-	
-	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
-	proteinGraph->getProteinProbs();
-	proteinGraph->getProteinProbsAndNames(names,probs);
-	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-	getROC_AUC(names,probs,roc);
-	getFDR_MSE(estq,empq,mse);
-	
-	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
-	
-	if(VERB > 2)
-	{
-	  std::cerr.precision(10);
-	  std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
-	  std::cerr.unsetf(std::ios::floatfield);
-	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
-	  std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
-	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
-	}  
-	if (current_objective > best_objective)
-	{
-	  best_objective = current_objective;
-	  gamma_best = gamma_local;
-	  alpha_best = alpha_local;
-	  beta_best = beta_local;
-	}
+  double beta_local = beta_search[k];
+  
+  proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
+  proteinGraph->getProteinProbs();
+  proteinGraph->getProteinProbsAndNames(names,probs);
+  getEstimated_and_Empirical_FDR(names,probs,empq,estq);
+  getROC_AUC(names,probs,roc);
+  getFDR_MSE(estq,empq,mse);
+  
+  current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
+  
+  if(VERB > 2)
+  {
+    std::cerr.precision(10);
+    std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
+    std::cerr.unsetf(std::ios::floatfield);
+    std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
+    std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
+    std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
+  }  
+  if (current_objective > best_objective)
+  {
+    best_objective = current_objective;
+    gamma_best = gamma_local;
+    alpha_best = alpha_local;
+    beta_best = beta_local;
+  }
 
       }
     }
@@ -458,34 +458,34 @@ void FidoInterface::gridSearchOptimize()
       for (double k = log10(alpha_init); k <= Round(log10(alpha_limit),2); k+=alpha_step)
       {
        
-	double alpha_local = pow(10,k);
-	
-	proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
-	proteinGraph->getProteinProbs();
-	proteinGraph->getProteinProbsAndNames(names,probs);
-	getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-	getROC_AUC(names,probs,roc);
-	getFDR_MSE(estq,empq,mse);
-	
-	current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
-	
-	if(VERB > 2)
-	{
-	  std::cerr.precision(10);
-	  std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
-	  std::cerr.unsetf(std::ios::floatfield);
-	  std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
-	  std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
-	  std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
-	  
-	}    
-	if (current_objective > best_objective)
-	{
-	  best_objective = current_objective;
-	  gamma_best = gamma_local;
-	  alpha_best = alpha_local;
-	  beta_best = beta_local;
-	}
+  double alpha_local = pow(10,k);
+  
+  proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
+  proteinGraph->getProteinProbs();
+  proteinGraph->getProteinProbsAndNames(names,probs);
+  getEstimated_and_Empirical_FDR(names,probs,empq,estq);
+  getROC_AUC(names,probs,roc);
+  getFDR_MSE(estq,empq,mse);
+  
+  current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
+  
+  if(VERB > 2)
+  {
+    std::cerr.precision(10);
+    std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
+    std::cerr.unsetf(std::ios::floatfield);
+    std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
+    std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
+    std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
+    
+  }    
+  if (current_objective > best_objective)
+  {
+    best_objective = current_objective;
+    gamma_best = gamma_local;
+    alpha_best = alpha_local;
+    beta_best = beta_local;
+  }
       }
     }
   }
@@ -498,7 +498,7 @@ void FidoInterface::gridSearchOptimize()
 
 
 void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
-					  const std::vector<double> &probabilities, double &auc)
+            const std::vector<double> &probabilities, double &auc)
 {
   /* Estimate ROC auc1 area as : (So - no(no + 1) / 2) / (no*n1)
    * where no = number of target
@@ -543,8 +543,8 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
       //if ties activated count groups as 1 protein
       if(tiesAsOneProtein)
       {
-	if(tpChange) tpChange = 1;
-	if(fpChange) fpChange = 1;
+  if(tpChange) tpChange = 1;
+  if(fpChange) fpChange = 1;
       }
 
       tp += tpChange;
@@ -552,10 +552,10 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
       //should only do it when fp changes and either of them is != 0
       if(prev_prob != -1 && fp != 0 && tp != 0 && fp != prev_fp)
       {
-	double trapezoid = trapezoid_area(fp,prev_fp,tp,prev_tp);
-	prev_fp = fp;
-	prev_tp = tp;
-	auc += trapezoid;
+  double trapezoid = trapezoid_area(fp,prev_fp,tp,prev_tp);
+  prev_fp = fp;
+  prev_tp = tp;
+  auc += trapezoid;
       }   
       
       prev_prob = prob;
@@ -577,9 +577,9 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
 
 
 void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names,
-							     const std::vector<double> &probabilities,
-							     std::vector<double> &empq,
-							     std::vector<double> &estq) 
+                   const std::vector<double> &probabilities,
+                   std::vector<double> &empq,
+                   std::vector<double> &estq) 
 {
   empq.clear();
   estq.clear();
@@ -598,93 +598,93 @@ void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector
 
       if(tiesAsOneProtein)
       {
-	unsigned tpChange = countTargets(names[k]);
-	unsigned fpChange = names[k].size() - tpChange;
-	
-	fpCount += (double)fpChange;
-	tpCount += (double)tpChange;
-	
-	if(countDecoyQvalue)
-	{
-	  totalFDR += (prob) * (double)(tpChange + fpChange);
-	  estFDR = totalFDR / (tpCount + fpCount);
-	}
-	else
-	{
-	  totalFDR += (prob) * (double)(tpChange);
-	  estFDR = totalFDR / (tpCount);  
-	}
+  unsigned tpChange = countTargets(names[k]);
+  unsigned fpChange = names[k].size() - tpChange;
+  
+  fpCount += (double)fpChange;
+  tpCount += (double)tpChange;
+  
+  if(countDecoyQvalue)
+  {
+    totalFDR += (prob) * (double)(tpChange + fpChange);
+    estFDR = totalFDR / (tpCount + fpCount);
+  }
+  else
+  {
+    totalFDR += (prob) * (double)(tpChange);
+    estFDR = totalFDR / (tpCount);  
+  }
 
-	if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
-	
-	if(empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
-	if(estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
-	    
-	if(estFDR < previousEstQ) estFDR = previousEstQ;
-	else previousEstQ = estFDR;
-	    
-	if(empFDR < previousEmpQ) empFDR = previousEmpQ;
-	else previousEmpQ = empFDR;
-	
-	if(updateRocN)
-	{ 
-	  rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
-	}
-	
-	estq.push_back(estFDR);
-	empq.push_back(empFDR);
+  if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
+  
+  if(empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
+  if(estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
+      
+  if(estFDR < previousEstQ) estFDR = previousEstQ;
+  else previousEstQ = estFDR;
+      
+  if(empFDR < previousEmpQ) empFDR = previousEmpQ;
+  else previousEmpQ = empFDR;
+  
+  if(updateRocN)
+  { 
+    rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
+  }
+  
+  estq.push_back(estFDR);
+  empq.push_back(empFDR);
 
       }
       else
       {
-	for(unsigned i=0; i<names[k].size(); i++)
-	{
-	    std::string protein = names[k][i];
-	    
-	    bool isdecoy = isDecoy(protein);
-	    
-	    if(isdecoy)
-	    {
-	      fpCount++;
-	    }
-	    else
-	    {
-	      tpCount++;
-	    }
-	    
-	    if(countDecoyQvalue)
-	    {
-	      totalFDR += (prob);
-	      estFDR = totalFDR / (tpCount + fpCount);
-	    }
-	    else if(tpCount)
-	    {
-	      if(!((bool)isdecoy)) totalFDR += (prob);
-	      estFDR = totalFDR / (tpCount);
-	    }
-	    
-	    if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
-	    
-	    if(empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
-	    if(estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
-	    
-	    if(estFDR < previousEstQ) estFDR = previousEstQ;
-	    else previousEstQ = estFDR;
-	    
-	    if(empFDR < previousEmpQ) empFDR = previousEmpQ;
-	    else previousEmpQ = empFDR;
-	    
-	    if(updateRocN)
-	    {
-	      rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
-	    }
-	    
-	    estq.push_back(estFDR);
-	    empq.push_back(empFDR);
-	    
-	 }
+  for(unsigned i=0; i<names[k].size(); i++)
+  {
+      std::string protein = names[k][i];
+      
+      bool isdecoy = isDecoy(protein);
+      
+      if(isdecoy)
+      {
+        fpCount++;
       }
-	
+      else
+      {
+        tpCount++;
+      }
+      
+      if(countDecoyQvalue)
+      {
+        totalFDR += (prob);
+        estFDR = totalFDR / (tpCount + fpCount);
+      }
+      else if(tpCount)
+      {
+        if(!((bool)isdecoy)) totalFDR += (prob);
+        estFDR = totalFDR / (tpCount);
+      }
+      
+      if(tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
+      
+      if(empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
+      if(estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
+      
+      if(estFDR < previousEstQ) estFDR = previousEstQ;
+      else previousEstQ = estFDR;
+      
+      if(empFDR < previousEmpQ) empFDR = previousEmpQ;
+      else previousEmpQ = empFDR;
+      
+      if(updateRocN)
+      {
+        rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
+      }
+      
+      estq.push_back(estFDR);
+      empq.push_back(empFDR);
+      
+   }
+      }
+  
     }
    
   return;
@@ -692,7 +692,7 @@ void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector
 
 
 void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR, 
-				 const std::vector<double> &empFDR,double &mse)
+         const std::vector<double> &empFDR,double &mse)
 {
   /* Estimate MSE mse1 as : 1/N multiply by the SUM from k=1 to N of (estFDR(k) - empFDR(k))^2 */
   

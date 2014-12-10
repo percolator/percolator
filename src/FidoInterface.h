@@ -21,6 +21,19 @@
 #include "GroupPowerBigraph.h"
 #include <boost/assign/list_of.hpp>
 
+/*
+* FidoInterface is a class that computes probabilities and statistics based
+* on provided proteins from the set of scored peptides from percolator. It
+* uses number of additional parameters to setup the calculations.
+*
+* Here are some usefull abbreviations:
+* AUC - Area Under Curve
+* FDR - False Discovery Rate
+* FIDO - ?
+* MSE - Mean Squared Error
+* PSM - ?
+* ROC - Receiver Operating Characteristic
+*/
 class FidoInterface : public ProteinProbEstimator
 {
       
@@ -61,9 +74,9 @@ class FidoInterface : public ProteinProbEstimator
   public:
 
     FidoInterface(double __alpha = -1,double __beta = -1,double __gamma = -1,bool __nogroupProteins = false, 
-		   bool __noseparate = false, bool __noprune = false, unsigned __depth = 0,bool __reduceTree = false, 
-		   bool __truncate = true, double mse_threshold = 0.1,bool tiesAsOneProtein = false, bool usePi0 = false, 
-		   bool outputEmpirQVal = false, std::string decoyPattern = "random",bool trivialGrouping = false);
+       bool __noseparate = false, bool __noprune = false, unsigned __depth = 0,bool __reduceTree = false, 
+       bool __truncate = true, double mse_threshold = 0.1,bool tiesAsOneProtein = false, bool usePi0 = false, 
+       bool outputEmpirQVal = false, std::string decoyPattern = "random",bool trivialGrouping = false);
 
     virtual ~FidoInterface();
     
@@ -83,12 +96,12 @@ class FidoInterface : public ProteinProbEstimator
     /** fido extra functions to do the grid search for parameters alpha,betha and gamma **/
 
     void getROC_AUC(const std::vector<std::vector<string> > &names,
-		     const std::vector<double> &probabilities, double &auc);
+         const std::vector<double> &probabilities, double &auc);
     
     void getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names,
-					  const std::vector<double> &probabilities,
-					  std::vector<double> &empq,
-					  std::vector<double> &estq);
+            const std::vector<double> &probabilities,
+            std::vector<double> &empq,
+            std::vector<double> &estq);
     
     void getFDR_MSE(const std::vector<double> &estFDR, const std::vector<double> &empFDR,double &mse);
     

@@ -26,7 +26,7 @@
 #include <boost/filesystem.hpp>
 
 using namespace std;
-      
+
 Caller::Caller() :
         pNorm(NULL), pCheck(NULL), protEstimator(NULL),
         forwardTabInputFN(""), tabFN(""), psmResultFN(""), 
@@ -50,7 +50,7 @@ Caller::~Caller() {
     delete protEstimator;
   }
   protEstimator = NULL;
-  if(readStdIn) {
+  if (readStdIn) {
     boost::filesystem::remove_all(xmlInputDir);
     delete xmlInputDir;
   }
@@ -107,8 +107,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "xmloutput",
       "path to file in xml-output format (pout)",
       "filename");
-  cmd.defineOption("e",
+  cmd.defineOption("",
       "stdinput",
+      "read tab-input format (pin) from standard input",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("e",
+      "stdinput-xml",
       "read xml-input format (pin) from standard input",
       "",
       TRUE_IF_SET);
@@ -260,24 +265,24 @@ bool Caller::parseOptions(int argc, char **argv) {
       "", 
       TRUE_IF_SET);
   cmd.defineOption("q",
-      "empirical-protein-q", 		   
+      "empirical-protein-q",        
       "output empirical q-values and p-values (from target-decoy analysis) (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
   cmd.defineOption("N",
-      "fido-no-group-proteins", 		   
+      "fido-no-group-proteins",        
       "disactivates the grouping of proteins with similar connectivity, \
        for example if proteins P1 and P2 have the same peptides matching both of them, P1 and P2 will not be grouped as one protein \
        (Only valid if option -A is active).",
       "",
       TRUE_IF_SET);
   cmd.defineOption("E",
-      "fido-no-separate-proteins", 		   
+      "fido-no-separate-proteins",        
       "Proteins graph will not be separated in sub-graphs (Only valid if option -A is active).",
       "",
       TRUE_IF_SET); 
   cmd.defineOption("C",
-      "fido-no-prune-proteins", 		   
+      "fido-no-prune-proteins",        
       "it does not prune peptides with a very low score (~0.0) which means that if a peptide with a very low score is matching two proteins,\
        when we prune the peptide,it will be duplicated to generate two new protein groups (Only valid if option -A is active).",
       "",
@@ -422,31 +427,61 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("L"))  decoyProteinResultFN = cmd.options["L"];
     
     protEstimator = new FidoInterface(fido_alpha,fido_beta,fido_gamma,fido_nogroupProteins,fido_noseparate,
-				      fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
-				      tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
+              fido_noprune,fido_depth,fido_reduceTree,fido_truncate,fido_mse_threshold,
+              tiesAsOneProtein,usePi0,outputEmpirQVal,decoy_prefix,fido_trivialGrouping);
+  }
+  
+  if (cmd.optionSet("k")) {
+    tabInput = false;
+    xmlInterface.setXmlInputFN(cmd.options["k"]);
   }
   
   if (cmd.optionSet("e")) {
-
     readStdIn = true;
+    tabInput = false;
     string str = "";
-    try
-    {
+    try {
       boost::filesystem::path ph = boost::filesystem::unique_path();
       boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
       boost::filesystem::path file("pin-tmp.xml");
       xmlInterface.setXmlInputFN(std::string((dir / file).string())); 
-      str =  dir.string();
+      str = dir.string();
       xmlInputDir = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), xmlInputDir);
       xmlInputDir[str.size()] = '\0';
       if (boost::filesystem::is_directory(dir)) {
-	      boost::filesystem::remove_all(dir);
+        boost::filesystem::remove_all(dir);
       }
       boost::filesystem::create_directory(dir);
-    } 
-    catch (boost::filesystem::filesystem_error &e)
-    {
+    } catch (boost::filesystem::filesystem_error &e) {
+      std::cerr << e.what() << std::endl;
+      return 0;
+    }
+  }
+  
+  if (cmd.optionSet("j")) {
+    tabInput = true;
+    forwardTabInputFN = cmd.options["j"];
+  }
+  
+  if (cmd.optionSet("")) {
+    readStdIn = true;
+    tabInput = true;
+    string str = "";
+    try {
+      boost::filesystem::path ph = boost::filesystem::unique_path();
+      boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+      boost::filesystem::path file("pin-tmp.tab");
+      forwardTabInputFN = std::string((dir / file).string()); 
+      str = dir.string();
+      xmlInputDir = new char[str.size() + 1];
+      std::copy(str.begin(), str.end(), xmlInputDir);
+      xmlInputDir[str.size()] = '\0';
+      if (boost::filesystem::is_directory(dir)) {
+        boost::filesystem::remove_all(dir);
+      }
+      boost::filesystem::create_directory(dir);
+    } catch (boost::filesystem::filesystem_error &e) {
       std::cerr << e.what() << std::endl;
       return 0;
     }
@@ -460,22 +495,15 @@ bool Caller::parseOptions(int argc, char **argv) {
     if(crossValidation.getSelectedCpos() == 0)
     {
       std::cerr << "Warning : the positive penalty(cpos) is 0, therefore both the "  
-		 << "positive and negative penalties are going "
-		 << "to be cross-validated. The option --Cneg has to be used together "
-		 << "with the option --Cpos" << std::endl;
+               << "positive and negative penalties are going "
+               << "to be cross-validated. The option --Cneg has to be used together "
+               << "with the option --Cpos" << std::endl;
     }
   }
   if (cmd.optionSet("J")) {
     tabFN = cmd.options["J"];
   }
-  if (cmd.optionSet("j")) {
-    tabInput = true;
-    forwardTabInputFN = cmd.options["j"];
-  }
-  if (cmd.optionSet("k")) {
-    tabInput = false;
-    xmlInterface.setXmlInputFN(cmd.options["k"]);
-  }
+  
   if (cmd.optionSet("w")) {
     weightFN = cmd.options["w"];
   }
@@ -533,7 +561,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
-    if(!cmd.optionSet("j") && !cmd.optionSet("k") && !cmd.optionSet("e") ){ // unless the input comes from -j, -k or -e option
+    if(!cmd.optionSet("j") && !cmd.optionSet("k") && !cmd.optionSet("e") && !cmd.optionSet("")){ // unless the input comes from -j, -k or -e option
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
       return 0; // ...error
@@ -543,12 +571,12 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.arguments.size() == 1) {
     tabInput = true;
     forwardTabInputFN = cmd.arguments[0]; // then it's the pin input
-    if(cmd.optionSet("k")){ // and if the tab input is also present
+    if (cmd.optionSet("k") || cmd.optionSet("j")){ // and if the tab input is also present
       cerr << "Error: use one of either pin-xml or tab-delimited input format.";
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error
     }
-    if(cmd.optionSet("e")){ // if stdin pin file is present
+    if (cmd.optionSet("e") || cmd.optionSet("")){ // if stdin pin file is present
       cerr << "Error: the pin file has already been given as stdinput argument.";
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error
@@ -775,13 +803,18 @@ int Caller::run() {
     cerr << extendedGreeter();
   }
   // populate tmp input file with cin information if option is enabled
-  if(readStdIn){
+  if (readStdIn) {
     ofstream tmpInputFile;
-    tmpInputFile.open(xmlInterface.getXmlInputFN().c_str());
-    while(cin) {
-      char buffer[1000];
-      cin.getline(buffer, 1000);
-      tmpInputFile << buffer << endl;
+    if (tabInput) {
+      tmpInputFile.open(forwardTabInputFN.c_str());
+    } else {
+      tmpInputFile.open(xmlInterface.getXmlInputFN().c_str());
+    }
+    while (cin) {
+      std::string buffer;
+      getline(cin, buffer);
+      if (buffer.size() > 0)
+        tmpInputFile << buffer << endl;
     }
     tmpInputFile.close();
   }
@@ -826,7 +859,7 @@ int Caller::run() {
   }
   
   // calculate unique peptides level probabilities WOTE
-  if(reportUniquePeptides){
+  if (reportUniquePeptides){
     calculatePSMProb(true, &fullset, procStart, procStartClock, diff, target_decoy_competition);
     if (xmlInterface.getXmlOutputFN().size() > 0){
       xmlInterface.writeXML_Peptides(fullset);
