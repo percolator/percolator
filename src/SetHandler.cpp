@@ -20,11 +20,11 @@
 SetHandler::SetHandler() {}
 
 SetHandler::~SetHandler() {
-  BOOST_FOREACH (DataSet * subset, subsets) {
-    if (subset != NULL) {
-      delete subset;
+  for (unsigned int ix = 0; ix < subsets.size(); ix++) {
+    if (subsets[ix] != NULL) {
+      delete subsets[ix];
     }
-    subset = NULL;
+    subsets[ix] = NULL;
   }
 }
 

@@ -195,7 +195,7 @@ void PSMDescription::unnormalizeRetentionTimes(vector<PSMDescription> & psms) {
 
 void PSMDescription::printProteins(std::ostream& out) {
   std::set<std::string>::const_iterator it = proteinIds.begin();
-  for ( ; it != proteinIds.begin(); ++it) {
+  for ( ; it != proteinIds.end(); ++it) {
     out << '\t' << *it;
   }
 }
