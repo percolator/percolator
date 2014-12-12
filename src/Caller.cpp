@@ -50,7 +50,7 @@ Caller::~Caller() {
     delete protEstimator;
   }
   protEstimator = NULL;
-  if (readStdIn) {
+  if (readStdIn && !tabInput) {
     boost::filesystem::remove_all(xmlInputDir);
     delete xmlInputDir;
   }
@@ -444,7 +444,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       boost::filesystem::path ph = boost::filesystem::unique_path();
       boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
       boost::filesystem::path file("pin-tmp.xml");
-      xmlInterface.setXmlInputFN(std::string((dir / file).string())); 
+      //xmlInterface.setXmlInputFN(std::string((dir / file).string())); 
       str = dir.string();
       xmlInputDir = new char[str.size() + 1];
       std::copy(str.begin(), str.end(), xmlInputDir);
@@ -467,24 +467,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("")) {
     readStdIn = true;
     tabInput = true;
-    string str = "";
-    try {
-      boost::filesystem::path ph = boost::filesystem::unique_path();
-      boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
-      boost::filesystem::path file("pin-tmp.tab");
-      forwardTabInputFN = std::string((dir / file).string()); 
-      str = dir.string();
-      xmlInputDir = new char[str.size() + 1];
-      std::copy(str.begin(), str.end(), xmlInputDir);
-      xmlInputDir[str.size()] = '\0';
-      if (boost::filesystem::is_directory(dir)) {
-        boost::filesystem::remove_all(dir);
-      }
-      boost::filesystem::create_directory(dir);
-    } catch (boost::filesystem::filesystem_error &e) {
-      std::cerr << e.what() << std::endl;
-      return 0;
-    }
   }
   
   if (cmd.optionSet("p")) {
@@ -600,7 +582,17 @@ int Caller::readFiles() {
   if (xmlInterface.getXmlInputFN().size() != 0) {    
     error = xmlInterface.readPin(setHandler, pCheck, protEstimator);
   } else if (tabInput) {
-    error = setHandler.readTab(forwardTabInputFN, pCheck);
+    std::ifstream fileStream;
+    if (!readStdIn) {
+      fileStream.open(forwardTabInputFN.c_str(), ios::in);
+      if (VERB > 1) {
+        std::cerr << "Reading Tab delimited input from datafile " << 
+                     forwardTabInputFN << std::endl;
+      }
+    }
+    std::istream &dataStream = readStdIn ? std::cin : fileStream;
+    
+    error = setHandler.readTab(dataStream, pCheck);
   }
   return error;
 }
@@ -618,14 +610,13 @@ void Caller::fillFeatureSets() {
         << " and pi0=" << fullset.getPi0() << endl;
   }
   
-  //check for the minimum recommended number of positive and negative hits
-  if(fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
+  // check for the minimum recommended number of positive and negative hits
+  if (fullset.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
     std::cerr << "Warning : the number of positive samples read is too small to perform a correct classification.\n" << std::endl;
   }
-  if(fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
+  if (fullset.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
     std::cerr << "Warning : the number of negative samples read is too small to perform a correct classification.\n" << std::endl;
   }
-  
   
   if (DataSet::getCalcDoc()) {
     BOOST_FOREACH (DataSet * subset, setHandler.getSubsets()) {
@@ -803,13 +794,9 @@ int Caller::run() {
     cerr << extendedGreeter();
   }
   // populate tmp input file with cin information if option is enabled
-  if (readStdIn) {
+  if (readStdIn && !tabInput && false) {
     ofstream tmpInputFile;
-    if (tabInput) {
-      tmpInputFile.open(forwardTabInputFN.c_str());
-    } else {
-      tmpInputFile.open(xmlInterface.getXmlInputFN().c_str());
-    }
+    tmpInputFile.open(xmlInterface.getXmlInputFN().c_str());
     while (cin) {
       std::string buffer;
       getline(cin, buffer);

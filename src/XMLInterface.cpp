@@ -57,13 +57,10 @@ static const XMLCh fragSpectrumScanStr[] = {
 XMLInterface::XMLInterface() : xmlInputFN(""), schemaValidation(false), otherCall(""), xmlOutputFN(""), reportUniquePeptides(false) {}
 
 XMLInterface::~XMLInterface() {
-  // clean up temporary files in case of an exception
-  if (boost::filesystem::exists(xmlOutputFN_PSMs.c_str()))
-    remove(xmlOutputFN_PSMs.c_str());
-  if (boost::filesystem::exists(xmlOutputFN_Peptides.c_str()))
-    remove(xmlOutputFN_Peptides.c_str());
-  if (boost::filesystem::exists(xmlOutputFN_Proteins.c_str()))
-    remove(xmlOutputFN_Proteins.c_str());
+  // clean up temporary files if an exception occurred during the writing
+  remove(xmlOutputFN_PSMs.c_str());
+  remove(xmlOutputFN_Peptides.c_str());
+  remove(xmlOutputFN_Proteins.c_str());
 }
   
 int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator) {    
@@ -375,7 +372,7 @@ void XMLInterface::writeXML(Scores & fullset, ProteinProbEstimator * protEstimat
   }
   os << "  </process_info>" << endl << endl;
 
-  // apppend PSMs
+  // append PSMs
   ifstream ifs_psms(xmlOutputFN_PSMs.data(), ios::in | ios::binary);
   os << ifs_psms.rdbuf();
   ifs_psms.close();

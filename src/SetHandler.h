@@ -62,7 +62,7 @@ class SetHandler {
     void push_back_dataset( DataSet * ds );
        
     //const double* getFeatures(const int setPos, const int ixPos) const;  
-    int readTab(const string& dataFN, SanityCheck *& pCheck);
+    int readTab(istream& dataStream, SanityCheck *& pCheck);
     void writeTab(const string& dataFN, SanityCheck * pCheck);
     void print(Scores& test, int label, ostream& myout = cout);
     void fillFeatures(vector<ScoreHolder> &scores, int label);

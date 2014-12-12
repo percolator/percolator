@@ -88,24 +88,19 @@ int const SetHandler::getLabel(int setPos) {
   return subsets[setPos]->getLabel();
 }
 
-int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
-  if (VERB > 1) {
-    cerr << "Reading Tab delimited input from datafile " << dataFN << endl;
-  }
-  
-  ifstream dataStream(dataFN.c_str(), ios::in);
+int SetHandler::readTab(istream& dataStream, SanityCheck *& pCheck) {
   if (!dataStream) {
     ostringstream temp;
-    temp << "ERROR: Can not open file " << dataFN << endl;
+    temp << "ERROR: Can not open data stream." << endl;
     throw MyException(temp.str());
   }
-  std::string tmp, psmid, line;
+  std::string tmp, psmid, line, headerLine, defaultDirectionLine;
   istringstream iss;
   
-  getline(dataStream, line); // line with feature names
+  getline(dataStream, headerLine); // line with feature names
   if (line.substr(0,5) == "<?xml") {
     ostringstream temp;
-    temp << "ERROR: Cannot read Tab delimited input from datafile " << dataFN << ".\n" << 
+    temp << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
        "The input file seems to be in XML format, use the -k flag for XML input. " << endl;
     throw MyException(temp.str());
   }
@@ -114,7 +109,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   std::string optionalHeader;
   std::vector<OptionalField> optionalFields;
   
-  iss.str(rtrim(line));
+  iss.str(rtrim(headerLine));
   iss >> tmp >> tmp; // discard id, label
   bool hasScannr = false;
   while (iss.good()) {
@@ -141,8 +136,8 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   }
   
   // parse second/third line for default direction and feature count
-  getline(dataStream, line);
-  iss.str(rtrim(line));
+  getline(dataStream, defaultDirectionLine);
+  iss.str(rtrim(defaultDirectionLine));
   
   iss >> psmid >> tmp; // read id and label of second row
   for (int i = 1; i <= optionalFieldCount; ++i) 
@@ -159,6 +154,8 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
     iss >> tmp >> tmp; // remove id and label
     for (int i = 1; i <= optionalFieldCount; ++i) 
       iss >> tmp; // discard optional fields
+  } else {
+    line = defaultDirectionLine;
   }
   
   // count number of features from first PSM
@@ -172,12 +169,8 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   iss.clear(); // clear the error bit
   if (DataSet::getCalcDoc()) numFeatures -= 2;
   
-  // read from start again
-  dataStream.seekg(0, std::ios::beg);
-  
   // fill in the feature names from the first line
-  getline(dataStream, line); // save row with feature names for later parsing
-  iss.str(rtrim(line));
+  iss.str(rtrim(headerLine));
   FeatureNames& featureNames = DataSet::getFeatureNames();
   int skip = 2 + optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0);
   int numFeatLeft = static_cast<int>(numFeatures);
@@ -197,8 +190,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   std::vector<double> init_values;
   bool hasDefaultValues = false;
   if (hasInitialValueRow) {
-    getline(dataStream, line);
-    iss.str(rtrim(line));
+    iss.str(rtrim(defaultDirectionLine));
     iss >> tmp >> tmp; // remove id and label
     for (int i = 1; i <= optionalFieldCount; ++i) 
       iss >> tmp; // discard optional fields
@@ -232,10 +224,11 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
   decoySet->setLabel(-1);
 
   // read in the data
-  int label;
+  
   unsigned int lineNr = (hasInitialValueRow ? 3 : 2);
-  while (getline(dataStream, line)) {
-    iss.str(rtrim(line));
+  do {
+    int label;
+    istringstream iss(rtrim(line));
     iss >> psmid >> label;
     if (label == 1) {
       targetSet->readPsm(line, lineNr, optionalFields);
@@ -246,7 +239,7 @@ int SetHandler::readTab(const string& dataFN, SanityCheck *& pCheck) {
           lineNr << " has a label not in {1,-1} and will be ignored." << std::endl;
     }
     ++lineNr;
-  }
+  } while (getline(dataStream, line));
   
   push_back_dataset(targetSet);
   push_back_dataset(decoySet);
