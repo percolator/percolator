@@ -26,7 +26,7 @@
 #include <algorithm>
 #include <vector>
 #include <map>
-#include <boost/foreach.hpp>
+
 #include "Scores.h"
 #include "ResultHolder.h"
 #include "Globals.h"
@@ -61,7 +61,9 @@ class DataSet {
     static FeatureNames& getFeatureNames() { return featureNames; }
     static unsigned getNumFeatures() { return featureNames.getNumFeatures(); }
     
-    void setRetentionTime(map<int, double>& scan2rt) { PSMDescription::setRetentionTime(psms, scan2rt); }
+    void setRetentionTime(map<int, double>& scan2rt) { 
+      PSMDescription::setRetentionTime(psms, scan2rt);
+    }
     
     bool writeTabData(ofstream& out);
     
@@ -89,9 +91,11 @@ class DataSet {
     static bool isotopeMass;
     const static string aaAlphabet;
     static string ptmAlphabet;
-    const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; // Normal + Amino acid + PTM + hitsPerSpectrum + doc
     
-    vector<PSMDescription*> psms;
+    // Normal + Amino acid + PTM + hitsPerSpectrum + doc
+    const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; 
+    
+    std::vector<PSMDescription*> psms;
     int label;
     int numSpectra;
     string fileId;

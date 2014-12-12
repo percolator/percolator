@@ -24,6 +24,7 @@
 #include <list>
 #include <memory>
 #include <cassert>
+
 #include "Globals.h"
 #include "SetHandler.h"
 #include "DataSet.h"
@@ -31,8 +32,6 @@
 #include "Scores.h"
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
-
-#include <boost/foreach.hpp>
 
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
@@ -61,7 +60,7 @@ class XMLInterface {
     
     inline void setSchemaValidation(bool on) { schemaValidation = on; }
     
-    int readPin(SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator);
+    int readPin(istream& dataStream, SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator);
     
     inline void setPi0Peptides(double pi0) { pi_0_peptides = pi0; }
     inline void setPi0Psms(double pi0) { pi_0_psms = pi0; }

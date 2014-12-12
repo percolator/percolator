@@ -26,8 +26,9 @@ FeatureNames DataSet::featureNames;
 DataSet::DataSet() : numSpectra(0) {}
 
 DataSet::~DataSet() {
-  BOOST_FOREACH (PSMDescription * psm, psms)
-  {
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
     if(psm->features) {
       delete[] psm->features;
       psm->features = NULL;
@@ -50,20 +51,20 @@ bool DataSet::writeTabData(ofstream& out) {
   if (calcDOC) {
     nf -= DescriptionOfCorrect::numDOCFeatures();
   }
-  BOOST_FOREACH (PSMDescription * pPSM, psms) {
-    double* featureRow = pPSM->features;
-    out << pPSM->id << '\t' << label << '\t' << pPSM->scan;
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
+    double* featureRow = psm->features;
+    out << psm->id << '\t' << label << '\t' << psm->scan;
     if (calcDOC) {
-      out << '\t' << pPSM->getUnnormalizedRetentionTime() << '\t'
-          << pPSM->massDiff;
+      out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
+          << psm->massDiff;
     }
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << featureRow[ix];
     }
-    out << '\t' << pPSM->peptide;
-    BOOST_FOREACH (const std::string &proteinId, pPSM->proteinIds) {
-      out << '\t' << proteinId;
-    }
+    out << '\t' << psm->peptide;
+    psm->printProteins(out);
     out << endl;
   }
   return true;
@@ -90,14 +91,14 @@ void DataSet::print_10features() {
 
 void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
   ostringstream out;
-  BOOST_FOREACH (PSMDescription * psm, psms) {
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
     ScoreHolder* pSH = test.getScoreHolder(psm->features);
     if (pSH == NULL) {
       continue;
     }
-    BOOST_FOREACH (const std::string &proteinId, psm->proteinIds) {
-      out << "\t" << proteinId;
-    }
+    psm->printProteins(out);
     outList.push_back(ResultHolder(pSH->score, psm->q, psm->pep, psm->id, psm->peptide, out.str()));
     out.str("");
   }
@@ -106,25 +107,37 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
 
 // TODO: find a way to make these four functions generic
 void DataSet::fillFeatures(vector<ScoreHolder> &scores) {
-  BOOST_FOREACH (PSMDescription * psm, psms)
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
     scores.push_back(ScoreHolder(.0, label, psm));
+  }
 }
     
 void DataSet::fillFeaturesPeptide(vector<ScoreHolder> &scores) {
-  BOOST_FOREACH (PSMDescription * psm, psms)
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
     scores.push_back(ScoreHolderPeptide(.0, label, psm));
+  }
 }
 
 void DataSet::fillFeatures(vector<double*> &features) {
-  BOOST_FOREACH (PSMDescription * psm, psms)
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
     features.push_back(psm->features);
+  }
 }
 
 void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
   double* features;
-  BOOST_FOREACH (PSMDescription * psm, psms)
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  for ( ; it != psms.end(); ++it) {
+    PSMDescription* psm = *it;
     if ((features = psm->retentionFeatures))
         rtFeatures.push_back(features);
+  }
 }
 
 /*
@@ -184,8 +197,9 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
   }
   
   bool hasScannr = false;
-  BOOST_FOREACH (const OptionalField field, optionalFields) {
-    switch (field) {
+  std::vector<OptionalField>::const_iterator it = optionalFields.begin();
+  for ( ; it != optionalFields.end(); ++it) {
+    switch (*it) {
       case SCANNR: {
         buff >> myPsm->scan;
         if (!buff.good()) {

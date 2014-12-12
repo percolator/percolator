@@ -243,8 +243,12 @@ int CrossValidation::xv_process_one_bin(unsigned int set, bool updateDOC, vector
   Outputs->d = svmInput->positives + svmInput->negatives;
   
   // Find combination of soft margin parameters with highest estimate of true positives
-  BOOST_FOREACH (const double cpos, cpos_vec) {
-    BOOST_FOREACH (const double cfrac, cfrac_vec) {
+  std::vector<double>::const_iterator itp = cpos_vec.begin();
+  for ( ; itp != cpos_vec.end(); ++itp) {
+    double cpos = *itp;  
+    std::vector<double>::const_iterator itf = cfrac_vec.begin();
+    for ( ; itf != cfrac_vec.end(); ++itf) {
+      double cfrac = *itf;
       if (VERB > 2) cerr << "-cross validation with cpos=" << cpos
           << ", cfrac=" << cfrac << endl;
       int tp = 0;

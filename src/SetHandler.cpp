@@ -57,17 +57,19 @@ void SetHandler::push_back_dataset( DataSet * ds ) {
  */
 void SetHandler::print(Scores& test, int label, ostream& myout) {
   vector<ResultHolder> outList(0);
-  BOOST_FOREACH (DataSet * subset, subsets) {
-    if (subset->getLabel() == label) {
-      subset->print(test, outList);
+  for (std::vector<DataSet*>::iterator it = subsets.begin();
+         it != subsets.end(); ++it) {
+    if ((*it)->getLabel() == label) {
+      (*it)->print(test, outList);
     }
   }
   sort(outList.begin(), outList.end(), std::greater<ResultHolder> ());
   myout
       << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds"
       << endl;
-  BOOST_FOREACH (const ResultHolder & psmResult, outList) {
-    myout << psmResult << endl;
+  for (std::vector<ResultHolder>::iterator it = outList.begin();
+         it != outList.end(); ++it) {
+    myout << *it << endl;
   }
 }
 
@@ -261,13 +263,14 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   vector<double> initial_values = pCheck->getDefaultWeights();
   if (initial_values.size() > 0) {
     dataStream << "DefaultDirection\t-\t-";
-    BOOST_FOREACH (const double iv, initial_values) {
-      dataStream << '\t' << iv;
+    for (size_t i = 0; i < initial_values.size(); ++i) {
+      dataStream << '\t' << initial_values[i];
     }
     dataStream << std::endl;
   }
-  BOOST_FOREACH (DataSet * subset, subsets) {
-    subset->writeTabData(dataStream);
+  for (std::vector<DataSet*>::iterator it = subsets.begin();
+         it != subsets.end(); ++it) {
+    (*it)->writeTabData(dataStream);
   }
 }
 

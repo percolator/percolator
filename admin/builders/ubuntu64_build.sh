@@ -50,11 +50,13 @@ cd ${build_dir}
 
 # download and patch xsd
 xsd=xsd-3.3.0-x86_64-linux-gnu
-wget --quiet http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/${xsd}.tar.bz2
-tar xjf ${xsd}.tar.bz2
-sed -i 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
-sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
-sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
+if [ ! -d ${xsd} ]; then
+  wget --quiet http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/${xsd}.tar.bz2
+  tar xjf ${xsd}.tar.bz2
+  sed -i 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
+  sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
+  sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
+fi
 
 # end of section to remove
 sudo apt-get -y install libxerces-c-dev libboost-dev libboost-filesystem-dev;

@@ -28,8 +28,6 @@
 #include <cctype>
 #include <locale>
 
-#include <boost/foreach.hpp>
-
 #include "ResultHolder.h"
 #include "DataSet.h"
 #include "Normalizer.h"

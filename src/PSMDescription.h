@@ -79,6 +79,7 @@ class PSMDescription {
     // normalize retention times for a  set of peptides
     static void normalizeRetentionTimes(vector<PSMDescription> & psms);
     friend ostream& operator<<(ostream& out, PSMDescription& psm);
+    void printProteins(std::ostream& out);
     double getRetentionTime() const { return retentionTime; }
     double getPredictedRetentionTime() { return predictedTime; }
 

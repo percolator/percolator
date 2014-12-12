@@ -24,7 +24,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include <boost/foreach.hpp>
+
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"

@@ -27,7 +27,6 @@
 #include <map>
 #include <string>
 #include <memory>
-#include <boost/foreach.hpp>
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif
@@ -60,61 +59,59 @@ class Caller {
   public:
     
     Caller();
-    Caller(bool uniquePeptides);
     virtual ~Caller();
     
     static string greeter();
     string extendedGreeter();
-    bool parseOptions(int argc, char **argv);
-    int readFiles();
-    
-    void fillFeatureSets();
-    void calculatePSMProb(bool uniquePeptideRun, Scores *fullset, time_t& procStart,
-        clock_t& procStartClock, double& diff, bool targetDecoyCompetition = false);
-    
-    void calculateProteinProbabilitiesFido();
-    
+    bool parseOptions(int argc, char **argv);    
     int run();
     
   protected:
     
-    XMLInterface xmlInterface;
+    XMLInterface xmlInterface_;
     
-    Normalizer * pNorm;
-    SanityCheck * pCheck;
-    ProteinProbEstimator* protEstimator;
+    Normalizer* pNorm_;
+    SanityCheck* pCheck_;
+    ProteinProbEstimator* protEstimator_;
     
-    CrossValidation crossValidation;
+    CrossValidation crossValidation_;
     
-    string forwardTabInputFN;
-    string tabFN;
+    string tabInputFN_;
+    string tabOutputFN_;
     
-    string psmResultFN, peptideResultFN, proteinResultFN;
-    string decoyPsmResultFN, decoyPeptideResultFN, decoyProteinResultFN;
+    string psmResultFN_, peptideResultFN_, proteinResultFN_;
+    string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
     
-    char* xmlInputDir;
-    string weightFN;
+    string weightFN_;
     
-    bool tabInput;
-    bool readStdIn;
+    bool tabInput_;
+    bool readStdIn_;
     
-    bool reportUniquePeptides;
-    bool target_decoy_competition;
+    bool reportUniquePeptides_;
+    bool targetDecoyCompetition_;
     
-    double test_fdr;
+    double testFdr_;
     
-    double threshTestRatio;
-    double trainRatio;
+    double threshTestRatio_;
+    double trainRatio_;
     
-    string call;
+    string call_;
     
-    time_t startTime;
-    clock_t startClock;
-    //SetHandler normal, shuffled; //,shuffledTest,shuffledThreshold;
-    SetHandler setHandler;
-    Scores fullset; //,thresholdset;
-    map<int, double> scan2rt;
-
+    time_t startTime_;
+    clock_t startClock_;
+    
+    SetHandler setHandler_;
+    Scores allScores_; //,thresholdset;
+    
+    map<int, double> scanToRetentionTimeMap_;
+    
+    int readFiles();
+    
+    void fillFeatureSets();
+    void calculatePSMProb(bool uniquePeptideRun, time_t& procStart,
+        clock_t& procStartClock, double& diff);
+    
+    void calculateProteinProbabilitiesFido();
     
 };
 

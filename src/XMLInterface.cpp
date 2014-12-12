@@ -63,7 +63,7 @@ XMLInterface::~XMLInterface() {
   remove(xmlOutputFN_Proteins.c_str());
 }
   
-int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator) {    
+int XMLInterface::readPin(istream& dataStream, SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator) {    
 #ifdef XML_SUPPORT  
   DataSet * targetSet = new DataSet();
   assert(targetSet);
@@ -77,15 +77,11 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
   try {
     
     using namespace xercesc;
-    
-    std::ifstream xmlInStream;
-    xmlInStream.exceptions(ifstream::badbit | ifstream::failbit);
-    xmlInStream.open(xmlInputFN.c_str());
 
     string schemaDefinition = Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
     parser p;
     xml_schema::dom::auto_ptr<DOMDocument> doc(p.start(
-        xmlInStream, xmlInputFN.c_str(), schemaValidation,
+        dataStream, xmlInputFN.c_str(), schemaValidation,
         schemaDefinition, PIN_VERSION_MAJOR, PIN_VERSION_MINOR));
 
     doc = p.next();
@@ -95,7 +91,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     // that overrides this decision). As for now special treatment is needed
     char* value = XMLString::transcode(doc->getDocumentElement()->getTextContent());
     
-    if(VERB > 1) std::cerr << "enzyme=" << value << std::endl;
+    if (VERB > 1) std::cerr << "enzyme=" << value << std::endl;
     
     Enzyme::setEnzyme(value);
     XMLString::release(&value);
@@ -103,7 +99,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
 
     //checking if database is present to jump it
     bool hasProteins = false;
-    if(XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
+    if (XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
       //NOTE I dont really need this info, do I? good to have it though
       // std::unique_ptr< ::percolatorInNs::databases > databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
       doc = p.next();
@@ -124,38 +120,44 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     // read feature names and initial values that are present in feature descriptions
     FeatureNames& featureNames = DataSet::getFeatureNames();
     percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
-    BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {    
-      featureNames.insertFeature(descr.name());
+    percolatorInNs::featureDescriptions::featureDescription_const_iterator featureIt;
+    featureIt = featureDescriptions.featureDescription().begin();
+    for ( ; featureIt != featureDescriptions.featureDescription().end(); ++featureIt) {
+      featureNames.insertFeature(featureIt->name());
     }
     featureNames.initFeatures(DataSet::getCalcDoc());
     
     std::vector<double> init_values(FeatureNames::getNumFeatures());
-    unsigned int i = 0;
     bool hasDefaultValues = false;
-    BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, featureDescriptions.featureDescription()) {    
-      if (descr.initialValue().present()) {
-        if (descr.initialValue().get() != 0.0) {
+    unsigned int i = 0;
+    featureIt = featureDescriptions.featureDescription().begin();
+    for ( ; featureIt != featureDescriptions.featureDescription().end(); ++featureIt) {    
+      if (featureIt->initialValue().present()) {
+        if (featureIt->initialValue().get() != 0.0) 
           hasDefaultValues = true;
+        if (VERB > 2) {
+          std::cerr << "Initial direction for " << featureIt->name() << " is " << 
+                       featureIt->initialValue().get() << std::endl;
         }
-        if (VERB >2) {
-          std::cerr << "Initial direction for " << descr.name() << " is " << descr.initialValue().get() << std::endl;
-        }
-        init_values[i] = descr.initialValue().get();
+        init_values[i] = featureIt->initialValue().get();
       }
       ++i;
     }
 
     // read Fragment Spectrum Scans
-    for (doc = p.next(); doc.get()!= 0 && 
-          XMLString::equals(fragSpectrumScanStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
-    {
+    for (doc = p.next(); 
+         doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
+             doc->getDocumentElement()->getTagName()); 
+         doc = p.next()) {
       percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-      BOOST_FOREACH (const ::percolatorInNs::peptideSpectrumMatch &psm, fragSpectrumScan.peptideSpectrumMatch()) {
-        PSMDescription *myPsm = readPsm(psm,fragSpectrumScan.scanNumber());
-        if (psm.isDecoy()) {
-          decoySet->registerPsm(myPsm);
+      percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
+      psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
+      for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
+        PSMDescription* psm = readPsm(*psmIt, fragSpectrumScan.scanNumber());
+        if (psmIt->isDecoy()) {
+          decoySet->registerPsm(psm);
         } else {
-          targetSet->registerPsm(myPsm);
+          targetSet->registerPsm(psm);
         }
       }
     }
@@ -187,7 +189,7 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
     assert(pCheck);
     if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
     pCheck->checkAndSetDefaultDir();
-    xmlInStream.close();
+    
   } catch (const xml_schema::exception& e) {
     std::cerr << e << endl;
     return 0;
@@ -218,15 +220,17 @@ int XMLInterface::readPin(SetHandler & setHandler, SanityCheck *& pCheck, Protei
 std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
   std::list<std::pair<int,std::string> > mods;
   std::string peptideSeq = peptide.peptideSequence();
-  BOOST_FOREACH (const ::percolatorInNs::modificationType &mod_ref, peptide.modification()){
+  percolatorInNs::peptideType::modification_const_iterator modIt;
+  modIt = peptide.modification().begin();
+  for ( ; modIt != peptide.modification().end(); ++modIt) {
     std::stringstream ss;
-    if (mod_ref.uniMod().present()) {
-      ss << "[UNIMOD:" << mod_ref.uniMod().get().accession() << "]";
-      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    if (modIt->uniMod().present()) {
+      ss << "[UNIMOD:" << modIt->uniMod().get().accession() << "]";
+      mods.push_back(std::pair<int,std::string>(modIt->location(),ss.str()));
     }
-    if (mod_ref.freeMod().present()) {
-      ss << "[" << mod_ref.freeMod().get().moniker() << "]";
-      mods.push_back(std::pair<int,std::string>(mod_ref.location(),ss.str()));
+    if (modIt->freeMod().present()) {
+      ss << "[" << modIt->freeMod().get().moniker() << "]";
+      mods.push_back(std::pair<int,std::string>(modIt->location(),ss.str()));
     }
   }
   mods.sort(greater<std::pair<int,std::string> >());
@@ -237,8 +241,8 @@ std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& p
   return peptideSeq;
 }
 
-PSMDescription * XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber) {
-  PSMDescription *myPsm = new PSMDescription();
+PSMDescription* XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber) {
+  PSMDescription* myPsm = new PSMDescription();
   string mypept = decoratePeptide(psm.peptide());
 
   if (psm.occurence().size() <= 0) {
@@ -247,12 +251,14 @@ PSMDescription * XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatc
     The PSM does not contain protein occurences." << std::endl;
     throw MyException(temp.str());
   }
-
-  BOOST_FOREACH (const ::percolatorInNs::occurence & oc, psm.occurence()) {
-    myPsm->proteinIds.insert( oc.proteinId() );
+  
+  percolatorInNs::peptideSpectrumMatch::occurence_const_iterator occIt;
+  occIt = psm.occurence().begin();
+  for ( ; occIt != psm.occurence().end(); ++occIt) {
+    myPsm->proteinIds.insert( occIt->proteinId() );
     // adding n-term and c-term residues to peptide
     //NOTE the residues for the peptide in the PSMs are always the same for every protein
-    myPsm->peptide = oc.flankN() + "." + mypept + "." + oc.flankC();
+    myPsm->peptide = occIt->flankN() + "." + mypept + "." + occIt->flankC();
   }
 
   myPsm->id = psm.id();
@@ -265,11 +271,9 @@ PSMDescription * XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatc
   }
 
   myPsm->features = new double[FeatureNames::getNumFeatures()];
-    
-  unsigned int featureNum = 0;
-  BOOST_FOREACH (const double feature, psm.features().feature()) {
-    myPsm->features[featureNum] = feature;
-    featureNum++;
+  
+  for (unsigned int i = 0; i < psm.features().feature().size(); ++i) {
+    myPsm->features[i] = psm.features().feature()[i];
   }
 
   // myPsm.peptide = psmIter->peptide().peptideSequence();

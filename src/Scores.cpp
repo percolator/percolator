@@ -95,8 +95,9 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
     os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
   }
   
-  BOOST_FOREACH (const std::string & pid, sh.pPSM->proteinIds) {
-    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(pid) << "</protein_id>" << endl;
+  std::set<std::string>::const_iterator pidIt = sh.pPSM->proteinIds.begin();
+  for ( ; pidIt != sh.pPSM->proteinIds.end() ; ++pidIt) {
+    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
   }
   
   os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
@@ -122,22 +123,23 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << "      <q_value>"   << scientific  << sh.pPSM->q   << "</q_value>" << endl;
   os << "      <pep>"        << scientific  << sh.pPSM->pep << "</pep>" << endl;
   
-  if(Scores::getShowExpMass()) 
-  {
+  if (Scores::getShowExpMass()) {
     os << "      <exp_mass>" << fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
   }
   os << "      <calc_mass>" << fixed << setprecision (3)  << sh.pPSM->calcMass << "</calc_mass>" << endl;
   
-  BOOST_FOREACH (const std::string &pid, sh.pPSM->proteinIds) {
-    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(pid) << "</protein_id>" << endl;
+  std::set<std::string>::const_iterator pidIt = sh.pPSM->proteinIds.begin();
+  for ( ; pidIt != sh.pPSM->proteinIds.end() ; ++pidIt) {
+    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
   }
   
   os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
   os << "      <psm_ids>" << endl;
   
   // output all psms that contain the peptide
-  BOOST_FOREACH (const std::string &psm, sh.psms_list){
-    os << "        <psm_id>" << psm << "</psm_id>" << endl;
+  std::vector<std::string>::const_iterator psmIt = sh.psms_list.begin();
+  for ( ; psmIt != sh.psms_list.end() ; ++psmIt) {
+    os << "        <psm_id>" << *psmIt << "</psm_id>" << endl;
   }
   os << "      </psm_ids>" << endl;
   os << "    </peptide>" << endl;
@@ -181,11 +183,12 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool computePi0) {
 }
 
 void Scores::printRetentionTime(ostream& outs, double fdr) {
-  BOOST_FOREACH (ScoreHolder &sh, scores) {
-    if (sh.isTarget()) outs
-        << PSMDescription::unnormalize(sh.pPSM->retentionTime) << "\t"
-        << PSMDescription::unnormalize(doc.estimateRT(sh.pPSM->retentionFeatures))
-    << "\t" << sh.pPSM->peptide << endl;
+  std::vector<ScoreHolder>::iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isTarget()) 
+      outs << PSMDescription::unnormalize(scoreIt->pPSM->retentionTime) << "\t"
+        << PSMDescription::unnormalize(doc.estimateRT(scoreIt->pPSM->retentionFeatures))
+        << "\t" << scoreIt->pPSM->peptide << endl;
   }
 }
 
@@ -205,8 +208,9 @@ double Scores::calcScore(const double* feat) const {
  */
 ScoreHolder* Scores::getScoreHolder(const double* d) {
   if (scoreMap.size() == 0) {
-    BOOST_FOREACH (ScoreHolder &sh, scores) {
-      scoreMap[sh.pPSM->features] = &sh;
+    std::vector<ScoreHolder>::iterator scoreIt = scores.begin();
+    for ( ; scoreIt != scores.end(); ++scoreIt) {
+      scoreMap[scoreIt->pPSM->features] = &(*scoreIt);
     }
   }
   std::map<const double*, ScoreHolder*>::iterator res = scoreMap.find(d);
@@ -301,8 +305,9 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
   // store possible spectra with relative scores
   multimap<unsigned int,ScoreHolder> spectraScores;
   // populate spectraScores
-  BOOST_FOREACH (ScoreHolder &sh, scores) {
-    spectraScores.insert(pair<unsigned int,ScoreHolder>(sh.pPSM->scan, sh));
+  std::vector<ScoreHolder>::iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    spectraScores.insert(pair<unsigned int,ScoreHolder>(scoreIt->pPSM->scan, *scoreIt));
   }
 
   // put scores into the folds; choose a fold (at random) and change it only
@@ -349,8 +354,9 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
 void Scores::recalculateSizes() {
   totalNumberOfTargets = 0;
   totalNumberOfDecoys = 0;
-  BOOST_FOREACH (const ScoreHolder &sh, scores) {
-    if (sh.isTarget()) {
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isTarget()) {
       ++totalNumberOfTargets;
     } else {
       ++totalNumberOfDecoys;
@@ -388,12 +394,13 @@ void Scores::normalizeScores(double fdr) {
   }
    
   double diff = q1-median;
-  BOOST_FOREACH (ScoreHolder &sh, scores) {
-    sh.score -= q1;
-    sh.score /= diff;
-    if (sh.score <= 0 && VERB > 3) { // Why do we warn for this, it happens for most of the data
-      std::cerr << "\nWARNING the score of the PSM " << sh.pPSM->id << " is less or equal than zero "
-           << "after normalization.\n" << std::endl;
+  std::vector<ScoreHolder>::iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    scoreIt->score -= q1;
+    scoreIt->score /= diff;
+    if (scoreIt->score <= 0 && VERB > 3) { // Why do we warn for this, it happens for most of the data
+      std::cerr << "\nWARNING the score of the PSM " << scoreIt->pPSM->id << 
+          " is less or equal than zero after normalization.\n" << std::endl;
     }
   }
   
@@ -408,8 +415,9 @@ void Scores::normalizeScores(double fdr) {
 int Scores::calcScores(vector<double>& w, double fdr) {
   w_vec = w;
   unsigned int ix;
-  BOOST_FOREACH (ScoreHolder &sh, scores) {
-    sh.score = calcScore(sh.pPSM->features);
+  std::vector<ScoreHolder>::iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    scoreIt->score = calcScore(scoreIt->pPSM->features);
   }
   sort(scores.begin(), scores.end(), greater<ScoreHolder> ());
   if (VERB > 3) {
@@ -442,14 +450,15 @@ int Scores::calcQ(double fdr) {
   double efp = 0.0, q; // estimated false positives, q value
   
   // NOTE check this
-  BOOST_FOREACH (ScoreHolder &sh, scores) {
-    if (sh.isTarget()) {
+  std::vector<ScoreHolder>::iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isTarget()) {
       targets++;
-      sh.pPSM->p = (decoys+(double)1)/(totalNumberOfDecoys+(double)1);
+      scoreIt->pPSM->p = (decoys+(double)1)/(totalNumberOfDecoys+(double)1);
     } else {
       decoys++;
       efp = pi0 * decoys * targetDecoySizeRatio;
-      sh.pPSM->p = (decoys)/(double)(totalNumberOfDecoys);
+      scoreIt->pPSM->p = (decoys)/(double)(totalNumberOfDecoys);
     }
     if (targets) {
       q = efp / (double)targets;
@@ -459,7 +468,7 @@ int Scores::calcQ(double fdr) {
     if (q > pi0) {
       q = pi0;
     }
-    sh.pPSM->q = q;
+    scoreIt->pPSM->q = q;
     if (fdr >= q) {
       posNow = targets;
     }
@@ -476,9 +485,10 @@ int Scores::calcQ(double fdr) {
 
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
   unsigned int ix2 = 0;
-  BOOST_FOREACH (const ScoreHolder &sh, scores) {
-    if (sh.isDecoy()) {
-      data.vals[ix2] = sh.pPSM->features;
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isDecoy()) {
+      data.vals[ix2] = scoreIt->pPSM->features;
       data.Y[ix2] = -1;
       data.C[ix2++] = cneg;
     }
@@ -489,13 +499,14 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     const double cpos) {
   unsigned int ix2 = data.negatives, p = 0;
-  BOOST_FOREACH (const ScoreHolder &sh, scores) {
-    if (sh.isTarget()) {
-      if (fdr < sh.pPSM->q) {
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isTarget()) {
+      if (fdr < scoreIt->pPSM->q) {
         posNow = p;
         break;
       }
-      data.vals[ix2] = sh.pPSM->features;
+      data.vals[ix2] = scoreIt->pPSM->features;
       data.Y[ix2] = 1;
       data.C[ix2++] = cpos;
       ++p;
@@ -614,11 +625,12 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
 
 void Scores::recalculateDescriptionOfCorrect(const double fdr) {
   doc.clear();
-  BOOST_FOREACH (const ScoreHolder &sh, scores) {
-    if (sh.isTarget()) {
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isTarget()) {
       //      if (fdr>scores[ix1].pPSM->q) {
-      if (0.0 >= sh.pPSM->q) {
-        doc.registerCorrect(*(sh.pPSM));
+      if (0.0 >= scoreIt->pPSM->q) {
+        doc.registerCorrect(*(scoreIt->pPSM));
       }
     }
   }
@@ -627,8 +639,9 @@ void Scores::recalculateDescriptionOfCorrect(const double fdr) {
 }
 
 void Scores::setDOCFeatures() {
-  BOOST_FOREACH (const ScoreHolder &sh, scores) {
-    doc.setFeatures(*(sh.pPSM));
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    doc.setFeatures(*(scoreIt->pPSM));
   }
 }
 
@@ -637,16 +650,18 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
   int bestFeature = -1;
   bool lowBest = false;
   for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
-    BOOST_FOREACH (ScoreHolder &sh, scores) {
-      sh.score = sh.pPSM->features[featNo];
+    for (std::vector<ScoreHolder>::iterator scoreIt = scores.begin(); 
+         scoreIt != scores.end(); ++scoreIt) {
+      scoreIt->score = scoreIt->pPSM->features[featNo];
     }
     sort(scores.begin(), scores.end());
     // check once in forward direction (high scores are good) and once in backward
     for (int i = 0; i < 2; i++) {
       int positives = 0, decoys = 0;
       double efp = 0.0, q;
-      BOOST_FOREACH (ScoreHolder &sh, scores) {
-        if (sh.isTarget()) {
+      std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+      for ( ; scoreIt != scores.end(); ++scoreIt) {
+        if (scoreIt->isTarget()) {
           positives++;
         } else {
           decoys++;
@@ -658,7 +673,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
           q = pi0;
         }
         if (fdr <= q) {
-          if (positives > bestPositives && scores.begin()->score != sh.score) {
+          if (positives > bestPositives && scores.begin()->score != scoreIt->score) {
             bestPositives = positives;
             bestFeature = featNo;
             lowBest = (i == 0);
@@ -712,8 +727,9 @@ void Scores::calcPep() {
 
 unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
-  BOOST_FOREACH (ScoreHolder &sh, scores) {
-    if (sh.isTarget() && sh.pPSM->q < level) {
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores.begin();
+  for ( ; scoreIt != scores.end(); ++scoreIt) {
+    if (scoreIt->isTarget() && scoreIt->pPSM->q < level) {
       hits++;
     }
   }

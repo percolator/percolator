@@ -202,7 +202,11 @@ start (istream& is, const string& id, bool val, string schemaDefinition,
     parser_->parseReset (token_);
   else
     clean_ = false;
-  isrc_.reset (new xml::sax::std_input_source (is, id));
+  if (id.size() > 0) {
+    isrc_.reset (new xml::sax::std_input_source (is, id));
+  } else {
+    isrc_.reset (new xml::sax::std_input_source (is));
+  }
 
   int r (0);
 
