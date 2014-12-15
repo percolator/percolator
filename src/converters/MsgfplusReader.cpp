@@ -117,17 +117,17 @@ void MsgfplusReader::searchEngineSpecificParsing(
 
 	// Check whether fragmentation spectrum features are present
 	if (!useFragmentSpectrumFeatures) {
-    	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
-    		if (up.value().present()) {
-    			std::string param_name(up.name().c_str());
-    			// Check whether the mzid-file seem to include features for fragment spectra resolution and accuracy
-    			if (param_name == "MeanRelErrorTop7") {  // If one fragmentSpectrum feature is found
-    				useFragmentSpectrumFeatures = true;
-    				std::cerr << "Uses features for fragment spectra mass errors" << std::endl;
-    			}
-    		}
-    	}
-    }
+  	BOOST_FOREACH(const ::mzIdentML_ns::UserParamType & up, item.userParam()) {
+  		if (up.value().present()) {
+  			std::string param_name(up.name().c_str());
+  			// Check whether the mzid-file seem to include features for fragment spectra resolution and accuracy
+  			if (param_name == "MeanRelErrorTop7") {  // If one fragmentSpectrum feature is found
+  				useFragmentSpectrumFeatures = true;
+  				std::cerr << "Uses features for fragment spectra mass errors" << std::endl;
+  			}
+  		}
+  	}
+  }
 }
 
 
@@ -336,8 +336,9 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     }
 
     // If MeanErrorAll is 0.0, it was not updated, it was probably missing in the file.
-    if (MeanErrorTop7 == 0.0) {
+    if (useFragmentSpectrumFeatures && MeanErrorTop7 == 0.0) {
     	// Skip this PSM
+    	// std::cerr << "Skipping PSM with id " << psmid << " because MeanErrorTop7 = 0" << std::endl; // disabled this warning because it occurs a lot
     	return;
     }
 
@@ -431,7 +432,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       std::auto_ptr< percolatorInNs::occurence > oc_p(new percolatorInNs::occurence(*i, flankN, flankC));
       psm_p->occurence().push_back(oc_p);
     }
-
+    
     database->savePsm(useScanNumber, psm_p);
   }
   // Try-Catch statement to find potential errors among the features.
