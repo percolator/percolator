@@ -17,25 +17,28 @@
 
 #include "CrossValidation.h"
 
-const unsigned int CrossValidation::xval_fold = 3; /* number of folds for cross validation*/
-const double CrossValidation::requiredIncreaseOver2Iterations = 0.01; /* checks cross validation convergence */
+// number of folds for cross validation
+const unsigned int CrossValidation::numFolds_ = 3;
+// checks cross validation convergence in case of quickValidation_
+const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01; 
 
 CrossValidation::CrossValidation() :
-      quickValidation(false), reportPerformanceEachIteration(false),
-      testFdr(0.01), selectionFdr(0.01), selectedCpos(0), selectedCneg(0), niter(10) {}
+    quickValidation_(false), reportPerformanceEachIteration_(false), 
+    testFdr_(0.01), selectionFdr_(0.01), 
+    selectedCpos_(0), selectedCneg_(0), niter_(10) {}
 
 
 CrossValidation::~CrossValidation() { 
-  if (svmInput) {
-    delete svmInput;
+  if (svmInput_) {
+    delete svmInput_;
   }
-  svmInput = NULL;
+  svmInput_ = NULL;
 }
 
 void CrossValidation::printParameters(ostringstream & oss) {
-  oss << "Hyperparameters fdr=" << selectionFdr
-      << ", Cpos=" << selectedCpos << ", Cneg=" << selectedCneg
-      << ", maxNiter=" << niter << endl;
+  oss << "Hyperparameters selectionFdr=" << selectionFdr_
+      << ", Cpos=" << selectedCpos_ << ", Cneg=" << selectedCneg_
+      << ", maxNiter=" << niter_ << endl;
 }
 
 
@@ -43,104 +46,112 @@ void CrossValidation::printParameters(ostringstream & oss) {
  * Sets up the SVM classifier: 
  * - divide dataset into training and test sets for each fold
  * - set parameters (fdr, soft margin)
- * @param w list of normal vectors
+ * @param w_ vector of SVM weights
  * @return number of positives for initial setup
  */
-int CrossValidation::preIterationSetup(Scores & fullset, SanityCheck * pCheck, Normalizer * pNorm) {
+int CrossValidation::preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
+                                       Normalizer * pNorm) {
+  // initialize weights vector for all folds
+  w_ = vector<vector<double> >(numFolds_, 
+           vector<double> (FeatureNames::getNumFeatures() + 1));
   
-  w = vector<vector<double> > (xval_fold,vector<double> (FeatureNames::getNumFeatures()+ 1));
-  
-  svmInput = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1); // One input set, to be reused multiple times
-  assert( svmInput );
+  // One input set, to be reused multiple times
+  svmInput_ = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1);
+  assert( svmInput_ );
 
-  if (selectedCpos >= 0 && selectedCneg >= 0) {
-    xv_train.resize(xval_fold);
-    xv_test.resize(xval_fold);
+  if (selectedCpos_ >= 0 && selectedCneg_ >= 0) {
+    trainScores_.resize(numFolds_);
+    testScores_.resize(numFolds_);
     
-  	fullset.createXvalSetsBySpectrum(xv_train, xv_test, xval_fold);
+  	fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_);
 
-    if (selectionFdr <= 0.0) {
-      selectionFdr = testFdr;
+    if (selectionFdr_ <= 0.0) {
+      selectionFdr_ = testFdr_;
     }
-    if (selectedCpos > 0) {
-      xv_cposs.push_back(selectedCpos);
+    if (selectedCpos_ > 0) {
+      candidatesCpos_.push_back(selectedCpos_);
     } else {
-      xv_cposs.push_back(10);
-      xv_cposs.push_back(1);
-      xv_cposs.push_back(0.1);
+      candidatesCpos_.push_back(10);
+      candidatesCpos_.push_back(1);
+      candidatesCpos_.push_back(0.1);
       if (VERB > 0) {
         cerr << "selecting cpos by cross validation" << endl;
       }
     }
-    if (selectedCpos > 0 && selectedCneg > 0) {
-      xv_cfracs.push_back(selectedCneg / selectedCpos);
+    if (selectedCpos_ > 0 && selectedCneg_ > 0) {
+      candidatesCfrac_.push_back(selectedCneg_ / selectedCpos_);
     } else {
-      xv_cfracs.push_back(1.0 * fullset.getTargetDecoySizeRatio());
-      xv_cfracs.push_back(3.0 * fullset.getTargetDecoySizeRatio());
-      xv_cfracs.push_back(10.0 * fullset.getTargetDecoySizeRatio());
+      candidatesCfrac_.push_back(1.0 * fullset.getTargetDecoySizeRatio());
+      candidatesCfrac_.push_back(3.0 * fullset.getTargetDecoySizeRatio());
+      candidatesCfrac_.push_back(10.0 * fullset.getTargetDecoySizeRatio());
       if (VERB > 0) {
         cerr << "selecting cneg by cross validation" << endl;
       }
     }
-    return pCheck->getInitDirection(xv_test, xv_train, pNorm, w, testFdr);
+    return pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
+                                    testFdr_);
   } else {
     vector<Scores> myset(1, fullset);
     cerr << "B" << endl;
-    return pCheck->getInitDirection(myset, myset, pNorm, w, testFdr);
+    return pCheck->getInitDirection(myset, myset, pNorm, w_, testFdr_);
   }
 }
 
 /** 
  * Train the SVM using several cross validation iterations
- * @param w list of normal vectors
+ * @param pNorm Normalization object
  */
 void CrossValidation::train(Normalizer * pNorm) {
 
   if (VERB > 0) {
     cerr << "---Training with Cpos";
-    if (selectedCpos > 0) {
-      cerr << "=" << selectedCpos;
+    if (selectedCpos_ > 0) {
+      cerr << "=" << selectedCpos_;
     } else {
       cerr << " selected by cross validation";
     }
     cerr << ", Cneg";
-    if (selectedCneg > 0) {
-      cerr << "=" << selectedCneg;
+    if (selectedCneg_ > 0) {
+      cerr << "=" << selectedCneg_;
     } else {
       cerr << " selected by cross validation";
     }
-    cerr << ", fdr=" << selectionFdr << endl;
+    cerr << ", fdr=" << selectionFdr_ << endl;
   }
   
   // iterate
-  int foundPositivesOldOld=0, foundPositivesOld=0, foundPositives=0; 
-  for (unsigned int i = 0; i < niter; i++) {
+  int foundPositivesOldOld = 0, foundPositivesOld = 0, foundPositives = 0; 
+  for (unsigned int i = 0; i < niter_; i++) {
     if (VERB > 1) {
       cerr << "Iteration " << i + 1 << " :\t";
     }
     
-    foundPositives = xv_step(true);
+    bool updateDOC = true;
+    foundPositives = doStep(updateDOC);
     
     if (VERB > 1) {
       cerr << "After the iteration step, " << foundPositives
-          << " target PSMs with q<" << selectionFdr
+          << " target PSMs with q<" << testFdr_
           << " were estimated by cross validation" << endl;
     }
     if (VERB > 2) {
       cerr << "Obtained weights" << endl;
       printAllWeights(cerr, pNorm);
     }
-    if (foundPositives>0 && foundPositivesOldOld>0 && quickValidation) {
-      if ((double)(foundPositives-foundPositivesOldOld)<=(foundPositivesOldOld*requiredIncreaseOver2Iterations)) {
+    if (foundPositives > 0 && foundPositivesOldOld > 0 && quickValidation_) {
+      if (static_cast<double>(foundPositives - foundPositivesOldOld) <= 
+          foundPositivesOldOld * requiredIncreaseOver2Iterations_) {
         if (VERB > 1) {
-          cerr << "Performance increase over the last two iterations indicate that the algorithm has converged" << endl;
-          cerr << "(" << foundPositives << " vs " << foundPositivesOldOld << ")" << endl;
+          std::cerr << "Performance increase over the last two iterations " <<
+              "indicate that the algorithm has converged\n" <<
+              "(" << foundPositives << " vs " << foundPositivesOldOld << ")" << 
+              std::endl;
         }
         break;
       }
     }    
-    foundPositivesOldOld=foundPositivesOld;    
-    foundPositivesOld=foundPositives;
+    foundPositivesOldOld = foundPositivesOld;    
+    foundPositivesOld = foundPositives;
   }
   if (VERB == 2) {
     cerr
@@ -149,28 +160,30 @@ void CrossValidation::train(Normalizer * pNorm) {
     printSetWeights(cerr, 0, pNorm);
   }
   foundPositives = 0;
-  for (size_t set = 0; set < xval_fold; ++set) {
+  for (size_t set = 0; set < numFolds_; ++set) {
     if (DataSet::getCalcDoc()) {
-      xv_test[set].getDOC().copyDOCparameters(xv_train[set].getDOC());
-      xv_test[set].setDOCFeatures();
+      testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
+      testScores_[set].setDOCFeatures();
     }
-    foundPositives += xv_test[set].calcScores(w[set], testFdr);
+    foundPositives += testScores_[set].calcScores(w_[set], testFdr_);
   }
   if (VERB > 0) {
-    cerr << "After all training done, " << foundPositives << " target PSMs with q<"
-        << testFdr << " were found when measuring on the test set"
-        << endl;
+    std::cerr << "After all training done, " << foundPositives << 
+                 " target PSMs with q<" << testFdr_ << 
+                 " were found when measuring on the test set" << std::endl;
   }  
 }
 
 
 /** 
  * Executes a cross validation step
- * @param w list of the bins' normal vectors (in linear algebra sense) of the hyperplane from SVM
- * @param updateDOC boolean deciding to recalculate retention features @see DescriptionOfCorrect
+ * @param w_ list of the bins' normal vectors (in linear algebra sense) of the 
+ *        hyperplane from SVM
+ * @param updateDOC boolean deciding to recalculate retention features 
+ *        @see DescriptionOfCorrect
  * @return Estimation of number of true positives
  */
-int CrossValidation::xv_step(bool updateDOC) {
+int CrossValidation::doStep(bool updateDOC) {
   // Setup
   struct options* pOptions = new options;
   pOptions->lambda = 1.0;
@@ -181,74 +194,80 @@ int CrossValidation::xv_step(bool updateDOC) {
   struct vector_double* pWeights = new vector_double;
   pWeights->d = FeatureNames::getNumFeatures() + 1;
   pWeights->vec = new double[pWeights->d];
-  int estTP = 0;
-  double best_cpos = 1, best_cfrac = 1;
-  if (!quickValidation) {
-    for (unsigned int set = 0; set < xval_fold; ++set) {
-      estTP += xv_process_one_bin(set,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);   
+  int estTruePos = 0;
+  double bestCpos = 1, bestCfrac = 1;
+  if (!quickValidation_) {
+    for (unsigned int set = 0; set < numFolds_; ++set) {
+      estTruePos += processSingleFold(set, updateDOC, candidatesCpos_, 
+                                      candidatesCfrac_, bestCpos, bestCfrac, 
+                                      pWeights, pOptions);   
     }
   } else {
-    // Use limited internal cross validation, i.e take the cpos and cfrac values of the first bin 
-    // and use it for the subsequent bins 
-    estTP += xv_process_one_bin(0,updateDOC, xv_cposs, xv_cfracs, best_cpos, best_cfrac, pWeights, pOptions);
-    vector<double> cp(1),cf(1);
-    cp[0]=best_cpos; cf[0]= best_cfrac;
-    for (unsigned int set = 1; set < xval_fold; ++set) {
-      estTP += xv_process_one_bin(set,updateDOC, cp, cf, best_cpos, best_cfrac, pWeights, pOptions);   
+    // Use limited internal cross validation, i.e take the cpos and cfrac 
+    // values of the first bin and use it for the subsequent bins 
+    estTruePos += processSingleFold(0, updateDOC, candidatesCpos_, 
+                                    candidatesCfrac_, bestCpos, bestCfrac, 
+                                    pWeights, pOptions);
+    vector<double> cp(1, bestCpos), cf(1, bestCfrac);
+    for (unsigned int set = 1; set < numFolds_; ++set) {
+      estTruePos += processSingleFold(set, updateDOC, cp, cf, bestCpos, 
+                                      bestCfrac, pWeights, pOptions);   
     }
   }
   delete[] pWeights->vec;
   delete pWeights;
   delete pOptions;
-  return estTP / (xval_fold - 1);
+  return estTruePos / (numFolds_ - 1);
 }
 
 /** 
  * Train one of the crossvalidation bins 
  * @param set identification number of the bin that is processed
- * @param w list of normal vectors (in the linear algebra sense) of the hyperplane from SVM, one for each bin
- * @param updateDOC boolean deciding to calculate retention features @see DescriptionOfCorrect
- * @param cpos_vec vector with soft margin parameter for positives
- * @param cfrac_vec vector with soft margin parameter for fraction negatives / positives
- * @param best_cpos best soft margin parameter for positives
- * @param best_cfrac best soft margin parameter for fraction negatives / positives
+ * @param updateDOC boolean deciding to calculate retention features 
+ *        @see DescriptionOfCorrect
+ * @param cposCandidates candidate soft margin parameters for positives
+ * @param cfracCandidates candidate soft margin parameters for fraction neg/pos
+ * @param bestCpos best soft margin parameter for positives
+ * @param bestCfrac best soft margin parameter for fraction neg/pos
  * @param pWeights results vector from the SVM algorithm
  * @param pOptions options for the SVM algorithm
 */
-int CrossValidation::xv_process_one_bin(unsigned int set, bool updateDOC, vector<double>& cpos_vec, 
-         vector<double>& cfrac_vec, double &best_cpos, double &best_cfrac, vector_double* pWeights,
-         options * pOptions) {
-  int bestTP = 0;
+int CrossValidation::processSingleFold(unsigned int set, bool updateDOC, 
+    vector<double>& cposCandidates, vector<double>& cfracCandidates, 
+    double &bestCpos, double &bestCfrac, vector_double* pWeights, 
+    options * pOptions) {
+  int bestTruePos = 0;
   if (VERB > 2) {
     cerr << "cross validation - fold " << set + 1 << " out of "
-         << xval_fold << endl;
+         << numFolds_ << endl;
   }
   
-  vector<double> ww = w[set]; // normal vector initial guess and result holder
-  vector<double> bestW = w[set]; // normal vector with highest true positive estimate
-  xv_train[set].calcScores(ww, selectionFdr);
+  vector<double> ww = w_[set]; // SVM weights initial guess and result holder
+  vector<double> bestW = w_[set]; // SVM weights with highest true pos estimate
+  trainScores_[set].calcScores(ww, selectionFdr_);
   if (DataSet::getCalcDoc() && updateDOC) {
-    xv_train[set].recalculateDescriptionOfCorrect(selectionFdr);
+    trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
   }
-  xv_train[set].generateNegativeTrainingSet(*svmInput, 1.0);
-  xv_train[set].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0);
+  trainScores_[set].generateNegativeTrainingSet(*svmInput_, 1.0);
+  trainScores_[set].generatePositiveTrainingSet(*svmInput_, selectionFdr_, 1.0);
   if (VERB > 2) {
-    cerr << "Calling with " << svmInput->positives << " positives and "
-         << svmInput->negatives << " negatives\n";
+    cerr << "Calling with " << svmInput_->positives << " positives and "
+         << svmInput_->negatives << " negatives\n";
   }
   
   // Create storage vector for SVM algorithm
   struct vector_double* Outputs = new vector_double;
-  Outputs->vec = new double[svmInput->positives + svmInput->negatives];
-  Outputs->d = svmInput->positives + svmInput->negatives;
+  size_t numInputs = svmInput_->positives + svmInput_->negatives;
+  Outputs->vec = new double[numInputs];
+  Outputs->d = numInputs;
   
-  // Find combination of soft margin parameters with highest estimate of true positives
-  std::vector<double>::const_iterator itp = cpos_vec.begin();
-  for ( ; itp != cpos_vec.end(); ++itp) {
-    double cpos = *itp;  
-    std::vector<double>::const_iterator itf = cfrac_vec.begin();
-    for ( ; itf != cfrac_vec.end(); ++itf) {
-      double cfrac = *itf;
+  // Find soft margin parameters with highest estimate of true positives
+  std::vector<double>::const_iterator itCpos = cposCandidates.begin();
+  for ( ; itCpos != cposCandidates.end(); ++itCpos) {
+    double cpos = *itCpos;  
+    std::vector<double>::const_iterator itCfrac = cfracCandidates.begin();
+    for ( ; itCfrac != cfracCandidates.end(); ++itCfrac) {
+      double cfrac = *itCfrac;
       if (VERB > 2) cerr << "-cross validation with cpos=" << cpos
           << ", cfrac=" << cfrac << endl;
       int tp = 0;
@@ -258,69 +277,76 @@ int CrossValidation::xv_process_one_bin(unsigned int set, bool updateDOC, vector
       for (int ix = 0; ix < Outputs->d; ix++) {
         Outputs->vec[ix] = 0;
       }
-      svmInput->setCost(cpos, (cpos) * (cfrac));
+      svmInput_->setCost(cpos, (cpos) * (cfrac));
       
       // Call SVM algorithm (see ssl.cpp)
-      L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+      L2_SVM_MFN(*svmInput_, pOptions, pWeights, Outputs);
       
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
         ww[i] = pWeights->vec[i];
       }
       // sub-optimal cross validation (better would be to measure
       // performance on a set disjoint of the training set)
-      tp = xv_train[set].calcScores(ww, testFdr);
+      tp = trainScores_[set].calcScores(ww, testFdr_);
       if (VERB > 2) {
         cerr << "- cross validation estimates " << tp
-             << " target PSMs over " << testFdr * 100 << "% FDR level"
+             << " target PSMs over " << testFdr_ * 100 << "% FDR level"
              << endl;
       }
-      if (tp >= bestTP) {
+      if (tp >= bestTruePos) {
         if (VERB > 2) {
           cerr << "Better than previous result, store this" << endl;
         }
-        bestTP = tp;
+        bestTruePos = tp;
         bestW = ww;
-        best_cpos = cpos;
-        best_cfrac = cfrac;
+        bestCpos = cpos;
+        bestCfrac = cfrac;
       }
     }
-    if (VERB > 2) cerr << "cross validation estimates " << bestTP
-        / (xval_fold - 1) << " target PSMs with q<" << testFdr
-        << " for hyperparameters Cpos=" << best_cpos << ", Cneg="
-        << best_cfrac * best_cpos << endl;
+    if (VERB > 2) {
+      std::cerr << "cross validation estimates " << 
+          bestTruePos / (numFolds_-1) << " target PSMs with q<" << testFdr_ <<
+          " for hyperparameters Cpos=" << bestCpos << 
+          ", Cneg=" << bestCfrac * bestCpos << std::endl;
+    }
   }
-  w[set]=bestW;
+  w_[set] = bestW;
   delete[] Outputs->vec;
   delete Outputs;
-  return bestTP;
+  return bestTruePos;
 }
 
-void CrossValidation::postIterationProcessing(Scores & fullset, SanityCheck * pCheck) {
-  if (!pCheck->validateDirection(w)) {
-    fullset.calcScores(w[0]);
+void CrossValidation::postIterationProcessing(Scores& fullset,
+                                              SanityCheck* pCheck) {
+  if (!pCheck->validateDirection(w_)) {
+    fullset.calcScores(w_[0]);
   }
   if (VERB > 0) {
-    cerr << "Merging results from " << xv_test.size() << " datasets" << endl;
+    std::cerr << "Merging results from " << testScores_.size() << 
+                 " datasets" << std::endl;
   }
-  fullset.merge(xv_test, selectionFdr);
+  fullset.merge(testScores_, selectionFdr_);
 }
 
 /**
  * Prints the weights of the normalized vector to a stream
  * @param weightStream stream where the weights are written to
- * @param w normal vector
+ * @param w_ normal vector
  */
-void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set, Normalizer * pNorm) {
-  weightStream << "# first line contains normalized weights, second line the raw weights" << endl;
-  weightStream << DataSet::getFeatureNames().getFeatureNames() << "\tm0" << endl;
+void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set, 
+                                      Normalizer * pNorm) {
+  weightStream << "# first line contains normalized weights, " <<
+                  "second line the raw weights" << std::endl;
+  weightStream << DataSet::getFeatureNames().getFeatureNames() << 
+                  "\tm0" << std::endl;
   weightStream.precision(3);
-  weightStream << w[set][0];
+  weightStream << w_[set][0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
-    weightStream << "\t" << fixed << setprecision(4) << w[set][ix];
+    weightStream << "\t" << fixed << setprecision(4) << w_[set][ix];
   }
   weightStream << endl;
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
-  pNorm->unnormalizeweight(w[set], ww);
+  pNorm->unnormalizeweight(w_[set], ww);
   weightStream << ww[0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
     weightStream << "\t" << fixed << setprecision(4) << ww[ix];
@@ -328,20 +354,21 @@ void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set, 
   weightStream << endl;
 }
 
-void CrossValidation::printAllWeights(ostream & weightStream, Normalizer * pNorm) {
-  for (unsigned int ix = 0; ix < xval_fold; ++ix) {
+void CrossValidation::printAllWeights(ostream & weightStream, 
+                                      Normalizer * pNorm) {
+  for (unsigned int ix = 0; ix < numFolds_; ++ix) {
     printSetWeights(weightStream, ix, pNorm);
   }
 }
 
 void CrossValidation::printDOC() {
   cerr << "For the cross validation sets the average deltaMass are ";
-  for (size_t ix = 0; ix < xv_test.size(); ix++) {
-    cerr << xv_test[ix].getDOC().getAvgDeltaMass() << " ";
+  for (size_t ix = 0; ix < testScores_.size(); ix++) {
+    cerr << testScores_[ix].getDOC().getAvgDeltaMass() << " ";
   }
   cerr << "and average pI are ";
-  for (size_t ix = 0; ix < xv_test.size(); ix++) {
-    cerr << xv_test[ix].getDOC().getAvgPI() << " ";
+  for (size_t ix = 0; ix < testScores_.size(); ix++) {
+    cerr << testScores_[ix].getDOC().getAvgPI() << " ";
   }
   cerr << endl;
 }

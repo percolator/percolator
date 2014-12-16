@@ -317,81 +317,91 @@ void FidoInterface::gridSearch()
   switch(depth)
   {
     case 0:    
-      gamma_search = boost::assign::list_of(0.5);
-      beta_search = boost::assign::list_of(0.001);
-      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
+      gamma_search.push_back(0.5);
+      
+      beta_search.push_back(0.001);
+      
+      alpha_search.push_back(0.008);
+      alpha_search.push_back(0.032);
+      alpha_search.push_back(0.128);
       break;
     
     case 1:
-      gamma_search = boost::assign::list_of(0.1)(0.5)(0.9);
-      beta_search = boost::assign::list_of(0.001);
-      for (double k = 0.002; k <= 0.4; k*=4)
-      {
+      gamma_search.push_back(0.1);
+      gamma_search.push_back(0.5);
+      gamma_search.push_back(0.9);
+      
+      beta_search.push_back(0.001);
+      for (double k = 0.002; k <= 0.4; k*=4) {
        alpha_search.push_back(k);
       }
       break;
       
     case 2:
-      gamma_search = boost::assign::list_of(0.1)(0.3)(0.5)(0.75)(0.9);
-      beta_search = boost::assign::list_of(0.001);
-      for (double k = 0.001; k <= 0.4; k*=2)
-      {
+      gamma_search.push_back(0.1);
+      gamma_search.push_back(0.3);
+      gamma_search.push_back(0.5);
+      gamma_search.push_back(0.75);
+      gamma_search.push_back(0.9);
+      
+      beta_search.push_back(0.001);
+      for (double k = 0.001; k <= 0.4; k*=2) {
        alpha_search.push_back(k);
       }
       break;
     
     default:
-      gamma_search = boost::assign::list_of(0.5);
-      beta_search = boost::assign::list_of(0.001);
-      alpha_search = boost::assign::list_of(0.008)(0.032)(0.128);
-  }
-
-  if(alpha != -1)
-    alpha_search = boost::assign::list_of(alpha);
-  if(beta != -1)
-    beta_search = boost::assign::list_of(beta);
-  if(gamma != -1)
-    gamma_search = boost::assign::list_of(gamma);
-  
-  for (unsigned int i = 0; i < gamma_search.size(); i++)
-  {
-    double gamma_local = gamma_search[i];
-    
-    for (unsigned int j = 0; j < alpha_search.size(); j++)
-    {
-      double alpha_local = alpha_search[j];
+      gamma_search.push_back(0.5);
       
-      for (unsigned int k = 0; k < beta_search.size(); k++)
-      {
-
-  double beta_local = beta_search[k];
-  
-  proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
-  proteinGraph->getProteinProbs();
-  proteinGraph->getProteinProbsAndNames(names,probs);
-  getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-  getROC_AUC(names,probs,roc);
-  getFDR_MSE(estq,empq,mse);
-  
-  current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
-  
-  if(VERB > 2)
-  {
-    std::cerr.precision(10);
-    std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
-    std::cerr.unsetf(std::ios::floatfield);
-    std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
-    std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
-    std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
-  }  
-  if (current_objective > best_objective)
-  {
-    best_objective = current_objective;
-    gamma_best = gamma_local;
-    alpha_best = alpha_local;
-    beta_best = beta_local;
+      beta_search.push_back(0.001);
+      
+      alpha_search.push_back(0.008);
+      alpha_search.push_back(0.032);
+      alpha_search.push_back(0.128);
+      break;
   }
 
+  if (alpha != -1)
+    alpha_search.push_back(alpha);
+  if (beta != -1)
+    beta_search.push_back(beta);
+  if (gamma != -1)
+    gamma_search.push_back(gamma);
+  
+  for (unsigned int i = 0; i < gamma_search.size(); i++) {
+    double gamma_local = gamma_search[i];
+    for (unsigned int j = 0; j < alpha_search.size(); j++) {
+      double alpha_local = alpha_search[j];
+      for (unsigned int k = 0; k < beta_search.size(); k++) {
+        double beta_local = beta_search[k];
+        
+        proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
+        proteinGraph->getProteinProbs();
+        proteinGraph->getProteinProbsAndNames(names,probs);
+        getEstimated_and_Empirical_FDR(names,probs,empq,estq);
+        getROC_AUC(names,probs,roc);
+        getFDR_MSE(estq,empq,mse);
+        
+        current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
+        
+        if (VERB > 2) {
+          std::cerr.precision(10);
+          std::cerr << "Grid searching Alpha= "  << alpha_local << 
+                       " Beta= " << beta_local << 
+                       " Gamma= "  << gamma_local << std::endl;
+          std::cerr.unsetf(std::ios::floatfield);
+          std::cerr << "The ROC AUC estimated values is : " << roc << std::endl;
+          std::cerr << "The MSE FDR estimated values is : " << mse << std::endl;
+          std::cerr << "Objective function with second roc and mse is : " << 
+                       current_objective << std::endl;
+        }
+        
+        if (current_objective > best_objective) {
+          best_objective = current_objective;
+          gamma_best = gamma_local;
+          alpha_best = alpha_local;
+          beta_best = beta_local;
+        }
       }
     }
   }

@@ -19,7 +19,9 @@ if(XML_SUPPORT)
     message(FATAL_ERROR "The package Apache Xerces-C++ has not been found")
   endif(XERCESC_FOUND)
   include_directories(${XERCESC_INCLUDE_DIR})
-
+  
+  find_package(Threads REQUIRED) # XERCESC depends on pthread
+  
   if(APPLE OR MINGW)
     find_package(CURL REQUIRED) # XERCESC depends on curl
   endif()
@@ -32,16 +34,7 @@ if(XML_SUPPORT)
   endif(XSD_FOUND)  
   include_directories(${XSD_INCLUDE_DIR})
   
-  FIND_PACKAGE ( Threads REQUIRED )
 endif(XML_SUPPORT)
-
-find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
-if(Boost_FOUND)
-  message(STATUS "Package Boost found at: ${Boost_INCLUDE_DIRS}")
-else(Boost_FOUND)
-  message(FATAL_ERROR "Boost has not been found")
-endif(Boost_FOUND)
-include_directories(${Boost_INCLUDE_DIRS})
 
 
 ###############################################################################
@@ -136,9 +129,9 @@ endif()
  
 # SET LIBRARIES FOR PERCOLATOR
 if(MSVC)
-  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${CURL_LIBRARIES})
+  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
 else(MSVC)
-  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${CURL_LIBRARIES} stdc++)
+  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
 endif()
  
 # INSTALL PERCOLATOR

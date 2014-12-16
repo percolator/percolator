@@ -36,54 +36,59 @@ class CrossValidation {
     CrossValidation();
     ~CrossValidation();
     
-    int preIterationSetup(Scores & fullset, SanityCheck * pCheck, Normalizer * pNorm);
+    int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
+                          Normalizer * pNorm);
     
     void train(Normalizer * pNorm);
     
     void postIterationProcessing(Scores & fullset, SanityCheck * pCheck);
     
     void printParameters(ostringstream & oss);
-    void printSetWeights(ostream & weightStream, unsigned int set, Normalizer * pNorm);
+    void printSetWeights(ostream & weightStream, unsigned int set, 
+                         Normalizer * pNorm);
     void printAllWeights(ostream & weightStream, Normalizer * pNorm);
     void printDOC();
     
-    void inline setSelectedCpos(double cpos) { selectedCpos = cpos; }
-    double inline getSelectedCpos() { return selectedCpos; }
-    void inline setSelectedCneg(double cneg) { selectedCneg = cneg; }
-    double inline getSelectedCneg() { return selectedCneg; }
-    void inline setSelectionFdr(double fdr) { selectionFdr = fdr; }
-    double inline getSelectionFdr() { return selectionFdr; }
-    void inline setNiter(unsigned int n) { niter = n; }
-    unsigned int inline getNiter() { return niter; }
+    void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
+    double inline getSelectedCpos() { return selectedCpos_; }
+    void inline setSelectedCneg(double cneg) { selectedCneg_ = cneg; }
+    double inline getSelectedCneg() { return selectedCneg_; }
     
-    void inline setTestFdr(double fdr) { testFdr = fdr; }
-    void inline setQuickValidation(bool on) { quickValidation = on; }
-    void inline setReportPerformanceEachIteration(bool on) { reportPerformanceEachIteration = on; }
+    void inline setSelectionFdr(double fdr) { selectionFdr_ = fdr; }
+    double inline getSelectionFdr() { return selectionFdr_; }
+    void inline setTestFdr(double fdr) { testFdr_ = fdr; }
+    
+    void inline setNiter(unsigned int n) { niter_ = n; }
+    unsigned int inline getNiter() { return niter_; }
+    void inline setQuickValidation(bool on) { quickValidation_ = on; }
+    void inline setReportPerformanceEachIteration(bool on) { 
+      reportPerformanceEachIteration_ = on;
+    }
     
   protected:
-    AlgIn *svmInput;
-    vector< vector<double> > w;
+    AlgIn* svmInput_;
+    vector< vector<double> > w_; // svm weights for each fold
     
-    bool quickValidation;
-    bool reportPerformanceEachIteration;
+    bool quickValidation_;
+    bool reportPerformanceEachIteration_;
     
-    double testFdr;
-    double selectionFdr;
-    double selectedCpos;
-    double selectedCneg;
+    double testFdr_; // fdr used for cross validation performance measuring
+    double selectionFdr_; // fdr used for determining positive training set
+    double selectedCpos_; // soft margin parameter for positive training set
+    double selectedCneg_; // soft margin parameter for negative training set
     
-    unsigned int niter;
-    const static double requiredIncreaseOver2Iterations;
+    unsigned int niter_;
+    const static double requiredIncreaseOver2Iterations_;
     
-    const static unsigned int xval_fold;
-    vector<Scores> xv_train, xv_test;
-    vector<double> xv_cposs, xv_cfracs;
+    const static unsigned int numFolds_;
+    vector<Scores> trainScores_, testScores_;
+    vector<double> candidatesCpos_, candidatesCfrac_;
     
-    int xv_process_one_bin(unsigned int set, bool updateDOC, 
+    int processSingleFold(unsigned int set, bool updateDOC, 
                            vector<double>& cpos_vec, vector<double>& cfrac_vec, 
                            double& best_cpos, double& best_cfrac, 
                            vector_double* pWeights, options * pOptions);
-    int xv_step(bool updateDOC = false);
+    int doStep(bool updateDOC = false);
     
 };
 

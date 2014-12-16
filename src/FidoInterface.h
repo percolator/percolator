@@ -19,7 +19,6 @@
 #define FIDOINTERFACE_H
 #include "ProteinProbEstimator.h"
 #include "GroupPowerBigraph.h"
-#include <boost/assign/list_of.hpp>
 
 /*
 * FidoInterface is a class that computes probabilities and statistics based

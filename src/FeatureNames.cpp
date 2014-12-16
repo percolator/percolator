@@ -75,7 +75,7 @@ string FeatureNames::getFeatureNames(bool skipDOC) {
 
 int FeatureNames::getFeatureNumber(const string& featureName) {
   for (unsigned int fnum = 0; fnum < featureNames.size(); ++fnum) {
-    // there is no good case insensitive string compare in c++ (trying to avoid boost dependencies)
+    // there is no easy case insensitive string compare in c++, so go by char
     if (featureNames[fnum].size() == featureName.size()) {
       bool isEqual = true;
       for (unsigned int i = 0; i < featureName.size(); ++i) {
