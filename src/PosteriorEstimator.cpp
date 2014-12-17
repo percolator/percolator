@@ -394,8 +394,7 @@ void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<dou
 	return;
 }
 
-void PosteriorEstimator::getPValues(
-                                    const vector<pair<double, bool> >& combined,
+void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
                                     vector<double>& p) {
   // assuming combined sorted in best hit first order
   vector<pair<double, bool> >::const_iterator myPair = combined.begin();
@@ -404,25 +403,23 @@ void PosteriorEstimator::getPValues(
   while (myPair != combined.end()) {
     if (myPair->first != prevScore) {
       for (size_t ix = 0; ix < posSame; ++ix) {
-        p.push_back((double)nDecoys + (((double)negSame)
-            / (double)(posSame + 1)) * (ix + 1));
+        p.push_back(nDecoys + negSame * (ix + 1) / (double)(posSame + 1) );
       }
       nDecoys += negSame;
       negSame = 0;
       posSame = 0;
       prevScore = myPair->first;
     }
-    if (myPair->second) {
+    if (myPair->second) { // isTarget
       ++posSame;
-    } else {
+    } else { // isDecoy
       ++negSame;
     }
     ++myPair;
   }
-  transform(p.begin(), p.end(), p.begin(), bind2nd(divides<double> (),
-                                                   (double)nDecoys));
   // p sorted in acending order
-  return;
+  transform(p.begin(), p.end(), p.begin(), 
+            bind2nd(divides<double>(), (double)nDecoys));
 }
 
 /*
@@ -449,7 +446,7 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
       pi0s.push_back(pi0);
     }
   }
-  if(pi0s.size()==0){
+  if (pi0s.size() == 0) {
     cerr << "Error in the input data: too good separation between target "
         << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
     return -1;
@@ -471,8 +468,8 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
     }
   }
   // Which index did the iterator get?
-  unsigned int minIx = distance(mse.begin(), min_element(mse.begin(),
-                                                         mse.end()));
+  unsigned int minIx = distance(mse.begin(), 
+                                min_element(mse.begin(), mse.end()));
   double pi0 = max(min(pi0s[minIx], 1.0), 0.0);
   return pi0;
 }

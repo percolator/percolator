@@ -311,8 +311,8 @@ void XMLInterface::writeXML_Peptides(Scores & fullset) {
   os.open(xmlOutputFN_Peptides.c_str(), ios::out);
   // append PEPTIDEs
   os << "  <peptides>" << endl;
-  for (vector<ScoreHolder>::iterator psm = fullset.begin(); psm
-  != fullset.end(); ++psm) {
+  for (vector<ScoreHolder>::iterator psm = fullset.begin(); 
+       psm != fullset.end(); ++psm) {
     os << (ScoreHolderPeptide)*psm;
   }
   os << "  </peptides>" << endl << endl;
@@ -325,7 +325,7 @@ void XMLInterface::writeXML_Peptides(Scores & fullset) {
 void XMLInterface::writeXML_Proteins(ProteinProbEstimator * protEstimator) {
   xmlOutputFN_Proteins = xmlOutputFN;
   xmlOutputFN_Proteins.append("writeXML_Proteins");
-  protEstimator->writeOutputToXML(xmlOutputFN_Proteins, Scores::isOutXmlDecoys());
+  protEstimator->writeOutputToXML(xmlOutputFN_Proteins, Scores::getPrintDecoysInXml());
 }
 
 /** 

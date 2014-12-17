@@ -43,40 +43,38 @@ using namespace std;
 * testing, Xval data sets, reads/writes from/to a file, prints them.
 *
 */
-class SetHandler {
+class SetHandler {    
+ public:
+  SetHandler();
+  virtual ~SetHandler();
+
+  void push_back_dataset(DataSet* ds);
+     
+  //const double* getFeatures(const int setPos, const int ixPos) const; 
   
-  protected:
-    vector<DataSet*> subsets;
-    int n_examples;
-    
-    unsigned int getSubsetIndexFromLabel(int label);
-    static inline std::string &rtrim(std::string &s);
-    
-  public:
-    
-    SetHandler();
-    virtual ~SetHandler();
+  // Reads in tab delimited stream and returns a SanityCheck object based on
+  // the presence of default weights. Returns 0 on error, 1 on success.
+  int readTab(istream& dataStream, SanityCheck*& pCheck);
+  void writeTab(const string& dataFN, SanityCheck* pCheck);
+  void print(Scores& test, int label, ostream& myout = cout);
+  void fillFeatures(vector<ScoreHolder> &scores, int label);
 
-    void push_back_dataset( DataSet * ds );
-       
-    //const double* getFeatures(const int setPos, const int ixPos) const;  
-    int readTab(istream& dataStream, SanityCheck *& pCheck);
-    void writeTab(const string& dataFN, SanityCheck * pCheck);
-    void print(Scores& test, int label, ostream& myout = cout);
-    void fillFeatures(vector<ScoreHolder> &scores, int label);
-    void fillFeaturesPeptide(vector<ScoreHolder> &scores, int label);
-
-    int const getLabel(int setPos);
-    inline int const getSize() { return n_examples; }
-    inline int getSizeFromLabel(int label) {
-      return (subsets[getSubsetIndexFromLabel(label)]->getSize());
-    }
-    
-    vector<DataSet*> & getSubsets() { return subsets; }
-    inline DataSet* getSubset(unsigned int ix) { return (subsets[ix]); }
-    inline DataSet* getSubsetFromLabel(int label) {
-      return (subsets[getSubsetIndexFromLabel(label)]);
-    }
+  int const getLabel(int setPos);
+  inline int getSizeFromLabel(int label) {
+    return (subsets_[getSubsetIndexFromLabel(label)]->getSize());
+  }
+  
+  vector<DataSet*>& getSubsets() { return subsets_; }
+  inline DataSet* getSubset(unsigned int ix) { return (subsets_[ix]); }
+  inline DataSet* getSubsetFromLabel(int label) {
+    return (subsets_[getSubsetIndexFromLabel(label)]);
+  }
+  
+ protected:
+  vector<DataSet*> subsets_;
+  
+  unsigned int getSubsetIndexFromLabel(int label);
+  static inline std::string &rtrim(std::string &s);
 };
 
 #endif /*SETHANDLER_H_*/

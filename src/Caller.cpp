@@ -508,7 +508,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     DescriptionOfCorrect::setDocType(cmd.getInt("D", 0, 15));
   }
   if (cmd.optionSet("Z")) {
-    Scores::setOutXmlDecoys(true);
+    Scores::setPrintDecoysInXml(true);
   }
   if (cmd.optionSet("s")) {
     xmlInterface_.setSchemaValidation(false);
@@ -590,7 +590,7 @@ int Caller::readFiles() {
  * Fills in the features previously read from file and normalizes them
  */
 void Caller::fillFeatureSets() {
-  allScores_.fillFeatures(setHandler_, reportUniquePeptides_);
+  allScores_.fillFeatures(setHandler_);
   if (VERB > 1) {
     cerr << "Train/test set contains " << allScores_.posSize()
         << " positives and " << allScores_.negSize()
@@ -655,7 +655,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     allScores_.weedOutRedundant();
   } else if (targetDecoyCompetition_) {
     allScores_.weedOutRedundantTDC();
-    if(VERB > 0) {
+    if (VERB > 0) {
       std::cerr << "Target Decoy Competition yielded " << allScores_.posSize() 
         << " target PSMs and " << allScores_.negSize() << " decoy PSMs" << std::endl;
     }
@@ -694,7 +694,7 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
               << " cpu seconds or " << diff << " seconds wall time" << endl;
   
   if (VERB > 1 && writeOutput) {
-    cerr << timerValues.str();
+    std::cerr << timerValues.str();
   }
   
   if (weightFN_.size() > 0) {
@@ -792,7 +792,9 @@ int Caller::run() {
   
   // Reading input files (pin or temporary file)
   if (!readFiles()) {
-    throw MyException("ERROR: Failed to read in file, check if the correct file-format was used.");
+    std::cerr << "ERROR: Failed to read in file, check if the correct " <<
+                 "file-format was used.";
+    return 0;
   }
   // Copy feature data to Scores object
   fillFeatureSets();

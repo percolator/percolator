@@ -20,11 +20,11 @@
 SetHandler::SetHandler() {}
 
 SetHandler::~SetHandler() {
-  for (unsigned int ix = 0; ix < subsets.size(); ix++) {
-    if (subsets[ix] != NULL) {
-      delete subsets[ix];
+  for (unsigned int ix = 0; ix < subsets_.size(); ix++) {
+    if (subsets_[ix] != NULL) {
+      delete subsets_[ix];
     }
-    subsets[ix] = NULL;
+    subsets_[ix] = NULL;
   }
 }
 
@@ -34,8 +34,8 @@ SetHandler::~SetHandler() {
  * @return index of matching DataSet
  */
 unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
-  for (unsigned int ix = 0; ix < subsets.size(); ++ix) {
-    if (subsets[ix]->getLabel() == label) return ix;
+  for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
+    if (subsets_[ix]->getLabel() == label) return ix;
   }
   ostringstream temp;
   temp << "Error: No DataSet found with label " << label << std::endl;
@@ -47,7 +47,7 @@ unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
  * @param ds pointer to DataSet to be inserted
  */
 void SetHandler::push_back_dataset( DataSet * ds ) {
-  subsets.push_back(ds);
+  subsets_.push_back(ds);
 }
 
 /**
@@ -57,8 +57,8 @@ void SetHandler::push_back_dataset( DataSet * ds ) {
  */
 void SetHandler::print(Scores& test, int label, ostream& myout) {
   vector<ResultHolder> outList(0);
-  for (std::vector<DataSet*>::iterator it = subsets.begin();
-         it != subsets.end(); ++it) {
+  for (std::vector<DataSet*>::iterator it = subsets_.begin();
+         it != subsets_.end(); ++it) {
     if ((*it)->getLabel() == label) {
       (*it)->print(test, outList);
     }
@@ -74,37 +74,32 @@ void SetHandler::print(Scores& test, int label, ostream& myout) {
 }
 
 void SetHandler::fillFeatures(vector<ScoreHolder> &scores, int label) {
-  subsets[getSubsetIndexFromLabel(label)]->fillFeatures(scores);
-}
-
-void SetHandler::fillFeaturesPeptide(vector<ScoreHolder> &scores, int label) {
-  subsets[getSubsetIndexFromLabel(label)]->fillFeaturesPeptide(scores);
+  subsets_[getSubsetIndexFromLabel(label)]->fillFeatures(scores);
 }
 
 /*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
-  return subsets[setPos]->getFeatures(ixPos);
+  return subsets_[setPos]->getFeatures(ixPos);
 }*/
 
 int const SetHandler::getLabel(int setPos) {
-  assert(setPos >= 0 && setPos < (signed int)subsets.size());
-  return subsets[setPos]->getLabel();
+  assert(setPos >= 0 && setPos < (signed int)subsets_.size());
+  return subsets_[setPos]->getLabel();
 }
 
-int SetHandler::readTab(istream& dataStream, SanityCheck *& pCheck) {
+int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
   if (!dataStream) {
-    ostringstream temp;
-    temp << "ERROR: Can not open data stream." << endl;
-    throw MyException(temp.str());
+    std::cerr << "ERROR: Can not open data stream." << std::endl;
+    return 0;
   }
   std::string tmp, psmid, line, headerLine, defaultDirectionLine;
   istringstream iss;
   
   getline(dataStream, headerLine); // line with feature names
   if (line.substr(0,5) == "<?xml") {
-    ostringstream temp;
-    temp << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
-       "The input file seems to be in XML format, use the -k flag for XML input. " << endl;
-    throw MyException(temp.str());
+    std::cerr << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
+       "Input file seems to be in XML format, use the -k flag for XML input." << 
+       std::endl;
+    return 0;
   }
   
   // Checking for optional headers "ScanNr", "ExpMass" and "CalcMass"
@@ -213,9 +208,11 @@ int SetHandler::readTab(istream& dataStream, SanityCheck *& pCheck) {
   }
   
   if (numFeatures < 1) {
-    throw MyException("ERROR: Reading tab file, too few features present.");
+    std::cerr << "ERROR: Reading tab file, too few features present." << std::endl;
+    return 0;
   } else if (hasDefaultValues && init_values.size() > numFeatures) {
-    throw MyException("ERROR: Reading tab file, too many default values present.");
+    std::cerr << "ERROR: Reading tab file, too many default values present." << std::endl;
+    return 0;
   }
   
   DataSet * targetSet = new DataSet();
@@ -268,8 +265,8 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
     }
     dataStream << std::endl;
   }
-  for (std::vector<DataSet*>::iterator it = subsets.begin();
-         it != subsets.end(); ++it) {
+  for (std::vector<DataSet*>::iterator it = subsets_.begin();
+         it != subsets_.end(); ++it) {
     (*it)->writeTabData(dataStream);
   }
 }

@@ -17,17 +17,16 @@
 
 #include "DataSet.h"
 
-bool DataSet::isotopeMass = false;
-bool DataSet::calcDOC = false;
-const string DataSet::aaAlphabet = "ACDEFGHIKLMNPQRSTVWY";
-string DataSet::ptmAlphabet = "#*@";
-FeatureNames DataSet::featureNames;
+bool DataSet::calcDOC_ = false;
+const string DataSet::aaAlphabet_ = "ACDEFGHIKLMNPQRSTVWY";
+string DataSet::ptmAlphabet_ = "#*@";
+FeatureNames DataSet::featureNames_;
 
-DataSet::DataSet() : numSpectra(0) {}
+DataSet::DataSet() : numSpectra_(0) {}
 
 DataSet::~DataSet() {
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     if(psm->features) {
       delete[] psm->features;
@@ -48,15 +47,15 @@ DataSet::~DataSet() {
 
 bool DataSet::writeTabData(ofstream& out) {
   unsigned int nf = FeatureNames::getNumFeatures();
-  if (calcDOC) {
+  if (calcDOC_) {
     nf -= DescriptionOfCorrect::numDOCFeatures();
   }
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     double* featureRow = psm->features;
-    out << psm->id << '\t' << label << '\t' << psm->scan;
-    if (calcDOC) {
+    out << psm->id << '\t' << label_ << '\t' << psm->scan;
+    if (calcDOC_) {
       out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
           << psm->massDiff;
     }
@@ -73,7 +72,7 @@ bool DataSet::writeTabData(ofstream& out) {
 void DataSet::print_features() {
   for (int i = 0; i < getSize(); i++) {
     for (unsigned int j = 0; j < FeatureNames::getNumFeatures(); j++) {
-      cerr << j + 1 << ":" << psms[i]->features[j] << " ";
+      cerr << j + 1 << ":" << psms_[i]->features[j] << " ";
     }
     cerr << endl;
   }
@@ -83,7 +82,7 @@ void DataSet::print_10features() {
   cerr << DataSet::getFeatureNames().getFeatureNames() << endl;
   for (int i = 0; i < 10; i++) {
     for (unsigned int j = 0; j < FeatureNames::getNumFeatures(); j++) {
-      cerr << psms[i]->features[j] << "\t";
+      cerr << psms_[i]->features[j] << "\t";
     }
     cerr << endl;
   }
@@ -91,8 +90,8 @@ void DataSet::print_10features() {
 
 void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
   ostringstream out;
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     ScoreHolder* pSH = test.getScoreHolder(psm->features);
     if (pSH == NULL) {
@@ -105,26 +104,18 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
   test.resetScoreMap();
 }
 
-// TODO: find a way to make these four functions generic
+// TODO: find a way to make these three functions generic
 void DataSet::fillFeatures(vector<ScoreHolder> &scores) {
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
-    scores.push_back(ScoreHolder(.0, label, psm));
-  }
-}
-    
-void DataSet::fillFeaturesPeptide(vector<ScoreHolder> &scores) {
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
-    PSMDescription* psm = *it;
-    scores.push_back(ScoreHolderPeptide(.0, label, psm));
+    scores.push_back(ScoreHolder(.0, label_, psm));
   }
 }
 
 void DataSet::fillFeatures(vector<double*> &features) {
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     features.push_back(psm->features);
   }
@@ -132,8 +123,8 @@ void DataSet::fillFeatures(vector<double*> &features) {
 
 void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
   double* features;
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  for ( ; it != psms.end(); ++it) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     if ((features = psm->retentionFeatures))
         rtFeatures.push_back(features);
@@ -143,11 +134,11 @@ void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
 /*
 double DataSet::isPngasef(const string& peptide) {
   bool isDecoy;
-  switch (label) {
+  switch (label_) {
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
     default:  { throw MyException("ERROR : class DataSet has not been initiated\
-    to neither target nor decoy label\n");}
+    to neither target nor decoy label_\n");}
   }
   return isPngasef( peptide, isDecoy);
 }
@@ -188,11 +179,11 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
   unsigned int numFeatures = FeatureNames::getNumFeatures();
   
   PSMDescription *myPsm = new PSMDescription();
-  buff >> myPsm->id >> tmp; // read PSMid and get rid of label
+  buff >> myPsm->id >> tmp; // read PSMid and get rid of label_
   if (!buff.good()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr << \
-        ". Could not read PSMid or label." << std::endl;
+        ". Could not read PSMid or label_." << std::endl;
     throw MyException(temp.str());
   }
   
@@ -227,7 +218,7 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
   }
   if (!hasScannr) myPsm->scan = lineNr;
   
-  if (calcDOC) {
+  if (calcDOC_) {
     numFeatures -= DescriptionOfCorrect::numDOCFeatures();
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
@@ -277,7 +268,7 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
 unsigned int DataSet::peptideLength(const string& pep) {
   unsigned int len = 0;
   for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (aaAlphabet.find(pep.at(pos)) != string::npos) {
+    if (aaAlphabet_.find(pep.at(pos)) != string::npos) {
       len++;
     }
   }
@@ -287,7 +278,7 @@ unsigned int DataSet::peptideLength(const string& pep) {
 unsigned int DataSet::cntPTMs(const string& pep) {
   unsigned int len = 0;
   for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (ptmAlphabet.find(pep.at(pos)) != string::npos) {
+    if (ptmAlphabet_.find(pep.at(pos)) != string::npos) {
       len++;
     }
   }
@@ -296,15 +287,15 @@ unsigned int DataSet::cntPTMs(const string& pep) {
 
 void DataSet::registerPsm(PSMDescription * myPsm) {
   bool isDecoy;
-  switch (label) {
+  switch (label_) {
     case 1: { isDecoy = false; break; };
     case -1: { isDecoy = true; break; };
     default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
-    to neither target nor decoy label\n");}
+    to neither target nor decoy label_\n");}
   }
   
-  if (calcDOC) {
-    int featureNum = featureNames.getDocFeatNum();
+  if (calcDOC_) {
+    int featureNum = featureNames_.getDocFeatNum();
     myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
     DescriptionOfCorrect::calcRegressionFeature(*myPsm);
     myPsm->features[featureNum++] = abs( myPsm->pI - 6.5);
@@ -312,6 +303,6 @@ void DataSet::registerPsm(PSMDescription * myPsm) {
     myPsm->features[featureNum++] = 0;
     myPsm->features[featureNum++] = 0;
   }
-  psms.push_back(myPsm);
-  ++numSpectra;
+  psms_.push_back(myPsm);
+  ++numSpectra_;
 }

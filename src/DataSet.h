@@ -47,22 +47,20 @@ class DataSet {
     
     void initFeatureTables(const unsigned int numFeatures);
     
-    void inline setLabel(int l) { label = l; }
-    int inline getLabel() const { return label; }
+    void inline setLabel(int l) { label_ = l; }
+    int inline getLabel() const { return label_; }
     
-    void inline setSize(int n) { numSpectra = n; }
-    int inline getSize() const { return numSpectra; }
+    void inline setSize(int n) { numSpectra_ = n; }
+    int inline getSize() const { return numSpectra_; }
     
-    static inline void setCalcDoc(bool on) { calcDOC = on; }
-    static inline bool getCalcDoc() { return calcDOC; }
+    static inline void setCalcDoc(bool on) { calcDOC_ = on; }
+    static inline bool getCalcDoc() { return calcDOC_; }
     
-    static void setIsotopeMass(bool on) { isotopeMass = on; }
-    
-    static FeatureNames& getFeatureNames() { return featureNames; }
-    static unsigned getNumFeatures() { return featureNames.getNumFeatures(); }
+    static FeatureNames& getFeatureNames() { return featureNames_; }
+    static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
     
     void setRetentionTime(map<int, double>& scan2rt) { 
-      PSMDescription::setRetentionTime(psms, scan2rt);
+      PSMDescription::setRetentionTime(psms_, scan2rt);
     }
     
     bool writeTabData(ofstream& out);
@@ -72,7 +70,6 @@ class DataSet {
     void print(Scores& test, vector<ResultHolder> & outList);
     
     void fillFeatures(vector<ScoreHolder> &scores);
-    void fillFeaturesPeptide(vector<ScoreHolder> &scores);
     void fillFeatures(vector<double*> &features);
     void fillRtFeatures(vector<double*> &rtFeatures);
     
@@ -87,19 +84,14 @@ class DataSet {
 
   protected:   
     // double isPngasef(const string& peptide);
-    static bool calcDOC;
-    static bool isotopeMass;
-    const static string aaAlphabet;
-    static string ptmAlphabet;
+    static bool calcDOC_;
+    const static std::string aaAlphabet_;
+    static std::string ptmAlphabet_;
     
-    // Normal + Amino acid + PTM + hitsPerSpectrum + doc
-    const static int maxNumRealFeatures = 16 + 3 + 20 * 3 + 1 + 1 + 3; 
-    
-    std::vector<PSMDescription*> psms;
-    int label;
-    int numSpectra;
-    string fileId;
-    static FeatureNames featureNames;
+    std::vector<PSMDescription*> psms_;
+    int label_;
+    int numSpectra_;
+    static FeatureNames featureNames_;
 };
 
 #endif /*DATASET_H_*/

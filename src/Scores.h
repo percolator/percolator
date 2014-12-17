@@ -103,9 +103,11 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
 }
 
 /**
- * ScoreHolder for unique peptides.
+ * ScoreHolder for unique peptides. Only differs in the way it is printed to 
+ * a stream, therefore it is safe to create a vector slicing the object to
+ * a normal ScoreHolder.
  */
-class ScoreHolderPeptide: public ScoreHolder {
+class ScoreHolderPeptide : public ScoreHolder {
   public:
     ScoreHolderPeptide() : ScoreHolder() {}
     ScoreHolderPeptide(ScoreHolder& sh) : ScoreHolder(sh) {}
@@ -128,8 +130,8 @@ class AlgIn;
 * DOC - Description Of Correct
 * FDR - False Discovery Rate
 * LCG - Linear Congruential Generator
-* Pi0 - ?
-* TDC - ?
+* Pi0 - prior probability of null hypothesis
+* TDC - Target Decoy Competition
 *
 */
 class Scores {
@@ -139,8 +141,8 @@ class Scores {
     ~Scores();
     void merge(vector<Scores>& sv, double fdr=0.01, bool computePi0 = true);
     
-    vector<ScoreHolder>::iterator begin() { return scores.begin(); }
-    vector<ScoreHolder>::iterator end() { return scores.end(); }
+    vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
+    vector<ScoreHolder>::iterator end() { return scores_.end(); }
     
     double calcScore(const double* features) const;
     int calcScores(vector<double>& w, double fdr = 0.01);
@@ -149,7 +151,7 @@ class Scores {
     void calcPep();
     double estimatePi0();
     
-    void fillFeatures(SetHandler& setHandler, bool);
+    void fillFeatures(SetHandler& setHandler);
     
     int getInitDirection(const double fdr, vector<double>& direction);
     void createXvalSets(vector<Scores>& train, vector<Scores>& test,
@@ -175,37 +177,48 @@ class Scores {
     void fill(string& fn);
     
     ScoreHolder* getScoreHolder(const double* d);
-    DescriptionOfCorrect& getDOC() { return doc; }
-    inline double getPi0() { return pi0; }
-    inline double getTargetDecoySizeRatio() { return targetDecoySizeRatio; }
-    inline unsigned int size() { return (totalNumberOfTargets + totalNumberOfDecoys); }
-    inline unsigned int posSize() { return (totalNumberOfTargets); }
-    inline unsigned int posNowSize() { return (posNow); }
-    inline unsigned int negSize() { return (totalNumberOfDecoys); }
     
-    inline static bool isOutXmlDecoys() { return outxmlDecoys; }
-    inline static void setOutXmlDecoys(bool decoys_out) { outxmlDecoys = decoys_out; }
-    inline static void setShowExpMass(bool expmass) { showExpMass = expmass; }
-    inline static bool getShowExpMass() { return showExpMass; }
+    DescriptionOfCorrect& getDOC() { return doc_; }
     
-    inline void resetScoreMap() { scoreMap.clear(); }
+    inline double getPi0() const { return pi0_; }
+    inline double getTargetDecoySizeRatio() const { 
+      return targetDecoySizeRatio_; 
+    }
+    inline unsigned int size() const { 
+      return totalNumberOfTargets_ + totalNumberOfDecoys_; 
+    }
+    inline unsigned int posSize() const { return totalNumberOfTargets_; }
+    inline unsigned int posNowSize() const { return numPos_; }
+    inline unsigned int negSize() const { return totalNumberOfDecoys_; }
     
-    inline static void setSeed(unsigned long s) { seed = s; }
+    inline static void setPrintDecoysInXml(bool decoysOut) { 
+      printDecoysInXml_ = decoysOut; 
+    }
+    inline static bool getPrintDecoysInXml() { return printDecoysInXml_; }
+    inline static void setShowExpMass(bool expmass) { showExpMass_ = expmass; }
+    inline static bool getShowExpMass() { return showExpMass_; }
+    
+    inline void resetScoreMap() { scoreMap_.clear(); }
+    
+    inline static void setSeed(unsigned long s) { seed_ = s; }
     unsigned long lcg_rand();
     
-    vector<ScoreHolder> scores;
+    inline void addScoreHolder(const ScoreHolder& sh) {
+      scores_.push_back(sh);
+    }
     
   protected:
     
-    vector<double> w_vec;
-    int totalNumberOfDecoys, totalNumberOfTargets, posNow;
-    std::map<const double*, ScoreHolder*> scoreMap;
-    DescriptionOfCorrect doc;
-    static bool outxmlDecoys;
-    static unsigned long seed;
-    static bool showExpMass;
-    double pi0;
-    double targetDecoySizeRatio;
+    vector<ScoreHolder> scores_;
+    vector<double> svmWeights_;
+    int totalNumberOfDecoys_, totalNumberOfTargets_, numPos_;
+    std::map<const double*, ScoreHolder*> scoreMap_;
+    DescriptionOfCorrect doc_;
+    static bool printDecoysInXml_;
+    static unsigned long seed_;
+    static bool showExpMass_;
+    double pi0_;
+    double targetDecoySizeRatio_;
 };
 
 #endif /*SCORES_H_*/
