@@ -394,7 +394,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     std::string peptideS = peptideSeq;
     for (unsigned int ix = 0; ix < peptideSeq.size(); ++ix) {
       if (freqAA.find(peptideSeq[ix]) == string::npos) {
-         peptideSeq.erase(ix, 1);
+         peptideSeq.erase(ix--, 1);
       }
     }
 

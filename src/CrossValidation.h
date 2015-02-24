@@ -66,7 +66,7 @@ class CrossValidation {
     }
     
   protected:
-    AlgIn* svmInput_;
+    std::vector<AlgIn*> svmInputs_;
     vector< vector<double> > w_; // svm weights for each fold
     
     bool quickValidation_;
@@ -81,11 +81,13 @@ class CrossValidation {
     const static double requiredIncreaseOver2Iterations_;
     
     const static unsigned int numFolds_;
+    const static unsigned int numAlgInObjects_;
     vector<Scores> trainScores_, testScores_;
     vector<double> candidatesCpos_, candidatesCfrac_;
     
     int processSingleFold(unsigned int set, bool updateDOC, 
-                           vector<double>& cpos_vec, vector<double>& cfrac_vec, 
+                           const vector<double>& cpos_vec, 
+                           const vector<double>& cfrac_vec, 
                            double& best_cpos, double& best_cfrac, 
                            vector_double* pWeights, options * pOptions);
     int doStep(bool updateDOC = false);

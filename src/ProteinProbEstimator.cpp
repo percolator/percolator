@@ -177,8 +177,8 @@ double ProteinProbEstimator::estimatePriors() {
       }
       /* update computed prior */
       prior_peptide += prior;
-      if(psm->pPSM->q <= 0.1) ++confident_peptides;
-      prior_peptide2 += psm->pPSM->pep;
+      if(psm->q <= 0.1) ++confident_peptides;
+      prior_peptide2 += psm->pep;
       ++total_peptides;
     }
   }
@@ -477,7 +477,7 @@ void ProteinProbEstimator::setTargetandDecoysNames() {
     // for each protein
     for(set<string>::iterator protIt = psm->pPSM->proteinIds.begin(); protIt != psm->pPSM->proteinIds.end(); protIt++) {
       Protein::Peptide *peptide = new Protein::Peptide(psm->pPSM->getPeptideSequence(),psm->isDecoy(),
-							psm->pPSM->pep,psm->pPSM->q,psm->pPSM->p);
+							psm->pep,psm->q,psm->p);
       if(proteins.find(*protIt) == proteins.end()) {
 	      Protein *newprotein = new Protein(*protIt,0.0,0.0,0.0,0.0,psm->isDecoy(),peptide);
 	      proteins.insert(std::make_pair(*protIt,newprotein));

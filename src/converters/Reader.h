@@ -18,14 +18,11 @@
 #ifndef READER_H
 #define READER_H
 
-#include "Enzyme.h"
+#include <assert.h>
 #include <iostream>
 #include <fstream>
 #include <numeric>
 #include <map>
-#include <xercesc/dom/DOM.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xsd/cxx/xml/string.hxx>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
@@ -34,19 +31,24 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
+
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/util/XMLString.hpp>
+#include <xsd/cxx/xml/string.hxx>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp> 
+#include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
+
 #include "Globals.h"
 #include "config.h"
 #include "FeatureNames.h"
 #include "percolator_in.hxx"
 #include "parseoptions.h"
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp> 
-#include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
 #include "MSReader.h"
 #include "Spectrum.h"
-#include <assert.h>
+#include "Enzyme.h"
+
 #if defined (__WIN32__) || defined (__MINGW__) 
   #include <direct.h>
   #include <io.h>

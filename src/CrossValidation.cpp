@@ -18,7 +18,12 @@
 #include "CrossValidation.h"
 
 // number of folds for cross validation
-const unsigned int CrossValidation::numFolds_ = 3;
+const unsigned int CrossValidation::numFolds_ = 3u;
+#ifdef _OPENMP
+const unsigned int CrossValidation::numAlgInObjects_ = CrossValidation::numFolds_;
+#else
+const unsigned int CrossValidation::numAlgInObjects_ = 1u;
+#endif
 // checks cross validation convergence in case of quickValidation_
 const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01; 
 
@@ -29,10 +34,12 @@ CrossValidation::CrossValidation() :
 
 
 CrossValidation::~CrossValidation() { 
-  if (svmInput_) {
-    delete svmInput_;
+  for (unsigned int set = 0; set < numAlgInObjects_; ++set) {
+    if (svmInputs_[set]) {
+      delete svmInputs_[set];
+    }
+    svmInputs_[set] = NULL;
   }
-  svmInput_ = NULL;
 }
 
 void CrossValidation::printParameters(ostringstream & oss) {
@@ -56,15 +63,17 @@ int CrossValidation::preIterationSetup(Scores & fullset, SanityCheck * pCheck,
            vector<double> (FeatureNames::getNumFeatures() + 1));
   
   // One input set, to be reused multiple times
-  svmInput_ = new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1);
-  assert( svmInput_ );
-
+  for (unsigned int set = 0; set < numAlgInObjects_; ++set) {
+    svmInputs_.push_back(new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1));
+    assert( svmInputs_.back() );
+  }
+  
   if (selectedCpos_ >= 0 && selectedCneg_ >= 0) {
     trainScores_.resize(numFolds_);
     testScores_.resize(numFolds_);
     
-  	fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_);
-
+    fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_);
+    
     if (selectionFdr_ <= 0.0) {
       selectionFdr_ = testFdr_;
     }
@@ -138,18 +147,17 @@ void CrossValidation::train(Normalizer * pNorm) {
       cerr << "Obtained weights" << endl;
       printAllWeights(cerr, pNorm);
     }
-    if (foundPositives > 0 && foundPositivesOldOld > 0 && quickValidation_) {
-      if (static_cast<double>(foundPositives - foundPositivesOldOld) <= 
-          foundPositivesOldOld * requiredIncreaseOver2Iterations_) {
-        if (VERB > 1) {
-          std::cerr << "Performance increase over the last two iterations " <<
-              "indicate that the algorithm has converged\n" <<
-              "(" << foundPositives << " vs " << foundPositivesOldOld << ")" << 
-              std::endl;
-        }
-        break;
+    if (foundPositives > 0 && foundPositivesOldOld > 0 && quickValidation_ &&
+           (static_cast<double>(foundPositives - foundPositivesOldOld) <= 
+           foundPositivesOldOld * requiredIncreaseOver2Iterations_)) {
+      if (VERB > 1) {
+        std::cerr << "Performance increase over the last two iterations " <<
+            "indicate that the algorithm has converged\n" <<
+            "(" << foundPositives << " vs " << foundPositivesOldOld << ")" << 
+            std::endl;
       }
-    }    
+      break;
+    }
     foundPositivesOldOld = foundPositivesOld;    
     foundPositivesOld = foundPositives;
   }
@@ -191,31 +199,52 @@ int CrossValidation::doStep(bool updateDOC) {
   pOptions->epsilon = EPSILON;
   pOptions->cgitermax = CGITERMAX;
   pOptions->mfnitermax = MFNITERMAX;
-  struct vector_double* pWeights = new vector_double;
-  pWeights->d = FeatureNames::getNumFeatures() + 1;
-  pWeights->vec = new double[pWeights->d];
   int estTruePos = 0;
-  double bestCpos = 1, bestCfrac = 1;
   if (!quickValidation_) {
+  #pragma omp parallel for schedule(dynamic, 1)
     for (unsigned int set = 0; set < numFolds_; ++set) {
-      estTruePos += processSingleFold(set, updateDOC, candidatesCpos_, 
+      struct vector_double* pWeights = new vector_double;
+      pWeights->d = FeatureNames::getNumFeatures() + 1;
+      pWeights->vec = new double[pWeights->d];
+      
+      double bestCpos = 1, bestCfrac = 1;
+      
+      int estTruePosFold = processSingleFold(set, updateDOC, candidatesCpos_, 
                                       candidatesCfrac_, bestCpos, bestCfrac, 
-                                      pWeights, pOptions);   
+                                      pWeights, pOptions);
+      #pragma omp critical (add_tps)
+      {
+        estTruePos += estTruePosFold;
+      }
+      
+      delete[] pWeights->vec;
+      delete pWeights;
     }
   } else {
+    struct vector_double* pWeights = new vector_double;
+    pWeights->d = FeatureNames::getNumFeatures() + 1;
+    pWeights->vec = new double[pWeights->d];
+    
+    double bestCpos = 1, bestCfrac = 1;
+    
     // Use limited internal cross validation, i.e take the cpos and cfrac 
     // values of the first bin and use it for the subsequent bins 
     estTruePos += processSingleFold(0, updateDOC, candidatesCpos_, 
                                     candidatesCfrac_, bestCpos, bestCfrac, 
                                     pWeights, pOptions);
     vector<double> cp(1, bestCpos), cf(1, bestCfrac);
+  #pragma omp parallel for schedule(dynamic, 1)
     for (unsigned int set = 1; set < numFolds_; ++set) {
-      estTruePos += processSingleFold(set, updateDOC, cp, cf, bestCpos, 
-                                      bestCfrac, pWeights, pOptions);   
+      int estTruePosFold = processSingleFold(set, updateDOC, cp, cf, bestCpos, 
+                                      bestCfrac, pWeights, pOptions);
+      #pragma omp critical (add_tps)
+      {
+        estTruePos += estTruePosFold;
+      }  
     }
+    delete[] pWeights->vec;
+    delete pWeights;
   }
-  delete[] pWeights->vec;
-  delete pWeights;
   delete pOptions;
   return estTruePos / (numFolds_ - 1);
 }
@@ -233,7 +262,7 @@ int CrossValidation::doStep(bool updateDOC) {
  * @param pOptions options for the SVM algorithm
 */
 int CrossValidation::processSingleFold(unsigned int set, bool updateDOC, 
-    vector<double>& cposCandidates, vector<double>& cfracCandidates, 
+    const vector<double>& cposCandidates, const vector<double>& cfracCandidates, 
     double &bestCpos, double &bestCfrac, vector_double* pWeights, 
     options * pOptions) {
   int bestTruePos = 0;
@@ -248,16 +277,23 @@ int CrossValidation::processSingleFold(unsigned int set, bool updateDOC,
   if (DataSet::getCalcDoc() && updateDOC) {
     trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
   }
-  trainScores_[set].generateNegativeTrainingSet(*svmInput_, 1.0);
-  trainScores_[set].generatePositiveTrainingSet(*svmInput_, selectionFdr_, 1.0);
+  
+#ifdef _OPENMP
+  AlgIn* svmInput = svmInputs_[set];
+#else
+  AlgIn* svmInput = svmInputs_[0];
+#endif
+  
+  trainScores_[set].generateNegativeTrainingSet(*svmInput, 1.0);
+  trainScores_[set].generatePositiveTrainingSet(*svmInput, selectionFdr_, 1.0);
   if (VERB > 2) {
-    cerr << "Calling with " << svmInput_->positives << " positives and "
-         << svmInput_->negatives << " negatives\n";
+    cerr << "Calling with " << svmInput->positives << " positives and "
+         << svmInput->negatives << " negatives\n";
   }
   
   // Create storage vector for SVM algorithm
   struct vector_double* Outputs = new vector_double;
-  size_t numInputs = svmInput_->positives + svmInput_->negatives;
+  size_t numInputs = svmInput->positives + svmInput->negatives;
   Outputs->vec = new double[numInputs];
   Outputs->d = numInputs;
   
@@ -277,10 +313,10 @@ int CrossValidation::processSingleFold(unsigned int set, bool updateDOC,
       for (int ix = 0; ix < Outputs->d; ix++) {
         Outputs->vec[ix] = 0;
       }
-      svmInput_->setCost(cpos, (cpos) * (cfrac));
+      svmInput->setCost(cpos, cpos * cfrac);
       
       // Call SVM algorithm (see ssl.cpp)
-      L2_SVM_MFN(*svmInput_, pOptions, pWeights, Outputs);
+      L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
       
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
         ww[i] = pWeights->vec[i];

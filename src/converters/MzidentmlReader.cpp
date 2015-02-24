@@ -1,27 +1,22 @@
 #include "MzidentmlReader.h"
 
-static const XMLCh sequenceCollectionStr[] = {chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_n,
-  chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e,
-  chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull};
+static const XMLCh sequenceCollectionStr[] = {
+    chLatin_S, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_n,
+    chLatin_c, chLatin_e, chLatin_C, chLatin_o, chLatin_l, chLatin_l, chLatin_e,
+    chLatin_c, chLatin_t, chLatin_i, chLatin_o, chLatin_n, chNull};
 
 
-static string schemaDefinition = Globals::getInstance()->getXMLDir(true)+MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
+static string schemaDefinition = Globals::getInstance()->getXMLDir(true) + 
+           MZIDENTML_SCHEMA_LOCATION + string("mzIdentML1.1.0.xsd");
 static string scheme_namespace = MZIDENTML_NAMESPACE;
 static string schema_major = boost::lexical_cast<string>(MZIDENTML_VERSION_MAJOR);
 static string schema_minor = boost::lexical_cast<string>(MZIDENTML_VERSION_MINOR);
 
 static double proton_mass = 1.00727663;
 
-MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {
+MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {}
 
-}
-
-MzidentmlReader::~MzidentmlReader() {
-
-
-
-}
-
+MzidentmlReader::~MzidentmlReader() {}
 
 void MzidentmlReader::cleanHashMaps() {
   peptideMapType::iterator iter;
@@ -43,7 +38,6 @@ void MzidentmlReader::cleanHashMaps() {
   }
 }
 
-
 bool MzidentmlReader::checkIsMeta(const std::string &file) {
   //NOTE assuming the file has been tested before
   bool isMeta;
@@ -60,19 +54,18 @@ bool MzidentmlReader::checkIsMeta(const std::string &file) {
   return isMeta;
 }
 
-
-
 void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   ifstream ifs;
   ifs.exceptions(ifstream::badbit | ifstream::failbit);
-  try
-  {
+  try {
     ifs.open(fn.c_str());
     parser p;
     bool schemaVal = true;
     xml_schema::dom::auto_ptr<xercesc_3_1::DOMDocument> doc
-            (p.start(ifs, fn.c_str(), schemaVal, schemaDefinition, schema_major, schema_minor, scheme_namespace));
+        (p.start(ifs, fn.c_str(), schemaVal, schemaDefinition, schema_major, 
+                 schema_minor, scheme_namespace));
 
+    // MT: This seems to be a bit slow for doing nothing
     for (doc = p.next(); doc.get() != 0
             && !XMLString::equals(spectrumIdentificationResultStr, doc->getDocumentElement()->getTagName()); doc = p.next()) {
       // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
@@ -99,8 +92,8 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   } catch (const xml_schema::exception& e) {
     cerr << "XML schema exception in getMaxMinCharge: " << e << endl;
   } catch (MyException e) {
-	cerr << e.what() << endl;
-	exit(1);
+	  cerr << e.what() << endl;
+	  exit(1);
   } catch (std::exception e) {
     cerr << "Some unknown exception in getMaxMinCharge: " << e.what() << endl;
   }
@@ -108,13 +101,15 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   return;
 }
 
-void MzidentmlReader::searchEngineSpecificParsing(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, int itemCount) {
+void MzidentmlReader::searchEngineSpecificParsing(
+    const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
+    int itemCount) {
 	// itemCount is which order the item is in the mzid-file, read through userParam elements
 	return;  // Empty function
 }
 
-void MzidentmlReader::read(const std::string &fn, bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database)
-{
+void MzidentmlReader::read(const std::string &fn, bool isDecoy, 
+    boost::shared_ptr<FragSpectrumScanDatabase> database) {
   namespace xml = xsd::cxx::xml;
   scanNumberMapType scanNumberMap;
   ifstream ifs;

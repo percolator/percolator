@@ -72,8 +72,8 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
   os << ">" << endl;
   
   os << "      <svm_score>"   << fixed   << sh.score   << "</svm_score>" << endl;
-  os << "      <q_value>"   << scientific << sh.pPSM->q   << "</q_value>" << endl;
-  os << "      <pep>"          << scientific << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <q_value>"   << scientific << sh.q   << "</q_value>" << endl;
+  os << "      <pep>"          << scientific << sh.pep << "</pep>" << endl;
   
   if(Scores::getShowExpMass()) 
   {
@@ -100,7 +100,7 @@ ostream& operator<<(ostream& os, const ScoreHolder& sh) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
   }
   
-  os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
+  os << "      <p_value>" << scientific << sh.p << "</p_value>" <<endl;
   os << "    </psm>" << endl;
   return os;
 }
@@ -120,8 +120,8 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   os << ">" << endl;
   
   os << "      <svm_score>" << fixed       << sh.score     << "</svm_score>" << endl;
-  os << "      <q_value>"   << scientific  << sh.pPSM->q   << "</q_value>" << endl;
-  os << "      <pep>"        << scientific  << sh.pPSM->pep << "</pep>" << endl;
+  os << "      <q_value>"   << scientific  << sh.q   << "</q_value>" << endl;
+  os << "      <pep>"        << scientific  << sh.pep << "</pep>" << endl;
   
   if (Scores::getShowExpMass()) {
     os << "      <exp_mass>" << fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
@@ -133,7 +133,7 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
     os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
   }
   
-  os << "      <p_value>" << scientific << sh.pPSM->p << "</p_value>" <<endl;
+  os << "      <p_value>" << scientific << sh.p << "</p_value>" <<endl;
   os << "      <psm_ids>" << endl;
   
   // output all psms that contain the peptide
@@ -156,7 +156,6 @@ Scores::Scores() {
   targetDecoySizeRatio_ = 1;
   totalNumberOfDecoys_ = 0;
   totalNumberOfTargets_ = 0;
-  numPos_ = 0;
 }
 
 Scores::~Scores() {}
@@ -369,7 +368,7 @@ void Scores::normalizeScores(double fdr) {
   double median = q1 + 1.0;
 
   for (; it != scores_.end(); ++it) {
-    if (it->pPSM->q < fdr)
+    if (it->q < fdr)
       q1 = it->score;
     if (it->isDecoy()) {
       if(++decoys==medianIndex) {
@@ -417,16 +416,16 @@ int Scores::calcScores(vector<double>& w, double fdr) {
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
   if (VERB > 3) {
     if (scores_.size() >= 10) {
-      cerr << "10 best scores_ and labels" << endl;
+      cerr << "10 best scores and labels" << endl;
       for (ix = 0; ix < 10; ix++) {
         cerr << scores_[ix].score << " " << scores_[ix].label << endl;
       }
-      cerr << "10 worst scores_ and labels" << endl;
+      cerr << "10 worst scores and labels" << endl;
       for (ix = scores_.size() - 10; ix < scores_.size(); ix++) {
         cerr << scores_[ix].score << " " << scores_[ix].label << endl;
       }
     } else {
-      cerr << "Too few scores_ to display top and bottom PSMs (" << scores_.size() << " scores_ found)." << endl;
+      cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores_ found)." << endl;
     }
   }
   return calcQ(fdr);
@@ -444,16 +443,18 @@ int Scores::calcQ(double fdr) {
   int targets = 0, decoys = 0;
   double efp = 0.0, q; // estimated false positives, q value
   
+  int numPos = 0;
+  
   // NOTE check this
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
       targets++;
-      scoreIt->pPSM->p = (decoys+(double)1)/(totalNumberOfDecoys_+(double)1);
+      scoreIt->p = (decoys+(double)1)/(totalNumberOfDecoys_+(double)1);
     } else {
       decoys++;
       efp = pi0_ * decoys * targetDecoySizeRatio_;
-      scoreIt->pPSM->p = (decoys)/(double)(totalNumberOfDecoys_);
+      scoreIt->p = (decoys)/(double)(totalNumberOfDecoys_);
     }
     if (targets) {
       q = efp / (double)targets;
@@ -463,19 +464,19 @@ int Scores::calcQ(double fdr) {
     if (q > pi0_) {
       q = pi0_;
     }
-    scoreIt->pPSM->q = q;
+    scoreIt->q = q;
     if (fdr >= q) {
-      numPos_ = targets;
+      numPos = targets;
     }
   }
   if (scores_.size() > 0) {
     for (int ix = scores_.size(); --ix;) {
-      if (scores_[ix - 1].pPSM->q > scores_[ix].pPSM->q) {
-        scores_[ix - 1].pPSM->q = scores_[ix].pPSM->q;
+      if (scores_[ix - 1].q > scores_[ix].q) {
+        scores_[ix - 1].q = scores_[ix].q;
       }
     }
   }
-  return numPos_;
+  return numPos;
 }
 
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
@@ -497,8 +498,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
-      if (fdr < scoreIt->pPSM->q) {
-        numPos_ = p;
+      if (fdr < scoreIt->q) {
         break;
       }
       data.vals[ix2] = scoreIt->pPSM->features;
@@ -618,7 +618,7 @@ void Scores::recalculateDescriptionOfCorrect(const double fdr) {
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
       //      if (fdr>scores_[ix1].pPSM->q) {
-      if (0.0 >= scoreIt->pPSM->q) {
+      if (0.0 >= scoreIt->q) {
         doc_.registerCorrect(*(scoreIt->pPSM));
       }
     }
@@ -708,7 +708,7 @@ void Scores::calcPep() {
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, pi0_, peps, true);
   for (size_t ix = 0; ix < scores_.size(); ix++) {
-    (scores_[ix]).pPSM->pep = peps[ix];
+    (scores_[ix]).pep = peps[ix];
   }
 }
 
@@ -716,7 +716,7 @@ unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget() && scoreIt->pPSM->q < level) {
+    if (scoreIt->isTarget() && scoreIt->q < level) {
       hits++;
     }
   }

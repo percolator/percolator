@@ -482,7 +482,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
 	           << " contains modification " << peptide[ix] << " that is not specified by a \"-p\" argument" << endl;
 	      throw MyException(temp.str());
       }
-      peptide.erase(ix,1);
+      peptide.erase(ix--,1);
     }  
   }
 
@@ -496,7 +496,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
       mod_p->uniMod(um_p);
       peptide_p->modification().push_back(mod_p);      
-      peptideS.erase(ix,1);
+      peptideS.erase(ix--,1);
     }  
   }
 

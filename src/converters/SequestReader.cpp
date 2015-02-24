@@ -246,7 +246,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
                   << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
           throw MyException(temp.str());
         }
-        peptideSeq.erase(ix, 1);
+        peptideSeq.erase(ix--, 1);
       }
     }
 
@@ -259,7 +259,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
         std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
         mod_p->uniMod(um_p);
         peptide_p->modification().push_back(mod_p);      
-        peptideS.erase(ix,1);      
+        peptideS.erase(ix--,1);      
       }
     }
 

@@ -1,0 +1,8 @@
+1. change version number and add information to changelog on master
+2. create a release
+3. create a branch
+4. reset version number on master
+5. checkout branch
+6. create binaries
+7. send binaries to Lukas
+8. checkout master

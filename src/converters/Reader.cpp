@@ -69,7 +69,7 @@ void Reader::init() {
   // check files exists and if they are metafiles or not
   if (!po->iscombined) {
     std::ifstream targetFileIn(po->targetFN.data(), std::ios::in);
-    std::ifstream decoyFileIn(po->targetFN.data(), std::ios::in);
+    std::ifstream decoyFileIn(po->decoyFN.data(), std::ios::in);
     if (!targetFileIn) {
       targetFileIn.close();
       decoyFileIn.close();

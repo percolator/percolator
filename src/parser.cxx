@@ -357,6 +357,7 @@ startElement (const XMLCh* const uri,
               const XMLCh* const qname,
               const Attributes& attr)
 {
+  //std::cerr << depth_ << " " << (char)qname[0] << (char)qname[1] << (char)qname[2] << std::endl;
   if ( depth_ == 0 || depth_ == 1 || ( depth_== 4 && XMLString::equals (qname, spectrumIdentificationResultStr) ))
   {
     doc_.reset (dom_impl_.createDocument (uri, qname, 0));
@@ -390,6 +391,7 @@ startElement (const XMLCh* const uri,
        ns = XMLUni::fgXMLNSURIName;
 
     cur_->setAttributeNS (ns, qn, attr.getValue (i));
+    //std::cerr << (char)attr.getValue(i)[0] << (char)attr.getValue(i)[1] << (char)attr.getValue(i)[2] << std::endl;
   }
   depth_++;
 }

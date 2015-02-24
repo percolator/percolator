@@ -67,7 +67,7 @@ void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides)
       connect(PSMNames, pepName, proteinNames, protName);
     }
     // p probability of the peptide match to the spectrum
-    value = 1 - psm->pPSM->pep;
+    value = 1 - psm->pep;
     PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
  }
 

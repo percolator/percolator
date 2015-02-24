@@ -21,10 +21,9 @@
 #include "Reader.h"
 #include <algorithm>
 
-class SqtReader: public Reader
-{
+class SqtReader: public Reader {
 
-public:
+ public:
   
   SqtReader(ParseOptions *po);
   
@@ -47,8 +46,8 @@ public:
   
   void addFeatureDescriptions(bool doEnzyme);
   
-protected:
-    static const std::map<string,double> sqtFeaturesDefaultValue;
+ protected:
+  static const std::map<string,double> sqtFeaturesDefaultValue;
 };
 
 #endif // SQTREADER_H

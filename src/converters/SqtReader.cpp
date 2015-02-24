@@ -1,6 +1,5 @@
 #include "SqtReader.h"
 
-
 //default score vector //TODO move this to a file or input parameter                          
 const std::map<string,double> SqtReader::sqtFeaturesDefaultValue =
 boost::assign::map_list_of("lnrSp", 0.0)
@@ -47,56 +46,46 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   std::vector< std::string > proteinIds;
   std::map<char,int> ptmMap = po->ptmScheme; 
 
-  while (getline(instr, line)) 
-  {
-    if (line[0] == 'S') 
-    {
+  while (getline(instr, line)) {
+    if (line[0] == 'S') {
       linestr.clear();
       linestr.str(line);
-      if (!(linestr >> tmp >> tmpdbl >> scan >> charge >> tmpdbl)) 
-      {
-	ostringstream temp;
+      if (!(linestr >> tmp >> tmpdbl >> scan >> charge >> tmpdbl)) {
+	      ostringstream temp;
         temp << "Error : can not parse the S line: " << line << endl;
-	throw MyException(temp.str());
+	      throw MyException(temp.str());
       }
       // Computer name might not be set, just skip this part of the line
       linestr.ignore(256, '\t');
       linestr.ignore(256, '\t');
       // First assume a MacDonald et al definition of S (9 fields)
-      if (!(linestr >> observedMassCharge >> tmpdbl >> tmpdbl >> nSM)) 
-      {
-	ostringstream temp;
+      if (!(linestr >> observedMassCharge >> tmpdbl >> tmpdbl >> nSM)) {
+      	ostringstream temp;
         temp << "Error : can not parse the S line: " << line << endl;
-	throw MyException(temp.str());
+	      throw MyException(temp.str());
       }
       // Check if the Yate's lab definition (10 fields) is valid
       // http://fields.scripps.edu/sequest/SQTFormat.html
       //
-      if (linestr >> tstSM) 
-      {
+      if (linestr >> tstSM) {
         nSM = tstSM;
       }
     }
-    if (line[0] == 'M') 
-    {
+    if (line[0] == 'M') {
       linestr.clear();
       linestr.str(line);
 
-      if (ms == 1) 
-      {
+      if (ms == 1) {
         linestr >> tmp >> tmp >> tmp >> tmp >> deltCn >> otherXcorr;
         lastXcorr = otherXcorr;
-      } 
-      else 
-      {
+      } else {
         linestr >> tmp >> tmp >> tmp >> tmp >> tmp >> lastXcorr;
       }
-      if (match == ms) 
-      {
+      if (match == ms) {
         double rSp, sp, matched, expected;
         linestr.seekg(0, ios::beg);
-        if (!(linestr >> tmp >> tmp >> rSp >> calculatedMassToCharge >> tmp >> xcorr >> sp >> matched >> expected >> peptide)) 
-	      {
+        if (!(linestr >> tmp >> tmp >> rSp >> calculatedMassToCharge >> tmp >> 
+                         xcorr >> sp >> matched >> expected >> peptide)) {
 	        ostringstream temp;
 	        temp << "Error : can not parse the M line: " << line << endl;
 	        throw MyException(temp.str());
@@ -155,8 +144,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
       
     }
   }
-  f_seq[1] = (xcorr - lastXcorr) / (std::max)(1.0,xcorr);
-  f_seq[2] = (xcorr - otherXcorr) / (std::max)(1.0,xcorr);
+  f_seq[1] = (xcorr - lastXcorr) / (std::max)(1.0,xcorr); // delt5Cn
+  f_seq[2] = (xcorr - otherXcorr) / (std::max)(1.0,xcorr); // deltCn
   
   percolatorInNs::occurence::flankN_type flankN = peptide.substr(0,1);
   percolatorInNs::occurence::flankC_type flankC = peptide.substr(peptide.size() - 1,1);
@@ -164,7 +153,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   // Strip peptide from termini and modifications 
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::string peptideS = peptideSequence;
-  for(unsigned int ix=0;ix<peptideSequence.size();++ix) {
+  for (unsigned int ix = 0; ix<peptideSequence.size(); ++ix) {
     if (freqAA.find(peptideSequence[ix]) == string::npos) {
       if (ptmMap.count(peptideSequence[ix]) == 0) {
 	      ostringstream temp;
@@ -172,24 +161,23 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
 	      << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
         throw MyException(temp.str());
       }
-      peptideSequence.erase(ix,1);
+      peptideSequence.erase(ix--,1);
     }  
   }
-  std::auto_ptr< percolatorInNs::peptideType >  peptide_p( new percolatorInNs::peptideType( peptideSequence   ) );
+  std::auto_ptr< percolatorInNs::peptideType > peptide_p( new percolatorInNs::peptideType(peptideSequence) );
   // Register the ptms
-  for(unsigned int ix=0;ix<peptideS.size();++ix) {
+  for (unsigned int ix=0;ix<peptideS.size();++ix) {
     if (freqAA.find(peptideS[ix])==string::npos) {
       int accession = ptmMap[peptideS[ix]];
       std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
       std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
       mod_p->uniMod(um_p);
       peptide_p->modification().push_back(mod_p);      
-      peptideS.erase(ix,1);      
+      peptideS.erase(ix--,1);    
     }  
   }
   
-  if(po->iscombined)
-  {
+  if (po->iscombined) {
     //NOTE when combine search the PSM will take the identity of its first ranked protein
     isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
   }
@@ -198,8 +186,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   psm_p(new percolatorInNs::peptideSpectrumMatch
   (features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge));
 
-  for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) 
-  {
+  for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
     std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
     psm_p->occurence().push_back(oc_p);
   }

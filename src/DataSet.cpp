@@ -98,7 +98,7 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
       continue;
     }
     psm->printProteins(out);
-    outList.push_back(ResultHolder(pSH->score, psm->q, psm->pep, psm->id, psm->peptide, out.str()));
+    outList.push_back(ResultHolder(pSH->score, pSH->q, pSH->pep, psm->id, psm->peptide, out.str()));
     out.str("");
   }
   test.resetScoreMap();

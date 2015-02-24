@@ -85,7 +85,6 @@ class PSMDescription {
 
     static double normDiv, normSub;
     unsigned charge;
-    double q, pep, p;
     double* features;
     double* retentionFeatures;
     double retentionTime, predictedTime, massDiff, pI, expMass, calcMass;

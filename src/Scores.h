@@ -40,14 +40,14 @@ using namespace std;
 */
 class ScoreHolder {
   public:
-    double score; // ,q,pep;
+    double score, q, pep, p;
     int label;
     PSMDescription* pPSM;
     std::vector<std::string> psms_list;
     
-    ScoreHolder() : score(0.0), label(0), pPSM(NULL), psms_list () {}
+    ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL), psms_list () {}
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), label(l), pPSM(psm), psms_list () {}
+      score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm), psms_list () {}
     virtual ~ScoreHolder() {}
     
     pair<double, bool> toPair() const { return pair<double, bool> (score, label > 0); }
@@ -188,7 +188,6 @@ class Scores {
       return totalNumberOfTargets_ + totalNumberOfDecoys_; 
     }
     inline unsigned int posSize() const { return totalNumberOfTargets_; }
-    inline unsigned int posNowSize() const { return numPos_; }
     inline unsigned int negSize() const { return totalNumberOfDecoys_; }
     
     inline static void setPrintDecoysInXml(bool decoysOut) { 
@@ -211,7 +210,7 @@ class Scores {
     
     vector<ScoreHolder> scores_;
     vector<double> svmWeights_;
-    int totalNumberOfDecoys_, totalNumberOfTargets_, numPos_;
+    int totalNumberOfDecoys_, totalNumberOfTargets_;
     std::map<const double*, ScoreHolder*> scoreMap_;
     DescriptionOfCorrect doc_;
     static bool printDecoysInXml_;
