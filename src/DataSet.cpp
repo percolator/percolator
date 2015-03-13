@@ -286,10 +286,9 @@ unsigned int DataSet::cntPTMs(const string& pep) {
 }
 
 void DataSet::registerPsm(PSMDescription * myPsm) {
-  bool isDecoy;
   switch (label_) {
-    case 1: { isDecoy = false; break; };
-    case -1: { isDecoy = true; break; };
+    case 1: { break; };
+    case -1: { break; };
     default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
     to neither target nor decoy label_\n");}
   }

@@ -908,8 +908,8 @@ bool ComparePsmsRT(PSMDescription psm1, PSMDescription psm2) {
 }
 
 /* Compare 2 psms according to predicted retention time */
-bool ComparePsmsPRT(pair<PSMDescription, int> psm1, pair<PSMDescription,
-    int> psm2) {
+bool ComparePsmsPRT(pair<PSMDescription, const double> psm1, pair<PSMDescription,
+    const double> psm2) {
   double prt1, prt2;
   prt1 = psm1.first.getPredictedRetentionTime();
   prt2 = psm2.first.getPredictedRetentionTime();

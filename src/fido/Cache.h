@@ -81,5 +81,5 @@ template <typename C, typename R, typename A>
   }
 };
 
-
 #endif
+

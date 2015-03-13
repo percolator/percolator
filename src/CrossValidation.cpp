@@ -202,7 +202,7 @@ int CrossValidation::doStep(bool updateDOC) {
   int estTruePos = 0;
   if (!quickValidation_) {
   #pragma omp parallel for schedule(dynamic, 1)
-    for (unsigned int set = 0; set < numFolds_; ++set) {
+    for (int set = 0; set < numFolds_; ++set) {
       struct vector_double* pWeights = new vector_double;
       pWeights->d = FeatureNames::getNumFeatures() + 1;
       pWeights->vec = new double[pWeights->d];
@@ -234,7 +234,7 @@ int CrossValidation::doStep(bool updateDOC) {
                                     pWeights, pOptions);
     vector<double> cp(1, bestCpos), cf(1, bestCfrac);
   #pragma omp parallel for schedule(dynamic, 1)
-    for (unsigned int set = 1; set < numFolds_; ++set) {
+    for (int set = 1; set < numFolds_; ++set) {
       int estTruePosFold = processSingleFold(set, updateDOC, cp, cf, bestCpos, 
                                       bestCfrac, pWeights, pOptions);
       #pragma omp critical (add_tps)
@@ -278,11 +278,7 @@ int CrossValidation::processSingleFold(unsigned int set, bool updateDOC,
     trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
   }
   
-#ifdef _OPENMP
-  AlgIn* svmInput = svmInputs_[set];
-#else
-  AlgIn* svmInput = svmInputs_[0];
-#endif
+  AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
   
   trainScores_[set].generateNegativeTrainingSet(*svmInput, 1.0);
   trainScores_[set].generatePositiveTrainingSet(*svmInput, selectionFdr_, 1.0);

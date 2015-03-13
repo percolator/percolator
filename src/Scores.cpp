@@ -232,7 +232,7 @@ void Scores::fillFeatures(SetHandler& setHandler) {
 // from wikipedia
 unsigned long Scores::lcg_rand() {
   //uint64_t
-  seed_ = (seed_ * 279470273) % 4294967291;
+  seed_ = (seed_ * 279470273u) % 4294967291u;
   return seed_;
 }
 

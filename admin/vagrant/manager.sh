@@ -49,6 +49,11 @@ while getopts “hab:s:r:p:” OPTION; do
                     vagbox_url="http://files.vagrantup.com/precise64.box"
                     ;;
                 fedora)	post="fedora64";;
+                centos) 
+                    post="centos64"
+                    vagbox_name="centos64"
+                    vagbox_url="http://tag1consulting.com/files/centos-5.9-x86-64-minimal.box"
+                    ;;
                 w64) post="mingw64";;
                 w32) post="mingw32";;
                 *)

@@ -66,3 +66,4 @@ class Logger
 };
 
 #endif // LOGGER_H
+
