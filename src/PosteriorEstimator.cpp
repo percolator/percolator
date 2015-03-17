@@ -580,8 +580,8 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
       << "Alternatively, accuate p-value could be provided in a single file pvalue_file."
       << endl << endl;
   intro << "The method reports score, PEP, and q-value calculated directly from scores" << endl; 
-  intro << "Covergance of the method can be checked by comparing the average PEP of identifications" << endl;
-  intro << "above treshold with the q-value" << endl; 
+  intro << "Convergence of the method can be checked by comparing the average PEP of identifications" << endl;
+  intro << "above threshold with the q-value" << endl; 
   CommandLineParser cmd(intro.str());
   // finally parse and handle return codes (display help etc...)
   cmd.defineOption("v",
