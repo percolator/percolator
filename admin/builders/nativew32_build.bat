@@ -108,7 +108,7 @@ set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
 set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86-windows-vc-10.0
-set XERCES_URL=http://apache.mirrors.spacedump.net/xerces/c/3/binaries/xerces-c-3.1.1-x86-windows-vc-10.0.zip
+set XERCES_URL=http://archive.apache.org/dist/xerces/c/3/binaries/xerces-c-3.1.1-x86-windows-vc-10.0.zip
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%XERCES_URL%','%INSTALL_DIR%\xerces.zip')"

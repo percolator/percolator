@@ -110,7 +110,7 @@ set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
 set XERCES_DIR=%INSTALL_DIR%\xerces-c-3.1.1-x86_64-windows-vc-10.0
-set XERCES_URL=http://apache.mirrors.spacedump.net/xerces/c/3/binaries/xerces-c-3.1.1-x86_64-windows-vc-10.0.zip
+set XERCES_URL=http://archive.apache.org/dist/xerces/c/3/binaries/xerces-c-3.1.1-x86_64-windows-vc-10.0.zip
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%XERCES_URL%','%INSTALL_DIR%\xerces.zip')"
@@ -128,23 +128,25 @@ if not exist "%XSD_DIR%" (
 
 ::: Needed for converters package :::
 set SQLITE_DIR=%INSTALL_DIR%\sqlite3_x64
-set SQLITE_SRC_URL=http://www.sqlite.org/snapshot/sqlite-amalgamation32k-201409200035.zip
-set SQLITE_DLL_URL=http://www.sqlite.org/snapshot/sqlite-dll-win64-x64-201409200035.zip
+set SQLITE_SRC_URL=http://sqlite.org/2015/sqlite-amalgamation-3080803.zip
+set SQLITE_DLL_URL=http://system.data.sqlite.org/blobs/1.0.96.0/sqlite-netFx45-binary-x64-2012-1.0.96.0.zip
 if not exist "%SQLITE_DIR%" (
   echo Downloading and installing SQLite3
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%SQLITE_SRC_URL%','%INSTALL_DIR%\sqlite_src.zip')"
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%SQLITE_DLL_URL%','%INSTALL_DIR%\sqlite_dll.zip')"
-  %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%\src" > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%" > NUL
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_dll.zip" -o"%SQLITE_DIR%" > NUL
   
   ::: Generate lib from dll
+  cd /D "%SQLITE_DIR%"
+  ren sqlite-amalgamation-3080803 src
+  ren SQLite.Interop.dll sqlite3.dll
   setlocal enableDelayedExpansion
   set DLL_BASE=%SQLITE_DIR%\sqlite3
   set DEF_FILE=!DLL_BASE!.def
   set write=0
   echo EXPORTS> "!DEF_FILE!"
   for /f "usebackq tokens=4" %%i in (`dumpbin /exports "!DLL_BASE!.dll"`) do if "!write!"=="1" (echo %%i >> "!DEF_FILE!") else (if %%i==name set write=1)
-  cd /D "%SQLITE_DIR%"
   lib /DEF:"!DEF_FILE!" /MACHINE:X64
   endlocal
 )
