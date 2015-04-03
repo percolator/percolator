@@ -1,3 +1,19 @@
+v2.09
+* Added support for reading from stdin using an empty hyphen argument (#107)
+* Added error message when running converters without arguments (#108)
+* Fixed invalid pin output from converters with `--aa-freq` parameter (#110)
+* Added exp_mass and calc_mass to the tab delimited pin format, so that it appears in the xml output (#112)
+* Fixed backwards compatibility with old MSGF+ output (#115)
+* Fixed sqt2pin issue of skipping second modification if there are two consecutive PTMs (#116)
+* Added OpenMP support for a maximum of 3 cores (1 for each of the cross validation bins). 
+  * runs about 2 times as fast, instead of the theoretical 3 (#119).
+  * memory usage is slightly higher (<5%) than the single core implementation, since some structures had to be triplicated
+  * the number of cores can be set to 1 dynamically by setting the environment variables
+  ```
+  export OMP_DYNAMIC=FALSE
+  export OMP_NUM_THREADS=1
+  ```
+  
 v2.08.01
 * Changed behaviour of `-r` and `-B` (=peptide result file names for target and decoy) flags in combination with `-U` (=only PSM statistics) flag. The provided file names will now contain the PSM results, provided that the new `-m` and `-M` (=PSM result file names for target and decoy) flags are not given. This will allow backwards compatibility with percolator 2.04.
 
