@@ -23,7 +23,11 @@ if [[ $? -eq 0 ]]; then
   echo "Building of Fedora binaries succeeded"
 fi
 
+echo "Building CentOS binaries"
+./manager.sh -p centos > centos_output.txt 2>&1
+if [[ $? -eq 0 ]]; then
+  echo "Building of CentOS binaries succeeded"
+fi
 
-
-#./manager.sh -p w32 > w32_output.txt 2>&1
-#./manager.sh -p w64 > w64_output.txt 2>&1
+#./manager.sh -p w32 > w32_output.txt 2>&1 # MINGW32
+#./manager.sh -p w64 > w64_output.txt 2>&1 # MINGW64

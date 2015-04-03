@@ -55,7 +55,7 @@ fi
 cmake_bin="${src_dir}/${cm}/bin/cmake"
 
 # download, compile and link xerces
-xer=xerces-c-3.1.1
+xer=xerces-c-3.1.2
 if [ -e ${xer}.tar.gz ]; then
   echo "  XercesC has been installed previously, remove if you want a clean install"
 else

@@ -47,7 +47,7 @@ sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
 sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
 
 # download, compile and link xerces
-xer=xerces-c-3.1.1
+xer=xerces-c-3.1.2
 
 wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
 
