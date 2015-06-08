@@ -237,60 +237,22 @@ unsigned long Scores::lcg_rand() {
 }
 
 /**
- * Divides the PSMs from pin file into xval_fold cross-validation sets
- * @param train vector containing the training sets of PSMs
- * @param test vector containing the test sets of PSMs
- * @param xval_fold number of folds in train and test
- */
-void Scores::createXvalSets(vector<Scores>& train, vector<Scores>& test,
-    const unsigned int xval_fold) {
-  train.resize(xval_fold);
-  test.resize(xval_fold);
-  vector<size_t> remain(xval_fold);
-  size_t fold = xval_fold, ix = scores_.size();
-  while (fold--) {
-    remain[fold] = ix / (fold + 1);
-    ix -= remain[fold];
-  }
-  for (unsigned int j = 0; j < scores_.size(); j++) {
-    ix = lcg_rand() % (scores_.size() - j);
-    fold = 0;
-    while (ix > remain[fold]) {
-      ix -= remain[fold++];
-    }
-    for (unsigned int i = 0; i < xval_fold; i++) {
-      if (i == fold) {
-        test[i].addScoreHolder(scores_[j]);
-      } else {
-        train[i].addScoreHolder(scores_[j]);
-      }
-    }
-    --remain[fold];
-  }
-  // calculate ratios of target over decoy for train and test set
-  for (unsigned int i = 0; i < xval_fold; i++) {
-    train[i].recalculateSizes();
-    test[i].recalculateSizes();
-  }
-}
-
-/**
  * Divides the PSMs from pin file into xval_fold cross-validation sets based on
  * their spectrum scan number
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
  * @param xval_fold: number of folds in train and test
  */
-void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
-    test, const unsigned int xval_fold) {
+void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
+    std::vector<Scores>& test, const unsigned int xval_fold) {
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold);
   test.resize(xval_fold);
   // remain keeps track of residual space available in each fold
-  vector<size_t> remain(xval_fold);
+  std::vector<int> remain(xval_fold);
   // set values for remain: initially each fold is assigned (tot number of
   // scores_ / tot number of folds)
-  size_t fold = xval_fold, ix = scores_.size();
+  int fold = xval_fold, ix = scores_.size();
   while (fold--) {
     remain[fold] = ix / (fold + 1);
     ix -= remain[fold];
@@ -304,8 +266,8 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
     spectraScores.insert(pair<unsigned int,ScoreHolder>(scoreIt->pPSM->scan, *scoreIt));
   }
 
-  // put scores_ into the folds; choose a fold (at random) and change it only
-  // when scores_ from a new spectra are encountered
+  // put scores into the folds; choose a fold (at random) and change it only
+  // when scores from a new spectra are encountered
   // note: this works because multimap is an ordered container!
   unsigned int previousSpectrum = spectraScores.begin()->first;
   size_t randIndex = lcg_rand() % xval_fold;
@@ -316,11 +278,10 @@ void Scores::createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>&
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
     
-    //NOTE what if the fold is full but previousSpectrum is the same as current spectrum??
-    if(previousSpectrum != curScan){
+    if (previousSpectrum != curScan) {
       randIndex = lcg_rand() % xval_fold;
       // allow only indexes of folds that are non-full
-      while(remain[randIndex] == 0){
+      while (remain[randIndex] <= 0){
         randIndex = lcg_rand() % xval_fold;
       }
     }
@@ -534,17 +495,17 @@ void Scores::weedOutRedundant(bool computePi0) {
   // run a pointer down the scores_ list
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); scoreIt++){
-   // compare pointer's peptide with previousPeptide
-   std::string currentPeptide = scoreIt->pPSM->getPeptideSequence();
-   if (currentPeptide != previousPeptide || scoreIt->label != previousLabel) {
-     // insert as a new score
-     uniquePeptideScores.push_back(*scoreIt);
-     // update previousPeptide
-     previousPeptide = currentPeptide;
-     previousLabel = scoreIt->label;
-   }
-   // append the psm_id
-   uniquePeptideScores.back().psms_list.push_back(scoreIt->pPSM->id);
+    // compare pointer's peptide with previousPeptide
+    std::string currentPeptide = scoreIt->pPSM->getPeptideSequence();
+    if (currentPeptide != previousPeptide || scoreIt->label != previousLabel) {
+      // insert as a new score
+      uniquePeptideScores.push_back(*scoreIt);
+      // update previousPeptide
+      previousPeptide = currentPeptide;
+      previousLabel = scoreIt->label;
+    }
+    // append the psm_id
+    uniquePeptideScores.back().psms_list.push_back(scoreIt->pPSM->id);
   }
 
   scores_ = uniquePeptideScores;
@@ -576,27 +537,20 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
 
   vector<ScoreHolder> uniquePSMs = vector<ScoreHolder>();
   unsigned previousSpectra = 0;
-  unsigned previousCharge = 0;
   double previousExpMass = 0.0;
   //int previousLabel;
   // run a pointer down the scores_ list
   vector<ScoreHolder>::iterator current = scores_.begin();
-  for(;current!=scores_.end(); current++){
-   // compare pointer's spectra with previous spectra
-   unsigned currentSpectra = current->pPSM->scan;
-   unsigned currentCharge = current->pPSM->charge;
-   double currentExpMass = current->pPSM->expMass;
-   //int currentLabel = current->label;
-   if(currentSpectra == previousSpectra && previousCharge == currentCharge 
-     && previousExpMass == currentExpMass) {
-     // if the spectra is duplicate
-   } else {
-     // otherwise keep it
+  for (;current!=scores_.end(); current++){
+    // compare pointer's spectra with previous spectra
+    unsigned currentSpectra = current->pPSM->scan;
+    double currentExpMass = current->pPSM->expMass;
+    //int currentLabel = current->label;
+    if (currentSpectra != previousSpectra || previousExpMass != currentExpMass) {
      uniquePSMs.push_back(*current);
      previousSpectra = currentSpectra;
-     previousCharge = currentCharge;
      previousExpMass = currentExpMass;
-   }
+    }
   }
   scores_ = uniquePSMs;
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
@@ -644,7 +598,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
       scoreIt->score = scoreIt->pPSM->features[featNo];
     }
     sort(scores_.begin(), scores_.end());
-    // check once in forward direction (high scores_ are good) and once in backward
+    // check once in forward direction (high scores are good) and once in backward
     for (int i = 0; i < 2; i++) {
       int positives = 0, decoys = 0;
       double efp = 0.0, q;

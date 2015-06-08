@@ -45,9 +45,9 @@ class ScoreHolder {
     PSMDescription* pPSM;
     std::vector<std::string> psms_list;
     
-    ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL), psms_list () {}
+    ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
     ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm), psms_list () {}
+      score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm) {}
     virtual ~ScoreHolder() {}
     
     pair<double, bool> toPair() const { return pair<double, bool> (score, label > 0); }
@@ -83,9 +83,8 @@ struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bo
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return ( (__x.pPSM->scan < __y.pPSM->scan ) 
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->charge < __y.pPSM->charge) )
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->charge == __y.pPSM->charge) && (__x.pPSM->expMass < __y.pPSM->expMass) )
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->charge == __y.pPSM->charge) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
        && (__x.score > __y.score) ) );
   }
 };
@@ -154,10 +153,8 @@ class Scores {
     void fillFeatures(SetHandler& setHandler);
     
     int getInitDirection(const double fdr, vector<double>& direction);
-    void createXvalSets(vector<Scores>& train, vector<Scores>& test,
-        const unsigned int xval_fold);
-    void createXvalSetsBySpectrum(vector<Scores>& train, vector<Scores>& test,
-        const unsigned int xval_fold);
+    void createXvalSetsBySpectrum(std::vector<Scores>& train, 
+        std::vector<Scores>& test, const unsigned int xval_fold);
     
     void generatePositiveTrainingSet(AlgIn& data, const double fdr,
         const double cpos);

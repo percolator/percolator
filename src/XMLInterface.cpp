@@ -262,7 +262,6 @@ PSMDescription* XMLInterface::readPsm(const percolatorInNs::peptideSpectrumMatch
   }
 
   myPsm->id = psm.id();
-  myPsm->charge = psm.chargeState();
   myPsm->scan = scanNumber;
   myPsm->expMass = psm.experimentalMass();
   myPsm->calcMass = psm.calculatedMass();

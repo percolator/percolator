@@ -84,7 +84,6 @@ class PSMDescription {
     double getPredictedRetentionTime() { return predictedTime; }
 
     static double normDiv, normSub;
-    unsigned charge;
     double* features;
     double* retentionFeatures;
     double retentionTime, predictedTime, massDiff, pI, expMass, calcMass;
