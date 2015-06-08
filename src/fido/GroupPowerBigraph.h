@@ -14,24 +14,23 @@
 using namespace std;
 
 
-class GroupPowerBigraph
-{
+class GroupPowerBigraph {
   
-public:
+ public:
   
- GroupPowerBigraph(double __alpha, double __beta, double __gamma, 
+  GroupPowerBigraph(double __alpha, double __beta, double __gamma, 
 		   bool __nogroupProteins = false, bool __noseparate = false , 
 		   bool __noprune = false, bool __trivialGrouping = false) :
-  gm(__alpha,__beta,__gamma),
-  nogroupProteins(__nogroupProteins), 
-  noseparate(__noseparate), 
-  noprune(__noprune),
-  LOG_MAX_ALLOWED_CONFIGURATIONS(18),
-  PsmThreshold(0.0),
-  PeptideThreshold(1e-3),
-  ProteinThreshold(1e-3),
-  PeptidePrior(0.1),
-  trivialgruping(__trivialGrouping)
+    gm(__alpha,__beta,__gamma),
+    nogroupProteins(__nogroupProteins), 
+    noseparate(__noseparate), 
+    noprune(__noprune),
+    LOG_MAX_ALLOWED_CONFIGURATIONS(18),
+    PsmThreshold(0.0),
+    PeptideThreshold(1e-3),
+    ProteinThreshold(1e-3),
+    PeptidePrior(0.1),
+    trivialgruping(__trivialGrouping)
   {
     setAlphaBetaGamma(__alpha, __beta, __gamma);
   }

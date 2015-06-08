@@ -550,15 +550,14 @@ int EludeCaller::Run() {
       best_model = AutomaticModelSelection();
     } else if (only_hydrophobicity_index_) {
     	map<string, double> custom_hydrophobicity_index = TrainRetentionIndex();
-		if (!index_file_.empty()) {
-			SaveRetentionIndexToFile(index_file_, custom_hydrophobicity_index);
-		} else {
-			PrintHydrophobicityIndex(custom_hydrophobicity_index);
-		}
+		  if (!index_file_.empty()) {
+			  SaveRetentionIndexToFile(index_file_, custom_hydrophobicity_index);
+		  } else {
+			  PrintHydrophobicityIndex(custom_hydrophobicity_index);
+		  }
     	cerr << "Now I saved the index" << endl;
     	return 0;
-    }  
-    else if (load_model_file_.empty()){
+    } else if (load_model_file_.empty()) {
       TrainRetentionModel();
     }
   } else if (automatic_model_sel_) {

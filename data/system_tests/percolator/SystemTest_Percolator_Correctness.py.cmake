@@ -18,7 +18,7 @@ class Tester:
     if result:
       print("...succeeded")
     else:
-      failures += 1
+      self.failures += 1
     self.success = result and self.success
 
 print("PERCOLATOR CORRECTNESS")

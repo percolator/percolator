@@ -30,44 +30,43 @@
 * FDR - False Discovery Rate
 * FIDO - ?
 * MSE - Mean Squared Error
-* PSM - ?
+* PSM - Peptide Spectrum Match
 * ROC - Receiver Operating Characteristic
 */
-class FidoInterface : public ProteinProbEstimator
-{
+class FidoInterface : public ProteinProbEstimator {
       
-    /** FIDO PARAMETERS **/
+  /** FIDO PARAMETERS **/
 
-    /** compute peptide level prior probability instead of using default = 0.1 **/
-    const static bool computePriors = false;
-    /** threshold used for fido to remove poor PSMs **/
-    const static double psmThreshold;
-    const static double reduced_psmThreshold;
-    /** threshold used for fido to classify a peptide as very low confidence **/
-    const static double peptideThreshold;
-    const static double reduced_peptideThreshold;
-    /** threshold used for fido to classify a protein as very low confidence and prune it **/
-    const static double proteinThreshold; 
-    const static double reduced_proteinThreshold;
-    /** default value for peptide prior probability used in fido to compute the peptide likehood **/
-    const static double peptidePrior; 
-    /** number of maximum of tree configurations allowed in fido **/
-    const static double max_allow_configurations;
-    /** allow the presence of peptides with the same sequence but different label (target/decoy) **/
-    const static bool allow_multiple_labeled_peptides = false;
-    
-    /** GRID SEARCH PARAMETERS **/
-    
-    /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
-    const static double lambda;
-    
-    /** number of false positives allowed while estiaming the ROC curve score **/
-    /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
-    const static unsigned default_rocN = 50;
-    const static bool updateRocN = true;
-    
-    /** activate the optimization of the parameters to see the best boundaries**/
-    const static bool optimize = false;
+  /** compute peptide level prior probability instead of using default = 0.1 **/
+  const static bool computePriors = false;
+  /** threshold used for fido to remove poor PSMs **/
+  const static double psmThreshold;
+  const static double reduced_psmThreshold;
+  /** threshold used for fido to classify a peptide as very low confidence **/
+  const static double peptideThreshold;
+  const static double reduced_peptideThreshold;
+  /** threshold used for fido to classify a protein as very low confidence and prune it **/
+  const static double proteinThreshold; 
+  const static double reduced_proteinThreshold;
+  /** default value for peptide prior probability used in fido to compute the peptide likehood **/
+  const static double peptidePrior; 
+  /** number of maximum of tree configurations allowed in fido **/
+  const static double max_allow_configurations;
+  /** allow the presence of peptides with the same sequence but different label (target/decoy) **/
+  const static bool allow_multiple_labeled_peptides = false;
+  
+  /** GRID SEARCH PARAMETERS **/
+  
+  /** value that balances the objective function equation (lambda * rocR) - (1-lambda) * (fdr_mse) **/
+  const static double lambda;
+  
+  /** number of false positives allowed while estiaming the ROC curve score **/
+  /** if updateRocN is true the N value will be estimated automatically according to the number of FP found at a certain threshold **/
+  const static unsigned default_rocN = 50;
+  const static bool updateRocN = true;
+  
+  /** activate the optimization of the parameters to see the best boundaries**/
+  const static bool optimize = false;
    
 
   public:

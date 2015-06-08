@@ -96,8 +96,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "and write access on the file)." << std::endl;
   // init
   CommandLineParser cmd(intro.str());
-  // available lower case letters: c, h, l, o, y, z
-  // available upper case letters: L
+  // available lower case letters: c, o, y, z
   // N.B.: "W" is used twice, once for Fido and once for Percolator
   cmd.defineOption("X",
       "xmloutput",
@@ -709,12 +708,10 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     } else {
       ofstream targetStream(peptideResultFN_.data(), ios::out);
       setHandler_.print(allScores_, NORMAL, targetStream);
-      targetStream.close();
     }
     if (!decoyPeptideResultFN_.empty()) {
       ofstream decoyStream(decoyPeptideResultFN_.data(), ios::out);
       setHandler_.print(allScores_, SHUFFLED, decoyStream);
-      decoyStream.close();
     }
     // set pi_0 value (to be outputted)
     xmlInterface_.setPi0Peptides(allScores_.getPi0());
@@ -724,12 +721,10 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
     } else if (!psmResultFN_.empty()) {
       ofstream targetStream(psmResultFN_.data(), ios::out);
       setHandler_.print(allScores_, NORMAL, targetStream);
-      targetStream.close();
     }
     if (!decoyPsmResultFN_.empty()) {
       ofstream decoyStream(decoyPsmResultFN_.data(), ios::out);
       setHandler_.print(allScores_, SHUFFLED, decoyStream);
-      decoyStream.close();
     }
     // set pi_0 value (to be outputted)
     xmlInterface_.setPi0Psms(allScores_.getPi0());

@@ -7,8 +7,7 @@
 #include "Array.h"
 #include "Vector.h"
 
-struct GraphNode
-{
+struct GraphNode {
   const string & name;
   Set & association;
   double & weight;
@@ -16,43 +15,30 @@ struct GraphNode
   Set & sectionMark;
 
   GraphNode(const string & n, Set & a, double & w, int & s, Set & sM):
-    name(n),
-    association(a),
-    weight(w),
-    section(s),
-    sectionMark(sM)
-    {
-    }
+    name(n), association(a), weight(w), section(s), sectionMark(sM) { }
     
-  ~GraphNode()
-    {
-    }
-  };
+  ~GraphNode() { }
+};
 
-struct GraphLayer
-{
+struct GraphLayer {
   Array<string> names;
   Array<Set> associations;
   Array<double> weights;
   Array<int> sections;
   Array<Set> sectionMarks;
 
-  ~GraphLayer()
-  {
-
-  }
+  ~GraphLayer() { }
     
-  friend ostream & operator <<(ostream & os, const GraphLayer & gl)
-  {
+  friend ostream & operator <<(ostream & os, const GraphLayer & gl) {
     os << "\t" << gl.associations << endl << "\t" << gl.weights << endl << "\t" << gl.names << endl;
     return os;
   }
-  GraphNode operator [] (int k)
-  {
+  
+  GraphNode operator [] (int k) {
     return GraphNode( names[k], associations[k], weights[k], sections[k], sectionMarks[k]);
   }
-  int size() const
-  {
+  
+  int size() const {
     return associations.size();
   }
 };

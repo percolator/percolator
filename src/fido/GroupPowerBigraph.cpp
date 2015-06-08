@@ -3,93 +3,78 @@
 
 #include "GroupPowerBigraph.h"
 
-GroupPowerBigraph::~GroupPowerBigraph()
-{
+GroupPowerBigraph::~GroupPowerBigraph() { }
 
-}
-
-Array<double> GroupPowerBigraph::proteinProbs()
-{
+Array<double> GroupPowerBigraph::proteinProbs() {
   Array<double> result;
   
-  for (int k=0; k<subgraphs.size(); k++)
-    {
-      subgraphs[k].getProteinProbs(gm);
-      result.append( subgraphs[k].proteinProbabilities() );
-    }
+  for (int k=0; k<subgraphs.size(); k++) {
+    subgraphs[k].getProteinProbs(gm);
+    result.append( subgraphs[k].proteinProbabilities() );
+  }
 
   return result;
 }
 
-void GroupPowerBigraph::getProteinProbs()
-{
+void GroupPowerBigraph::getProteinProbs() {
   probabilityR = proteinProbs();
 }
 
-void GroupPowerBigraph::getGroupProtNames()
-{
+void GroupPowerBigraph::getGroupProtNames() {
   int k,j;
-  for (k=0; k<subgraphs.size(); k++)
-    {
-      const BasicGroupBigraph & bgb = subgraphs[k];
+  for (k=0; k<subgraphs.size(); k++) {
+    const BasicGroupBigraph & bgb = subgraphs[k];
 
-      for (j=0; j<bgb.proteinsToPSMs.size(); j++)
-	{
-	  groupProtNames.add( bgb.proteinGroupNames()[j] );
-	}
+    for (j=0; j<bgb.proteinsToPSMs.size(); j++) {
+      groupProtNames.add( bgb.proteinGroupNames()[j] );
     }
+  }
 }
 
-void GroupPowerBigraph::printProteinWeights() const
-{
+void GroupPowerBigraph::printProteinWeights() const {
   //NOTE this is priting out PEPs not posterior probabilities
   Array<double> sorted = probabilityR;
   Array<int> indices = sorted.sort();
-  for (int k=0; k<sorted.size(); k++)
-  {
+  for (int k=0; k<sorted.size(); k++) {
     cout << double(1 - sorted[k]) << " " << groupProtNames[ indices[k] ] << endl;
   }
-  if(severedProteins.size()!=0)
+  if (severedProteins.size() != 0)
     cout << "1.0 " << severedProteins << endl;
 }
 
 /*return a map of PEPs and their respectives proteins */
-void GroupPowerBigraph::getProteinProbsPercolator(std::multimap<double, std::vector<std::string> > &pepProteins) const
-{
+void GroupPowerBigraph::getProteinProbsPercolator(std::multimap<double, std::vector<std::string> > &pepProteins) const {
   Array<double> sorted = probabilityR;
   Array<int> indices = sorted.sort();
-  for (int k=0; k<sorted.size(); k++)
-  {
+  for (int k=0; k<sorted.size(); k++) {
     double pep = (1.0 - (double)sorted[k]);
-    if(pep < 0.0)pep = 0.0;
-    if(pep > 1.0)pep = 1.0;
+    if (pep < 0.0) pep = 0.0;
+    if (pep > 1.0) pep = 1.0;
  
     pepProteins.insert(std::make_pair(pep,groupProtNames[ indices[k] ].getVector()));
   }
-  if(severedProteins.size()!=0)
-  {
+  
+  if (severedProteins.size()!=0) {
     pepProteins.insert(std::make_pair(1.0,severedProteins.getVector()));
   }
  
   return;
 }
 
-void GroupPowerBigraph::getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const
-{
+void GroupPowerBigraph::getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const {
   names.clear();
   probs.clear();
   Array<double> sorted = probabilityR;
   Array<int> indices = sorted.sort();
-  for (int k=0; k<sorted.size(); k++)
-  {
+  for (int k=0; k<sorted.size(); k++) {
     double pep = (1.0 - (double)sorted[k]);
-    if(pep <= 0.0)pep = 0.0;
-    if(pep >= 1.0)pep = 1.0;
+    if (pep <= 0.0) pep = 0.0;
+    if (pep >= 1.0) pep = 1.0;
     names.push_back(groupProtNames[ indices[k] ].getVector());
     probs.push_back(pep);
   }
-  if(severedProteins.size()!=0)
-  {
+  
+  if (severedProteins.size() != 0) {
     names.push_back(severedProteins.getVector());
     probs.push_back(1.0);
   }
@@ -97,20 +82,16 @@ void GroupPowerBigraph::getProteinProbsAndNames(std::vector<std::vector<std::str
 }
 
 
-double GroupPowerBigraph::getLogNumberStates() const
-{
+double GroupPowerBigraph::getLogNumberStates() const {
   double total = 0;
-  for (int k=0; k<subgraphs.size(); k++)
-    {
-      total = Numerical::logAdd(total, subgraphs[k].logNumberOfConfigurations());
-    }
+  for (int k=0; k<subgraphs.size(); k++) {
+    total = Numerical::logAdd(total, subgraphs[k].logNumberOfConfigurations());
+  }
   // add one because each peptide needs to be estimated once
   return total + 1;
 }
 
-Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold )
-{
-
+Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph & bb, double newPeptideThreshold ) {
   bb.setPeptideThreshold(newPeptideThreshold);
   bb.prune();
   severedProteins.append( bb.severedProteins );
@@ -118,38 +99,30 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
   Array<BasicBigraph> preResult = bb.partitionSections();
   Array<BasicBigraph> result;
 
-  for (int k=0; k<preResult.size(); k++)
-    {
-      BasicGroupBigraph bgb = BasicGroupBigraph(preResult[k],nogroupProteins/*,trivialgruping*/);
-      double logNumConfig = bgb.logNumberOfConfigurations();
-      if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && 
-	log2(bgb.PSMsToProteins.size())+log2(bgb.getOriginalN()[0].size+1) <= LOG_MAX_ALLOWED_CONFIGURATIONS )
-	{
-	  double newThresh = 1.25*(newPeptideThreshold + 1e-6);
-	  Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], newThresh);
-	  result.append( completelyFragmented );
-	}
-      else if (logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS)
-	{
-	  // the graph cannot become pruned to the desired efficiency;
-	  // prune as much as possible
-	  double largest = Vector(preResult[k].PSMsToProteins.weights).max();
-	  Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], largest);
-	  result.append( completelyFragmented );
-	}
-      else
-	{
-	  // the graph is already pruned to the desired degree
-	  result.add( preResult[k] );
-	}
+  for (int k=0; k<preResult.size(); k++) {
+    BasicGroupBigraph bgb = BasicGroupBigraph(preResult[k],nogroupProteins/*,trivialgruping*/);
+    double logNumConfig = bgb.logNumberOfConfigurations();
+    if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && 
+         log2(bgb.PSMsToProteins.size())+log2(bgb.getOriginalN()[0].size+1) <= LOG_MAX_ALLOWED_CONFIGURATIONS ) {
+      double newThresh = 1.25*(newPeptideThreshold + 1e-6);
+      Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], newThresh);
+      result.append( completelyFragmented );
+    } else if (logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS) {
+      // the graph cannot become pruned to the desired efficiency;
+      // prune as much as possible
+      double largest = Vector(preResult[k].PSMsToProteins.weights).max();
+      Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], largest);
+      result.append( completelyFragmented );
+    } else {
+      // the graph is already pruned to the desired degree
+      result.add( preResult[k] );
     }
-
+  }
+  
   return result;
-
 }
 
-void GroupPowerBigraph::read(Scores* fullset){
-  
+void GroupPowerBigraph::read(Scores* fullset) {
   BasicBigraph bb;
   bb.setPeptidePrior(PeptidePrior);
   bb.setPeptideThreshold(PeptideThreshold);
@@ -157,37 +130,32 @@ void GroupPowerBigraph::read(Scores* fullset){
   bb.setProteinThreshold(ProteinThreshold);
   bb.read(fullset,multiple_labeled_peptides);
 
-  if(!(bool)(noseparate))
-  {
-    severedProteins = Array<string>();
-    Array<BasicBigraph> subBasic;
-    subBasic = Array<BasicBigraph>();
-    
-    if(!(bool)(noprune))
-      subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
-    else
-      subBasic = iterativePartitionSubgraphs(bb, -1);
-
-    subgraphs = Array<BasicGroupBigraph>(subBasic.size());
-
-    for (int k=0; k<subBasic.size(); k++)
-      {
-	subgraphs[k] = BasicGroupBigraph(subBasic[k],nogroupProteins,trivialgruping);
-      }
-  }
-  else
-  {
+  if (noseparate) {
     bb.prune();
     severedProteins = Array<string>();
     severedProteins.append( bb.severedProteins );
     subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,nogroupProteins,trivialgruping));
+  } else {
+    severedProteins = Array<string>();
+    Array<BasicBigraph> subBasic;
+    subBasic = Array<BasicBigraph>();
+    
+    if (noprune)
+      subBasic = iterativePartitionSubgraphs(bb, -1);
+    else
+      subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
+
+    subgraphs = Array<BasicGroupBigraph>(subBasic.size());
+
+    for (int k=0; k<subBasic.size(); k++) {
+      subgraphs[k] = BasicGroupBigraph(subBasic[k],nogroupProteins,trivialgruping);
+    }
   }
   
   initialize();
 }
 
-void GroupPowerBigraph::read(istream & is){
-  
+void GroupPowerBigraph::read(istream & is) {
   BasicBigraph bb;
   bb.setPeptidePrior(PeptidePrior);
   bb.setPeptideThreshold(PeptideThreshold);
@@ -195,37 +163,32 @@ void GroupPowerBigraph::read(istream & is){
   bb.setProteinThreshold(ProteinThreshold);
   bb.read(is,multiple_labeled_peptides);
 
-  if(!(bool)(noseparate))
-  {
-    severedProteins = Array<string>();
-    Array<BasicBigraph> subBasic;
-    subBasic = Array<BasicBigraph>();
-    
-    if(!(bool)(noprune))
-      subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
-    else
-      subBasic = iterativePartitionSubgraphs(bb, -1);
-
-    subgraphs = Array<BasicGroupBigraph>(subBasic.size());
-
-    for (int k=0; k<subBasic.size(); k++)
-      {
-	subgraphs[k] = BasicGroupBigraph(subBasic[k],nogroupProteins,trivialgruping);
-      }
-  }
-  else
-  {
+  if (noseparate) {
     bb.prune();
     severedProteins = Array<string>();
     severedProteins.append( bb.severedProteins );
     subgraphs = Array<BasicGroupBigraph>(1, BasicGroupBigraph(bb,nogroupProteins,trivialgruping));
+  } else {
+    severedProteins = Array<string>();
+    Array<BasicBigraph> subBasic;
+    subBasic = Array<BasicBigraph>();
+    
+    if (noprune)
+      subBasic = iterativePartitionSubgraphs(bb, -1);
+    else
+      subBasic = iterativePartitionSubgraphs(bb, PeptideThreshold);
+
+    subgraphs = Array<BasicGroupBigraph>(subBasic.size());
+
+    for (int k=0; k<subBasic.size(); k++) {
+      subgraphs[k] = BasicGroupBigraph(subBasic[k],nogroupProteins,trivialgruping);
+    }
   }
   
   initialize();
 }
 
-void GroupPowerBigraph::initialize()
-{
+void GroupPowerBigraph::initialize() {
   getGroupProtNames();
 }
 
@@ -261,10 +224,10 @@ pair<Array<Array<string> >, Array<double> > GroupPowerBigraph::getDescendingProt
     {
       double tmp = (double) sorted[k];
       if ( std::isnan( tmp ) )
-	{
-	  cerr << "error: found nan in GroupPowerBigraph::getDescendingProteinWeights" << endl;
-	  cerr << "\tprotein " << groupProtNames[k] << endl;
-	}
+  {
+    cerr << "error: found nan in GroupPowerBigraph::getDescendingProteinWeights" << endl;
+    cerr << "\tprotein " << groupProtNames[k] << endl;
+  }
     }
   
   Array<int> indices = sorted.sort();

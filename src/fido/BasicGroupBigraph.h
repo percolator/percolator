@@ -16,74 +16,61 @@
 class Counter
 {
  public:
-  Counter()
-    {
-      size = 0;
-      start();
-    }
-  Counter(int s)
-    {
-      size = s;
-      start();
-    }
-    
-  ~Counter()
-  {
-    
+  Counter() {
+    size = 0;
+    start();
   }
+  
+  Counter(int s) {
+    size = s;
+    start();
+  }
+    
+  ~Counter() { }
   
   int size;
   int state;
 
-  void start()
-  {
+  void start() {
     state = 0;
   }
-  bool inRange() const
-  {
+  
+  bool inRange() const {
     bool ret = state <= size;
     return ret;
   }
-  void advance()
-  {
+  
+  void advance() {
     if ( size == 0 )
       cerr << "Warning: advancing group with size 0" << endl;
 
     state++;
   }
 
-  friend ostream & operator <<(ostream & os, const Counter & c)
-  {
+  friend ostream & operator <<(ostream & os, const Counter & c) {
     return os << " Counter(" << c.state << "/" << c.size << ") ";
   }
   
-  static void start(Array<Counter> & cA)
-  {
+  static void start(Array<Counter> & cA) {
     for (int k=0; k<cA.size(); k++)
       cA[k].start();
   }
 
-  static bool inRange(Array<Counter> & cA)
-  {
+  static bool inRange(Array<Counter> & cA) {
     return cA.back().inRange();
   }
 
-  static void advance(Array<Counter> & cA)
-  {
-    for (int k=0; k<cA.size(); k++)
-      {
-	cA[k].advance();
-	if ( ! cA[k].inRange() && k != cA.size() - 1 )
-	  {
-	    // do not reset the last one so that you know when it is not inRange
-	    cA[k].start();
-	  }
-	else
-	  {
-	    // no need to carry, so you can stop
-	    break;
-	  }
-      }
+  static void advance(Array<Counter> & cA) {
+    for (int k=0; k<cA.size(); k++) {
+	    cA[k].advance();
+	    if ( ! cA[k].inRange() && k != cA.size() - 1 ) {
+	      // do not reset the last one so that you know when it is not inRange
+	      cA[k].start();
+	    } else {
+	      // no need to carry, so you can stop
+	      break;
+	    }
+    }
   }
 };
 
@@ -113,13 +100,12 @@ class BasicGroupBigraph : public BasicBigraph
   
   virtual ~BasicGroupBigraph();
   
-  void read(Scores* fullset)
-  {
-     BasicBigraph::read(fullset);
-     if(nogroupProtein)
-	groupProteins();
-     else
-       trivialGroupProteins();
+  void read(Scores* fullset) {
+    BasicBigraph::read(fullset);
+    if (nogroupProtein)
+      groupProteins();
+    else
+      trivialGroupProteins();
   }
    
     // for partitioning

@@ -167,7 +167,19 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
   // save the sub and the div
   vsub_ = the_normalizer_->GetVSub();
   vdiv_ = the_normalizer_->GetVDiv();
-
+  
+  /*
+  //MT: prints the normalized features for Xuanbin's project
+  for (size_t j = 0; j < psms.size(); ++j) {
+    cout << psms[j].peptide;
+    for (int i = 0; i < retention_features_.GetTotalNumberFeatures(); ++i) {
+      cout << " " << psms[j].retentionFeatures[i];
+    }
+    cout << std::endl;
+  }
+  cerr << "Finished printing out features" << std::endl;
+  */
+  
   // initialize a RBF SVR
   if (svr_model_) {
     delete svr_model_;

@@ -39,11 +39,11 @@ void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides)
       pepName = pepName.substr(2, pepName.size()-4 );
     }
     //NOTE fido will keep only one peptide in the case that a target and a decoy peptide
-    //	    contain the same sequence
+    //      contain the same sequence
     //     this is a bit of a tricky situation because for separate target-decoy searches
-    //	    two unique peptides ( target and decoy ) might have the same sequence, therefore
-    //	   fido assumes that peptide is connected to the correspondent target and decoy proteins
-    //	   however, this is not the real situation. This scenario is not common but as a very rough
+    //      two unique peptides ( target and decoy ) might have the same sequence, therefore
+    //     fido assumes that peptide is connected to the correspondent target and decoy proteins
+    //     however, this is not the real situation. This scenario is not common but as a very rough
     //    and quick wordaround I am appending a * to all the decoy peptides to distinguish them
     //    from the target peptides. 
     if(psm->isDecoy() && multiple_labeled_peptides)
@@ -62,7 +62,7 @@ void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides)
     {
       protName = getRidOfUnprintablesAndUnicode(*pid);
       if ( proteinNames.lookup(protName) == -1 ){
-	add(proteinsToPSMs, proteinNames, protName);
+  add(proteinsToPSMs, proteinNames, protName);
       }
       connect(PSMNames, pepName, proteinNames, protName);
     }
@@ -94,64 +94,64 @@ void BasicBigraph::read(istream & is,bool multiple_labeled_peptides)
     {
 
       if ( instr == 'e' && (state == 'e' || state == 'p') )
-	{
-	  if ( state == 'p' )
-	    {
-	      cerr << "Warning: no peptide score for peptide entry " << pepName << ", using last score (" << value << ")" << endl;
-	      value = -1;
-	      if ( value == -10 )
-		{
-		  throw MyException("Error: No previous peptide entry to use");
-		}
-	      PSMsToProteins.weights[ pepIndex ] = max(value, PSMsToProteins.weights[ pepIndex ]);
-	    }
-	  
-	  is >> pepName;
-	 
-	  //pepName = cleanPeptideSequence(pepName);
-	  
-	  if ( PSMNames.lookup(pepName) == -1 )
-	    {
-	      add(PSMsToProteins, PSMNames, pepName);
-	    }
-	  
-	  pepIndex = PSMNames.lookup(pepName);
+  {
+    if ( state == 'p' )
+      {
+        cerr << "Warning: no peptide score for peptide entry " << pepName << ", using last score (" << value << ")" << endl;
+        value = -1;
+        if ( value == -10 )
+    {
+      throw MyException("Error: No previous peptide entry to use");
+    }
+        PSMsToProteins.weights[ pepIndex ] = max(value, PSMsToProteins.weights[ pepIndex ]);
+      }
+    
+    is >> pepName;
+   
+    //pepName = cleanPeptideSequence(pepName);
+    
+    if ( PSMNames.lookup(pepName) == -1 )
+      {
+        add(PSMsToProteins, PSMNames, pepName);
+      }
+    
+    pepIndex = PSMNames.lookup(pepName);
 
-	  state = 'c';
+    state = 'c';
 
-	}
+  }
       else if ( instr == 'c' && state == 'c' )
-	{
-	  state = 'r';
-	}
+  {
+    state = 'r';
+  }
       else if ( instr == 'r' && ( state == 'c' || state == 'r' || state == 'p' ) )
-	{
-	  is >> protName;
+  {
+    is >> protName;
 
-	  if ( proteinNames.lookup(protName) == -1 )
-	    add(proteinsToPSMs, proteinNames, protName);
+    if ( proteinNames.lookup(protName) == -1 )
+      add(proteinsToPSMs, proteinNames, protName);
 
-	  connect(PSMNames, pepName, proteinNames, protName);
+    connect(PSMNames, pepName, proteinNames, protName);
 
-	  state = 'p';
-	}
+    state = 'p';
+  }
       else if ( instr == 'p' && state == 'p' )
-	{
-	  is >> value;
-	  // this option scores peptides using only the best match
-	  PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
-	  state = 'e';
-	}
+  {
+    is >> value;
+    // this option scores peptides using only the best match
+    PSMsToProteins.weights[ pepIndex ] = max(PSMsToProteins.weights[pepIndex], value);
+    state = 'e';
+  }
       else if ( instr == '#' )
-	{
-	  // comment line
-	  string garbage;
-	  getline(is, garbage);
-	}
+  {
+    // comment line
+    string garbage;
+    getline(is, garbage);
+  }
       else
-	{
-	  throw MyException("");
-	}
+  {
+    throw MyException("");
+  }
     }
 
   PSMsToProteins.names = PSMNames.getItemsByNumber();
@@ -176,20 +176,16 @@ void BasicBigraph::printGraphStats() const
 }
 
 
-void BasicBigraph::saveSeveredProteins()
-{
+void BasicBigraph::saveSeveredProteins() {
   severedProteins = Array<string>();
-  for (int k=0; k<proteinsToPSMs.size(); k++)
-    {
-      if ( proteinsToPSMs.associations[k].size() == 0 )
-	{
-	  severedProteins.add( proteinsToPSMs.names[k] );
-	}
+  for (int k = 0; k < proteinsToPSMs.size(); k++) {
+    if (proteinsToPSMs.associations[k].size() == 0) {
+      severedProteins.add( proteinsToPSMs.names[k] );
     }
+  }
 }
 
-void BasicBigraph::prune()
-{
+void BasicBigraph::prune() {
   removePoorPSMs();
   removePoorProteins();
   saveSeveredProteins();
@@ -200,23 +196,20 @@ void BasicBigraph::prune()
 }
 
 
-void BasicBigraph::cloneMultipleMarkedPSMs()
-{
+void BasicBigraph::cloneMultipleMarkedPSMs() {
   numberClones = 0;
 
   // compute this once, since it will change as you add clones
   int N = PSMsToProteins.size();
 
-  for (int k=0; k<N; k++)
-    {
-      const GraphNode & psm = PSMsToProteins[k];
-      // the way the marking procedure works, it will only multiple
-      // mark PSMs with a score of 0.0
-      if ( psm.sectionMark.size() > 1 )
-	{
-	  clonePSM( k );
-	}
+  for (int k=0; k<N; k++) {
+    const GraphNode & psm = PSMsToProteins[k];
+    // the way the marking procedure works, it will only multiple
+    // mark PSMs with a score of 0.0
+    if ( psm.sectionMark.size() > 1 ) {
+      clonePSM( k );
     }
+  }
 }
 
 void BasicBigraph::clonePSM(int pepIndex)
@@ -256,7 +249,7 @@ void BasicBigraph::clonePSM(int pepIndex)
 
       // add the association from this section's proteins to the new peptide
       for (int j=0; j<associatedProteinsBySection[k].size(); j++)
-	proteinsToPSMs.associations[ associatedProteinsBySection[k][j] ] |= Set::SingletonSet( PSMsToProteins.size()-1 );
+  proteinsToPSMs.associations[ associatedProteinsBySection[k][j] ] |= Set::SingletonSet( PSMsToProteins.size()-1 );
     }
 
   // afterward, erase the original
@@ -264,11 +257,11 @@ void BasicBigraph::clonePSM(int pepIndex)
   for (k=0; k<associatedProteinsBySection.size(); k++)
     {
       for (j=0; j<associatedProteinsBySection[k].size(); j++)
-	{
-	  int prot = associatedProteinsBySection[k][j];
+  {
+    int prot = associatedProteinsBySection[k][j];
 
-	  proteinsToPSMs[prot].association = proteinsToPSMs[prot].association.without( Set::SingletonSet(pepIndex) );
-	}
+    proteinsToPSMs[prot].association = proteinsToPSMs[prot].association.without( Set::SingletonSet(pepIndex) );
+  }
     }
 
   // (remove the associations to proteins)
@@ -276,25 +269,22 @@ void BasicBigraph::clonePSM(int pepIndex)
   numberClones += sections.size()-1;
 }
 
-void BasicBigraph::reindex()
-{
+void BasicBigraph::reindex() {
   int k;
 
   // note: later check to see if you can do suchThat in Array using a
   // pointer to a member function
   Set connectedPSMs;
-  for (k=0; k<PSMsToProteins.size(); k++)
-    {
-      if ( ! PSMsToProteins.associations[k].isEmpty() )
-	connectedPSMs.add(k);
-    }
+  for (k = 0; k < PSMsToProteins.size(); k++) {
+    if (!PSMsToProteins.associations[k].isEmpty())
+      connectedPSMs.add(k);
+  }
 
   Set connectedProteins;
-  for (k=0; k<proteinsToPSMs.size(); k++)
-    {
-      if ( ! proteinsToPSMs.associations[k].isEmpty() )
-	connectedProteins.add(k);
-    }
+  for (k = 0; k < proteinsToPSMs.size(); k++) {
+    if (!proteinsToPSMs.associations[k].isEmpty())
+      connectedProteins.add(k);
+  }
 
   // note: ahh! this is bad design. You need to remake this code
   int backupNumberClones = numberClones;
@@ -307,9 +297,7 @@ void BasicBigraph::reindex()
   PeptideThreshold = backupPeptideThreshold;
 }
 
-BasicBigraph BasicBigraph::buildSubgraph(const Set & connectedProteins, const Set & connectedPSMs)
-{
-  int k;
+BasicBigraph BasicBigraph::buildSubgraph(const Set & connectedProteins, const Set & connectedPSMs) {
   BasicBigraph result;
 
   result.PSMsToProteins.names = PSMsToProteins.names[ connectedPSMs ];
@@ -317,80 +305,64 @@ BasicBigraph BasicBigraph::buildSubgraph(const Set & connectedProteins, const Se
   result.PSMsToProteins.weights = PSMsToProteins.weights[ connectedPSMs ];
   result.PSMsToProteins.sections = PSMsToProteins.sections[ connectedPSMs ];
 
-  for (k=0; k<result.PSMsToProteins.associations.size(); k++)
-    {
-      result.PSMsToProteins.associations[k] = result.PSMsToProteins.associations[k].reindexToFind( connectedProteins );
-    }
+  for (int k = 0; k < result.PSMsToProteins.associations.size(); k++) {
+    result.PSMsToProteins.associations[k] = result.PSMsToProteins.associations[k].reindexToFind( connectedProteins );
+  }
 
   result.proteinsToPSMs.names = proteinsToPSMs.names[ connectedProteins ];
   result.proteinsToPSMs.associations = proteinsToPSMs.associations[ connectedProteins ];
   result.proteinsToPSMs.weights = proteinsToPSMs.weights[ connectedProteins ];
   result.proteinsToPSMs.sections = proteinsToPSMs.sections[ connectedProteins ];
 
-  for (k=0; k<result.proteinsToPSMs.associations.size(); k++)
-    {
-      result.proteinsToPSMs.associations[k] = result.proteinsToPSMs.associations[k].reindexToFind( connectedPSMs );
-    }
+  for (int k = 0; k < result.proteinsToPSMs.associations.size(); k++) {
+    result.proteinsToPSMs.associations[k] = result.proteinsToPSMs.associations[k].reindexToFind( connectedPSMs );
+  }
 
   return result;
 }
 
-void BasicBigraph::removePoorPSMs()
-{
-  int k;
-  for (k=0; k<PSMsToProteins.size(); k++)
-    {
-      if ( PSMsToProteins.weights[k] < PsmThreshold  )
-	{
-	  disconnectPSM(k);
-	}
+void BasicBigraph::removePoorPSMs() {
+  for (int k = 0; k < PSMsToProteins.size(); k++) {
+    if (PSMsToProteins.weights[k] < PsmThreshold) {
+      disconnectPSM(k);
     }
+  }
 }
 
-void BasicBigraph::removePoorProteins()
-{
-  int k;
-  for (k=0; k<proteinsToPSMs.size(); k++)
-    {
-      if ( Vector(PSMsToProteins.weights[ proteinsToPSMs.associations[k] ]).max() < ProteinThreshold )
-	{
-	  disconnectProtein(k);
-	}
+void BasicBigraph::removePoorProteins() {
+  for (int k = 0; k < proteinsToPSMs.size(); k++) {
+    if (Vector(PSMsToProteins.weights[ proteinsToPSMs.associations[k] ]).max() < ProteinThreshold) {
+      disconnectProtein(k);
     }
+  }
 }
 
-void BasicBigraph::disconnectPSM(int k)
-{
-  Set & as = PSMsToProteins.associations[k];
-  for (Set::Iterator iter = as.begin(); iter != as.end(); iter++)
-    {
-      Set & setRef = proteinsToPSMs.associations[ *iter ];
-      setRef = setRef.without( Set::SingletonSet( k ) );
-    }
+void BasicBigraph::disconnectPSM(int k) {
+  Set& as = PSMsToProteins.associations[k];
+  for (Set::Iterator iter = as.begin(); iter != as.end(); iter++) {
+    Set& setRef = proteinsToPSMs.associations[ *iter ];
+    setRef = setRef.without( Set::SingletonSet( k ) );
+  }
   as = Set();
 }
 
-void BasicBigraph::disconnectProtein(int k)
-{
+void BasicBigraph::disconnectProtein(int k) {
   Set & as = proteinsToPSMs.associations[k];
-  for (Set::Iterator iter = as.begin(); iter != as.end(); iter++)
-    {
-      Set & setRef = PSMsToProteins.associations[ *iter ];
-      setRef = setRef.without( Set::SingletonSet( k ) );
-    }
+  for (Set::Iterator iter = as.begin(); iter != as.end(); iter++) {
+    Set & setRef = PSMsToProteins.associations[ *iter ];
+    setRef = setRef.without( Set::SingletonSet( k ) );
+  }
   as = Set();
 }
 
-void BasicBigraph::add(GraphLayer & gl, StringTable & st, const string & item)
-{
-  if ( st.lookup(item) == -1 )
-    {
-      // if the string is not already known, then add a new node for it
-      st.add(item);
-      gl.associations.add( Set() );
-      gl.weights.add( -1.0 );
-      gl.sections.add(-1);
-    }
+void BasicBigraph::add(GraphLayer & gl, StringTable & st, const string & item) {
+  if ( st.lookup(item) == -1 ) {
+    // if the string is not already known, then add a new node for it
+    st.add(item);
+    gl.associations.add( Set() );
+    gl.weights.add( -1.0 );
+    gl.sections.add(-1);
+  }
 }
 
 void BasicBigraph::connect(const StringTable & pepNames, const string & pepName, const StringTable & proteinNames, const string & protName)
@@ -417,34 +389,27 @@ void BasicBigraph::printProteinWeights() const
     }
 }
 
-void BasicBigraph::traceConnected(int index, GraphLayer & gl, int sectionNumber)
-{
+void BasicBigraph::traceConnected(int index, GraphLayer & gl, int sectionNumber) {
   if ( gl.sections[index] == sectionNumber )
     return;
   gl.sections[index] = sectionNumber;
   // if it has not already been marked by this section, do so
   gl.sectionMarks[index] |= Set::SingletonSet(sectionNumber);
-  if ( & gl == & PSMsToProteins && gl.weights[index] <= PeptideThreshold )
-    {
-      return;
-    }
+  if ( &gl == &PSMsToProteins && gl.weights[index] <= PeptideThreshold ) {
+    return;
+  }
 
-  const Set & as = gl.associations[index];
-  for (Set::Iterator iter = as.begin(); iter != as.end(); iter++)
-    {
-      if ( & gl == & proteinsToPSMs )
-	traceConnected( *iter, PSMsToProteins, sectionNumber );
-      else
-	{
-	  traceConnected( *iter, proteinsToPSMs, sectionNumber );
-	}
-    }
+  const Set& as = gl.associations[index];
+  for (Set::Iterator iter = as.begin(); iter != as.end(); iter++) {
+    if ( &gl == &proteinsToPSMs )
+      traceConnected( *iter, PSMsToProteins, sectionNumber );
+    else
+      traceConnected( *iter, proteinsToPSMs, sectionNumber );
+  }
 }
 
-int BasicBigraph::markSectionPartitions()
-{
+int BasicBigraph::markSectionPartitions() {
   // returns the number of sections that are found
-
   proteinsToPSMs.sectionMarks = Array<Set>(proteinsToPSMs.size());
   PSMsToProteins.sectionMarks = Array<Set>(PSMsToProteins.size());
 
@@ -452,55 +417,44 @@ int BasicBigraph::markSectionPartitions()
   proteinsToPSMs.sections = Array<int>(proteinsToPSMs.size(), -1);
 
   int section = 0;
-  int k;
-  for (k=0; k<proteinsToPSMs.size(); k++)
-    {
-      if ( proteinsToPSMs[k].section == -1 )
-	{
-	  traceConnected( k, proteinsToPSMs, section );
-	  section++;
-	}
+  for (int k = 0; k < proteinsToPSMs.size(); k++) {
+    if (proteinsToPSMs[k].section == -1) {
+      traceConnected( k, proteinsToPSMs, section );
+      section++;
     }
+  }
 
   return section;
 }
 
-Array<BasicBigraph> BasicBigraph::partitionSections()
-{
+Array<BasicBigraph> BasicBigraph::partitionSections() {
   int numSections = markSectionPartitions();
 
   Array<Set> proteinSubsets(numSections), PSMSubsets(numSections);
-  int k;
-  for (k=0; k<proteinsToPSMs.size(); k++)
-    {
-      proteinSubsets[ proteinsToPSMs[k].section ].add(k);
-    }
+  for (int k = 0; k < proteinsToPSMs.size(); k++) {
+    proteinSubsets[ proteinsToPSMs[k].section ].add(k);
+  }
 
-  for (k=0; k<PSMsToProteins.size(); k++)
-    {
-      PSMSubsets[ PSMsToProteins[k].section ].add(k);
-    }
+  for (int k = 0; k < PSMsToProteins.size(); k++) {
+    PSMSubsets[ PSMsToProteins[k].section ].add(k);
+  }
 
   // now reindex them to their proper sets
 
   Array<BasicBigraph> result;
-  for (k=0; k<numSections; k++)
-    {
-      result.add( buildSubgraph( proteinSubsets[k], PSMSubsets[k] ) );
-    }
+  for (int k = 0; k < numSections; k++) {
+    result.add( buildSubgraph( proteinSubsets[k], PSMSubsets[k] ) );
+  }
 
   return result;
 }
 
-void BasicBigraph::pseudoCountPSMs()
-{
-  for (int k=0; k<PSMsToProteins.size(); k++)
-    {
-      if ( PSMsToProteins.weights[k] < PeptideThreshold )
-	{
-	  PSMsToProteins.weights[k] = PeptideThreshold;
-	}
-    }  
+void BasicBigraph::pseudoCountPSMs() {
+  for (int k=0; k<PSMsToProteins.size(); k++) {
+    if ( PSMsToProteins.weights[k] < PeptideThreshold ) {
+      PSMsToProteins.weights[k] = PeptideThreshold;
+    }
+  }  
 }
 
 void BasicBigraph::setPsmThreshold(double __psm_threshold)
