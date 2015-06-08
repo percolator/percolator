@@ -371,11 +371,11 @@ void ProteinProbEstimator::estimateQValues() {
 	      nP += ntargets;
       }
       qvalue = (sum / (double)nP);
-      if(std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
+      if (std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
       qvalues.push_back(qvalue);
     } else {
       std::vector<std::string> proteins = it->second;
-      for(std::vector<std::string>::const_iterator it2 = proteins.begin(); 
+      for (std::vector<std::string>::const_iterator it2 = proteins.begin(); 
 	          it2 != proteins.end(); it2++) {
 	      std::string protein = *it2;
 	      if (!countDecoyQvalue) {

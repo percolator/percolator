@@ -15,6 +15,7 @@
 
  *******************************************************************************/
 #include <cstring>
+#include <cstdlib>
 #include <cmath>
 #include <algorithm>
 #include <assert.h>
@@ -48,7 +49,7 @@ void DescriptionOfCorrect::calcRegressionFeature(PSMDescription& psm) {
   if (psm.getRetentionFeatures()) {
     RTModel::fillFeaturesAllIndex(pep, psm.getRetentionFeatures());
   }
-  //  cout <<  peptide << " " << pep << " " << retentionFeatures[0] << endl;
+  //cout <<  peptide << " " << pep << " " << psm.getRetentionFeatures()[0] << endl;
 }
 
 void DescriptionOfCorrect::trainCorrect() {
