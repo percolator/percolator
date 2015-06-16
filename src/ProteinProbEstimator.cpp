@@ -60,8 +60,8 @@ ProteinProbEstimator::~ProteinProbEstimator() {
   }
   fastReader = 0;
   
-  for(std::multimap<double,std::vector<std::string> >::iterator it = pepProteins.begin();
-        it != pepProteins.end(); it++) {
+  for(std::multimap<double,std::vector<std::string> >::iterator it = pepProteinMap_.begin();
+        it != pepProteinMap_.end(); it++) {
 	  FreeAll(it->second);
   }
       
@@ -112,10 +112,10 @@ void ProteinProbEstimator::computeFDR() {
 }
 
 void ProteinProbEstimator::computeStatistics() {
-  if(usePi0 && !mayufdr && outputEmpirQVal) { 
+  if (usePi0 && !mayufdr && outputEmpirQVal) { 
     estimatePValues();
     pi0 = estimatePi0();
-    if(pi0 <= 0.0 || pi0 > 1.0) pi0 = *qvalues.rbegin();
+    if (pi0 <= 0.0 || pi0 > 1.0) pi0 = *qvalues.rbegin();
   } else {
     pi0 = fdr;
   }
@@ -198,8 +198,8 @@ double ProteinProbEstimator::estimatePriors() {
 }
 
 void ProteinProbEstimator::getCombinedList(std::vector<std::pair<double , bool> > &combined) {
-  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin();
-       it != pepProteins.end(); it++) {
+  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteinMap_.begin();
+       it != pepProteinMap_.end(); it++) {
     double prob = it->first;
     std::vector<std::string> proteinList = it->second;
     for(std::vector<std::string>::const_iterator itP = proteinList.begin();
@@ -357,12 +357,12 @@ void ProteinProbEstimator::estimateQValues() {
   double qvalue = 0.0;
   qvalues.clear();
 
-  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); 
-          it != pepProteins.end(); it++) {
+  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteinMap_.begin(); 
+          it != pepProteinMap_.end(); it++) {
     if (tiesAsOneProtein) {
       int ntargets = countTargets(it->second);
       //NOTE in case I want to count and use target and decoys proteins while estimateing qvalue from PEP
-      if (countDecoyQvalue) {
+      if (countDecoyQvalue_) {
 	      int ndecoys = it->second.size() - ntargets;
 	      sum += (double)(it->first * (ntargets + ndecoys));
 	      nP += (ntargets + ndecoys);
@@ -378,12 +378,7 @@ void ProteinProbEstimator::estimateQValues() {
       for (std::vector<std::string>::const_iterator it2 = proteins.begin(); 
 	          it2 != proteins.end(); it2++) {
 	      std::string protein = *it2;
-	      if (!countDecoyQvalue) {
-	        if (isTarget(protein)) {
-	          sum += it->first;
-	          nP++;
-	        }
-	      } else {
+	      if (isTarget(protein) || countDecoyQvalue_) {
 	        sum += it->first;
 	        nP++;
 	      }
@@ -407,7 +402,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
   qvaluesEmp.clear();
   double TargetDecoyRatio = (double)numberTargetProteins / (double)numberDecoyProteins;
  
-  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteins.begin(); it != pepProteins.end(); it++) {
+  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteinMap_.begin(); it != pepProteinMap_.end(); it++) {
     if (tiesAsOneProtein) {
       numTarget = countTargets(it->second);
       numDecoy = it->second.size() - numTarget;
@@ -445,28 +440,26 @@ void ProteinProbEstimator::estimateQValuesEmp() {
 }
 
 void ProteinProbEstimator::updateProteinProbabilities() {
-  std::vector<double> peps;
+  std::vector<double> peps; // posterior error probabilities, not peptide
   std::vector<std::vector<std::string> > proteinNames;
-  std::transform(pepProteins.begin(), pepProteins.end(), std::back_inserter(peps), RetrieveKey());
-  std::transform(pepProteins.begin(), pepProteins.end(), std::back_inserter(proteinNames), RetrieveValue());
-  unsigned qindex = 0;
-  for (unsigned i = 0; i < peps.size(); i++) {
-    double pep = peps[i];
-    std::vector<std::string> proteinlist = proteinNames[i];
-    for(unsigned j = 0; j < proteinlist.size(); j++) { 
-      std::string proteinName = proteinlist[j];
-      if(tiesAsOneProtein) {
-	      proteins[proteinName]->setPEP(pep);
-	      proteins[proteinName]->setQ(qvalues[i]);
-	      proteins[proteinName]->setQemp(qvaluesEmp[i]);
-	      proteins[proteinName]->setP(pvalues[i]);
-      } else {	
-	      proteins[proteinName]->setPEP(pep);
-	      proteins[proteinName]->setQ(qvalues[qindex]);
-	      proteins[proteinName]->setQemp(qvaluesEmp[qindex]);
-	      proteins[proteinName]->setP(pvalues[qindex]);
+  std::transform(pepProteinMap_.begin(), pepProteinMap_.end(), std::back_inserter(peps), RetrieveKey());
+  std::transform(pepProteinMap_.begin(), pepProteinMap_.end(), std::back_inserter(proteinNames), RetrieveValue());
+  unsigned protIdx = 0;
+  for (unsigned pepIdx = 0; pepIdx < peps.size(); pepIdx++) {
+    double pep = peps[pepIdx];
+    std::vector<std::string> proteinlist = proteinNames[pepIdx];
+    for (unsigned j = 0; j < proteinlist.size(); j++) { 
+      unsigned int idx;
+      if (tiesAsOneProtein) {
+        idx = pepIdx;
+      } else {
+        idx = protIdx++;
       }
-      qindex++;
+      std::string proteinName = proteinlist[j];
+      proteins[proteinName]->setPEP(pep);
+      proteins[proteinName]->setQ(qvalues[idx]);
+      proteins[proteinName]->setQemp(qvaluesEmp[idx]);
+      proteins[proteinName]->setP(pvalues[idx]);
     }
   }
 

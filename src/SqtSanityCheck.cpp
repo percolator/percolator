@@ -34,12 +34,31 @@ void SqtSanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
   for (unsigned int ix = 0; ix < numFeatures + 1; ++ix) {
     wSet[ix] = 0;
   }
-  if(numFeatures >= 2) wSet[2] = 1.61; // deltCn
-  if(numFeatures >= 3) wSet[3] = 1.1; // Xcorr
-  if(numFeatures >= 7) wSet[7] = -0.573; // Peptide length
-  if(numFeatures >= 8) wSet[8] = 0.0335; // Charge 1
-  if(numFeatures >= 9) wSet[9] = 0.149; // Charge 2
-  if(numFeatures >= 10) wSet[10] = -0.156; // Charge 3
+  if (numFeatures >= 2) {
+    wSet[2] = 1.61; // deltCn
+    default_weights.resize(11);
+    default_weights[2] = 1.61;
+  }
+  if (numFeatures >= 3) {
+    wSet[3] = 1.1; // Xcorr
+    default_weights[3] = 1.1;
+  }
+  if (numFeatures >= 7) {
+    wSet[7] = -0.573; // Peptide length
+    default_weights[7] = -0.573;
+  }
+  if (numFeatures >= 8) {
+    wSet[8] = 0.0335; // Charge 1
+    default_weights[8] = 0.0335;
+  }
+  if (numFeatures >= 9) {
+    wSet[9] = 0.149; // Charge 2
+    default_weights[9] = 0.149;
+  }
+  if (numFeatures >= 10) {
+    wSet[10] = -0.156; // Charge 3
+    default_weights[10] = -0.156;
+  }
   
   /*
 

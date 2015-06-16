@@ -21,157 +21,82 @@
 #include <string>
 using namespace std;
 
-/** data container that will store all the information of the proteins, peptides, type, qvalues,pvalues etc..**/
-    
+/** data container that will store all the information of the proteins, 
+    peptides, type, qvalues, pvalues etc..**/
 class Protein {
-  
-  public:
-    
-    struct Peptide{
-      Peptide(std::string __name,bool __isdecoy,double __pep,double __q,double __empq)
-      {
-  name = __name;
-  isdecoy = __isdecoy;
-  pep =__pep;
-  q = __q;
-  empq = __empq;
-      }
-      double pep;
-      double q;
-      double empq;
-      std::string name;
-      bool isdecoy;
-    };
-    
-    Protein();
-    
-    Protein(std::string namenew,double qnew, double qempnew, double pepnew, 
-      double pnew, bool isdecoy_new, Peptide *__peptide);
-    
-    ~Protein();
-    
-    std::string getName()
-    {
-      return name;
-    }
-    
-    std::string getName() const
-    {
-      return name;
-    }
-    
-    double getQ() {
-      return q;
-    }
-    
-    double getQ() const {
-      return q;
-    }
-    
-    double getQemp() {
-      return qemp;
-    }
-    
-    double getQemp() const {
-      return qemp;
-    }
-    
-    double getPEP() {
-      return pep;
-    }
-    
-    double getPEP() const {
-      return pep;
-    }
-    
-    double getP() {
-      return p; 
-    }
-    
-    double getP() const {
-      return p; 
-    }
-    
-    bool getIsDecoy() {
-      return isDecoy;
-    }
-    
-    bool getIsDecoy() const {
-      return isDecoy;
-    }
-    
-    std::vector<Peptide*> getPeptides() {
-      return peptides;
-    }
-    
-    std::vector<Peptide*> getPeptides() const {
-      return peptides;
-    }
-    
-    void setName(std::string namenew)
-    {
-      name = namenew;
-    }
-    
-    void setQ(double qnew) {
-      q = qnew;
-    }
-    
-    void setQemp(double qempnew) {
-      qemp = qempnew;
-    }
-    
-    void setIsDecoy(bool isdecoynew) {
-      isDecoy = isdecoynew;
-    }
-    
-    void setPEP(double pepnew) {
-      pep = pepnew;
-    }
-    
-    void setP(double pnew) {
-      p = pnew;
-    }
-    
-    void setPeptide(std::string peptide,bool isdecoy,double pep,double q,double empq) {
-      peptides.push_back(new Peptide(peptide,isdecoy,pep,q,empq));
-    }
-    
-    void setPeptide(Peptide *__peptide)
-    {
-      peptides.push_back(__peptide);
-    }
-    
-    void setPeptides(std::vector<Peptide*> peptidesnew)
-    {
-       peptides = std::vector<Peptide*>(peptidesnew);
-    }
-
-    
-    /*inline bool operator<(const Protein& a,const Protein& b)  {
-      return a.getPEP() > b.getPEP();
-    }
-    
-    inline bool operator>(const Protein& a,const Protein& b)  {
-      return a.getPEP() < b.getPEP();
-    }
-    
-    inline bool operator!=(const Protein& a,const Protein& b) {
-      return !(a.getName() == b.getName());
-    }
-    
-    inline bool operator==(const Protein& a,const Protein& b) {
-      return (a.getName() == b.getName());
-    }*/
-   
-  private:
-    
+ public:
+  struct Peptide {
+    Peptide(std::string __name, bool __isdecoy, double __pep, double __q, 
+            double __empq) : name(__name), isdecoy(__isdecoy), pep(__pep),
+            q(__q), empq(__empq) {}
     std::string name;
-    double q, qemp, pep, p, pi0;
-    std::string id;
-    bool isDecoy;
-    std::vector<Peptide*> peptides;
-    
+    bool isdecoy;
+    double pep, q, empq;
+  };
+  
+  Protein() : q(0.0), qemp(0.0), pep(0.0), p(0.0), isDecoy(false), name("") {}
+  Protein(std::string namenew,double qnew, double qempnew, double pepnew, 
+    double pnew, bool isdecoy_new, Peptide *__peptide);
+  ~Protein();
+  
+  void setName(std::string namenew) { name = namenew; }
+  std::string getName() { return name; }
+  std::string getName() const { return name; }
+  
+  void setQ(double qnew) { q = qnew; }
+  double getQ() { return q; }
+  double getQ() const { return q; }
+  
+  void setQemp(double qempnew) { qemp = qempnew; }
+  double getQemp() { return qemp; }
+  double getQemp() const { return qemp; }
+  
+  void setPEP(double pepnew) { pep = pepnew; }
+  double getPEP() { return pep; }  
+  double getPEP() const { return pep; }
+  
+  void setP(double pnew) { p = pnew; }
+  double getP() { return p; }
+  double getP() const { return p; }
+  
+  void setIsDecoy(bool isdecoynew) { isDecoy = isdecoynew; }
+  bool getIsDecoy() { return isDecoy; }
+  bool getIsDecoy() const { return isDecoy; }
+  
+  void setPeptide(std::string peptide,bool isdecoy,double pep,double q,double empq) {
+    peptides.push_back(new Peptide(peptide,isdecoy,pep,q,empq));
+  }
+  void setPeptide(Peptide *__peptide) {
+    peptides.push_back(__peptide);
+  }
+  void setPeptides(std::vector<Peptide*> peptidesnew) {
+     peptides = std::vector<Peptide*>(peptidesnew);
+  }
+  std::vector<Peptide*> getPeptides() { return peptides; }
+  std::vector<Peptide*> getPeptides() const { return peptides; }
+  
+  /*
+  inline bool operator<(const Protein& a,const Protein& b)  {
+    return a.getPEP() > b.getPEP();
+  }
+  inline bool operator>(const Protein& a,const Protein& b)  {
+    return a.getPEP() < b.getPEP();
+  }
+  inline bool operator!=(const Protein& a,const Protein& b) {
+    return !(a.getName() == b.getName());
+  }
+  inline bool operator==(const Protein& a,const Protein& b) {
+    return (a.getName() == b.getName());
+  }
+  */
+ 
+ private:
+  std::string name;
+  double q, qemp, pep, p, pi0;
+  std::string id;
+  bool isDecoy;
+  std::vector<Peptide*> peptides;
+  
 };
 
 

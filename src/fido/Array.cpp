@@ -240,76 +240,60 @@ istream & operator >>(istream & is, Array<T> & rhs)
 // }
 
 template <typename T>
-bool Array<T>::operator ==(const Array<T> & rhs) const
-{
+bool Array<T>::operator ==(const Array<T> & rhs) const {
   if ( size() != rhs.size() )
     return false;
 
-  for (int k=0; k<size(); k++)
-    {
-      if ( (*this)[k] != rhs[k] )
-	{
-	  return false;
-	}
-    }
-
+  for (int k=0; k<size(); k++) {
+    if ( (*this)[k] != rhs[k] ) {
+  	  return false;
+	  }
+  }
   return true;
 }
 
 template <typename T>
-Array<int> Array<T>::sort()
-{
+Array<int> Array<T>::sort() {
   vector<pair<T, int> > sortie(size());
-
-  int k;
-  for (k=0; k<size(); k++)
-    {
-      sortie[k] = pair<T, int>( (*this)[k], k);
-    }
+  for (int k = 0; k < size(); k++) {
+    sortie[k] = pair<T, int>( (*this)[k], k);
+  }
 
   ::sort( sortie.begin(), sortie.end() , std::greater<std::pair<T, int> >() );
   
   Array<int> result(size());
-  for (k=0; k<size(); k++)
-    {
-      (*this)[k] = sortie[k].first;
-      result[k] = sortie[k].second;
-    }
-
+  for (int k = 0; k < size(); k++) {
+    (*this)[k] = sortie[k].first;
+    result[k] = sortie[k].second;
+  }
   return result;
 }
 
 template <typename T>
-Array<int> Array<T>::sortA()
-{
+Array<int> Array<T>::sortA() {
   vector<pair<T, int> > sortie(size());
 
-  int k;
-  for (k=0; k<size(); k++)
-    {
-      sortie[k] = pair<T, int>( (*this)[k], k);
-    }
+  for (int k = 0; k < size(); k++) {
+    sortie[k] = pair<T, int>( (*this)[k], k);
+  }
 
-  ::sort( sortie.begin(), sortie.end() );
+  ::sort(sortie.begin(), sortie.end());
   
   Array<int> result(size());
-  for (k=0; k<size(); k++)
-    {
-      (*this)[k] = sortie[k].first;
-      result[k] = sortie[k].second;
-    }
+  for (int k = 0; k < size(); k++) {
+    (*this)[k] = sortie[k].first;
+    result[k] = sortie[k].second;
+  }
 
   return result;
 }
 
 template <typename T>
-vector<T> Array<T>::getVector()
-{
+vector<T> Array<T>::getVector() {
   return data;
 }
 
 template <typename T>
-vector<T> Array<T>::getVector() const
-{
+vector<T> Array<T>::getVector() const {
   return data;
 }

@@ -351,7 +351,7 @@ int CrossValidation::processSingleFold(unsigned int set, bool updateDOC,
 void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck* pCheck) {
   if (!pCheck->validateDirection(w_)) {
-    fullset.calcScores(w_[0]);
+    fullset.calcScores(w_[0], selectionFdr_);
   }
   if (VERB > 0) {
     std::cerr << "Merging results from " << testScores_.size() << 

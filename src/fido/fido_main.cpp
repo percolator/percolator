@@ -184,10 +184,8 @@ int Fido::run() {
     cerr << protEstimator->printCopyright();
   }
   
-  ifstream fin(fname);
-  
   protEstimator->run();
-  protEstimator->computeProbabilitiesFromFile(fin);
+  protEstimator->computeProbabilities(std::string(fname));
   protEstimator->computeStatistics();
   
   time_t procStart;

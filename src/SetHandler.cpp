@@ -189,7 +189,7 @@ int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
   if (hasInitialValueRow) {
     iss.str(rtrim(defaultDirectionLine));
     iss >> tmp >> tmp; // remove id and label
-    for (int i = 1; i <= optionalFieldCount; ++i) 
+    for (int i = 1; i <= optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0); ++i) 
       iss >> tmp; // discard optional fields
     
     unsigned int ix = 0;
@@ -251,7 +251,7 @@ int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
 
 void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   ofstream dataStream(dataFN.data(), ios::out);
-  dataStream << "SpecId\tLabel\tScanNr\t";
+  dataStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\t";
   if (DataSet::getCalcDoc()) {
     dataStream << "RT\tdM\t";
   }
@@ -259,7 +259,10 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
       << "\tPeptide\tProteins" << std::endl;
   vector<double> initial_values = pCheck->getDefaultWeights();
   if (initial_values.size() > 0) {
-    dataStream << "DefaultDirection\t-\t-";
+    dataStream << "DefaultDirection\t-\t-\t-\t-";
+    if (DataSet::getCalcDoc()) {
+      dataStream << "\t-\t-";
+    }
     for (size_t i = 0; i < initial_values.size(); ++i) {
       dataStream << '\t' << initial_values[i];
     }

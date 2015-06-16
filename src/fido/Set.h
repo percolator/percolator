@@ -6,18 +6,14 @@
 
 #include "Array.h"
 
-class Set : public Array<int>
-{
+class Set : public Array<int> {
  public:
   Set() {}
 
   void add(int el);
-  const Set & operator &=(const Set & rhs);
-  const Set & operator |=(const Set & rhs);
-  bool isEmpty() const
-  {
-    return size() == 0;
-  }
+  const Set & operator &=(const Set & rhs); // intersection
+  const Set & operator |=(const Set & rhs); // union
+  bool isEmpty() const { return size() == 0; }
 
   int find(int x) const;
   int findHelper(int low, int high, int x) const;
@@ -28,24 +24,18 @@ class Set : public Array<int>
   class UnsortedOrderException {};
   class InvalidBaseException {};
 
-
-  Array<int> operator [](const Set & rhs) const
-  {
+  Array<int> operator [](const Set & rhs) const {
     return Array<int>::operator [](rhs);
   }
-
-  const int & operator [](int k) const
-  {
+  const int & operator [](int k) const {
     return Array<int>::operator [](k);
   }
 
   // for hashing sets
-  static unsigned int sumSetElements(const Set & s)
-  {
+  static unsigned int sumSetElements(const Set & s) {
     unsigned int sum = 0;
     for (int k=0; k<s.size(); k++)
       sum += s[k];
-
     return sum;
   }
 
@@ -57,23 +47,20 @@ class Set : public Array<int>
   Set without( const Set & rhs ) const;
 
   static Set FullSet(int low, int high);
-  static Set SingletonSet(int value)
-  {
+  static Set SingletonSet(int value) {
     return FullSet(value, value);
   }
   
-  int randomElement() const
-  {
+  int randomElement() const {
     return (*this)[ rand() % size() ];
   }
 
  private:
-
   bool verify() const;
 };
 
-Set operator &(Set lhs, const Set & rhs);
-Set operator |(Set lhs, const Set & rhs);
+Set operator &(Set lhs, const Set & rhs); // intersection
+Set operator |(Set lhs, const Set & rhs); // union
 
 
 #endif

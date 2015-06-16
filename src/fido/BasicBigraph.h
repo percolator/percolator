@@ -7,6 +7,11 @@
 #include "Array.h"
 #include "Vector.h"
 
+/*
+* GraphNode represents a PSM or protein with associated probability and
+* keeps a list of nodes it is connected to in the bigraph
+*
+*/
 struct GraphNode {
   const string & name;
   Set & association;
@@ -20,6 +25,10 @@ struct GraphNode {
   ~GraphNode() { }
 };
 
+/*
+* GraphLayer represents a collection of PSMs or proteins
+*
+*/
 struct GraphLayer {
   Array<string> names;
   Array<Set> associations;
@@ -43,11 +52,12 @@ struct GraphLayer {
   }
 };
 
-class BasicBigraph 
-{
-
-public:
-  
+/*
+* BasicBigraph represents a (sub)bigraph of PSMs and proteins
+*
+*/
+class BasicBigraph {
+ public:
   BasicBigraph();
   BasicBigraph(double __psmthreshold, double __peptidethreshold, 
 	       double __proteinthreshold, double __peptideprior);
@@ -59,8 +69,7 @@ public:
   void printGraph();
   void printProteinWeights() const;
   void printGraphStats() const;
-  void print() const
-  {
+  void print() const {
     cout << "PSM graph layer: " << endl;
     cout << PSMsToProteins << endl;
     cout << "Protein graph layer: " << endl;

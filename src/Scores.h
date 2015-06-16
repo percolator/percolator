@@ -134,87 +134,90 @@ class AlgIn;
 *
 */
 class Scores {
+ public:
+  Scores() : pi0_(1.0), targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
+    totalNumberOfTargets_(0) {}
+  ~Scores() {}
+  void merge(vector<Scores>& sv, double fdr);
   
-  public:
-    Scores();
-    ~Scores();
-    void merge(vector<Scores>& sv, double fdr=0.01, bool computePi0 = true);
-    
-    vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
-    vector<ScoreHolder>::iterator end() { return scores_.end(); }
-    
-    double calcScore(const double* features) const;
-    int calcScores(vector<double>& w, double fdr = 0.01);
-    int calcQ(double fdr = 0.01);
-    void recalculateDescriptionOfCorrect(const double fdr);
-    void calcPep();
-    double estimatePi0();
-    
-    void fillFeatures(SetHandler& setHandler);
-    
-    int getInitDirection(const double fdr, vector<double>& direction);
-    void createXvalSetsBySpectrum(std::vector<Scores>& train, 
-        std::vector<Scores>& test, const unsigned int xval_fold);
-    
-    void generatePositiveTrainingSet(AlgIn& data, const double fdr,
-        const double cpos);
-    void generateNegativeTrainingSet(AlgIn& data, const double cneg);
-    
-    void recalculateSizes();
-    void normalizeScores(double fdr=0.01);
-    
-    void weedOutRedundant(bool computePi0 = true);
-    void weedOutRedundantTDC(bool computePi0 = true);
-    
-    void printRetentionTime(ostream& outs, double fdr);
-    unsigned getQvaluesBelowLevel(double level);
-    
-    void setDOCFeatures();
-    
-    void fill(string& fn);
-    
-    ScoreHolder* getScoreHolder(const double* d);
-    
-    DescriptionOfCorrect& getDOC() { return doc_; }
-    
-    inline double getPi0() const { return pi0_; }
-    inline double getTargetDecoySizeRatio() const { 
-      return targetDecoySizeRatio_; 
-    }
-    inline unsigned int size() const { 
-      return totalNumberOfTargets_ + totalNumberOfDecoys_; 
-    }
-    inline unsigned int posSize() const { return totalNumberOfTargets_; }
-    inline unsigned int negSize() const { return totalNumberOfDecoys_; }
-    
-    inline static void setPrintDecoysInXml(bool decoysOut) { 
-      printDecoysInXml_ = decoysOut; 
-    }
-    inline static bool getPrintDecoysInXml() { return printDecoysInXml_; }
-    inline static void setShowExpMass(bool expmass) { showExpMass_ = expmass; }
-    inline static bool getShowExpMass() { return showExpMass_; }
-    
-    inline void resetScoreMap() { scoreMap_.clear(); }
-    
-    inline static void setSeed(unsigned long s) { seed_ = s; }
-    unsigned long lcg_rand();
-    
-    inline void addScoreHolder(const ScoreHolder& sh) {
-      scores_.push_back(sh);
-    }
-    
-  protected:
-    
-    vector<ScoreHolder> scores_;
-    vector<double> svmWeights_;
-    int totalNumberOfDecoys_, totalNumberOfTargets_;
-    std::map<const double*, ScoreHolder*> scoreMap_;
-    DescriptionOfCorrect doc_;
-    static bool printDecoysInXml_;
-    static unsigned long seed_;
-    static bool showExpMass_;
-    double pi0_;
-    double targetDecoySizeRatio_;
+  vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
+  vector<ScoreHolder>::iterator end() { return scores_.end(); }
+  
+  double calcScore(const double* features) const;
+  int calcScores(vector<double>& w, double fdr);
+  int calcQ(double fdr);
+  void recalculateDescriptionOfCorrect(const double fdr);
+  void calcPep();
+  void estimatePi0();
+  
+  void fillFeatures(SetHandler& setHandler);
+  
+  int getInitDirection(const double fdr, vector<double>& direction);
+  void createXvalSetsBySpectrum(std::vector<Scores>& train, 
+      std::vector<Scores>& test, const unsigned int xval_fold);
+  
+  void generatePositiveTrainingSet(AlgIn& data, const double fdr,
+      const double cpos);
+  void generateNegativeTrainingSet(AlgIn& data, const double cneg);
+  
+  void recalculateSizes();
+  void normalizeScores(double fdr);
+  
+  void weedOutRedundant();
+  void weedOutRedundantTDC();
+  
+  void printRetentionTime(ostream& outs, double fdr);
+  unsigned getQvaluesBelowLevel(double level);
+  
+  void setDOCFeatures();
+  
+  void fill(string& fn);
+  
+  ScoreHolder* getScoreHolder(const double* d);
+  
+  DescriptionOfCorrect& getDOC() { return doc_; }
+  
+  inline static void setUsePi0(bool b) { usePi0_ = b; }
+  inline double getPi0() const { return pi0_; }
+  inline double getTargetDecoySizeRatio() const { 
+    return targetDecoySizeRatio_; 
+  }
+  inline unsigned int size() const { 
+    return totalNumberOfTargets_ + totalNumberOfDecoys_; 
+  }
+  inline unsigned int posSize() const { return totalNumberOfTargets_; }
+  inline unsigned int negSize() const { return totalNumberOfDecoys_; }
+  
+  inline static void setPrintDecoysInXml(bool decoysOut) { 
+    printDecoysInXml_ = decoysOut; 
+  }
+  inline static bool getPrintDecoysInXml() { return printDecoysInXml_; }
+  inline static void setShowExpMass(bool expmass) { showExpMass_ = expmass; }
+  inline static bool getShowExpMass() { return showExpMass_; }
+  
+  inline void resetScoreMap() { scoreMap_.clear(); }
+  
+  inline static void setSeed(unsigned long s) { seed_ = s; }
+  unsigned long lcg_rand();
+  
+  inline void addScoreHolder(const ScoreHolder& sh) {
+    scores_.push_back(sh);
+  }
+  
+ protected:
+  static bool printDecoysInXml_;
+  static unsigned long seed_;
+  static bool showExpMass_;
+  static bool usePi0_;
+  
+  double pi0_;
+  double targetDecoySizeRatio_;
+  int totalNumberOfDecoys_, totalNumberOfTargets_;
+  
+  vector<ScoreHolder> scores_;
+  vector<double> svmWeights_;
+  std::map<const double*, ScoreHolder*> scoreMap_;
+  DescriptionOfCorrect doc_;
 };
 
 #endif /*SCORES_H_*/

@@ -17,15 +17,11 @@
 
 #include "FidoInterface.h"
 
-const double FidoInterface::psmThreshold = 0.0;
-const double FidoInterface::reduced_psmThreshold = 0.2;
-const double FidoInterface::peptideThreshold = 0.001;
-const double FidoInterface::reduced_peptideThreshold = 0.2;
-const double FidoInterface::proteinThreshold = 0.01; 
-const double FidoInterface::reduced_proteinThreshold = 0.2;
-const double FidoInterface::peptidePrior = 0.1; 
-const double FidoInterface::max_allow_configurations = 18;
-const double FidoInterface::lambda = 0.15;
+const double FidoInterface::kPsmThreshold = 0.0;
+const double FidoInterface::kPeptideThreshold = 0.001;
+const double FidoInterface::kPeptidePrior = 0.1; 
+const double FidoInterface::LOG_MAX_ALLOWED_CONFIGURATIONS = 18;
+const double FidoInterface::kObjectiveLambda = 0.15;
 
 double trapezoid_area(double x1, double x2, double y1, double y2) {
   double base = abs(x1 - x2);
@@ -77,74 +73,72 @@ int GetDecimalPlaces(double dbVal) {
   return nDecimal;
 }
 
-
-FidoInterface::FidoInterface(double __alpha,double __beta,double __gamma,bool __nogroupProteins, 
-            bool __noseparate, bool __noprune, unsigned __depth,bool __reduceTree, 
-            bool __truncate, double mse_threshold,bool tiesAsOneProtein, bool usePi0, 
-            bool outputEmpirQVal, std::string decoyPattern,bool __trivialGrouping)
-            :ProteinProbEstimator(tiesAsOneProtein,usePi0,outputEmpirQVal,decoyPattern) {
-  alpha = __alpha;
-  beta = __beta;
-  gamma = __gamma;
-  trivialGrouping = __trivialGrouping;
-  nogroupProteins = __nogroupProteins;
-  noseparate = __noseparate;
-  noprune = __noprune;
-  depth = __depth;
-  reduceTree = __reduceTree;
-  truncate = __truncate;
-  threshold = mse_threshold;
-  dogridSearch = false;
-}
-
+FidoInterface::FidoInterface(double alpha, double beta, double gamma, 
+    bool noPartitioning, bool noClustering, bool noPruning, 
+    unsigned gridSearchDepth, double gridSearchThreshold, 
+    double proteinThreshold, double mseThreshold, 
+    bool tiesAsOneProtein, bool usePi0, bool outputEmpirQVal, 
+    std::string decoyPattern, bool trivialGrouping) :
+  ProteinProbEstimator(tiesAsOneProtein, usePi0, outputEmpirQVal, decoyPattern), 
+  alpha_(alpha), beta_(beta), gamma_(gamma),
+  noPartitioning_(noPartitioning), noClustering_(noClustering),
+  noPruning_(noPruning), proteinThreshold_(proteinThreshold), 
+  trivialGrouping_(trivialGrouping), gridSearchDepth_(gridSearchDepth), 
+  gridSearchThreshold_(gridSearchThreshold), mseThreshold_(mseThreshold),
+  doGridSearch_(false), rocN_(kDefaultRocN) {}
+      
 FidoInterface::~FidoInterface() {  
-  if (proteinGraph) {
-    delete proteinGraph;
+  if (proteinGraph_) {
+    delete proteinGraph_;
   }
-  proteinGraph = 0;
+  proteinGraph_ = 0;
 }
 
 void FidoInterface::run() {
-  dogridSearch = !(alpha != -1 && beta != -1 && gamma != -1);
+  doGridSearch_ = !(alpha_ != -1 && beta_ != -1 && gamma_ != -1);
   
-  double peptidePrior_local = peptidePrior;
-  if (computePriors) {
-    peptidePrior_local = estimatePriors();
+  double localPeptidePrior = kPeptidePrior;
+  if (kComputePriors) {
+    localPeptidePrior = estimatePriors();
     if (VERB > 1) {
-      std::cerr << "The estimated peptide level prior probability is : " << peptidePrior_local << std::endl;
+      std::cerr << "The estimated peptide level prior probability is : " << localPeptidePrior << std::endl;
     }
   }
   
-  proteinGraph = new GroupPowerBigraph(alpha,beta,gamma,nogroupProteins,noseparate,noprune,trivialGrouping);
-  proteinGraph->setMaxAllowedConfigurations(max_allow_configurations);
-  proteinGraph->setPeptidePrior(peptidePrior_local);
+  proteinGraph_ = new GroupPowerBigraph(alpha_, beta_, gamma_, noClustering_, noPartitioning_, noPruning_, trivialGrouping_);
+  proteinGraph_->setMaxAllowedConfigurations(LOG_MAX_ALLOWED_CONFIGURATIONS);
+  proteinGraph_->setPeptidePrior(localPeptidePrior);
   
-  if (reduceTree && dogridSearch) {
+  if (gridSearchThreshold_ > 0.0 && doGridSearch_) {
     //NOTE lets create a smaller tree to estimate the parameters faster
     if (VERB > 1) {
       std::cerr << "Reducing the tree of proteins to increase the speed of the grid search.." << std::endl;
     }
-    proteinGraph->setProteinThreshold(reduced_proteinThreshold);
-    proteinGraph->setPsmThreshold(reduced_psmThreshold);
-    proteinGraph->setPeptideThreshold(reduced_peptideThreshold);
-    proteinGraph->setGroupProteins(false);
-    proteinGraph->setSeparateProteins(false);
-    proteinGraph->setPruneProteins(false);
-    proteinGraph->setTrivialGrouping(true);
-    proteinGraph->setMultipleLabeledPeptides(false);
+    proteinGraph_->setProteinThreshold(gridSearchThreshold_);
+    proteinGraph_->setPsmThreshold(gridSearchThreshold_);
+    proteinGraph_->setPeptideThreshold(gridSearchThreshold_);
+    proteinGraph_->setNoClustering(false); // i.e. do clustering
+    proteinGraph_->setNoPartitioning(false); // i.e. do partitioning
+    proteinGraph_->setNoPruning(false); // i.e. do pruning
+    proteinGraph_->setTrivialGrouping(true);
+    proteinGraph_->setMultipleLabeledPeptides(false);
   } else {
-    double local_protein_threshold = proteinThreshold;
-    if (truncate) local_protein_threshold = 0.0;
-    proteinGraph->setProteinThreshold(local_protein_threshold);
-    proteinGraph->setPsmThreshold(psmThreshold);
-    proteinGraph->setPeptideThreshold(peptideThreshold);
-    proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
+    proteinGraph_->setProteinThreshold(proteinThreshold_);
+    proteinGraph_->setPsmThreshold(kPsmThreshold);
+    proteinGraph_->setPeptideThreshold(kPeptideThreshold);
+    proteinGraph_->setMultipleLabeledPeptides(kAddPeptideDecoyLabel);
   }
  
 }
 
-void FidoInterface::computeProbabilities() {
-  proteinGraph->read(peptideScores);
+void FidoInterface::computeProbabilities(const std::string& fname) {
+  ifstream fin;
+  if (fname.size() > 0) {
+    fin.open(fname.c_str());
+    proteinGraph_->read(fin);
+  } else {
+    proteinGraph_->read(peptideScores);
+  }
   
   time_t startTime;
   clock_t startClock;
@@ -155,12 +149,12 @@ void FidoInterface::computeProbabilities() {
     computeFDR();
   }
   
-  if (dogridSearch) {
+  if (doGridSearch_) {
     if (VERB > 1) {
       std::cerr << "The parameters for the model will be estimated by grid search.\n" << std::endl;
     }
     
-    if (optimize)
+    if (kOptimizeParams)
       gridSearchOptimize(); 
     else
       gridSearch();
@@ -177,109 +171,41 @@ void FidoInterface::computeProbabilities() {
   if (VERB > 1) {
     cerr << "The following parameters have been chosen:\n";
     std::cerr.precision(10);
-    cerr << "gamma = " << gamma << endl;
-    cerr << "alpha = " << alpha << endl;
-    cerr << "beta  = " << beta << endl;
+    cerr << "alpha = " << alpha_ << endl;
+    cerr << "beta  = " << beta_ << endl;
+    cerr << "gamma = " << gamma_ << endl;
     std::cerr.unsetf(std::ios::floatfield);
     cerr << "\nProtein level probabilities will now be estimated";
   }
 
 
-  if (dogridSearch && reduceTree) {
-    //NOTE lets create the tree again with all the members
-    double local_protein_threshold = proteinThreshold;
-    if(truncate) local_protein_threshold = 0.0;
-    proteinGraph->setProteinThreshold(local_protein_threshold);
-    proteinGraph->setPsmThreshold(psmThreshold);
-    proteinGraph->setPeptideThreshold(peptideThreshold);
-    proteinGraph->setGroupProteins(nogroupProteins);
-    proteinGraph->setSeparateProteins(noseparate);
-    proteinGraph->setPruneProteins(noprune);
-    proteinGraph->setTrivialGrouping(trivialGrouping);
-    proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
-    proteinGraph->read(peptideScores);
-  }
-  
-  proteinGraph->setAlphaBetaGamma(alpha,beta,gamma);
-  proteinGraph->getProteinProbs();
-  pepProteins.clear();
-  proteinGraph->getProteinProbsPercolator(pepProteins);
-}
-
-//NOTE almost entirely duplicated of computeProbabilities, it could be refactored
-void FidoInterface::computeProbabilitiesFromFile(ifstream &fin) {
-  proteinGraph->read(fin);
-  
-  time_t startTime;
-  clock_t startClock;
-  time(&startTime);
-  startClock = clock();
-  
-  if (mayufdr) {
-    computeFDR();
-  }
-  
-  if (dogridSearch) {
-    if (VERB > 1) {
-      std::cerr << "The parameters for the model will be estimated by grid search.\n" << std::endl;
+  if (gridSearchThreshold_ > 0.0 && doGridSearch_) {
+    //NOTE reset the tree after grid searching
+    proteinGraph_->setProteinThreshold(proteinThreshold_);
+    proteinGraph_->setPsmThreshold(kPsmThreshold);
+    proteinGraph_->setPeptideThreshold(kPeptideThreshold);
+    proteinGraph_->setNoClustering(noClustering_);
+    proteinGraph_->setNoPartitioning(noPartitioning_);
+    proteinGraph_->setNoPruning(noPruning_);
+    proteinGraph_->setTrivialGrouping(trivialGrouping_);
+    proteinGraph_->setMultipleLabeledPeptides(kAddPeptideDecoyLabel);
+    if (fname.size() > 0) {
+      proteinGraph_->read(fin);
+    } else {
+      proteinGraph_->read(peptideScores);
     }
-    
-    if (optimize)
-      gridSearchOptimize(); 
-    else
-      gridSearch();
-    
-    time_t procStart;
-    clock_t procStartClock = clock();
-    time(&procStart);
-    double diff = difftime(procStart, startTime);
-    if (VERB > 1) cerr << "Estimating the parameters took : "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall time" << endl;
-  }
-
-  if (VERB > 1) {
-    cerr << "The following parameters have been chosen:\n";
-    std::cerr.precision(10);
-    cerr << "gamma = " << gamma << endl;
-    cerr << "alpha = " << alpha << endl;
-    cerr << "beta  = " << beta << endl;
-    std::cerr.unsetf(std::ios::floatfield);
-    cerr << "\nProtein level probabilities will now be estimated";
-  }
-
-
-  if (dogridSearch && reduceTree) {
-    //NOTE lets create the tree again with all the members
-    double local_protein_threshold = proteinThreshold;
-    if(truncate) local_protein_threshold = 0.0;
-    proteinGraph->setProteinThreshold(local_protein_threshold);
-    proteinGraph->setPsmThreshold(psmThreshold);
-    proteinGraph->setPeptideThreshold(peptideThreshold);
-    proteinGraph->setGroupProteins(nogroupProteins);
-    proteinGraph->setSeparateProteins(noseparate);
-    proteinGraph->setPruneProteins(noprune);
-    proteinGraph->setMultipleLabeledPeptides(allow_multiple_labeled_peptides);
-    proteinGraph->read(fin);
   }
   
-  proteinGraph->setAlphaBetaGamma(alpha,beta,gamma);
-  proteinGraph->getProteinProbs();
-  pepProteins.clear();
-  proteinGraph->getProteinProbsPercolator(pepProteins);
+  proteinGraph_->setAlphaBetaGamma(alpha_, beta_, gamma_);
+  proteinGraph_->getProteinProbs();
+  pepProteinMap_.clear();
+  proteinGraph_->getProteinProbsPercolator(pepProteinMap_);
 }
 
 void FidoInterface::gridSearch() {
-  double gamma_best, alpha_best, beta_best;
-  gamma_best = alpha_best = beta_best = -1.0;
-  double best_objective = -100000000;
-  std::vector<std::vector<std::string> > names;
-  std::vector<double> probs,empq,estq;
-  std::vector<long double> gamma_search,beta_search,alpha_search;
-
-  double roc, mse,current_objective;
+  std::vector<double> gamma_search, beta_search, alpha_search;
   
-  switch(depth) {
+  switch(gridSearchDepth_) {
     case 0:    
       gamma_search.push_back(0.5);
       
@@ -325,66 +251,17 @@ void FidoInterface::gridSearch() {
       break;
   }
 
-  if (alpha != -1)
-    alpha_search.push_back(alpha);
-  if (beta != -1)
-    beta_search.push_back(beta);
-  if (gamma != -1)
-    gamma_search.push_back(gamma);
+  if (alpha_ != -1) alpha_search.push_back(alpha_);
+  if ( beta_ != -1) beta_search.push_back(beta_);
+  if (gamma_ != -1) gamma_search.push_back(gamma_);
   
-  for (unsigned int i = 0; i < gamma_search.size(); i++) {
-    double gamma_local = gamma_search[i];
-    for (unsigned int j = 0; j < alpha_search.size(); j++) {
-      double alpha_local = alpha_search[j];
-      for (unsigned int k = 0; k < beta_search.size(); k++) {
-        double beta_local = beta_search[k];
-        
-        proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
-        proteinGraph->getProteinProbs();
-        proteinGraph->getProteinProbsAndNames(names,probs);
-        getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-        getROC_AUC(names,probs,roc);
-        getFDR_MSE(estq,empq,mse);
-        
-        current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
-        
-        if (VERB > 2) {
-          std::cerr.precision(10);
-          std::cerr << "Grid searching Alpha= "  << alpha_local << 
-                       " Beta= " << beta_local << 
-                       " Gamma= "  << gamma_local << std::endl;
-          std::cerr.unsetf(std::ios::floatfield);
-          std::cerr << "The ROC AUC estimated values is : " << roc << std::endl;
-          std::cerr << "The MSE FDR estimated values is : " << mse << std::endl;
-          std::cerr << "Objective function with second roc and mse is : " << 
-                       current_objective << std::endl;
-        }
-        
-        if (current_objective > best_objective) {
-          best_objective = current_objective;
-          gamma_best = gamma_local;
-          alpha_best = alpha_local;
-          beta_best = beta_local;
-        }
-      }
-    }
-  }
-  alpha = alpha_best;
-  beta = beta_best;
-  gamma = gamma_best;
+  gridSearch(alpha_search, beta_search, gamma_search);
 }
 
 void FidoInterface::gridSearchOptimize() {
   if (VERB > 1) {
     std::cerr << "Running super grid search..." << std::endl;
   }
-  
-  double gamma_best, alpha_best, beta_best;
-  gamma_best = alpha_best = beta_best = -1.0;
-  double best_objective = -100000000;
-  std::vector<std::vector<std::string> > names;
-  std::vector<double> probs,empq,estq; 
-  double roc,mse,current_objective;
   
   double alpha_step = 0.05;
   double beta_step = 0.05;
@@ -398,51 +275,50 @@ void FidoInterface::gridSearchOptimize() {
   double beta_limit = 0.05;
   double alpha_limit = 0.5;
   
-  if (alpha != -1) {
-    alpha_init = alpha_limit = alpha;
-  }
+  if (alpha_ != -1) alpha_init = alpha_limit = alpha_;
+  if ( beta_ != -1) beta_init = beta_limit = beta_;
+  if (gamma_ != -1) gamma_init = gamma_limit = gamma_;
   
-  if (beta != -1) {
-    beta_init = beta_limit = beta;
-  }
-  
-  if (gamma != -1) {
-    gamma_init = gamma_limit = gamma;
-  }
+  std::vector<double> gamma_search, beta_search, alpha_search;
   
   //NOTE very annoying the residue error of the floats that get acummulated in every iteration
+  for (int i = 0; gamma_init + gamma_step*i <= gamma_limit; ++i) { 
+    gamma_search.push_back(gamma_init + gamma_step*i);
+  }
   
-  for (double i = gamma_init; i <= gamma_limit; i+=gamma_step) { 
-    double gamma_local = i;
-    
-    for (double j = log10(beta_init); j <= Round(log10(beta_limit),2); j+=beta_step) {
-      double original = pow(10,j);
-      double beta_local = original - beta_init;
-      if(beta_local > 0.0) beta_local = original;
-      
-      for (double k = log10(alpha_init); k <= Round(log10(alpha_limit),2); k+=alpha_step) {
-       
-        double alpha_local = pow(10,k);
+  double lbi = log10(beta_init);
+  for (int i = 0; lbi + i*beta_step <= Round(log10(beta_limit),2); ++i) {
+    double j = lbi + i*beta_step;
+    double original = pow(10,j);
+    double beta_local = original - beta_init;
+    if (beta_local > 0.0) beta_local = original;
+    beta_search.push_back(beta_local);
+  }
+  
+  double lai = log10(alpha_init);
+  for (int i = 0; lai + i*alpha_step <= Round(log10(alpha_limit),2); ++i) {
+    double k = lai + i*alpha_step;
+    alpha_search.push_back(pow(10,k));
+  }
+  
+  gridSearch(alpha_search, beta_search, gamma_search);
+}
+
+void FidoInterface::gridSearch(std::vector<double>& alpha_search, 
+    std::vector<double>& beta_search, 
+    std::vector<double>& gamma_search) {
+  double gamma_best = -1.0, alpha_best = -1.0, beta_best = -1.0;
+  double best_objective = -100000000;
+  double current_objective;
+  
+  for (unsigned int i = 0; i < gamma_search.size(); i++) {
+    double gamma_local = gamma_search[i];
+    for (unsigned int j = 0; j < alpha_search.size(); j++) {
+      double alpha_local = alpha_search[j];
+      for (unsigned int k = 0; k < beta_search.size(); k++) {
+        double beta_local = beta_search[k];
         
-        proteinGraph->setAlphaBetaGamma(alpha_local, beta_local, gamma_local);
-        proteinGraph->getProteinProbs();
-        proteinGraph->getProteinProbsAndNames(names,probs);
-        getEstimated_and_Empirical_FDR(names,probs,empq,estq);
-        getROC_AUC(names,probs,roc);
-        getFDR_MSE(estq,empq,mse);
-        
-        current_objective = (lambda * roc) - fabs(((1-lambda) * (mse)));
-        
-        if (VERB > 2) {
-          std::cerr.precision(10);
-          std::cerr << "Grid searching Alpha= "  << alpha_local << " Beta= " << beta_local << " Gamma= "  << gamma_local << std::endl;
-          std::cerr.unsetf(std::ios::floatfield);
-          std::cerr << "The ROC AUC estimated values is : " << roc <<  std::endl;
-          std::cerr << "The MSE FDR estimated values is : " <<  mse << std::endl;
-          std::cerr << "Objective function with second roc and mse is : " << current_objective << std::endl;
-          
-        }  
-        
+        current_objective = calcObjective(alpha_local, beta_local, gamma_local);
         if (current_objective > best_objective) {
           best_objective = current_objective;
           gamma_best = gamma_local;
@@ -451,10 +327,39 @@ void FidoInterface::gridSearchOptimize() {
         }
       }
     }
-  }  
-  alpha = alpha_best;
-  beta = beta_best;
-  gamma = gamma_best;
+  }
+  alpha_ = alpha_best;
+  beta_ = beta_best;
+  gamma_ = gamma_best;
+}
+
+double FidoInterface::calcObjective(double alpha, double beta, double gamma) {
+  std::vector<std::vector<std::string> > names;
+  std::vector<double> probs, empq, estq; 
+  double roc ,mse, objective;
+  
+  proteinGraph_->setAlphaBetaGamma(alpha, beta, gamma);
+  proteinGraph_->getProteinProbs();
+  proteinGraph_->getProteinProbsAndNames(names, probs);
+  
+  getEstimated_and_Empirical_FDR(names, probs, empq, estq);
+  getROC_AUC(names, probs, roc);
+  getFDR_MSE(estq, empq, mse);
+  
+  objective = (kObjectiveLambda * roc) - fabs((1-kObjectiveLambda) * mse);
+  
+  if (VERB > 2) {
+    std::cerr.precision(10);
+    std::cerr << "Grid searching Alpha= "  << alpha << 
+                 " Beta= " << beta << 
+                 " Gamma= "  << gamma << std::endl;
+    std::cerr.unsetf(std::ios::floatfield);
+    std::cerr << "The ROC AUC estimated values is : " << roc << std::endl;
+    std::cerr << "The MSE FDR estimated values is : " << mse << std::endl;
+    std::cerr << "Objective function with second roc and mse is : " << 
+                 objective << std::endl;
+  }
+  return objective;
 }
 
 void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
@@ -493,21 +398,21 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
   double prev_prob = -1;
   auc = 0.0;
   
-  //assuming names and probabilities same size
-  for (unsigned k=0; k < names.size() && fp <= rocN; k++) {
+  // assuming names and probabilities same size; rocN_ set by getEstimated_and_Empirical_FDR()
+  for (unsigned k = 0; k < names.size() && fp <= rocN_; k++) {
     double prob = probabilities[k];
     unsigned tpChange = countTargets(names[k]);
     unsigned fpChange = names[k].size() - tpChange;
     //if ties activated count groups as 1 protein
-    if (tiesAsOneProtein) {
-      if (tpChange) tpChange = 1;
-      if (fpChange) fpChange = 1;
+    if (trivialGrouping_) {
+      if (tpChange > 0) tpChange = 1;
+      if (fpChange > 0) fpChange = 1;
     }
 
     tp += tpChange;
     fp += fpChange;
     //should only do it when fp changes and either of them is != 0
-    if(prev_prob != -1 && fp != 0 && tp != 0 && fp != prev_fp) {
+    if (prev_prob != -1 && fp != 0 && tp != 0 && fp != prev_fp) {
       double trapezoid = trapezoid_area(fp,prev_fp,tp,prev_tp);
       prev_fp = fp;
       prev_tp = tp;
@@ -518,7 +423,7 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
 
   unsigned normalizer = (tp * fp);
   
-  if (normalizer) {
+  if (normalizer > 0) {
     auc /= normalizer;
   } else {
     auc = 0.0;
@@ -528,100 +433,36 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
 }
 
 
-void FidoInterface::getEstimated_and_Empirical_FDR(const std::vector<std::vector<string> > &names,
-                   const std::vector<double> &probabilities,
-                   std::vector<double> &empq,
-                   std::vector<double> &estq) {
+void FidoInterface::getEstimated_and_Empirical_FDR(
+    const std::vector<std::vector<string> >& proteinNames,
+    const std::vector<double>& probabilities,
+    std::vector<double>& empq, 
+    std::vector<double>& estq) {
   empq.clear();
   estq.clear();
-  double fpCount = 0.0, tpCount = 0.0;
-  double totalFDR = 0.0, estFDR = 0.0, empFDR = 0.0;
-  double TargetDecoyRatio = (double)numberTargetProteins / (double)numberDecoyProteins;
-  double previousEmpQ = 0.0;
-  double previousEstQ = 0.0;
   
-  if (updateRocN) rocN = 50;
+  double targetDecoyRatio = static_cast<double>(numberTargetProteins) / numberDecoyProteins;
+  FDRCalculator fdrCalculator(targetDecoyRatio, pi0, countDecoyQvalue_);
   
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
-  for (unsigned int k=0; (k<names.size() && (estFDR <= threshold)); k++) {
+  for (unsigned int k = 0; (k < proteinNames.size() && 
+        (fdrCalculator.getPreviousEstQ() <= mseThreshold_)); k++) {
     double prob = probabilities[k];
-    
     if (tiesAsOneProtein) {
-      unsigned tpChange = countTargets(names[k]);
-      unsigned fpChange = names[k].size() - tpChange;
-      
-      fpCount += (double)fpChange;
-      tpCount += (double)tpChange;
-      
-      if (countDecoyQvalue) {
-        totalFDR += (prob) * (double)(tpChange + fpChange);
-        estFDR = totalFDR / (tpCount + fpCount);
-      } else {
-        totalFDR += (prob) * (double)(tpChange);
-        estFDR = totalFDR / (tpCount);  
-      }
-
-      if (tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
-      
-      if (empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
-      if (estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
-          
-      if (estFDR < previousEstQ) estFDR = previousEstQ;
-      else previousEstQ = estFDR;
-          
-      if (empFDR < previousEmpQ) empFDR = previousEmpQ;
-      else previousEmpQ = empFDR;
-      
-      if (updateRocN) { 
-        rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
-      }
-      
-      estq.push_back(estFDR);
-      empq.push_back(empFDR);
-
+      unsigned tpChange = countTargets(proteinNames[k]);
+      unsigned fpChange = proteinNames[k].size() - tpChange;
+      fdrCalculator.calcFDRs(fpChange, tpChange, prob, estq, empq);
     } else {
-      for(unsigned i = 0; i < names[k].size(); i++) {
-        std::string protein = names[k][i];
+      for (unsigned i = 0; i < proteinNames[k].size(); i++) {
+        unsigned fpChange, tpChange;
+        if (isDecoy(proteinNames[k][i])) ++fpChange;
+        else ++tpChange;
         
-        bool isdecoy = isDecoy(protein);
-        
-        if (isdecoy) {
-          fpCount++;
-        } else {
-          tpCount++;
-        }
-        
-        if (countDecoyQvalue) {
-          totalFDR += (prob);
-          estFDR = totalFDR / (tpCount + fpCount);
-        } else if(tpCount) {
-          if (!isdecoy) totalFDR += (prob);
-          estFDR = totalFDR / (tpCount);
-        }
-        
-        if (tpCount) empFDR = (fpCount * pi0 * TargetDecoyRatio) / tpCount; 
-        
-        if (empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
-        if (estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
-        
-        if (estFDR < previousEstQ) estFDR = previousEstQ;
-        else previousEstQ = estFDR;
-        
-        if (empFDR < previousEmpQ) empFDR = previousEmpQ;
-        else previousEmpQ = empFDR;
-        
-        if (updateRocN) {
-          rocN = (unsigned)std::max(rocN,(unsigned)std::max(50,std::min((int)fpCount,500)));
-        }
-        
-        estq.push_back(estFDR);
-        empq.push_back(empFDR);
+        fdrCalculator.calcFDRs(fpChange, tpChange, prob, estq, empq);
       }
     }
-  
   }
-   
-  return;
+  if (kUpdateRocN) rocN_ = fdrCalculator.getRocN();
 }
 
 
@@ -658,14 +499,14 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
    * Total Area = Total Area / range of X
    */
   
-  if(   (*min_element(estFDR.begin(),estFDR.end()) >= threshold) 
+  if(   (*min_element(estFDR.begin(),estFDR.end()) >= mseThreshold_) 
      || (estFDR.size() != empFDR.size()) 
      || (estFDR.empty() || empFDR.empty())
      || (((*max_element(estFDR.begin(),estFDR.end()) <= 0.0) 
      && (*max_element(empFDR.begin(),empFDR.end()) <= 0.0))) ) {
     //no elements into the confidence interval or vectors empty 
-    //or differnt size or all zeroes 
-    mse = threshold;
+    //or different size or all zeroes 
+    mse = mseThreshold_;
     //mse1 = mse2 = mse3 = mse4 = 1.0;
     return;
   }
@@ -673,15 +514,15 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
   //mse1 = mse2 = mse3 = mse4 = 0.0;
   double x1,x2,y1,y2;
 
-  for(unsigned k = 0; k < estFDR.size()-1; k++) {
-    if (estFDR[k] <= threshold && empFDR[k] <= threshold) {
-      //empFDR and estFDR below threshoold, y2,x2 are the diff of them
+  for (unsigned k = 0; k < estFDR.size()-1; k++) {
+    if (estFDR[k] <= mseThreshold_ && empFDR[k] <= mseThreshold_) {
+      //empFDR and estFDR below threshold, y2,x2 are the diff of them
       x1 = estFDR[k];
       x2 = estFDR[k+1];
       y1 = x1 - empFDR[k];
       y2 = x2 - empFDR[k+1];
     } else {
-      //empFDR is above threshold, penalize the area positive
+      //empFDR is above mseThreshold_, penalize the area positive
       x1 = estFDR[k];
       x2 = estFDR[k+1];
       y1 = x1;
@@ -690,7 +531,7 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
     
     
     if ( x1 != x2 && x2 != 0 && y2 != 0 ) { //if there is an area
-      x2 = min(x2,threshold); //in case x2 is above threshold
+      x2 = min(x2,mseThreshold_); //in case x2 is above mseThreshold_
       //mse2 += trapezoid_area(x1,x2,y1,y2);
       //mse3 += abs(area(x1, y1, x2, y2));
       mse += areaSq(x1, y1, x2, y2);
@@ -701,7 +542,7 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
 
   //mse1 += pow(y2,2); //last element of diff between vectors
   
-  double normalizer1 = abs(std::min(estFDR.back(),threshold) - estFDR.front()); //normalize by x axis range (threshold on top always)
+  double normalizer1 = abs(std::min(estFDR.back(),mseThreshold_) - estFDR.front()); //normalize by x axis range (mseThreshold_ on top always)
   //double normalizer2 = (double)estFDR.size(); //normalize by the number of elements
   
   //mse1 /= normalizer2;
@@ -712,10 +553,48 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
   return;
 }
 
+std::ostream& FidoInterface::printParametersXML(std::ostream &os) {
+  os << "    <alpha>" << alpha_ <<"</alpha>" << endl;
+  os << "    <beta>"  << beta_ <<"</beta>" << endl;
+  os << "    <gamma>" << gamma_ <<"</gamma>" << endl;
+  return os;
+}
+
 string FidoInterface::printCopyright() {
   ostringstream oss;
   oss << "Copyright (c) 2008-9 University of Washington. All rights reserved.\n"
       << "Written by Oliver R. Serang (orserang@u.washington.edu) in the\n"
       << "Department of Genome Sciences at the University of Washington.\n" << std::endl;
   return oss.str();
+}
+
+void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
+               std::vector<double>& empq, std::vector<double>& estq) {
+  double estFDR = 0.0, empFDR = 0.0;
+  fpCount_ += fpChange;
+  tpCount_ += tpChange;
+  
+  if (countDecoyQvalue_) {
+    totalFDR_ += prob * (tpChange + fpChange);
+    estFDR = totalFDR_ / (tpCount_ + fpCount_);
+  } else if (tpCount_ > 0) {
+    totalFDR_ += prob * tpChange;
+    estFDR = totalFDR_ / tpCount_;
+  }
+
+  if (tpCount_ > 0) empFDR = (fpCount_ * pi0_ * targetDecoyRatio_) / tpCount_;
+  
+  if (empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
+  if (estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
+      
+  if (estFDR < previousEstQ_) estFDR = previousEstQ_;
+  else previousEstQ_ = estFDR;
+      
+  if (empFDR < previousEmpQ_) empFDR = previousEmpQ_;
+  else previousEmpQ_ = empFDR;
+  
+  estq.push_back(estFDR);
+  empq.push_back(empFDR);
+  
+  rocN_ = std::max(rocN_, (unsigned)std::max(50,std::min((int)fpCount_,500)));
 }

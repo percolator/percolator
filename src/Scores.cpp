@@ -147,24 +147,16 @@ ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
   return os;
 }
 
+bool Scores::usePi0_ = false;
 bool Scores::printDecoysInXml_ = false;
 bool Scores::showExpMass_ = false;
 unsigned long Scores::seed_ = 1;
 
-Scores::Scores() {
-  pi0_ = 1.0;
-  targetDecoySizeRatio_ = 1;
-  totalNumberOfDecoys_ = 0;
-  totalNumberOfTargets_ = 0;
-}
-
-Scores::~Scores() {}
-
-void Scores::merge(vector<Scores>& sv, double fdr, bool computePi0) {
+void Scores::merge(vector<Scores>& sv, double fdr) {
   scores_.clear();
   for (vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
-    a->estimatePi0();
+    if (usePi0_) a->estimatePi0();
     a->calcQ(fdr);
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores_));
@@ -177,7 +169,7 @@ void Scores::merge(vector<Scores>& sv, double fdr, bool computePi0) {
       scores_.end(),
       mem_fun_ref(&ScoreHolder::isTarget));
   targetDecoySizeRatio_ = totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-  if(computePi0) estimatePi0();
+  if (usePi0_) estimatePi0();
   else pi0_ = 1.0;
 }
 
@@ -476,7 +468,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * Routine that sees to that only unique peptides are kept (used for analysis
  * on peptide-fdr rather than psm-fdr)
  */
-void Scores::weedOutRedundant(bool computePi0) {
+void Scores::weedOutRedundant() {
   
   // lexicographically order the scores_ (based on peptides names,labels and scores)
   std::sort(scores_.begin(), scores_.end(), lexicOrderProb());
@@ -518,14 +510,14 @@ void Scores::weedOutRedundant(bool computePi0) {
   targetDecoySizeRatio_ = 
       totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
 
-  if (computePi0) estimatePi0();
+  if (usePi0_) estimatePi0();
   else pi0_ = 1.0;
 }
 
 /**
  * Routine that sees to that only unique spectra are kept for TDC
  */
-void Scores::weedOutRedundantTDC(bool computePi0) {
+void Scores::weedOutRedundantTDC() {
   // order the scores_ (based on spectra id and scores_)
   std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
 
@@ -562,7 +554,7 @@ void Scores::weedOutRedundantTDC(bool computePi0) {
     mem_fun_ref(&ScoreHolder::isTarget));
   targetDecoySizeRatio_ = totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
   
-  if (computePi0) estimatePi0();
+  if (usePi0_) estimatePi0();
   else pi0_ = 1.0;
 }
 
@@ -641,7 +633,7 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
   return bestPositives;
 }
 
-double Scores::estimatePi0() {
+void Scores::estimatePi0() {
   vector<pair<double, bool> > combined;
   vector<double> pvals;
   transform(scores_.begin(), scores_.end(), back_inserter(combined),
@@ -649,7 +641,6 @@ double Scores::estimatePi0() {
   // Estimate pi0_
   PosteriorEstimator::getPValues(combined, pvals);
   pi0_ = PosteriorEstimator::estimatePi0(pvals);
-  return pi0_;
 }
 
 void Scores::calcPep() {

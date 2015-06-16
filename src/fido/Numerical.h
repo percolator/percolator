@@ -12,22 +12,11 @@ using namespace std;
 
 const double Pi = 3.14159;
 
-class Numerical
-{
+class Numerical {
  public:
-  Numerical()
-    {
-      epsilon = 1e-9;
-    }
-  Numerical(double eps)
-    {
-      epsilon = eps;
-    }
-
-  virtual ~Numerical()
-    {
-      
-    }
+  Numerical() { epsilon = 1e-9; }
+  Numerical(double eps) : epsilon(eps) {}
+  virtual ~Numerical() {}
     
   bool isPos(double d);
   bool isNonpos(double d);
@@ -42,22 +31,17 @@ class Numerical
 
   double epsilon;
 
-  static double inf()
-  {
+  static double inf() {
     return numeric_limits<double>::infinity();
   }
-  static double logAdd(double logA, double logB)
-  {
-    if ( logA < logB )
-    {
+  static double logAdd(double logA, double logB) {
+    if (logA < logB) {
       return logAdd(logB, logA);
     }
     // assume logA <= logB
     // when one of the terms is very small, then just use the other term
-    if ( std::isinf(logA) && logA < 0 )
-      return logB;
-
-    return log2( 1 + pow(2, logB-logA) ) + logA;
+    if (std::isinf(logA) && logA < 0) return logB;
+    else return log2( 1 + pow(2, logB-logA) ) + logA;
   }
 };
 

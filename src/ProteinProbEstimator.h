@@ -32,7 +32,6 @@
 #include "Scores.h"
 
 /** set of helper functions to sort data structures and some operations overloaded **/
-
 struct IntCmpProb {
   bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
       return (  (lhs.second->getPEP() < rhs.second->getPEP())
@@ -47,20 +46,16 @@ inline double myminfunc(double a, double b) {
   return a > b ? b : a;
 }
 
-struct RetrieveKey
-{
+struct RetrieveKey {
   template <typename T>
-  typename T::first_type operator()(T keyValuePair) const
-  {
+  typename T::first_type operator()(T keyValuePair) const {
     return keyValuePair.first;
   }
 };
     
-struct RetrieveValue
-{
+struct RetrieveValue {
   template <typename T>
-  typename T::second_type operator()(T keyValuePair) const
-  {
+  typename T::second_type operator()(T keyValuePair) const {
     return keyValuePair.second;
   }
 };
@@ -73,158 +68,152 @@ struct RetrieveValue
 * Mayu - a software package for the analysis of (large) mass
 *           spectrometry-based shotgun proteomics data sets.
 */
-class ProteinProbEstimator {
+class ProteinProbEstimator { 
+ public:
   
-  public:
-    
-    static inline void setCalcProteinLevelProb(bool on) { calcProteinLevelProb = on; }
-    static inline bool getCalcProteinLevelProb() { return calcProteinLevelProb; }
-    inline bool getUsePi0() { return usePi0; }
-    
-    /** PROTEIN FDR ESTIMATOR PARAMETERS **/
-    
-    /* Default configuration (changeable by functions)
-     * decoy prefix = random
-     * number of bins = 10
-     * target decoy ratio = 1.0
-     * binning mode = equal deepth
-     * correct identical sequences = true
-     */
-    
-    const static bool correct_identical_sequences = true;
-    const static bool binning_equal_deepth = true;
-    const static double target_decoy_ratio;
-    const static unsigned number_bins = 10;
-    
-    
-    /** GENERAL PARAMETERS **/
-    
-    /** compute global protein FDR using MAYU based implementation **/
-    const static bool mayufdr = false;
-    /** threshold used to estimate the protein FDR(pi0) **/
-    const static double psmThresholdMayu;
-    /** whether to use the decoy prefix(faster) to check if a protein is decoy or not **/
-    const static bool useDecoyPrefix = true;
-    /** whether to count decoy proteins when estimated q values or not **/
-    const static bool countDecoyQvalue = true;
-    /** protein prior probability used to estimate the peptide prior probabilities **/
-    const static double prior_protein;
-    
-    
-    /******************************************************************************************************************/
-    
-    
-    ProteinProbEstimator(bool tiesAsOneProtein = false, bool usePi0 = false, 
-        bool outputEmpirQVal = false, std::string decoyPattern = "random");
-    
-    virtual ~ProteinProbEstimator();
-    
-    /** reads the proteins from the set of scored peptides from percolator **/
-    bool initialize(Scores* fullset);
-    
-    /** start the protein probabilities tool**/
-    virtual void run() = 0;
-    
-    /** initialize the estimation of the protein probabilities **/
-    virtual void computeProbabilities() = 0;
-    
-    /** print out the tab delimited list of proteins to std::cerr or the screen */
-    void printOut(const std::string &proteinFN, 
-       const std::string &proteinDecoyFN);
-    
-    /** initialize the estimation of the q values and p values **/
-    void computeStatistics();
-    
-    /** MAYUS method for estimation of Protein FDR **/
-    void computeFDR();
-    
-    /** write the list of proteins to the output file **/
-    void writeOutputToXML(string xmlOutputFN, bool outputDecoys);
+  static inline void setCalcProteinLevelProb(bool on) { calcProteinLevelProb = on; }
+  static inline bool getCalcProteinLevelProb() { return calcProteinLevelProb; }
+  inline bool getUsePi0() { return usePi0; }
+  
+  /** PROTEIN FDR ESTIMATOR PARAMETERS **/
+  
+  /* Default configuration (changeable by functions)
+   * decoy prefix = random
+   * number of bins = 10
+   * target decoy ratio = 1.0
+   * binning mode = equal deepth
+   * correct identical sequences = true
+   */
+  
+  const static bool correct_identical_sequences = true;
+  const static bool binning_equal_deepth = true;
+  const static double target_decoy_ratio;
+  const static unsigned number_bins = 10;
+  
+  
+  /** GENERAL PARAMETERS **/
+  
+  /** compute global protein FDR using MAYU based implementation **/
+  const static bool mayufdr = false;
+  /** threshold used to estimate the protein FDR(pi0) **/
+  const static double psmThresholdMayu;
+  /** whether to use the decoy prefix(faster) to check if a protein is decoy or not **/
+  const static bool useDecoyPrefix = true;
+  /** whether to count decoy proteins when estimated q values or not **/
+  const static bool countDecoyQvalue_ = true;
+  /** protein prior probability used to estimate the peptide prior probabilities **/
+  const static double prior_protein;
+  
+  
+  /******************************************************************************************************************/
+  
+  
+  ProteinProbEstimator(bool tiesAsOneProtein = false, bool usePi0 = false, 
+      bool outputEmpirQVal = false, std::string decoyPattern = "random");
+  
+  virtual ~ProteinProbEstimator();
+  
+  /** reads the proteins from the set of scored peptides from percolator **/
+  bool initialize(Scores* fullset);
+  
+  /** start the protein probabilities tool**/
+  virtual void run() = 0;
+  
+  /** initialize the estimation of the protein probabilities **/
+  virtual void computeProbabilities(const std::string& fname = "") = 0;
+  
+  /** print out the tab delimited list of proteins to std::cerr or the screen */
+  void printOut(const std::string &proteinFN, 
+     const std::string &proteinDecoyFN);
+  
+  /** initialize the estimation of the q values and p values **/
+  void computeStatistics();
+  
+  /** MAYUS method for estimation of Protein FDR **/
+  void computeFDR();
+  
+  /** write the list of proteins to the output file **/
+  void writeOutputToXML(string xmlOutputFN, bool outputDecoys);
 
-    /** Return the number of proteins whose q value is less or equal than the threshold given**/
-    unsigned getQvaluesBelowLevel(double level);
-    unsigned getQvaluesBelowLevelDecoy(double level);
-   
-    /** populate the list of proteins**/
-    void setTargetandDecoysNames();
-    
-    /** return the data structure for the proteins **/
-    std::map<const std::string,Protein*> getProteins() { return proteins; }
-    
-    /** add proteins read from the database **/
-    void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
-    
-    /** print copyright of the author**/
-    virtual string printCopyright() = 0;
-    
-    /**some getters **/
-    
-    double getPi0(){return pi0;};
-    double getFDR(){return fdr;};
-    
-    /** Hack for fido :( **/
-    virtual double getGamma() = 0;
-    virtual double getBeta() = 0;
-    virtual double getAlpha() = 0;
-    
-  protected:
+  /** Return the number of proteins whose q value is less or equal than the threshold given**/
+  unsigned getQvaluesBelowLevel(double level);
+  unsigned getQvaluesBelowLevelDecoy(double level);
+ 
+  /** populate the list of proteins**/
+  void setTargetandDecoysNames();
   
-    static bool calcProteinLevelProb;
-   
-    /** functions to count number of target and decoy proteins **/
-    unsigned countTargets(const std::vector<std::string> &proteinList);
-    unsigned countDecoys(const std::vector<std::string> &proteinList);
-    bool isTarget(const std::string& proteinName);
-    bool isDecoy(const std::string& proteinName);
-    
-     /** print a tab delimited list of proteins probabilities in a file or stdout**/
-    void print(ostream& myout, bool decoy=false);
-    
-    /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
-     * this function is used to estimate the protein FDR**/
-    void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
-          std::set<std::string> &numberFP);
-       
-    /** estimate prior probabilities for peptide level **/
-    double estimatePriors();
-    
-    /** this function generates a vector of pair protein pep and label **/
-    void getCombinedList(std::vector<std::pair<double , bool> > &combined);
-    
-     /** update the proteins with the computed qvalues and pvalues**/
-    void updateProteinProbabilities();
-    
-    /** compute estimated qvalues from the PEP**/
-    void estimateQValues();
-    
-    /** compute pvalues from the scored target/decoy proteins**/
-    void estimatePValues(); 
-    
-    /** compute empirical qvalues from the target/decoy proteins**/
-    void estimateQValuesEmp();
-    
-    /** compute pi0 from the set of pvalues**/
-    double estimatePi0(const unsigned int numBoot = 100);
-    
-    /** variables **/
-    std::set<string> truePosSet, falsePosSet;
-    ProteinFDRestimator *fastReader;
-    std::map<const std::string,Protein*> proteins;    
-    std::multimap<double,std::vector<std::string> > pepProteins;
-    std::map<std::string,std::pair<std::string,double> > targetProteins;
-    std::map<std::string,std::pair<std::string,double> > decoyProteins;
-    std::vector<double> qvalues;
-    std::vector<double> qvaluesEmp;
-    std::vector<double> pvalues;
-    Scores* peptideScores;
-    bool tiesAsOneProtein;
-    bool usePi0;
-    bool outputEmpirQVal;
-    double pi0;
-    double fdr;
-    unsigned int numberDecoyProteins;
-    unsigned int numberTargetProteins;
-    std::string decoyPattern;
+  /** return the data structure for the proteins **/
+  std::map<const std::string,Protein*> getProteins() { return proteins; }
+  
+  /** add proteins read from the database **/
+  void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
+  
+  /** print copyright of the author**/
+  virtual string printCopyright() = 0;
+  
+  /**some getters **/
+  double getPi0() { return pi0; }
+  double getFDR() { return fdr; }
+  virtual std::ostream& printParametersXML(std::ostream &os) = 0;
+  
+ protected:
+
+  static bool calcProteinLevelProb;
+ 
+  /** functions to count number of target and decoy proteins **/
+  unsigned countTargets(const std::vector<std::string> &proteinList);
+  unsigned countDecoys(const std::vector<std::string> &proteinList);
+  bool isTarget(const std::string& proteinName);
+  bool isDecoy(const std::string& proteinName);
+  
+   /** print a tab delimited list of proteins probabilities in a file or stdout**/
+  void print(ostream& myout, bool decoy=false);
+  
+  /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
+   * this function is used to estimate the protein FDR**/
+  void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
+        std::set<std::string> &numberFP);
+     
+  /** estimate prior probabilities for peptide level **/
+  double estimatePriors();
+  
+  /** this function generates a vector of pair protein pep and label **/
+  void getCombinedList(std::vector<std::pair<double , bool> > &combined);
+  
+   /** update the proteins with the computed qvalues and pvalues**/
+  void updateProteinProbabilities();
+  
+  /** compute estimated qvalues from the PEP**/
+  void estimateQValues();
+  
+  /** compute pvalues from the scored target/decoy proteins**/
+  void estimatePValues(); 
+  
+  /** compute empirical qvalues from the target/decoy proteins**/
+  void estimateQValuesEmp();
+  
+  /** compute pi0 from the set of pvalues**/
+  double estimatePi0(const unsigned int numBoot = 100);
+  
+  /** variables **/
+  std::set<string> truePosSet, falsePosSet;
+  ProteinFDRestimator *fastReader;
+  std::map<const std::string,Protein*> proteins;    
+  std::multimap<double,std::vector<std::string> > pepProteinMap_;
+  std::map<std::string,std::pair<std::string,double> > targetProteins;
+  std::map<std::string,std::pair<std::string,double> > decoyProteins;
+  std::vector<double> qvalues;
+  std::vector<double> qvaluesEmp;
+  std::vector<double> pvalues;
+  Scores* peptideScores;
+  bool tiesAsOneProtein; /* assigns same q-value to proteins with same PEP */
+  bool usePi0;
+  bool outputEmpirQVal;
+  double pi0;
+  double fdr;
+  unsigned int numberDecoyProteins;
+  unsigned int numberTargetProteins;
+  std::string decoyPattern;
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

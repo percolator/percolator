@@ -351,21 +351,19 @@ void XMLInterface::writeXML(Scores & fullset, ProteinProbEstimator * protEstimat
 
   os << "    <other_command_line>" << otherCall << "</other_command_line>\n";
   os << "    <pi_0_psms>" << pi_0_psms << "</pi_0_psms>" << endl;
-  if(reportUniquePeptides)
+  if (reportUniquePeptides)
     os << "    <pi_0_peptides>" << pi_0_peptides << "</pi_0_peptides>" << endl;
-  if(ProteinProbEstimator::getCalcProteinLevelProb()) {  
-    if(protEstimator->getUsePi0())
+  if (ProteinProbEstimator::getCalcProteinLevelProb()) {  
+    if (protEstimator->getUsePi0())
       os << "    <pi_0_proteins>" << protEstimator->getPi0() << "</pi_0_proteins>" << endl;
     /*if(protEstimator->getMayuFdr())
       os << "    <fdr_proteins>" << protEstimator->getFDR() << "</fdr_proteins>" << endl;*/
-    os << "    <alpha>" << protEstimator->getAlpha() <<"</alpha>" << endl;
-    os << "    <beta>"  << protEstimator->getBeta() <<"</beta>" << endl;
-    os << "    <gamma>" << protEstimator->getGamma() <<"</gamma>" << endl;
+    protEstimator->printParametersXML(os);
   }
   os << "    <psms_qlevel>" <<  numberQpsms <<"</psms_qlevel>" << endl;
-  if(reportUniquePeptides)
+  if (reportUniquePeptides)
     os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.01) << "</peptides_qlevel>" << endl;
-  if(ProteinProbEstimator::getCalcProteinLevelProb())
+  if (ProteinProbEstimator::getCalcProteinLevelProb())
     os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.01) << "</proteins_qlevel>" << endl;  
   if (DataSet::getCalcDoc()) {
     os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
@@ -381,14 +379,14 @@ void XMLInterface::writeXML(Scores & fullset, ProteinProbEstimator * protEstimat
   ifs_psms.close();
   remove(xmlOutputFN_PSMs.c_str());
   // append Peptides
-  if(reportUniquePeptides){
+  if (reportUniquePeptides){
     ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
     os << ifs_peptides.rdbuf();
     ifs_peptides.close();
     remove(xmlOutputFN_Peptides.c_str());
   }
   // append Proteins
-  if(ProteinProbEstimator::getCalcProteinLevelProb()){
+  if (ProteinProbEstimator::getCalcProteinLevelProb()){
     ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
     os << ifs_proteins.rdbuf();
     ifs_proteins.close();

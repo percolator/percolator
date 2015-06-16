@@ -5,7 +5,6 @@
 
 BasicGroupBigraph::~BasicGroupBigraph() { }
 
-
 void BasicGroupBigraph::printProteinWeights() const {
   Array<double> sorted = proteinsToPSMs.weights;
   Array<int> indices = sorted.sort();
@@ -15,11 +14,12 @@ void BasicGroupBigraph::printProteinWeights() const {
   }
 }
 
+// each group consists of just one protein
 void BasicGroupBigraph::trivialGroupProteins() {
   groupProtNames = Array<Array<string> >(proteinsToPSMs.size());
   originalN = Array<Counter>(proteinsToPSMs.size());
 
-  for (int k=0; k<proteinsToPSMs.size(); k++) {
+  for (int k = 0; k < proteinsToPSMs.size(); k++) {
     groupProtNames[k] = Array<string>(1, proteinsToPSMs.names[k]);
     originalN[k] = Counter(1);
   }
@@ -33,12 +33,11 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups) {
   int k;
   for (k = 0; k < groups.size(); k++) {
     groupProtNames[k] = proteinsToPSMs.names[ groups[k] ];
-      
-    if (trivialGrouping) { 
+    if (trivialGrouping_) { 
       // each group is either present or absent
       originalN[k] = Counter( 1 );
     } else {
-      originalN[k] = Counter( groups[k].size() );
+      originalN[k] = Counter(groups[k].size());
     }
   }
 
@@ -53,9 +52,10 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups) {
   reindex();
 }
 
+// uses hashing of PSMs associations set per protein to find proteins with the
+// same set of PSMs
 void BasicGroupBigraph::groupProteins() {
   Array<Set> groups = ReplicateIndexer<Set>::replicates(Set::sumSetElements, proteinsToPSMs.associations );
-
   groupProteinsBy(groups);
 }
 

@@ -66,32 +66,27 @@ public:
   // bound checking function
   bool inBounds(int i) const;
 
-  class Iterator
-  {
+  class Iterator {
     //  protected:
-  public:
+   public:
     const Array<T>*array;
     int location;
-  public:
-    Iterator()
-      {
-	array = NULL;
-	location = -1;
-      }
-    Iterator(const Array<T>*a, int loc)
-      {
-	array = a;
-	location = loc;
-      }
-    int getLocation() const
-    {
+   public:
+    Iterator() {
+	    array = NULL;
+	    location = -1;
+    }
+    Iterator(const Array<T>*a, int loc) {
+      array = a;
+      location = loc;
+    }
+    int getLocation() const {
       return location;
     }
-    const Iterator & operator ++(int)
-      {
-	location++;
-	return *this;
-      }
+    const Iterator & operator ++(int) {
+	    location++;
+	    return *this;
+    }
     bool operator !=(const Iterator & rhs)
     {
       return ! ((*this) == rhs);
@@ -110,13 +105,11 @@ public:
     }
   };
 
-  Iterator begin() const
-  {
+  Iterator begin() const {
     return Iterator(this, 0);
   }
 
-  Iterator end() const
-  {
+  Iterator end() const {
     return Iterator(this, size());
   }
 
@@ -137,7 +130,7 @@ protected:
 template <typename T, typename R>
   void sizeCheck(const Array<T> & lhs, const Array<R> & rhs);
 
-// concatonate
+// concatenate
 template <typename T>
 Array<T> concatonate(const Array<T> & lhs, const Array<T> & rhs);
 

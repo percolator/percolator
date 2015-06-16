@@ -104,7 +104,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
   //If I have not been given a initial direction
   if (!initDefaultDir) {
     //if the default_weights from pin.xml are not present
-    if(default_weights.size() == 0) {
+    if (default_weights.size() == 0) {
       // Set init direction to be the most discriminative direction
       for (size_t set = 0; set < w.size(); ++set) {
         calcInitDirection(w[set], set);

@@ -54,7 +54,8 @@ bool DataSet::writeTabData(ofstream& out) {
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     double* featureRow = psm->features;
-    out << psm->id << '\t' << label_ << '\t' << psm->scan;
+    out << psm->id << '\t' << label_ << '\t' << psm->scan << '\t' 
+        << psm->expMass << '\t' << psm->calcMass;
     if (calcDOC_) {
       out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
           << psm->massDiff;
