@@ -3,6 +3,20 @@
 
 #include "BasicGroupBigraph.h"
 
+BasicGroupBigraph::BasicGroupBigraph(bool noClustering, bool trivialGrouping) :
+    logLikelihoodConstantCachedFunctor(
+      &BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
+    noClustering_(noClustering), trivialGrouping_(trivialGrouping) {}
+
+BasicGroupBigraph::BasicGroupBigraph(const BasicBigraph & rhs, 
+    bool noClustering, bool trivialGrouping) :
+      BasicBigraph(rhs), logLikelihoodConstantCachedFunctor(
+        &BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
+      noClustering_(noClustering), trivialGrouping_(trivialGrouping) {
+  if (noClustering_) trivialGroupProteins();
+  else groupProteins();
+}
+
 BasicGroupBigraph::~BasicGroupBigraph() { }
 
 void BasicGroupBigraph::printProteinWeights() const {
@@ -30,8 +44,7 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups) {
   groupProtNames = Array<Array<string> > (groups.size());
   originalN = Array<Counter> (groups.size());
 
-  int k;
-  for (k = 0; k < groups.size(); k++) {
+  for (int k = 0; k < groups.size(); k++) {
     groupProtNames[k] = proteinsToPSMs.names[ groups[k] ];
     if (trivialGrouping_) { 
       // each group is either present or absent
@@ -42,7 +55,7 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups) {
   }
 
   // remove all but the first of each group from the graph
-  for (k = 0; k < groups.size(); k++) {
+  for (int k = 0; k < groups.size(); k++) {
     Set reps = groups[k].without( Set::SingletonSet(groups[k][0]) );
     for (Set::Iterator iter = reps.begin(); iter != reps.end(); iter++) {
       disconnectProtein(*iter);

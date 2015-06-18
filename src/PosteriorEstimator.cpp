@@ -91,10 +91,8 @@ double mymin(double a, double b) {
   return a > b ? b : a;
 }
 
-void PosteriorEstimator::estimatePEP(
-                                     vector<pair<double, bool> >& combined,
-                                     double pi0, vector<double>& peps,
-				       bool include_negative) {
+void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
+    bool usePi0, double pi0, vector<double>& peps, bool include_negative) {
   // Logistic regression on the data
   size_t nTargets = 0, nDecoys = 0;
   LogisticRegression lr;
@@ -120,9 +118,9 @@ void PosteriorEstimator::estimatePEP(
   copy(peps.begin(), peps.end(), drIt);
   copy(xvals.begin(), xvals.end(), xvalIt);
 #endif
-  double factor = pi0 * ((double)nTargets / (double)nDecoys);
-  double top = min(1.0, factor
-      * exp(*max_element(peps.begin(), peps.end())));
+  double factor = 1.0;
+  if (usePi0) factor = pi0 * ((double)nTargets / (double)nDecoys);
+  double top = min(1.0, factor * exp(*max_element(peps.begin(), peps.end())));
   vector<double>::iterator pep = peps.begin();
   bool crap = false;
   for (; pep != peps.end(); ++pep) {
@@ -141,24 +139,19 @@ void PosteriorEstimator::estimatePEP(
 
 
 void PosteriorEstimator::estimatePEPGeneralized(
-                                     vector<pair<double, bool> >& combined,
-                                     vector<double>& peps,
-				       bool include_negative) {
+    vector<pair<double, bool> >& combined, vector<double>& peps,
+    bool include_negative) {
   // Logistic regression on the data
-  size_t nTargets = 0, nDecoys = 0;
   LogisticRegression lr;
   estimate(combined, lr);
   vector<double> xvals(0);
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem) {
     xvals.push_back(elem->first);
-    if (elem->second) {
-      ++nTargets;
-    } else {
+    if (!elem->second) {
       if (include_negative) {
         xvals.push_back(elem->first);
       }
-      ++nDecoys;
     }
   }
   lr.predict(xvals, peps);
@@ -357,8 +350,8 @@ void PosteriorEstimator::getQValues(double pi0, const vector<pair<double,
       ++nDecoys;
     } else {
       ++nTargets;
-      if(!includeNegativesInResult)
-	q.push_back(((double)nDecoys) / (double)nTargets);
+      if (!includeNegativesInResult)
+	      q.push_back(((double)nDecoys) / (double)nTargets);
     }
     if(includeNegativesInResult)
       q.push_back(((double)nDecoys) / (double)nTargets);
@@ -382,6 +375,7 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
 	return;
 }
+
 void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double> & q) {
 	int nP = 0;
 	double sum = 0.0;
@@ -536,7 +530,7 @@ int PosteriorEstimator::run() {
   }
 
   double pi0 = estimatePi0(pvals);
-  if(pi0 < 0) //NOTE there was an error
+  if (pi0 < 0) //NOTE there was an error
   {
     return 0;
   }
@@ -545,7 +539,8 @@ int PosteriorEstimator::run() {
     cerr << "Selecting pi_0=" << pi0 << endl;
   }
   // Logistic regression on the data
-  estimatePEP(combined, pi0, peps,includeNegativesInResult);
+  bool usePi0 = true;
+  estimatePEP(combined, usePi0, pi0, peps,includeNegativesInResult);
   finishStandalone(combined, peps, pvals, pi0);
 
   return true;

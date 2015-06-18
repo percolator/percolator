@@ -68,9 +68,8 @@ class FidoInterface : public ProteinProbEstimator {
     bool noPruning = true, 
     unsigned gridSearchDepth = 0u, double gridSearchThreshold = 0.0, 
     double proteinThreshold = 0.01, double mse_threshold = 0.1, 
-    bool tiesAsOneProtein = true, bool usePi0 = false, 
-    bool outputEmpirQVal = false, std::string decoyPattern = "random", 
-    bool trivialGrouping = true);
+    bool usePi0 = false, bool outputEmpirQVal = false, 
+    std::string decoyPattern = "random", bool trivialGrouping = true);
   virtual ~FidoInterface();
   
   void run();
@@ -90,8 +89,6 @@ class FidoInterface : public ProteinProbEstimator {
   bool noPartitioning_, noClustering_, noPruning_;
   /* turns off pruning of edges to proteins with only low confident PSMs */
   double proteinThreshold_;
-  /* protein groups are either present or absent and cannot be partially present */
-  bool trivialGrouping_;
   
   /** GRID SEARCH PARAMETERS **/
   
@@ -105,6 +102,8 @@ class FidoInterface : public ProteinProbEstimator {
   double mseThreshold_;
   /* threshold for ROC AUC estimation */
   mutable unsigned int rocN_;
+  
+  void updateTargetDecoySizes();
   
   /** fido extra functions to do the grid search for parameters alpha,beta and gamma **/
   void getROC_AUC(const std::vector<std::vector<string> > &names,
@@ -132,10 +131,10 @@ class FidoInterface : public ProteinProbEstimator {
 */
 class FDRCalculator {
  public:
-  FDRCalculator(double targetDecoyRatio, double pi0, bool countDecoyQvalue) : 
+  FDRCalculator(bool usePi0, double targetDecoyRatio, double pi0, bool countDecoyQvalue) : 
       fpCount_(0.0), tpCount_(0.0), totalFDR_(0.0), 
+      usePi0_(usePi0), pi0_(pi0), targetDecoyRatio_(targetDecoyRatio),
       previousEmpQ_(0.0), previousEstQ_(0.0),
-      pi0_(pi0), targetDecoyRatio_(targetDecoyRatio),
       countDecoyQvalue_(countDecoyQvalue), rocN_(50u) {}
   
   unsigned getRocN() const { return rocN_; }
@@ -145,6 +144,7 @@ class FDRCalculator {
                std::vector<double>& empq, std::vector<double>& estq);
  private:
   double fpCount_, tpCount_, totalFDR_;
+  bool usePi0_;
   double pi0_, targetDecoyRatio_;
   double previousEmpQ_, previousEstQ_;
   bool countDecoyQvalue_;

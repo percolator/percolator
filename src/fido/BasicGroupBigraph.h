@@ -77,16 +77,9 @@ class Counter {
 */
 class BasicGroupBigraph : public BasicBigraph {
  public:   
-  BasicGroupBigraph(bool noClustering = false, bool trivialGrouping = false) :
-      logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-      noClustering_(noClustering),trivialGrouping_(trivialGrouping) {}
-
-  BasicGroupBigraph(const BasicBigraph & rhs, bool noClustering = false, bool trivialGrouping = false) :
-      BasicBigraph(rhs), logLikelihoodConstantCachedFunctor( & BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-      noClustering_(noClustering),trivialGrouping_(trivialGrouping) {
-    if (noClustering_) trivialGroupProteins();
-    else groupProteins();
-  }
+  BasicGroupBigraph(bool noClustering = false, bool trivialGrouping = false);
+  BasicGroupBigraph(const BasicBigraph & rhs, bool noClustering = false, 
+                    bool trivialGrouping = false);
   
   virtual ~BasicGroupBigraph();
   

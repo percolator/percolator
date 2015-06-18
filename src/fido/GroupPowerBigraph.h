@@ -38,6 +38,7 @@ class GroupPowerBigraph {
   void printProteinWeights() const;
   void getProteinProbsPercolator(std::multimap<double, std::vector<std::string> > &pepProteins) const;
   void getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const;
+  void getProteinNames(std::vector<std::vector<std::string> > &names) const;
   void getProteinProbs();
   Array<string> peptideNames() const;
   double getLogNumberStates() const;

@@ -69,12 +69,7 @@ struct RetrieveValue {
 *           spectrometry-based shotgun proteomics data sets.
 */
 class ProteinProbEstimator { 
- public:
-  
-  static inline void setCalcProteinLevelProb(bool on) { calcProteinLevelProb = on; }
-  static inline bool getCalcProteinLevelProb() { return calcProteinLevelProb; }
-  inline bool getUsePi0() { return usePi0; }
-  
+ public:  
   /** PROTEIN FDR ESTIMATOR PARAMETERS **/
   
   /* Default configuration (changeable by functions)
@@ -108,7 +103,7 @@ class ProteinProbEstimator {
   /******************************************************************************************************************/
   
   
-  ProteinProbEstimator(bool tiesAsOneProtein = false, bool usePi0 = false, 
+  ProteinProbEstimator(bool trivialGrouping = true, bool usePi0 = false, 
       bool outputEmpirQVal = false, std::string decoyPattern = "random");
   
   virtual ~ProteinProbEstimator();
@@ -151,10 +146,15 @@ class ProteinProbEstimator {
   /** print copyright of the author**/
   virtual string printCopyright() = 0;
   
-  /**some getters **/
-  double getPi0() { return pi0; }
-  double getFDR() { return fdr; }
+  /** printing custom parameters to xml **/
   virtual std::ostream& printParametersXML(std::ostream &os) = 0;
+  
+  /**some getters and setters**/
+  static inline void setCalcProteinLevelProb(bool on) { calcProteinLevelProb = on; }
+  static inline bool getCalcProteinLevelProb() { return calcProteinLevelProb; }
+  inline bool getUsePi0() { return usePi0_; }
+  double getPi0() { return pi0_; }
+  double getFDR() { return fdr_; }
   
  protected:
 
@@ -205,15 +205,17 @@ class ProteinProbEstimator {
   std::vector<double> qvalues;
   std::vector<double> qvaluesEmp;
   std::vector<double> pvalues;
-  Scores* peptideScores;
+  Scores* peptideScores_;
   bool tiesAsOneProtein; /* assigns same q-value to proteins with same PEP */
-  bool usePi0;
-  bool outputEmpirQVal;
-  double pi0;
-  double fdr;
-  unsigned int numberDecoyProteins;
-  unsigned int numberTargetProteins;
-  std::string decoyPattern;
+  /* protein groups are either present or absent and cannot be partially present */
+  bool trivialGrouping_;
+  bool usePi0_;
+  double pi0_;
+  bool outputEmpirQVal_;
+  double fdr_;
+  unsigned int numberDecoyProteins_;
+  unsigned int numberTargetProteins_;
+  std::string decoyPattern_;
 };
 
 #endif /* PROTEINPROBESTIMATOR_H_ */

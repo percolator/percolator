@@ -261,11 +261,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gamma",
       "Set Fido's prior probability that a protein is present in the sample. Set by grid search if not specified",
       "value");
+  /*
   cmd.defineOption("I",
       "fido-protein-level-pi0",
       "Use pi_0 value when calculating empirical q-values.",
       "", 
       TRUE_IF_SET);
+  */
   cmd.defineOption("q",
       "fido-empirical-protein-q",        
       "Estimate empirical p-values and q-values using target-decoy analysis.",
@@ -284,8 +286,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Apply the specified threshold to PSM, peptide and protein probabilities to obtain a faster estimate of the alpha, beta and gamma parameters. Default = 0; Recommended when set = 0.2.",
       "value");
   cmd.defineOption("C",
-      "fido-split-large-components",        
-      "Approximate the posterior distribution by allowing large graph components to be split into subgraphs. The splitting is done by duplicating peptides with low probabilities. Splitting continues until the number of possible configurations of each subgraph is below 2^18",
+      "fido-no-split-large-components",        
+      "Do not approximate the posterior distribution by allowing large graph components to be split into subgraphs. The splitting is done by duplicating peptides with low probabilities. Splitting continues until the number of possible configurations of each subgraph is below 2^18.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("E",
@@ -383,29 +385,28 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
     
     // Confidence estimation options (general protein prob options)
-    bool protEstimatorTiesAsOneProtein = true; // cannot be set on cmd line
-    bool protEstimatorUsePi0 = false;
+    bool protEstimatorUsePi0 = false; // cannot be set on cmd line
     bool protEstimatorOutputEmpirQVal = false;
+    bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
     std::string protEstimatorDecoyPrefix = "random";
-    protEstimatorUsePi0 = cmd.optionSet("I");
+    //protEstimatorUsePi0 = cmd.optionSet("I");
     protEstimatorOutputEmpirQVal = cmd.optionSet("q");
     if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
+    //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
     
     // Options for controlling speed
     bool fidoNoPartitioning = false; // cannot be set on cmd line
     bool fidoNoClustering = false; // cannot be set on cmd line
-    bool fidoTrivialGrouping = true; // cannot be set on cmd line
     unsigned fidoGridSearchDepth = 0;
-    bool fidoNoPruning = true;
+    bool fidoNoPruning = false;
     double fidoGridSearchThreshold = 0.0;
     double fidoProteinThreshold = 0.01;
     double fidoMseThreshold = 0.1;
     if (cmd.optionSet("d")) fidoGridSearchDepth = cmd.getInt("d", 0, 2);
     if (cmd.optionSet("T")) fidoGridSearchThreshold = cmd.getDouble("T", 0.0, 1.0);
-    if (cmd.optionSet("C")) fidoNoPruning = false;
+    if (cmd.optionSet("C")) fidoNoPruning = true;
     if (cmd.optionSet("E")) fidoProteinThreshold = cmd.getDouble("T", 0.0, 1.0);
     if (cmd.optionSet("H")) fidoMseThreshold = cmd.getDouble("H",0.001,1.0);
-    //if (cmd.optionSet("Q")) fidoTrivialGrouping = false;
     
     // Output file options
     if (cmd.optionSet("l")) proteinResultFN_ = cmd.options["l"];
@@ -415,9 +416,8 @@ bool Caller::parseOptions(int argc, char **argv) {
               fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
               fidoGridSearchDepth, fidoGridSearchThreshold,
               fidoProteinThreshold, fidoMseThreshold,
-              protEstimatorTiesAsOneProtein, protEstimatorUsePi0, 
-              protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
-              fidoTrivialGrouping);
+              protEstimatorUsePi0, protEstimatorOutputEmpirQVal, 
+              protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
   }
   
   if (cmd.optionSet("k")) {
@@ -446,7 +446,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("n")) {
     crossValidation_.setSelectedCneg(cmd.getDouble("n", 0.0, 1e127));
     if (crossValidation_.getSelectedCpos() == 0) {
-      std::cerr << "Warning : the positive penalty(cpos) is 0, therefore both the "  
+      std::cerr << "WARNING: the positive penalty(cpos) is 0, therefore both the "  
                << "positive and negative penalties are going "
                << "to be cross-validated. The option --Cneg has to be used together "
                << "with the option --Cpos" << std::endl;
@@ -510,8 +510,12 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   Scores::setShowExpMass(true);
   if (cmd.optionSet("y")) {
-    targetDecoyCompetition_ = false; 
-    Scores::setUsePi0(true);
+    if (cmd.optionSet("A")) {
+      std::cerr << "WARNING: cannot use qvality for pep calculation when predicting protein probabilities with the -A flag, ignoring the -y flag." << std::endl;
+    } else {
+      targetDecoyCompetition_ = false;
+      Scores::setUsePi0(true);
+    }
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {

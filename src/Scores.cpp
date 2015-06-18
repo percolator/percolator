@@ -406,7 +406,11 @@ int Scores::calcQ(double fdr) {
       scoreIt->p = (decoys+(double)1)/(totalNumberOfDecoys_+(double)1);
     } else {
       decoys++;
-      efp = pi0_ * decoys * targetDecoySizeRatio_;
+      if (usePi0_) {
+        efp = pi0_ * decoys * targetDecoySizeRatio_;
+      } else {
+        efp = decoys;
+      }
       scoreIt->p = (decoys)/(double)(totalNumberOfDecoys_);
     }
     if (targets) {
@@ -600,7 +604,11 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
           positives++;
         } else {
           decoys++;
-          efp = pi0_ * decoys * targetDecoySizeRatio_;
+          if (usePi0_) {
+            efp = pi0_ * decoys * targetDecoySizeRatio_;
+          } else {
+            efp = decoys;
+          }
         }
         if (positives) {
           q = efp / (double)positives;
@@ -651,7 +659,7 @@ void Scores::calcPep() {
       mem_fun_ref(&ScoreHolder::toPair));
   vector<double> peps;
   // Logistic regression on the data
-  PosteriorEstimator::estimatePEP(combined, pi0_, peps, true);
+  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
   for (size_t ix = 0; ix < scores_.size(); ix++) {
     (scores_[ix]).pep = peps[ix];
   }

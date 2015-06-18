@@ -32,7 +32,7 @@ class PosteriorEstimator {
     string greeter();
     int run();
     static void estimatePEP(vector<pair<double, bool> >& combined,
-                            double pi0, vector<double>& peps,
+            bool usePi0, double pi0, vector<double>& peps,
 			      bool include_negative = false);
     static void estimatePEPGeneralized(vector<pair<double, bool> >& combined,
 					 vector<double>& peps,

@@ -18,9 +18,10 @@
 #include "Protein.h"
 
 Protein::Protein(string namenew, double qnew, double qempnew, double pepnew, 
-    double pnew, bool isdecoy_new, Protein::Peptide* __peptide)
+    double pnew, bool isdecoy_new, Protein::Peptide* __peptide,
+    std::string groupId)
 	: name(namenew), q(qnew), qemp(qempnew), pep(pepnew), p(pnew),
-	  isDecoy(isdecoy_new) {
+	  isDecoy(isdecoy_new), groupId_(groupId) {
   if (__peptide) peptides.push_back(__peptide);
 }
 

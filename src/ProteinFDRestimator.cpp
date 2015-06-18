@@ -298,7 +298,7 @@ void ProteinFDRestimator::binProteinsEqualWidth()
   double span = abs(max - min);
   double part = span / nbins;
   
-  if(VERB > 2)
+  if (VERB > 2)
     std::cerr << "\nBinning proteins using equal width\n" << std::endl;
   
   for(unsigned i = 0; i < nbins; i++)

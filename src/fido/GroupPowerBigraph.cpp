@@ -39,7 +39,8 @@ void GroupPowerBigraph::printProteinWeights() const {
 }
 
 // return a map of PEPs and their respectives proteins
-void GroupPowerBigraph::getProteinProbsPercolator(std::multimap<double, std::vector<std::string> > &pepProteins) const {
+void GroupPowerBigraph::getProteinProbsPercolator(
+    std::multimap<double, std::vector<std::string> > &pepProteins) const {
   Array<double> sorted = probsPresentProteins_;
   Array<int> indices = sorted.sort();
   for (int k = 0; k < sorted.size(); k++) {
@@ -50,14 +51,27 @@ void GroupPowerBigraph::getProteinProbsPercolator(std::multimap<double, std::vec
     pepProteins.insert(std::make_pair(pep, groupProtNames_[ indices[k] ].getVector()));
   }
   
-  if (severedProteins_.size()!=0) {
-    pepProteins.insert(std::make_pair(1.0,severedProteins_.getVector()));
+  if (severedProteins_.size() != 0) {
+    pepProteins.insert(std::make_pair(1.0, severedProteins_.getVector()));
   }
  
   return;
 }
 
-void GroupPowerBigraph::getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const {
+void GroupPowerBigraph::getProteinNames(std::vector<std::vector<std::string> > &names) const {
+  names.clear();
+  for (int k = 0; k < groupProtNames_.size(); k++) {
+    names.push_back(groupProtNames_[k].getVector());
+  }
+  
+  if (severedProteins_.size() != 0) {
+    names.push_back(severedProteins_.getVector());
+  }
+}
+
+void GroupPowerBigraph::getProteinProbsAndNames(
+    std::vector<std::vector<std::string> > &names, 
+    std::vector<double> &probs) const {
   names.clear();
   probs.clear();
   
@@ -75,7 +89,6 @@ void GroupPowerBigraph::getProteinProbsAndNames(std::vector<std::vector<std::str
     names.push_back(severedProteins_.getVector());
     probs.push_back(1.0);
   }
-  return;
 }
 
 
@@ -95,26 +108,36 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
 
   Array<BasicBigraph> preResult = bb.partitionSections();
   Array<BasicBigraph> result;
-
+  
+  bool warnTooManyConfigurations = false;
+  
   for (int k = 0; k < preResult.size(); k++) {
     BasicGroupBigraph bgb = BasicGroupBigraph(preResult[k], noClustering_/*,trivialGrouping_*/);
     double logNumConfig = bgb.logNumberOfConfigurations();
-    if ( logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && 
+    if ( newPeptideThreshold >= 0.0 &&
+         logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && 
          log2(bgb.PSMsToProteins.size())+log2(bgb.getOriginalN()[0].size+1) <= LOG_MAX_ALLOWED_CONFIGURATIONS ) {
       double newThresh = 1.25*(newPeptideThreshold + 1e-6);
       Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], newThresh);
       result.append( completelyFragmented );
-    } else if (logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS) {
+    } else if (newPeptideThreshold >= 0.0 && logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS) {
       // the graph cannot become pruned to the desired efficiency;
       // prune as much as possible
       double largest = Vector(preResult[k].PSMsToProteins.weights).max();
       Array<BasicBigraph> completelyFragmented = iterativePartitionSubgraphs(preResult[k], largest);
       result.append( completelyFragmented );
     } else {
+      if (newPeptideThreshold < 0.0 && logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS) {
+        warnTooManyConfigurations = true;
+      }
       // the graph is already pruned to the desired degree
       result.add( preResult[k] );
     }
   }
+  
+  if (warnTooManyConfigurations)
+    std::cerr << "WARNING: more than 2^18 possible configurations, run time will be long.\n"
+      << "Consider using the -C flag to reduce the number of configurations automatically.\n" << std::endl;
   
   return result;
 }

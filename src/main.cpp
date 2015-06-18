@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
   }
   catch (const std::exception& e) 
   {
-    std::cerr << e.what() << endl;
+    std::cerr << "Exception caught: " << e.what() << endl;
     retVal = EXIT_FAILURE;
   }
   catch(...)

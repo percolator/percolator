@@ -77,13 +77,13 @@ FidoInterface::FidoInterface(double alpha, double beta, double gamma,
     bool noPartitioning, bool noClustering, bool noPruning, 
     unsigned gridSearchDepth, double gridSearchThreshold, 
     double proteinThreshold, double mseThreshold, 
-    bool tiesAsOneProtein, bool usePi0, bool outputEmpirQVal, 
+    bool usePi0, bool outputEmpirQVal, 
     std::string decoyPattern, bool trivialGrouping) :
-  ProteinProbEstimator(tiesAsOneProtein, usePi0, outputEmpirQVal, decoyPattern), 
+  ProteinProbEstimator(trivialGrouping, usePi0, outputEmpirQVal, decoyPattern), 
   alpha_(alpha), beta_(beta), gamma_(gamma),
   noPartitioning_(noPartitioning), noClustering_(noClustering),
   noPruning_(noPruning), proteinThreshold_(proteinThreshold), 
-  trivialGrouping_(trivialGrouping), gridSearchDepth_(gridSearchDepth), 
+  gridSearchDepth_(gridSearchDepth), 
   gridSearchThreshold_(gridSearchThreshold), mseThreshold_(mseThreshold),
   doGridSearch_(false), rocN_(kDefaultRocN) {}
       
@@ -131,14 +131,32 @@ void FidoInterface::run() {
  
 }
 
+void FidoInterface::updateTargetDecoySizes() {
+  std::vector<std::vector<std::string> > proteinNames;
+  proteinGraph_->getProteinNames(proteinNames);
+  
+  numberTargetProteins_ = 0;
+  numberDecoyProteins_ = 0;
+  for (unsigned int k = 0; k < proteinNames.size(); ++k) {
+    unsigned tpChange = countTargets(proteinNames[k]);
+    unsigned fpChange = proteinNames[k].size() - tpChange;
+    if (trivialGrouping_) {
+      if (tpChange > 0) numberTargetProteins_ += 1;
+      if (fpChange > 0) numberDecoyProteins_ += 1;
+    }
+  }
+}
+
 void FidoInterface::computeProbabilities(const std::string& fname) {
   ifstream fin;
   if (fname.size() > 0) {
     fin.open(fname.c_str());
     proteinGraph_->read(fin);
   } else {
-    proteinGraph_->read(peptideScores);
+    proteinGraph_->read(peptideScores_);
   }
+  
+  if (trivialGrouping_) updateTargetDecoySizes();
   
   time_t startTime;
   clock_t startClock;
@@ -175,7 +193,7 @@ void FidoInterface::computeProbabilities(const std::string& fname) {
     cerr << "beta  = " << beta_ << endl;
     cerr << "gamma = " << gamma_ << endl;
     std::cerr.unsetf(std::ios::floatfield);
-    cerr << "\nProtein level probabilities will now be estimated";
+    cerr << "\nProtein level probabilities will now be estimated\n";
   }
 
 
@@ -189,11 +207,13 @@ void FidoInterface::computeProbabilities(const std::string& fname) {
     proteinGraph_->setNoPruning(noPruning_);
     proteinGraph_->setTrivialGrouping(trivialGrouping_);
     proteinGraph_->setMultipleLabeledPeptides(kAddPeptideDecoyLabel);
+    
     if (fname.size() > 0) {
       proteinGraph_->read(fin);
     } else {
-      proteinGraph_->read(peptideScores);
+      proteinGraph_->read(peptideScores_);
     }
+    if (trivialGrouping_) updateTargetDecoySizes();
   }
   
   proteinGraph_->setAlphaBetaGamma(alpha_, beta_, gamma_);
@@ -408,7 +428,6 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
       if (tpChange > 0) tpChange = 1;
       if (fpChange > 0) fpChange = 1;
     }
-
     tp += tpChange;
     fp += fpChange;
     //should only do it when fp changes and either of them is != 0
@@ -441,26 +460,20 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
   empq.clear();
   estq.clear();
   
-  double targetDecoyRatio = static_cast<double>(numberTargetProteins) / numberDecoyProteins;
-  FDRCalculator fdrCalculator(targetDecoyRatio, pi0, countDecoyQvalue_);
+  double targetDecoyRatio = static_cast<double>(numberTargetProteins_) / numberDecoyProteins_;
+  FDRCalculator fdrCalculator(usePi0_, targetDecoyRatio, pi0_, countDecoyQvalue_);
   
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
   for (unsigned int k = 0; (k < proteinNames.size() && 
         (fdrCalculator.getPreviousEstQ() <= mseThreshold_)); k++) {
     double prob = probabilities[k];
-    if (tiesAsOneProtein) {
-      unsigned tpChange = countTargets(proteinNames[k]);
-      unsigned fpChange = proteinNames[k].size() - tpChange;
-      fdrCalculator.calcFDRs(fpChange, tpChange, prob, estq, empq);
-    } else {
-      for (unsigned i = 0; i < proteinNames[k].size(); i++) {
-        unsigned fpChange, tpChange;
-        if (isDecoy(proteinNames[k][i])) ++fpChange;
-        else ++tpChange;
-        
-        fdrCalculator.calcFDRs(fpChange, tpChange, prob, estq, empq);
-      }
+    unsigned tpChange = countTargets(proteinNames[k]);
+    unsigned fpChange = proteinNames[k].size() - tpChange;
+    if (trivialGrouping_) {
+      if (tpChange > 0) tpChange = 1;
+      if (fpChange > 0) fpChange = 1;
     }
+    fdrCalculator.calcFDRs(fpChange, tpChange, prob, estq, empq);
   }
   if (kUpdateRocN) rocN_ = fdrCalculator.getRocN();
 }
@@ -582,7 +595,13 @@ void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
     estFDR = totalFDR_ / tpCount_;
   }
 
-  if (tpCount_ > 0) empFDR = (fpCount_ * pi0_ * targetDecoyRatio_) / tpCount_;
+  if (tpCount_ > 0) {
+    if (usePi0_) {
+      empFDR = (fpCount_ * pi0_ * targetDecoyRatio_) / tpCount_;
+    } else {
+      empFDR = fpCount_ / tpCount_;
+    }
+  }
   
   if (empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
   if (estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
