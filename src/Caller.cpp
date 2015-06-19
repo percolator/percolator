@@ -97,10 +97,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   // init
   CommandLineParser cmd(intro.str());
   // available lower case letters: c, f, g, o, z
-  // available upper case letters: N, Q 
+  // available upper case letters: I, N, Q 
   cmd.defineOption("X",
       "xmloutput",
-      "Path to xml-output file.",
+      "Path to xml-output (pout) file.",
       "filename");
   cmd.defineOption("",
       "stdinput",
@@ -240,7 +240,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("s",
       "no-schema-validation",
-      "skip validation of input file against xml schema.",
+      "Skip validation of input file against xml schema.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("A",
@@ -293,8 +293,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("E",
       "fido-protein-truncation-threshold",
       "To speed up inference, proteins for which none of the associated peptides has a probability exceeding the specified threshold will be assigned probability = 0. Default = 0.01.",
-      "",
-      TRUE_IF_SET);
+      "value");
   cmd.defineOption("H",
       "fido-gridsearch-mse-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for big size datasets. Default = 0.1",
