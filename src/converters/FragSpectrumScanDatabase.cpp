@@ -37,10 +37,10 @@ void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::frag
     }
 
     tabOutputStream << psm.id() << '\t' << label << '\t' << fss->scanNumber();
+    tabOutputStream << '\t' << psm.experimentalMass() << '\t' << psm.calculatedMass();
     if (psm.observedTime().present()) {
       tabOutputStream << '\t' << psm.observedTime() << '\t' << MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
     }
-    tabOutputStream << '\t' << psm.experimentalMass() << '\t' << psm.calculatedMass();
     BOOST_FOREACH (const double feature, psm.features().feature()) {
       tabOutputStream << '\t' << feature;
     }

@@ -241,11 +241,10 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     
     // print column headers
     bool hasInitialValues = false;
-    outputStream << "SpecId\tLabel";
+    outputStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass";
     if (scan2rt.size() > 0) {
       outputStream << "\tRT\tdM";
     }
-    outputStream << "\tScanNr\tExpMass\tCalcMass";
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
       outputStream << "\t" << descr.name();
       if (descr.initialValue().get() != 0) hasInitialValues = true;
@@ -255,6 +254,9 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     // print default values
     if (hasInitialValues) {
       outputStream << "DefaultDirection\t-\t-\t-\t-";
+      if (scan2rt.size() > 0) {
+        outputStream << "\t-\t-";
+      }
       BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
         outputStream << "\t" << descr.initialValue().get();
       }
