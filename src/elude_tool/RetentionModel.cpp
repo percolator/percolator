@@ -71,13 +71,14 @@ int RetentionModel::InitSVR(const bool linear_svr) {
     svr_model_ = new LibSVRModel(LibSVRModel::RBF_SVR);
     is_linear_ = false;
   }
+  return 0;
 }
 
 /* get the weights of a linear SVR which are equivalent to an index*/
 //map<string, double> RetentionModel::GetRetentionIndex() {
 map<string, double> RetentionModel::GetRetentionIndex() {
-  int no_features = retention_features_.GetTotalNumberFeatures();
-  double temp[no_features + 1][no_features];
+  const int no_features = retention_features_.GetTotalNumberFeatures();
+  std::vector< std::vector<double> > temp(no_features + 1, std::vector<double>(no_features));
   for (int i = 0; i < no_features + 1; ++i) {
     for (int j = 0; j < no_features; ++j) {
       if (j == (i - 1)) {
@@ -88,11 +89,11 @@ map<string, double> RetentionModel::GetRetentionIndex() {
     }
   }
   // get weights
-  double background = svr_model_->PredictRT(no_features, temp[0]);
+  double background = svr_model_->PredictRT(no_features, &temp[0][0]);
   vector<string> aa_alphabet = retention_features_.amino_acids_alphabet();
   map<string, double> svr_index;
   for (int i = 1; i < no_features + 1; ++i) {
-    svr_index[aa_alphabet[i-1]] = svr_model_->PredictRT(no_features, temp[i])
+    svr_index[aa_alphabet[i-1]] = svr_model_->PredictRT(no_features, &temp[i][0])
         - background;
   }
   return svr_index;
@@ -336,6 +337,7 @@ int RetentionModel::SaveModelToFile(const string &file_name) {
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;
   }
+  return 0;
 }
 
 /* load the model from a file */
@@ -409,6 +411,7 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;
   }
+  return 0;
 }
 
 int RetentionModel::SaveRetentionIndexToFile(const string &file_name) {
@@ -434,4 +437,5 @@ int RetentionModel::SaveRetentionIndexToFile(const string &file_name) {
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;
   }
+  return 0;
 }

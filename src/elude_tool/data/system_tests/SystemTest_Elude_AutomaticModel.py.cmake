@@ -15,7 +15,7 @@ out_path = "@pathToWritable@"
 # when explicitly loading the best model 
 # context data, rt in the test 
 def AutomaticModelLinearAdjust():
-  print "Running EludeAutomaticModelTest::AutomaticModelLinearAdjust..."
+  print("Running EludeAutomaticModelTest::AutomaticModelLinearAdjust...")
   #elude_path = os.path.join(path, "./../../", "elude")
   data_folder = os.path.join(pathToData, "elude/calibrate_data/")  
   lib_path = os.path.join(pathToData, "elude/calibrate_data/test_lib")  
@@ -53,13 +53,13 @@ def AutomaticModelLinearAdjust():
   # clean-up 
   utility.cleanUp([log_file1, log_file2])
 
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 # case 2: no linear adjustment performed; the performances are compared to 
 # when explicitly loading the best model 
 # context, test includes rt
 def AutomaticModelNoLinearAdjust():
-  print "Running EludeAutomaticModelTest::AutomaticModelNoLinearAdjust..."
+  print("Running EludeAutomaticModelTest::AutomaticModelNoLinearAdjust...")
   
   data_folder = os.path.join(pathToData, "elude/calibrate_data/")  
   lib_path = os.path.join(pathToData, "elude/calibrate_data/test_lib")  
@@ -99,12 +99,12 @@ def AutomaticModelNoLinearAdjust():
   # clean-up 
   utility.cleanUp([log_file1, log_file2])
 
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 def main():
   AutomaticModelLinearAdjust()
   AutomaticModelNoLinearAdjust()
-  print ""
+  print("")
 
 if __name__ == '__main__':
   main()

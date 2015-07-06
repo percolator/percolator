@@ -15,7 +15,7 @@ out_path = "@pathToWritable@"
 # the alphabet of the train is same as the alphabet of the test
 # remove in source and non enzymatic, check in source 
 def TrainTestSameAlphabet():
-  print "Running EludePtmsTrainEvaluateTest::TrainTestSameAlphabet..."
+  print("Running EludePtmsTrainEvaluateTest::TrainTestSameAlphabet...")
    
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -59,13 +59,13 @@ def TrainTestSameAlphabet():
   # clean-up 
   utility.cleanUp([out_file, log_file])
   
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 # context format, test includes rt 
 # the alphabet of the train includes the alphabet of the test
 # save and check the index 
 def TrainTestDifferentAlphabet():
-  print "Running EludePtmsTrainEvaluateTest::TrainTestDifferentAlphabet..."
+  print("Running EludePtmsTrainEvaluateTest::TrainTestDifferentAlphabet...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_3.txt")
@@ -106,12 +106,12 @@ def TrainTestDifferentAlphabet():
     
   # clean-up 
   utility.cleanUp([out_file, log_file, index_file])
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 # the alphabet of the train does not include the alphabet of the test
 # context format, test includes rt 
 def TrainTestInconsistentAlphabet():
-  print "Running EludePtmsTrainEvaluateTest::TrainTestDifferentAlphabet..."
+  print("Running EludePtmsTrainEvaluateTest::TrainTestDifferentAlphabet...")
 
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -138,13 +138,13 @@ def TrainTestInconsistentAlphabet():
   
   # clean-up 
   utility.cleanUp([log_file])
-  print "...TEST SUCCEEDED" 
+  print("...TEST SUCCEEDED" )
   
 # context format, test includes rt, ignore ptms on
 # the alphabet of the train does not include the alphabet of the test
 # check performance measures 
 def TrainTestInconsistentAlphabet():
-  print "Running EludePtmsTrainEvaluateTest::TrainTestInconsistentAlphabet..."
+  print("Running EludePtmsTrainEvaluateTest::TrainTestInconsistentAlphabet...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -171,13 +171,13 @@ def TrainTestInconsistentAlphabet():
     
   # clean-up 
   utility.cleanUp([log_file])
-  print "...TEST SUCCEEDED" 
+  print("...TEST SUCCEEDED" )
 
 # context format, test includes rt, ignore ptms on
 # the alphabet of the train does not include the alphabet of the test
 # check performance measures 
 def TrainTestIgnorePtms():
-  print "Running EludePtmsTrainEvaluateTest::TrainTestIgnorePtms..."
+  print("Running EludePtmsTrainEvaluateTest::TrainTestIgnorePtms...")
  
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -206,14 +206,14 @@ def TrainTestIgnorePtms():
  
   # clean-up 
   utility.cleanUp([log_file, out_file, idx_file])
-  print "...TEST SUCCEEDED" 
+  print("...TEST SUCCEEDED" )
   
 def main():
   TrainTestSameAlphabet()
   TrainTestDifferentAlphabet()
   TrainTestInconsistentAlphabet()
   TrainTestIgnorePtms()
-  print ""  
+  print(""  )
   
 if __name__ == '__main__':
   main()

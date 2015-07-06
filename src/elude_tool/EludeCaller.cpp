@@ -378,11 +378,13 @@ int EludeCaller::ProcessTrainData() {
 
   // shuffle the training data
   random_shuffle(train_psms_.begin(), train_psms_.end());
+  return 0;
 }
 
 int EludeCaller::NormalizeRetentionTimes(vector<PSMDescription> &psms) {
   PSMDescription::setPSMSet(psms);
   PSMDescription::normalizeRetentionTimes(psms);
+  return 0;
 }
 
 int EludeCaller::SaveRetentionIndexToFile(const string &file_name, const map<string, double> &index) {
@@ -426,6 +428,7 @@ int EludeCaller::TrainRetentionModel() {
   retention_index_ = rt_model_->BuildRetentionIndex(train_aa_alphabet_, false, train_psms_);
   /* train the model */
   rt_model_->TrainRetentionModel(train_aa_alphabet_, retention_index_, true, train_psms_);
+  return 0;
 }
 
 /* process test data */
@@ -703,6 +706,7 @@ int EludeCaller::Run() {
       }
     }
   }
+  return 0;
 }
 
 void EludeCaller::PrintPredictions(const vector<PSMDescription> &psms) const {
@@ -723,6 +727,7 @@ int EludeCaller::AdjustLinearly(vector<PSMDescription> &psms) {
   for( ; it != psms.end(); ++it) {
     it->predictedTime = lts->predict(it->predictedTime);
   }
+  return 0;
 }
 
 /* Load the best model from the library; the function returns a pair consisting of
@@ -772,7 +777,7 @@ pair<int, double> EludeCaller::AutomaticModelSelection() {
   if (VERB >= 4) {
     cerr << "-------------" << endl;
   }
-  for(int i = 1; i < model_files.size(); ++i) {
+  for(size_t i = 1; i < model_files.size(); ++i) {
     m = new RetentionModel(the_normalizer_);
     m->LoadModelFromFile(model_files[i]);
     if (m->IsIncludedInAlphabet(train_aa_alphabet_, ignore_ptms_) &&
@@ -840,7 +845,6 @@ vector<string> EludeCaller::ListDirFiles(const std::string &dir_name) {
 
 bool EludeCaller::FileExists(const string &file) {
   struct stat file_info;
-  int int_stat;
   if (stat(file.c_str(), &file_info) != 0) {
     return false;
   } else {
@@ -917,7 +921,7 @@ bool ComparePsmsPRT(pair<PSMDescription, const double> psm1, pair<PSMDescription
 
 /* calculate Spearman's rank correlation */
 double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
-  double corr = 0.0, d = 0.0, avg_rank, rank_p, rank_o;
+  double corr = 0.0, d = 0.0, avg_rank, rank_p;
   int i, j;
   int n = psms.size();
   vector<pair<PSMDescription, double> > rankedPsms;
@@ -1103,4 +1107,5 @@ int EludeCaller::AllocateRTFeatures(vector<PSMDescription> &psms) {
        it->retentionFeatures = new double[RetentionFeatures::kMaxNumberFeatures];
     }
   }
+  return 0;
 }

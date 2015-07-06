@@ -392,7 +392,7 @@ void ProteinProbEstimator::estimateQValues() {
     qvalue = (sum / (double)nP);
     if (std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
     
-    for (int i = 0; i < it->second.size(); ++i) {
+    for (size_t i = 0; i < it->second.size(); ++i) {
       qvalues.push_back(qvalue);
     }
   }
@@ -439,7 +439,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
     }
     if (std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
     
-    for (int i = 0; i < it->second.size(); ++i) {
+    for (size_t i = 0; i < it->second.size(); ++i) {
       qvaluesEmp.push_back(qvalue);
       
       if (numDecoy > 0) {

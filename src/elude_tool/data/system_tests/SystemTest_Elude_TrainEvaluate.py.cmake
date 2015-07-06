@@ -14,8 +14,8 @@ out_path = "@pathToWritable@"
 # context data, test does not include rt
 # the predictions are checked
 def TrainTestContextData():
-  print "Running EludeTrainEvaluateTest::TrainTestContextData..."
-  print "!!!!!", pathToData, "\n", out_path, "\n", pathToBinaries, "\n!!!!!!!"
+  print("Running EludeTrainEvaluateTest::TrainTestContextData...")
+  print("!!!!!", pathToData, "\n", out_path, "\n", pathToBinaries, "\n!!!!!!!")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
  
@@ -58,13 +58,13 @@ def TrainTestContextData():
   # clean-up 
   utility.cleanUp([out_file, log_file])
   
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 # train and test when only peptide sequences are given and rts 
 # I will not save the model, but I will check the performance figures from the log file
 # also, check non enzymatic and in source 
 def TrainTestNoContextData():
-  print "Running EludeTrainEvaluateTest::TrainTestNoContextData..."
+  print("Running EludeTrainEvaluateTest::TrainTestNoContextData...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_1.txt")
@@ -106,12 +106,12 @@ def TrainTestNoContextData():
   # clean-up 
   utility.cleanUp([out_file, log_file, insource_file])
   
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
   
 def main():
   TrainTestContextData()
   TrainTestNoContextData()
-  print ""  
+  print(""  )
   
 if __name__ == '__main__':
   main()

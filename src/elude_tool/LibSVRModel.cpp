@@ -82,6 +82,7 @@ int LibSVRModel::InitSVRParameters(const SVRType &kernel_type) {
   svr_parameters_.C = 0.0;
   svr_parameters_.gamma = 0.0;
   svr_parameters_.p = 0.0;
+  return 0;
 }
 
 /* set the SVR type */
@@ -121,6 +122,7 @@ int LibSVRModel::TrainModel(const std::vector<PSMDescription> &train_psms, const
     svm_destroy_model(svr_);
   }
   svr_ = libsvm_wrapper::TrainModel(train_psms, number_features, svr_parameters_);
+  return 0;
 }
 
 /* predict retention time using the trained model */
@@ -257,6 +259,7 @@ int LibSVRModel::CalibrateModel(const std::vector<PSMDescription> &calibration_p
 // save a model
 int LibSVRModel::SaveModel(FILE *fp) {
   libsvm_wrapper::SaveModel(fp, svr_);
+  return 0;
 }
 
 // load a model

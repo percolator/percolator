@@ -3,7 +3,7 @@ set MSVC_VER=12
 set VCTARGET=C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0
 set SRC_DIR=%~dp0..\..\..\
 set BUILD_DIR=%SRC_DIR%\build
-set RELEASE_DIR=%SRC_DIR%
+set RELEASE_DIR=%SRC_DIR%\release
 set BUILD_TYPE=Release
 
 :parse
@@ -26,6 +26,7 @@ call "C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevC
 setlocal
 set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
+if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 
 set CMAKE_URL=http://www.cmake.org/files/v2.8/cmake-2.8.12.1-win32-x86.exe
 if not exist "%INSTALL_DIR%\cmake" (
@@ -87,7 +88,8 @@ set PYTHON_URL=http://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 if not exist "%PYTHON_DIR%" (
   echo Downloading and installing Python
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%PYTHON_URL%','%INSTALL_DIR%\python.msi')"
-  msiexec /i "%INSTALL_DIR%\python.msi" /quiet TARGETDIR="%PYTHON_DIR%" /li "%INSTALL_DIR%\python_install.log"
+  cd /D "%INSTALL_DIR%"
+  msiexec /i python.msi /quiet TARGETDIR=python /Li python_install.log
 )
 setlocal
 set PATH=%PATH%;%PYTHON_DIR%
@@ -177,6 +179,16 @@ if not exist "%ZLIB_DIR%" (
 set ZLIB_DIR=%ZLIB_DIR%\bin;%ZLIB_DIR%\include
 set PATH=%PATH%;%ZLIB_DIR%
 
+::: needed for Elude :::
+set DIRENT_H_PATH=C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\VC\include\dirent.h
+set DIRENT_H_URL=http://www.softagalleria.net/download/dirent/dirent-1.20.1.zip
+if not exist "%DIRENT_H_PATH%" ( 
+  echo Downloading and installing dirent.h 
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%DIRENT_H_URL%','%INSTALL_DIR%\dirent.zip')"
+  %ZIP_EXE% x "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent" > NUL
+  move "%INSTALL_DIR%\dirent\include\dirent.h" "%DIRENT_H_PATH%" > NUL
+)
+
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: END INSTALL DEPENDENCIES ::::::::::::::::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -189,11 +201,10 @@ set PATH=%PATH%;%ZLIB_DIR%
 
 if not exist "%BUILD_DIR%" (md "%BUILD_DIR%")
 
+::::::: Building percolator without xml support :::::::
 if not exist "%BUILD_DIR%\percolator-noxml" (md "%BUILD_DIR%\percolator-noxml")
 cd /D "%BUILD_DIR%\percolator-noxml"
-
-::::::: Building percolator without xml support :::::::
-echo cmake percolator.....
+echo cmake percolator-noxml.....
 %CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -201,10 +212,9 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
+::::::: Building percolator :::::::
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 cd /D "%BUILD_DIR%\percolator"
-
-::::::: Building percolator :::::::
 echo cmake percolator.....
 %CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
@@ -213,10 +223,9 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
+::::::: Building converters :::::::
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
-
-::::::: Building converters :::::::
 echo cmake converters.....
 %CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
@@ -225,14 +234,12 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
-::if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
-::cd /D "%BUILD_DIR%\elude"
-
-::::::: Building elude (Not working at the moment, see https://github.com/percolator/percolator/issues/106)::::::: 
-::echo cmake elude.....
-::%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
-::echo build elude (this will take a few minutes).....
-::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+::::: Building elude (Not working at the moment, see https://github.com/percolator/percolator/issues/106)::::::: 
+if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
+cd /D "%BUILD_DIR%\elude"echo cmake elude.....
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
+echo build elude (this will take a few minutes).....
+msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -241,10 +248,11 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 :::::::::::: END BUILD ::::::::::::::::
 :::::::::::::::::::::::::::::::::::::::
 
+echo Copying installers to %RELEASE_DIR%
 copy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
 copy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
 copy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
-::copy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
+copy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 

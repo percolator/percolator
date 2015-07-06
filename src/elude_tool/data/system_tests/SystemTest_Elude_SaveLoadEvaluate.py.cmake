@@ -14,7 +14,7 @@ out_path = "@pathToWritable@"
 # trains a model, then loads the model and make sure that the predictions are the same 
 # context data, test does not include rt
 def SaveLoadContextData():
-  print "Running EludeSaveLoadEvaluateTest::SaveLoadContextData..."
+  print("Running EludeSaveLoadEvaluateTest::SaveLoadContextData...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train.txt")
@@ -80,12 +80,12 @@ def SaveLoadContextData():
   # clean-up 
   utility.cleanUp([out_file1, out_file2, model_file, log_file])
  
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
   
 # trains a model, then loads the model and makes sure that the performance figures are the same 
 # train includes rt, no context 
 def SaveLoadNoContextData():
-  print "Running EludeSaveLoadEvaluateTest::SaveLoadNoContextData..."
+  print("Running EludeSaveLoadEvaluateTest::SaveLoadNoContextData...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_1.txt")
@@ -125,12 +125,12 @@ def SaveLoadNoContextData():
   # clean-up 
   utility.cleanUp([model_file, log_file1, log_file2])
  
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
   
 def main():
   SaveLoadContextData()
   SaveLoadNoContextData()
-  print ""
+  print("")
 
   
 if __name__ == '__main__':

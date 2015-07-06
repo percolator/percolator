@@ -14,7 +14,7 @@ out_path = "@pathToWritable@"
 
 # the model is trained on data with the same ptms as the test
 def SaveLoadSamePtms():
-  print "Running EludePtmsSaveLoadTest::SaveLoadSamePtms..."
+  print("Running EludePtmsSaveLoadTest::SaveLoadSamePtms...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -79,12 +79,12 @@ def SaveLoadSamePtms():
 
   # clean-up 
   utility.cleanUp([out_file1, out_file2, model_file, log_file]) 
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
   
   
 # the model is trained on data including the ptms in the test 
 def SaveLoadDifferentPtms():
-  print "Running EludePtmsSaveLoadTest::SaveLoadDifferentPtms..."
+  print("Running EludePtmsSaveLoadTest::SaveLoadDifferentPtms...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_3.txt")
@@ -131,12 +131,12 @@ def SaveLoadDifferentPtms():
   
   # clean-up 
   utility.cleanUp([model_file, log_file1, log_file2]) 
-  print "...TEST SUCCEEDED"  
+  print("...TEST SUCCEEDED"  )
   
 # the test includes ptms that were not present in the training set 
 # the model is trained on data including the ptms in the test 
 def SaveLoadInconsistentPtms():
-  print "Running EludePtmsSaveLoadTest::SaveLoadInconsistentPtms..."
+  print("Running EludePtmsSaveLoadTest::SaveLoadInconsistentPtms...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -176,12 +176,12 @@ def SaveLoadInconsistentPtms():
   
   # clean-up 
   utility.cleanUp([model_file, log_file1, log_file2]) 
-  print "...TEST SUCCEEDED"  
+  print("...TEST SUCCEEDED"  )
 
 # the test includes ptms that were not present in the training set
 # but the ignore ptms flag is set 
 def SaveLoadIgnorePtms():
-  print "Running EludePtmsSaveLoadTest::SaveLoadIgnorePtms..."
+  print("Running EludePtmsSaveLoadTest::SaveLoadIgnorePtms...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -247,7 +247,7 @@ def SaveLoadIgnorePtms():
 
   # clean-up 
   utility.cleanUp([out_file1, out_file2, model_file, log_file1, log_file2]) 
-  print "...TEST SUCCEEDED"  
+  print("...TEST SUCCEEDED"  )
 
 
 def main():

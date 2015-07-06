@@ -13,7 +13,7 @@ out_path = "@pathToWritable@"
 
 # test add a model to library 
 def AddModelLibrary():
-  print "Running EludePtmsAutomaticModelTest::AddModelLibrary..."
+  print("Running EludePtmsAutomaticModelTest::AddModelLibrary...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_file = os.path.join(data_folder, "train_2.txt")
@@ -35,12 +35,12 @@ def AddModelLibrary():
     
   # clean-up 
   utility.cleanUp([log_file, model_file]) 
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 # add different models to the library, make sure the suitable ones are chosen, no calibration 
 # check output and performance, the ignore ptms flag is off
 def AutomaticSelection():
-  print "Running EludePtmsAutomaticModelTest::AutomaticSelection..."
+  print("Running EludePtmsAutomaticModelTest::AutomaticSelection...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_files = map(lambda f: os.path.join(data_folder, f), ["train_2.txt", "train_3.txt"])
@@ -111,12 +111,12 @@ def AutomaticSelection():
   # clean-up 
   utility.cleanUp(expected_files + [log_file1, out_file1, log_file2, out_file2]) 
   
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 # add different models to the library, make sure the suitable ones are chosen 
 # check output and performance, the ignore ptms flag is on
 def AutomaticSelectionIgnorePtms():
-  print "Running EludePtmsAutomaticModelTest::AutomaticSelectionIgnorePtms..."
+  print("Running EludePtmsAutomaticModelTest::AutomaticSelectionIgnorePtms...")
   
   data_folder = os.path.join(pathToData, "elude/standalone/")  
   train_files = map(lambda f: os.path.join(data_folder, f), ["train_2.txt", "train_3.txt"])
@@ -187,13 +187,13 @@ def AutomaticSelectionIgnorePtms():
   
   # clean-up 
   utility.cleanUp(expected_files + [log_file1, out_file1, log_file2, out_file2]) 
-  print "...TEST SUCCEEDED"
+  print("...TEST SUCCEEDED")
 
 def main():
   AddModelLibrary()
   AutomaticSelection()
   AutomaticSelectionIgnorePtms()
-  print ""
+  print("")
 
 if __name__ == '__main__':
   main()

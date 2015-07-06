@@ -371,9 +371,9 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
 
         //don't record z-lines unless this is a scan number that is wanted
         if(!firstScan){
-	  fgets(tstr,256,fileIn);
- 	  break;
-	}
+	        fgets(tstr,256,fileIn);
+       	  break;
+	      }
 	      fgets(tstr,256,fileIn);
 	      tok=strtok(tstr," \t\n\r");
 	      tok=strtok(NULL," \t\n\r");

@@ -38,7 +38,10 @@ MESSAGE( STATUS )
 get_arch("${TARGET_ARCH}")
 
 # #SET USEFUL VARIABLES TO BE USED IN THE CODE
-if(MINGW OR WIN32) # windows
+if(MSVC) # windows
+  set(ELUDE_WRITABLE_DIR "share\\\\elude\\\\")
+  set(ELUDE_MODELS_PATH "share\\\\elude\\\\models\\\\")
+elseif(MINGW OR WIN32)  
   set(ELUDE_WRITABLE_DIR "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\")
   set(ELUDE_MODELS_PATH "C:\\\\Docume~1\\\\AllUse~1\\\\Documents\\\\elude\\\\models\\\\")
 else() # linux

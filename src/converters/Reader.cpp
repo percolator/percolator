@@ -860,6 +860,7 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
                     storeMe = *(r+1);
                   }
                 }
+                std::cerr << rrr << " " << exm << " " << storeMe << " " << altMassDiff << std::endl;
               }
               r = rTimes->end();
             }

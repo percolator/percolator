@@ -36,8 +36,8 @@ def testFileContent(filename, no_lines, line_numbers, line_contents):
 
 # fail a test with a message 
 def failTest(message):
-  print message 
-  print "...TEST FAILED"
+  print(message)
+  print("...TEST FAILED")
   
 # check the existence of a list of files 
 # the test_name is used for printing 
