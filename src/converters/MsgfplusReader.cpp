@@ -377,16 +377,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       f_seq.push_back((double) Enzyme::countEnzymatic(peptideSeq));
     }
 
-    if (po->calcPTMs) {
-      f_seq.push_back(cntPTMs(peptideSeqWithFlanks));
-    }
-    if (po->pngasef) {
-      f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy));
-    }
-    if (po->calcAAFrequencies) {
-      computeAAFrequencies(peptideSeqWithFlanks, f_seq);
-    }
-
     percolatorInNs::occurence::flankN_type flankN = peptideSeqWithFlanks.substr(0, 1);
     percolatorInNs::occurence::flankC_type flankC = peptideSeqWithFlanks.substr(peptideSeqWithFlanks.size() - 1, 1);
 
@@ -400,6 +390,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 
     std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
     // Register the ptms
+    unsigned int numPTMs = 0;
     BOOST_FOREACH (const ::mzIdentML_ns::ModificationType &mod_ref, peptideMap[item.peptide_ref().get()]->Modification()){
       BOOST_FOREACH (const ::mzIdentML_ns::CVParamType &cv_ref, mod_ref.cvParam()) {
         if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
@@ -412,7 +403,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
         int mod_loc = boost::lexical_cast<int>(mod_ref.location());
         std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(mod_loc));
         if (cv_ref.accession() == "MS:1001460") {
-          std::string mod_acc = "unknown";  // Only convert text after "UNIMOD:"
+          std::string mod_acc = "unknown";
           std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(mod_acc));
           mod_p->freeMod(fm_p);
         } else {
@@ -420,8 +411,19 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
           std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(mod_acc));
           mod_p->uniMod(um_p);
         }
+        ++numPTMs;
         peptide_p->modification().push_back(mod_p);
       }
+    }
+    
+    if (po->calcPTMs) {
+      f_seq.push_back(numPTMs);
+    }
+    if (po->pngasef) {
+      f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy));
+    }
+    if (po->calcAAFrequencies) {
+      computeAAFrequencies(peptideSeqWithFlanks, f_seq);
     }
 
     ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch

@@ -422,44 +422,39 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   //double missed_cleavages = boost::lexical_cast<unsigned>(domain.missed_cleavages());
   std::string peptide = boost::lexical_cast<std::string>(domain.seq());
   std::string pre = boost::lexical_cast<std::string>(domain.pre());
-  if(pre=="[") {
+  if (pre=="[") {
 	  pre = "-";
   }
   std::string flankN = boost::lexical_cast<std::string>(pre.at(pre.size()-1));
   std::string post = boost::lexical_cast<std::string>(domain.post());
-  if(post=="]") {
+  if (post=="]") {
 	 post = "-";
   }
   std::string flankC = boost::lexical_cast<std::string>(post.at(0));
   std::string fullpeptide = flankN + "." + peptide + "." + flankC;
+  std::string peptideNoMods = removePTMs(peptide, ptmMap);
   double xions = 0.0,yions = 0.0,zions = 0.0,aions = 0.0,bions = 0.0,cions = 0.0;
-  if(x_score)
-  {
+  if (x_score) {
     //xscore = boost::lexical_cast<double>(domain.x_score());
     xions = boost::lexical_cast<double>(domain.x_ions());
   }
-  if(y_score)
-  {
+  if (y_score) {
     //yscore = boost::lexical_cast<double>(domain.y_score()); 
     yions = boost::lexical_cast<double>(domain.y_ions());
   }
-  if(z_score)
-  {
+  if (z_score) {
     //zscore = boost::lexical_cast<double>(domain.z_score());
     zions = boost::lexical_cast<double>(domain.z_ions());
   }
-  if(a_score)
-  {
+  if (a_score) {
     //ascore = boost::lexical_cast<double>(domain.a_score());
     aions = boost::lexical_cast<double>(domain.a_ions());
   }
-  if(b_score)
-  {
+  if (b_score) {
     //bscore = boost::lexical_cast<double>(domain.b_score());
     bions = boost::lexical_cast<double>(domain.b_ions());
   }
-  if(c_score)
-  {
+  if (c_score) {
     //cscore = boost::lexical_cast<double>(domain.c_score());
     cions = boost::lexical_cast<double>(domain.c_ions());
   }
@@ -504,33 +499,13 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   f_seq.push_back(hyperscore);
   f_seq.push_back(hyperscore - next_hyperscore);
   //ions fractions
-  if(a_score)
-  {
-    f_seq.push_back(aions / peptide.size());
-  }
-  if(b_score)
-  {
-    f_seq.push_back(bions / peptide.size());
-  }
-  if(c_score)
-  {
-    f_seq.push_back(cions / peptide.size());
-  }
-  
-  if(x_score)
-  {
-    f_seq.push_back(xions / peptide.size());
-  }
-  if(y_score)
-  {
-    f_seq.push_back(yions / peptide.size());
-  }
-  if(z_score)
-  {
-    f_seq.push_back(zions / peptide.size());
-  }
+  if (a_score) f_seq.push_back(aions / peptide.size());
+  if (b_score) f_seq.push_back(bions / peptide.size());
+  if (c_score) f_seq.push_back(cions / peptide.size());
+  if (x_score) f_seq.push_back(xions / peptide.size());
+  if (y_score) f_seq.push_back(yions / peptide.size());
+  if (z_score) f_seq.push_back(zions / peptide.size());
   //Mass
-
   f_seq.push_back(parenIonMass);
   f_seq.push_back(mass_diff);
   f_seq.push_back(abs(mass_diff));
@@ -546,20 +521,18 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,doubl
   //Enzyme
   if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) 
   {
-    f_seq.push_back( Enzyme::isEnzymatic(fullpeptide.at(0),fullpeptide.at(2)) ? 1.0 : 0.0);
-    f_seq.push_back(Enzyme::isEnzymatic(fullpeptide.at(fullpeptide.size() - 3),fullpeptide.at(fullpeptide.size() - 1)) ? 1.0 : 0.0);
-    f_seq.push_back( (double)Enzyme::countEnzymatic(peptide) );
+    f_seq.push_back( Enzyme::isEnzymatic(peptideNoMods.at(0),peptideNoMods.at(2)) ? 1.0 : 0.0);
+    f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3),peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
+    std::string peptid2 = peptideNoMods.substr(2, peptideNoMods.length() - 4);
+    f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
   }
 
   //PTM
-  if (po->calcPTMs) 
-  {
-    f_seq.push_back(cntPTMs(fullpeptide));
+  if (po->calcPTMs) {
+    f_seq.push_back(cntPTMs(fullpeptide, ptmMap));
   }
-
   //PNGA
-  if (po->pngasef) 
-  {
+  if (po->pngasef) {
     f_seq.push_back(isPngasef(fullpeptide,isDecoy));
   }
   //AA FREQ

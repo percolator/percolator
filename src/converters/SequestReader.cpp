@@ -174,6 +174,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
     std::map<char, int> ptmMap = po->ptmScheme;
+    std::string peptideNoMods = removePTMs(peptideSeqWithFlanks, ptmMap);
     psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
 
@@ -218,13 +219,14 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
       f_seq.push_back(charge == c ? 1.0 : 0.0); // Charge
     }
     if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-      f_seq.push_back(Enzyme::isEnzymatic(peptideSeqWithFlanks.at(0), peptideSeqWithFlanks.at(2)) ? 1.0 : 0.0);
-      f_seq.push_back(Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3), peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1)) ? 1.0 : 0.0);
-      f_seq.push_back((double) Enzyme::countEnzymatic(peptideSeq));
+      f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(0), peptideNoMods.at(2)) ? 1.0 : 0.0);
+      f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3), peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
+      std::string peptid2 = peptideNoMods.substr(2, peptideNoMods.size() - 4);
+      f_seq.push_back((double) Enzyme::countEnzymatic(peptid2));
     }
 
     if (po->calcPTMs) {
-      f_seq.push_back(cntPTMs(peptideSeqWithFlanks));
+      f_seq.push_back(cntPTMs(peptideSeqWithFlanks, ptmMap));
     }
     if (po->pngasef) {
       f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy));

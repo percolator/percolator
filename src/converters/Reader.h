@@ -134,9 +134,11 @@ class Reader {
   
   virtual void print(ostream &outputStream, bool xmlOutput);
   
+  std::string removePTMs(const string& peptide, std::map<char,int>& ptmMap);
+  
   unsigned int peptideLength(const string& pep);
   
-  unsigned int cntPTMs(const string& pep);
+  unsigned int cntPTMs(const string& pep, std::map<char,int>& ptmMap);
   
   double isPngasef(const string& peptide, bool isDecoy );
   

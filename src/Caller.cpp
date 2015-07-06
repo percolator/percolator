@@ -123,7 +123,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("n",
       "Cneg",
-      "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or -p not specified.",
+      "Cneg, penalty for mistakes made on negative examples. Set by cross validation if not specified or if -p is not specified.",
       "value");
   cmd.defineOption("t",
       "testFDR",

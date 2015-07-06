@@ -266,26 +266,6 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
   registerPsm(myPsm);
 }
 
-unsigned int DataSet::peptideLength(const string& pep) {
-  unsigned int len = 0;
-  for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (aaAlphabet_.find(pep.at(pos)) != string::npos) {
-      len++;
-    }
-  }
-  return len;
-}
-
-unsigned int DataSet::cntPTMs(const string& pep) {
-  unsigned int len = 0;
-  for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (ptmAlphabet_.find(pep.at(pos)) != string::npos) {
-      len++;
-    }
-  }
-  return len;
-}
-
 void DataSet::registerPsm(PSMDescription * myPsm) {
   switch (label_) {
     case 1: { break; };

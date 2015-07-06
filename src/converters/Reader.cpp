@@ -406,23 +406,75 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge) {
   return mass;
 }
 
+std::string Reader::removePTMs(const string& peptide, std::map<char,int>& ptmMap) {
+  std::string peptideSequence = peptide;
+  if (checkPeptideFlanks(peptide)) {
+    peptideSequence = peptide.substr(2, peptide.size()- 4);
+  }
+  for (unsigned int ix = 0; ix < peptideSequence.size(); ++ix) {
+    if (freqAA.find(peptideSequence[ix]) == string::npos) {
+      if (peptideSequence[ix] == '[') {
+        unsigned int posEnd = peptideSequence.substr(ix).find_first_of(']');
+        if (posEnd == string::npos) {
+          ostringstream temp;
+	        temp << "Error : Peptide sequence " << peptide << " contains an invalid modification" << endl;
+          throw MyException(temp.str());
+        } else {
+          peptideSequence.erase(ix--, posEnd + 1);
+        }
+      } else if (ptmMap.count(peptideSequence[ix]) > 0) {
+	      peptideSequence.erase(ix--,1);
+      } else {
+        ostringstream temp;
+	      temp << "Error : Peptide sequence " << peptide << " contains modification " 
+	      << peptideSequence[ix] << " that is not specified by a \"-p\" argument" << endl;
+        throw MyException(temp.str());
+      }
+    }  
+  }
+  if (checkPeptideFlanks(peptide)) {
+    return peptide.substr(0,1) + std::string(".") + peptideSequence + std::string(".") + peptide.substr(peptide.size() - 1,1);
+  } else {
+    return peptideSequence;
+  }
+}
+
 unsigned int Reader::peptideLength(const string& pep) {
   unsigned int len = 0;
   assert(checkPeptideFlanks(pep));
   for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (aaAlphabet.find(pep.at(pos)) != string::npos) {
+    if (freqAA.find(pep.at(pos)) != string::npos) {
       len++;
+    } else if (pep.at(pos) == '[') {
+      unsigned int posEnd = pep.substr(pos).find_first_of(']');
+      if (posEnd == string::npos) {
+        ostringstream temp;
+        temp << "Error : Peptide sequence " << pep << " contains an invalid modification" << endl;
+        throw MyException(temp.str());
+      } else {
+        pos += posEnd;
+      }
     }
   }
   return len;
 }
 
-unsigned int Reader::cntPTMs(const string& pep) {
+unsigned int Reader::cntPTMs(const string& pep, std::map<char,int>& ptmMap) {
   unsigned int len = 0;
   assert(checkPeptideFlanks(pep));
   for (string::size_type pos = 2; (pos + 2) < pep.size(); pos++) {
-    if (modifiedAA.find(pep.at(pos)) != string::npos) {
-      len++;
+    if (ptmMap.find(pep.at(pos)) != ptmMap.end()) {
+      ++len;
+    } else if (pep.at(pos) == '[') {
+      unsigned int posEnd = pep.substr(pos).find_first_of(']');
+      if (posEnd == string::npos) {
+        ostringstream temp;
+        temp << "Error : Peptide sequence " << pep << " contains an invalid modification" << endl;
+        throw MyException(temp.str());
+      } else {
+        ++len;
+        pos += posEnd;
+      }
     }
   }
   return len;

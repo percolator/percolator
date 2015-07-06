@@ -135,9 +135,9 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
     }
   }
   
-  if (warnTooManyConfigurations)
+  if (noPruning_ && warnTooManyConfigurations)
     std::cerr << "WARNING: more than 2^18 possible configurations, run time will be long.\n"
-      << "Consider using the -C flag to reduce the number of configurations automatically.\n" << std::endl;
+      << "Consider turning off the -C flag to reduce the number of configurations automatically.\n" << std::endl;
   
   return result;
 }

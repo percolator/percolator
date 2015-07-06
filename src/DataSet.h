@@ -72,11 +72,6 @@ class DataSet {
     void fillFeatures(vector<ScoreHolder> &scores);
     void fillFeatures(vector<double*> &features);
     void fillRtFeatures(vector<double*> &rtFeatures);
-    
-    static double isEnz(const char n, const char c);
-    static unsigned int peptideLength(const string& pep);
-    static unsigned int cntPTMs(const string& pep);
-    // static double isPngasef(const string& peptide, bool isDecoy );
 
     void readPsm(const std::string line, const unsigned int lineNr,
                  const std::vector<OptionalField>& optionalFields);
