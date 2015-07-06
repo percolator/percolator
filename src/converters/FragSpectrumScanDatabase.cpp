@@ -3,7 +3,7 @@
  
 
 FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
-    scan2rt(0) {
+    scan2rt(NULL) {
   if(id_par.empty()) id = "no_id"; else id = id_par;
 }
 
@@ -37,6 +37,9 @@ void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::frag
     }
 
     tabOutputStream << psm.id() << '\t' << label << '\t' << fss->scanNumber();
+    if (psm.observedTime().present()) {
+      tabOutputStream << '\t' << psm.observedTime() << '\t' << MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
+    }
     tabOutputStream << '\t' << psm.experimentalMass() << '\t' << psm.calculatedMass();
     BOOST_FOREACH (const double feature, psm.features().feature()) {
       tabOutputStream << '\t' << feature;

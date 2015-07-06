@@ -26,7 +26,9 @@
 #include <list>
 #include <string>
 #include <algorithm>
+#include <cmath>
 #include "Globals.h"
+#include "MassHandler.h"
 #include "serializer.hxx"
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/util/XMLUni.hpp>

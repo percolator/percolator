@@ -44,6 +44,8 @@ Reader::~Reader() {
 }
 
 void Reader::init() {
+  MassHandler::setMonoisotopicMass(po->monoisotopic);
+  
   // initializing xercesc objects corresponding to pin element...
   xercesc::XMLPlatformUtils::Initialize ();
 
@@ -239,7 +241,11 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     
     // print column headers
     bool hasInitialValues = false;
-    outputStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass";
+    outputStream << "SpecId\tLabel";
+    if (scan2rt.size() > 0) {
+      outputStream << "\tRT\tdM";
+    }
+    outputStream << "\tScanNr\tExpMass\tCalcMass";
     BOOST_FOREACH (const ::percolatorInNs::featureDescription & descr, f_seq.featureDescription()) {
       outputStream << "\t" << descr.name();
       if (descr.initialValue().get() != 0) hasInitialValues = true;
@@ -694,20 +700,8 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
 
 }
 
-double Reader::massDiff(double observedMass, double calculatedMass,unsigned int charge) {
-  assert(charge > 0);
-  double dm = observedMass - calculatedMass;
-  if (po->monoisotopic) {
-    double isodm = dm - 1;
-    for (int isotope = 0; isotope < 5; ++isotope) {
-      if (abs(isodm) > abs(dm + isotope)) {
-        isodm = dm + isotope;
-      }
-    }
-    dm = isodm / calculatedMass;
-    return dm;
-  }
-  return dm / charge;
+double Reader::massDiff(double observedMass, double calculatedMass, unsigned int charge) {
+  return MassHandler::massDiff(observedMass, calculatedMass, charge);
 }
 
 bool Reader::checkPeptideFlanks(const std::string &pep) {
@@ -860,7 +854,6 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
                     storeMe = *(r+1);
                   }
                 }
-                std::cerr << rrr << " " << exm << " " << storeMe << " " << altMassDiff << std::endl;
               }
               r = rTimes->end();
             }

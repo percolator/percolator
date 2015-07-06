@@ -46,6 +46,7 @@
 #include "percolator_in.hxx"
 #include "parseoptions.h"
 #include "MSReader.h"
+#include "MassHandler.h"
 #include "Spectrum.h"
 #include "Enzyme.h"
 
