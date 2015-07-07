@@ -317,7 +317,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	      std::string param_name(up.name().c_str());
 	      if (msgfplusFeatures.count(param_name)) {
 	        switch (msgfplusFeatures.at(param_name)) {
-	          case 4: IsotopeError = boost::lexical_cast<double>(up.value().get().c_str()); break;
+	          case 4: IsotopeError = boost::lexical_cast<int>(up.value().get().c_str()); break;
 	          case 5: ExplainedIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
 	          case 6: NTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;
 	          case 7: CTermIonCurrentRatio = boost::lexical_cast<double>(up.value().get().c_str());break;

@@ -139,7 +139,7 @@ void CommandLineParser::help() {
   string::size_type descLen = optMaxLen + 8;
   string::size_type helpLen = lineLen - descLen;
   cerr << header << endl << "Options:" << endl;
-  for (unsigned int i = opts.size(); i--;) {
+  for (size_t i = opts.size(); i--;) {
     string::size_type j = 0;
     cerr << " " << opts[i].shortOpt;
     if (opts[i].helpType.length() > 0) {
@@ -179,7 +179,7 @@ void CommandLineParser::htmlHelp() {
   searchandreplace(htmlHeader, "\n", "<br/>");
   cerr << htmlHeader << endl << "Options:" << endl;
   cerr << "<table border=0>" << endl;
-  for (unsigned int i = opts.size(); i--;) {
+  for (size_t i = opts.size(); i--;) {
     cerr << "<tr><td><code>" << opts[i].shortOpt;
     if (opts[i].helpType.length() > 0) {
       cerr << " &lt;" << opts[i].helpType << "&gt;";
@@ -214,7 +214,7 @@ void CommandLineParser::findOption(char** argv, int& index) {
     valstr = optstr.substr(eqsign + 1);
     optstr = optstr.substr(0, eqsign);
   }
-  for (unsigned int i = 0; i < opts.size(); i++) {
+  for (size_t i = 0; i < opts.size(); i++) {
     if (opts[i] == optstr) {
       switch (opts[i].type) {
         case FALSE_IF_SET:

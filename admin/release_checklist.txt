@@ -1,10 +1,10 @@
-1. change version number and add information to changelog on master
-2. commit and push to master on github
-3. create a release on github
-4. create a branch
-5. checkout branch
-6. create binaries
-7. send binaries to Lukas
-8. checkout master
-9. reset version number on master
-10. commit and push to master on github
+1. change percolator version number in CommonCMake.txt
+2. create binaries for all platforms with vagrant and fix building bugs
+3. verify that all system tests pass
+4. add information to changelog on master
+5. commit and push to master on github
+6. create a release on github
+7. create a branch on github with the version number
+8. reset version number on master
+9. commit and push to master on github
+10. send binaries to Lukas

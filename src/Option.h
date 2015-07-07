@@ -67,7 +67,7 @@ class CommandLineParser {
     map<string, string> options;
     vector<string> arguments;
   private:
-    unsigned int optMaxLen;
+    size_t optMaxLen;
     const static unsigned int lineLen = 80;
     string header, endnote;
     vector<Option> opts;

@@ -55,12 +55,12 @@ fi
 cmake_bin="${src_dir}/${cm}/bin/cmake"
 
 # download, compile and link xerces
-xer=xerces-c-3.1.2
+xer=xerces-c-3.1.1
 if [ -e ${xer}.tar.gz ]; then
   echo "  XercesC has been installed previously, remove if you want a clean install"
 else
   echo "  Installing XercesC"
-  wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
+  wget --quiet http://archive.apache.org/dist/xerces/c/3/sources/${xer}.tar.gz
   tar xzf ${xer}.tar.gz 
   cd ${xer}
   ./configure --disable-network --disable-threads --disable-shared --enable-static

@@ -236,7 +236,8 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 
 ::::: Building elude (Not working at the moment, see https://github.com/percolator/percolator/issues/106)::::::: 
 if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
-cd /D "%BUILD_DIR%\elude"echo cmake elude.....
+cd /D "%BUILD_DIR%\elude"
+echo cmake elude.....
 %CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
 echo build elude (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m

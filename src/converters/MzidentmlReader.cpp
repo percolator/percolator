@@ -168,7 +168,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
             doc->getDocumentElement()->getTagName()); doc = p.next()) {
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
-      unsigned numberHitsSpectra = 0;
+      int numberHitsSpectra = 0;
 
       //Find scan number from the cvParam element in spetrumIdentificationResults
       if(!useRankedScanNumbers) {

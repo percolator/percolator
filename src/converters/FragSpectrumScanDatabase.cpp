@@ -92,7 +92,7 @@ overflow (void* p, char* buf, int n_) {
     dst->capacity (capacity * 2);
   dst->size (size + n);
   memcpy (dst->data () + size, buf, n);
-  return n;
+  return static_cast<int>(n);
 }
 
 extern "C" int
@@ -103,5 +103,5 @@ underflow (void* p, char* buf, int n_) {
   n = size > n ? n : size;
   memcpy (buf, ui->buf->data () + ui->pos, n);
   ui->pos += n;
-  return n;
+  return static_cast<int>(n);
 }

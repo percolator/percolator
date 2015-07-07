@@ -422,7 +422,7 @@ std::string Reader::removePTMs(const string& peptide, std::map<char,int>& ptmMap
   for (unsigned int ix = 0; ix < peptideSequence.size(); ++ix) {
     if (freqAA.find(peptideSequence[ix]) == string::npos) {
       if (peptideSequence[ix] == '[') {
-        unsigned int posEnd = peptideSequence.substr(ix).find_first_of(']');
+        size_t posEnd = peptideSequence.substr(ix).find_first_of(']');
         if (posEnd == string::npos) {
           ostringstream temp;
 	        temp << "Error : Peptide sequence " << peptide << " contains an invalid modification" << endl;
@@ -454,7 +454,7 @@ unsigned int Reader::peptideLength(const string& pep) {
     if (freqAA.find(pep.at(pos)) != string::npos) {
       len++;
     } else if (pep.at(pos) == '[') {
-      unsigned int posEnd = pep.substr(pos).find_first_of(']');
+      size_t posEnd = pep.substr(pos).find_first_of(']');
       if (posEnd == string::npos) {
         ostringstream temp;
         temp << "Error : Peptide sequence " << pep << " contains an invalid modification" << endl;
@@ -474,7 +474,7 @@ unsigned int Reader::cntPTMs(const string& pep, std::map<char,int>& ptmMap) {
     if (ptmMap.find(pep.at(pos)) != ptmMap.end()) {
       ++len;
     } else if (pep.at(pos) == '[') {
-      unsigned int posEnd = pep.substr(pos).find_first_of(']');
+      size_t posEnd = pep.substr(pos).find_first_of(']');
       if (posEnd == string::npos) {
         ostringstream temp;
         temp << "Error : Peptide sequence " << pep << " contains an invalid modification" << endl;
@@ -594,8 +594,8 @@ unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
     	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
         if ( (protsequence[end] == 'K' || protsequence[end] == 'R')
 	          && (protsequence[end+1] != 'P' || end == length ) ) {
-          int begin = start + 1;
-          int finish = end - start;
+          int begin = static_cast<int>(start + 1);
+          int finish = static_cast<int>(end - start);
           if (start == 0) {
             begin--;
             finish++;
@@ -658,8 +658,8 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
 
   long int pos;
   {
-    long int pos1 = name.find(' ');
-    long int pos2 = name.find('\t');
+    long int pos1 = static_cast<long int>(name.find(' '));
+    long int pos2 = static_cast<long int>(name.find('\t'));
     if (pos1 != -1 && pos2 != -1)
       pos = pos1 < pos2 ? pos1 : pos2;
     else if (pos1 != -1)

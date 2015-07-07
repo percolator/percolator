@@ -48,9 +48,10 @@ sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
 sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
 
 # download, compile and link xerces
-xer=xerces-c-3.1.2
-wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
-
+#xer=xerces-c-3.1.2
+#wget --quiet http://apache.mirrors.spacedump.net//xerces/c/3/sources/${xer}.tar.gz
+xer=xerces-c-3.1.1
+wget --quiet http://archive.apache.org/dist/xerces/c/3/sources/${xer}.tar.gz
 mkdir ${build_dir}
 cd ${build_dir}
 tar xzf ${src_dir}/${xer}.tar.gz 
@@ -73,14 +74,14 @@ cp per*.rpm ${release_dir}
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src/;${src_dir}/${xsd}/"  ${src_dir}/percolator
 make -j 4;
 make -j 4 package;
 cp per*.rpm ${release_dir}
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src;${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" -DCMAKE_PREFIX_PATH="${build_dir}/${xer}/src/;${src_dir}/${xsd}/" ${src_dir}/percolator/src/converters
 make -j 4;
 make -j 4 package;
 cp per*.rpm ${release_dir}

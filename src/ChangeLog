@@ -1,4 +1,17 @@
+v2.10
+* Made Target-Decoy competition the default search mode (can be switched off with the new '-y' flag)
+* Fixed unbalanced fold sizes in cross validation
+* Fixed build script for Elude on Windows (#106)
+* Fixed enzC feature in the presence of a modification on the C terminal (#118)
+* Resolved duplicate `-W` flag (#124)
+* Fixed issue with Target-Decoy competition (#128)
+* Added support for modifications of the form `P[mod_string]EPT` of sqt input file for sqt2pin (#131)
+* Simplified the Fido interface for protein inference
+  * Removed options to turn off optimizations that did not alter the posteriors
+  * Proteins are always grouped if they have identical evidence and get a protein group number in the protein tab delimited output
+  
 v2.09
+* Added CentOS building script, tested on a clean install of CentOS5.9 (#98, #99)
 * Added support for reading from stdin using an empty hyphen argument (#107)
 * Added error message when running converters without arguments (#108)
 * Fixed invalid pin output from converters with `--aa-freq` parameter (#110)
