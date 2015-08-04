@@ -37,10 +37,10 @@ void bootstrap(const vector<T>& in, vector<T>& out, size_t max_size = 1000) {
 }
 
 
-ProteinProbEstimator::ProteinProbEstimator(bool trivialGrouping, bool usePi0, 
+ProteinProbEstimator::ProteinProbEstimator(bool trivialGrouping, double pi0, 
 					     bool outputEmpirQVal, std::string decoyPattern) : 
-	  trivialGrouping_(trivialGrouping), pi0_(1.0), peptideScores_(NULL), 
-	  numberDecoyProteins_(0u), numberTargetProteins_(0u), usePi0_(usePi0),
+	  trivialGrouping_(trivialGrouping), pi0_(pi0), peptideScores_(NULL), 
+	  numberDecoyProteins_(0u), numberTargetProteins_(0u), usePi0_(true),
 	  outputEmpirQVal_(outputEmpirQVal), decoyPattern_(decoyPattern), fdr_(1.0) {}
 
 ProteinProbEstimator::~ProteinProbEstimator() {

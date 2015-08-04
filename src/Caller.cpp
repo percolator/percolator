@@ -261,13 +261,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gamma",
       "Set Fido's prior probability that a protein is present in the sample. Set by grid search if not specified",
       "value");
-  /*
   cmd.defineOption("I",
       "fido-protein-level-pi0",
-      "Use pi_0 value when calculating empirical q-values.",
-      "", 
-      TRUE_IF_SET);
-  */
+      "The pi_0 value when calculating protein-level empirical q-values. The value defaults to 1.0",
+      "value");
   cmd.defineOption("q",
       "fido-empirical-protein-q",        
       "Estimate empirical p-values and q-values using target-decoy analysis.",
@@ -384,11 +381,12 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
     
     // Confidence estimation options (general protein prob options)
-    bool protEstimatorUsePi0 = false; // cannot be set on cmd line
+    bool protEstimatorUsePi0 = true; // cannot be set on cmd line, but pi_0 value can
     bool protEstimatorOutputEmpirQVal = false;
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
     std::string protEstimatorDecoyPrefix = "random";
-    //protEstimatorUsePi0 = cmd.optionSet("I");
+    double  protEstimatorPi0 = 1.0;
+    if (cmd.optionSet("I")) protEstimatorPi0 = cmd.getDouble("I", 0.0, 1.0);
     protEstimatorOutputEmpirQVal = cmd.optionSet("q");
     if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
     //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
@@ -415,7 +413,7 @@ bool Caller::parseOptions(int argc, char **argv) {
               fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
               fidoGridSearchDepth, fidoGridSearchThreshold,
               fidoProteinThreshold, fidoMseThreshold,
-              protEstimatorUsePi0, protEstimatorOutputEmpirQVal, 
+              protEstimatorPi0, protEstimatorOutputEmpirQVal, 
               protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
   }
   

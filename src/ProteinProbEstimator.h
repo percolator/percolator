@@ -103,7 +103,7 @@ class ProteinProbEstimator {
   /******************************************************************************************************************/
   
   
-  ProteinProbEstimator(bool trivialGrouping = true, bool usePi0 = false, 
+  ProteinProbEstimator(bool trivialGrouping = true, double pi0 = 1.0, 
       bool outputEmpirQVal = false, std::string decoyPattern = "random");
   
   virtual ~ProteinProbEstimator();
