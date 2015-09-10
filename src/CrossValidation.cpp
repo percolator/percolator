@@ -357,7 +357,13 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     std::cerr << "Merging results from " << testScores_.size() << 
                  " datasets" << std::endl;
   }
-  fullset.merge(testScores_, selectionFdr_);
+  fullset.merge(testScores_, selectionFdr_);  
+}
+
+void CrossValidation::freeMemoryBlocks() {
+  for (unsigned int i = 0; i < numFolds_; ++i) {
+    testScores_[i].deleteContiguousMemoryBlock();
+  }
 }
 
 /**

@@ -6,6 +6,7 @@
 #include "StringTable.h"
 #include "Array.h"
 #include "Vector.h"
+#include "ReplicateIndexer.h"
 
 /*
 * GraphNode represents a PSM or protein with associated probability and
@@ -60,7 +61,7 @@ class BasicBigraph {
  public:
   BasicBigraph();
   BasicBigraph(double __psmthreshold, double __peptidethreshold, 
-	       double __proteinthreshold, double __peptideprior);
+	       double __proteinthreshold);
   virtual ~BasicBigraph();
   
   void read(Scores* fullset, bool multiple_labeled_peptides = false);
@@ -84,8 +85,6 @@ class BasicBigraph {
   double getPeptideThreshold();
   void setProteinThreshold(double protein_threshold);
   double getProteinThreshold();
-  void setPeptidePrior(double peptide_prior);
-  double getPeptidePrior();
   
 protected:
   
@@ -112,7 +111,6 @@ protected:
   double PsmThreshold;
   double PeptideThreshold;
   double ProteinThreshold;
-  double PeptidePrior;
   
 public:
   //NOTE these should be protected and access them with functions

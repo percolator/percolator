@@ -37,6 +37,9 @@ struct IntCmpProb {
       return (  (lhs.second->getPEP() < rhs.second->getPEP())
            || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
            || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
+              && (lhs.second->getGroupId() < rhs.second->getGroupId()) )
+           || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
+              && (lhs.second->getGroupId() == rhs.second->getGroupId()) 
               && (lhs.second->getName() < rhs.second->getName()) )  
     );
   }

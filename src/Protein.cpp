@@ -19,7 +19,7 @@
 
 Protein::Protein(string namenew, double qnew, double qempnew, double pepnew, 
     double pnew, bool isdecoy_new, Protein::Peptide* __peptide,
-    std::string groupId)
+    int groupId)
 	: name(namenew), q(qnew), qemp(qempnew), pep(pepnew), p(pnew),
 	  isDecoy(isdecoy_new), groupId_(groupId) {
   if (__peptide) peptides.push_back(__peptide);

@@ -381,7 +381,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
     
     // Confidence estimation options (general protein prob options)
-    bool protEstimatorUsePi0 = true; // cannot be set on cmd line, but pi_0 value can
     bool protEstimatorOutputEmpirQVal = false;
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
     std::string protEstimatorDecoyPrefix = "random";
@@ -399,10 +398,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     double fidoGridSearchThreshold = 0.0;
     double fidoProteinThreshold = 0.01;
     double fidoMseThreshold = 0.1;
-    if (cmd.optionSet("d")) fidoGridSearchDepth = cmd.getInt("d", 0, 2);
+    if (cmd.optionSet("d")) fidoGridSearchDepth = cmd.getInt("d", 0, 4);
     if (cmd.optionSet("T")) fidoGridSearchThreshold = cmd.getDouble("T", 0.0, 1.0);
     if (cmd.optionSet("C")) fidoNoPruning = true;
-    if (cmd.optionSet("E")) fidoProteinThreshold = cmd.getDouble("T", 0.0, 1.0);
+    if (cmd.optionSet("E")) fidoProteinThreshold = cmd.getDouble("E", 0.0, 1.0);
     if (cmd.optionSet("H")) fidoMseThreshold = cmd.getDouble("H",0.001,1.0);
     
     // Output file options
@@ -839,5 +838,6 @@ int Caller::run() {
   }
   // write output to file
   xmlInterface_.writeXML(allScores_, protEstimator_, call_);  
+  crossValidation_.freeMemoryBlocks();
   return 1;
 }

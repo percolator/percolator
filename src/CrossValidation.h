@@ -42,6 +42,7 @@ class CrossValidation {
     void train(Normalizer * pNorm);
     
     void postIterationProcessing(Scores & fullset, SanityCheck * pCheck);
+    void freeMemoryBlocks();
     
     void printParameters(ostringstream & oss);
     void printSetWeights(ostream & weightStream, unsigned int set, 

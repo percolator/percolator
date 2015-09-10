@@ -107,10 +107,11 @@ void ProteinProbEstimator::computeFDR() {
 void ProteinProbEstimator::computeStatistics() {
   if (usePi0_ && !mayufdr && outputEmpirQVal_) { 
     estimatePValues();
-    pi0_ = estimatePi0();
+    /*pi0_ = estimatePi0();
     if (pi0_ <= 0.0 || pi0_ > 1.0) pi0_ = *qvalues.rbegin();
   } else {
     pi0_ = fdr_;
+    */
   }
   
   /** computing q values **/
@@ -147,18 +148,20 @@ void ProteinProbEstimator::printOut(const std::string &proteinFN,
 }
 
 double ProteinProbEstimator::estimatePriors() {
-  /* Compute a priori probabilities of peptide presence */
+  /* Compute a priori probabilities of peptide presence (correctness?) */
   /* prior = the mean of the probabilities, maybe one prior for each charge *
    * prior2 = assuming a peptide is present if only if the protein is present and counting
    * the size of protein and prior protein probabily in the computation
-   * prior3 = the ratio of confident peptides among all the peptides */
+   * prior3 = the ratio of confident peptides among all the peptides 
+   * prior4 = the ratio of decoy peptides versus target peptides (TDC) */
   
   double prior_peptide = 0.0;
   double prior_peptide2 = 0.0;
   unsigned confident_peptides = 0;
+  unsigned decoy_peptides = 0;
   unsigned total_peptides = 0;
-  double prior, prior2, prior3;
-  prior = prior2 = prior3 = 0.0;
+  double prior, prior2, prior3, prior4;
+  prior = prior2 = prior3 = prior4 = 0.0;
   for (vector<ScoreHolder>::iterator psm = peptideScores_->begin(); 
          psm!= peptideScores_->end(); ++psm) {
     if(!psm->isDecoy()) {
@@ -173,16 +176,19 @@ double ProteinProbEstimator::estimatePriors() {
 	      prior +=  pow(-1.0,(int)index) * tmp_prior;
       }
       /* update computed prior */
-      prior_peptide += prior;
+      prior_peptide += (1.0-prior);
       if(psm->q <= 0.1) ++confident_peptides;
-      prior_peptide2 += psm->pep;
+      prior_peptide2 += (1.0-psm->pep);
       ++total_peptides;
+    } else {
+      ++decoy_peptides;
     }
   }
   
   prior = prior_peptide2 / (double)total_peptides;
   prior2 = prior_peptide / (double)total_peptides;
-  prior3 = (double)(confident_peptides/total_peptides);
+  prior3 = confident_peptides / (double)total_peptides;
+  prior4 = (total_peptides - decoy_peptides) / (double)total_peptides;
   
   if (prior > 0.99) prior = 0.99;
   if (prior < 0.01) prior = 0.01;
@@ -190,8 +196,10 @@ double ProteinProbEstimator::estimatePriors() {
   if (prior2 < 0.01) prior2 = 0.01;
   if (prior3 > 0.99) prior3 = 0.99;
   if (prior3 < 0.01) prior3 = 0.01;
+  if (prior4 > 0.99) prior4 = 0.99;
+  if (prior4 < 0.01) prior4 = 0.01;
   
-  return prior3;
+  return prior4;
 }
 
 void ProteinProbEstimator::getCombinedList(std::vector<std::pair<double , bool> > &combined) {
@@ -330,7 +338,7 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot)
 }
 
 unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
-  std::set<std::string> identifiedGroupIds;
+  std::set<int> identifiedGroupIds;
   unsigned nP = 0;
   for (std::map<const std::string,Protein*>::const_iterator myP = proteins.begin(); 
           myP != proteins.end(); ++myP) {
@@ -348,7 +356,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
 }
 
 unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level) { 
-  std::set<std::string> identifiedGroupIds;
+  std::set<int> identifiedGroupIds;
   unsigned nP = 0;
   for (std::map<const std::string,Protein*>::const_iterator myP = proteins.begin(); 
           myP != proteins.end(); ++myP) {
@@ -408,7 +416,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
   unsigned numDecoy = 0;
   pvalues.clear();
   qvaluesEmp.clear();
-  double TargetDecoyRatio = (double)numberTargetProteins_ / (double)numberDecoyProteins_;
+  //double TargetDecoyRatio = (double)numberTargetProteins_ / (double)numberDecoyProteins_;
   
   if (VERB > 1) {
     if (trivialGrouping_) {
@@ -432,7 +440,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
     
     if (nTargets) {
       if (usePi0_) {
-        qvalue = (double)(nDecoys * pi0_ * TargetDecoyRatio) / (double)nTargets;
+        qvalue = (double)(nDecoys * pi0_ /** TargetDecoyRatio */) / (double)nTargets;
       } else {
         qvalue = (double)(nDecoys) / (double)nTargets;
       }
@@ -462,13 +470,9 @@ void ProteinProbEstimator::updateProteinProbabilities() {
     double pep = peps[pepIdx];
     std::vector<std::string> proteinlist = proteinNames[pepIdx];
     for (unsigned j = 0; j < proteinlist.size(); j++) { 
-      std::ostringstream ss;
-      if (trivialGrouping_) {
-        ss << (pepIdx + 1);
-      } else {
-        ss << (protIdx + 1);
-      }
-      std::string protGroupId = ss.str();
+      int protGroupId = protIdx + 1;
+      if (trivialGrouping_) protGroupId = pepIdx + 1;
+      
       std::string proteinName = proteinlist[j];
       proteins[proteinName]->setPEP(pep);
       proteins[proteinName]->setQ(qvalues[protIdx]);
@@ -489,10 +493,7 @@ void ProteinProbEstimator::setTargetandDecoysNames() {
       Protein::Peptide *peptide = new Protein::Peptide(psm->pPSM->getPeptideSequence(),psm->isDecoy(),
 							psm->pep,psm->q,psm->p);
       if (proteins.find(*protIt) == proteins.end()) {
-        std::ostringstream ss;
-        ss << ++numGroups;
-        std::string protGroupId = ss.str();
-	      Protein *newprotein = new Protein(*protIt,0.0,0.0,0.0,0.0,psm->isDecoy(),peptide,protGroupId);
+	      Protein *newprotein = new Protein(*protIt,0.0,0.0,0.0,0.0,psm->isDecoy(),peptide,++numGroups);
 	      proteins.insert(std::make_pair(*protIt,newprotein));
 	
 	      if (psm->isDecoy()) {
@@ -615,7 +616,6 @@ void ProteinProbEstimator::print(ostream& myout, bool decoy) {
   
   myout << "ProteinId\tProteinGroupId\tq-value\tposterior_error_prob\tpeptideIds" << std::endl;
   
-  unsigned int protGroupId = 0;
   for (std::vector<std::pair<std::string,Protein*> > ::const_iterator myP = myvec.begin(); 
 	        myP != myvec.end(); myP++) {
     if( (decoy && myP->second->getIsDecoy()) || (!decoy && !myP->second->getIsDecoy())) {

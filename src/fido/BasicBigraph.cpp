@@ -4,12 +4,12 @@
 #include "BasicBigraph.h"
 
 BasicBigraph::BasicBigraph(): PsmThreshold(0.0), PeptideThreshold(1e-3),
-  ProteinThreshold(1e-3),PeptidePrior(0.1) {}
+  ProteinThreshold(1e-3) {}
 
 BasicBigraph::BasicBigraph(double __psmthreshold, double __peptidethreshold, 
-    double __proteinthreshold, double __peptideprior):
+    double __proteinthreshold):
   PsmThreshold(__psmthreshold), PeptideThreshold(__peptidethreshold),
-  ProteinThreshold(__proteinthreshold), PeptidePrior(__peptideprior) {}
+  ProteinThreshold(__proteinthreshold) {}
 
 BasicBigraph::~BasicBigraph() {}
 
@@ -376,10 +376,27 @@ int BasicBigraph::markSectionPartitions() {
 
   PSMsToProteins.sections = Array<int>(PSMsToProteins.size(), -1);
   proteinsToPSMs.sections = Array<int>(proteinsToPSMs.size(), -1);
-
+  
+  // MT: make sure proteins with equal peptide evidence end up in the same section
+  Array<Set> groups = ReplicateIndexer<Set>::replicates(Set::sumSetElements, proteinsToPSMs.associations );
+  std::map<int, int> mapToFirstInGroup;
+  
+  for (int k = 0; k < groups.size(); k++) {
+    Set reps = groups[k].without( Set::SingletonSet(groups[k][0]) );
+    for (Set::Iterator iter = reps.begin(); iter != reps.end(); iter++) {
+      mapToFirstInGroup[*iter] = groups[k][0];
+    }
+  }
+  
   int section = 0;
   for (int k = 0; k < proteinsToPSMs.size(); k++) {
-    if (proteinsToPSMs[k].section == -1) {
+    if (mapToFirstInGroup.find(k) != mapToFirstInGroup.end()) {
+      int sectionNumber = proteinsToPSMs.sections[mapToFirstInGroup[k]];
+      proteinsToPSMs.sections[k] = sectionNumber;
+      // add mark to set of marks for this node, set can only be larger than 1 for 
+      // peptides below PeptideThreshold
+      proteinsToPSMs.sectionMarks[k] |= Set::SingletonSet(sectionNumber);
+    } else if (proteinsToPSMs[k].section == -1) {
       traceConnected(k, proteinsToPSMs, section);
       section++;
     }
@@ -432,16 +449,6 @@ void BasicBigraph::setPeptideThreshold(double __peptide_threshold)
 void BasicBigraph::setProteinThreshold(double __protein_threshold)
 {
   ProteinThreshold = __protein_threshold;
-}
-
-void BasicBigraph::setPeptidePrior(double __peptide_prior)
-{
-  PeptidePrior = __peptide_prior;
-}
-
-double BasicBigraph::getPeptidePrior()
-{
-  return PeptidePrior;
 }
 
 double BasicBigraph::getPeptideThreshold()

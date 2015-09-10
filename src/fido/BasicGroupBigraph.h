@@ -77,8 +77,8 @@ class Counter {
 */
 class BasicGroupBigraph : public BasicBigraph {
  public:   
-  BasicGroupBigraph(bool noClustering = false, bool trivialGrouping = false);
-  BasicGroupBigraph(const BasicBigraph & rhs, bool noClustering = false, 
+  BasicGroupBigraph(double peptidePrior = 0.1, bool noClustering = false, bool trivialGrouping = false);
+  BasicGroupBigraph(double peptidePrior, const BasicBigraph & rhs, bool noClustering = false, 
                     bool trivialGrouping = false);
   
   virtual ~BasicGroupBigraph();
@@ -103,6 +103,9 @@ class BasicGroupBigraph : public BasicBigraph {
     return groupProtNames;
   }
   const Array<Counter>& getOriginalN() const { return originalN; }
+  
+  void setPeptidePrior(double peptide_prior);
+  double getPeptidePrior();
 
  private:  
   Array<Counter> originalN;
@@ -116,6 +119,7 @@ class BasicGroupBigraph : public BasicBigraph {
   double logLikelihoodAlphaBetaGivenD(const GridModel& gm) const;
   double likelihoodAlphaBetaGivenD(const GridModel& gm) const;  
   
+  double PeptidePrior;
   bool noClustering_;
   bool trivialGrouping_;
  

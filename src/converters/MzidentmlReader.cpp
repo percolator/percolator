@@ -61,7 +61,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
     ifs.open(fn.c_str());
     parser p;
     bool schemaVal = true;
-    xml_schema::dom::auto_ptr<xercesc_3_1::DOMDocument> doc
+    xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
         (p.start(ifs, fn.c_str(), schemaVal, schemaDefinition, schema_major, 
                  schema_minor, scheme_namespace));
 
@@ -87,7 +87,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
     cerr << "Exception opening/reading file :" << fn << endl;
   } catch (const xercesc::DOMException& e) {
     char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch xercesc_3_1::DOMException=" << tmpStr << std::endl;
+    std::cerr << "catch xercesc::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
   } catch (const xml_schema::exception& e) {
     cerr << "XML schema exception in getMaxMinCharge: " << e << endl;
@@ -118,7 +118,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
     parser p;
-    xml_schema::dom::auto_ptr<xercesc_3_1::DOMDocument> doc
+    xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
             (p.start(ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
 
     //NOTE wouldnt be  better to use the get tag by Name to jump SequenceCollenction directly?
@@ -210,7 +210,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
     ifs.close();
     char * tmpStr = XMLString::transcode(e.getMessage());
     ostringstream temp;
-    temp << "Error : xercesc_3_1::DOMException=" << tmpStr << std::endl;
+    temp << "Error : xercesc::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
     throw MyException(temp.str());
   }

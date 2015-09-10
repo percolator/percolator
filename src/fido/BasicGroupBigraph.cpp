@@ -3,16 +3,16 @@
 
 #include "BasicGroupBigraph.h"
 
-BasicGroupBigraph::BasicGroupBigraph(bool noClustering, bool trivialGrouping) :
+BasicGroupBigraph::BasicGroupBigraph(double peptidePrior, bool noClustering, bool trivialGrouping) :
     logLikelihoodConstantCachedFunctor(
       &BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-    noClustering_(noClustering), trivialGrouping_(trivialGrouping) {}
+    PeptidePrior(peptidePrior), noClustering_(noClustering), trivialGrouping_(trivialGrouping) {}
 
-BasicGroupBigraph::BasicGroupBigraph(const BasicBigraph & rhs, 
+BasicGroupBigraph::BasicGroupBigraph(double peptidePrior, const BasicBigraph & rhs, 
     bool noClustering, bool trivialGrouping) :
       BasicBigraph(rhs), logLikelihoodConstantCachedFunctor(
         &BasicGroupBigraph::logLikelihoodConstant, "logLikelihoodConstant"),
-      noClustering_(noClustering), trivialGrouping_(trivialGrouping) {
+      PeptidePrior(peptidePrior), noClustering_(noClustering), trivialGrouping_(trivialGrouping) {
   if (noClustering_) trivialGroupProteins();
   else groupProteins();
 }
@@ -328,4 +328,14 @@ Array<double> BasicGroupBigraph::probabilityEOverAllAlphaBeta(const GridModel & 
 
 double BasicGroupBigraph::logLikelihoodAlphaBetaGivenD(const GridModel & gm) const {
   return logLikelihoodConstantCachedFunctor(gm, this);
+}
+
+void BasicGroupBigraph::setPeptidePrior(double __peptide_prior)
+{
+  PeptidePrior = __peptide_prior;
+}
+
+double BasicGroupBigraph::getPeptidePrior()
+{
+  return PeptidePrior;
 }

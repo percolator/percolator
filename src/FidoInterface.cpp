@@ -99,7 +99,11 @@ void FidoInterface::run() {
   
   double localPeptidePrior = kPeptidePrior;
   if (kComputePriors) {
-    localPeptidePrior = estimatePriors();
+    if (pi0_ != 1.0) {
+      localPeptidePrior = 1 - pi0_;
+    } else {
+      localPeptidePrior = estimatePriors();
+    }
     if (VERB > 1) {
       std::cerr << "The estimated peptide level prior probability is : " << localPeptidePrior << std::endl;
     }
@@ -251,7 +255,7 @@ void FidoInterface::gridSearch() {
       gamma_search.push_back(0.1);
       gamma_search.push_back(0.3);
       gamma_search.push_back(0.5);
-      gamma_search.push_back(0.75);
+      gamma_search.push_back(0.7);
       gamma_search.push_back(0.9);
       
       beta_search.push_back(0.001);
@@ -259,7 +263,26 @@ void FidoInterface::gridSearch() {
        alpha_search.push_back(k);
       }
       break;
-    
+    case 3:
+      for (double k = 0.01; k <= 0.76; k+=0.05) {
+       alpha_search.push_back(k);
+      }
+      beta_search.push_back(0.001);
+      for (double k = 0.05; k <= 0.95; k+=0.05) {
+       gamma_search.push_back(k);
+      }
+      break;
+    case 4: // grid search from FIDO paper
+      for (double k = 0.01; k <= 0.76; k+=0.05) {
+       alpha_search.push_back(k);
+      }
+      for (double k = 0.0; k <= 0.80; k+=0.05) {
+       beta_search.push_back(k);
+      }
+      for (double k = 0.1; k <= 0.9; k+=0.1) {
+       gamma_search.push_back(k);
+      }
+      break;
     default:
       gamma_search.push_back(0.5);
       
@@ -473,7 +496,7 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
       if (tpChange > 0) tpChange = 1;
       if (fpChange > 0) fpChange = 1;
     }
-    fdrCalculator.calcFDRs(fpChange, tpChange, prob, estq, empq);
+    fdrCalculator.calcFDRs(fpChange, tpChange, prob, empq, estq);
   }
   if (kUpdateRocN) rocN_ = fdrCalculator.getRocN();
 }
@@ -519,7 +542,8 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
      && (*max_element(empFDR.begin(),empFDR.end()) <= 0.0))) ) {
     //no elements into the confidence interval or vectors empty 
     //or different size or all zeroes 
-    mse = mseThreshold_;
+    //mse = mseThreshold_;
+    mse = 1.0;
     //mse1 = mse2 = mse3 = mse4 = 1.0;
     return;
   }
@@ -557,11 +581,12 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
   
   double normalizer1 = abs(std::min(estFDR.back(),mseThreshold_) - estFDR.front()); //normalize by x axis range (mseThreshold_ on top always)
   //double normalizer2 = (double)estFDR.size(); //normalize by the number of elements
-  
+  //std::cerr << estFDR[estFDR.size() - 2] << " " << estFDR.back() << std::endl;
+  //std::cerr << empFDR[empFDR.size() - 2] << " " << empFDR.back() << std::endl;
   //mse1 /= normalizer2;
   //mse2 /= normalizer1;
   //mse3 /= normalizer1;
-  mse /= normalizer1;
+  mse /= (normalizer1*normalizer1*normalizer1)/3;
   
   return;
 }
@@ -597,7 +622,7 @@ void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
 
   if (tpCount_ > 0) {
     if (usePi0_) {
-      empFDR = (fpCount_ * pi0_ * targetDecoyRatio_) / tpCount_;
+      empFDR = (fpCount_ * pi0_ /* * targetDecoyRatio_*/) / tpCount_;
     } else {
       empFDR = fpCount_ / tpCount_;
     }
@@ -608,7 +633,7 @@ void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
       
   if (estFDR < previousEstQ_) estFDR = previousEstQ_;
   else previousEstQ_ = estFDR;
-      
+  
   if (empFDR < previousEmpQ_) empFDR = previousEmpQ_;
   else previousEmpQ_ = empFDR;
   

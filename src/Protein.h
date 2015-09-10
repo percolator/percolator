@@ -34,10 +34,10 @@ class Protein {
     double pep, q, empq;
   };
   
-  Protein() : name(""), q(0.0), qemp(0.0), pep(0.0), p(0.0), groupId_(""), 
+  Protein() : name(""), q(0.0), qemp(0.0), pep(0.0), p(0.0), groupId_(-1), 
               isDecoy(false) {}
   Protein(std::string namenew,double qnew, double qempnew, double pepnew, 
-    double pnew, bool isdecoy_new, Peptide *__peptide, std::string groupId);
+    double pnew, bool isdecoy_new, Peptide *__peptide, int groupId);
   ~Protein();
   
   void setName(std::string namenew) { name = namenew; }
@@ -58,8 +58,8 @@ class Protein {
   void setIsDecoy(bool isdecoynew) { isDecoy = isdecoynew; }
   bool getIsDecoy() const { return isDecoy; }
   
-  void setGroupId(std::string groupId) { groupId_ = groupId; }
-  std::string getGroupId() const { return groupId_; }
+  void setGroupId(int groupId) { groupId_ = groupId; }
+  int getGroupId() const { return groupId_; }
   
   void setPeptide(std::string peptide,bool isdecoy,double pep,double q,double empq) {
     peptides.push_back(new Peptide(peptide,isdecoy,pep,q,empq));
@@ -91,7 +91,7 @@ class Protein {
  private:
   std::string name;
   double q, qemp, pep, p, pi0;
-  std::string groupId_;
+  int groupId_;
   bool isDecoy;
   std::vector<Peptide*> peptides;
   

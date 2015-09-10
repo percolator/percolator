@@ -296,6 +296,10 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     train[i].recalculateSizes();
     test[i].recalculateSizes();
   }
+  
+  for (unsigned int i = 0; i < xval_fold; i++) {
+    test[i].copyIntoContiguousMemoryBlock();
+  }
 }
 
 void Scores::recalculateSizes() {
@@ -310,6 +314,44 @@ void Scores::recalculateSizes() {
     }
   }
   targetDecoySizeRatio_ = totalNumberOfTargets_ / (double)totalNumberOfDecoys_;
+}
+
+void Scores::copyIntoContiguousMemoryBlock() {
+  size_t numFeatures = FeatureNames::getNumFeatures();
+  // relies on clean up of PSMDescriptions to deallocate these arrays
+  decoyPtr_ = new double[totalNumberOfDecoys_ * numFeatures];
+  targetPtr_ = new double[totalNumberOfTargets_ * numFeatures];
+  
+  double *d = decoyPtr_, *t = targetPtr_;
+  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
+  for ( ; scoreIt != scores_.end(); ++scoreIt) {
+    if (scoreIt->isTarget()) {
+      std::copy(scoreIt->pPSM->features, scoreIt->pPSM->features + numFeatures, t);
+      delete[] scoreIt->pPSM->features;
+      scoreIt->pPSM->features = t;
+      t += numFeatures;
+    } else {
+      std::copy(scoreIt->pPSM->features, scoreIt->pPSM->features + numFeatures, d);
+      delete[] scoreIt->pPSM->features;
+      scoreIt->pPSM->features = d;
+      d += numFeatures;
+    }
+  }  
+}
+
+void Scores::deleteContiguousMemoryBlock() {
+  if (targetPtr_) {
+    delete[] targetPtr_;
+    targetPtr_ = NULL;
+  }
+  if (decoyPtr_) {
+    delete[] decoyPtr_;
+    decoyPtr_ = NULL;
+  }
+  std::vector<ScoreHolder>::iterator it = scores_.begin();
+  for ( ; it != scores_.end(); ++it) {
+    if (it->pPSM->features) it->pPSM->features = NULL;
+  }
 }
     
 

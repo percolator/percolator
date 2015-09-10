@@ -21,6 +21,8 @@
   #include <stdint.h>
 #endif
 
+#include <cstdlib>
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <iostream>
@@ -28,6 +30,7 @@
 using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
+#include "FeatureNames.h"
 
 /*
 * ScoreHolder is a class that provides a way to assign score value to a
@@ -136,7 +139,7 @@ class AlgIn;
 class Scores {
  public:
   Scores() : pi0_(1.0), targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
-    totalNumberOfTargets_(0) {}
+    totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
   ~Scores() {}
   void merge(vector<Scores>& sv, double fdr);
   
@@ -165,6 +168,8 @@ class Scores {
   
   void weedOutRedundant();
   void weedOutRedundantTDC();
+  
+  void deleteContiguousMemoryBlock();
   
   void printRetentionTime(ostream& outs, double fdr);
   unsigned getQvaluesBelowLevel(double level);
@@ -218,6 +223,11 @@ class Scores {
   vector<double> svmWeights_;
   std::map<const double*, ScoreHolder*> scoreMap_;
   DescriptionOfCorrect doc_;
+  
+  double* decoyPtr_;
+  double* targetPtr_;
+  
+  void copyIntoContiguousMemoryBlock();
 };
 
 #endif /*SCORES_H_*/

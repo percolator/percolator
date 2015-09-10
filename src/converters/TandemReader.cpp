@@ -43,7 +43,7 @@ TandemReader::~TandemReader()
 
 //NOTE Function to add namespace to a dom documents all elements except elements that has the namespace www.bioml.com/gaml/
 /*
-void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns)
+void add_namespace (xercesc::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns)
 {
   DOMElement* ne;
   XMLCh* GAML_XMLCH=XMLString::transcode("www.bioml.com/gaml/");
@@ -68,7 +68,7 @@ void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const X
   XMLString::release(&GAML_XMLCH); 
 }
 
-void add_namespace (xercesc_3_1::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns)
+void add_namespace (xercesc::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns)
 {
   add_namespace (doc, e, xsd::cxx::xml::string (ns).c_str ());
 }

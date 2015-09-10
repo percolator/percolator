@@ -112,7 +112,7 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
   bool warnTooManyConfigurations = false;
   
   for (int k = 0; k < preResult.size(); k++) {
-    BasicGroupBigraph bgb = BasicGroupBigraph(preResult[k], noClustering_/*,trivialGrouping_*/);
+    BasicGroupBigraph bgb = BasicGroupBigraph(peptidePrior_, preResult[k], noClustering_/*,trivialGrouping_*/);
     double logNumConfig = bgb.logNumberOfConfigurations();
     if ( newPeptideThreshold >= 0.0 &&
          logNumConfig > LOG_MAX_ALLOWED_CONFIGURATIONS && 
@@ -143,15 +143,13 @@ Array<BasicBigraph> GroupPowerBigraph::iterativePartitionSubgraphs(BasicBigraph 
 }
 
 void GroupPowerBigraph::read(Scores* fullset) {
-  BasicBigraph basicBigraph(psmThreshold_, peptideThreshold_, proteinThreshold_, 
-                  peptidePrior_);
+  BasicBigraph basicBigraph(psmThreshold_, peptideThreshold_, proteinThreshold_);
   basicBigraph.read(fullset, addPeptideDecoyLabel_);  
   initialize(basicBigraph);
 }
 
 void GroupPowerBigraph::read(istream& is) {
-  BasicBigraph basicBigraph(psmThreshold_, peptideThreshold_, proteinThreshold_, 
-                  peptidePrior_);
+  BasicBigraph basicBigraph(psmThreshold_, peptideThreshold_, proteinThreshold_);
   basicBigraph.read(is, addPeptideDecoyLabel_);
   initialize(basicBigraph);
 }
@@ -161,7 +159,7 @@ void GroupPowerBigraph::initialize(BasicBigraph& basicBigraph) {
   if (noPartitioning_) {
     basicBigraph.prune();
     severedProteins_.append(basicBigraph.severedProteins);
-    subgraphs_ = Array<BasicGroupBigraph>(1, BasicGroupBigraph(basicBigraph, noClustering_, trivialGrouping_));
+    subgraphs_ = Array<BasicGroupBigraph>(1, BasicGroupBigraph(peptidePrior_, basicBigraph, noClustering_, trivialGrouping_));
   } else {
     Array<BasicBigraph> subBasic;
     subBasic = Array<BasicBigraph>();
@@ -171,10 +169,10 @@ void GroupPowerBigraph::initialize(BasicBigraph& basicBigraph) {
     else
       subBasic = iterativePartitionSubgraphs(basicBigraph, peptideThreshold_);
 
-    subgraphs_ = Array<BasicGroupBigraph>(subBasic.size());
+    subgraphs_ = Array<BasicGroupBigraph>(subBasic.size(), BasicGroupBigraph(peptidePrior_));
 
     for (int k = 0; k < subBasic.size(); k++) {
-      subgraphs_[k] = BasicGroupBigraph(subBasic[k], noClustering_, trivialGrouping_);
+      subgraphs_[k] = BasicGroupBigraph(peptidePrior_, subBasic[k], noClustering_, trivialGrouping_);
     }
   }
   getGroupProtNames();
