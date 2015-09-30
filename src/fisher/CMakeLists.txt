@@ -46,7 +46,7 @@ load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
-add_library(fisherlibrary STATIC Database.cpp Protein.cpp)
+add_library(fisherlibrary STATIC Database.cpp Protein.cpp DatabaseProteinIterator.cpp ProteinPeptideIterator.cpp Peptide.cpp PeptideSrc.cpp PeptideConstraint.cpp)
 
 add_executable(fisher FisherCaller.cpp)
 

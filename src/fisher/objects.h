@@ -11,6 +11,9 @@
 #ifndef OBJECTS_H 
 #define OBJECTS_H
 
+#include <vector>
+#include <cstdlib>
+
 // Macro allowing us to build using floats or double
 #ifdef USE_DOUBLES
 typedef double FLOAT_T;
@@ -43,6 +46,17 @@ namespace Crux {
  */
 class PeptideSrc;
 
+/**
+ *\typedef  PeptideSrcIterator 
+ *\brief An object to iterate over the PeptideSrc in a peptide  
+ */
+typedef std::vector<PeptideSrc*>::iterator  PeptideSrcIterator; 
+
+/**
+ * \typedef RESIDUE_ITERATOR_T 
+ * \brief An object to iterate over the residues in a peptide
+ */
+typedef struct residue_iterator RESIDUE_ITERATOR_T;
 
 /**
  * \class ProteinPeptideIterator
