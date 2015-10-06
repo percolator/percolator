@@ -14,56 +14,110 @@
  limitations under the License.
 
  *******************************************************************************/
-#include <cstdlib>
-#include <cstdio>
-#include <iostream>
-#include <algorithm>
 
-#include "Database.h"
-#include "DatabaseProteinIterator.h"
-#include "PeptideConstraint.h"
-#include "ProteinPeptideIterator.h"
-#include "Protein.h"
+#include "FisherCaller.h"
+#include "Option.h"
+#include "Globals.h"
 using namespace std;
 
-int main(int argc, char** argv) {
-  
-  // now create a database
-  Database* database = new Database(argv[1], false);
-  
-  if(!database->parse()){
-    std::cerr << "Failed to parse database, cannot create new index for " << argv[1] << std::endl;
-    return EXIT_FAILURE;
-  } else {
-    std::cerr << "Read " << database->getNumProteins() << " proteins." << std::endl;
-    std::cerr << database->getProteinAtIdx(5)->getSequencePointer() << std::endl;
+FisherCaller::FisherCaller(PeptideConstraint* peptide_constraint) : 
+    database_(NULL), peptide_constraint_(peptide_constraint) {}
+
+FisherCaller::FisherCaller() : database_(NULL) {
+  peptide_constraint_ = new PeptideConstraint(TRYPSIN, FULL_DIGEST, 10, 30, 0);
+}
+
+FisherCaller::~FisherCaller() {
+  if (database_ != NULL) {
+    delete database_;
+  }
+  if (peptide_constraint_ != NULL) {
+    delete peptide_constraint_;
+  }
+}
+
+/* introductory message */
+string FisherCaller::greeter() const {
+  ostringstream oss;
+  oss << "Fisher version " << VERSION << ", ";
+  oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
+  oss << "Distributed under MIT License" << endl;
+  oss << "Written by Lukas Kall (lukas.kall@scilifelab.se) "
+         "and Matthew The (matthew.the@scilifelab.se)" << endl;
+  oss << "Usage:" << endl;
+  oss << "   fisher [options]" << endl << endl;
+  return oss.str();
+}
+
+/* parse the command line arguments */
+bool FisherCaller::parseOptions(int argc, char** argv) {
+  ostringstream intro;
+  intro << greeter() << endl << "Usage:" << endl;
+  intro << "   fisher -i \"percolator_peptide_output\" -d \"fasta_protein_db\" " << endl;
+  CommandLineParser cmd(intro.str());
+  // define available options
+  cmd.defineOption("v",
+                   "verbose",
+                   "Set verbosity of output: 0 = no processing info, 5 = all, default is 2.",
+                   "level");
+  cmd.defineOption("i",
+                   "peptide_in",
+                   "Specifies the file with the peptide tab-delimited output file from percolator.",
+                   "filename");
+  cmd.defineOption("d",
+                   "database",
+                   "Specifies the file with protein sequences in fasta format.",
+                   "filename");
+  cmd.defineOption("o",
+                   "protein_out",
+                   "Specifies the file with the inferred proteins.",
+                   "filename");
+
+  cmd.parseArgs(argc, argv);
+
+  // process options
+  if (cmd.optionSet("v")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  }
+  if (cmd.optionSet("d")) {
+    protein_db_file_ = cmd.options["d"];
+  }
+  if (cmd.optionSet("i")) {
+    peptide_input_file_ = cmd.options["i"];
+  }
+  if (cmd.optionSet("o")) {
+    protein_output_file_ = cmd.options["o"];
   }
   
+  return true;
+}
+
+bool FisherCaller::getPeptideProteinMap(
+    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    bool generateDecoys) {
   // set a new protein iterator
-  DatabaseProteinIterator* database_protein_iterator = new DatabaseProteinIterator(database);
+  DatabaseProteinIterator* database_protein_iterator = new DatabaseProteinIterator(database_);
   if(database_protein_iterator == NULL){
     std::cerr << "Could not create protein iterator." << std::endl;
-    return EXIT_FAILURE;
+    return false;
   }
-
-  // set peptide constraint
-  
-  PeptideConstraint* peptide_constraint = new PeptideConstraint(TRYPSIN, FULL_DIGEST, 6, 50, 0);
   
   Crux::Protein* protein = NULL;
   
   size_t protein_idx = 0;
-  std::map<std::string, std::vector<size_t> > peptide_protein_map;
   // check if there are any proteins to create peptides from
   while(database_protein_iterator->hasNext()){
 
     protein = database_protein_iterator->next();
-  
+    
+    if (generateDecoys) {
+      protein->shuffle(PROTEIN_REVERSE_DECOYS);
+    }
     //std::cerr << protein->getSequencePointer() << std::endl;
     
     // set new protein peptide iterator
     ProteinPeptideIterator* cur_protein_peptide_iterator =
-      new ProteinPeptideIterator(protein, peptide_constraint);
+      new ProteinPeptideIterator(protein, peptide_constraint_);
     
     // if first protein does not contain a match peptide, reinitailize
     while(cur_protein_peptide_iterator->hasNext()) {
@@ -83,20 +137,21 @@ int main(int argc, char** argv) {
   }
   
   delete database_protein_iterator;
+  return true;
+}
+
+bool FisherCaller::getFragmentProteinMap(
+    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein) {
+  Crux::Protein* protein = NULL;
   
-  std::cerr << peptide_protein_map["VRPLAR"].size() << std::endl;
-  std::cerr << peptide_protein_map["EHHEHASAPLLPPPPTSALSSIASTTAASSAHAK"].size() << std::endl;
-  std::cerr << database->getProteinAtIdx(peptide_protein_map["EHHEHASAPLLPPPPTSALSSIASTTAASSAHAK"][0])->getSequencePointer() << std::endl;
-  
-  std::map<size_t, std::vector<size_t> > fragment_protein_map;
-  std::map<size_t, size_t> num_peptides_per_protein;
-  
-  for (size_t i = 0; i < database->getNumProteins(); ++i) {
-    protein = database->getProteinAtIdx(i);
+  for (size_t i = 0; i < database_->getNumProteins(); ++i) {
+    protein = database_->getProteinAtIdx(i);
     
     // set new protein peptide iterator
     ProteinPeptideIterator* cur_protein_peptide_iterator =
-      new ProteinPeptideIterator(protein, peptide_constraint);
+      new ProteinPeptideIterator(protein, peptide_constraint_);
     
     bool is_first = true;
     size_t num_sequences = 0;
@@ -149,13 +204,18 @@ int main(int argc, char** argv) {
     // free old iterator
     delete (cur_protein_peptide_iterator);
   }
-  
-  std::map<std::string, std::string> fragment_map, duplicate_map;
+}
+
+bool FisherCaller::getProteinFragmentsAndDuplicates(
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein,
+    std::map<std::string, std::string>& fragment_map, 
+    std::map<std::string, std::string>& duplicate_map) {
   std::map<size_t, std::vector<size_t> >::iterator it;
   for (it = fragment_protein_map.begin(); it != fragment_protein_map.end(); ++it) {
     size_t i = it->first;
     
-    char* c_this_id = database->getProteinAtIdx(i)->getId();
+    char* c_this_id = database_->getProteinAtIdx(i)->getId();
     std::string this_protein_id(c_this_id);
     std::free(c_this_id);
     
@@ -163,7 +223,7 @@ int main(int argc, char** argv) {
       size_t j = *it2;
       
       if (i != j) {
-        char* c_that_id = database->getProteinAtIdx(j)->getId();
+        char* c_that_id = database_->getProteinAtIdx(j)->getId();
         std::string that_protein_id(c_that_id);
         std::free(c_that_id);
         
@@ -177,9 +237,51 @@ int main(int argc, char** argv) {
       }
     }
   }
+}
 
-  delete peptide_constraint;
-  delete database;
+bool FisherCaller::getProteinFragmentsAndDuplicates(
+    std::map<std::string, std::string>& fragment_map,
+    std::map<std::string, std::string>& duplicate_map,
+    bool generateDecoys) {
+  // now create a database_
+  database_ = new Database(protein_db_file_.c_str(), false);
+  
+  if(!database_->parse()){
+    std::cerr << "Failed to parse database_, cannot create new index for " << protein_db_file_ << std::endl;
+    return EXIT_FAILURE;
+  } /*else {
+    std::cerr << "Read " << database_->getNumProteins() << " proteins." << std::endl;
+    std::cerr << database_->getProteinAtIdx(5)->getSequencePointer() << std::endl;
+  }*/
+  
+  std::map<std::string, std::vector<size_t> > peptide_protein_map;
+  bool success = getPeptideProteinMap(peptide_protein_map, generateDecoys);
+  
+  if (!success) {
+    std::cerr << "Failed to create peptide protein map." << std::endl;
+    return EXIT_FAILURE;
+  } /*else {
+    std::cerr << peptide_protein_map["VRPLAR"].size() << std::endl;
+    std::cerr << peptide_protein_map["EHHEHASAPLLPPPPTSALSSIASTTAASSAHAK"].size() << std::endl;
+    std::cerr << database_->getProteinAtIdx(peptide_protein_map["EHHEHASAPLLPPPPTSALSSIASTTAASSAHAK"][0])->getSequencePointer() << std::endl;
+  }*/
+  
+  std::map<size_t, std::vector<size_t> > fragment_protein_map;
+  std::map<size_t, size_t> num_peptides_per_protein;
+  
+  success = getFragmentProteinMap(peptide_protein_map, fragment_protein_map, num_peptides_per_protein);
+  
+  if (!success) {
+    std::cerr << "Failed to create fragment protein map." << std::endl;
+    return EXIT_FAILURE;
+  }
+  
+  success = getProteinFragmentsAndDuplicates(fragment_protein_map, num_peptides_per_protein, fragment_map, duplicate_map);
+  
+  if (!success) {
+    std::cerr << "Failed to get protein fragments and duplicates." << std::endl;
+    return EXIT_FAILURE;
+  }
   
   return EXIT_SUCCESS;
 }

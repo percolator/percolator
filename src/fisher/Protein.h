@@ -12,6 +12,8 @@
 
 #include <stdio.h>
 #include <string>
+#include <cstring>
+#include <algorithm>
 //#include "utils.h"
 #include "objects.h"
 //#include "Peptide.h"
@@ -75,7 +77,20 @@ class Protein {
   void shuffleRegion(
     int start, ///< index of peptide start
     int end);  ///< index of last residue in peptide
-
+  
+  /**
+   * given two strings return a concatenated third string
+   * \returns a heap allocated string that concatenates the two inputs
+   */
+  char* cat_string(const char* string_one, const char* string_two){
+    int len_one = strlen(string_one);
+    int len_two = strlen(string_two);
+    
+    char* result = (char*)calloc(len_one + len_two + 1, sizeof(char));
+    strncpy(result, string_one, len_one);
+    strncpy(&result[len_one], string_two, len_two);
+    return result;
+  }
  public:
 
   /**

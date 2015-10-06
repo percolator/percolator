@@ -142,13 +142,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Quicker execution by reduced internal cross-validation.",
       "",
       TRUE_IF_SET);
-  /*
   cmd.defineOption("f",
-      "train-ratio",
-      "Fraction of the negative data set to be used as train set when only providing one negative set, \
-      remaining examples will be used as test set. Set to 0.6 by default.",
+      "fisher-fasta-database",
+      "Protein database in fasta format.",
       "value");
-  */
   cmd.defineOption("J",
       "tab-out",
       "Output computed features to given file in pin-tab format.",
@@ -246,8 +243,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("A",
       "protein",
       "Use the Fido algorithm to infer protein probabilities",
-      "",
-      TRUE_IF_SET);
+      "value");
   cmd.defineOption("a",
       "fido-alpha",
       "Set Fido's probability with which a present protein emits an associated peptide. \
@@ -370,50 +366,65 @@ bool Caller::parseOptions(int argc, char **argv) {
   
     ProteinProbEstimator::setCalcProteinLevelProb(true);
     
-    /*fido parameters*/
-    
-    // General Fido options
-    double fidoAlpha = -1;
-    double fidoBeta = -1;
-    double fidoGamma = -1;
-    if (cmd.optionSet("a")) fidoAlpha = cmd.getDouble("a", 0.00, 1.0);
-    if (cmd.optionSet("b")) fidoBeta = cmd.getDouble("b", 0.00, 1.0);
-    if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
-    
-    // Confidence estimation options (general protein prob options)
-    bool protEstimatorOutputEmpirQVal = false;
-    bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
-    std::string protEstimatorDecoyPrefix = "random";
-    double  protEstimatorPi0 = 1.0;
-    if (cmd.optionSet("I")) protEstimatorPi0 = cmd.getDouble("I", 0.0, 1.0);
-    protEstimatorOutputEmpirQVal = cmd.optionSet("q");
-    if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
-    //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
-    
-    // Options for controlling speed
-    bool fidoNoPartitioning = false; // cannot be set on cmd line
-    bool fidoNoClustering = false; // cannot be set on cmd line
-    unsigned fidoGridSearchDepth = 0;
-    bool fidoNoPruning = false;
-    double fidoGridSearchThreshold = 0.0;
-    double fidoProteinThreshold = 0.01;
-    double fidoMseThreshold = 0.1;
-    if (cmd.optionSet("d")) fidoGridSearchDepth = cmd.getInt("d", 0, 4);
-    if (cmd.optionSet("T")) fidoGridSearchThreshold = cmd.getDouble("T", 0.0, 1.0);
-    if (cmd.optionSet("C")) fidoNoPruning = true;
-    if (cmd.optionSet("E")) fidoProteinThreshold = cmd.getDouble("E", 0.0, 1.0);
-    if (cmd.optionSet("H")) fidoMseThreshold = cmd.getDouble("H",0.001,1.0);
+    if (cmd.options["A"] == "fido") {
+      /*fido parameters*/
+      
+      // General Fido options
+      double fidoAlpha = -1;
+      double fidoBeta = -1;
+      double fidoGamma = -1;
+      if (cmd.optionSet("a")) fidoAlpha = cmd.getDouble("a", 0.00, 1.0);
+      if (cmd.optionSet("b")) fidoBeta = cmd.getDouble("b", 0.00, 1.0);
+      if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
+      
+      // Confidence estimation options (general protein prob options)
+      bool protEstimatorOutputEmpirQVal = false;
+      bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
+      std::string protEstimatorDecoyPrefix = "random";
+      double  protEstimatorPi0 = 1.0;
+      if (cmd.optionSet("I")) protEstimatorPi0 = cmd.getDouble("I", 0.0, 1.0);
+      protEstimatorOutputEmpirQVal = cmd.optionSet("q");
+      if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
+      //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
+      
+      // Options for controlling speed
+      bool fidoNoPartitioning = false; // cannot be set on cmd line
+      bool fidoNoClustering = false; // cannot be set on cmd line
+      unsigned fidoGridSearchDepth = 0;
+      bool fidoNoPruning = false;
+      double fidoGridSearchThreshold = 0.0;
+      double fidoProteinThreshold = 0.01;
+      double fidoMseThreshold = 0.1;
+      if (cmd.optionSet("d")) fidoGridSearchDepth = cmd.getInt("d", 0, 4);
+      if (cmd.optionSet("T")) fidoGridSearchThreshold = cmd.getDouble("T", 0.0, 1.0);
+      if (cmd.optionSet("C")) fidoNoPruning = true;
+      if (cmd.optionSet("E")) fidoProteinThreshold = cmd.getDouble("E", 0.0, 1.0);
+      if (cmd.optionSet("H")) fidoMseThreshold = cmd.getDouble("H",0.001,1.0);
+      
+      protEstimator_ = new FidoInterface(fidoAlpha, fidoBeta, fidoGamma, 
+                fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
+                fidoGridSearchDepth, fidoGridSearchThreshold,
+                fidoProteinThreshold, fidoMseThreshold,
+                protEstimatorPi0, protEstimatorOutputEmpirQVal, 
+                protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
+    } else if (cmd.options["A"] == "fisher") {  
+      std::string fastaDatabase;    
+      if (cmd.optionSet("f")) {
+        fastaDatabase = cmd.options["f"];
+      }
+      
+      protEstimator_ = new FisherInterface(fastaDatabase, true, true);
+    } else {
+      if (cmd.options["A"] != "none") {
+        std::cerr << "WARNING: unknown protein inference method " << cmd.options["A"] 
+            << ", no protein inference will take place. The available methods are \"fido\" and \"fisher\"." << std::endl;
+      }
+      ProteinProbEstimator::setCalcProteinLevelProb(false);
+    }
     
     // Output file options
     if (cmd.optionSet("l")) proteinResultFN_ = cmd.options["l"];
     if (cmd.optionSet("L")) decoyProteinResultFN_ = cmd.options["L"];
-    
-    protEstimator_ = new FidoInterface(fidoAlpha, fidoBeta, fidoGamma, 
-              fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
-              fidoGridSearchDepth, fidoGridSearchThreshold,
-              fidoProteinThreshold, fidoMseThreshold,
-              protEstimatorPi0, protEstimatorOutputEmpirQVal, 
-              protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
   }
   
   if (cmd.optionSet("k")) {
@@ -461,11 +472,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("V")) {
     SanityCheck::setInitDefaultDirName(cmd.options["V"]);
   }
-  /*
-  if (cmd.optionSet("f")) {
-    trainRatio_ = cmd.getDouble("f", 0.0, 1.0);
-  }
-  */
   if (cmd.optionSet("u")) {
     Normalizer::setType(Normalizer::UNI);
   }
@@ -742,7 +748,7 @@ void Caller::calculateProteinProbabilitiesFido() {
   startClock_ = clock();  
 
   if (VERB > 0) {
-    cerr << "\nCalculating protein level probabilities with Fido\n";
+    cerr << "\nCalculating protein level probabilities\n";
     cerr << protEstimator_->printCopyright();
   }
   

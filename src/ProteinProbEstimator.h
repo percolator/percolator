@@ -44,6 +44,15 @@ struct IntCmpProb {
     );
   }
 };
+
+struct IntCmpPvalue {
+  bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
+      return (  (lhs.second->getP() < rhs.second->getP())
+           || ( (lhs.second->getP() == rhs.second->getP())
+              && (lhs.second->getName() < rhs.second->getName()) )  
+    );
+  }
+};
   
 inline double myminfunc(double a, double b) {
   return a > b ? b : a;
@@ -201,7 +210,7 @@ class ProteinProbEstimator {
   /** variables **/
   std::set<string> truePosSet, falsePosSet;
   ProteinFDRestimator *fastReader;
-  std::map<const std::string,Protein*> proteins;    
+  std::map<const std::string,Protein*> proteins;
   std::multimap<double,std::vector<std::string> > pepProteinMap_;
   std::map<std::string,std::pair<std::string,double> > targetProteins;
   std::map<std::string,std::pair<std::string,double> > decoyProteins;

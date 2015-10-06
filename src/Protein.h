@@ -26,12 +26,12 @@ using namespace std;
 class Protein {
  public:
   struct Peptide {
-    Peptide(std::string __name, bool __isdecoy, double __pep, double __q, 
-            double __empq) : name(__name), isdecoy(__isdecoy), pep(__pep),
+    Peptide(std::string __name, bool __isdecoy, double __p, double __pep, double __q, 
+            double __empq) : name(__name), isdecoy(__isdecoy), p(__p), pep(__pep),
             q(__q), empq(__empq) {}
     std::string name;
     bool isdecoy;
-    double pep, q, empq;
+    double p, pep, q, empq;
   };
   
   Protein() : name(""), q(0.0), qemp(0.0), pep(0.0), p(0.0), groupId_(-1), 
@@ -61,8 +61,8 @@ class Protein {
   void setGroupId(int groupId) { groupId_ = groupId; }
   int getGroupId() const { return groupId_; }
   
-  void setPeptide(std::string peptide,bool isdecoy,double pep,double q,double empq) {
-    peptides.push_back(new Peptide(peptide,isdecoy,pep,q,empq));
+  void setPeptide(std::string peptide,bool isdecoy,double p,double pep,double q,double empq) {
+    peptides.push_back(new Peptide(peptide,isdecoy,p,pep,q,empq));
   }
   void setPeptide(Peptide *__peptide) {
     peptides.push_back(__peptide);

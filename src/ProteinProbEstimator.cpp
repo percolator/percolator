@@ -490,7 +490,7 @@ void ProteinProbEstimator::setTargetandDecoysNames() {
   for (vector<ScoreHolder>::iterator psm = peptideScores_->begin(); psm!= peptideScores_->end(); ++psm) {
     // for each protein
     for (set<string>::iterator protIt = psm->pPSM->proteinIds.begin(); protIt != psm->pPSM->proteinIds.end(); protIt++) {
-      Protein::Peptide *peptide = new Protein::Peptide(psm->pPSM->getPeptideSequence(),psm->isDecoy(),
+      Protein::Peptide *peptide = new Protein::Peptide(psm->pPSM->getPeptideSequence(),psm->isDecoy(),psm->p,
 							psm->pep,psm->q,psm->p);
       if (proteins.find(*protIt) == proteins.end()) {
 	      Protein *newprotein = new Protein(*protIt,0.0,0.0,0.0,0.0,psm->isDecoy(),peptide,++numGroups);

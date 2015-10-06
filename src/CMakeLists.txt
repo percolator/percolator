@@ -80,13 +80,13 @@ if(XML_SUPPORT)
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
-								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp )
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp FisherInterface.cpp)
 else(XML_SUPPORT)
   add_library(perclibrary STATIC BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp 
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
-								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp )
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp FisherInterface.cpp)
 endif(XML_SUPPORT)
 								  
 								  
@@ -97,11 +97,17 @@ endif(XML_SUPPORT)
 #COMPILE FIDO
 add_subdirectory(fido)
 
+#COMPILE FISHER
+add_subdirectory(fisher)
+
 #INCLUDE PERCOLATOR HEADERS
 include_directories(.) 
 
 #INCLUDE FIDO HEADERS FOR PERCLIBRARY 
 include_directories(fido)
+
+#INCLUDE FISHER HEADERS FOR PERCLIBRARY 
+include_directories(fisher)
 
 ################################################################################
 								  
@@ -129,9 +135,9 @@ endif()
  
 # SET LIBRARIES FOR PERCOLATOR
 if(MSVC)
-  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+  target_link_libraries(percolator perclibrary fido fisher ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
 else(MSVC)
-  target_link_libraries(percolator perclibrary fido ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
+  target_link_libraries(percolator perclibrary fido fisher ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
 endif()
  
 # INSTALL PERCOLATOR

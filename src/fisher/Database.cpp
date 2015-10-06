@@ -17,19 +17,9 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-//#include "utils.h"
-//#include "crux-utils.h"
-//#include "Peptide.h"
 #include "Protein.h"
-//#include "ProteinPeptideIterator.h"
 #include "Database.h"
-//#include "hash.h"
-//#include "carp.h"
 #include "objects.h"
-//#include "PeptideConstraint.h"
-
-//#include "DatabaseProteinIterator.h"
-//#include "DatabasePeptideIterator.h"
 
 #include <map>
 #include <vector>

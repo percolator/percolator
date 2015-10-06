@@ -520,6 +520,44 @@ bool Protein::readRawSequence
  * Thanks Bill!
  */
 
+/**
+ * Change the sequence of a protein to be a randomized version of
+ * itself.  The method of randomization is dependant on the
+ * decoy_type (shuffle or reverse).  The name of the protein is also
+ * changed by prefixing with "decoy-prefix"
+ */
+void Protein::shuffle(
+  DECOY_TYPE_T decoy_type){ ///< method for shuffling
+  //char* decoy_str = decoy_type_to_string(decoy_type);
+  //carp(CARP_DEBUG, "Shuffling protein %s as %s", id_, decoy_str);
+  //free(decoy_str);
+
+  switch(decoy_type){
+  case NO_DECOYS:
+    return;
+
+  case PROTEIN_REVERSE_DECOYS:
+    reverse(sequence_, sequence_ + strlen(sequence_));
+    break;
+
+  case PROTEIN_SHUFFLE_DECOYS:
+  case PEPTIDE_SHUFFLE_DECOYS:
+  case INVALID_DECOY_TYPE:
+  case NUMBER_DECOY_TYPES:
+    //carp(CARP_FATAL, "Illegal decoy type for shuffling protein.");
+    break;
+  }
+  
+  // change the protein name
+  // TODO: change this to a global parameter
+  const char* prefix = "decoy_";
+
+  char* new_name = cat_string(prefix, id_);
+  free(id_);
+  id_= new_name;
+
+}
+
 /** 
  * Access routines of the form get_<object>_<field> and set_<object>_<field>. 
  */

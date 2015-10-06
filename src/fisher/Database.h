@@ -11,12 +11,8 @@
 #define DATABASE_H
 
 #include <stdio.h>
-//#include "utils.h"
 #include "objects.h"
-//#include "Peptide.h"
 #include "Protein.h"
-//#include "carp.h"
-//#include "PeptideConstraint.h"
 #include <string>
 #include <cstring>
 #include <map>
