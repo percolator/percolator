@@ -366,6 +366,20 @@ bool Caller::parseOptions(int argc, char **argv) {
   
     ProteinProbEstimator::setCalcProteinLevelProb(true);
     
+    // Confidence estimation options (general protein prob options)
+    bool protEstimatorOutputEmpirQVal = false;
+    bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
+    std::string protEstimatorDecoyPrefix = "random";
+    double protEstimatorPi0 = 1.0;
+    if (cmd.optionSet("I")) protEstimatorPi0 = cmd.getDouble("I", 0.0, 1.0);
+    protEstimatorOutputEmpirQVal = cmd.optionSet("q");
+    if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
+    //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
+    
+    // Output file options
+    if (cmd.optionSet("l")) proteinResultFN_ = cmd.options["l"];
+    if (cmd.optionSet("L")) decoyProteinResultFN_ = cmd.options["L"];
+    
     if (cmd.options["A"] == "fido") {
       /*fido parameters*/
       
@@ -376,16 +390,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       if (cmd.optionSet("a")) fidoAlpha = cmd.getDouble("a", 0.00, 1.0);
       if (cmd.optionSet("b")) fidoBeta = cmd.getDouble("b", 0.00, 1.0);
       if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
-      
-      // Confidence estimation options (general protein prob options)
-      bool protEstimatorOutputEmpirQVal = false;
-      bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
-      std::string protEstimatorDecoyPrefix = "random";
-      double  protEstimatorPi0 = 1.0;
-      if (cmd.optionSet("I")) protEstimatorPi0 = cmd.getDouble("I", 0.0, 1.0);
-      protEstimatorOutputEmpirQVal = cmd.optionSet("q");
-      if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
-      //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
       
       // Options for controlling speed
       bool fidoNoPartitioning = false; // cannot be set on cmd line
@@ -413,7 +417,13 @@ bool Caller::parseOptions(int argc, char **argv) {
         fastaDatabase = cmd.options["f"];
       }
       
-      protEstimator_ = new FisherInterface(fastaDatabase, true, true);
+      bool fisherReportFragmentProteins = true;
+      bool fisherReportDuplicateProteins = true;
+      
+      protEstimator_ = new FisherInterface(fastaDatabase, 
+          fisherReportFragmentProteins, fisherReportDuplicateProteins,
+          protEstimatorTrivialGrouping, protEstimatorPi0, 
+          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
     } else {
       if (cmd.options["A"] != "none") {
         std::cerr << "WARNING: unknown protein inference method " << cmd.options["A"] 
@@ -421,10 +431,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       }
       ProteinProbEstimator::setCalcProteinLevelProb(false);
     }
-    
-    // Output file options
-    if (cmd.optionSet("l")) proteinResultFN_ = cmd.options["l"];
-    if (cmd.optionSet("L")) decoyProteinResultFN_ = cmd.options["L"];
   }
   
   if (cmd.optionSet("k")) {

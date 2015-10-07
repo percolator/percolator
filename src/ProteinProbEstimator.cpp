@@ -105,7 +105,7 @@ void ProteinProbEstimator::computeFDR() {
 }
 
 void ProteinProbEstimator::computeStatistics() {
-  if (usePi0_ && !mayufdr && outputEmpirQVal_) { 
+  if (usePi0_ && !mayufdr && outputEmpirQVal_ && pvalues.size() == 0) { 
     estimatePValues();
     /*pi0_ = estimatePi0();
     if (pi0_ <= 0.0 || pi0_ > 1.0) pi0_ = *qvalues.rbegin();
@@ -389,13 +389,15 @@ void ProteinProbEstimator::estimateQValues() {
       if (ndecoys > 0) ndecoys = 1;
     }
     
-    //NOTE in case I want to count and use target and decoys proteins while estimating qvalue from PEP
-    if (countDecoyQvalue_) {
-      sum += (double)(it->first * (ntargets + ndecoys));
-      nP += (ntargets + ndecoys);
-    } else {
-      sum += (double)(it->first * ntargets);
-      nP += ntargets;
+    if (ndecoys == 0) {
+      //NOTE in case I want to count and use target and decoys proteins while estimating qvalue from PEP
+      if (countDecoyQvalue_) {
+        sum += (double)(it->first * (ntargets + ndecoys));
+        nP += (ntargets + ndecoys);
+      } else {
+        sum += (double)(it->first * ntargets);
+        nP += ntargets;
+      }
     }
     qvalue = (sum / (double)nP);
     if (std::isnan(qvalue) || std::isinf(qvalue) || qvalue > 1.0) qvalue = 1.0;
@@ -414,9 +416,9 @@ void ProteinProbEstimator::estimateQValuesEmp() {
   unsigned nTargets = 0;
   double qvalue = 0.0;
   unsigned numDecoy = 0;
-  pvalues.clear();
+  //pvalues.clear();
   qvaluesEmp.clear();
-  //double TargetDecoyRatio = (double)numberTargetProteins_ / (double)numberDecoyProteins_;
+  double targetDecoyRatio = (double)numberTargetProteins_ / (double)numberDecoyProteins_;
   
   if (VERB > 1) {
     if (trivialGrouping_) {
@@ -440,7 +442,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
     
     if (nTargets) {
       if (usePi0_) {
-        qvalue = (double)(nDecoys * pi0_ /** TargetDecoyRatio */) / (double)nTargets;
+        qvalue = (double)(nDecoys * pi0_ * targetDecoyRatio) / (double)nTargets;
       } else {
         qvalue = (double)(nDecoys) / (double)nTargets;
       }
@@ -449,12 +451,13 @@ void ProteinProbEstimator::estimateQValuesEmp() {
     
     for (size_t i = 0; i < it->second.size(); ++i) {
       qvaluesEmp.push_back(qvalue);
-      
+      /*
       if (numDecoy > 0) {
         pvalues.push_back((nDecoys)/(double)(numberDecoyProteins_));
       } else {
         pvalues.push_back((nDecoys+(double)1)/(numberDecoyProteins_+(double)1));
       }
+      */
     }
   }
   std::partial_sum(qvaluesEmp.rbegin(), qvaluesEmp.rend(), qvaluesEmp.rbegin(), myminfunc);

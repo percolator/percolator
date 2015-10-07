@@ -21,10 +21,12 @@
 using namespace std;
 
 FisherCaller::FisherCaller(PeptideConstraint* peptide_constraint) : 
-    database_(NULL), peptide_constraint_(peptide_constraint) {}
+    database_(NULL), peptide_constraint_(peptide_constraint), decoyPattern_("decoy_") {}
 
-FisherCaller::FisherCaller() : database_(NULL) {
+FisherCaller::FisherCaller() : database_(NULL), decoyPattern_("decoy_") {
+  //TODO make these global variables
   peptide_constraint_ = new PeptideConstraint(TRYPSIN, FULL_DIGEST, 10, 30, 0);
+  //peptide_constraint_ = new PeptideConstraint(TRYPSIN, FULL_DIGEST, 7, 50, 2);
 }
 
 FisherCaller::~FisherCaller() {

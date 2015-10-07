@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <functional>
+#include <cfloat>
 #include <boost/math/special_functions/gamma.hpp>
 
 #include "ProteinProbEstimator.h"
@@ -40,7 +41,8 @@ class FisherInterface : public ProteinProbEstimator {
 
  public:
   FisherInterface(const std::string& fastaDatabase, bool reportFragmentProteins,
-                  bool reportDuplicateProteins);
+    bool reportDuplicateProteins, bool trivialGrouping, double pi0, 
+    bool outputEmpirQval, std::string& decoyPattern);
   virtual ~FisherInterface();
   
   void run();

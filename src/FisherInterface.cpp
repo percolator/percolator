@@ -17,23 +17,25 @@
 
 #include "FisherInterface.h"
 
-std::pair<double, bool> make_my_pair(std::pair<std::string,Protein*> d, bool b) {
-  return make_pair(d.second->getP(), b);
-}
-
 double get_pvalue(std::pair<std::string,Protein*> d) {
   return d.second->getP();
 }
 
 FisherInterface::FisherInterface(const std::string& fastaDatabase, 
-    bool reportFragmentProteins, bool reportDuplicateProteins) :
+    bool reportFragmentProteins, bool reportDuplicateProteins,
+    bool trivialGrouping, double pi0, bool outputEmpirQval, 
+    std::string& decoyPattern) :
+  ProteinProbEstimator(trivialGrouping, pi0, outputEmpirQval, decoyPattern),
   fastaProteinFN_(fastaDatabase), reportFragmentProteins_(reportFragmentProteins),
   reportDuplicateProteins_(reportDuplicateProteins) {}
 
 FisherInterface::~FisherInterface() {}
 
 void FisherInterface::run() {
-  proteins.clear(); // previously set in setTargetandDecoyNames, but we can trash that
+  // previously set in setTargetandDecoyNames, but we can trash that
+  numberTargetProteins_ = 0;
+  numberDecoyProteins_ = 0;
+  proteins.clear();
   
   std::map<std::string, std::string> fragment_map, duplicate_map;
   fisherCaller_.setFastaDatabase(fastaProteinFN_);
@@ -57,7 +59,7 @@ void FisherInterface::run() {
         std::string proteinId = *protIt;
         
         // just hacking a bit for our simulation scripts
-        if (proteinId.find("decoy_") == std::string::npos) {
+        if (proteinId.find(decoyPattern_) == std::string::npos) {
           size_t found = proteinId.find_first_of("_");
           proteinId = proteinId.substr(found + 1);
         }
@@ -96,6 +98,11 @@ void FisherInterface::run() {
           Protein *newprotein = new Protein(lastProteinId,0.0,0.0,0.0,0.0,
               peptideIt->isDecoy(),peptide,++numGroups);
           proteins.insert(std::make_pair(lastProteinId,newprotein));
+          if (lastProteinId.find(decoyPattern_) == std::string::npos) {
+            ++numberTargetProteins_;
+          } else {
+            ++numberDecoyProteins_;
+          }
         } else {
           proteins[lastProteinId]->setPeptide(peptide);
           if (proteinsInGroup.size() > 1) {
@@ -135,6 +142,7 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
       fisher += log((*itP)->p);
     }
     double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
+    if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
     it->second->setP(proteinPvalue);
   }
   
@@ -142,33 +150,39 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   std::sort(myvec.begin(), myvec.end(), IntCmpPvalue());
   
   std::vector<std::pair<double, bool> > combined;
-  transform(myvec.begin(), myvec.end(),
-            back_inserter(combined),
-            bind2nd(ptr_fun(make_my_pair), true));
-  
   std::vector<double> pvals;
-  transform(myvec.begin(), myvec.end(),
-            back_inserter(pvals),
-            ptr_fun(get_pvalue));
-  double pi0 = PosteriorEstimator::estimatePi0(pvals);
+  bool decoysPresent = false;
+  for (size_t i = 0; i < myvec.size(); ++i) {
+    double pValue = myvec[i].second->getP();
+    bool isDecoy = myvec[i].second->getIsDecoy();
+    combined.push_back(make_pair(pValue, !isDecoy));
+    if (!isDecoy) {
+      pvals.push_back(pValue);
+    } else {
+      decoysPresent = true;
+    }
+  }
+  pi0_ = PosteriorEstimator::estimatePi0(pvals);
   
   if (VERB > 1) {
-    std::cerr << "protein pi0 estimate = " << pi0 << std::endl;
+    std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
   }
-  size_t nDec = myvec.size();
-  double step = 1.0 / 2.0 / (double)nDec;
-  for (size_t ix = 0; ix < nDec; ++ix) {
-    combined.push_back(std::make_pair(step * (1 + 2 * ix), false));
+  if (!decoysPresent) {
+    size_t nDec = myvec.size();
+    double step = 1.0 / 2.0 / (double)nDec;
+    for (size_t ix = 0; ix < nDec; ++ix) {
+      combined.push_back(std::make_pair(step * (1 + 2 * ix), false));
+    }
   }
-  
   std::sort(combined.begin(), combined.end());
   
-  bool includeNegativesInResult = false, usePi0 = true;
+  bool includeNegativesInResult = decoysPresent;
   std::vector<double> peps;
   PosteriorEstimator::setReversed(true);
-  PosteriorEstimator::estimatePEP(combined, usePi0, pi0, peps, includeNegativesInResult);
+  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, includeNegativesInResult);
   
   for (size_t i = 0; i < myvec.size(); ++i) {
+    pvalues.push_back(myvec[i].second->getP());
     pepProteinMap_.insert(std::make_pair(peps[i], std::vector<std::string>(1, myvec[i].first) ));
   }
 }

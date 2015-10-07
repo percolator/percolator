@@ -55,9 +55,12 @@ class FisherCaller{
   void setFastaDatabase(const std::string& protein_db_file) {
     protein_db_file_ = protein_db_file;
   }
+  
+  std::string getDecoyPattern() const { return decoyPattern_; }
  private:
   Database* database_;
   PeptideConstraint* peptide_constraint_;
+  std::string decoyPattern_;
   
   std::string protein_db_file_, peptide_input_file_, protein_output_file_;
   
