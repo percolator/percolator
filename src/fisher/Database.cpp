@@ -17,9 +17,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-#include "Protein.h"
 #include "Database.h"
-#include "objects.h"
 
 #include <map>
 #include <vector>

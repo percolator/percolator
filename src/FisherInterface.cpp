@@ -24,8 +24,10 @@ double get_pvalue(std::pair<std::string,Protein*> d) {
 FisherInterface::FisherInterface(const std::string& fastaDatabase, 
     bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double pi0, bool outputEmpirQval, 
-    std::string& decoyPattern) :
+    std::string& decoyPattern, ENZYME_T enzyme, DIGEST_T digestion, 
+    int min_peptide_length, int max_peptide_length, int max_miscleavages) :
   ProteinProbEstimator(trivialGrouping, pi0, outputEmpirQval, decoyPattern),
+  fisherCaller_(enzyme, digestion, min_peptide_length, max_peptide_length, max_miscleavages),
   fastaProteinFN_(fastaDatabase), reportFragmentProteins_(reportFragmentProteins),
   reportDuplicateProteins_(reportDuplicateProteins) {}
 
@@ -124,7 +126,7 @@ void FisherInterface::run() {
         for (std::set<std::string>::iterator proteinIt = groupIt->second.begin(); proteinIt != groupIt->second.end(); ++proteinIt) {
           newName += *proteinIt + ",";
         }
-        newName = newName.substr(0, newName.size() - 2);
+        newName = newName.substr(0, newName.size() - 1);
         representIt->second->setName(newName);
       }
     }
@@ -151,15 +153,12 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> pvals;
-  bool decoysPresent = false;
   for (size_t i = 0; i < myvec.size(); ++i) {
     double pValue = myvec[i].second->getP();
     bool isDecoy = myvec[i].second->getIsDecoy();
     combined.push_back(make_pair(pValue, !isDecoy));
     if (!isDecoy) {
       pvals.push_back(pValue);
-    } else {
-      decoysPresent = true;
     }
   }
   pi0_ = PosteriorEstimator::estimatePi0(pvals);
@@ -167,16 +166,9 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   if (VERB > 1) {
     std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
   }
-  if (!decoysPresent) {
-    size_t nDec = myvec.size();
-    double step = 1.0 / 2.0 / (double)nDec;
-    for (size_t ix = 0; ix < nDec; ++ix) {
-      combined.push_back(std::make_pair(step * (1 + 2 * ix), false));
-    }
-  }
   std::sort(combined.begin(), combined.end());
   
-  bool includeNegativesInResult = decoysPresent;
+  bool includeNegativesInResult = true;
   std::vector<double> peps;
   PosteriorEstimator::setReversed(true);
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, includeNegativesInResult);

@@ -11,24 +11,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "carp.h"
-//#include "utils.h"
-//#include "mass.h"
-#include "objects.h"
-//#include "DatabasePeptideIterator.h"
-#include "Peptide.h"
-#include "Protein.h"
-#include "PeptideSrc.h"
-//#include "PeptideConstraint.h"
-//#include "PeptideIterator.h"
-
 #include <vector>
 #include <string>
 
-//#include "DelimitedFile.h"
-//#include "MatchFileReader.h"
-//#include "MatchCollectionParser.h"
-
+#include "objects.h"
+#include "Peptide.h"
+#include "Protein.h"
+#include "PeptideSrc.h"
+#include "PeptideConstraint.h"
 
 using namespace std;
 using namespace Crux;

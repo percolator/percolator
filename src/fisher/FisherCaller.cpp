@@ -23,10 +23,12 @@ using namespace std;
 FisherCaller::FisherCaller(PeptideConstraint* peptide_constraint) : 
     database_(NULL), peptide_constraint_(peptide_constraint), decoyPattern_("decoy_") {}
 
-FisherCaller::FisherCaller() : database_(NULL), decoyPattern_("decoy_") {
+FisherCaller::FisherCaller(ENZYME_T enzyme, DIGEST_T digestion, 
+  int min_peptide_length, int max_peptide_length, int max_miscleavages) : 
+    database_(NULL), decoyPattern_("decoy_") {
   //TODO make these global variables
-  peptide_constraint_ = new PeptideConstraint(TRYPSIN, FULL_DIGEST, 10, 30, 0);
-  //peptide_constraint_ = new PeptideConstraint(TRYPSIN, FULL_DIGEST, 7, 50, 2);
+  peptide_constraint_ = new PeptideConstraint(enzyme, digestion, 
+      min_peptide_length, max_peptide_length, max_miscleavages);
 }
 
 FisherCaller::~FisherCaller() {
@@ -96,24 +98,23 @@ bool FisherCaller::parseOptions(int argc, char** argv) {
 
 bool FisherCaller::getPeptideProteinMap(
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    bool generateDecoys) {
-  // set a new protein iterator
-  DatabaseProteinIterator* database_protein_iterator = new DatabaseProteinIterator(database_);
-  if(database_protein_iterator == NULL){
-    std::cerr << "Could not create protein iterator." << std::endl;
-    return false;
-  }
-  
+    bool generateDecoys) {  
   Crux::Protein* protein = NULL;
   
-  size_t protein_idx = 0;
-  // check if there are any proteins to create peptides from
-  while(database_protein_iterator->hasNext()){
-
-    protein = database_protein_iterator->next();
+  for (size_t protein_idx = 0; protein_idx < database_->getNumProteins(); 
+       ++protein_idx) {
+    protein = database_->getProteinAtIdx(protein_idx);
     
     if (generateDecoys) {
       protein->shuffle(PROTEIN_REVERSE_DECOYS);
+      
+      // MT: the crux interface will change the protein identifier. If we are
+      // not inside the crux environment we do this separately here.
+      std::string currentId(protein->getIdPointer());
+      if (currentId.substr(0, decoyPattern_.size()) != decoyPattern_) {
+        currentId = decoyPattern_ + currentId;
+        protein->setId(currentId.c_str());
+      }
     }
     //std::cerr << protein->getSequencePointer() << std::endl;
     
@@ -133,12 +134,10 @@ bool FisherCaller::getPeptideProteinMap(
       delete peptide;
     }
     
-    ++protein_idx;
     // free old iterator
     delete (cur_protein_peptide_iterator);
   }
   
-  delete database_protein_iterator;
   return true;
 }
 

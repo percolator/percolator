@@ -22,7 +22,7 @@
 int main(int argc, char** argv) {
   std::map<std::string, std::string> fragment_map, duplicate_map;
   
-  FisherCaller* fCaller = new FisherCaller();
+  FisherCaller* fCaller = new FisherCaller(TRYPSIN, FULL_DIGEST, 10, 30, 0);
   int retVal = EXIT_FAILURE;
   
   try

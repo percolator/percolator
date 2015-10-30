@@ -15,13 +15,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "utils.h"
-//#include "crux-utils.h"
+
 #include "objects.h"
-//#include "mass.h"
 #include "Peptide.h"
-#include "Protein.h"
-//#include "carp.h"
 
 /**
  * \class PeptideConstraint

@@ -96,8 +96,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "and write access on the file)." << std::endl;
   // init
   CommandLineParser cmd(intro.str());
-  // available lower case letters: c, f, g, o, z
-  // available upper case letters: I, N, Q 
+  // available lower case letters: o, z
+  // available upper case letters: N, Q 
   cmd.defineOption("X",
       "xmloutput",
       "Path to xml-output (pout) file.",
@@ -240,10 +240,29 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Skip validation of input file against xml schema.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("A",
-      "protein",
-      "Use the Fido algorithm to infer protein probabilities",
+  cmd.defineOption("f",
+      "fisher-protein",
+      "Use fisher's method to infer protein probabilities, provide the fasta file as the argument to this flag.",
       "value");
+  cmd.defineOption("z",
+      "fisher-min-max-pept-length",
+      "Set the minimum and maximum peptide length of your database search as \"min,max\", e.g. \"6,50\". Default: 6,50.",
+      "value");
+  cmd.defineOption("c",
+      "fisher-report-fragments",
+      "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second.",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("g",
+      "fisher-report-duplicates",
+      "If multiple database proteins contain exactly the same set of peptides, then Percolator will randomly discard all but one of the proteins. If this option is set, then the IDs of these duplicated proteins will be reported as a comma-separated list.",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("A",
+      "fido-protein",
+      "Use the Fido algorithm to infer protein probabilities",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("a",
       "fido-alpha",
       "Set Fido's probability with which a present protein emits an associated peptide. \
@@ -362,7 +381,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("B"))  decoyPeptideResultFN_ = cmd.options["B"];
   }
 
-  if (cmd.optionSet("A")) {
+  if (cmd.optionSet("A") || cmd.optionSet("f")) {
   
     ProteinProbEstimator::setCalcProteinLevelProb(true);
     
@@ -380,7 +399,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     if (cmd.optionSet("l")) proteinResultFN_ = cmd.options["l"];
     if (cmd.optionSet("L")) decoyProteinResultFN_ = cmd.options["L"];
     
-    if (cmd.options["A"] == "fido") {
+    if (cmd.optionSet("A")) {
       /*fido parameters*/
       
       // General Fido options
@@ -411,25 +430,45 @@ bool Caller::parseOptions(int argc, char **argv) {
                 fidoProteinThreshold, fidoMseThreshold,
                 protEstimatorPi0, protEstimatorOutputEmpirQVal, 
                 protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
-    } else if (cmd.options["A"] == "fisher") {  
-      std::string fastaDatabase;    
-      if (cmd.optionSet("f")) {
-        fastaDatabase = cmd.options["f"];
-      }
+    } else if (cmd.optionSet("f")) {  
+      std::string fastaDatabase = cmd.options["f"];
       
-      bool fisherReportFragmentProteins = true;
-      bool fisherReportDuplicateProteins = true;
+      // default options
+      bool fisherReportFragmentProteins = false;
+      bool fisherReportDuplicateProteins = false;
+      ENZYME_T fisherEnzyme = TRYPSIN;
+      DIGEST_T fisherDigest = FULL_DIGEST;
+      int fisherMinPeptideLength = 6;
+      int fisherMaxPeptideLength = 50;
+      int fisherMaxMiscleavages = 0;
+      
+      if (cmd.optionSet("c")) fisherReportFragmentProteins = true;
+      if (cmd.optionSet("g")) fisherReportDuplicateProteins = true;
+      if (cmd.optionSet("z")) {
+        std::string minMaxString = cmd.options["z"];
+        size_t commaLoc = minMaxString.find_first_of(",");
+        bool malformedString = false;
+        if (commaLoc != std::string::npos) {
+          sscanf(minMaxString.substr(0, commaLoc).c_str(), "%d", &fisherMinPeptideLength);
+          sscanf(minMaxString.substr(commaLoc + 1).c_str(), "%d", &fisherMaxPeptideLength);
+        } else {
+          malformedString = true;
+        }
+        
+        if (fisherMinPeptideLength > fisherMaxPeptideLength) malformedString = true;
+        if (malformedString) {
+          std::cerr << "ERROR: fisher min,max-peptide length string \"" 
+                    << minMaxString << "\" is malformed." << std::endl;
+          return 0;
+        }
+      }
       
       protEstimator_ = new FisherInterface(fastaDatabase, 
           fisherReportFragmentProteins, fisherReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorPi0, 
-          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
-    } else {
-      if (cmd.options["A"] != "none") {
-        std::cerr << "WARNING: unknown protein inference method " << cmd.options["A"] 
-            << ", no protein inference will take place. The available methods are \"fido\" and \"fisher\"." << std::endl;
-      }
-      ProteinProbEstimator::setCalcProteinLevelProb(false);
+          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
+          fisherEnzyme, fisherDigest, fisherMinPeptideLength,
+          fisherMaxPeptideLength, fisherMaxMiscleavages);
     }
   }
   

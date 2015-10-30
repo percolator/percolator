@@ -46,7 +46,7 @@ load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
-add_library(fisherlibrary STATIC FisherCaller.cpp Database.cpp Protein.cpp DatabaseProteinIterator.cpp ProteinPeptideIterator.cpp Peptide.cpp PeptideSrc.cpp PeptideConstraint.cpp ../Option.cpp ../Globals.cpp ../MyException.cpp ../Logger.cpp)
+add_library(fisherlibrary STATIC FisherCaller.cpp Database.cpp Protein.cpp ProteinPeptideIterator.cpp Peptide.cpp PeptideSrc.cpp PeptideConstraint.cpp ../Option.cpp ../Globals.cpp ../MyException.cpp ../Logger.cpp)
 
 add_executable(fisher FisherMain.cpp)
 
@@ -75,8 +75,6 @@ endif()
 ###############################################################################
 # CROSS COMPILING AND INSTALLING
 ###############################################################################
-
-#TODO: make sure the models are included in the windows installer
 
 if(APPLE)
   install(TARGETS fisher EXPORT FISHER DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!

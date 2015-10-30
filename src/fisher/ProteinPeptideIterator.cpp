@@ -216,8 +216,7 @@ void ProteinPeptideIterator::selectPeptides(
  */
 void ProteinPeptideIterator::prepare()
 {
-  // TODO: use global variable for this
-  prepareMc(0);
+  prepareMc(peptide_constraint_->getNumMisCleavage());
 }
 
 void ProteinPeptideIterator::prepareMc(
@@ -396,8 +395,8 @@ ProteinPeptideIterator::ProteinPeptideIterator(
   cumulative_cleavages_ = new vector<int>();
 
   // estimate array size and reserve space to avoid resizing vector
-  // TODO: create global variable for these
-  int max_peptides = countMaxPeptides(protein->getLength(), 6, 50);
+  int max_peptides = countMaxPeptides(protein->getLength(), 
+      peptide_constraint->getMinLength(), peptide_constraint->getMaxLength());
   nterm_cleavage_positions_->reserve(max_peptides); 
   peptide_lengths_->reserve(max_peptides);
   cumulative_cleavages_->reserve(max_peptides);

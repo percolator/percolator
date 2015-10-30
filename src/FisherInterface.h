@@ -42,7 +42,9 @@ class FisherInterface : public ProteinProbEstimator {
  public:
   FisherInterface(const std::string& fastaDatabase, bool reportFragmentProteins,
     bool reportDuplicateProteins, bool trivialGrouping, double pi0, 
-    bool outputEmpirQval, std::string& decoyPattern);
+    bool outputEmpirQval, std::string& decoyPattern, 
+    ENZYME_T enzyme, DIGEST_T digestion, int min_peptide_length, 
+    int max_peptide_length, int max_miscleavages);
   virtual ~FisherInterface();
   
   void run();

@@ -12,17 +12,11 @@
 #include <string.h>
 #include <ctype.h>
 #include <vector>
-//#include "utils.h"
-//#include "crux-utils.h"
-//#include "parameter.h"
-#include "objects.h"
-//#include "Peptide.h"
+
 #include "Protein.h"
-//#include "PeptideSrc.h"
-#include "Database.h"
-//#include "carp.h"
-//#include "PeptideConstraint.h"
-//#include "ProteinPeptideIterator.h"
+#include "Peptide.h"
+#include "PeptideSrc.h"
+#include "PeptideConstraint.h"
 
 using namespace std;
 using namespace Crux;
@@ -547,15 +541,6 @@ void Protein::shuffle(
     //carp(CARP_FATAL, "Illegal decoy type for shuffling protein.");
     break;
   }
-  
-  // change the protein name
-  // TODO: change this to a global parameter
-  const char* prefix = "decoy_";
-
-  char* new_name = cat_string(prefix, id_);
-  free(id_);
-  id_= new_name;
-
 }
 
 /** 

@@ -483,7 +483,23 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
   empq.clear();
   estq.clear();
   
-  double targetDecoyRatio = static_cast<double>(numberTargetProteins_) / numberDecoyProteins_;
+  double targetDecoyRatio = 1.0;
+  
+  if (usePi0_) {
+    targetDecoyRatio = static_cast<double>(numberTargetProteins_) / numberDecoyProteins_;
+    std::vector<std::pair<double, bool> > combined;
+    for (unsigned int k = 0; k < proteinNames.size(); ++k) {
+      double prob = probabilities[k];
+      unsigned tpChange = countTargets(proteinNames[k]);
+      unsigned fpChange = proteinNames[k].size() - tpChange;
+      bool isDecoy = (tpChange == 0);
+      combined.push_back(make_pair(probabilities[k], !isDecoy));
+    }
+    
+    std::vector<double> pvals;
+    PosteriorEstimator::getPValues(combined, pvals);
+    pi0_ = PosteriorEstimator::estimatePi0(pvals);
+  }
   FDRCalculator fdrCalculator(usePi0_, targetDecoyRatio, pi0_, countDecoyQvalue_);
   
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
@@ -612,17 +628,23 @@ void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
   fpCount_ += fpChange;
   tpCount_ += tpChange;
   
+  if (fpChange == 0) {
+    if (countDecoyQvalue_) {
+      totalFDR_ += prob * (tpChange + fpChange);
+    } else if (tpCount_ > 0) {
+      totalFDR_ += prob * tpChange;
+    }
+  }
+  
   if (countDecoyQvalue_) {
-    totalFDR_ += prob * (tpChange + fpChange);
     estFDR = totalFDR_ / (tpCount_ + fpCount_);
   } else if (tpCount_ > 0) {
-    totalFDR_ += prob * tpChange;
     estFDR = totalFDR_ / tpCount_;
   }
-
+  
   if (tpCount_ > 0) {
     if (usePi0_) {
-      empFDR = (fpCount_ * pi0_ /* * targetDecoyRatio_*/) / tpCount_;
+      empFDR = (fpCount_ * pi0_ * targetDecoyRatio_) / tpCount_;
     } else {
       empFDR = fpCount_ / tpCount_;
     }

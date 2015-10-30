@@ -107,8 +107,12 @@ void ProteinProbEstimator::computeFDR() {
 void ProteinProbEstimator::computeStatistics() {
   if (usePi0_ && !mayufdr && outputEmpirQVal_ && pvalues.size() == 0) { 
     estimatePValues();
-    /*pi0_ = estimatePi0();
+    pi0_ = estimatePi0();
     if (pi0_ <= 0.0 || pi0_ > 1.0) pi0_ = *qvalues.rbegin();
+    if (VERB > 1) {
+     std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
+    }
+    /*
   } else {
     pi0_ = fdr_;
     */

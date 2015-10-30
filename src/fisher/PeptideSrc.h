@@ -13,11 +13,7 @@
 #include <stdio.h>
 #include <string>
 
-//#include "utils.h"
-//#include "mass.h"
 #include "objects.h"
-//#include "carp.h"
-#include "PeptideConstraint.h"
 
 
 class PeptideSrc {

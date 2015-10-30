@@ -31,14 +31,14 @@
 #include <algorithm>
 
 #include "Database.h"
-#include "DatabaseProteinIterator.h"
 #include "PeptideConstraint.h"
 #include "ProteinPeptideIterator.h"
 #include "Protein.h"
 
 class FisherCaller{
  public:
-  FisherCaller();
+  FisherCaller(ENZYME_T enzyme, DIGEST_T digestion, int min_peptide_length, 
+    int max_peptide_length, int max_miscleavages);
   FisherCaller(PeptideConstraint* peptide_constraint);
   ~FisherCaller();
   
@@ -55,8 +55,6 @@ class FisherCaller{
   void setFastaDatabase(const std::string& protein_db_file) {
     protein_db_file_ = protein_db_file;
   }
-  
-  std::string getDecoyPattern() const { return decoyPattern_; }
  private:
   Database* database_;
   PeptideConstraint* peptide_constraint_;

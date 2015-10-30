@@ -8,14 +8,12 @@
  ****************************************************************************/
 #include "Peptide.h"
 #include "PeptideSrc.h"
-//#include "PostProcessProtein.h"
 #include <string.h>
 
 #include <set>
 #include <vector>
 #include <algorithm>
 #include <sstream>
-//#include "MatchFileReader.h"
 
 using namespace std;
 using namespace Crux;
@@ -488,45 +486,7 @@ int Peptide::getMissedCleavageSites(
   }
   
   return missed_count;
-
-
-
 }
-
-/**
- * Creates a heap allocated hash_value for the peptide that should
- * uniquely identify the peptide
- *\returns the string of "<first src protein idx><start idx><length>"
- */
-char* Peptide::getHashValue() {
-
-  char* hash_value = NULL;
-  int peptide_length_space = get_number_digits(length_);
-  unsigned int protein_idx = 
-    getPeptideSrc()->getParentProtein()->getProteinIdx();
-  int protein_idx_space = get_number_digits(protein_idx);
-  int peptide_start_idx = getPeptideSrc()->getStartIdx();
-  int peptide_start_idx_space = get_number_digits(peptide_start_idx);
-  int status;
-  int space = peptide_length_space + protein_idx_space + peptide_start_idx_space + 1;
-
-  // allocate space for three integers
-  hash_value = (char*)calloc(space,sizeof(char));
-  
-  // copy over the itegers
-  status = snprintf(hash_value, 
-                    space,
-                    "%d%d%d", 
-                   protein_idx, 
-                   peptide_start_idx, 
-                   length_);
-  
-  if(status != (space-1)){
-    //carp(CARP_ERROR, "failed to create peptide hash value");
-  }
-  return hash_value;
-}
-
 
 /* Comparisons for sorting */
 

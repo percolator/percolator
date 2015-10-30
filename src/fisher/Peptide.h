@@ -17,17 +17,9 @@
 #include <vector>
 #include <set>
 
-//#include "utils.h"
-//#include "crux-utils.h"
-//#include "hash.h"
-//#include "mass.h"
-#include "Protein.h"
 #include "objects.h"
-//#include "carp.h"
-//#include "PeptideConstraint.h"
+#include "Protein.h"
 #include "Database.h"
-//#include "modifications.h"
-//#include "peptide_modifications.h"
 
 //these may be elsewhere
 static const int MAX_PEPTIDE_LENGTH = 255;
@@ -62,22 +54,7 @@ class Peptide {
    */
   void init();
   
-  // TODO: move these functions
-  /**
-   *\returns the number of digits in the number
-   */
-  int get_number_digits(
-    int number ///< the number to count digits
-    )
-  {
-    int idx = 0;
-    for(; number >= 10; ++idx){
-      number = number/10;    
-    }
-
-    return ++idx;
-  }
-  
+  // MT: helper function copied from crux/src/c/crux-utils.cpp
   /**
    * Returns copy of the src string upto the specified length.
    * Includes a null terminating character.
