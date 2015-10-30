@@ -105,12 +105,15 @@ void ProteinProbEstimator::computeFDR() {
 }
 
 void ProteinProbEstimator::computeStatistics() {
-  if (usePi0_ && !mayufdr && outputEmpirQVal_ && pvalues.size() == 0) { 
+  if (pvalues.size() == 0) {
     estimatePValues();
+  }
+  
+  if (usePi0_ && !mayufdr && outputEmpirQVal_) {
     pi0_ = estimatePi0();
     if (pi0_ <= 0.0 || pi0_ > 1.0) pi0_ = *qvalues.rbegin();
     if (VERB > 1) {
-     std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
+      std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
     }
     /*
   } else {
@@ -434,7 +437,8 @@ void ProteinProbEstimator::estimateQValuesEmp() {
     }
   }
   
-  for (std::multimap<double,std::vector<std::string> >::const_iterator it = pepProteinMap_.begin(); it != pepProteinMap_.end(); it++) {
+  std::multimap<double,std::vector<std::string> >::const_iterator it;
+  for (it = pepProteinMap_.begin(); it != pepProteinMap_.end(); it++) {
     numTarget = countTargets(it->second);
     numDecoy = it->second.size() - numTarget;
     if (trivialGrouping_) {

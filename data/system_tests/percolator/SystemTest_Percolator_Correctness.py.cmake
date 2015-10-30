@@ -118,5 +118,5 @@ if T.success:
  print("...ALL TESTS SUCCEEDED")
  exit(0)
 else:
- print("..." + T.failures + " TESTS FAILED")
+ print("..." + str(T.failures) + " TESTS FAILED")
  exit(1)
