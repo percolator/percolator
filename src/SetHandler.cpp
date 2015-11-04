@@ -17,7 +17,7 @@
 
 #include "SetHandler.h"
 
-SetHandler::SetHandler() {}
+SetHandler::SetHandler() : maxPSMs_(0u) {}
 
 SetHandler::~SetHandler() {
   for (unsigned int ix = 0; ix < subsets_.size(); ix++) {
@@ -64,9 +64,8 @@ void SetHandler::print(Scores& test, int label, ostream& myout) {
     }
   }
   sort(outList.begin(), outList.end(), std::greater<ResultHolder> ());
-  myout
-      << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds"
-      << endl;
+  myout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n"
+        << endl;
   for (std::vector<ResultHolder>::iterator it = outList.begin();
          it != outList.end(); ++it) {
     myout << *it << endl;
@@ -75,6 +74,27 @@ void SetHandler::print(Scores& test, int label, ostream& myout) {
 
 void SetHandler::fillFeatures(vector<ScoreHolder> &scores, int label) {
   subsets_[getSubsetIndexFromLabel(label)]->fillFeatures(scores);
+}
+
+void SetHandler::normalizeFeatures(Normalizer*& pNorm) {
+  std::vector<double*> featuresV, rtFeaturesV;
+  for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
+    subsets_[ix]->fillFeatures(featuresV);
+    subsets_[ix]->fillRtFeatures(rtFeaturesV);
+  }
+  pNorm = Normalizer::getNormalizer();
+
+  pNorm->setSet(featuresV,
+      rtFeaturesV,
+      FeatureNames::getNumFeatures(),
+      DataSet::getCalcDoc() ? RTModel::totalNumRTFeatures() : 0);
+  pNorm->normalizeSet(featuresV, rtFeaturesV);
+}
+
+void SetHandler::setRetentionTime(map<int, double>& scan2rt) {
+  for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
+    subsets_[ix]->setRetentionTime(scan2rt);
+  }
 }
 
 /*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
@@ -88,14 +108,14 @@ int const SetHandler::getLabel(int setPos) {
 
 int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
   if (!dataStream) {
-    std::cerr << "ERROR: Can not open data stream." << std::endl;
+    std::cerr << "ERROR: Cannot open data stream." << std::endl;
     return 0;
   }
-  std::string tmp, psmid, line, headerLine, defaultDirectionLine;
-  istringstream iss;
+  std::string psmLine, headerLine, defaultDirectionLine;
   
   getline(dataStream, headerLine); // line with feature names
-  if (line.substr(0,5) == "<?xml") {
+  headerLine = rtrim(headerLine);
+  if (headerLine.substr(0,5) == "<?xml") {
     std::cerr << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
        "Input file seems to be in XML format, use the -k flag for XML input." << 
        std::endl;
@@ -103,12 +123,60 @@ int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
   }
   
   // Checking for optional headers "ScanNr", "ExpMass" and "CalcMass"
-  std::string optionalHeader;
   std::vector<OptionalField> optionalFields;
+  int optionalFieldCount = getOptionalFields(headerLine, optionalFields);
   
-  iss.str(rtrim(headerLine));
+  // parse second line for default direction
+  getline(dataStream, defaultDirectionLine);
+  defaultDirectionLine = rtrim(defaultDirectionLine);
+  bool hasInitialValueRow = isDefaultDirectionLine(defaultDirectionLine);
+
+  // count number of features from first PSM
+  if (hasInitialValueRow) {
+    getline(dataStream, psmLine);
+  } else {
+    psmLine = defaultDirectionLine;
+  }
+  psmLine = rtrim(psmLine);
+  int numFeatures = getNumFeatures(psmLine, optionalFieldCount);
+  
+  // fill in the feature names from the header line
+  FeatureNames& featureNames = DataSet::getFeatureNames();
+  getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
+  
+  // fill in the default weights if present
+  std::vector<double> init_values;
+  bool hasDefaultValues = false;
+  if (hasInitialValueRow) {
+    hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
+                                     init_values);
+  }
+  
+  if (numFeatures < 1) {
+    std::cerr << "ERROR: Reading tab file, too few features present." << std::endl;
+    return 0;
+  } else if (hasDefaultValues && init_values.size() > numFeatures) {
+    std::cerr << "ERROR: Reading tab file, too many default values present." << std::endl;
+    return 0;
+  }
+
+  // read in the data
+  readPSMs(dataStream, psmLine, hasInitialValueRow, optionalFields);  
+  //readSubsetPSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, 1000u);
+  
+  pCheck = new SanityCheck();
+  pCheck->checkAndSetDefaultDir();
+  if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
+  return 1;
+}
+
+int SetHandler::getOptionalFields(const std::string& headerLine, 
+    std::vector<OptionalField>& optionalFields) {
+  istringstream iss(headerLine);
+  std::string tmp;
   iss >> tmp >> tmp; // discard id, label
   bool hasScannr = false;
+  std::string optionalHeader;
   while (iss.good()) {
     iss >> optionalHeader;
     // transform to lower case for case insensitive matching
@@ -125,52 +193,48 @@ int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
       break;
     }
   }
-  int optionalFieldCount = static_cast<int>(optionalFields.size());
-  
   if (!hasScannr) {
     cerr << "\nWARNING: Tab delimited input does not contain ScanNr column," <<
             "\n         scan numbers will be assigned automatically.\n" << endl;
   }
+  return static_cast<int>(optionalFields.size());
+}
+
+bool SetHandler::isDefaultDirectionLine(const std::string& defaultDirectionLine) {
+  istringstream iss(defaultDirectionLine);
   
-  // parse second/third line for default direction and feature count
-  getline(dataStream, defaultDirectionLine);
-  iss.str(rtrim(defaultDirectionLine));
-  
-  iss >> psmid >> tmp; // read id and label of second row
+  std::string psmid;
+  iss >> psmid;
+
+  std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
+  return (psmid == "defaultdirection");
+}
+
+int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) {
+  istringstream iss(line);
+  std::string tmp;
+  iss >> tmp >> tmp; // remove id and label
   for (int i = 1; i <= optionalFieldCount; ++i) 
     iss >> tmp; // discard optional fields
   
-  // check if first row contains the default weights
-  bool hasInitialValueRow = false;
-  std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
-  if (psmid == "defaultdirection") { 
-    hasInitialValueRow = true;
-    // read in third line for feature count
-    getline(dataStream, line);
-    iss.str(rtrim(line));
-    iss >> tmp >> tmp; // remove id and label
-    for (int i = 1; i <= optionalFieldCount; ++i) 
-      iss >> tmp; // discard optional fields
-  } else {
-    line = defaultDirectionLine;
-  }
-  
-  // count number of features from first PSM
   double a;
-  unsigned int numFeatures = 0;
+  int numFeatures = 0;
   iss >> a; // test third/fourth column
   while (iss.good()) {
     ++numFeatures;
     iss >> a;
   }
-  iss.clear(); // clear the error bit
-  if (DataSet::getCalcDoc()) numFeatures -= 2;
   
-  // fill in the feature names from the first line
-  iss.str(rtrim(headerLine));
-  FeatureNames& featureNames = DataSet::getFeatureNames();
+  if (DataSet::getCalcDoc()) numFeatures -= 2;
+  return numFeatures;
+}
+
+void SetHandler::getFeatureNames(const std::string& headerLine, 
+    int numFeatures, int optionalFieldCount, FeatureNames& featureNames) {
+  istringstream iss(headerLine);
   int skip = 2 + optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0);
-  int numFeatLeft = static_cast<int>(numFeatures);
+  int numFeatLeft = numFeatures;
+  std::string tmp;
   while (iss.good()) {
     iss >> tmp;
     // removes enumerator, label and if present optional fields and DOC features
@@ -178,75 +242,34 @@ int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
       featureNames.insertFeature(tmp);
     }
   }
-  iss.clear(); // clear the error bit
   
   featureNames.initFeatures(DataSet::getCalcDoc());
   assert(numFeatures == DataSet::getNumFeatures());
-  
-  // fill in the default weights if present
-  std::vector<double> init_values;
-  bool hasDefaultValues = false;
-  if (hasInitialValueRow) {
-    iss.str(rtrim(defaultDirectionLine));
-    iss >> tmp >> tmp; // remove id and label
-    for (int i = 1; i <= optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0); ++i) 
-      iss >> tmp; // discard optional fields
-    
-    unsigned int ix = 0;
-    while (iss.good()) {
-      iss >> a;
-      if (a != 0.0) hasDefaultValues = true;
-      if (VERB > 2) {
-        std::cerr << "Initial direction for " << 
-                     DataSet::getFeatureNames().getFeatureName(ix) << " is " << 
-                     a << std::endl;
-      }
-      init_values.push_back(a);
-      ix++;
-    }
-    iss.clear(); // clear the error bit
-  }
-  
-  if (numFeatures < 1) {
-    std::cerr << "ERROR: Reading tab file, too few features present." << std::endl;
-    return 0;
-  } else if (hasDefaultValues && init_values.size() > numFeatures) {
-    std::cerr << "ERROR: Reading tab file, too many default values present." << std::endl;
-    return 0;
-  }
-  
-  DataSet * targetSet = new DataSet();
-  assert(targetSet);
-  targetSet->setLabel(1);
-  DataSet * decoySet = new DataSet();
-  assert(decoySet);
-  decoySet->setLabel(-1);
+}
 
-  // read in the data
+bool SetHandler::getInitValues(const std::string& defaultDirectionLine, 
+    int optionalFieldCount, std::vector<double>& init_values) {
+  istringstream iss(defaultDirectionLine);
+  std::string tmp;
+  iss >> tmp >> tmp; // remove id and label
+  for (int i = 1; i <= optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0); ++i) 
+    iss >> tmp; // discard optional fields
   
-  unsigned int lineNr = (hasInitialValueRow ? 3 : 2);
-  do {
-    int label;
-    istringstream iss(rtrim(line));
-    iss >> psmid >> label;
-    if (label == 1) {
-      targetSet->readPsm(line, lineNr, optionalFields);
-    } else if (label == -1) {
-      decoySet->readPsm(line, lineNr, optionalFields);
-    } else {
-      std::cerr << "Warning: the PSM with id " << psmid << " on line " << 
-          lineNr << " has a label not in {1,-1} and will be ignored." << std::endl;
+  bool hasDefaultValues = false;
+  unsigned int ix = 0;
+  double a;
+  while (iss.good()) {
+    iss >> a;
+    if (a != 0.0) hasDefaultValues = true;
+    if (VERB > 2) {
+      std::cerr << "Initial direction for " << 
+                   DataSet::getFeatureNames().getFeatureName(ix) << " is " << 
+                   a << std::endl;
     }
-    ++lineNr;
-  } while (getline(dataStream, line));
-  
-  push_back_dataset(targetSet);
-  push_back_dataset(decoySet);
-  
-  pCheck = new SanityCheck();
-  pCheck->checkAndSetDefaultDir();
-  if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
-  return 1;
+    init_values.push_back(a);
+    ix++;
+  }
+  return hasDefaultValues;
 }
 
 void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
@@ -272,6 +295,163 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
          it != subsets_.end(); ++it) {
     (*it)->writeTabData(dataStream);
   }
+}
+
+void SetHandler::readPSMs(istream& dataStream, std::string& psmLine, 
+    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields) {
+  DataSet* targetSet = new DataSet();
+  assert(targetSet);
+  targetSet->setLabel(1);
+  DataSet* decoySet = new DataSet();
+  assert(decoySet);
+  decoySet->setLabel(-1);
+  
+  if (maxPSMs_ > 0u) {
+    std::priority_queue<PSMDescriptionPriority> subsetPSMs;
+    std::map<ScanId, size_t> scanIdLookUp;
+    unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
+    do {
+      psmLine = rtrim(psmLine);
+      ScanId scanId = getScanId(psmLine, optionalFields, lineNr);
+      size_t randIdx;
+      if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
+        randIdx = scanIdLookUp[scanId];
+      } else {
+        randIdx = Scores::lcg_rand();
+        scanIdLookUp[scanId] = randIdx;
+      }
+      
+      unsigned int upperLimit = UINT_MAX;
+      if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
+        PSMDescriptionPriority psmPriority;
+        psmPriority.psm = new PSMDescription();
+        bool readProteins = false;
+        psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
+                                             readProteins, psmPriority.psm);
+        psmPriority.priority = randIdx;
+        subsetPSMs.push(psmPriority);
+        if (subsetPSMs.size() > maxPSMs_) {
+          PSMDescriptionPriority del = subsetPSMs.top();
+          upperLimit = del.priority;
+          deletePSMPointer(del.psm);
+          subsetPSMs.pop();
+        }
+      }
+      ++lineNr;
+    } while (getline(dataStream, psmLine));
+    
+    while (!subsetPSMs.empty()) {
+      PSMDescriptionPriority psmPriority = subsetPSMs.top();
+      if (psmPriority.label == 1) {
+        targetSet->registerPsm(psmPriority.psm);
+      } else if (psmPriority.label == -1) {
+        decoySet->registerPsm(psmPriority.psm);
+      } else {
+        std::cerr << "Warning: the PSM " << psmPriority.psm->id
+            << " has a label not in {1,-1} and will be ignored." << std::endl;
+        deletePSMPointer(psmPriority.psm);
+      }
+      subsetPSMs.pop();
+    }
+  } else {
+    unsigned int targetIdx = 0u, decoyIdx = 0u, lineNr = (hasInitialValueRow ? 3u : 2u);
+    do {
+      psmLine = rtrim(psmLine);
+      int label = getLabel(psmLine, lineNr);
+      if (label == 1) {
+        targetSet->readPsm(psmLine, lineNr, optionalFields);
+      } else if (label == -1) {
+        decoySet->readPsm(psmLine, lineNr, optionalFields);
+      } else {
+        std::cerr << "Warning: the PSM on line " << lineNr
+            << " has a label not in {1,-1} and will be ignored." << std::endl;
+      }
+      ++lineNr;
+    } while (getline(dataStream, psmLine));
+  }
+  
+  push_back_dataset(targetSet);
+  push_back_dataset(decoySet);
+}
+
+int SetHandler::getLabel(const std::string& psmLine, unsigned int lineNr) {
+  istringstream iss(psmLine);
+  std::string psmid;
+  int label;
+  iss >> psmid >> label;
+  if (!iss.good()) {
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
+        << ". Could not read PSMid or label." << std::endl;
+    throw MyException(temp.str());
+  }
+  return label;
+}
+
+ScanId SetHandler::getScanId(const std::string& psmLine, 
+    std::vector<OptionalField>& optionalFields, unsigned int lineNr) {
+  ScanId scanId;
+  
+  std::istringstream buff(psmLine);
+  std::string tmp;
+  int label;
+  buff >> tmp >> label; // read PSMid and get rid of label
+  if (!buff.good()) {
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
+        << ". Could not read PSMid or label." << std::endl;
+    throw MyException(temp.str());
+  }
+  
+  bool hasScannr = false;
+  std::vector<OptionalField>::const_iterator it = optionalFields.begin();
+  for ( ; it != optionalFields.end(); ++it) {
+    switch (*it) {
+      case SCANNR: {
+        buff >> scanId.first;
+        if (!buff.good()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading scan number on line " 
+              << lineNr << ". Check if scan number is an integer." << std::endl;
+          throw MyException(temp.str());
+        } else {
+          hasScannr = true;
+        }
+        break;
+      } case EXPMASS: {
+        buff >> scanId.second;
+        if (!buff.good()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading experimental mass on line " 
+              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+          throw MyException(temp.str());
+        }
+        break;
+      } case CALCMASS: {
+        break;
+      } default: {
+        ostringstream temp;
+        temp << "ERROR: Unknown optional field." << std::endl;
+        throw MyException(temp.str());
+        break;
+      }
+    }
+  }
+  if (!hasScannr) scanId.first = lineNr;
+  
+  return scanId;
+}
+
+void SetHandler::deletePSMPointer(PSMDescription* psm) {
+  if (psm->features) {
+    delete[] psm->features;
+    psm->features = NULL;
+  }
+  if (psm->retentionFeatures) {
+    delete[] psm->retentionFeatures;
+    psm->retentionFeatures = NULL;
+  }
+  delete psm;
 }
 
 std::string& SetHandler::rtrim(std::string &s) {

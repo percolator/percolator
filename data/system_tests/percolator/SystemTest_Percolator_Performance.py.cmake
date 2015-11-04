@@ -32,9 +32,16 @@ def checkNumberOfSignificant(what,file,expected):
   else:
     output = getLine("New pi_0 estimate",file)
   if what=="proteins":
-    extracted = float(output[-3:])
+    extracted = output[-3:]
   else:
-    extracted = float(output[39:42])
+    extracted = output[39:42]
+    
+  try:
+    extracted = float(extracted)
+  except ValueError:
+    print("...TEST FAILED: could not read from " + file)
+    extracted = 0
+    success = False
   # check if number of significant within 10% of expected value 
   # NB: for this small data set the number can vary widely depending on the random seed
   if extracted<expected-(10*expected/100)  or extracted>expected+(10*expected/100) : 
@@ -48,7 +55,14 @@ def checkPi0(what,file,expected):
   success = True
   print("(*): checking pi_0 estimate for "+what+"...")
   output = getLine("Selecting pi_0",file)
-  extracted = float(output[15:20])
+  extracted = output[15:20]
+  try:
+    extracted = float(extracted)
+  except ValueError:
+    print("...TEST FAILED: could not read from " + file)
+    extracted = 0
+    success = False
+    
   if extracted<expected-(5*expected/100) or extracted>expected+(5*expected/100):
     print("...TEST FAILED: "+what+" pi_0=" + str(extracted) + " is outside of desired range")
     print("check "+file+" for details") 
@@ -98,9 +112,23 @@ def performanceD4On(docFile, psmFile):
   #output = getLine("New pi_0", psmFile)
   #extracted_D4off = int(output[39:42])
   output = getLine("Iteration 10", docFile)
-  extracted_D4on = int(output[42:45])
+  extracted_D4on = output[42:45]
+  try:
+    extracted_D4on = float(extracted_D4on)
+  except ValueError:
+    print("...TEST FAILED: could not read number of PSMs from " + docFile)
+    extracted_D4on = 0
+    success = False
+    
   output = getLine("Iteration 10", psmFile)
-  extracted_D4off = int(output[42:45])
+  extracted_D4off = output[42:45]
+  try:
+    extracted_D4off = float(extracted_D4off)
+  except ValueError:
+    print("...TEST FAILED: could not read number of PSMs from " + psmFile)
+    extracted_D4off = 0
+    success = False
+  
   if extracted_D4on < extracted_D4off:
     print("...TEST FAILED: percolator with -D 4 option performed worse than without it (" + str(extracted_D4on) + " vs. " + str(extracted_D4off) + ")")
     print("check " + docFile + " and " + psmFile + " for details")

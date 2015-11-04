@@ -27,10 +27,13 @@ const unsigned int CrossValidation::numAlgInObjects_ = 1u;
 // checks cross validation convergence in case of quickValidation_
 const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01; 
 
-CrossValidation::CrossValidation() :
-    quickValidation_(false), reportPerformanceEachIteration_(false), 
-    testFdr_(0.01), selectionFdr_(0.01), 
-    selectedCpos_(0), selectedCneg_(0), niter_(10) {}
+CrossValidation::CrossValidation(bool quickValidation, 
+  bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
+  double selectedCpos, double selectedCneg, int niter, bool usePi0) :
+    quickValidation_(quickValidation), usePi0_(usePi0),
+    reportPerformanceEachIteration_(reportPerformanceEachIteration), 
+    testFdr_(testFdr), selectionFdr_(selectionFdr), 
+    selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter) {}
 
 
 CrossValidation::~CrossValidation() { 
@@ -42,13 +45,6 @@ CrossValidation::~CrossValidation() {
   }
 }
 
-void CrossValidation::printParameters(ostringstream & oss) {
-  oss << "Hyperparameters selectionFdr=" << selectionFdr_
-      << ", Cpos=" << selectedCpos_ << ", Cneg=" << selectedCneg_
-      << ", maxNiter=" << niter_ << endl;
-}
-
-
 /** 
  * Sets up the SVM classifier: 
  * - divide dataset into training and test sets for each fold
@@ -56,8 +52,8 @@ void CrossValidation::printParameters(ostringstream & oss) {
  * @param w_ vector of SVM weights
  * @return number of positives for initial setup
  */
-int CrossValidation::preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
-                                       Normalizer * pNorm) {
+int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck, 
+                                       Normalizer* pNorm) {
   // initialize weights vector for all folds
   w_ = vector<vector<double> >(numFolds_, 
            vector<double> (FeatureNames::getNumFeatures() + 1));
@@ -69,8 +65,8 @@ int CrossValidation::preIterationSetup(Scores & fullset, SanityCheck * pCheck,
   }
   
   if (selectedCpos_ >= 0 && selectedCneg_ >= 0) {
-    trainScores_.resize(numFolds_);
-    testScores_.resize(numFolds_);
+    trainScores_.resize(numFolds_, Scores(usePi0_));
+    testScores_.resize(numFolds_, Scores(usePi0_));
     
     fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_);
     

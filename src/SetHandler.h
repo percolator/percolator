@@ -27,6 +27,8 @@
 #include <string>
 #include <cctype>
 #include <locale>
+#include <queue>
+#include <climits>
 
 #include "ResultHolder.h"
 #include "DataSet.h"
@@ -37,6 +39,18 @@
 #include "SanityCheck.h"
 
 using namespace std;
+
+struct PSMDescriptionPriority {
+  PSMDescription* psm;
+  size_t priority;
+  int label;
+  
+  bool operator<(const PSMDescriptionPriority& psmp) const {
+    return (priority < psmp.priority);
+  }
+};
+
+typedef std::pair<int, double> ScanId;
 
 /*
 * SetHandler is a class that provides functionality to handle training,
@@ -51,6 +65,7 @@ class SetHandler {
   void push_back_dataset(DataSet* ds);
      
   //const double* getFeatures(const int setPos, const int ixPos) const; 
+  size_t getMaxPSMs() { return maxPSMs_; }
   
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
@@ -58,23 +73,43 @@ class SetHandler {
   void writeTab(const string& dataFN, SanityCheck* pCheck);
   void print(Scores& test, int label, ostream& myout = cout);
   void fillFeatures(vector<ScoreHolder> &scores, int label);
-
+  void normalizeFeatures(Normalizer*& pNorm);
+  void setRetentionTime(map<int, double>& scan2rt);
+  
   int const getLabel(int setPos);
   inline int getSizeFromLabel(int label) {
     return (subsets_[getSubsetIndexFromLabel(label)]->getSize());
   }
   
-  vector<DataSet*>& getSubsets() { return subsets_; }
   inline DataSet* getSubset(unsigned int ix) { return (subsets_[ix]); }
   inline DataSet* getSubsetFromLabel(int label) {
     return (subsets_[getSubsetIndexFromLabel(label)]);
   }
   
+  static void deletePSMPointer(PSMDescription* psm);
+  
  protected:
+  size_t maxPSMs_;
   vector<DataSet*> subsets_;
   
   unsigned int getSubsetIndexFromLabel(int label);
   static inline std::string &rtrim(std::string &s);
+  
+  int getOptionalFields(const std::string& headerLine, 
+    std::vector<OptionalField>& optionalFields);
+  bool isDefaultDirectionLine(const std::string& defaultDirectionLine);
+  int getNumFeatures(const std::string& line, int optionalFieldCount);
+  void getFeatureNames(const std::string& headerLine, int numFeatures, 
+    int optionalFieldCount, FeatureNames& featureNames);
+  bool getInitValues(const std::string& defaultDirectionLine, 
+    int optionalFieldCount, std::vector<double>& init_values);
+  int getLabel(const std::string& psmLine, unsigned int lineNr);
+  ScanId getScanId(const std::string& psmLine, 
+    std::vector<OptionalField>& optionalFields, unsigned int lineNr);
+    
+  void readPSMs(istream& dataStream, std::string& psmLine, 
+    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields);
+  
 };
 
 #endif /*SETHANDLER_H_*/

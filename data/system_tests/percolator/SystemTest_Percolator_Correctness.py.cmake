@@ -92,7 +92,7 @@ if xmlSupport:
 
   # running percolator with option to generate tab-delimited input
   print("(*) running percolator to generate tab-delimited input...")
-  tabData=os.path.join(pathToOutputData, "percolator/tab/percolatorTab ")
+  tabData=os.path.join(pathToOutputData, "percolatorTab ")
   T.doTest(canPercRunThis("tab_generate","-y -U -J " + tabData,"percolator/pin/pin.xml","-k",False))
 
 print("- PERCOLATOR TAB FORMAT")

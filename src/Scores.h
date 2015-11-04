@@ -42,23 +42,26 @@ using namespace std;
 *
 */
 class ScoreHolder {
-  public:
-    double score, q, pep, p;
-    int label;
-    PSMDescription* pPSM;
-    std::vector<std::string> psms_list;
-    
-    ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
-    ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
-      score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm) {}
-    virtual ~ScoreHolder() {}
-    
-    pair<double, bool> toPair() const { return pair<double, bool> (score, label > 0); }
-    
-    inline bool isTarget() const { return label != -1; }
-    inline bool isDecoy() const { return label == -1; }
+ public:
+  double score, q, pep, p;
+  int label;
+  PSMDescription* pPSM;
+  std::vector<std::string> psms_list;
+  
+  ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
+  ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
+    score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm) {}
+  virtual ~ScoreHolder() {}
+  
+  std::pair<double, bool> toPair() const { 
+    return pair<double, bool> (score, label > 0); 
+  }
+  
+  inline bool isTarget() const { return label != -1; }
+  inline bool isDecoy() const { return label == -1; }
+  void printPSM(ostream& os, bool printDecoys, bool printExpMass);
+  void printPeptide(ostream& os, bool printDecoys, bool printExpMass);
 };
-ostream& operator<<(ostream& os, const ScoreHolder& sh);
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
@@ -104,23 +107,6 @@ inline string getRidOfUnprintablesAndUnicode(string inpString) {
   return outputs;
 }
 
-/**
- * ScoreHolder for unique peptides. Only differs in the way it is printed to 
- * a stream, therefore it is safe to create a vector slicing the object to
- * a normal ScoreHolder.
- */
-class ScoreHolderPeptide : public ScoreHolder {
-  public:
-    ScoreHolderPeptide() : ScoreHolder() {}
-    ScoreHolderPeptide(ScoreHolder& sh) : ScoreHolder(sh) {}
-    ScoreHolderPeptide(const double& s, const int& l, PSMDescription* psm = NULL) :
-      ScoreHolder(s, l, psm) {}
-    virtual ~ScoreHolderPeptide() {}
-};
-
-// overloading output operator for class ScoreHolderPeptide
-ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh);
-
 class SetHandler;
 class AlgIn;
 
@@ -138,7 +124,8 @@ class AlgIn;
 */
 class Scores {
  public:
-  Scores() : pi0_(1.0), targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
+  Scores(bool usePi0) : usePi0_(usePi0), pi0_(1.0), 
+    targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
     totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
   ~Scores() {}
   void merge(vector<Scores>& sv, double fdr);
@@ -182,7 +169,6 @@ class Scores {
   
   DescriptionOfCorrect& getDOC() { return doc_; }
   
-  inline static void setUsePi0(bool b) { usePi0_ = b; }
   inline double getPi0() const { return pi0_; }
   inline double getTargetDecoySizeRatio() const { 
     return targetDecoySizeRatio_; 
@@ -193,27 +179,18 @@ class Scores {
   inline unsigned int posSize() const { return totalNumberOfTargets_; }
   inline unsigned int negSize() const { return totalNumberOfDecoys_; }
   
-  inline static void setPrintDecoysInXml(bool decoysOut) { 
-    printDecoysInXml_ = decoysOut; 
-  }
-  inline static bool getPrintDecoysInXml() { return printDecoysInXml_; }
-  inline static void setShowExpMass(bool expmass) { showExpMass_ = expmass; }
-  inline static bool getShowExpMass() { return showExpMass_; }
-  
   inline void resetScoreMap() { scoreMap_.clear(); }
   
   inline static void setSeed(unsigned long s) { seed_ = s; }
-  unsigned long lcg_rand();
+  static unsigned long lcg_rand();
   
   inline void addScoreHolder(const ScoreHolder& sh) {
     scores_.push_back(sh);
   }
   
  protected:
-  static bool printDecoysInXml_;
   static unsigned long seed_;
-  static bool showExpMass_;
-  static bool usePi0_;
+  bool usePi0_;
   
   double pi0_;
   double targetDecoySizeRatio_;

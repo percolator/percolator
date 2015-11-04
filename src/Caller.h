@@ -52,67 +52,56 @@
 * 
 */
 class Caller {
-  public:
-    enum SetHandlerType {
-      NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
-    };
-    
-  public:
-    
-    Caller();
-    virtual ~Caller();
-    
-    static string greeter();
-    string extendedGreeter();
-    bool parseOptions(int argc, char **argv);    
-    int run();
-    
-  protected:
-    
-    XMLInterface xmlInterface_;
-    
-    Normalizer* pNorm_;
-    SanityCheck* pCheck_;
-    ProteinProbEstimator* protEstimator_;
-    
-    CrossValidation crossValidation_;
-    
-    string tabInputFN_;
-    string tabOutputFN_;
-    
-    string psmResultFN_, peptideResultFN_, proteinResultFN_;
-    string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
-    
-    string weightFN_;
-    
-    bool tabInput_;
-    bool readStdIn_;
-    
-    bool reportUniquePeptides_;
-    bool targetDecoyCompetition_;
-    
-    double testFdr_;
-    
-    double threshTestRatio_;
-    double trainRatio_;
-    
-    string call_;
-    
-    time_t startTime_;
-    clock_t startClock_;
-    
-    SetHandler setHandler_;
-    Scores allScores_; //,thresholdset;
-    
-    map<int, double> scanToRetentionTimeMap_;
-    
-    int readFiles();
-    
-    void fillFeatureSets();
-    void calculatePSMProb(bool uniquePeptideRun, time_t& procStart,
-        clock_t& procStartClock, double& diff);
-    
-    void calculateProteinProbabilitiesFido();
+ public:
+  enum SetHandlerType {
+    NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
+  };
+  
+  Caller();
+  virtual ~Caller();
+  
+  static string greeter();
+  string extendedGreeter(time_t& startTime);
+  bool parseOptions(int argc, char **argv);    
+  int run();
+  
+ protected:    
+  Normalizer* pNorm_;
+  SanityCheck* pCheck_;
+  ProteinProbEstimator* protEstimator_;
+  
+  // file input parameters
+  bool tabInput_;
+  bool readStdIn_;
+  std::string inputFN_;
+  bool xmlSchemaValidation_;
+  
+  // file output parameters
+  std::string tabOutputFN_, xmlOutputFN_;
+  std::string weightOutputFN_;
+  std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
+  std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
+  bool xmlPrintDecoys_, xmlPrintExpMass_;
+  
+  // report level parameters
+  bool reportUniquePeptides_;
+  bool targetDecoyCompetition_;
+  bool usePi0_;
+  
+  // cross validation parameters
+  double selectionFdr_, testFdr_;
+  unsigned int numIterations_;
+  double selectedCpos_, selectedCneg_;
+  bool reportEachIteration_, quickValidation_;
+  
+  // reporting parameters
+  std::string call_;
+  
+  void calculatePSMProb(SetHandler& setHandler, Scores& allScores,
+      bool uniquePeptideRun, time_t& procStart,
+      clock_t& procStartClock, double& diff);
+  
+  void calculateProteinProbabilities(Scores& allScores);
     
 };
 

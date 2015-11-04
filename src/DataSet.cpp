@@ -18,11 +18,9 @@
 #include "DataSet.h"
 
 bool DataSet::calcDOC_ = false;
-const string DataSet::aaAlphabet_ = "ACDEFGHIKLMNPQRSTVWY";
-string DataSet::ptmAlphabet_ = "#*@";
 FeatureNames DataSet::featureNames_;
 
-DataSet::DataSet() : numSpectra_(0) {}
+DataSet::DataSet() {}
 
 DataSet::~DataSet() {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
@@ -89,7 +87,7 @@ void DataSet::print_10features() {
   }
 }
 
-void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
+void DataSet::print(Scores& test, std::vector<ResultHolder> &outList) {
   ostringstream out;
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
@@ -106,7 +104,7 @@ void DataSet::print(Scores& test, vector<ResultHolder> &outList) {
 }
 
 // TODO: find a way to make these three functions generic
-void DataSet::fillFeatures(vector<ScoreHolder> &scores) {
+void DataSet::fillFeatures(std::vector<ScoreHolder> &scores) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
@@ -114,7 +112,7 @@ void DataSet::fillFeatures(vector<ScoreHolder> &scores) {
   }
 }
 
-void DataSet::fillFeatures(vector<double*> &features) {
+void DataSet::fillFeatures(std::vector<double*> &features) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
@@ -122,7 +120,7 @@ void DataSet::fillFeatures(vector<double*> &features) {
   }
 }
 
-void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
+void DataSet::fillRtFeatures(std::vector<double*> &rtFeatures) {
   double* features;
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
@@ -132,61 +130,29 @@ void DataSet::fillRtFeatures(vector<double*> &rtFeatures) {
   }
 }
 
-/*
-double DataSet::isPngasef(const string& peptide) {
-  bool isDecoy;
-  switch (label_) {
-    case 1: { isDecoy = false; break; };
-    case -1: { isDecoy = true; break; };
-    default:  { throw MyException("ERROR : class DataSet has not been initiated\
-    to neither target nor decoy label_\n");}
-  }
-  return isPngasef( peptide, isDecoy);
-}
-//
-double DataSet::isPngasef(const string& peptide, bool isDecoy ) {
-  size_t next_pos = 0, pos;
-  while ((pos = peptide.find("N*", next_pos)) != string::npos) {
-    next_pos = pos + 1;
-    if (! isDecoy) {
-      pos += 3;
-      if (peptide[pos] == '#') {
-        pos += 1;
-      }
-    } else {
-      pos -= 2;
-      if (peptide[pos] == '#') {
-        pos -= 1;
-      }
-    }
-    if (peptide[pos] == 'T' || peptide[pos] == 'S') {
-      return 1.0;
-    }
-  }
-  return 0.0;
-}
-*/
-
 /**
  * Read in psm details from a string out of tab delimited file
  * @param dataStream filestream of tab delimited file, only passed to close on exception
  * TODO: remove dataStream parameter and return int with type of error to handle upstream.
  * @param line tab delimited string containing the psm details
  */
-void DataSet::readPsm(const std::string line, const unsigned int lineNr, 
-                      const std::vector<OptionalField>& optionalFields) {
-  istringstream buff(line);
-  string tmp;
+void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
+    const std::vector<OptionalField>& optionalFields) { 
+  PSMDescription* myPsm = new PSMDescription();
+  bool readProteins = true;
+  readPsm(line, lineNr, optionalFields, readProteins, myPsm);
+  registerPsm(myPsm);
+}
+
+int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
+    const std::vector<OptionalField>& optionalFields, bool readProteins,
+    PSMDescription* myPsm) {
+  std::istringstream buff(line);
+  std::string tmp;
   unsigned int numFeatures = FeatureNames::getNumFeatures();
   
-  PSMDescription *myPsm = new PSMDescription();
-  buff >> myPsm->id >> tmp; // read PSMid and get rid of label_
-  if (!buff.good()) {
-    ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr << \
-        ". Could not read PSMid or label_." << std::endl;
-    throw MyException(temp.str());
-  }
+  int label;
+  buff >> myPsm->id >> label; // read PSMid and label
   
   bool hasScannr = false;
   std::vector<OptionalField>::const_iterator it = optionalFields.begin();
@@ -196,8 +162,8 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
         buff >> myPsm->scan;
         if (!buff.good()) {
           ostringstream temp;
-          temp << "ERROR: Reading tab file, error reading scan number of PSM with id " << myPsm->id << \
-              ". Check if the scan number is an integer." << std::endl;
+          temp << "ERROR: Reading tab file, error reading scan number of PSM " 
+              << myPsm->id << ". Check if scan number is an integer." << std::endl;
           throw MyException(temp.str());
         } else {
           hasScannr = true;
@@ -224,15 +190,16 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
   }
-  double *featureRow = new double[FeatureNames::getNumFeatures()];
+  double* featureRow = new double[FeatureNames::getNumFeatures()];
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
     buff >> featureRow[j];
   }
   if (!buff.good()) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading in the feature vector of PSM with id " << myPsm->id << \
-     ". Check if there are enough features on this line and if they are all floating point numbers or integers." << std::endl;
+    temp << "ERROR: Reading tab file, error reading in feature vector of PSM " 
+      << myPsm->id << ". Check if there are enough features on this line and "
+      << "if they are all floating point numbers or integers." << std::endl;
     throw MyException(temp.str());
   }
   
@@ -241,37 +208,38 @@ void DataSet::readPsm(const std::string line, const unsigned int lineNr,
   myPsm->peptide = peptide_seq;
   if (!buff.good()) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM with id " << myPsm->id << ". Check if" << \
-      " a peptide and at least one protein are specified." << std::endl;
+    temp << "ERROR: Reading tab file, error reading PSM " << myPsm->id 
+      << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
   } else if (peptide_seq.size() < 5) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq << \
-      " with PSM id " << myPsm->id << " is too short." << std::endl;
+    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
+      << " with PSM id " << myPsm->id << " is too short." << std::endl;
     throw MyException(temp.str());
   } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq << \
-      " with PSM id " << myPsm->id << " does not contain one or two of its flanking amino acids." << std::endl;
+    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
+      << " with PSM id " << myPsm->id << " does not contain one or two of its"
+      << " flanking amino acids." << std::endl;
     throw MyException(temp.str());
   }
   
-  while (!!buff) {
+  while (readProteins && !!buff) {
     buff >> tmp;
     if (tmp.size() > 0) {
       myPsm->proteinIds.insert(tmp);
     }
   }
   
-  registerPsm(myPsm);
+  return label;
 }
 
-void DataSet::registerPsm(PSMDescription * myPsm) {
+void DataSet::registerPsm(PSMDescription* myPsm) {
   switch (label_) {
     case 1: { break; };
     case -1: { break; };
-    default:  { throw MyException("Error : Reading PSM, class DataSet has not been initiated\
-    to neither target nor decoy label_\n");}
+    default:  { throw MyException("ERROR : Reading PSM, class DataSet has not been initiated\
+    to neither target nor decoy label\n");}
   }
   
   if (calcDOC_) {
@@ -284,5 +252,4 @@ void DataSet::registerPsm(PSMDescription * myPsm) {
     myPsm->features[featureNum++] = 0;
   }
   psms_.push_back(myPsm);
-  ++numSpectra_;
 }

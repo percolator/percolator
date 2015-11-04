@@ -27,13 +27,16 @@
 using namespace std;
 
 Caller::Caller() :
-        pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL),
-        tabInputFN_(""), tabOutputFN_(""), psmResultFN_(""), 
-        peptideResultFN_(""), proteinResultFN_(""), decoyPsmResultFN_(""), 
-        decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-        weightFN_(""), tabInput_(false), readStdIn_(false),
-        reportUniquePeptides_(true), targetDecoyCompetition_(true),
-        testFdr_(0.01), threshTestRatio_(0.3), trainRatio_(0.6) {
+    pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), tabInput_(true), 
+    readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true), 
+    tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
+    psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""), 
+    decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
+    xmlPrintDecoys_(false), xmlPrintExpMass_(true),
+    reportUniquePeptides_(true), targetDecoyCompetition_(true), usePi0_(false),
+    selectionFdr_(0.01), testFdr_(0.01), numIterations_(10),
+    selectedCpos_(0.0), selectedCneg_(0.0),
+    reportEachIteration_(false), quickValidation_(false) {
 }
 
 Caller::~Caller() {
@@ -51,15 +54,17 @@ Caller::~Caller() {
   protEstimator_ = NULL;
 }
 
-string Caller::extendedGreeter() {
+string Caller::extendedGreeter(time_t& startTime) {
   ostringstream oss;
   char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call_ << endl;
-  oss << "Started " << ctime(&startTime_) << endl;
+  oss << "Started " << ctime(&startTime) << endl;
   oss.seekp(-1, ios_base::cur);
-  if(host) oss << " on " << host << endl;
-  crossValidation_.printParameters(oss);
+  if (host) oss << " on " << host << endl;
+  oss << "Hyperparameters selectionFdr=" << selectionFdr_
+      << ", Cpos=" << selectedCpos_ << ", Cneg=" << selectedCneg_
+      << ", maxNiter=" << numIterations_ << endl;
   return oss.str();
 }
 
@@ -334,11 +339,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   // now query the parsing results
-  if (cmd.optionSet("X")) xmlInterface_.setXmlOutputFN(cmd.options["X"]);
+  if (cmd.optionSet("X")) xmlOutputFN_ = cmd.options["X"];
   
   // filenames for outputting results to file
-  if (cmd.optionSet("m"))  psmResultFN_ = cmd.options["m"];
-  if (cmd.optionSet("M"))  decoyPsmResultFN_ = cmd.options["M"];
+  if (cmd.optionSet("m")) psmResultFN_ = cmd.options["m"];
+  if (cmd.optionSet("M")) decoyPsmResultFN_ = cmd.options["M"];
   
   if (cmd.optionSet("U")) {
     if (cmd.optionSet("A")){
@@ -377,8 +382,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
     reportUniquePeptides_ = false;
   } else {
-    if (cmd.optionSet("r"))  peptideResultFN_ = cmd.options["r"];
-    if (cmd.optionSet("B"))  decoyPeptideResultFN_ = cmd.options["B"];
+    if (cmd.optionSet("r")) peptideResultFN_ = cmd.options["r"];
+    if (cmd.optionSet("B")) decoyPeptideResultFN_ = cmd.options["B"];
   }
 
   if (cmd.optionSet("A") || cmd.optionSet("f")) {
@@ -474,7 +479,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   if (cmd.optionSet("k")) {
     tabInput_ = false;
-    xmlInterface_.setXmlInputFN(cmd.options["k"]);
+    inputFN_ = cmd.options["k"];
   }
   
   if (cmd.optionSet("e")) {
@@ -484,7 +489,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   if (cmd.optionSet("j")) {
     tabInput_ = true;
-    tabInputFN_ = cmd.options["j"];
+    inputFN_ = cmd.options["j"];
   }
   
   if (cmd.optionSet("")) {
@@ -493,11 +498,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   if (cmd.optionSet("p")) {
-    crossValidation_.setSelectedCpos(cmd.getDouble("p", 0.0, 1e127));
+    selectedCpos_ = cmd.getDouble("p", 0.0, 1e127);
   }
   if (cmd.optionSet("n")) {
-    crossValidation_.setSelectedCneg(cmd.getDouble("n", 0.0, 1e127));
-    if (crossValidation_.getSelectedCpos() == 0) {
+    selectedCneg_ = cmd.getDouble("n", 0.0, 1e127);
+    if (selectedCpos_ == 0) {
       std::cerr << "WARNING: the positive penalty(cpos) is 0, therefore both the "  
                << "positive and negative penalties are going "
                << "to be cross-validated. The option --Cneg has to be used together "
@@ -509,7 +514,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   if (cmd.optionSet("w")) {
-    weightFN_ = cmd.options["w"];
+    weightOutputFN_ = cmd.options["w"];
   }
   if (cmd.optionSet("W")) {
     SanityCheck::setInitWeightFN(cmd.options["W"]);
@@ -524,20 +529,19 @@ bool Caller::parseOptions(int argc, char **argv) {
     SanityCheck::setOverrule(true);
   }
   if (cmd.optionSet("R")) {
-    crossValidation_.setReportPerformanceEachIteration(true);
+    reportEachIteration_ = true;
   }
   if (cmd.optionSet("x")) {
-    crossValidation_.setQuickValidation(true);
+    quickValidation_ = true;
   }
   if (cmd.optionSet("F")) {
-    crossValidation_.setSelectionFdr(cmd.getDouble("F", 0.0, 1.0));
+    selectionFdr_ = cmd.getDouble("F", 0.0, 1.0);
   }
   if (cmd.optionSet("t")) {
     testFdr_ = cmd.getDouble("t", 0.0, 1.0);
-    crossValidation_.setTestFdr(testFdr_);
   }
   if (cmd.optionSet("i")) {
-    crossValidation_.setNiter(cmd.getInt("i", 0, 1000));
+    numIterations_ = cmd.getInt("i", 0, 1000);
   }
   if (cmd.optionSet("S")) {
     Scores::setSeed(cmd.getInt("S", 1, 20000));
@@ -549,19 +553,18 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("K")) {
     DescriptionOfCorrect::setKlammer(true);
   }
-  if (cmd.optionSet("Z")) {
-    Scores::setPrintDecoysInXml(true);
-  }
   if (cmd.optionSet("s")) {
-    xmlInterface_.setSchemaValidation(false);
+    xmlSchemaValidation_ = false;
   }
-  Scores::setShowExpMass(true);
+  if (cmd.optionSet("Z")) {
+    xmlPrintDecoys_ = true;
+  }
   if (cmd.optionSet("y")) {
     if (cmd.optionSet("A")) {
       std::cerr << "WARNING: cannot use qvality for pep calculation when predicting protein probabilities with the -A flag, ignoring the -y flag." << std::endl;
     } else {
       targetDecoyCompetition_ = false;
-      Scores::setUsePi0(true);
+      usePi0_ = true;
     }
   }
   // if there are no arguments left...
@@ -575,7 +578,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   // if there is one argument left...
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
-    tabInputFN_ = cmd.arguments[0]; // then it's the pin input
+    inputFN_ = cmd.arguments[0]; // then it's the pin input
     if (cmd.optionSet("k") || cmd.optionSet("j")){ // and if the tab input is also present
       cerr << "Error: use one of either pin-xml or tab-delimited input format.";
       cerr << "\nInvoke with -h option for help.\n";
@@ -597,93 +600,14 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
-/**
- * Reads in the files from XML (must be enabled at compile time) or tab format
- */
-int Caller::readFiles() { 
-  int error = 0;
-  if (!tabInput_) {
-    std::ifstream fileStream;
-    if (!readStdIn_) {
-      fileStream.exceptions(ifstream::badbit | ifstream::failbit);
-      fileStream.open(xmlInterface_.getXmlInputFN().c_str(), ios::in);
-      if (VERB > 1) {
-        std::cerr << "Reading XML input from datafile " << 
-                     xmlInterface_.getXmlInputFN() << std::endl;
-      }
-    }
-    
-    std::istream &dataStream = readStdIn_ ? std::cin : fileStream;
-    
-    error = xmlInterface_.readPin(dataStream, setHandler_, pCheck_, protEstimator_);
-  } else {
-    std::ifstream fileStream;
-    if (!readStdIn_) {
-      fileStream.open(tabInputFN_.c_str(), ios::in);
-      if (VERB > 1) {
-        std::cerr << "Reading Tab delimited input from datafile " << 
-                     tabInputFN_ << std::endl;
-      }
-    }
-    std::istream &dataStream = readStdIn_ ? std::cin : fileStream;
-    
-    error = setHandler_.readTab(dataStream, pCheck_);
-  }
-  return error;
-}
-
-
-/** 
- * Fills in the features previously read from file and normalizes them
- */
-void Caller::fillFeatureSets() {
-  allScores_.fillFeatures(setHandler_);
-  if (VERB > 1) {
-    cerr << "Train/test set contains " << allScores_.posSize()
-        << " positives and " << allScores_.negSize()
-        << " negatives, size ratio=" << allScores_.getTargetDecoySizeRatio()
-        << " and pi0=" << allScores_.getPi0() << endl;
-  }
-  
-  // check for the minimum recommended number of positive and negative hits
-  if (allScores_.posSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
-    std::cerr << "Warning : the number of positive samples read is too small to perform a correct classification.\n" << std::endl;
-  }
-  if (allScores_.negSize() <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
-    std::cerr << "Warning : the number of negative samples read is too small to perform a correct classification.\n" << std::endl;
-  }
-  
-  if (DataSet::getCalcDoc()) {
-    for (std::vector<DataSet*>::iterator it = setHandler_.getSubsets().begin();
-         it != setHandler_.getSubsets().end(); ++it) {
-      (*it)->setRetentionTime(scanToRetentionTimeMap_);
-    }
-  }
-  
-  //Normalize features
-  vector<double*> featuresV, rtFeaturesV;
-  for (std::vector<DataSet*>::iterator it = setHandler_.getSubsets().begin();
-         it != setHandler_.getSubsets().end(); ++it) {
-    (*it)->fillFeatures(featuresV);
-    (*it)->fillRtFeatures(rtFeaturesV);
-  }
-  pNorm_ = Normalizer::getNormalizer();
-
-  pNorm_->setSet(featuresV,
-      rtFeaturesV,
-      FeatureNames::getNumFeatures(),
-      DataSet::getCalcDoc() ? RTModel::totalNumRTFeatures() : 0);
-  pNorm_->normalizeSet(featuresV, rtFeaturesV);
-}
-
-
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities
  * @param procStart clock time when process started
  * @param procStartClock clock associated with procStart
  * @param diff runtime of the calculations
  */
-void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
+void Caller::calculatePSMProb(SetHandler& setHandler, Scores& allScores,
+    bool isUniquePeptideRun, time_t& procStart,
     clock_t& procStartClock, double& diff){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides_ option was switched on OR if this is not the unique
@@ -696,27 +620,23 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
   }
   
   if (isUniquePeptideRun) {
-    allScores_.weedOutRedundant();
+    allScores.weedOutRedundant();
   } else if (targetDecoyCompetition_) {
-    allScores_.weedOutRedundantTDC();
+    allScores.weedOutRedundantTDC();
     if (VERB > 0) {
-      std::cerr << "Target Decoy Competition yielded " << allScores_.posSize() 
-        << " target PSMs and " << allScores_.negSize() << " decoy PSMs" << std::endl;
+      std::cerr << "Target Decoy Competition yielded " << allScores.posSize() 
+        << " target PSMs and " << allScores.negSize() << " decoy PSMs" << std::endl;
     }
   }
   
   if (VERB > 0 && writeOutput) {
     if (!targetDecoyCompetition_)
-      std::cerr << "Selecting pi_0=" << allScores_.getPi0() << std::endl;
+      std::cerr << "Selecting pi_0=" << allScores.getPi0() << std::endl;
     std::cerr << "Calibrating statistics - calculating q values" << std::endl;
   }
   
-  int foundPSMs = allScores_.calcQ(testFdr_);
-  allScores_.calcPep();
-  
-  if (VERB > 0 && DataSet::getCalcDoc() && writeOutput) {
-    crossValidation_.printDOC();
-  }
+  int foundPSMs = allScores.calcQ(testFdr_);
+  allScores.calcPep();
   
   if (VERB > 0 && writeOutput) {
     if (targetDecoyCompetition_) {
@@ -725,60 +645,40 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
       std::cerr << "New pi_0 estimate on merged list gives ";
     }
     std::cerr << foundPSMs << (reportUniquePeptides_ ? " peptides" : " PSMs") 
-        << " over q=" << testFdr_ << endl;
+              << " over q=" << testFdr_ << endl;
+    std::cerr << "Calibrating statistics - calculating Posterior error "
+              << "probabilities (PEPs)" << std::endl;
   }
-  
-  if (VERB > 0 && writeOutput) {
-    cerr
-    << "Calibrating statistics - calculating Posterior error probabilities (PEPs)"
-    << endl;
-  }
-  
-  time_t end;
-  time(&end);
-  diff = difftime(end, procStart);
-  ostringstream timerValues;
-  timerValues.precision(4);
-  timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
-              << " cpu seconds or " << diff << " seconds wall time" << endl;
   
   if (VERB > 1 && writeOutput) {
+    time_t end;
+    time(&end);
+    diff = difftime(end, procStart);
+    ostringstream timerValues;
+    timerValues.precision(4);
+    timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
+                << " cpu seconds or " << diff << " seconds wall time" << endl;
     std::cerr << timerValues.str();
   }
   
-  if (weightFN_.size() > 0) {
-    ofstream weightStream(weightFN_.data(), ios::out);
-    crossValidation_.printAllWeights(weightStream, pNorm_);
-    weightStream.close();
+  std::string targetFN, decoyFN;
+  if (isUniquePeptideRun) {
+    targetFN = peptideResultFN_;
+    decoyFN = decoyPeptideResultFN_;
+  } else {
+    targetFN = psmResultFN_;
+    decoyFN = decoyPsmResultFN_;
   }
   
-  if (isUniquePeptideRun) {
-    if (peptideResultFN_.empty()) {
-      setHandler_.print(allScores_, NORMAL);
-    } else {
-      ofstream targetStream(peptideResultFN_.data(), ios::out);
-      setHandler_.print(allScores_, NORMAL, targetStream);
-    }
-    if (!decoyPeptideResultFN_.empty()) {
-      ofstream decoyStream(decoyPeptideResultFN_.data(), ios::out);
-      setHandler_.print(allScores_, SHUFFLED, decoyStream);
-    }
-    // set pi_0 value (to be outputted)
-    xmlInterface_.setPi0Peptides(allScores_.getPi0());
+  if (targetFN.empty()) {
+    setHandler.print(allScores, NORMAL);
   } else {
-    if (psmResultFN_.empty() && writeOutput) {
-      setHandler_.print(allScores_, NORMAL);
-    } else if (!psmResultFN_.empty()) {
-      ofstream targetStream(psmResultFN_.data(), ios::out);
-      setHandler_.print(allScores_, NORMAL, targetStream);
-    }
-    if (!decoyPsmResultFN_.empty()) {
-      ofstream decoyStream(decoyPsmResultFN_.data(), ios::out);
-      setHandler_.print(allScores_, SHUFFLED, decoyStream);
-    }
-    // set pi_0 value (to be outputted)
-    xmlInterface_.setPi0Psms(allScores_.getPi0());
-    xmlInterface_.setNumberQpsms(allScores_.getQvaluesBelowLevel(0.01));
+    ofstream targetStream(targetFN.c_str(), ios::out);
+    setHandler.print(allScores, NORMAL, targetStream);
+  }
+  if (!decoyFN.empty()) {
+    ofstream decoyStream(decoyFN.c_str(), ios::out);
+    setHandler.print(allScores, SHUFFLED, decoyStream);
   }
 }
 
@@ -786,18 +686,18 @@ void Caller::calculatePSMProb(bool isUniquePeptideRun, time_t& procStart,
  * Calculates the protein probabilites by calling Fido and directly writes 
  * the results to XML
  */
-void Caller::calculateProteinProbabilitiesFido() {
-  time_t startTime_;
-  clock_t startClock_;
-  time(&startTime_);
-  startClock_ = clock();  
+void Caller::calculateProteinProbabilities(Scores& allScores) {
+  time_t startTime;
+  clock_t startClock;
+  time(&startTime);
+  startClock = clock();  
 
   if (VERB > 0) {
     cerr << "\nCalculating protein level probabilities\n";
     cerr << protEstimator_->printCopyright();
   }
   
-  protEstimator_->initialize(&allScores_);
+  protEstimator_->initialize(&allScores);
   protEstimator_->run();
   protEstimator_->computeProbabilities();
   protEstimator_->computeStatistics();
@@ -805,18 +705,15 @@ void Caller::calculateProteinProbabilitiesFido() {
   time_t procStart;
   clock_t procStartClock = clock();
   time(&procStart);
-  double diff_time = difftime(procStart, startTime_);
+  double diff_time = difftime(procStart, startTime);
   
   if (VERB > 1) {  
     cerr << "Estimating Protein Probabilities took : "
-    << ((double)(procStartClock - startClock_)) / (double)CLOCKS_PER_SEC
+    << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
     << " cpu seconds or " << diff_time << " seconds wall time" << endl;
   }
   
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);
-  if (xmlInterface_.getXmlOutputFN().size() > 0) {
-      xmlInterface_.writeXML_Proteins(protEstimator_);
-  }
 }
 
 /** 
@@ -828,67 +725,114 @@ void Caller::calculateProteinProbabilitiesFido() {
  * 5. (optional) calculate protein probabilities
  */
 int Caller::run() {  
-
-  time(&startTime_);
-  startClock_ = clock();
+  time_t startTime;
+  time(&startTime);
+  clock_t startClock = clock();
   if (VERB > 0) {
-    cerr << extendedGreeter();
+    cerr << extendedGreeter(startTime);
+  }
+  
+  int success = 0;
+  std::ifstream fileStream;
+  if (!readStdIn_) {
+    if (!tabInput_) fileStream.exceptions(ifstream::badbit | ifstream::failbit);
+    fileStream.open(inputFN_.c_str(), ios::in);
+    if (VERB > 1) {
+      std::cerr << "Reading input from datafile " << inputFN_ << std::endl;
+    }
+  }
+  
+  std::istream &dataStream = readStdIn_ ? std::cin : fileStream;
+  
+  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_, 
+                            xmlPrintDecoys_, xmlPrintExpMass_);
+  SetHandler setHandler;
+  if (!tabInput_) {
+    success = xmlInterface.readPin(dataStream, inputFN_, setHandler, pCheck_, protEstimator_);
+  } else {
+    success = setHandler.readTab(dataStream, pCheck_);
   }
   
   // Reading input files (pin or temporary file)
-  if (!readFiles()) {
+  if (!success) {
     std::cerr << "ERROR: Failed to read in file, check if the correct " <<
                  "file-format was used.";
     return 0;
   }
-  // Copy feature data to Scores object
-  fillFeatureSets();
   
   if (VERB > 2) {
     std::cerr << "FeatureNames::getNumFeatures(): "<< FeatureNames::getNumFeatures() << endl;
   }
-  int firstNumberOfPositives = crossValidation_.preIterationSetup(allScores_, pCheck_, pNorm_);
+  
+  // Normalize features
+  setHandler.normalizeFeatures(pNorm_);
+  
+  // Copy feature data pointers to Scores object
+  Scores allScores(usePi0_);
+  allScores.fillFeatures(setHandler);
+  
+  CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
+                                  testFdr_, selectionFdr_, selectedCpos_, 
+                                  selectedCneg_, numIterations_, usePi0_);
+  int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_);
   if (VERB > 0) {
     cerr << "Estimating " << firstNumberOfPositives << " over q="
         << testFdr_ << " in initial direction" << endl;
   }
   
   if (tabOutputFN_.length() > 0) {
-    setHandler_.writeTab(tabOutputFN_, pCheck_);
+    setHandler.writeTab(tabOutputFN_, pCheck_);
   }
   
   time_t procStart;
   clock_t procStartClock = clock();
   time(&procStart);
-  double diff = difftime(procStart, startTime_);
+  double diff = difftime(procStart, startTime);
   if (VERB > 1) cerr << "Reading in data and feature calculation took "
-      << ((double)(procStartClock - startClock_)) / (double)CLOCKS_PER_SEC
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
   
   // Do the SVM training
-  crossValidation_.train(pNorm_);
-  crossValidation_.postIterationProcessing(allScores_, pCheck_);
-  // calculate psms level probabilities
+  crossValidation.train(pNorm_);
+  crossValidation.postIterationProcessing(allScores, pCheck_);
   
-  //PSM probabilities TDA or TDC
-  calculatePSMProb(false, procStart, procStartClock, diff);
-  if (xmlInterface_.getXmlOutputFN().size() > 0){
-    xmlInterface_.writeXML_PSMs(allScores_);
+  if (VERB > 0 && DataSet::getCalcDoc()) {
+    crossValidation.printDOC();
+  }
+  
+  // calculate psms level probabilities TDA or TDC
+  bool isUniquePeptideRun = false;
+  calculatePSMProb(setHandler, allScores, isUniquePeptideRun, procStart, 
+                   procStartClock, diff);
+  if (xmlInterface.getXmlOutputFN().size() > 0){
+    xmlInterface.writeXML_PSMs(allScores);
   }
   
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_){
-    calculatePSMProb(true, procStart, procStartClock, diff);
-    if (xmlInterface_.getXmlOutputFN().size() > 0){
-      xmlInterface_.writeXML_Peptides(allScores_);
+    isUniquePeptideRun = true;
+    calculatePSMProb(setHandler, allScores, isUniquePeptideRun, procStart, 
+                     procStartClock, diff);
+    if (xmlInterface.getXmlOutputFN().size() > 0){
+      xmlInterface.writeXML_Peptides(allScores);
     }
   }
+  
+  if (weightOutputFN_.size() > 0) {
+    ofstream weightStream(weightOutputFN_.c_str(), ios::out);
+    crossValidation.printAllWeights(weightStream, pNorm_);
+    weightStream.close();
+  }
+  
   // calculate protein level probabilities with FIDO
-  if(ProteinProbEstimator::getCalcProteinLevelProb()){
-    calculateProteinProbabilitiesFido();
+  if (ProteinProbEstimator::getCalcProteinLevelProb()){
+    calculateProteinProbabilities(allScores);
+    if (xmlInterface.getXmlOutputFN().size() > 0) {
+      xmlInterface.writeXML_Proteins(protEstimator_);
+    }
   }
   // write output to file
-  xmlInterface_.writeXML(allScores_, protEstimator_, call_);  
-  crossValidation_.freeMemoryBlocks();
+  xmlInterface.writeXML(allScores, protEstimator_, call_);  
+  crossValidation.freeMemoryBlocks();
   return 1;
 }

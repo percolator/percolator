@@ -49,49 +49,58 @@
 
 class XMLInterface {
   
-  public:
-    XMLInterface();
-    ~XMLInterface();
-    
-    inline void setXmlInputFN(std::string inputFN) { xmlInputFN = inputFN; }
-    inline std::string getXmlInputFN() { return xmlInputFN; }
-    inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN = outputFN; }
-    inline std::string getXmlOutputFN() { return xmlOutputFN; }
-    
-    inline void setSchemaValidation(bool on) { schemaValidation = on; }
-    
-    int readPin(istream& dataStream, SetHandler & setHandler, SanityCheck *& pCheck, ProteinProbEstimator * protEstimator);
-    
-    inline void setPi0Peptides(double pi0) { pi_0_peptides = pi0; }
-    inline void setPi0Psms(double pi0) { pi_0_psms = pi0; }
-    inline void setNumberQpsms(double nq) { numberQpsms = nq; }
-    
-    void writeXML_PSMs(Scores & fullset);
-    void writeXML_Peptides(Scores & fullset);
-    void writeXML_Proteins(ProteinProbEstimator * protEstimator);
-    void writeXML(Scores & fullset, ProteinProbEstimator * protEstimator, std::string call);
-    
-  protected:
-    std::string xmlInputFN;
-    
-    bool schemaValidation;
-    std::string otherCall;
-    
-    std::string xmlOutputFN;
-    std::string xmlOutputFN_PSMs;
-    std::string xmlOutputFN_Peptides;
-    std::string xmlOutputFN_Proteins;
-    
-    bool reportUniquePeptides;
-    double pi_0_psms;
-    double pi_0_peptides;
-    double numberQpsms;
-    
+ public:
+  XMLInterface(const std::string& xmlOutputFN, const bool xmlSchemaValidation,
+               bool printDecoys, bool printExpMass);
+  ~XMLInterface();
+  
+  inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN_ = outputFN; }
+  inline std::string getXmlOutputFN() { return xmlOutputFN_; }
+  
+  inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
+  inline void setPrintDecoys(bool decoysOut) { 
+    printDecoys_ = decoysOut; 
+  }
+  inline bool getPrintDecoys() { return printDecoys_; }
+  inline void setPrintExpMass(bool printExpMass) { 
+    printExpMass_ = printExpMass; 
+  }
+  inline bool getPrintExpMass() { return printExpMass_; }
+  
+  int readPin(istream& dataStream, const std::string& xmlInputFN, 
+    SetHandler & setHandler, SanityCheck *& pCheck, 
+    ProteinProbEstimator * protEstimator);
+  
+  void writeXML_PSMs(Scores& fullset);
+  void writeXML_Peptides(Scores& fullset);
+  void writeXML_Proteins(ProteinProbEstimator* protEstimator);
+  void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
+                std::string call);
+  
+ protected:
+  std::string xmlOutputFN_; 
+  bool schemaValidation_;
+  std::string otherCall_;
+  
+  bool printDecoys_, printExpMass_;
+  
+  std::string xmlOutputFN_PSMs;
+  std::string xmlOutputFN_Peptides;
+  std::string xmlOutputFN_Proteins;
+  
+  bool reportUniquePeptides_;
+  double pi0Psms_;
+  double pi0Peptides_;
+  unsigned int numberQpsms_;
+  
 #ifdef XML_SUPPORT
-    PSMDescription * readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, unsigned scanNumber );
-    std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
+  PSMDescription* readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, 
+                          unsigned scanNumber, bool readProteins);
+  ScanId getScanId(const percolatorInNs::peptideSpectrumMatch& psm, 
+                   unsigned scanNumber);
+  std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
 #endif //XML_SUPPORT
-    
+  
 };
 
 #endif /*XMLINTERFACE_H_*/

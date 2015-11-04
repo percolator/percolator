@@ -82,12 +82,18 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   if (initWeightFN.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
     ifstream weightStream(initWeightFN.data(), ios::in);
-    readWeights(weightStream, ww);
-    weightStream.close();
-    assert(pNorm);
-    pNorm->normalizeweight(ww, w[0]);
-    for (size_t set = 1; set < w.size(); ++set) {
-      copy(w[0].begin(), w[0].end(), w[set].begin());
+    if (weightStream.is_open()) {
+      readWeights(weightStream, ww);
+      weightStream.close();
+      assert(pNorm);
+      pNorm->normalizeweight(ww, w[0]);
+      for (size_t set = 1; set < w.size(); ++set) {
+        copy(w[0].begin(), w[0].end(), w[set].begin());
+      }
+    } else {
+      std::cerr << "WARNING: Could not find weights input file " << initWeightFN
+                << ". Using default weights instead." << std::endl;
+      getDefaultDirection(w);
     }
   } else {
     getDefaultDirection(w);

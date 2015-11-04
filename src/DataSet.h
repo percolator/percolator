@@ -33,7 +33,6 @@
 #include "PSMDescription.h"
 #include "FeatureNames.h"
 #include "DescriptionOfCorrect.h"
-using namespace std;
 
 // Optional columns in tab delimited input
 enum OptionalField {
@@ -41,52 +40,50 @@ enum OptionalField {
 };
 
 class DataSet {
-  public:
-    DataSet();
-    virtual ~DataSet();
-    
-    void initFeatureTables(const unsigned int numFeatures);
-    
-    void inline setLabel(int l) { label_ = l; }
-    int inline getLabel() const { return label_; }
-    
-    void inline setSize(int n) { numSpectra_ = n; }
-    int inline getSize() const { return numSpectra_; }
-    
-    static inline void setCalcDoc(bool on) { calcDOC_ = on; }
-    static inline bool getCalcDoc() { return calcDOC_; }
-    
-    static FeatureNames& getFeatureNames() { return featureNames_; }
-    static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
-    
-    void setRetentionTime(map<int, double>& scan2rt) { 
-      PSMDescription::setRetentionTime(psms_, scan2rt);
-    }
-    
-    bool writeTabData(ofstream& out);
-    
-    void print_10features();
-    void print_features();
-    void print(Scores& test, vector<ResultHolder> & outList);
-    
-    void fillFeatures(vector<ScoreHolder> &scores);
-    void fillFeatures(vector<double*> &features);
-    void fillRtFeatures(vector<double*> &rtFeatures);
+ public:
+  DataSet();
+  virtual ~DataSet();
+  
+  void initFeatureTables(const unsigned int numFeatures);
+  
+  void inline setLabel(int l) { label_ = l; }
+  int inline getLabel() const { return label_; }
+  
+  unsigned int inline getSize() const { return psms_.size(); }
+  
+  static inline void setCalcDoc(bool on) { calcDOC_ = on; }
+  static inline bool getCalcDoc() { return calcDOC_; }
+  
+  static FeatureNames& getFeatureNames() { return featureNames_; }
+  static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
+  
+  void setRetentionTime(map<int, double>& scan2rt) { 
+    PSMDescription::setRetentionTime(psms_, scan2rt);
+  }
+  
+  bool writeTabData(std::ofstream& out);
+  
+  void print_10features();
+  void print_features();
+  void print(Scores& test, std::vector<ResultHolder> & outList);
+  
+  void fillFeatures(std::vector<ScoreHolder> &scores);
+  void fillFeatures(std::vector<double*> &features);
+  void fillRtFeatures(std::vector<double*> &rtFeatures);
+  
+  void readPsm(const std::string& line, const unsigned int lineNr,
+               const std::vector<OptionalField>& optionalFields);
+  static int readPsm(const std::string& line, const unsigned int lineNr,
+    const std::vector<OptionalField>& optionalFields, bool readProteins,
+    PSMDescription* myPsm);
+  void registerPsm(PSMDescription * myPsm);
 
-    void readPsm(const std::string line, const unsigned int lineNr,
-                 const std::vector<OptionalField>& optionalFields);
-    void registerPsm(PSMDescription * myPsm);
-
-  protected:   
-    // double isPngasef(const string& peptide);
-    static bool calcDOC_;
-    const static std::string aaAlphabet_;
-    static std::string ptmAlphabet_;
-    
-    std::vector<PSMDescription*> psms_;
-    int label_;
-    int numSpectra_;
-    static FeatureNames featureNames_;
+ protected:   
+  static bool calcDOC_;
+  
+  std::vector<PSMDescription*> psms_;
+  int label_;
+  static FeatureNames featureNames_;
 };
 
 #endif /*DATASET_H_*/

@@ -28,7 +28,7 @@
 #include <string>
 #include <cmath>
 #include <memory>
-using namespace std;
+
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
@@ -37,7 +37,6 @@ using namespace std;
 #include "PosteriorEstimator.h"
 #include "ssl.h"
 #include "MassHandler.h"
-
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score);
@@ -57,104 +56,93 @@ inline double truncateTo(double truncateMe, const char* length) {
   return atof(truncated);
 }
 
-ostream& operator<<(ostream& os, const ScoreHolder& sh) {
-  if (sh.isDecoy() && !Scores::getPrintDecoysInXml()) {
-    return os;
-  }
-  
-  os << "    <psm p:psm_id=\"" << sh.pPSM->id << "\"";
-  if (Scores::getPrintDecoysInXml()) {
-    if (sh.isDecoy())
-      os << " p:decoy=\"true\"";
-    else 
-      os << " p:decoy=\"false\"";
-  }
-  os << ">" << endl;
-  
-  os << "      <svm_score>"   << fixed   << sh.score   << "</svm_score>" << endl;
-  os << "      <q_value>"   << scientific << sh.q   << "</q_value>" << endl;
-  os << "      <pep>"          << scientific << sh.pep << "</pep>" << endl;
-  
-  if(Scores::getShowExpMass()) 
-  {
-    os << "      <exp_mass>" << fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
-  }   
-  
-  os << "      <calc_mass>" << fixed << setprecision (3) << sh.pPSM->calcMass << "</calc_mass>" << endl;
-  
-  if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\"" 
-          << PSMDescription::unnormalize(sh.pPSM->retentionTime)
-          << "\" predicted=\""
-          << PSMDescription::unnormalize(sh.pPSM->predictedTime) << "\"/>"
-          << endl;
+void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
+  if (!isDecoy() || printDecoys) {
+    os << "    <psm p:psm_id=\"" << pPSM->id << "\"";
+    if (printDecoys) {
+      if (isDecoy())
+        os << " p:decoy=\"true\"";
+      else 
+        os << " p:decoy=\"false\"";
+    }
+    os << ">" << endl;
+    
+    os << "      <svm_score>" << fixed      << score << "</svm_score>" << endl;
+    os << "      <q_value>"   << scientific << q     << "</q_value>" << endl;
+    os << "      <pep>"       << scientific << pep   << "</pep>" << endl;
+    
+    if (printExpMass) {
+      os << "      <exp_mass>" << fixed << setprecision (4) << pPSM->expMass << "</exp_mass>" << endl;
+    }   
+    
+    os << "      <calc_mass>" << fixed << setprecision (3) << pPSM->calcMass << "</calc_mass>" << endl;
+    
+    if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\"" 
+            << PSMDescription::unnormalize(pPSM->retentionTime)
+            << "\" predicted=\""
+            << PSMDescription::unnormalize(pPSM->predictedTime) << "\"/>"
+            << endl;
 
-  if (sh.pPSM->getPeptideSequence().size() > 0) {
-    string n = sh.pPSM->getFlankN();
-    string c = sh.pPSM->getFlankC();
-    string centpep = sh.pPSM->getPeptideSequence();
-    os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
+    if (pPSM->getPeptideSequence().size() > 0) {
+      string n = pPSM->getFlankN();
+      string c = pPSM->getFlankC();
+      string centpep = pPSM->getPeptideSequence();
+      os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
+    }
+    
+    std::set<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
+    for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
+      os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
+    }
+    
+    os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
+    os << "    </psm>" << endl;
   }
-  
-  std::set<std::string>::const_iterator pidIt = sh.pPSM->proteinIds.begin();
-  for ( ; pidIt != sh.pPSM->proteinIds.end() ; ++pidIt) {
-    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
-  }
-  
-  os << "      <p_value>" << scientific << sh.p << "</p_value>" <<endl;
-  os << "    </psm>" << endl;
-  return os;
 }
 
-ostream& operator<<(ostream& os, const ScoreHolderPeptide& sh) {
-  if (sh.isDecoy() && !Scores::getPrintDecoysInXml()) {
-    return os;
+void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass) {
+  if (!isDecoy() || printDecoys) {  
+    os << "    <peptide p:peptide_id=\"" << pPSM->getPeptideSequence() << "\"";
+    if (printDecoys) {
+      if (isDecoy())
+        os << " p:decoy=\"true\"";
+      else 
+        os << " p:decoy=\"false\"";
+    }
+    os << ">" << endl;
+    
+    os << "      <svm_score>" << fixed       << score     << "</svm_score>" << endl;
+    os << "      <q_value>"   << scientific  << q   << "</q_value>" << endl;
+    os << "      <pep>"        << scientific  << pep << "</pep>" << endl;
+    
+    if (printExpMass) {
+      os << "      <exp_mass>" << fixed << setprecision (4) << pPSM->expMass << "</exp_mass>" << endl;
+    }
+    os << "      <calc_mass>" << fixed << setprecision (3)  << pPSM->calcMass << "</calc_mass>" << endl;
+    
+    std::set<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
+    for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
+      os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
+    }
+    
+    os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
+    os << "      <psm_ids>" << endl;
+    
+    // output all psms that contain the peptide
+    std::vector<std::string>::const_iterator psmIt = psms_list.begin();
+    for ( ; psmIt != psms_list.end() ; ++psmIt) {
+      os << "        <psm_id>" << *psmIt << "</psm_id>" << endl;
+    }
+    os << "      </psm_ids>" << endl;
+    os << "    </peptide>" << endl;
   }
-  
-  os << "    <peptide p:peptide_id=\"" << sh.pPSM->getPeptideSequence() << "\"";
-  if (Scores::getPrintDecoysInXml()) {
-    if (sh.isDecoy())
-      os << " p:decoy=\"true\"";
-    else 
-      os << " p:decoy=\"false\"";
-  }
-  os << ">" << endl;
-  
-  os << "      <svm_score>" << fixed       << sh.score     << "</svm_score>" << endl;
-  os << "      <q_value>"   << scientific  << sh.q   << "</q_value>" << endl;
-  os << "      <pep>"        << scientific  << sh.pep << "</pep>" << endl;
-  
-  if (Scores::getShowExpMass()) {
-    os << "      <exp_mass>" << fixed << setprecision (4) << sh.pPSM->expMass << "</exp_mass>" << endl;
-  }
-  os << "      <calc_mass>" << fixed << setprecision (3)  << sh.pPSM->calcMass << "</calc_mass>" << endl;
-  
-  std::set<std::string>::const_iterator pidIt = sh.pPSM->proteinIds.begin();
-  for ( ; pidIt != sh.pPSM->proteinIds.end() ; ++pidIt) {
-    os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
-  }
-  
-  os << "      <p_value>" << scientific << sh.p << "</p_value>" <<endl;
-  os << "      <psm_ids>" << endl;
-  
-  // output all psms that contain the peptide
-  std::vector<std::string>::const_iterator psmIt = sh.psms_list.begin();
-  for ( ; psmIt != sh.psms_list.end() ; ++psmIt) {
-    os << "        <psm_id>" << *psmIt << "</psm_id>" << endl;
-  }
-  os << "      </psm_ids>" << endl;
-  os << "    </peptide>" << endl;
-  
-  return os;
 }
 
-bool Scores::usePi0_ = false;
-bool Scores::printDecoysInXml_ = false;
-bool Scores::showExpMass_ = false;
 unsigned long Scores::seed_ = 1;
 
-void Scores::merge(vector<Scores>& sv, double fdr) {
+void Scores::merge(std::vector<Scores>& sv, double fdr) {
   scores_.clear();
-  for (vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
+  for (std::vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
     if (usePi0_) a->estimatePi0();
     a->calcQ(fdr);
@@ -218,6 +206,21 @@ void Scores::fillFeatures(SetHandler& setHandler) {
   totalNumberOfTargets_ = setHandler.getSizeFromLabel(1);
   totalNumberOfDecoys_ = setHandler.getSizeFromLabel(-1);
   targetDecoySizeRatio_ = (double)totalNumberOfTargets_ / totalNumberOfDecoys_;
+  
+  if (VERB > 1) {
+    cerr << "Train/test set contains " << totalNumberOfTargets_
+        << " positives and " << totalNumberOfDecoys_
+        << " negatives, size ratio=" << targetDecoySizeRatio_
+        << " and pi0=" << pi0_ << endl;
+  }
+  
+  // check for the minimum recommended number of positive and negative hits
+  if (totalNumberOfTargets_ <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
+    std::cerr << "Warning : the number of positive samples read is too small to perform a correct classification.\n" << std::endl;
+  }
+  if (totalNumberOfDecoys_ <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
+    std::cerr << "Warning : the number of negative samples read is too small to perform a correct classification.\n" << std::endl;
+  }
 }
 
 // Park–Miller random number generator
@@ -238,8 +241,8 @@ unsigned long Scores::lcg_rand() {
 void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
     std::vector<Scores>& test, const unsigned int xval_fold) {
   // set the number of cross validation folds for train and test to xval_fold
-  train.resize(xval_fold);
-  test.resize(xval_fold);
+  train.resize(xval_fold, Scores(usePi0_));
+  test.resize(xval_fold, Scores(usePi0_));
   // remain keeps track of residual space available in each fold
   std::vector<int> remain(xval_fold);
   // set values for remain: initially each fold is assigned (tot number of
@@ -358,7 +361,7 @@ void Scores::deleteContiguousMemoryBlock() {
 void Scores::normalizeScores(double fdr) {
   // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys_/2u),decoys=0u;
-  vector<ScoreHolder>::iterator it = scores_.begin();
+  std::vector<ScoreHolder>::iterator it = scores_.begin();
   double q1 = it->score;
   double median = q1 + 1.0;
 
@@ -401,7 +404,7 @@ void Scores::normalizeScores(double fdr) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcScores(vector<double>& w, double fdr) {
+int Scores::calcScores(std::vector<double>& w, double fdr) {
   svmWeights_ = w;
   unsigned int ix;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
@@ -573,12 +576,12 @@ void Scores::weedOutRedundantTDC() {
   * scores_.erase(std::unique(scores_.begin(), scores_.end(), mycmp), scores_.end());
   */
 
-  vector<ScoreHolder> uniquePSMs = vector<ScoreHolder>();
+  std::vector<ScoreHolder> uniquePSMs = std::vector<ScoreHolder>();
   unsigned previousSpectra = 0;
   double previousExpMass = 0.0;
   //int previousLabel;
   // run a pointer down the scores_ list
-  vector<ScoreHolder>::iterator current = scores_.begin();
+  std::vector<ScoreHolder>::iterator current = scores_.begin();
   for (;current!=scores_.end(); current++){
     // compare pointer's spectra with previous spectra
     unsigned currentSpectra = current->pPSM->scan;
@@ -626,7 +629,7 @@ void Scores::setDOCFeatures() {
   }
 }
 
-int Scores::getInitDirection(const double fdr, vector<double>& direction) {
+int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
@@ -684,8 +687,8 @@ int Scores::getInitDirection(const double fdr, vector<double>& direction) {
 }
 
 void Scores::estimatePi0() {
-  vector<pair<double, bool> > combined;
-  vector<double> pvals;
+  std::vector<pair<double, bool> > combined;
+  std::vector<double> pvals;
   transform(scores_.begin(), scores_.end(), back_inserter(combined),
             mem_fun_ref(&ScoreHolder::toPair));
   // Estimate pi0_
@@ -694,12 +697,12 @@ void Scores::estimatePi0() {
 }
 
 void Scores::calcPep() {
-  vector<pair<double, bool> > combined;
+  std::vector<pair<double, bool> > combined;
   transform(scores_.begin(),
       scores_.end(),
       back_inserter(combined),
       mem_fun_ref(&ScoreHolder::toPair));
-  vector<double> peps;
+  std::vector<double> peps;
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
   for (size_t ix = 0; ix < scores_.size(); ix++) {
