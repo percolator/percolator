@@ -59,7 +59,7 @@ typedef std::pair<int, double> ScanId;
 */
 class SetHandler {    
  public:
-  SetHandler();
+  SetHandler(unsigned int maxPSMs);
   virtual ~SetHandler();
 
   void push_back_dataset(DataSet* ds);
@@ -70,8 +70,9 @@ class SetHandler {
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
   int readTab(istream& dataStream, SanityCheck*& pCheck);
+  int readAndScoreTab(istream& dataStream, 
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck);
   void writeTab(const string& dataFN, SanityCheck* pCheck);
-  void print(Scores& test, int label, ostream& myout = cout);
   void fillFeatures(vector<ScoreHolder> &scores, int label);
   void normalizeFeatures(Normalizer*& pNorm);
   void setRetentionTime(map<int, double>& scan2rt);
@@ -87,6 +88,8 @@ class SetHandler {
   }
   
   static void deletePSMPointer(PSMDescription* psm);
+  
+  void reset();
   
  protected:
   size_t maxPSMs_;
@@ -109,7 +112,9 @@ class SetHandler {
     
   void readPSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields);
-  
+  void readAndScorePSMs(istream& dataStream, std::string& psmLine, 
+    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
+    std::vector<double>& rawWeights, Scores& allScores);
 };
 
 #endif /*SETHANDLER_H_*/

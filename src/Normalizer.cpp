@@ -34,8 +34,8 @@ Normalizer::Normalizer() {
 Normalizer::~Normalizer() {
 }
 
-void Normalizer::normalizeSet(vector<double*> & featuresV,
-                              vector<double*> & rtFeaturesV) {
+void Normalizer::normalizeSet(vector<double*>& featuresV,
+                              vector<double*>& rtFeaturesV) {
   double* features;
   vector<double*>::iterator it = featuresV.begin();
   for (; it != featuresV.end(); ++it) {
@@ -65,22 +65,7 @@ void Normalizer::unNormalizeSet(vector<double*> & rtFeaturesV) {
     }
   }
 }
-// normalize a set of PSMs
-/*
- void Normalizer::normalizeSet(vector<PSMDescription> & psms)
- {
- vector<PSMDescription>::iterator it;
- double * retFeatures;
 
- cout << "Normalizing..." << endl;
- for(it = psms.begin(); it != psms.end(); ++it)
- {
- retFeatures = it->retentionFeatures;
- normalize(retFeatures, retFeatures, 0, numRetentionFeatures);
- }
- cout << "Done." << endl << endl;
- }
- */
 Normalizer* Normalizer::getNormalizer() {
   if (theNormalizer == NULL) {
     if (subclass_type == UNI) {

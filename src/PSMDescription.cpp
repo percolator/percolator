@@ -39,8 +39,7 @@ PSMDescription::PSMDescription(double ort, double prt) :
       expMass(0.), calcMass(0.), scan(0), id(""), peptide(""), parentFragment(NULL) {
 }
 
-PSMDescription::~PSMDescription() {
-}
+PSMDescription::~PSMDescription() {}
 
 double PSMDescription::normDiv = -1.0;
 double PSMDescription::normSub = 0.0;

@@ -353,10 +353,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     std::cerr << "Merging results from " << testScores_.size() << 
                  " datasets" << std::endl;
   }
-  fullset.merge(testScores_, selectionFdr_);  
-}
-
-void CrossValidation::freeMemoryBlocks() {
+  fullset.merge(testScores_, selectionFdr_);
   for (unsigned int i = 0; i < numFolds_; ++i) {
     testScores_[i].deleteContiguousMemoryBlock();
   }
@@ -386,6 +383,19 @@ void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set,
     weightStream << "\t" << fixed << setprecision(4) << ww[ix];
   }
   weightStream << endl;
+}
+
+void CrossValidation::getAvgWeights(std::vector<double>& weights, 
+                                    Normalizer * pNorm) {
+  vector<double> ww(FeatureNames::getNumFeatures() + 1);
+  
+  weights.resize(FeatureNames::getNumFeatures() + 1);
+  for (size_t set = 0; set < w_.size(); ++set) {
+    pNorm->unnormalizeweight(w_[set], ww);
+    for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures() + 1; ix++) {
+      weights[ix] += ww[ix] / w_.size();
+    }
+  }
 }
 
 void CrossValidation::printAllWeights(ostream & weightStream, 

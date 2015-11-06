@@ -88,19 +88,17 @@ class Caller {
   bool targetDecoyCompetition_;
   bool usePi0_;
   
-  // cross validation parameters
+  // SVM / cross validation parameters
   double selectionFdr_, testFdr_;
-  unsigned int numIterations_;
+  unsigned int numIterations_, maxPSMs_;
   double selectedCpos_, selectedCneg_;
   bool reportEachIteration_, quickValidation_;
   
   // reporting parameters
   std::string call_;
   
-  void calculatePSMProb(SetHandler& setHandler, Scores& allScores,
-      bool uniquePeptideRun, time_t& procStart,
-      clock_t& procStartClock, double& diff);
-  
+  void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
+      time_t& procStart, clock_t& procStartClock, double& diff);
   void calculateProteinProbabilities(Scores& allScores);
     
 };

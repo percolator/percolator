@@ -65,8 +65,7 @@ class DataSet {
   
   void print_10features();
   void print_features();
-  void print(Scores& test, std::vector<ResultHolder> & outList);
-  
+
   void fillFeatures(std::vector<ScoreHolder> &scores);
   void fillFeatures(std::vector<double*> &features);
   void fillRtFeatures(std::vector<double*> &rtFeatures);
@@ -76,8 +75,9 @@ class DataSet {
   static int readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription* myPsm);
+  
   void registerPsm(PSMDescription * myPsm);
-
+  
  protected:   
   static bool calcDOC_;
   

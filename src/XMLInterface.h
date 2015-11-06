@@ -68,8 +68,12 @@ class XMLInterface {
   inline bool getPrintExpMass() { return printExpMass_; }
   
   int readPin(istream& dataStream, const std::string& xmlInputFN, 
-    SetHandler & setHandler, SanityCheck *& pCheck, 
-    ProteinProbEstimator * protEstimator);
+    SetHandler& setHandler, SanityCheck*& pCheck, 
+    ProteinProbEstimator* protEstimator);
+  int readAndScorePin(istream& dataStream, std::vector<double>& rawWeights, 
+    Scores& allScores, const std::string& xmlInputFN,
+    SetHandler& setHandler, SanityCheck*& pCheck, 
+    ProteinProbEstimator* protEstimator);
   
   void writeXML_PSMs(Scores& fullset);
   void writeXML_Peptides(Scores& fullset);

@@ -87,22 +87,6 @@ void DataSet::print_10features() {
   }
 }
 
-void DataSet::print(Scores& test, std::vector<ResultHolder> &outList) {
-  ostringstream out;
-  std::vector<PSMDescription*>::iterator it = psms_.begin();
-  for ( ; it != psms_.end(); ++it) {
-    PSMDescription* psm = *it;
-    ScoreHolder* pSH = test.getScoreHolder(psm->features);
-    if (pSH == NULL) {
-      continue;
-    }
-    psm->printProteins(out);
-    outList.push_back(ResultHolder(pSH->score, pSH->q, pSH->pep, psm->id, psm->peptide, out.str()));
-    out.str("");
-  }
-  test.resetScoreMap();
-}
-
 // TODO: find a way to make these three functions generic
 void DataSet::fillFeatures(std::vector<ScoreHolder> &scores) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();

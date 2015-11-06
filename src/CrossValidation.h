@@ -43,12 +43,12 @@ class CrossValidation {
   void train(Normalizer * pNorm);
   
   void postIterationProcessing(Scores & fullset, SanityCheck * pCheck);
-  void freeMemoryBlocks();
   
   void printSetWeights(ostream & weightStream, unsigned int set, 
                        Normalizer * pNorm);
   void printAllWeights(ostream & weightStream, Normalizer * pNorm);
   void printDOC();
+  void getAvgWeights(std::vector<double>& weights, Normalizer * pNorm);
   
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
   double inline getSelectedCpos() { return selectedCpos_; }

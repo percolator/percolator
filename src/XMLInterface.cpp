@@ -66,8 +66,18 @@ XMLInterface::~XMLInterface() {
   remove(xmlOutputFN_Peptides.c_str());
   remove(xmlOutputFN_Proteins.c_str());
 }
-  
+
 int XMLInterface::readPin(istream& dataStream, const std::string& xmlInputFN,
+    SetHandler& setHandler, SanityCheck*& pCheck, 
+    ProteinProbEstimator* protEstimator) {
+  std::vector<double> noWeights;
+  Scores noScores(true);
+  readAndScorePin(dataStream, noWeights, noScores, xmlInputFN, setHandler, 
+                  pCheck, protEstimator);
+}
+  
+int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawWeights, 
+    Scores& allScores, const std::string& xmlInputFN,
     SetHandler& setHandler, SanityCheck*& pCheck, 
     ProteinProbEstimator* protEstimator) {    
 #ifdef XML_SUPPORT
@@ -142,67 +152,89 @@ int XMLInterface::readPin(istream& dataStream, const std::string& xmlInputFN,
       ++i;
     }
     
-    DataSet* targetSet = new DataSet();
-    assert(targetSet);
-    targetSet->setLabel(1);
-    DataSet* decoySet = new DataSet();
-    assert(decoySet);
-    decoySet->setLabel(-1);
-    
-    // read Fragment Spectrum Scans
-    if (setHandler.getMaxPSMs() > 0u) {
-      bool readProteins = true;
-      std::priority_queue<PSMDescriptionPriority> subsetPSMs;
-      std::map<ScanId, size_t> scanIdLookUp;
-      for (doc = p.next(); 
-           doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
-               doc->getDocumentElement()->getTagName()); 
-           doc = p.next()) {
-        percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
-        percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
-        psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
-        for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
-          ScanId scanId = getScanId(*psmIt, fragSpectrumScan.scanNumber());
-          size_t randIdx;
-          if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
-            randIdx = scanIdLookUp[scanId];
-          } else {
-            randIdx = Scores::lcg_rand();
-            scanIdLookUp[scanId] = randIdx;
+    bool readProteins = true;
+    if (rawWeights.size() == 0) {
+      DataSet* targetSet = new DataSet();
+      assert(targetSet);
+      targetSet->setLabel(1);
+      DataSet* decoySet = new DataSet();
+      assert(decoySet);
+      decoySet->setLabel(-1);
+      
+      // read Fragment Spectrum Scans
+      if (setHandler.getMaxPSMs() > 0u) {
+        readProteins = false;
+        std::priority_queue<PSMDescriptionPriority> subsetPSMs;
+        std::map<ScanId, size_t> scanIdLookUp;
+        for (doc = p.next(); 
+             doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
+                 doc->getDocumentElement()->getTagName()); 
+             doc = p.next()) {
+          percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
+          percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
+          psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
+          for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
+            ScanId scanId = getScanId(*psmIt, fragSpectrumScan.scanNumber());
+            size_t randIdx;
+            if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
+              randIdx = scanIdLookUp[scanId];
+            } else {
+              randIdx = Scores::lcg_rand();
+              scanIdLookUp[scanId] = randIdx;
+            }
+            
+            unsigned int upperLimit = UINT_MAX;
+            if (subsetPSMs.size() < setHandler.getMaxPSMs() || randIdx < upperLimit) {
+              PSMDescriptionPriority psmPriority;
+              psmPriority.psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
+              psmPriority.label = (psmIt->isDecoy() ? -1 : 1);
+              psmPriority.priority = randIdx;
+              subsetPSMs.push(psmPriority);
+              if (subsetPSMs.size() > setHandler.getMaxPSMs()) {
+                PSMDescriptionPriority del = subsetPSMs.top();
+                upperLimit = del.priority;
+                SetHandler::deletePSMPointer(del.psm);
+                subsetPSMs.pop();
+              }
+            }
           }
-          
-          unsigned int upperLimit = UINT_MAX;
-          if (subsetPSMs.size() < setHandler.getMaxPSMs() || randIdx < upperLimit) {
-            PSMDescriptionPriority psmPriority;
-            psmPriority.psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
-            psmPriority.label = (psmIt->isDecoy() ? -1 : 1);
-            psmPriority.priority = randIdx;
-            subsetPSMs.push(psmPriority);
-            if (subsetPSMs.size() > setHandler.getMaxPSMs()) {
-              PSMDescriptionPriority del = subsetPSMs.top();
-              upperLimit = del.priority;
-              SetHandler::deletePSMPointer(del.psm);
-              subsetPSMs.pop();
+        }
+        
+        while (!subsetPSMs.empty()) {
+          PSMDescriptionPriority psmPriority = subsetPSMs.top();
+          if (psmPriority.label == 1) {
+            targetSet->registerPsm(psmPriority.psm);
+          } else if (psmPriority.label == -1) {
+            decoySet->registerPsm(psmPriority.psm);
+          } else {
+            std::cerr << "Warning: the PSM " << psmPriority.psm->id
+                << " has a label not in {1,-1} and will be ignored." << std::endl;
+            SetHandler::deletePSMPointer(psmPriority.psm);
+          }
+          subsetPSMs.pop();
+        }
+      } else {
+        for (doc = p.next(); 
+             doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
+                 doc->getDocumentElement()->getTagName()); 
+             doc = p.next()) {
+          percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
+          percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
+          psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
+          for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
+            PSMDescription* psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
+            if (psmIt->isDecoy()) {
+              decoySet->registerPsm(psm);
+            } else {
+              targetSet->registerPsm(psm);
             }
           }
         }
       }
-      
-      while (!subsetPSMs.empty()) {
-        PSMDescriptionPriority psmPriority = subsetPSMs.top();
-        if (psmPriority.label == 1) {
-          targetSet->registerPsm(psmPriority.psm);
-        } else if (psmPriority.label == -1) {
-          decoySet->registerPsm(psmPriority.psm);
-        } else {
-          std::cerr << "Warning: the PSM " << psmPriority.psm->id
-              << " has a label not in {1,-1} and will be ignored." << std::endl;
-          SetHandler::deletePSMPointer(psmPriority.psm);
-        }
-        subsetPSMs.pop();
-      }
+    
+      setHandler.push_back_dataset(targetSet);
+      setHandler.push_back_dataset(decoySet);
     } else {
-      bool readProteins = true;
       for (doc = p.next(); 
            doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
                doc->getDocumentElement()->getTagName()); 
@@ -211,47 +243,63 @@ int XMLInterface::readPin(istream& dataStream, const std::string& xmlInputFN,
         percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
         psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
         for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
-          PSMDescription* psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
-          if (psmIt->isDecoy()) {
-            decoySet->registerPsm(psm);
+          ScoreHolder sh;
+          sh.label = (psmIt->isDecoy() ? -1 : 1);
+          sh.pPSM = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
+          
+          unsigned int numFeatures = FeatureNames::getNumFeatures();
+          for (unsigned int j = 0; j < numFeatures; j++) {
+            sh.score += sh.pPSM->features[j] * rawWeights[j];
+          }
+          sh.score += rawWeights[numFeatures];
+          
+          delete[] sh.pPSM->features;
+          sh.pPSM->features = NULL;
+          if (sh.pPSM->retentionFeatures) {
+            delete[] sh.pPSM->retentionFeatures;
+            sh.pPSM->retentionFeatures = NULL;
+          }
+          
+          if (sh.label != 1 && sh.label != -1) {
+            std::cerr << "Warning: the PSM " << sh.pPSM->id
+                << " has a label not in {1,-1} and will be ignored." << std::endl;
+            SetHandler::deletePSMPointer(sh.pPSM);
           } else {
-            targetSet->registerPsm(psm);
+            allScores.addScoreHolder(sh);
           }
         }
       }
     }
     
-    
-    setHandler.push_back_dataset(targetSet);
-    setHandler.push_back_dataset(decoySet);
-
-    // read database proteins
-    // only read them if they are present and the option of using mayusfdr is activated
-    unsigned readProteins = 0;
-    if (hasProteins && ProteinProbEstimator::getCalcProteinLevelProb() /*&& Caller::protEstimator->getMayuFdr()*/) {
-      assert(protEstimator); // should be initialized if -A flag was used (which also sets calcProteinLevelProb)
-      for (doc = p.next(); doc.get()!= 0
-          && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
-      {
-        ::percolatorInNs::protein protein(*doc->getDocumentElement());
-        protEstimator->addProteinDb(protein.isDecoy(), protein.name(), protein.sequence(), protein.length());
-        ++readProteins;
+    if (readProteins) {
+      // read database proteins
+      // only read them if they are present and the option of using mayusfdr is activated
+      unsigned numProteins = 0;
+      if (hasProteins && ProteinProbEstimator::getCalcProteinLevelProb() /*&& Caller::protEstimator->getMayuFdr()*/) {
+        assert(protEstimator); // should be initialized if -A flag was used (which also sets calcProteinLevelProb)
+        for (doc = p.next(); doc.get()!= 0
+            && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
+        {
+          ::percolatorInNs::protein protein(*doc->getDocumentElement());
+          protEstimator->addProteinDb(protein.isDecoy(), protein.name(), protein.sequence(), protein.length());
+          ++numProteins;
+        }
       }
+      /*
+      if(ProteinProbEstimator::getCalcProteinLevelProb() && protEstimator->getMayuFdr() && numProteins <= 0) {
+        std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
+	         Did you run converters with the flag -F ?\n" << std::endl;
+        Caller::protEstimator->setMayusFDR(false);
+      }
+      */
     }
-    /*
-    if(ProteinProbEstimator::getCalcProteinLevelProb() && protEstimator->getMayuFdr() && readProteins <= 0) {
-      std::cerr << "Warning : options -Q and -A are activated but the number of proteins found in the input file is zero.\n\
-	       Did you run converters with the flag -F ?\n" << std::endl;
-      Caller::protEstimator->setMayusFDR(false);
-    }
-    */
     
-    //maybe better to do :
-    //SanityCheck::addDefaultWeights(init_values);
-    pCheck = SanityCheck::initialize(otherCall_);
-    assert(pCheck);
-    if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
-    pCheck->checkAndSetDefaultDir();
+    if (rawWeights.size() == 0) {
+      pCheck = SanityCheck::initialize(otherCall_);
+      assert(pCheck);
+      pCheck->checkAndSetDefaultDir();
+      if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
+    }
     
   } catch (const xml_schema::exception& e) {
     std::cerr << e << endl;

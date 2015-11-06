@@ -17,17 +17,21 @@
 
 #include "SetHandler.h"
 
-SetHandler::SetHandler() : maxPSMs_(0u) {}
+SetHandler::SetHandler(unsigned int maxPSMs) : maxPSMs_(maxPSMs) {}
 
 SetHandler::~SetHandler() {
+  reset();
+}
+
+void SetHandler::reset() {
   for (unsigned int ix = 0; ix < subsets_.size(); ix++) {
     if (subsets_[ix] != NULL) {
       delete subsets_[ix];
     }
     subsets_[ix] = NULL;
   }
+  subsets_.clear();
 }
-
 /**
  * Gets the vector index of the DataSet matching the label
  * @param label DataSet label
@@ -48,28 +52,6 @@ unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
  */
 void SetHandler::push_back_dataset( DataSet * ds ) {
   subsets_.push_back(ds);
-}
-
-/**
- * Prints the results to a stream
- * @param test Scores object to be printed
- * @param myout stream to be printed to
- */
-void SetHandler::print(Scores& test, int label, ostream& myout) {
-  vector<ResultHolder> outList(0);
-  for (std::vector<DataSet*>::iterator it = subsets_.begin();
-         it != subsets_.end(); ++it) {
-    if ((*it)->getLabel() == label) {
-      (*it)->print(test, outList);
-    }
-  }
-  sort(outList.begin(), outList.end(), std::greater<ResultHolder> ());
-  myout << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n"
-        << endl;
-  for (std::vector<ResultHolder>::iterator it = outList.begin();
-         it != outList.end(); ++it) {
-    myout << *it << endl;
-  }
 }
 
 void SetHandler::fillFeatures(vector<ScoreHolder> &scores, int label) {
@@ -107,66 +89,9 @@ int const SetHandler::getLabel(int setPos) {
 }
 
 int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
-  if (!dataStream) {
-    std::cerr << "ERROR: Cannot open data stream." << std::endl;
-    return 0;
-  }
-  std::string psmLine, headerLine, defaultDirectionLine;
-  
-  getline(dataStream, headerLine); // line with feature names
-  headerLine = rtrim(headerLine);
-  if (headerLine.substr(0,5) == "<?xml") {
-    std::cerr << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
-       "Input file seems to be in XML format, use the -k flag for XML input." << 
-       std::endl;
-    return 0;
-  }
-  
-  // Checking for optional headers "ScanNr", "ExpMass" and "CalcMass"
-  std::vector<OptionalField> optionalFields;
-  int optionalFieldCount = getOptionalFields(headerLine, optionalFields);
-  
-  // parse second line for default direction
-  getline(dataStream, defaultDirectionLine);
-  defaultDirectionLine = rtrim(defaultDirectionLine);
-  bool hasInitialValueRow = isDefaultDirectionLine(defaultDirectionLine);
-
-  // count number of features from first PSM
-  if (hasInitialValueRow) {
-    getline(dataStream, psmLine);
-  } else {
-    psmLine = defaultDirectionLine;
-  }
-  psmLine = rtrim(psmLine);
-  int numFeatures = getNumFeatures(psmLine, optionalFieldCount);
-  
-  // fill in the feature names from the header line
-  FeatureNames& featureNames = DataSet::getFeatureNames();
-  getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
-  
-  // fill in the default weights if present
-  std::vector<double> init_values;
-  bool hasDefaultValues = false;
-  if (hasInitialValueRow) {
-    hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
-                                     init_values);
-  }
-  
-  if (numFeatures < 1) {
-    std::cerr << "ERROR: Reading tab file, too few features present." << std::endl;
-    return 0;
-  } else if (hasDefaultValues && init_values.size() > numFeatures) {
-    std::cerr << "ERROR: Reading tab file, too many default values present." << std::endl;
-    return 0;
-  }
-
-  // read in the data
-  readPSMs(dataStream, psmLine, hasInitialValueRow, optionalFields);  
-  //readSubsetPSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, 1000u);
-  
-  pCheck = new SanityCheck();
-  pCheck->checkAndSetDefaultDir();
-  if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
+  std::vector<double> noWeights;
+  Scores noScores(true);
+  readAndScoreTab(dataStream, noWeights, noScores, pCheck);
   return 1;
 }
 
@@ -452,6 +377,108 @@ void SetHandler::deletePSMPointer(PSMDescription* psm) {
     psm->retentionFeatures = NULL;
   }
   delete psm;
+}
+
+int SetHandler::readAndScoreTab(istream& dataStream, 
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck) {
+  if (!dataStream) {
+    std::cerr << "ERROR: Cannot open data stream." << std::endl;
+    return 0;
+  }
+  std::string psmLine, headerLine, defaultDirectionLine;
+  
+  getline(dataStream, headerLine); // line with feature names
+  headerLine = rtrim(headerLine);
+  if (headerLine.substr(0,5) == "<?xml") {
+    std::cerr << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
+       "Input file seems to be in XML format, use the -k flag for XML input." << 
+       std::endl;
+    return 0;
+  }
+  
+  // Checking for optional headers "ScanNr", "ExpMass" and "CalcMass"
+  std::vector<OptionalField> optionalFields;
+  int optionalFieldCount = getOptionalFields(headerLine, optionalFields);
+  
+  // parse second line for default direction
+  getline(dataStream, defaultDirectionLine);
+  defaultDirectionLine = rtrim(defaultDirectionLine);
+  bool hasInitialValueRow = isDefaultDirectionLine(defaultDirectionLine);
+
+  // count number of features from first PSM
+  if (hasInitialValueRow) {
+    getline(dataStream, psmLine);
+  } else {
+    psmLine = defaultDirectionLine;
+  }
+  psmLine = rtrim(psmLine);
+  int numFeatures = getNumFeatures(psmLine, optionalFieldCount);
+  
+  // fill in the feature names from the header line
+  FeatureNames& featureNames = DataSet::getFeatureNames();
+  getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
+  
+  // fill in the default weights if present
+  std::vector<double> init_values;
+  bool hasDefaultValues = false;
+  if (hasInitialValueRow) {
+    hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
+                                     init_values);
+  }
+  
+  if (numFeatures < 1) {
+    std::cerr << "ERROR: Reading tab file, too few features present." << std::endl;
+    return 0;
+  } else if (hasDefaultValues && init_values.size() > numFeatures) {
+    std::cerr << "ERROR: Reading tab file, too many default values present." << std::endl;
+    return 0;
+  }
+
+  // read in the data
+  if (rawWeights.size() > 0) {
+    readAndScorePSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, rawWeights, allScores);
+  } else {
+    readPSMs(dataStream, psmLine, hasInitialValueRow, optionalFields);
+    
+    pCheck = new SanityCheck();
+    pCheck->checkAndSetDefaultDir();
+    if (hasDefaultValues) pCheck->addDefaultWeights(init_values); 
+  }
+  return 1;
+}
+
+void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine, 
+    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
+    std::vector<double>& rawWeights, Scores& allScores) {
+  unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
+  bool readProteins = true;
+  do {
+    psmLine = rtrim(psmLine);
+    ScoreHolder sh;
+    sh.pPSM = new PSMDescription();
+    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM);
+    unsigned int numFeatures = FeatureNames::getNumFeatures();
+    for (unsigned int j = 0; j < numFeatures; j++) {
+      sh.score += sh.pPSM->features[j] * rawWeights[j];
+    }
+    sh.score += rawWeights[numFeatures];
+    
+    delete[] sh.pPSM->features;
+    sh.pPSM->features = NULL;
+    if (sh.pPSM->retentionFeatures) {
+      delete[] sh.pPSM->retentionFeatures;
+      sh.pPSM->retentionFeatures = NULL;
+    }
+    
+    if (sh.label != 1 && sh.label != -1) {
+      std::cerr << "Warning: the PSM on line " << lineNr
+          << " has a label not in {1,-1} and will be ignored." << std::endl;
+      deletePSMPointer(sh.pPSM);
+    } else {
+      allScores.addScoreHolder(sh);
+    }
+    ++lineNr;
+  } while (getline(dataStream, psmLine));
 }
 
 std::string& SetHandler::rtrim(std::string &s) {

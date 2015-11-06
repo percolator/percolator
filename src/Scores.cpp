@@ -149,6 +149,10 @@ void Scores::merge(std::vector<Scores>& sv, double fdr) {
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores_));
   }
+  postMergeStep();
+}
+
+void Scores::postMergeStep() {
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
   totalNumberOfDecoys_ = count_if(scores_.begin(),
       scores_.end(),
@@ -171,32 +175,26 @@ void Scores::printRetentionTime(ostream& outs, double fdr) {
   }
 }
 
-double Scores::calcScore(const double* feat) const {
+double Scores::calcScore(const double* feat, const std::vector<double>& w) const {
   register int ix = FeatureNames::getNumFeatures();
-  register double score = svmWeights_[ix];
+  register double score = w[ix];
   for (; ix--;) {
-    score += feat[ix] * svmWeights_[ix];
+    score += feat[ix] * w[ix];
   }
   return score;
 }
 
-/**
- * Returns the ScoreHolder object associated with a list of features
- * @param d array of features
- * @return pointer to ScoreHolder
- */
-ScoreHolder* Scores::getScoreHolder(const double* d) {
-  if (scoreMap_.size() == 0) {
-    std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-    for ( ; scoreIt != scores_.end(); ++scoreIt) {
-      scoreMap_[scoreIt->pPSM->features] = &(*scoreIt);
+void Scores::print(int label, std::ostream& os) {
+  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
+  os << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n";
+  for ( ; scoreIt != scores_.end(); ++scoreIt) {
+    if (scoreIt->label == label) {
+      std::ostringstream out;
+      scoreIt->pPSM->printProteins(out);
+      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->id, scoreIt->pPSM->peptide, out.str());
+      os << rh << std::endl;
     }
   }
-  std::map<const double*, ScoreHolder*>::iterator res = scoreMap_.find(d);
-  if (res != scoreMap_.end()) {
-    return res->second;
-  }
-  return NULL;
 }
 
 void Scores::fillFeatures(SetHandler& setHandler) {
@@ -390,10 +388,6 @@ void Scores::normalizeScores(double fdr) {
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     scoreIt->score -= q1;
     scoreIt->score /= diff;
-    if (scoreIt->score <= 0 && VERB > 3) { // Why do we warn for this, it happens for most of the data
-      std::cerr << "\nWARNING the score of the PSM " << scoreIt->pPSM->id << 
-          " is less or equal than zero after normalization.\n" << std::endl;
-    }
   }
   
 }
@@ -405,11 +399,10 @@ void Scores::normalizeScores(double fdr) {
  * @return number of true positives
  */
 int Scores::calcScores(std::vector<double>& w, double fdr) {
-  svmWeights_ = w;
   unsigned int ix;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    scoreIt->score = calcScore(scoreIt->pPSM->features);
+    scoreIt->score = calcScore(scoreIt->pPSM->features, w);
   }
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
   if (VERB > 3) {

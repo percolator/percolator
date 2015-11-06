@@ -27,7 +27,6 @@
 #include <map>
 #include <iostream>
 
-using namespace std;
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
@@ -76,15 +75,6 @@ struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   }
 };
 
-struct OrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->getPeptideSequence() < __y.pPSM->getPeptideSequence() ) 
-    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.score > __y.score) ) );
-  }
-};
-
-
 struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool
   operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
@@ -129,11 +119,12 @@ class Scores {
     totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
   ~Scores() {}
   void merge(vector<Scores>& sv, double fdr);
+  void postMergeStep();
   
-  vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
-  vector<ScoreHolder>::iterator end() { return scores_.end(); }
+  std::vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
+  std::vector<ScoreHolder>::iterator end() { return scores_.end(); }
   
-  double calcScore(const double* features) const;
+  double calcScore(const double* features, const std::vector<double>& w) const;
   int calcScores(vector<double>& w, double fdr);
   int calcQ(double fdr);
   void recalculateDescriptionOfCorrect(const double fdr);
@@ -142,7 +133,7 @@ class Scores {
   
   void fillFeatures(SetHandler& setHandler);
   
-  int getInitDirection(const double fdr, vector<double>& direction);
+  int getInitDirection(const double fdr, std::vector<double>& direction);
   void createXvalSetsBySpectrum(std::vector<Scores>& train, 
       std::vector<Scores>& test, const unsigned int xval_fold);
   
@@ -163,9 +154,7 @@ class Scores {
   
   void setDOCFeatures();
   
-  void fill(string& fn);
-  
-  ScoreHolder* getScoreHolder(const double* d);
+  void print(int label, std::ostream& os = std::cout);
   
   DescriptionOfCorrect& getDOC() { return doc_; }
   
@@ -179,14 +168,14 @@ class Scores {
   inline unsigned int posSize() const { return totalNumberOfTargets_; }
   inline unsigned int negSize() const { return totalNumberOfDecoys_; }
   
-  inline void resetScoreMap() { scoreMap_.clear(); }
-  
   inline static void setSeed(unsigned long s) { seed_ = s; }
   static unsigned long lcg_rand();
   
   inline void addScoreHolder(const ScoreHolder& sh) {
     scores_.push_back(sh);
   }
+  
+  void reset() { scores_.clear(); }
   
  protected:
   static unsigned long seed_;
@@ -196,9 +185,7 @@ class Scores {
   double targetDecoySizeRatio_;
   int totalNumberOfDecoys_, totalNumberOfTargets_;
   
-  vector<ScoreHolder> scores_;
-  vector<double> svmWeights_;
-  std::map<const double*, ScoreHolder*> scoreMap_;
+  std::vector<ScoreHolder> scores_;
   DescriptionOfCorrect doc_;
   
   double* decoyPtr_;
