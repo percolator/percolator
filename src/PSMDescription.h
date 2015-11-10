@@ -40,6 +40,8 @@ class PSMDescription {
     PSMDescription(double ort, double prt);
     
     virtual ~PSMDescription();
+    
+    static void deletePtr(PSMDescription* psm);
     void clear() { proteinIds.clear(); }
     double* getFeatures() { return features; }
     double* getRetentionFeatures() { return retentionFeatures; }

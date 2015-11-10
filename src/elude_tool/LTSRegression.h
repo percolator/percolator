@@ -28,6 +28,8 @@
 #include <utility>
 #include <vector>
 
+#include "PseudoRandom.h"
+
 using namespace std;
 
 struct dataPoint {

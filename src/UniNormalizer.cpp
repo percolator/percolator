@@ -84,3 +84,26 @@ void UniNormalizer::setSet(vector<double*> & featuresV,
     }
   }
 }
+
+void UniNormalizer::updateSet(vector<double*>& featuresV, size_t offset,
+                              size_t numFeatures) {
+  vector<double> mins(numFeatures, 1e+100), maxs(numFeatures, -1e+100);
+  double* features;
+  size_t ix;
+  
+  vector<double*>::iterator it = featuresV.begin();
+  for (; it != featuresV.end(); ++it) {
+    features = *it;
+    for (ix = 0; ix < numFeatures; ix++) {
+      mins[ix] = min(features[ix], mins[ix]);
+      maxs[ix] = max(features[ix], maxs[ix]);
+    }
+  }
+  for (ix = 0; ix < numFeatures; ++ix) {
+    sub[offset + ix] = mins[ix];
+    div[offset + ix] = maxs[ix] - mins[ix];
+    if (div[offset + ix] <= 0) {
+      div[offset + ix] = 1.0;
+    }
+  }
+}

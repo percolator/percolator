@@ -26,10 +26,12 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+
 #include "Globals.h"
 #include "ProteinFDRestimator.h"
 #include "Protein.h"
 #include "Scores.h"
+#include "PseudoRandom.h"
 
 /** set of helper functions to sort data structures and some operations overloaded **/
 struct IntCmpProb {

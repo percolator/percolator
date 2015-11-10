@@ -36,6 +36,7 @@
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
   #include "MassHandler.h"
+  #include "PseudoRandom.h"
   
   #include "parser.hxx"
   #include "serializer.hxx"

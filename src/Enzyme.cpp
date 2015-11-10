@@ -26,11 +26,16 @@ Enzyme* Enzyme::getEnzyme() {
   return theEnzyme;
 }
 
-void Enzyme::setEnzyme(EnzymeType enz) {
+void Enzyme::destroy() {
   if (theEnzyme) {
     delete theEnzyme;
   }
   theEnzyme = NULL;
+}
+
+void Enzyme::setEnzyme(EnzymeType enz) {
+  destroy();
+  
   switch (enz) {
     case CHYMOTRYPSIN:
       theEnzyme = new Chymotrypsin();
@@ -67,42 +72,39 @@ void Enzyme::setEnzyme(EnzymeType enz) {
       return;
     case TRYPSIN:
     default:
-      theEnzyme = new Trypsin;
+      theEnzyme = new Trypsin();
       return;
   }
 }
 
 void Enzyme::setEnzyme(std::string enzyme) {
-  if (theEnzyme) {
-    delete theEnzyme;
-  }
-  theEnzyme = NULL;
+  destroy();
   
   std::transform(enzyme.begin(), enzyme.end(), enzyme.begin(), ::tolower);
   if (enzyme == Chymotrypsin::getString()) {
-      theEnzyme = new Chymotrypsin();
+    theEnzyme = new Chymotrypsin();
   } else if (enzyme == Thermolysin::getString()) {
-      theEnzyme = new Thermolysin();
+    theEnzyme = new Thermolysin();
   } else if (enzyme == Proteinasek::getString()) {
-      theEnzyme = new Proteinasek();
+    theEnzyme = new Proteinasek();
   } else if (enzyme == Pepsin::getString()) {
-      theEnzyme = new Pepsin();
+    theEnzyme = new Pepsin();
   } else if (enzyme == Elastase::getString()) {
-      theEnzyme = new Elastase();
+    theEnzyme = new Elastase();
   } else if (enzyme == LysN::getString()) {
-      theEnzyme = new LysN();
+    theEnzyme = new LysN();
   } else if (enzyme == LysC::getString()) {
-      theEnzyme = new LysC();
+    theEnzyme = new LysC();
   } else if (enzyme == ArgC::getString()) {
-      theEnzyme = new ArgC();
+    theEnzyme = new ArgC();
   } else if (enzyme == AspN::getString()) {
-      theEnzyme = new AspN();
+    theEnzyme = new AspN();
   } else if (enzyme == GluC::getString()) {
-      theEnzyme = new GluC();
+    theEnzyme = new GluC();
   } else if (enzyme == Enzyme::getString()) {
-      theEnzyme = new Enzyme();
+    theEnzyme = new Enzyme();
   } else if (enzyme == Trypsin::getString()) {
-      theEnzyme = new Trypsin();
+    theEnzyme = new Trypsin();
   }
   else {
     ostringstream temp;

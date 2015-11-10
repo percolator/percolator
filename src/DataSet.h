@@ -55,6 +55,7 @@ class DataSet {
   static inline bool getCalcDoc() { return calcDOC_; }
   
   static FeatureNames& getFeatureNames() { return featureNames_; }
+  static void resetFeatureNames() { featureNames_ = FeatureNames(); }
   static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
   
   void setRetentionTime(map<int, double>& scan2rt) { 
@@ -66,15 +67,16 @@ class DataSet {
   void print_10features();
   void print_features();
 
-  void fillFeatures(std::vector<ScoreHolder> &scores);
-  void fillFeatures(std::vector<double*> &features);
-  void fillRtFeatures(std::vector<double*> &rtFeatures);
+  void fillFeatures(std::vector<ScoreHolder>& scores);
+  void fillFeatures(std::vector<double*>& features);
+  void fillDOCFeatures(std::vector<double*>& features);
+  void fillRtFeatures(std::vector<double*>& rtFeatures);
   
   void readPsm(const std::string& line, const unsigned int lineNr,
                const std::vector<OptionalField>& optionalFields);
   static int readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription* myPsm);
+    PSMDescription*& myPsm);
   
   void registerPsm(PSMDescription * myPsm);
   

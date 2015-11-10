@@ -79,6 +79,7 @@ void DescriptionOfCorrect::trainCorrect() {
         << " avg dM=" << avgDM << endl;
   }
 }
+
 void DescriptionOfCorrect::setFeatures(PSMDescription& psm) {
   assert(DataSet::getFeatureNames().getDocFeatNum() > 0);
   psm.predictedTime = rtModel.estimateRT(psm.retentionFeatures);
@@ -86,31 +87,35 @@ void DescriptionOfCorrect::setFeatures(PSMDescription& psm) {
   double dm = abs(psm.massDiff - avgDM);
   double drt = abs(psm.retentionTime - psm.predictedTime);
   if (docFeatures & 1) {
-    psm.features[docFeatNum]
-        = Normalizer::getNormalizer()->normalize(abs(psm.pI - avgPI),
-                                                 docFeatNum);
-  } else {
-    psm.features[docFeatNum] = 0.0;
+    psm.features[docFeatNum] = abs(psm.pI - avgPI);
   }
   if (docFeatures & 2) {
-    psm.features[docFeatNum + 1]
-        = Normalizer::getNormalizer()->normalize(dm, docFeatNum + 1);
-  } else {
-    psm.features[docFeatNum + 1] = 0.0;
+    psm.features[docFeatNum + 1] = dm;
   }
   if (docFeatures & 4) {
-    psm.features[docFeatNum + 2]
-        = Normalizer::getNormalizer()->normalize(drt, docFeatNum + 2);
-  } else {
-    psm.features[docFeatNum + 2] = 0.0;
+    psm.features[docFeatNum + 2] = drt;
   }
   // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm.retentionTime))));
   if (docFeatures & 8) {
-    psm.features[docFeatNum + 3]
-        = Normalizer::getNormalizer()->normalize(sqrt(dm * drt),
-                                                 docFeatNum + 3);
-  } else {
-    psm.features[docFeatNum + 3] = 0.0;
+    psm.features[docFeatNum + 3] = sqrt(dm * drt);
+  }
+}
+
+void DescriptionOfCorrect::setFeaturesNormalized(PSMDescription& psm, Normalizer* pNorm) {
+  setFeatures(psm);
+  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
+  if (docFeatures & 1) {
+    psm.features[docFeatNum] = pNorm->normalize(psm.features[docFeatNum], docFeatNum);
+  }
+  if (docFeatures & 2) {
+    psm.features[docFeatNum + 1] = pNorm->normalize(psm.features[docFeatNum + 1], docFeatNum + 1);
+  }
+  if (docFeatures & 4) {
+    psm.features[docFeatNum + 2] = pNorm->normalize(psm.features[docFeatNum + 2], docFeatNum + 2);
+  }
+  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm.retentionTime))));
+  if (docFeatures & 8) {
+    psm.features[docFeatNum + 3] = pNorm->normalize(psm.features[docFeatNum + 3], docFeatNum + 3);
   }
 }
 

@@ -41,6 +41,19 @@ PSMDescription::PSMDescription(double ort, double prt) :
 
 PSMDescription::~PSMDescription() {}
 
+void PSMDescription::deletePtr(PSMDescription* psm) {
+  if (psm->features) {
+    delete[] psm->features;
+    psm->features = NULL;
+  }
+  if (psm->retentionFeatures) {
+    delete[] psm->retentionFeatures;
+    psm->retentionFeatures = NULL;
+  }
+  delete psm;
+  psm = NULL;
+}
+
 double PSMDescription::normDiv = -1.0;
 double PSMDescription::normSub = 0.0;
 

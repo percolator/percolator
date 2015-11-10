@@ -31,6 +31,7 @@ void SetHandler::reset() {
     subsets_[ix] = NULL;
   }
   subsets_.clear();
+  DataSet::resetFeatureNames();
 }
 /**
  * Gets the vector index of the DataSet matching the label
@@ -71,6 +72,19 @@ void SetHandler::normalizeFeatures(Normalizer*& pNorm) {
       FeatureNames::getNumFeatures(),
       DataSet::getCalcDoc() ? RTModel::totalNumRTFeatures() : 0);
   pNorm->normalizeSet(featuresV, rtFeaturesV);
+}
+
+void SetHandler::normalizeDOCFeatures(Normalizer* pNorm) {
+  std::vector<double*> featuresDOC;
+  for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
+    subsets_[ix]->fillDOCFeatures(featuresDOC);
+  }
+
+  size_t numFeatures = DescriptionOfCorrect::numDOCFeatures();
+  size_t offset = FeatureNames::getNumFeatures() - numFeatures;
+  
+  pNorm->updateSet(featuresDOC, offset, numFeatures);
+  pNorm->normalizeSet(featuresDOC, offset, numFeatures);
 }
 
 void SetHandler::setRetentionTime(map<int, double>& scan2rt) {
@@ -242,14 +256,13 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
         randIdx = scanIdLookUp[scanId];
       } else {
-        randIdx = Scores::lcg_rand();
+        randIdx = PseudoRandom::lcg_rand();
         scanIdLookUp[scanId] = randIdx;
       }
       
       unsigned int upperLimit = UINT_MAX;
       if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
         PSMDescriptionPriority psmPriority;
-        psmPriority.psm = new PSMDescription();
         bool readProteins = false;
         psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
                                              readProteins, psmPriority.psm);
@@ -258,26 +271,14 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         if (subsetPSMs.size() > maxPSMs_) {
           PSMDescriptionPriority del = subsetPSMs.top();
           upperLimit = del.priority;
-          deletePSMPointer(del.psm);
+          PSMDescription::deletePtr(del.psm);
           subsetPSMs.pop();
         }
       }
       ++lineNr;
     } while (getline(dataStream, psmLine));
     
-    while (!subsetPSMs.empty()) {
-      PSMDescriptionPriority psmPriority = subsetPSMs.top();
-      if (psmPriority.label == 1) {
-        targetSet->registerPsm(psmPriority.psm);
-      } else if (psmPriority.label == -1) {
-        decoySet->registerPsm(psmPriority.psm);
-      } else {
-        std::cerr << "Warning: the PSM " << psmPriority.psm->id
-            << " has a label not in {1,-1} and will be ignored." << std::endl;
-        deletePSMPointer(psmPriority.psm);
-      }
-      subsetPSMs.pop();
-    }
+    addQueueToSets(subsetPSMs, targetSet, decoySet);
   } else {
     unsigned int targetIdx = 0u, decoyIdx = 0u, lineNr = (hasInitialValueRow ? 3u : 2u);
     do {
@@ -297,6 +298,24 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   
   push_back_dataset(targetSet);
   push_back_dataset(decoySet);
+}
+
+void SetHandler::addQueueToSets(
+    std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
+    DataSet* targetSet, DataSet* decoySet) {
+  while (!subsetPSMs.empty()) {
+    PSMDescriptionPriority psmPriority = subsetPSMs.top();
+    if (psmPriority.label == 1) {
+      targetSet->registerPsm(psmPriority.psm);
+    } else if (psmPriority.label == -1) {
+      decoySet->registerPsm(psmPriority.psm);
+    } else {
+      std::cerr << "Warning: the PSM " << psmPriority.psm->id
+          << " has a label not in {1,-1} and will be ignored." << std::endl;
+      PSMDescription::deletePtr(psmPriority.psm);
+    }
+    subsetPSMs.pop();
+  }
 }
 
 int SetHandler::getLabel(const std::string& psmLine, unsigned int lineNr) {
@@ -365,18 +384,6 @@ ScanId SetHandler::getScanId(const std::string& psmLine,
   if (!hasScannr) scanId.first = lineNr;
   
   return scanId;
-}
-
-void SetHandler::deletePSMPointer(PSMDescription* psm) {
-  if (psm->features) {
-    delete[] psm->features;
-    psm->features = NULL;
-  }
-  if (psm->retentionFeatures) {
-    delete[] psm->retentionFeatures;
-    psm->retentionFeatures = NULL;
-  }
-  delete psm;
 }
 
 int SetHandler::readAndScoreTab(istream& dataStream, 
@@ -455,28 +462,8 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
   do {
     psmLine = rtrim(psmLine);
     ScoreHolder sh;
-    sh.pPSM = new PSMDescription();
     sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM);
-    unsigned int numFeatures = FeatureNames::getNumFeatures();
-    for (unsigned int j = 0; j < numFeatures; j++) {
-      sh.score += sh.pPSM->features[j] * rawWeights[j];
-    }
-    sh.score += rawWeights[numFeatures];
-    
-    delete[] sh.pPSM->features;
-    sh.pPSM->features = NULL;
-    if (sh.pPSM->retentionFeatures) {
-      delete[] sh.pPSM->retentionFeatures;
-      sh.pPSM->retentionFeatures = NULL;
-    }
-    
-    if (sh.label != 1 && sh.label != -1) {
-      std::cerr << "Warning: the PSM on line " << lineNr
-          << " has a label not in {1,-1} and will be ignored." << std::endl;
-      deletePSMPointer(sh.pPSM);
-    } else {
-      allScores.addScoreHolder(sh);
-    }
+    allScores.scoreAndAddPSM(sh, rawWeights);
     ++lineNr;
   } while (getline(dataStream, psmLine));
 }

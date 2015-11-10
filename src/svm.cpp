@@ -1773,7 +1773,7 @@ void svm_binary_svc_probability(const svm_problem* prob,
     perm[i] = i;
   }
   for (i = 0; i < prob->l; i++) {
-    int j = i + rand() % (prob->l - i);
+    int j = i + PseudoRandom::lcg_rand() % (prob->l - i);
     swap(perm[i], perm[j]);
   }
   for (i = 0; i < nr_fold; i++) {
@@ -2200,7 +2200,7 @@ void svm_cross_validation(const svm_problem* prob,
     }
     for (c = 0; c < nr_class; c++)
       for (i = 0; i < count[c]; i++) {
-        int j = i + rand() % (count[c] - i);
+        int j = i + PseudoRandom::lcg_rand() % (count[c] - i);
         swap(index[start[c] + j], index[start[c] + i]);
       }
     for (i = 0; i < nr_fold; i++) {
@@ -2237,7 +2237,7 @@ void svm_cross_validation(const svm_problem* prob,
       perm[i] = i;
     }
     for (i = 0; i < l; i++) {
-      int j = i + rand() % (l - i);
+      int j = i + PseudoRandom::lcg_rand() % (l - i);
       swap(perm[i], perm[j]);
     }
     for (i = 0; i <= nr_fold; i++) {

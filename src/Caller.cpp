@@ -551,7 +551,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     maxPSMs_ = cmd.getInt("N", 0, 100000000);
   }
   if (cmd.optionSet("S")) {
-    Scores::setSeed(cmd.getInt("S", 1, 20000));
+    PseudoRandom::setSeed(cmd.getInt("S", 1, 20000));
   }
   if (cmd.optionSet("D")) {
     DataSet::setCalcDoc(true);
@@ -774,7 +774,6 @@ int Caller::run() {
     std::cerr << "FeatureNames::getNumFeatures(): "<< FeatureNames::getNumFeatures() << endl;
   }
   
-  // Normalize features
   setHandler.normalizeFeatures(pNorm_);
   
   // Copy feature data pointers to Scores object
@@ -788,6 +787,10 @@ int Caller::run() {
   if (VERB > 0) {
     cerr << "Estimating " << firstNumberOfPositives << " over q="
         << testFdr_ << " in initial direction" << endl;
+  }
+  
+  if (DataSet::getCalcDoc()) {
+    setHandler.normalizeDOCFeatures(pNorm_);
   }
   
   time_t procStart;
@@ -804,17 +807,18 @@ int Caller::run() {
   
   // Do the SVM training
   crossValidation.train(pNorm_);
-  // Calculate the final SVM scores and clean up structures
-  crossValidation.postIterationProcessing(allScores, pCheck_);
-  
-  if (VERB > 0 && DataSet::getCalcDoc()) {
-    crossValidation.printDOC();
-  }
   
   if (weightOutputFN_.size() > 0) {
     ofstream weightStream(weightOutputFN_.c_str(), ios::out);
     crossValidation.printAllWeights(weightStream, pNorm_);
     weightStream.close();
+  }
+  
+  // Calculate the final SVM scores and clean up structures
+  crossValidation.postIterationProcessing(allScores, pCheck_);
+  
+  if (VERB > 0 && DataSet::getCalcDoc()) {
+    crossValidation.printDOC();
   }
   
   if (setHandler.getMaxPSMs() > 0u) {
@@ -866,6 +870,7 @@ int Caller::run() {
     }
   }
   // write output to file
-  xmlInterface.writeXML(allScores, protEstimator_, call_);  
+  xmlInterface.writeXML(allScores, protEstimator_, call_);
+  Enzyme::destroy();
   return 1;
 }

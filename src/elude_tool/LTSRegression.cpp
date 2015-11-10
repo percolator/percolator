@@ -62,10 +62,10 @@ vector<dataPoint> LTSRegression::getInitialHSubset() {
   int i1, i2;
   int n = data.size();
   // generate two random indices
-  i1 = rand() % n;
-  i2 = rand() % n;
+  i1 = PseudoRandom::lcg_rand() % n;
+  i2 = PseudoRandom::lcg_rand() % n;
   while (i2 == i1) {
-    i2 = rand() % n;
+    i2 = PseudoRandom::lcg_rand() % n;
   }
   // calculate the a and b of the equation of the line going through the two points selected above (y = ax + b)
   a = (data[i2].y - data[i1].y) / (data[i2].x - data[i1].x);

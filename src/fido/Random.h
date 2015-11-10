@@ -24,8 +24,12 @@ class Random
   static void fillRandomUniform(Array<double> & lhs, double low, double high);
 
   class SamplingException {};
+  
+  inline static void setSeed(unsigned long s) { seed_ = s; }
+  static unsigned long lcg_rand();
 private:
   static Numerical samplingChecker;
+  static unsigned long seed_;
 };
 
 #endif

@@ -64,6 +64,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
     assert( svmInputs_.back() );
   }
   
+  int numPositive = 0;
   if (selectedCpos_ >= 0 && selectedCneg_ >= 0) {
     trainScores_.resize(numFolds_, Scores(usePi0_));
     testScores_.resize(numFolds_, Scores(usePi0_));
@@ -93,20 +94,31 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
         cerr << "selecting cneg by cross validation" << endl;
       }
     }
-    return pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
+    numPositive = pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
                                     testFdr_);
   } else {
     vector<Scores> myset(1, fullset);
     cerr << "B" << endl;
-    return pCheck->getInitDirection(myset, myset, pNorm, w_, testFdr_);
+    numPositive = pCheck->getInitDirection(myset, myset, pNorm, w_, testFdr_);
   }
+  
+  if (DataSet::getCalcDoc()) {
+    for (int set = 0; set < numFolds_; ++set) {
+      trainScores_[set].calcScores(w_[set], selectionFdr_);
+      trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
+      testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
+      testScores_[set].setDOCFeatures(pNorm);
+    }
+  }
+  
+  return numPositive;
 }
 
 /** 
  * Train the SVM using several cross validation iterations
  * @param pNorm Normalization object
  */
-void CrossValidation::train(Normalizer * pNorm) {
+void CrossValidation::train(Normalizer* pNorm) {
 
   if (VERB > 0) {
     cerr << "---Training with Cpos";
@@ -132,7 +144,7 @@ void CrossValidation::train(Normalizer * pNorm) {
     }
     
     bool updateDOC = true;
-    foundPositives = doStep(updateDOC);
+    foundPositives = doStep(updateDOC, pNorm);
     
     if (VERB > 1) {
       cerr << "After the iteration step, " << foundPositives
@@ -165,10 +177,6 @@ void CrossValidation::train(Normalizer * pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    if (DataSet::getCalcDoc()) {
-      testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
-      testScores_[set].setDOCFeatures();
-    }
     foundPositives += testScores_[set].calcScores(w_[set], testFdr_);
   }
   if (VERB > 0) {
@@ -187,7 +195,7 @@ void CrossValidation::train(Normalizer * pNorm) {
  *        @see DescriptionOfCorrect
  * @return Estimation of number of true positives
  */
-int CrossValidation::doStep(bool updateDOC) {
+int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm) {
   // Setup
   struct options* pOptions = new options;
   pOptions->lambda = 1.0;
@@ -196,6 +204,19 @@ int CrossValidation::doStep(bool updateDOC) {
   pOptions->cgitermax = CGITERMAX;
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
+  
+  // the calculation of DOC contains random number generation and cannot be
+  // parallelized easily without becoming non-deterministic
+  for (int set = 0; set < numFolds_; ++set) {
+    trainScores_[set].calcScores(w_[set], selectionFdr_);
+    if (DataSet::getCalcDoc() && updateDOC) {
+      trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
+      //trainScores_[set].setDOCFeatures(pNorm); // this overwrites features of overlapping training folds...
+      testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
+      testScores_[set].setDOCFeatures(pNorm);
+    }
+  }
+  
   if (!quickValidation_) {
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < numFolds_; ++set) {
@@ -205,7 +226,7 @@ int CrossValidation::doStep(bool updateDOC) {
       
       double bestCpos = 1, bestCfrac = 1;
       
-      int estTruePosFold = processSingleFold(set, updateDOC, candidatesCpos_, 
+      int estTruePosFold = processSingleFold(set, candidatesCpos_, 
                                       candidatesCfrac_, bestCpos, bestCfrac, 
                                       pWeights, pOptions);
       #pragma omp critical (add_tps)
@@ -225,13 +246,13 @@ int CrossValidation::doStep(bool updateDOC) {
     
     // Use limited internal cross validation, i.e take the cpos and cfrac 
     // values of the first bin and use it for the subsequent bins 
-    estTruePos += processSingleFold(0, updateDOC, candidatesCpos_, 
+    estTruePos += processSingleFold(0, candidatesCpos_, 
                                     candidatesCfrac_, bestCpos, bestCfrac, 
                                     pWeights, pOptions);
     vector<double> cp(1, bestCpos), cf(1, bestCfrac);
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 1; set < numFolds_; ++set) {
-      int estTruePosFold = processSingleFold(set, updateDOC, cp, cf, bestCpos, 
+      int estTruePosFold = processSingleFold(set, cp, cf, bestCpos, 
                                       bestCfrac, pWeights, pOptions);
       #pragma omp critical (add_tps)
       {
@@ -248,8 +269,6 @@ int CrossValidation::doStep(bool updateDOC) {
 /** 
  * Train one of the crossvalidation bins 
  * @param set identification number of the bin that is processed
- * @param updateDOC boolean deciding to calculate retention features 
- *        @see DescriptionOfCorrect
  * @param cposCandidates candidate soft margin parameters for positives
  * @param cfracCandidates candidate soft margin parameters for fraction neg/pos
  * @param bestCpos best soft margin parameter for positives
@@ -257,7 +276,7 @@ int CrossValidation::doStep(bool updateDOC) {
  * @param pWeights results vector from the SVM algorithm
  * @param pOptions options for the SVM algorithm
 */
-int CrossValidation::processSingleFold(unsigned int set, bool updateDOC, 
+int CrossValidation::processSingleFold(unsigned int set,
     const vector<double>& cposCandidates, const vector<double>& cfracCandidates, 
     double &bestCpos, double &bestCfrac, vector_double* pWeights, 
     options * pOptions) {
@@ -269,10 +288,6 @@ int CrossValidation::processSingleFold(unsigned int set, bool updateDOC,
   
   vector<double> ww = w_[set]; // SVM weights initial guess and result holder
   vector<double> bestW = w_[set]; // SVM weights with highest true pos estimate
-  trainScores_[set].calcScores(ww, selectionFdr_);
-  if (DataSet::getCalcDoc() && updateDOC) {
-    trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
-  }
   
   AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
   
@@ -347,11 +362,17 @@ int CrossValidation::processSingleFold(unsigned int set, bool updateDOC,
 void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck* pCheck) {
   if (!pCheck->validateDirection(w_)) {
-    fullset.calcScores(w_[0], selectionFdr_);
+    for (int set = 0; set < numFolds_; ++set) {
+      testScores_[set].calcScores(w_[0], selectionFdr_);
+    }
   }
   if (VERB > 0) {
     std::cerr << "Merging results from " << testScores_.size() << 
                  " datasets" << std::endl;
+  }
+  if (DataSet::getCalcDoc()) {
+    // TODO: take the average instead of the first DOC model?
+    fullset.getDOC().copyDOCparameters(testScores_[0].getDOC());
   }
   fullset.merge(testScores_, selectionFdr_);
   for (unsigned int i = 0; i < numFolds_; ++i) {

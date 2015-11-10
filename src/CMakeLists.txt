@@ -79,13 +79,13 @@ if(XML_SUPPORT)
                   PSMDescription.cpp ResultHolder.cpp 
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
-								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
+								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp FisherInterface.cpp)
 else(XML_SUPPORT)
   add_library(perclibrary STATIC BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp ResultHolder.cpp 
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp 
-								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
+								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp Protein.cpp FisherInterface.cpp)
 endif(XML_SUPPORT)
 								  

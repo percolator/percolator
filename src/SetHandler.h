@@ -37,6 +37,8 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "SanityCheck.h"
+#include "PseudoRandom.h"
+#include "DescriptionOfCorrect.h"
 
 using namespace std;
 
@@ -72,9 +74,13 @@ class SetHandler {
   int readTab(istream& dataStream, SanityCheck*& pCheck);
   int readAndScoreTab(istream& dataStream, 
     std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck);
+  void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
+    DataSet* targetSet, DataSet* decoySet);
+  
   void writeTab(const string& dataFN, SanityCheck* pCheck);
   void fillFeatures(vector<ScoreHolder> &scores, int label);
   void normalizeFeatures(Normalizer*& pNorm);
+  void normalizeDOCFeatures(Normalizer* pNorm);
   void setRetentionTime(map<int, double>& scan2rt);
   
   int const getLabel(int setPos);

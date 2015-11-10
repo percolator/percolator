@@ -5,6 +5,7 @@
 #define _Set_H
 
 #include "Array.h"
+#include "Random.h"
 
 class Set : public Array<int> {
  public:
@@ -52,7 +53,7 @@ class Set : public Array<int> {
   }
   
   int randomElement() const {
-    return (*this)[ rand() % size() ];
+    return (*this)[ Random::lcg_rand() % size() ];
   }
 
  private:

@@ -38,17 +38,17 @@ class CrossValidation {
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
-                        Normalizer * pNorm);
+                        Normalizer* pNorm);
   
-  void train(Normalizer * pNorm);
+  void train(Normalizer* pNorm);
   
   void postIterationProcessing(Scores & fullset, SanityCheck * pCheck);
   
   void printSetWeights(ostream & weightStream, unsigned int set, 
-                       Normalizer * pNorm);
-  void printAllWeights(ostream & weightStream, Normalizer * pNorm);
+                       Normalizer* pNorm);
+  void printAllWeights(ostream & weightStream, Normalizer* pNorm);
   void printDOC();
-  void getAvgWeights(std::vector<double>& weights, Normalizer * pNorm);
+  void getAvgWeights(std::vector<double>& weights, Normalizer* pNorm);
   
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
   double inline getSelectedCpos() { return selectedCpos_; }
@@ -87,12 +87,12 @@ class CrossValidation {
   std::vector<Scores> trainScores_, testScores_;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
   
-  int processSingleFold(unsigned int set, bool updateDOC, 
+  int processSingleFold(unsigned int set,
                          const vector<double>& cpos_vec, 
                          const vector<double>& cfrac_vec, 
                          double& best_cpos, double& best_cfrac, 
-                         vector_double* pWeights, options * pOptions);
-  int doStep(bool updateDOC = false);
+                         vector_double* pWeights, options* pOptions);
+  int doStep(bool updateDOC, Normalizer* pNorm);
     
 };
 

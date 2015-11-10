@@ -5,6 +5,14 @@
 
 Numerical Random::samplingChecker(1e-10);
 
+unsigned long Random::seed_ = 1;
+
+unsigned long Random::lcg_rand() {
+  //uint64_t
+  seed_ = (seed_ * 279470273u) % 4294967291u;
+  return seed_;
+}
+
 double Random::uniform(double a, double b)
 {
   if ( a > b )
@@ -22,7 +30,7 @@ double Random::uniform(double a, double b)
 	}
     }
 
-  double u = rand() % 1000000 / 999999.0;
+  double u = lcg_rand() % 1000000 / 999999.0;
   return u * (b-a) + a;
 }
 
@@ -49,7 +57,7 @@ int Random::inRange(int a, int b)
   if ( b == a )
     return a;
 
-  return rand() % (b-a) + a;
+  return lcg_rand() % (b-a) + a;
 }
 
 void Random::fillRandomUniform(Array<double> & lhs, double low, double high)

@@ -23,85 +23,80 @@
 using namespace std;
 
 class Normalizer {
-  public:
-    virtual ~Normalizer();
-    virtual void setSet(vector<double*> & featuresV,
-                        vector<double*> & rtFeaturesV, size_t numFeatures,
-                        size_t numRetentionFeatures) {
-      ;
+ public:
+  virtual ~Normalizer();
+  virtual void setSet(vector<double*>& featuresV,
+                      vector<double*>& rtFeaturesV, size_t numFeatures,
+                      size_t numRetentionFeatures) {}
+  virtual void updateSet(vector<double*>& featuresV, size_t offset,
+                         size_t numFeatures) {}
+  
+  void normalizeSet(vector<double*>& featuresV,
+                    vector<double*>& rtFeaturesV);
+  void normalizeSet(vector<double*>& featuresV,
+                    size_t offset, size_t numFeatures);
+  void normalize(const double* in, double* out, size_t offset,
+                 size_t numFeatures);
+  inline double normalize(const double in, size_t index) {
+    return (in - sub[index]) / div[index];
+  }
+  virtual void unnormalizeweight(const vector<double>& in,
+                                 vector<double>& out) {}
+  virtual void normalizeweight(const vector<double>& in,
+                               vector<double>& out) {}
+  static Normalizer* getNormalizer();
+  static void setType(int type);
+  const static int UNI = 0;
+  const static int STDV = 1;
+  void resizeVecs(size_t size) {
+    sub.resize(size, 0.0);
+    div.resize(size, 1.0);
+  }
+  void setNumberRetentionFeatures(size_t numRF) {
+    numRetentionFeatures = numRF;
+  }
+  void setNumFeatures(const size_t nf) {
+    numFeatures = nf;
+  }
+  double* getSub() {
+    return &sub[0];
+  }
+  double* getDiv() {
+    return &div[0];
+  }
+  size_t* getNumRetFeatures() {
+    return &numRetentionFeatures;
+  }
+  void printNumRetFeatures() {
+    cout << "There are " << numRetentionFeatures << endl;
+  }
+  void printSub() {
+    for (unsigned int i = 0; i < numRetentionFeatures; i++) {
+      cout << sub[i] << " ";
     }
-    //    virtual void setPsmSet(vector<PSMDescription> & psms, size_t noFeat){;}
-    //    void normalizeSet(vector<PSMDescription> & psms);
-    void normalizeSet(vector<double*> & featuresV,
-                      vector<double*> & rtFeaturesV);
-    // not tested
-    void unNormalizeSet(vector<double*> & rtFeaturesV);
-    void normalize(const double* in, double* out, size_t offset,
-                   size_t numFeatures);
-    double normalize(const double in, size_t index) {
-      return (in - sub[index]) / div[index];
+    cout << endl;
+  }
+  void printDiv() {
+    for (unsigned int i = 0; i < numRetentionFeatures; i++) {
+      cout << div[i] << " ";
     }
-    virtual void unnormalizeweight(const vector<double>& in,
-                                   vector<double>& out) {
-      ;
-    }
-    virtual void normalizeweight(const vector<double>& in,
-                                 vector<double>& out) {
-      ;
-    }
-    static Normalizer* getNormalizer();
-    static void setType(int type);
-    const static int UNI = 0;
-    const static int STDV = 1;
-    void resizeVecs(size_t size) {
-      sub.resize(size);
-      div.resize(size);
-    }
-    void setNumberRetentionFeatures(size_t numRF) {
-      numRetentionFeatures = numRF;
-    }
-    void setNumFeatures(const size_t nf) {
-      numFeatures = nf;
-    }
-    double* getSub() {
-      return &sub[0];
-    }
-    double* getDiv() {
-      return &div[0];
-    }
-    size_t* getNumRetFeatures() {
-      return &numRetentionFeatures;
-    }
-    void printNumRetFeatures() {
-      cout << "There are " << numRetentionFeatures << endl;
-    }
-    void printSub() {
-      for (unsigned int i = 0; i < numRetentionFeatures; i++) {
-        cout << sub[i] << " ";
-      }
-      cout << endl;
-    }
-    void printDiv() {
-      for (unsigned int i = 0; i < numRetentionFeatures; i++) {
-        cout << div[i] << " ";
-      }
-      cout << endl;
-    }
-    void SetSubDiv(const vector<double> s, const vector<double> d) {
-      sub = s;
-      div = d;
-      numFeatures = 0;
-      numRetentionFeatures = s.size();
-    }
-    vector<double> GetVSub() const { return sub; }
-    vector<double> GetVDiv() const { return div; }
-  protected:
-    Normalizer();
-    static Normalizer* theNormalizer;
-    static int subclass_type;
-    size_t numFeatures, numRetentionFeatures;
-    vector<double> sub;
-    vector<double> div;
+    cout << endl;
+  }
+  void SetSubDiv(const vector<double> s, const vector<double> d) {
+    sub = s;
+    div = d;
+    numFeatures = 0;
+    numRetentionFeatures = s.size();
+  }
+  vector<double> GetVSub() const { return sub; }
+  vector<double> GetVDiv() const { return div; }
+ protected:
+  Normalizer();
+  static Normalizer* theNormalizer;
+  static int subclass_type;
+  size_t numFeatures, numRetentionFeatures;
+  vector<double> sub;
+  vector<double> div;
 };
 
 #endif /*NORMALIZER_H_*/

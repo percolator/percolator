@@ -100,7 +100,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   }
   initPositives = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives += (*pTestset)[set].calcScores(w[set], fdr);
+    initPositives += (*pTestset)[set].calcScores(w[set], test_fdr);
   }
   return initPositives;
 }
@@ -120,7 +120,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
       for (size_t set = 0; set < w.size(); ++set) {
         for (size_t ix = 0; ix < w[set].size(); ix++) {
           w[set][ix] = 0;
-          if(ix < default_weights.size()){
+          if (ix < default_weights.size()){
               w[set][ix] = default_weights[ix];
           }          
         }

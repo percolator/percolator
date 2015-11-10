@@ -36,16 +36,17 @@ Normalizer::~Normalizer() {
 
 void Normalizer::normalizeSet(vector<double*>& featuresV,
                               vector<double*>& rtFeaturesV) {
+  normalizeSet(featuresV, 0, numFeatures);
+  normalizeSet(rtFeaturesV, numFeatures, numRetentionFeatures);
+}
+
+void Normalizer::normalizeSet(vector<double*>& featuresV,
+                              size_t offset, size_t numFeatures) {
   double* features;
   vector<double*>::iterator it = featuresV.begin();
   for (; it != featuresV.end(); ++it) {
     features = *it;
-    normalize(features, features, 0, numFeatures);
-  }
-  vector<double*>::iterator rtit = rtFeaturesV.begin();
-  for (; rtit != rtFeaturesV.end(); ++rtit) {
-    features = *rtit;
-    normalize(features, features, numFeatures, numRetentionFeatures);
+    normalize(features, features, offset, numFeatures);
   }
 }
 
@@ -53,16 +54,6 @@ void Normalizer::normalize(const double* in, double* out, size_t offset,
                            size_t numFeatures) {
   for (unsigned int ix = 0; ix < numFeatures; ++ix) {
     out[ix] = (in[ix] - sub[offset + ix]) / div[offset + ix];
-  }
-}
-
-void Normalizer::unNormalizeSet(vector<double*> & rtFeaturesV) {
-  double* features;
-  for (unsigned int i = 0; i < rtFeaturesV.size(); ++i) {
-    features = rtFeaturesV[i];
-    for (unsigned int j = 0; j < numRetentionFeatures; ++j) {
-      features[j] = (features[j] * div[j]) + sub[j];
-    }
   }
 }
 

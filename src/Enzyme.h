@@ -33,9 +33,9 @@ class Enzyme {
       NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, THERMOLYSIN, PROTEINASEK, PEPSIN, ELASTASE, 
       LYSN, LYSC, ARGC, ASPN, GLUC
     };
-    virtual ~Enzyme() {
-      delete theEnzyme;
-    }
+    virtual ~Enzyme() {}
+    static void destroy();
+    
     static Enzyme* getEnzyme();
     static void setEnzyme(EnzymeType enz);
     static void setEnzyme(std::string enzyme);
@@ -53,10 +53,6 @@ class Enzyme {
     }
     static std::string getStringEnzyme() {
       return getEnzyme()->toString();
-    }
-    Enzyme() {
-      assert(theEnzyme == NULL);
-      theEnzyme = this;
     }
     static std::string getString() {
       return "no_enzyme";

@@ -25,17 +25,7 @@ DataSet::DataSet() {}
 DataSet::~DataSet() {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
-    PSMDescription* psm = *it;
-    if(psm->features) {
-      delete[] psm->features;
-      psm->features = NULL;
-    }
-    if(psm->retentionFeatures) {
-      delete[] psm->retentionFeatures;
-      psm->retentionFeatures = NULL;
-    }
-    delete psm;
-    psm = NULL;
+    PSMDescription::deletePtr(*it);
   }
 }
 
@@ -88,7 +78,7 @@ void DataSet::print_10features() {
 }
 
 // TODO: find a way to make these three functions generic
-void DataSet::fillFeatures(std::vector<ScoreHolder> &scores) {
+void DataSet::fillFeatures(std::vector<ScoreHolder>& scores) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
@@ -96,7 +86,7 @@ void DataSet::fillFeatures(std::vector<ScoreHolder> &scores) {
   }
 }
 
-void DataSet::fillFeatures(std::vector<double*> &features) {
+void DataSet::fillFeatures(std::vector<double*>& features) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
@@ -104,7 +94,15 @@ void DataSet::fillFeatures(std::vector<double*> &features) {
   }
 }
 
-void DataSet::fillRtFeatures(std::vector<double*> &rtFeatures) {
+void DataSet::fillDOCFeatures(std::vector<double*>& features) {
+  std::vector<PSMDescription*>::iterator it = psms_.begin();
+  for ( ; it != psms_.end(); ++it) {
+    PSMDescription* psm = *it;
+    features.push_back(psm->features + featureNames_.getDocFeatNum());
+  }
+}
+
+void DataSet::fillRtFeatures(std::vector<double*>& rtFeatures) {
   double* features;
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
@@ -122,7 +120,7 @@ void DataSet::fillRtFeatures(std::vector<double*> &rtFeatures) {
  */
 void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields) { 
-  PSMDescription* myPsm = new PSMDescription();
+  PSMDescription* myPsm = NULL;
   bool readProteins = true;
   readPsm(line, lineNr, optionalFields, readProteins, myPsm);
   registerPsm(myPsm);
@@ -130,12 +128,13 @@ void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
 
 int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription* myPsm) {
+    PSMDescription*& myPsm) {
   std::istringstream buff(line);
   std::string tmp;
-  unsigned int numFeatures = FeatureNames::getNumFeatures();
   
+  myPsm = new PSMDescription();
   int label;
+  
   buff >> myPsm->id >> label; // read PSMid and label
   
   bool hasScannr = false;
@@ -169,12 +168,13 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
   if (!hasScannr) myPsm->scan = lineNr;
   
+  unsigned int numFeatures = FeatureNames::getNumFeatures();
+  double* featureRow = new double[numFeatures]();
   if (calcDOC_) {
     numFeatures -= DescriptionOfCorrect::numDOCFeatures();
     buff >> myPsm->retentionTime;
     buff >> myPsm->massDiff;
   }
-  double* featureRow = new double[FeatureNames::getNumFeatures()];
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
     buff >> featureRow[j];
@@ -227,13 +227,8 @@ void DataSet::registerPsm(PSMDescription* myPsm) {
   }
   
   if (calcDOC_) {
-    int featureNum = featureNames_.getDocFeatNum();
-    myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()];
+    myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()]();
     DescriptionOfCorrect::calcRegressionFeature(*myPsm);
-    myPsm->features[featureNum++] = abs( myPsm->pI - 6.5);
-    myPsm->features[featureNum++] = abs( myPsm->massDiff);
-    myPsm->features[featureNum++] = 0;
-    myPsm->features[featureNum++] = 0;
   }
   psms_.push_back(myPsm);
 }

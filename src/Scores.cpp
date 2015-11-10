@@ -138,8 +138,6 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass)
   }
 }
 
-unsigned long Scores::seed_ = 1;
-
 void Scores::merge(std::vector<Scores>& sv, double fdr) {
   scores_.clear();
   for (std::vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
@@ -184,6 +182,42 @@ double Scores::calcScore(const double* feat, const std::vector<double>& w) const
   return score;
 }
 
+void Scores::scoreAndAddPSM(ScoreHolder& sh, 
+    const std::vector<double>& rawWeights) {
+  const unsigned int numFeatures = FeatureNames::getNumFeatures();
+  if (DataSet::getCalcDoc()) {
+    size_t numRTFeatures = RTModel::totalNumRTFeatures();
+    sh.pPSM->retentionFeatures = new double[numRTFeatures]();
+    DescriptionOfCorrect::calcRegressionFeature(*(sh.pPSM));
+    for (size_t i = 0; i < numRTFeatures; ++i) {
+      sh.pPSM->retentionFeatures[i] = Normalizer::getNormalizer()->normalize(sh.pPSM->retentionFeatures[i], numFeatures + i);
+    }
+    doc_.setFeatures(*(sh.pPSM));
+  }
+  
+  for (unsigned int j = 0; j < numFeatures; j++) {
+    sh.score += sh.pPSM->features[j] * rawWeights[j];
+  }
+  sh.score += rawWeights[numFeatures];
+  
+  if (sh.pPSM->features) {
+    delete[] sh.pPSM->features;
+    sh.pPSM->features = NULL;
+  }
+  if (sh.pPSM->retentionFeatures) {
+    delete[] sh.pPSM->retentionFeatures;
+    sh.pPSM->retentionFeatures = NULL;
+  }
+  
+  if (sh.label != 1 && sh.label != -1) {
+    std::cerr << "Warning: the PSM " << sh.pPSM->id
+        << " has a label not in {1,-1} and will be ignored." << std::endl;
+    PSMDescription::deletePtr(sh.pPSM);
+  } else {
+    scores_.push_back(sh);
+  }
+}
+
 void Scores::print(int label, std::ostream& os) {
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   os << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n";
@@ -221,14 +255,6 @@ void Scores::fillFeatures(SetHandler& setHandler) {
   }
 }
 
-// Park–Miller random number generator
-// from wikipedia
-unsigned long Scores::lcg_rand() {
-  //uint64_t
-  seed_ = (seed_ * 279470273u) % 4294967291u;
-  return seed_;
-}
-
 /**
  * Divides the PSMs from pin file into xval_fold cross-validation sets based on
  * their spectrum scan number
@@ -263,7 +289,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // when scores from a new spectra are encountered
   // note: this works because multimap is an ordered container!
   unsigned int previousSpectrum = spectraScores.begin()->first;
-  size_t randIndex = lcg_rand() % xval_fold;
+  size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
   for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin(); 
         it != spectraScores.end(); ++it) {
     const unsigned int curScan = (*it).first;
@@ -272,10 +298,10 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     // the previous iteration, choose new fold
     
     if (previousSpectrum != curScan) {
-      randIndex = lcg_rand() % xval_fold;
+      randIndex = PseudoRandom::lcg_rand() % xval_fold;
       // allow only indexes of folds that are non-full
       while (remain[randIndex] <= 0){
-        randIndex = lcg_rand() % xval_fold;
+        randIndex = PseudoRandom::lcg_rand() % xval_fold;
       }
     }
     // insert
@@ -612,13 +638,12 @@ void Scores::recalculateDescriptionOfCorrect(const double fdr) {
     }
   }
   doc_.trainCorrect();
-  setDOCFeatures();
 }
 
-void Scores::setDOCFeatures() {
+void Scores::setDOCFeatures(Normalizer* pNorm) {
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    doc_.setFeatures(*(scoreIt->pPSM));
+    doc_.setFeaturesNormalized(*(scoreIt->pPSM), pNorm);
   }
 }
 

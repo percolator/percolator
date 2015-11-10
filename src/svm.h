@@ -3,6 +3,8 @@
 #define _DENSE_REP
 #include <vector>
 
+#include "PseudoRandom.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

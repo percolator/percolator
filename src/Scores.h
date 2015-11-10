@@ -30,6 +30,8 @@
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
+#include "PseudoRandom.h"
+#include "Normalizer.h"
 
 /*
 * ScoreHolder is a class that provides a way to assign score value to a
@@ -107,7 +109,6 @@ class AlgIn;
 * Here are some usefull abbreviations:
 * DOC - Description Of Correct
 * FDR - False Discovery Rate
-* LCG - Linear Congruential Generator
 * Pi0 - prior probability of null hypothesis
 * TDC - Target Decoy Competition
 *
@@ -125,6 +126,7 @@ class Scores {
   std::vector<ScoreHolder>::iterator end() { return scores_.end(); }
   
   double calcScore(const double* features, const std::vector<double>& w) const;
+  void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights);
   int calcScores(vector<double>& w, double fdr);
   int calcQ(double fdr);
   void recalculateDescriptionOfCorrect(const double fdr);
@@ -152,7 +154,7 @@ class Scores {
   void printRetentionTime(ostream& outs, double fdr);
   unsigned getQvaluesBelowLevel(double level);
   
-  void setDOCFeatures();
+  void setDOCFeatures(Normalizer* pNorm);
   
   void print(int label, std::ostream& os = std::cout);
   
@@ -166,10 +168,7 @@ class Scores {
     return totalNumberOfTargets_ + totalNumberOfDecoys_; 
   }
   inline unsigned int posSize() const { return totalNumberOfTargets_; }
-  inline unsigned int negSize() const { return totalNumberOfDecoys_; }
-  
-  inline static void setSeed(unsigned long s) { seed_ = s; }
-  static unsigned long lcg_rand();
+  inline unsigned int negSize() const { return totalNumberOfDecoys_; }  
   
   inline void addScoreHolder(const ScoreHolder& sh) {
     scores_.push_back(sh);
@@ -178,7 +177,6 @@ class Scores {
   void reset() { scores_.clear(); }
   
  protected:
-  static unsigned long seed_;
   bool usePi0_;
   
   double pi0_;

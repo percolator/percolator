@@ -17,10 +17,12 @@
 
 #ifndef POSTERIORESTIMATOR_H_
 #define POSTERIORESTIMATOR_H_
-#include<vector>
-#include<string>
-#include<utility>
+#include <vector>
+#include <string>
+#include <utility>
+
 #include "LogisticRegression.h"
+#include "PseudoRandom.h"
 using namespace std;
 
 

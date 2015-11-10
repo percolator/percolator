@@ -104,7 +104,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     Enzyme::setEnzyme(value);
     XMLString::release(&value);
     doc = p.next();
-
+    
     //checking if database is present to jump it
     bool hasProteins = false;
     if (XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
@@ -124,7 +124,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
       //percolatorInNs::calibration calibration(*doc->getDocumentElement());
       doc = p.next();
     };
-
+    
     // read feature names and initial values that are present in feature descriptions
     FeatureNames& featureNames = DataSet::getFeatureNames();
     percolatorInNs::featureDescriptions featureDescriptions(*doc->getDocumentElement());
@@ -179,7 +179,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
             if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
               randIdx = scanIdLookUp[scanId];
             } else {
-              randIdx = Scores::lcg_rand();
+              randIdx = PseudoRandom::lcg_rand();
               scanIdLookUp[scanId] = randIdx;
             }
             
@@ -193,26 +193,14 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
               if (subsetPSMs.size() > setHandler.getMaxPSMs()) {
                 PSMDescriptionPriority del = subsetPSMs.top();
                 upperLimit = del.priority;
-                SetHandler::deletePSMPointer(del.psm);
+                PSMDescription::deletePtr(del.psm);
                 subsetPSMs.pop();
               }
             }
           }
         }
         
-        while (!subsetPSMs.empty()) {
-          PSMDescriptionPriority psmPriority = subsetPSMs.top();
-          if (psmPriority.label == 1) {
-            targetSet->registerPsm(psmPriority.psm);
-          } else if (psmPriority.label == -1) {
-            decoySet->registerPsm(psmPriority.psm);
-          } else {
-            std::cerr << "Warning: the PSM " << psmPriority.psm->id
-                << " has a label not in {1,-1} and will be ignored." << std::endl;
-            SetHandler::deletePSMPointer(psmPriority.psm);
-          }
-          subsetPSMs.pop();
-        }
+        setHandler.addQueueToSets(subsetPSMs, targetSet, decoySet);
       } else {
         for (doc = p.next(); 
              doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
@@ -235,6 +223,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
       setHandler.push_back_dataset(targetSet);
       setHandler.push_back_dataset(decoySet);
     } else {
+      const unsigned int numFeatures = FeatureNames::getNumFeatures();
       for (doc = p.next(); 
            doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
                doc->getDocumentElement()->getTagName()); 
@@ -247,26 +236,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
           sh.label = (psmIt->isDecoy() ? -1 : 1);
           sh.pPSM = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
           
-          unsigned int numFeatures = FeatureNames::getNumFeatures();
-          for (unsigned int j = 0; j < numFeatures; j++) {
-            sh.score += sh.pPSM->features[j] * rawWeights[j];
-          }
-          sh.score += rawWeights[numFeatures];
-          
-          delete[] sh.pPSM->features;
-          sh.pPSM->features = NULL;
-          if (sh.pPSM->retentionFeatures) {
-            delete[] sh.pPSM->retentionFeatures;
-            sh.pPSM->retentionFeatures = NULL;
-          }
-          
-          if (sh.label != 1 && sh.label != -1) {
-            std::cerr << "Warning: the PSM " << sh.pPSM->id
-                << " has a label not in {1,-1} and will be ignored." << std::endl;
-            SetHandler::deletePSMPointer(sh.pPSM);
-          } else {
-            allScores.addScoreHolder(sh);
-          }
+          allScores.scoreAndAddPSM(sh, rawWeights);
         }
       }
     }
@@ -379,7 +349,7 @@ PSMDescription* XMLInterface::readPsm(
     myPsm->retentionTime = psm.observedTime().get();
   }
 
-  myPsm->features = new double[FeatureNames::getNumFeatures()];
+  myPsm->features = new double[FeatureNames::getNumFeatures()]();
   
   for (unsigned int i = 0; i < psm.features().feature().size(); ++i) {
     myPsm->features[i] = psm.features().feature()[i];
