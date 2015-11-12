@@ -24,21 +24,101 @@ double get_pvalue(std::pair<std::string,Protein*> d) {
 FisherInterface::FisherInterface(const std::string& fastaDatabase, 
     bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double pi0, bool outputEmpirQval, 
-    std::string& decoyPattern, ENZYME_T enzyme, DIGEST_T digestion, 
-    int min_peptide_length, int max_peptide_length, int max_miscleavages) :
+    std::string& decoyPattern) :
   ProteinProbEstimator(trivialGrouping, pi0, outputEmpirQval, decoyPattern),
-  fisherCaller_(enzyme, digestion, min_peptide_length, max_peptide_length, max_miscleavages),
   fastaProteinFN_(fastaDatabase), reportFragmentProteins_(reportFragmentProteins),
   reportDuplicateProteins_(reportDuplicateProteins) {}
 
 FisherInterface::~FisherInterface() {}
 
-void FisherInterface::run() {
-  // previously set in setTargetandDecoyNames, but we can trash that
-  numberTargetProteins_ = 0;
-  numberDecoyProteins_ = 0;
-  proteins.clear();
+bool FisherInterface::initialize(Scores* fullset) {
+  peptideScores_ = fullset;
+  int min_peptide_length = 1000, max_peptide_length = 0;
+  int max_miscleavages = 0, max_non_enzymatic_flanks = 0;
+  int total_non_enzymatic_flanks = 0;
   
+  ENZYME_T enzyme;
+  if (Enzyme::getEnzymeType() == Enzyme::TRYPSIN) {
+    enzyme = TRYPSIN;
+  } else if (Enzyme::getEnzymeType() == Enzyme::CHYMOTRYPSIN) {
+    enzyme = CHYMOTRYPSIN;
+  } else if (Enzyme::getEnzymeType() == Enzyme::ELASTASE) {
+    enzyme = ELASTASE;
+  } else if (Enzyme::getEnzymeType() == Enzyme::LYSN) {
+    enzyme = LYSN;
+  } else if (Enzyme::getEnzymeType() == Enzyme::LYSC) {
+    enzyme = LYSC;
+  } else if (Enzyme::getEnzymeType() == Enzyme::ARGC) {
+    enzyme = ARGC;
+  } else if (Enzyme::getEnzymeType() == Enzyme::ASPN) {
+    enzyme = ASPN;
+  } else if (Enzyme::getEnzymeType() == Enzyme::GLUC) {
+    enzyme = GLUC;
+  } else {
+    // not supported yet: THERMOLYSIN, PROTEINASEK, PEPSIN
+    std::cerr << "Warning: specified protease " << Enzyme::getStringEnzyme()
+              << " currently not supported, using trypsin to identify"
+              << " duplicate and fragment proteins" << std::endl;
+    Enzyme::setEnzyme(Enzyme::TRYPSIN);
+    enzyme = TRYPSIN;
+  }
+  
+  for (vector<ScoreHolder>::iterator shIt = peptideScores_->begin(); shIt != peptideScores_->end(); ++shIt) {
+    std::string peptideSequenceFlanked = shIt->pPSM->getFullPeptideSequence();
+    std::string peptideSequence = shIt->pPSM->getPeptideSequence();
+    
+    int peptide_length = peptideSequence.size();
+    min_peptide_length = std::min(min_peptide_length, peptide_length);
+    max_peptide_length = std::max(max_peptide_length, peptide_length);
+    
+    int miscleavages = Enzyme::countEnzymatic(peptideSequence);
+    max_miscleavages = std::max(max_miscleavages, miscleavages);
+    
+    int non_enzymatic_flanks = 0;
+    if (!Enzyme::isEnzymatic(peptideSequenceFlanked[0], 
+                             peptideSequenceFlanked[2])) {
+      ++non_enzymatic_flanks;
+    }
+    if (!Enzyme::isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
+                             peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
+      ++non_enzymatic_flanks;
+    }
+    max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
+    total_non_enzymatic_flanks += max_non_enzymatic_flanks;
+  }
+  // if more than half of the flanks or non enzymatic, probably the protease is wrong
+  if (total_non_enzymatic_flanks > peptideScores_->size()) {
+    std::cerr << "Warning: more than half of the cleavage sites are non enzymatic, "
+              << "please verify that the right protease was specified." << std::endl;
+  }
+  
+  DIGEST_T digest;
+  std::string digestString = "";
+  if (max_non_enzymatic_flanks == 0) {
+    digest = FULL_DIGEST;
+    digestString = "full";
+  } else if (max_non_enzymatic_flanks == 1) {
+    digest = PARTIAL_DIGEST;
+    digestString = "partial";
+  } else {
+    digest = NON_SPECIFIC_DIGEST;
+    enzyme = NO_ENZYME;
+    digestString = "non-specific";
+  }
+  if (VERB > 1) {
+    std::cerr << "Protein digestion parameters for duplicate/fragment detection (detected from PSM input):\n"
+              << " enzyme=" << Enzyme::getStringEnzyme() 
+              << ", digestion=" << digestString
+              << ", min-pept-length=" << min_peptide_length
+              << ", max-pept-length=" << max_peptide_length
+              << ", max-miscleavages=" << max_miscleavages << std::endl;
+  }
+  fisherCaller_.initConstraints(enzyme, digest, min_peptide_length, 
+                                max_peptide_length, max_miscleavages);
+  return true;
+}
+
+void FisherInterface::run() {  
   std::map<std::string, std::string> fragment_map, duplicate_map;
   fisherCaller_.setFastaDatabase(fastaProteinFN_);
   bool generateDecoys = false;

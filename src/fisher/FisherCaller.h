@@ -37,11 +37,12 @@
 
 class FisherCaller{
  public:
-  FisherCaller(ENZYME_T enzyme, DIGEST_T digestion, int min_peptide_length, 
-    int max_peptide_length, int max_miscleavages);
+  FisherCaller();
   FisherCaller(PeptideConstraint* peptide_constraint);
   ~FisherCaller();
   
+  void initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
+    int min_peptide_length, int max_peptide_length, int max_miscleavages);
   /* introductory message */
   std::string greeter() const;
   /* parse the command line arguments */

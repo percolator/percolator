@@ -18,17 +18,14 @@
 #include "FisherCaller.h"
 #include "Option.h"
 #include "Globals.h"
+
 using namespace std;
 
 FisherCaller::FisherCaller(PeptideConstraint* peptide_constraint) : 
     database_(NULL), peptide_constraint_(peptide_constraint), decoyPattern_("decoy_") {}
 
-FisherCaller::FisherCaller(ENZYME_T enzyme, DIGEST_T digestion, 
-  int min_peptide_length, int max_peptide_length, int max_miscleavages) : 
-    database_(NULL), decoyPattern_("decoy_") {
-  //TODO make these global variables
-  peptide_constraint_ = new PeptideConstraint(enzyme, digestion, 
-      min_peptide_length, max_peptide_length, max_miscleavages);
+FisherCaller::FisherCaller() : 
+    database_(NULL), decoyPattern_("decoy_"), peptide_constraint_(NULL) {
 }
 
 FisherCaller::~FisherCaller() {
@@ -38,6 +35,12 @@ FisherCaller::~FisherCaller() {
   if (peptide_constraint_ != NULL) {
     delete peptide_constraint_;
   }
+}
+
+void FisherCaller::initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
+    int min_peptide_length, int max_peptide_length, int max_miscleavages) {
+  peptide_constraint_ = new PeptideConstraint(enzyme, digestion, 
+      min_peptide_length, max_peptide_length, max_miscleavages);
 }
 
 /* introductory message */

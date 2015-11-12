@@ -73,6 +73,7 @@ class FidoInterface : public ProteinProbEstimator {
     std::string decoyPattern = "random", bool trivialGrouping = true);
   virtual ~FidoInterface();
   
+  bool initialize(Scores* fullset) { ProteinProbEstimator::initialize(fullset); }
   void run();
   void computeProbabilities(const std::string& fname = "");
   

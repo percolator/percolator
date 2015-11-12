@@ -253,10 +253,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fisher-protein",
       "Use fisher's method to infer protein probabilities, provide the fasta file as the argument to this flag.",
       "value");
-  cmd.defineOption("z",
-      "fisher-min-max-pept-length",
-      "Set the minimum and maximum peptide length of your database search as \"min,max\", e.g. \"6,50\". Default: 6,50.",
-      "value");
   cmd.defineOption("c",
       "fisher-report-fragments",
       "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second.",
@@ -444,40 +440,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       
       // default options
       bool fisherReportFragmentProteins = false;
-      bool fisherReportDuplicateProteins = false;
-      ENZYME_T fisherEnzyme = TRYPSIN;
-      DIGEST_T fisherDigest = FULL_DIGEST;
-      int fisherMinPeptideLength = 6;
-      int fisherMaxPeptideLength = 50;
-      int fisherMaxMiscleavages = 0;
-      
+      bool fisherReportDuplicateProteins = false;      
       if (cmd.optionSet("c")) fisherReportFragmentProteins = true;
       if (cmd.optionSet("g")) fisherReportDuplicateProteins = true;
-      if (cmd.optionSet("z")) {
-        std::string minMaxString = cmd.options["z"];
-        size_t commaLoc = minMaxString.find_first_of(",");
-        bool malformedString = false;
-        if (commaLoc != std::string::npos) {
-          sscanf(minMaxString.substr(0, commaLoc).c_str(), "%d", &fisherMinPeptideLength);
-          sscanf(minMaxString.substr(commaLoc + 1).c_str(), "%d", &fisherMaxPeptideLength);
-        } else {
-          malformedString = true;
-        }
-        
-        if (fisherMinPeptideLength > fisherMaxPeptideLength) malformedString = true;
-        if (malformedString) {
-          std::cerr << "ERROR: fisher min,max-peptide length string \"" 
-                    << minMaxString << "\" is malformed." << std::endl;
-          return 0;
-        }
-      }
       
       protEstimator_ = new FisherInterface(fastaDatabase, 
           fisherReportFragmentProteins, fisherReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorPi0, 
-          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
-          fisherEnzyme, fisherDigest, fisherMinPeptideLength,
-          fisherMaxPeptideLength, fisherMaxMiscleavages);
+          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
     }
   }
   

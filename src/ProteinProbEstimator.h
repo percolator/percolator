@@ -123,7 +123,7 @@ class ProteinProbEstimator {
   virtual ~ProteinProbEstimator();
   
   /** reads the proteins from the set of scored peptides from percolator **/
-  bool initialize(Scores* fullset);
+  virtual bool initialize(Scores* fullset);
   
   /** start the protein probabilities tool**/
   virtual void run() = 0;

@@ -64,10 +64,11 @@ class PSMDescription {
     double getUnnormalizedRetentionTime() { return unnormalize(retentionTime); }
     static bool isSubPeptide(string& child, string& parent);
     bool isNotEnzymatic() {
+      std::string peptideSeq = getPeptideSequence();
       return !(Enzyme::isEnzymatic(peptide[0], peptide[2])
           && Enzyme::isEnzymatic(peptide[peptide.size() - 3],
                                  peptide[peptide.size() - 1])
-          && Enzyme::countEnzymatic(peptide) == 0);
+          && Enzyme::countEnzymatic(peptideSeq) == 0);
     }
     void checkFragmentPeptides(vector<PSMDescription*>::reverse_iterator other,
                                vector<PSMDescription*>::reverse_iterator theEnd);

@@ -26,6 +26,7 @@
 #include "ProteinProbEstimator.h"
 #include "PosteriorEstimator.h"
 #include "FisherCaller.h"
+#include "Enzyme.h"
 
 /*
 * FisherInterface is a class that computes probabilities and statistics based
@@ -42,11 +43,10 @@ class FisherInterface : public ProteinProbEstimator {
  public:
   FisherInterface(const std::string& fastaDatabase, bool reportFragmentProteins,
     bool reportDuplicateProteins, bool trivialGrouping, double pi0, 
-    bool outputEmpirQval, std::string& decoyPattern, 
-    ENZYME_T enzyme, DIGEST_T digestion, int min_peptide_length, 
-    int max_peptide_length, int max_miscleavages);
+    bool outputEmpirQval, std::string& decoyPattern);
   virtual ~FisherInterface();
   
+  bool initialize(Scores* fullset);
   void run();
   void computeProbabilities(const std::string& fname = "");
   
