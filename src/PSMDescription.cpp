@@ -75,6 +75,24 @@ bool PSMDescription::isSubPeptide(string& child, string& parent) {
   return parent.length() > child.length();
 }
 
+std::string PSMDescription::removePTMs(const string& peptide) {
+  std::string peptideSequence = peptide;
+  peptideSequence = peptide.substr(2, peptide.size()- 4);
+  for (unsigned int ix = 0; ix < peptideSequence.size(); ++ix) {
+    if (peptideSequence[ix] == '[') {
+      size_t posEnd = peptideSequence.substr(ix).find_first_of(']');
+      if (posEnd == string::npos) {
+        ostringstream temp;
+        temp << "Error : Peptide sequence " << peptide << " contains an invalid modification" << endl;
+        throw MyException(temp.str());
+      } else {
+        peptideSequence.erase(ix--, posEnd + 1);
+      }
+    }
+  }
+  return peptide.substr(0,1) + std::string(".") + peptideSequence + std::string(".") + peptide.substr(peptide.size() - 1,1);
+}
+
 void PSMDescription::checkFragmentPeptides(vector<PSMDescription*>::reverse_iterator other,
                                            vector<PSMDescription*>::reverse_iterator theEnd) {
   for (; other != theEnd; ++other) {

@@ -40,6 +40,8 @@ bool FisherInterface::initialize(Scores* fullset) {
   ENZYME_T enzyme;
   if (Enzyme::getEnzymeType() == Enzyme::TRYPSIN) {
     enzyme = TRYPSIN;
+  } else if (Enzyme::getEnzymeType() == Enzyme::TRYPSINP) {
+    enzyme = TRYPSINP;
   } else if (Enzyme::getEnzymeType() == Enzyme::CHYMOTRYPSIN) {
     enzyme = CHYMOTRYPSIN;
   } else if (Enzyme::getEnzymeType() == Enzyme::ELASTASE) {
@@ -65,13 +67,18 @@ bool FisherInterface::initialize(Scores* fullset) {
   
   for (vector<ScoreHolder>::iterator shIt = peptideScores_->begin(); shIt != peptideScores_->end(); ++shIt) {
     std::string peptideSequenceFlanked = shIt->pPSM->getFullPeptideSequence();
-    std::string peptideSequence = shIt->pPSM->getPeptideSequence();
+    
+    peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
+    std::string peptideSequence = PSMDescription::removeFlanks(peptideSequenceFlanked);
     
     int peptide_length = peptideSequence.size();
     min_peptide_length = std::min(min_peptide_length, peptide_length);
     max_peptide_length = std::max(max_peptide_length, peptide_length);
     
     int miscleavages = Enzyme::countEnzymatic(peptideSequence);
+    /*if (miscleavages > max_miscleavages) {
+      std::cerr << "MC" << peptideSequenceFlanked << std::endl;
+    }*/
     max_miscleavages = std::max(max_miscleavages, miscleavages);
     
     int non_enzymatic_flanks = 0;
@@ -82,6 +89,9 @@ bool FisherInterface::initialize(Scores* fullset) {
     if (!Enzyme::isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
                              peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
       ++non_enzymatic_flanks;
+    }
+    if (non_enzymatic_flanks > max_non_enzymatic_flanks) {
+      std::cerr << "SP " << peptideSequenceFlanked << std::endl;
     }
     max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
     total_non_enzymatic_flanks += max_non_enzymatic_flanks;
@@ -130,67 +140,65 @@ void FisherInterface::run() {
   unsigned int numGroups = 0;
   for (vector<ScoreHolder>::iterator peptideIt = peptideScores_->begin(); 
           peptideIt != peptideScores_->end(); ++peptideIt) {
-    // for each protein
-    //if (!peptideIt->isDecoy()) {
-    if (true) {
-      std::string lastProteinId;
-      std::set<std::string> proteinsInGroup;
-      bool isFirst = true, isShared = false;
-      for (set<string>::iterator protIt = peptideIt->pPSM->proteinIds.begin(); 
-              protIt != peptideIt->pPSM->proteinIds.end(); protIt++) {
-        std::string proteinId = *protIt;
-        
-        // just hacking a bit for our simulation scripts
-        if (proteinId.find(decoyPattern_) == std::string::npos) {
-          size_t found = proteinId.find_first_of("_");
-          proteinId = proteinId.substr(found + 1);
-        }
-        
-        if (fragment_map.find(proteinId) != fragment_map.end()) {
-          if (reportFragmentProteins_) proteinsInGroup.insert(*protIt);
-          proteinId = fragment_map[proteinId];
-        } else if (duplicate_map.find(proteinId) != duplicate_map.end()) {
-          if (reportDuplicateProteins_) proteinsInGroup.insert(*protIt);
-          proteinId = duplicate_map[proteinId];
-        } else {
-          proteinsInGroup.insert(*protIt);
-        }
-        
-        if (isFirst) {
-          lastProteinId = proteinId;
-          isFirst = false;
-        } else if (lastProteinId != proteinId) {
-          isShared = true;
-          break;
-        }
+    std::string lastProteinId;
+    std::set<std::string> proteinsInGroup;
+    bool isFirst = true, isShared = false;
+    for (set<string>::iterator protIt = peptideIt->pPSM->proteinIds.begin(); 
+            protIt != peptideIt->pPSM->proteinIds.end(); protIt++) {
+      std::string proteinId = *protIt;
+      
+      /*
+      // just hacking a bit for our simulation scripts
+      if (proteinId.find(decoyPattern_) == std::string::npos) {
+        size_t found = proteinId.find_first_of("_");
+        proteinId = proteinId.substr(found + 1);
+      }
+      */
+      
+      if (fragment_map.find(proteinId) != fragment_map.end()) {
+        if (reportFragmentProteins_) proteinsInGroup.insert(*protIt);
+        proteinId = fragment_map[proteinId];
+      } else if (duplicate_map.find(proteinId) != duplicate_map.end()) {
+        if (reportDuplicateProteins_) proteinsInGroup.insert(*protIt);
+        proteinId = duplicate_map[proteinId];
+      } else {
+        proteinsInGroup.insert(*protIt);
       }
       
-      if (proteinsInGroup.size() == 1) {
-        lastProteinId = *(proteinsInGroup.begin());
+      if (isFirst) {
+        lastProteinId = proteinId;
+        isFirst = false;
+      } else if (lastProteinId != proteinId) {
+        isShared = true;
+        break;
       }
-      
-      if (!isShared) {
-        Protein::Peptide *peptide = new Protein::Peptide(
-            peptideIt->pPSM->getPeptideSequence(),peptideIt->isDecoy(),
-				    peptideIt->p, peptideIt->pep,peptideIt->q,peptideIt->p);
-        if (proteins.find(lastProteinId) == proteins.end()) {
-          if (proteinsInGroup.size() > 1) {
-            groupProteinIds[lastProteinId] = proteinsInGroup;
-          }
-          Protein *newprotein = new Protein(lastProteinId,0.0,0.0,0.0,0.0,
-              peptideIt->isDecoy(),peptide,++numGroups);
-          proteins.insert(std::make_pair(lastProteinId,newprotein));
-          if (lastProteinId.find(decoyPattern_) == std::string::npos) {
-            ++numberTargetProteins_;
-          } else {
-            ++numberDecoyProteins_;
-          }
+    }
+    
+    if (proteinsInGroup.size() == 1) {
+      lastProteinId = *(proteinsInGroup.begin());
+    }
+    
+    if (!isShared) {
+      Protein::Peptide *peptide = new Protein::Peptide(
+          peptideIt->pPSM->getPeptideSequence(),peptideIt->isDecoy(),
+			    peptideIt->p, peptideIt->pep,peptideIt->q,peptideIt->p);
+      if (proteins.find(lastProteinId) == proteins.end()) {
+        if (proteinsInGroup.size() > 1) {
+          groupProteinIds[lastProteinId] = proteinsInGroup;
+        }
+        Protein *newprotein = new Protein(lastProteinId,0.0,0.0,0.0,0.0,
+            peptideIt->isDecoy(),peptide,++numGroups);
+        proteins.insert(std::make_pair(lastProteinId,newprotein));
+        if (lastProteinId.find(decoyPattern_) == std::string::npos) {
+          ++numberTargetProteins_;
         } else {
-          proteins[lastProteinId]->setPeptide(peptide);
-          if (proteinsInGroup.size() > 1) {
-            groupProteinIds[lastProteinId].insert(proteinsInGroup.begin(), 
-                                                   proteinsInGroup.end());
-          }
+          ++numberDecoyProteins_;
+        }
+      } else {
+        proteins[lastProteinId]->setPeptide(peptide);
+        if (proteinsInGroup.size() > 1) {
+          groupProteinIds[lastProteinId].insert(proteinsInGroup.begin(), 
+                                                 proteinsInGroup.end());
         }
       }
     }

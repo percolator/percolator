@@ -47,6 +47,12 @@ class PSMDescription {
     double* getRetentionFeatures() { return retentionFeatures; }
     static vector<double*> getRetFeatures(vector<PSMDescription> & psms);
     
+    // TODO: move these 2 functions somewhere else
+    static std::string removePTMs(const std::string& peptideSeq);
+    static std::string removeFlanks(const std::string& peptideSeq) { 
+      return peptideSeq.substr(2, peptideSeq.size()-4); 
+    }
+    
     string& getFullPeptide() { return getAParent()->peptide; }
     string getPeptideSequence() { return peptide.substr(2, peptide.size()-4); }
     string& getFullPeptideSequence() { return peptide; }
@@ -64,11 +70,12 @@ class PSMDescription {
     double getUnnormalizedRetentionTime() { return unnormalize(retentionTime); }
     static bool isSubPeptide(string& child, string& parent);
     bool isNotEnzymatic() {
-      std::string peptideSeq = getPeptideSequence();
-      return !(Enzyme::isEnzymatic(peptide[0], peptide[2])
-          && Enzyme::isEnzymatic(peptide[peptide.size() - 3],
-                                 peptide[peptide.size() - 1])
-          && Enzyme::countEnzymatic(peptideSeq) == 0);
+      std::string peptideSeq = removePTMs(peptide);
+      std::string peptideSeqNoFlanks = removeFlanks(peptide);
+      return !(Enzyme::isEnzymatic(peptideSeq[0], peptideSeq[2])
+          && Enzyme::isEnzymatic(peptideSeq[peptideSeq.size() - 3],
+                                 peptideSeq[peptideSeq.size() - 1])
+          && Enzyme::countEnzymatic(peptideSeqNoFlanks) == 0);
     }
     void checkFragmentPeptides(vector<PSMDescription*>::reverse_iterator other,
                                vector<PSMDescription*>::reverse_iterator theEnd);

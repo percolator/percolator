@@ -21,26 +21,19 @@
 
 using namespace std;
 
-FisherCaller::FisherCaller(PeptideConstraint* peptide_constraint) : 
-    database_(NULL), peptide_constraint_(peptide_constraint), decoyPattern_("decoy_") {}
+FisherCaller::FisherCaller() : enzyme_(TRYPSIN), digestion_(FULL_DIGEST),
+    min_peptide_length_(6), max_peptide_length_(50), max_miscleavages_(0),
+    decoyPattern_("decoy_") {}
 
-FisherCaller::FisherCaller() : 
-    database_(NULL), decoyPattern_("decoy_"), peptide_constraint_(NULL) {
-}
-
-FisherCaller::~FisherCaller() {
-  if (database_ != NULL) {
-    delete database_;
-  }
-  if (peptide_constraint_ != NULL) {
-    delete peptide_constraint_;
-  }
-}
+FisherCaller::~FisherCaller() {}
 
 void FisherCaller::initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
     int min_peptide_length, int max_peptide_length, int max_miscleavages) {
-  peptide_constraint_ = new PeptideConstraint(enzyme, digestion, 
-      min_peptide_length, max_peptide_length, max_miscleavages);
+  enzyme_ = enzyme;
+  digestion_ = digestion;
+  min_peptide_length_ = min_peptide_length;
+  max_peptide_length_ = max_peptide_length;
+  max_miscleavages_ = max_miscleavages;
 }
 
 /* introductory message */
@@ -48,7 +41,7 @@ string FisherCaller::greeter() const {
   ostringstream oss;
   oss << "Fisher version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Distributed under MIT License" << endl;
+  oss << "Distributed under Apache License" << endl;
   oss << "Written by Lukas Kall (lukas.kall@scilifelab.se) "
          "and Matthew The (matthew.the@scilifelab.se)" << endl;
   oss << "Usage:" << endl;
@@ -99,118 +92,115 @@ bool FisherCaller::parseOptions(int argc, char** argv) {
   return true;
 }
 
-bool FisherCaller::getPeptideProteinMap(
+bool FisherCaller::getPeptideProteinMap(Database& db, 
+    PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    bool generateDecoys) {  
-  Crux::Protein* protein = NULL;
-  
-  for (size_t protein_idx = 0; protein_idx < database_->getNumProteins(); 
+    bool generateDecoys) {
+  for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
        ++protein_idx) {
-    protein = database_->getProteinAtIdx(protein_idx);
-    
-    if (generateDecoys) {
-      protein->shuffle(PROTEIN_REVERSE_DECOYS);
-      
-      // MT: the crux interface will change the protein identifier. If we are
-      // not inside the crux environment we do this separately here.
-      std::string currentId(protein->getIdPointer());
-      if (currentId.substr(0, decoyPattern_.size()) != decoyPattern_) {
-        currentId = decoyPattern_ + currentId;
-        protein->setId(currentId.c_str());
-      }
-    }
-    //std::cerr << protein->getSequencePointer() << std::endl;
-    
-    // set new protein peptide iterator
-    ProteinPeptideIterator* cur_protein_peptide_iterator =
-      new ProteinPeptideIterator(protein, peptide_constraint_);
-    
-    // if first protein does not contain a match peptide, reinitailize
-    while(cur_protein_peptide_iterator->hasNext()) {
-      Crux::Peptide* peptide = cur_protein_peptide_iterator->next();
-      char* c_seq = peptide->getSequence();
-      std::string sequence(c_seq);
-      peptide_protein_map[sequence].push_back(protein_idx);
-      //std::cerr << sequence << std::endl; 
-      //std::cerr << peptide->getSequence() << std::endl;
-      std::free(c_seq);
-      delete peptide;
-    }
-    
-    // free old iterator
-    delete (cur_protein_peptide_iterator);
+    addProteinToPeptideProteinMap(db, protein_idx, peptide_constraint, 
+        peptide_protein_map, generateDecoys);
   }
   
   return true;
 }
 
-bool FisherCaller::getFragmentProteinMap(
+void FisherCaller::addProteinToPeptideProteinMap(Database& db, 
+    size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
-    std::map<size_t, size_t>& num_peptides_per_protein) {
-  Crux::Protein* protein = NULL;
+    bool generateDecoys) {
+  Crux::Protein* protein = db.getProteinAtIdx(protein_idx);
+    
+  if (generateDecoys) {
+    protein->shuffle(PROTEIN_REVERSE_DECOYS);
+    
+    // MT: the crux interface will change the protein identifier. If we are
+    // not inside the crux environment we do this separately here.
+    std::string currentId(protein->getIdPointer());
+    if (currentId.substr(0, decoyPattern_.size()) != decoyPattern_) {
+      currentId = decoyPattern_ + currentId;
+      protein->setId(currentId.c_str());
+    }
+  }
+  //std::cerr << protein->getSequencePointer() << std::endl;
   
-  for (size_t i = 0; i < database_->getNumProteins(); ++i) {
-    protein = database_->getProteinAtIdx(i);
-    
-    // set new protein peptide iterator
-    ProteinPeptideIterator* cur_protein_peptide_iterator =
-      new ProteinPeptideIterator(protein, peptide_constraint_);
-    
-    bool is_first = true;
-    size_t num_sequences = 0;
-    std::vector<size_t> protein_idx_intersection;
-    // if first protein does not contain a match peptide, reinitailize
-    while(cur_protein_peptide_iterator->hasNext()) {
-      Crux::Peptide* peptide = cur_protein_peptide_iterator->next();
-      char* c_seq = peptide->getSequence();
-      std::string sequence(c_seq);
-      ++num_sequences;
-      
-      if (is_first) {
-        protein_idx_intersection = peptide_protein_map[sequence];
-        is_first = false;
-      } else {
-        std::vector<size_t> newprotein_idx_intersection(protein_idx_intersection.size());
-        std::vector<size_t>::iterator it = std::set_intersection(
-            protein_idx_intersection.begin(), protein_idx_intersection.end(), 
-            peptide_protein_map[sequence].begin(), peptide_protein_map[sequence].end(), 
-            newprotein_idx_intersection.begin());
-        newprotein_idx_intersection.resize(it - newprotein_idx_intersection.begin());
-        protein_idx_intersection = newprotein_idx_intersection;
-      }
-      
-      //std::cerr << sequence << std::endl; 
-      //std::cerr << peptide->getSequence() << std::endl;
-      
-      std::free(c_seq);
-      delete peptide;
-      
-      if (protein_idx_intersection.size() < 2) break;
-    }
-    
-    if (protein_idx_intersection.size() > 1) {
-      num_peptides_per_protein[i] = num_sequences;
-      std::sort(protein_idx_intersection.begin(), protein_idx_intersection.end()); // sort in descending order
-      
-      size_t j = protein_idx_intersection.size() - 1;
-      if (protein_idx_intersection[j] == i) --j;
-      
-      if (fragment_protein_map.find(i) != fragment_protein_map.end()) {
-        fragment_protein_map[protein_idx_intersection[j]].insert(
-            fragment_protein_map[protein_idx_intersection[j]].end(),
-            fragment_protein_map[i].begin(), fragment_protein_map[i].end());
-        fragment_protein_map.erase(i);
-      }
-      fragment_protein_map[protein_idx_intersection[j]].push_back(i);
-    }
-    
-    // free old iterator
-    delete (cur_protein_peptide_iterator);
+  ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
+  
+  while (cur_protein_peptide_iterator.hasNext()) {
+    Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
+    std::string sequence(peptide->getSequencePointer(), peptide->getLength());
+    peptide_protein_map[sequence].push_back(protein_idx);
+    delete peptide;
   }
 }
 
-bool FisherCaller::getProteinFragmentsAndDuplicates(
+bool FisherCaller::getFragmentProteinMap(Database& db, 
+    PeptideConstraint& peptide_constraint,
+    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein) {
+  for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
+       ++protein_idx) {
+    addProteinToFragmentProteinMap(db, protein_idx, peptide_constraint,
+        peptide_protein_map, fragment_protein_map, num_peptides_per_protein);
+  }
+  return true;
+}
+
+void FisherCaller::addProteinToFragmentProteinMap(Database& db, 
+    size_t protein_idx, PeptideConstraint& peptide_constraint,
+    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein) {
+  Crux::Protein* protein = db.getProteinAtIdx(protein_idx);
+    
+  // set new protein peptide iterator
+  ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
+  
+  bool is_first = true;
+  size_t num_sequences = 0;
+  std::vector<size_t> protein_idx_intersection;
+  while (cur_protein_peptide_iterator.hasNext()) {
+    Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
+    std::string sequence(peptide->getSequencePointer(), peptide->getLength());    
+    delete peptide;
+    ++num_sequences;
+    
+    if (is_first) {
+      protein_idx_intersection = peptide_protein_map[sequence];
+      is_first = false;
+    } else {
+      std::vector<size_t> newprotein_idx_intersection(protein_idx_intersection.size());
+      std::vector<size_t>::iterator it = std::set_intersection(
+          protein_idx_intersection.begin(), protein_idx_intersection.end(), 
+          peptide_protein_map[sequence].begin(), peptide_protein_map[sequence].end(), 
+          newprotein_idx_intersection.begin());
+      newprotein_idx_intersection.resize(it - newprotein_idx_intersection.begin());
+      protein_idx_intersection = newprotein_idx_intersection;
+    }
+    
+    if (protein_idx_intersection.size() < 2) break;
+  }
+  
+  if (protein_idx_intersection.size() > 1) {
+    num_peptides_per_protein[protein_idx] = num_sequences;
+    std::sort(protein_idx_intersection.begin(), protein_idx_intersection.end()); // sort in descending order
+    
+    size_t j = protein_idx_intersection.size() - 1;
+    if (protein_idx_intersection[j] == protein_idx) --j;
+    
+    if (fragment_protein_map.find(protein_idx) != fragment_protein_map.end()) {
+      fragment_protein_map[protein_idx_intersection[j]].insert(
+          fragment_protein_map[protein_idx_intersection[j]].end(),
+          fragment_protein_map[protein_idx].begin(), 
+          fragment_protein_map[protein_idx].end());
+      fragment_protein_map.erase(protein_idx);
+    }
+    fragment_protein_map[protein_idx_intersection[j]].push_back(protein_idx);
+  }
+}
+
+bool FisherCaller::getProteinFragmentsAndDuplicates(Database& db,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 
@@ -218,18 +208,13 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
   std::map<size_t, std::vector<size_t> >::iterator it;
   for (it = fragment_protein_map.begin(); it != fragment_protein_map.end(); ++it) {
     size_t i = it->first;
-    
-    char* c_this_id = database_->getProteinAtIdx(i)->getId();
-    std::string this_protein_id(c_this_id);
-    std::free(c_this_id);
+    std::string this_protein_id(db.getProteinAtIdx(i)->getIdPointer());
     
     for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
       size_t j = *it2;
       
       if (i != j) {
-        char* c_that_id = database_->getProteinAtIdx(j)->getId();
-        std::string that_protein_id(c_that_id);
-        std::free(c_that_id);
+        std::string that_protein_id(db.getProteinAtIdx(j)->getIdPointer());
         
         if (num_peptides_per_protein[i] == num_peptides_per_protein[j]) {
           duplicate_map[that_protein_id] = this_protein_id;
@@ -241,46 +226,92 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
       }
     }
   }
+  return true;
+}
+
+bool FisherCaller::getProteinFragmentsAndDuplicatesExtraDigest(Database& db, 
+    PeptideConstraint& peptide_constraint,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein,
+    std::map<std::string, std::string>& fragment_map, 
+    std::map<std::string, std::string>& duplicate_map) {
+  bool generateDecoys = false;
+  std::map<size_t, std::vector<size_t> >::iterator it;
+  for (it = fragment_protein_map.begin(); it != fragment_protein_map.end(); ++it) {
+    size_t i = it->first;
+    std::map<std::string, std::vector<size_t> > peptide_protein_map;
+    addProteinToPeptideProteinMap(db, i, peptide_constraint, 
+        peptide_protein_map, generateDecoys);
+    for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+      size_t j = *it2;
+      if (i != j) {
+        addProteinToPeptideProteinMap(db, j, peptide_constraint, 
+            peptide_protein_map, generateDecoys);
+      }
+    }
+    
+    std::map<size_t, std::vector<size_t> > fragment_protein_map_local;
+    std::map<size_t, size_t> num_peptides_per_protein_local;
+    addProteinToFragmentProteinMap(db, i, peptide_constraint, peptide_protein_map, 
+        fragment_protein_map_local, num_peptides_per_protein_local);
+    for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+      size_t j = *it2;
+      if (i != j) {
+        addProteinToFragmentProteinMap(db, j, peptide_constraint, 
+            peptide_protein_map, fragment_protein_map_local, 
+            num_peptides_per_protein_local);
+      }
+    }
+    
+    getProteinFragmentsAndDuplicates(db, fragment_protein_map_local, 
+        num_peptides_per_protein_local, fragment_map, duplicate_map);
+  }
+  return true;
 }
 
 bool FisherCaller::getProteinFragmentsAndDuplicates(
     std::map<std::string, std::string>& fragment_map,
     std::map<std::string, std::string>& duplicate_map,
     bool generateDecoys) {
-  // now create a database_
-  database_ = new Database(protein_db_file_.c_str(), false);
+  // now create a database
+  Database db(protein_db_file_.c_str(), false);
   
-  if(!database_->parse()){
-    std::cerr << "Failed to parse database_, cannot create new index for " << protein_db_file_ << std::endl;
+  if(!db.parse()){
+    std::cerr << "Failed to parse database, cannot create new index for " << protein_db_file_ << std::endl;
     return EXIT_FAILURE;
-  } /*else {
-    std::cerr << "Read " << database_->getNumProteins() << " proteins." << std::endl;
-    std::cerr << database_->getProteinAtIdx(5)->getSequencePointer() << std::endl;
-  }*/
+  }
   
+  // First do a full digest to get candidates for protein grouping
+  PeptideConstraint peptide_constraint(enzyme_, FULL_DIGEST, 
+      min_peptide_length_, max_peptide_length_, max_miscleavages_);
   std::map<std::string, std::vector<size_t> > peptide_protein_map;
-  bool success = getPeptideProteinMap(peptide_protein_map, generateDecoys);
+  bool success = getPeptideProteinMap(db, peptide_constraint, peptide_protein_map, generateDecoys);
   
   if (!success) {
     std::cerr << "Failed to create peptide protein map." << std::endl;
     return EXIT_FAILURE;
-  } /*else {
-    std::cerr << peptide_protein_map["VRPLAR"].size() << std::endl;
-    std::cerr << peptide_protein_map["EHHEHASAPLLPPPPTSALSSIASTTAASSAHAK"].size() << std::endl;
-    std::cerr << database_->getProteinAtIdx(peptide_protein_map["EHHEHASAPLLPPPPTSALSSIASTTAASSAHAK"][0])->getSequencePointer() << std::endl;
-  }*/
+  }
   
   std::map<size_t, std::vector<size_t> > fragment_protein_map;
   std::map<size_t, size_t> num_peptides_per_protein;
   
-  success = getFragmentProteinMap(peptide_protein_map, fragment_protein_map, num_peptides_per_protein);
+  success = getFragmentProteinMap(db, peptide_constraint, peptide_protein_map, fragment_protein_map, num_peptides_per_protein);
   
   if (!success) {
     std::cerr << "Failed to create fragment protein map." << std::endl;
     return EXIT_FAILURE;
   }
   
-  success = getProteinFragmentsAndDuplicates(fragment_protein_map, num_peptides_per_protein, fragment_map, duplicate_map);
+  // If not a full digest, check validity of each candidate protein group
+  if (digestion_ == FULL_DIGEST) {
+    success = getProteinFragmentsAndDuplicates(db, fragment_protein_map, num_peptides_per_protein, fragment_map, duplicate_map);
+  } else {
+    PeptideConstraint peptide_constraint_extra_digest(enzyme_, digestion_, 
+        min_peptide_length_, max_peptide_length_, max_miscleavages_);
+    success = getProteinFragmentsAndDuplicatesExtraDigest(db, 
+        peptide_constraint_extra_digest, fragment_protein_map, 
+        num_peptides_per_protein, fragment_map, duplicate_map);
+  }
   
   if (!success) {
     std::cerr << "Failed to get protein fragments and duplicates." << std::endl;

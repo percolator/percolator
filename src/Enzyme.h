@@ -30,7 +30,7 @@
 class Enzyme {
   public:
     enum EnzymeType {
-      NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, THERMOLYSIN, PROTEINASEK, PEPSIN, ELASTASE, 
+      NO_ENZYME, TRYPSIN, TRYPSINP, CHYMOTRYPSIN, THERMOLYSIN, PROTEINASEK, PEPSIN, ELASTASE, 
       LYSN, LYSC, ARGC, ASPN, GLUC
     };
     virtual ~Enzyme() {}
@@ -97,6 +97,29 @@ class Trypsin : public Enzyme {
     }
     virtual EnzymeType getET() {
       return TRYPSIN;
+    }
+};
+
+class TrypsinP : public Enzyme {
+  public:
+    virtual ~TrypsinP() {
+      ;
+    }
+    TrypsinP() {
+      ;
+    }
+    static std::string getString() {
+      return "trypsinp";
+    }
+  protected:
+    virtual std::string toString() {
+      return getString();
+    }
+    virtual bool isEnz(const char& n, const char& c) {
+      return ((n == 'K' || n == 'R') || n == '-' || c == '-');
+    }
+    virtual EnzymeType getET() {
+      return TRYPSINP;
     }
 };
 

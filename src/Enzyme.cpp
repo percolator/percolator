@@ -37,6 +37,9 @@ void Enzyme::setEnzyme(EnzymeType enz) {
   destroy();
   
   switch (enz) {
+    case TRYPSINP:
+      theEnzyme = new TrypsinP();
+      return;
     case CHYMOTRYPSIN:
       theEnzyme = new Chymotrypsin();
       return;
@@ -103,6 +106,8 @@ void Enzyme::setEnzyme(std::string enzyme) {
     theEnzyme = new GluC();
   } else if (enzyme == Enzyme::getString()) {
     theEnzyme = new Enzyme();
+  } else if (enzyme == TrypsinP::getString()) {
+    theEnzyme = new TrypsinP();
   } else if (enzyme == Trypsin::getString()) {
     theEnzyme = new Trypsin();
   }

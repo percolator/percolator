@@ -169,33 +169,7 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   
   //option e has been changed, see above
   if (cmd.optionSet("e")) {
-    if( cmd.options["e"] == "no_enzyme")
-      Enzyme::setEnzyme(Enzyme::NO_ENZYME);
-    else if( cmd.options["e"] == "elastase")
-      Enzyme::setEnzyme(Enzyme::ELASTASE);
-    else if( cmd.options["e"] == "chymotrypsin")
-      Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
-    else if( cmd.options["e"] == "thermolysin")
-      Enzyme::setEnzyme(Enzyme::THERMOLYSIN);
-    else if( cmd.options["e"] == "proteinasek")
-      Enzyme::setEnzyme(Enzyme::PROTEINASEK);
-    else if( cmd.options["e"] == "pepsin")
-      Enzyme::setEnzyme(Enzyme::PEPSIN);
-    else if( cmd.options["e"] == "trypsin")
-      Enzyme::setEnzyme(Enzyme::TRYPSIN);
-    else if( cmd.options["e"] == "lys-n")
-      Enzyme::setEnzyme(Enzyme::LYSN);
-    else if( cmd.options["e"] == "lys-c")
-      Enzyme::setEnzyme(Enzyme::LYSC);
-    else if( cmd.options["e"] == "arg-c")
-      Enzyme::setEnzyme(Enzyme::ARGC);
-    else if( cmd.options["e"] == "asp-n")
-      Enzyme::setEnzyme(Enzyme::ASPN);
-    else if( cmd.options["e"] == "glu-c")
-      Enzyme::setEnzyme(Enzyme::GLUC);
-    else {
-      cerr << "Did not recognize choice of enzyme, uses Trypsin" << endl;
-      Enzyme::setEnzyme(Enzyme::TRYPSIN);}
+    Enzyme::setEnzyme(cmd.options["e"]);
   }
   if (cmd.optionSet("N")) parseOptions.pngasef = true;
   if (cmd.optionSet("a")) parseOptions.calcAAFrequencies = true;

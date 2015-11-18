@@ -220,24 +220,30 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
   try
   {
 
-    BOOST_FOREACH (const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
-    {
+    BOOST_FOREACH (const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef()) {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
       //NOTE check that there are not chimeric peptides
-      if( peptideId != std::string(pepEv->peptide_ref()))
-      {
-	std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
-		  << " contains different chimeric peptide sequences. "
-		  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
-		  << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
+      if (peptideId != std::string(pepEv->peptide_ref())) {
+	      std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
+		        << " contains different chimeric peptide sequences. "
+		        << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
+		        << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       }
       //else
       //{
-      __flankN = boost::lexical_cast<string > (pepEv->pre());
-      __flankC = boost::lexical_cast<string > (pepEv->post());
-      if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
-      if (__flankC == "?") {__flankC = "-";}
+      if (__flankN != "-") {
+        __flankN = boost::lexical_cast<std::string> (pepEv->pre());
+        if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
+        // MT: MSGF+ clips methionine of protein N-terminals, set to "-" to avoid confusion with cleavage rules
+        if (__flankN == "M" && boost::lexical_cast<std::string>(pepEv->start()) == "2") { __flankN = "-"; } 
+      }
+      
+      if (__flankC != "-") {
+        __flankC = boost::lexical_cast<std::string> (pepEv->post());
+        if (__flankC == "?") {__flankC = "-";}
+      }
+      
       std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
       mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
       std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
@@ -396,7 +402,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
         if (!(std::string(cv_ref.cvRef())=="UNIMOD")) {
           ostringstream errs;
           errs << "Error: current implementation can only handle UNIMOD accessions "
-	       << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
+	             << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
           throw MyException(errs.str());
         }
         // cerr <<  cv_ref.accession() << endl;

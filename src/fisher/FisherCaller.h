@@ -38,7 +38,6 @@
 class FisherCaller{
  public:
   FisherCaller();
-  FisherCaller(PeptideConstraint* peptide_constraint);
   ~FisherCaller();
   
   void initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
@@ -57,22 +56,40 @@ class FisherCaller{
     protein_db_file_ = protein_db_file;
   }
  private:
-  Database* database_;
-  PeptideConstraint* peptide_constraint_;
+  ENZYME_T enzyme_;
+  DIGEST_T digestion_;
+  int min_peptide_length_, max_peptide_length_, max_miscleavages_;
   std::string decoyPattern_;
   
   std::string protein_db_file_, peptide_input_file_, protein_output_file_;
   
-  bool getPeptideProteinMap(
+  bool getPeptideProteinMap(Database& db, 
+    PeptideConstraint& peptide_constraint,
+    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    bool generateDecoys);
+  void addProteinToPeptideProteinMap(Database& db, 
+    size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     bool generateDecoys);
   
-  bool getFragmentProteinMap(
+  bool getFragmentProteinMap(Database& db, 
+    PeptideConstraint& peptide_constraint,
+    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein);
+  void addProteinToFragmentProteinMap(Database& db, 
+    size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein);
   
-  bool getProteinFragmentsAndDuplicates(
+  bool getProteinFragmentsAndDuplicatesExtraDigest(Database& db, 
+    PeptideConstraint& peptide_constraint,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein,
+    std::map<std::string, std::string>& fragment_map, 
+    std::map<std::string, std::string>& duplicate_map);
+  bool getProteinFragmentsAndDuplicates(Database& db,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 

@@ -253,6 +253,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fisher-protein",
       "Use fisher's method to infer protein probabilities, provide the fasta file as the argument to this flag.",
       "value");
+  cmd.defineOption("z",
+      "fisher-enzyme",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
+      "",
+      "trypsin");
   cmd.defineOption("c",
       "fisher-report-fragments",
       "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second.",
@@ -440,7 +445,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       
       // default options
       bool fisherReportFragmentProteins = false;
-      bool fisherReportDuplicateProteins = false;      
+      bool fisherReportDuplicateProteins = false;
+      if (cmd.optionSet("z")) {
+        Enzyme::setEnzyme(cmd.options["z"]);
+      }      
       if (cmd.optionSet("c")) fisherReportFragmentProteins = true;
       if (cmd.optionSet("g")) fisherReportDuplicateProteins = true;
       
