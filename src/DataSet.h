@@ -33,6 +33,7 @@
 #include "PSMDescription.h"
 #include "FeatureNames.h"
 #include "DescriptionOfCorrect.h"
+#include "FeatureMemoryPool.h"
 
 // Optional columns in tab delimited input
 enum OptionalField {
@@ -73,10 +74,11 @@ class DataSet {
   void fillRtFeatures(std::vector<double*>& rtFeatures);
   
   void readPsm(const std::string& line, const unsigned int lineNr,
-               const std::vector<OptionalField>& optionalFields);
+               const std::vector<OptionalField>& optionalFields, 
+               FeatureMemoryPool& featurePool);
   static int readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription*& myPsm);
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool);
   
   void registerPsm(PSMDescription * myPsm);
   

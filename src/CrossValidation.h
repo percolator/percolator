@@ -27,6 +27,7 @@
 #include "SanityCheck.h"
 #include "Scores.h"
 #include "DataSet.h"
+#include "FeatureMemoryPool.h"
 #include "ssl.h"
 
 class CrossValidation {
@@ -38,7 +39,7 @@ class CrossValidation {
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
-                        Normalizer* pNorm);
+                        Normalizer* pNorm, FeatureMemoryPool& featurePool);
   
   void train(Normalizer* pNorm);
   

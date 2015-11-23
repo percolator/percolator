@@ -39,6 +39,7 @@
 #include "SanityCheck.h"
 #include "PseudoRandom.h"
 #include "DescriptionOfCorrect.h"
+#include "FeatureMemoryPool.h"
 
 using namespace std;
 
@@ -95,11 +96,14 @@ class SetHandler {
   
   static void deletePSMPointer(PSMDescription* psm);
   
+  FeatureMemoryPool& getFeaturePool() { return featurePool_; }
+  
   void reset();
   
  protected:
   size_t maxPSMs_;
   vector<DataSet*> subsets_;
+  FeatureMemoryPool featurePool_;
   
   unsigned int getSubsetIndexFromLabel(int label);
   static inline std::string &rtrim(std::string &s);

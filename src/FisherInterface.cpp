@@ -17,10 +17,6 @@
 
 #include "FisherInterface.h"
 
-double get_pvalue(std::pair<std::string,Protein*> d) {
-  return d.second->getP();
-}
-
 FisherInterface::FisherInterface(const std::string& fastaDatabase, 
     bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double pi0, bool outputEmpirQval, 
@@ -65,7 +61,8 @@ bool FisherInterface::initialize(Scores* fullset) {
     enzyme = TRYPSIN;
   }
   
-  for (vector<ScoreHolder>::iterator shIt = peptideScores_->begin(); shIt != peptideScores_->end(); ++shIt) {
+  for (std::vector<ScoreHolder>::iterator shIt = peptideScores_->begin(); 
+           shIt != peptideScores_->end(); ++shIt) {    
     std::string peptideSequenceFlanked = shIt->pPSM->getFullPeptideSequence();
     
     peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
@@ -90,9 +87,9 @@ bool FisherInterface::initialize(Scores* fullset) {
                              peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
       ++non_enzymatic_flanks;
     }
-    if (non_enzymatic_flanks > max_non_enzymatic_flanks) {
+    /*if (non_enzymatic_flanks > max_non_enzymatic_flanks) {
       std::cerr << "SP " << peptideSequenceFlanked << std::endl;
-    }
+    }*/
     max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
     total_non_enzymatic_flanks += max_non_enzymatic_flanks;
   }

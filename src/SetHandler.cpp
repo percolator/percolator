@@ -250,6 +250,9 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     std::map<ScanId, size_t> scanIdLookUp;
     unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
     do {
+      if (lineNr % 1000000 == 0 && VERB > 1) {
+        std::cerr << "Processing line " << lineNr << std::endl;
+      }
       psmLine = rtrim(psmLine);
       ScanId scanId = getScanId(psmLine, optionalFields, lineNr);
       size_t randIdx;
@@ -265,12 +268,13 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
         psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
-                                             readProteins, psmPriority.psm);
+                                 readProteins, psmPriority.psm, featurePool_);
         psmPriority.priority = randIdx;
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
           PSMDescriptionPriority del = subsetPSMs.top();
           upperLimit = del.priority;
+          featurePool_.deallocate(del.psm->features);
           PSMDescription::deletePtr(del.psm);
           subsetPSMs.pop();
         }
@@ -285,9 +289,9 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       psmLine = rtrim(psmLine);
       int label = getLabel(psmLine, lineNr);
       if (label == 1) {
-        targetSet->readPsm(psmLine, lineNr, optionalFields);
+        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_);
       } else if (label == -1) {
-        decoySet->readPsm(psmLine, lineNr, optionalFields);
+        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_);
       } else {
         std::cerr << "Warning: the PSM on line " << lineNr
             << " has a label not in {1,-1} and will be ignored." << std::endl;
@@ -312,6 +316,7 @@ void SetHandler::addQueueToSets(
     } else {
       std::cerr << "Warning: the PSM " << psmPriority.psm->id
           << " has a label not in {1,-1} and will be ignored." << std::endl;
+      featurePool_.deallocate(psmPriority.psm->features);
       PSMDescription::deletePtr(psmPriority.psm);
     }
     subsetPSMs.pop();
@@ -424,6 +429,7 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   // fill in the feature names from the header line
   FeatureNames& featureNames = DataSet::getFeatureNames();
   getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
+  featurePool_.createPool(DataSet::getNumFeatures());
   
   // fill in the default weights if present
   std::vector<double> init_values;
@@ -460,10 +466,13 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   bool readProteins = true;
   do {
+    if (lineNr % 1000000 == 0 && VERB > 1) {
+      std::cerr << "Processing line " << lineNr << std::endl;
+    }
     psmLine = rtrim(psmLine);
     ScoreHolder sh;
-    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM);
-    allScores.scoreAndAddPSM(sh, rawWeights);
+    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM, featurePool_);
+    allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
     ++lineNr;
   } while (getline(dataStream, psmLine));
 }

@@ -761,7 +761,7 @@ int Caller::run() {
   CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
                                   testFdr_, selectionFdr_, selectedCpos_, 
                                   selectedCneg_, numIterations_, usePi0_);
-  int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_);
+  int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
     cerr << "Estimating " << firstNumberOfPositives << " over q="
         << testFdr_ << " in initial direction" << endl;
@@ -800,6 +800,9 @@ int Caller::run() {
   }
   
   if (setHandler.getMaxPSMs() > 0u) {
+    if (VERB > 0) {
+      cerr << "Scoring full list of PSMs with trained SVMs." << endl;
+    }
     std::vector<double> rawWeights;
     crossValidation.getAvgWeights(rawWeights, pNorm_);
     setHandler.reset();

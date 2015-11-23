@@ -96,12 +96,58 @@ bool FisherCaller::getPeptideProteinMap(Database& db,
     PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     bool generateDecoys) {
+  std::vector< std::pair<std::string, size_t> > peptideProteinIdxMap;
   for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
        ++protein_idx) {
     addProteinToPeptideProteinMap(db, protein_idx, peptide_constraint, 
         peptide_protein_map, generateDecoys);
+    /*Crux::Protein* protein = db.getProteinAtIdx(protein_idx);
+    
+    if (generateDecoys) {
+      protein->shuffle(PROTEIN_REVERSE_DECOYS);
+      
+      // MT: the crux interface will change the protein identifier. If we are
+      // not inside the crux environment we do this separately here.
+      std::string currentId(protein->getIdPointer());
+      if (currentId.substr(0, decoyPattern_.size()) != decoyPattern_) {
+        currentId = decoyPattern_ + currentId;
+        protein->setId(currentId.c_str());
+      }
+    }
+    
+    ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
+    while (cur_protein_peptide_iterator.hasNext()) {
+      Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
+      std::string sequence(peptide->getSequencePointer(), peptide->getLength());
+      peptideProteinIdxMap.push_back(std::make_pair(sequence,protein_idx));
+      delete peptide;
+    }*/
+  }
+  /*
+  std::string prevPeptide = "";
+  size_t count = 0;
+  std::vector<size_t> proteinIdxs;
+  std::sort(peptideProteinIdxMap.begin(), peptideProteinIdxMap.end());
+  for (size_t i = 0; i < peptideProteinIdxMap.size(); ++i) {
+    if (peptideProteinIdxMap[i].first == prevPeptide) {
+      ++count;
+      proteinIdxs.push_back(peptideProteinIdxMap[i-1].second);
+    } else {
+      if (count > 0) {
+        proteinIdxs.push_back(peptideProteinIdxMap[i-1].second);
+        peptide_protein_map[prevPeptide] = proteinIdxs;
+        proteinIdxs.clear();
+        count = 0;
+      }
+      prevPeptide = peptideProteinIdxMap[i].first;
+    }
   }
   
+  if (count > 0) {
+    proteinIdxs.push_back(peptideProteinIdxMap[i-1].second);
+    peptide_protein_map[prevPeptide] = proteinIdxs;
+  }
+  */
   return true;
 }
 
@@ -122,10 +168,8 @@ void FisherCaller::addProteinToPeptideProteinMap(Database& db,
       protein->setId(currentId.c_str());
     }
   }
-  //std::cerr << protein->getSequencePointer() << std::endl;
   
   ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
-  
   while (cur_protein_peptide_iterator.hasNext()) {
     Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
     std::string sequence(peptide->getSequencePointer(), peptide->getLength());
@@ -273,6 +317,10 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
     std::map<std::string, std::string>& fragment_map,
     std::map<std::string, std::string>& duplicate_map,
     bool generateDecoys) {
+  time_t startTime;
+  time(&startTime);
+  clock_t startClock = clock();
+  
   // now create a database
   Database db(protein_db_file_.c_str(), false);
   
@@ -280,6 +328,14 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
     std::cerr << "Failed to parse database, cannot create new index for " << protein_db_file_ << std::endl;
     return EXIT_FAILURE;
   }
+  
+  time_t procStart;
+  clock_t procStartClock = clock();
+  time(&procStart);
+  double diff = difftime(procStart, startTime);
+  if (VERB > 1) cerr << "Creating database took "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff << " seconds wall time" << endl;
   
   // First do a full digest to get candidates for protein grouping
   PeptideConstraint peptide_constraint(enzyme_, FULL_DIGEST, 
@@ -292,6 +348,13 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
     return EXIT_FAILURE;
   }
   
+  procStartClock = clock();
+  time(&procStart);
+  diff = difftime(procStart, startTime);
+  if (VERB > 1) cerr << "Creating protein peptide map took "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff << " seconds wall time" << endl;
+      
   std::map<size_t, std::vector<size_t> > fragment_protein_map;
   std::map<size_t, size_t> num_peptides_per_protein;
   
@@ -301,6 +364,13 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
     std::cerr << "Failed to create fragment protein map." << std::endl;
     return EXIT_FAILURE;
   }
+  
+  procStartClock = clock();
+  time(&procStart);
+  diff = difftime(procStart, startTime);
+  if (VERB > 1) cerr << "Creating fragment protein map took "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff << " seconds wall time" << endl;
   
   // If not a full digest, check validity of each candidate protein group
   if (digestion_ == FULL_DIGEST) {
@@ -312,6 +382,14 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
         peptide_constraint_extra_digest, fragment_protein_map, 
         num_peptides_per_protein, fragment_map, duplicate_map);
   }
+  
+  procStartClock = clock();
+  time(&procStart);
+  diff = difftime(procStart, startTime);
+  if (VERB > 1) cerr << "Getting protein fragments and duplicates map took "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff << " seconds wall time" << endl;
+  
   
   if (!success) {
     std::cerr << "Failed to get protein fragments and duplicates." << std::endl;

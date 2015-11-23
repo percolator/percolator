@@ -32,13 +32,14 @@
 #include "FeatureNames.h"
 #include "PseudoRandom.h"
 #include "Normalizer.h"
+#include "FeatureMemoryPool.h"
 
 /*
 * ScoreHolder is a class that provides a way to assign score value to a
 * PSMDescription and have a way to compare PSMs based on the assigned
 * score value and output them into the stream.
 *
-* Here are some usefull abbreviations:
+* Here are some useful abbreviations:
 * PSM - Peptide Spectrum Match
 *
 */
@@ -126,7 +127,8 @@ class Scores {
   std::vector<ScoreHolder>::iterator end() { return scores_.end(); }
   
   double calcScore(const double* features, const std::vector<double>& w) const;
-  void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights);
+  void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights,
+                      FeatureMemoryPool& featurePool);
   int calcScores(vector<double>& w, double fdr);
   int calcQ(double fdr);
   void recalculateDescriptionOfCorrect(const double fdr);
@@ -137,7 +139,8 @@ class Scores {
   
   int getInitDirection(const double fdr, std::vector<double>& direction);
   void createXvalSetsBySpectrum(std::vector<Scores>& train, 
-      std::vector<Scores>& test, const unsigned int xval_fold);
+      std::vector<Scores>& test, const unsigned int xval_fold,
+      FeatureMemoryPool& featurePool);
   
   void generatePositiveTrainingSet(AlgIn& data, const double fdr,
       const double cpos);
@@ -148,8 +151,6 @@ class Scores {
   
   void weedOutRedundant();
   void weedOutRedundantTDC();
-  
-  void deleteContiguousMemoryBlock();
   
   void printRetentionTime(ostream& outs, double fdr);
   unsigned getQvaluesBelowLevel(double level);
@@ -189,7 +190,8 @@ class Scores {
   double* decoyPtr_;
   double* targetPtr_;
   
-  void copyIntoContiguousMemoryBlock();
+  void reorderFeatureRows(FeatureMemoryPool& featurePool, bool isTarget,
+    std::map<double*, double*>& movedAddresses, size_t& idx);
 };
 
 #endif /*SCORES_H_*/

@@ -42,10 +42,6 @@ PSMDescription::PSMDescription(double ort, double prt) :
 PSMDescription::~PSMDescription() {}
 
 void PSMDescription::deletePtr(PSMDescription* psm) {
-  if (psm->features) {
-    delete[] psm->features;
-    psm->features = NULL;
-  }
   if (psm->retentionFeatures) {
     delete[] psm->retentionFeatures;
     psm->retentionFeatures = NULL;

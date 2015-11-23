@@ -57,7 +57,6 @@ class FisherInterface : public ProteinProbEstimator {
   /** FISHER PARAMETERS **/
   std::string fastaProteinFN_;
   bool reportFragmentProteins_, reportDuplicateProteins_;
-  
   FisherCaller fisherCaller_;
   
 };

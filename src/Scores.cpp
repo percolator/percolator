@@ -183,7 +183,7 @@ double Scores::calcScore(const double* feat, const std::vector<double>& w) const
 }
 
 void Scores::scoreAndAddPSM(ScoreHolder& sh, 
-    const std::vector<double>& rawWeights) {
+    const std::vector<double>& rawWeights, FeatureMemoryPool& featurePool) {
   const unsigned int numFeatures = FeatureNames::getNumFeatures();
   if (DataSet::getCalcDoc()) {
     size_t numRTFeatures = RTModel::totalNumRTFeatures();
@@ -200,10 +200,7 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   }
   sh.score += rawWeights[numFeatures];
   
-  if (sh.pPSM->features) {
-    delete[] sh.pPSM->features;
-    sh.pPSM->features = NULL;
-  }
+  featurePool.deallocate(sh.pPSM->features);
   if (sh.pPSM->retentionFeatures) {
     delete[] sh.pPSM->retentionFeatures;
     sh.pPSM->retentionFeatures = NULL;
@@ -263,7 +260,8 @@ void Scores::fillFeatures(SetHandler& setHandler) {
  * @param xval_fold: number of folds in train and test
  */
 void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
-    std::vector<Scores>& test, const unsigned int xval_fold) {
+    std::vector<Scores>& test, const unsigned int xval_fold, 
+    FeatureMemoryPool& featurePool) {
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
   test.resize(xval_fold, Scores(usePi0_));
@@ -324,8 +322,13 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     test[i].recalculateSizes();
   }
   
+  std::map<double*, double*> movedAddresses;
+  size_t idx = 0;
   for (unsigned int i = 0; i < xval_fold; i++) {
-    test[i].copyIntoContiguousMemoryBlock();
+    bool isTarget = true;
+    test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
+    isTarget = false;
+    test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
   }
 }
 
@@ -343,44 +346,25 @@ void Scores::recalculateSizes() {
   targetDecoySizeRatio_ = totalNumberOfTargets_ / (double)totalNumberOfDecoys_;
 }
 
-void Scores::copyIntoContiguousMemoryBlock() {
+void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool, 
+    bool isTarget, std::map<double*, double*>& movedAddresses, size_t& idx) {
   size_t numFeatures = FeatureNames::getNumFeatures();
-  // relies on clean up of PSMDescriptions to deallocate these arrays
-  decoyPtr_ = new double[totalNumberOfDecoys_ * numFeatures];
-  targetPtr_ = new double[totalNumberOfTargets_ * numFeatures];
-  
-  double *d = decoyPtr_, *t = targetPtr_;
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget()) {
-      std::copy(scoreIt->pPSM->features, scoreIt->pPSM->features + numFeatures, t);
-      delete[] scoreIt->pPSM->features;
-      scoreIt->pPSM->features = t;
-      t += numFeatures;
-    } else {
-      std::copy(scoreIt->pPSM->features, scoreIt->pPSM->features + numFeatures, d);
-      delete[] scoreIt->pPSM->features;
-      scoreIt->pPSM->features = d;
-      d += numFeatures;
+    if (scoreIt->isTarget() == isTarget) {
+      double* newAddress = featurePool.addressFromIdx(idx++);
+      double* oldAddress = scoreIt->pPSM->features;
+      while (movedAddresses.find(oldAddress) != movedAddresses.end()) {
+        oldAddress = movedAddresses[oldAddress];
+      }
+      if (oldAddress != newAddress) {
+        std::swap_ranges(oldAddress, oldAddress + numFeatures, newAddress);
+        scoreIt->pPSM->features = newAddress;
+        movedAddresses[newAddress] = oldAddress;
+      }
     }
-  }  
-}
-
-void Scores::deleteContiguousMemoryBlock() {
-  if (targetPtr_) {
-    delete[] targetPtr_;
-    targetPtr_ = NULL;
-  }
-  if (decoyPtr_) {
-    delete[] decoyPtr_;
-    decoyPtr_ = NULL;
-  }
-  std::vector<ScoreHolder>::iterator it = scores_.begin();
-  for ( ; it != scores_.end(); ++it) {
-    if (it->pPSM->features) it->pPSM->features = NULL;
   }
 }
-    
 
 void Scores::normalizeScores(double fdr) {
   // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit

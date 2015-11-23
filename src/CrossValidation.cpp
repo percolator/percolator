@@ -53,7 +53,7 @@ CrossValidation::~CrossValidation() {
  * @return number of positives for initial setup
  */
 int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck, 
-                                       Normalizer* pNorm) {
+    Normalizer* pNorm, FeatureMemoryPool& featurePool) {
   // initialize weights vector for all folds
   w_ = vector<vector<double> >(numFolds_, 
            vector<double> (FeatureNames::getNumFeatures() + 1));
@@ -69,7 +69,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
     trainScores_.resize(numFolds_, Scores(usePi0_));
     testScores_.resize(numFolds_, Scores(usePi0_));
     
-    fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_);
+    fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool);
     
     if (selectionFdr_ <= 0.0) {
       selectionFdr_ = testFdr_;
@@ -375,9 +375,6 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     fullset.getDOC().copyDOCparameters(testScores_[0].getDOC());
   }
   fullset.merge(testScores_, selectionFdr_);
-  for (unsigned int i = 0; i < numFolds_; ++i) {
-    testScores_[i].deleteContiguousMemoryBlock();
-  }
 }
 
 /**

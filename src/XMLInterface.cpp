@@ -136,6 +136,8 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     featureNames.initFeatures(DataSet::getCalcDoc());
     
     std::vector<double> init_values(FeatureNames::getNumFeatures());
+    setHandler.getFeaturePool().createPool(FeatureNames::getNumFeatures());
+    
     bool hasDefaultValues = false;
     unsigned int i = 0;
     featureIt = featureDescriptions.featureDescription().begin();
@@ -186,13 +188,14 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
             unsigned int upperLimit = UINT_MAX;
             if (subsetPSMs.size() < setHandler.getMaxPSMs() || randIdx < upperLimit) {
               PSMDescriptionPriority psmPriority;
-              psmPriority.psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
+              psmPriority.psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
               psmPriority.label = (psmIt->isDecoy() ? -1 : 1);
               psmPriority.priority = randIdx;
               subsetPSMs.push(psmPriority);
               if (subsetPSMs.size() > setHandler.getMaxPSMs()) {
                 PSMDescriptionPriority del = subsetPSMs.top();
                 upperLimit = del.priority;
+                setHandler.getFeaturePool().deallocate(del.psm->features);
                 PSMDescription::deletePtr(del.psm);
                 subsetPSMs.pop();
               }
@@ -210,7 +213,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
           percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
           psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
           for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
-            PSMDescription* psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
+            PSMDescription* psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
             if (psmIt->isDecoy()) {
               decoySet->registerPsm(psm);
             } else {
@@ -234,9 +237,9 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
         for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
           ScoreHolder sh;
           sh.label = (psmIt->isDecoy() ? -1 : 1);
-          sh.pPSM = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins);
+          sh.pPSM = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
           
-          allScores.scoreAndAddPSM(sh, rawWeights);
+          allScores.scoreAndAddPSM(sh, rawWeights, setHandler.getFeaturePool());
         }
       }
     }
@@ -321,7 +324,7 @@ std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& p
 
 PSMDescription* XMLInterface::readPsm(
     const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber, 
-    bool readProteins) {
+    bool readProteins, FeatureMemoryPool& featurePool) {
   PSMDescription* myPsm = new PSMDescription();
   string mypept = decoratePeptide(psm.peptide());
 
@@ -349,7 +352,7 @@ PSMDescription* XMLInterface::readPsm(
     myPsm->retentionTime = psm.observedTime().get();
   }
 
-  myPsm->features = new double[FeatureNames::getNumFeatures()]();
+  myPsm->features = featurePool.allocate();
   
   for (unsigned int i = 0; i < psm.features().feature().size(); ++i) {
     myPsm->features[i] = psm.features().feature()[i];

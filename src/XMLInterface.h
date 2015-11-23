@@ -37,6 +37,7 @@
   #include "Enzyme.h"
   #include "MassHandler.h"
   #include "PseudoRandom.h"
+  #include "FeatureMemoryPool.h"
   
   #include "parser.hxx"
   #include "serializer.hxx"
@@ -100,7 +101,8 @@ class XMLInterface {
   
 #ifdef XML_SUPPORT
   PSMDescription* readPsm(const ::percolatorInNs::peptideSpectrumMatch &psm, 
-                          unsigned scanNumber, bool readProteins);
+                          unsigned scanNumber, bool readProteins,
+                          FeatureMemoryPool& featurePool);
   ScanId getScanId(const percolatorInNs::peptideSpectrumMatch& psm, 
                    unsigned scanNumber);
   std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);

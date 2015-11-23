@@ -21,88 +21,87 @@
 #include <vector>
 #include <string>
 #include <iostream>
-using namespace std;
+
 #include "Enzyme.h"
 
 /*
 * PSMDescription
 *
-* Here are some usefull abbreviations:
+* Here are some useful abbreviations:
 * PSM - Peptide Spectrum Match
 *
 */
 class PSMDescription {
   
-  public:
-    
-    PSMDescription();
-    PSMDescription(const string peptide, const double retTime);
-    PSMDescription(double ort, double prt);
-    
-    virtual ~PSMDescription();
-    
-    static void deletePtr(PSMDescription* psm);
-    void clear() { proteinIds.clear(); }
-    double* getFeatures() { return features; }
-    double* getRetentionFeatures() { return retentionFeatures; }
-    static vector<double*> getRetFeatures(vector<PSMDescription> & psms);
-    
-    // TODO: move these 2 functions somewhere else
-    static std::string removePTMs(const std::string& peptideSeq);
-    static std::string removeFlanks(const std::string& peptideSeq) { 
-      return peptideSeq.substr(2, peptideSeq.size()-4); 
+ public: 
+  PSMDescription();
+  PSMDescription(const std::string peptide, const double retTime);
+  PSMDescription(double ort, double prt);
+  
+  virtual ~PSMDescription();
+  
+  static void deletePtr(PSMDescription* psm);
+  void clear() { proteinIds.clear(); }
+  double* getFeatures() { return features; }
+  double* getRetentionFeatures() { return retentionFeatures; }
+  static std::vector<double*> getRetFeatures(std::vector<PSMDescription> & psms);
+  
+  // TODO: move these 2 functions somewhere else
+  static std::string removePTMs(const std::string& peptideSeq);
+  static std::string removeFlanks(const std::string& peptideSeq) { 
+    return peptideSeq.substr(2, peptideSeq.size()-4); 
+  }
+  
+  std::string& getFullPeptide() { return getAParent()->peptide; }
+  std::string getPeptideSequence() { return peptide.substr(2, peptide.size()-4); }
+  std::string& getFullPeptideSequence() { return peptide; }
+  std::string getFlankN() { return peptide.substr(0, 1); }    
+  std::string getFlankC() { return peptide.substr(peptide.size()-1, peptide.size()); }
+  
+  PSMDescription* getAParent() {
+    if (parentFragment) {
+      return parentFragment->getAParent();
+    } else {
+      return this;
     }
-    
-    string& getFullPeptide() { return getAParent()->peptide; }
-    string getPeptideSequence() { return peptide.substr(2, peptide.size()-4); }
-    string& getFullPeptideSequence() { return peptide; }
-    string getFlankN() { return peptide.substr(0, 1); }    
-    string getFlankC() { return peptide.substr(peptide.size()-1, peptide.size()); }
-    
-    PSMDescription* getAParent() {
-      if (parentFragment) {
-        return parentFragment->getAParent();
-      } else {
-        return this;
-      }
-    }
-    
-    double getUnnormalizedRetentionTime() { return unnormalize(retentionTime); }
-    static bool isSubPeptide(string& child, string& parent);
-    bool isNotEnzymatic() {
-      std::string peptideSeq = removePTMs(peptide);
-      std::string peptideSeqNoFlanks = removeFlanks(peptide);
-      return !(Enzyme::isEnzymatic(peptideSeq[0], peptideSeq[2])
-          && Enzyme::isEnzymatic(peptideSeq[peptideSeq.size() - 3],
-                                 peptideSeq[peptideSeq.size() - 1])
-          && Enzyme::countEnzymatic(peptideSeqNoFlanks) == 0);
-    }
-    void checkFragmentPeptides(vector<PSMDescription*>::reverse_iterator other,
-                               vector<PSMDescription*>::reverse_iterator theEnd);
-    
-    static void setRetentionTime(vector<PSMDescription*>& psms, map<int,
-        double>& scan2rt);
-    static double unnormalize(double normalizedTime);
-    static void unnormalizeRetentionTimes(vector<PSMDescription> & psms);
-    // set the norm and div for a set of peptides
-    static void setPSMSet(vector<PSMDescription> & psms);
-    // normalize retention times for a  set of peptides
-    static void normalizeRetentionTimes(vector<PSMDescription> & psms);
-    friend ostream& operator<<(ostream& out, PSMDescription& psm);
-    void printProteins(std::ostream& out);
-    double getRetentionTime() const { return retentionTime; }
-    double getPredictedRetentionTime() { return predictedTime; }
+  }
+  
+  double getUnnormalizedRetentionTime() { return unnormalize(retentionTime); }
+  static bool isSubPeptide(std::string& child, std::string& parent);
+  bool isNotEnzymatic() {
+    std::string peptideSeq = removePTMs(peptide);
+    std::string peptideSeqNoFlanks = removeFlanks(peptide);
+    return !(Enzyme::isEnzymatic(peptideSeq[0], peptideSeq[2])
+        && Enzyme::isEnzymatic(peptideSeq[peptideSeq.size() - 3],
+                               peptideSeq[peptideSeq.size() - 1])
+        && Enzyme::countEnzymatic(peptideSeqNoFlanks) == 0);
+  }
+  void checkFragmentPeptides(std::vector<PSMDescription*>::reverse_iterator other,
+                             std::vector<PSMDescription*>::reverse_iterator theEnd);
+  
+  static void setRetentionTime(std::vector<PSMDescription*>& psms, 
+                               std::map<int, double>& scan2rt);
+  static double unnormalize(double normalizedTime);
+  static void unnormalizeRetentionTimes(std::vector<PSMDescription> & psms);
+  // set the norm and div for a set of peptides
+  static void setPSMSet(std::vector<PSMDescription> & psms);
+  // normalize retention times for a  set of peptides
+  static void normalizeRetentionTimes(std::vector<PSMDescription> & psms);
+  friend std::ostream& operator<<(std::ostream& out, PSMDescription& psm);
+  void printProteins(std::ostream& out);
+  double getRetentionTime() const { return retentionTime; }
+  double getPredictedRetentionTime() { return predictedTime; }
 
-    static double normDiv, normSub;
-    
-    double* features;
-    double* retentionFeatures;
-    double retentionTime, predictedTime, massDiff, pI, expMass, calcMass;
-    unsigned int scan;
-    string id;
-    string peptide;
-    set<string> proteinIds;
-    PSMDescription* parentFragment;
+  static double normDiv, normSub;
+  
+  double* features; // owned by a FeatureMemoryPool instance, no need to delete
+  double* retentionFeatures;
+  double retentionTime, predictedTime, massDiff, pI, expMass, calcMass;
+  unsigned int scan;
+  std::string id;
+  std::string peptide;
+  std::set<std::string> proteinIds;
+  PSMDescription* parentFragment;
 };
 
 inline bool const operator<(PSMDescription const& one,
@@ -122,7 +121,7 @@ inline bool operator==(PSMDescription const& one,
   }
 }
 
-inline ostream& operator<<(ostream& out, PSMDescription& psm) {
+inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {
   out << "Peptide: " << psm.peptide << endl;
   out << "Spectrum scan number: " << psm.scan << endl;
   out << "Retention time, predicted retention time: " << psm.retentionTime
