@@ -667,12 +667,12 @@ double* RTModel::fillFeaturesIndex(const string& peptide,
   return features;
 }
 
-void RTModel::calcRetentionFeatures(PSMDescription& psm) {
+void RTModel::calcRetentionFeatures(PSMDescription* psm) {
 
-  string pep = psm.getPeptideSequence();
-  double* features = psm.getRetentionFeatures();
+  string pep = psm->getPeptideSequence();
+  double* features = psm->getRetentionFeatures();
   // if there is memory allocated
-  if (psm.getRetentionFeatures()) {
+  if (psm->getRetentionFeatures()) {
     if (selected_features & 1 << 0) {
       features = fillFeaturesIndex(pep, our_index, features);
       //cout << "our_index" << endl;
@@ -742,8 +742,8 @@ void RTModel::calcRetentionFeatures(PSMDescription& psm) {
 }
 
 // calculate the retention features for a vector of PSMs
-void RTModel::calcRetentionFeatures(vector<PSMDescription> &psms) {
-  vector<PSMDescription>::iterator it;
+void RTModel::calcRetentionFeatures(vector<PSMDescription*> &psms) {
+  vector<PSMDescription*>::iterator it;
   if (VERB > 2) {
     cerr << endl << "Computing retention features..." << endl;
   }
@@ -826,7 +826,7 @@ int RTModel::getSelect(int sel_features, int max, size_t* finalNumFeatures) {
 }
 
 // train the SVM
-void RTModel::trainRetention(vector<PSMDescription>& trainset,
+void RTModel::trainRetention(vector<PSMDescription*>& trainset,
                              const double C, const double gamma,
                              const double epsilon, int noPsms) 
 {
@@ -853,9 +853,9 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset,
   data.x = new svm_node[data.l];
   data.y = new double[data.l];
   for (size_t ix1 = 0; ix1 < trainset.size(); ix1++) {
-    data.x[ix1].values = trainset[ix1].retentionFeatures;
+    data.x[ix1].values = trainset[ix1]->getRetentionFeatures();
     data.x[ix1].dim = noFeaturesToCalc;
-    data.y[ix1] = trainset[ix1].retentionTime;
+    data.y[ix1] = trainset[ix1]->getRetentionTime();
   }
   // build a model by training the SVM on the given training set
   char const *err_msg = svm_check_parameter(&data, &param);
@@ -876,12 +876,12 @@ void RTModel::trainRetention(vector<PSMDescription>& trainset,
 }
 
 // old function to train a SVR (used by percolator)
-void RTModel::trainRetention(vector<PSMDescription>& psms) {
+void RTModel::trainRetention(vector<PSMDescription*>& psms) {
   // Train retention time regressor
   size_t test_frac = 4u;
   if (psms.size() > test_frac * 10u) {
     // If we got enough data, calibrate gamma and C by leaving out a testset
-    vector<PSMDescription> train, test;
+    std::vector<PSMDescription*> train, test;
     for (size_t ix = 0; ix < psms.size(); ++ix) {
       if (ix % test_frac == 0) {
         test.push_back(psms[ix]);
@@ -925,10 +925,10 @@ void RTModel::trainRetention(vector<PSMDescription>& psms) {
 }
 
 // perform k-validation and return as estimate of the prediction error CV = 1/k (sum(PE(k))), where PE(k)=(sum(yi - yi_pred)^2)/size
-double RTModel::computeKfoldCV(const vector<PSMDescription> & psms,
+double RTModel::computeKfoldCV(const vector<PSMDescription*> & psms,
                                const double gamma, const double epsilon,
                                const double c) {
-  vector<PSMDescription> train, test;
+  vector<PSMDescription*> train, test;
   unsigned int noPsms;
   // sum of prediction errors
   double sumPEs, PEk;
@@ -960,11 +960,11 @@ double RTModel::computeKfoldCV(const vector<PSMDescription> & psms,
 
 // simple evaluation; just divide the data in 4 parts, train on three of them and test on the 4th; return the ms of diff
 double RTModel::computeSimpleEvaluation(
-                                        const vector<PSMDescription> & psms,
+                                        const vector<PSMDescription*> & psms,
                                         const double gamma,
                                         const double epsilon,
                                         const double c) {
-  vector<PSMDescription> train, test;
+  vector<PSMDescription*> train, test;
   unsigned int noPsms;
   double ms;
   // how many parts will the data be split in
@@ -997,7 +997,7 @@ double RTModel::computeSimpleEvaluation(
 }
 
 // train the Support Vector Regressor
-void RTModel::trainSVM(vector<PSMDescription> & psms) {
+void RTModel::trainSVM(vector<PSMDescription*> & psms) {
   int noPsms = psms.size();
   if (VERB >= 2) {
     cerr << endl << "Training the SVR model..." << endl;
@@ -1139,12 +1139,12 @@ void RTModel::trainSVM(vector<PSMDescription> & psms) {
 }
 
 // test the svm on the given test set
-double RTModel::testRetention(vector<PSMDescription>& testset) {
+double RTModel::testRetention(vector<PSMDescription*>& testset) {
   double rms = 0.0;
   double estimatedRT;
   for (size_t ix1 = 0; ix1 < testset.size(); ix1++) {
-    estimatedRT = estimateRT(testset[ix1].retentionFeatures);
-    double diff = estimatedRT - testset[ix1].retentionTime;
+    estimatedRT = estimateRT(testset[ix1]->getRetentionFeatures());
+    double diff = estimatedRT - testset[ix1]->getRetentionTime();
     rms += diff * diff;
   }
   return rms / testset.size();
@@ -1221,7 +1221,7 @@ void RTModel::copyIndexModel(svm_model* from) {
 }
 
 // train a linear SVR with the given parameters
-void RTModel::trainIndexRetention(vector<PSMDescription>& trainset,
+void RTModel::trainIndexRetention(vector<PSMDescription*>& trainset,
                                   const double C, const double epsilon) {
   svm_parameter param;
   param.svm_type = EPSILON_SVR;
@@ -1241,9 +1241,9 @@ void RTModel::trainIndexRetention(vector<PSMDescription>& trainset,
   data.x = new svm_node[data.l];
   data.y = new double[data.l];
   for (size_t ix1 = 0; ix1 < trainset.size(); ++ix1) {
-    data.x[ix1].values = trainset[ix1].retentionFeatures;
+    data.x[ix1].values = trainset[ix1]->getRetentionFeatures();
     data.x[ix1].dim = inhouseIndexAlphabet.size();
-    data.y[ix1] = trainset[ix1].retentionTime;
+    data.y[ix1] = trainset[ix1]->getRetentionTime();
   }
   // build a model by training the SVM on the given training set
   char const *err_msg = svm_check_parameter(&data, &param);
@@ -1266,9 +1266,9 @@ void RTModel::trainIndexRetention(vector<PSMDescription>& trainset,
 }
 
 // perform k-validation and return as estimate of the prediction error CV = 1/k (sum(PE(k))), where PE(k)=(sum(yi - yi_pred)^2)/size
-double RTModel::computeKfoldCVIndex(const vector<PSMDescription> & psms,
+double RTModel::computeKfoldCVIndex(const vector<PSMDescription*> & psms,
                                     const double epsilon, const double c) {
-  vector<PSMDescription> train, test;
+  vector<PSMDescription*> train, test;
   unsigned int noPsms;
   // sum of prediction errors
   double sumPEs, PEk;
@@ -1300,12 +1300,12 @@ double RTModel::computeKfoldCVIndex(const vector<PSMDescription> & psms,
 }
 
 // test the svr on the given test set
-double RTModel::testIndexRetention(vector<PSMDescription>& testset) {
+double RTModel::testIndexRetention(vector<PSMDescription*>& testset) {
   double ms = 0.0;
   double estimatedRT;
   for (size_t ix1 = 0; ix1 < testset.size(); ix1++) {
-    estimatedRT = estimateIndexRT(testset[ix1].retentionFeatures);
-    double diff = estimatedRT - testset[ix1].retentionTime;
+    estimatedRT = estimateIndexRT(testset[ix1]->getRetentionFeatures());
+    double diff = estimatedRT - testset[ix1]->getRetentionTime();
     ms += diff * diff;
   }
   return ms / testset.size();
@@ -1323,7 +1323,7 @@ double RTModel::estimateIndexRT(double* features) {
 
 // train the Support Vector Regressor for hydrophobicity
 // the C is given as parameter
-void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription> & psms,
+void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription*>& psms,
                                           const double C) {
   if (VERB >= 2) {
     cerr << "Building the hydrophobicity model with c = ..." << C << endl;
@@ -1370,7 +1370,7 @@ void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription> & psms,
 }
 
 // train the Support Vector Regressor for hydrophobicity
-void RTModel::trainIndexSVR(vector<PSMDescription> & psms) {
+void RTModel::trainIndexSVR(vector<PSMDescription*> & psms) {
   double
       GRID_C[13] = { pow(2., -6), pow(2., -5), pow(2., -4), pow(2., -3),
                      pow(2., -2), pow(2., -1), pow(2., 0), pow(2., 1), pow(2.,
@@ -1424,8 +1424,8 @@ void RTModel::trainIndexSVR(vector<PSMDescription> & psms) {
   trainIndexRetention(psms, c_index, eps_index);
 }
 
-void RTModel::computeHydrophobicityIndex(vector<PSMDescription> & psms) {
-  vector<PSMDescription>::iterator it;
+void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
+  vector<PSMDescription*>::iterator it;
   Normalizer* normalizer;
   const int noFeat = inhouseIndexAlphabet.length();
   for (int i = 0; i < ('Z' - 'A' + 1); ++i) {
@@ -1433,19 +1433,19 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription> & psms) {
   }
   // calculate the aa features for all the psms
   for (it = psms.begin(); it != psms.end(); ++it) {
-    string pep = it->getPeptideSequence();
-    double* features = it->getRetentionFeatures();
+    string pep = (*it)->getPeptideSequence();
+    double* features = (*it)->getRetentionFeatures();
     // amino acids
     features = fillAAFeatures(inhouseIndexAlphabet, pep, features);
   }
   // scale the rts
-  PSMDescription::setPSMSet(psms);
-  PSMDescription::normalizeRetentionTimes(psms);
+  PSMDescriptionDOC::setPSMSet(psms);
+  PSMDescriptionDOC::normalizeRetentionTimes(psms);
   normalizer = Normalizer::getNormalizer();
   normalizer->resizeVecs(noFeat);
   // scale the values of the features between 0 and 1
   vector<double*> tmp;
-  vector<double*> tRetFeat = PSMDescription::getRetFeatures(psms);
+  vector<double*> tRetFeat = PSMDescriptionDOC::getRetFeatures(psms);
   normalizer->setSet(tmp, tRetFeat, (size_t)0, noFeat);
   normalizer->normalizeSet(tmp, tRetFeat);
   // train retention
@@ -1468,9 +1468,9 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription> & psms) {
   cerr << "------------------------------" << endl;
   for (unsigned int i = 0; i < psms.size(); ++i)
     for (int j = 0; j < noFeat; ++j) {
-      psms[i].getRetentionFeatures()[j] = 0.0;
+      psms[i]->getRetentionFeatures()[j] = 0.0;
     }
-  PSMDescription::unnormalizeRetentionTimes(psms);
+  PSMDescriptionDOC::unnormalizeRetentionTimes(psms);
   if (VERB > 2) {
     printInhouseIndex();
   }
@@ -1552,8 +1552,8 @@ void RTModel::saveSVRModel(const string modelFile,
   assert(model != NULL);
   // initializations
   //char *model_file_name = modelFile.c_str();
-  double normSub = PSMDescription::normSub;
-  double normDiv = PSMDescription::normDiv;
+  double normSub = PSMDescriptionDOC::normSubRT_;
+  double normDiv = PSMDescriptionDOC::normDivRT_;
   double* sub = theNormalizer->getSub();
   double* div = theNormalizer->getDiv();
   size_t* numRetFeatures = theNormalizer->getNumRetFeatures();
@@ -1611,13 +1611,13 @@ void RTModel::loadSVRModel(const string modelFile,
   fp >> label >> selected_features;
   // sub
   double* sub = theNormalizer->getSub();
-  fp >> label >> PSMDescription::normSub;
+  fp >> label >> PSMDescriptionDOC::normSubRT_;
   for (unsigned int i = 0; i < numRtFeat; ++i) {
     fp >> sub[i];
   }
   // div
   double* div = theNormalizer->getDiv();
-  fp >> label >> PSMDescription::normDiv;
+  fp >> label >> PSMDescriptionDOC::normDivRT_;
   for (unsigned int i = 0; i < numRtFeat; ++i) {
     fp >> div[i];
   }
@@ -1683,11 +1683,11 @@ void RTModel::printInhouseIndex(string& filename) {
 }
 
 // print psms to file
-void RTModel::printPsms(string& filename, vector<PSMDescription> & psms) {
+void RTModel::printPsms(string& filename, vector<PSMDescription*> & psms) {
   ofstream out;
   out.open(filename.c_str());
   for (unsigned int i = 0; i < psms.size(); ++i) {
-    out << psms[i] << endl;
+    out << *psms[i] << endl;
   }
   out.close();
 }

@@ -117,7 +117,7 @@ int LibSVRModel::setRBFSVRParam(const double &eps, const double &C, const double
 }
 
 /* train a svr model */
-int LibSVRModel::TrainModel(const std::vector<PSMDescription> &train_psms, const int &number_features) {
+int LibSVRModel::TrainModel(const std::vector<PSMDescription*> &train_psms, const int &number_features) {
   if (svr_) {
     svm_destroy_model(svr_);
   }
@@ -138,21 +138,21 @@ double LibSVRModel::PredictRT(const int &number_features, double *features) {
 }
 
 /* predict rt for a set of peptides and return the value of the error */
-double LibSVRModel::EstimatePredictionError(const int &number_features, const vector<PSMDescription> &test_psms) {
+double LibSVRModel::EstimatePredictionError(const int &number_features, const vector<PSMDescription*> &test_psms) {
   double ms_error = 0.0, predicted_rt = 0.0, deviation;
-  vector<PSMDescription>::const_iterator it = test_psms.begin();
+  vector<PSMDescription*>::const_iterator it = test_psms.begin();
 
   for ( ; it != test_psms.end(); ++it) {
-    predicted_rt =  PredictRT(number_features, it->retentionFeatures);
-    deviation = predicted_rt - it->retentionTime;
+    predicted_rt =  PredictRT(number_features, (*it)->getRetentionFeatures());
+    deviation = predicted_rt - (*it)->getRetentionTime();
     ms_error += deviation * deviation;
   }
   return ms_error / (double)test_psms.size();
 }
 
 /* perform k-fold cross validation; return error value */
-double LibSVRModel::ComputeKFoldValidation(const std::vector<PSMDescription> &psms, const int &number_features) {
-  vector<PSMDescription> train, test;
+double LibSVRModel::ComputeKFoldValidation(const std::vector<PSMDescription*> &psms, const int &number_features) {
+  vector<PSMDescription*> train, test;
   int len = psms.size();
   // sum of prediction errors
   double sum_pek = 0.0, pek = 0.0;
@@ -177,7 +177,7 @@ double LibSVRModel::ComputeKFoldValidation(const std::vector<PSMDescription> &ps
 
 /* calibrate the values of the parameters for a linear SVR; the values of the best parameters
   * are stored in the svr_parameters_ member */
-int LibSVRModel::CalibrateLinearModel(const std::vector<PSMDescription> &calibration_psms,
+int LibSVRModel::CalibrateLinearModel(const std::vector<PSMDescription*> &calibration_psms,
                                       const int &number_features) {
   double best_c, best_e;
   double best_error = 1e100, error;
@@ -208,7 +208,7 @@ int LibSVRModel::CalibrateLinearModel(const std::vector<PSMDescription> &calibra
 
 /* calibrate the values of the parameters for a RBF SVR; the values of the best parameters
   * are stored in the svr_parameters_ member */
-int LibSVRModel::CalibrateRBFModel(const std::vector<PSMDescription> &calibration_psms,
+int LibSVRModel::CalibrateRBFModel(const std::vector<PSMDescription*> &calibration_psms,
                                    const int &number_features) {
   double best_c, best_e, best_g;
   double best_error = 1e100, error;
@@ -247,7 +247,7 @@ int LibSVRModel::CalibrateRBFModel(const std::vector<PSMDescription> &calibratio
   return 0;
 }
 
-int LibSVRModel::CalibrateModel(const std::vector<PSMDescription> &calibration_psms,
+int LibSVRModel::CalibrateModel(const std::vector<PSMDescription*> &calibration_psms,
                    const int &number_features) {
   if (kernel_ == LINEAR_SVR) {
     return CalibrateLinearModel(calibration_psms, number_features);

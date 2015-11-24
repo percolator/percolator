@@ -84,15 +84,15 @@ class RTModel {
     static void fillFeaturesAllIndex(const string& pep, double* features);
     static double* fillFeaturesIndex(const string& peptide,
                                      const float* index, double* features);
-    void calcRetentionFeatures(PSMDescription& psm);
-    void calcRetentionFeatures(vector<PSMDescription> &psms);
+    void calcRetentionFeatures(PSMDescription* psm);
+    void calcRetentionFeatures(vector<PSMDescription*>& psms);
     // calculate the difference in hydrophobicity between 2 peptides
     static double calcDiffHydrophobicities(const string& parent,
                                            const string& child);
     // train a SVR
-    void trainSVM(vector<PSMDescription> & psms);
-    void trainRetention(vector<PSMDescription>& trainset);
-    void trainRetention(vector<PSMDescription>& trainset, const double C,
+    void trainSVM(vector<PSMDescription*> & psms);
+    void trainRetention(vector<PSMDescription*>& trainset);
+    void trainRetention(vector<PSMDescription*>& trainset, const double C,
                         const double gamma, const double epsilon,
                         int noPsms);
     bool isModelNull() {
@@ -103,15 +103,15 @@ class RTModel {
       }
     }
     // k-fold evaluation
-    double computeKfoldCV(const vector<PSMDescription> & psms,
+    double computeKfoldCV(const vector<PSMDescription*> & psms,
                           const double gamma, const double epsilon,
                           const double c);
     // use simple evaluation
-    double computeSimpleEvaluation(const vector<PSMDescription> & psms,
+    double computeSimpleEvaluation(const vector<PSMDescription*> & psms,
                                    const double gamma,
                                    const double epsilon, const double c);
     // estima rt using a trained model
-    double testRetention(vector<PSMDescription>& testset);
+    double testRetention(vector<PSMDescription*>& testset);
     double estimateRT(double* features);
     // load, save, copy and destroy the svr model
     void loadSVRModel(string modelFile, Normalizer* theNormalizer);
@@ -163,17 +163,17 @@ class RTModel {
     // print the inhouse index to the given file
     void printInhouseIndex(string& filename);
     // EXPERIMENTAL
-    void trainIndexSVRNoCCalibration(vector<PSMDescription> & psms,
+    void trainIndexSVRNoCCalibration(vector<PSMDescription*> & psms,
                                      const double C);
-    void computeHydrophobicityIndex(vector<PSMDescription> & psms);
-    void trainIndexRetention(vector<PSMDescription>& trainset,
+    void computeHydrophobicityIndex(vector<PSMDescription*> & psms);
+    void trainIndexRetention(vector<PSMDescription*>& trainset,
                              const double C, const double epsilon);
     void copyIndexModel(svm_model* from);
-    double computeKfoldCVIndex(const vector<PSMDescription> & psms,
+    double computeKfoldCVIndex(const vector<PSMDescription*> & psms,
                                const double epsilon, const double c);
-    void trainIndexSVR(vector<PSMDescription> & psms);
+    void trainIndexSVR(vector<PSMDescription*> & psms);
     double estimateIndexRT(double* features);
-    double testIndexRetention(vector<PSMDescription>& testset);
+    double testIndexRetention(vector<PSMDescription*>& testset);
     void printInhouseIndex();
     bool calculateIndex();
     // EXPERIMENTAL 2
@@ -190,7 +190,7 @@ class RTModel {
     double* fillPolarFeatures(const string& peptide, double* features);
     static double indexSumSquaredDiff(const float* index,
                                       const string& peptide);
-    void printPsms(string& filename, vector<PSMDescription> & psms);
+    void printPsms(string& filename, vector<PSMDescription*> & psms);
     void setinhouseIndexAlphabet(const string& alph) {
       inhouseIndexAlphabet = alph;
     }

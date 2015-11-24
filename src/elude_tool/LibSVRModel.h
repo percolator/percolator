@@ -56,22 +56,22 @@ class LibSVRModel : public SVRModel {
    /* check if the model is null */
    inline bool IsModelNull() const { svr_ == NULL ? true : false; }
    /* train a svr model */
-   virtual int TrainModel(const std::vector<PSMDescription> &train_psms,
+   virtual int TrainModel(const std::vector<PSMDescription*> &train_psms,
                           const int &number_features);
    /* predict retention time using the trained model */
    virtual double PredictRT(const int &number_features, double *features);
    /* predict rt for a set of peptides and return the value of the error */
-   double EstimatePredictionError(const int &number_features, const std::vector<PSMDescription> &test_psms);
+   double EstimatePredictionError(const int &number_features, const std::vector<PSMDescription*> &test_psms);
    /* perform k-fold cross validation; return error value */
-   double ComputeKFoldValidation(const std::vector<PSMDescription> &psms, const int &number_features);
+   double ComputeKFoldValidation(const std::vector<PSMDescription*> &psms, const int &number_features);
    /* calibrate the values of the parameters for a linear SVR; the values of the best parameters
     * are stored in the svr_parameters_ member */
-   int CalibrateLinearModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features);
+   int CalibrateLinearModel(const std::vector<PSMDescription*> &calibration_psms, const int &number_features);
    /* calibrate the values of the parameters for a SVR with RBF kernel; the values of the best parameters
     * are stored in the svr_parameters_ member */
-   int CalibrateRBFModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features);
+   int CalibrateRBFModel(const std::vector<PSMDescription*> &calibration_psms, const int &number_features);
    /* calibrate the values of the parameters */
-   virtual int CalibrateModel(const std::vector<PSMDescription> &calibration_psms,
+   virtual int CalibrateModel(const std::vector<PSMDescription*> &calibration_psms,
                               const int &number_features);
   /* save a svr model */
    virtual int SaveModel(FILE *fp);

@@ -176,7 +176,7 @@ double ProteinProbEstimator::estimatePriors() {
       double prior = prior_protein * size;
       double tmp_prior = prior;
       // for each protein
-      for(set<string>::iterator protIt = psm->pPSM->proteinIds.begin(); 
+      for(std::vector<std::string>::iterator protIt = psm->pPSM->proteinIds.begin(); 
 	          protIt != psm->pPSM->proteinIds.end(); protIt++) {
 	      unsigned index = std::distance(psm->pPSM->proteinIds.begin(), protIt);
 	      tmp_prior = (tmp_prior * prior_protein * (size - index)) / (index + 1);
@@ -294,8 +294,7 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold,
   }
 }
 
-double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) 
-{
+double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) {
   std::vector<double> pBoot, lambdas, pi0s, mse;
   std::vector<double>::iterator start;
   unsigned int numLambda = 100;
@@ -500,7 +499,7 @@ void ProteinProbEstimator::setTargetandDecoysNames() {
   unsigned int numGroups = 0;
   for (vector<ScoreHolder>::iterator psm = peptideScores_->begin(); psm!= peptideScores_->end(); ++psm) {
     // for each protein
-    for (set<string>::iterator protIt = psm->pPSM->proteinIds.begin(); protIt != psm->pPSM->proteinIds.end(); protIt++) {
+    for (std::vector<std::string>::iterator protIt = psm->pPSM->proteinIds.begin(); protIt != psm->pPSM->proteinIds.end(); protIt++) {
       Protein::Peptide *peptide = new Protein::Peptide(psm->pPSM->getPeptideSequence(),psm->isDecoy(),psm->p,
 							psm->pep,psm->q,psm->p);
       if (proteins.find(*protIt) == proteins.end()) {

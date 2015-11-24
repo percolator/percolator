@@ -34,9 +34,9 @@ class PSMDescription;
 class SVRModel {
  public:
     /* calibrate the values of the parameters */
-   virtual int CalibrateModel(const std::vector<PSMDescription> &calibration_psms, const int &number_features) = 0;
+   virtual int CalibrateModel(const std::vector<PSMDescription*>& calibration_psms, const int &number_features) = 0;
    /* train a svr model */
-   virtual int TrainModel(const std::vector<PSMDescription> &train_psms, const int &number_features) = 0;
+   virtual int TrainModel(const std::vector<PSMDescription*>& train_psms, const int &number_features) = 0;
    /* predict retention time using the trained model */
    virtual double PredictRT(const int &number_features, double *features) = 0;
    /* save a svr model */

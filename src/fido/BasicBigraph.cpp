@@ -46,7 +46,7 @@ void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides) {
     pepIndex = PSMNames.lookup(pepName);
 
     // r proteins
-    set<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
+    std::vector<string>::const_iterator pid = psm->pPSM->proteinIds.begin();
     for (; pid!= psm->pPSM->proteinIds.end(); ++pid) {
       protName = getRidOfUnprintablesAndUnicode(*pid);
       if (proteinNames.lookup(protName) == -1) {

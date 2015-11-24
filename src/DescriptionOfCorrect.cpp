@@ -40,31 +40,36 @@ DescriptionOfCorrect::DescriptionOfCorrect() {
 DescriptionOfCorrect::~DescriptionOfCorrect() {
 }
 
-void DescriptionOfCorrect::calcRegressionFeature(PSMDescription& psm) {
-  string peptide = psm.getFullPeptide();
+void DescriptionOfCorrect::calcRegressionFeature(PSMDescription* psm) {
+  string peptide = psm->getFullPeptide();
   string::size_type pos1 = peptide.find('.');
   string::size_type pos2 = peptide.find('.', ++pos1);
   string pep = peptide.substr(pos1, pos2 - pos1);
-  psm.pI = isoElectricPoint(pep);
-  if (psm.getRetentionFeatures()) {
-    RTModel::fillFeaturesAllIndex(pep, psm.getRetentionFeatures());
+  psm->setIsoElectricPoint(isoElectricPoint(pep));
+  if (psm->getRetentionFeatures()) {
+    RTModel::fillFeaturesAllIndex(pep, psm->getRetentionFeatures());
   }
-  //cout <<  peptide << " " << pep << " " << psm.getRetentionFeatures()[0] << endl;
+  //cout <<  peptide << " " << pep << " " << psm->getRetentionFeatures()[0] << endl;
 }
 
 void DescriptionOfCorrect::trainCorrect() {
-  // Get rid of redundant peptides
-  sort(psms.begin(), psms.end(), less<PSMDescription> ());
-  psms.resize(distance(psms.begin(), unique(psms.begin(), psms.end())));
-  // Get rid of non enzymatic peptides
-  remove_if(psms.begin(),
-            psms.end(),
-            std::mem_fun_ref(&PSMDescription::isNotEnzymatic));
+  // Get rid of redundant and non enzymatic peptides
+  sort(psms.begin(), psms.end(), PSMDescription::ptrLess);
+  std::vector<PSMDescription*>::iterator it = psms.begin();
+  PSMDescription* prev = NULL;
+  for (; it != psms.end();) {
+    if ((*it)->isNotEnzymatic() || (prev != NULL && *(*it) == *prev)) {
+      it = psms.erase(it);
+    } else {
+      prev = *it;
+      ++it;
+    }
+  }
   // Get averages
   double piSum = 0.0, dMSum = 0.0;
   for (size_t ix = 0; ix < psms.size(); ++ix) {
-    piSum += psms[ix].pI;
-    dMSum += psms[ix].massDiff;
+    piSum += psms[ix]->getIsoElectricPoint();
+    dMSum += psms[ix]->getMassDiff();
   }
   if (psms.size() == 0) {
     avgPI = 0.0;
@@ -80,42 +85,42 @@ void DescriptionOfCorrect::trainCorrect() {
   }
 }
 
-void DescriptionOfCorrect::setFeatures(PSMDescription& psm) {
+void DescriptionOfCorrect::setFeatures(PSMDescription* psm) {
   assert(DataSet::getFeatureNames().getDocFeatNum() > 0);
-  psm.predictedTime = rtModel.estimateRT(psm.retentionFeatures);
+  psm->setPredictedRetentionTime(rtModel.estimateRT(psm->getRetentionFeatures()));
   size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
-  double dm = abs(psm.massDiff - avgDM);
-  double drt = abs(psm.retentionTime - psm.predictedTime);
+  double dm = abs(psm->getMassDiff() - avgDM);
+  double drt = abs(psm->getRetentionTime() - psm->getPredictedRetentionTime());
   if (docFeatures & 1) {
-    psm.features[docFeatNum] = abs(psm.pI - avgPI);
+    psm->features[docFeatNum] = abs(psm->getIsoElectricPoint() - avgPI);
   }
   if (docFeatures & 2) {
-    psm.features[docFeatNum + 1] = dm;
+    psm->features[docFeatNum + 1] = dm;
   }
   if (docFeatures & 4) {
-    psm.features[docFeatNum + 2] = drt;
+    psm->features[docFeatNum + 2] = drt;
   }
-  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm.retentionTime))));
+  // double ddrt=drt/(1+log(max(1.0,PSMDescriptionDOC::unnormalize(psm->getRetentionTime))));
   if (docFeatures & 8) {
-    psm.features[docFeatNum + 3] = sqrt(dm * drt);
+    psm->features[docFeatNum + 3] = sqrt(dm * drt);
   }
 }
 
-void DescriptionOfCorrect::setFeaturesNormalized(PSMDescription& psm, Normalizer* pNorm) {
+void DescriptionOfCorrect::setFeaturesNormalized(PSMDescription* psm, Normalizer* pNorm) {
   setFeatures(psm);
   size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
   if (docFeatures & 1) {
-    psm.features[docFeatNum] = pNorm->normalize(psm.features[docFeatNum], docFeatNum);
+    psm->features[docFeatNum] = pNorm->normalize(psm->features[docFeatNum], docFeatNum);
   }
   if (docFeatures & 2) {
-    psm.features[docFeatNum + 1] = pNorm->normalize(psm.features[docFeatNum + 1], docFeatNum + 1);
+    psm->features[docFeatNum + 1] = pNorm->normalize(psm->features[docFeatNum + 1], docFeatNum + 1);
   }
   if (docFeatures & 4) {
-    psm.features[docFeatNum + 2] = pNorm->normalize(psm.features[docFeatNum + 2], docFeatNum + 2);
+    psm->features[docFeatNum + 2] = pNorm->normalize(psm->features[docFeatNum + 2], docFeatNum + 2);
   }
-  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm.retentionTime))));
+  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm->getRetentionTime))));
   if (docFeatures & 8) {
-    psm.features[docFeatNum + 3] = pNorm->normalize(psm.features[docFeatNum + 3], docFeatNum + 3);
+    psm->features[docFeatNum + 3] = pNorm->normalize(psm->features[docFeatNum + 3], docFeatNum + 3);
   }
 }
 

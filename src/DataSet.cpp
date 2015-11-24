@@ -46,7 +46,7 @@ bool DataSet::writeTabData(ofstream& out) {
         << psm->expMass << '\t' << psm->calcMass;
     if (calcDOC_) {
       out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
-          << psm->massDiff;
+          << psm->getMassDiff();
     }
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << featureRow[ix];
@@ -107,8 +107,8 @@ void DataSet::fillRtFeatures(std::vector<double*>& rtFeatures) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
-    if ((features = psm->retentionFeatures))
-        rtFeatures.push_back(features);
+    if ((features = psm->getRetentionFeatures()))
+      rtFeatures.push_back(features);
   }
 }
 
@@ -132,7 +132,11 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   std::istringstream buff(line);
   std::string tmp;
   
-  myPsm = new PSMDescription();
+  if (calcDOC_) {
+    myPsm = new PSMDescriptionDOC();
+  } else {
+    myPsm = new PSMDescription();
+  }
   int label;
   
   buff >> myPsm->id >> label; // read PSMid and label
@@ -172,8 +176,11 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   double* featureRow = featurePool.allocate();;
   if (calcDOC_) {
     numFeatures -= DescriptionOfCorrect::numDOCFeatures();
-    buff >> myPsm->retentionTime;
-    buff >> myPsm->massDiff;
+    double rt, dm;
+    buff >> rt;
+    buff >> dm;
+    myPsm->setRetentionTime(rt);
+    myPsm->setMassDiff(dm);
   }
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
@@ -211,7 +218,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   while (readProteins && !!buff) {
     buff >> tmp;
     if (tmp.size() > 0) {
-      myPsm->proteinIds.insert(tmp);
+      myPsm->proteinIds.push_back(tmp);
     }
   }
   
@@ -227,8 +234,8 @@ void DataSet::registerPsm(PSMDescription* myPsm) {
   }
   
   if (calcDOC_) {
-    myPsm->retentionFeatures = new double[RTModel::totalNumRTFeatures()]();
-    DescriptionOfCorrect::calcRegressionFeature(*myPsm);
+    myPsm->setRetentionFeatures(new double[RTModel::totalNumRTFeatures()]());
+    DescriptionOfCorrect::calcRegressionFeature(myPsm);
   }
   psms_.push_back(myPsm);
 }

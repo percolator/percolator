@@ -166,9 +166,9 @@ class RetentionFeatures {
 
    /************* RETENTION FEATURES FOR PSMS **************/
    /* computes the retention features for a set of peptides; return 0 if success */
-   int ComputeRetentionFeatures(std::vector<PSMDescription> &psms);
+   int ComputeRetentionFeatures(std::vector<PSMDescription*> &psms);
    /* computes the retention features for one psm */
-   int ComputeRetentionFeatures(PSMDescription &psm);
+   int ComputeRetentionFeatures(PSMDescription* psm);
 
    /************* ACCESSORS AND MUTATORS **************/
    static const std::map<std::string, double>& k_kyte_doolittle()

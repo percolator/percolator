@@ -85,13 +85,13 @@ TEST_F(RetentionModelTest, NormalizeFeaturesTest) {
 
   rtmodel->NormalizeFeatures(true, tmp);
 
-  EXPECT_FLOAT_EQ(0.0, tmp[0].retentionFeatures[0]);
-  EXPECT_FLOAT_EQ(1.0, tmp[1].retentionFeatures[0]);
-  EXPECT_NEAR(0.17948718, tmp[2].retentionFeatures[0], 0.001);
+  EXPECT_FLOAT_EQ(0.0, tmp[0].getRetentionFeatures()[0]);
+  EXPECT_FLOAT_EQ(1.0, tmp[1].getRetentionFeatures()[0]);
+  EXPECT_NEAR(0.17948718, tmp[2].getRetentionFeatures()[0], 0.001);
 
-  EXPECT_FLOAT_EQ(1.0, tmp[0].retentionFeatures[no_features - 1]);
-  EXPECT_FLOAT_EQ(0.0, tmp[1].retentionFeatures[no_features - 1]);
-  EXPECT_FLOAT_EQ(0.0, tmp[2].retentionFeatures[no_features - 1]);
+  EXPECT_FLOAT_EQ(1.0, tmp[0].getRetentionFeatures()[no_features - 1]);
+  EXPECT_FLOAT_EQ(0.0, tmp[1].getRetentionFeatures()[no_features - 1]);
+  EXPECT_FLOAT_EQ(0.0, tmp[2].getRetentionFeatures()[no_features - 1]);
 }
 
 TEST_F(RetentionModelTest, BuildRetentionIndexNoPtmsTest) {
@@ -145,10 +145,10 @@ TEST_F(RetentionModelTest, PredictRTTest) {
   map<string, double> index = rtmodel->BuildRetentionIndex(aa_alphabet_ptms, false, psms_ptms);
   rtmodel->TrainRetentionModel(aa_alphabet_ptms, index, true, psms_ptms);
   EXPECT_EQ(0,rtmodel->PredictRT(aa_alphabet, false, "", psms));
-  EXPECT_NEAR(40.3878, psms[22].retentionTime, 0.01);
-  EXPECT_NEAR(39.3343, psms[22].predictedTime, 0.01);
-  EXPECT_NEAR(21.3787, psms[100].retentionTime, 0.01);
-  EXPECT_NEAR(23.2295, psms[100].predictedTime, 0.01);
+  EXPECT_NEAR(40.3878, psms[22].getRetentionTime(), 0.01);
+  EXPECT_NEAR(39.3343, psms[22].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(21.3787, psms[100].getRetentionTime(), 0.01);
+  EXPECT_NEAR(23.2295, psms[100].getPredictedRetentionTime(), 0.01);
 }
 
 TEST_F(RetentionModelTest, PredictRTTestPtms) {
@@ -156,11 +156,11 @@ TEST_F(RetentionModelTest, PredictRTTestPtms) {
   map<string, double> index = rtmodel->BuildRetentionIndex(aa_alphabet, false, psms);
   rtmodel->TrainRetentionModel(aa_alphabet, index, true, psms);
   EXPECT_EQ(0,rtmodel->PredictRT(aa_alphabet_ptms, true, "", psms_ptms));
-  EXPECT_NEAR(31.9043, psms_ptms[0].predictedTime, 0.01);
-  EXPECT_NEAR(33.2027, psms_ptms[10].predictedTime, 0.01);
-  EXPECT_NEAR(22.6466, psms_ptms[psms_ptms.size() - 1].predictedTime, 0.01);
+  EXPECT_NEAR(31.9043, psms_ptms[0].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(33.2027, psms_ptms[10].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(22.6466, psms_ptms[psms_ptms.size() - 1].getPredictedRetentionTime(), 0.01);
   EXPECT_EQ(0,rtmodel->PredictRT(aa_alphabet_test, false, "", test_psms));
-  EXPECT_NEAR(22.062, test_psms[9].predictedTime, 0.01);
+  EXPECT_NEAR(22.062, test_psms[9].getPredictedRetentionTime(), 0.01);
 }
 
 TEST_F(RetentionModelTest, SaveModelToFileTest) {
@@ -223,9 +223,9 @@ TEST_F(RetentionModelTest, LoadModelFromFileTest) {
   rtmodel = new RetentionModel(Normalizer::getNormalizer());
   rtmodel->LoadModelFromFile(tmp);
   EXPECT_EQ(0,rtmodel->PredictRT(aa_alphabet, false, "", psms));
-  EXPECT_NEAR(40.3878, psms[22].retentionTime, 0.01);
-  EXPECT_NEAR(39.3343, psms[22].predictedTime, 0.01);
-  EXPECT_NEAR(21.3787, psms[100].retentionTime, 0.01);
+  EXPECT_NEAR(40.3878, psms[22].getRetentionTime(), 0.01);
+  EXPECT_NEAR(39.3343, psms[22].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(21.3787, psms[100].getRetentionTime(), 0.01);
   remove(tmp.c_str());
 }
 

@@ -77,11 +77,13 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
     
     os << "      <calc_mass>" << fixed << setprecision (3) << pPSM->calcMass << "</calc_mass>" << endl;
     
-    if (DataSet::getCalcDoc()) os << "      <retentionTime observed=\"" 
-            << PSMDescription::unnormalize(pPSM->retentionTime)
-            << "\" predicted=\""
-            << PSMDescription::unnormalize(pPSM->predictedTime) << "\"/>"
-            << endl;
+    if (DataSet::getCalcDoc()) {
+      os << "      <retentionTime observed=\"" 
+         << pPSM->getUnnormalizedRetentionTime()
+         << "\" predicted=\""
+         << PSMDescriptionDOC::unnormalize(pPSM->getPredictedRetentionTime()) << "\"/>"
+         << endl;
+    }
 
     if (pPSM->getPeptideSequence().size() > 0) {
       string n = pPSM->getFlankN();
@@ -90,7 +92,7 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
       os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
     }
     
-    std::set<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
+    std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
     }
@@ -120,7 +122,7 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass)
     }
     os << "      <calc_mass>" << fixed << setprecision (3)  << pPSM->calcMass << "</calc_mass>" << endl;
     
-    std::set<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
+    std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
     }
@@ -167,8 +169,8 @@ void Scores::printRetentionTime(ostream& outs, double fdr) {
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) 
-      outs << PSMDescription::unnormalize(scoreIt->pPSM->retentionTime) << "\t"
-        << PSMDescription::unnormalize(doc_.estimateRT(scoreIt->pPSM->retentionFeatures))
+      outs << scoreIt->pPSM->getUnnormalizedRetentionTime() << "\t"
+        << PSMDescriptionDOC::unnormalize(doc_.estimateRT(scoreIt->pPSM->getRetentionFeatures()))
         << "\t" << scoreIt->pPSM->peptide << endl;
   }
 }
@@ -187,12 +189,13 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   const unsigned int numFeatures = FeatureNames::getNumFeatures();
   if (DataSet::getCalcDoc()) {
     size_t numRTFeatures = RTModel::totalNumRTFeatures();
-    sh.pPSM->retentionFeatures = new double[numRTFeatures]();
-    DescriptionOfCorrect::calcRegressionFeature(*(sh.pPSM));
+    double* rtFeatures = new double[numRTFeatures]();
+    DescriptionOfCorrect::calcRegressionFeature(sh.pPSM);
     for (size_t i = 0; i < numRTFeatures; ++i) {
-      sh.pPSM->retentionFeatures[i] = Normalizer::getNormalizer()->normalize(sh.pPSM->retentionFeatures[i], numFeatures + i);
+      rtFeatures[i] = Normalizer::getNormalizer()->normalize(rtFeatures[i], numFeatures + i);
     }
-    doc_.setFeatures(*(sh.pPSM));
+    sh.pPSM->setRetentionFeatures(rtFeatures);
+    doc_.setFeatures(sh.pPSM);
   }
   
   for (unsigned int j = 0; j < numFeatures; j++) {
@@ -201,10 +204,7 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   sh.score += rawWeights[numFeatures];
   
   featurePool.deallocate(sh.pPSM->features);
-  if (sh.pPSM->retentionFeatures) {
-    delete[] sh.pPSM->retentionFeatures;
-    sh.pPSM->retentionFeatures = NULL;
-  }
+  sh.pPSM->deleteRetentionFeatures();
   
   if (sh.label != 1 && sh.label != -1) {
     std::cerr << "Warning: the PSM " << sh.pPSM->id
@@ -280,7 +280,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // populate spectraScores
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    spectraScores.insert(pair<unsigned int,ScoreHolder>(scoreIt->pPSM->scan, *scoreIt));
+    spectraScores.insert(std::make_pair(scoreIt->pPSM->scan, *scoreIt));
   }
 
   // put scores into the folds; choose a fold (at random) and change it only
@@ -303,7 +303,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
       }
     }
     // insert
-    for (unsigned int i = 0; i < xval_fold; i++) {
+    for (unsigned int i = 0; i < xval_fold; ++i) {
       if (i == randIndex) {
         test[i].addScoreHolder(sh);
       } else {
@@ -317,14 +317,14 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   }
 
   // calculate ratios of target over decoy for train and test set
-  for (unsigned int i = 0; i < xval_fold; i++) {
+  for (unsigned int i = 0; i < xval_fold; ++i) {
     train[i].recalculateSizes();
     test[i].recalculateSizes();
   }
   
   std::map<double*, double*> movedAddresses;
   size_t idx = 0;
-  for (unsigned int i = 0; i < xval_fold; i++) {
+  for (unsigned int i = 0; i < xval_fold; ++i) {
     bool isTarget = true;
     test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
     isTarget = false;
@@ -357,9 +357,9 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
       while (movedAddresses.find(oldAddress) != movedAddresses.end()) {
         oldAddress = movedAddresses[oldAddress];
       }
+      std::swap_ranges(oldAddress, oldAddress + numFeatures, newAddress);
+      scoreIt->pPSM->features = newAddress;
       if (oldAddress != newAddress) {
-        std::swap_ranges(oldAddress, oldAddress + numFeatures, newAddress);
-        scoreIt->pPSM->features = newAddress;
         movedAddresses[newAddress] = oldAddress;
       }
     }
@@ -617,7 +617,7 @@ void Scores::recalculateDescriptionOfCorrect(const double fdr) {
     if (scoreIt->isTarget()) {
       //      if (fdr>scores_[ix1].pPSM->q) {
       if (0.0 >= scoreIt->q) {
-        doc_.registerCorrect(*(scoreIt->pPSM));
+        doc_.registerCorrect(scoreIt->pPSM);
       }
     }
   }
@@ -627,7 +627,7 @@ void Scores::recalculateDescriptionOfCorrect(const double fdr) {
 void Scores::setDOCFeatures(Normalizer* pNorm) {
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    doc_.setFeaturesNormalized(*(scoreIt->pPSM), pNorm);
+    doc_.setFeaturesNormalized(scoreIt->pPSM, pNorm);
   }
 }
 

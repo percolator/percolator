@@ -39,7 +39,7 @@ class RetentionModel {
     RetentionModel(Normalizer *normalizer);
    ~RetentionModel();
    /* normalize the features of a set of peptides */
-   int NormalizeFeatures(const bool set_set, std::vector<PSMDescription> &psms);
+   int NormalizeFeatures(const bool set_set, std::vector<PSMDescription*> &psms);
    /* init a libSVM model; if linear, then a linear kernel is used; else RBF */
    int InitSVR(const bool linear_svr);
    /* set the alphabet */
@@ -49,13 +49,13 @@ class RetentionModel {
     * assume the rt of the psms is already normalized */
    std::map<std::string, double>  BuildRetentionIndex(
        const std::set<std::string> &aa_alphabet, const bool normalized_rts,
-       std::vector<PSMDescription> &psms);
+       std::vector<PSMDescription*> &psms);
    /*  get the weights of a linear SVR */
    std::map<std::string, double> GetRetentionIndex();
    /* train a retention model; the svr_index is given as a parameter */
    int TrainRetentionModel(const std::set<std::string> &aa_alphabet,
        const std::map<std::string, double> &index, const bool normalized_rts,
-       std::vector<PSMDescription> &psms);
+       std::vector<PSMDescription*> &psms);
    /* return true if the model is null */
    bool IsModelNull() const { return svr_model_ == NULL; }
    /* check if the first set is included in the second vector */
@@ -64,7 +64,7 @@ class RetentionModel {
    /* predict rt for a vector of psms; it includes calculation of retention features
     * but it assumes that the feature table is initialized */
    int PredictRT(const std::set<std::string> &aa_alphabet, const bool ignore_ptms,
-       const std::string &text, std::vector<PSMDescription> &psms);
+       const std::string &text, std::vector<PSMDescription*> &psms);
    /* save the model to a file */
    int SaveModelToFile(const std::string &file_name);
    /* load the model from a file */

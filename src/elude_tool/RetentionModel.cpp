@@ -23,6 +23,7 @@
 
 #include "RetentionModel.h"
 #include "PSMDescription.h"
+#include "PSMDescriptionDOC.h"
 #include "LibSVRModel.h"
 #include "Normalizer.h"
 
@@ -39,10 +40,10 @@ RetentionModel::~RetentionModel() {
 
 /* normalize the features of a set of peptides */
 int RetentionModel::NormalizeFeatures(const bool set_set,
-    std::vector<PSMDescription> &psms) {
+    std::vector<PSMDescription*> &psms) {
   //cout << psms[0] << endl;
   vector<double*> tmp;
-  vector<double*> tmp_ret_feat = PSMDescription::getRetFeatures(psms);
+  vector<double*> tmp_ret_feat = PSMDescriptionDOC::getRetFeatures(psms);
   int number_active_features = retention_features_.GetTotalNumberFeatures();
   the_normalizer_->resizeVecs(number_active_features);
   if (set_set) {
@@ -101,15 +102,15 @@ map<string, double> RetentionModel::GetRetentionIndex() {
 
 /* build the retention index */
 map<string, double> RetentionModel::BuildRetentionIndex(const set<string> &aa_alphabet,
-    const bool normalized_rts, vector<PSMDescription> &psms) {
+    const bool normalized_rts, vector<PSMDescription*> &psms) {
   if (VERB >= 4) {
     cerr << "Training retention index..." << endl;
   }
   if (!normalized_rts) {
-    PSMDescription::setPSMSet(psms);
-    sub_ = PSMDescription::normSub;
-    div_ = PSMDescription::normDiv;
-    PSMDescription::normalizeRetentionTimes(psms);
+    PSMDescriptionDOC::setPSMSet(psms);
+    sub_ = PSMDescriptionDOC::normSubRT_;
+    div_ = PSMDescriptionDOC::normDivRT_;
+    PSMDescriptionDOC::normalizeRetentionTimes(psms);
   }
   // set the amino acids alphabet
   vector<string> alphabet(aa_alphabet.begin(), aa_alphabet.end());
@@ -137,16 +138,16 @@ map<string, double> RetentionModel::BuildRetentionIndex(const set<string> &aa_al
 
 /* train a retention model; the svr_index is given as a parameter */
 int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const map<string, double> &index,
-    const bool normalized_rts, vector<PSMDescription> &psms) {
+    const bool normalized_rts, vector<PSMDescription*> &psms) {
   if (VERB >= 4) {
     cerr << "Training retention model..." << endl;
   }
   // normalize
   if (!normalized_rts) {
-    PSMDescription::setPSMSet(psms);
-    sub_ = PSMDescription::normSub;
-    div_ = PSMDescription::normDiv;
-    PSMDescription::normalizeRetentionTimes(psms);
+    PSMDescriptionDOC::setPSMSet(psms);
+    sub_ = PSMDescriptionDOC::normSubRT_;
+    div_ = PSMDescriptionDOC::normDivRT_;
+    PSMDescriptionDOC::normalizeRetentionTimes(psms);
   }
   // set the amino acids alphabet and the index
   vector<string> alphabet(aa_alphabet.begin(), aa_alphabet.end());
@@ -174,7 +175,7 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
   for (size_t j = 0; j < psms.size(); ++j) {
     cout << psms[j].peptide;
     for (int i = 0; i < retention_features_.GetTotalNumberFeatures(); ++i) {
-      cout << " " << psms[j].retentionFeatures[i];
+      cout << " " << psms[j].getRetentionFeatures()[i];
     }
     cout << std::endl;
   }
@@ -194,7 +195,7 @@ int RetentionModel::TrainRetentionModel(const set<string> &aa_alphabet, const ma
   // train the model
   svr_model_->TrainModel(psms, number_features);
   // unnormalize the retention time
-  PSMDescription::unnormalizeRetentionTimes(psms);
+  PSMDescriptionDOC::unnormalizeRetentionTimes(psms);
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;
   }
@@ -232,7 +233,7 @@ bool RetentionModel::IsIncludedInAlphabet(const set<string> &alphabet,
 * but it assumes that the feature table is initialized.
 * Note that we cannot predict rt if the model was not trained on same alphabet */
 int RetentionModel::PredictRT(const set<string> &aa_alphabet, const bool ignore_ptms,
-    const string &text, vector<PSMDescription> &psms) {
+    const string &text, vector<PSMDescription*> &psms) {
   if (VERB >= 4) {
     cerr << "Predicting retention time for the " << text << " ..." << endl;
   }
@@ -258,13 +259,13 @@ int RetentionModel::PredictRT(const set<string> &aa_alphabet, const bool ignore_
     // normalize the features
   NormalizeFeatures(false, psms);
   double predicted_rt;
-  PSMDescription::normDiv = div_;
-  PSMDescription::normSub = sub_;
+  PSMDescriptionDOC::normDivRT_ = div_;
+  PSMDescriptionDOC::normSubRT_ = sub_;
   int number_features = retention_features_.GetTotalNumberFeatures();
-  vector<PSMDescription>::iterator it = psms.begin();
+  vector<PSMDescription*>::iterator it = psms.begin();
   for( ; it != psms.end(); ++it) {
-    predicted_rt = svr_model_->PredictRT(number_features, it->retentionFeatures);
-    it->predictedTime = PSMDescription::unnormalize(predicted_rt);
+    predicted_rt = svr_model_->PredictRT(number_features, (*it)->getRetentionFeatures());
+    (*it)->setPredictedRetentionTime(PSMDescriptionDOC::unnormalize(predicted_rt));
   }
   if (VERB >= 4) {
     cerr << "Done." << endl << endl;

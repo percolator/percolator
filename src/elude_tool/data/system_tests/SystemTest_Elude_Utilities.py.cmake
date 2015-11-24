@@ -48,7 +48,7 @@ def checkFilesExistence(test_name, files):
       return False
   return True  
       
-# clea up by deleting a list of files 
+# clean up by deleting a list of files 
 def cleanUp(files): 
   for f in files: 
     try:

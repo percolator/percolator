@@ -73,7 +73,7 @@ link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
 add_library(eludelibrary STATIC RetentionFeatures.cpp DataManager.cpp EludeMain.cpp LibSVRModel.cpp LibsvmWrapper.cpp SVRModel.h RetentionModel.cpp EludeCaller.cpp  
 				  LTSRegression.cpp ../svm.cpp ../Normalizer.cpp ../UniNormalizer.cpp ../StdvNormalizer.cpp 
-				  ../Option.cpp ../Enzyme.cpp ../PSMDescription.cpp ../Globals.cpp ../Logger.cpp ../MyException.cpp ../PseudoRandom.cpp)
+				  ../Option.cpp ../Enzyme.cpp ../PSMDescription.cpp ../PSMDescriptionDOC.cpp ../Globals.cpp ../Logger.cpp ../MyException.cpp ../PseudoRandom.cpp)
 
 add_executable(elude EludeCaller.cpp)
 

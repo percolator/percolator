@@ -681,8 +681,8 @@ double* RetentionFeatures::ComputePhosFeatures(const string &peptide, double *fe
 
 /************* RETENTION FEATURES FOR PSMS **************/
 /* computes the retention features for a set of peptides; return 0 if success */
-int RetentionFeatures::ComputeRetentionFeatures(vector<PSMDescription> &psms) {
-  vector<PSMDescription>::iterator it= psms.begin();
+int RetentionFeatures::ComputeRetentionFeatures(vector<PSMDescription*> &psms) {
+  vector<PSMDescription*>::iterator it= psms.begin();
   for( ; it != psms.end(); ++it) {
     ComputeRetentionFeatures(*it);
   }
@@ -690,12 +690,12 @@ int RetentionFeatures::ComputeRetentionFeatures(vector<PSMDescription> &psms) {
 }
 
 /* computes the retention features for one psm */
-int RetentionFeatures::ComputeRetentionFeatures(PSMDescription &psm) {
-  string peptide = psm.getFullPeptideSequence();
+int RetentionFeatures::ComputeRetentionFeatures(PSMDescription* psm) {
+  string peptide = psm->getFullPeptideSequence();
   string::size_type pos1 = peptide.find('.');
   string::size_type pos2 = peptide.find('.', ++pos1);
   string pep = peptide.substr(pos1, pos2 - pos1);
-  double* features = psm.getRetentionFeatures();
+  double* features = psm->getRetentionFeatures();
 
   // if there is memory allocated
   if (features != NULL) {

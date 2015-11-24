@@ -50,7 +50,7 @@ class EludeCaller{
    /* process the train data */
    int ProcessTrainData();
    /* normalize retention times for a set of peptides */
-   int NormalizeRetentionTimes(vector<PSMDescription> &psms);
+   int NormalizeRetentionTimes(vector<PSMDescription*> &psms);
    /* train a retention model */
    int TrainRetentionModel();
    /* process the test data */
@@ -62,11 +62,11 @@ class EludeCaller{
    /* main function of Elude */
    int Run();
    /*compute Delta t(95%) window */
-   static double ComputeWindow(vector<PSMDescription> &psms);
+   static double ComputeWindow(vector<PSMDescription*> &psms);
    /* calculate Spearman's rank correlation */
-   static double ComputeRankCorrelation(vector<PSMDescription> &psms);
+   static double ComputeRankCorrelation(vector<PSMDescription*> &psms);
    /* Compute Pearson's correlation coefficient */
-   static double ComputePearsonCorrelation(vector<PSMDescription> & psms);
+   static double ComputePearsonCorrelation(vector<PSMDescription*> & psms);
    /* Delete all the RT model */
    void DeleteRTModels();
    /* Return a list of files in a directory */
@@ -74,28 +74,28 @@ class EludeCaller{
    /* Check if a file exists */
    static bool FileExists(const string &file);
    /* find the best line that fits the data (basically the coefficients a, b) */
-   static void FindLeastSquaresSolution(const std::vector<PSMDescription> &psms,
+   static void FindLeastSquaresSolution(const std::vector<PSMDescription*> &psms,
        double& a, double& b);
    /* get a filename from a path excluding the extension (if there is one) */
    static std::string GetFileName(const std::string &path);
    /* linear adjustment via lts*/
-   int AdjustLinearly(vector<PSMDescription> &psms);
+   int AdjustLinearly(vector<PSMDescription*> &psms);
    /* add a model to the library */
    int AddModelLibrary() const;
    /* save the retention index to a file */
    int SaveIndexToFile(const int &best_model_index) const;
    /* print the predicted retention times for a set of peptides */
-   void PrintPredictions(const std::vector<PSMDescription> &psms) const;
+   void PrintPredictions(const std::vector<PSMDescription*> &psms) const;
    /* calls for percolator */
    /* train a model using train_psms, then use this model to predict rt for the test */
-   /* int TrainTestModel(std::vector<PSMDescription> &train_psms,
-		   std::vector<PSMDescription> &test_psms); */
+   /* int TrainTestModel(std::vector<PSMDescription*> &train_psms,
+		   std::vector<PSMDescription*> &test_psms); */
    /* select a model using train_psms, then use this model to predict rt for the test */
-   int SelectTestModel(std::vector<PSMDescription> &calibration_psms,
-   		   std::vector<PSMDescription> &test_psms);
+   int SelectTestModel(std::vector<PSMDescription*> &calibration_psms,
+   		   std::vector<PSMDescription*> &test_psms);
    /* given a list of ptms, build a set with all the amino acids present */
-   std::set<std::string> GetAAAlphabet(const vector<PSMDescription> &psms) const;
-   int AllocateRTFeatures(std::vector<PSMDescription> &psms);
+   std::set<std::string> GetAAAlphabet(const vector<PSMDescription*> &psms) const;
+   int AllocateRTFeatures(std::vector<PSMDescription*> &psms);
    /* function to train only the retention index */
    map<string, double> TrainRetentionIndex(); 
    /* function to write a retention index to a file */
@@ -104,8 +104,8 @@ class EludeCaller{
    void PrintHydrophobicityIndex(const map<string, double> &index) const; 
    
    /************ Accessors and mutators ************/
-   inline std::vector<PSMDescription>& train_psms() { return train_psms_; }
-   inline std::vector<PSMDescription>& test_psms() { return test_psms_; }
+   inline std::vector<PSMDescription*>& train_psms() { return train_psms_; }
+   inline std::vector<PSMDescription*>& test_psms() { return test_psms_; }
    inline std::set<std::string>& train_aa_alphabet() { return train_aa_alphabet_; }
    inline std::set<std::string>& test_aa_alphabet() { return test_aa_alphabet_; }
    inline void set_save_model_file(const string &file) { save_model_file_ = file; }
@@ -174,8 +174,8 @@ class EludeCaller{
    /* only th ehydrophobicity index should be trained */
    bool only_hydrophobicity_index_;
    /* train and test peptide-spectrum matches */
-   std::vector<PSMDescription> train_psms_;
-   std::vector<PSMDescription> test_psms_;
+   std::vector<PSMDescription*> train_psms_;
+   std::vector<PSMDescription*> test_psms_;
    /* the amino acid alphabet in train and test, respectively */
    std::set<std::string> train_aa_alphabet_;
    std::set<std::string> test_aa_alphabet_;

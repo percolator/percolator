@@ -179,7 +179,7 @@ TEST_F(EludeCallerTest, TestTrainTestModel) {
   vector<PSMDescription> test_psms = caller.test_psms();
   EXPECT_EQ(1252, test_psms.size());
   sort(test_psms.begin(), test_psms.end());
-  EXPECT_NEAR(28.3021, test_psms[9].predictedTime, 2.0);
+  EXPECT_NEAR(28.3021, test_psms[9].getPredictedRetentionTime(), 2.0);
 }
 
 TEST_F(EludeCallerTest, TestComputeWindow) {
@@ -217,7 +217,7 @@ TEST_F(EludeCallerTest, TestSaveLoadModel) {
   vector<PSMDescription> test_psms = caller2.test_psms();
   EXPECT_EQ(1252, test_psms.size());
   sort(test_psms.begin(), test_psms.end());
-  EXPECT_NEAR(29.6867, test_psms[9].predictedTime, 2.0);
+  EXPECT_NEAR(29.6867, test_psms[9].getPredictedRetentionTime(), 2.0);
   remove(tmp.c_str());
 }
 
@@ -252,9 +252,9 @@ TEST_F(EludeCallerTest, TestAutomaticModelSelection) {
   vector<PSMDescription> test_psms = caller.test_psms();
   EXPECT_EQ(1740, test_psms.size());
   sort(test_psms.begin(), test_psms.end());
-  EXPECT_NEAR(51.6007, test_psms[0].predictedTime, 0.01);
-  EXPECT_NEAR(27.528, test_psms[1000].predictedTime, 0.01);
-  EXPECT_NEAR(39.1311, test_psms[1739].predictedTime, 0.01);
+  EXPECT_NEAR(51.6007, test_psms[0].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(27.528, test_psms[1000].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(39.1311, test_psms[1739].getPredictedRetentionTime(), 0.01);
 }
 
 TEST_F(EludeCallerTest, TestFindLeastSquaresSolution) {
@@ -291,9 +291,9 @@ TEST_F(EludeCallerTest, TestAutomaticModelSelectionWithCalibration) {
   vector<PSMDescription> test_psms = caller.test_psms();
   EXPECT_EQ(1740, test_psms.size());
   sort(test_psms.begin(), test_psms.end());
-  EXPECT_NEAR(51.6007 * a + b, test_psms[0].predictedTime, 0.01);
-  EXPECT_NEAR(27.528 * a + b, test_psms[1000].predictedTime, 0.01);
-  EXPECT_NEAR(39.1311 * a + b , test_psms[1739].predictedTime, 0.01);
+  EXPECT_NEAR(51.6007 * a + b, test_psms[0].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(27.528 * a + b, test_psms[1000].getPredictedRetentionTime(), 0.01);
+  EXPECT_NEAR(39.1311 * a + b , test_psms[1739].getPredictedRetentionTime(), 0.01);
 }
 
 TEST_F(EludeCallerTest, TestGetFileName) {
@@ -439,9 +439,9 @@ TEST_F(EludeCallerTest, TestLoadModel) {
   vector<PSMDescription> test_psms = caller.test_psms();
   sort(test_psms.begin(), test_psms.end());
   EXPECT_EQ(1740, test_psms.size());
-  cout << test_psms[0].peptide << " " << test_psms[0].predictedTime << endl;
-  cout << test_psms[1000].peptide << " " << test_psms[1000].predictedTime << endl;
-  cout << test_psms[1739].peptide << " " << test_psms[1739].predictedTime << endl;
+  cout << test_psms[0].peptide << " " << test_psms[0].getPredictedRetentionTime() << endl;
+  cout << test_psms[1000].peptide << " " << test_psms[1000].getPredictedRetentionTime() << endl;
+  cout << test_psms[1739].peptide << " " << test_psms[1739].getPredictedRetentionTime() << endl;
 }*/
 
 

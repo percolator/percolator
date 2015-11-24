@@ -56,10 +56,10 @@ TEST_F(LibSVRModelTest, TrainAndPredictBasicTest) {
   model.TrainModel(psms, no_features);
   EXPECT_FALSE(model.IsModelNull()) << "TrainAndPredictBasicTest error. Null model." << endl; ;
   int len = psms.size();
-  EXPECT_FLOAT_EQ(0.0, psms[len - 1].predictedTime);
-  psms[len - 1].predictedTime = model.PredictRT(no_features, psms[len - 1].retentionFeatures);
+  EXPECT_FLOAT_EQ(0.0, psms[len - 1].getPredictedRetentionTime());
+  psms[len - 1].getPredictedRetentionTime() = model.PredictRT(no_features, psms[len - 1].getRetentionFeatures());
   // TO DO: double check that this is correct
-  EXPECT_NEAR(35.5, psms[len - 1].predictedTime, 0.5);
+  EXPECT_NEAR(35.5, psms[len - 1].getPredictedRetentionTime(), 0.5);
 }
 
 TEST_F(LibSVRModelTest, EstimatePredictionErrorTest) {
@@ -70,8 +70,8 @@ TEST_F(LibSVRModelTest, EstimatePredictionErrorTest) {
 
   model.setRBFSVRParam(0.01, 0.05, 5);
   model.TrainModel(psms, no_features);
-  double pred1 =  psms[0].retentionTime - model.PredictRT(no_features, psms[0].retentionFeatures);
-  double pred2 =  psms[len - 1].retentionTime - model.PredictRT(no_features, psms[len - 1].retentionFeatures);
+  double pred1 =  psms[0].getRetentionTime() - model.PredictRT(no_features, psms[0].getRetentionFeatures());
+  double pred2 =  psms[len - 1].getRetentionTime() - model.PredictRT(no_features, psms[len - 1].getRetentionFeatures());
   double error = model.EstimatePredictionError(no_features, test_psms);
   EXPECT_NEAR((pred1*pred1 + pred2*pred2) / 2.0, error, 0.01) << "EstimatePredictionErrorTest does not give the correct results" << endl;
 }

@@ -55,9 +55,9 @@ TEST_F(DataManagerTest, TestLoadPeptidesRTContext) {
   // check that the number of peptides is correct and test some of them
   EXPECT_EQ(101, psms.size()) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
   EXPECT_EQ("K.IIGPDADFFGELVVDAAEAVR.V", psms[32].peptide) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl ;
-  EXPECT_NEAR(62.97, psms[32].retentionTime, 0.01) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
+  EXPECT_NEAR(62.97, psms[32].getRetentionTime(), 0.01) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
   EXPECT_EQ("K.QIEQGEAELEAAHTVAR.I", psms[100].peptide) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
-  EXPECT_NEAR(21.3787, psms[100].retentionTime, 0.01) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
+  EXPECT_NEAR(21.3787, psms[100].getRetentionTime(), 0.01) << "TestLoadPeptidesRTContext does not give the correct results for " << train_file1 << endl;
   // check the alphabet
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
@@ -76,9 +76,9 @@ TEST_F(DataManagerTest, TestLoadPeptidesRTNoContext) {
   // check that the number of peptides is correct and test some of them
   EXPECT_EQ(139, psms.size()) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
   EXPECT_EQ("LTNPTYGDLNHLVSLTMSGVTTCLR", psms[32].peptide) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl ;
-  EXPECT_NEAR(64.7802, psms[32].retentionTime, 0.01) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
+  EXPECT_NEAR(64.7802, psms[32].getRetentionTime(), 0.01) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
   EXPECT_EQ("EIGGIFTPASVTSEEEVR", psms[138].peptide) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
-  EXPECT_NEAR(44.4893, psms[138].retentionTime, 0.01) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
+  EXPECT_NEAR(44.4893, psms[138].getRetentionTime(), 0.01) << "TestLoadPeptidesRTNoContext does not give the correct results for " << train_file2 << endl;
   // check the alphabet
   EXPECT_EQ(aa_alphabet.size(), basic_alphabet.size());
   set<string>::iterator it = aa_alphabet.begin();
@@ -96,7 +96,7 @@ TEST_F(DataManagerTest, TestLoadPeptidesPtmsNoRTContext) {
   // check that the number of peptides is correct and test some of them
   EXPECT_EQ(1251, psms.size()) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl;
   EXPECT_EQ("K.TMEGDCEVAYTIVQEGEK.T", psms[1250].peptide) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
-  EXPECT_NEAR(-1.0, psms[1250].retentionTime, 0.001) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
+  EXPECT_NEAR(-1.0, psms[1250].getRetentionTime(), 0.001) << "TestLoadPeptidesNoRTContext does not give the correct results for " << test_file1 << endl ;
   // check the alphabet
   basic_alphabet.insert("S[unimod:21]");
   basic_alphabet.insert("Y[unimod:21]");
@@ -118,11 +118,11 @@ TEST_F(DataManagerTest, TestInitCleanFeatureTable) {
   ASSERT_TRUE(feat != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;;
   vector<PSMDescription>::iterator it = psms.begin();
   for( ; it != psms.end(); ++it) {
-    EXPECT_TRUE(it->retentionFeatures != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;
+    EXPECT_TRUE(it->getRetentionFeatures() != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;
   }
   dm.CleanUpTable(psms, feat);
   for(it = psms.begin(); it != psms.end(); ++it) {
-    EXPECT_TRUE(it->retentionFeatures == NULL) << "TestInitCleanFeatureTable (Clean up step) error" << endl;
+    EXPECT_TRUE(it->getRetentionFeatures() == NULL) << "TestInitCleanFeatureTable (Clean up step) error" << endl;
   }
 }
 
@@ -142,7 +142,7 @@ TEST_F(DataManagerTest, TestRemoveDuplicates) {
 
   EXPECT_EQ(2, psms.size()) << "TestRemoveDuplicates error (incorrect size). " << endl;
   EXPECT_EQ(string("IAMAPEPTIDE"), psms[0].peptide) << "TestRemoveDuplicates error. " << endl;
-  EXPECT_EQ(9.0, psms[0].retentionTime) << "TestRemoveDuplicates error (incorrect rt) " << endl ;
+  EXPECT_EQ(9.0, psms[0].getRetentionTime()) << "TestRemoveDuplicates error (incorrect rt) " << endl ;
   EXPECT_EQ(string("PEPTIDE"), psms[1].peptide) << "TestRemoveDuplicates error." << endl;
 }
 
@@ -161,7 +161,7 @@ TEST_F(DataManagerTest, TestRemoveCommonPeptides) {
 
   EXPECT_EQ(1, psms1.size()) << "TestRemoveCommonPeptides error (incorrect size)." << endl;
   EXPECT_EQ(string("PEPTIDE"), psms1[0].peptide) << "TestRemoveCommonPeptides error" << endl;
-  EXPECT_EQ(20.0, psms1[0].retentionTime) << "TestRemoveCommonPeptides error (incorrect rt)" << endl;
+  EXPECT_EQ(20.0, psms1[0].getRetentionTime()) << "TestRemoveCommonPeptides error (incorrect rt)" << endl;
 }
 
 TEST_F(DataManagerTest, TestIsFragmentOf) {
@@ -308,9 +308,9 @@ TEST_F(DataManagerTest, TestWriteInSourceToFile) {
 TEST_F(DataManagerTest, TestWriteOutFile) {
   vector<PSMDescription> psms;
   PSMDescription psm1("R.AAA.A", 10.0);
-  psm1.predictedTime = 15.0;
+  psm1.getPredictedRetentionTime() = 15.0;
   PSMDescription psm2("R.YYYYYYY.A", 11.0);
-  psm2.predictedTime = 16.0;
+  psm2.getPredictedRetentionTime() = 16.0;
   psms.push_back(psm1);
   psms.push_back(psm2);
 

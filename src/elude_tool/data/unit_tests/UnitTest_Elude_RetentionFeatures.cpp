@@ -603,8 +603,8 @@ TEST_F(RetentionFeaturesTest, TestComputeRetentionFeaturesNoPtms)
   PSMDescription psm1("AAAA[unimod:21]", 10.0);
   PSMDescription psm2("R.YY[unimod:21]YY.R", 11.0);
   int n_features = rf.GetTotalNumberFeatures();
-  psm1.retentionFeatures = new double[n_features];
-  psm2.retentionFeatures = new double[n_features];
+  psm1.getRetentionFeatures() = new double[n_features];
+  psm2.getRetentionFeatures() = new double[n_features];
   vector<PSMDescription> psms;
   psms.push_back(psm1);
   psms.push_back(psm2);
@@ -612,24 +612,24 @@ TEST_F(RetentionFeaturesTest, TestComputeRetentionFeaturesNoPtms)
   rf.ComputeRetentionFeatures(psms);
   for (int i = 0; i < n_features; ++i) {
     if (i == 0) {
-      EXPECT_NEAR(RetentionFeatures::IndexSum(psm1.peptide, RetentionFeatures::k_kyte_doolittle()), psms[0].retentionFeatures[i], 0.01) << " i = 0";
-      EXPECT_NEAR(RetentionFeatures::IndexSum(psm2.peptide.substr(2,15), RetentionFeatures::k_kyte_doolittle()), psms[1].retentionFeatures[i], 0.01)  << " i = 0";
+      EXPECT_NEAR(RetentionFeatures::IndexSum(psm1.peptide, RetentionFeatures::k_kyte_doolittle()), psms[0].getRetentionFeatures()[i], 0.01) << " i = 0";
+      EXPECT_NEAR(RetentionFeatures::IndexSum(psm2.peptide.substr(2,15), RetentionFeatures::k_kyte_doolittle()), psms[1].getRetentionFeatures()[i], 0.01)  << " i = 0";
     } if (i == 39) {
       set<string> hydrophobic_aa = RetentionFeatures::GetExtremeRetentionAA(RetentionFeatures::k_kyte_doolittle()).second;
-      EXPECT_NEAR(RetentionFeatures::NumberConsecTypeAA(psm1.peptide, hydrophobic_aa), psms[0].retentionFeatures[i], 0.01)  << " i = 39";
-      EXPECT_NEAR(RetentionFeatures::NumberConsecTypeAA(psm2.peptide.substr(2,15), hydrophobic_aa), psms[1].retentionFeatures[i], 0.01) << " i = 39";
+      EXPECT_NEAR(RetentionFeatures::NumberConsecTypeAA(psm1.peptide, hydrophobic_aa), psms[0].getRetentionFeatures()[i], 0.01)  << " i = 39";
+      EXPECT_NEAR(RetentionFeatures::NumberConsecTypeAA(psm2.peptide.substr(2,15), hydrophobic_aa), psms[1].getRetentionFeatures()[i], 0.01) << " i = 39";
     }if (i == 40) {
-      EXPECT_NEAR(RetentionFeatures::ComputeBulkinessSum(psm1.peptide, RetentionFeatures::k_bulkiness()), psms[0].retentionFeatures[i], 0.01) << " i = 40";
-      EXPECT_NEAR(RetentionFeatures::ComputeBulkinessSum(psm2.peptide.substr(2,15), RetentionFeatures::k_bulkiness()), psms[1].retentionFeatures[i], 0.01) << " i = 40";
+      EXPECT_NEAR(RetentionFeatures::ComputeBulkinessSum(psm1.peptide, RetentionFeatures::k_bulkiness()), psms[0].getRetentionFeatures()[i], 0.01) << " i = 40";
+      EXPECT_NEAR(RetentionFeatures::ComputeBulkinessSum(psm2.peptide.substr(2,15), RetentionFeatures::k_bulkiness()), psms[1].getRetentionFeatures()[i], 0.01) << " i = 40";
     }if (i == 41) {
-      EXPECT_NEAR(RetentionFeatures::PeptideLength(psm1.peptide), psms[0].retentionFeatures[i], 0.01) << " i = 41";
-      EXPECT_NEAR(RetentionFeatures::PeptideLength(psm2.peptide.substr(2,15)), psms[1].retentionFeatures[i], 0.01) << " i = 41";
+      EXPECT_NEAR(RetentionFeatures::PeptideLength(psm1.peptide), psms[0].getRetentionFeatures()[i], 0.01) << " i = 41";
+      EXPECT_NEAR(RetentionFeatures::PeptideLength(psm2.peptide.substr(2,15)), psms[1].getRetentionFeatures()[i], 0.01) << " i = 41";
     }if (i == 42) {
-      EXPECT_NEAR(4.0, psms[0].retentionFeatures[i], 0.01) << " i = 42";
-      EXPECT_FLOAT_EQ(0, psms[1].retentionFeatures[i]) << " i = 42";
+      EXPECT_NEAR(4.0, psms[0].getRetentionFeatures()[i], 0.01) << " i = 42";
+      EXPECT_FLOAT_EQ(0, psms[1].getRetentionFeatures()[i]) << " i = 42";
     }if (i == 61) {
-      EXPECT_NEAR(4.0, psms[1].retentionFeatures[i], 0.01) << " i = 61";
-      EXPECT_FLOAT_EQ(0, psms[0].retentionFeatures[i]) << " i = 61";
+      EXPECT_NEAR(4.0, psms[1].getRetentionFeatures()[i], 0.01) << " i = 61";
+      EXPECT_FLOAT_EQ(0, psms[0].getRetentionFeatures()[i]) << " i = 61";
     }
   }
 }

@@ -33,6 +33,7 @@
 #include "Enzyme.h"
 #include "Globals.h"
 #include "DataManager.h"
+#include "PSMDescriptionDOC.h"
 
 const double EludeCaller::kFractionPeptides = 0.95;
 string EludeCaller::library_path_ = ELUDE_MODELS_PATH;
@@ -71,6 +72,14 @@ EludeCaller::~EludeCaller() {
   }
   if (lts != NULL) {
     delete lts;
+  }
+  std::vector<PSMDescription*>::iterator it = train_psms_.begin();
+  for ( ; it != train_psms_.end(); ++it) {
+    PSMDescription::deletePtr(*it);
+  }
+  it = test_psms_.begin();
+  for ( ; it != test_psms_.end(); ++it) {
+    PSMDescription::deletePtr(*it);
   }
   DeleteRTModels();
 }
@@ -350,12 +359,12 @@ int EludeCaller::ProcessTrainData() {
     processed_test_= true;
   }
   // remove in source fragmentation
-  vector< pair<PSMDescription, string> > in_source_fragments;
+  vector< pair<PSMDescription*, string> > in_source_fragments;
   if (test_includes_rt_) {
     in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
         RetentionFeatures::kKyteDoolittle, remove_in_source_, train_psms_, test_psms_);
   } else {
-    vector<PSMDescription> tmp;
+    vector<PSMDescription*> tmp;
     in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
         RetentionFeatures::kKyteDoolittle, false, train_psms_, tmp);
   }
@@ -381,9 +390,9 @@ int EludeCaller::ProcessTrainData() {
   return 0;
 }
 
-int EludeCaller::NormalizeRetentionTimes(vector<PSMDescription> &psms) {
-  PSMDescription::setPSMSet(psms);
-  PSMDescription::normalizeRetentionTimes(psms);
+int EludeCaller::NormalizeRetentionTimes(vector<PSMDescription*> &psms) {
+  PSMDescriptionDOC::setPSMSet(psms);
+  PSMDescriptionDOC::normalizeRetentionTimes(psms);
   return 0;
 }
 
@@ -445,7 +454,7 @@ int EludeCaller::ProcessTestData() {
   // remove in source
   if (!in_source_file_.empty() || remove_in_source_) {
     if (test_includes_rt_) {
-      vector< pair<PSMDescription, string> > in_source_fragments;
+      vector< pair<PSMDescription*, string> > in_source_fragments;
       in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
           RetentionFeatures::kKyteDoolittle, remove_in_source_, train_psms_, test_psms_);
       if (!in_source_file_.empty()) {
@@ -476,12 +485,12 @@ int EludeCaller::ProcessTestData() {
 }
 
 // get retention times as vectors
-pair<vector<double> , vector<double> > GetRTs(const vector<PSMDescription> &psms) {
+pair<vector<double> , vector<double> > GetRTs(const vector<PSMDescription*> &psms) {
   vector<double> rts, prts;
-  vector<PSMDescription>::const_iterator it = psms.begin();
+  vector<PSMDescription*>::const_iterator it = psms.begin();
   for ( ; it != psms.end(); ++it) {
-    rts.push_back(it->retentionTime);
-    prts.push_back(it->predictedTime);
+    rts.push_back((*it)->getRetentionTime());
+    prts.push_back((*it)->getPredictedRetentionTime());
   }
   return make_pair(prts, rts);
 }
@@ -709,10 +718,10 @@ int EludeCaller::Run() {
   return 0;
 }
 
-void EludeCaller::PrintPredictions(const vector<PSMDescription> &psms) const {
-  vector<PSMDescription>::const_iterator it = psms.begin();
+void EludeCaller::PrintPredictions(const vector<PSMDescription*> &psms) const {
+  vector<PSMDescription*>::const_iterator it = psms.begin();
   for( ; it != psms.end(); ++it)
-    cout << it->peptide << "\t" << it->predictedTime << endl;
+    cout << (*it)->peptide << "\t" << (*it)->getPredictedRetentionTime() << endl;
 }
 
 void EludeCaller::PrintHydrophobicityIndex(const map<string, double> &index) const {
@@ -722,10 +731,11 @@ void EludeCaller::PrintHydrophobicityIndex(const map<string, double> &index) con
   }
 }
 
-int EludeCaller::AdjustLinearly(vector<PSMDescription> &psms) {
-  vector<PSMDescription>::iterator it = psms.begin();
+int EludeCaller::AdjustLinearly(vector<PSMDescription*> &psms) {
+  vector<PSMDescription*>::iterator it = psms.begin();
   for( ; it != psms.end(); ++it) {
-    it->predictedTime = lts->predict(it->predictedTime);
+    (*it)->setPredictedRetentionTime(
+        lts->predict((*it)->getPredictedRetentionTime()));
   }
   return 0;
 }
@@ -854,15 +864,15 @@ bool EludeCaller::FileExists(const string &file) {
 
 /* find the best line that fits the data (basically the coefficients a, b)
  * The predicted time is the explanatory variable */
-void EludeCaller::FindLeastSquaresSolution(const vector<PSMDescription> &psms,
+void EludeCaller::FindLeastSquaresSolution(const vector<PSMDescription*>& psms,
     double& a, double& b) {
   double sum_x = 0.0, sum_y = 0.0;
   double sum_x_squared = 0.0, sum_xy = 0.0;
   double x, y;
-  vector<PSMDescription>::const_iterator it = psms.begin();
+  vector<PSMDescription*>::const_iterator it = psms.begin();
   for ( ; it != psms.end(); ++it) {
-    y = it->retentionTime;
-    x = it->predictedTime;
+    y = (*it)->getRetentionTime();
+    x = (*it)->getPredictedRetentionTime();
     sum_x += x;
     sum_y += y;
     sum_x_squared += x * x;
@@ -877,25 +887,25 @@ void EludeCaller::FindLeastSquaresSolution(const vector<PSMDescription> &psms,
   b = avg_y - (a * avg_x);
 }
 
-bool ComparePsmsDeltaRT(PSMDescription psm1, PSMDescription psm2) {
-  double delta_rt1 = psm1.getPredictedRetentionTime() - psm1.getRetentionTime();
-  double delta_rt2 = psm2.getPredictedRetentionTime() - psm2.getRetentionTime();
+bool ComparePsmsDeltaRT(PSMDescription* psm1, PSMDescription* psm2) {
+  double delta_rt1 = psm1->getPredictedRetentionTime() - psm1->getRetentionTime();
+  double delta_rt2 = psm2->getPredictedRetentionTime() - psm2->getRetentionTime();
   return delta_rt1 < delta_rt2;
 }
 
 /*compute Delta t(95%) window */
-double EludeCaller::ComputeWindow(vector<PSMDescription> &psms) {
+double EludeCaller::ComputeWindow(vector<PSMDescription*> &psms) {
   double win, diff;
   int nr = (int) round(kFractionPeptides * (double) psms.size());
   int k = psms.size() - nr, i = 1;
 
   sort(psms.begin(), psms.end(), ComparePsmsDeltaRT);
-  win = (psms[nr - 1].getPredictedRetentionTime() - psms[nr - 1].getRetentionTime())
-      - (psms[0].getPredictedRetentionTime() - psms[0].getRetentionTime());
+  win = (psms[nr - 1]->getPredictedRetentionTime() - psms[nr - 1]->getRetentionTime())
+      - (psms[0]->getPredictedRetentionTime() - psms[0]->getRetentionTime());
   while (i <= k) {
-    diff = (psms[i + nr - 1].getPredictedRetentionTime()
-        - psms[i + nr - 1].getRetentionTime()) - (psms[i].getPredictedRetentionTime()
-        - psms[i].getRetentionTime());
+    diff = (psms[i + nr - 1]->getPredictedRetentionTime()
+        - psms[i + nr - 1]->getRetentionTime()) - (psms[i]->getPredictedRetentionTime()
+        - psms[i]->getRetentionTime());
     if (diff < win) {
       win = diff;
     }
@@ -906,25 +916,25 @@ double EludeCaller::ComputeWindow(vector<PSMDescription> &psms) {
 }
 
 /* Compare 2 psms according to retention time */
-bool ComparePsmsRT(PSMDescription psm1, PSMDescription psm2) {
-  return psm1.getRetentionTime() < psm2.getRetentionTime();
+bool ComparePsmsRT(PSMDescription* psm1, PSMDescription* psm2) {
+  return psm1->getRetentionTime() < psm2->getRetentionTime();
 }
 
 /* Compare 2 psms according to predicted retention time */
-bool ComparePsmsPRT(pair<PSMDescription, const double> psm1, pair<PSMDescription,
-    const double> psm2) {
+bool ComparePsmsPRT(pair<PSMDescription*, const double> psm1, 
+                    pair<PSMDescription*, const double> psm2) {
   double prt1, prt2;
-  prt1 = psm1.first.getPredictedRetentionTime();
-  prt2 = psm2.first.getPredictedRetentionTime();
+  prt1 = psm1.first->getPredictedRetentionTime();
+  prt2 = psm2.first->getPredictedRetentionTime();
   return prt1 < prt2;
 }
 
 /* calculate Spearman's rank correlation */
-double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
+double EludeCaller::ComputeRankCorrelation(vector<PSMDescription*> &psms) {
   double corr = 0.0, d = 0.0, avg_rank, rank_p;
   int i, j;
   int n = psms.size();
-  vector<pair<PSMDescription, double> > rankedPsms;
+  vector<pair<PSMDescription*, double> > rankedPsms;
 
   if (VERB >= 4) {
     cerr << "Computing rank correlation between predicted and observed retention times"
@@ -937,8 +947,8 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
   i = 0;
   while (i < n) {
     avg_rank = j = i + 1;
-    while ((j < n) && (psms[i].getRetentionTime()
-        == psms[j].getRetentionTime())) {
+    while ((j < n) && (psms[i]->getRetentionTime()
+        == psms[j]->getRetentionTime())) {
       avg_rank += ++j;
     }
     avg_rank = avg_rank / (double)(j - i);
@@ -954,8 +964,8 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
   while (i < n) {
     // calculate rank of predicted rt
     rank_p = j = i + 1;
-    while ((j < n) && (rankedPsms[i].first.getPredictedRetentionTime()
-        == rankedPsms[j].first.getPredictedRetentionTime())) {
+    while ((j < n) && (rankedPsms[i].first->getPredictedRetentionTime()
+        == rankedPsms[j].first->getPredictedRetentionTime())) {
       rank_p += ++j;
     }
     rank_p = rank_p / (double)(j - i);
@@ -975,13 +985,13 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription> &psms) {
 }
 
 /* Compute Pearson's correlation coefficient */
-double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription> & psms) {
+double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription*> & psms) {
   int no_psms = psms.size();
   // calculate means
   double sum_obs = 0.0, sum_pred = 0.0;
   for (int i = 0; i < no_psms; i++) {
-    sum_obs += psms[i].retentionTime;
-    sum_pred += psms[i].predictedTime;
+    sum_obs += psms[i]->getRetentionTime();
+    sum_pred += psms[i]->getPredictedRetentionTime();
   }
   double avg_obs = sum_obs / no_psms;
   double avg_pred = sum_pred / no_psms;
@@ -991,8 +1001,8 @@ double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription> & psms) {
   double dev_obs, dev_pred;
   double numerator = 0.0;
   for (int i = 0; i < no_psms; i++) {
-    dev_obs = psms[i].retentionTime - avg_obs;
-    dev_pred = psms[i].predictedTime - avg_pred;
+    dev_obs = psms[i]->getRetentionTime() - avg_obs;
+    dev_pred = psms[i]->getPredictedRetentionTime() - avg_pred;
     numerator += dev_obs * dev_pred;
     sum_obs += pow(dev_obs, 2);
     sum_pred += pow(dev_pred, 2);
@@ -1020,14 +1030,14 @@ string EludeCaller::GetFileName(const string &path) {
 }
 
 /* Percolator calls */
-set<string> EludeCaller::GetAAAlphabet(const vector<PSMDescription> &psms) const {
+set<string> EludeCaller::GetAAAlphabet(const vector<PSMDescription*> &psms) const {
   set<string> aa_alphabet;
-  vector<PSMDescription>::const_iterator it = psms.begin();
+  vector<PSMDescription*>::const_iterator it = psms.begin();
   string peptide = "", peptide_sequence = "";
   vector<string> amino_acids;
   int pos1, pos2;
   for ( ; it != psms.end(); ++it) {
-    peptide = it->peptide;
+    peptide = (*it)->peptide;
 	  pos1 = peptide.find('.');
 	  pos2 = peptide.find('.', ++pos1);
 	  peptide_sequence = peptide.substr(pos1, pos2 - pos1);
@@ -1039,8 +1049,8 @@ set<string> EludeCaller::GetAAAlphabet(const vector<PSMDescription> &psms) const
 
 /* select a model using train_psms, then use this model to predict rt for the test */
 /*
-int EludeCaller::TrainTestModel(vector<PSMDescription> &train_psms,
-    vector<PSMDescription> &test_psms) {
+int EludeCaller::TrainTestModel(vector<PSMDescription*> &train_psms,
+    vector<PSMDescription*> &test_psms) {
   // make sure that all symbols from the test are also in the train
   set<string> train_alphabet = GetAAAlphabet(train_psms);
   set<string> test_alphabet = GetAAAlphabet(test_psms);
@@ -1061,8 +1071,8 @@ int EludeCaller::TrainTestModel(vector<PSMDescription> &train_psms,
   rt_model_->PredictRT(test_alphabet, false, "test", test_psms);
 } */
 
-int EludeCaller::SelectTestModel(std::vector<PSMDescription> &calibration_psms,
-         std::vector<PSMDescription> &test_psms) {
+int EludeCaller::SelectTestModel(std::vector<PSMDescription*> &calibration_psms,
+         std::vector<PSMDescription*> &test_psms) {
 
   train_psms_ = calibration_psms;
   test_psms_ = test_psms;
@@ -1100,11 +1110,11 @@ int EludeCaller::SelectTestModel(std::vector<PSMDescription> &calibration_psms,
   return 0;
 }
 
-int EludeCaller::AllocateRTFeatures(vector<PSMDescription> &psms) {
-  vector<PSMDescription>::iterator it = psms.begin();
+int EludeCaller::AllocateRTFeatures(vector<PSMDescription*> &psms) {
+  vector<PSMDescription*>::iterator it = psms.begin();
   for ( ; it != psms.end(); ++it) {
-    if (it->retentionFeatures == NULL) {
-       it->retentionFeatures = new double[RetentionFeatures::kMaxNumberFeatures];
+    if ((*it)->getRetentionFeatures()) {
+       (*it)->setRetentionFeatures(new double[RetentionFeatures::kMaxNumberFeatures]);
     }
   }
   return 0;

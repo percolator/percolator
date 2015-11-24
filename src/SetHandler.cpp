@@ -249,6 +249,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
     std::map<ScanId, size_t> scanIdLookUp;
     unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
+    unsigned int upperLimit = UINT_MAX;
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
         std::cerr << "Processing line " << lineNr << std::endl;
@@ -263,7 +264,6 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         scanIdLookUp[scanId] = randIdx;
       }
       
-      unsigned int upperLimit = UINT_MAX;
       if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;

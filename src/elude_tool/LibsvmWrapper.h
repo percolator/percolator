@@ -30,7 +30,7 @@ struct svm_model;
 
 namespace libsvm_wrapper {
   /* train a svr */
-  svm_model* TrainModel(const std::vector<PSMDescription> &psms, const int &number_features, const svm_parameter &parameter);
+  svm_model* TrainModel(const std::vector<PSMDescription*> &psms, const int &number_features, const svm_parameter &parameter);
   /* predict the retention time of psm using the provided svr */
   double PredictRT(const svm_model* svr, const int &number_features, double *features);
   /* save/load a model to/from a file*/

@@ -33,7 +33,7 @@ class DescriptionOfCorrect {
     double getAvgPI() {
       return avgPI;
     }
-    static void calcRegressionFeature(PSMDescription& psm);
+    static void calcRegressionFeature(PSMDescription* psm);
     static double isoElectricPoint(const string& peptide);
     static void setKlammer(bool on) {
       RTModel::setDoKlammer(on);
@@ -44,12 +44,12 @@ class DescriptionOfCorrect {
     void clear() {
       psms.clear();
     }
-    void registerCorrect(PSMDescription& psm) {
+    void registerCorrect(PSMDescription* psm) {
       psms.push_back(psm);
     }
     void trainCorrect();
-    void setFeatures(PSMDescription& psm);
-    void setFeaturesNormalized(PSMDescription& psm, Normalizer* pNorm);
+    void setFeatures(PSMDescription* psm);
+    void setFeaturesNormalized(PSMDescription* psm, Normalizer* pNorm);
     //static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + 20);}
     //static size_t minimumNumRTFeatures() {return 3*10+1+3;}
     void print_10features();
@@ -75,7 +75,7 @@ class DescriptionOfCorrect {
 
   protected:
     double avgPI, avgDM;
-    vector<PSMDescription> psms;
+    std::vector<PSMDescription*> psms;
     //  vector<double> rtW;
     double c, gamma, epsilon;
     RTModel rtModel;

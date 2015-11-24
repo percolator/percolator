@@ -140,7 +140,7 @@ void FisherInterface::run() {
     std::string lastProteinId;
     std::set<std::string> proteinsInGroup;
     bool isFirst = true, isShared = false;
-    for (set<string>::iterator protIt = peptideIt->pPSM->proteinIds.begin(); 
+    for (std::vector<std::string>::iterator protIt = peptideIt->pPSM->proteinIds.begin(); 
             protIt != peptideIt->pPSM->proteinIds.end(); protIt++) {
       std::string proteinId = *protIt;
       

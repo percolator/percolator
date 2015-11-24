@@ -31,6 +31,7 @@
 #include "ResultHolder.h"
 #include "Globals.h"
 #include "PSMDescription.h"
+#include "PSMDescriptionDOC.h"
 #include "FeatureNames.h"
 #include "DescriptionOfCorrect.h"
 #include "FeatureMemoryPool.h"
@@ -60,7 +61,7 @@ class DataSet {
   static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
   
   void setRetentionTime(map<int, double>& scan2rt) { 
-    PSMDescription::setRetentionTime(psms_, scan2rt);
+    PSMDescriptionDOC::setRetentionTime(psms_, scan2rt);
   }
   
   bool writeTabData(std::ofstream& out);
@@ -80,7 +81,7 @@ class DataSet {
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool);
   
-  void registerPsm(PSMDescription * myPsm);
+  void registerPsm(PSMDescription* myPsm);
   
  protected:   
   static bool calcDOC_;

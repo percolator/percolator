@@ -168,6 +168,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
         readProteins = false;
         std::priority_queue<PSMDescriptionPriority> subsetPSMs;
         std::map<ScanId, size_t> scanIdLookUp;
+        unsigned int upperLimit = UINT_MAX;
         for (doc = p.next(); 
              doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
                  doc->getDocumentElement()->getTagName()); 
@@ -185,7 +186,6 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
               scanIdLookUp[scanId] = randIdx;
             }
             
-            unsigned int upperLimit = UINT_MAX;
             if (subsetPSMs.size() < setHandler.getMaxPSMs() || randIdx < upperLimit) {
               PSMDescriptionPriority psmPriority;
               psmPriority.psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
@@ -325,7 +325,12 @@ std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& p
 PSMDescription* XMLInterface::readPsm(
     const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber, 
     bool readProteins, FeatureMemoryPool& featurePool) {
-  PSMDescription* myPsm = new PSMDescription();
+  PSMDescription* myPsm;
+  if (DataSet::getCalcDoc()) {
+    myPsm = new PSMDescriptionDOC();
+  } else {
+    myPsm = new PSMDescription();
+  }
   string mypept = decoratePeptide(psm.peptide());
 
   if (psm.occurence().size() <= 0) {
@@ -338,7 +343,7 @@ PSMDescription* XMLInterface::readPsm(
   percolatorInNs::peptideSpectrumMatch::occurence_const_iterator occIt;
   occIt = psm.occurence().begin();
   for ( ; occIt != psm.occurence().end(); ++occIt) {
-    if (readProteins) myPsm->proteinIds.insert( occIt->proteinId() );
+    if (readProteins) myPsm->proteinIds.push_back( occIt->proteinId() );
     // adding n-term and c-term residues to peptide
     //NOTE the residues for the peptide in the PSMs are always the same for every protein
     myPsm->peptide = occIt->flankN() + "." + mypept + "." + occIt->flankC();
@@ -349,7 +354,7 @@ PSMDescription* XMLInterface::readPsm(
   myPsm->expMass = psm.experimentalMass();
   myPsm->calcMass = psm.calculatedMass();
   if ( psm.observedTime().present() ) {
-    myPsm->retentionTime = psm.observedTime().get();
+    myPsm->setRetentionTime(psm.observedTime().get());
   }
 
   myPsm->features = featurePool.allocate();
@@ -359,8 +364,8 @@ PSMDescription* XMLInterface::readPsm(
   }
 
   // myPsm.peptide = psmIter->peptide().peptideSequence();
-  myPsm->massDiff = MassHandler::massDiff(psm.experimentalMass(), 
-      psm.calculatedMass(), psm.chargeState());
+  myPsm->setMassDiff(MassHandler::massDiff(psm.experimentalMass(), 
+      psm.calculatedMass(), psm.chargeState()));
   return myPsm;
 }
 

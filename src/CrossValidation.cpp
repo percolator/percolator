@@ -95,7 +95,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
       }
     }
     numPositive = pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
-                                    testFdr_);
+                                           testFdr_);
   } else {
     vector<Scores> myset(1, fullset);
     cerr << "B" << endl;
