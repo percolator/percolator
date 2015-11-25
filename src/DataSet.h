@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <vector>
 #include <map>
+#include <cerrno>
 
 #include "Scores.h"
 #include "ResultHolder.h"
@@ -35,6 +36,52 @@
 #include "FeatureNames.h"
 #include "DescriptionOfCorrect.h"
 #include "FeatureMemoryPool.h"
+
+class TabReader {
+ public:
+  TabReader(const char* line) : f_(line) {
+    errno = 0;
+  }
+  
+  void skip() {
+    const char* pch = strchr(f_, '\t');
+    err = errno;
+    f_ = pch + 1;
+  }
+  
+  double readDouble() {
+    char* next_ = NULL;
+    double d = strtod(f_, &next_); f_ = next_ + 1;
+    err = errno;
+    return d;
+  }
+  
+  int readInt() {
+    char* next_ = NULL;
+    int i = strtol(f_, &next_, 10); f_ = next_ + 1;
+    err = errno;
+    return i;
+  }
+  
+  std::string readString() {
+    const char* pch = strchr(f_, '\t');
+    if (pch == NULL) {
+      err = 1;
+      return std::string(f_);
+    } else {
+      err = errno;
+      std::string s(f_, pch - f_);
+      f_ = pch + 1;
+      return s;
+    }
+  }
+  
+  bool error() { return err != 0; }
+ private:
+  const char* f_;
+  int err;
+};
+
 
 // Optional columns in tab delimited input
 enum OptionalField {

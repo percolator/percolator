@@ -414,7 +414,7 @@ void XMLInterface::writeXML_Peptides(Scores& fullset) {
   os << "  <peptides>" << endl;
   for (vector<ScoreHolder>::iterator psm = fullset.begin(); 
        psm != fullset.end(); ++psm) {
-    psm->printPeptide(os, printDecoys_, printExpMass_);
+    psm->printPeptide(os, printDecoys_, printExpMass_, fullset);
   }
   os << "  </peptides>" << endl << endl;
   os.close();

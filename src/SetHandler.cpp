@@ -340,15 +340,21 @@ int SetHandler::getLabel(const std::string& psmLine, unsigned int lineNr) {
 ScanId SetHandler::getScanId(const std::string& psmLine, 
     std::vector<OptionalField>& optionalFields, unsigned int lineNr) {
   ScanId scanId;
+  TabReader reader(psmLine.c_str());
   
-  std::istringstream buff(psmLine);
-  std::string tmp;
-  int label;
-  buff >> tmp >> label; // read PSMid and get rid of label
-  if (!buff.good()) {
+  reader.skip();
+  if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
-        << ". Could not read PSMid or label." << std::endl;
+        << ". Could not read PSMid." << std::endl;
+    throw MyException(temp.str());
+  }
+  
+  int label = reader.readInt();
+  if (reader.error()) {
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
+        << ". Could not read label." << std::endl;
     throw MyException(temp.str());
   }
   
@@ -357,8 +363,8 @@ ScanId SetHandler::getScanId(const std::string& psmLine,
   for ( ; it != optionalFields.end(); ++it) {
     switch (*it) {
       case SCANNR: {
-        buff >> scanId.first;
-        if (!buff.good()) {
+        scanId.first = reader.readInt();
+        if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number on line " 
               << lineNr << ". Check if scan number is an integer." << std::endl;
@@ -368,8 +374,8 @@ ScanId SetHandler::getScanId(const std::string& psmLine,
         }
         break;
       } case EXPMASS: {
-        buff >> scanId.second;
-        if (!buff.good()) {
+        scanId.second = reader.readDouble();
+        if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading experimental mass on line " 
               << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
@@ -377,6 +383,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine,
         }
         break;
       } case CALCMASS: {
+        reader.skip();
         break;
       } default: {
         ostringstream temp;

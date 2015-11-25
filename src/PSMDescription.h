@@ -51,6 +51,9 @@ class PSMDescription {
   static bool ptrLess(PSMDescription* one, PSMDescription* other) {
     return *one < *other;
   }
+  static bool ptrEqual(PSMDescription* one, PSMDescription* other) {
+    return *one == *other;
+  }
   
   std::string getPeptideSequence() { return peptide.substr(2, peptide.size()-4); }
   std::string& getFullPeptideSequence() { return peptide; }

@@ -34,6 +34,8 @@
 #include "Normalizer.h"
 #include "FeatureMemoryPool.h"
 
+class Scores;
+
 /*
 * ScoreHolder is a class that provides a way to assign score value to a
 * PSMDescription and have a way to compare PSMs based on the assigned
@@ -46,12 +48,12 @@
 class ScoreHolder {
  public:
   double score, q, pep, p;
-  int label;
   PSMDescription* pPSM;
-  std::vector<std::string> psms_list;
+  int label;
+  //std::vector<std::string> psms_list;
   
   ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
-  ScoreHolder(const double& s, const int& l, PSMDescription* psm = NULL) :
+  ScoreHolder(const double s, const int l, PSMDescription* psm = NULL) :
     score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm) {}
   virtual ~ScoreHolder() {}
   
@@ -62,29 +64,47 @@ class ScoreHolder {
   inline bool isTarget() const { return label != -1; }
   inline bool isDecoy() const { return label == -1; }
   void printPSM(ostream& os, bool printDecoys, bool printExpMass);
-  void printPeptide(ostream& os, bool printDecoys, bool printExpMass);
+  void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
 };
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
   
 struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->getPeptideSequence() < __y.pPSM->getPeptideSequence() ) 
-    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label > __y.label) )
-    || ( (__x.pPSM->getPeptideSequence() == __y.pPSM->getPeptideSequence()) && (__x.label == __y.label)
-      && (__x.score > __y.score) ) );
+  static int compStrIt(std::string::iterator first1, std::string::iterator last1,
+                       std::string::iterator first2, std::string::iterator last2) {
+    for ( ; (first1 != last1) && (first2 != last2); first1++, first2++ ) {
+      if (*first1 < *first2) return 1;
+      if (*first2 < *first1) return -1;
+    }
+    if (first2 != last2) return 1;
+    else if (first1 != last1) return -1;
+    else return 0;
+  }
+  
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    int peptCmp = compStrIt(__x.pPSM->getFullPeptideSequence().begin() + 2, 
+                            __x.pPSM->getFullPeptideSequence().end() - 2, 
+                            __y.pPSM->getFullPeptideSequence().begin() + 2, 
+                            __y.pPSM->getFullPeptideSequence().end() - 2);
+    return ( ( peptCmp == 1 ) 
+    || ( (peptCmp == 0) && (__x.label > __y.label) )
+    || ( (peptCmp == 0) && (__x.label == __y.label) && (__x.score > __y.score) ) );
   }
 };
 
 struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool
-  operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return ( (__x.pPSM->scan < __y.pPSM->scan ) 
     || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
     || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
        && (__x.score > __y.score) ) );
+  }
+};
+
+struct UniqueScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass);
   }
 };
 
@@ -175,6 +195,10 @@ class Scores {
     scores_.push_back(sh);
   }
   
+  std::vector<PSMDescription*>& getPsms(PSMDescription* pPSM) {
+    return peptidePsmMap_[pPSM];
+  }
+  
   void reset() { scores_.clear(); }
   
  protected:
@@ -185,6 +209,7 @@ class Scores {
   int totalNumberOfDecoys_, totalNumberOfTargets_;
   
   std::vector<ScoreHolder> scores_;
+  std::map<PSMDescription*, std::vector<PSMDescription*> > peptidePsmMap_;
   DescriptionOfCorrect doc_;
   
   double* decoyPtr_;

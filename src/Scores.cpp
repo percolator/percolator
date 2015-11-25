@@ -102,7 +102,7 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
   }
 }
 
-void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass) {
+void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset) {
   if (!isDecoy() || printDecoys) {  
     os << "    <peptide p:peptide_id=\"" << pPSM->getPeptideSequence() << "\"";
     if (printDecoys) {
@@ -131,9 +131,9 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass)
     os << "      <psm_ids>" << endl;
     
     // output all psms that contain the peptide
-    std::vector<std::string>::const_iterator psmIt = psms_list.begin();
-    for ( ; psmIt != psms_list.end() ; ++psmIt) {
-      os << "        <psm_id>" << *psmIt << "</psm_id>" << endl;
+    std::vector<PSMDescription*>::const_iterator psmIt = fullset.getPsms(pPSM).begin();
+    for ( ; psmIt != fullset.getPsms(pPSM).end() ; ++psmIt) {
+      os << "        <psm_id>" << (*psmIt)->id << "</psm_id>" << endl;
     }
     os << "      </psm_ids>" << endl;
     os << "    </peptide>" << endl;
@@ -426,7 +426,7 @@ int Scores::calcScores(std::vector<double>& w, double fdr) {
         cerr << scores_[ix].score << " " << scores_[ix].label << endl;
       }
     } else {
-      cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores_ found)." << endl;
+      cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores found)." << endl;
     }
   }
   return calcQ(fdr);
@@ -521,22 +521,18 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
  * on peptide-fdr rather than psm-fdr)
  */
 void Scores::weedOutRedundant() {
-  
   // lexicographically order the scores_ (based on peptides names,labels and scores)
   std::sort(scores_.begin(), scores_.end(), lexicOrderProb());
-
+  
   /*
-  * much faster and simpler version but it does not fill up psms_list     
-  * which will simply iterate over the unique peptides and the removed list many times 
+  * much simpler version but it does not fill up the peptide-PSM map:
   * scores_.erase(std::unique(scores_.begin(), scores_.end(), mycmp), scores_.end());
   */
-
-  //NOTE the weed out PSMs might not be cleaned at the end
 
   std::vector<ScoreHolder> uniquePeptideScores;
   std::string previousPeptide = "";
   int previousLabel = 0;
-  // run a pointer down the scores_ list
+  // run a pointer down the scores list
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); scoreIt++){
     // compare pointer's peptide with previousPeptide
@@ -548,66 +544,21 @@ void Scores::weedOutRedundant() {
       previousPeptide = currentPeptide;
       previousLabel = scoreIt->label;
     }
-    // append the psm_id
-    uniquePeptideScores.back().psms_list.push_back(scoreIt->pPSM->id);
+    // append the psm
+    peptidePsmMap_[uniquePeptideScores.back().pPSM].push_back(scoreIt->pPSM);
   }
-
   scores_ = uniquePeptideScores;
-  sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
-
-  totalNumberOfDecoys_ = count_if(scores_.begin(), scores_.end(),
-                                 mem_fun_ref(&ScoreHolder::isDecoy));
-  totalNumberOfTargets_ = count_if(scores_.begin(), scores_.end(),
-                                  mem_fun_ref(&ScoreHolder::isTarget));
-  targetDecoySizeRatio_ = 
-      totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-
-  if (usePi0_) estimatePi0();
-  else pi0_ = 1.0;
+  postMergeStep();
 }
 
 /**
  * Routine that sees to that only unique spectra are kept for TDC
  */
 void Scores::weedOutRedundantTDC() {
-  // order the scores_ (based on spectra id and scores_)
+  // order the scores_ (based on spectra id and score)
   std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
-
-  /*
-  * much faster and simpler version but it does not fill up psms_list     
-  * which will simply iterate over the unique peptides and the removed list many times 
-  * scores_.erase(std::unique(scores_.begin(), scores_.end(), mycmp), scores_.end());
-  */
-
-  std::vector<ScoreHolder> uniquePSMs = std::vector<ScoreHolder>();
-  unsigned previousSpectra = 0;
-  double previousExpMass = 0.0;
-  //int previousLabel;
-  // run a pointer down the scores_ list
-  std::vector<ScoreHolder>::iterator current = scores_.begin();
-  for (;current!=scores_.end(); current++){
-    // compare pointer's spectra with previous spectra
-    unsigned currentSpectra = current->pPSM->scan;
-    double currentExpMass = current->pPSM->expMass;
-    //int currentLabel = current->label;
-    if (currentSpectra != previousSpectra || previousExpMass != currentExpMass) {
-     uniquePSMs.push_back(*current);
-     previousSpectra = currentSpectra;
-     previousExpMass = currentExpMass;
-    }
-  }
-  scores_ = uniquePSMs;
-  sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
-  totalNumberOfDecoys_ = count_if(scores_.begin(),
-    scores_.end(),
-    mem_fun_ref(&ScoreHolder::isDecoy));
-  totalNumberOfTargets_ = count_if(scores_.begin(),
-    scores_.end(),
-    mem_fun_ref(&ScoreHolder::isTarget));
-  targetDecoySizeRatio_ = totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-  
-  if (usePi0_) estimatePi0();
-  else pi0_ = 1.0;
+  scores_.erase(std::unique(scores_.begin(), scores_.end(), UniqueScanMassCharge()), scores_.end());
+  postMergeStep();
 }
 
 void Scores::recalculateDescriptionOfCorrect(const double fdr) {

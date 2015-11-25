@@ -129,7 +129,7 @@ void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
 int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool) {
-  std::istringstream buff(line);
+  TabReader reader(line.c_str());
   std::string tmp;
   
   if (calcDOC_) {
@@ -137,17 +137,16 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   } else {
     myPsm = new PSMDescription();
   }
-  int label;
-  
-  buff >> myPsm->id >> label; // read PSMid and label
+  myPsm->id = reader.readString();
+  int label = reader.readInt();
   
   bool hasScannr = false;
   std::vector<OptionalField>::const_iterator it = optionalFields.begin();
   for ( ; it != optionalFields.end(); ++it) {
     switch (*it) {
       case SCANNR: {
-        buff >> myPsm->scan;
-        if (!buff.good()) {
+        myPsm->scan = reader.readInt();
+        if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number of PSM " 
               << myPsm->id << ". Check if scan number is an integer." << std::endl;
@@ -157,10 +156,10 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         }
         break;
       } case EXPMASS: {
-        buff >> myPsm->expMass;
+        myPsm->expMass = reader.readDouble();
         break;
       } case CALCMASS: {
-        buff >> myPsm->calcMass;
+        myPsm->calcMass = reader.readDouble();
         break;
       } default: {
         ostringstream temp;
@@ -177,16 +176,16 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (calcDOC_) {
     numFeatures -= DescriptionOfCorrect::numDOCFeatures();
     double rt, dm;
-    buff >> rt;
-    buff >> dm;
+    rt = reader.readDouble();
+    dm = reader.readDouble();
     myPsm->setRetentionTime(rt);
     myPsm->setMassDiff(dm);
   }
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
-    buff >> featureRow[j];
+    featureRow[j] = reader.readDouble();
   }
-  if (!buff.good()) {
+  if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading in feature vector of PSM " 
       << myPsm->id << ". Check if there are enough features on this line and "
@@ -194,10 +193,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     throw MyException(temp.str());
   }
   
-  std::string peptide_seq = "";
-  buff >> peptide_seq;
+  std::string peptide_seq = reader.readString();
   myPsm->peptide = peptide_seq;
-  if (!buff.good()) {
+  if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading PSM " << myPsm->id 
       << ". Check if a peptide and at least one protein are specified." << std::endl;
@@ -215,8 +213,8 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     throw MyException(temp.str());
   }
   
-  while (readProteins && !!buff) {
-    buff >> tmp;
+  while (readProteins && !reader.error()) {
+    std::string tmp = reader.readString();
     if (tmp.size() > 0) {
       myPsm->proteinIds.push_back(tmp);
     }

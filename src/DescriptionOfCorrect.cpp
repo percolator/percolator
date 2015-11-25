@@ -55,16 +55,8 @@ void DescriptionOfCorrect::calcRegressionFeature(PSMDescription* psm) {
 void DescriptionOfCorrect::trainCorrect() {
   // Get rid of redundant and non enzymatic peptides
   sort(psms.begin(), psms.end(), PSMDescription::ptrLess);
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  PSMDescription* prev = NULL;
-  for (; it != psms.end();) {
-    if ((*it)->isNotEnzymatic() || (prev != NULL && *(*it) == *prev)) {
-      it = psms.erase(it);
-    } else {
-      prev = *it;
-      ++it;
-    }
-  }
+  psms.erase(std::remove_if(psms.begin(), psms.end(), mem_fun(&PSMDescription::isNotEnzymatic)), psms.end());
+  psms.erase(std::unique(psms.begin(), psms.end(), PSMDescription::ptrEqual), psms.end());
   // Get averages
   double piSum = 0.0, dMSum = 0.0;
   for (size_t ix = 0; ix < psms.size(); ++ix) {

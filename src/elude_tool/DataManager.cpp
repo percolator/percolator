@@ -167,16 +167,7 @@ double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescript
 /* remove duplicate peptides */
 int DataManager::RemoveDuplicates(std::vector<PSMDescription*> &psms) {
   sort(psms.begin(), psms.end(), PSMDescription::ptrLess);
-  std::vector<PSMDescription*>::iterator it = psms.begin();
-  PSMDescription* prev = NULL;
-  for (; it != psms.end();) {
-    if (prev != NULL && *(*it) == *prev) {
-      it = psms.erase(it);
-    } else {
-      prev = *it;
-      ++it;
-    }
-  }
+  psms.erase( std::unique(psms.begin(), psms.end(), PSMDescription::ptrEqual), psms.end());
   return 0;
 }
 
