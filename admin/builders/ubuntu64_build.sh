@@ -38,9 +38,9 @@ whoami;
 #------------------------------------------------------------------------
 echo "Checking necessary packages for building percolator...";
 
-# Do not apt-update if this is a travis-ci job
+# Do not apt-upgrade if this is a travis-ci job
+sudo apt-get update;
 if [ -z "$TRAVIS" ]; then
-  sudo apt-get update;
   sudo apt-get upgrade;
   sudo apt-get -y install g++ make cmake rpm fakeroot;
 fi
