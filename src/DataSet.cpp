@@ -42,7 +42,7 @@ bool DataSet::writeTabData(ofstream& out) {
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     double* featureRow = psm->features;
-    out << psm->id << '\t' << label_ << '\t' << psm->scan << '\t' 
+    out << psm->getId() << '\t' << label_ << '\t' << psm->scan << '\t' 
         << psm->expMass << '\t' << psm->calcMass;
     if (calcDOC_) {
       out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
@@ -137,7 +137,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   } else {
     myPsm = new PSMDescription();
   }
-  myPsm->id = reader.readString();
+  myPsm->setId(reader.readString());
   int label = reader.readInt();
   
   bool hasScannr = false;
@@ -149,7 +149,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number of PSM " 
-              << myPsm->id << ". Check if scan number is an integer." << std::endl;
+              << myPsm->getId() << ". Check if scan number is an integer." << std::endl;
           throw MyException(temp.str());
         } else {
           hasScannr = true;
@@ -188,7 +188,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading in feature vector of PSM " 
-      << myPsm->id << ". Check if there are enough features on this line and "
+      << myPsm->getId() << ". Check if there are enough features on this line and "
       << "if they are all floating point numbers or integers." << std::endl;
     throw MyException(temp.str());
   }
@@ -197,18 +197,18 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   myPsm->peptide = peptide_seq;
   if (reader.error()) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM " << myPsm->id 
+    temp << "ERROR: Reading tab file, error reading PSM " << myPsm->getId() 
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
   } else if (peptide_seq.size() < 5) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
-      << " with PSM id " << myPsm->id << " is too short." << std::endl;
+      << " with PSM id " << myPsm->getId() << " is too short." << std::endl;
     throw MyException(temp.str());
   } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
     ostringstream temp;
     temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
-      << " with PSM id " << myPsm->id << " does not contain one or two of its"
+      << " with PSM id " << myPsm->getId() << " does not contain one or two of its"
       << " flanking amino acids." << std::endl;
     throw MyException(temp.str());
   }

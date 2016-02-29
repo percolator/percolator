@@ -73,6 +73,9 @@ class PSMDescription {
     return (peptide == other.peptide);
   }
   
+  virtual inline void setId(const std::string& id) { id_ = id; }
+  virtual inline std::string& getId() { return id_; }
+  
   // Virtual functions for PSMDescriptionDOC
   virtual std::string& getFullPeptide() { return peptide; }
   virtual PSMDescription* getAParent() { return this; }
@@ -116,7 +119,7 @@ class PSMDescription {
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
   double expMass, calcMass;
   unsigned int scan;
-  std::string id;
+  std::string id_;
   std::string peptide;
   std::vector<std::string> proteinIds;
 };

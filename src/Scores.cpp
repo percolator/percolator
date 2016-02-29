@@ -58,7 +58,7 @@ inline double truncateTo(double truncateMe, const char* length) {
 
 void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
   if (!isDecoy() || printDecoys) {
-    os << "    <psm p:psm_id=\"" << pPSM->id << "\"";
+    os << "    <psm p:psm_id=\"" << pPSM->getId() << "\"";
     if (printDecoys) {
       if (isDecoy())
         os << " p:decoy=\"true\"";
@@ -133,7 +133,7 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass,
     // output all psms that contain the peptide
     std::vector<PSMDescription*>::const_iterator psmIt = fullset.getPsms(pPSM).begin();
     for ( ; psmIt != fullset.getPsms(pPSM).end() ; ++psmIt) {
-      os << "        <psm_id>" << (*psmIt)->id << "</psm_id>" << endl;
+      os << "        <psm_id>" << (*psmIt)->getId() << "</psm_id>" << endl;
     }
     os << "      </psm_ids>" << endl;
     os << "    </peptide>" << endl;
@@ -207,7 +207,7 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   sh.pPSM->deleteRetentionFeatures();
   
   if (sh.label != 1 && sh.label != -1) {
-    std::cerr << "Warning: the PSM " << sh.pPSM->id
+    std::cerr << "Warning: the PSM " << sh.pPSM->getId()
         << " has a label not in {1,-1} and will be ignored." << std::endl;
     PSMDescription::deletePtr(sh.pPSM);
   } else {
@@ -222,7 +222,7 @@ void Scores::print(int label, std::ostream& os) {
     if (scoreIt->label == label) {
       std::ostringstream out;
       scoreIt->pPSM->printProteins(out);
-      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->id, scoreIt->pPSM->peptide, out.str());
+      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->getId(), scoreIt->pPSM->peptide, out.str());
       os << rh << std::endl;
     }
   }
@@ -445,13 +445,18 @@ int Scores::calcQ(double fdr) {
   double efp = 0.0, q; // estimated false positives, q value
   
   int numPos = 0;
-  
+  /*
+  double p1 = 1e-3, p2 = 1e-2;
+  size_t idx1, idx2;
+  */
   // NOTE check this
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
       targets++;
       scoreIt->p = (decoys+(double)1)/(totalNumberOfDecoys_+(double)1);
+      /*if (scoreIt->p < p1) idx1 = targets + decoys;
+      if (scoreIt->p < p2) idx2 = targets + decoys;*/
     } else {
       decoys++;
       if (usePi0_) {
@@ -481,6 +486,25 @@ int Scores::calcQ(double fdr) {
       }
     }
   }
+  
+  /* extrapolate p-values beyond last decoy
+  double score1 = scores_.at(idx1).score;
+  double score2 = scores_.at(idx2).score;
+  double slope = (log(p2) - log(p1)) / (score2 - score1);
+  
+  std::cerr << "P-value slope: " << slope << " " << score1 << " " << score2 << std::endl;
+  for (size_t idx = 0; idx < scores_.size(); ++idx) {
+    if (scores_.at(idx).p < p1) {
+      if (scores_.at(idx).isTarget()) { // isTarget
+        scores_.at(idx).p = exp((scores_.at(idx).score - score1)*slope + log(p1));
+        if (scores_.at(idx).p == 0.0) scores_.at(idx).p = DBL_MIN;
+      }
+    } else {
+      break;
+    }
+  }
+  */
+  
   return numPos;
 }
 

@@ -22,6 +22,7 @@
 #endif
 
 #include <cstdlib>
+#include <cfloat>
 #include <algorithm>
 #include <vector>
 #include <map>

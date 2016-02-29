@@ -17,12 +17,13 @@
 
 #include "FisherInterface.h"
 
-FisherInterface::FisherInterface(const std::string& fastaDatabase, 
-    bool reportFragmentProteins, bool reportDuplicateProteins,
+FisherInterface::FisherInterface(const std::string& fastaDatabase,
+    double pvalueCutoff, bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double pi0, bool outputEmpirQval, 
     std::string& decoyPattern) :
   ProteinProbEstimator(trivialGrouping, pi0, outputEmpirQval, decoyPattern),
-  fastaProteinFN_(fastaDatabase), reportFragmentProteins_(reportFragmentProteins),
+  fastaProteinFN_(fastaDatabase), maxPeptidePval_(pvalueCutoff),
+  reportFragmentProteins_(reportFragmentProteins),
   reportDuplicateProteins_(reportDuplicateProteins) {}
 
 FisherInterface::~FisherInterface() {}
@@ -73,9 +74,9 @@ bool FisherInterface::initialize(Scores* fullset) {
     max_peptide_length = std::max(max_peptide_length, peptide_length);
     
     int miscleavages = Enzyme::countEnzymatic(peptideSequence);
-    /*if (miscleavages > max_miscleavages) {
-      std::cerr << "MC" << peptideSequenceFlanked << std::endl;
-    }*/
+    if (miscleavages > max_miscleavages && VERB > 1) {
+      std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
+    }
     max_miscleavages = std::max(max_miscleavages, miscleavages);
     
     int non_enzymatic_flanks = 0;
@@ -87,9 +88,9 @@ bool FisherInterface::initialize(Scores* fullset) {
                              peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
       ++non_enzymatic_flanks;
     }
-    /*if (non_enzymatic_flanks > max_non_enzymatic_flanks) {
-      std::cerr << "SP " << peptideSequenceFlanked << std::endl;
-    }*/
+    if (non_enzymatic_flanks > max_non_enzymatic_flanks && VERB > 1) {
+      std::cerr << "Non enzymatic flank detected: " << peptideSequenceFlanked << std::endl;
+    }
     max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
     total_non_enzymatic_flanks += max_non_enzymatic_flanks;
   }
@@ -140,17 +141,12 @@ void FisherInterface::run() {
     std::string lastProteinId;
     std::set<std::string> proteinsInGroup;
     bool isFirst = true, isShared = false;
+    
+    if (peptideIt->p > maxPeptidePval_) continue;
+    
     for (std::vector<std::string>::iterator protIt = peptideIt->pPSM->proteinIds.begin(); 
             protIt != peptideIt->pPSM->proteinIds.end(); protIt++) {
       std::string proteinId = *protIt;
-      
-      /*
-      // just hacking a bit for our simulation scripts
-      if (proteinId.find(decoyPattern_) == std::string::npos) {
-        size_t found = proteinId.find_first_of("_");
-        proteinId = proteinId.substr(found + 1);
-      }
-      */
       
       if (fragment_map.find(proteinId) != fragment_map.end()) {
         if (reportFragmentProteins_) proteinsInGroup.insert(*protIt);
@@ -219,18 +215,27 @@ void FisherInterface::run() {
 }
 
 void FisherInterface::computeProbabilities(const std::string& fname) {
-  for(std::map<const std::string,Protein*>::iterator it = proteins.begin(); 
+  for (std::map<const std::string,Protein*>::iterator it = proteins.begin(); 
         it != proteins.end(); it++) {
-    std::string proteinId = it->first;
     std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
-    double fisher = 0.0;
-    for(std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
-          itP != peptides.end(); itP++) {
-      fisher += log((*itP)->p);
+    if (true) {
+      double fisher = 0.0;
+      int significantPeptides = 0;
+      for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+            itP != peptides.end(); itP++) {
+        fisher += log((*itP)->p / maxPeptidePval_);
+      }
+      double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
+      if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
+      it->second->setP(proteinPvalue);
+    } else { // MaxQuant's strategy
+      double fisher = 0.0;
+      for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+            itP != peptides.end(); itP++) {
+        fisher += log((*itP)->pep);
+      }
+      it->second->setP(fisher);
     }
-    double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
-    if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
-    it->second->setP(proteinPvalue);
   }
   
   std::vector<std::pair<std::string,Protein*> > myvec(proteins.begin(), proteins.end());
@@ -238,13 +243,22 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> pvals;
-  for (size_t i = 0; i < myvec.size(); ++i) {
-    double pValue = myvec[i].second->getP();
-    bool isDecoy = myvec[i].second->getIsDecoy();
-    combined.push_back(make_pair(pValue, !isDecoy));
-    if (!isDecoy) {
-      pvals.push_back(pValue);
+  if (true) { // if we have well calibrated p-values
+    for (size_t i = 0; i < myvec.size(); ++i) {
+      double pValue = myvec[i].second->getP();
+      bool isDecoy = myvec[i].second->getIsDecoy();
+      combined.push_back(make_pair(pValue, !isDecoy));
+      if (!isDecoy) {
+        pvals.push_back(pValue);
+      }
     }
+  } else { // if we have some other type of score
+    for (size_t i = 0; i < myvec.size(); ++i) {
+      double pValue = myvec[i].second->getP();
+      bool isDecoy = myvec[i].second->getIsDecoy();
+      combined.push_back(make_pair(pValue, !isDecoy));
+    }
+    PosteriorEstimator::getPValues(combined, pvals);
   }
   pi0_ = PosteriorEstimator::estimatePi0(pvals);
   

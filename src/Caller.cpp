@@ -101,8 +101,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "and write access on the file)." << std::endl;
   // init
   CommandLineParser cmd(intro.str());
-  // available lower case letters: o, z
-  // available upper case letters: N, Q 
+  // available lower case letters: o
+  // available upper case letters: N
   cmd.defineOption("X",
       "xmloutput",
       "Path to xml-output (pout) file.",
@@ -258,6 +258,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
       "",
       "trypsin");
+  /*cmd.defineOption("Q",
+      "fisher-pval-cutoff",
+      "The p-value cutoff for peptides when inferring proteins with fisher's method. Default = 1.0",
+      "value");*/
   cmd.defineOption("c",
       "fisher-report-fragments",
       "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second.",
@@ -444,15 +448,17 @@ bool Caller::parseOptions(int argc, char **argv) {
       std::string fastaDatabase = cmd.options["f"];
       
       // default options
+      double fisherPvalueCutoff = 1.0;
       bool fisherReportFragmentProteins = false;
       bool fisherReportDuplicateProteins = false;
       if (cmd.optionSet("z")) {
         Enzyme::setEnzyme(cmd.options["z"]);
       }      
+      //if (cmd.optionSet("Q")) fisherPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
       if (cmd.optionSet("c")) fisherReportFragmentProteins = true;
       if (cmd.optionSet("g")) fisherReportDuplicateProteins = true;
       
-      protEstimator_ = new FisherInterface(fastaDatabase, 
+      protEstimator_ = new FisherInterface(fastaDatabase, fisherPvalueCutoff,
           fisherReportFragmentProteins, fisherReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorPi0, 
           protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
@@ -654,11 +660,11 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
     decoyFN = decoyPsmResultFN_;
   }
   
-  if (targetFN.empty()) {
-    allScores.print(NORMAL);
-  } else {
+  if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
     allScores.print(NORMAL, targetStream);
+  } else if (writeOutput) {
+    allScores.print(NORMAL);
   }
   if (!decoyFN.empty()) {
     ofstream decoyStream(decoyFN.c_str(), ios::out);

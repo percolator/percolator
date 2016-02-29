@@ -314,7 +314,7 @@ void SetHandler::addQueueToSets(
     } else if (psmPriority.label == -1) {
       decoySet->registerPsm(psmPriority.psm);
     } else {
-      std::cerr << "Warning: the PSM " << psmPriority.psm->id
+      std::cerr << "Warning: the PSM " << psmPriority.psm->getId()
           << " has a label not in {1,-1} and will be ignored." << std::endl;
       featurePool_.deallocate(psmPriority.psm->features);
       PSMDescription::deletePtr(psmPriority.psm);

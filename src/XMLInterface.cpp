@@ -349,7 +349,7 @@ PSMDescription* XMLInterface::readPsm(
     myPsm->peptide = occIt->flankN() + "." + mypept + "." + occIt->flankC();
   }
 
-  myPsm->id = psm.id();
+  myPsm->setId(psm.id());
   myPsm->scan = scanNumber;
   myPsm->expMass = psm.experimentalMass();
   myPsm->calcMass = psm.calculatedMass();

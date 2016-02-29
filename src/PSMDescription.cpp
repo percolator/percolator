@@ -23,12 +23,12 @@
 
 PSMDescription::PSMDescription() :
     features(NULL), expMass(0.), calcMass(0.), scan(0),
-    id(""), peptide("") {
+    id_(""), peptide("") {
 }
 
 PSMDescription::PSMDescription(const std::string& pep) :
     features(NULL), expMass(0.), calcMass(0.), scan(0),
-    id(""), peptide(pep) {
+    id_(""), peptide(pep) {
 }
 
 PSMDescription::~PSMDescription() {}

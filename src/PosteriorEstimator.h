@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <cfloat>
 
 #include "LogisticRegression.h"
 #include "PseudoRandom.h"
