@@ -114,7 +114,7 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
       "Scheme");
   cmd.defineOption("P",
       "pattern",
-      "Pattern used to identify the decoy PSMs",
+      "Pattern used to identify the decoy PSMs. Default = \"random\".",
       "",
       "pattern");
   /** new parameters for reading the fasta database to obtain the proteins **/

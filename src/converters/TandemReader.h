@@ -30,10 +30,9 @@ using namespace xercesc;
 
 typedef map<std::string, set<std::string> > peptideProteinMapType;
 
-class TandemReader: public Reader
-{
+class TandemReader: public Reader {
 
-public:
+ public:
   
   TandemReader(ParseOptions* po);
   
@@ -49,22 +48,18 @@ public:
   
   void addFeatureDescriptions(bool doEnzyme);
   
-protected:
+ protected:
   
   //Variables
-  bool x_score;
-  bool y_score;
-  bool z_score;
-  bool a_score;
-  bool b_score;
-  bool c_score;
+  bool x_score, y_score, z_score, a_score, b_score, c_score;
   bool firstPSM;
   
   //Functions
   void readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
-		   boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn);
+		  boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn);
   
-  void getPeptideProteinMap(const tandem_ns::group &groupObj,peptideProteinMapType &peptideProteinMap);
+  void getPeptideProteinMap(const tandem_ns::group &groupObj,
+      peptideProteinMapType &peptideProteinMap, bool& isDecoy);
   
   void createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
 		  double sumI,double maxI,bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
