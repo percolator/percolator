@@ -354,7 +354,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     //Add a small number to some logged features to avoid log(0)
     f_seq.push_back(RawScore);
     f_seq.push_back(DeNovoScore);
-    f_seq.push_back(RawScore / (DeNovoScore+0.0001));  // ScoreRatio
+    f_seq.push_back(std::max(-1.0, RawScore / (DeNovoScore+0.0001)));  // ScoreRatio
     f_seq.push_back(DeNovoScore - RawScore);  // Score difference, or Energy
     f_seq.push_back(-log(EValue));
     //f_seq.push_back(-log(SpecEValue));
