@@ -72,7 +72,7 @@ int XMLInterface::readPin(istream& dataStream, const std::string& xmlInputFN,
     ProteinProbEstimator* protEstimator) {
   std::vector<double> noWeights;
   Scores noScores(true);
-  readAndScorePin(dataStream, noWeights, noScores, xmlInputFN, setHandler, 
+  return readAndScorePin(dataStream, noWeights, noScores, xmlInputFN, setHandler, 
                   pCheck, protEstimator);
 }
   

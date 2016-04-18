@@ -243,6 +243,12 @@ void Scores::fillFeatures(SetHandler& setHandler) {
         << " and pi0=" << pi0_ << endl;
   }
   
+  if (totalNumberOfTargets_ == 0) {
+    throw MyException("Error: no target PSMs were provided.\n");
+  } else if (totalNumberOfDecoys_ == 0) {
+    throw MyException("Error: no decoy PSMs were provided.\n");
+  }
+  
   // check for the minimum recommended number of positive and negative hits
   if (totalNumberOfTargets_ <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
     std::cerr << "Warning : the number of positive samples read is too small to perform a correct classification.\n" << std::endl;

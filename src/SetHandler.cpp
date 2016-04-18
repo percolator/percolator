@@ -105,8 +105,7 @@ int const SetHandler::getLabel(int setPos) {
 int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
   std::vector<double> noWeights;
   Scores noScores(true);
-  readAndScoreTab(dataStream, noWeights, noScores, pCheck);
-  return 1;
+  return readAndScoreTab(dataStream, noWeights, noScores, pCheck);
 }
 
 int SetHandler::getOptionalFields(const std::string& headerLine, 
