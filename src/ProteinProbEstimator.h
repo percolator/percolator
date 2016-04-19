@@ -36,22 +36,22 @@
 /** set of helper functions to sort data structures and some operations overloaded **/
 struct IntCmpProb {
   bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
-      return (  (lhs.second->getPEP() < rhs.second->getPEP())
-           || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
-           || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
-              && (lhs.second->getGroupId() < rhs.second->getGroupId()) )
-           || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
-              && (lhs.second->getGroupId() == rhs.second->getGroupId()) 
-              && (lhs.second->getName() < rhs.second->getName()) )  
+    return (  (lhs.second->getPEP() < rhs.second->getPEP())
+         || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
+         || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
+            && (lhs.second->getGroupId() < rhs.second->getGroupId()) )
+         || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
+            && (lhs.second->getGroupId() == rhs.second->getGroupId()) 
+            && (lhs.second->getName() < rhs.second->getName()) )  
     );
   }
 };
 
-struct IntCmpPvalue {
+struct IntCmpScore {
   bool operator()(const std::pair<const std::string,Protein*> &lhs, const std::pair<const std::string,Protein*> &rhs) {
-      return (  (lhs.second->getP() < rhs.second->getP())
-           || ( (lhs.second->getP() == rhs.second->getP())
-              && (lhs.second->getName() < rhs.second->getName()) )  
+    return ( lhs.second->getScore() < rhs.second->getScore()
+         || (lhs.second->getScore() == rhs.second->getScore() 
+            && lhs.second->getName() < rhs.second->getName())
     );
   }
 };
@@ -117,7 +117,7 @@ class ProteinProbEstimator {
   /******************************************************************************************************************/
   
   
-  ProteinProbEstimator(bool trivialGrouping = true, double pi0 = 1.0, 
+  ProteinProbEstimator(bool trivialGrouping = true, double absenceRatio = 1.0, 
       bool outputEmpirQVal = false, std::string decoyPattern = "random");
   
   virtual ~ProteinProbEstimator();
@@ -152,7 +152,7 @@ class ProteinProbEstimator {
   void setTargetandDecoysNames();
   
   /** return the data structure for the proteins **/
-  std::map<const std::string,Protein*> getProteins() { return proteins; }
+  std::map<const std::string,Protein*> getProteins() { return proteins_; }
   
   /** add proteins read from the database **/
   void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
@@ -168,6 +168,7 @@ class ProteinProbEstimator {
   static inline bool getCalcProteinLevelProb() { return calcProteinLevelProb; }
   inline bool getUsePi0() { return usePi0_; }
   double getPi0() { return pi0_; }
+  double getAbsenceRatio() { return absenceRatio_; }
   double getFDR() { return fdr_; }
   
  protected:
@@ -212,7 +213,7 @@ class ProteinProbEstimator {
   /** variables **/
   std::set<string> truePosSet, falsePosSet;
   ProteinFDRestimator *fastReader;
-  std::map<const std::string,Protein*> proteins;
+  std::map<const std::string,Protein*> proteins_;
   std::multimap<double,std::vector<std::string> > pepProteinMap_;
   std::map<std::string,std::pair<std::string,double> > targetProteins;
   std::map<std::string,std::pair<std::string,double> > decoyProteins;
@@ -224,7 +225,7 @@ class ProteinProbEstimator {
   /* protein groups are either present or absent and cannot be partially present */
   bool trivialGrouping_;
   bool usePi0_;
-  double pi0_;
+  double pi0_, absenceRatio_;
   bool outputEmpirQVal_;
   double fdr_;
   unsigned int numberDecoyProteins_;

@@ -17,16 +17,15 @@
 
 #include "Protein.h"
 
-Protein::Protein(string namenew, double qnew, double qempnew, double pepnew, 
-    double pnew, bool isdecoy_new, Protein::Peptide* __peptide,
+Protein::Protein(std::string name, bool isDecoy, Protein::Peptide *peptide,
     int groupId)
-	: name(namenew), q(qnew), qemp(qempnew), pep(pepnew), p(pnew),
-	  isDecoy(isdecoy_new), groupId_(groupId) {
-  if (__peptide) peptides.push_back(__peptide);
+	: name_(name), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
+	  isDecoy_(isDecoy), groupId_(groupId) {
+  if (peptide) setPeptide(peptide);
 }
 
 Protein::~Protein() {
-  for (unsigned i = 0; i < peptides.size(); i++)
-    if (peptides[i]) delete peptides[i];
+  for (unsigned i = 0; i < peptides_.size(); i++)
+    if (peptides_[i]) delete peptides_[i];
 }
 

@@ -26,52 +26,55 @@ using namespace std;
 class Protein {
  public:
   struct Peptide {
-    Peptide(std::string __name, bool __isdecoy, double __p, double __pep, double __q, 
-            double __empq) : name(__name), isdecoy(__isdecoy), p(__p), pep(__pep),
-            q(__q), empq(__empq) {}
+    Peptide(std::string _name, bool _isdecoy, double _p, double _pep, double _q, 
+            double _score) : name(_name), isdecoy(_isdecoy), 
+            p(_p), pep(_pep), q(_q), score(_score) {}
     std::string name;
     bool isdecoy;
-    double p, pep, q, empq;
+    double p, pep, q, score;
   };
   
-  Protein() : name(""), q(0.0), qemp(0.0), pep(0.0), p(0.0), groupId_(-1), 
-              isDecoy(false) {}
-  Protein(std::string namenew,double qnew, double qempnew, double pepnew, 
-    double pnew, bool isdecoy_new, Peptide *__peptide, int groupId);
+  Protein() : name_(""), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
+              groupId_(-1), isDecoy_(false) {}
+  Protein(std::string name, bool isdecoy, Peptide *peptide, int groupId);
   ~Protein();
   
-  void setName(std::string namenew) { name = namenew; }
-  std::string getName() const { return name; }
+  inline void setName(std::string name) { name_ = name; }
+  inline std::string getName() const { return name_; }
   
-  void setQ(double qnew) { q = qnew; }
-  double getQ() const { return q; }
+  inline void setQ(double q) { q_ = q; }
+  inline double getQ() const { return q_; }
   
-  void setQemp(double qempnew) { qemp = qempnew; }
-  double getQemp() const { return qemp; }
+  inline void setQemp(double qemp) { qemp_ = qemp; }
+  inline double getQemp() const { return qemp_; }
   
-  void setPEP(double pepnew) { pep = pepnew; }
-  double getPEP() const { return pep; }
+  inline void setPEP(double pep) { pep_ = pep; }
+  inline double getPEP() const { return pep_; }
   
-  void setP(double pnew) { p = pnew; }
-  double getP() const { return p; }
+  inline void setP(double p) { p_ = p; }
+  inline double getP() const { return p_; }
   
-  void setIsDecoy(bool isdecoynew) { isDecoy = isdecoynew; }
-  bool getIsDecoy() const { return isDecoy; }
+  inline void setScore(double score) { score_ = score; }
+  inline double getScore() const { return score_; }
   
-  void setGroupId(int groupId) { groupId_ = groupId; }
-  int getGroupId() const { return groupId_; }
+  inline void setIsDecoy(bool isdecoy) { isDecoy_ = isdecoy; }
+  inline bool getIsDecoy() const { return isDecoy_; }
   
-  void setPeptide(std::string peptide,bool isdecoy,double p,double pep,double q,double empq) {
-    peptides.push_back(new Peptide(peptide,isdecoy,p,pep,q,empq));
+  inline void setGroupId(int groupId) { groupId_ = groupId; }
+  inline int getGroupId() const { return groupId_; }
+  
+  void setPeptide(std::string peptide, bool isdecoy, double p, double pep, 
+                  double q, double empq) {
+    peptides_.push_back(new Peptide(peptide, isdecoy, p, pep, q, empq));
   }
-  void setPeptide(Peptide *__peptide) {
-    peptides.push_back(__peptide);
+  void setPeptide(Peptide *peptide) {
+    peptides_.push_back(peptide);
   }
-  void setPeptides(std::vector<Peptide*> peptidesnew) {
-     peptides = std::vector<Peptide*>(peptidesnew);
+  void setPeptides(std::vector<Peptide*> peptides) {
+     peptides_ = std::vector<Peptide*>(peptides);
   }
-  std::vector<Peptide*> getPeptides() { return peptides; }
-  std::vector<Peptide*> getPeptides() const { return peptides; }
+  std::vector<Peptide*> getPeptides() { return peptides_; }
+  std::vector<Peptide*> getPeptides() const { return peptides_; }
   
   /*
   inline bool operator<(const Protein& a,const Protein& b)  {
@@ -89,11 +92,11 @@ class Protein {
   */
  
  private:
-  std::string name;
-  double q, qemp, pep, p, pi0;
+  std::string name_;
+  double q_, qemp_, pep_, p_, score_;
   int groupId_;
-  bool isDecoy;
-  std::vector<Peptide*> peptides;
+  bool isDecoy_;
+  std::vector<Peptide*> peptides_;
   
 };
 

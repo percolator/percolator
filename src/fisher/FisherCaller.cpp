@@ -333,7 +333,7 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
   clock_t procStartClock = clock();
   time(&procStart);
   double diff = difftime(procStart, startTime);
-  if (VERB > 1) cerr << "Creating database took "
+  if (VERB > 3) cerr << "Creating database took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
   
@@ -351,7 +351,7 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
   procStartClock = clock();
   time(&procStart);
   diff = difftime(procStart, startTime);
-  if (VERB > 1) cerr << "Creating protein peptide map took "
+  if (VERB > 3) cerr << "Creating protein peptide map took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
       
@@ -368,7 +368,7 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
   procStartClock = clock();
   time(&procStart);
   diff = difftime(procStart, startTime);
-  if (VERB > 1) cerr << "Creating fragment protein map took "
+  if (VERB > 3) cerr << "Creating fragment protein map took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
   

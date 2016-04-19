@@ -250,11 +250,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("f",
-      "fisher-protein",
-      "Use fisher's method to infer protein probabilities, provide the fasta file as the argument to this flag.",
+      "picked-protein",
+      "Use the picked protein-level FDR to infer protein probabilities, provide the fasta file as the argument to this flag.",
       "value");
   cmd.defineOption("z",
-      "fisher-enzyme",
+      "protein-enzyme",
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
       "",
       "trypsin");
@@ -263,15 +263,19 @@ bool Caller::parseOptions(int argc, char **argv) {
       "The p-value cutoff for peptides when inferring proteins with fisher's method. Default = 1.0",
       "value");*/
   cmd.defineOption("c",
-      "fisher-report-fragments",
-      "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second.",
+      "protein-report-fragments",
+      "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second. Not available for Fido.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("g",
-      "fisher-report-duplicates",
-      "If multiple database proteins contain exactly the same set of peptides, then Percolator will randomly discard all but one of the proteins. If this option is set, then the IDs of these duplicated proteins will be reported as a comma-separated list.",
+      "protein-report-duplicates",
+      "If multiple database proteins contain exactly the same set of peptides, then Percolator will randomly discard all but one of the proteins. If this option is set, then the IDs of these duplicated proteins will be reported as a comma-separated list. Not available for Fido.",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("I",
+      "protein-absence-ratio",
+      "The ratio of absent proteins, used for calculating protein-level q-values with a null hypothesis of \"Protein P is absent\". This uses the \"classic\" protein FDR in favor of the \"picked\" protein FDR.",
+      "value");
   cmd.defineOption("A",
       "fido-protein",
       "Use the Fido algorithm to infer protein probabilities",
@@ -290,10 +294,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gamma",
       "Set Fido's prior probability that a protein is present in the sample. Set by grid search if not specified",
       "value");
-  cmd.defineOption("I",
-      "fido-protein-level-pi0",
-      "The pi_0 value when calculating protein-level empirical q-values. The value defaults to 1.0",
-      "value");
   cmd.defineOption("q",
       "fido-empirical-protein-q",        
       "Estimate empirical p-values and q-values using target-decoy analysis.",
@@ -301,7 +301,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("P",
       "fido-pattern",
-      "Define the text pattern to identify decoy proteins in the database. Default = \"random\".",
+      "Define the text pattern to identify decoy proteins in the database. Default = \"random_\".",
       "value");
   cmd.defineOption("d",
       "fido-gridsearch-depth",
@@ -402,9 +402,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     // Confidence estimation options (general protein prob options)
     bool protEstimatorOutputEmpirQVal = false;
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
-    std::string protEstimatorDecoyPrefix = "random";
-    double protEstimatorPi0 = 1.0;
-    if (cmd.optionSet("I")) protEstimatorPi0 = cmd.getDouble("I", 0.0, 1.0);
+    std::string protEstimatorDecoyPrefix = "random_";
+    double protEstimatorAbsenceRatio = 1.0;
+    if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
     protEstimatorOutputEmpirQVal = cmd.optionSet("q");
     if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
     //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
@@ -442,7 +442,7 @@ bool Caller::parseOptions(int argc, char **argv) {
                 fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
                 fidoGridSearchDepth, fidoGridSearchThreshold,
                 fidoProteinThreshold, fidoMseThreshold,
-                protEstimatorPi0, protEstimatorOutputEmpirQVal, 
+                protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal, 
                 protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
     } else if (cmd.optionSet("f")) {  
       std::string fastaDatabase = cmd.options["f"];
@@ -460,7 +460,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       
       protEstimator_ = new FisherInterface(fastaDatabase, fisherPvalueCutoff,
           fisherReportFragmentProteins, fisherReportDuplicateProteins,
-          protEstimatorTrivialGrouping, protEstimatorPi0, 
+          protEstimatorTrivialGrouping, protEstimatorAbsenceRatio, 
           protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
     }
   }
@@ -698,9 +698,12 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   double diff_time = difftime(procStart, startTime);
   
   if (VERB > 1) {  
-    cerr << "Estimating Protein Probabilities took : "
-    << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-    << " cpu seconds or " << diff_time << " seconds wall time" << endl;
+    ostringstream timerValues;
+    timerValues.precision(4);
+    timerValues << "Estimating Protein Probabilities took : "
+      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
+      << " cpu seconds or " << diff_time << " seconds wall time" << endl;
+    std::cerr << timerValues.str();
   }
   
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);

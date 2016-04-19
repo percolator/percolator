@@ -19,12 +19,15 @@
 
 FisherInterface::FisherInterface(const std::string& fastaDatabase,
     double pvalueCutoff, bool reportFragmentProteins, bool reportDuplicateProteins,
-    bool trivialGrouping, double pi0, bool outputEmpirQval, 
+    bool trivialGrouping, double absenceRatio, bool outputEmpirQval, 
     std::string& decoyPattern) :
-  ProteinProbEstimator(trivialGrouping, pi0, outputEmpirQval, decoyPattern),
-  fastaProteinFN_(fastaDatabase), maxPeptidePval_(pvalueCutoff),
-  reportFragmentProteins_(reportFragmentProteins),
-  reportDuplicateProteins_(reportDuplicateProteins) {}
+      ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQval, decoyPattern),
+      fastaProteinFN_(fastaDatabase), maxPeptidePval_(pvalueCutoff),
+      reportFragmentProteins_(reportFragmentProteins),
+      reportDuplicateProteins_(reportDuplicateProteins),
+      protInferenceMethod_(BESTPEPT) {
+  if (absenceRatio == 1.0) usePi0_ = false;
+}
 
 FisherInterface::~FisherInterface() {}
 
@@ -129,8 +132,16 @@ bool FisherInterface::initialize(Scores* fullset) {
 void FisherInterface::run() {  
   std::map<std::string, std::string> fragment_map, duplicate_map;
   fisherCaller_.setFastaDatabase(fastaProteinFN_);
+  
+  if (VERB > 1) {
+    std::cerr << "Detecting protein fragments/duplicates in target database" << std::endl;
+  }
   bool generateDecoys = false;
   fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
+  
+  if (VERB > 1) {
+    std::cerr << "Detecting protein fragments/duplicates in decoy database" << std::endl;
+  }
   generateDecoys = true;
   fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
   
@@ -173,22 +184,22 @@ void FisherInterface::run() {
     
     if (!isShared) {
       Protein::Peptide *peptide = new Protein::Peptide(
-          peptideIt->pPSM->getPeptideSequence(),peptideIt->isDecoy(),
-			    peptideIt->p, peptideIt->pep,peptideIt->q,peptideIt->p);
-      if (proteins.find(lastProteinId) == proteins.end()) {
+          peptideIt->pPSM->getPeptideSequence(), peptideIt->isDecoy(),
+			    peptideIt->p, peptideIt->pep, peptideIt->q, peptideIt->score);
+      if (proteins_.find(lastProteinId) == proteins_.end()) {
         if (proteinsInGroup.size() > 1) {
           groupProteinIds[lastProteinId] = proteinsInGroup;
         }
-        Protein *newprotein = new Protein(lastProteinId,0.0,0.0,0.0,0.0,
-            peptideIt->isDecoy(),peptide,++numGroups);
-        proteins.insert(std::make_pair(lastProteinId,newprotein));
+        Protein *newprotein = new Protein(lastProteinId, peptideIt->isDecoy(),
+            peptide, ++numGroups);
+        proteins_.insert(std::make_pair(lastProteinId,newprotein));
         if (lastProteinId.find(decoyPattern_) == std::string::npos) {
           ++numberTargetProteins_;
         } else {
           ++numberDecoyProteins_;
         }
       } else {
-        proteins[lastProteinId]->setPeptide(peptide);
+        proteins_[lastProteinId]->setPeptide(peptide);
         if (proteinsInGroup.size() > 1) {
           groupProteinIds[lastProteinId].insert(proteinsInGroup.begin(), 
                                                  proteinsInGroup.end());
@@ -201,8 +212,8 @@ void FisherInterface::run() {
     std::map<std::string, std::set<std::string> >::iterator groupIt;
     std::map<const std::string,Protein*>::iterator representIt;
     for (groupIt = groupProteinIds.begin(); groupIt != groupProteinIds.end(); ++groupIt) {
-      representIt = proteins.find(groupIt->first);
-      if (representIt != proteins.end()) {
+      representIt = proteins_.find(groupIt->first);
+      if (representIt != proteins_.end()) {
         std::string newName = "";
         for (std::set<std::string>::iterator proteinIt = groupIt->second.begin(); proteinIt != groupIt->second.end(); ++proteinIt) {
           newName += *proteinIt + ",";
@@ -215,67 +226,207 @@ void FisherInterface::run() {
 }
 
 void FisherInterface::computeProbabilities(const std::string& fname) {
-  for (std::map<const std::string,Protein*>::iterator it = proteins.begin(); 
-        it != proteins.end(); it++) {
+  for (std::map<const std::string,Protein*>::iterator it = proteins_.begin(); 
+        it != proteins_.end(); it++) {
     std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
-    if (true) {
-      double fisher = 0.0;
-      int significantPeptides = 0;
-      for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
-            itP != peptides.end(); itP++) {
-        fisher += log((*itP)->p / maxPeptidePval_);
+    switch (protInferenceMethod_) {
+      case FISHER: {
+        double fisher = 0.0;
+        int significantPeptides = 0;
+        for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+              itP != peptides.end(); itP++) {
+          fisher += log((*itP)->p / maxPeptidePval_);
+        }
+        double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
+        if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
+        it->second->setP(proteinPvalue);
+        it->second->setScore(proteinPvalue);
+        break;
+      } case PEPPROD: { // MaxQuant's strategy
+        double logPepProd = 0.0;
+        for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+              itP != peptides.end(); itP++) {
+          logPepProd += log((*itP)->pep);
+        }
+        it->second->setScore(logPepProd);
+        break;
+      } case BESTPEPT: {
+        double maxScore = -1000.0;
+        for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+              itP != peptides.end(); itP++) {
+          maxScore = std::max(maxScore, (*itP)->score);
+        }
+        it->second->setScore(-1.0*maxScore); // lower scores are better
+        break;
       }
-      double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
-      if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
-      it->second->setP(proteinPvalue);
-    } else { // MaxQuant's strategy
-      double fisher = 0.0;
-      for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
-            itP != peptides.end(); itP++) {
-        fisher += log((*itP)->pep);
-      }
-      it->second->setP(fisher);
     }
   }
   
-  std::vector<std::pair<std::string,Protein*> > myvec(proteins.begin(), proteins.end());
-  std::sort(myvec.begin(), myvec.end(), IntCmpPvalue());
+  std::vector<std::pair<std::string,Protein*> > protIdProtPairs(proteins_.begin(), proteins_.end());
   
+  if (!usePi0_) pickedProteinStrategy(protIdProtPairs);
+  
+  std::vector<double> peps;
+  estimatePEPs(protIdProtPairs, peps);
+  
+  for (size_t i = 0; i < protIdProtPairs.size(); ++i) {
+    pepProteinMap_.insert(std::make_pair(peps[i], std::vector<std::string>(1, protIdProtPairs[i].first) ));
+  }
+}
+
+/* less efficient than pickedProteinStrategy, but more forgiving in specifying the correct decoyPattern */
+void FisherInterface::pickedProteinStrategySubstring(
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
+  std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
+  
+  std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
+  std::vector<std::string> targetProts, decoyProts;
+  std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
+  size_t numErased = 0;
+  for (; it != protIdProtPairs.end(); ++it) {
+    bool isDecoy = it->second->getIsDecoy();
+    bool globalErase = false;
+    std::string proteinName = it->second->getName(); 
+    
+    std::istringstream ss(proteinName); 
+    std::string proteinId;
+    while (std::getline(ss, proteinId, ',')) { // split name by comma
+      bool localErase = false;
+      if (isDecoy) {
+        for (size_t j = 0; j < targetProts.size(); ++j) {
+          if (proteinId.find(targetProts[j]) != std::string::npos) {
+            localErase = true;
+            break;
+          }
+        }
+      } else {
+        for (size_t j = 0; j < decoyProts.size(); ++j) {
+          if (decoyProts[j].find(proteinId) != std::string::npos) {
+            localErase = true;
+            break;
+          }
+        }
+      }
+      if (!localErase) {
+        if (isDecoy) decoyProts.push_back(proteinId);
+        else targetProts.push_back(proteinId);
+      } else {
+        globalErase = true;
+      }
+    }
+    if (globalErase) {
+      if (isDecoy) --numberDecoyProteins_;
+      else --numberTargetProteins_;
+      proteins_.erase(it->first); // this is where the printed proteins are stored
+      numErased += 1;
+    } else {
+      pickedProtIdProtPairs.push_back(*it);
+    }
+  }
+  pickedProtIdProtPairs.swap(protIdProtPairs);
+  
+  if (numErased == 0) {
+    std::cerr << "Warning: No target-decoy protein pairs found. Check if the "
+      << "correct decoy pattern was specified with the -P flag, i.e. if the "
+      << "target protein is called \"protA\" and the decoy protein "
+      << "\"decoy_protA\", use the option \"-p decoy_\"." << std::endl;
+  }
+}
+
+
+void FisherInterface::pickedProteinStrategy(
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
+  std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
+  
+  std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
+  std::set<std::string> targetProts, decoyProts;
+  std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
+  size_t numErased = 0;
+  for (; it != protIdProtPairs.end(); ++it) {
+    bool isDecoy = it->second->getIsDecoy();
+    bool globalErase = false;
+    std::string proteinName = it->second->getName(); 
+    
+    std::istringstream ss(proteinName); 
+    std::string proteinId;
+    while (std::getline(ss, proteinId, ',')) { // split name by comma
+      bool localErase = false;
+      if (isDecoy) {
+        std::string targetId = proteinId.substr(decoyPattern_.size());
+        if (targetProts.find(targetId) != targetProts.end()) {
+          localErase = true;
+        } else {
+          decoyProts.insert(proteinId);
+        }
+      } else {
+        if (decoyProts.find(decoyPattern_ + proteinId) != decoyProts.end()) {
+          localErase = true;
+        } else {
+          targetProts.insert(proteinId);
+        }
+      }
+      if (localErase) globalErase = true;
+    }
+    if (globalErase) {
+      if (isDecoy) --numberDecoyProteins_;
+      else --numberTargetProteins_;
+      proteins_.erase(it->first); // this is where the printed proteins are stored
+      numErased += 1;
+    } else {
+      pickedProtIdProtPairs.push_back(*it);
+    }
+  }
+  pickedProtIdProtPairs.swap(protIdProtPairs);
+  
+  if (numErased == 0) {
+    std::cerr << "Warning: No target-decoy protein pairs found for the picked "
+      << "protein strategy.\n  Check if the correct decoy pattern was specified "
+      << "with the -P flag;\n  if the target protein is called \"protA\" and the "
+      << "decoy protein \"decoy_protA\", use the option \"-P decoy_\"." 
+      << std::endl << std::endl;
+  }
+}
+
+void FisherInterface::estimatePEPs(
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs,
+    std::vector<double>& peps) {
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> pvals;
-  if (true) { // if we have well calibrated p-values
-    for (size_t i = 0; i < myvec.size(); ++i) {
-      double pValue = myvec[i].second->getP();
-      bool isDecoy = myvec[i].second->getIsDecoy();
-      combined.push_back(make_pair(pValue, !isDecoy));
-      if (!isDecoy) {
-        pvals.push_back(pValue);
+  switch (protInferenceMethod_) {
+    case FISHER: { // if we have well calibrated p-values
+      for (size_t i = 0; i < protIdProtPairs.size(); ++i) {
+        double pValue = protIdProtPairs[i].second->getP();
+        bool isDecoy = protIdProtPairs[i].second->getIsDecoy();
+        combined.push_back(make_pair(pValue, !isDecoy));
+        if (!isDecoy) {
+          pvals.push_back(pValue);
+        }
       }
+      break;
+    } case PEPPROD:
+      case BESTPEPT: { // if we have some other type of score
+      for (size_t i = 0; i < protIdProtPairs.size(); ++i) {
+        double score = protIdProtPairs[i].second->getScore();
+        bool isDecoy = protIdProtPairs[i].second->getIsDecoy();
+        combined.push_back(make_pair(score, !isDecoy));
+      }
+      PosteriorEstimator::getPValues(combined, pvals);
+      break;
     }
-  } else { // if we have some other type of score
-    for (size_t i = 0; i < myvec.size(); ++i) {
-      double pValue = myvec[i].second->getP();
-      bool isDecoy = myvec[i].second->getIsDecoy();
-      combined.push_back(make_pair(pValue, !isDecoy));
-    }
-    PosteriorEstimator::getPValues(combined, pvals);
   }
-  pi0_ = PosteriorEstimator::estimatePi0(pvals);
   
-  if (VERB > 1) {
-    std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
+  if (usePi0_) {
+    pi0_ = PosteriorEstimator::estimatePi0(pvals);
+    if (VERB > 1) {
+      std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
+    }
   }
+  
   std::sort(combined.begin(), combined.end());
   
   bool includeNegativesInResult = true;
-  std::vector<double> peps;
   PosteriorEstimator::setReversed(true);
-  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, includeNegativesInResult);
-  
-  for (size_t i = 0; i < myvec.size(); ++i) {
-    pvalues.push_back(myvec[i].second->getP());
-    pepProteinMap_.insert(std::make_pair(peps[i], std::vector<std::string>(1, myvec[i].first) ));
-  }
+  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_ * absenceRatio_, peps, includeNegativesInResult);
 }
 
 std::ostream& FisherInterface::printParametersXML(std::ostream &os) {

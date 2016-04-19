@@ -77,9 +77,9 @@ FidoInterface::FidoInterface(double alpha, double beta, double gamma,
     bool noPartitioning, bool noClustering, bool noPruning, 
     unsigned gridSearchDepth, double gridSearchThreshold, 
     double proteinThreshold, double mseThreshold, 
-    double pi0, bool outputEmpirQVal, 
+    double absenceRatio, bool outputEmpirQVal, 
     std::string decoyPattern, bool trivialGrouping) :
-  ProteinProbEstimator(trivialGrouping, pi0, outputEmpirQVal, decoyPattern), 
+  ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQVal, decoyPattern), 
   alpha_(alpha), beta_(beta), gamma_(gamma),
   noPartitioning_(noPartitioning), noClustering_(noClustering),
   noPruning_(noPruning), proteinThreshold_(proteinThreshold), 
@@ -99,8 +99,8 @@ void FidoInterface::run() {
   
   double localPeptidePrior = kPeptidePrior;
   if (kComputePriors) {
-    if (pi0_ != 1.0) {
-      localPeptidePrior = 1 - pi0_;
+    if (absenceRatio_ != 1.0) {
+      localPeptidePrior = 1 - absenceRatio_;
     } else {
       localPeptidePrior = estimatePriors();
     }
@@ -500,7 +500,7 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
     PosteriorEstimator::getPValues(combined, pvals);
     pi0_ = PosteriorEstimator::estimatePi0(pvals);
   }
-  FDRCalculator fdrCalculator(usePi0_, targetDecoyRatio, pi0_, countDecoyQvalue_);
+  FDRCalculator fdrCalculator(usePi0_, targetDecoyRatio, pi0_ * absenceRatio_, countDecoyQvalue_);
   
   //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
   for (unsigned int k = 0; (k < proteinNames.size() && 
@@ -643,11 +643,8 @@ void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
   }
   
   if (tpCount_ > 0) {
-    if (usePi0_) {
-      empFDR = (fpCount_ * pi0_ * targetDecoyRatio_) / tpCount_;
-    } else {
-      empFDR = fpCount_ / tpCount_;
-    }
+    empFDR = fpCount_ / tpCount_;
+    if (usePi0_) empFDR *= pi0_ * targetDecoyRatio_;
   }
   
   if (empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;

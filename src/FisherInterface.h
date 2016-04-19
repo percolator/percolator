@@ -29,6 +29,16 @@
 #include "Enzyme.h"
 #include "PseudoRandom.h"
 
+/* 
+* Protein inference methods:
+* 1. Fisher's method for combining p-values
+* 2. Product of Posterior error probabilities (PEPs)
+* 3. Best peptide approach
+*/
+enum ProteinInferenceMethod {
+  FISHER, PEPPROD, BESTPEPT
+};
+
 /*
 * FisherInterface is a class that computes probabilities and statistics based
 * on provided proteins from the set of scored peptides from percolator. It
@@ -44,7 +54,7 @@ class FisherInterface : public ProteinProbEstimator {
  public:
   FisherInterface(const std::string& fastaDatabase, double pvalueCutoff,
     bool reportFragmentProteins, bool reportDuplicateProteins, 
-    bool trivialGrouping, double pi0, 
+    bool trivialGrouping, double absenceRatio, 
     bool outputEmpirQval, std::string& decoyPattern);
   virtual ~FisherInterface();
   
@@ -56,7 +66,16 @@ class FisherInterface : public ProteinProbEstimator {
   string printCopyright();
 
  private:
+  void pickedProteinStrategy(
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs);
+  void pickedProteinStrategySubstring(
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs);
+  void estimatePEPs(
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs,
+    std::vector<double>& peps);
+  
   /** FISHER PARAMETERS **/
+  ProteinInferenceMethod protInferenceMethod_;
   std::string fastaProteinFN_;
   bool reportFragmentProteins_, reportDuplicateProteins_;
   FisherCaller fisherCaller_;

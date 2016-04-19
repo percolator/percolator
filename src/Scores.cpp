@@ -689,7 +689,7 @@ void Scores::calcPep() {
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
   for (size_t ix = 0; ix < scores_.size(); ix++) {
-    (scores_[ix]).pep = peps[ix];
+    scores_[ix].pep = peps[ix];
   }
 }
 
