@@ -87,7 +87,6 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
 
     string schemaDefinition = Globals::getInstance()->getXMLDir()+PIN_SCHEMA_LOCATION+string("percolator_in.xsd");
     parser p;
-    std::string xmlInputFN = "";
     xml_schema::dom::auto_ptr<DOMDocument> doc(p.start(
         dataStream, xmlInputFN.c_str(), schemaValidation_,
         schemaDefinition, PIN_VERSION_MAJOR, PIN_VERSION_MINOR));
@@ -275,14 +274,14 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     }
     
   } catch (const xml_schema::exception& e) {
-    std::cerr << e << endl;
+    std::cerr << "ERROR: xml schema error " << e << endl;
     return 0;
   } catch (const std::ios_base::failure&) {
     std::cerr << "ERROR: unable to open or read" << std::endl;
     return 0;
   } catch (const xercesc::DOMException& e) {
-    char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "ERROR: catched xercesc::DOMException=" << tmpStr << std::endl;
+    char* tmpStr = XMLString::transcode(e.getMessage());
+    std::cerr << "ERROR: caught xercesc::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
     return 0;
   }
@@ -335,7 +334,7 @@ PSMDescription* XMLInterface::readPsm(
 
   if (psm.occurence().size() <= 0) {
     ostringstream temp;
-    temp << "Error: adding PSM " << psm.id() << " to the dataset.\n\
+    temp << "Error: cannot add PSM " << psm.id() << " to the dataset.\n\
     The PSM does not contain protein occurences." << std::endl;
     throw MyException(temp.str());
   }

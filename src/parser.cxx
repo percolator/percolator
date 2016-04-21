@@ -241,13 +241,17 @@ void error_handler::handle(const SAXParseException& e, severity s) {
 
   if (xid == 0)
     xid = e.getSystemId();
-
+  
+  if (xid == 0) // MT: this should not happen, but it does...
+    xid = XMLString::transcode("input.xml");
+  
   char* id(XMLString::transcode(xid));
   char* msg(XMLString::transcode(e.getMessage()));
   
   ostringstream temp;
-  temp << id << ":" << e.getLineNumber () << ":" << e.getColumnNumber ()
-     << " " << (s == s_warning ? "warning: " : "error: ") << msg << endl;
+  temp << "XML parser " << (s == s_warning ? "warning" : "error") 
+     << " at " << id << ":" << e.getLineNumber() << ":" << e.getColumnNumber()
+     << "\n  " << (s == s_warning ? "warning: " : "error: ") << msg << endl;
   XMLString::release (&id);
   XMLString::release (&msg);
   
