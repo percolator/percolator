@@ -48,7 +48,7 @@ if [ -e ${cm}.sh ]; then
   echo "  CMake has been installed previously"
 else
   echo "  Installing CMake"
-  wget --quiet http://www.cmake.org/files/v2.8/${cm}.sh
+  wget --no-check-certificate https://www.cmake.org/files/v2.8/${cm}.sh
   mkdir ${cm}
   sudo sh ./${cm}.sh --skip-license --prefix=${cm}
 fi
@@ -111,7 +111,7 @@ if [ -e ${boost}.tar.gz ]; then
   echo "  Boost ${boost_version} has been installed previously, remove if you want a clean install"
 else
   echo "  Installing Boost, this might take a while..."
-  wget http://sourceforge.net/projects/boost/files/boost/${boost_version}/${boost}.tar.gz/download
+  wget --no-check-certificate http://sourceforge.net/projects/boost/files/boost/${boost_version}/${boost}.tar.gz/download
   tar zxf ${boost}.tar.gz
   cd ${boost}
   sudo sh ./bootstrap.sh

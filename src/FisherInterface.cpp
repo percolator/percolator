@@ -237,7 +237,8 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
               itP != peptides.end(); itP++) {
           fisher += log((*itP)->p / maxPeptidePval_);
         }
-        double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
+        //double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
+        double proteinPvalue = 0.0;
         if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
         it->second->setP(proteinPvalue);
         it->second->setScore(proteinPvalue);

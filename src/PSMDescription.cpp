@@ -34,9 +34,11 @@ PSMDescription::PSMDescription(const std::string& pep) :
 PSMDescription::~PSMDescription() {}
 
 void PSMDescription::deletePtr(PSMDescription* psm) {
-  psm->deleteRetentionFeatures();
-  delete psm;
-  psm = NULL;
+  if (psm != NULL) {
+    psm->deleteRetentionFeatures();
+    delete psm;
+    psm = NULL;
+  }
 }
 
 bool PSMDescription::isNotEnzymatic() {

@@ -1,3 +1,11 @@
+v3.0
+* Added protein-level FDRs using best-scoring peptide approach
+* Added support for training on subsets of PSMs to speed up analysis for large data sets
+* Fixed msgf2pin issue with huge ScoreRatio feature (#142)
+* Fixed tandem2pin issue with incorrect decoy label assigment for shared peptides (#143)
+* Added error message when no decoys are provided (#145)
+* Fixed reporting of XML parsing errors for converters (#146)
+
 v2.10
 * Made Target-Decoy competition the default search mode (can be switched off with the new '-y' flag)
 * Fixed unbalanced fold sizes in cross validation

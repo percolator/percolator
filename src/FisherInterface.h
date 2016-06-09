@@ -21,7 +21,7 @@
 #include <cmath>
 #include <functional>
 #include <cfloat>
-#include <boost/math/special_functions/gamma.hpp>
+//#include <boost/math/special_functions/gamma.hpp>
 
 #include "ProteinProbEstimator.h"
 #include "PosteriorEstimator.h"

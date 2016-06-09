@@ -20,6 +20,11 @@
 
 #ifdef _MSC_VER
 //#include "WinCrux.h"
+/*********************************************************
+ This function replaces the GNU extension of the same name.
+ Reads a line from the given stream.
+ *********************************************************/
+int getline(char **lineptr, size_t *n, FILE *stream);
 #endif
 
 //Comparator function for c type strings.
@@ -44,9 +49,6 @@ class Database {
   unsigned long int size_; ///< The size of the database in bytes (convenience)
   bool use_light_protein_; ///< should I use the light/heavy protein option
   bool is_memmap_; ///< Are we using a memory mapped fasta file? 
-#ifdef _MSC_VER
-  SIMPLE_UNMMAP unmap_info_;
-#endif
   void* data_address_; ///< pointer to the beginning of the memory mapped data, 
   unsigned int pointer_count_; ///< number of pointers referencing this database. 
   long file_size_; ///< the size of the binary fasta file, when memory mapping

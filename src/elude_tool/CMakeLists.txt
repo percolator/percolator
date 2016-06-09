@@ -125,11 +125,11 @@ add_subdirectory(data/system_tests/)
 
 #TODO: make sure the models are included in the windows installer
 
-if(APPLE)
-  install(TARGETS elude EXPORT ELUDE DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!
-else(APPLE)
+#if(APPLE)
+#  install(TARGETS elude EXPORT ELUDE DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!
+#else(APPLE)
   install(TARGETS elude EXPORT ELUDE DESTINATION bin)
-endif(APPLE)
+#endif(APPLE)
 
 
 if(MINGW)

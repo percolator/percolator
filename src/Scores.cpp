@@ -558,26 +558,23 @@ void Scores::weedOutRedundant() {
   * much simpler version but it does not fill up the peptide-PSM map:
   * scores_.erase(std::unique(scores_.begin(), scores_.end(), mycmp), scores_.end());
   */
-
-  std::vector<ScoreHolder> uniquePeptideScores;
+  
   std::string previousPeptide = "";
   int previousLabel = 0;
-  // run a pointer down the scores list
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); scoreIt++){
-    // compare pointer's peptide with previousPeptide
-    std::string currentPeptide = scoreIt->pPSM->getPeptideSequence();
-    if (currentPeptide != previousPeptide || scoreIt->label != previousLabel) {
+  size_t lastWrittenIdx = 0u;
+  for (size_t idx = 0u; idx < scores_.size(); ++idx){
+    std::string currentPeptide = scores_.at(idx).pPSM->getPeptideSequence();
+    int currentLabel = scores_.at(idx).label;
+    if (currentPeptide != previousPeptide || currentLabel != previousLabel) {
       // insert as a new score
-      uniquePeptideScores.push_back(*scoreIt);
-      // update previousPeptide
+      scores_.at(lastWrittenIdx++) = scores_.at(idx);
       previousPeptide = currentPeptide;
-      previousLabel = scoreIt->label;
+      previousLabel = currentLabel;
     }
     // append the psm
-    peptidePsmMap_[uniquePeptideScores.back().pPSM].push_back(scoreIt->pPSM);
+    peptidePsmMap_[scores_.at(lastWrittenIdx - 1).pPSM].push_back(scores_.at(idx).pPSM);
   }
-  scores_ = uniquePeptideScores;
+  scores_.resize(lastWrittenIdx);
   postMergeStep();
 }
 
@@ -585,9 +582,28 @@ void Scores::weedOutRedundant() {
  * Routine that sees to that only unique spectra are kept for TDC
  */
 void Scores::weedOutRedundantTDC() {
-  // order the scores_ (based on spectra id and score)
-  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
+  // order the scores (based on spectra id and score)
+  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());  
   scores_.erase(std::unique(scores_.begin(), scores_.end(), UniqueScanMassCharge()), scores_.end());
+  
+  /* does not actually release memory because of memory fragmentation
+  double previousExpMass = 0.0;
+  unsigned int previousScan = 0u;
+  size_t lastWrittenIdx = 0u;
+  for (size_t idx = 0u; idx < scores_.size(); ++idx){
+    double currentExpMass = scores_.at(idx).pPSM->expMass;
+    int currentScan = scores_.at(idx).pPSM->scan;
+    if (currentExpMass != previousExpMass || currentScan != previousScan) {
+      // insert as a new score
+      scores_.at(lastWrittenIdx++).swap(scores_.at(idx));
+      previousScan = currentScan;
+      previousExpMass = currentExpMass;
+    } else {
+      PSMDescription::deletePtr(scores_.at(idx).pPSM);
+    }
+  }
+  scores_.resize(lastWrittenIdx);
+  */
   postMergeStep();
 }
 

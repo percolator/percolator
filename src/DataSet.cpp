@@ -213,11 +213,13 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     throw MyException(temp.str());
   }
   
-  while (readProteins && !reader.error()) {
-    std::string tmp = reader.readString();
-    if (tmp.size() > 0) {
-      myPsm->proteinIds.push_back(tmp);
+  if (readProteins) {
+    std::vector<std::string> proteins;
+    while (!reader.error()) {
+      std::string tmp = reader.readString();
+      if (tmp.size() > 0) proteins.push_back(tmp);
     }
+    proteins.swap(myPsm->proteinIds); // shrink to fit
   }
   
   return label;
