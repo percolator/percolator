@@ -293,28 +293,33 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 
 	      //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
 	      //boost filesystem when we dont use them
-	      try {
-	        boost::filesystem::path ph = boost::filesystem::unique_path();
-	        boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
-	        boost::filesystem::path file("converters-tmp.tcb");
-	        tcf = std::string((dir / file).string());
-	        str =  dir.string();
-	        tcd = new char[str.size() + 1];
-	        std::copy(str.begin(), str.end(), tcd);
-	        tcd[str.size()] = '\0';
-	        if (boost::filesystem::is_directory(dir)) {
-	          boost::filesystem::remove_all(dir);
-	        }
+#ifndef __APPLE__
+              try {
+                boost::filesystem::path ph = boost::filesystem::unique_path();
+                boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+                boost::filesystem::path file("converters-tmp.tcb");
+                tcf = std::string((dir / file).string());
+                str =  dir.string();
+                tcd = new char[str.size() + 1];
+                std::copy(str.begin(), str.end(), tcd);
+                tcd[str.size()] = '\0';
+                if (boost::filesystem::is_directory(dir)) {
+                  boost::filesystem::remove_all(dir);
+                }
 
-	        boost::filesystem::create_directory(dir);
-	      } catch (boost::filesystem::filesystem_error &e) {
-	        std::cerr << e.what() << std::endl;
-	      }
+                boost::filesystem::create_directory(dir);
+              } catch (boost::filesystem::filesystem_error &e) {
+                std::cerr << e.what() << std::endl;
+              }
 
-	      tmpDirs.resize(lineNumber_par+1);
-	      tmpDirs[lineNumber_par]=tcd;
-	      tmpFNs.resize(lineNumber_par+1);
-	      tmpFNs[lineNumber_par]=tcf;
+              tmpDirs.resize(lineNumber_par+1);
+              tmpDirs[lineNumber_par]=tcd;
+              std::string tmpName = tcf;
+#else
+              std::string tmpName = std::tmpnam(NULL);
+#endif
+              tmpFNs.resize(lineNumber_par+1);
+              tmpFNs[lineNumber_par] = tmpName;
 	      database->init(tmpFNs[lineNumber_par]);
 	    } else {
 	      database->init("");
