@@ -2,8 +2,8 @@
 set MSVC_VER=12
 set VCTARGET=C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0
 set SRC_DIR=%~dp0..\..\..\
-set BUILD_DIR=%SRC_DIR%\build
-set RELEASE_DIR=%SRC_DIR%\release
+set BUILD_DIR=%SRC_DIR%\build-32bit
+set RELEASE_DIR=%SRC_DIR%\release-32bit
 set BUILD_TYPE=Release
 
 :parse
@@ -27,14 +27,6 @@ set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 
-set CMAKE_URL=http://www.cmake.org/files/v2.8/cmake-2.8.12.1-win32-x86.exe
-if not exist "%INSTALL_DIR%\cmake" (
-  echo Downloading and installing CMake
-  PowerShell "(new-object System.Net.WebClient).DownloadFile('%CMAKE_URL%','%INSTALL_DIR%\cmake.exe')"
-  "%INSTALL_DIR%\cmake.exe" /S /D=%INSTALL_DIR%\cmake
-)
-set CMAKE_EXE="%INSTALL_DIR%\cmake\bin\cmake.exe"
-
 set ZIP_URL=http://downloads.sourceforge.net/sevenzip/7z920.exe
 if not exist "%INSTALL_DIR%\7zip" (
   echo Downloading and installing 7-Zip
@@ -43,28 +35,22 @@ if not exist "%INSTALL_DIR%\7zip" (
 )
 set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 
-:: The windows binary release of boost 1.55 does not include the serialization library, therefore we built from source.
-:: If this bug is fixed in the next version, we can just grab the binaries (much faster, except for a bigger download)
-set BOOST_ROOT=%INSTALL_DIR%\boost_1_55_0
-set BOOST_URL=http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.7z/download
+set CMAKE_BASE=cmake-3.5.2-win32-x86
+set CMAKE_URL=https://cmake.org/files/v3.5/%CMAKE_BASE%.zip
+if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
+  echo Downloading and installing CMake
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%CMAKE_URL%','%INSTALL_DIR%\cmake.zip')"
+  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
+)
+set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
+
+:: The windows binary release takes up 3GB, therefore we built only the libraries we need from source.
+set BOOST_ROOT=%INSTALL_DIR%\boost_1_61_0
+set BOOST_URL=http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.7z/download
 if not exist "%BOOST_ROOT%" (
   echo Downloading and installing Boost, this can take a few minutes...
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%BOOST_URL%','%INSTALL_DIR%\boost.7z')"
   %ZIP_EXE% x "%INSTALL_DIR%\boost.7z" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
-  :::::: Fix a bug in the 1.55 release ::::::::
-  echo #include ^<algorithm^> > tmp.txt
-  type "%BOOST_ROOT%\libs\serialization\src\basic_text_iprimitive.cpp" >> tmp.txt
-  type tmp.txt > "%BOOST_ROOT%\libs\serialization\src\basic_text_iprimitive.cpp"
-  echo #include ^<algorithm^> > tmp.txt
-  type "%BOOST_ROOT%\libs\serialization\src\basic_text_oprimitive.cpp" >> tmp.txt
-  type tmp.txt > "%BOOST_ROOT%\libs\serialization\src\basic_text_oprimitive.cpp"
-  echo #include ^<algorithm^> > tmp.txt
-  type "%BOOST_ROOT%\libs\serialization\src\basic_text_wiprimitive.cpp" >> tmp.txt
-  type tmp.txt > "%BOOST_ROOT%\libs\serialization\src\basic_text_wiprimitive.cpp"
-  echo #include ^<algorithm^> > tmp.txt
-  type "%BOOST_ROOT%\libs\serialization\src\basic_text_woprimitive.cpp" >> tmp.txt
-  type tmp.txt > "%BOOST_ROOT%\libs\serialization\src\basic_text_woprimitive.cpp"
-  :::::: end bug fix ::::::::
   cd /D "%BOOST_ROOT%"
   call bootstrap
   bjam threading=multi --with-system --with-filesystem --with-serialization -d0
@@ -73,12 +59,14 @@ set BOOST_LIB=%BOOST_ROOT%\stage\lib
 
 ::: Needed for CPack :::
 set NSIS_DIR=%INSTALL_DIR%\nsis
-set NSIS_URL=http://downloads.sourceforge.net/project/nsis/NSIS 3 Pre-release/3.0a2/nsis-3.0a2-setup.exe
+set NSIS_URL=https://sourceforge.net/projects/nsis/files/NSIS 3 Pre-release/3.0rc1/nsis-3.0rc1-setup.exe/download
 if not exist "%NSIS_DIR%" (
   echo Downloading and installing NSIS installer
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%NSIS_URL%','%INSTALL_DIR%\nsis.exe')"
   "%INSTALL_DIR%\nsis.exe" /S /D=%INSTALL_DIR%\nsis
 )
+setlocal
+set PATH=%PATH%;%INSTALL_DIR%\nsis
 
 ::: Needed for system tests :::
 set PYTHON_DIR=%INSTALL_DIR%\python
@@ -180,8 +168,8 @@ if not exist "%BUILD_DIR%" (md "%BUILD_DIR%")
 if not exist "%BUILD_DIR%\percolator-noxml" (md "%BUILD_DIR%\percolator-noxml")
 cd /D "%BUILD_DIR%\percolator-noxml"
 echo cmake percolator-noxml.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
-echo build percolator (this will take a few minutes).....
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
+echo build percolator-noxml (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -191,7 +179,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 cd /D "%BUILD_DIR%\percolator"
 echo cmake percolator.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
@@ -209,7 +197,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
-::::::: Building elude (Not working at the moment, see https://github.com/percolator/percolator/issues/106)::::::: 
+::::::: Building elude ::::::: 
 if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
 cd /D "%BUILD_DIR%\elude"
 echo cmake elude.....

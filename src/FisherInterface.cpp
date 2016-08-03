@@ -79,12 +79,13 @@ bool FisherInterface::initialize(Scores* fullset) {
     int miscleavages = Enzyme::countEnzymatic(peptideSequence);
     if (miscleavages > max_miscleavages && VERB > 1) {
       std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
+      max_miscleavages = std::max(max_miscleavages, miscleavages);
     }
-    max_miscleavages = std::max(max_miscleavages, miscleavages);
     
     int non_enzymatic_flanks = 0;
     if (!Enzyme::isEnzymatic(peptideSequenceFlanked[0], 
-                             peptideSequenceFlanked[2])) {
+                             peptideSequenceFlanked[2]) 
+           && peptideSequenceFlanked.substr(0,1) != "M") { // ignore protein N-term methionine cleavage
       ++non_enzymatic_flanks;
     }
     if (!Enzyme::isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
@@ -93,9 +94,9 @@ bool FisherInterface::initialize(Scores* fullset) {
     }
     if (non_enzymatic_flanks > max_non_enzymatic_flanks && VERB > 1) {
       std::cerr << "Non enzymatic flank detected: " << peptideSequenceFlanked << std::endl;
+      max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
     }
-    max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
-    total_non_enzymatic_flanks += max_non_enzymatic_flanks;
+    total_non_enzymatic_flanks += non_enzymatic_flanks;
   }
   // if more than half of the flanks or non enzymatic, probably the protease is wrong
   if (total_non_enzymatic_flanks > peptideScores_->size()) {
@@ -129,21 +130,23 @@ bool FisherInterface::initialize(Scores* fullset) {
   return true;
 }
 
-void FisherInterface::run() {  
+void FisherInterface::run() {
   std::map<std::string, std::string> fragment_map, duplicate_map;
-  fisherCaller_.setFastaDatabase(fastaProteinFN_);
-  
-  if (VERB > 1) {
-    std::cerr << "Detecting protein fragments/duplicates in target database" << std::endl;
+  if (fastaProteinFN_ != "auto") {
+    fisherCaller_.setFastaDatabase(fastaProteinFN_);
+    
+    if (VERB > 1) {
+      std::cerr << "Detecting protein fragments/duplicates in target database" << std::endl;
+    }
+    bool generateDecoys = false;
+    fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
+    
+    if (VERB > 1) {
+      std::cerr << "Detecting protein fragments/duplicates in decoy database" << std::endl;
+    }
+    generateDecoys = true;
+    fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
   }
-  bool generateDecoys = false;
-  fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
-  
-  if (VERB > 1) {
-    std::cerr << "Detecting protein fragments/duplicates in decoy database" << std::endl;
-  }
-  generateDecoys = true;
-  fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
   
   std::map<std::string, std::set<std::string> > groupProteinIds;
   unsigned int numGroups = 0;
@@ -264,6 +267,7 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   }
   
   std::vector<std::pair<std::string,Protein*> > protIdProtPairs(proteins_.begin(), proteins_.end());
+  std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
   
   if (!usePi0_) pickedProteinStrategy(protIdProtPairs);
   
@@ -278,8 +282,6 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
 /* less efficient than pickedProteinStrategy, but more forgiving in specifying the correct decoyPattern */
 void FisherInterface::pickedProteinStrategySubstring(
     std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
-  std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
-  
   std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
   std::vector<std::string> targetProts, decoyProts;
   std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
@@ -336,9 +338,7 @@ void FisherInterface::pickedProteinStrategySubstring(
 
 
 void FisherInterface::pickedProteinStrategy(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
-  std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
-  
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {  
   std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
   std::set<std::string> targetProts, decoyProts;
   std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
@@ -403,6 +403,8 @@ void FisherInterface::estimatePEPs(
           pvals.push_back(pValue);
         }
       }
+      std::sort(combined.begin(), combined.end());
+      std::sort(pvals.begin(), pvals.end());
       break;
     } case PEPPROD:
       case BESTPEPT: { // if we have some other type of score
@@ -411,6 +413,7 @@ void FisherInterface::estimatePEPs(
         bool isDecoy = protIdProtPairs[i].second->getIsDecoy();
         combined.push_back(make_pair(score, !isDecoy));
       }
+      std::sort(combined.begin(), combined.end());
       PosteriorEstimator::getPValues(combined, pvals);
       break;
     }
@@ -422,8 +425,6 @@ void FisherInterface::estimatePEPs(
       std::cerr << "protein pi0 estimate = " << pi0_ << std::endl;
     }
   }
-  
-  std::sort(combined.begin(), combined.end());
   
   bool includeNegativesInResult = true;
   PosteriorEstimator::setReversed(true);

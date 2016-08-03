@@ -24,7 +24,11 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
-#include <math.h>
+#ifdef WIN32
+#include <float.h>
+#define isfinite _finite
+#endif
+
 #include "Globals.h"
 #include "EludeModel.h"
 #include "DataSet.h"
@@ -1157,6 +1161,9 @@ double RTModel::estimateRT(double* features) {
   node.values = features;
   node.dim = noFeaturesToCalc;
   predicted_value = svm_predict(model, &node);
+  if (!isfinite(predicted_value)) {
+    predicted_value = 0.0;
+  }
   return predicted_value;
 }
 

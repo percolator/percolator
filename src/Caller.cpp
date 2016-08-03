@@ -231,7 +231,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("U",
       "only-psms",
-      "Do not remove redundant peptides, keep all PSMS and exclude peptide level probabilities.",
+      "Do not remove redundant peptides, keep all PSMS and exclude peptide level probabilities. This also turns on the -y flag, i.e. target-decoy competition is skipped, so that every PSM is reported. This can be overriden by explicitly specifying the -Y flag.",
       "",
       FALSE_IF_SET);
   cmd.defineOption("y",
@@ -240,8 +240,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   cmd.defineOption("Y",
-      "post-processing-tdc [default]",
-      "Use target-decoy competition to assign q-values and PEPs. This is the default setting, flag is only present for backwards compatibility.",
+      "post-processing-tdc",
+      "Use target-decoy competition to assign q-values and PEPs. This is the default setting, unless the -U flag is specified.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("s",
@@ -251,7 +251,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("f",
       "picked-protein",
-      "Use the picked protein-level FDR to infer protein probabilities, provide the fasta file as the argument to this flag.",
+      "Use the picked protein-level FDR to infer protein probabilities. Provide the fasta file as the argument to this flag, which will be used for protein grouping based on an in-silico digest. If no fasta file is available or protein grouping is not desired, set this flag to \"auto\" to skip protein grouping.",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
@@ -333,11 +333,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   */
   cmd.defineOption("l",
       "results-proteins",
-      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A is active)",
+      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A or -f is active)",
       "filename");
   cmd.defineOption("L",
       "decoy-results-proteins",
-      "Output tab delimited results for decoy proteins into a file (Only valid if option -A is active)",
+      "Output tab delimited results for decoy proteins into a file (Only valid if option -A or -f is active)",
       "filename");
   
   // finally parse and handle return codes (display help etc...)
@@ -355,6 +355,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("M")) decoyPsmResultFN_ = cmd.options["M"];
   
   if (cmd.optionSet("U")) {
+    // the different "hacks" below are mainly to keep backwards compatibility with old Mascot versions
     if (cmd.optionSet("A")){
       cerr
       << "ERROR: The -U option cannot be used in conjunction with -A: peptide level statistics\n"
@@ -390,6 +391,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       }
     }
     reportUniquePeptides_ = false;
+    targetDecoyCompetition_ = false;
+    usePi0_ = true;
   } else {
     if (cmd.optionSet("r")) peptideResultFN_ = cmd.options["r"];
     if (cmd.optionSet("B")) decoyPeptideResultFN_ = cmd.options["B"];
@@ -557,6 +560,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       targetDecoyCompetition_ = false;
       usePi0_ = true;
     }
+  }
+  if (cmd.optionSet("Y")) {
+    targetDecoyCompetition_ = true;
+    usePi0_ = false;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {

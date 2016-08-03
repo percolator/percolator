@@ -66,7 +66,7 @@ class PSMDescriptionDOC : public PSMDescription {
   inline void setMassDiff(const double dm) {
     massDiff_ = dm;
   }
-  inline double getMassDiff() const { return predictedTime_; }
+  inline double getMassDiff() const { return massDiff_; }
   
   std::string& getFullPeptide() { return getAParent()->peptide; }
   PSMDescription* getAParent() {

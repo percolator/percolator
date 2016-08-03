@@ -334,7 +334,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
 //Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
 void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,
     peptideProteinMapType &peptideProteinMap, bool& isDecoy) {
-  isDecoy = true;
+  if (po->iscombined) isDecoy = true; // Adjust isDecoy if combined file
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) {
     std::string proteinName = getRidOfUnprintables(protObj.label());
     tandem_ns::peptide peptideObj = protObj.peptide();
