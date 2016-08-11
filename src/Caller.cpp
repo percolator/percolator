@@ -62,7 +62,7 @@ string Caller::extendedGreeter(time_t& startTime) {
   oss << "Started " << ctime(&startTime) << endl;
   oss.seekp(-1, ios_base::cur);
   if (host) oss << " on " << host << endl;
-  oss << "Hyperparameters selectionFdr=" << selectionFdr_
+  oss << "Hyperparameters: selectionFdr=" << selectionFdr_
       << ", Cpos=" << selectedCpos_ << ", Cneg=" << selectedCneg_
       << ", maxNiter=" << numIterations_ << endl;
   return oss.str();
@@ -140,7 +140,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value"); 
   cmd.defineOption("i",
       "maxiter",
-      "Maximal number of iterations",
+      "Maximal number of iterations. Default = 10.",
       "number");
   cmd.defineOption("N",
       "subset-max-train",
@@ -264,12 +264,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");*/
   cmd.defineOption("c",
       "protein-report-fragments",
-      "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second. Not available for Fido.",
+      "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("g",
       "protein-report-duplicates",
-      "If multiple database proteins contain exactly the same set of peptides, then Percolator will randomly discard all but one of the proteins. If this option is set, then the IDs of these duplicated proteins will be reported as a comma-separated list. Not available for Fido.",
+      "If multiple database proteins contain exactly the same set of peptides, then Percolator will randomly discard all but one of the proteins. If this option is set, then the IDs of these duplicated proteins will be reported as a comma-separated list. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("I",
@@ -621,31 +621,33 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
   } else if (targetDecoyCompetition_) {
     allScores.weedOutRedundantTDC();
     if (VERB > 0) {
-      std::cerr << "Target Decoy Competition yielded " << allScores.posSize() 
-        << " target PSMs and " << allScores.negSize() << " decoy PSMs" << std::endl;
+      std::cerr << "Selected best-scoring PSM per scan+expMass"
+        << " (target-decoy competition): "
+        << allScores.posSize() << " target PSMs and " 
+        << allScores.negSize() << " decoy PSMs." << std::endl;
     }
   }
   
   if (VERB > 0 && writeOutput) {
     if (!targetDecoyCompetition_)
       std::cerr << "Selecting pi_0=" << allScores.getPi0() << std::endl;
-    std::cerr << "Calibrating statistics - calculating q values" << std::endl;
+    std::cerr << "Calculating q values." << std::endl;
   }
   
   int foundPSMs = allScores.calcQ(testFdr_);
-  allScores.calcPep();
   
   if (VERB > 0 && writeOutput) {
     if (targetDecoyCompetition_) {
-      std::cerr << "Merged list gives ";
+      std::cerr << "Final list yields ";
     } else {
-      std::cerr << "New pi_0 estimate on merged list gives ";
+      std::cerr << "New pi_0 estimate on final list yields ";
     }
-    std::cerr << foundPSMs << (reportUniquePeptides_ ? " peptides" : " PSMs") 
-              << " over q=" << testFdr_ << endl;
-    std::cerr << "Calibrating statistics - calculating Posterior error "
-              << "probabilities (PEPs)" << std::endl;
+    std::cerr << foundPSMs << " target " << (reportUniquePeptides_ ? "peptides" : "PSMs") 
+              << " with q<" << testFdr_ << "." << endl;
+    std::cerr << "Calculating posterior error probabilities (PEPs)." << std::endl;
   }
+  
+  allScores.calcPep();
   
   if (VERB > 1 && writeOutput) {
     time_t end;
@@ -654,7 +656,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
     ostringstream timerValues;
     timerValues.precision(4);
     timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
-                << " cpu seconds or " << diff << " seconds wall time" << endl;
+                << " cpu seconds or " << diff << " seconds wall clock time." << endl;
     std::cerr << timerValues.str();
   }
   
@@ -690,13 +692,28 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   startClock = clock();  
 
   if (VERB > 0) {
-    cerr << "\nCalculating protein level probabilities\n";
+    cerr << "\nCalculating protein level probabilities.\n";
     cerr << protEstimator_->printCopyright();
   }
   
   protEstimator_->initialize(&allScores);
+  
+  if (VERB > 1) {
+    std::cerr << "Initialized protein inference engine." << std::endl;
+  }
+  
   protEstimator_->run();
+  
+  if (VERB > 1) {
+    std::cerr << "Computing protein probabilities." << std::endl;
+  }
+  
   protEstimator_->computeProbabilities();
+  
+  if (VERB > 1) {
+    std::cerr << "Computing protein statistics." << std::endl;
+  }
+  
   protEstimator_->computeStatistics();
   
   time_t procStart;
@@ -707,9 +724,9 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   if (VERB > 1) {  
     ostringstream timerValues;
     timerValues.precision(4);
-    timerValues << "Estimating Protein Probabilities took : "
+    timerValues << "Estimating protein probabilities took : "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff_time << " seconds wall time" << endl;
+      << " cpu seconds or " << diff_time << " seconds wall clock time." << endl;
     std::cerr << timerValues.str();
   }
   
@@ -737,13 +754,10 @@ int Caller::run() {
   if (!readStdIn_) {
     if (!tabInput_) fileStream.exceptions(ifstream::badbit | ifstream::failbit);
     fileStream.open(inputFN_.c_str(), ios::in);
-    if (VERB > 1) {
-      std::cerr << "Reading input from datafile " << inputFN_ << std::endl;
-    }
   } else if (maxPSMs_ > 0u) {
     maxPSMs_ = 0u;
     std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading "
-              << "from stdin, training on all data instead" << std::endl;
+              << "from stdin, training on all data instead." << std::endl;
   }
   
   std::istream &dataStream = readStdIn_ ? std::cin : fileStream;
@@ -752,8 +766,14 @@ int Caller::run() {
                             xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
   if (!tabInput_) {
+    if (VERB > 1) {
+      std::cerr << "Reading pin-xml input from datafile " << inputFN_ << "." << std::endl;
+    }
     success = xmlInterface.readPin(dataStream, inputFN_, setHandler, pCheck_, protEstimator_);
   } else {
+    if (VERB > 1) {
+      std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << "." << std::endl;
+    }
     success = setHandler.readTab(dataStream, pCheck_);
   }
   
@@ -779,7 +799,7 @@ int Caller::run() {
                                   selectedCneg_, numIterations_, usePi0_);
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
-    cerr << "Estimating " << firstNumberOfPositives << " over q="
+    cerr << "Found " << firstNumberOfPositives << " test set positives with q<"
         << testFdr_ << " in initial direction" << endl;
   }
   
@@ -793,7 +813,7 @@ int Caller::run() {
   double diff = difftime(procStart, startTime);
   if (VERB > 1) cerr << "Reading in data and feature calculation took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall time" << endl;
+      << " cpu seconds or " << diff << " seconds wall clock time." << endl;
   
   if (tabOutputFN_.length() > 0) {
     setHandler.writeTab(tabOutputFN_, pCheck_);

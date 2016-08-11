@@ -678,9 +678,9 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
   }
   direction[bestFeature] = (lowBest ? -1 : 1);
   if (VERB > 1) {
-    cerr << "Selected feature number " << bestFeature + 1
-        << " as initial search direction, could separate "
-        << bestPositives << " positives in that direction" << endl;
+    cerr << "Selected feature " << bestFeature + 1
+        << " as initial search direction. Could separate "
+        << bestPositives << " training set positives in that direction." << endl;
   }
   return bestPositives;
 }

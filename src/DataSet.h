@@ -37,29 +37,52 @@
 #include "DescriptionOfCorrect.h"
 #include "FeatureMemoryPool.h"
 
+// using char pointers is much faster than istringstream
 class TabReader {
  public:
-  TabReader(const char* line) : f_(line) {
+  TabReader(const std::string& line) : f_(line.c_str()), err(0) {
     errno = 0;
+  }
+  
+  void advance(const char* next) {
+    if (*next != '\0') {
+      f_ = next + 1; // eats up the tab
+    } else {
+      f_ = next; // prevents pointing over the null byte
+    }
   }
   
   void skip() {
     const char* pch = strchr(f_, '\t');
     err = errno;
-    f_ = pch + 1;
+    advance(pch);
+  }
+  
+  void skip(size_t numSkip) {
+    for (size_t i = 0; i < numSkip; ++i) skip();
   }
   
   double readDouble() {
-    char* next_ = NULL;
-    double d = strtod(f_, &next_); f_ = next_ + 1;
-    err = errno;
+    char* next = NULL;
+    double d = strtod(f_, &next);
+    if (next == f_) {
+      err = 1;
+    } else {
+      err = errno;
+    }
+    advance(next);
     return d;
   }
   
   int readInt() {
-    char* next_ = NULL;
-    int i = strtol(f_, &next_, 10); f_ = next_ + 1;
-    err = errno;
+    char* next = NULL;
+    int i = strtol(f_, &next, 10);
+    if (next == f_) {
+      err = 1;
+    } else {
+      err = errno;
+    }
+    advance(next);
     return i;
   }
   
@@ -71,7 +94,7 @@ class TabReader {
     } else {
       err = errno;
       std::string s(f_, pch - f_);
-      f_ = pch + 1;
+      advance(pch);
       return s;
     }
   }

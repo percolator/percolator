@@ -68,8 +68,10 @@ class FisherInterface : public ProteinProbEstimator {
  private:
   void pickedProteinStrategy(
     std::vector<std::pair<std::string,Protein*> >& protIdProtPairs);
-  void pickedProteinStrategySubstring(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs);
+  bool pickedProteinCheckId(std::string& proteinId, bool isDecoy,
+    std::set<std::string>& targetProts, std::set<std::string>& decoyProts);
+  bool pickedProteinCheck(std::string& proteinName, bool isDecoy, 
+    std::set<std::string>& targetProts, std::set<std::string>& decoyProts);
   void estimatePEPs(
     std::vector<std::pair<std::string,Protein*> >& protIdProtPairs,
     std::vector<double>& peps);

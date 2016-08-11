@@ -386,7 +386,7 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(
   procStartClock = clock();
   time(&procStart);
   diff = difftime(procStart, startTime);
-  if (VERB > 1) cerr << "Getting protein fragments and duplicates map took "
+  if (VERB > 2) cerr << "Resolving protein fragments and duplicates map took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
   

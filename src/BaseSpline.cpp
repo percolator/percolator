@@ -148,7 +148,7 @@ void BaseSpline::iterativeReweightedLeastSquares(double alpha) {
     limitg();
     PackedVector difference = g.packedSubtract(gnew);
     step = packedNorm(difference) / n;
-    if (VERB > 2) {
+    if (VERB > 3) {
       cerr << "step size:" << step << endl;
     }
   } while ((step > stepEpsilon || step < 0.0) && (++iter < 20));
@@ -284,7 +284,7 @@ double BaseSpline::evaluateSlope(double alpha) {
   // Now score the fit based on a linear combination between
   // The bump area and alpha
 
-  if (VERB > 2) {
+  if (VERB > 3) {
     cerr << "mixg=" << mixg << ", maxg=" << maxg << ", maxBA=" << maxSlope << " at ix=" << slopeix << ", alpha=" << alpha << endl;
   }
   return maxSlope*weightSlope + alpha;

@@ -113,10 +113,11 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     if (default_weights.size() == 0) {
       // Set init direction to be the most discriminative direction
       for (size_t set = 0; set < w.size(); ++set) {
+        if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
         calcInitDirection(w[set], set);
       }
     } else {
-      // I want to assign the default vector that is present in the pin.xml file
+      // I want to assign the default vector that is present in the input file
       for (size_t set = 0; set < w.size(); ++set) {
         for (size_t ix = 0; ix < w[set].size(); ix++) {
           w[set][ix] = 0;
@@ -148,10 +149,6 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   int overFDR = 0;
   for (size_t set = 0; set < w.size(); ++set) {
     overFDR += (*pTestset)[set].calcScores(w[set], fdr);
-  }
-  if (VERB > 0) {
-    cerr << "Found " << overFDR << " target PSMs scoring over " << fdr
-        * 100 << "% FDR level on testset" << endl;
   }
   if (overFDR <= 0) {
     cerr << "No target score better than best decoy" << endl;

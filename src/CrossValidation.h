@@ -45,9 +45,8 @@ class CrossValidation {
   
   void postIterationProcessing(Scores & fullset, SanityCheck * pCheck);
   
-  void printSetWeights(ostream & weightStream, unsigned int set, 
-                       Normalizer* pNorm);
   void printAllWeights(ostream & weightStream, Normalizer* pNorm);
+  
   void printDOC();
   void getAvgWeights(std::vector<double>& weights, Normalizer* pNorm);
   
@@ -69,7 +68,7 @@ class CrossValidation {
   
  protected:
   std::vector<AlgIn*> svmInputs_;
-  vector< vector<double> > w_; // svm weights for each fold
+  std::vector< std::vector<double> > w_; // svm weights for each fold
   
   bool quickValidation_;
   bool usePi0_;
@@ -94,7 +93,15 @@ class CrossValidation {
                          double& best_cpos, double& best_cfrac, 
                          vector_double* pWeights, options* pOptions);
   int doStep(bool updateDOC, Normalizer* pNorm);
-    
+  
+  void printSetWeights(ostream & weightStream, unsigned int set);
+  void printRawSetWeights(ostream & weightStream, unsigned int set, 
+                       Normalizer* pNorm);
+  
+  void printAllWeightsColumns(ostream & weightStream);
+  void printAllRawWeightsColumns(ostream & weightStream, Normalizer* pNorm);
+  static void printAllWeightsColumns(std::vector< std::vector<double> > weightMatrix, 
+                              ostream & weightStream);
 };
 
 #endif /*CROSSVALIDATION_H_*/

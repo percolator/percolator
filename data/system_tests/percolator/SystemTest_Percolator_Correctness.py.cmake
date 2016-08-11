@@ -12,14 +12,12 @@ pathToOutputData = "@pathToOutputData@"
 xmlSupport = @xmlSupport@
 
 class Tester:
-  success = True
   failures = 0
   def doTest(self, result):
     if result:
       print("...succeeded")
     else:
       self.failures += 1
-    self.success = result and self.success
 
 print("PERCOLATOR CORRECTNESS")
 
@@ -71,15 +69,12 @@ T = Tester()
 if xmlSupport:
   print("- PERCOLATOR PIN XML FORMAT")
 
-  # running percolator to calculate psm probabilities
   print("(*) running percolator to calculate psm probabilities...")
   T.doTest(canPercRunThisXml("psms","-y -U","percolator/pin/pin.xml"))
 
-  # running percolator to calculate peptide probabilities
   print("(*) running percolator to calculate peptide probabilities...")
   T.doTest(canPercRunThisXml("peptides","-y","percolator/pin/pin.xml"))
 
-  # running percolator to calculate protein probabilities
   print("(*) running percolator to calculate protein probabilities...")
   T.doTest(canPercRunThisXml("proteins","-A","percolator/pin/pin.xml"))
 
@@ -87,37 +82,38 @@ if xmlSupport:
   #print("(*) running percolator on input with ptms...")
   #success = canPercRunThis("psm_ptms","-U","percolator/pin_ptms/pin_ptms.xml","-k")
 
-  # running percolator on pin.xml with -D 4 option (description of correct features)
   print("(*) running percolator with description of correct features option...")
   T.doTest(canPercRunThisXml("D4on","-y -D 4 -U","percolator/pin/pin.xml"))
 
-  # running percolator with option to generate tab-delimited input
+  print("(*) running percolator with subset training option...")
+  T.doTest(canPercRunThisXml("subset_training","-y -N 1000 -U","percolator/pin/pin.xml"))
+  
   print("(*) running percolator to generate tab-delimited input...")
   tabData=os.path.join(pathToOutputData, "percolatorTab ")
   T.doTest(canPercRunThis("tab_generate","-y -U -J " + tabData,"percolator/pin/pin.xml","-k",False))
 
+# running percolator with option to process tab-delimited input
 print("- PERCOLATOR TAB FORMAT")
 
-# running percolator to calculate psm probabilities
 print("(*) running percolator to calculate psm probabilities...")
 T.doTest(canPercRunThisTab("tab_psms","-y -U","percolator/tab/percolatorTab"))
 
-# running percolator with option to process tab-delimited input
 print("(*) running percolator to calculate peptide probabilities...")
 T.doTest(canPercRunThisTab("tab_peptides","-y","percolator/tab/percolatorTab"))
 
-# running percolator with option to process tab-delimited input
 print("(*) running percolator to calculate protein probabilities...")
 T.doTest(canPercRunThisTab("tab_proteins","-A","percolator/tab/percolatorTab"))
 
-# running percolator with option to process tab-delimited input
 print("(*) running percolator with description of correct features option...")
 T.doTest(canPercRunThisTab("tab_D4on","-y -D 4 -U","percolator/tab/percolatorTabDOC"))
 
+print("(*) running percolator with subset training option...")
+T.doTest(canPercRunThisTab("tab_subset_training","-y -N 1000 -U","percolator/tab/percolatorTab"))
+
 # if no errors were encountered, succeed
-if T.success:
- print("...ALL TESTS SUCCEEDED")
- exit(0)
+if T.failures == 0:
+  print("...ALL TESTS SUCCEEDED")
+  exit(0)
 else:
- print("..." + str(T.failures) + " TESTS FAILED")
- exit(1)
+  print("..." + str(T.failures) + " TESTS FAILED")
+  exit(1)

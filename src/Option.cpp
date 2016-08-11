@@ -247,6 +247,6 @@ void CommandLineParser::findOption(char** argv, int& index) {
       return;
     }
   }
-  error("ERROR: program was invoked with an invalid option.\n" +
-		  string("Please run \"command --help.\""));
+  error("ERROR: the option " + optstr + " is invalid.\n" +
+        "Please run \"command --help.\"");
 }

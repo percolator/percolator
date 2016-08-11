@@ -129,7 +129,7 @@ void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
 int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool) {
-  TabReader reader(line.c_str());
+  TabReader reader(line);
   std::string tmp;
   
   if (calcDOC_) {

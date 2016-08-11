@@ -219,7 +219,9 @@ void FisherInterface::run() {
       if (representIt != proteins_.end()) {
         std::string newName = "";
         for (std::set<std::string>::iterator proteinIt = groupIt->second.begin(); proteinIt != groupIt->second.end(); ++proteinIt) {
-          newName += *proteinIt + ",";
+          std::string proteinId = *proteinIt;
+          std::replace(proteinId.begin(), proteinId.end(), ',', ';');
+          newName += proteinId + ",";
         }
         newName = newName.substr(0, newName.size() - 1);
         representIt->second->setName(newName);
@@ -229,6 +231,10 @@ void FisherInterface::run() {
 }
 
 void FisherInterface::computeProbabilities(const std::string& fname) {
+  if (VERB > 2) {
+    std::cerr << "Computing protein probabilities for " 
+              << proteins_.size() << " protein groups." << std::endl;
+  }
   for (std::map<const std::string,Protein*>::iterator it = proteins_.begin(); 
         it != proteins_.end(); it++) {
     std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
@@ -269,7 +275,9 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   std::vector<std::pair<std::string,Protein*> > protIdProtPairs(proteins_.begin(), proteins_.end());
   std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
   
-  if (!usePi0_) pickedProteinStrategy(protIdProtPairs);
+  if (!usePi0_) {
+    pickedProteinStrategy(protIdProtPairs);
+  }
   
   std::vector<double> peps;
   estimatePEPs(protIdProtPairs, peps);
@@ -279,96 +287,62 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   }
 }
 
-/* less efficient than pickedProteinStrategy, but more forgiving in specifying the correct decoyPattern */
-void FisherInterface::pickedProteinStrategySubstring(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
-  std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
-  std::vector<std::string> targetProts, decoyProts;
-  std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
-  size_t numErased = 0;
-  for (; it != protIdProtPairs.end(); ++it) {
-    bool isDecoy = it->second->getIsDecoy();
-    bool globalErase = false;
-    std::string proteinName = it->second->getName(); 
-    
+bool FisherInterface::pickedProteinCheckId(std::string& proteinId, bool isDecoy,
+    std::set<std::string>& targetProts, std::set<std::string>& decoyProts) {
+  bool found = false;
+  if (isDecoy) {
+    std::string targetId = proteinId.substr(decoyPattern_.size());
+    if (targetProts.find(targetId) != targetProts.end()) {
+      found = true;
+    } else {
+      decoyProts.insert(proteinId);
+    }
+  } else {
+    if (decoyProts.find(decoyPattern_ + proteinId) != decoyProts.end()) {
+      found = true;
+    } else {
+      targetProts.insert(proteinId);
+    }
+  }
+  return found;
+}
+
+bool FisherInterface::pickedProteinCheck(std::string& proteinName, bool isDecoy, 
+    std::set<std::string>& targetProts, std::set<std::string>& decoyProts) {
+  bool erase = false;
+  if (reportFragmentProteins_ || reportDuplicateProteins_) {
     std::istringstream ss(proteinName); 
     std::string proteinId;
     while (std::getline(ss, proteinId, ',')) { // split name by comma
-      bool localErase = false;
-      if (isDecoy) {
-        for (size_t j = 0; j < targetProts.size(); ++j) {
-          if (proteinId.find(targetProts[j]) != std::string::npos) {
-            localErase = true;
-            break;
-          }
-        }
-      } else {
-        for (size_t j = 0; j < decoyProts.size(); ++j) {
-          if (decoyProts[j].find(proteinId) != std::string::npos) {
-            localErase = true;
-            break;
-          }
-        }
-      }
-      if (!localErase) {
-        if (isDecoy) decoyProts.push_back(proteinId);
-        else targetProts.push_back(proteinId);
-      } else {
-        globalErase = true;
-      }
+      erase = erase || pickedProteinCheckId(proteinId, isDecoy, 
+                                          targetProts, decoyProts);
     }
-    if (globalErase) {
-      if (isDecoy) --numberDecoyProteins_;
-      else --numberTargetProteins_;
-      proteins_.erase(it->first); // this is where the printed proteins are stored
-      numErased += 1;
-    } else {
-      pickedProtIdProtPairs.push_back(*it);
-    }
+  } else {
+    erase = pickedProteinCheckId(proteinName, isDecoy, targetProts, decoyProts);
   }
-  pickedProtIdProtPairs.swap(protIdProtPairs);
-  
-  if (numErased == 0) {
-    std::cerr << "Warning: No target-decoy protein pairs found. Check if the "
-      << "correct decoy pattern was specified with the -P flag, i.e. if the "
-      << "target protein is called \"protA\" and the decoy protein "
-      << "\"decoy_protA\", use the option \"-p decoy_\"." << std::endl;
-  }
+  return erase;
 }
 
-
+/* Executes the picked protein-FDR strategy from Savitski et al. 2015
+   For protein groups, if one of the corresponding proteins has been observed
+   the whole group is eliminated */
 void FisherInterface::pickedProteinStrategy(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {  
+    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
+  if (VERB > 1) {
+    std::cerr << "Performing picked protein strategy" << std::endl;
+  }
+  
   std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
   std::set<std::string> targetProts, decoyProts;
   std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
   size_t numErased = 0;
+  // TODO: what about peptides with both target and decoy proteins?
   for (; it != protIdProtPairs.end(); ++it) {
     bool isDecoy = it->second->getIsDecoy();
-    bool globalErase = false;
     std::string proteinName = it->second->getName(); 
     
-    std::istringstream ss(proteinName); 
-    std::string proteinId;
-    while (std::getline(ss, proteinId, ',')) { // split name by comma
-      bool localErase = false;
-      if (isDecoy) {
-        std::string targetId = proteinId.substr(decoyPattern_.size());
-        if (targetProts.find(targetId) != targetProts.end()) {
-          localErase = true;
-        } else {
-          decoyProts.insert(proteinId);
-        }
-      } else {
-        if (decoyProts.find(decoyPattern_ + proteinId) != decoyProts.end()) {
-          localErase = true;
-        } else {
-          targetProts.insert(proteinId);
-        }
-      }
-      if (localErase) globalErase = true;
-    }
-    if (globalErase) {
+    bool erase = pickedProteinCheck(proteinName, isDecoy, targetProts, decoyProts);
+    if (erase) {
       if (isDecoy) --numberDecoyProteins_;
       else --numberTargetProteins_;
       proteins_.erase(it->first); // this is where the printed proteins are stored
@@ -385,6 +359,12 @@ void FisherInterface::pickedProteinStrategy(
       << "with the -P flag;\n  if the target protein is called \"protA\" and the "
       << "decoy protein \"decoy_protA\", use the option \"-P decoy_\"." 
       << std::endl << std::endl;
+  }
+  
+  if (VERB > 1) {
+    std::cerr << "Eliminated lower-scoring target-decoy protein: "
+              << targetProts.size() << " target proteins and "
+              << decoyProts.size() << " decoy proteins remaining." << std::endl;
   }
 }
 

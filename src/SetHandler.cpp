@@ -110,13 +110,11 @@ int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
 
 int SetHandler::getOptionalFields(const std::string& headerLine, 
     std::vector<OptionalField>& optionalFields) {
-  istringstream iss(headerLine);
-  std::string tmp;
-  iss >> tmp >> tmp; // discard id, label
+  TabReader reader(headerLine);
+  reader.skip(2u); // discard id, label
   bool hasScannr = false;
-  std::string optionalHeader;
-  while (iss.good()) {
-    iss >> optionalHeader;
+  while (!reader.error()) {
+    std::string optionalHeader = reader.readString();
     // transform to lower case for case insensitive matching
     std::transform(optionalHeader.begin(), optionalHeader.end(), 
                    optionalHeader.begin(), ::tolower);
@@ -131,7 +129,7 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
       break;
     }
   }
-  if (!hasScannr) {
+  if (!hasScannr && VERB > 0) {
     cerr << "\nWARNING: Tab delimited input does not contain ScanNr column," <<
             "\n         scan numbers will be assigned automatically.\n" << endl;
   }
@@ -139,28 +137,23 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
 }
 
 bool SetHandler::isDefaultDirectionLine(const std::string& defaultDirectionLine) {
-  istringstream iss(defaultDirectionLine);
+  TabReader reader(defaultDirectionLine);
   
-  std::string psmid;
-  iss >> psmid;
+  std::string psmid = reader.readString();
 
   std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
   return (psmid == "defaultdirection");
 }
 
 int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) {
-  istringstream iss(line);
-  std::string tmp;
-  iss >> tmp >> tmp; // remove id and label
-  for (int i = 1; i <= optionalFieldCount; ++i) 
-    iss >> tmp; // discard optional fields
+  TabReader reader(line);
+  reader.skip(2u + optionalFieldCount); // remove id, label and optional fields
   
-  double a;
+  double a = reader.readDouble();
   int numFeatures = 0;
-  iss >> a; // test third/fourth column
-  while (iss.good()) {
+  while (!reader.error()) {
     ++numFeatures;
-    iss >> a;
+    a = reader.readDouble();
   }
   
   if (DataSet::getCalcDoc()) numFeatures -= 2;
@@ -169,14 +162,13 @@ int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) 
 
 void SetHandler::getFeatureNames(const std::string& headerLine, 
     int numFeatures, int optionalFieldCount, FeatureNames& featureNames) {
-  istringstream iss(headerLine);
-  int skip = 2 + optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0);
+  TabReader reader(headerLine);
+  // removes enumerator, label and if present optional fields and DOC features
+  reader.skip(2u + optionalFieldCount + (DataSet::getCalcDoc() ? 2u : 0u));
   int numFeatLeft = numFeatures;
-  std::string tmp;
-  while (iss.good()) {
-    iss >> tmp;
-    // removes enumerator, label and if present optional fields and DOC features
-    if (skip-- <= 0 && numFeatLeft-- > 0) { 
+  while (!reader.error()) {
+    std::string tmp = reader.readString();
+    if (numFeatLeft-- > 0) { 
       featureNames.insertFeature(tmp);
     }
   }
@@ -187,17 +179,14 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
 
 bool SetHandler::getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values) {
-  istringstream iss(defaultDirectionLine);
-  std::string tmp;
-  iss >> tmp >> tmp; // remove id and label
-  for (int i = 1; i <= optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0); ++i) 
-    iss >> tmp; // discard optional fields
+  TabReader reader(defaultDirectionLine);
+  // removes enumerator, label and if present optional fields and DOC features
+  reader.skip(2u + optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0));
   
   bool hasDefaultValues = false;
   unsigned int ix = 0;
-  double a;
-  while (iss.good()) {
-    iss >> a;
+  double a = reader.readDouble();
+  while (!reader.error()) {
     if (a != 0.0) hasDefaultValues = true;
     if (VERB > 2) {
       std::cerr << "Initial direction for " << 
@@ -205,6 +194,7 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
                    a << std::endl;
     }
     init_values.push_back(a);
+    a = reader.readDouble();
     ix++;
   }
   return hasDefaultValues;
@@ -339,7 +329,7 @@ int SetHandler::getLabel(const std::string& psmLine, unsigned int lineNr) {
 ScanId SetHandler::getScanId(const std::string& psmLine, 
     std::vector<OptionalField>& optionalFields, unsigned int lineNr) {
   ScanId scanId;
-  TabReader reader(psmLine.c_str());
+  TabReader reader(psmLine);
   
   reader.skip();
   if (reader.error()) {
