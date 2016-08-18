@@ -767,12 +767,12 @@ int Caller::run() {
   SetHandler setHandler(maxPSMs_);
   if (!tabInput_) {
     if (VERB > 1) {
-      std::cerr << "Reading pin-xml input from datafile " << inputFN_ << "." << std::endl;
+      std::cerr << "Reading pin-xml input from datafile " << inputFN_ << std::endl;
     }
     success = xmlInterface.readPin(dataStream, inputFN_, setHandler, pCheck_, protEstimator_);
   } else {
     if (VERB > 1) {
-      std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << "." << std::endl;
+      std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << std::endl;
     }
     success = setHandler.readTab(dataStream, pCheck_);
   }

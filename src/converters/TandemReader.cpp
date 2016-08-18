@@ -379,7 +379,6 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   }
   std::string flankC = boost::lexical_cast<std::string>(post.at(0));
   std::string fullpeptide = flankN + "." + peptide + "." + flankC;
-  std::string peptideNoMods = removePTMs(peptide, ptmMap);
   double xions = 0.0,yions = 0.0,zions = 0.0,aions = 0.0,bions = 0.0,cions = 0.0;
   if (x_score) {
     //xscore = boost::lexical_cast<double>(domain.x_score());
@@ -405,17 +404,9 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
     //cscore = boost::lexical_cast<double>(domain.c_score());
     cions = boost::lexical_cast<double>(domain.c_ions());
   }
-
- //Information about mass modifications in the peptide
- //NOTE here I have all the modifications, I should modify the mass with them
-  BOOST_FOREACH(const tandem_ns::aa &aaObj, domain.aa()) {
-    aaObj.modified();
-    aaObj.type();
-    aaObj.at();
-  }  
-
+  
   //Remove modifications
-  std::string peptideS = peptide;
+  std::string peptideS = peptide; // save modified peptide for later
   for(unsigned int ix=0;ix<peptide.size();++ix) {
     if (freqAA.find(peptide[ix]) == string::npos) {
       if (ptmMap.count(peptide[ix])==0) {
@@ -430,7 +421,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
 
   std::auto_ptr< percolatorInNs::peptideType > peptide_p( new percolatorInNs::peptideType(peptide) );
   
-  //Register the ptms (modifications)
+  // Register the ptms (modifications)
   for(unsigned int ix=0;ix<peptideS.size();++ix) {
     if (freqAA.find(peptideS[ix]) == string::npos) {
       int accession = ptmMap[peptideS[ix]];
@@ -440,6 +431,30 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
       peptide_p->modification().push_back(mod_p);      
       peptideS.erase(ix--,1);
     }  
+  }
+  
+  // Register more ptms
+  if (domain.aa().size() > 0) {
+    int peptideInProtStartPos = boost::lexical_cast<int>(domain.start());
+    int peptideInProtEndPos = boost::lexical_cast<int>(domain.end());
+    BOOST_FOREACH(const tandem_ns::aa &aaObj, domain.aa()) {
+      int modPos = boost::lexical_cast<int>(aaObj.at());
+      if (modPos < peptideInProtStartPos || modPos > peptideInProtEndPos) {
+        ostringstream temp;
+        temp << "Error: Peptide sequence " << peptide
+             << " contains modification [" << aaObj.modified() << "] at protein position " 
+             << modPos << ", which is outside of the peptide interval [" 
+             << peptideInProtStartPos << "," << peptideInProtEndPos << "]." << endl;
+        throw MyException(temp.str());
+      }
+      int relativeModPos = modPos - peptideInProtStartPos + 1;
+      // aaObj.type(); // gives the amino acid that was modified. Redundant information as we have the position already, could be used for assertion
+      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(relativeModPos));
+      std::string mod_acc = aaObj.modified(); // modification mass
+      std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(mod_acc));
+      mod_p->freeMod(fm_p);
+      peptide_p->modification().push_back(mod_p);
+    }
   }
 
   //Push back the main scores
@@ -466,6 +481,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
 
   //Enzyme
   if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
+    std::string peptideNoMods = removePTMs(peptide, ptmMap);
     f_seq.push_back( Enzyme::isEnzymatic(peptideNoMods.at(0),peptideNoMods.at(2)) ? 1.0 : 0.0);
     f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3),peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
     std::string peptid2 = peptideNoMods.substr(2, peptideNoMods.length() - 4);
@@ -525,10 +541,10 @@ void TandemReader::read(const std::string &fn, bool isDecoy,
   //NOTE the root of the element, doesn't have any useful attributes
   //Loops over the group elements which are the spectra and the last 3 are the input parameters
   for (doc = p.next(); doc.get() != 0; doc = p.next()) {
-    //NOTE cant acess mixed content using codesynthesis, need to keep dom assoication. See the manual for tree parser and : 
+    //NOTE can't access mixed content using codesynthesis, need to keep dom association. See the manual for tree parser: 
     //http://www.codesynthesis.com/pipermail/xsd-users/2008-October/002005.html
-    //Not implementet here
-    //Check that the tag name is group and that its not the inputput parameters
+    //Not implemented here
+    //Check that the tag name is group and that its not the input parameters
     if (XMLString::equals(groupStr,doc->getDocumentElement()->getTagName()) 
           && XMLString::equals(groupModelStr,doc->getDocumentElement()->getAttribute(groupTypeStr))) {
       tandem_ns::group groupObj(*doc->getDocumentElement()); //Parse it the codesynthesis object model.

@@ -2712,8 +2712,10 @@ svm_model* svm_load_model(const char* model_file_name) {
   char buffer[128], c;
   double value;
   int index = 0;
+  int c_int = 0;
   // read the max dimension of all vectors
-  while ((c = fgetc(fp)) != EOF) {
+  while ((c_int = fgetc(fp)) != EOF) {
+    c = (char) c_int;
     if (isspace(c)) {
       index = 0;
     } else if (c == ':') {
