@@ -102,7 +102,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   // init
   CommandLineParser cmd(intro.str());
   // available lower case letters: o
-  // available upper case letters: N
+  // available upper case letters:
   cmd.defineOption("X",
       "xmloutput",
       "Path to xml-output (pout) file.",
@@ -151,10 +151,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Quicker execution by reduced internal cross-validation.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("f",
-      "fisher-fasta-database",
-      "Protein database in fasta format.",
-      "value");
   cmd.defineOption("J",
       "tab-out",
       "Output computed features to given file in pin-tab format.",
@@ -183,6 +179,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all. Default = 2",
       "level");
+  cmd.defineOption("o",
+      "no-terminate",
+      "Do not stop execution when encountering questionable SVM inputs or results.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("u",
       "unitnorm",
       "Use unit normalization [0-1] instead of standard deviation normalization",
@@ -324,8 +325,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gridsearch-mse-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for big size datasets. Default = 0.1",
       "value");
-  /*
-  cmd.defineOption("Q",
+  /*cmd.defineOption("Q",
       "fido-protein-group-level-inference",
       "Uses protein group level inference, each cluster of proteins is either present or not, therefore when grouping proteins discard all possible combinations for each group.(Only valid if option -A is active and -N is inactive).",
       "",
@@ -345,6 +345,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   if (cmd.optionSet("v")) {
     Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  }
+  
+  if (cmd.optionSet("o")) {
+    Globals::getInstance()->setNoTerminate(true);
   }
   
   // now query the parsing results
@@ -851,16 +855,22 @@ int Caller::run() {
     } else {
       success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores, pCheck_);
     }
-    allScores.postMergeStep();
-    allScores.calcQ(selectionFdr_);
-    allScores.normalizeScores(selectionFdr_);
-    
+        
     // Reading input files (pin or temporary file)
     if (!success) {
       std::cerr << "ERROR: Failed to read in file, check if the correct " <<
                    "file-format was used.";
       return 0;
     }
+    
+    if (VERB > 1) {
+      cerr << "Evaluated set contained " << allScores.posSize()
+          << " positives and " << allScores.negSize() << " negatives." << endl;
+    }
+    
+    allScores.postMergeStep();
+    allScores.calcQ(selectionFdr_);
+    allScores.normalizeScores(selectionFdr_);
   }
   
   // calculate psms level probabilities TDA or TDC

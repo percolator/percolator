@@ -172,7 +172,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (!hasScannr) myPsm->scan = lineNr;
   
   unsigned int numFeatures = FeatureNames::getNumFeatures();
-  double* featureRow = featurePool.allocate();;
+  double* featureRow = featurePool.allocate();
   if (calcDOC_) {
     numFeatures -= DescriptionOfCorrect::numDOCFeatures();
     double rt, dm;

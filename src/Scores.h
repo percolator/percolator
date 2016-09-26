@@ -154,7 +154,6 @@ class Scores {
   int calcQ(double fdr);
   void recalculateDescriptionOfCorrect(const double fdr);
   void calcPep();
-  void estimatePi0();
   
   void fillFeatures(SetHandler& setHandler);
   
@@ -200,7 +199,11 @@ class Scores {
     return peptidePsmMap_[pPSM];
   }
   
-  void reset() { scores_.clear(); }
+  void reset() { 
+    scores_.clear(); 
+    totalNumberOfTargets_ = 0;
+    totalNumberOfDecoys_ = 0;
+  }
   
  protected:
   bool usePi0_;
@@ -218,6 +221,7 @@ class Scores {
   
   void reorderFeatureRows(FeatureMemoryPool& featurePool, bool isTarget,
     std::map<double*, double*>& movedAddresses, size_t& idx);
+  void checkSeparationAndSetPi0();
 };
 
 #endif /*SCORES_H_*/

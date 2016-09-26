@@ -206,6 +206,23 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
   vector<double> medians;
   vector<unsigned int> negatives, sizes;
   binData(combined, medians, negatives, sizes);
+  if (medians.size() < 2) {
+    ostringstream oss;
+    oss << "ERROR: Only 1 bin available for PEP estimation, no distinguishing feature present." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error and adding random noise to scores for PEP calculation." << std::endl;
+      vector<pair<double, bool> >::iterator elem = combined.begin();
+      medians.clear();
+      negatives.clear();
+      sizes.clear();
+      for (; elem != combined.end(); ++elem) {
+        elem->first += (double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * 1e-20;
+      }
+      binData(combined, medians, negatives, sizes);
+    } else {
+      throw MyException(oss.str());
+    }
+  }
   lr.setData(medians, negatives, sizes);
   lr.roughnessPenaltyIRLS();
   // restore sorting order
@@ -394,7 +411,7 @@ void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
   size_t nDecoys = 0, posSame = 0, negSame = 0;
   double prevScore = -4711.4711; // number that hopefully never turn up first in sequence
   while (myPair != combined.end()) {
-    if (myPair->first != prevScore) {
+    if (myPair->first != prevScore || myPair == combined.end() - 1) {
       for (size_t ix = 0; ix < posSame; ++ix) {
         p.push_back(nDecoys + negSame * (ix + 1) / (double)(posSame + 1) );
       }
@@ -411,8 +428,19 @@ void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
     ++myPair;
   }
   // p sorted in acending order
+  if (nDecoys == 0u) nDecoys = 1u; // prevent dividing by zero
   transform(p.begin(), p.end(), p.begin(), 
             bind2nd(divides<double>(), (double)nDecoys));
+}
+
+bool PosteriorEstimator::checkSeparation(std::vector<double>& p) {
+  double minLambda = (1.0 / numLambda) * maxLambda;
+  // Find the index of the first element in p that is < lambda.
+  // N.B. Assumes p is sorted in ascending order.
+  std::vector<double>::iterator start = lower_bound(p.begin(), p.end(), minLambda);
+  // Calculates the difference in index between start and end
+  size_t Wl = distance(start, p.end());
+  return (Wl == 0u);
 }
 
 /*
@@ -421,7 +449,7 @@ void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
  */
 double PosteriorEstimator::estimatePi0(vector<double>& p,
                                        const unsigned int numBoot) {
-  vector<double> pBoot, lambdas, pi0s, mse;
+  vector<double> lambdas, pi0s;
   vector<double>::iterator start;
   size_t n = p.size();
   // Calculate pi0 for different values for lambda
@@ -445,6 +473,8 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
     return -1;
   }
   double minPi0 = *min_element(pi0s.begin(), pi0s.end());
+  
+  vector<double> pBoot, mse;
   // Initialize the vector mse with zeroes.
   fill_n(back_inserter(mse), pi0s.size(), 0.0);
   // Examine which lambda level that is most stable under bootstrap

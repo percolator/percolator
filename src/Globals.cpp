@@ -29,7 +29,7 @@ Globals::~Globals() {
   }
 }
 
-Globals::Globals() {
+Globals::Globals() : noTerminate_(false) {
   glob = this;
   verbose = 2;
   fileLog = std::string("");

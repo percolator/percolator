@@ -144,7 +144,7 @@ void Scores::merge(std::vector<Scores>& sv, double fdr) {
   scores_.clear();
   for (std::vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
-    if (usePi0_) a->estimatePi0();
+    a->checkSeparationAndSetPi0();
     a->calcQ(fdr);
     a->normalizeScores(fdr);
     copy(a->begin(), a->end(), back_inserter(scores_));
@@ -161,8 +161,7 @@ void Scores::postMergeStep() {
       scores_.end(),
       mem_fun_ref(&ScoreHolder::isTarget));
   targetDecoySizeRatio_ = totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-  if (usePi0_) estimatePi0();
-  else pi0_ = 1.0;
+  checkSeparationAndSetPi0();
 }
 
 void Scores::printRetentionTime(ostream& outs, double fdr) {
@@ -206,6 +205,12 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   featurePool.deallocate(sh.pPSM->features);
   sh.pPSM->deleteRetentionFeatures();
   
+  if (sh.label == 1) {
+    ++totalNumberOfTargets_;
+  } else if (sh.label == -1) {
+    ++totalNumberOfDecoys_;
+  }
+  
   if (sh.label != 1 && sh.label != -1) {
     std::cerr << "Warning: the PSM " << sh.pPSM->getId()
         << " has a label not in {1,-1} and will be ignored." << std::endl;
@@ -244,9 +249,23 @@ void Scores::fillFeatures(SetHandler& setHandler) {
   }
   
   if (totalNumberOfTargets_ == 0) {
-    throw MyException("Error: no target PSMs were provided.\n");
-  } else if (totalNumberOfDecoys_ == 0) {
-    throw MyException("Error: no decoy PSMs were provided.\n");
+    ostringstream oss;
+    oss << "Error: no target PSMs were provided.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error." << std::endl;
+    } else {
+      throw MyException(oss.str());
+    }
+  }
+  
+  if (totalNumberOfDecoys_ == 0) {
+    ostringstream oss;
+    oss << "Error: no decoy PSMs were provided.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error." << std::endl;
+    } else {
+      throw MyException(oss.str());
+    }
   }
   
   // check for the minimum recommended number of positive and negative hits
@@ -372,40 +391,36 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
   }
 }
 
-void Scores::normalizeScores(double fdr) {
-  // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
+// sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
+void Scores::normalizeScores(double fdr) {  
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys_/2u),decoys=0u;
   std::vector<ScoreHolder>::iterator it = scores_.begin();
-  double q1 = it->score;
-  double median = q1 + 1.0;
+  double fdrScore = it->score;
+  double medianDecoyScore = fdrScore + 1.0;
 
   for (; it != scores_.end(); ++it) {
     if (it->q < fdr)
-      q1 = it->score;
+      fdrScore = it->score;
     if (it->isDecoy()) {
-      if(++decoys==medianIndex) {
-        median = it->score;
+      if (++decoys == medianIndex) {
+        medianDecoyScore = it->score;
         break;
       }
     }
   }
-  //NOTE perhaps I should also check when q1 and median are both negatives
-  //NOTE in such cases the normalization could give negative scores_ which would
-  //     cause an assertion to fail in qvality
-  if (q1 <= median || it == scores_.end()) {
-    ostringstream temp;
-    temp << "Error : the input data has too good separation between target "
-         << "and decoy PSMs.\n" << std::endl;
-    throw MyException(temp.str());
-  }
-   
-  double diff = q1-median;
+  
+  //NOTE perhaps I should also check when fdrScore and medianDecoyScore are both 
+  //  negative. In such cases the normalization could give negative scores which 
+  //  would cause an assertion to fail in qvality
+  
+  double diff = fdrScore - medianDecoyScore;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    scoreIt->score -= q1;
-    scoreIt->score /= diff;
+    scoreIt->score -= fdrScore;
+    if (diff > 0.0) {
+      scoreIt->score /= diff;
+    }
   }
-  
 }
 
 /**
@@ -447,8 +462,14 @@ int Scores::calcScores(std::vector<double>& w, double fdr) {
 int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
 
-  int targets = 0, decoys = 0;
+  int targets = 0;
+  double decoys = 0.0;
   double efp = 0.0, q; // estimated false positives, q value
+  if (usePi0_) {
+    efp = pi0_ * decoys * targetDecoySizeRatio_;
+  } else {
+    efp = decoys;
+  }
   
   int numPos = 0;
   /*
@@ -460,17 +481,17 @@ int Scores::calcQ(double fdr) {
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
       targets++;
-      scoreIt->p = (decoys+(double)1)/(totalNumberOfDecoys_+(double)1);
+      scoreIt->p = decoys / (totalNumberOfDecoys_+(double)1);
       /*if (scoreIt->p < p1) idx1 = targets + decoys;
       if (scoreIt->p < p2) idx2 = targets + decoys;*/
     } else {
-      decoys++;
+      decoys += 1.0;
       if (usePi0_) {
         efp = pi0_ * decoys * targetDecoySizeRatio_;
       } else {
         efp = decoys;
       }
-      scoreIt->p = (decoys)/(double)(totalNumberOfDecoys_);
+      scoreIt->p = decoys / totalNumberOfDecoys_;
     }
     if (targets) {
       q = efp / (double)targets;
@@ -676,7 +697,9 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
   for (int ix = FeatureNames::getNumFeatures(); ix--;) {
     direction[ix] = 0;
   }
-  direction[bestFeature] = (lowBest ? -1 : 1);
+  if (bestFeature >= 0) {
+    direction[bestFeature] = (lowBest ? -1 : 1);
+  }
   if (VERB > 1) {
     cerr << "Selected feature " << bestFeature + 1
         << " as initial search direction. Could separate "
@@ -685,14 +708,32 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
   return bestPositives;
 }
 
-void Scores::estimatePi0() {
+void Scores::checkSeparationAndSetPi0() {
   std::vector<pair<double, bool> > combined;
   std::vector<double> pvals;
   transform(scores_.begin(), scores_.end(), back_inserter(combined),
             mem_fun_ref(&ScoreHolder::toPair));
-  // Estimate pi0_
   PosteriorEstimator::getPValues(combined, pvals);
-  pi0_ = PosteriorEstimator::estimatePi0(pvals);
+  
+  pi0_ = 1.0;
+  bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvals);
+  if (tooGoodSeparation) {
+    ostringstream oss;
+    oss << "Error in the input data: too good separation between target "
+        << "and decoy PSMs.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str();
+      if (usePi0_) {
+        std::cerr << "No-terminate flag set: setting pi0 = 1 and ignoring error." << std::endl;
+      } else {
+        std::cerr << "No-terminate flag set: ignoring error." << std::endl;
+      }
+    } else {
+      throw MyException(oss.str() + "Terminating.\n");
+    }
+  } else if (usePi0_) {
+    pi0_ = PosteriorEstimator::estimatePi0(pvals);
+  }
 }
 
 void Scores::calcPep() {

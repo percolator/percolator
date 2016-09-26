@@ -293,26 +293,31 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 
 	      //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
 	      //boost filesystem when we dont use them
-	      try {
-	        boost::filesystem::path ph = boost::filesystem::unique_path();
-	        boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
-	        boost::filesystem::path file("converters-tmp.tcb");
-	        tcf = std::string((dir / file).string());
-	        str =  dir.string();
-	        tcd = new char[str.size() + 1];
-	        std::copy(str.begin(), str.end(), tcd);
-	        tcd[str.size()] = '\0';
-	        if (boost::filesystem::is_directory(dir)) {
-	          boost::filesystem::remove_all(dir);
-	        }
+#ifndef __APPLE__
+        try {
+          boost::filesystem::path ph = boost::filesystem::unique_path();
+          boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+          boost::filesystem::path file("converters-tmp.tcb");
+          tcf = std::string((dir / file).string());
+          str =  dir.string();
+          tcd = new char[str.size() + 1];
+          std::copy(str.begin(), str.end(), tcd);
+          tcd[str.size()] = '\0';
+          if (boost::filesystem::is_directory(dir)) {
+            boost::filesystem::remove_all(dir);
+          }
 
-	        boost::filesystem::create_directory(dir);
-	      } catch (boost::filesystem::filesystem_error &e) {
-	        std::cerr << e.what() << std::endl;
-	      }
+          boost::filesystem::create_directory(dir);
+        } catch (boost::filesystem::filesystem_error &e) {
+          std::cerr << e.what() << std::endl;
+        }
 
-	      tmpDirs.resize(lineNumber_par+1);
-	      tmpDirs[lineNumber_par]=tcd;
+        tmpDirs.resize(lineNumber_par+1);
+        tmpDirs[lineNumber_par]=tcd;
+        std::string tmpName = tcf;
+#else
+        std::string tmpName = std::tmpnam(NULL);
+#endif
 	      tmpFNs.resize(lineNumber_par+1);
 	      tmpFNs[lineNumber_par]=tcf;
 	      database->init(tmpFNs[lineNumber_par]);
@@ -336,6 +341,12 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
     unsigned int lineNumber=0;
     std::string line2;
     std::ifstream meta(fn.data(), std::ios::in);
+    if (!meta) {
+      meta.close();
+      ostringstream temp;
+      temp << "Error : unable to open or read file " << fn << std::endl;
+      throw MyException(temp.str());
+    }
     while (getline(meta, line2)) {
 	    if (line2.size() > 0 && line2[0] != '#') {
 	      line2.erase(std::remove(line2.begin(),line2.end(),' '),line2.end());

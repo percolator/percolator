@@ -174,8 +174,14 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   }
   
   if (po->iscombined) {
-    //NOTE when combine search the PSM will take the identity of its first ranked protein
-    isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
+    // if one of the proteins is a target protein, we classify the PSM as a target PSM
+    isDecoy = true;
+    for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
+      if (i->find(po->reversedFeaturePattern, 0) == std::string::npos) {
+        isDecoy = false;
+        break;
+      }
+    }
   }
   
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  
@@ -278,9 +284,9 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
     if (line[0] == 'L') {
       ++lines;
       buff << line << std::endl;
-     if ((int)theMs.size() < po->hitsPerSpectrum && 
-       ( !isDecoy || ( po->reversedFeaturePattern == "" || 
-       ((line.find(po->reversedFeaturePattern, 0) != std::string::npos))))) {
+      if ((int)theMs.size() < po->hitsPerSpectrum && 
+           ( !po->iscombined || !isDecoy || ( po->reversedFeaturePattern == "" || 
+           ((line.find(po->reversedFeaturePattern, 0) != std::string::npos))))) {
 	      theMs.insert(ms - 1);
       }
     }

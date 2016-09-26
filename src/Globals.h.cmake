@@ -121,6 +121,7 @@ limitations under the License.
 
 
 #define VERB (Globals::getInstance()->getVerbose())
+#define NO_TERMINATE (Globals::getInstance()->getNoTerminate())
 #define STD_CERR (*(Globals::getInstance()->getLogger())) 
 
 #include <time.h>
@@ -156,6 +157,12 @@ class Globals {
     void incVerbose() {
       verbose++;
     }
+    void setNoTerminate(bool noTerminate) {
+      noTerminate_ = noTerminate;
+    }
+    bool getNoTerminate() {
+      return noTerminate_;
+    }
     void setLogFile(const std::string& filename);
     void initLogger();
     int redirectBuffer();
@@ -164,6 +171,7 @@ class Globals {
   private:
     Globals();
     int verbose;
+    bool noTerminate_;
     static Globals* glob;
     Logger *log;
     std::string fileLog;

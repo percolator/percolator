@@ -54,8 +54,12 @@ class TabReader {
   
   void skip() {
     const char* pch = strchr(f_, '\t');
-    err = errno;
-    advance(pch);
+    if (pch == NULL) {
+      err = 1;
+    } else {
+      err = errno;
+      advance(pch);
+    }
   }
   
   void skip(size_t numSkip) {

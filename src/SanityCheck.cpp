@@ -113,7 +113,6 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     if (default_weights.size() == 0) {
       // Set init direction to be the most discriminative direction
       for (size_t set = 0; set < w.size(); ++set) {
-        if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
         calcInitDirection(w[set], set);
       }
     } else {
@@ -138,6 +137,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
 }
 
 void SanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
+  if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
   (*pTrainset)[set].getInitDirection(fdr, wSet);
 }
 

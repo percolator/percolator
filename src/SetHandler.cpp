@@ -373,6 +373,12 @@ ScanId SetHandler::getScanId(const std::string& psmLine,
         break;
       } case CALCMASS: {
         reader.skip();
+        if (reader.error()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading calculated mass on line " 
+              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+          throw MyException(temp.str());
+        }
         break;
       } default: {
         ostringstream temp;
@@ -421,11 +427,21 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   }
   psmLine = rtrim(psmLine);
   int numFeatures = getNumFeatures(psmLine, optionalFieldCount);
-  
-  // fill in the feature names from the header line
   FeatureNames& featureNames = DataSet::getFeatureNames();
+  // fill in the feature names from the header line
   getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
-  featurePool_.createPool(DataSet::getNumFeatures());
+  if (numFeatures < 1) {
+    ostringstream oss;
+    oss << "ERROR: Reading tab file, too few features present." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error and using a pseudo-feature of zeroes." << std::endl;
+      featurePool_.createPool(1u);
+    } else {
+      throw MyException(oss.str());
+    }
+  } else {
+    featurePool_.createPool(DataSet::getNumFeatures());
+  }  
   
   // fill in the default weights if present
   std::vector<double> init_values;
@@ -434,13 +450,15 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
                                      init_values);
   }
-  
-  if (numFeatures < 1) {
-    std::cerr << "ERROR: Reading tab file, too few features present." << std::endl;
-    return 0;
-  } else if (hasDefaultValues && init_values.size() > numFeatures) {
-    std::cerr << "ERROR: Reading tab file, too many default values present." << std::endl;
-    return 0;
+  if (hasDefaultValues && init_values.size() > numFeatures) {
+    ostringstream oss;
+    oss << "ERROR: Reading tab file, too many default values present." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error and trimming default value vector." << std::endl;
+      init_values.resize(numFeatures);
+    } else {
+      throw MyException(oss.str());
+    }
   }
 
   // read in the data

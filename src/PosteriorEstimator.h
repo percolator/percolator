@@ -51,6 +51,7 @@ class PosteriorEstimator {
                                 vector<double>& q);
     static void getQValuesFromPEP(const vector<double>& pep,
                                 vector<double>& q);
+    static bool checkSeparation(vector<double>& p);
     static double estimatePi0(vector<double>& p,
                               const unsigned int numBoot = 100);
     static void setReversed(bool status) {
