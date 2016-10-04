@@ -39,11 +39,21 @@
 #include "MassHandler.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
-  return (one.score > other.score);
+  return (one.score > other.score) 
+      || (one.score == other.score && one.pPSM->scan > other.pPSM->scan) 
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+            one.pPSM->expMass > other.pPSM->expMass)
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+            one.pPSM->expMass == other.pPSM->expMass && one.label > other.label);
 }
 
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
-  return (one.score < other.score);
+  return (one.score < other.score) 
+      || (one.score == other.score && one.pPSM->scan < other.pPSM->scan) 
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+            one.pPSM->expMass < other.pPSM->expMass)
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+            one.pPSM->expMass == other.pPSM->expMass && one.label < other.label);
 }
 
 inline double truncateTo(double truncateMe, const char* length) {

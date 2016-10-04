@@ -173,7 +173,7 @@ if not exist "%DIRENT_H_PATH%" (
   echo Downloading and installing dirent.h 
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%DIRENT_H_URL%','%INSTALL_DIR%\dirent.zip')"
   %ZIP_EXE% x "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent" > NUL
-  move "%INSTALL_DIR%\dirent\include\dirent.h" "%DIRENT_H_PATH%" > NUL
+  copy "%INSTALL_DIR%\dirent\include\dirent.h" "%DIRENT_H_PATH%" > NUL
 )
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
