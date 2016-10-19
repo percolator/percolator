@@ -29,15 +29,16 @@ bool MassHandler::monoisotopic = false;
 double MassHandler::massDiff(double observedMass, double calculatedMass, unsigned int charge) {
   assert(charge > 0);
   double dm = observedMass - calculatedMass;
-  if (monoisotopic) {
-    double isodm = dm - 1;
-    for (int isotope = 0; isotope < 5; ++isotope) {
-      if (abs(isodm) > abs(dm + isotope)) {
-        isodm = dm + isotope;
-      }
+  if (observedMass > calculatedMass) {
+    const double iDm = 1.0033548378;
+    while (abs(dm - iDm) < iDm) {
+      dm -= iDm;
     }
-    dm = isodm / calculatedMass;
-    return dm;
+  } else {
+    const double iDm = 0.984016;
+    while (abs(dm + iDm) < iDm) {
+      dm += iDm;
+    }
   }
   return dm / charge;
 }
