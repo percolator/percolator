@@ -43,7 +43,7 @@ endfunction()
 
 
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MAJOR "3")
 set(CPACK_PACKAGE_VERSION_MINOR "00")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
@@ -62,7 +62,7 @@ ELSE(MSVC)
   set(XML_REL_PATH "share/xml/percolator/")
 ENDIF(MSVC)
 
-IF(MINGW OR WIN32) 
+IF(MINGW OR WIN32)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".dll" ${CMAKE_FIND_LIBRARY_SUFFIXES})
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/lib/include)
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
@@ -81,12 +81,12 @@ set(POUT_SCHEMA_LOCATION "xml-pout-${POUT_VERSION_MAJOR}-${POUT_VERSION_MINOR}/"
 IF(MINGW)
   IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(MINGW64 1)
-    SET(MINGW_PATH /usr/x86_64-w64-mingw32/sys-root/mingw/)  
-    SET(MINGW_PACK_NAME win64)  
+    SET(MINGW_PATH /usr/x86_64-w64-mingw32/sys-root/mingw/)
+    SET(MINGW_PACK_NAME win64)
   ELSE()
     SET(MINGW32 1)
-    SET(MINGW_PATH /usr/i686-w64-mingw32/sys-root/mingw/)  
-    SET(MINGW_PACK_NAME win32)  
+    SET(MINGW_PATH /usr/i686-w64-mingw32/sys-root/mingw/)
+    SET(MINGW_PACK_NAME win32)
   ENDIF()
 ENDIF(MINGW)
 
@@ -110,11 +110,11 @@ endif()
 
 # Link Boost static and single threaded
 set(Boost_USE_STATIC_LIBS   ON)
-set(Boost_USE_MULTITHREADED OFF)  
+set(Boost_USE_MULTITHREADED OFF)
 
 set(BOOST_MIN_VERSION "1.46.0")
-set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0" 
-			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47" 
+set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0"
+			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47"
 			       "1.48" "1.48.0" "1.49" "1.49.0" "1.50.0" "1.50" "1.51.0" "1.51")
 
 ###############################################################################
@@ -146,7 +146,7 @@ endif()
 
 if(MSVC)
   add_definitions (/MP /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE)
-  # CMake automatically configures VS to use multi threading, 
+  # CMake automatically configures VS to use multi threading,
   # if boost would use single threading, the auto-linking process of boost would fail.
   set(Boost_USE_MULTITHREADED ON)
 endif(MSVC)
