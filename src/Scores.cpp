@@ -471,76 +471,23 @@ int Scores::calcScores(std::vector<double>& w, double fdr) {
  */
 int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
-
-  int targets = 0;
-  double decoys = 0.0;
-  double efp = 0.0, q; // estimated false positives, q value
-  if (usePi0_) {
-    efp = pi0_ * decoys * targetDecoySizeRatio_;
-  } else {
-    efp = decoys;
-  }
+  
+  std::vector<pair<double, bool> > combined;
+  std::vector<double> qvals;
+  
+  transform(scores_.begin(), scores_.end(), back_inserter(combined),
+            mem_fun_ref(&ScoreHolder::toPair));
+  PosteriorEstimator::setNegative(true); // also get q-values for decoys
+  PosteriorEstimator::getQValues(pi0_, combined, qvals);
+  
+  std::vector<double>::const_iterator qIt = qvals.begin();
+  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   
   int numPos = 0;
-  /*
-  double p1 = 1e-3, p2 = 1e-2;
-  size_t idx1, idx2;
-  */
-  // NOTE check this
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget()) {
-      targets++;
-      scoreIt->p = decoys / (totalNumberOfDecoys_+(double)1);
-      /*if (scoreIt->p < p1) idx1 = targets + decoys;
-      if (scoreIt->p < p2) idx2 = targets + decoys;*/
-    } else {
-      decoys += 1.0;
-      if (usePi0_) {
-        efp = pi0_ * decoys * targetDecoySizeRatio_;
-      } else {
-        efp = decoys;
-      }
-      scoreIt->p = decoys / totalNumberOfDecoys_;
-    }
-    if (targets) {
-      q = efp / (double)targets;
-    } else {
-      q = pi0_;
-    }
-    if (q > pi0_) {
-      q = pi0_;
-    }
-    scoreIt->q = q;
-    if (fdr >= q) {
-      numPos = targets;
-    }
+  for (; qIt != qvals.end(); ++qIt, ++scoreIt) {
+    scoreIt->q = *qIt;
+    if (scoreIt->q < fdr) ++numPos;
   }
-  if (scores_.size() > 0) {
-    for (int ix = scores_.size(); --ix;) {
-      if (scores_[ix - 1].q > scores_[ix].q) {
-        scores_[ix - 1].q = scores_[ix].q;
-      }
-    }
-  }
-  
-  /* extrapolate p-values beyond last decoy
-  double score1 = scores_.at(idx1).score;
-  double score2 = scores_.at(idx2).score;
-  double slope = (log(p2) - log(p1)) / (score2 - score1);
-  
-  std::cerr << "P-value slope: " << slope << " " << score1 << " " << score2 << std::endl;
-  for (size_t idx = 0; idx < scores_.size(); ++idx) {
-    if (scores_.at(idx).p < p1) {
-      if (scores_.at(idx).isTarget()) { // isTarget
-        scores_.at(idx).p = exp((scores_.at(idx).score - score1)*slope + log(p1));
-        if (scores_.at(idx).p == 0.0) scores_.at(idx).p = DBL_MIN;
-      }
-    } else {
-      break;
-    }
-  }
-  */
   
   return numPos;
 }
