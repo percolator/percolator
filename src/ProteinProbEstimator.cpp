@@ -267,7 +267,7 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold,
    * This creates sometimes a difference in the number of TP and FP proteins between percolator and Mayus 
    * which causes a slight difference in the estimated protein FDR
    */
-  for (std::map<std::string,Protein*>::const_iterator it = proteins_.begin();
+  for (std::map<const std::string,Protein*>::const_iterator it = proteins_.begin();
        it != proteins_.end(); it++) {
     unsigned num_target_confident = 0;
     unsigned num_decoy_confident = 0;
