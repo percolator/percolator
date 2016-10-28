@@ -30,7 +30,7 @@ int getline(char **lineptr, size_t *n, FILE *stream);
 //Comparator function for c type strings.
 struct cmp_str {
 
-  bool operator()(char const *a, char const *b) {
+  bool operator()(char const *a, char const *b) const {
     return strcmp(a, b) < 0;
   }
 };
