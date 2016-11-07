@@ -2,7 +2,7 @@
 # NAME AND VERSION
 ###############################################################################
 cmake_minimum_required (VERSION 2.6)
-project(PERCOLATOR_FISHER)
+project(PERCOLATOR_PICKED_PROTEIN)
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 include("${PERCOLATOR_SOURCE_DIR}/CommonCMake.txt")
 
@@ -18,7 +18,7 @@ MESSAGE( STATUS )
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )
-MESSAGE( STATUS "Building FISHER:" )
+MESSAGE( STATUS "Building PICKED_PROTEIN:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
@@ -46,20 +46,20 @@ load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
-add_library(fisherlibrary STATIC FisherCaller.cpp Database.cpp Protein.cpp ProteinPeptideIterator.cpp Peptide.cpp PeptideSrc.cpp PeptideConstraint.cpp ../Option.cpp ../Globals.cpp ../MyException.cpp ../Logger.cpp)
+add_library(pickedproteinlibrary STATIC PickedProteinCaller.cpp Database.cpp Protein.cpp ProteinPeptideIterator.cpp Peptide.cpp PeptideSrc.cpp PeptideConstraint.cpp ../Option.cpp ../Globals.cpp ../MyException.cpp ../Logger.cpp)
 
-add_executable(fisher FisherMain.cpp)
+add_executable(picked-protein PickedProteinMain.cpp)
 
-target_link_libraries(fisher fisherlibrary)
+target_link_libraries(picked-protein pickedproteinlibrary)
 
 IF(MINGW OR WIN32)
-  set_property(TARGET fisher PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_target_properties(fisher PROPERTIES LINK_FLAGS "-Wl -Bstatic -static-libgcc")
+  set_property(TARGET picked-protein PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_target_properties(picked-protein PROPERTIES LINK_FLAGS "-Wl -Bstatic -static-libgcc")
 ENDIF()
 
 if(APPLE)
-  set_property(TARGET fisher PROPERTY LINK_SEARCH_END_STATIC ON)
-  set_property(TARGET fisher PROPERTY MACOSX_BUNDLE ON) 
+  set_property(TARGET picked-protein PROPERTY LINK_SEARCH_END_STATIC ON)
+  set_property(TARGET picked-protein PROPERTY MACOSX_BUNDLE ON) 
 endif(APPLE)
 
 if(PROFILING AND UNIX)
@@ -77,16 +77,16 @@ endif()
 ###############################################################################
 
 if(APPLE)
-  install(TARGETS fisher EXPORT FISHER DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!
+  install(TARGETS picked-protein EXPORT PICKED_PROTEIN DESTINATION ./bin BUNDLE DESTINATION ../Applications) # Important to use relative path here (used by CPack)!
 else(APPLE)
-  install(TARGETS fisher EXPORT FISHER DESTINATION bin)
+  install(TARGETS picked-protein EXPORT PICKED_PROTEIN DESTINATION bin)
 endif(APPLE)
 
 
 if(MINGW)
-  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fisher-${PACKAGE_VERSION}-win32.exe" COMMAND makensis 
-		      "${PERCOLATOR_SOURCE_DIR}/cmake/windows_fisher/script.nsi" DEPENDS fisher) 
-  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/fisher-${PACKAGE_VERSION}-win32.exe" )
+  add_custom_command( OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/picked-protein-${PACKAGE_VERSION}-win32.exe" COMMAND makensis 
+		      "${PERCOLATOR_SOURCE_DIR}/cmake/windows_picked_protein/script.nsi" DEPENDS picked-protein) 
+  add_custom_target( win32installer DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/picked-protein-${PACKAGE_VERSION}-win32.exe" )
 endif()
 
 ###############################################################################
@@ -94,8 +94,8 @@ endif()
 ###############################################################################
 
 # PACKAGING OPTIONS: GENERAL
-set(PACKAGE_NICKNAME "fisher")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Protein inference using Fisher's method.")
+set(PACKAGE_NICKNAME "picked-protein")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Protein inference using the picked protein method.")
 include("${PERCOLATOR_SOURCE_DIR}/CPack.txt")
 set(CPACK_RPM_PACKAGE_DEPENDS "libc6, libgcc1")
 

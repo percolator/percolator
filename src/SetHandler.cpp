@@ -234,10 +234,10 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   assert(decoySet);
   decoySet->setLabel(-1);
   
-  if (maxPSMs_ > 0u) {
+  unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
+  if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
     std::map<ScanId, size_t> scanIdLookUp;
-    unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
     unsigned int upperLimit = UINT_MAX;
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -272,8 +272,8 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     } while (getline(dataStream, psmLine));
     
     addQueueToSets(subsetPSMs, targetSet, decoySet);
-  } else {
-    unsigned int targetIdx = 0u, decoyIdx = 0u, lineNr = (hasInitialValueRow ? 3u : 2u);
+  } else { // simply read all PSMs
+    unsigned int targetIdx = 0u, decoyIdx = 0u;
     do {
       psmLine = rtrim(psmLine);
       int label = getLabel(psmLine, lineNr);
@@ -287,6 +287,10 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       }
       ++lineNr;
     } while (getline(dataStream, psmLine));
+  }
+  
+  if (VERB > 1) {
+    std::cerr << "Found " << lineNr - (hasInitialValueRow ? 3u : 2u) << " PSMs" << std::endl;
   }
   
   push_back_dataset(targetSet);
@@ -489,6 +493,10 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
     allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
     ++lineNr;
   } while (getline(dataStream, psmLine));
+  
+  if (VERB > 1) {
+    std::cerr << "Found " << lineNr - (hasInitialValueRow ? 3u : 2u) << " PSMs" << std::endl;
+  }
 }
 
 std::string& SetHandler::rtrim(std::string &s) {

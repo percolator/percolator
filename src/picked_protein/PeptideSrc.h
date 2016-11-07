@@ -15,12 +15,13 @@
 
 #include "objects.h"
 
+namespace PercolatorCrux {
 
 class PeptideSrc {
 
  protected:
   DIGEST_T digestion_; ///< how specific the ends are relative to the enzyme
-  Crux::Protein* parent_protein_; ///< the parent of this preptide
+  PercolatorCrux::Protein* parent_protein_; ///< the parent of this preptide
 
   /*
    * start_idx_ tracks the index of the peptide within the corresponding protein
@@ -29,8 +30,8 @@ class PeptideSrc {
    */
   int start_idx_; ///< start index of the peptide in the protein sequence, first residue is 1 
   int start_idx_original_;  ///< start index of the peptide in the original protein sequence
-  static std::map<std::string, Crux::Peptide* > sequence_to_peptide_; ///< Maps a sequence to a peptide object
-  static std::map<std::string, Crux::Peptide* > decoy_sequence_to_peptide_; ///< Maps a decoy sequence to a peptide object
+  static std::map<std::string, PercolatorCrux::Peptide* > sequence_to_peptide_; ///< Maps a sequence to a peptide object
+  static std::map<std::string, PercolatorCrux::Peptide* > decoy_sequence_to_peptide_; ///< Maps a decoy sequence to a peptide object
 
   /**
    * \brief fills the sequence_to_peptide_ member variable for use in parseTabDelimited
@@ -55,7 +56,7 @@ class PeptideSrc {
    */
   PeptideSrc(
     DIGEST_T digest,
-    Crux::Protein* parent_protein, ///< the parent of this preptide -in
+    PercolatorCrux::Protein* parent_protein, ///< the parent of this preptide -in
     int start_idx ///< peptide start index in protein sequence, first is 1 -in
     );
 
@@ -106,13 +107,13 @@ class PeptideSrc {
    * sets the parent protein
    */
   void setParentProtein(
-    Crux::Protein* parent_protein ///< the parent of this preptide -in  
+    PercolatorCrux::Protein* parent_protein ///< the parent of this preptide -in  
     );
 
   /**
    * \returns a pointer to the parent protein
    */
-  Crux::Protein* getParentProtein();
+  PercolatorCrux::Protein* getParentProtein();
 
   /**
    * sets the start index of the peptide in the protein sequence
@@ -155,4 +156,6 @@ class PeptideSrc {
  * c-basic-offset: 2
  * End:
  */
+ 
+}; // end namespace PercolatorCrux
 #endif

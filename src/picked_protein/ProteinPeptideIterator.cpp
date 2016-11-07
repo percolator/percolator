@@ -10,7 +10,7 @@
 #include "ProteinPeptideIterator.h"
 
 using namespace std;
-using namespace Crux;
+using namespace PercolatorCrux;
 
 
 /**
@@ -431,7 +431,7 @@ bool ProteinPeptideIterator::hasNext()
  * \returns The next peptide in the protein, in an unspecified order
  * the Peptide is new heap allocated object, user must free it
  */
-Crux::Peptide* ProteinPeptideIterator::next()
+PercolatorCrux::Peptide* ProteinPeptideIterator::next()
 {
   if( !has_next_){
     //carp(CARP_DEBUG, "Returning null");

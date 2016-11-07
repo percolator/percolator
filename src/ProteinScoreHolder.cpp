@@ -15,34 +15,17 @@
 
  *******************************************************************************/
 
-#include "Option.h"
-#include "Globals.h"
-#include "FisherCaller.h"
+#include "ProteinScoreHolder.h"
 
-int main(int argc, char** argv) {
-  std::map<std::string, std::string> fragment_map, duplicate_map;
-  
-  FisherCaller* fCaller = new FisherCaller(TRYPSIN, FULL_DIGEST, 10, 30, 0);
-  int retVal = EXIT_FAILURE;
-  
-  try
-  {
-    if (fCaller->parseOptions(argc, argv)) {
-      retVal = fCaller->getProteinFragmentsAndDuplicates(fragment_map, duplicate_map);
-    }
-  }
-  catch (const std::exception& e) 
-  {
-    std::cerr << e.what() << endl;
-    retVal = EXIT_FAILURE;
-  }
-  catch(...)
-  {
-    std::cerr << "Unknown exception, contact the developer.." << std::endl;
-    retVal = EXIT_FAILURE;
-  } 
+ProteinScoreHolder::ProteinScoreHolder(std::string name, bool isDecoy, ProteinScoreHolder::Peptide *peptide,
+    int groupId)
+	: name_(name), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
+	  isDecoy_(isDecoy), groupId_(groupId) {
+  if (peptide) setPeptide(peptide);
+}
 
-  delete fCaller;
-  return retVal;
+ProteinScoreHolder::~ProteinScoreHolder() {
+  for (unsigned i = 0; i < peptides_.size(); i++)
+    if (peptides_[i]) delete peptides_[i];
 }
 

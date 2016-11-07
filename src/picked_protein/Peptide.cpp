@@ -16,7 +16,7 @@
 #include <sstream>
 
 using namespace std;
-using namespace Crux;
+using namespace PercolatorCrux;
 /*
   TABLE OF CONTENTS
   Global variables
@@ -47,18 +47,6 @@ using namespace Crux;
 struct PRINT_PEPTIDE_T {
   unsigned char length; ///< The length of the peptide
   vector<PeptideSrc*>* peptide_src; ///< a vector of peptide_src  
-};
-
-
-/**
- * \struct residue_iterator
- * \brief Object to iterate over the residues in a peptide, starting at the
- * first residue of the peptide, and proceeding in order.
- */
-struct residue_iterator {
-  Peptide*  peptide; ///< The peptide whose residues to iterate over.
-  char*   sequence;    ///< The peptide sequence
-  int     residue_idx; ///< The index of the current peak
 };
 
 /**

@@ -17,7 +17,7 @@
 #include "objects.h"
 #include "Database.h"
 
-namespace Crux {
+namespace PercolatorCrux {
 
 class Protein {
  protected:
@@ -340,7 +340,7 @@ class Protein {
  */
 bool protein_id_less_than(Protein* protein_one, Protein* protein_two);
 
-};
+}; // end namespace PercolatorCrux
 
 /*
  * Local Variables:

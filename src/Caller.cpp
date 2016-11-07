@@ -455,18 +455,18 @@ bool Caller::parseOptions(int argc, char **argv) {
       std::string fastaDatabase = cmd.options["f"];
       
       // default options
-      double fisherPvalueCutoff = 1.0;
-      bool fisherReportFragmentProteins = false;
-      bool fisherReportDuplicateProteins = false;
+      double pickedProteinPvalueCutoff = 1.0;
+      bool pickedProteinReportFragmentProteins = false;
+      bool pickedProteinReportDuplicateProteins = false;
       if (cmd.optionSet("z")) {
         Enzyme::setEnzyme(cmd.options["z"]);
       }      
-      //if (cmd.optionSet("Q")) fisherPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
-      if (cmd.optionSet("c")) fisherReportFragmentProteins = true;
-      if (cmd.optionSet("g")) fisherReportDuplicateProteins = true;
+      //if (cmd.optionSet("Q")) pickedProteinPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
+      if (cmd.optionSet("c")) pickedProteinReportFragmentProteins = true;
+      if (cmd.optionSet("g")) pickedProteinReportDuplicateProteins = true;
       
-      protEstimator_ = new FisherInterface(fastaDatabase, fisherPvalueCutoff,
-          fisherReportFragmentProteins, fisherReportDuplicateProteins,
+      protEstimator_ = new PickedProteinInterface(fastaDatabase, pickedProteinPvalueCutoff,
+          pickedProteinReportFragmentProteins, pickedProteinReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorAbsenceRatio, 
           protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
     }

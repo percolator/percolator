@@ -21,7 +21,7 @@
 #include "PeptideConstraint.h"
 
 using namespace std;
-using namespace Crux;
+using namespace PercolatorCrux;
 
 /**
  * Static variable definitions

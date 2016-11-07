@@ -15,9 +15,11 @@
 
  *******************************************************************************/
 
-#include "FisherInterface.h"
+#include "PickedProteinInterface.h"
 
-FisherInterface::FisherInterface(const std::string& fastaDatabase,
+using namespace PercolatorCrux;
+
+PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
     double pvalueCutoff, bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double absenceRatio, bool outputEmpirQval, 
     std::string& decoyPattern) :
@@ -29,9 +31,9 @@ FisherInterface::FisherInterface(const std::string& fastaDatabase,
   if (absenceRatio == 1.0) usePi0_ = false;
 }
 
-FisherInterface::~FisherInterface() {}
+PickedProteinInterface::~PickedProteinInterface() {}
 
-bool FisherInterface::initialize(Scores* fullset) {
+bool PickedProteinInterface::initialize(Scores* fullset) {
   peptideScores_ = fullset;
   int min_peptide_length = 1000, max_peptide_length = 0;
   int max_miscleavages = 0, max_non_enzymatic_flanks = 0;
@@ -130,7 +132,7 @@ bool FisherInterface::initialize(Scores* fullset) {
   return true;
 }
 
-void FisherInterface::run() {
+void PickedProteinInterface::run() {
   std::map<std::string, std::string> fragment_map, duplicate_map;
   if (fastaProteinFN_ != "auto") {
     fisherCaller_.setFastaDatabase(fastaProteinFN_);
@@ -186,14 +188,14 @@ void FisherInterface::run() {
     }
     
     if (!isShared) {
-      Protein::Peptide *peptide = new Protein::Peptide(
+      ProteinScoreHolder::Peptide *peptide = new ProteinScoreHolder::Peptide(
           peptideIt->pPSM->getPeptideSequence(), peptideIt->isDecoy(),
 			    peptideIt->p, peptideIt->pep, peptideIt->q, peptideIt->score);
       if (proteins_.find(lastProteinId) == proteins_.end()) {
         if (proteinsInGroup.size() > 1) {
           groupProteinIds[lastProteinId] = proteinsInGroup;
         }
-        Protein *newprotein = new Protein(lastProteinId, peptideIt->isDecoy(),
+        ProteinScoreHolder *newprotein = new ProteinScoreHolder(lastProteinId, peptideIt->isDecoy(),
             peptide, ++numGroups);
         proteins_.insert(std::make_pair(lastProteinId,newprotein));
         if (lastProteinId.find(decoyPattern_) == std::string::npos) {
@@ -213,7 +215,7 @@ void FisherInterface::run() {
   
   if (reportFragmentProteins_ || reportDuplicateProteins_) {
     std::map<std::string, std::set<std::string> >::iterator groupIt;
-    std::map<const std::string,Protein*>::iterator representIt;
+    std::map<const std::string,ProteinScoreHolder*>::iterator representIt;
     for (groupIt = groupProteinIds.begin(); groupIt != groupProteinIds.end(); ++groupIt) {
       representIt = proteins_.find(groupIt->first);
       if (representIt != proteins_.end()) {
@@ -230,19 +232,19 @@ void FisherInterface::run() {
   }
 }
 
-void FisherInterface::computeProbabilities(const std::string& fname) {
+void PickedProteinInterface::computeProbabilities(const std::string& fname) {
   if (VERB > 2) {
     std::cerr << "Computing protein probabilities for " 
               << proteins_.size() << " protein groups." << std::endl;
   }
-  for (std::map<const std::string,Protein*>::iterator it = proteins_.begin(); 
+  for (std::map<const std::string,ProteinScoreHolder*>::iterator it = proteins_.begin(); 
         it != proteins_.end(); it++) {
-    std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
+    std::vector<ProteinScoreHolder::Peptide*> peptides = it->second->getPeptides();
     switch (protInferenceMethod_) {
       case FISHER: {
         double fisher = 0.0;
         int significantPeptides = 0;
-        for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+        for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
           fisher += log((*itP)->p / maxPeptidePval_);
         }
@@ -254,7 +256,7 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
         break;
       } case PEPPROD: { // MaxQuant's strategy
         double logPepProd = 0.0;
-        for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+        for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
           logPepProd += log((*itP)->pep);
         }
@@ -262,7 +264,7 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
         break;
       } case BESTPEPT: {
         double maxScore = -1000.0;
-        for (std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+        for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
           maxScore = std::max(maxScore, (*itP)->score);
         }
@@ -272,7 +274,7 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
     }
   }
   
-  std::vector<std::pair<std::string,Protein*> > protIdProtPairs(proteins_.begin(), proteins_.end());
+  std::vector<std::pair<std::string,ProteinScoreHolder*> > protIdProtPairs(proteins_.begin(), proteins_.end());
   std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
   
   if (!usePi0_) {
@@ -287,7 +289,7 @@ void FisherInterface::computeProbabilities(const std::string& fname) {
   }
 }
 
-bool FisherInterface::pickedProteinCheckId(std::string& proteinId, bool isDecoy,
+bool PickedProteinInterface::pickedProteinCheckId(std::string& proteinId, bool isDecoy,
     std::set<std::string>& targetProts, std::set<std::string>& decoyProts) {
   bool found = false;
   if (isDecoy) {
@@ -307,7 +309,7 @@ bool FisherInterface::pickedProteinCheckId(std::string& proteinId, bool isDecoy,
   return found;
 }
 
-bool FisherInterface::pickedProteinCheck(std::string& proteinName, bool isDecoy, 
+bool PickedProteinInterface::pickedProteinCheck(std::string& proteinName, bool isDecoy, 
     std::set<std::string>& targetProts, std::set<std::string>& decoyProts) {
   bool erase = false;
   if (reportFragmentProteins_ || reportDuplicateProteins_) {
@@ -326,15 +328,15 @@ bool FisherInterface::pickedProteinCheck(std::string& proteinName, bool isDecoy,
 /* Executes the picked protein-FDR strategy from Savitski et al. 2015
    For protein groups, if one of the corresponding proteins has been observed
    the whole group is eliminated */
-void FisherInterface::pickedProteinStrategy(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs) {
+void PickedProteinInterface::pickedProteinStrategy(
+    std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs) {
   if (VERB > 1) {
     std::cerr << "Performing picked protein strategy" << std::endl;
   }
   
-  std::vector<std::pair<std::string,Protein*> > pickedProtIdProtPairs;
+  std::vector<std::pair<std::string,ProteinScoreHolder*> > pickedProtIdProtPairs;
   std::set<std::string> targetProts, decoyProts;
-  std::vector<std::pair<std::string,Protein*> >::iterator it = protIdProtPairs.begin();
+  std::vector<std::pair<std::string,ProteinScoreHolder*> >::iterator it = protIdProtPairs.begin();
   size_t numErased = 0;
   // TODO: what about peptides with both target and decoy proteins?
   for (; it != protIdProtPairs.end(); ++it) {
@@ -368,8 +370,8 @@ void FisherInterface::pickedProteinStrategy(
   }
 }
 
-void FisherInterface::estimatePEPs(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs,
+void PickedProteinInterface::estimatePEPs(
+    std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs,
     std::vector<double>& peps) {
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> pvals;
@@ -411,11 +413,11 @@ void FisherInterface::estimatePEPs(
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_ * absenceRatio_, peps, includeNegativesInResult);
 }
 
-std::ostream& FisherInterface::printParametersXML(std::ostream &os) {
+std::ostream& PickedProteinInterface::printParametersXML(std::ostream &os) {
   return os;
 }
 
-string FisherInterface::printCopyright() {
+string PickedProteinInterface::printCopyright() {
   ostringstream oss;
   return oss.str();
 }

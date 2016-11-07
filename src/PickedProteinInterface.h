@@ -15,8 +15,8 @@
 
  *******************************************************************************/
 
-#ifndef FISHERINTERFACE_H
-#define FISHERINTERFACE_H
+#ifndef PICKED_PROTEIN_INTERFACE_H
+#define PICKED_PROTEIN_INTERFACE_H
 
 #include <cmath>
 #include <functional>
@@ -25,7 +25,7 @@
 
 #include "ProteinProbEstimator.h"
 #include "PosteriorEstimator.h"
-#include "FisherCaller.h"
+#include "PickedProteinCaller.h"
 #include "Enzyme.h"
 #include "PseudoRandom.h"
 
@@ -40,7 +40,7 @@ enum ProteinInferenceMethod {
 };
 
 /*
-* FisherInterface is a class that computes probabilities and statistics based
+* PickedProteinInterface is a class that computes probabilities and statistics based
 * on provided proteins from the set of scored peptides from percolator. It
 * uses number of additional parameters to setup the calculations.
 *
@@ -49,14 +49,14 @@ enum ProteinInferenceMethod {
 * PSM - Peptide Spectrum Match
 *
 */
-class FisherInterface : public ProteinProbEstimator {
+class PickedProteinInterface : public ProteinProbEstimator {
 
  public:
-  FisherInterface(const std::string& fastaDatabase, double pvalueCutoff,
+  PickedProteinInterface(const std::string& fastaDatabase, double pvalueCutoff,
     bool reportFragmentProteins, bool reportDuplicateProteins, 
     bool trivialGrouping, double absenceRatio, 
     bool outputEmpirQval, std::string& decoyPattern);
-  virtual ~FisherInterface();
+  virtual ~PickedProteinInterface();
   
   bool initialize(Scores* fullset);
   void run();
@@ -67,22 +67,22 @@ class FisherInterface : public ProteinProbEstimator {
 
  private:
   void pickedProteinStrategy(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs);
+    std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs);
   bool pickedProteinCheckId(std::string& proteinId, bool isDecoy,
     std::set<std::string>& targetProts, std::set<std::string>& decoyProts);
   bool pickedProteinCheck(std::string& proteinName, bool isDecoy, 
     std::set<std::string>& targetProts, std::set<std::string>& decoyProts);
   void estimatePEPs(
-    std::vector<std::pair<std::string,Protein*> >& protIdProtPairs,
+    std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs,
     std::vector<double>& peps);
   
-  /** FISHER PARAMETERS **/
+  /** PICKED_PROTEIN PARAMETERS **/
   ProteinInferenceMethod protInferenceMethod_;
   std::string fastaProteinFN_;
   bool reportFragmentProteins_, reportDuplicateProteins_;
-  FisherCaller fisherCaller_;
+  PickedProteinCaller fisherCaller_;
   double maxPeptidePval_;
   
 };
 
-#endif // FISHERINTERFACE_H
+#endif // PICKED_PROTEININTERFACE_H

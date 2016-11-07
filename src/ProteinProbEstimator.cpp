@@ -58,7 +58,7 @@ ProteinProbEstimator::~ProteinProbEstimator() {
 	  FreeAll(it->second);
   }
       
-  for(std::map<const std::string,Protein*>::iterator it = proteins_.begin(); 
+  for(std::map<const std::string,ProteinScoreHolder*>::iterator it = proteins_.begin(); 
         it != proteins_.end(); it++) {
 	  if(it->second)
 	    delete it->second;
@@ -267,15 +267,15 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold,
    * This creates sometimes a difference in the number of TP and FP proteins between percolator and Mayus 
    * which causes a slight difference in the estimated protein FDR
    */
-  for (std::map<std::string,Protein*>::const_iterator it = proteins_.begin();
+  for (std::map<std::string,ProteinScoreHolder*>::const_iterator it = proteins_.begin();
        it != proteins_.end(); it++) {
     unsigned num_target_confident = 0;
     unsigned num_decoy_confident = 0;
     std::string protname = it->first;
-    std::vector<Protein::Peptide*> peptides = it->second->getPeptides();
-    for(std::vector<Protein::Peptide*>::const_iterator itP = peptides.begin();
+    std::vector<ProteinScoreHolder::Peptide*> peptides = it->second->getPeptides();
+    for(std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
           itP != peptides.end(); itP++) {
-      Protein::Peptide *p = *itP;
+      ProteinScoreHolder::Peptide *p = *itP;
       if(p->q <= psm_threshold && p->isdecoy)
         ++num_decoy_confident;
       if(p->q <= psm_threshold && !p->isdecoy)
@@ -342,7 +342,7 @@ double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) {
 unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
   std::set<int> identifiedGroupIds;
   unsigned nP = 0;
-  for (std::map<const std::string,Protein*>::const_iterator myP = proteins_.begin(); 
+  for (std::map<const std::string,ProteinScoreHolder*>::const_iterator myP = proteins_.begin(); 
           myP != proteins_.end(); ++myP) {
     if (myP->second->getQemp() < level && !myP->second->getIsDecoy()) {
       nP++;
@@ -360,7 +360,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
 unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level) { 
   std::set<int> identifiedGroupIds;
   unsigned nP = 0;
-  for (std::map<const std::string,Protein*>::const_iterator myP = proteins_.begin(); 
+  for (std::map<const std::string,ProteinScoreHolder*>::const_iterator myP = proteins_.begin(); 
           myP != proteins_.end(); ++myP) {
     if (myP->second->getQ() < level && myP->second->getIsDecoy()) {
       nP++;
@@ -493,11 +493,11 @@ void ProteinProbEstimator::setTargetandDecoysNames() {
   for (vector<ScoreHolder>::iterator psm = peptideScores_->begin(); psm!= peptideScores_->end(); ++psm) {
     // for each protein
     for (std::vector<std::string>::iterator protIt = psm->pPSM->proteinIds.begin(); protIt != psm->pPSM->proteinIds.end(); protIt++) {
-      Protein::Peptide *peptide = new Protein::Peptide(
+      ProteinScoreHolder::Peptide *peptide = new ProteinScoreHolder::Peptide(
           psm->pPSM->getPeptideSequence(), psm->isDecoy(),
           psm->p, psm->pep, psm->q, psm->score);
       if (proteins_.find(*protIt) == proteins_.end()) {
-	      Protein *newprotein = new Protein(*protIt, psm->isDecoy(), peptide, ++numGroups);
+	      ProteinScoreHolder *newprotein = new ProteinScoreHolder(*protIt, psm->isDecoy(), peptide, ++numGroups);
 	      proteins_.insert(std::make_pair(*protIt,newprotein));
 	
 	      if (psm->isDecoy()) {
@@ -567,14 +567,14 @@ bool ProteinProbEstimator::isTarget(const std::string& proteinName) {
 
 
 void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN, bool outputDecoys) {
-  std::vector<std::pair<std::string,Protein*> > myvec(proteins_.begin(), proteins_.end());
+  std::vector<std::pair<std::string,ProteinScoreHolder*> > myvec(proteins_.begin(), proteins_.end());
   std::sort(myvec.begin(), myvec.end(), IntCmpProb());
 
   ofstream os;
   os.open(xmlOutputFN.data(), ios::app);
   // append PROTEINs tag
   os << "  <proteins>" << endl;
-  for (std::vector<std::pair<std::string,Protein*> > ::const_iterator myP = myvec.begin(); 
+  for (std::vector<std::pair<std::string,ProteinScoreHolder*> > ::const_iterator myP = myvec.begin(); 
 	      myP != myvec.end(); myP++) {
     if ( (!outputDecoys && !myP->second->getIsDecoy()) || (outputDecoys)) {
       os << "    <protein p:protein_id=\"" << myP->second->getName() << "\"";
@@ -598,8 +598,8 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN, bool outputDecoy
 	      os << "      <p_value>" << scientific << myP->second->getP() << "</p_value>\n";
 	    }
 	  
-	    std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
-	    for (std::vector<Protein::Peptide*>::const_iterator peptIt = peptides.begin(); 
+	    std::vector<ProteinScoreHolder::Peptide*> peptides = myP->second->getPeptides();
+	    for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator peptIt = peptides.begin(); 
 	        peptIt != peptides.end(); peptIt++) {
 	      if ((*peptIt)->name != "") {
 	        os << "      <peptide_seq seq=\"" << (*peptIt)->name << "\"/>"<<endl;
@@ -615,18 +615,18 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN, bool outputDecoy
 
 void ProteinProbEstimator::print(ostream& myout, bool decoy) {
   
-  std::vector<std::pair<std::string,Protein*> > myvec(proteins_.begin(), proteins_.end());
+  std::vector<std::pair<std::string,ProteinScoreHolder*> > myvec(proteins_.begin(), proteins_.end());
   std::sort(myvec.begin(), myvec.end(), IntCmpProb());
   
   myout << "ProteinId\tProteinGroupId\tq-value\tposterior_error_prob\tpeptideIds" << std::endl;
   
-  for (std::vector<std::pair<std::string,Protein*> > ::const_iterator myP = myvec.begin(); 
+  for (std::vector<std::pair<std::string,ProteinScoreHolder*> > ::const_iterator myP = myvec.begin(); 
 	        myP != myvec.end(); myP++) {
     if( (decoy && myP->second->getIsDecoy()) || (!decoy && !myP->second->getIsDecoy())) {
       myout << myP->second->getName() << "\t" << myP->second->getGroupId() << "\t" 
             << myP->second->getQemp() << "\t" << myP->second->getPEP() << "\t";
-      std::vector<Protein::Peptide*> peptides = myP->second->getPeptides();
-      for(std::vector<Protein::Peptide*>::const_iterator peptIt = peptides.begin(); peptIt != peptides.end(); peptIt++) {
+      std::vector<ProteinScoreHolder::Peptide*> peptides = myP->second->getPeptides();
+      for(std::vector<ProteinScoreHolder::Peptide*>::const_iterator peptIt = peptides.begin(); peptIt != peptides.end(); peptIt++) {
         if((*peptIt)->name != "") {
           myout << (*peptIt)->name << "  ";
         }

@@ -13,7 +13,7 @@
 
 #include "PeptideConstraint.h"
 
-using namespace Crux;
+using namespace PercolatorCrux;
 
 /**
  * Allocates a new (empty) peptide_constraint object.
