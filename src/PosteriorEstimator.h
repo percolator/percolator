@@ -40,8 +40,6 @@ class PosteriorEstimator {
     static void estimatePEPGeneralized(vector<pair<double, bool> >& combined,
 					 vector<double>& peps,
 					 bool include_negative = false);
-    static void estimate(vector<pair<double, bool> >& combined,
-                         LogisticRegression& lr);
     static void getPValues(const vector<pair<double, bool> >& combined,
                            vector<double>& p);
     static void getQValues(double pi0,
@@ -70,12 +68,25 @@ protected:
                           const vector<double>& p, double pi0);
     void finishStandaloneGeneralized(vector<pair<double, bool> >& combined,
                           const vector<double>& peps);
+
+    static void getMixMaxCounts(const vector<pair<double, bool> >& combined,
+                         std::vector<double>& h_w_le_z,
+                         std::vector<double>& h_z_le_z);
+
+    static void estimate(vector<pair<double, bool> >& combined,
+                         LogisticRegression& lr, bool usePi0, double pi0);
     static void binData(const vector<pair<double, bool> >& combined,
                         vector<double>& medians,
-                        vector<unsigned int>& negatives, vector<
-                            unsigned int> & sizes);
+                        vector<unsigned int>& negatives,
+                        vector<unsigned int>& sizes);
+    static void binDataMixMax(const vector<pair<double, bool> >& combined,
+                        double pi0, vector<double>& medians,
+                        vector<unsigned int>& negatives,
+                        vector<unsigned int>& sizes);
+
+    // used for standalone execution
     string targetFile, decoyFile;
-    static bool reversed, pvalInput, competition,includeNegativesInResult;
+    static bool reversed, pvalInput, competition, includeNegativesInResult;
     string resultFileName;
 };
 
