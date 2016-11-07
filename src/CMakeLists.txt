@@ -137,7 +137,11 @@ endif()
 if(MSVC)
   target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
 else(MSVC)
-  target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
+  if (APPLE)
+    target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} )
+  else(APPLE)
+    target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
+  endif (APPLE)
 endif()
  
 # INSTALL PERCOLATOR
