@@ -25,6 +25,8 @@
 #include <iostream>
 
 #ifdef _MSC_VER
+
+namespace PercolatorCrux {
 /*********************************************************
  This function replaces the GNU extension of the same name.
  Reads a line from the given stream.
@@ -87,6 +89,7 @@ int getline(char **lineptr, size_t *n, FILE *stream) {
     // Some sort of read error
     return -1;
   }
+}
 }
 #endif
 
