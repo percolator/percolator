@@ -31,12 +31,12 @@ double MassHandler::massDiff(double observedMass, double calculatedMass, unsigne
   double dm = observedMass - calculatedMass;
   if (observedMass > calculatedMass) {
     const double iDm = 1.0033548378;
-    while (abs(dm - iDm) < iDm) {
+    while (abs(dm - iDm) < abs(dm)) {
       dm -= iDm;
     }
   } else {
     const double iDm = 0.984016;
-    while (abs(dm + iDm) < iDm) {
+    while (abs(dm + iDm) < abs(dm)) {
       dm += iDm;
     }
   }
