@@ -19,10 +19,12 @@
 #include <iterator>
 #include <vector>
 
+namespace PercolatorCrux {
+
 class ProteinPeptideIterator {
 
  protected:
-  Crux::Protein* protein_; ///< The protein whose peptides to iterate over. 
+  PercolatorCrux::Protein* protein_; ///< The protein whose peptides to iterate over. 
   unsigned short int cur_start_; ///< Start in protein of the current peptide.
   unsigned short int cur_length_; ///< The length of the current peptide.
   unsigned int peptide_idx_; ///< The index of the current peptide.
@@ -115,7 +117,7 @@ class ProteinPeptideIterator {
    * \returns a PROTEIN_PEPTIDE_ITERATOR_T object.
    */
   ProteinPeptideIterator(
-    Crux::Protein* protein,
+    PercolatorCrux::Protein* protein,
     PeptideConstraint* peptide_constraint
   );
 
@@ -133,12 +135,12 @@ class ProteinPeptideIterator {
   /**
    * \returns The next peptide in the protein, in an unspecified order
    */
-  Crux::Peptide* next();
+  PercolatorCrux::Peptide* next();
 
   /**
    *\returns the protein that the iterator was created on
    */
-  Crux::Protein* getProtein();
+  PercolatorCrux::Protein* getProtein();
 
   /**
    * \returns The total number of peptides in this protein.
@@ -181,5 +183,6 @@ class ProteinPeptideIterator {
  * End:
  */
 
+}; // end namespace PercolatorCrux
 
 #endif

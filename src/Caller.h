@@ -39,7 +39,7 @@
 #include "Normalizer.h"
 #include "ProteinProbEstimator.h"
 #include "FidoInterface.h"
-#include "FisherInterface.h"
+#include "PickedProteinInterface.h"
 #include "XMLInterface.h"
 #include "CrossValidation.h"
 

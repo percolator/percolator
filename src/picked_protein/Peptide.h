@@ -16,22 +16,21 @@
 #include <string.h>
 #include <vector>
 #include <set>
+#include <string>
 
 #include "objects.h"
 #include "Protein.h"
 #include "Database.h"
 
+namespace PercolatorCrux {
+
 //these may be elsewhere
 static const int MAX_PEPTIDE_LENGTH = 255;
-
-#include <string>
 
 /**
  * \class peptide
  * \brief A subsequence of a protein.
  */
-
-namespace Crux {
 
 class Peptide {
 
@@ -81,7 +80,7 @@ class Peptide {
    */
   Peptide(
     unsigned char length,     ///< The length of the peptide -in
-    Crux::Protein* parent_protein, ///< The parent_protein of this peptide -in
+    PercolatorCrux::Protein* parent_protein, ///< The parent_protein of this peptide -in
     int start_idx ///< Start index of peptide in the protein sequence -in
     );
 
@@ -129,8 +128,8 @@ class Peptide {
    */
   ~Peptide();
 
-  static void free(Crux::Peptide* peptide);
-  Crux::Peptide* copyPtr();
+  static void free(PercolatorCrux::Peptide* peptide);
+  PercolatorCrux::Peptide* copyPtr();
 
   /*  Getters and Setters  */
   
@@ -190,7 +189,7 @@ class Peptide {
   /**
    * returns a pointer to the peptide's first parent protein field of the peptide
    */
-  Crux::Protein* getParentProtein();
+  PercolatorCrux::Protein* getParentProtein();
 
   /*  Get-set:  sequence */
 
@@ -435,8 +434,6 @@ class Peptide {
 
 };  // class Peptide
 
-};  // namespace Crux
-
 /*  Iterators */
 
 /**
@@ -444,7 +441,7 @@ class Peptide {
  * \returns a RESIDUE_ITERATOR_T object.
  */
 RESIDUE_ITERATOR_T* new_residue_iterator(
-  Crux::Peptide* peptide ///< peptide sequence to iterate -in
+  PercolatorCrux::Peptide* peptide ///< peptide sequence to iterate -in
   );
 
 /**
@@ -468,6 +465,8 @@ bool residue_iterator_has_next(
 char residue_iterator_next(
   RESIDUE_ITERATOR_T* residue_iterator  ///< the query iterator -in
   );
+
+}; // end namespace PercolatorCrux
 
 #endif
 

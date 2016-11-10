@@ -19,11 +19,11 @@
  * Sep, 2015
  */
 /*
- * This file stores the class FisherCaller which is managing the interface with the user
+ * This file stores the class PickedProteinCaller which is managing the interface with the user
  */
 
-#ifndef FISHER_FISHERCALLER_H_
-#define FISHER_FISHERCALLER_H_
+#ifndef PICKED_PROTEIN_PICKED_PROTEIN_CALLER_H_
+#define PICKED_PROTEIN_PICKED_PROTEIN_CALLER_H_
 
 #include <cstdlib>
 #include <cstdio>
@@ -35,12 +35,12 @@
 #include "ProteinPeptideIterator.h"
 #include "Protein.h"
 
-class FisherCaller{
+class PickedProteinCaller{
  public:
-  FisherCaller();
-  ~FisherCaller();
+  PickedProteinCaller();
+  ~PickedProteinCaller();
   
-  void initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
+  void initConstraints(PercolatorCrux::ENZYME_T enzyme, PercolatorCrux::DIGEST_T digestion, 
     int min_peptide_length, int max_peptide_length, int max_miscleavages);
   /* introductory message */
   std::string greeter() const;
@@ -56,44 +56,44 @@ class FisherCaller{
     protein_db_file_ = protein_db_file;
   }
  private:
-  ENZYME_T enzyme_;
-  DIGEST_T digestion_;
+  PercolatorCrux::ENZYME_T enzyme_;
+  PercolatorCrux::DIGEST_T digestion_;
   int min_peptide_length_, max_peptide_length_, max_miscleavages_;
   std::string decoyPattern_;
   
   std::string protein_db_file_, peptide_input_file_, protein_output_file_;
   
-  bool getPeptideProteinMap(Database& db, 
-    PeptideConstraint& peptide_constraint,
+  bool getPeptideProteinMap(PercolatorCrux::Database& db, 
+    PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     bool generateDecoys);
-  void addProteinToPeptideProteinMap(Database& db, 
-    size_t protein_idx, PeptideConstraint& peptide_constraint,
+  void addProteinToPeptideProteinMap(PercolatorCrux::Database& db, 
+    size_t protein_idx, PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     bool generateDecoys);
   
-  bool getFragmentProteinMap(Database& db, 
-    PeptideConstraint& peptide_constraint,
+  bool getFragmentProteinMap(PercolatorCrux::Database& db, 
+    PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein);
-  void addProteinToFragmentProteinMap(Database& db, 
-    size_t protein_idx, PeptideConstraint& peptide_constraint,
+  void addProteinToFragmentProteinMap(PercolatorCrux::Database& db, 
+    size_t protein_idx, PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein);
   
-  bool getProteinFragmentsAndDuplicatesExtraDigest(Database& db, 
-    PeptideConstraint& peptide_constraint,
+  bool getProteinFragmentsAndDuplicatesExtraDigest(PercolatorCrux::Database& db, 
+    PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 
     std::map<std::string, std::string>& duplicate_map);
-  bool getProteinFragmentsAndDuplicates(Database& db,
+  bool getProteinFragmentsAndDuplicates(PercolatorCrux::Database& db,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 
     std::map<std::string, std::string>& duplicate_map);
 };
 
-#endif /* FISHER_FISHERCALLER_H_ */
+#endif /* PICKED_PROTEIN_PICKED_PROTEIN_CALLER_H_ */

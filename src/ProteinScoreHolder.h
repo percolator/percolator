@@ -23,7 +23,7 @@ using namespace std;
 
 /** data container that will store all the information of the proteins, 
     peptides, type, qvalues, pvalues etc..**/
-class Protein {
+class ProteinScoreHolder {
  public:
   struct Peptide {
     Peptide(std::string _name, bool _isdecoy, double _p, double _pep, double _q, 
@@ -34,10 +34,10 @@ class Protein {
     double p, pep, q, score;
   };
   
-  Protein() : name_(""), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
+  ProteinScoreHolder() : name_(""), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
               groupId_(-1), isDecoy_(false) {}
-  Protein(std::string name, bool isdecoy, Peptide *peptide, int groupId);
-  ~Protein();
+  ProteinScoreHolder(std::string name, bool isdecoy, Peptide *peptide, int groupId);
+  ~ProteinScoreHolder();
   
   inline void setName(std::string name) { name_ = name; }
   inline std::string getName() const { return name_; }

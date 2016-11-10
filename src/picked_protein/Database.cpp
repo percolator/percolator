@@ -25,6 +25,8 @@
 #include <iostream>
 
 #ifdef _MSC_VER
+
+namespace PercolatorCrux {
 /*********************************************************
  This function replaces the GNU extension of the same name.
  Reads a line from the given stream.
@@ -88,10 +90,11 @@ int getline(char **lineptr, size_t *n, FILE *stream) {
     return -1;
   }
 }
+}
 #endif
 
 using namespace std;
-using namespace Crux; 
+using namespace PercolatorCrux;
 const string Database::binary_suffix = "-binary-fasta";
 const string Database::decoy_binary_suffix = "-binary-fasta-decoy";
 const string Database::decoy_fasta_suffix = "-random.fasta";

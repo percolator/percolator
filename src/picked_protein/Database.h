@@ -18,6 +18,8 @@
 #include <map>
 #include <vector>
 
+namespace PercolatorCrux {
+
 #ifdef _MSC_VER
 //#include "WinCrux.h"
 /*********************************************************
@@ -30,11 +32,10 @@ int getline(char **lineptr, size_t *n, FILE *stream);
 //Comparator function for c type strings.
 struct cmp_str {
 
-  bool operator()(char const *a, char const *b) {
+  bool operator()(char const *a, char const *b) const {
     return strcmp(a, b) < 0;
   }
 };
-
 
 class Database {
  protected:
@@ -43,8 +44,8 @@ class Database {
   FILE*        file_;     ///< Open filehandle for this database.
                          ///  A database has only one associated file.
   bool is_parsed_;  ///< Has this database been parsed yet.
-  std::vector<Crux::Protein*>* proteins_; ///< Proteins in this database.
-  std::map<char*, Crux::Protein*, cmp_str>* protein_map_; //map for proteins 
+  std::vector<PercolatorCrux::Protein*>* proteins_; ///< Proteins in this database.
+  std::map<char*, PercolatorCrux::Protein*, cmp_str>* protein_map_; //map for proteins 
   bool is_hashed_; //Indicator of whether the database has been hashed/mapped.
   unsigned long int size_; ///< The size of the database in bytes (convenience)
   bool use_light_protein_; ///< should I use the light/heavy protein option
@@ -120,7 +121,7 @@ class Database {
     );         
 
   void addProtein(
-    Crux::Protein* protein
+    PercolatorCrux::Protein* protein
   );
 
   /**
@@ -248,14 +249,14 @@ class Database {
   /**
    *\returns the nth protein of the database
    */
-  Crux::Protein* getProteinAtIdx(
+  PercolatorCrux::Protein* getProteinAtIdx(
     unsigned int protein_idx ///< The index of the protein to retrieve -in
     );
 
   /**
    *\returns the protein designated by protein id of the database
    */
-  Crux::Protein* getProteinByIdString(
+  PercolatorCrux::Protein* getProteinByIdString(
     const char* protein_id ///< The id string for this protein -in
     );
 
@@ -306,7 +307,7 @@ bool void_database_peptide_iterator_has_next(
 /**
  * \returns The next peptide in the database.
  */
-Crux::Peptide* void_database_peptide_iterator_next(
+PercolatorCrux::Peptide* void_database_peptide_iterator_next(
   void* database_peptide_iterator ///< the iterator of interest -in
   );
 
@@ -337,7 +338,7 @@ bool void_database_sorted_peptide_iterator_has_next(
  * returns each peptide in sorted order
  * \returns The next peptide in the database.
  */
-Crux::Peptide* void_database_sorted_peptide_iterator_next(
+PercolatorCrux::Peptide* void_database_sorted_peptide_iterator_next(
   void* database_peptide_iterator ///< the iterator of interest -in
   );
 
@@ -348,4 +349,7 @@ Crux::Peptide* void_database_sorted_peptide_iterator_next(
  * c-basic-offset: 2
  * End:
  */
+
+}; // end namespace PercolatorCrux
+
 #endif

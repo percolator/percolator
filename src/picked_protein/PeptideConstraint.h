@@ -19,6 +19,8 @@
 #include "objects.h"
 #include "Peptide.h"
 
+namespace PercolatorCrux {
+
 /**
  * \class PeptideConstraint
  * \brief Object to represent constraints which a peptide may or may not
@@ -70,7 +72,7 @@ class PeptideConstraint {
    * \returns TRUE if the constraint is satisified. FALSE if not.
    */
   bool isSatisfied(
-   Crux::Peptide* peptide ///< the query peptide -in   
+   PercolatorCrux::Peptide* peptide ///< the query peptide -in   
    );
 
   /**
@@ -140,6 +142,8 @@ class PeptideConstraint {
   int getNumMisCleavage();
 
 };
+
+}; // end namespace PercolatorCrux
 
 #endif
 

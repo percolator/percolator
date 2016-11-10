@@ -15,19 +15,20 @@
 
  *******************************************************************************/
 
-#include "FisherCaller.h"
+#include "PickedProteinCaller.h"
 #include "Option.h"
 #include "Globals.h"
 
 using namespace std;
+using namespace PercolatorCrux;
 
-FisherCaller::FisherCaller() : enzyme_(TRYPSIN), digestion_(FULL_DIGEST),
+PickedProteinCaller::PickedProteinCaller() : enzyme_(TRYPSIN), digestion_(FULL_DIGEST),
     min_peptide_length_(6), max_peptide_length_(50), max_miscleavages_(0),
     decoyPattern_("decoy_") {}
 
-FisherCaller::~FisherCaller() {}
+PickedProteinCaller::~PickedProteinCaller() {}
 
-void FisherCaller::initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
+void PickedProteinCaller::initConstraints(ENZYME_T enzyme, DIGEST_T digestion, 
     int min_peptide_length, int max_peptide_length, int max_miscleavages) {
   enzyme_ = enzyme;
   digestion_ = digestion;
@@ -37,23 +38,23 @@ void FisherCaller::initConstraints(ENZYME_T enzyme, DIGEST_T digestion,
 }
 
 /* introductory message */
-string FisherCaller::greeter() const {
+string PickedProteinCaller::greeter() const {
   ostringstream oss;
-  oss << "Fisher version " << VERSION << ", ";
+  oss << "Picked-Protein version " << VERSION << ", ";
   oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
   oss << "Distributed under Apache License" << endl;
   oss << "Written by Lukas Kall (lukas.kall@scilifelab.se) "
          "and Matthew The (matthew.the@scilifelab.se)" << endl;
   oss << "Usage:" << endl;
-  oss << "   fisher [options]" << endl << endl;
+  oss << "   picked-protein [options]" << endl << endl;
   return oss.str();
 }
 
 /* parse the command line arguments */
-bool FisherCaller::parseOptions(int argc, char** argv) {
+bool PickedProteinCaller::parseOptions(int argc, char** argv) {
   ostringstream intro;
   intro << greeter() << endl << "Usage:" << endl;
-  intro << "   fisher -i \"percolator_peptide_output\" -d \"fasta_protein_db\" " << endl;
+  intro << "   picked-protein -i \"percolator_peptide_output\" -d \"fasta_protein_db\" " << endl;
   CommandLineParser cmd(intro.str());
   // define available options
   cmd.defineOption("v",
@@ -92,7 +93,7 @@ bool FisherCaller::parseOptions(int argc, char** argv) {
   return true;
 }
 
-bool FisherCaller::getPeptideProteinMap(Database& db, 
+bool PickedProteinCaller::getPeptideProteinMap(Database& db, 
     PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     bool generateDecoys) {
@@ -101,7 +102,7 @@ bool FisherCaller::getPeptideProteinMap(Database& db,
        ++protein_idx) {
     addProteinToPeptideProteinMap(db, protein_idx, peptide_constraint, 
         peptide_protein_map, generateDecoys);
-    /*Crux::Protein* protein = db.getProteinAtIdx(protein_idx);
+    /*PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
     
     if (generateDecoys) {
       protein->shuffle(PROTEIN_REVERSE_DECOYS);
@@ -117,7 +118,7 @@ bool FisherCaller::getPeptideProteinMap(Database& db,
     
     ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
     while (cur_protein_peptide_iterator.hasNext()) {
-      Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
+      PercolatorCrux::Peptide* peptide = cur_protein_peptide_iterator.next();
       std::string sequence(peptide->getSequencePointer(), peptide->getLength());
       peptideProteinIdxMap.push_back(std::make_pair(sequence,protein_idx));
       delete peptide;
@@ -151,11 +152,11 @@ bool FisherCaller::getPeptideProteinMap(Database& db,
   return true;
 }
 
-void FisherCaller::addProteinToPeptideProteinMap(Database& db, 
+void PickedProteinCaller::addProteinToPeptideProteinMap(Database& db, 
     size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     bool generateDecoys) {
-  Crux::Protein* protein = db.getProteinAtIdx(protein_idx);
+  PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
     
   if (generateDecoys) {
     protein->shuffle(PROTEIN_REVERSE_DECOYS);
@@ -171,14 +172,14 @@ void FisherCaller::addProteinToPeptideProteinMap(Database& db,
   
   ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
   while (cur_protein_peptide_iterator.hasNext()) {
-    Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
+    PercolatorCrux::Peptide* peptide = cur_protein_peptide_iterator.next();
     std::string sequence(peptide->getSequencePointer(), peptide->getLength());
     peptide_protein_map[sequence].push_back(protein_idx);
     delete peptide;
   }
 }
 
-bool FisherCaller::getFragmentProteinMap(Database& db, 
+bool PickedProteinCaller::getFragmentProteinMap(Database& db, 
     PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
@@ -191,12 +192,12 @@ bool FisherCaller::getFragmentProteinMap(Database& db,
   return true;
 }
 
-void FisherCaller::addProteinToFragmentProteinMap(Database& db, 
+void PickedProteinCaller::addProteinToFragmentProteinMap(Database& db, 
     size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein) {
-  Crux::Protein* protein = db.getProteinAtIdx(protein_idx);
+  PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
     
   // set new protein peptide iterator
   ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
@@ -205,7 +206,7 @@ void FisherCaller::addProteinToFragmentProteinMap(Database& db,
   size_t num_sequences = 0;
   std::vector<size_t> protein_idx_intersection;
   while (cur_protein_peptide_iterator.hasNext()) {
-    Crux::Peptide* peptide = cur_protein_peptide_iterator.next();
+    PercolatorCrux::Peptide* peptide = cur_protein_peptide_iterator.next();
     std::string sequence(peptide->getSequencePointer(), peptide->getLength());    
     delete peptide;
     ++num_sequences;
@@ -244,7 +245,7 @@ void FisherCaller::addProteinToFragmentProteinMap(Database& db,
   }
 }
 
-bool FisherCaller::getProteinFragmentsAndDuplicates(Database& db,
+bool PickedProteinCaller::getProteinFragmentsAndDuplicates(Database& db,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 
@@ -273,7 +274,7 @@ bool FisherCaller::getProteinFragmentsAndDuplicates(Database& db,
   return true;
 }
 
-bool FisherCaller::getProteinFragmentsAndDuplicatesExtraDigest(Database& db, 
+bool PickedProteinCaller::getProteinFragmentsAndDuplicatesExtraDigest(Database& db, 
     PeptideConstraint& peptide_constraint,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
@@ -313,7 +314,7 @@ bool FisherCaller::getProteinFragmentsAndDuplicatesExtraDigest(Database& db,
   return true;
 }
 
-bool FisherCaller::getProteinFragmentsAndDuplicates(
+bool PickedProteinCaller::getProteinFragmentsAndDuplicates(
     std::map<std::string, std::string>& fragment_map,
     std::map<std::string, std::string>& duplicate_map,
     bool generateDecoys) {
