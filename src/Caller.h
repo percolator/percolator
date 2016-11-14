@@ -86,7 +86,7 @@ class Caller {
   // report level parameters
   bool reportUniquePeptides_;
   bool targetDecoyCompetition_;
-  bool usePi0_;
+  bool useMixMax_;
   
   // SVM / cross validation parameters
   double selectionFdr_, testFdr_;

@@ -122,7 +122,7 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
     *pep = exp(*pep);
     if (*pep >= top) {
       *pep = top;
-      //crap = true;
+      crap = true;
     }
   }
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
@@ -197,11 +197,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
   }
   vector<double> medians;
   vector<unsigned int> negatives, sizes;
-  if (usePi0) {
-    binDataMixMax(combined, pi0, medians, negatives, sizes);
-  } else {
-    binData(combined, medians, negatives, sizes);
-  }
+  binData(combined, pi0, medians, negatives, sizes);
   if (medians.size() < 2) {
     ostringstream oss;
     oss << "ERROR: Only 1 bin available for PEP estimation, "
@@ -216,11 +212,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
       for (; elem != combined.end(); ++elem) {
         elem->first += (double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * 1e-20;
       }
-      if (usePi0) {
-        binDataMixMax(combined, pi0, medians, negatives, sizes);
-      } else {
-        binData(combined, medians, negatives, sizes);
-      }
+      binData(combined, pi0, medians, negatives, sizes);
     } else {
       throw MyException(oss.str());
     }
@@ -311,7 +303,10 @@ void PosteriorEstimator::finishStandaloneGeneralized(
 	}
 }
 
-void PosteriorEstimator::binDataMixMax(const vector<pair<double, bool> >& combined,
+/*
+ * If pi0 == 1.0 this is equal to the "traditional" binning
+ */
+void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
     double pi0, vector<double>& medians, vector<unsigned int> & negatives,
     vector<unsigned int> & sizes) {
   std::vector<double> h_w_le_z, h_z_le_z; // N_{w<=z} and N_{z<=z}
@@ -324,95 +319,58 @@ void PosteriorEstimator::binDataMixMax(const vector<pair<double, bool> >& combin
   double targetedBinSize = max(combined.size() / (double)(noIntervals), 1.0);
   
   std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
-  int n_z_ge_w = 0, n_w_ge_w = 0; // N_{z>=w} and N_{w>=w}
-  int psmsInBin = 0, binStartIdx = 0, sum_n_z_ge_w = 0;
+  int n_z_ge_w = 0, sum_n_z_ge_w = 0; // N_{z>=w} in bin and total
+  int decoyQueue = 0, psmsInBin = 0, binStartIdx = 0;
   for (; myPair != combined.end(); ++myPair) {
     if (!(myPair->second)) { // decoy PSM
       ++n_z_ge_w;
-      int j = h_w_le_z.size() - sum_n_z_ge_w - n_z_ge_w;
-      int cnt_w = h_w_le_z.at(j);
-      int cnt_z = h_z_le_z.at(j);
-      estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
-      estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
-      estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
-      E_f1_mod_run_tot += estPx_lt_zj * (1.0 - pi0);
-    } else {
-      ++n_w_ge_w;
+      ++decoyQueue;
     }
     ++psmsInBin;
-
-    if (combined.size() - binStartIdx - psmsInBin <= binsLeft * targetedBinSize) {
-      double numNegatives = n_z_ge_w * pi0 + E_f1_mod_run_tot;
-      unsigned int numNegativesInt = static_cast<unsigned int>(numNegatives+0.5);
-      double median = combined.at(binStartIdx + psmsInBin / 2).first;
-      
-      if (medians.size() > 0 && *(medians.rbegin()) == median) {
-        *(sizes.rbegin()) += psmsInBin;
-        *(negatives.rbegin()) += numNegativesInt;
-      } else {
-        medians.push_back(median);
-        sizes.push_back(psmsInBin);
-        negatives.push_back(numNegativesInt);
+    
+    // handles ties
+    if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
+      if (pi0 < 1.0 && decoyQueue > 0) {
+        int j = h_w_le_z.size() - sum_n_z_ge_w - n_z_ge_w;
+        int cnt_w = h_w_le_z.at(j);
+        int cnt_z = h_z_le_z.at(j);
+        estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
+        estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
+        estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
+        E_f1_mod_run_tot += decoyQueue * estPx_lt_zj * (1.0 - pi0);
       }
+      decoyQueue = 0;
       
-      if (VERB > 4) {
-        std::cerr << "Median = " << median << ", Num psms = " << psmsInBin 
-                  << ", Num decoys = " << n_z_ge_w 
-                  << ", Num negatives = " << numNegatives << std::endl;
+      if (combined.size() - binStartIdx - psmsInBin <= binsLeft * targetedBinSize) {
+        double numNegatives = n_z_ge_w * pi0 + E_f1_mod_run_tot;
+        // round to the next integer, as the IRLS implementation requires integers 
+        // and we want to be conservative
+        unsigned int numNegativesInt = static_cast<unsigned int>(ceil(numNegatives));
+        double median = combined.at(binStartIdx + psmsInBin / 2).first;
+        
+        if (medians.size() > 0 && *(medians.rbegin()) == median) {
+          *(sizes.rbegin()) += psmsInBin;
+          *(negatives.rbegin()) += numNegativesInt;
+        } else {
+          medians.push_back(median);
+          sizes.push_back(psmsInBin);
+          negatives.push_back(numNegativesInt);
+        }
+        
+        if (VERB > 4) {
+          std::cerr << "Median = " << median << ", Num psms = " << psmsInBin 
+                    << ", Num decoys = " << n_z_ge_w 
+                    << ", Num negatives = " << numNegatives << std::endl;
+        }
+        binStartIdx += psmsInBin;
+        --binsLeft;
+        
+        psmsInBin = 0;
+        E_f1_mod_run_tot = 0.0;
+        sum_n_z_ge_w += n_z_ge_w;
+        n_z_ge_w = 0;
       }
-      binStartIdx += psmsInBin;
-      --binsLeft;
-      
-      psmsInBin = 0;
-      E_f1_mod_run_tot = 0.0;
-      sum_n_z_ge_w += n_z_ge_w;
-      n_z_ge_w = 0;
-      n_w_ge_w = 0;
     }
-  }
-}
-
-void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
-    vector<double>& medians, vector<unsigned int> & negatives,
-    vector<unsigned int> & sizes) {
-  // Create bins and count number of negatives in each bin
-  size_t binsLeft = noIntervals;
-  double targetedBinSize = max(floor(combined.size()
-      / (double)(noIntervals)), 1.0);
-  vector<pair<double, bool> >::const_iterator combinedIter =
-      combined.begin();
-  size_t firstIx, pastIx = 0;
-  while (pastIx < combined.size()) {
-    while (((combined.size() - pastIx) / targetedBinSize < binsLeft)
-        && binsLeft > 1) {
-      --binsLeft;
-    }
-    double binSize =
-        max((combined.size() - pastIx) / (double)(binsLeft--), 1.0);
-    firstIx = pastIx;
-    pastIx = min(combined.size(), (size_t)(firstIx + binSize));
-    // Handle ties
-    while ((pastIx < combined.size()) && (combined[pastIx - 1].first
-        == combined[pastIx].first)) {
-      ++pastIx;
-    }
-    int inBin = pastIx - firstIx;
-    assert(inBin > 0);
-    int negInBin = count_if(combinedIter, combinedIter + inBin, IsDecoy());
-    combinedIter += inBin;
-    double median = combined[firstIx + inBin / 2].first;
-    if (medians.size() > 0 && *(medians.rbegin()) == median) {
-      *(sizes.rbegin()) += inBin;
-      *(negatives.rbegin()) += negInBin;
-    } else {
-      medians.push_back(median);
-      sizes.push_back(inBin);
-      negatives.push_back(negInBin);
-    }
-  }
-  if (VERB > 2) {
-    cerr << "Binned data into " << medians.size()
-      << " bins for PEP calcuation" << endl;
   }
 }
 
@@ -420,20 +378,26 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
  *
  * Assumes that scores are sorted in descending order
  *
- * TODO (MT): score ties are not handled yet, but these are very rare in SVM scores
- *
  */
 void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& combined,
     std::vector<double>& h_w_le_z, std::vector<double>& h_z_le_z) {
-  int cnt_z = 0, cnt_w = 0;
+  int cnt_z = 0, cnt_w = 0, queue = 0;
   std::vector<pair<double, bool> >::const_reverse_iterator myPairRev = combined.rbegin();
   for ( ; myPairRev != combined.rend(); ++myPairRev) {
-    if (!(myPairRev->second)) { // decoy PSM
-      ++cnt_z;
-      h_w_le_z.push_back(static_cast<double>(cnt_w));
-      h_z_le_z.push_back(static_cast<double>(cnt_z));
+    if (myPairRev->second) {
+      ++cnt_w; // target PSM
     } else {
-      ++cnt_w;
+      ++cnt_z; // decoy PSM
+      ++queue;
+    }
+    
+    // handles ties
+    if (myPairRev+1 == combined.rend() || myPairRev->first != (myPairRev+1)->first) {
+      for (int i = 0; i < queue; ++i) {
+        h_w_le_z.push_back(static_cast<double>(cnt_w));
+        h_z_le_z.push_back(static_cast<double>(cnt_z));
+      }
+      queue = 0;
     }
   }
 }
@@ -444,8 +408,8 @@ void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& comb
  * Which itself was a reimplementation of Uri Keich's code written in R.
  *
  * Assumes that scores are sorted in descending order
- *
- * TODO (MT): score ties are not handled yet, but these are very rare in SVM scores
+ * 
+ * If pi0 == 1.0 this is equal to the "traditional" q-value calculation
  *
  */
 void PosteriorEstimator::getQValues(double pi0, 
@@ -460,59 +424,46 @@ void PosteriorEstimator::getQValues(double pi0,
   double fdr = 0.0;
 
   std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
-  int n_z_ge_w = 0, n_w_ge_w = 0; // N_{z>=w} and N_{w>=w}
+  int n_z_ge_w = 1, n_w_ge_w = 0; // N_{z>=w} and N_{w>=w}
+  int decoyQueue = 0, targetQueue = 0; // handles ties
   for ( ; myPair != combined.end(); ++myPair) {
-    if (!(myPair->second)) { // decoy PSM
-      ++n_z_ge_w;
-      if (pi0 < 1.0) {
-        int j = h_w_le_z.size() - n_z_ge_w;
+    if (myPair->second) { 
+      ++n_w_ge_w; // target PSM
+      ++targetQueue;
+    } else {
+      ++n_z_ge_w; // decoy PSM
+      ++decoyQueue;
+    }
+    
+    // handles ties
+    if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
+      if (pi0 < 1.0 && decoyQueue > 0) {
+        int j = h_w_le_z.size() - (n_z_ge_w - 1);
         int cnt_w = h_w_le_z.at(j);
         int cnt_z = h_z_le_z.at(j);
         estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
         estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
         estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
-        E_f1_mod_run_tot += estPx_lt_zj * (1.0 - pi0);
+        E_f1_mod_run_tot += decoyQueue * estPx_lt_zj * (1.0 - pi0);
+        if (VERB > 4) {
+          std::cerr << "Mix-max num negatives correction: " << E_f1_mod_run_tot << std::endl;
+        }
       }
+      
       if (includeNegativesInResult) {
+        targetQueue += decoyQueue;
+      }
+      fdr = (n_z_ge_w * pi0 + E_f1_mod_run_tot) / (double)((std::max)(1, n_w_ge_w));
+      for (int i = 0; i < targetQueue; ++i) {
         q.push_back((std::min)(fdr, 1.0));
       }
-    } else {
-      ++n_w_ge_w;
-      if (pi0 < 1.0 && VERB > 4) {
-        std::cerr << "Mix-max num negatives correction: " << E_f1_mod_run_tot << std::endl;
-      }
-      fdr = ((double)n_z_ge_w * pi0 + E_f1_mod_run_tot) / (double)(n_w_ge_w);
-      q.push_back((std::min)(fdr, 1.0));
+      decoyQueue = 0;
+      targetQueue = 0;
     }
   }
   // Convert the FDRs into q-values.
   partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
 }
-
-/*
-void PosteriorEstimator::getQValues(double pi0, const vector<pair<double,
-    bool> > & combined, vector<double>& q) {
-  // assuming combined sorted in decending order
-  vector<pair<double, bool> >::const_iterator myPair = combined.begin();
-  unsigned int nTargets = 0, nDecoys = 0;
-  while (myPair != combined.end()) {
-    if (!(myPair->second)) {
-      ++nDecoys;
-    } else {
-      ++nTargets;
-      if (!includeNegativesInResult)
-	      q.push_back(((double)nDecoys) / (double)nTargets);
-    }
-    if(includeNegativesInResult)
-      q.push_back(((double)nDecoys) / (double)nTargets);
-    ++myPair;
-  }
-  double factor = pi0 * ((double)nTargets / (double)nDecoys);
-  transform(q.begin(), q.end(), q.begin(), bind2nd(multiplies<double> (),
-                                                   factor));
-  partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
-}
-*/
 
 void PosteriorEstimator::getQValuesFromP(double pi0,
                                          const vector<double>& p, vector<double> & q) {
@@ -523,47 +474,49 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 		q.push_back((*myP * m * pi0) / (double)nP);
 	}
 	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
-	return;
 }
 
-void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double> & q) {
-	int nP = 0;
+// assumes pep are sorted in ascending order
+void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double>& q) {
+	int nP = 1, queue = 0;
 	double sum = 0.0;
-	// assuming pep sorted in decending order ?? sure?? //TOFIX
 	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
-		sum += *myP;
-		q.push_back(sum / (double)nP);
+	  sum += *myP;
+	  ++queue;
+	  // ensure that PSMs with the same PEP get the same q-value
+	  if (myP+1 == pep.end() || *myP != *(myP+1)) {
+		  for (int i = 0; i < queue; ++i) {
+  		  q.push_back(sum / (double)nP);
+  		}
+		  queue = 0;
+		}
 	}
 	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
-	return;
 }
 
 void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
                                     vector<double>& p) {
   // assuming combined sorted in best hit first order
   vector<pair<double, bool> >::const_iterator myPair = combined.begin();
-  size_t nDecoys = 0, posSame = 0, negSame = 0;
-  double prevScore = -4711.4711; // number that hopefully never turn up first in sequence
+  size_t nDecoys = 1, posSame = 0, negSame = 0;
   for ( ; myPair != combined.end(); ++myPair) {
-    if (myPair->first != prevScore || myPair == combined.end() - 1) {
+    if (myPair->second) { // isTarget
+      ++posSame;
+    } else { // isDecoy
+      ++negSame;
+    }
+    if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
       for (size_t ix = 0; ix < posSame; ++ix) {
         p.push_back(nDecoys + negSame * (ix + 1) / (double)(posSame + 1) );
       }
       nDecoys += negSame;
       negSame = 0;
       posSame = 0;
-      prevScore = myPair->first;
-    }
-    if (myPair->second) { // isTarget
-      ++posSame;
-    } else { // isDecoy
-      ++negSame;
     }
   }
-  // p sorted in acending order
-  if (nDecoys == 0u) nDecoys = 1u; // prevent dividing by zero
+  // p values sorted in ascending order
   transform(p.begin(), p.end(), p.begin(), 
-            bind2nd(divides<double>(), (double)nDecoys));
+            bind2nd(divides<double>(), (double)(nDecoys)));
 }
 
 bool PosteriorEstimator::checkSeparation(std::vector<double>& p) {

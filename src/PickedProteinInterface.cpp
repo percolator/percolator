@@ -33,8 +33,7 @@ PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
 
 PickedProteinInterface::~PickedProteinInterface() {}
 
-bool PickedProteinInterface::initialize(Scores* fullset) {
-  peptideScores_ = fullset;
+bool PickedProteinInterface::initialize(Scores& peptideScores) {
   int min_peptide_length = 1000, max_peptide_length = 0;
   int max_miscleavages = 0, max_non_enzymatic_flanks = 0;
   int total_non_enzymatic_flanks = 0;
@@ -67,8 +66,8 @@ bool PickedProteinInterface::initialize(Scores* fullset) {
     enzyme = TRYPSIN;
   }
   
-  for (std::vector<ScoreHolder>::iterator shIt = peptideScores_->begin(); 
-           shIt != peptideScores_->end(); ++shIt) {    
+  for (std::vector<ScoreHolder>::iterator shIt = peptideScores.begin(); 
+           shIt != peptideScores.end(); ++shIt) {    
     std::string peptideSequenceFlanked = shIt->pPSM->getFullPeptideSequence();
     
     peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
@@ -101,7 +100,7 @@ bool PickedProteinInterface::initialize(Scores* fullset) {
     total_non_enzymatic_flanks += non_enzymatic_flanks;
   }
   // if more than half of the flanks or non enzymatic, probably the protease is wrong
-  if (total_non_enzymatic_flanks > peptideScores_->size()) {
+  if (total_non_enzymatic_flanks > peptideScores.size()) {
     std::cerr << "Warning: more than half of the cleavage sites are non enzymatic, "
               << "please verify that the right protease was specified." << std::endl;
   }
@@ -129,10 +128,13 @@ bool PickedProteinInterface::initialize(Scores* fullset) {
   }
   fisherCaller_.initConstraints(enzyme, digest, min_peptide_length, 
                                 max_peptide_length, max_miscleavages);
+  
+  groupProteins(peptideScores);
+  
   return true;
 }
 
-void PickedProteinInterface::run() {
+void PickedProteinInterface::groupProteins(Scores& peptideScores) {
   std::map<std::string, std::string> fragment_map, duplicate_map;
   if (fastaProteinFN_ != "auto") {
     fisherCaller_.setFastaDatabase(fastaProteinFN_);
@@ -152,8 +154,8 @@ void PickedProteinInterface::run() {
   
   std::map<std::string, std::set<std::string> > groupProteinIds;
   unsigned int numGroups = 0;
-  for (vector<ScoreHolder>::iterator peptideIt = peptideScores_->begin(); 
-          peptideIt != peptideScores_->end(); ++peptideIt) {
+  for (vector<ScoreHolder>::iterator peptideIt = peptideScores.begin(); 
+          peptideIt != peptideScores.end(); ++peptideIt) {
     std::string lastProteinId;
     std::set<std::string> proteinsInGroup;
     bool isFirst = true, isShared = false;
@@ -204,7 +206,7 @@ void PickedProteinInterface::run() {
           ++numberDecoyProteins_;
         }
       } else {
-        proteins_[lastProteinId]->setPeptide(peptide);
+        proteins_[lastProteinId]->addPeptide(peptide);
         if (proteinsInGroup.size() > 1) {
           groupProteinIds[lastProteinId].insert(proteinsInGroup.begin(), 
                                                  proteinsInGroup.end());

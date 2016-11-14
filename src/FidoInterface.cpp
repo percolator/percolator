@@ -94,24 +94,80 @@ FidoInterface::~FidoInterface() {
   proteinGraph_ = 0;
 }
 
-void FidoInterface::run() {
+bool FidoInterface::initialize(Scores& peptideScores) {  
   doGridSearch_ = !(alpha_ != -1 && beta_ != -1 && gamma_ != -1);
   
-  double localPeptidePrior = kPeptidePrior;
+  localPeptidePrior_ = kPeptidePrior;
   if (kComputePriors) {
     if (absenceRatio_ != 1.0) {
-      localPeptidePrior = 1 - absenceRatio_;
+      localPeptidePrior_ = 1 - absenceRatio_;
     } else {
-      localPeptidePrior = estimatePriors();
+      localPeptidePrior_ = estimatePriors(peptideScores);
     }
     if (VERB > 1) {
-      std::cerr << "The estimated peptide level prior probability is : " << localPeptidePrior << std::endl;
+      std::cerr << "The estimated peptide level prior probability is : " << localPeptidePrior_ << std::endl;
     }
   }
   
+  peptideScorePtr_ = &peptideScores;
+  
+  return ProteinProbEstimator::initialize(peptideScores);
+}
+
+double FidoInterface::estimatePriors(Scores& peptideScores) {
+  /* Compute a priori probabilities of peptide presence (correctness?) */
+  /* prior = the mean of the probabilities, maybe one prior for each charge *
+   * prior2 = assuming a peptide is present if only if the protein is present and counting
+   * the size of protein and prior protein probabily in the computation
+   * prior3 = the ratio of confident peptides among all the peptides 
+   * prior4 = the ratio of decoy peptides versus target peptides (TDC) */
+  
+  double prior_peptide = 0.0;
+  double prior_peptide2 = 0.0;
+  unsigned confident_peptides = 0;
+  unsigned decoy_peptides = 0;
+  unsigned total_peptides = 0;
+  double prior, prior2, prior3, prior4;
+  prior = prior2 = prior3 = prior4 = 0.0;
+  for (vector<ScoreHolder>::iterator psm = peptideScores.begin(); 
+         psm!= peptideScores.end(); ++psm) {
+    if(!psm->isDecoy()) {
+      unsigned size = psm->pPSM->proteinIds.size();
+      double prior = prior_protein * size;
+      double tmp_prior = prior;
+      // for each protein
+      for(std::vector<std::string>::iterator protIt = psm->pPSM->proteinIds.begin(); 
+	          protIt != psm->pPSM->proteinIds.end(); protIt++) {
+	      unsigned index = std::distance(psm->pPSM->proteinIds.begin(), protIt);
+	      tmp_prior = (tmp_prior * prior_protein * (size - index)) / (index + 1);
+	      prior +=  pow(-1.0,(int)index) * tmp_prior;
+      }
+      /* update computed prior */
+      prior_peptide += (1.0-prior);
+      if(psm->q <= 0.1) ++confident_peptides;
+      prior_peptide2 += (1.0-psm->pep);
+      ++total_peptides;
+    } else {
+      ++decoy_peptides;
+    }
+  }
+  
+  prior = prior_peptide2 / (double)total_peptides;
+  prior2 = prior_peptide / (double)total_peptides;
+  prior3 = confident_peptides / (double)total_peptides;
+  prior4 = (total_peptides - decoy_peptides) / (double)total_peptides;
+  
+  double returnPrior = prior4; // select which prior to use
+  if (returnPrior > 0.99) returnPrior = 0.99;
+  if (returnPrior < 0.01) returnPrior = 0.01;
+  
+  return returnPrior;
+}
+
+void FidoInterface::run() {  
   proteinGraph_ = new GroupPowerBigraph(alpha_, beta_, gamma_, noClustering_, noPartitioning_, noPruning_, trivialGrouping_);
   proteinGraph_->setMaxAllowedConfigurations(LOG_MAX_ALLOWED_CONFIGURATIONS);
-  proteinGraph_->setPeptidePrior(localPeptidePrior);
+  proteinGraph_->setPeptidePrior(localPeptidePrior_);
   
   if (gridSearchThreshold_ > 0.0 && doGridSearch_) {
     //NOTE lets create a smaller tree to estimate the parameters faster
@@ -145,9 +201,11 @@ void FidoInterface::updateTargetDecoySizes() {
     unsigned tpChange = countTargets(proteinNames[k]);
     unsigned fpChange = proteinNames[k].size() - tpChange;
     if (trivialGrouping_) {
-      if (tpChange > 0) numberTargetProteins_ += 1;
-      if (fpChange > 0) numberDecoyProteins_ += 1;
+      if (tpChange > 0) tpChange = 1;
+      if (fpChange > 0) fpChange = 1;
     }
+    numberTargetProteins_ += tpChange;
+    numberDecoyProteins_ += fpChange;
   }
 }
 
@@ -157,7 +215,7 @@ void FidoInterface::computeProbabilities(const std::string& fname) {
     fin.open(fname.c_str());
     proteinGraph_->read(fin);
   } else {
-    proteinGraph_->read(peptideScores_);
+    proteinGraph_->read(peptideScorePtr_);
   }
   
   if (trivialGrouping_) updateTargetDecoySizes();
@@ -215,7 +273,7 @@ void FidoInterface::computeProbabilities(const std::string& fname) {
     if (fname.size() > 0) {
       proteinGraph_->read(fin);
     } else {
-      proteinGraph_->read(peptideScores_);
+      proteinGraph_->read(peptideScorePtr_);
     }
     if (trivialGrouping_) updateTargetDecoySizes();
   }

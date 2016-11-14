@@ -63,11 +63,11 @@ class ProteinScoreHolder {
   inline void setGroupId(int groupId) { groupId_ = groupId; }
   inline int getGroupId() const { return groupId_; }
   
-  void setPeptide(std::string peptide, bool isdecoy, double p, double pep, 
+  void addPeptide(std::string peptide, bool isdecoy, double p, double pep, 
                   double q, double empq) {
     peptides_.push_back(new Peptide(peptide, isdecoy, p, pep, q, empq));
   }
-  void setPeptide(Peptide *peptide) {
+  void addPeptide(Peptide *peptide) {
     peptides_.push_back(peptide);
   }
   void setPeptides(std::vector<Peptide*> peptides) {

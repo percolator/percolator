@@ -117,11 +117,12 @@ class SetHandler {
   bool getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values);
   int getLabel(const std::string& psmLine, unsigned int lineNr);
-  ScanId getScanId(const std::string& psmLine, 
+  ScanId getScanId(const std::string& psmLine, bool& isDecoy,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr);
     
   void readPSMs(istream& dataStream, std::string& psmLine, 
-    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields);
+    bool hasInitialValueRow, bool& separateSearches,
+    std::vector<OptionalField>& optionalFields);
   void readAndScorePSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
     std::vector<double>& rawWeights, Scores& allScores);

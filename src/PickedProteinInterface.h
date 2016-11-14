@@ -58,14 +58,16 @@ class PickedProteinInterface : public ProteinProbEstimator {
     bool outputEmpirQval, std::string& decoyPattern);
   virtual ~PickedProteinInterface();
   
-  bool initialize(Scores* fullset);
-  void run();
+  bool initialize(Scores& fullset);
+  void run() {}
   void computeProbabilities(const std::string& fname = "");
   
   std::ostream& printParametersXML(std::ostream &os);
   string printCopyright();
 
  private:
+  void groupProteins(Scores& peptideScores);
+  
   void pickedProteinStrategy(
     std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs);
   bool pickedProteinCheckId(std::string& proteinId, bool isDecoy,

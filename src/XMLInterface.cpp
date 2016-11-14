@@ -160,13 +160,18 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
       targetSet->setLabel(1);
       DataSet* decoySet = new DataSet();
       assert(decoySet);
-      decoySet->setLabel(-1);
+      decoySet->setLabel(-1);    
       
+      // detect if the input came from separate target and decoy searches or 
+      // from a concatenated search by looking for scan+expMass combinations
+      // that have both at least one target and decoy PSM
+      bool concatenatedSearch = true;
+    
       // read Fragment Spectrum Scans
-      if (setHandler.getMaxPSMs() > 0u) {
+      if (setHandler.getMaxPSMs() > 0u) { // subset training option is turned on
         readProteins = false;
         std::priority_queue<PSMDescriptionPriority> subsetPSMs;
-        std::map<ScanId, size_t> scanIdLookUp;
+        std::map<ScanId, std::pair<size_t, bool> > scanIdLookUp; // ScanId -> (priority, isDecoy)
         unsigned int upperLimit = UINT_MAX;
         for (doc = p.next(); 
              doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
@@ -179,10 +184,14 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
             ScanId scanId = getScanId(*psmIt, fragSpectrumScan.scanNumber());
             size_t randIdx;
             if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
-              randIdx = scanIdLookUp[scanId];
+              if (concatenatedSearch && psmIt->isDecoy() != scanIdLookUp[scanId].second) {
+                concatenatedSearch = false;
+              }
+              randIdx = scanIdLookUp[scanId].first;
             } else {
               randIdx = PseudoRandom::lcg_rand();
-              scanIdLookUp[scanId] = randIdx;
+              scanIdLookUp[scanId].first = randIdx;
+              scanIdLookUp[scanId].second = psmIt->isDecoy();
             }
             
             if (subsetPSMs.size() < setHandler.getMaxPSMs() || randIdx < upperLimit) {
@@ -204,6 +213,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
         
         setHandler.addQueueToSets(subsetPSMs, targetSet, decoySet);
       } else {
+        std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
         for (doc = p.next(); 
              doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
                  doc->getDocumentElement()->getTagName()); 
@@ -212,6 +222,15 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
           percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
           psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
           for ( ; psmIt != fragSpectrumScan.peptideSpectrumMatch().end(); ++psmIt) {
+            ScanId scanId = getScanId(*psmIt, fragSpectrumScan.scanNumber());
+            if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
+              if (concatenatedSearch && psmIt->isDecoy() != scanIdLookUp[scanId]) {
+                concatenatedSearch = false;
+              }
+            } else {
+              scanIdLookUp[scanId] = psmIt->isDecoy();
+            }
+            
             PSMDescription* psm = readPsm(*psmIt, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
             if (psmIt->isDecoy()) {
               decoySet->registerPsm(psm);
@@ -224,7 +243,14 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     
       setHandler.push_back_dataset(targetSet);
       setHandler.push_back_dataset(decoySet);
-    } else {
+      
+      pCheck = SanityCheck::initialize(otherCall_);
+      assert(pCheck);
+      pCheck->checkAndSetDefaultDir();
+      if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
+      pCheck->setConcatenatedSearch(concatenatedSearch);
+      
+    } else { // read PSMs and immediately score them (second step of subset training option)
       const unsigned int numFeatures = FeatureNames::getNumFeatures();
       for (doc = p.next(); 
            doc.get()!= 0 && XMLString::equals(fragSpectrumScanStr, 
@@ -248,7 +274,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
       // only read them if they are present and the option of using mayusfdr is activated
       unsigned numProteins = 0;
       if (hasProteins && ProteinProbEstimator::getCalcProteinLevelProb() /*&& Caller::protEstimator->getMayuFdr()*/) {
-        assert(protEstimator); // should be initialized if -A flag was used (which also sets calcProteinLevelProb)
+        assert(protEstimator); // should be initialized if -A or -f flag was used (which also sets calcProteinLevelProb)
         for (doc = p.next(); doc.get()!= 0
             && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) 
         {
@@ -264,13 +290,6 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
         Caller::protEstimator->setMayusFDR(false);
       }
       */
-    }
-    
-    if (rawWeights.size() == 0) {
-      pCheck = SanityCheck::initialize(otherCall_);
-      assert(pCheck);
-      pCheck->checkAndSetDefaultDir();
-      if (hasDefaultValues) pCheck->addDefaultWeights(init_values);
     }
     
   } catch (const xml_schema::exception& e) {

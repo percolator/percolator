@@ -226,7 +226,8 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
 }
 
 void SetHandler::readPSMs(istream& dataStream, std::string& psmLine, 
-    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields) {
+    bool hasInitialValueRow, bool& concatenatedSearch,
+    std::vector<OptionalField>& optionalFields) {
   DataSet* targetSet = new DataSet();
   assert(targetSet);
   targetSet->setLabel(1);
@@ -237,20 +238,26 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
-    std::map<ScanId, size_t> scanIdLookUp;
+    // ScanId -> (priority, isDecoy)
+    std::map<ScanId, std::pair<size_t, bool> > scanIdLookUp;
     unsigned int upperLimit = UINT_MAX;
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
         std::cerr << "Processing line " << lineNr << std::endl;
       }
       psmLine = rtrim(psmLine);
-      ScanId scanId = getScanId(psmLine, optionalFields, lineNr);
+      bool isDecoy = false;
+      ScanId scanId = getScanId(psmLine, isDecoy, optionalFields, lineNr);
       size_t randIdx;
       if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
-        randIdx = scanIdLookUp[scanId];
+        if (concatenatedSearch && isDecoy != scanIdLookUp[scanId].second) {
+          concatenatedSearch = false;
+        }
+        randIdx = scanIdLookUp[scanId].first;
       } else {
         randIdx = PseudoRandom::lcg_rand();
-        scanIdLookUp[scanId] = randIdx;
+        scanIdLookUp[scanId].first = randIdx;
+        scanIdLookUp[scanId].second = isDecoy;
       }
       
       if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
@@ -274,9 +281,21 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     addQueueToSets(subsetPSMs, targetSet, decoySet);
   } else { // simply read all PSMs
     unsigned int targetIdx = 0u, decoyIdx = 0u;
+    std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
     do {
       psmLine = rtrim(psmLine);
       int label = getLabel(psmLine, lineNr);
+      
+      bool isDecoy = (label == -1);
+      ScanId scanId = getScanId(psmLine, isDecoy, optionalFields, lineNr);
+      if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
+        if (concatenatedSearch && isDecoy != scanIdLookUp[scanId]) {
+          concatenatedSearch = false;
+        }
+      } else {
+        scanIdLookUp[scanId] = isDecoy;
+      }
+      
       if (label == 1) {
         targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_);
       } else if (label == -1) {
@@ -330,7 +349,7 @@ int SetHandler::getLabel(const std::string& psmLine, unsigned int lineNr) {
   return label;
 }
 
-ScanId SetHandler::getScanId(const std::string& psmLine, 
+ScanId SetHandler::getScanId(const std::string& psmLine, bool& isDecoy,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr) {
   ScanId scanId;
   TabReader reader(psmLine);
@@ -344,6 +363,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine,
   }
   
   int label = reader.readInt();
+  isDecoy = (label == -1);
   if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
@@ -469,11 +489,17 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   if (rawWeights.size() > 0) {
     readAndScorePSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, rawWeights, allScores);
   } else {
-    readPSMs(dataStream, psmLine, hasInitialValueRow, optionalFields);
+    // detect if the input came from separate target and decoy searches or 
+    // from a concatenated search by looking for scan+expMass combinations
+    // that have both at least one target and decoy PSM
+    bool concatenatedSearch = true;
+    
+    readPSMs(dataStream, psmLine, hasInitialValueRow, concatenatedSearch, optionalFields);
     
     pCheck = new SanityCheck();
     pCheck->checkAndSetDefaultDir();
     if (hasDefaultValues) pCheck->addDefaultWeights(init_values); 
+    pCheck->setConcatenatedSearch(concatenatedSearch);
   }
   return 1;
 }

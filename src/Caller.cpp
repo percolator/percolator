@@ -32,8 +32,8 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""), 
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    xmlPrintDecoys_(false), xmlPrintExpMass_(true),
-    reportUniquePeptides_(true), targetDecoyCompetition_(true), usePi0_(false),
+    xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true), 
+    targetDecoyCompetition_(false), useMixMax_(false),
     selectionFdr_(0.01), testFdr_(0.01), numIterations_(10), maxPSMs_(0u),
     selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false) {
@@ -236,13 +236,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       FALSE_IF_SET);
   cmd.defineOption("y",
-      "post-processing-qvality",
-      "Replace the target-decoy competition with the method qvality to assign q-values and PEPs. Note that this option only has an effect if the input PSMs are from separate target and decoy searches.",
+      "post-processing-mix-max",
+      "Use the mix-max method to assign q-values and PEPs. Note that this option only has an effect if the input PSMs are from separate target and decoy searches. This is the default setting.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("Y",
       "post-processing-tdc",
-      "Use target-decoy competition to assign q-values and PEPs. This is the default setting, unless the -U flag is specified.",
+      "Replace the mix-max method by target-decoy competition for assigning q-values and PEPs. If the input PSMs are from separate target and decoy searches, Percolator's SVM scores will be used to eliminate the lower scoring target or decoy PSM(s) of each scan+expMass combination. If the input PSMs are detected to be coming from a concatenated search, this option will be turned on automatically, as this is incompatible with the mix-max method. In case this detection fails, turn this option on explicitly.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("s",
@@ -270,7 +270,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       TRUE_IF_SET);
   cmd.defineOption("g",
       "protein-report-duplicates",
-      "If multiple database proteins contain exactly the same set of peptides, then Percolator will randomly discard all but one of the proteins. If this option is set, then the IDs of these duplicated proteins will be reported as a comma-separated list. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
+      "If this option is set and multiple database proteins contain exactly the same set of peptides, then the IDs of these duplicated proteins will be reported as a comma-separated list, instead of the default behavior of randomly discarding all but one of the proteins. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
       "",
       TRUE_IF_SET);
   cmd.defineOption("I",
@@ -366,6 +366,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       << "are needed to calculate protein level ones.";
       return 0;
     }
+    reportUniquePeptides_ = false;
+    
     if (cmd.optionSet("r")) {
       if (!cmd.optionSet("m")) {
         if (VERB > 0) {
@@ -394,9 +396,6 @@ bool Caller::parseOptions(int argc, char **argv) {
         << "are calculated, ignoring -B option." << endl;
       }
     }
-    reportUniquePeptides_ = false;
-    targetDecoyCompetition_ = false;
-    usePi0_ = true;
   } else {
     if (cmd.optionSet("r")) peptideResultFN_ = cmd.options["r"];
     if (cmd.optionSet("B")) decoyPeptideResultFN_ = cmd.options["B"];
@@ -558,16 +557,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     xmlPrintDecoys_ = true;
   }
   if (cmd.optionSet("y")) {
-    if (cmd.optionSet("A")) {
-      std::cerr << "WARNING: cannot use qvality for pep calculation when predicting protein probabilities with the -A flag, ignoring the -y flag." << std::endl;
-    } else {
-      targetDecoyCompetition_ = false;
-      usePi0_ = true;
+    if (cmd.optionSet("Y")) {
+      std::cerr << "Warning: ignoring the -Y/-post-processing-tdc option, as it"
+          << " is incompatible with the -y/-post-processing-mix-max option." 
+          << std::endl;
     }
-  }
-  if (cmd.optionSet("Y")) {
+    useMixMax_ = true;
+  } else if (cmd.optionSet("Y")) {
     targetDecoyCompetition_ = true;
-    usePi0_ = false;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -633,18 +630,19 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
   }
   
   if (VERB > 0 && writeOutput) {
-    if (!targetDecoyCompetition_)
+    if (useMixMax_) {
       std::cerr << "Selecting pi_0=" << allScores.getPi0() << std::endl;
+    }
     std::cerr << "Calculating q values." << std::endl;
   }
   
   int foundPSMs = allScores.calcQ(testFdr_);
   
   if (VERB > 0 && writeOutput) {
-    if (targetDecoyCompetition_) {
-      std::cerr << "Final list yields ";
-    } else {
+    if (useMixMax_) {
       std::cerr << "New pi_0 estimate on final list yields ";
+    } else {
+      std::cerr << "Final list yields ";
     }
     std::cerr << foundPSMs << " target " << (reportUniquePeptides_ ? "peptides" : "PSMs") 
               << " with q<" << testFdr_ << "." << endl;
@@ -700,7 +698,7 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
     cerr << protEstimator_->printCopyright();
   }
   
-  protEstimator_->initialize(&allScores);
+  protEstimator_->initialize(allScores);
   
   if (VERB > 1) {
     std::cerr << "Initialized protein inference engine." << std::endl;
@@ -794,13 +792,56 @@ int Caller::run() {
   
   setHandler.normalizeFeatures(pNorm_);
   
+  /*
+  true search   detected search  mix-max  tdc  flag for mix-max       flag for tdc
+  separate      separate         yes      yes  none (but -y allowed)  -Y
+  separate      concatenated     yes      yes  -y (force)             -Y
+  concatenated  concatenated     no       yes  NA                     none (but -Y allowed)
+  concatenated  separate         no       yes  NA                     -Y (force)
+  */
+  if (pCheck_->concatenatedSearch()) {
+    if (useMixMax_) {
+      if (VERB > 0) {
+        std::cerr << "Warning: concatenated search input detected, "
+          << "but overridden by -y flag: using mix-max anyway." << std::endl;
+      }
+    } else {
+      if (VERB > 0) {
+        std::cerr << "Concatenated search input detected, skipping both " 
+          << "target-decoy competition and mix-max." << std::endl;
+      }
+    }
+  } else { // separate searches detected
+    if (targetDecoyCompetition_) { // this also captures the case where input was in reality from concatenated search
+      if (VERB > 0) {
+        std::cerr << "Separate target and decoy search inputs detected, "
+          << "using target-decoy competition on Percolator scores." << std::endl;
+      }
+    } else {
+      useMixMax_ = true;
+      if (VERB > 0) {
+        std::cerr << "Separate target and decoy search inputs detected, "
+          << "using mix-max method." << std::endl;
+      }
+    }
+  }
+  assert(!(useMixMax_ && targetDecoyCompetition_));
+  
   // Copy feature data pointers to Scores object
-  Scores allScores(usePi0_);
+  Scores allScores(useMixMax_);
   allScores.fillFeatures(setHandler);
+  
+  if (VERB > 0 && useMixMax_ && 
+        abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
+    std::cerr << "Warning: The mix-max procedure is not well behaved when "
+      << "# targets (" << allScores.posSize() << ") != "
+      << "# decoys (" << allScores.negSize() << "). "
+      << "Consider using target-decoy competition (-Y flag)." << std::endl;
+  }
   
   CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
                                   testFdr_, selectionFdr_, selectedCpos_, 
-                                  selectedCneg_, numIterations_, usePi0_);
+                                  selectedCneg_, numIterations_, useMixMax_);
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"

@@ -73,7 +73,7 @@ class FidoInterface : public ProteinProbEstimator {
     std::string decoyPattern = "random", bool trivialGrouping = true);
   virtual ~FidoInterface();
   
-  bool initialize(Scores* fullset) { return ProteinProbEstimator::initialize(fullset); }
+  bool initialize(Scores& peptideScores);
   void run();
   void computeProbabilities(const std::string& fname = "");
   
@@ -83,6 +83,9 @@ class FidoInterface : public ProteinProbEstimator {
  private:
   /** FIDO PARAMETERS **/
   
+  /** pointer to the peptide scores to regenerate the graph after the hyperparameter search **/
+  Scores* peptideScorePtr_; 
+  
   /* bigraph used by fido to represent connections between PSMs and proteins */
   GroupPowerBigraph* proteinGraph_;
   /* alpha, beta and gamma parameter (Fig 2 in Serang et al. 2010) */
@@ -91,6 +94,8 @@ class FidoInterface : public ProteinProbEstimator {
   bool noPartitioning_, noClustering_, noPruning_;
   /* turns off pruning of edges to proteins with only low confident PSMs */
   double proteinThreshold_;
+  /** estimated peptide prior of being correct/present **/
+  double localPeptidePrior_;
   
   /** GRID SEARCH PARAMETERS **/
   
@@ -106,6 +111,9 @@ class FidoInterface : public ProteinProbEstimator {
   mutable unsigned int rocN_;
   
   void updateTargetDecoySizes();
+  
+  /** estimate prior probabilities for peptide level **/
+  double estimatePriors(Scores& peptideScores);
   
   /** fido extra functions to do the grid search for parameters alpha,beta and gamma **/
   void getROC_AUC(const std::vector<std::vector<string> > &names,

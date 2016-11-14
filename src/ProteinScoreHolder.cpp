@@ -21,7 +21,7 @@ ProteinScoreHolder::ProteinScoreHolder(std::string name, bool isDecoy, ProteinSc
     int groupId)
 	: name_(name), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
 	  isDecoy_(isDecoy), groupId_(groupId) {
-  if (peptide) setPeptide(peptide);
+  if (peptide) addPeptide(peptide);
 }
 
 ProteinScoreHolder::~ProteinScoreHolder() {

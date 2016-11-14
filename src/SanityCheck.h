@@ -21,54 +21,67 @@ class Scores;
 class Normalizer;
 
 class SanityCheck {
-  public:
-    SanityCheck();
-    virtual ~SanityCheck();
-    static SanityCheck* initialize(string otherCall);
-    void readWeights(istream& weightStream, vector<double>& w);
-    void checkAndSetDefaultDir();
-    int getInitDirection(vector<Scores>& testset,
-                         vector<Scores> &trainset, Normalizer* pNorm,
-                         vector<vector<double> >& w, double test_fdr);
-    
-    virtual bool validateDirection(vector<vector<double> >& w);
-    void resetDirection(vector<vector<double> >& w);
+ public:
+  SanityCheck();
+  virtual ~SanityCheck();
+  static SanityCheck* initialize(string otherCall);
+  void readWeights(istream& weightStream, vector<double>& w);
+  void checkAndSetDefaultDir();
+  int getInitDirection(vector<Scores>& testset,
+                       vector<Scores> &trainset, Normalizer* pNorm,
+                       vector<vector<double> >& w, double test_fdr);
+  
+  virtual bool validateDirection(vector<vector<double> >& w);
+  void resetDirection(vector<vector<double> >& w);
 
-    static void setInitWeightFN(string fn) {
-      initWeightFN = fn;
-    }
-    static void setInitDefaultDir(int dir) {
-      initDefaultDir = dir;
-    }
-    static void setInitDefaultDirName(const string & dirName) {
-      initDefaultDirName = dirName;
-    }
-    static void setOverrule(bool orl) {
-      overRule = orl;
-    }
-    
-    static void addDefaultWeights(vector<double> __default_weights) {
-        default_weights = __default_weights;
-    }
-    
-    static vector<double>& getDefaultWeights() {
-        return default_weights;
-    }
-    
-  protected:
-    virtual void getDefaultDirection(vector<vector<double> >& w);
-    virtual void calcInitDirection(vector<double>& wSet, size_t set);
-    int initPositives;
-    double fdr;
-    static bool overRule;
-    static string initWeightFN;
-    static string initDefaultDirName;
-    static int initDefaultDir; // Default Direction, 0=do not use,
-    // positive integer = feature number,
-    // negative integer = lower score better
-    vector<Scores> *pTestset, *pTrainset;
-    //this vector is meant to have the initial directions givn in the pin.xml
-    static vector<double> default_weights;
+  static void setInitWeightFN(string fn) {
+    initWeightFN = fn;
+  }
+  static void setInitDefaultDir(int dir) {
+    initDefaultDir = dir;
+  }
+  static void setInitDefaultDirName(const string & dirName) {
+    initDefaultDirName = dirName;
+  }
+  static void setOverrule(bool orl) {
+    overRule = orl;
+  }
+  
+  static void addDefaultWeights(vector<double> __default_weights) {
+      default_weights = __default_weights;
+  }
+  
+  static vector<double>& getDefaultWeights() {
+      return default_weights;
+  }
+  
+  bool concatenatedSearch() const {
+    return concatenatedSearch_;
+  }
+  
+  void setConcatenatedSearch(const bool s) {
+    concatenatedSearch_ = s;
+  }
+  
+ protected:
+  virtual void getDefaultDirection(vector<vector<double> >& w);
+  virtual void calcInitDirection(vector<double>& wSet, size_t set);
+  int initPositives;
+  double fdr;
+  static bool overRule;
+  static string initWeightFN;
+  static string initDefaultDirName;
+  static int initDefaultDir; // Default Direction, 0=do not use,
+  // positive integer = feature number,
+  // negative integer = lower score better
+  
+  vector<Scores> *pTestset, *pTrainset;
+  
+  //this vector is meant to have the initial directions givn in the pin.xml
+  static vector<double> default_weights;
+  
+  // input from concatenated search, i.e. not separate target and decoy searches
+  bool concatenatedSearch_;
 };
 
 #endif /*SANITYCHECK_H_*/

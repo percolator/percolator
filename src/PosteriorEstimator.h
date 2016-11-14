@@ -76,10 +76,6 @@ protected:
     static void estimate(vector<pair<double, bool> >& combined,
                          LogisticRegression& lr, bool usePi0, double pi0);
     static void binData(const vector<pair<double, bool> >& combined,
-                        vector<double>& medians,
-                        vector<unsigned int>& negatives,
-                        vector<unsigned int>& sizes);
-    static void binDataMixMax(const vector<pair<double, bool> >& combined,
                         double pi0, vector<double>& medians,
                         vector<unsigned int>& negatives,
                         vector<unsigned int>& sizes);

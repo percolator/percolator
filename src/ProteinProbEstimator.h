@@ -15,8 +15,8 @@
 
  *******************************************************************************/
  
-#ifndef PROTEINPROBESTIMATOR_H_
-#define PROTEINPROBESTIMATOR_H_
+#ifndef PROTEIN_PROB_ESTIMATOR_H_
+#define PROTEIN_PROB_ESTIMATOR_H_
 
 #include <functional>
 #include <numeric>
@@ -30,6 +30,7 @@
 #include "Globals.h"
 #include "ProteinFDRestimator.h"
 #include "ProteinScoreHolder.h"
+#include "PosteriorEstimator.h"
 #include "Scores.h"
 #include "PseudoRandom.h"
 
@@ -123,7 +124,7 @@ class ProteinProbEstimator {
   virtual ~ProteinProbEstimator();
   
   /** reads the proteins from the set of scored peptides from percolator **/
-  virtual bool initialize(Scores* fullset);
+  virtual bool initialize(Scores& peptideScores);
   
   /** start the protein probabilities tool**/
   virtual void run() = 0;
@@ -149,10 +150,7 @@ class ProteinProbEstimator {
   unsigned getQvaluesBelowLevelDecoy(double level);
  
   /** populate the list of proteins**/
-  void setTargetandDecoysNames();
-  
-  /** return the data structure for the proteins **/
-  std::map<const std::string,ProteinScoreHolder*> getProteins() { return proteins_; }
+  void setTargetandDecoysNames(Scores& peptideScores);
   
   /** add proteins read from the database **/
   void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
@@ -188,12 +186,9 @@ class ProteinProbEstimator {
    * this function is used to estimate the protein FDR**/
   void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
         std::set<std::string> &numberFP);
-     
-  /** estimate prior probabilities for peptide level **/
-  double estimatePriors();
   
   /** this function generates a vector of pair protein pep and label **/
-  void getCombinedList(std::vector<std::pair<double , bool> > &combined);
+  void getCombinedList(std::vector<std::pair<double , bool> >& combined);
   
    /** update the proteins with the computed qvalues and pvalues**/
   void updateProteinProbabilities();
@@ -210,20 +205,30 @@ class ProteinProbEstimator {
   /** compute pi0 from the set of pvalues**/
   double estimatePi0(const unsigned int numBoot = 100);
   
+  
   /** variables **/
+  
+  /** contains all the protein names for target and decoy set respectively **/
   std::set<string> truePosSet, falsePosSet;
-  ProteinFDRestimator *fastReader;
-  std::map<const std::string,ProteinScoreHolder*> proteins_;
-  std::multimap<double,std::vector<std::string> > pepProteinMap_;
-  std::map<std::string,std::pair<std::string,double> > targetProteins;
-  std::map<std::string,std::pair<std::string,double> > decoyProteins;
+  
+  /** map from protein name to its sequence and its sequence length, used for Mayu method **/
+  std::map<std::string,std::pair<std::string,double> > targetProteins_;
+  std::map<std::string,std::pair<std::string,double> > decoyProteins_;
+  
+  /** map from protein name to its score **/
+  std::map<const std::string, ProteinScoreHolder*> proteins_;
+  
+  /** map from PEP to a protein group **/
+  std::multimap<double, std::vector<std::string> > pepProteinMap_;
+  
+  /** score vectors **/
   std::vector<double> qvalues;
   std::vector<double> qvaluesEmp;
-  std::vector<double> pvalues;
-  Scores* peptideScores_;
-  bool tiesAsOneProtein; /* assigns same q-value to proteins with same PEP */
+  std::vector<double> pvalues_;
+  
   /* protein groups are either present or absent and cannot be partially present */
   bool trivialGrouping_;
+  
   bool usePi0_;
   double pi0_, absenceRatio_;
   bool outputEmpirQVal_;
@@ -233,4 +238,4 @@ class ProteinProbEstimator {
   std::string decoyPattern_;
 };
 
-#endif /* PROTEINPROBESTIMATOR_H_ */
+#endif /* PROTEIN_PROB_ESTIMATOR_H_ */
