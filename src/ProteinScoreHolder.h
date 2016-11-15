@@ -36,7 +36,7 @@ class ProteinScoreHolder {
   
   ProteinScoreHolder() : name_(""), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
               groupId_(-1), isDecoy_(false) {}
-  ProteinScoreHolder(std::string name, bool isdecoy, Peptide *peptide, int groupId);
+  ProteinScoreHolder(std::string name, bool isdecoy, Peptide peptide, int groupId);
   ~ProteinScoreHolder();
   
   inline void setName(std::string name) { name_ = name; }
@@ -58,23 +58,24 @@ class ProteinScoreHolder {
   inline double getScore() const { return score_; }
   
   inline void setIsDecoy(bool isdecoy) { isDecoy_ = isdecoy; }
-  inline bool getIsDecoy() const { return isDecoy_; }
+  inline bool isDecoy() const { return isDecoy_; }
+  inline bool isTarget() const { return !isDecoy_; }
   
   inline void setGroupId(int groupId) { groupId_ = groupId; }
   inline int getGroupId() const { return groupId_; }
   
   void addPeptide(std::string peptide, bool isdecoy, double p, double pep, 
                   double q, double empq) {
-    peptides_.push_back(new Peptide(peptide, isdecoy, p, pep, q, empq));
+    peptides_.push_back(Peptide(peptide, isdecoy, p, pep, q, empq));
   }
-  void addPeptide(Peptide *peptide) {
+  void addPeptide(Peptide peptide) {
     peptides_.push_back(peptide);
   }
-  void setPeptides(std::vector<Peptide*> peptides) {
-     peptides_ = std::vector<Peptide*>(peptides);
+  void setPeptides(std::vector<Peptide> peptides) {
+     peptides_ = std::vector<Peptide>(peptides);
   }
-  std::vector<Peptide*> getPeptides() { return peptides_; }
-  std::vector<Peptide*> getPeptides() const { return peptides_; }
+  std::vector<Peptide> getPeptides() { return peptides_; }
+  std::vector<Peptide> getPeptides() const { return peptides_; }
   
   /*
   inline bool operator<(const Protein& a,const Protein& b)  {
@@ -96,7 +97,7 @@ class ProteinScoreHolder {
   double q_, qemp_, pep_, p_, score_;
   int groupId_;
   bool isDecoy_;
-  std::vector<Peptide*> peptides_;
+  std::vector<Peptide> peptides_;
   
 };
 

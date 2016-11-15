@@ -190,23 +190,23 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores) {
     }
     
     if (!isShared) {
-      ProteinScoreHolder::Peptide *peptide = new ProteinScoreHolder::Peptide(
-          peptideIt->pPSM->getPeptideSequence(), peptideIt->isDecoy(),
-			    peptideIt->p, peptideIt->pep, peptideIt->q, peptideIt->score);
-      if (proteins_.find(lastProteinId) == proteins_.end()) {
+      ProteinScoreHolder::Peptide peptide(peptideIt->pPSM->getPeptideSequence(), 
+          peptideIt->isDecoy(), peptideIt->p, peptideIt->pep, peptideIt->q, peptideIt->score);
+      if (proteinToIdxMap_.find(lastProteinId) == proteinToIdxMap_.end()) {
         if (proteinsInGroup.size() > 1) {
           groupProteinIds[lastProteinId] = proteinsInGroup;
         }
-        ProteinScoreHolder *newprotein = new ProteinScoreHolder(lastProteinId, peptideIt->isDecoy(),
+        ProteinScoreHolder newProtein(lastProteinId, peptideIt->isDecoy(),
             peptide, ++numGroups);
-        proteins_.insert(std::make_pair(lastProteinId,newprotein));
+        proteinToIdxMap_[lastProteinId] = proteins_.size();
+        proteins_.push_back(newProtein);
         if (lastProteinId.find(decoyPattern_) == std::string::npos) {
           ++numberTargetProteins_;
         } else {
           ++numberDecoyProteins_;
         }
       } else {
-        proteins_[lastProteinId]->addPeptide(peptide);
+        proteins_.at(proteinToIdxMap_[lastProteinId]).addPeptide(peptide);
         if (proteinsInGroup.size() > 1) {
           groupProteinIds[lastProteinId].insert(proteinsInGroup.begin(), 
                                                  proteinsInGroup.end());
@@ -217,18 +217,18 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores) {
   
   if (reportFragmentProteins_ || reportDuplicateProteins_) {
     std::map<std::string, std::set<std::string> >::iterator groupIt;
-    std::map<const std::string,ProteinScoreHolder*>::iterator representIt;
+    std::map<std::string, size_t>::iterator representIt;
     for (groupIt = groupProteinIds.begin(); groupIt != groupProteinIds.end(); ++groupIt) {
-      representIt = proteins_.find(groupIt->first);
-      if (representIt != proteins_.end()) {
+      representIt = proteinToIdxMap_.find(groupIt->first);
+      if (representIt != proteinToIdxMap_.end()) {
         std::string newName = "";
         for (std::set<std::string>::iterator proteinIt = groupIt->second.begin(); proteinIt != groupIt->second.end(); ++proteinIt) {
           std::string proteinId = *proteinIt;
           std::replace(proteinId.begin(), proteinId.end(), ',', ';');
           newName += proteinId + ",";
         }
-        newName = newName.substr(0, newName.size() - 1);
-        representIt->second->setName(newName);
+        newName = newName.substr(0, newName.size() - 1); // remove last comma
+        proteins_.at(representIt->second).setName(newName);
       }
     }
   }
@@ -239,56 +239,50 @@ void PickedProteinInterface::computeProbabilities(const std::string& fname) {
     std::cerr << "Computing protein probabilities for " 
               << proteins_.size() << " protein groups." << std::endl;
   }
-  for (std::map<const std::string,ProteinScoreHolder*>::iterator it = proteins_.begin(); 
+  for (std::vector<ProteinScoreHolder>::iterator it = proteins_.begin(); 
         it != proteins_.end(); it++) {
-    std::vector<ProteinScoreHolder::Peptide*> peptides = it->second->getPeptides();
+    std::vector<ProteinScoreHolder::Peptide> peptides = it->getPeptides();
     switch (protInferenceMethod_) {
       case FISHER: {
         double fisher = 0.0;
         int significantPeptides = 0;
-        for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
+        for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
-          fisher += log((*itP)->p / maxPeptidePval_);
+          fisher += log(itP->p / maxPeptidePval_);
         }
         //double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
         double proteinPvalue = 0.0;
         if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
-        it->second->setP(proteinPvalue);
-        it->second->setScore(proteinPvalue);
+        it->setP(proteinPvalue);
+        it->setScore(proteinPvalue);
         break;
       } case PEPPROD: { // MaxQuant's strategy
         double logPepProd = 0.0;
-        for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
+        for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
-          logPepProd += log((*itP)->pep);
+          logPepProd += log(itP->pep);
         }
-        it->second->setScore(logPepProd);
+        it->setScore(logPepProd);
         break;
       } case BESTPEPT: {
         double maxScore = -1000.0;
-        for (std::vector<ProteinScoreHolder::Peptide*>::const_iterator itP = peptides.begin();
+        for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
-          maxScore = std::max(maxScore, (*itP)->score);
+          maxScore = std::max(maxScore, itP->score);
         }
-        it->second->setScore(-1.0*maxScore); // lower scores are better
+        it->setScore(-1.0*maxScore); // lower scores are better
         break;
       }
     }
   }
   
-  std::vector<std::pair<std::string,ProteinScoreHolder*> > protIdProtPairs(proteins_.begin(), proteins_.end());
-  std::sort(protIdProtPairs.begin(), protIdProtPairs.end(), IntCmpScore());
+  std::sort(proteins_.begin(), proteins_.end(), IntCmpScore());
   
   if (!usePi0_) {
-    pickedProteinStrategy(protIdProtPairs);
+    pickedProteinStrategy();
   }
   
-  std::vector<double> peps;
-  estimatePEPs(protIdProtPairs, peps);
-  
-  for (size_t i = 0; i < protIdProtPairs.size(); ++i) {
-    pepProteinMap_.insert(std::make_pair(peps[i], std::vector<std::string>(1, protIdProtPairs[i].first) ));
-  }
+  estimatePEPs();
 }
 
 bool PickedProteinInterface::pickedProteinCheckId(std::string& proteinId, bool isDecoy,
@@ -330,32 +324,30 @@ bool PickedProteinInterface::pickedProteinCheck(std::string& proteinName, bool i
 /* Executes the picked protein-FDR strategy from Savitski et al. 2015
    For protein groups, if one of the corresponding proteins has been observed
    the whole group is eliminated */
-void PickedProteinInterface::pickedProteinStrategy(
-    std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs) {
+void PickedProteinInterface::pickedProteinStrategy() {
   if (VERB > 1) {
     std::cerr << "Performing picked protein strategy" << std::endl;
   }
   
-  std::vector<std::pair<std::string,ProteinScoreHolder*> > pickedProtIdProtPairs;
+  std::vector<ProteinScoreHolder> pickedProtIdProtPairs;
   std::set<std::string> targetProts, decoyProts;
-  std::vector<std::pair<std::string,ProteinScoreHolder*> >::iterator it = protIdProtPairs.begin();
+  std::vector<ProteinScoreHolder>::iterator it = proteins_.begin();
   size_t numErased = 0;
   // TODO: what about peptides with both target and decoy proteins?
-  for (; it != protIdProtPairs.end(); ++it) {
-    bool isDecoy = it->second->getIsDecoy();
-    std::string proteinName = it->second->getName(); 
+  for (; it != proteins_.end(); ++it) {
+    bool isDecoy = it->isDecoy();
+    std::string proteinName = it->getName(); 
     
     bool erase = pickedProteinCheck(proteinName, isDecoy, targetProts, decoyProts);
     if (erase) {
       if (isDecoy) --numberDecoyProteins_;
       else --numberTargetProteins_;
-      proteins_.erase(it->first); // this is where the printed proteins are stored
       numErased += 1;
     } else {
       pickedProtIdProtPairs.push_back(*it);
     }
   }
-  pickedProtIdProtPairs.swap(protIdProtPairs);
+  pickedProtIdProtPairs.swap(proteins_);
   
   if (numErased == 0) {
     std::cerr << "Warning: No target-decoy protein pairs found for the picked "
@@ -372,18 +364,16 @@ void PickedProteinInterface::pickedProteinStrategy(
   }
 }
 
-void PickedProteinInterface::estimatePEPs(
-    std::vector<std::pair<std::string,ProteinScoreHolder*> >& protIdProtPairs,
-    std::vector<double>& peps) {
+void PickedProteinInterface::estimatePEPs() {
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> pvals;
   switch (protInferenceMethod_) {
     case FISHER: { // if we have well calibrated p-values
-      for (size_t i = 0; i < protIdProtPairs.size(); ++i) {
-        double pValue = protIdProtPairs[i].second->getP();
-        bool isDecoy = protIdProtPairs[i].second->getIsDecoy();
-        combined.push_back(make_pair(pValue, !isDecoy));
-        if (!isDecoy) {
+      for (size_t i = 0; i < proteins_.size(); ++i) {
+        double pValue = proteins_.at(i).getP();
+        bool isTarget = proteins_.at(i).isTarget();
+        combined.push_back(make_pair(pValue, isTarget));
+        if (isTarget) {
           pvals.push_back(pValue);
         }
       }
@@ -392,10 +382,10 @@ void PickedProteinInterface::estimatePEPs(
       break;
     } case PEPPROD:
       case BESTPEPT: { // if we have some other type of score
-      for (size_t i = 0; i < protIdProtPairs.size(); ++i) {
-        double score = protIdProtPairs[i].second->getScore();
-        bool isDecoy = protIdProtPairs[i].second->getIsDecoy();
-        combined.push_back(make_pair(score, !isDecoy));
+      for (size_t i = 0; i < proteins_.size(); ++i) {
+        double score = proteins_.at(i).getScore();
+        bool isTarget = proteins_.at(i).isTarget();
+        combined.push_back(make_pair(score, isTarget));
       }
       std::sort(combined.begin(), combined.end());
       PosteriorEstimator::getPValues(combined, pvals);
@@ -410,9 +400,14 @@ void PickedProteinInterface::estimatePEPs(
     }
   }
   
+  std::vector<double> peps;
   bool includeNegativesInResult = true;
   PosteriorEstimator::setReversed(true);
-  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_ * absenceRatio_, peps, includeNegativesInResult);
+  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, includeNegativesInResult);
+  
+  for (size_t i = 0; i < proteins_.size(); ++i) {
+    proteins_.at(i).setPEP(peps.at(i));
+  }
 }
 
 std::ostream& PickedProteinInterface::printParametersXML(std::ostream &os) {

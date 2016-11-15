@@ -135,30 +135,4 @@ class FidoInterface : public ProteinProbEstimator {
   
 };
 
-/* FDRCalculator is a helper class for FidoInterface to facilitate the two 
-*    options for FDR calculation (tiesAsOneProtein on/off).
-*
-*/
-class FDRCalculator {
- public:
-  FDRCalculator(bool usePi0, double targetDecoyRatio, double pi0, bool countDecoyQvalue) : 
-      fpCount_(0.0), tpCount_(0.0), totalFDR_(0.0), 
-      usePi0_(usePi0), pi0_(pi0), targetDecoyRatio_(targetDecoyRatio),
-      previousEmpQ_(0.0), previousEstQ_(0.0),
-      countDecoyQvalue_(countDecoyQvalue), rocN_(50u) {}
-  
-  unsigned getRocN() const { return rocN_; }
-  double getPreviousEstQ() const { return previousEstQ_; }
-  
-  void calcFDRs(double fpChange, double tpChange, double prob,
-               std::vector<double>& empq, std::vector<double>& estq);
- private:
-  double fpCount_, tpCount_, totalFDR_;
-  bool usePi0_;
-  double pi0_, targetDecoyRatio_;
-  double previousEmpQ_, previousEstQ_;
-  bool countDecoyQvalue_;
-  unsigned int rocN_;  
-};
-
 #endif // FIDOINTERFACE_H

@@ -218,13 +218,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "results-peptides",
       "Output tab delimited results of peptides to a file instead of stdout (will be ignored if used with -U option)",
       "filename");
-  cmd.defineOption("m",
-      "results-psms",
-      "Output tab delimited results of PSMs to a file instead of stdout",
-      "filename");
   cmd.defineOption("B",
       "decoy-results-peptides",
       "Output tab delimited results for decoy peptides into a file (will be ignored if used with -U option)",
+      "filename");
+  cmd.defineOption("m",
+      "results-psms",
+      "Output tab delimited results of PSMs to a file instead of stdout",
       "filename");
   cmd.defineOption("M",
       "decoy-results-psms",
@@ -254,6 +254,23 @@ bool Caller::parseOptions(int argc, char **argv) {
       "picked-protein",
       "Use the picked protein-level FDR to infer protein probabilities. Provide the fasta file as the argument to this flag, which will be used for protein grouping based on an in-silico digest. If no fasta file is available or protein grouping is not desired, set this flag to \"auto\" to skip protein grouping.",
       "value");
+  cmd.defineOption("A",
+      "fido-protein",
+      "Use the Fido algorithm to infer protein probabilities",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption("l",
+      "results-proteins",
+      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A or -f is active)",
+      "filename");
+  cmd.defineOption("L",
+      "decoy-results-proteins",
+      "Output tab delimited results for decoy proteins into a file (Only valid if option -A or -f is active)",
+      "filename");
+  cmd.defineOption("P",
+      "protein-decoy-pattern",
+      "Define the text pattern to identify decoy proteins in the database. Default = \"random_\".",
+      "value");
   cmd.defineOption("z",
       "protein-enzyme",
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
@@ -273,15 +290,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "If this option is set and multiple database proteins contain exactly the same set of peptides, then the IDs of these duplicated proteins will be reported as a comma-separated list, instead of the default behavior of randomly discarding all but one of the proteins. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("I",
+  /*cmd.defineOption("I",
       "protein-absence-ratio",
       "The ratio of absent proteins, used for calculating protein-level q-values with a null hypothesis of \"Protein P is absent\". This uses the \"classic\" protein FDR in favor of the \"picked\" protein FDR.",
-      "value");
-  cmd.defineOption("A",
-      "fido-protein",
-      "Use the Fido algorithm to infer protein probabilities",
-      "",
-      TRUE_IF_SET);
+      "value"); // EXPERIMENTAL PHASE */
   cmd.defineOption("a",
       "fido-alpha",
       "Set Fido's probability with which a present protein emits an associated peptide. \
@@ -289,21 +301,17 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("b",
       "fido-beta",
-      "Set Fido's probability of creation of a peptide from noise. Set by grid search if not specified",
+      "Set Fido's probability of creation of a peptide from noise. Set by grid search if not specified.",
       "value");
   cmd.defineOption("G",
       "fido-gamma",
-      "Set Fido's prior probability that a protein is present in the sample. Set by grid search if not specified",
+      "Set Fido's prior probability that a protein is present in the sample. Set by grid search if not specified.",
       "value");
   cmd.defineOption("q",
       "fido-empirical-protein-q",        
-      "Estimate empirical p-values and q-values using target-decoy analysis.",
+      "Output empirical p-values and q-values for Fido using target-decoy analysis to XML output (only valid if -X flag is present).",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("P",
-      "fido-pattern",
-      "Define the text pattern to identify decoy proteins in the database. Default = \"random_\".",
-      "value");
   cmd.defineOption("d",
       "fido-gridsearch-depth",
       "Setting the gridsearch-depth to 0 (fastest), 1 or 2 (slowest) controls how much computational time is required for the estimation of alpha, beta and gamma parameters for Fido. Default = 0.",
@@ -323,7 +331,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("H",
       "fido-gridsearch-mse-threshold",
-      "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for big size datasets. Default = 0.1",
+      "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
       "value");
   /*cmd.defineOption("Q",
       "fido-protein-group-level-inference",
@@ -331,14 +339,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "",
       TRUE_IF_SET);
   */
-  cmd.defineOption("l",
-      "results-proteins",
-      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A or -f is active)",
-      "filename");
-  cmd.defineOption("L",
-      "decoy-results-proteins",
-      "Output tab delimited results for decoy proteins into a file (Only valid if option -A or -f is active)",
-      "filename");
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);

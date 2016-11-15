@@ -375,9 +375,7 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
 }
 
 /**
- *
  * Assumes that scores are sorted in descending order
- *
  */
 void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& combined,
     std::vector<double>& h_w_le_z, std::vector<double>& h_z_le_z) {
@@ -410,7 +408,6 @@ void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& comb
  * Assumes that scores are sorted in descending order
  * 
  * If pi0 == 1.0 this is equal to the "traditional" q-value calculation
- *
  */
 void PosteriorEstimator::getQValues(double pi0, 
     const vector<pair<double, bool> >& combined, vector<double>& q) {
@@ -482,14 +479,7 @@ void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<dou
 	double sum = 0.0;
 	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
 	  sum += *myP;
-	  ++queue;
-	  // ensure that PSMs with the same PEP get the same q-value
-	  if (myP+1 == pep.end() || *myP != *(myP+1)) {
-		  for (int i = 0; i < queue; ++i) {
-  		  q.push_back(sum / (double)nP);
-  		}
-		  queue = 0;
-		}
+	  q.push_back(sum / (double)nP);
 	}
 	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
 }

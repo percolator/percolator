@@ -9,7 +9,10 @@
 #include "Array.h"
 #include "Random.h"
 #include "Model.h"
-#include "Scores.h" // from Percolator
+
+// from Percolator
+#include "Scores.h"
+#include "ProteinScoreHolder.h"
 
 using namespace std;
 
@@ -36,7 +39,9 @@ class GroupPowerBigraph {
   
   Array<double> proteinProbs();
   void printProteinWeights() const;
-  void getProteinProbsPercolator(std::multimap<double, std::vector<std::string> > &pepProteins) const;
+  void getProteinProbsPercolator(
+    std::vector<ProteinScoreHolder>& proteins,
+    std::map<std::string, size_t>& proteinToIdxMap) const;
   void getProteinProbsAndNames(std::vector<std::vector<std::string> > &names, std::vector<double> &probs) const;
   void getProteinNames(std::vector<std::vector<std::string> > &names) const;
   void getProteinProbs();

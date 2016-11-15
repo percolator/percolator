@@ -36,23 +36,23 @@
 
 /** set of helper functions to sort data structures and some operations overloaded **/
 struct IntCmpProb {
-  bool operator()(const std::pair<const std::string,ProteinScoreHolder*> &lhs, const std::pair<const std::string,ProteinScoreHolder*> &rhs) {
-    return (  (lhs.second->getPEP() < rhs.second->getPEP())
-         || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() < rhs.second->getQ()) )
-         || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
-            && (lhs.second->getGroupId() < rhs.second->getGroupId()) )
-         || ( (lhs.second->getPEP() == rhs.second->getPEP()) && (lhs.second->getQ() == rhs.second->getQ())
-            && (lhs.second->getGroupId() == rhs.second->getGroupId()) 
-            && (lhs.second->getName() < rhs.second->getName()) )  
+  bool operator()(const ProteinScoreHolder& lhs, const ProteinScoreHolder& rhs) {
+    return (  (lhs.getPEP() < rhs.getPEP())
+         || ( (lhs.getPEP() == rhs.getPEP()) && (lhs.getGroupId() < rhs.getGroupId()) )
+         || ( (lhs.getPEP() == rhs.getPEP()) && (lhs.getGroupId() == rhs.getGroupId())
+            && (lhs.getQ() < rhs.getQ()) )
+         || ( (lhs.getPEP() == rhs.getPEP()) && (lhs.getGroupId() == rhs.getGroupId())
+            && (lhs.getQ() == rhs.getQ()) && (lhs.getName() < rhs.getName()) )  
     );
   }
 };
 
 struct IntCmpScore {
-  bool operator()(const std::pair<const std::string,ProteinScoreHolder*> &lhs, const std::pair<const std::string,ProteinScoreHolder*> &rhs) {
-    return ( lhs.second->getScore() < rhs.second->getScore()
-         || (lhs.second->getScore() == rhs.second->getScore() 
-            && lhs.second->getName() < rhs.second->getName())
+  bool operator()(const ProteinScoreHolder& lhs, const ProteinScoreHolder& rhs) {
+    return ( lhs.getScore() < rhs.getScore()
+         || (lhs.getScore() == rhs.getScore() && lhs.getGroupId() < rhs.getGroupId())
+         || (lhs.getScore() == rhs.getScore() && lhs.getGroupId() == rhs.getGroupId()
+            && lhs.getName() < rhs.getName())
     );
   }
 };
@@ -172,7 +172,12 @@ class ProteinProbEstimator {
  protected:
 
   static bool calcProteinLevelProb;
- 
+  
+  inline bool lastProteinInGroup(
+      std::vector<ProteinScoreHolder>::const_iterator it) {
+    return !trivialGrouping_ || it+1 != proteins_.end() 
+                             || it->getGroupId() != (it+1)->getGroupId();
+  }
   /** functions to count number of target and decoy proteins **/
   unsigned countTargets(const std::vector<std::string> &proteinList);
   unsigned countDecoys(const std::vector<std::string> &proteinList);
@@ -190,9 +195,6 @@ class ProteinProbEstimator {
   /** this function generates a vector of pair protein pep and label **/
   void getCombinedList(std::vector<std::pair<double , bool> >& combined);
   
-   /** update the proteins with the computed qvalues and pvalues**/
-  void updateProteinProbabilities();
-  
   /** compute estimated qvalues from the PEP**/
   void estimateQValues();
   
@@ -209,22 +211,15 @@ class ProteinProbEstimator {
   /** variables **/
   
   /** contains all the protein names for target and decoy set respectively **/
-  std::set<string> truePosSet, falsePosSet;
+  std::set<string> truePosSet_, falsePosSet_;
   
   /** map from protein name to its sequence and its sequence length, used for Mayu method **/
   std::map<std::string,std::pair<std::string,double> > targetProteins_;
   std::map<std::string,std::pair<std::string,double> > decoyProteins_;
   
-  /** map from protein name to its score **/
-  std::map<const std::string, ProteinScoreHolder*> proteins_;
-  
-  /** map from PEP to a protein group **/
-  std::multimap<double, std::vector<std::string> > pepProteinMap_;
-  
-  /** score vectors **/
-  std::vector<double> qvalues;
-  std::vector<double> qvaluesEmp;
-  std::vector<double> pvalues_;
+  /** vector of protein scores **/
+  std::vector<ProteinScoreHolder> proteins_;
+  std::map<std::string, size_t> proteinToIdxMap_;
   
   /* protein groups are either present or absent and cannot be partially present */
   bool trivialGrouping_;

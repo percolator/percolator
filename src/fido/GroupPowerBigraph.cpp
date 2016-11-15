@@ -40,19 +40,30 @@ void GroupPowerBigraph::printProteinWeights() const {
 
 // return a map of PEPs and their respectives proteins
 void GroupPowerBigraph::getProteinProbsPercolator(
-    std::multimap<double, std::vector<std::string> > &pepProteins) const {
+    std::vector<ProteinScoreHolder>& proteins,
+    std::map<std::string, size_t>& proteinToIdxMap) const {
   Array<double> sorted = probsPresentProteins_;
   Array<int> indices = sorted.sort();
   for (int k = 0; k < sorted.size(); k++) {
     double pep = (1.0 - sorted[k]);
     if (pep < 0.0) pep = 0.0;
     if (pep > 1.0) pep = 1.0;
- 
-    pepProteins.insert(std::make_pair(pep, groupProtNames_[ indices[k] ].getVector()));
+
+    std::vector<std::string> proteinNames = groupProtNames_[ indices[k] ].getVector();
+    std::vector<std::string>::const_iterator protIt = proteinNames.begin();
+    for (; protIt != proteinNames.end(); ++protIt) {
+      proteins.at(proteinToIdxMap[*protIt]).setPEP(pep);
+      proteins.at(proteinToIdxMap[*protIt]).setScore(pep);
+    }
   }
   
   if (severedProteins_.size() != 0) {
-    pepProteins.insert(std::make_pair(1.0, severedProteins_.getVector()));
+    std::vector<std::string> proteinNames = severedProteins_.getVector();
+    std::vector<std::string>::const_iterator protIt = proteinNames.begin();
+    for (; protIt != proteinNames.end(); ++protIt) {
+      proteins.at(proteinToIdxMap[*protIt]).setPEP(1.0);
+      proteins.at(proteinToIdxMap[*protIt]).setScore(1.0);
+    }
   }
  
   return;

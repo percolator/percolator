@@ -201,8 +201,12 @@ void FidoInterface::updateTargetDecoySizes() {
     unsigned tpChange = countTargets(proteinNames[k]);
     unsigned fpChange = proteinNames[k].size() - tpChange;
     if (trivialGrouping_) {
-      if (tpChange > 0) tpChange = 1;
-      if (fpChange > 0) fpChange = 1;
+      if (tpChange > 0) {
+        tpChange = 1;
+        fpChange = 0;
+      } else if (fpChange > 0) {
+        fpChange = 1;
+      }
     }
     numberTargetProteins_ += tpChange;
     numberDecoyProteins_ += fpChange;
@@ -218,7 +222,7 @@ void FidoInterface::computeProbabilities(const std::string& fname) {
     proteinGraph_->read(peptideScorePtr_);
   }
   
-  if (trivialGrouping_) updateTargetDecoySizes();
+  if (trivialGrouping_ || useDecoyPrefix) updateTargetDecoySizes();
   
   time_t startTime;
   clock_t startClock;
@@ -280,8 +284,7 @@ void FidoInterface::computeProbabilities(const std::string& fname) {
   
   proteinGraph_->setAlphaBetaGamma(alpha_, beta_, gamma_);
   proteinGraph_->getProteinProbs();
-  pepProteinMap_.clear();
-  proteinGraph_->getProteinProbsPercolator(pepProteinMap_);
+  proteinGraph_->getProteinProbsPercolator(proteins_, proteinToIdxMap_);
 }
 
 void FidoInterface::gridSearch() {
@@ -444,8 +447,9 @@ double FidoInterface::calcObjective(double alpha, double beta, double gamma) {
   proteinGraph_->getProteinProbsAndNames(names, probs);
   
   getEstimated_and_Empirical_FDR(names, probs, empq, estq);
-  getROC_AUC(names, probs, roc);
   getFDR_MSE(estq, empq, mse);
+  getROC_AUC(names, probs, roc);
+  
   
   objective = (kObjectiveLambda * roc) - fabs((1-kObjectiveLambda) * mse);
   
@@ -499,15 +503,19 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
   double prev_prob = -1;
   auc = 0.0;
   
-  // assuming names and probabilities same size; rocN_ set by getEstimated_and_Empirical_FDR()
+  // assuming names and probabilities same size; rocN_ set by getFDR_MSE()
   for (unsigned k = 0; k < names.size() && fp <= rocN_; k++) {
     double prob = probabilities[k];
     unsigned tpChange = countTargets(names[k]);
     unsigned fpChange = names[k].size() - tpChange;
     //if ties activated count groups as 1 protein
     if (trivialGrouping_) {
-      if (tpChange > 0) tpChange = 1;
-      if (fpChange > 0) fpChange = 1;
+      if (tpChange > 0) {
+        tpChange = 1;
+        fpChange = 0;
+      } else if (fpChange > 0) {
+        fpChange = 1;
+      }
     }
     tp += tpChange;
     fp += fpChange;
@@ -532,7 +540,6 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
   return;
 }
 
-
 void FidoInterface::getEstimated_and_Empirical_FDR(
     const std::vector<std::vector<string> >& proteinNames,
     const std::vector<double>& probabilities,
@@ -541,38 +548,26 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
   empq.clear();
   estq.clear();
   
-  double targetDecoyRatio = 1.0;
+  std::vector<std::pair<double, bool> > combined;
+  std::vector<double> peps;
+  for (unsigned int k = 0; k < proteinNames.size(); ++k) {
+    double prob = probabilities[k];
+    unsigned tpChange = countTargets(proteinNames[k]);
+    unsigned fpChange = proteinNames[k].size() - tpChange;
+    bool isDecoy = (tpChange == 0);
+    combined.push_back(make_pair(probabilities[k], !isDecoy));
+    peps.push_back(probabilities[k]);
+  }
   
   if (usePi0_) {
-    targetDecoyRatio = static_cast<double>(numberTargetProteins_) / numberDecoyProteins_;
-    std::vector<std::pair<double, bool> > combined;
-    for (unsigned int k = 0; k < proteinNames.size(); ++k) {
-      double prob = probabilities[k];
-      unsigned tpChange = countTargets(proteinNames[k]);
-      unsigned fpChange = proteinNames[k].size() - tpChange;
-      bool isDecoy = (tpChange == 0);
-      combined.push_back(make_pair(probabilities[k], !isDecoy));
-    }
-    
     std::vector<double> pvals;
     PosteriorEstimator::getPValues(combined, pvals);
     pi0_ = PosteriorEstimator::estimatePi0(pvals);
   }
-  FDRCalculator fdrCalculator(usePi0_, targetDecoyRatio, pi0_ * absenceRatio_, countDecoyQvalue_);
   
-  //NOTE no need to store more q values since they will not be taken into account while estimating MSE FDR divergence
-  for (unsigned int k = 0; (k < proteinNames.size() && 
-        (fdrCalculator.getPreviousEstQ() <= mseThreshold_)); k++) {
-    double prob = probabilities[k];
-    unsigned tpChange = countTargets(proteinNames[k]);
-    unsigned fpChange = proteinNames[k].size() - tpChange;
-    if (trivialGrouping_) {
-      if (tpChange > 0) tpChange = 1;
-      if (fpChange > 0) fpChange = 1;
-    }
-    fdrCalculator.calcFDRs(fpChange, tpChange, prob, empq, estq);
-  }
-  if (kUpdateRocN) rocN_ = fdrCalculator.getRocN();
+  PosteriorEstimator::setNegative(true); // also get q-values for decoys
+  PosteriorEstimator::getQValuesFromPEP(peps, estq);
+  PosteriorEstimator::getQValues(pi0_, combined, empq);
 }
 
 
@@ -632,14 +627,18 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
       x2 = estFDR[k+1];
       y1 = x1 - empFDR[k];
       y2 = x2 - empFDR[k+1];
-    } else {
+    } else if (estFDR[k] <= mseThreshold_) {
       //empFDR is above mseThreshold_, penalize the area positive
       x1 = estFDR[k];
       x2 = estFDR[k+1];
       y1 = x1;
       y2 = x2;
+    } else {
+      if (kUpdateRocN) {
+        rocN_ = std::max(rocN_, (unsigned)std::max(50,std::min((int)k,500)));
+      }
+      break;
     }
-    
     
     if ( x1 != x2 && x2 != 0 && y2 != 0 ) { //if there is an area
       x2 = min(x2,mseThreshold_); //in case x2 is above mseThreshold_
@@ -661,7 +660,6 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
   //mse2 /= normalizer1;
   //mse3 /= normalizer1;
   mse /= (normalizer1*normalizer1*normalizer1)/3;
-  
   return;
 }
 
@@ -678,44 +676,4 @@ string FidoInterface::printCopyright() {
       << "Written by Oliver R. Serang (orserang@u.washington.edu) in the\n"
       << "Department of Genome Sciences at the University of Washington.\n" << std::endl;
   return oss.str();
-}
-
-void FDRCalculator::calcFDRs(double fpChange, double tpChange, double prob,
-               std::vector<double>& empq, std::vector<double>& estq) {
-  double estFDR = 0.0, empFDR = 0.0;
-  fpCount_ += fpChange;
-  tpCount_ += tpChange;
-  
-  if (fpChange == 0) {
-    if (countDecoyQvalue_) {
-      totalFDR_ += prob * (tpChange + fpChange);
-    } else if (tpCount_ > 0) {
-      totalFDR_ += prob * tpChange;
-    }
-  }
-  
-  if (countDecoyQvalue_) {
-    estFDR = totalFDR_ / (tpCount_ + fpCount_);
-  } else if (tpCount_ > 0) {
-    estFDR = totalFDR_ / tpCount_;
-  }
-  
-  if (tpCount_ > 0) {
-    empFDR = fpCount_ / tpCount_;
-    if (usePi0_) empFDR *= pi0_ * targetDecoyRatio_;
-  }
-  
-  if (empFDR > 1.0 || std::isnan(empFDR) || std::isinf(empFDR)) empFDR = 1.0;
-  if (estFDR > 1.0 || std::isnan(estFDR) || std::isinf(estFDR)) estFDR = 1.0;
-      
-  if (estFDR < previousEstQ_) estFDR = previousEstQ_;
-  else previousEstQ_ = estFDR;
-  
-  if (empFDR < previousEmpQ_) empFDR = previousEmpQ_;
-  else previousEmpQ_ = empFDR;
-  
-  estq.push_back(estFDR);
-  empq.push_back(empFDR);
-  
-  rocN_ = std::max(rocN_, (unsigned)std::max(50,std::min((int)fpCount_,500)));
 }
