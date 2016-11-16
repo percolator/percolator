@@ -221,6 +221,7 @@ class Scores {
   
   void reorderFeatureRows(FeatureMemoryPool& featurePool, bool isTarget,
     std::map<double*, double*>& movedAddresses, size_t& idx);
+  void getScoreLabelPairs(std::vector<pair<double, bool> >& combined);
   void checkSeparationAndSetPi0();
 };
 

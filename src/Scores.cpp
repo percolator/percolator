@@ -463,6 +463,12 @@ int Scores::calcScores(std::vector<double>& w, double fdr) {
   return calcQ(fdr);
 }
 
+void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
+  combined.clear();
+  transform(scores_.begin(), scores_.end(), back_inserter(combined),
+            mem_fun_ref(&ScoreHolder::toPair));
+}
+
 /**
  * Calculates the q-value for each psm in scores_: the q-value is the minimal
  * FDR of any set that includes the particular psm
@@ -471,76 +477,23 @@ int Scores::calcScores(std::vector<double>& w, double fdr) {
  */
 int Scores::calcQ(double fdr) {
   assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
-
-  int targets = 0;
-  double decoys = 0.0;
-  double efp = 0.0, q; // estimated false positives, q value
-  if (usePi0_) {
-    efp = pi0_ * decoys * targetDecoySizeRatio_;
-  } else {
-    efp = decoys;
-  }
+  
+  std::vector<pair<double, bool> > combined;
+  getScoreLabelPairs(combined);
+  
+  std::vector<double> qvals;
+  PosteriorEstimator::setNegative(true); // also get q-values for decoys
+  PosteriorEstimator::getQValues(pi0_, combined, qvals);
+  
+  // set q-values and count number of positives
+  std::vector<double>::const_iterator qIt = qvals.begin();
+  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   
   int numPos = 0;
-  /*
-  double p1 = 1e-3, p2 = 1e-2;
-  size_t idx1, idx2;
-  */
-  // NOTE check this
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget()) {
-      targets++;
-      scoreIt->p = decoys / (totalNumberOfDecoys_+(double)1);
-      /*if (scoreIt->p < p1) idx1 = targets + decoys;
-      if (scoreIt->p < p2) idx2 = targets + decoys;*/
-    } else {
-      decoys += 1.0;
-      if (usePi0_) {
-        efp = pi0_ * decoys * targetDecoySizeRatio_;
-      } else {
-        efp = decoys;
-      }
-      scoreIt->p = decoys / totalNumberOfDecoys_;
-    }
-    if (targets) {
-      q = efp / (double)targets;
-    } else {
-      q = pi0_;
-    }
-    if (q > pi0_) {
-      q = pi0_;
-    }
-    scoreIt->q = q;
-    if (fdr >= q) {
-      numPos = targets;
-    }
+  for (; qIt != qvals.end(); ++qIt, ++scoreIt) {
+    scoreIt->q = *qIt;
+    if (scoreIt->q < fdr && scoreIt->isTarget()) ++numPos;
   }
-  if (scores_.size() > 0) {
-    for (int ix = scores_.size(); --ix;) {
-      if (scores_[ix - 1].q > scores_[ix].q) {
-        scores_[ix - 1].q = scores_[ix].q;
-      }
-    }
-  }
-  
-  /* extrapolate p-values beyond last decoy
-  double score1 = scores_.at(idx1).score;
-  double score2 = scores_.at(idx2).score;
-  double slope = (log(p2) - log(p1)) / (score2 - score1);
-  
-  std::cerr << "P-value slope: " << slope << " " << score1 << " " << score2 << std::endl;
-  for (size_t idx = 0; idx < scores_.size(); ++idx) {
-    if (scores_.at(idx).p < p1) {
-      if (scores_.at(idx).isTarget()) { // isTarget
-        scores_.at(idx).p = exp((scores_.at(idx).score - score1)*slope + log(p1));
-        if (scores_.at(idx).p == 0.0) scores_.at(idx).p = DBL_MIN;
-      }
-    } else {
-      break;
-    }
-  }
-  */
   
   return numPos;
 }
@@ -669,47 +622,43 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
       scoreIt->score = scoreIt->pPSM->features[featNo];
     }
     sort(scores_.begin(), scores_.end());
-    // check once in forward direction (high scores are good) and once in backward
+    // check once in forward direction (i = 0, higher scores are better) and 
+    // once in backward direction (i = 1, lower scores are better)
     for (int i = 0; i < 2; i++) {
-      int positives = 0, decoys = 0;
-      double efp = 0.0, q;
-      std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-      for ( ; scoreIt != scores_.end(); ++scoreIt) {
-        if (scoreIt->isTarget()) {
-          positives++;
-        } else {
-          decoys++;
-          if (usePi0_) {
-            efp = pi0_ * decoys * targetDecoySizeRatio_;
-          } else {
-            efp = decoys;
-          }
-        }
-        if (positives) {
-          q = efp / (double)positives;
-        } else {
-          q = pi0_;
-        }
-        if (fdr <= q) {
-          if (positives > bestPositives && scores_.begin()->score != scoreIt->score) {
-            bestPositives = positives;
-            bestFeature = featNo;
-            lowBest = (i == 0);
-          }
-          if (i == 0) {
-            reverse(scores_.begin(), scores_.end());
-          }
-          break;
-        }
+      if (i == 1) {
+        reverse(scores_.begin(), scores_.end());
+      }
+      int positives = calcQ(fdr);
+      if (positives > bestPositives) {
+        bestPositives = positives;
+        bestFeature = featNo;
+        lowBest = (i == 0);
       }
     }
   }
   for (int ix = FeatureNames::getNumFeatures(); ix--;) {
     direction[ix] = 0;
   }
+  
+  if (bestPositives <= 0) {
+    ostringstream oss;
+    oss << "Error in the input data: cannot find an initial direction with " 
+        << "positive training examples. "
+        << "Consider raising the training FDR threshold (-F flag)." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << oss.str();
+      std::cerr << "No-terminate flag set: setting initial direction to the "
+                << "first feature and ignoring the error." << std::endl;
+      bestFeature = 0;
+    } else {
+      throw MyException(oss.str() + "Terminating.\n");
+    }
+  }
+  
   if (bestFeature >= 0) {
     direction[bestFeature] = (lowBest ? -1 : 1);
   }
+  
   if (VERB > 1) {
     cerr << "Selected feature " << bestFeature + 1
         << " as initial search direction. Could separate "
@@ -720,9 +669,9 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
 
 void Scores::checkSeparationAndSetPi0() {
   std::vector<pair<double, bool> > combined;
+  getScoreLabelPairs(combined);
+  
   std::vector<double> pvals;
-  transform(scores_.begin(), scores_.end(), back_inserter(combined),
-            mem_fun_ref(&ScoreHolder::toPair));
   PosteriorEstimator::getPValues(combined, pvals);
   
   pi0_ = 1.0;
@@ -748,10 +697,8 @@ void Scores::checkSeparationAndSetPi0() {
 
 void Scores::calcPep() {
   std::vector<pair<double, bool> > combined;
-  transform(scores_.begin(),
-      scores_.end(),
-      back_inserter(combined),
-      mem_fun_ref(&ScoreHolder::toPair));
+  getScoreLabelPairs(combined);
+  
   std::vector<double> peps;
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);

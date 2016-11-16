@@ -29,7 +29,7 @@ using namespace std;
 // In most sence a place holder as very little logic is build-in in this case
 
 SanityCheck::SanityCheck() :
-  initPositives(0), pTestset(NULL), pTrainset(NULL) {
+  initPositives(0), pTestset(NULL), pTrainset(NULL), concatenatedSearch_(true) {
 }
 
 SanityCheck::~SanityCheck() {

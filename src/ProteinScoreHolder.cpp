@@ -17,15 +17,12 @@
 
 #include "ProteinScoreHolder.h"
 
-ProteinScoreHolder::ProteinScoreHolder(std::string name, bool isDecoy, ProteinScoreHolder::Peptide *peptide,
+ProteinScoreHolder::ProteinScoreHolder(std::string name, bool isDecoy, ProteinScoreHolder::Peptide peptide,
     int groupId)
 	: name_(name), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
 	  isDecoy_(isDecoy), groupId_(groupId) {
-  if (peptide) setPeptide(peptide);
+  if (!peptide.name.empty()) addPeptide(peptide);
 }
 
-ProteinScoreHolder::~ProteinScoreHolder() {
-  for (unsigned i = 0; i < peptides_.size(); i++)
-    if (peptides_[i]) delete peptides_[i];
-}
+ProteinScoreHolder::~ProteinScoreHolder() {}
 
