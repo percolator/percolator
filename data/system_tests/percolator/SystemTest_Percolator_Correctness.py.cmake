@@ -75,15 +75,14 @@ if xmlSupport:
   print("(*) running percolator to calculate peptide probabilities...")
   T.doTest(canPercRunThisXml("peptides","-y","percolator/pin/pin.xml"))
 
-  print("(*) running percolator to calculate protein probabilities...")
-  T.doTest(canPercRunThisXml("proteins","-A","percolator/pin/pin.xml"))
-
-  # running percolator to calculate psm probabilities given input file generated from sqt2pin with ptms (broken xml)
-  #print("(*) running percolator on input with ptms...")
-  #success = canPercRunThis("psm_ptms","-U","percolator/pin_ptms/pin_ptms.xml","-k")
+  print("(*) running percolator to calculate protein probabilities with picked-protein...")
+  T.doTest(canPercRunThisXml("proteins","-f auto -P decoy_","percolator/pin/pin.xml"))
+  
+  print("(*) running percolator to calculate protein probabilities with fido...")
+  T.doTest(canPercRunThisXml("proteins-fido","-A -P decoy_","percolator/pin/pin.xml"))
 
   print("(*) running percolator with description of correct features option...")
-  T.doTest(canPercRunThisXml("D4on","-y -D 4 -U","percolator/pin/pin.xml"))
+  T.doTest(canPercRunThisXml("D4on","-y -D 4 -U","percolator/pin/pinDOC.xml"))
 
   print("(*) running percolator with subset training option...")
   T.doTest(canPercRunThisXml("subset_training","-y -N 1000 -U","percolator/pin/pin.xml"))
@@ -101,8 +100,11 @@ T.doTest(canPercRunThisTab("tab_psms","-y -U","percolator/tab/percolatorTab"))
 print("(*) running percolator to calculate peptide probabilities...")
 T.doTest(canPercRunThisTab("tab_peptides","-y","percolator/tab/percolatorTab"))
 
-print("(*) running percolator to calculate protein probabilities...")
-T.doTest(canPercRunThisTab("tab_proteins","-A","percolator/tab/percolatorTab"))
+print("(*) running percolator to calculate protein probabilities with picked-protein...")
+T.doTest(canPercRunThisTab("tab_proteins","-f auto -P decoy_","percolator/tab/percolatorTab"))
+
+print("(*) running percolator to calculate protein probabilities with fido...")
+T.doTest(canPercRunThisTab("tab_proteins-fido","-A -P decoy_","percolator/tab/percolatorTab"))
 
 print("(*) running percolator with description of correct features option...")
 T.doTest(canPercRunThisTab("tab_D4on","-y -D 4 -U","percolator/tab/percolatorTabDOC"))

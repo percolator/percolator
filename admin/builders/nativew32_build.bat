@@ -53,7 +53,7 @@ if not exist "%BOOST_ROOT%" (
   %ZIP_EXE% x "%INSTALL_DIR%\boost.7z" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
   cd /D "%BOOST_ROOT%"
   call bootstrap
-  bjam threading=multi --with-system --with-filesystem --with-serialization -d0
+  bjam threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
 )
 set BOOST_LIB=%BOOST_ROOT%\stage\lib
 

@@ -21,13 +21,13 @@ if [[ $? -eq 0 ]]; then
 fi
 
 echo "Building native 64-bit Windows binaries"
-./manager_win.sh -p nw64 > nw64_output.txt 2>&1
+./manager.sh -p nw64 > nw64_output.txt 2>&1
 if [[ $? -eq 0 ]]; then
   echo "Building of native 64-bin Windows binaries succeeded"
 fi
 
 echo "Building native 32-bit Windows binaries"
-./manager_win.sh -p nw32 > nw32_output.txt 2>&1
+./manager.sh -p nw32 > nw32_output.txt 2>&1
 if [[ $? -eq 0 ]]; then
   echo "Building of 32-bit native Windows binaries succeeded"
 fi

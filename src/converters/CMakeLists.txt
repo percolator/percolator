@@ -28,7 +28,7 @@ MESSAGE( STATUS "Indicate the type of XML serialization scheme :
 		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" 
 		  or -DSERIALIZE=\"LevelDB\".
 		  By setting up the variable SERIALIZE to either Boost 
-		  or TokyoCabined or LevelDB you will chose the serialization 
+		  or TokyoCabinet or LevelDB you will choose the serialization 
 		  scheme that will be used to build Converters.
 		  Boost serialization option will be used as default if no option is given.")
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )

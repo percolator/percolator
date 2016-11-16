@@ -27,15 +27,13 @@ def getLine(search_term,file):
 def checkNumberOfSignificant(what,file,expected):
   success = True
   print("(*): checking number of significant "+what+" found...")
-  if what=="proteins":
-    output = getLine("The number of proteins idenfified at q-value = 0.01 is :",file)
+  if "proteins" in what:
+    output = getLine("Number of protein",file)
+    extracted = output.split(": ")[1]
   else:
     output = getLine("New pi_0 estimate",file)
-  if what=="proteins":
-    extracted = output[-3:]
-  else:
-    extracted = output[39:42]
-    
+    extracted = output.split("yields ")[1].split(" target")[0]
+  
   try:
     extracted = float(extracted)
   except ValueError:
@@ -43,9 +41,8 @@ def checkNumberOfSignificant(what,file,expected):
     extracted = 0
     success = False
   # check if number of significant within 10% of expected value 
-  # NB: for this small data set the number can vary widely depending on the random seed
-  if extracted<expected-(10*expected/100)  or extracted>expected+(10*expected/100) : 
-    print("...TEST FAILED: number of significant "+what+"=" + str(int(extracted)) + " is outside of desired range")
+  if abs(extracted - expected) > 0.1*expected: 
+    print("...TEST FAILED: number of significant "+what+"=" + str(int(extracted)) + " is outside of desired range (" + str(expected) + " +/- 10%)")
     print("check "+file+" for details") 
     success = False
   return success
@@ -55,7 +52,7 @@ def checkPi0(what,file,expected):
   success = True
   print("(*): checking pi_0 estimate for "+what+"...")
   output = getLine("Selecting pi_0",file)
-  extracted = output[15:20]
+  extracted = output.split("pi_0=")[1]
   try:
     extracted = float(extracted)
   except ValueError:
@@ -63,8 +60,8 @@ def checkPi0(what,file,expected):
     extracted = 0
     success = False
     
-  if extracted<expected-(5*expected/100) or extracted>expected+(5*expected/100):
-    print("...TEST FAILED: "+what+" pi_0=" + str(extracted) + " is outside of desired range")
+  if abs(extracted - expected) > 0.05*expected:
+    print("...TEST FAILED: "+what+" pi_0=" + str(extracted) + " is outside of desired range (" + str(expected) + " +/- 5%)")
     print("check "+file+" for details") 
     success = False
   return success
@@ -112,7 +109,7 @@ def performanceD4On(docFile, psmFile):
   #output = getLine("New pi_0", psmFile)
   #extracted_D4off = int(output[39:42])
   output = getLine("Iteration 10", docFile)
-  extracted_D4on = output[42:45]
+  extracted_D4on = output.split("Estimated ")[1].split(" PSMs")[0]
   try:
     extracted_D4on = float(extracted_D4on)
   except ValueError:
@@ -121,7 +118,7 @@ def performanceD4On(docFile, psmFile):
     success = False
     
   output = getLine("Iteration 10", psmFile)
-  extracted_D4off = output[42:45]
+  extracted_D4off = output.split("Estimated ")[1].split(" PSMs")[0]
   try:
     extracted_D4off = float(extracted_D4off)
   except ValueError:
@@ -141,18 +138,21 @@ if xmlSupport:
   psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
   peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
   proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
+  proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_proteins-fido.txt")
   docFile = os.path.join(pathToOutputData,"PERCOLATOR_D4on.txt")
 
   # number of significant psms within boundaries
-  success=checkNumberOfSignificant("psms",psmFile,303) and success
+  success=checkNumberOfSignificant("psms",psmFile,1131) and success
   # number of significant peptrides within boundaries
-  success=checkNumberOfSignificant("peptides",peptideFile,221) and success
-  # number of significant proteins within boundaries (old dataset)
-  #success=checkNumberOfSignificant("proteins",proteinFile,153) and success
+  success=checkNumberOfSignificant("peptides",peptideFile,922) and success
+  # number of significant proteins within boundaries for picked-protein
+  success=checkNumberOfSignificant("proteins",proteinFile,342) and success
+  # number of significant proteins within boundaries for fido (poorly calibrated)
+  success=checkNumberOfSignificant("proteins-fido",proteinFileFido,711) and success
   # psm: pi0 within boundaries
-  success=checkPi0("psms",psmFile,0.8912) and success
+  success=checkPi0("psms",psmFile,0.8413) and success
   # peptides: pi0 within boundaries
-  success=checkPi0("peptides",peptideFile,0.9165) and success
+  success=checkPi0("peptides",peptideFile,0.8632) and success
   # psm: pep within boundaries (old dataset)
   #expected=[2.61748e-13,3.26564e-09,7.28959e-08]
   #success = checkPep("psms",psmFile, expected);
@@ -167,16 +167,21 @@ print("- PERCOLATOR TAB FORMAT")
 psmFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_psms.txt")
 peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_peptides.txt")
 proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins.txt")
+proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins-fido.txt")
 docFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_D4on.txt")
 
-# number of significant psms within boundaries (ubuntu=306, windows=301)
-success=checkNumberOfSignificant("psms",psmFile,303) and success
-# number of significant peptrides within boundaries (ubuntu=204, windows=225)
-success=checkNumberOfSignificant("peptides",peptideFile,221) and success
+# number of significant psms within boundaries
+success=checkNumberOfSignificant("psms",psmFile,1131) and success
+# number of significant peptrides within boundaries
+success=checkNumberOfSignificant("peptides",peptideFile,922) and success
+# number of significant proteins within boundaries for picked-protein
+success=checkNumberOfSignificant("proteins",proteinFile,342) and success
+# number of significant proteins within boundaries for fido (poorly calibrated)
+success=checkNumberOfSignificant("proteins-fido",proteinFileFido,643) and success
 # psm: pi0 within boundaries
-success=checkPi0("psms",psmFile,0.8912) and success
+success=checkPi0("psms",psmFile,0.8413) and success
 # peptides: pi0 within boundaries
-success=checkPi0("peptides",peptideFile,0.9165) and success
+success=checkPi0("peptides",peptideFile,0.8632) and success
 # performance increase with -D 4 option
 success = performanceD4On(docFile, psmFile) and success
 

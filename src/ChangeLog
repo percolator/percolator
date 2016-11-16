@@ -1,3 +1,27 @@
+v3.01
+* Changed all FDR calculations to the more conservative: (decoys+1)/targets
+* Added `-o`/`-no-terminate` flag to allow overriding of fatal errors:
+  * No default direction can be found: set to the first feature (#135)
+  * Separation between target and decoy PSMs/proteins is too great: continue with this direction anyway
+  * No target PSMs present: return empty result list
+  * No decoy PSMs present: give all target PSMs a q-value of 1/numPSMs
+  * No features present: create a single pseudo feature which is always zero
+  * Too many values in default direction vector: trim default direction vector to number of features
+* Added mix-max method for FDR and PEP calculation, which replaces target-decoy competition as the default method. The advantage is that this will report all input PSMs in the PSM output and also corrects for incorrect native spectra in qvality (#152)
+* Automatic detection of search input as coming from a concatenated search or from separate target and decoy searches. For a concatenated search, the mix-max method will be skipped. For separate target and decoy searches the user can choose to use the mix-max method (default) or target-decoy competition (-Y flag)
+* Updated and improved stderr output to be more informative
+* Fixed fasta in-silico digestion for protein grouping which mistook N-methionine cleavage for a non-enzymatic cleavage site (#148)
+* Fixed retention time NaN predictions by setting them to 0 instead (#150)
+* Fixed protein group representation for picked-protein in the case that protein names contain a comma, by replacing these by semicolons (#153)
+* Fixed tandem2pin issue that labeled all PSMs as decoy when providing separate target and decoy input files (#154)
+* Added OpenMP runtime library to be included in windows installer (#158)
+* Fixed msgf2pin converter issue with C-terminal modifications (#161)
+* Fixed tandem2pin to parse PTMs (#132)
+* Fixed install location on windows 64-bit from "Program Files (x86)" to "Program Files" (#144)
+* Several fixes for OSX build script (#159, #162, #165)
+* Fixed mass difference calculation in certain converters (#166)
+* Fixed several build issues on several platforms (#79, #113, #133)
+
 v3.0
 * Added protein-level FDRs using best-scoring peptide approach
 * Added support for training on subsets of PSMs to speed up analysis for large data sets

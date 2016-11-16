@@ -1,8 +1,8 @@
 #!/bin/bash
 # Requirements are:
-# Command line tools
+# XCode
+# Command line tools (check if installed with "xcode-select -p", otherwise install with "xcode-select --install")
 # MacPorts or homebrew as package manager
-# CMake
 # PackageMaker (https://developer.apple.com/downloads ::search::
 #----------------------------------------
 
@@ -41,20 +41,20 @@ if [[ ! -d /Applications/PackageMaker.app ]]
     echo ""
     exit 1
 fi
-exit 1
+
 package_manager_installed=true
 if [[ -d /opt/local/var/macports ]]
   then
     echo "[ Package manager ] : MacPorts "
     package_manager="sudo port"
-    boost_install_options="boost -no_static -no_single"
-    other_packages="tokyocabinet bzip2 libiconv zlib pthread"
+    boost_install_options="boost -no_static"
+    other_packages="cmake tokyocabinet bzip2 libiconv zlib"
 elif [[ -f ${HOME}/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="tokyo-cabinet lbzip2 pbzip2 lzlib"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
 else
     package_manager_installed=false
 fi
@@ -67,11 +67,6 @@ if [ "$package_manager_installed" == false ]
   echo "  MacPorts: http://www.macports.org/install.php"
   exit 1
 fi
-
-
-# PackageMaker is also required. It is a part of Auxiliary Tools for Xcode packet that Apple provides for Developers.
-# You can find it here: https://developer.apple.com/downloads/index.action?name=packagemaker#
-# TODO: check if PackageMaker is installed
 
 if [[ -z ${build_dir} ]]; then
   build_dir="$(mktemp -d -t build)";
@@ -100,11 +95,9 @@ $package_manager install $other_packages
 $package_manager install $boost_install_options
 
 #----------------------------------------
-# xsd=xsd-3.3.0-i686-macosx # This is now ${mac_os_xsd} from _urls_and_file_names_.sh
 cd ${build_dir}
-# curl -O http://www.codesynthesis.com/download/xsd/3.3/macosx/i686/${xsd}.tar.bz2
-curl -O ${mac_os_xsd_url} # this is all in _urls_and_file_names_.sh
-tar -xjf ${mac_os_xsd}.tar.bz2 # this is all in _urls_and_file_names_.sh
+curl -O ${mac_os_xsd_url}
+tar -xjf ${mac_os_xsd}.tar.bz2
 sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
 sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/parsing.txx
 sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
@@ -116,7 +109,6 @@ sed -i -e 's/ int8_t/ char/g' ${extr} ${inse}
 sed -i -e 's/xdr_int8_t/xdr_char/g' ${extr} ${inse}
 sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
 #------------------------------------------
-# xer=xerces-c-3.1.1 # now ${mac_os_xer}
 mkdir -p ${build_dir}
 cd ${build_dir}
 if [[ -d /usr/local/include/xercesc ]] # this implies homebrew installation ...
@@ -133,29 +125,39 @@ fi
 
 #-------------------------------------------
 
+mkdir -p ${release_dir}
+
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
 
-cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/
-make -j 2 "VERBOSE=1"
-sudo make -j 2 package
-
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/
+make -j 2
+make -j 2 package
+cp -v per*.dmg ${release_dir}
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DCXX="/usr/bin/gcc" -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/
-make -j 2 "VERBOSE=1"
-sudo make -j 2 package
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/
+make -j 2
+make -j 2 package
+cp -v per*.dmg ${release_dir}
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
-cmake -V  -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  -DSERIALIZE="TokyoCabinet" ${src_dir}/src/converters
-make -j 2 "VERBOSE=1"
-sudo make -j 2 package
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/src/converters
+make -j 2
+make -j 2 package
+cp -v per*.dmg ${release_dir}
+
+mkdir -p ${build_dir}/elude
+cd ${build_dir}/elude
+
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" ${src_dir}/src/elude_tool
+make -j 2
+make -j 2 package
+cp -v elude*.dmg ${release_dir}
 #--------------------------------------------
-mkdir -p ${release_dir}
-cp -v ${build_dir}/percolator-noxml/*.dmg ${release_dir}
-cp -v ${build_dir}/percolator/*.dmg ${release_dir}
-cp -v ${build_dir}/converters/*.dmg ${release_dir}
+
+echo "build directory was : ${build_dir}";

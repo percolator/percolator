@@ -13,7 +13,7 @@ usage: $0
                   [[-h]] [[-a]]
                   [[-b branch]]|[[-s sourc_directory]]
                   [[-r release_directory]]
-                  -p ubuntu|fedora|w32|w64
+                  -p ubuntu|fedora|w32|w64|nw32|nw64
 
 If no branch and source_directory is provided, the source
 code from which the sourcecode is checked out from will be used.
@@ -22,6 +22,7 @@ Make sure that Vagrant and VirtualBox are up to date.
   -a     keeps the vagrant box alive (i.e. do not call vagrant destroy)
 EOF
 }
+
 #--------------------------------------------------------
 #input options management
 #--------------------------------------------------------
@@ -32,8 +33,8 @@ script_dir=$(dirname ${BASH_SOURCE});
 cd ${script_dir};
 builder_adr="../builders/"
 # boxes, might be overridden later on
-vagbox_name="fedora18"
-vagbox_url="http://www.nada.kth.se/~alinar/fedora18.box"
+vagbox_name="box-cutter/fedora23"
+vagbox_url=""
 
 while getopts “hab:s:r:p:” OPTION; do
     case $OPTION in
@@ -45,30 +46,60 @@ while getopts “hab:s:r:p:” OPTION; do
         p)  case $OPTARG in
                	ubuntu)
                     post="ubuntu64"
-                    vagbox_name="precise64"
-                    vagbox_url="http://files.vagrantup.com/precise64.box"
+                    vagbox_name="ubuntu/trusty64"
+                    vagbox_url=""
+                    package_ext="deb"
                     ;;
-                fedora)	post="fedora64";;
+                fedora)	
+                    post="fedora64"
+                    package_ext="rpm"
+                    ;;
                 centos) 
                     post="centos64"
-                    vagbox_name="centos64"
-                    vagbox_url="http://tag1consulting.com/files/centos-5.9-x86-64-minimal.box"
+                    vagbox_name="bento/centos-7.2"
+                    #vagbox_name="bento/centos-6.7"
+                    vagbox_url=""
+                    package_ext="rpm"
                     ;;
-                w64) post="mingw64";;
-                w32) post="mingw32";;
+                w64) 
+                    post="mingw64"
+                    package_ext="exe"
+                    ;;
+                w32) 
+                    post="mingw32"
+                    package_ext="exe"
+                    ;;
+                nw32) 
+                    post="nativew32"
+                    batfile=true
+                    vagbox_name="win7vs12"
+                    vagbox_url="~/VagrantWin7/win7vs12.box"
+                    package_ext="exe"
+                    ;;
+                nw64) 
+                    post="nativew64"
+                    batfile=true
+                    vagbox_name="win7vs12"
+                    vagbox_url="~/VagrantWin7/win7vs12.box"
+                    package_ext="exe"
+                      ;;
                 *)
-                     if [[ $OPTARG == *,* ]]; then
-                         arr=$(echo $OPTARG | tr "," "\n");
-                         multi_platform="1";
-                     else
-                         echo "Platform $OPTARG is undefined."
-                         exit 1
-                     fi;;
+                    if [[ $OPTARG == *,* ]]; then
+                      arr=$(echo $OPTARG | tr "," "\n");
+                      multi_platform="1";
+                    else
+                      echo "Platform $OPTARG is undefined."
+                      exit 1
+                    fi;;
             esac;;
         \?)  echo "Invalid option: -${OPTARG}" >&2;;
     esac
 done
-builder="${post}_build.sh"
+if [[ -z $batfile ]]; then
+  builder="${post}_build.sh";
+else
+  builder="${post}_build.bat";
+fi
 
 ######
 if [[ ! -z $multi_platform ]]; then
@@ -130,6 +161,14 @@ cp ${builder_adr}${builder} ${tmp_dir};
 # making the Vagrantfile:
 cd ${tmp_dir};
 touch Vagrantfile;
+
+if [[ -z $batfile ]]; then
+
+vagbox_url_line=""
+if [[ -n ${vagbox_url} ]]; then
+  vagbox_url_line="config.vm.box_url = \"${vagbox_url}\""
+fi
+
 #-----------------Vagrantfile content---------------
 cat <<EOF > Vagrantfile
 # -*- mode: ruby -*-
@@ -137,9 +176,12 @@ cat <<EOF > Vagrantfile
 
 Vagrant.configure("2") do |config|
   config.vm.box = "${vagbox_name}"
-  config.vm.box_url = "${vagbox_url}"
+  ${vagbox_url_line}
+  config.ssh.insert_key = false
+  config.vm.boot_timeout = 600
   config.vm.provider "virtualbox" do |vb|
     vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "4"]
+    # vb.gui = true # turn on for trouble shooting, e.g. if boot times out repeatedly
   end
   config.vm.provision :shell do |shell|
     shell.path = "${tmp_dir}/${builder}"
@@ -149,7 +191,34 @@ end
 EOF
 #-----------------end of Vagrantfile content--------
 #  config.vm.provision :shell, :inline => "su vagrant -c 'bash /vagrant/${builder} /vagrant/src /vagrant/build_${post}'"
+else
+cat <<EOF > Vagrantfile
+Vagrant.configure("2") do |config|
 
+  # Configure base box parameters
+  config.vm.box = "${vagbox_name}"
+  config.vm.box_url = "${vagbox_url}"
+  config.vm.guest = :windows
+  config.winrm.username = "IEUser"
+  config.winrm.password = "Passw0rd!"
+  config.windows.halt_timeout = 30
+  config.vm.boot_timeout = 1200
+
+  # Port forward WinRM and RDP
+  config.vm.communicator = "winrm"
+  
+  config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "4"]
+    # vb.gui = true # turn on for trouble shooting, e.g. if boot times out repeatedly
+  end
+  
+  config.vm.provision :shell do |shell|
+    shell.path = "${tmp_dir}/${builder}"
+    shell.args = '-s "C:\vagrant\src" -b "C:\vagrant\build" -r "C:\vagrant"'
+  end
+end
+EOF
+fi
 #---------------------------------------------------------------------------------------
 vagrant up
 
@@ -159,8 +228,9 @@ vagrant up
 echo "Copying ready made packages from ${tmp_dir} to ${release}" 
 
 mkdir -p ${release};
-cp -v ${tmp_dir}/per*.{rpm,deb,exe,dmg} ${release};
-cp -v ${tmp_dir}/elude*.{rpm,deb,exe,dmg} ${release};
+cp -v ${tmp_dir}/per*.${package_ext} ${release};
+cp -v ${tmp_dir}/elude*.${package_ext} ${release};
+
 
 #cp -v ${tmp_dir}/build_${post}/percolator/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};
 #cp -v ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};

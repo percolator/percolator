@@ -45,7 +45,7 @@
   ENDIF (NOT TokyoCabinet_INCLUDE_DIR)
 
   # then try the normal way
-  IF (NOT TokyoCabinet_FOUND)
+  IF (NOT TokyoCabinet_FOUND OR NOT TokyoCabinet_INCLUDE_DIR)
   
     IF (TokyoCabinet_ROOT_DIR)
       FIND_PATH(TokyoCabinet_INCLUDE_DIR tcbdb.h HINTS "${TokyoCabinet_ROOT_DIR}/include")
@@ -92,7 +92,7 @@
       ENDIF (NOT TokyoCabinet_TCUTIL_H STREQUAL TokyoCabinet_TCUTIL_H-NOTFOUND)
     ENDIF (TokyoCabinet_FOUND)
 
-  ENDIF (NOT TokyoCabinet_FOUND)
+  ENDIF (NOT TokyoCabinet_FOUND OR NOT TokyoCabinet_INCLUDE_DIR)
 
   # checks version if user specified one
   SET(_details "Find TokyoCabinet: failed.")

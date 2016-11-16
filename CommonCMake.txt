@@ -43,8 +43,8 @@ endfunction()
 
 
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "00")
+set(CPACK_PACKAGE_VERSION_MAJOR "3")
+set(CPACK_PACKAGE_VERSION_MINOR "01")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "3")
@@ -130,6 +130,7 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 
 IF(APPLE)
   add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
+  set(Boost_USE_MULTITHREADED ON) # macports can currently not install single threaded boost libraries
 ENDIF(APPLE)
 
 if(UNIX OR APPLE OR MINGW)
