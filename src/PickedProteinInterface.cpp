@@ -241,7 +241,7 @@ void PickedProteinInterface::computeProbabilities(const std::string& fname) {
   }
   for (std::vector<ProteinScoreHolder>::iterator it = proteins_.begin(); 
         it != proteins_.end(); it++) {
-    std::vector<ProteinScoreHolder::Peptide> peptides = it->getPeptides();
+    const std::vector<ProteinScoreHolder::Peptide> peptides = it->getPeptidesByRef();
     switch (protInferenceMethod_) {
       case FISHER: {
         double fisher = 0.0;

@@ -173,7 +173,7 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold,
     unsigned num_target_confident = 0;
     unsigned num_decoy_confident = 0;
     std::string protname = it->getName();
-    std::vector<ProteinScoreHolder::Peptide> peptides = it->getPeptides();
+    const std::vector<ProteinScoreHolder::Peptide> peptides = it->getPeptidesByRef();
     for(std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
           itP != peptides.end(); ++itP) {
       if(itP->q <= psm_threshold && itP->isdecoy)
@@ -434,7 +434,7 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN, bool outputDecoy
 	      os << "      <p_value>" << scientific << myP->getP() << "</p_value>\n";
 	    }
 	  
-	    std::vector<ProteinScoreHolder::Peptide> peptides = myP->getPeptides();
+	    const std::vector<ProteinScoreHolder::Peptide> peptides = myP->getPeptidesByRef();
 	    for (std::vector<ProteinScoreHolder::Peptide>::const_iterator peptIt = peptides.begin(); 
 	        peptIt != peptides.end(); peptIt++) {
 	      if (peptIt->name != "") {
@@ -457,7 +457,7 @@ void ProteinProbEstimator::print(ostream& myout, bool decoy) {
     if( (decoy && myP->isDecoy()) || (!decoy && myP->isTarget())) {
       myout << myP->getName() << "\t" << myP->getGroupId() << "\t" 
             << myP->getQemp() << "\t" << myP->getPEP() << "\t";
-      std::vector<ProteinScoreHolder::Peptide> peptides = myP->getPeptides();
+      const std::vector<ProteinScoreHolder::Peptide> peptides = myP->getPeptidesByRef();
       std::vector<ProteinScoreHolder::Peptide>::const_iterator peptIt = peptides.begin();
       for(; peptIt != peptides.end(); peptIt++) {
         if (peptIt->name != "") {

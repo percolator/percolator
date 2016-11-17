@@ -74,7 +74,7 @@ class ProteinScoreHolder {
   void setPeptides(std::vector<Peptide> peptides) {
      peptides_ = std::vector<Peptide>(peptides);
   }
-  std::vector<Peptide> getPeptides() { return peptides_; }
+  const std::vector<Peptide>& getPeptidesByRef() const { return peptides_; }
   std::vector<Peptide> getPeptides() const { return peptides_; }
   
   /*

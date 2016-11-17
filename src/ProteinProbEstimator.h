@@ -169,6 +169,10 @@ class ProteinProbEstimator {
   double getAbsenceRatio() { return absenceRatio_; }
   double getFDR() { return fdr_; }
   
+  /** return the data structure for the proteins. DO NOT REMOVE, used by Crux! **/
+  const std::vector<ProteinScoreHolder>& getProteinsByRef() const { return proteins_; }
+  std::vector<ProteinScoreHolder> getProteins() const { return proteins_; }
+  
  protected:
 
   static bool calcProteinLevelProb;
