@@ -148,7 +148,7 @@ if xmlSupport:
   # number of significant proteins within boundaries for picked-protein
   success=checkNumberOfSignificant("proteins",proteinFile,342) and success
   # number of significant proteins within boundaries for fido (poorly calibrated)
-  success=checkNumberOfSignificant("proteins-fido",proteinFileFido,711) and success
+  success=checkNumberOfSignificant("proteins-fido",proteinFileFido,716) and success
   # psm: pi0 within boundaries
   success=checkPi0("psms",psmFile,0.8413) and success
   # peptides: pi0 within boundaries
@@ -177,7 +177,7 @@ success=checkNumberOfSignificant("peptides",peptideFile,922) and success
 # number of significant proteins within boundaries for picked-protein
 success=checkNumberOfSignificant("proteins",proteinFile,342) and success
 # number of significant proteins within boundaries for fido (poorly calibrated)
-success=checkNumberOfSignificant("proteins-fido",proteinFileFido,643) and success
+success=checkNumberOfSignificant("proteins-fido",proteinFileFido,720) and success
 # psm: pi0 within boundaries
 success=checkPi0("psms",psmFile,0.8413) and success
 # peptides: pi0 within boundaries

@@ -195,8 +195,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
   if (!reversed && !usePi0) {
     reverse(combined.begin(), combined.end());
   }
-  vector<double> medians;
-  vector<unsigned int> negatives, sizes;
+  vector<double> medians, negatives, sizes;
   binData(combined, pi0, medians, negatives, sizes);
   if (medians.size() < 2) {
     ostringstream oss;
@@ -307,8 +306,8 @@ void PosteriorEstimator::finishStandaloneGeneralized(
  * If pi0 == 1.0 this is equal to the "traditional" binning
  */
 void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
-    double pi0, vector<double>& medians, vector<unsigned int> & negatives,
-    vector<unsigned int> & sizes) {
+    double pi0, vector<double>& medians, vector<double> & negatives,
+    vector<double> & sizes) {
   std::vector<double> h_w_le_z, h_z_le_z; // N_{w<=z} and N_{z<=z}
   getMixMaxCounts(combined, h_w_le_z, h_z_le_z);
   
@@ -342,23 +341,22 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
       decoyQueue = 0;
       
       if (combined.size() - binStartIdx - psmsInBin <= binsLeft * targetedBinSize) {
-        double numNegatives = n_z_ge_w * pi0 + E_f1_mod_run_tot;
-        // round to the next integer, as the IRLS implementation requires integers 
-        // and we want to be conservative
-        unsigned int numNegativesInt = static_cast<unsigned int>(ceil(numNegatives));
         double median = combined.at(binStartIdx + psmsInBin / 2).first;
+        double numNegatives = n_z_ge_w * pi0 + E_f1_mod_run_tot;
+        double numPsmsCorrected = psmsInBin - n_z_ge_w + numNegatives;
         
         if (medians.size() > 0 && *(medians.rbegin()) == median) {
-          *(sizes.rbegin()) += psmsInBin;
-          *(negatives.rbegin()) += numNegativesInt;
+          *(negatives.rbegin()) += numNegatives;
+          *(sizes.rbegin()) += numPsmsCorrected;
         } else {
           medians.push_back(median);
-          sizes.push_back(psmsInBin);
-          negatives.push_back(numNegativesInt);
+          negatives.push_back(numNegatives);
+          sizes.push_back(numPsmsCorrected);
         }
         
         if (VERB > 4) {
           std::cerr << "Median = " << median << ", Num psms = " << psmsInBin 
+                    << ", Num psms corrected = " << numPsmsCorrected
                     << ", Num decoys = " << n_z_ge_w 
                     << ", Num negatives = " << numNegatives << std::endl;
         }
@@ -443,7 +441,8 @@ void PosteriorEstimator::getQValues(double pi0,
         estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
         E_f1_mod_run_tot += decoyQueue * estPx_lt_zj * (1.0 - pi0);
         if (VERB > 4) {
-          std::cerr << "Mix-max num negatives correction: " << E_f1_mod_run_tot << std::endl;
+          std::cerr << "Mix-max num negatives correction: "
+            << (1.0-pi0) * n_z_ge_w << " vs. " << E_f1_mod_run_tot << std::endl;
         }
       }
       

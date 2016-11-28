@@ -17,19 +17,20 @@
 
 #ifndef LOGISTICREGRESSION_H_
 #define LOGISTICREGRESSION_H_
-#include<vector>
-using namespace std;
+
+#include <vector>
+
 #include "BaseSpline.h"
 
 class LogisticRegression : public BaseSpline {
   public:
     LogisticRegression(){};
     virtual ~LogisticRegression(){};
-    void predict(const vector<double>& x, vector<double>& predict) {
+    void predict(const std::vector<double>& x, std::vector<double>& predict) {
       return BaseSpline::predict(x, predict);
     }
-    void setData(const vector<double>& xx, const vector<unsigned int>& yy,
-                 const vector<unsigned int>& mm) {
+    void setData(const std::vector<double>& xx, const std::vector<double>& yy,
+                 const std::vector<double>& mm) {
       BaseSpline::setData(xx);
       y = yy;
       m = mm;
@@ -39,7 +40,7 @@ class LogisticRegression : public BaseSpline {
     virtual void initg();
     virtual void limitg();
     virtual void limitgamma();
-    vector<unsigned int> y, m;
+    std::vector<double> y, m;
     static const double gRange;
     Array<double> p;
 };

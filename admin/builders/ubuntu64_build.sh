@@ -41,7 +41,7 @@ echo "Checking necessary packages for building percolator...";
 # Do not apt-upgrade if this is a travis-ci job
 sudo apt-get update;
 if [ -z "$TRAVIS" ]; then
-  trap 'echo "EXIT (rc: $?)" && exit 1' ERR
+  # trap 'echo "EXIT (rc: $?)" && exit 1' ERR
   sudo apt-get upgrade;
   sudo apt-get -y install g++ make cmake rpm fakeroot;
 fi
@@ -49,18 +49,8 @@ fi
 mkdir -p $build_dir
 cd ${build_dir}
 
-# download and patch xsd
-xsd=xsd-3.3.0-x86_64-linux-gnu
-if [ ! -d ${xsd} ]; then
-  wget --quiet http://www.codesynthesis.com/download/xsd/3.3/linux-gnu/x86_64/${xsd}.tar.bz2
-  tar xjf ${xsd}.tar.bz2
-  sed -i 's/setg/this->setg/g' ${xsd}/libxsd/xsd/cxx/zc-istream.txx
-  sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/parsing.txx
-  sed -i 's/ push_back/ this->push_back/g' ${xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
-fi
-
 # end of section to remove
-sudo apt-get -y install libxerces-c-dev libboost-dev libboost-filesystem-dev;
+sudo apt-get -y install libxerces-c-dev libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
 
 #------------------------------------------------------------------------
@@ -79,7 +69,7 @@ make -j 4 package;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON $src_dir/percolator -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/";
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
@@ -89,7 +79,7 @@ make -j 4 package;
 cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters -DCMAKE_PREFIX_PATH="${build_dir}/${xsd}/";
+cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 
 #-----make------
 echo -n "make converters (this will take few minutes).....";

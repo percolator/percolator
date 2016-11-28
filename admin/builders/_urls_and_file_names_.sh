@@ -18,10 +18,3 @@ mac_os_xerces_url='http://apache.mirrors.spacedump.net/xerces/c/3/sources/'${mac
 # -- xsd --
 centos_xsd='xsd-4.0.0-1.x86_64'
 centos_xsd_url='http://www.codesynthesis.com/download/xsd/4.0/linux-gnu/x86_64/'${centos_xsd}'.rpm'
-
-#
-# Fedora
-#
-# -- xsd --
-fedora_xsd='xsd-4.0.0-1.x86_64'
-fedora_xsd_url='http://www.codesynthesis.com/download/xsd/4.0/linux-gnu/x86_64/'${fedora_xsd}'.rpm'

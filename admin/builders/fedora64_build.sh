@@ -31,22 +31,9 @@ echo "The Builder $0 is building the Percolator packages with src=${src_dir} and
 whoami;
 
 sudo dnf install -y gcc gcc-c++ make cmake wget rpm-build
-sudo dnf install -y tokyocabinet-devel boost-static boost-devel sqlite-devel zlib-devel bzip2-devel xerces-c-devel
+sudo dnf install -y tokyocabinet-devel boost-static boost-devel sqlite-devel zlib-devel bzip2-devel xerces-c-devel xsd
 
 cd ${src_dir}
-
-# read all urls and file names from a centralized kb file
-source percolator/admin/builders/_urls_and_file_names_.sh
-
-# download and install xsd
-
-if hash xsdcxx 2>/dev/null; then
-  echo "  XSD has been installed previously, remove if you want a clean install"
-else
-  echo "  Installing XSD"
-  wget --quiet ${fedora_xsd_url}
-  rpm -ivh ${fedora_xsd}.rpm
-fi
 
 # download, compile and link percolator
 

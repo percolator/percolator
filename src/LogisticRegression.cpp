@@ -69,7 +69,7 @@ void LogisticRegression::calcPZW() {
     w.packedReplace(ix, max(m[ix] * p[ix] * (1 - p[ix]), num.epsilon));
     assert(isfinite(w[ix]));
     z.packedReplace(ix, min(gRange, max(-gRange, g[ix] +
-        (((double)y[ix]) - p[ix] * ((double)m[ix])) / w[ix])));
+        (y[ix] - p[ix] * m[ix]) / w[ix])));
     assert(isfinite(z[ix]));
   }
 }
@@ -92,7 +92,7 @@ void LogisticRegression::initg() {
   ostream_iterator<double> xvalIt(xvalFile, "\n");
   copy(x.begin(), x.end(), xvalIt);
   for (size_t yix = 0; yix < y.size(); ++yix) {
-    drFile << y[yix] / (double) m[yix] << endl;
+    drFile << y[yix] / m[yix] << endl;
   }
   drFile.close();
 #endif
