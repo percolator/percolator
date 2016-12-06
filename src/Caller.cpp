@@ -917,6 +917,9 @@ int Caller::run() {
   // calculate psms level probabilities TDA or TDC
   bool isUniquePeptideRun = false;
   calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
+#ifdef CRUX
+  processPsmScores(allScores);
+#endif
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
@@ -925,6 +928,9 @@ int Caller::run() {
   if (reportUniquePeptides_){
     isUniquePeptideRun = true;
     calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
+#ifdef CRUX
+    processPeptideScores(allScores);
+#endif
     if (xmlInterface.getXmlOutputFN().size() > 0){
       xmlInterface.writeXML_Peptides(allScores);
     }
@@ -933,6 +939,9 @@ int Caller::run() {
   // calculate protein level probabilities with FIDO
   if (ProteinProbEstimator::getCalcProteinLevelProb()){
     calculateProteinProbabilities(allScores);
+#ifdef CRUX
+    processProteinScores(protEstimator_);
+#endif
     if (xmlInterface.getXmlOutputFN().size() > 0) {
       xmlInterface.writeXML_Proteins(protEstimator_);
     }
