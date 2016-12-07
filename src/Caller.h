@@ -100,6 +100,12 @@ class Caller {
   void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
       time_t& procStart, clock_t& procStartClock, double& diff);
   void calculateProteinProbabilities(Scores& allScores);
+
+#ifdef CRUX
+  virtual void processPsmScores(Scores& allScores) {}
+  virtual void processPeptideScores(Scores& allScores) {}
+  virtual void processProteinScores(ProteinProbEstimator* protEstimator) {}
+#endif
     
 };
 

@@ -38,6 +38,10 @@
 #include "ssl.h"
 #include "MassHandler.h"
 
+#ifdef CRUX
+#include "app/PercolatorAdapter.h"
+#endif
+
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score) 
       || (one.score == other.score && one.pPSM->scan > other.pPSM->scan) 
@@ -231,6 +235,7 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
 }
 
 void Scores::print(int label, std::ostream& os) {
+#ifndef CRUX
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   os << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n";
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
@@ -241,6 +246,9 @@ void Scores::print(int label, std::ostream& os) {
       os << rh << std::endl;
     }
   }
+#else
+  PercolatorAdapter::printScores(this, label, os);
+#endif
 }
 
 void Scores::fillFeatures(SetHandler& setHandler) {

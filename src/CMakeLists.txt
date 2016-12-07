@@ -112,44 +112,49 @@ include_directories(picked_protein)
 ################################################################################
 								  
 # COMPILE PERCOLATOR
-add_executable(percolator main.cpp)
+if(CRUX)
+  ADD_DEFINITIONS(-DCRUX)
+  include_directories(${CRUX} ${CRUX}/src ${EXT_BINARY_DIR})
+ELSE(CRUX)
+  add_executable(percolator main.cpp)
 
-if(APPLE)
-  set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
-  set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
-#  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
-elseif(MINGW)
-#  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
-  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc")
-endif()
+  if(APPLE)
+    set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
+    set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
+  #  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
+  elseif(MINGW)
+  #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
+    set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc")
+  endif()
 
-if(PROFILING AND UNIX)
-  set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-endif()
- 
-# SET LIBRARIES FOR PERCOLATOR
-if(MSVC)
-  target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
-else(MSVC)
-  if (APPLE)
-    target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} )
-  else(APPLE)
-    target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
-  endif (APPLE)
-endif()
- 
-# INSTALL PERCOLATOR
-#if(APPLE)
-#  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-#else()
-  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
-#endif()
+  if(PROFILING AND UNIX)
+    set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  endif()
+   
+  # SET LIBRARIES FOR PERCOLATOR
+  if(MSVC)
+    target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+  else(MSVC)
+    if (APPLE)
+      target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} )
+    else(APPLE)
+      target_link_libraries(percolator perclibrary fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
+    endif (APPLE)
+  endif()
+   
+  # INSTALL PERCOLATOR
+  #if(APPLE)
+  #  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
+  #else()
+    install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
+  #endif()
+ENDIF(CRUX)
 
 ###############################################################################
 # COMPILE QVALITY
