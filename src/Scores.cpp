@@ -525,7 +525,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
-      if (fdr < scoreIt->q) {
+      if (scoreIt->q > fdr) {
         break;
       }
       data.vals[ix2] = scoreIt->pPSM->features;

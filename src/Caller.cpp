@@ -101,7 +101,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "and write access on the file)." << std::endl;
   // init
   CommandLineParser cmd(intro.str());
-  // available lower case letters: o
+  // available lower case letters:
   // available upper case letters:
   cmd.defineOption("X",
       "xmloutput",
@@ -232,7 +232,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("U",
       "only-psms",
-      "Do not remove redundant peptides, keep all PSMS and exclude peptide level probabilities. This also turns on the -y flag, i.e. target-decoy competition is skipped, so that every PSM is reported. This can be overriden by explicitly specifying the -Y flag.",
+      "Do not remove redundant peptides, keep all PSMS and exclude peptide level probabilities.",
       "",
       FALSE_IF_SET);
   cmd.defineOption("y",
@@ -245,6 +245,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Replace the mix-max method by target-decoy competition for assigning q-values and PEPs. If the input PSMs are from separate target and decoy searches, Percolator's SVM scores will be used to eliminate the lower scoring target or decoy PSM(s) of each scan+expMass combination. If the input PSMs are detected to be coming from a concatenated search, this option will be turned on automatically, as this is incompatible with the mix-max method. In case this detection fails, turn this option on explicitly.",
       "",
       TRUE_IF_SET);
+  cmd.defineOption("I",
+      "search-input",
+      "Specify the type of target-decoy search: \"auto\" (Percolator attempts to detect the search type automatically), \"concatenated\" (single search on concatenated target-decoy protein db) or \"separate\" (two searches, one against target and one against decoy protein db). Default = \"auto\".",
+      "value");
   cmd.defineOption("s",
       "no-schema-validation",
       "Skip validation of input file against xml schema.",
@@ -273,7 +277,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
-      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
+      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\". Default=\"trypsin\".",
       "",
       "trypsin");
   /*cmd.defineOption("Q",
@@ -410,7 +414,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
     std::string protEstimatorDecoyPrefix = "random_";
     double protEstimatorAbsenceRatio = 1.0;
-    if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
+    //if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
     protEstimatorOutputEmpirQVal = cmd.optionSet("q");
     if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
     //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
@@ -558,13 +562,35 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("y")) {
     if (cmd.optionSet("Y")) {
-      std::cerr << "Warning: ignoring the -Y/-post-processing-tdc option, as it"
-          << " is incompatible with the -y/-post-processing-mix-max option." 
-          << std::endl;
+      std::cerr << "Error: the -Y/-post-processing-tdc and "
+        << "-y/-post-processing-mix-max options were both set. "
+        << "Use only one of these options at a time." << std::endl;
+      return 0;
     }
     useMixMax_ = true;
   } else if (cmd.optionSet("Y")) {
     targetDecoyCompetition_ = true;
+  }
+  if (cmd.optionSet("I")) {
+    inputSearchType_ = cmd.options["I"];
+    if (inputSearchType_ == "concatenated") {
+      if (useMixMax_) {
+        std::cerr << "Error: concatenated search specified for -I/-search-input"
+            << " is incompatible with the specified -y/-post-processing-mix-max "
+            << "option." << std::endl;
+        return 0;
+      }
+      targetDecoyCompetition_ = false;
+      useMixMax_ = false;
+    } else if (inputSearchType_ == "separate") {
+      if (!targetDecoyCompetition_) {
+        useMixMax_ = true;
+      }
+    } else if (inputSearchType_ != "auto") {
+      std::cerr << "Error: the -I/-search-input option has to be one out of "
+                << "\"concatenated\", \"separate\" or \"auto\"." << std::endl;
+      return 0;
+    }
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -793,36 +819,49 @@ int Caller::run() {
   setHandler.normalizeFeatures(pNorm_);
   
   /*
+  auto search-input detection cases:
   true search   detected search  mix-max  tdc  flag for mix-max       flag for tdc
   separate      separate         yes      yes  none (but -y allowed)  -Y
   separate      concatenated     yes      yes  -y (force)             -Y
   concatenated  concatenated     no       yes  NA                     none (but -Y allowed)
   concatenated  separate         no       yes  NA                     -Y (force)
   */
-  if (pCheck_->concatenatedSearch()) {
-    if (useMixMax_) {
-      if (VERB > 0) {
-        std::cerr << "Warning: concatenated search input detected, "
-          << "but overridden by -y flag: using mix-max anyway." << std::endl;
+  if (inputSearchType_ == "auto") {
+    if (pCheck_->concatenatedSearch()) {
+      if (useMixMax_) {
+        if (VERB > 0) {
+          std::cerr << "Warning: concatenated search input detected, "
+            << "but overridden by -y flag: using mix-max anyway." << std::endl;
+        }
+      } else {
+        if (VERB > 0) {
+          std::cerr << "Concatenated search input detected, skipping both " 
+            << "target-decoy competition and mix-max." << std::endl;
+        }
       }
-    } else {
-      if (VERB > 0) {
-        std::cerr << "Concatenated search input detected, skipping both " 
-          << "target-decoy competition and mix-max." << std::endl;
+    } else { // separate searches detected
+      if (targetDecoyCompetition_) { // this also captures the case where input was in reality from concatenated search
+        if (VERB > 0) {
+          std::cerr << "Separate target and decoy search inputs detected, "
+            << "using target-decoy competition on Percolator scores." << std::endl;
+        }
+      } else {
+        useMixMax_ = true;
+        if (VERB > 0) {
+          std::cerr << "Separate target and decoy search inputs detected, "
+            << "using mix-max method." << std::endl;
+        }
       }
     }
-  } else { // separate searches detected
-    if (targetDecoyCompetition_) { // this also captures the case where input was in reality from concatenated search
-      if (VERB > 0) {
-        std::cerr << "Separate target and decoy search inputs detected, "
-          << "using target-decoy competition on Percolator scores." << std::endl;
-      }
-    } else {
-      useMixMax_ = true;
-      if (VERB > 0) {
-        std::cerr << "Separate target and decoy search inputs detected, "
-          << "using mix-max method." << std::endl;
-      }
+  } else if (pCheck_->concatenatedSearch() && inputSearchType_ == "separate") {
+    if (VERB > 0) {
+      std::cerr << "Warning: concatenated search input detected, but "
+        << "overridden by -I flag specifying separate searches." << std::endl;
+    }
+  } else if (!pCheck_->concatenatedSearch() && inputSearchType_ == "concatenated") {
+    if (VERB > 0) {
+      std::cerr << "Warning: separate searches input detected, but "
+        << "overridden by -I flag specifying a concatenated search." << std::endl;
     }
   }
   assert(!(useMixMax_ && targetDecoyCompetition_));

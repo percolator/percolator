@@ -174,7 +174,7 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
   }
   
   featureNames.initFeatures(DataSet::getCalcDoc());
-  assert(numFeatures == DataSet::getNumFeatures());
+  assert(numFeatures + (DataSet::getCalcDoc() ? DescriptionOfCorrect::numDOCFeatures() : 0u) == DataSet::getNumFeatures());
 }
 
 bool SetHandler::getInitValues(const std::string& defaultDirectionLine, 

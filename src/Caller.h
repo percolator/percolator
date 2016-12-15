@@ -87,6 +87,7 @@ class Caller {
   bool reportUniquePeptides_;
   bool targetDecoyCompetition_;
   bool useMixMax_;
+  std::string inputSearchType_;
   
   // SVM / cross validation parameters
   double selectionFdr_, testFdr_;
