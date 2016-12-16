@@ -447,7 +447,7 @@ void Scores::normalizeScores(double fdr) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcScores(std::vector<double>& w, double fdr) {
+int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
   unsigned int ix;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
@@ -468,7 +468,7 @@ int Scores::calcScores(std::vector<double>& w, double fdr) {
       cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores found)." << endl;
     }
   }
-  return calcQ(fdr);
+  return calcQ(fdr, skipDecoysPlusOne);
 }
 
 void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
@@ -483,7 +483,7 @@ void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcQ(double fdr) {
+int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
   assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
   
   std::vector<pair<double, bool> > combined;
@@ -491,7 +491,7 @@ int Scores::calcQ(double fdr) {
   
   std::vector<double> qvals;
   PosteriorEstimator::setNegative(true); // also get q-values for decoys
-  PosteriorEstimator::getQValues(pi0_, combined, qvals);
+  PosteriorEstimator::getQValues(pi0_, combined, qvals, skipDecoysPlusOne);
   
   // set q-values and count number of positives
   std::vector<double>::const_iterator qIt = qvals.begin();
@@ -624,6 +624,11 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
+  
+  // for determining the initial direction, the decoys+1 in the FDR estimates 
+  // is too restrictive for small datasets
+  bool skipDecoysPlusOne = true; 
+  
   for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
     for (std::vector<ScoreHolder>::iterator scoreIt = scores_.begin(); 
          scoreIt != scores_.end(); ++scoreIt) {
@@ -636,7 +641,7 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
       if (i == 1) {
         reverse(scores_.begin(), scores_.end());
       }
-      int positives = calcQ(fdr);
+      int positives = calcQ(fdr, skipDecoysPlusOne);
       if (positives > bestPositives) {
         bestPositives = positives;
         bestFeature = featNo;

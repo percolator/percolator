@@ -33,7 +33,7 @@ Caller::Caller() :
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""), 
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true), 
-    targetDecoyCompetition_(false), useMixMax_(false),
+    targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
     selectionFdr_(0.01), testFdr_(0.01), numIterations_(10), maxPSMs_(0u),
     selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false) {

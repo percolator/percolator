@@ -408,7 +408,8 @@ void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& comb
  * If pi0 == 1.0 this is equal to the "traditional" q-value calculation
  */
 void PosteriorEstimator::getQValues(double pi0, 
-    const vector<pair<double, bool> >& combined, vector<double>& q) {
+    const vector<pair<double, bool> >& combined, vector<double>& q,
+    bool skipDecoysPlusOne) {
   std::vector<double> h_w_le_z, h_z_le_z; // N_{w<=z} and N_{z<=z}
   if (pi0 < 1.0) {
     getMixMaxCounts(combined, h_w_le_z, h_z_le_z);
@@ -418,8 +419,10 @@ void PosteriorEstimator::getQValues(double pi0,
   double E_f1_mod_run_tot = 0.0;
   double fdr = 0.0;
 
-  std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
   int n_z_ge_w = 1, n_w_ge_w = 0; // N_{z>=w} and N_{w>=w}
+  if (skipDecoysPlusOne) n_z_ge_w = 0;
+  
+  std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
   int decoyQueue = 0, targetQueue = 0; // handles ties
   for ( ; myPair != combined.end(); ++myPair) {
     if (myPair->second) { 

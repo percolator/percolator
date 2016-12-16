@@ -38,13 +38,19 @@ function(get_arch TARGET_ARCH)
 endfunction()
 
 ###############################################################################
+# SET LOCATION OF MODULE FINDERS
+###############################################################################
+
+set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
+
+###############################################################################
 # SET GLOBAL VARIABLES
 ###############################################################################
 
 
 # VERSION AND NAMESPACES
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "00")
+set(CPACK_PACKAGE_VERSION_MAJOR "3")
+set(CPACK_PACKAGE_VERSION_MINOR "01")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "3")
@@ -55,6 +61,11 @@ set(MZIDENTML_VERSION_MINOR "1")
 set(GAML_TANDEM_VERSION_MAJOR "1")
 set(GAML_TANDEM_VERSION_MINOR "0")
 set(TANDEM_VERSION "2011.12.01.1")
+
+# UPDATE PATCH VERSION FOR INTERMEDIATE BUILDS
+INCLUDE(VersionGen)
+NIGHTLY_VERSION_GEN(CPACK_PACKAGE_VERSION_PATCH ${CPACK_PACKAGE_VERSION_MAJOR} ${CPACK_PACKAGE_VERSION_MINOR} ${CPACK_PACKAGE_VERSION_PATCH})
+MESSAGE(STATUS "NIGHTLY_VERSION ${CPACK_PACKAGE_VERSION_PATCH}")
 
 IF(MSVC)
   set(XML_REL_PATH "share/xml\\\\percolator/")
@@ -116,13 +127,6 @@ set(BOOST_MIN_VERSION "1.46.0")
 set(Boost_ADDITIONAL_VERSIONS "1.36" "1.36.0" "1.41" "1.41.0" "1.39" "1.39.0" "1.42.0" "1.42" "1.43.0"
 			       "1.43." "1.44.0" "1.44.0" "1.45.0" "1.45" "1.46.0" "1.46" "1.47.0" "1.47"
 			       "1.48" "1.48.0" "1.49" "1.49.0" "1.50.0" "1.50" "1.51.0" "1.51")
-
-###############################################################################
-# SET LOCATION OF MODULE FINDERS
-###############################################################################
-
-#set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 
 ###############################################################################
 # SET COMPILER OPTIONS

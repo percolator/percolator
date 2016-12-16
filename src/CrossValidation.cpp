@@ -213,10 +213,14 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm) {
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
   
+  // for determining an appropriate positive training set, the decoys+1 in the 
+  // FDR estimates is too restrictive for small datasets
+  bool skipDecoysPlusOne = true; 
+  
   // the calculation of DOC contains random number generation and cannot be
   // parallelized easily without becoming non-deterministic
   for (int set = 0; set < numFolds_; ++set) {
-    trainScores_[set].calcScores(w_[set], selectionFdr_);
+    trainScores_[set].calcScores(w_[set], selectionFdr_, skipDecoysPlusOne);
     if (DataSet::getCalcDoc() && updateDOC) {
       trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
       //trainScores_[set].setDOCFeatures(pNorm); // this overwrites features of overlapping training folds...
@@ -314,6 +318,10 @@ int CrossValidation::processSingleFold(unsigned int set,
   Outputs->vec = new double[numInputs];
   Outputs->d = numInputs;
   
+  // for determining the number of positives, the decoys+1 in the FDR estimates 
+  // is too restrictive for small datasets
+  bool skipDecoysPlusOne = true; 
+  
   // Find soft margin parameters with highest estimate of true positives
   std::vector<double>::const_iterator itCpos = cposCandidates.begin();
   for ( ; itCpos != cposCandidates.end(); ++itCpos) {
@@ -340,10 +348,10 @@ int CrossValidation::processSingleFold(unsigned int set,
       }
       // sub-optimal cross validation (better would be to measure
       // performance on a set disjoint of the training set)
-      tp = trainScores_[set].calcScores(ww, testFdr_);
+      tp = trainScores_[set].calcScores(ww, testFdr_, skipDecoysPlusOne);
       if (VERB > 3) {
         cerr << "- cross-validation found " << tp
-             << " training set PSMs with q<" << testFdr_ << "." << endl;
+             << " training set PSMs with q_liberal<" << testFdr_ << "." << endl;
       }
       if (tp >= bestTruePos) {
         if (VERB > 3) {
@@ -356,6 +364,8 @@ int CrossValidation::processSingleFold(unsigned int set,
       }
     }
   }
+  
+  bestTruePos = trainScores_[set].calcScores(bestW, testFdr_);
   
   if (VERB > 2) {
     std::cerr << "Split " << set + 1 << ": Found " << 

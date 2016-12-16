@@ -42,7 +42,7 @@ class PosteriorEstimator {
                          std::vector<double>& p);
   static void getQValues(double pi0,
                          const std::vector<std::pair<double, bool> >& combined,
-                         std::vector<double>& q);
+                         std::vector<double>& q, bool skipDecoysPlusOne = false);
   static void getQValuesFromP(double pi0, const std::vector<double>& p,
                               std::vector<double>& q);
   static void getQValuesFromPEP(const std::vector<double>& pep,

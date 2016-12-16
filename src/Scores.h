@@ -150,8 +150,8 @@ class Scores {
   double calcScore(const double* features, const std::vector<double>& w) const;
   void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);
-  int calcScores(vector<double>& w, double fdr);
-  int calcQ(double fdr);
+  int calcScores(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
+  int calcQ(double fdr, bool skipDecoysPlusOne = false);
   void recalculateDescriptionOfCorrect(const double fdr);
   void calcPep();
   
