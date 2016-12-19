@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "XMLInterface.h"
+#include "Version.h"
 
 #ifdef XML_SUPPORT
 

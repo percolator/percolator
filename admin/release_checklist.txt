@@ -3,7 +3,7 @@
 3. verify that all system tests pass
 4. add information to changelog on master
 5. commit and push to master on github
-6. create a release on github and upload binaries
+6. create a release on github and upload binaries, use the tag naming convention rel-<major>-<minor>[-<patch>], e.g. rel-3-01 or rel-3-01-02
 7. create a branch on github with the version number
 8. reset version number on master
 9. commit and push to master on github

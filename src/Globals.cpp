@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "Globals.h"
+#include "Version.h"
 #include <iostream>
 #include <cstdlib>
 

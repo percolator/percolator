@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "Caller.h"
+#include "Version.h"
 #ifndef _WIN32
   #include "unistd.h"
 #endif

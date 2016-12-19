@@ -33,6 +33,7 @@ using namespace std;
 #endif
 
 #include "Option.h"
+#include "Version.h"
 #include "PosteriorEstimator.h"
 #include "Transform.h"
 #include "Globals.h"

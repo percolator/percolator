@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "Interface.h"
+#include "Version.h"
 
 Interface::Interface() : xmlOutput(false), outputFN("") { }
 

@@ -28,6 +28,7 @@
 #include <ctime>
 
 #include "EludeCaller.h"
+#include "Version.h"
 #include "Normalizer.h"
 #include "Option.h"
 #include "Enzyme.h"

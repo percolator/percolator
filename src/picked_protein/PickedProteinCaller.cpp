@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "PickedProteinCaller.h"
+#include "Version.h"
 #include "Option.h"
 #include "Globals.h"
 
