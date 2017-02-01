@@ -585,6 +585,9 @@ void MSReader::writeFile(const char* c, MSFileFormat ff, MSObject& m, char* sha1
 #ifndef _NOSQLITE
 void MSReader::writeSqlite(const char* c, MSObject& m, char* sha1Report)
 {
+  char empty[1] = "";
+  if(!sha1Report)
+    sha1Report = empty;
 
   //open the database for write
   sqlite3_open(c, &db);
