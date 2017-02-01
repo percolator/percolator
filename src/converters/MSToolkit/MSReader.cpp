@@ -628,7 +628,7 @@ void MSReader::writeSqlite(const char* c, MSObject& m, char* sha1Report)
   string instrumentType="=";
   for(int i=0; i<16; i++)
     {
-      if(m.getHeader().header[i] != '\0')
+      if(m.getHeader().header[i] != 0)
 	{
 	  string headerLine = m.getHeader().header[i];
 	  if(headerLine.find("CreationDate") != string::npos)
