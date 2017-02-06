@@ -82,7 +82,7 @@ class MSReader {
   void setPrecisionInt(int i);
   void setPrecisionMZ(int i);
   void writeFile(const char* c, bool text, MSObject& m);
-  void writeFile(const char* c, MSFileFormat ff, MSObject& m, char* sha1Report='\0');
+  void writeFile(const char* c, MSFileFormat ff, MSObject& m, char* sha1Report=0);
 
   bool readFile(const char* c, bool text, Spectrum& s, int scNum=0);
   bool readFile(const char* c, MSFileFormat f, Spectrum& s, int scNum=0);
