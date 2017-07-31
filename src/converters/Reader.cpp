@@ -319,7 +319,7 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
         std::string tmpName = std::tmpnam(NULL);
 #endif
 	      tmpFNs.resize(lineNumber_par+1);
-	      tmpFNs[lineNumber_par]=tcf;
+	      tmpFNs[lineNumber_par]=tmpName;
 	      database->init(tmpFNs[lineNumber_par]);
 	    } else {
 	      database->init("");
