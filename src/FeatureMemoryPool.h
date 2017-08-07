@@ -28,15 +28,18 @@ class FeatureMemoryPool {
    unsigned int numRowsPerBlock_, numFeatures_, initializedRows_;
    std::vector<double*> memStarts_;
    std::vector<double*> freeRows_;
+   bool isInitialized_;
  public:
   FeatureMemoryPool() : numRowsPerBlock_(0), numFeatures_(0), 
-                        initializedRows_(0) {}
+                        initializedRows_(0), isInitialized_(false) {}
 
   ~FeatureMemoryPool() { destroyPool(); }
 
   void createPool(size_t numFeatures);
   void createNewBlock();
   void destroyPool();
+  
+  bool isInitialized() const { return isInitialized_; }
 
   double* addressFromIdx(unsigned int i) const;
 

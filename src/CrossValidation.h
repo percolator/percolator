@@ -82,7 +82,7 @@ class CrossValidation {
   unsigned int niter_;
   const static double requiredIncreaseOver2Iterations_;
   
-  const static unsigned int numFolds_;
+  const static unsigned int numFolds_, numFoldsNested_;
   const static unsigned int numAlgInObjects_;
   std::vector<Scores> trainScores_, testScores_;
   std::vector<double> candidatesCpos_, candidatesCfrac_;

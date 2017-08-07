@@ -46,11 +46,31 @@ if [ -z "$TRAVIS" ]; then
   sudo apt-get -y install g++ make cmake rpm fakeroot;
 fi
 
+cd ${src_dir}
+
+# read all urls and file names from a centralized kb file
+source percolator/admin/builders/_urls_and_file_names_.sh
+
 mkdir -p $build_dir
 cd ${build_dir}
 
+# issue with XercesC in Ubuntu 16.04: https://github.com/percolator/percolator/issues/188
+if [[ $(lsb_release -a) == *"16.04"* ]]; then
+  if [[ -z ${build_dir}/${ubuntu_xerces}/lib ]]; then
+    # download, compile and link xerces
+    wget --quiet ${ubuntu_xerces_url}
+    tar xzf ${ubuntu_xerces}.tar.gz 
+    cd ${ubuntu_xerces}/
+    ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu
+    make -j 4
+    make install
+  fi
+else
+  sudo apt-get -y install libxerces-c-dev
+fi
+
 # end of section to remove
-sudo apt-get -y install libxerces-c-dev libboost-dev libboost-filesystem-dev xsdcxx;
+sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
 
 #------------------------------------------------------------------------
@@ -69,7 +89,7 @@ make -j 4 package;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/" -DXML_SUPPORT=ON $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
@@ -79,7 +99,7 @@ make -j 4 package;
 cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 
 #-----make------
 echo -n "make converters (this will take few minutes).....";

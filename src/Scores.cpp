@@ -365,13 +365,15 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     test[i].recalculateSizes();
   }
   
-  std::map<double*, double*> movedAddresses;
-  size_t idx = 0;
-  for (unsigned int i = 0; i < xval_fold; ++i) {
-    bool isTarget = true;
-    test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
-    isTarget = false;
-    test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
+  if (featurePool.isInitialized()) {
+    std::map<double*, double*> movedAddresses;
+    size_t idx = 0;
+    for (unsigned int i = 0; i < xval_fold; ++i) {
+      bool isTarget = true;
+      test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
+      isTarget = false;
+      test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
+    }
   }
 }
 
@@ -525,13 +527,12 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget()) {
-      if (scoreIt->q > fdr) {
-        break;
+      if (scoreIt->q <= fdr) {
+        data.vals[ix2] = scoreIt->pPSM->features;
+        data.Y[ix2] = 1;
+        data.C[ix2++] = cpos;
+        ++p;
       }
-      data.vals[ix2] = scoreIt->pPSM->features;
-      data.Y[ix2] = 1;
-      data.C[ix2++] = cpos;
-      ++p;
     }
   }
   data.positives = p;
@@ -599,15 +600,24 @@ void Scores::weedOutRedundantTDC() {
   postMergeStep();
 }
 
+/**
+ * Routine that sees to that only 1 target and 1 decoy spectra are kept for 
+ * mix-max when using multiple hits per spectrum and separate searches
+ */
+void Scores::weedOutRedundantMixMax() {
+  // order the scores (based on spectra id and score)
+  std::sort(scores_.begin(), scores_.end(), OrderScanMassLabelCharge());  
+  scores_.erase(std::unique(scores_.begin(), scores_.end(), UniqueScanMassLabelCharge()), scores_.end());
+  
+  postMergeStep();
+}
+
 void Scores::recalculateDescriptionOfCorrect(const double fdr) {
   doc_.clear();
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget()) {
-      //      if (fdr>scores_[ix1].pPSM->q) {
-      if (0.0 >= scoreIt->q) {
-        doc_.registerCorrect(scoreIt->pPSM);
-      }
+    if (scoreIt->isTarget() && scoreIt->q <= fdr) {
+      doc_.registerCorrect(scoreIt->pPSM);
     }
   }
   doc_.trainCorrect();

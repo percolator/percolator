@@ -20,6 +20,7 @@
 void FeatureMemoryPool::createPool(size_t numFeatures) {
   numFeatures_ = numFeatures;
   numRowsPerBlock_ = kBlockSize / numFeatures_;
+  isInitialized_ = true;
 }
 
 void FeatureMemoryPool::createNewBlock() {
@@ -34,6 +35,7 @@ void FeatureMemoryPool::destroyPool() {
       memStarts_.at(i) = NULL;
     }
   }
+  isInitialized_ = false;
 }
 
 double* FeatureMemoryPool::addressFromIdx(unsigned int i) const {

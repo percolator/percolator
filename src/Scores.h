@@ -103,9 +103,26 @@ struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bo
   }
 };
 
+struct OrderScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return ( (__x.pPSM->scan < __y.pPSM->scan ) 
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+       && (__x.label > __y.label) )
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+       && (__x.label == __y.label) && (__x.score > __y.score) ) );
+  }
+};
+
 struct UniqueScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass);
+  }
+};
+
+struct UniqueScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label) && (__x.pPSM->expMass == __y.pPSM->expMass);
   }
 };
 
@@ -171,6 +188,7 @@ class Scores {
   
   void weedOutRedundant();
   void weedOutRedundantTDC();
+  void weedOutRedundantMixMax();
   
   void printRetentionTime(ostream& outs, double fdr);
   unsigned getQvaluesBelowLevel(double level);

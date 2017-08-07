@@ -30,7 +30,7 @@ FIND_LIBRARY(XERCESC_LIBRARIES NAMES xerces-c xerces-c_3 xerces-c_static_3 libxe
    /usr/
    /usr/lib
    /usr/local/lib
-   PATH_SUFFIXES src lib64 lib32 lib x86_64-linux-gnu i386-linux-gnu
+   PATH_SUFFIXES src lib64 lib32 lib
    )
 
 if( MSVC )

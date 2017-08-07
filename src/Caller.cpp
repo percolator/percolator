@@ -654,7 +654,9 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
         << allScores.posSize() << " target PSMs and " 
         << allScores.negSize() << " decoy PSMs." << std::endl;
     }
-  }
+  }/* else {
+    allScores.weedOutRedundantMixMax();
+  }*/
   
   if (VERB > 0 && writeOutput) {
     if (useMixMax_) {
