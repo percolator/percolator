@@ -239,79 +239,79 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   cmd.parseArgs(argc, argv);
 
   // process options
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  if (cmd.optionSet("verbose")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
-  if (cmd.optionSet("t")) {
-    train_file_ = cmd.options["t"];
+  if (cmd.optionSet("train")) {
+    train_file_ = cmd.options["train"];
   }
-  if (cmd.optionSet("e")) {
-    test_file_ = cmd.options["e"];
+  if (cmd.optionSet("evaluate")) {
+    test_file_ = cmd.options["evaluate"];
   }
-  if (cmd.optionSet("s")) {
-    save_model_file_ = cmd.options["s"];
+  if (cmd.optionSet("save-model")) {
+    save_model_file_ = cmd.options["save-model"];
   }
-  if (cmd.optionSet("l")) {
-    load_model_file_ = cmd.options["l"];
+  if (cmd.optionSet("load-model")) {
+    load_model_file_ = cmd.options["load-model"];
   }
-  if (cmd.optionSet("o")) {
-    output_file_ = cmd.options["o"];
+  if (cmd.optionSet("out")) {
+    output_file_ = cmd.options["out"];
   }
-  if (cmd.optionSet("a")) {
+  if (cmd.optionSet("auto")) {
     automatic_model_sel_ = true;
   }
-  if (cmd.optionSet("b")) {
-    library_path_ = cmd.options["b"];
+  if (cmd.optionSet("lib-path")) {
+    library_path_ = cmd.options["lib-path"];
     int n = library_path_.length();
     if (library_path_[n - 1] != '\\' && library_path_[n - 1] != '/') {
       library_path_ += "/";
     }
   }
-  if (cmd.optionSet("d")) {
+  if (cmd.optionSet("append")) {
     append_model_ = true;
   }
-  if (cmd.optionSet("j")) {
+  if (cmd.optionSet("no_linear_adjust")) {
     linear_calibration_ = false;
   }
-  if (cmd.optionSet("c")) {
-    double coverage = cmd.getDouble("c", 0.0, 1.0);
+  if (cmd.optionSet("lts-coverage")) {
+    double coverage = cmd.getDouble("lts-coverage", 0.0, 1.0);
     LTSRegression::setCoverage(coverage);
   }
-  if (cmd.optionSet("u")) {
+  if (cmd.optionSet("unique")) {
     remove_duplicates_ = true;
   }
-  if (cmd.optionSet("k")) {
+  if (cmd.optionSet("common")) {
     remove_common_peptides_ = true;
   }
-  if (cmd.optionSet("y")) {
+  if (cmd.optionSet("no-in-source")) {
     remove_in_source_ = true;
   }
-  if (cmd.optionSet("i")) {
-    in_source_file_ = cmd.options["i"];
+  if (cmd.optionSet("save-in-source")) {
+    in_source_file_ = cmd.options["save-in-source"];
   }
-  if (cmd.optionSet("z")) {
-    SetEnzyme(cmd.options["z"]);
+  if (cmd.optionSet("enzyme")) {
+    SetEnzyme(cmd.options["enzyme"]);
   }
-  if (cmd.optionSet("x")) {
+  if (cmd.optionSet("remove-non-enzymatic")) {
     remove_non_enzymatic_ = true;
   }
-  if (cmd.optionSet("r")) {
-    index_file_ = cmd.options["r"];
+  if (cmd.optionSet("retention-index")) {
+    index_file_ = cmd.options["retention-index"];
   }
-  if (cmd.optionSet("f")) {
+  if (cmd.optionSet("context-format")) {
     context_format_ = true;
   }
-  if (cmd.optionSet("g")) {
+  if (cmd.optionSet("test-rt")) {
     test_includes_rt_ = true;
   }
-  if (cmd.optionSet("p")) {
+  if (cmd.optionSet("ignore-ptms")) {
     RetentionFeatures::set_ignore_ptms(true);
     ignore_ptms_ = true;
   }
-  if (cmd.optionSet("n")) {
+  if (cmd.optionSet("index-only")) {
      only_hydrophobicity_index_ = true;
   }
-  if (cmd.optionSet("w")) {
+  if (cmd.optionSet("supress-print")) {
      supress_print_ = true;
   }
   

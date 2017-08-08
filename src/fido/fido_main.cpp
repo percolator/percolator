@@ -134,31 +134,31 @@ bool Fido::parseOptions(int argc, char** argv) {
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
-  if (cmd.optionSet("B")) {
-    decoyOut = cmd.options["B"];
+  if (cmd.optionSet("decoy-results")) {
+    decoyOut = cmd.options["decoy-results"];
   }
   
-  if (cmd.optionSet("r")) {
-    targetOut = cmd.options["r"];
+  if (cmd.optionSet("results")) {
+    targetOut = cmd.options["results"];
   }
   
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  if (cmd.optionSet("verbose")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
   
-  tiesAsOneProtein = cmd.optionSet("g");
-  usePi0 = cmd.optionSet("I");
-  fido_grouProteins = cmd.optionSet("N"); 
-  fido_noprune = cmd.optionSet("C");
-  fido_noseparate = cmd.optionSet("E");
-  fido_reduceTree = cmd.optionSet("T");
-  fido_truncate = cmd.optionSet("W");
-  if (cmd.optionSet("P"))  decoy_prefix = cmd.options["P"];
-  if (cmd.optionSet("d"))  fido_depth = cmd.getInt("d", 0, 3);
-  if (cmd.optionSet("a"))  fido_alpha = cmd.getDouble("a", 0.00, 1.0);
-  if (cmd.optionSet("b"))  fido_beta = cmd.getDouble("b", 0.00, 1.0);
-  if (cmd.optionSet("G"))  fido_gamma = cmd.getDouble("G", 0.00, 1.0);
-  if (cmd.optionSet("H"))  fido_mse_threshold = cmd.getDouble("H",0.001,1.0);
+  tiesAsOneProtein = cmd.optionSet("allow-protein-group");
+  usePi0 = cmd.optionSet("protein-level-pi0");
+  fido_grouProteins = cmd.optionSet("group-proteins"); 
+  fido_noprune = cmd.optionSet("no-prune-proteins");
+  fido_noseparate = cmd.optionSet("no-separate-proteins");
+  fido_reduceTree = cmd.optionSet("fido-reduce-tree-in-gridsearch");
+  fido_truncate = cmd.optionSet("no-truncation");
+  if (cmd.optionSet("pattern"))  decoy_prefix = cmd.options["pattern"];
+  if (cmd.optionSet("gridsearch-depth"))  fido_depth = cmd.getInt("gridsearch-depth", 0, 3);
+  if (cmd.optionSet("alpha"))  fido_alpha = cmd.getDouble("alpha", 0.00, 1.0);
+  if (cmd.optionSet("beta"))  fido_beta = cmd.getDouble("beta", 0.00, 1.0);
+  if (cmd.optionSet("gamma"))  fido_gamma = cmd.getDouble("gamma", 0.00, 1.0);
+  if (cmd.optionSet("grid-search-mse-threshold"))  fido_mse_threshold = cmd.getDouble("grid-search-mse-threshold",0.001,1.0);
 
   fname = cmd.arguments[0];
 

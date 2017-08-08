@@ -109,7 +109,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Path to xml-output (pout) file.",
       "filename");
   cmd.defineOption("",
-      "stdinput",
+      "stdinput-tab",
       "Read percolator tab-input format (pin-tab) from standard input",
       "",
       TRUE_IF_SET);
@@ -157,8 +157,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Output computed features to given file in pin-tab format.",
       "filename");
   cmd.defineOption("j",
-      "tab-in [default]",
-      "Input file given in pin-tab format. This is the default setting, flag only present for backwards compatibility.",
+      "tab-in",
+      "[set by default] Input file given in pin-tab format. This is the default setting, flag only present for backwards compatibility.",
       "filename");
   cmd.defineOption("k",
       "xml-in",
@@ -348,65 +348,65 @@ bool Caller::parseOptions(int argc, char **argv) {
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
   
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  if (cmd.optionSet("verbose")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
   
-  if (cmd.optionSet("o")) {
+  if (cmd.optionSet("no-terminate")) {
     Globals::getInstance()->setNoTerminate(true);
   }
   
   // now query the parsing results
-  if (cmd.optionSet("X")) xmlOutputFN_ = cmd.options["X"];
+  if (cmd.optionSet("xmloutput")) xmlOutputFN_ = cmd.options["xmloutput"];
   
   // filenames for outputting results to file
-  if (cmd.optionSet("m")) psmResultFN_ = cmd.options["m"];
-  if (cmd.optionSet("M")) decoyPsmResultFN_ = cmd.options["M"];
+  if (cmd.optionSet("result-psms")) psmResultFN_ = cmd.options["result-psms"];
+  if (cmd.optionSet("decoy-result-psms")) decoyPsmResultFN_ = cmd.options["decoy-result-psms"];
   
-  if (cmd.optionSet("U")) {
+  if (cmd.optionSet("only-psms")) {
     // the different "hacks" below are mainly to keep backwards compatibility with old Mascot versions
-    if (cmd.optionSet("A")){
+    if (cmd.optionSet("fido-protein")){
       cerr
-      << "ERROR: The -U option cannot be used in conjunction with -A: peptide level statistics\n"
+      << "ERROR: The -U/--only-psms option cannot be used in conjunction with -A/--fido-protein: peptide level statistics\n"
       << "are needed to calculate protein level ones.";
       return 0;
     }
     reportUniquePeptides_ = false;
     
-    if (cmd.optionSet("r")) {
-      if (!cmd.optionSet("m")) {
+    if (cmd.optionSet("results-peptides")) {
+      if (!cmd.optionSet("results-psms")) {
         if (VERB > 0) {
           cerr
-          << "WARNING: The -r option cannot be used in conjunction with -U: no peptide level statistics\n"
+          << "WARNING: The -r/--results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
           << "are calculated, redirecting PSM level statistics to provided file instead." << endl;
         }
-        psmResultFN_ = cmd.options["r"];
+        psmResultFN_ = cmd.options["results-peptides"];
       } else {
         cerr
-        << "WARNING: The -r option cannot be used in conjunction with -U: no peptide level statistics\n"
-        << "are calculated, ignoring -r option." << endl;
+        << "WARNING: The -r/--results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
+        << "are calculated, ignoring -r/--results-peptides option." << endl;
       }
     }
-    if (cmd.optionSet("B")) {
-      if (!cmd.optionSet("M")) {
+    if (cmd.optionSet("decoy-results-peptides")) {
+      if (!cmd.optionSet("decoy-results-psms")) {
         if (VERB > 0) {
           cerr
-          << "WARNING: The -B option cannot be used in conjunction with -U: no peptide level statistics\n"
+          << "WARNING: The -B/--decoy-results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
           << "are calculated, redirecting decoy PSM level statistics to provided file instead." << endl;
         }
-        decoyPsmResultFN_ = cmd.options["B"]; 
+        decoyPsmResultFN_ = cmd.options["decoy-results-peptides"]; 
       } else {
         cerr
-        << "WARNING: The -B option cannot be used in conjunction with -U: no peptide level statistics\n"
-        << "are calculated, ignoring -B option." << endl;
+        << "WARNING: The -B/--decoy-results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
+        << "are calculated, ignoring -B/--decoy-results-peptides option." << endl;
       }
     }
   } else {
-    if (cmd.optionSet("r")) peptideResultFN_ = cmd.options["r"];
-    if (cmd.optionSet("B")) decoyPeptideResultFN_ = cmd.options["B"];
+    if (cmd.optionSet("results-peptides")) peptideResultFN_ = cmd.options["results-peptides"];
+    if (cmd.optionSet("decoy-results-peptides")) decoyPeptideResultFN_ = cmd.options["decoy-results-peptides"];
   }
 
-  if (cmd.optionSet("A") || cmd.optionSet("f")) {
+  if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
   
     ProteinProbEstimator::setCalcProteinLevelProb(true);
     
@@ -416,24 +416,24 @@ bool Caller::parseOptions(int argc, char **argv) {
     std::string protEstimatorDecoyPrefix = "random_";
     double protEstimatorAbsenceRatio = 1.0;
     //if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
-    protEstimatorOutputEmpirQVal = cmd.optionSet("q");
-    if (cmd.optionSet("P")) protEstimatorDecoyPrefix = cmd.options["P"];
+    protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
+    if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
     //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
     
     // Output file options
-    if (cmd.optionSet("l")) proteinResultFN_ = cmd.options["l"];
-    if (cmd.optionSet("L")) decoyProteinResultFN_ = cmd.options["L"];
+    if (cmd.optionSet("results-proteins")) proteinResultFN_ = cmd.options["results-proteins"];
+    if (cmd.optionSet("decoy-results-proteins")) decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
     
-    if (cmd.optionSet("A")) {
+    if (cmd.optionSet("fido-protein")) {
       /*fido parameters*/
       
       // General Fido options
       double fidoAlpha = -1;
       double fidoBeta = -1;
       double fidoGamma = -1;
-      if (cmd.optionSet("a")) fidoAlpha = cmd.getDouble("a", 0.00, 1.0);
-      if (cmd.optionSet("b")) fidoBeta = cmd.getDouble("b", 0.00, 1.0);
-      if (cmd.optionSet("G")) fidoGamma = cmd.getDouble("G", 0.00, 1.0);
+      if (cmd.optionSet("fido-alpha")) fidoAlpha = cmd.getDouble("fido-alpha", 0.00, 1.0);
+      if (cmd.optionSet("fido-beta")) fidoBeta = cmd.getDouble("fido-beta", 0.00, 1.0);
+      if (cmd.optionSet("fido-gamma")) fidoGamma = cmd.getDouble("fido-gamma", 0.00, 1.0);
       
       // Options for controlling speed
       bool fidoNoPartitioning = false; // cannot be set on cmd line
@@ -443,11 +443,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       double fidoGridSearchThreshold = 0.0;
       double fidoProteinThreshold = 0.01;
       double fidoMseThreshold = 0.1;
-      if (cmd.optionSet("d")) fidoGridSearchDepth = cmd.getInt("d", 0, 4);
-      if (cmd.optionSet("T")) fidoGridSearchThreshold = cmd.getDouble("T", 0.0, 1.0);
-      if (cmd.optionSet("C")) fidoNoPruning = true;
-      if (cmd.optionSet("E")) fidoProteinThreshold = cmd.getDouble("E", 0.0, 1.0);
-      if (cmd.optionSet("H")) fidoMseThreshold = cmd.getDouble("H",0.001,1.0);
+      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getInt("fido-gridsearch-depth", 0, 4);
+      if (cmd.optionSet("fido-fast-gridsearch")) fidoGridSearchThreshold = cmd.getDouble("fido-fast-gridsearch", 0.0, 1.0);
+      if (cmd.optionSet("fido-no-split-large-components")) fidoNoPruning = true;
+      if (cmd.optionSet("fido-protein-truncation-threshold")) fidoProteinThreshold = cmd.getDouble("fido-protein-truncation-threshold", 0.0, 1.0);
+      if (cmd.optionSet("fido-gridsearch-mse-threshold")) fidoMseThreshold = cmd.getDouble("fido-gridsearch-mse-threshold",0.001,1.0);
       
       protEstimator_ = new FidoInterface(fidoAlpha, fidoBeta, fidoGamma, 
                 fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
@@ -455,19 +455,19 @@ bool Caller::parseOptions(int argc, char **argv) {
                 fidoProteinThreshold, fidoMseThreshold,
                 protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal, 
                 protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
-    } else if (cmd.optionSet("f")) {  
-      std::string fastaDatabase = cmd.options["f"];
+    } else if (cmd.optionSet("picked-protein")) {  
+      std::string fastaDatabase = cmd.options["picked-protein"];
       
       // default options
       double pickedProteinPvalueCutoff = 1.0;
       bool pickedProteinReportFragmentProteins = false;
       bool pickedProteinReportDuplicateProteins = false;
-      if (cmd.optionSet("z")) {
-        Enzyme::setEnzyme(cmd.options["z"]);
+      if (cmd.optionSet("protein-enzyme")) {
+        Enzyme::setEnzyme(cmd.options["protein-enzyme"]);
       }      
       //if (cmd.optionSet("Q")) pickedProteinPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
-      if (cmd.optionSet("c")) pickedProteinReportFragmentProteins = true;
-      if (cmd.optionSet("g")) pickedProteinReportDuplicateProteins = true;
+      if (cmd.optionSet("protein-report-fragments")) pickedProteinReportFragmentProteins = true;
+      if (cmd.optionSet("protein-report-duplicates")) pickedProteinReportDuplicateProteins = true;
       
       protEstimator_ = new PickedProteinInterface(fastaDatabase, pickedProteinPvalueCutoff,
           pickedProteinReportFragmentProteins, pickedProteinReportDuplicateProteins,
@@ -476,31 +476,31 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
   }
   
-  if (cmd.optionSet("k")) {
+  if (cmd.optionSet("xml-in")) {
     tabInput_ = false;
-    inputFN_ = cmd.options["k"];
+    inputFN_ = cmd.options["xml-in"];
   }
   
-  if (cmd.optionSet("e")) {
+  if (cmd.optionSet("stdinput-xml")) {
     readStdIn_ = true;
     tabInput_ = false;
   }
   
-  if (cmd.optionSet("j")) {
+  if (cmd.optionSet("tab-in")) {
     tabInput_ = true;
-    inputFN_ = cmd.options["j"];
+    inputFN_ = cmd.options["tab-in"];
   }
   
-  if (cmd.optionSet("")) {
+  if (cmd.optionSet("stdinput-tab")) {
     readStdIn_ = true;
     tabInput_ = true;
   }
   
-  if (cmd.optionSet("p")) {
-    selectedCpos_ = cmd.getDouble("p", 0.0, 1e127);
+  if (cmd.optionSet("Cpos")) {
+    selectedCpos_ = cmd.getDouble("Cpos", 0.0, 1e127);
   }
-  if (cmd.optionSet("n")) {
-    selectedCneg_ = cmd.getDouble("n", 0.0, 1e127);
+  if (cmd.optionSet("Cneg")) {
+    selectedCneg_ = cmd.getDouble("Cneg", 0.0, 1e127);
     if (selectedCpos_ == 0) {
       std::cerr << "WARNING: the positive penalty(cpos) is 0, therefore both the "  
                << "positive and negative penalties are going "
@@ -508,76 +508,76 @@ bool Caller::parseOptions(int argc, char **argv) {
                << "with the option --Cpos" << std::endl;
     }
   }
-  if (cmd.optionSet("J")) {
-    tabOutputFN_ = cmd.options["J"];
+  if (cmd.optionSet("tab-out")) {
+    tabOutputFN_ = cmd.options["tab-out"];
   }
   
-  if (cmd.optionSet("w")) {
-    weightOutputFN_ = cmd.options["w"];
+  if (cmd.optionSet("weights")) {
+    weightOutputFN_ = cmd.options["weights"];
   }
-  if (cmd.optionSet("W")) {
-    SanityCheck::setInitWeightFN(cmd.options["W"]);
+  if (cmd.optionSet("init-weights")) {
+    SanityCheck::setInitWeightFN(cmd.options["init-weights"]);
   }
-  if (cmd.optionSet("V")) {
-    SanityCheck::setInitDefaultDirName(cmd.options["V"]);
+  if (cmd.optionSet("default-direction")) {
+    SanityCheck::setInitDefaultDirName(cmd.options["default-direction"]);
   }
-  if (cmd.optionSet("u")) {
+  if (cmd.optionSet("unitnorm")) {
     Normalizer::setType(Normalizer::UNI);
   }
-  if (cmd.optionSet("O")) {
+  if (cmd.optionSet("override")) {
     SanityCheck::setOverrule(true);
   }
-  if (cmd.optionSet("R")) {
+  if (cmd.optionSet("test-each-iteration")) {
     reportEachIteration_ = true;
   }
-  if (cmd.optionSet("x")) {
+  if (cmd.optionSet("quick-validation")) {
     quickValidation_ = true;
   }
-  if (cmd.optionSet("F")) {
-    selectionFdr_ = cmd.getDouble("F", 0.0, 1.0);
+  if (cmd.optionSet("trainFDR")) {
+    selectionFdr_ = cmd.getDouble("trainFDR", 0.0, 1.0);
   }
-  if (cmd.optionSet("t")) {
-    testFdr_ = cmd.getDouble("t", 0.0, 1.0);
+  if (cmd.optionSet("testFDR")) {
+    testFdr_ = cmd.getDouble("testFDR", 0.0, 1.0);
   }
-  if (cmd.optionSet("i")) {
-    numIterations_ = cmd.getInt("i", 0, 1000);
+  if (cmd.optionSet("maxiter")) {
+    numIterations_ = cmd.getInt("maxiter", 0, 1000);
   }
-  if (cmd.optionSet("N")) {
-    maxPSMs_ = cmd.getInt("N", 0, 100000000);
+  if (cmd.optionSet("subset-max-train")) {
+    maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
   }
-  if (cmd.optionSet("S")) {
-    PseudoRandom::setSeed(cmd.getInt("S", 1, 20000));
+  if (cmd.optionSet("seed")) {
+    PseudoRandom::setSeed(cmd.getInt("seed", 1, 20000));
   }
-  if (cmd.optionSet("D")) {
+  if (cmd.optionSet("doc")) {
     DataSet::setCalcDoc(true);
-    DescriptionOfCorrect::setDocType(cmd.getInt("D", 0, 15));
+    DescriptionOfCorrect::setDocType(cmd.getInt("doc", 0, 15));
   }
-  if (cmd.optionSet("K")) {
+  if (cmd.optionSet("klammer")) {
     DescriptionOfCorrect::setKlammer(true);
   }
-  if (cmd.optionSet("s")) {
+  if (cmd.optionSet("no-schema-validation")) {
     xmlSchemaValidation_ = false;
   }
-  if (cmd.optionSet("Z")) {
+  if (cmd.optionSet("decoy-xml-output")) {
     xmlPrintDecoys_ = true;
   }
-  if (cmd.optionSet("y")) {
-    if (cmd.optionSet("Y")) {
-      std::cerr << "Error: the -Y/-post-processing-tdc and "
-        << "-y/-post-processing-mix-max options were both set. "
+  if (cmd.optionSet("post-processing-mix-max")) {
+    if (cmd.optionSet("post-processing-tdc")) {
+      std::cerr << "Error: the -Y/--post-processing-tdc and "
+        << "-y/--post-processing-mix-max options were both set. "
         << "Use only one of these options at a time." << std::endl;
       return 0;
     }
     useMixMax_ = true;
-  } else if (cmd.optionSet("Y")) {
+  } else if (cmd.optionSet("post-processing-tdc")) {
     targetDecoyCompetition_ = true;
   }
-  if (cmd.optionSet("I")) {
-    inputSearchType_ = cmd.options["I"];
+  if (cmd.optionSet("search-input")) {
+    inputSearchType_ = cmd.options["search-input"];
     if (inputSearchType_ == "concatenated") {
       if (useMixMax_) {
-        std::cerr << "Error: concatenated search specified for -I/-search-input"
-            << " is incompatible with the specified -y/-post-processing-mix-max "
+        std::cerr << "Error: concatenated search specified for -I/--search-input"
+            << " is incompatible with the specified -y/--post-processing-mix-max "
             << "option." << std::endl;
         return 0;
       }
@@ -588,14 +588,14 @@ bool Caller::parseOptions(int argc, char **argv) {
         useMixMax_ = true;
       }
     } else if (inputSearchType_ != "auto") {
-      std::cerr << "Error: the -I/-search-input option has to be one out of "
+      std::cerr << "Error: the -I/--search-input option has to be one out of "
                 << "\"concatenated\", \"separate\" or \"auto\"." << std::endl;
       return 0;
     }
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
-    if(!cmd.optionSet("j") && !cmd.optionSet("k") && !cmd.optionSet("e") && !cmd.optionSet("")){ // unless the input comes from -j, -k or -e option
+    if(!cmd.optionSet("tab-in") && !cmd.optionSet("xml-in") && !cmd.optionSet("stdinput-xml") && !cmd.optionSet("stdinput-tab")){ // unless the input comes from -j, -k or -e option
       cerr << "Error: too few arguments.";
       cerr << "\nInvoke with -h option for help\n";
       return 0; // ...error
@@ -605,12 +605,12 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
     inputFN_ = cmd.arguments[0]; // then it's the pin input
-    if (cmd.optionSet("k") || cmd.optionSet("j")){ // and if the tab input is also present
+    if (cmd.optionSet("xml-in") || cmd.optionSet("tab-in")){ // and if the tab input is also present
       cerr << "Error: use one of either pin-xml or tab-delimited input format.";
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error
     }
-    if (cmd.optionSet("e") || cmd.optionSet("")){ // if stdin pin file is present
+    if (cmd.optionSet("stdinput-xml") || cmd.optionSet("stdinput-tab")){ // if stdin pin file is present
       cerr << "Error: the pin file has already been given as stdinput argument.";
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error

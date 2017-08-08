@@ -63,7 +63,7 @@ bool PickedProteinCaller::parseOptions(int argc, char** argv) {
                    "Set verbosity of output: 0 = no processing info, 5 = all, default is 2.",
                    "level");
   cmd.defineOption("i",
-                   "peptide_in",
+                   "peptide-in",
                    "Specifies the file with the peptide tab-delimited output file from percolator.",
                    "filename");
   cmd.defineOption("d",
@@ -71,24 +71,24 @@ bool PickedProteinCaller::parseOptions(int argc, char** argv) {
                    "Specifies the file with protein sequences in fasta format.",
                    "filename");
   cmd.defineOption("o",
-                   "protein_out",
+                   "protein-out",
                    "Specifies the file with the inferred proteins.",
                    "filename");
 
   cmd.parseArgs(argc, argv);
 
   // process options
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  if (cmd.optionSet("verbose")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
-  if (cmd.optionSet("d")) {
-    protein_db_file_ = cmd.options["d"];
+  if (cmd.optionSet("database")) {
+    protein_db_file_ = cmd.options["database"];
   }
-  if (cmd.optionSet("i")) {
-    peptide_input_file_ = cmd.options["i"];
+  if (cmd.optionSet("peptide-in")) {
+    peptide_input_file_ = cmd.options["peptide-in"];
   }
-  if (cmd.optionSet("o")) {
-    protein_output_file_ = cmd.options["o"];
+  if (cmd.optionSet("protein-out")) {
+    protein_output_file_ = cmd.options["protein-out"];
   }
   
   return true;

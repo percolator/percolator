@@ -154,37 +154,37 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
 
-  if (cmd.optionSet("v")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("v", 0, 10));
+  if (cmd.optionSet("verbose")) {
+    Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
 
-  if (cmd.optionSet("o")) outputFN = cmd.options["o"];
-  if (cmd.optionSet("k")) {
+  if (cmd.optionSet("outputTab")) outputFN = cmd.options["outputTab"];
+  if (cmd.optionSet("outputXML")) {
     xmlOutput = true;
-    outputFN = cmd.options["k"];
+    outputFN = cmd.options["outputXML"];
   }
-  if (cmd.optionSet("K")) xmlOutput = true;
+  if (cmd.optionSet("outputXMLstdout")) xmlOutput = true;
   
   //option e has been changed, see above
-  if (cmd.optionSet("e")) {
-    Enzyme::setEnzyme(cmd.options["e"]);
+  if (cmd.optionSet("enzyme")) {
+    Enzyme::setEnzyme(cmd.options["enzyme"]);
   }
-  if (cmd.optionSet("N")) parseOptions.pngasef = true;
-  if (cmd.optionSet("a")) parseOptions.calcAAFrequencies = true;
-  if (cmd.optionSet("b")) parseOptions.calcPTMs = true;
-  if (cmd.optionSet("m")) {
-    int m = cmd.getInt("m", 1, 30000);
+  if (cmd.optionSet("PNGaseF")) parseOptions.pngasef = true;
+  if (cmd.optionSet("aa-freq")) parseOptions.calcAAFrequencies = true;
+  if (cmd.optionSet("PTM")) parseOptions.calcPTMs = true;
+  if (cmd.optionSet("matches")) {
+    int m = cmd.getInt("matches", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
   }
-  if (cmd.optionSet("2")) spectrumFile = cmd.options["2"];
-  if (cmd.optionSet("M")) parseOptions.monoisotopic = true;
+  if (cmd.optionSet("ms2-file")) spectrumFile = cmd.options["ms2-file"];
+  if (cmd.optionSet("isotope")) parseOptions.monoisotopic = true;
   
-  if (cmd.optionSet("p")) {
+  if (cmd.optionSet("psm-annotation")) {
     std::vector<std::string> strs;
-    boost::split(strs, cmd.options["p"], boost::is_any_of(":,"));
+    boost::split(strs, cmd.options["psm-annotation"], boost::is_any_of(":,"));
     if (strs.size()<2) {cerr << "Scheme is malformated" << endl; return 0;}
     for(unsigned int ix=0; ix+1<strs.size(); ix+=2) {
       parseOptions.ptmScheme[strs[ix][0]]=boost::lexical_cast<int>(strs[ix+1]);   
@@ -194,25 +194,25 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     }
   }
   
-  if (cmd.optionSet("P")) {
-    parseOptions.reversedFeaturePattern = cmd.options["P"];
+  if (cmd.optionSet("pattern")) {
+    parseOptions.reversedFeaturePattern = cmd.options["pattern"];
   }
   
-  if (cmd.optionSet("F")) {
+  if (cmd.optionSet("databases")) {
     //NOTE I do not like this, I should make two parameters, one for target db and another one for decoy db
     std::vector<std::string> strs;
-    boost::split(strs, cmd.options["F"], boost::is_any_of(","));
+    boost::split(strs, cmd.options["databases"], boost::is_any_of(","));
     strs.push_back("");
     parseOptions.targetDb = strs[0];
     parseOptions.decoyDb = strs[1];
     parseOptions.readProteins = true;
   }
   
-  if (cmd.optionSet("c")) parseOptions.missed_cleavages = cmd.getInt("c", 0, 10);
-  if (cmd.optionSet("l")) parseOptions.peptidelength = cmd.getInt("l",4,20);
-  if (cmd.optionSet("t")) parseOptions.maxpeplength = cmd.getInt("l",6,100);
-  if (cmd.optionSet("w")) parseOptions.minmass = cmd.getInt("l",100,1000);
-  if (cmd.optionSet("x")) parseOptions.maxmass = cmd.getInt("l",100,10000);
+  if (cmd.optionSet("cleavages")) parseOptions.missed_cleavages = cmd.getInt("cleavages", 0, 10);
+  if (cmd.optionSet("min-length")) parseOptions.peptidelength = cmd.getInt("min-length",4,20);
+  if (cmd.optionSet("max-length")) parseOptions.maxpeplength = cmd.getInt("max-length",6,100);
+  if (cmd.optionSet("min-mass")) parseOptions.minmass = cmd.getInt("min-mass",100,1000);
+  if (cmd.optionSet("max-mass")) parseOptions.maxmass = cmd.getInt("max-mass",100,10000);
   
   if (cmd.arguments.size() > 0) {
     targetFN = cmd.arguments[0];

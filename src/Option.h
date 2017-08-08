@@ -16,12 +16,12 @@
  *******************************************************************************/
 #ifndef OPTION_H_
 #define OPTION_H_
-#include<string>
-#include<map>
-#include<vector>
-#include "MyException.h"
 
-using namespace std;
+#include <string>
+#include <map>
+#include <vector>
+
+#include "MyException.h"
 
 typedef enum {
   FALSE_IF_SET = 0, TRUE_IF_SET, VALUE, MAYBE
@@ -29,48 +29,48 @@ typedef enum {
 
 class Option {
   public:
-    Option(string shrt, string lng, string dest, string hlp = "",
-           string hlpType = "", OptionOption type = VALUE, string defau =
-               "");
+    Option(std::string shrt, std::string lng, std::string dest, 
+           std::string hlp = "", std::string hlpType = "", 
+           OptionOption type = VALUE, std::string defau = "");
     ~Option();
-    bool operator ==(const string& option);
+    bool operator ==(const std::string& option);
     OptionOption type;
-    string shortOpt;
-    string longOpt;
-    string help;
-    string name;
-    string helpType;
-    string deflt;
+    std::string shortOpt;
+    std::string longOpt;
+    std::string help;
+    std::string name;
+    std::string helpType;
+    std::string deflt;
 };
 
 class CommandLineParser {
   public:
-    CommandLineParser(string usage = "", string tail = "");
+    CommandLineParser(std::string usage = "", std::string tail = "");
     ~CommandLineParser();
-    void error(string msg);
-    void defineOption(string shortOpt, string longOpt, string help = "",
-                      string helpType = "", OptionOption type = VALUE,
-                      string defaultVal = "");
-    void defineOption(string shortOpt, string longOpt, string help,
-                      string helpType, string defaultVal) {
+    void error(std::string msg);
+    void defineOption(std::string shortOpt, std::string longOpt, std::string help = "",
+                      std::string helpType = "", OptionOption type = VALUE,
+                      std::string defaultVal = "");
+    void defineOption(std::string shortOpt, std::string longOpt, std::string help,
+                      std::string helpType, std::string defaultVal) {
       defineOption(shortOpt, longOpt, help, helpType, VALUE, defaultVal);
     }
     void parseArgs(int argc, char** argv);
-    inline bool optionSet(string dest) {
+    inline bool optionSet(std::string dest) {
       //return (options.find(dest) != options.end());
       return (options[dest].length() > 0);
     }
-    double getDouble(string dest, double lower, double upper);
-    int getInt(string dest, int lower, int upper);
+    double getDouble(std::string dest, double lower, double upper);
+    int getInt(std::string dest, int lower, int upper);
     void help();
     void htmlHelp();
-    map<string, string> options;
-    vector<string> arguments;
+    std::map<std::string, std::string> options;
+    std::vector<std::string> arguments;
   private:
     size_t optMaxLen;
     const static unsigned int lineLen = 80;
-    string header, endnote;
-    vector<Option> opts;
+    std::string header, endnote;
+    std::vector<Option> opts;
     void findOption(char** argv, int& index);
 };
 

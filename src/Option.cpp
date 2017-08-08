@@ -21,7 +21,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
-using namespace std;
+
 #include "Option.h"
 
 template<class T>
@@ -30,16 +30,16 @@ bool from_string(T& t, const std::string& s) {
   return !(iss >> t).fail();
 }
 
-void searchandreplace(string& source, const string& find,
-                      const string& replace) {
+void searchandreplace(std::string& source, const std::string& find,
+                      const std::string& replace) {
   size_t j;
-  for (; (j = source.find(find)) != string::npos;) {
+  for (; (j = source.find(find)) != std::string::npos;) {
     source.replace(j, find.length(), replace);
   }
 }
 
-Option::Option(string shrt, string lng, string nm, string hlp,
-               string hlpType, OptionOption typ, string dfl) {
+Option::Option(std::string shrt, std::string lng, std::string nm, std::string hlp,
+               std::string hlpType, OptionOption typ, std::string dfl) {
   type = typ;
   shortOpt = shrt;
   longOpt = lng;
@@ -52,11 +52,11 @@ Option::Option(string shrt, string lng, string nm, string hlp,
 Option::~Option() {
 }
 
-bool Option::operator ==(const string& option) {
+bool Option::operator ==(const std::string& option) {
   return (shortOpt == option || longOpt == option);
 }
 
-CommandLineParser::CommandLineParser(string usage, string tail) {
+CommandLineParser::CommandLineParser(std::string usage, std::string tail) {
   header = usage;
   endnote = tail;
   optMaxLen = 0;
@@ -66,13 +66,13 @@ CommandLineParser::CommandLineParser(string usage, string tail) {
 CommandLineParser::~CommandLineParser() {
 }
 
-double CommandLineParser::getDouble(string dest, double lower,
+double CommandLineParser::getDouble(std::string dest, double lower,
                                     double upper) {
   double val;
   from_string<double> (val, options[dest]);
   if (!from_string<double> (val, options[dest]) || (val < lower || val > upper)) 
   {
-    ostringstream temp;
+    std::ostringstream temp;
     temp << "-" << dest << " option requires a float between " << lower
         << " and " << upper << endl;
     throw MyException(temp.str());
@@ -80,11 +80,11 @@ double CommandLineParser::getDouble(string dest, double lower,
   return val;
 }
 
-int CommandLineParser::getInt(string dest, int lower, int upper) {
+int CommandLineParser::getInt(std::string dest, int lower, int upper) {
   int val;
   if (!from_string<int> (val, options[dest]) || val < lower || val > upper) 
   {
-    ostringstream temp;
+    std::ostringstream temp;
     temp << "-" << dest << " option requires an integer between " << lower
         << " and " << upper << endl;
     throw MyException(temp.str());
@@ -92,24 +92,21 @@ int CommandLineParser::getInt(string dest, int lower, int upper) {
   return val;
 }
 
-void CommandLineParser::defineOption(string shortOpt, string longOpt,
-                                     string help, string helpType,
-                                     OptionOption typ, string dfault) {
-  
+void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
+                                     std::string help, std::string helpType,
+                                     OptionOption typ, std::string dfault) {
   //NOTE brute force to check if the option is already defined
   for(std::vector<Option>::const_iterator it = opts.begin();
-      it != opts.end(); it++)
-      {
-	if((*it).shortOpt == shortOpt || (*it).longOpt == longOpt)
-	{
-	  ostringstream temp;
-	  temp << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
-	  throw MyException(temp.str());
-	}
-      }
+      it != opts.end(); it++) {
+	  if((*it).shortOpt == shortOpt || (*it).longOpt == longOpt) {
+	    std::ostringstream temp;
+	    temp << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
+	    throw MyException(temp.str());
+	  }
+  }
   opts.insert(opts.begin(), Option("-" + shortOpt,
                                    "--" + longOpt,
-                                   shortOpt,
+                                   longOpt,
                                    help,
                                    helpType,
                                    typ,
@@ -129,24 +126,24 @@ void CommandLineParser::parseArgs(int argc, char** argv) {
   }
 }
 
-void CommandLineParser::error(string msg) {
-  ostringstream temp;
+void CommandLineParser::error(std::string msg) {
+  std::ostringstream temp;
   temp << header << endl << msg << endl;
   throw MyException(temp.str());
 }
 
 void CommandLineParser::help() {
-  string::size_type descLen = optMaxLen + 8;
-  string::size_type helpLen = lineLen - descLen;
+  std::string::size_type descLen = optMaxLen + 8;
+  std::string::size_type helpLen = lineLen - descLen;
   cerr << header << endl << "Options:" << endl;
   for (size_t i = opts.size(); i--;) {
-    string::size_type j = 0;
+    std::string::size_type j = 0;
     cerr << " " << opts[i].shortOpt;
     if (opts[i].helpType.length() > 0) {
       cerr << " <" << opts[i].helpType << ">";
     }
     cerr << endl;
-    string desc = " " + opts[i].longOpt;
+    std::string desc = " " + opts[i].longOpt;
     if (opts[i].helpType.length() > 0) {
       desc += " <" + opts[i].helpType + ">";
     }
@@ -155,10 +152,10 @@ void CommandLineParser::help() {
       cerr << left << desc;
       desc = " ";
       cerr.width(0);
-      string::size_type l = helpLen;
+      std::string::size_type l = helpLen;
       if (j + l < opts[i].help.length()) {
-        string::size_type p = opts[i].help.rfind(' ', j + l);
-        if (p != string::npos && p > j) {
+        std::string::size_type p = opts[i].help.rfind(' ', j + l);
+        if (p != std::string::npos && p > j) {
           l = p - j + 1;
         }
       }
@@ -175,7 +172,7 @@ void CommandLineParser::htmlHelp() {
   cerr
       << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />"
       << endl;
-  string htmlHeader = header;
+  std::string htmlHeader = header;
   searchandreplace(htmlHeader, "\n", "<br/>");
   cerr << htmlHeader << endl << "Options:" << endl;
   cerr << "<table border=0>" << endl;
@@ -193,7 +190,7 @@ void CommandLineParser::htmlHelp() {
     cerr << "<td>" << opts[i].help << "</td></tr>" << endl;
   }
   cerr << "</table>" << endl;
-  string htmlEnd = endnote;
+  std::string htmlEnd = endnote;
   searchandreplace(htmlEnd, "\n", "<br>");
   cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
   cerr << "</blockquote></body></html>" << endl;
@@ -201,16 +198,16 @@ void CommandLineParser::htmlHelp() {
 }
 
 void CommandLineParser::findOption(char** argv, int& index) {
-  if ((string)argv[index] == "-html" || (string)argv[index] == "--html") {
+  if ((std::string)argv[index] == "-html" || (std::string)argv[index] == "--html") {
     htmlHelp();
   }
-  if ((string)argv[index] == "-h" || (string)argv[index] == "--help") {
+  if ((std::string)argv[index] == "-h" || (std::string)argv[index] == "--help") {
     help();
   }
-  string optstr = (string)argv[index];
-  string valstr("");
-  string::size_type eqsign = optstr.find('=');
-  if (eqsign != string::npos) {
+  std::string optstr = (std::string)argv[index];
+  std::string valstr("");
+  std::string::size_type eqsign = optstr.find('=');
+  if (eqsign != std::string::npos) {
     valstr = optstr.substr(eqsign + 1);
     optstr = optstr.substr(0, eqsign);
   }
