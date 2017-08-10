@@ -360,8 +360,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("xmloutput")) xmlOutputFN_ = cmd.options["xmloutput"];
   
   // filenames for outputting results to file
-  if (cmd.optionSet("result-psms")) psmResultFN_ = cmd.options["result-psms"];
-  if (cmd.optionSet("decoy-result-psms")) decoyPsmResultFN_ = cmd.options["decoy-result-psms"];
+  if (cmd.optionSet("results-psms")) psmResultFN_ = cmd.options["results-psms"];
+  if (cmd.optionSet("decoy-results-psms")) decoyPsmResultFN_ = cmd.options["decoy-results-psms"];
   
   if (cmd.optionSet("only-psms")) {
     // the different "hacks" below are mainly to keep backwards compatibility with old Mascot versions
