@@ -574,7 +574,7 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
     throw MyException(std::string(e.what()));
   }
 
-  std::string type = isDecoy ?  "target" : "decoy";
+  std::string type = isDecoy ?  "decoy" : "target";
   if (po->iscombined) type = "target and decoy";
 
   if (proteins_counter == 0) {
