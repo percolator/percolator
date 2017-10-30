@@ -142,17 +142,17 @@ if xmlSupport:
   docFile = os.path.join(pathToOutputData,"PERCOLATOR_D4on.txt")
 
   # number of significant psms within boundaries
-  success=checkNumberOfSignificant("psms",psmFile,1131) and success
+  success=checkNumberOfSignificant("psms",psmFile,1137) and success
   # number of significant peptrides within boundaries
-  success=checkNumberOfSignificant("peptides",peptideFile,922) and success
+  success=checkNumberOfSignificant("peptides",peptideFile,924) and success
   # number of significant proteins within boundaries for picked-protein
-  success=checkNumberOfSignificant("proteins",proteinFile,342) and success
+  success=checkNumberOfSignificant("proteins",proteinFile,340) and success
   # number of significant proteins within boundaries for fido (poorly calibrated)
-  success=checkNumberOfSignificant("proteins-fido",proteinFileFido,716) and success
+  success=checkNumberOfSignificant("proteins-fido",proteinFileFido,526) and success
   # psm: pi0 within boundaries
-  success=checkPi0("psms",psmFile,0.8413) and success
+  success=checkPi0("psms",psmFile,0.8435) and success
   # peptides: pi0 within boundaries
-  success=checkPi0("peptides",peptideFile,0.8632) and success
+  success=checkPi0("peptides",peptideFile,0.8655) and success
   # psm: pep within boundaries (old dataset)
   #expected=[2.61748e-13,3.26564e-09,7.28959e-08]
   #success = checkPep("psms",psmFile, expected);
@@ -171,17 +171,17 @@ proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins-fido.tx
 docFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_D4on.txt")
 
 # number of significant psms within boundaries
-success=checkNumberOfSignificant("psms",psmFile,1131) and success
+success=checkNumberOfSignificant("psms",psmFile,1137) and success
 # number of significant peptrides within boundaries
-success=checkNumberOfSignificant("peptides",peptideFile,922) and success
+success=checkNumberOfSignificant("peptides",peptideFile,924) and success
 # number of significant proteins within boundaries for picked-protein
-success=checkNumberOfSignificant("proteins",proteinFile,342) and success
+success=checkNumberOfSignificant("proteins",proteinFile,340) and success
 # number of significant proteins within boundaries for fido (poorly calibrated)
-success=checkNumberOfSignificant("proteins-fido",proteinFileFido,720) and success
+success=checkNumberOfSignificant("proteins-fido",proteinFileFido,526) and success
 # psm: pi0 within boundaries
-success=checkPi0("psms",psmFile,0.8413) and success
+success=checkPi0("psms",psmFile,0.8435) and success
 # peptides: pi0 within boundaries
-success=checkPi0("peptides",peptideFile,0.8632) and success
+success=checkPi0("peptides",peptideFile,0.8655) and success
 # performance increase with -D 4 option
 success = performanceD4On(docFile, psmFile) and success
 

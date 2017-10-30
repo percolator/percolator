@@ -44,7 +44,8 @@ void GroupPowerBigraph::getProteinProbsPercolator(
     std::map<std::string, size_t>& proteinToIdxMap) const {
   Array<double> sorted = probsPresentProteins_;
   Array<int> indices = sorted.sort();
-  for (int k = 0; k < sorted.size(); k++) {
+  int k = 0;
+  for (; k < sorted.size(); k++) {
     double pep = (1.0 - sorted[k]);
     if (pep < 0.0) pep = 0.0;
     if (pep > 1.0) pep = 1.0;
@@ -54,6 +55,7 @@ void GroupPowerBigraph::getProteinProbsPercolator(
     for (; protIt != proteinNames.end(); ++protIt) {
       proteins.at(proteinToIdxMap[*protIt]).setPEP(pep);
       proteins.at(proteinToIdxMap[*protIt]).setScore(pep);
+      proteins.at(proteinToIdxMap[*protIt]).setGroupId(k);
     }
   }
   
@@ -63,6 +65,7 @@ void GroupPowerBigraph::getProteinProbsPercolator(
     for (; protIt != proteinNames.end(); ++protIt) {
       proteins.at(proteinToIdxMap[*protIt]).setPEP(1.0);
       proteins.at(proteinToIdxMap[*protIt]).setScore(1.0);
+      proteins.at(proteinToIdxMap[*protIt]).setGroupId(++k);
     }
   }
  
