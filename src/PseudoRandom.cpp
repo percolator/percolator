@@ -17,12 +17,11 @@
 
 #include "PseudoRandom.h"
 
-unsigned long PseudoRandom::seed_ = 1u;
+uint64_t PseudoRandom::seed_ = 1u;
 
 // Park–Miller random number generator
 // from wikipedia
 unsigned long PseudoRandom::lcg_rand() {
-  //uint64_t
   seed_ = (seed_ * 279470273u) % 4294967291u;
   return seed_;
 }

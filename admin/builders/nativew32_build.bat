@@ -1,9 +1,40 @@
 @echo off
-set MSVC_VER=12
-set VCTARGET=C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0
+set MSVC_VER=0
+
+:: use VS2015 if available
+REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0 > nul 2> nul
+if %ERRORLEVEL% EQU 0 (
+  echo Using Visual Studio 2015
+  set MSVC_VER=14
+)
+
+:: fall back to VS2013 is available
+if %MSVC_VER% EQU 0 (
+  REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.12.0 > nul 2> nul
+  if %ERRORLEVEL% EQU 0 (
+    echo Using Visual Studio 2013
+    set MSVC_VER=12
+  )
+)
+
+if %MSVC_VER% EQU 0 (
+  echo Could not find a suitable Visual Studio version; supported versions: VS2013, VS2015
+  EXIT /B 1  
+)
+
+set PROGRAM_FILES_DIR=C:\Program Files
+set BUILD_PLATFORM=32bit
+REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup\VS > nul 2> nul
+if %ERRORLEVEL% EQU 0 (
+  echo platform detected: 64-bit
+  set BUILD_PLATFORM=64bit
+  set "PROGRAM_FILES_DIR=C:\Program Files (x86)"
+)
+
+set VCTARGET=%PROGRAM_FILES_DIR%\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0
 set SRC_DIR=%~dp0..\..\..\
-set BUILD_DIR=%SRC_DIR%\build-32bit
-set RELEASE_DIR=%SRC_DIR%\release-32bit
+set BUILD_DIR=%SRC_DIR%\build\win32
+set RELEASE_DIR=%SRC_DIR%\release\win32
 set BUILD_TYPE=Release
 
 :parse
@@ -16,7 +47,17 @@ GOTO parse
 :endparse
 
 :: use the VS command prompt settings to set-up paths for compiler and builder
-call "C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevCmd.bat"
+:: see https://msdn.microsoft.com/en-us/library/f2ccy3wt.aspx for possible vcvarsall.bat arguments
+if not defined DevEnvDir (
+  call "%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\Common7\Tools\VsDevCmd.bat"
+  if "%BUILD_PLATFORM%" == "64bit" (
+    echo Setting variables for 64-bit
+    call "%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\VC\vcvarsall.bat" amd64_x86
+  ) else (
+    echo Setting variables for 32-bit
+    call "%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\VC\vcvarsall.bat" x86
+  )
+)
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
@@ -70,12 +111,13 @@ set PATH=%PATH%;%INSTALL_DIR%\nsis
 
 ::: Needed for system tests :::
 set PYTHON_DIR=%INSTALL_DIR%\python
+CALL :getabspath PYTHON_DIR "%PYTHON_DIR%"
 set PYTHON_URL=http://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 if not exist "%PYTHON_DIR%" (
   echo Downloading and installing Python
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%PYTHON_URL%','%INSTALL_DIR%\python.msi')"
   cd /D "%INSTALL_DIR%"
-  msiexec /i python.msi /quiet TARGETDIR=python /Li python_install.log
+  msiexec /i python.msi /quiet TARGETDIR="%PYTHON_DIR%" /Li python_install.log
 )
 setlocal
 set PATH=%PATH%;%INSTALL_DIR%\python
@@ -116,8 +158,8 @@ if not exist "%XSD_DIR%" (
 
 ::: Needed for converters package :::
 set SQLITE_DIR=%INSTALL_DIR%\sqlite3
-set SQLITE_SRC_URL=http://www.sqlite.org/2013/sqlite-amalgamation-3080200.zip
-set SQLITE_DLL_URL=http://www.sqlite.org/2013/sqlite-dll-win32-x86-3080200.zip
+set SQLITE_SRC_URL=https://www.sqlite.org/2013/sqlite-amalgamation-3080200.zip
+set SQLITE_DLL_URL=https://www.sqlite.org/2013/sqlite-dll-win32-x86-3080200.zip
 if not exist "%SQLITE_DIR%" (
   echo Downloading and installing SQLite3
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%SQLITE_SRC_URL%','%INSTALL_DIR%\sqlite_src.zip')"
@@ -143,13 +185,13 @@ set ZLIB_DIR=%ZLIB_DIR%;%ZLIB_DIR%\include
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
-set DIRENT_H_PATH=C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\VC\include\dirent.h
-set DIRENT_H_URL=http://www.softagalleria.net/download/dirent/dirent-1.20.1.zip
+set DIRENT_H_PATH=%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\VC\include\dirent.h
+set DIRENT_H_URL=https://github.com/tronkko/dirent/archive/1.23.1.zip
 if not exist "%DIRENT_H_PATH%" ( 
   echo Downloading and installing dirent.h 
   PowerShell "(new-object System.Net.WebClient).DownloadFile('%DIRENT_H_URL%','%INSTALL_DIR%\dirent.zip')"
-  %ZIP_EXE% x "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent" > NUL
-  move "%INSTALL_DIR%\dirent\include\dirent.h" "%DIRENT_H_PATH%" > NUL
+  %ZIP_EXE% x -aoa "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent"
+  copy "%INSTALL_DIR%\dirent\dirent-1.23.1\include\dirent.h" "%DIRENT_H_PATH%"
 )
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -221,3 +263,10 @@ copy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
 echo Finished buildscript execution in build directory %BUILD_DIR%
 
 cd "%SRC_DIR%\percolator\admin\builders"
+
+EXIT /B
+
+::: subroutines
+:getabspath
+SET "%1=%~f2"
+EXIT /B

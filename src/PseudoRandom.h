@@ -18,6 +18,8 @@
 #ifndef PSEUDO_RANDOM_H
 #define PSEUDO_RANDOM_H
 
+#include <stdint.h>
+
 /*
 * Random is a helper class generating pseudo random numbers starting from a seed
 *
@@ -29,9 +31,9 @@ class PseudoRandom {
  public:
   inline static void setSeed(unsigned long s) { seed_ = s; }
   static unsigned long lcg_rand();
-  const static unsigned long kRandMax = 4294967291u;
+  const static uint64_t kRandMax = 4294967291u;
  protected:
-  static unsigned long seed_;
+  static uint64_t seed_;
 };
 
 
