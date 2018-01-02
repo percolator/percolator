@@ -8,6 +8,8 @@ if %ERRORLEVEL% EQU 0 (
   set MSVC_VER=14
 )
 
+set ERRORLEVEL=0
+
 :: fall back to VS2013 is available
 if %MSVC_VER% EQU 0 (
   REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.12.0 > nul 2> nul
