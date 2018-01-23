@@ -20,7 +20,7 @@
 ProteinScoreHolder::ProteinScoreHolder(std::string name, bool isDecoy, ProteinScoreHolder::Peptide peptide,
     int groupId)
 	: name_(name), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
-	  isDecoy_(isDecoy), groupId_(groupId) {
+	  isDecoy_(isDecoy), groupId_(groupId), specCountsUnique_(0u), specCountsAll_(0u) {
   if (!peptide.name.empty()) addPeptide(peptide);
 }
 

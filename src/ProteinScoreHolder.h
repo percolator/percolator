@@ -35,7 +35,7 @@ class ProteinScoreHolder {
   };
   
   ProteinScoreHolder() : name_(""), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
-              groupId_(-1), isDecoy_(false) {}
+              groupId_(-1), specCountsUnique_(0u), specCountsAll_(0u), isDecoy_(false) {}
   ProteinScoreHolder(std::string name, bool isdecoy, Peptide peptide, int groupId);
   ~ProteinScoreHolder();
   
@@ -63,6 +63,14 @@ class ProteinScoreHolder {
   
   inline void setGroupId(int groupId) { groupId_ = groupId; }
   inline int getGroupId() const { return groupId_; }
+  
+  inline unsigned int getSpecCountsUnique() const { return specCountsUnique_; }
+  inline unsigned int getSpecCountsAll() const { return specCountsAll_; }
+  
+  void addSpecCounts(unsigned int psmCount, bool isUnique) {
+    if (isUnique) specCountsUnique_ += psmCount;
+    specCountsAll_ += psmCount;
+  }
   
   void addPeptide(std::string peptide, bool isdecoy, double p, double pep, 
                   double q, double empq) {
@@ -96,6 +104,7 @@ class ProteinScoreHolder {
   std::string name_;
   double q_, qemp_, pep_, p_, score_;
   int groupId_;
+  unsigned int specCountsUnique_, specCountsAll_;
   bool isDecoy_;
   std::vector<Peptide> peptides_;
   

@@ -119,12 +119,16 @@ class ProteinProbEstimator {
   
   
   ProteinProbEstimator(bool trivialGrouping = true, double absenceRatio = 1.0, 
-      bool outputEmpirQVal = false, std::string decoyPattern = "random");
+      bool outputEmpirQVal = false, std::string decoyPattern = "random",
+      double specCountQvalThreshold = -1.0);
   
   virtual ~ProteinProbEstimator();
   
   /** reads the proteins from the set of scored peptides from percolator **/
   virtual bool initialize(Scores& peptideScores);
+  
+  /** adds spectral counts if specCountQvalThreshold_ is set **/
+  void addSpectralCounts(Scores& peptideScores);
   
   /** start the protein probabilities tool**/
   virtual void run() = 0;
@@ -168,7 +172,9 @@ class ProteinProbEstimator {
   double getPi0() { return pi0_; }
   double getAbsenceRatio() { return absenceRatio_; }
   double getFDR() { return fdr_; }
-  
+  std::map<std::string, unsigned int>& getPeptideSpecCounts() { return peptideSpecCounts_; }
+  double getSpecCountQvalThreshold() { return specCountQvalThreshold_; }
+                               
   /** return the data structure for the proteins. DO NOT REMOVE, used by Crux! **/
   const std::vector<ProteinScoreHolder>& getProteinsByRef() const { return proteins_; }
   std::vector<ProteinScoreHolder> getProteins() const { return proteins_; }
@@ -188,7 +194,7 @@ class ProteinProbEstimator {
   bool isTarget(const std::string& proteinName);
   bool isDecoy(const std::string& proteinName);
   
-   /** print a tab delimited list of proteins probabilities in a file or stdout**/
+  /** print a tab delimited list of proteins probabilities in a file or stdout**/
   void print(ostream& myout, bool decoy=false);
   
   /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
@@ -225,7 +231,7 @@ class ProteinProbEstimator {
   std::vector<ProteinScoreHolder> proteins_;
   std::map<std::string, size_t> proteinToIdxMap_;
   
-  /* protein groups are either present or absent and cannot be partially present */
+  /** protein groups are either present or absent and cannot be partially present **/
   bool trivialGrouping_;
   
   bool usePi0_;
@@ -235,6 +241,10 @@ class ProteinProbEstimator {
   unsigned int numberDecoyProteins_;
   unsigned int numberTargetProteins_;
   std::string decoyPattern_;
+  
+  /** spectral count collections and variables **/
+  std::map<std::string, unsigned int> peptideSpecCounts_;
+  double specCountQvalThreshold_;
 };
 
 #endif /* PROTEIN_PROB_ESTIMATOR_H_ */

@@ -78,8 +78,10 @@ FidoInterface::FidoInterface(double alpha, double beta, double gamma,
     unsigned gridSearchDepth, double gridSearchThreshold, 
     double proteinThreshold, double mseThreshold, 
     double absenceRatio, bool outputEmpirQVal, 
-    std::string decoyPattern, bool trivialGrouping) :
-  ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQVal, decoyPattern), 
+    std::string decoyPattern, bool trivialGrouping, 
+    double specCountQvalThreshold) :
+  ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQVal, 
+                       decoyPattern, specCountQvalThreshold), 
   alpha_(alpha), beta_(beta), gamma_(gamma),
   noPartitioning_(noPartitioning), noClustering_(noClustering),
   noPruning_(noPruning), proteinThreshold_(proteinThreshold), 

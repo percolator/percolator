@@ -55,7 +55,8 @@ class PickedProteinInterface : public ProteinProbEstimator {
   PickedProteinInterface(const std::string& fastaDatabase, double pvalueCutoff,
     bool reportFragmentProteins, bool reportDuplicateProteins, 
     bool trivialGrouping, double absenceRatio, 
-    bool outputEmpirQval, std::string& decoyPattern);
+    bool outputEmpirQval, std::string& decoyPattern,
+    double specCountQvalThreshold);
   virtual ~PickedProteinInterface();
   
   bool initialize(Scores& fullset);

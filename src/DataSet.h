@@ -36,6 +36,7 @@
 #include "FeatureNames.h"
 #include "DescriptionOfCorrect.h"
 #include "FeatureMemoryPool.h"
+#include "ProteinProbEstimator.h"
 
 // using char pointers is much faster than istringstream
 class TabReader {
@@ -131,7 +132,10 @@ class DataSet {
   static inline bool getCalcDoc() { return calcDOC_; }
   
   static FeatureNames& getFeatureNames() { return featureNames_; }
-  static void resetFeatureNames() { featureNames_ = FeatureNames(); }
+  static void resetFeatureNames() { 
+    featureNames_ = FeatureNames();
+    FeatureNames::resetNumFeatures();
+  }
   static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
   
   void setRetentionTime(map<int, double>& scan2rt) { 

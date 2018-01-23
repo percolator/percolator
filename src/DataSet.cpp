@@ -200,17 +200,21 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     temp << "ERROR: Reading tab file, error reading PSM " << myPsm->getId() 
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
-  } else if (peptide_seq.size() < 5) {
-    ostringstream temp;
-    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
-      << " with PSM id " << myPsm->getId() << " is too short." << std::endl;
-    throw MyException(temp.str());
-  } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
-    ostringstream temp;
-    temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
-      << " with PSM id " << myPsm->getId() << " does not contain one or two of its"
-      << " flanking amino acids." << std::endl;
-    throw MyException(temp.str());
+  } else if (calcDOC_ || ProteinProbEstimator::getCalcProteinLevelProb()) {
+    // MT: we only need the peptide sequences to be well formatted if DOC features 
+    // are calculated, or if protein inference is applied
+    if (peptide_seq.size() < 5) {
+      ostringstream temp;
+      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
+        << " with PSM id " << myPsm->getId() << " is too short." << std::endl;
+      throw MyException(temp.str());
+    } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
+      ostringstream temp;
+      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
+        << " with PSM id " << myPsm->getId() << " does not contain one or two of its"
+        << " flanking amino acids." << std::endl;
+      throw MyException(temp.str());
+    }
   }
   
   if (readProteins) {

@@ -90,10 +90,10 @@ class Caller {
   std::string inputSearchType_;
   
   // SVM / cross validation parameters
-  double selectionFdr_, testFdr_;
-  unsigned int numIterations_, maxPSMs_;
+  double selectionFdr_, initialSelectionFdr_, testFdr_;
+  unsigned int numIterations_, maxPSMs_, nestedXvalBins_;
   double selectedCpos_, selectedCneg_;
-  bool reportEachIteration_, quickValidation_;
+  bool reportEachIteration_, quickValidation_, trainBestPositive_;
   
   // reporting parameters
   std::string call_;

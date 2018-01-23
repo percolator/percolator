@@ -24,6 +24,8 @@
 
 #include "Option.h"
 
+const std::string Option::NO_SHORT_OPT = "NO_SHORT_OPT_CONSTANT";
+
 template<class T>
 bool from_string(T& t, const std::string& s) {
   std::istringstream iss(s);
@@ -53,7 +55,7 @@ Option::~Option() {
 }
 
 bool Option::operator ==(const std::string& option) {
-  return (shortOpt == option || longOpt == option);
+  return ((shortOpt != Option::NO_SHORT_OPT && shortOpt == option) || longOpt == option);
 }
 
 CommandLineParser::CommandLineParser(std::string usage, std::string tail) {
@@ -98,13 +100,14 @@ void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
   //NOTE brute force to check if the option is already defined
   for(std::vector<Option>::const_iterator it = opts.begin();
       it != opts.end(); it++) {
-	  if((*it).shortOpt == shortOpt || (*it).longOpt == longOpt) {
+	  if((shortOpt != Option::NO_SHORT_OPT && (*it).shortOpt == shortOpt) || (*it).longOpt == longOpt) {
 	    std::ostringstream temp;
 	    temp << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
 	    throw MyException(temp.str());
 	  }
   }
-  opts.insert(opts.begin(), Option("-" + shortOpt,
+  
+  opts.insert(opts.begin(), Option((shortOpt == Option::NO_SHORT_OPT) ? shortOpt : "-" + shortOpt,
                                    "--" + longOpt,
                                    longOpt,
                                    help,
@@ -119,7 +122,7 @@ void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
 void CommandLineParser::parseArgs(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
-      findOption(argv, i);
+      findOption(argv, i, argc);
     } else {
       arguments.insert(arguments.end(), argv[i]);
     }
@@ -135,23 +138,27 @@ void CommandLineParser::error(std::string msg) {
 void CommandLineParser::help() {
   std::string::size_type descLen = optMaxLen + 8;
   std::string::size_type helpLen = lineLen - descLen;
-  cerr << header << endl << "Options:" << endl;
+  std::cerr << header << endl << "Options:" << endl;
   for (size_t i = opts.size(); i--;) {
     std::string::size_type j = 0;
-    cerr << " " << opts[i].shortOpt;
-    if (opts[i].helpType.length() > 0) {
-      cerr << " <" << opts[i].helpType << ">";
+    if (opts[i].shortOpt != Option::NO_SHORT_OPT) {
+      std::cerr << " " << opts[i].shortOpt;
+      if (opts[i].helpType.length() > 0) {
+        std::cerr << " <" << opts[i].helpType << ">";
+      }
+    } else {
+      std::cerr << "[EXPERIMENTAL FEATURE]";
     }
-    cerr << endl;
+    std::cerr << endl;
     std::string desc = " " + opts[i].longOpt;
     if (opts[i].helpType.length() > 0) {
       desc += " <" + opts[i].helpType + ">";
     }
     while (j < opts[i].help.length()) {
-      cerr.width(descLen);
-      cerr << left << desc;
+      std::cerr.width(descLen);
+      std::cerr << left << desc;
       desc = " ";
-      cerr.width(0);
+      std::cerr.width(0);
       std::string::size_type l = helpLen;
       if (j + l < opts[i].help.length()) {
         std::string::size_type p = opts[i].help.rfind(' ', j + l);
@@ -159,45 +166,51 @@ void CommandLineParser::help() {
           l = p - j + 1;
         }
       }
-      cerr << opts[i].help.substr(j, l) << endl;
+      std::cerr << opts[i].help.substr(j, l) << endl;
       j += l;
     }
   }
-  cerr << endl << endnote << endl;
+  std::cerr << endl << endnote << endl;
   exit(0);
 }
 
 void CommandLineParser::htmlHelp() {
-  cerr << "<html><title>Title</title><body><blockquote>" << endl;
-  cerr
+  std::cerr << "<html><title>Title</title><body><blockquote>" << endl;
+  std::cerr
       << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />"
       << endl;
   std::string htmlHeader = header;
   searchandreplace(htmlHeader, "\n", "<br/>");
-  cerr << htmlHeader << endl << "Options:" << endl;
-  cerr << "<table border=0>" << endl;
+  std::cerr << htmlHeader << endl << "Options:" << endl;
+  std::cerr << "<table border=0>" << endl;
   for (size_t i = opts.size(); i--;) {
-    cerr << "<tr><td><code>" << opts[i].shortOpt;
-    if (opts[i].helpType.length() > 0) {
-      cerr << " &lt;" << opts[i].helpType << "&gt;";
+    std::cerr << "<tr><td><code>";
+    if (opts[i].shortOpt != Option::NO_SHORT_OPT) {
+      std::cerr << opts[i].shortOpt;
+      if (opts[i].helpType.length() > 0) {
+        std::cerr << " &lt;" << opts[i].helpType << "&gt;";
+      }
+      std::cerr << "</code>, ";
+    } else {
+      std::cerr << "[EXPERIMENTAL FEATURE]";
     }
-    cerr << "</code>, <code>";
-    cerr << " " + opts[i].longOpt;
+    std::cerr << "<code>";
+    std::cerr << " " + opts[i].longOpt;
     if (opts[i].helpType.length() > 0) {
-      cerr << " &lt;" << opts[i].helpType << "&gt;";
+      std::cerr << " &lt;" << opts[i].helpType << "&gt;";
     }
-    cerr << "</code></td>" << endl;
-    cerr << "<td>" << opts[i].help << "</td></tr>" << endl;
+    std::cerr << "</code></td>" << endl;
+    std::cerr << "<td>" << opts[i].help << "</td></tr>" << endl;
   }
-  cerr << "</table>" << endl;
+  std::cerr << "</table>" << endl;
   std::string htmlEnd = endnote;
   searchandreplace(htmlEnd, "\n", "<br>");
-  cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
-  cerr << "</blockquote></body></html>" << endl;
+  std::cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
+  std::cerr << "</blockquote></body></html>" << endl;
   exit(0);
 }
 
-void CommandLineParser::findOption(char** argv, int& index) {
+void CommandLineParser::findOption(char** argv, int& index, int argc) {
   if ((std::string)argv[index] == "-html" || (std::string)argv[index] == "--html") {
     htmlHelp();
   }
@@ -223,6 +236,10 @@ void CommandLineParser::findOption(char** argv, int& index) {
         case VALUE:
           if (valstr.length() > 0) {
             options[opts[i].name] = valstr;
+          } else if (index + 1 >= argc) {
+            std::ostringstream temp;
+	          temp << "ERROR : option " << opts[i].name << " needs to be specified with a value." << std::endl;
+	          throw MyException(temp.str());
           } else {
             options[opts[i].name] = argv[index + 1];
             index++;
@@ -231,7 +248,7 @@ void CommandLineParser::findOption(char** argv, int& index) {
         case MAYBE:
           if (valstr.length() > 0) {
             options[opts[i].name] = valstr;
-          } else if (argv[index + 1][0] != '-') {
+          } else if (index + 1 < argc && argv[index + 1][0] != '-') {
             options[opts[i].name] = argv[index + 1];
             index++;
           } else {

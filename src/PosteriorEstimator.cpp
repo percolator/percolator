@@ -46,6 +46,7 @@ bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
 bool PosteriorEstimator::competition = false;
 bool PosteriorEstimator::includeNegativesInResult = false;
+bool PosteriorEstimator::usePi0_ = true;
 
 pair<double, bool> make_my_pair(double d, bool b) {
   return make_pair(d, b);
@@ -60,18 +61,6 @@ class IsDecoy {
 
 bool isMixed(const pair<double, bool>& aPair) {
   return aPair.second;
-}
-
-// This is the slow version of the function from revision 1.12.
-template<class T> void bootstrap_old(const vector<T>& in, vector<T>& out) {
-  out.clear();
-  double n = in.size();
-  for (size_t ix = 0; ix < n; ++ix) {
-    size_t draw = (size_t)((double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * n);
-    out.push_back(in[draw]);
-  }
-  // sort in desending order
-  sort(out.begin(), out.end());
 }
 
 template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
@@ -142,10 +131,8 @@ void PosteriorEstimator::estimatePEPGeneralized(
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem) {
     xvals.push_back(elem->first);
-    if (!elem->second) {
-      if (include_negative) {
-        xvals.push_back(elem->first);
-      }
+    if (elem->second || include_negative) {
+      xvals.push_back(elem->first);
     }
   }
   lr.predict(xvals, peps);
@@ -181,7 +168,7 @@ void PosteriorEstimator::estimatePEPGeneralized(
 
   if (VERB > 2) {
     cerr << "Highest generalized decoy rate =" << high
-	 << ", low rate = " << low << endl;
+	       << ", low rate = " << low << endl;
   }
 
   pep = peps.begin();
@@ -636,19 +623,20 @@ int PosteriorEstimator::run() {
     finishStandaloneGeneralized(combined, peps);
     return true;
   }
-
-  double pi0 = estimatePi0(pvals);
-  if (pi0 < 0) //NOTE there was an error
-  {
-    return 0;
+  
+  double pi0 = 1.0;
+  if (usePi0_) {
+    pi0 = estimatePi0(pvals);
+    if (pi0 < 0) { //NOTE there was an error
+      return false;
+    }
+    if (VERB > 1) {
+      std::cerr << "Selecting pi_0=" << pi0 << std::endl;
+    }
   }
-
-  if (VERB > 1) {
-    cerr << "Selecting pi_0=" << pi0 << endl;
-  }
+  
   // Logistic regression on the data
-  bool usePi0 = true;
-  estimatePEP(combined, usePi0, pi0, peps,includeNegativesInResult);
+  estimatePEP(combined, usePi0_, pi0, peps,includeNegativesInResult);
   finishStandalone(combined, peps, pvals, pi0);
 
   return true;
@@ -715,8 +703,13 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   cmd.defineOption("g",
                    "generalized",
                    "Generalized target decoy competition, situations where PSMs known to more frequently be incorrect are mixed in with the correct PSMs",
-		    "",
-		    TRUE_IF_SET);
+		               "",
+		               TRUE_IF_SET);
+  cmd.defineOption("Y",
+                   "tdc-input",
+                   "Turns off the pi0 correction for search results from a concatenated database.",
+                   "",
+                   TRUE_IF_SET);
   cmd.defineOption("d",
                    "include-negative",
                    "Include negative hits (decoy) probabilities in the results",
@@ -744,6 +737,9 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("generalized")) {
     PosteriorEstimator::setGeneralized(true);
+  }
+  if (cmd.optionSet("tdc-input")) {
+    PosteriorEstimator::setUsePi0(false);
   }
   if (cmd.optionSet("include-negative")) {
     PosteriorEstimator::setNegative(true);

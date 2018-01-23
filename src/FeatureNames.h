@@ -42,6 +42,9 @@ class FeatureNames {
         numFeatures = nf;
       }
     }
+    static inline void resetNumFeatures() {
+      numFeatures = 0;
+    }
 
     void initFeatures(bool calcDOC);
     

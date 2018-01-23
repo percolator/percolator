@@ -20,7 +20,6 @@
 
 #include <assert.h>
 #include "Transform.h"
-#include "Numerical.h"
 #include "PackedVector.h"
 #include "PackedMatrix.h"
 

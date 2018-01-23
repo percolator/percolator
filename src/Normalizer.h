@@ -45,6 +45,9 @@ class Normalizer {
   virtual void normalizeweight(const vector<double>& in,
                                vector<double>& out) {}
   static Normalizer* getNormalizer();
+  static void resetNormalizer() {
+    theNormalizer = NULL;
+  }
   static void setType(int type);
   const static int UNI = 0;
   const static int STDV = 1;

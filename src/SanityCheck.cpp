@@ -29,7 +29,8 @@ using namespace std;
 // In most sence a place holder as very little logic is build-in in this case
 
 SanityCheck::SanityCheck() :
-  initPositives(0), pTestset(NULL), pTrainset(NULL), concatenatedSearch_(true) {
+  initPositives_(0), pTestset(NULL), pTrainset(NULL), concatenatedSearch_(true),
+  test_fdr_(0.01), initial_train_fdr_(0.01) {
 }
 
 SanityCheck::~SanityCheck() {
@@ -75,10 +76,12 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   vector<Scores>& trainset,
                                   Normalizer* pNorm,
                                   vector<vector<double> > & w,
-                                  double test_fdr) {
+                                  double test_fdr,
+                                  double initial_train_fdr) {
   pTestset = &testset;
   pTrainset = &trainset;
-  fdr = test_fdr;
+  test_fdr_= test_fdr;
+  initial_train_fdr_ = initial_train_fdr;
   if (initWeightFN.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
     ifstream weightStream(initWeightFN.data(), ios::in);
@@ -98,11 +101,11 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   } else {
     getDefaultDirection(w);
   }
-  initPositives = 0;
+  initPositives_ = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives += (*pTestset)[set].calcScores(w[set], test_fdr);
+    initPositives_ += (*pTestset)[set].calcScores(w[set], test_fdr);
   }
-  return initPositives;
+  return initPositives_;
 }
 
 void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
@@ -138,7 +141,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
 
 void SanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
   if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
-  (*pTrainset)[set].getInitDirection(fdr, wSet);
+  (*pTrainset)[set].getInitDirection(initial_train_fdr_, wSet);
 }
 
 bool SanityCheck::validateDirection(vector<vector<double> >& w) {
@@ -148,15 +151,15 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   }
   int overFDR = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    overFDR += (*pTestset)[set].calcScores(w[set], fdr);
+    overFDR += (*pTestset)[set].calcScores(w[set], test_fdr_);
   }
   if (overFDR <= 0) {
-    cerr << "No target score better than best decoy" << endl;
+    cerr << "No targets found with q<" << test_fdr_ << endl;
     resetDirection(w);
     return false;
   }
-  if (initPositives > overFDR) {
-    cerr << "Less identifications (" << overFDR << " vs " << initPositives
+  if (initPositives_ > overFDR) {
+    cerr << "Less identifications (" << overFDR << " vs " << initPositives_
         << ") after percolator processing than before processing" << endl;
     resetDirection(w);
     return false;
@@ -196,7 +199,7 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
 
 void SanityCheck::resetDirection(vector<vector<double> >& w) {
   if (!overRule) {
-    cerr << "Resetting score vector, using default vector" << endl;
+    cerr << "Resetting score vector, using default vector. Use --override flag to prevent this." << endl;
     getDefaultDirection(w);
   }
 }

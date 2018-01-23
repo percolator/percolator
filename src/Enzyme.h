@@ -24,8 +24,8 @@
 #include <cstring> // needed for stricmp()
 #include <string>
 #include <assert.h>
-#include <MyException.h>
 
+#include "MyException.h"
 
 class Enzyme {
   public:

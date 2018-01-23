@@ -70,7 +70,8 @@ class FidoInterface : public ProteinProbEstimator {
     unsigned gridSearchDepth = 0u, double gridSearchThreshold = 0.0, 
     double proteinThreshold = 0.01, double mse_threshold = 0.1, 
     double pi0 = 1.0, bool outputEmpirQVal = false, 
-    std::string decoyPattern = "random", bool trivialGrouping = true);
+    std::string decoyPattern = "random", bool trivialGrouping = true,
+    double specCountQvalThreshold = -1.0);
   virtual ~FidoInterface();
   
   bool initialize(Scores& peptideScores);

@@ -522,10 +522,18 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 }
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
-    const double cpos) {
+    const double cpos, const bool trainBestPositive) {
   unsigned int ix2 = data.negatives, p = 0;
+  
+  std::vector<ScoreHolder>::iterator lastUniqueIt = scores_.end();
+  if (trainBestPositive) {
+    std::sort(scores_.begin(), scores_.end(), OrderScanLabel());
+    lastUniqueIt = std::unique(scores_.begin(), scores_.end(), UniqueScanLabel());
+    std::sort(scores_.begin(), lastUniqueIt, greater<ScoreHolder> ());
+  }
+  
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
+  for ( ; scoreIt != lastUniqueIt; ++scoreIt) {
     if (scoreIt->isTarget()) {
       if (scoreIt->q <= fdr) {
         data.vals[ix2] = scoreIt->pPSM->features;
@@ -539,11 +547,17 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
   data.m = ix2;
 }
 
+void Scores::weedOutRedundant() {
+  std::map<std::string, unsigned int> peptideSpecCounts;
+  double specCountQvalThreshold = -1.0;
+  weedOutRedundant(peptideSpecCounts, specCountQvalThreshold);
+}
+
 /**
  * Routine that sees to that only unique peptides are kept (used for analysis
  * on peptide-fdr rather than psm-fdr)
  */
-void Scores::weedOutRedundant() {
+void Scores::weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts, double specCountQvalThreshold) {
   // lexicographically order the scores_ (based on peptides names,labels and scores)
   std::sort(scores_.begin(), scores_.end(), lexicOrderProb());
   
@@ -566,6 +580,9 @@ void Scores::weedOutRedundant() {
     }
     // append the psm
     peptidePsmMap_[scores_.at(lastWrittenIdx - 1).pPSM].push_back(scores_.at(idx).pPSM);
+    if (specCountQvalThreshold > 0.0 && scores_.at(idx).q < specCountQvalThreshold) {
+      ++peptideSpecCounts[currentPeptide];
+    }
   }
   scores_.resize(lastWrittenIdx);
   postMergeStep();
@@ -630,7 +647,7 @@ void Scores::setDOCFeatures(Normalizer* pNorm) {
   }
 }
 
-int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
+int Scores::getInitDirection(const double initialSelectionFdr, std::vector<double>& direction) {
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
@@ -651,7 +668,7 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
       if (i == 1) {
         reverse(scores_.begin(), scores_.end());
       }
-      int positives = calcQ(fdr, skipDecoysPlusOne);
+      int positives = calcQ(initialSelectionFdr, skipDecoysPlusOne);
       if (positives > bestPositives) {
         bestPositives = positives;
         bestFeature = featNo;
@@ -667,7 +684,7 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
     ostringstream oss;
     oss << "Error in the input data: cannot find an initial direction with " 
         << "positive training examples. "
-        << "Consider raising the training FDR threshold (-F flag)." << std::endl;
+        << "Consider setting/raising the initial training FDR threshold (--train-initial-fdr)." << std::endl;
     if (NO_TERMINATE) {
       cerr << oss.str();
       std::cerr << "No-terminate flag set: setting initial direction to the "
@@ -684,8 +701,8 @@ int Scores::getInitDirection(const double fdr, std::vector<double>& direction) {
   
   if (VERB > 1) {
     cerr << "Selected feature " << bestFeature + 1
-        << " as initial search direction. Could separate "
-        << bestPositives << " training set positives in that direction." << endl;
+        << " as initial direction. Could separate "
+        << bestPositives << " training set positives with q<" << initialSelectionFdr << " in that direction." << endl;
   }
   return bestPositives;
 }

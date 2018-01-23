@@ -34,8 +34,9 @@ class CrossValidation {
   
  public:
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
-    double testFdr, double selectionFdr, double selectedCpos, 
-    double selectedCneg, int niter, bool usePi0);
+    double testFdr, double selectionFdr, double initialSelectionFdr, 
+    double selectedCpos, double selectedCneg, int niter, bool usePi0, 
+    int nestedXvalBins, bool trainBestPositive);
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
@@ -76,23 +77,28 @@ class CrossValidation {
   
   double testFdr_; // fdr used for cross validation performance measuring
   double selectionFdr_; // fdr used for determining positive training set
+  double initialSelectionFdr_; // fdr used for determining positive training set in first iteration
   double selectedCpos_; // soft margin parameter for positive training set
   double selectedCneg_; // soft margin parameter for negative training set
   
   unsigned int niter_;
+  unsigned int nestedXvalBins_;
+  
+  bool trainBestPositive_;
+  
   const static double requiredIncreaseOver2Iterations_;
   
-  const static unsigned int numFolds_, numFoldsNested_;
+  const static unsigned int numFolds_;
   const static unsigned int numAlgInObjects_;
   std::vector<Scores> trainScores_, testScores_;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
   
-  int processSingleFold(unsigned int set,
+  int processSingleFold(unsigned int set, double selectionFdr,
                          const vector<double>& cpos_vec, 
                          const vector<double>& cfrac_vec, 
                          double& best_cpos, double& best_cfrac, 
                          vector_double* pWeights, options* pOptions);
-  int doStep(bool updateDOC, Normalizer* pNorm);
+  int doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr);
   
   void printSetWeights(ostream & weightStream, unsigned int set);
   void printRawSetWeights(ostream & weightStream, unsigned int set, 

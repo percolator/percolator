@@ -35,9 +35,11 @@ Caller::Caller() :
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true), 
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
-    selectionFdr_(0.01), testFdr_(0.01), numIterations_(10), maxPSMs_(0u),
-    selectedCpos_(0.0), selectedCneg_(0.0),
-    reportEachIteration_(false), quickValidation_(false) {
+    selectionFdr_(0.01), initialSelectionFdr_(0.01), testFdr_(0.01), 
+    numIterations_(10), maxPSMs_(0u),
+    nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
+    reportEachIteration_(false), quickValidation_(false), 
+    trainBestPositive_(false) {
 }
 
 Caller::~Caller() {
@@ -274,17 +276,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Define the text pattern to identify decoy proteins in the database. Default = \"random_\".",
+      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. Default = \"random_\".",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\". Default=\"trypsin\".",
       "",
       "trypsin");
-  /*cmd.defineOption("Q",
-      "fisher-pval-cutoff",
-      "The p-value cutoff for peptides when inferring proteins with fisher's method. Default = 1.0",
-      "value");*/
   cmd.defineOption("c",
       "protein-report-fragments",
       "By default, if the peptides associated with protein A are a proper subset of the peptides associated with protein B, then protein A is eliminated and all the peptides are considered as evidence for protein B. Note that this filtering is done based on the complete set of peptides in the database, not based on the identified peptides in the search results. Alternatively, if this option is set and if all of the identified peptides associated with protein B are also associated with protein A, then Percolator will report a comma-separated list of protein IDs, where the full-length protein B is first in the list and the fragment protein A is listed second. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
@@ -295,10 +293,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "If this option is set and multiple database proteins contain exactly the same set of peptides, then the IDs of these duplicated proteins will be reported as a comma-separated list, instead of the default behavior of randomly discarding all but one of the proteins. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
       "",
       TRUE_IF_SET);
-  /*cmd.defineOption("I",
-      "protein-absence-ratio",
-      "The ratio of absent proteins, used for calculating protein-level q-values with a null hypothesis of \"Protein P is absent\". This uses the \"classic\" protein FDR in favor of the \"picked\" protein FDR.",
-      "value"); // EXPERIMENTAL PHASE */
   cmd.defineOption("a",
       "fido-alpha",
       "Set Fido's probability with which a present protein emits an associated peptide. \
@@ -338,11 +332,40 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gridsearch-mse-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
       "value");
-  /*cmd.defineOption("Q",
+  
+  /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "nested-xval-bins",
+      "Number of nested cross validation bins within each cross validation bin. This should reduce overfitting of the hyperparameters. Default = 1.",
+      "value");
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "spectral-counting-fdr",
+      "Activates spectral counting on protein level (either --fido-protein or --picked-protein has to be set) at the specified PSM q-value threshold. Adds two columns, \"spec_count_unique\" and \"spec_count_all\", to the protein tab separated output, containing the spectral count for the peptides unique to the protein and the spectral count including shared peptides respectively.",
+      "value");
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "train-best-positive",
+      "Enforce that, for each spectrum, at most one PSM is included in the positive set during each training iteration. If the user only provides one PSM per spectrum, this filter will have no effect.",
+      "",
+      TRUE_IF_SET);
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "train-fdr-initial",
+      "Set the FDR threshold for the first iteration. This is useful in cases where the original features do not display a good separation between targets and decoys. In subsequent iterations, the normal --trainFDR will be used.",
+      "value");
+  
+  /*
+  cmd.defineOption(Option::NO_SHORT_OPT,
       "fido-protein-group-level-inference",
       "Uses protein group level inference, each cluster of proteins is either present or not, therefore when grouping proteins discard all possible combinations for each group.(Only valid if option -A is active and -N is inactive).",
       "",
       TRUE_IF_SET);
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "fisher-pval-cutoff",
+      "The p-value cutoff for peptides when inferring proteins with fisher's method. Default = 1.0",
+      "value");
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "protein-absence-ratio",
+      "The ratio of absent proteins, used for calculating protein-level q-values with a null hypothesis of \"Protein P is absent\". This uses the \"classic\" protein FDR in favor of the \"picked\" protein FDR.",
+      "value");
   */
   
   // finally parse and handle return codes (display help etc...)
@@ -415,10 +438,15 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
     std::string protEstimatorDecoyPrefix = "random_";
     double protEstimatorAbsenceRatio = 1.0;
+    double protEstimatorPeptideQvalThreshold = -1.0;
+    
     //if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
     protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
     if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
     //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
+    if (cmd.optionSet("spectral-counting-fdr")) {
+      protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
+    }
     
     // Output file options
     if (cmd.optionSet("results-proteins")) proteinResultFN_ = cmd.options["results-proteins"];
@@ -454,7 +482,8 @@ bool Caller::parseOptions(int argc, char **argv) {
                 fidoGridSearchDepth, fidoGridSearchThreshold,
                 fidoProteinThreshold, fidoMseThreshold,
                 protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal, 
-                protEstimatorDecoyPrefix, protEstimatorTrivialGrouping);
+                protEstimatorDecoyPrefix, protEstimatorTrivialGrouping,
+                protEstimatorPeptideQvalThreshold);
     } else if (cmd.optionSet("picked-protein")) {  
       std::string fastaDatabase = cmd.options["picked-protein"];
       
@@ -472,7 +501,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       protEstimator_ = new PickedProteinInterface(fastaDatabase, pickedProteinPvalueCutoff,
           pickedProteinReportFragmentProteins, pickedProteinReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorAbsenceRatio, 
-          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix);
+          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
+          protEstimatorPeptideQvalThreshold);
     }
   }
   
@@ -533,8 +563,15 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("quick-validation")) {
     quickValidation_ = true;
   }
+  if (cmd.optionSet("train-best-positive")) {
+    trainBestPositive_ = true;
+  }
   if (cmd.optionSet("trainFDR")) {
     selectionFdr_ = cmd.getDouble("trainFDR", 0.0, 1.0);
+    initialSelectionFdr_ = selectionFdr_;
+  }
+  if (cmd.optionSet("train-fdr-initial")) {
+    initialSelectionFdr_ = cmd.getDouble("train-fdr-initial", 0.0, 1.0);
   }
   if (cmd.optionSet("testFDR")) {
     testFdr_ = cmd.getDouble("testFDR", 0.0, 1.0);
@@ -593,6 +630,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0;
     }
   }
+  
+  if (cmd.optionSet("nested-xval-bins")) {
+    nestedXvalBins_ = cmd.getInt("nested-xval-bins", 1, 1000);
+  }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
     if(!cmd.optionSet("tab-in") && !cmd.optionSet("xml-in") && !cmd.optionSet("stdinput-xml") && !cmd.optionSet("stdinput-tab")){ // unless the input comes from -j, -k or -e option
@@ -645,7 +686,12 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
   }
   
   if (isUniquePeptideRun) {
-    allScores.weedOutRedundant();
+    if (ProteinProbEstimator::getCalcProteinLevelProb()) {
+      allScores.weedOutRedundant(protEstimator_->getPeptideSpecCounts(), 
+                                 protEstimator_->getSpecCountQvalThreshold());
+    } else {
+      allScores.weedOutRedundant();
+    }
   } else if (targetDecoyCompetition_) {
     allScores.weedOutRedundantTDC();
     if (VERB > 0) {
@@ -731,6 +777,13 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   
   if (VERB > 1) {
     std::cerr << "Initialized protein inference engine." << std::endl;
+  }
+  
+  if (protEstimator_->getSpecCountQvalThreshold() > 0.0) {
+    protEstimator_->addSpectralCounts(allScores);
+    if (VERB > 1) {
+      std::cerr << "Added spectral counts." << std::endl;
+    }
   }
   
   protEstimator_->run();
@@ -838,8 +891,15 @@ int Caller::run() {
         }
       } else {
         if (VERB > 0) {
-          std::cerr << "Concatenated search input detected, skipping both " 
-            << "target-decoy competition and mix-max." << std::endl;
+          if (targetDecoyCompetition_) {
+            std::cerr << "Concatenated search input detected and "
+              << "--post-processing-tdc flag set. Applying target-decoy "
+              << "competition on Percolator scores."
+              << std::endl;
+          } else {
+            std::cerr << "Concatenated search input detected, skipping both " 
+              << "target-decoy competition and mix-max." << std::endl;
+          }
         }
       }
     } else { // separate searches detected
@@ -882,8 +942,9 @@ int Caller::run() {
   }
   
   CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
-                                  testFdr_, selectionFdr_, selectedCpos_, 
-                                  selectedCneg_, numIterations_, useMixMax_);
+                                  testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_, 
+                                  selectedCneg_, numIterations_, useMixMax_,
+                                  nestedXvalBins_, trainBestPositive_);
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"
@@ -978,8 +1039,8 @@ int Caller::run() {
     }
   }
   
-  // calculate protein level probabilities with FIDO
-  if (ProteinProbEstimator::getCalcProteinLevelProb()){
+  // calculate protein level probabilities with Fido or Picked-protein
+  if (ProteinProbEstimator::getCalcProteinLevelProb()) {
     calculateProteinProbabilities(allScores);
 #ifdef CRUX
     processProteinScores(protEstimator_);

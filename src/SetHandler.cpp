@@ -284,10 +284,12 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
     do {
       psmLine = rtrim(psmLine);
-      int label = getLabel(psmLine, lineNr);
-      
-      bool isDecoy = (label == -1);
+      int label = 1;
+      bool isDecoy = true;
       ScanId scanId = getScanId(psmLine, isDecoy, optionalFields, lineNr);
+      if (isDecoy) {
+        label = -1;
+      }
       if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
         if (concatenatedSearch && isDecoy != scanIdLookUp[scanId]) {
           concatenatedSearch = false;
@@ -333,20 +335,6 @@ void SetHandler::addQueueToSets(
     }
     subsetPSMs.pop();
   }
-}
-
-int SetHandler::getLabel(const std::string& psmLine, unsigned int lineNr) {
-  istringstream iss(psmLine);
-  std::string psmid;
-  int label;
-  iss >> psmid >> label;
-  if (!iss.good()) {
-    ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
-        << ". Could not read PSMid or label." << std::endl;
-    throw MyException(temp.str());
-  }
-  return label;
 }
 
 ScanId SetHandler::getScanId(const std::string& psmLine, bool& isDecoy,

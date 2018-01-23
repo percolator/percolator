@@ -23,10 +23,12 @@ const double ProteinProbEstimator::prior_protein = 0.5;
 bool ProteinProbEstimator::calcProteinLevelProb = false;
 
 ProteinProbEstimator::ProteinProbEstimator(bool trivialGrouping, double absenceRatio, 
-					     bool outputEmpirQVal, std::string decoyPattern) : 
+					     bool outputEmpirQVal, std::string decoyPattern, 
+					     double specCountQvalThreshold) : 
 	  trivialGrouping_(trivialGrouping), absenceRatio_(absenceRatio), pi0_(1.0),
 	  numberDecoyProteins_(0u), numberTargetProteins_(0u), usePi0_(true), 
-	  outputEmpirQVal_(outputEmpirQVal), decoyPattern_(decoyPattern), fdr_(1.0) {}
+	  outputEmpirQVal_(outputEmpirQVal), decoyPattern_(decoyPattern), fdr_(1.0),
+	  peptideSpecCounts_(), specCountQvalThreshold_(specCountQvalThreshold) {}
 
 ProteinProbEstimator::~ProteinProbEstimator() {}
 
@@ -345,6 +347,30 @@ void ProteinProbEstimator::setTargetandDecoysNames(Scores& peptideScores) {
   }
 }
 
+void ProteinProbEstimator::addSpectralCounts(Scores& peptideScores) {
+  std::vector<ScoreHolder>::iterator psm = peptideScores.begin();
+  for (; psm!= peptideScores.end(); ++psm) {
+    // for each protein
+    std::vector<std::string>::const_iterator protIt = psm->pPSM->proteinIds.begin();
+    std::set<unsigned int> seenProteinIdxs;
+    for (; protIt != psm->pPSM->proteinIds.end(); protIt++) {
+      if (proteinToIdxMap_.find(*protIt) != proteinToIdxMap_.end()) {
+        unsigned int proteinIdx = proteinToIdxMap_[*protIt];
+        if (seenProteinIdxs.find(proteinIdx) == seenProteinIdxs.end()) {
+          seenProteinIdxs.insert(proteinIdx);
+        }
+      }
+    }
+    
+    bool isUnique = (seenProteinIdxs.size() == 1);
+    unsigned int psmCount = peptideSpecCounts_[psm->pPSM->getPeptideSequence()];
+    std::set<unsigned int>::const_iterator protIdxIt = seenProteinIdxs.begin();
+    for (; protIdxIt != seenProteinIdxs.end(); ++protIdxIt) {
+      proteins_[*protIdxIt].addSpecCounts(psmCount, isUnique);
+    }
+  }
+}
+
 /** Used by XMLInterface to read in the proteins with its sequence and store them for the Mayu method **/
 void ProteinProbEstimator::addProteinDb(bool isDecoy, std::string name, 
                                         std::string sequence, double length) {
@@ -450,13 +476,20 @@ void ProteinProbEstimator::writeOutputToXML(string xmlOutputFN, bool outputDecoy
 }
 
 void ProteinProbEstimator::print(ostream& myout, bool decoy) {  
-  myout << "ProteinId\tProteinGroupId\tq-value\tposterior_error_prob\tpeptideIds" << std::endl;
+  myout << "ProteinId\tProteinGroupId\tq-value\tposterior_error_prob\t";
+  if (specCountQvalThreshold_ > 0.0) {
+    myout << "spec_count_unique\tspec_count_all\t";
+  }
+  myout << "peptideIds" << std::endl;
   
   for (std::vector<ProteinScoreHolder>::const_iterator myP = proteins_.begin(); 
 	        myP != proteins_.end(); myP++) {
     if( (decoy && myP->isDecoy()) || (!decoy && myP->isTarget())) {
       myout << myP->getName() << "\t" << myP->getGroupId() << "\t" 
             << myP->getQemp() << "\t" << myP->getPEP() << "\t";
+      if (specCountQvalThreshold_ > 0.0) {
+        myout << myP->getSpecCountsUnique() << "\t" << myP->getSpecCountsAll() << "\t";
+      }
       const std::vector<ProteinScoreHolder::Peptide> peptides = myP->getPeptidesByRef();
       std::vector<ProteinScoreHolder::Peptide>::const_iterator peptIt = peptides.begin();
       for(; peptIt != peptides.end(); peptIt++) {

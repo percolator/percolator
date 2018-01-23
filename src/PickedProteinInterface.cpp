@@ -22,8 +22,9 @@ using namespace PercolatorCrux;
 PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
     double pvalueCutoff, bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double absenceRatio, bool outputEmpirQval, 
-    std::string& decoyPattern) :
-      ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQval, decoyPattern),
+    std::string& decoyPattern, double specCountQvalThreshold) :
+      ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQval, 
+                           decoyPattern, specCountQvalThreshold),
       fastaProteinFN_(fastaDatabase), maxPeptidePval_(pvalueCutoff),
       reportFragmentProteins_(reportFragmentProteins),
       reportDuplicateProteins_(reportDuplicateProteins),
@@ -215,16 +216,20 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores) {
     }
   }
   
+  /* Update protein group identifier to include fragment and duplicate protein identifiers */
   if (reportFragmentProteins_ || reportDuplicateProteins_) {
     std::map<std::string, std::set<std::string> >::iterator groupIt;
     std::map<std::string, size_t>::iterator representIt;
     for (groupIt = groupProteinIds.begin(); groupIt != groupProteinIds.end(); ++groupIt) {
       representIt = proteinToIdxMap_.find(groupIt->first);
-      if (representIt != proteinToIdxMap_.end()) {
+      if (representIt != proteinToIdxMap_.end()) { /* these are the protein group representatives */
         std::string newName = "";
         for (std::set<std::string>::iterator proteinIt = groupIt->second.begin(); proteinIt != groupIt->second.end(); ++proteinIt) {
+          /* some protein identifiers contain commas, replace them by the much 
+             less used semicolon as the comma is used to separate protein 
+             identifiers */
           std::string proteinId = *proteinIt;
-          std::replace(proteinId.begin(), proteinId.end(), ',', ';');
+          std::replace(proteinId.begin(), proteinId.end(), ',', ';'); 
           newName += proteinId + ",";
         }
         newName = newName.substr(0, newName.size() - 1); // remove last comma

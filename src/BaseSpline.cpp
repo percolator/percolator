@@ -80,7 +80,6 @@ double BaseSpline::splineEval(double xx) {
 static double tao = 2 / (1 + sqrt(5.0)); // inverse of golden section
 
 void BaseSpline::roughnessPenaltyIRLS_Old() {
-  Numerical epsilon = Numerical(1e-15);
   unsigned int alphaIter = 0;
   initiateQR();
   double alpha = .05, cv = 1e100;
@@ -115,7 +114,6 @@ void BaseSpline::roughnessPenaltyIRLS_Old() {
 }
 
 void BaseSpline::roughnessPenaltyIRLS() {
-  Numerical epsilon = Numerical(1e-15);
   initiateQR();
   initg();
   double p1 = 1 - tao;

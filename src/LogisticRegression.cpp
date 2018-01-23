@@ -25,7 +25,7 @@ using namespace std;
 
 #include "Globals.h"
 #include "LogisticRegression.h"
-#include "Numerical.h"
+
 const double LogisticRegression::gRange = 35.0;
 
 void invlogit(double& out, double in) {
@@ -62,11 +62,11 @@ void LogisticRegression::calcPZW() {
     assert(isfinite(g[ix]));
     double e = exp(g[ix]);
     assert(isfinite(e));
-    Numerical num(1e-15);
-    p[ix] = min(max(e / (1 + e), num.epsilon), 1
-        - num.epsilon);
+    double epsilon = 1e-15;
+    p[ix] = min(max(e / (1 + e), epsilon), 1
+        - epsilon);
     assert(isfinite(p[ix]));
-    w.packedReplace(ix, max(m[ix] * p[ix] * (1 - p[ix]), num.epsilon));
+    w.packedReplace(ix, max(m[ix] * p[ix] * (1 - p[ix]), epsilon));
     assert(isfinite(w[ix]));
     z.packedReplace(ix, min(gRange, max(-gRange, g[ix] +
         (y[ix] - p[ix] * m[ix]) / w[ix])));

@@ -114,6 +114,14 @@ struct OrderScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolde
   }
 };
 
+struct OrderScanLabel : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return ( (__x.pPSM->scan < __y.pPSM->scan ) 
+    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.label > __y.label) ) );
+  }
+};
+
+
 struct UniqueScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass);
@@ -123,6 +131,12 @@ struct UniqueScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, b
 struct UniqueScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label) && (__x.pPSM->expMass == __y.pPSM->expMass);
+  }
+};
+
+struct UniqueScanLabel : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    return (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label);
   }
 };
 
@@ -174,19 +188,21 @@ class Scores {
   
   void fillFeatures(SetHandler& setHandler);
   
-  int getInitDirection(const double fdr, std::vector<double>& direction);
+  int getInitDirection(const double initialSelectionFdr, std::vector<double>& direction);
   void createXvalSetsBySpectrum(std::vector<Scores>& train, 
       std::vector<Scores>& test, const unsigned int xval_fold,
       FeatureMemoryPool& featurePool);
   
   void generatePositiveTrainingSet(AlgIn& data, const double fdr,
-      const double cpos);
+      const double cpos, const bool trainBestPositive);
   void generateNegativeTrainingSet(AlgIn& data, const double cneg);
   
   void recalculateSizes();
   void normalizeScores(double fdr);
   
   void weedOutRedundant();
+  void weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts, 
+                        double specCountQvalThreshold);
   void weedOutRedundantTDC();
   void weedOutRedundantMixMax();
   

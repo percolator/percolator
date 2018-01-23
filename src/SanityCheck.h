@@ -29,7 +29,8 @@ class SanityCheck {
   void checkAndSetDefaultDir();
   int getInitDirection(vector<Scores>& testset,
                        vector<Scores> &trainset, Normalizer* pNorm,
-                       vector<vector<double> >& w, double test_fdr);
+                       vector<vector<double> >& w, double test_fdr,
+                       double initial_train_fdr);
   
   virtual bool validateDirection(vector<vector<double> >& w);
   void resetDirection(vector<vector<double> >& w);
@@ -66,8 +67,10 @@ class SanityCheck {
  protected:
   virtual void getDefaultDirection(vector<vector<double> >& w);
   virtual void calcInitDirection(vector<double>& wSet, size_t set);
-  int initPositives;
-  double fdr;
+  
+  int initPositives_;
+  double test_fdr_, initial_train_fdr_;
+  
   static bool overRule;
   static string initWeightFN;
   static string initDefaultDirName;

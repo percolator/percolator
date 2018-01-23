@@ -116,7 +116,6 @@ class SetHandler {
     int optionalFieldCount, FeatureNames& featureNames);
   bool getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values);
-  int getLabel(const std::string& psmLine, unsigned int lineNr);
   ScanId getScanId(const std::string& psmLine, bool& isDecoy,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr);
     

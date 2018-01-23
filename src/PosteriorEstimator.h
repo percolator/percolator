@@ -60,6 +60,9 @@ class PosteriorEstimator {
   static void setNegative(bool negative) {
     includeNegativesInResult = negative;
   }
+  static void setUsePi0(bool usePi0) {
+    usePi0_ = usePi0;
+  }
  protected:
   void finishStandalone(std::vector<std::pair<double, bool> >& combined,
                         const std::vector<double>& peps,
@@ -80,7 +83,7 @@ class PosteriorEstimator {
 
   // used for standalone execution
   std::string targetFile, decoyFile;
-  static bool reversed, pvalInput, competition, includeNegativesInResult;
+  static bool reversed, pvalInput, competition, includeNegativesInResult, usePi0_;
   std::string resultFileName;
 };
 
