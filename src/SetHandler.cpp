@@ -112,7 +112,7 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     std::vector<OptionalField>& optionalFields) {
   TabReader reader(headerLine);
   reader.skip(2u); // discard id, label
-  bool hasScannr = false;
+  bool hasScannr = false, hasRt = false, hasDm = false;
   while (!reader.error()) {
     std::string optionalHeader = reader.readString();
     // transform to lower case for case insensitive matching
@@ -125,6 +125,14 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
       optionalFields.push_back(EXPMASS);
     } else if (optionalHeader == "calcmass") {
       optionalFields.push_back(CALCMASS);
+    } else if (DataSet::getCalcDoc()) {
+      if (optionalHeader == "rt" || optionalHeader == "retentiontime") {
+        optionalFields.push_back(RETTIME);
+        hasRt = true;
+      } else if (optionalHeader == "dm" || optionalHeader == "deltamass") {
+        optionalFields.push_back(DELTAMASS);
+        hasDm = true;
+      }
     } else {
       break;
     }
@@ -132,6 +140,12 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
   if (!hasScannr && VERB > 0) {
     cerr << "\nWARNING: Tab delimited input does not contain ScanNr column," <<
             "\n         scan numbers will be assigned automatically.\n" << endl;
+  }
+  if (DataSet::getCalcDoc() && (!hasRt || !hasDm)) {
+    ostringstream temp;
+    temp << "ERROR: Could not find column with name \"rt\"/\"retentiontime\" and " <<
+      "\"dm\"/\"deltamass\" necessary for the calculation of DOC features." << std::endl;
+    throw MyException(temp.str());
   }
   return static_cast<int>(optionalFields.size());
 }
@@ -156,15 +170,14 @@ int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) 
     a = reader.readDouble();
   }
   
-  if (DataSet::getCalcDoc()) numFeatures -= 2;
   return numFeatures;
 }
 
 void SetHandler::getFeatureNames(const std::string& headerLine, 
     int numFeatures, int optionalFieldCount, FeatureNames& featureNames) {
   TabReader reader(headerLine);
-  // removes enumerator, label and if present optional fields and DOC features
-  reader.skip(2u + optionalFieldCount + (DataSet::getCalcDoc() ? 2u : 0u));
+  // removes enumerator, label and if present optional fields
+  reader.skip(2u + optionalFieldCount);
   int numFeatLeft = numFeatures;
   while (!reader.error()) {
     std::string tmp = reader.readString();
@@ -180,8 +193,8 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
 bool SetHandler::getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values) {
   TabReader reader(defaultDirectionLine);
-  // removes enumerator, label and if present optional fields and DOC features
-  reader.skip(2u + optionalFieldCount + (DataSet::getCalcDoc() ? 2 : 0));
+  // removes enumerator, label and if present optional fields
+  reader.skip(2u + optionalFieldCount);
   
   bool hasDefaultValues = false;
   unsigned int ix = 0;
@@ -246,8 +259,10 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         std::cerr << "Processing line " << lineNr << std::endl;
       }
       psmLine = rtrim(psmLine);
-      bool isDecoy = false;
-      ScanId scanId = getScanId(psmLine, isDecoy, optionalFields, lineNr);
+      
+      int label = 0;
+      ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
+      bool isDecoy = (label == -1);
       size_t randIdx;
       if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
         if (concatenatedSearch && isDecoy != scanIdLookUp[scanId].second) {
@@ -284,12 +299,9 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
     do {
       psmLine = rtrim(psmLine);
-      int label = 1;
-      bool isDecoy = true;
-      ScanId scanId = getScanId(psmLine, isDecoy, optionalFields, lineNr);
-      if (isDecoy) {
-        label = -1;
-      }
+      int label = 0;
+      ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
+      bool isDecoy = (label == -1);
       if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
         if (concatenatedSearch && isDecoy != scanIdLookUp[scanId]) {
           concatenatedSearch = false;
@@ -337,7 +349,7 @@ void SetHandler::addQueueToSets(
   }
 }
 
-ScanId SetHandler::getScanId(const std::string& psmLine, bool& isDecoy,
+ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr) {
   ScanId scanId;
   TabReader reader(psmLine);
@@ -350,8 +362,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, bool& isDecoy,
     throw MyException(temp.str());
   }
   
-  int label = reader.readInt();
-  isDecoy = (label == -1);
+  label = reader.readInt();
   if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading PSM on line " << lineNr 
@@ -392,6 +403,24 @@ ScanId SetHandler::getScanId(const std::string& psmLine, bool& isDecoy,
           throw MyException(temp.str());
         }
         break;
+      } case RETTIME: {
+        reader.skip();
+        if (reader.error()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading retention time on line " 
+              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+          throw MyException(temp.str());
+        }
+        break;
+      } case DELTAMASS: {
+        reader.skip();
+        if (reader.error()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading delta mass on line " 
+              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+          throw MyException(temp.str());
+        }
+        break;
       } default: {
         ostringstream temp;
         temp << "ERROR: Unknown optional field." << std::endl;
@@ -422,7 +451,7 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     return 0;
   }
   
-  // Checking for optional headers "ScanNr", "ExpMass" and "CalcMass"
+  // Checking for optional headers "ScanNr", "ExpMass", "CalcMass", "Rt"/"RetentionTime" and "dM"/"DeltaMass"
   std::vector<OptionalField> optionalFields;
   int optionalFieldCount = getOptionalFields(headerLine, optionalFields);
   

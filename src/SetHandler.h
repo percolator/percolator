@@ -14,8 +14,10 @@
  limitations under the License.
 
  *******************************************************************************/
+
 #ifndef SETHANDLER_H_
 #define SETHANDLER_H_
+
 #include <assert.h>
 #include <iostream>
 #include <fstream>
@@ -116,7 +118,7 @@ class SetHandler {
     int optionalFieldCount, FeatureNames& featureNames);
   bool getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values);
-  ScanId getScanId(const std::string& psmLine, bool& isDecoy,
+  ScanId getScanId(const std::string& psmLine, int& label,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr);
     
   void readPSMs(istream& dataStream, std::string& psmLine, 

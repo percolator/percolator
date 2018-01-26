@@ -31,6 +31,7 @@
   #include "config.h"
 #endif
 #include "Globals.h"
+#include "MyException.h"
 #include "Option.h"
 #include "SetHandler.h"
 #include "DataSet.h"
@@ -101,7 +102,8 @@ class Caller {
   void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
       time_t& procStart, clock_t& procStartClock, double& diff);
   void calculateProteinProbabilities(Scores& allScores);
-
+  void checkIsWritable(const std::string& filePath);
+  
 #ifdef CRUX
   virtual void processPsmScores(Scores& allScores) {}
   virtual void processPeptideScores(Scores& allScores) {}

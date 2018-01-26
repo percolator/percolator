@@ -1091,7 +1091,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
   }
 
 uint rand_in_range( uint low, uint high) {
- uint idx = (uint)(((uint)rand()/((uint)RAND_MAX+1)) * (high-low)) + low;
+ uint idx = (uint)(((uint)rand()/((double)(RAND_MAX)+1)) * (high-low)) + low;
  return idx;
 }
 
@@ -1201,7 +1201,7 @@ return drand48();
           std::vector< TwoGroupsType > r(0);
           for ( int i = 0 ; i < N ; i++ ) {
               //somewhat lousy random number selection -- biased slightly towards 0
-              uint idx = (uint)(((uint)rand()/(uint)(RAND_MAX+1)) * (uint)v.size());
+              uint idx = (uint)(((uint)rand()/((double)(RAND_MAX)+1)) * (uint)v.size());
               r.push_back(v[idx]);
           }
           return v;

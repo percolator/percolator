@@ -113,7 +113,7 @@ class TabReader {
 
 // Optional columns in tab delimited input
 enum OptionalField {
-  SCANNR, EXPMASS, CALCMASS
+  SCANNR, EXPMASS, CALCMASS, RETTIME, DELTAMASS
 };
 
 class DataSet {

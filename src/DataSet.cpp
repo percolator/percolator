@@ -161,6 +161,12 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
       } case CALCMASS: {
         myPsm->calcMass = reader.readDouble();
         break;
+      } case RETTIME: {
+        myPsm->setRetentionTime(reader.readDouble());
+        break;
+      } case DELTAMASS: {
+        myPsm->setMassDiff(reader.readDouble());
+        break;
       } default: {
         ostringstream temp;
         temp << "ERROR: Unknown optional field." << std::endl;
@@ -172,15 +178,10 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (!hasScannr) myPsm->scan = lineNr;
   
   unsigned int numFeatures = FeatureNames::getNumFeatures();
-  double* featureRow = featurePool.allocate();
   if (calcDOC_) {
     numFeatures -= DescriptionOfCorrect::numDOCFeatures();
-    double rt, dm;
-    rt = reader.readDouble();
-    dm = reader.readDouble();
-    myPsm->setRetentionTime(rt);
-    myPsm->setMassDiff(dm);
   }
+  double* featureRow = featurePool.allocate();
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
     featureRow[j] = reader.readDouble();

@@ -388,11 +388,20 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   // now query the parsing results
-  if (cmd.optionSet("xmloutput")) xmlOutputFN_ = cmd.options["xmloutput"];
+  if (cmd.optionSet("xmloutput")) {
+    xmlOutputFN_ = cmd.options["xmloutput"];
+    checkIsWritable(xmlOutputFN_);
+  }
   
   // filenames for outputting results to file
-  if (cmd.optionSet("results-psms")) psmResultFN_ = cmd.options["results-psms"];
-  if (cmd.optionSet("decoy-results-psms")) decoyPsmResultFN_ = cmd.options["decoy-results-psms"];
+  if (cmd.optionSet("results-psms")) {
+    psmResultFN_ = cmd.options["results-psms"];
+    checkIsWritable(psmResultFN_);
+  }
+  if (cmd.optionSet("decoy-results-psms")) {
+    decoyPsmResultFN_ = cmd.options["decoy-results-psms"];
+    checkIsWritable(decoyPsmResultFN_);
+  }
   
   if (cmd.optionSet("only-psms")) {
     // the different "hacks" below are mainly to keep backwards compatibility with old Mascot versions
@@ -412,6 +421,7 @@ bool Caller::parseOptions(int argc, char **argv) {
           << "are calculated, redirecting PSM level statistics to provided file instead." << endl;
         }
         psmResultFN_ = cmd.options["results-peptides"];
+        checkIsWritable(psmResultFN_);
       } else {
         cerr
         << "WARNING: The -r/--results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
@@ -425,7 +435,8 @@ bool Caller::parseOptions(int argc, char **argv) {
           << "WARNING: The -B/--decoy-results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
           << "are calculated, redirecting decoy PSM level statistics to provided file instead." << endl;
         }
-        decoyPsmResultFN_ = cmd.options["decoy-results-peptides"]; 
+        decoyPsmResultFN_ = cmd.options["decoy-results-peptides"];
+        checkIsWritable(decoyPsmResultFN_);
       } else {
         cerr
         << "WARNING: The -B/--decoy-results-peptides option cannot be used in conjunction with -U/--only-psms: no peptide level statistics\n"
@@ -433,8 +444,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       }
     }
   } else {
-    if (cmd.optionSet("results-peptides")) peptideResultFN_ = cmd.options["results-peptides"];
-    if (cmd.optionSet("decoy-results-peptides")) decoyPeptideResultFN_ = cmd.options["decoy-results-peptides"];
+    if (cmd.optionSet("results-peptides")) {
+      peptideResultFN_ = cmd.options["results-peptides"];
+      checkIsWritable(peptideResultFN_);
+    }
+    if (cmd.optionSet("decoy-results-peptides")) {
+      decoyPeptideResultFN_ = cmd.options["decoy-results-peptides"];
+      checkIsWritable(decoyPeptideResultFN_);
+    }
   }
 
   if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
@@ -457,8 +474,14 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
     
     // Output file options
-    if (cmd.optionSet("results-proteins")) proteinResultFN_ = cmd.options["results-proteins"];
-    if (cmd.optionSet("decoy-results-proteins")) decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
+    if (cmd.optionSet("results-proteins")) {
+      proteinResultFN_ = cmd.options["results-proteins"];
+      checkIsWritable(proteinResultFN_);
+    }
+    if (cmd.optionSet("decoy-results-proteins")) {
+      decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
+      checkIsWritable(decoyProteinResultFN_);
+    }
     
     if (cmd.optionSet("fido-protein")) {
       /*fido parameters*/
@@ -548,10 +571,12 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("tab-out")) {
     tabOutputFN_ = cmd.options["tab-out"];
+    checkIsWritable(tabOutputFN_);
   }
   
   if (cmd.optionSet("weights")) {
     weightOutputFN_ = cmd.options["weights"];
+    checkIsWritable(weightOutputFN_);
   }
   if (cmd.optionSet("init-weights")) {
     SanityCheck::setInitWeightFN(cmd.options["init-weights"]);
@@ -823,6 +848,16 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   }
   
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);
+}
+
+void Caller::checkIsWritable(const std::string& filePath) {
+  std::ofstream ofs(filePath.c_str());
+  if (!ofs.is_open()) {
+    ostringstream temp;
+    temp << "ERROR: Could not open the file " << filePath << " for writing. " <<
+      "Check if the folder exists and if you have permission to write." << std::endl;
+    throw MyException(temp.str());
+  }
 }
 
 /** 
