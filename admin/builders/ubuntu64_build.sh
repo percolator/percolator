@@ -55,16 +55,19 @@ mkdir -p $build_dir
 cd ${build_dir}
 
 # issue with XercesC in Ubuntu 16.04: https://github.com/percolator/percolator/issues/188
-if [[ -z ${build_dir}/${ubuntu_xerces}/lib ]]; then
-  # download, compile and link xerces
-  wget --quiet ${ubuntu_xerces_url}
-  tar xzf ${ubuntu_xerces}.tar.gz 
-  cd ${ubuntu_xerces}/
-  ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu
-  make -j 4
-  make install
+if [[ $(lsb_release -a) == *"16.04"* ]]; then
+  if [[ -z ${build_dir}/${ubuntu_xerces}/lib ]]; then
+    # download, compile and link xerces
+    wget --quiet ${ubuntu_xerces_url}
+    tar xzf ${ubuntu_xerces}.tar.gz 
+    cd ${ubuntu_xerces}/
+    ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu
+    make -j 4
+    make install
+  fi
+else
+  sudo apt-get -y install libxerces-c-dev
 fi
-#sudo apt-get -y install libxerces-c-dev
 
 # end of section to remove
 sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
