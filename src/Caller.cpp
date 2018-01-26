@@ -334,23 +334,27 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
-  cmd.defineOption(Option::NO_SHORT_OPT,
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "nested-xval-bins",
       "Number of nested cross validation bins within each cross validation bin. This should reduce overfitting of the hyperparameters. Default = 1.",
       "value");
-  cmd.defineOption(Option::NO_SHORT_OPT,
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "spectral-counting-fdr",
       "Activates spectral counting on protein level (either --fido-protein or --picked-protein has to be set) at the specified PSM q-value threshold. Adds two columns, \"spec_count_unique\" and \"spec_count_all\", to the protein tab separated output, containing the spectral count for the peptides unique to the protein and the spectral count including shared peptides respectively.",
       "value");
-  cmd.defineOption(Option::NO_SHORT_OPT,
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "train-best-positive",
       "Enforce that, for each spectrum, at most one PSM is included in the positive set during each training iteration. If the user only provides one PSM per spectrum, this filter will have no effect.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption(Option::NO_SHORT_OPT,
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "train-fdr-initial",
       "Set the FDR threshold for the first iteration. This is useful in cases where the original features do not display a good separation between targets and decoys. In subsequent iterations, the normal --trainFDR will be used.",
       "value");
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "parameter-file",
+      "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
+      "filename");
   
   /*
   cmd.defineOption(Option::NO_SHORT_OPT,
@@ -370,6 +374,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
+  
+  if (cmd.optionSet("parameter-file")) {
+    cmd.parseArgsParamFile(cmd.options["parameter-file"]);
+  }
   
   if (cmd.optionSet("verbose")) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));

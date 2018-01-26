@@ -20,6 +20,9 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
 
 #include "MyException.h"
 
@@ -42,8 +45,8 @@ class Option {
   std::string helpType;
   std::string deflt;
   
-  /* allow options without a short flag, e.g. for experimental features */
-  static const std::string NO_SHORT_OPT; 
+  /* allow options without a short flag and for experimental features */
+  static const std::string NO_SHORT_OPT, EXPERIMENTAL_FEATURE; 
 };
 
 class CommandLineParser {
@@ -59,6 +62,7 @@ class CommandLineParser {
     defineOption(shortOpt, longOpt, help, helpType, VALUE, defaultVal);
   }
   void parseArgs(int argc, char** argv);
+  void parseArgsParamFile(const std::string paramFile);
   inline bool optionSet(std::string dest) {
     //return (options.find(dest) != options.end());
     return (options[dest].length() > 0);
@@ -75,6 +79,7 @@ class CommandLineParser {
   std::string header, endnote;
   std::vector<Option> opts;
   void findOption(char** argv, int& index, int argc);
+  static inline std::string &rtrim(std::string &s);
 };
 
 #endif /*OPTION_H_*/
