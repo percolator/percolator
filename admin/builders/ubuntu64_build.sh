@@ -54,9 +54,22 @@ source percolator/admin/builders/_urls_and_file_names_.sh
 mkdir -p $build_dir
 cd ${build_dir}
 
+# download and patch xsd
+if [[ $(lsb_release -a) == *"14.04"* ]]; then
+  if [ ! -d ${ubuntu_xsd} ]; then
+    wget --quiet ${ubuntu_xsd_url}
+    tar xjf ${ubuntu_xsd}.tar.bz2
+    sed -i 's/setg/this->setg/g' ${ubuntu_xsd}/libxsd/xsd/cxx/zc-istream.txx
+    sed -i 's/ push_back/ this->push_back/g' ${ubuntu_xsd}/libxsd/xsd/cxx/tree/parsing.txx
+    sed -i 's/ push_back/ this->push_back/g' ${ubuntu_xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
+  fi
+else
+  sudo apt-get -y install xsdcxx;
+fi
+
 # issue with XercesC in Ubuntu 16.04: https://github.com/percolator/percolator/issues/188
 if [[ $(lsb_release -a) == *"16.04"* ]]; then
-  if [[ -z ${build_dir}/${ubuntu_xerces}/lib ]]; then
+  if [[ ! -d ${ubuntu_xerces}/lib ]]; then
     # download, compile and link xerces
     wget --quiet ${ubuntu_xerces_url}
     tar xzf ${ubuntu_xerces}.tar.gz 
@@ -89,7 +102,7 @@ make -j 4 package;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/" -DXML_SUPPORT=ON $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
@@ -99,7 +112,7 @@ make -j 4 package;
 cd $build_dir/converters
 #-----cmake-----
 echo -n "cmake converters.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 
 #-----make------
 echo -n "make converters (this will take few minutes).....";

@@ -15,13 +15,6 @@
 
  *******************************************************************************/
 
-#include <cstdlib>
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <map>
-#include <vector>
-
 #include "Option.h"
 
 const std::string Option::NO_SHORT_OPT = "NO_SHORT_OPT_CONSTANT";

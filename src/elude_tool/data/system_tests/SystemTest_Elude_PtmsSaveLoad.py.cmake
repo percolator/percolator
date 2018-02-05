@@ -112,7 +112,7 @@ def SaveLoadDifferentPtms():
     exit(1)
   
   # run elude but load the model this time 
-  os.system("elude" + " -l " + model_file + " -e " + test_file + " -w -f -g -v 5 2> " 
+  os.system(pathToBinaries + " -l " + model_file + " -e " + test_file + " -w -f -g -v 5 2> " 
             + log_file2)
 
   if not utility.checkFilesExistence("EludePtmsSaveLoadTest::SaveLoadDifferentPtms", 

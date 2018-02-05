@@ -6,9 +6,10 @@ REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0 > nul 2> nul
 if %ERRORLEVEL% EQU 0 (
   echo Using Visual Studio 2015
   set MSVC_VER=14
+) else (
+  :: reset ERRORLEVEL to 0. N.B. set ERRORLEVEL=0 will permanently set it to 0
+  cd .
 )
-
-set ERRORLEVEL=0
 
 :: fall back to VS2013 is available
 if %MSVC_VER% EQU 0 (
@@ -16,6 +17,9 @@ if %MSVC_VER% EQU 0 (
   if %ERRORLEVEL% EQU 0 (
     echo Using Visual Studio 2013
     set MSVC_VER=12
+  ) else (
+    :: reset ERRORLEVEL to 0
+    cd .
   )
 )
 
@@ -31,6 +35,9 @@ if %ERRORLEVEL% EQU 0 (
   echo platform detected: 64-bit
   set BUILD_PLATFORM=64bit
   set "PROGRAM_FILES_DIR=C:\Program Files (x86)"
+) else (
+  :: reset ERRORLEVEL to 0
+  cd .
 )
 
 set VCTARGET=%PROGRAM_FILES_DIR%\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0
@@ -96,7 +103,7 @@ if not exist "%BOOST_ROOT%" (
   %ZIP_EXE% x "%INSTALL_DIR%\boost.7z" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
   cd /D "%BOOST_ROOT%"
   call bootstrap
-  bjam address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
+  b2 address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
 )
 set BOOST_LIB=%BOOST_ROOT%\stage\lib
 
@@ -289,7 +296,7 @@ echo Finished buildscript execution in build directory %BUILD_DIR%
 
 cd "%SRC_DIR%\percolator\admin\builders"
 
-EXIT /B
+EXIT /B %errorlevel%
 
 ::: subroutines
 :getabspath

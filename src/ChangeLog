@@ -1,3 +1,24 @@
+v3.02
+* Changed FDR calculation for initial direction selection to the more liberal decoys/targets (#208)
+* Added parameter file option instead of only command line specification (#149)
+* Allow training only on best PSM per peak group or spectrum (#207)
+* Include spectral counts for lists of protein inferences (#202)
+* Allow separate control of FDR threshold for initial iteration (#190)
+* Added check of deltaMass and retentionTime columns with DOC features (#167)
+* Added check if output files are writable before training SVM (#185)
+* Fixed tandem BioML input check for tandem2pin (#180)
+* Fixed discrepancy between windows and linux results (#203)
+* Fixed fido protein grouping (#201)
+* Fixed zlib DLL issue on windows (#197)
+* Fixed/clarified several log and help messages (#199, #205, #179)
+
+
+v3.01.2
+* Fixed empty output on xxx2pin converters on MacOS (#178).
+
+v3.01.1
+* Fixed macOS installer problems with macOS 10.11+ (#193)
+
 v3.01
 * Changed all FDR calculations to the more conservative: (decoys+1)/targets
 * Added `-o`/`-no-terminate` flag to allow overriding of fatal errors:

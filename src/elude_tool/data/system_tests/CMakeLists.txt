@@ -3,6 +3,9 @@
 #set(pathToData ${CMAKE_SOURCE_DIR}/data)
 #set(pathToWritable ${ELUDE_WRITABLE_DIR})
 set(pathToBinaries ${CMAKE_BINARY_DIR})
+if(APPLE)
+  set(pathToBinaries ${CMAKE_BINARY_DIR}/elude.app/Contents/MacOS)
+endif()
 set(pathToData ${CMAKE_SOURCE_DIR}/data)
 set(pathToWritable ${CMAKE_BINARY_DIR}/Testing)
 

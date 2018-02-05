@@ -6,8 +6,6 @@
 # PackageMaker (https://developer.apple.com/downloads ::search::
 #----------------------------------------
 
-# read all urls and file names from a centralized kb file
-source _urls_and_file_names_.sh
 
 # managing input arguments
 while getopts “s:b:r:t:” OPTION; do
@@ -81,46 +79,57 @@ if [[ -z ${src_dir} ]]; then
 	src_dir="${src_dir}/percolator"
   else
     # Might not work if we have symlinks in the way
-    src_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" && pwd )
+    src_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../../" && pwd )
   fi
 fi
 if [[ -z ${release_dir} ]]; then
   release_dir=${HOME}/release
 fi
 
-
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for user" `whoami`
 $package_manager install $other_packages
 $package_manager install $boost_install_options
 
-#----------------------------------------
-cd ${build_dir}
-curl -O ${mac_os_xsd_url}
-tar -xjf ${mac_os_xsd}.tar.bz2
-sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
-sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/parsing.txx
-sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
+cd ${src_dir}
 
-extr=${mac_os_xsd}/libxsd/xsd/cxx/tree/xdr-stream-extraction.hxx
-inse=${mac_os_xsd}/libxsd/xsd/cxx/tree/xdr-stream-insertion.hxx
-sed -i -e 's/ uint8_t/ unsigned char/g' ${extr} ${inse}
-sed -i -e 's/ int8_t/ char/g' ${extr} ${inse}
-sed -i -e 's/xdr_int8_t/xdr_char/g' ${extr} ${inse}
-sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
-#------------------------------------------
+# read all urls and file names from a centralized kb file
+source percolator/admin/builders/_urls_and_file_names_.sh
+
 mkdir -p ${build_dir}
 cd ${build_dir}
+
+# XercesC installation
 if [[ -d /usr/local/include/xercesc ]] # this implies homebrew installation ...
 	then
 	echo "Xerces is already installed."
 else
 	curl -O ${mac_os_xerces_url}
-	tar xzf ${mac_os_xer}.tar.gz
-	cd ${mac_os_xer}/
+	tar xzf ${mac_os_xerces}.tar.gz
+	cd ${mac_os_xerces}/
 	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
 	make -j 2
 	sudo make install
+fi
+
+cd ${build_dir}
+
+# XSD installation
+if [ ! -d ${mac_os_xsd} ]; then
+  curl -OL ${mac_os_xsd_url}
+  tar -xjf ${mac_os_xsd}.tar.bz2
+  sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
+  sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/parsing.txx
+  sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
+
+  extr=${mac_os_xsd}/libxsd/xsd/cxx/tree/xdr-stream-extraction.hxx
+  inse=${mac_os_xsd}/libxsd/xsd/cxx/tree/xdr-stream-insertion.hxx
+  sed -i -e 's/ uint8_t/ unsigned char/g' ${extr} ${inse}
+  sed -i -e 's/ int8_t/ char/g' ${extr} ${inse}
+  sed -i -e 's/xdr_int8_t/xdr_char/g' ${extr} ${inse}
+  sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
+else
+  echo "XSD is already installed."
 fi
 
 #-------------------------------------------
@@ -130,7 +139,7 @@ mkdir -p ${release_dir}
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
 cp -v per*.dmg ${release_dir}
@@ -138,7 +147,7 @@ cp -v per*.dmg ${release_dir}
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
 cp -v per*.dmg ${release_dir}
@@ -146,7 +155,7 @@ cp -v per*.dmg ${release_dir}
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/src/converters
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 2
 make -j 2 package
 cp -v per*.dmg ${release_dir}
@@ -154,7 +163,7 @@ cp -v per*.dmg ${release_dir}
 mkdir -p ${build_dir}/elude
 cd ${build_dir}/elude
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" ${src_dir}/src/elude_tool
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" ${src_dir}/percolator/src/elude_tool
 make -j 2
 make -j 2 package
 cp -v elude*.dmg ${release_dir}

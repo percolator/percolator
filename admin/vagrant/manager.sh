@@ -72,15 +72,19 @@ while getopts “hab:s:r:p:” OPTION; do
                 nw32) 
                     post="nativew32"
                     batfile=true
-                    vagbox_name="win7vs12"
-                    vagbox_url="~/VagrantWin7/win7vs12.box"
+                    vagbox_name="win10vs15"
+                    vagbox_url="~/VagrantWin7/win10vs15.box"
+                    #vagbox_name="win7vs12"
+                    #vagbox_url="~/VagrantWin7/win7vs12.box"
                     package_ext="exe"
                     ;;
                 nw64) 
                     post="nativew64"
                     batfile=true
-                    vagbox_name="win7vs12"
-                    vagbox_url="~/VagrantWin7/win7vs12.box"
+                    vagbox_name="win10vs15"
+                    vagbox_url="~/VagrantWin7/win10vs15.box"
+                    #vagbox_name="win7vs12"
+                    #vagbox_url="~/VagrantWin7/win7vs12.box"
                     package_ext="exe"
                       ;;
                 *)
@@ -199,8 +203,6 @@ Vagrant.configure("2") do |config|
   config.vm.box = "${vagbox_name}"
   config.vm.box_url = "${vagbox_url}"
   config.vm.guest = :windows
-  config.winrm.username = "IEUser"
-  config.winrm.password = "Passw0rd!"
   config.windows.halt_timeout = 30
   config.vm.boot_timeout = 1200
 
@@ -208,7 +210,7 @@ Vagrant.configure("2") do |config|
   config.vm.communicator = "winrm"
   
   config.vm.provider "virtualbox" do |vb|
-    vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "4"]
+    vb.customize ["modifyvm", :id, "--memory", "8192", "--cpus", "4"]
     # vb.gui = true # turn on for trouble shooting, e.g. if boot times out repeatedly
   end
   

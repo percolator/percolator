@@ -94,7 +94,7 @@ def checkOutputFile(test_name, out_file, no_lines = -1, indices = None,
   lines = loadFile(out_file)
   sorted(lines)
   if (no_lines != -1 and len(lines) != no_lines): 
-    utility.failTest(test_name + ", incorrect number of peptides in the output file")
+    failTest(test_name + ", incorrect number of peptides in the output file")
     return False
   
   if (indices != None):
@@ -105,12 +105,12 @@ def checkOutputFile(test_name, out_file, no_lines = -1, indices = None,
     
     for i in range(len(indices)):
       if peps[i] != epeps[i]:     
-        utility.failTest(test_name + ", incorrect peptides in the output file")
+        failTest(test_name + ", incorrect peptides in the output file")
         return False
       if (abs(prts[i] - eprts[i] > eprts[i]*0.15)):       
-        utility.failTest(test_name + ", incorrect predictions in the output file")
+        failTest(test_name + ", incorrect predictions in the output file")
         return False
       if (eorts != None) and (abs(orts[i] - eorts[i] > 0.1)):               
-        utility.failTest(test_name + ", incorrect observed rts in the output file")
+        failTest(test_name + ", incorrect observed rts in the output file")
         return False
   return True

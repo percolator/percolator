@@ -43,7 +43,7 @@ def SaveLoadContextData():
     exit(1)
   
   # run elude but load the model this time 
-  os.system("elude" + " -l " + model_file + " -e " + test_file + " -o " + out_file2
+  os.system(pathToBinaries + " -l " + model_file + " -e " + test_file + " -o " + out_file2
             + " -f -v 5 2> " + log_file)
 
   # check existence of the second output file
@@ -105,7 +105,7 @@ def SaveLoadNoContextData():
     exit(1)
 
   # run elude but load the model this time 
-  os.system("elude" + " -l " + model_file + " -e " + test_file 
+  os.system(pathToBinaries + " -l " + model_file + " -e " + test_file 
             + " -w -g -v 5 2> " + log_file2)
 
   if not utility.checkFilesExistence("EludeSaveLoadEvaluateTest::SaveLoadNoContextData", 

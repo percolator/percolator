@@ -23,6 +23,10 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <cstdlib>
+#include <sstream>
+#include <functional>
+#include <cctype>
 
 #include "MyException.h"
 

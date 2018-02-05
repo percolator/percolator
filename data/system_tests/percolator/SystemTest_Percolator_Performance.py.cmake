@@ -127,7 +127,7 @@ def performanceD4On(docFile, psmFile):
     success = False
   
   if extracted_D4on < extracted_D4off:
-    print("...TEST FAILED: percolator with -D 4 option performed worse than without it (" + str(extracted_D4on) + " vs. " + str(extracted_D4off) + ")")
+    print("...WARNING: percolator with -D 4 option performed worse than without it (" + str(extracted_D4on) + " vs. " + str(extracted_D4off) + ")")
     print("check " + docFile + " and " + psmFile + " for details")
   #  success = False
   return success
