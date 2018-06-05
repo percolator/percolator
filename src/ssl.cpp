@@ -37,7 +37,8 @@ AlgIn::~AlgIn() {
 
 int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
          const double epsilon, const struct vector_int* Subset,
-         struct vector_double* Weights, struct vector_double* Outputs) {
+         struct vector_double* Weights, struct vector_double* Outputs,
+         double cpos, double cneg) {
   if (VERBOSE_CGLS) {
     cout << "CGLS starting..." << endl;
   }
@@ -48,7 +49,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   int* J = Subset->vec;
   const double** set = data.vals;
   const double* Y = data.Y;
-  const double* C = data.C;
+  //const double* C = data.C;
   const int n = data.n;
   //  int m  = pSet->size();
   double* beta = Weights->vec;
@@ -60,7 +61,8 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   register int i, j;
   for (i = active; i--;) {
     ii = J[i];
-    z[i] = C[ii] * (Y[ii] - o[ii]);
+    // C[ii]
+    z[i] = ((Y[ii]==1)? cpos : cneg) * (Y[ii] - o[ii]);
   }
   double* r = new double[n];
   for (i = n; i--;) {
@@ -105,7 +107,8 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
       }
       t += p[n - 1];
       q[i] = t;
-      omega_q += C[ii] * t * t;
+      // C[ii]
+      omega_q += ((Y[ii]==1)? cpos : cneg) * t * t;
     }
     gamma = omega1 / (lambda * omega_p + omega_q);
     inv_omega2 = 1 / omega1;
@@ -117,7 +120,8 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     for (int i = active; i--;) {
       ii = J[i];
       o[ii] += gamma * q[i];
-      z[i] -= gamma * C[ii] * q[i];
+      // C[ii]
+      z[i] -= gamma * ((Y[ii]==1)? cpos : cneg) * q[i];
       omega_z += z[i] * z[i];
     }
     for (register int j = 0; j < active; j++) {
@@ -165,13 +169,13 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
 
 int L2_SVM_MFN(const AlgIn& data, struct options* Options,
                struct vector_double* Weights,
-               struct vector_double* Outputs) {
+               struct vector_double* Outputs, double cpos, double cneg) {
   /* Disassemble the structures */
   timer tictoc;
   tictoc.restart();
   const double** set = data.vals;
   const double* Y = data.Y;
-  const double* C = data.C;
+  //const double* C = data.C;
   const int n = Weights->d;
   const int m = data.m;
   double lambda = Options->lambda;
@@ -198,7 +202,8 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
     if (diff > 0) {
       ActiveSubset->vec[active] = i;
       active++;
-      F += 0.5 * C[i] * diff * diff;
+      // C[i]
+      F += 0.5 * ((Y[i]==1)? cpos : cneg) * diff * diff;
     } else {
       ActiveSubset->vec[inactive] = i;
       inactive--;
@@ -238,7 +243,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
                epsilon,
                ActiveSubset,
                Weights_bar,
-               Outputs_bar);
+               Outputs_bar, cpos, cneg);
     for (register int i = active; i < m; i++) {
       ii = ActiveSubset->vec[i];
       const double* val = set[ii];
@@ -295,7 +300,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
         return 1;
       }
     }
-    delta = line_search(w, w_bar, lambda, o, o_bar, Y, C, n, m);
+    delta = line_search(w, w_bar, lambda, o, o_bar, Y, NULL, n, m, cpos, cneg);
     F_old = F;
     F = 0.0;
     for (int i = n; i--;) {
@@ -311,7 +316,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
       if (diff > 0) {
         ActiveSubset->vec[active] = i;
         active++;
-        F += 0.5 * C[i] * diff * diff;
+        F += 0.5 * ((Y[i]==1)? cpos : cneg) * diff * diff;
       } else {
         ActiveSubset->vec[inactive] = i;
         inactive--;
@@ -335,8 +340,8 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
 }
 
 double line_search(double* w, double* w_bar, double lambda, double* o,
-                   double* o_bar, const double* Y, const double* C, int d, /* data dimensionality -- 'n' */
-                   int l) { /* number of examples */
+                   double* o_bar, const double* Y, const double* C_, int d, /* data dimensionality -- 'n' */
+                   int l, double cpos, double cneg) { /* number of examples */
   double omegaL = 0.0;
   double omegaR = 0.0;
   double diff = 0.0;
@@ -352,7 +357,8 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
   int ii = 0;
   for (int i = 0; i < l; i++) {
     if (Y[i] * o[i] < 1) {
-      diff = C[i] * (o_bar[i] - o[i]);
+      // C[i]
+      diff = ((Y[i]==1)? cpos : cneg) * (o_bar[i] - o[i]);
       L += (o[i] - Y[i]) * diff;
       R += (o_bar[i] - Y[i]) * diff;
     }
@@ -387,7 +393,8 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
       break;
     }
     ii = deltas[i].index;
-    diff = (deltas[i].s) * C[ii] * (o_bar[ii] - o[ii]);
+    // C[ii]
+    diff = (deltas[i].s) * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
     L += diff * (o[ii] - Y[ii]);
     R += diff * (o_bar[ii] - Y[ii]);
   }

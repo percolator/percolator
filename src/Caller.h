@@ -95,6 +95,7 @@ class Caller {
   unsigned int numIterations_, maxPSMs_, nestedXvalBins_;
   double selectedCpos_, selectedCneg_;
   bool reportEachIteration_, quickValidation_, trainBestPositive_;
+  int ncposthreads_;
   
   // reporting parameters
   std::string call_;
