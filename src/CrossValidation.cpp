@@ -1,4 +1,4 @@
-/********thpool_wait***********************************************************************
+/*******************************************************************************
  Copyright 2006-2012 Lukas Käll <lukas.kall@scilifelab.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -423,7 +423,6 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
 
   for (unsigned int nestedFold = 0; nestedFold < nestedXvalBins_; ++nestedFold) {
     nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
-    nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     
     if (VERB > 2) {
