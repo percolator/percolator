@@ -300,6 +300,7 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
 
 struct thread_arguments
 {
+  pthread_mutex_t* mutex;
   double * model;
   double * Y;
   int m;
@@ -322,8 +323,6 @@ void train_one_svm(void* arg){
 
   thread_arguments* targs = (thread_arguments*)arg;
 
-  //fprintf(stderr, "start to train for %f %f on %i\n", targs->cpos, targs->cfrac, (int)pthread_self());
-
   for (int ix = 0; ix < targs->n; ix++) {
     targs->model[ix] = 0.0;
   }
@@ -339,20 +338,21 @@ void train_one_svm(void* arg){
     trainedmodel.push_back(targs->model[j]);
   }
   
+  pthread_mutex_lock (targs->mutex);
   int tp = targs->p_nestedTestScores_obj->calcScores(trainedmodel, targs->testFdr_, targs->skipDecoysPlusOne);
+  pthread_mutex_unlock (targs->mutex);
   if (VERB > 3) {
     cerr << "- cross-validation found " << tp
          << " training set PSMs with q_liberal<" << targs->testFdr_ << "." << endl;
   }
   
-  if (targs->nestedXvalBins_ > 1) {
+  //if (targs->nestedXvalBins_ > 1) {
     *targs->p_score = tp;
-  } else {
-    *targs->p_score = tp;
-  }
+  //} else {
+  //  *targs->p_score = tp;
+  //}
 
-  //fprintf(stderr, "finished training %i\n", (int)pthread_self());
-
+  delete pWeights;
 }
 
 /** 
@@ -434,7 +434,6 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
     size_t numInputs = svmInput->positives + svmInput->negatives;
     
     if(numInputs > Outputss[0]->d){
-      std::cout << "reallcoate Outputs with dimension " << int(numInputs * 1.25) << std::endl;
       for(int i=0;i<Outputss.size();i++){
         delete[] Outputss[i]->vec;
         Outputss[i]->vec = new double[int(numInputs * 1.25)];
@@ -442,6 +441,8 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
       }
     }
 
+    pthread_mutex_t mutex;
+    pthread_mutex_init (&mutex, NULL);
     struct thread_arguments args[cposCandidates.size() * cfracCandidates.size()];
     threadpool_t *pool = NULL;
     if(USE_MULTIPLE_PTHREAD(ncposthreads_)) {
@@ -458,6 +459,7 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
         cfracs[modelid] = cfrac;
 
         struct thread_arguments* arg_p = &args[modelid];
+        arg_p->mutex = &mutex;
         arg_p->model = models[modelid];
         arg_p->Y = svmInput->Y;
         arg_p->m = svmInput->m;
