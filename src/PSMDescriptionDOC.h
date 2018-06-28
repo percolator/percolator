@@ -79,12 +79,6 @@ class PSMDescriptionDOC : public PSMDescription {
   // static methods and members for retention time normalization
   static double normDivRT_, normSubRT_;
   
-  static void setRetentionTime(std::vector<PSMDescription*>& psms, 
-                               std::map<int, double>& scan2rt);
-  void checkFragmentPeptides(std::vector<PSMDescription*>::reverse_iterator other,
-                             std::vector<PSMDescription*>::reverse_iterator theEnd);
-  static bool isSubPeptide(std::string& child, std::string& parent);
-  
   static void setPSMSet(std::vector<PSMDescription*>& psms);
   static void normalizeRetentionTimes(std::vector<PSMDescription*>& psms);
   static double normalize(double unnormalizedTime);

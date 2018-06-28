@@ -41,15 +41,6 @@ void PSMDescription::deletePtr(PSMDescription* psm) {
   }
 }
 
-bool PSMDescription::isNotEnzymatic() {
-  std::string peptideSeq = removePTMs(peptide);
-  std::string peptideSeqNoFlanks = removeFlanks(peptide);
-  return !(Enzyme::isEnzymatic(peptideSeq[0], peptideSeq[2])
-      && Enzyme::isEnzymatic(peptideSeq[peptideSeq.size() - 3],
-                             peptideSeq[peptideSeq.size() - 1])
-      && Enzyme::countEnzymatic(peptideSeqNoFlanks) == 0);
-}
-
 std::string PSMDescription::removePTMs(const string& peptide) {
   std::string peptideSequence = peptide;
   peptideSequence = peptide.substr(2, peptide.size()- 4);

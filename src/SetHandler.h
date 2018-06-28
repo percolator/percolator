@@ -84,7 +84,6 @@ class SetHandler {
   void fillFeatures(vector<ScoreHolder> &scores, int label);
   void normalizeFeatures(Normalizer*& pNorm);
   void normalizeDOCFeatures(Normalizer* pNorm);
-  void setRetentionTime(map<int, double>& scan2rt);
   
   int const getLabel(int setPos);
   inline int getSizeFromLabel(int label) {

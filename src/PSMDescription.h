@@ -59,7 +59,6 @@ class PSMDescription {
   std::string& getFullPeptideSequence() { return peptide; }
   std::string getFlankN() { return peptide.substr(0, 1); }    
   std::string getFlankC() { return peptide.substr(peptide.size()-1, peptide.size()); }  
-  bool isNotEnzymatic();
   
   friend std::ostream& operator<<(std::ostream& out, PSMDescription& psm);
   void printProteins(std::ostream& out);

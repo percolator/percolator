@@ -87,12 +87,6 @@ void SetHandler::normalizeDOCFeatures(Normalizer* pNorm) {
   pNorm->normalizeSet(featuresDOC, offset, numFeatures);
 }
 
-void SetHandler::setRetentionTime(map<int, double>& scan2rt) {
-  for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
-    subsets_[ix]->setRetentionTime(scan2rt);
-  }
-}
-
 /*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
   return subsets_[setPos]->getFeatures(ixPos);
 }*/

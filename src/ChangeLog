@@ -12,7 +12,6 @@ v3.02
 * Fixed zlib DLL issue on windows (#197)
 * Fixed/clarified several log and help messages (#199, #205, #179)
 
-
 v3.01.2
 * Fixed empty output on xxx2pin converters on MacOS (#178).
 

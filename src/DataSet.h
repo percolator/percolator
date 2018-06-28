@@ -138,10 +138,6 @@ class DataSet {
   }
   static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
   
-  void setRetentionTime(map<int, double>& scan2rt) { 
-    PSMDescriptionDOC::setRetentionTime(psms_, scan2rt);
-  }
-  
   bool writeTabData(std::ofstream& out);
   
   void print_10features();
