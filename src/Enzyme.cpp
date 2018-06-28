@@ -17,71 +17,55 @@
 
 #include "Enzyme.h"
 
-Enzyme* Enzyme::theEnzyme = NULL;
-
-Enzyme* Enzyme::getEnzyme() {
-  if (theEnzyme == NULL) {
-    theEnzyme = new Trypsin(); // Use trypsin per default
+Enzyme* Enzyme::createEnzyme(EnzymeType enz) {
+  Enzyme* theEnzyme;
+  switch (enz) {
+    case TRYPSINP:
+      theEnzyme = new TrypsinP();
+      break;
+    case CHYMOTRYPSIN:
+      theEnzyme = new Chymotrypsin();
+      break;
+    case THERMOLYSIN:
+      theEnzyme = new Thermolysin();
+      break;
+    case PROTEINASEK:
+      theEnzyme = new Proteinasek();
+      break;
+    case PEPSIN:
+      theEnzyme = new Pepsin();
+      break;
+    case ELASTASE:
+      theEnzyme = new Elastase();
+      break;
+    case LYSN:
+      theEnzyme = new LysN();
+      break;
+    case LYSC:
+      theEnzyme = new LysC();
+      break;
+    case ARGC:
+      theEnzyme = new ArgC();
+      break;
+    case ASPN:
+      theEnzyme = new AspN();
+      break;
+    case GLUC:
+      theEnzyme = new GluC();
+      break;
+    case NO_ENZYME:
+      theEnzyme = new NoEnzyme();
+      break;
+    case TRYPSIN:
+    default:
+      theEnzyme = new Trypsin();
+      break;
   }
   return theEnzyme;
 }
 
-void Enzyme::destroy() {
-  if (theEnzyme) {
-    delete theEnzyme;
-  }
-  theEnzyme = NULL;
-}
-
-void Enzyme::setEnzyme(EnzymeType enz) {
-  destroy();
-  
-  switch (enz) {
-    case TRYPSINP:
-      theEnzyme = new TrypsinP();
-      return;
-    case CHYMOTRYPSIN:
-      theEnzyme = new Chymotrypsin();
-      return;
-    case THERMOLYSIN:
-      theEnzyme = new Thermolysin();
-      return;
-    case PROTEINASEK:
-      theEnzyme = new Proteinasek();
-      return;
-    case PEPSIN:
-      theEnzyme = new Pepsin();
-      return;
-    case ELASTASE:
-      theEnzyme = new Elastase();
-      return;
-    case LYSN:
-      theEnzyme = new LysN();
-      return;
-    case LYSC:
-      theEnzyme = new LysC();
-      return;
-    case ARGC:
-      theEnzyme = new ArgC();
-      return;
-    case ASPN:
-      theEnzyme = new AspN();
-      return;
-    case GLUC:
-      theEnzyme = new GluC();
-      return;
-    case NO_ENZYME:
-      theEnzyme = new Enzyme();
-      return;
-    case TRYPSIN:
-    default:
-      theEnzyme = new Trypsin();
-      return;
-  }
-}
-
-void Enzyme::setEnzyme(std::string enzyme) {
-  destroy();
+Enzyme* Enzyme::createEnzyme(std::string enzyme) {
+  Enzyme* theEnzyme;
   
   std::transform(enzyme.begin(), enzyme.end(), enzyme.begin(), ::tolower);
   if (enzyme == Chymotrypsin::getString()) {
@@ -104,8 +88,8 @@ void Enzyme::setEnzyme(std::string enzyme) {
     theEnzyme = new AspN();
   } else if (enzyme == GluC::getString()) {
     theEnzyme = new GluC();
-  } else if (enzyme == Enzyme::getString()) {
-    theEnzyme = new Enzyme();
+  } else if (enzyme == NoEnzyme::getString()) {
+    theEnzyme = new NoEnzyme();
   } else if (enzyme == TrypsinP::getString()) {
     theEnzyme = new TrypsinP();
   } else if (enzyme == Trypsin::getString()) {
@@ -113,12 +97,14 @@ void Enzyme::setEnzyme(std::string enzyme) {
   }
   else {
     ostringstream temp;
-    temp << "The selected enzyme have no corresponding class" << std::endl;
+    temp << "The selected enzyme \"" << enzyme << "\" has no corresponding class" << std::endl;
     throw MyException(temp.str());
   }
+  
+  return theEnzyme;
 }
 
-size_t Enzyme::countEnzymatic(std::string& peptide) {
+size_t Enzyme::countEnzymatic(std::string& peptide) const {
   size_t count = 0;
   for (size_t ix = 1; ix < peptide.size(); ++ix) {
     if (isEnzymatic(peptide[ix - 1], peptide[ix])) {

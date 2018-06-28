@@ -70,17 +70,17 @@ XMLInterface::~XMLInterface() {
 
 int XMLInterface::readPin(istream& dataStream, const std::string& xmlInputFN,
     SetHandler& setHandler, SanityCheck*& pCheck, 
-    ProteinProbEstimator* protEstimator) {
+    ProteinProbEstimator* protEstimator, Enzyme*& enzyme) {
   std::vector<double> noWeights;
   Scores noScores(true);
   return readAndScorePin(dataStream, noWeights, noScores, xmlInputFN, setHandler, 
-                  pCheck, protEstimator);
+                  pCheck, protEstimator, enzyme);
 }
   
 int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawWeights, 
     Scores& allScores, const std::string& xmlInputFN,
-    SetHandler& setHandler, SanityCheck*& pCheck, 
-    ProteinProbEstimator* protEstimator) {    
+    SetHandler& setHandler, SanityCheck*& pCheck,
+    ProteinProbEstimator* protEstimator, Enzyme*& enzyme) {    
 #ifdef XML_SUPPORT
   xercesc::XMLPlatformUtils::Initialize();
   try {
@@ -101,7 +101,9 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     
     if (VERB > 1) std::cerr << "enzyme=" << value << std::endl;
     
-    Enzyme::setEnzyme(value);
+    delete enzyme;
+    enzyme = Enzyme::createEnzyme(value);
+    
     XMLString::release(&value);
     doc = p.next();
     
@@ -270,7 +272,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
       }
     }
     
-    if (readProteins) {
+    if (readProteins) {      
       // read database proteins
       // only read them if they are present and the option of using mayusfdr is activated
       unsigned numProteins = 0;

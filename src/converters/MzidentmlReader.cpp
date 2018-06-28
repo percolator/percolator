@@ -14,7 +14,7 @@ static string schema_minor = boost::lexical_cast<string>(MZIDENTML_VERSION_MINOR
 
 static double proton_mass = 1.00727663;
 
-MzidentmlReader::MzidentmlReader(ParseOptions *po) : Reader(po) {}
+MzidentmlReader::MzidentmlReader(ParseOptions po) : Reader(po) {}
 
 MzidentmlReader::~MzidentmlReader() {}
 
@@ -192,7 +192,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
       }
 
       BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) {
-	      if(++numberHitsSpectra <= po->hitsPerSpectrum) {
+	      if(++numberHitsSpectra <= po.hitsPerSpectrum) {
 	        assert(item.experimentalMassToCharge());
           int charge = item.chargeState();
 	        ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass = item.experimentalMassToCharge()*charge - proton_mass*charge;

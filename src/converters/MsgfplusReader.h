@@ -24,7 +24,7 @@
 class MsgfplusReader : public MzidentmlReader
 {
   public:
-    MsgfplusReader(ParseOptions *po);
+    MsgfplusReader(ParseOptions po);
 
     virtual ~MsgfplusReader();
     bool checkValidity(const std::string &file);

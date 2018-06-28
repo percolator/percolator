@@ -50,7 +50,6 @@ EludeCaller::EludeCaller():automatic_model_sel_(false), append_model_(false),
                            rt_model_(NULL), ignore_ptms_(false), lts(NULL), supress_print_(false), 
                            only_hydrophobicity_index_(false) {
   Normalizer::setType(Normalizer::UNI);
-  //Enzyme::setEnzyme(Enzyme::TRYPSIN);
   RetentionFeatures::set_ignore_ptms(false);
   the_normalizer_ = Normalizer::getNormalizer();
   string basic_aa[] = {"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"};
@@ -82,6 +81,10 @@ EludeCaller::~EludeCaller() {
   for ( ; it != test_psms_.end(); ++it) {
     PSMDescription::deletePtr(*it);
   }
+  if (enzyme_) {
+    delete enzyme_;
+  }
+  enzyme_ = NULL;
   DeleteRTModels();
 }
 
@@ -291,6 +294,8 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("enzyme")) {
     SetEnzyme(cmd.options["enzyme"]);
+  } else {
+    SetEnzyme("trypsin");
   }
   if (cmd.optionSet("remove-non-enzymatic")) {
     remove_non_enzymatic_ = true;
@@ -321,15 +326,15 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
 void EludeCaller::SetEnzyme(const string &enzyme) {
   if ((enzyme.compare("CHYMOTRYPSIN") == 0) ||
       (enzyme.compare("chymotrypsin") == 0)) {
-    Enzyme::setEnzyme(Enzyme::CHYMOTRYPSIN);
+    enzyme_ = Enzyme::createEnzyme(Enzyme::CHYMOTRYPSIN);
   } else if ((enzyme.compare("ELASTASE") == 0) ||
              (enzyme.compare("elastase") == 0)) {
-    Enzyme::setEnzyme(Enzyme::ELASTASE);
+    enzyme_ = Enzyme::createEnzyme(Enzyme::ELASTASE);
   } else if ((enzyme.compare("TRYPSIN") == 0) ||
              (enzyme.compare("trypsin") == 0)) {
-    Enzyme::setEnzyme(Enzyme::TRYPSIN);
+    enzyme_ = Enzyme::createEnzyme(Enzyme::TRYPSIN);
   } else {
-    Enzyme::setEnzyme(Enzyme::NO_ENZYME);
+    enzyme_ = Enzyme::createEnzyme(Enzyme::NO_ENZYME);
     if (VERB >= 3) {
       cerr << "Warning: Enzyme " + enzyme + " not recognized. No enzyme set. Please use"
            << "one of the values {NO_ENZYME, TRYPSIN, CHYMOTRYPSIN, ELASTASE}." << endl;
@@ -362,11 +367,11 @@ int EludeCaller::ProcessTrainData() {
   // remove in source fragmentation
   vector< pair<PSMDescription*, string> > in_source_fragments;
   if (test_includes_rt_) {
-    in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
+    in_source_fragments = DataManager::RemoveInSourceFragments(enzyme_, hydrophobicity_diff_,
         RetentionFeatures::kKyteDoolittle, remove_in_source_, train_psms_, test_psms_);
   } else {
     vector<PSMDescription*> tmp;
-    in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
+    in_source_fragments = DataManager::RemoveInSourceFragments(enzyme_, hydrophobicity_diff_,
         RetentionFeatures::kKyteDoolittle, false, train_psms_, tmp);
   }
   if (!in_source_file_.empty()) {
@@ -375,8 +380,8 @@ int EludeCaller::ProcessTrainData() {
   // remove non enzymatic
   if (remove_non_enzymatic_) {
     if (context_format_) {
-      DataManager::RemoveNonEnzymatic(train_psms_, "train data");
-      DataManager::RemoveNonEnzymatic(test_psms_, "test data");
+      DataManager::RemoveNonEnzymatic(enzyme_, train_psms_, "train data");
+      DataManager::RemoveNonEnzymatic(enzyme_, test_psms_, "test data");
     } else {
       if (VERB >= 4) {
         cerr << "Warning: non-enzymatic peptides cannot be detected unless the peptides"
@@ -456,7 +461,7 @@ int EludeCaller::ProcessTestData() {
   if (!in_source_file_.empty() || remove_in_source_) {
     if (test_includes_rt_) {
       vector< pair<PSMDescription*, string> > in_source_fragments;
-      in_source_fragments = DataManager::RemoveInSourceFragments(hydrophobicity_diff_,
+      in_source_fragments = DataManager::RemoveInSourceFragments(enzyme_, hydrophobicity_diff_,
           RetentionFeatures::kKyteDoolittle, remove_in_source_, train_psms_, test_psms_);
       if (!in_source_file_.empty()) {
         DataManager::WriteInSourceToFile(in_source_file_, in_source_fragments);
@@ -472,7 +477,7 @@ int EludeCaller::ProcessTestData() {
   // remove non enzymatic
   if (remove_non_enzymatic_) {
     if (context_format_) {
-      DataManager::RemoveNonEnzymatic(test_psms_, "test data");
+      DataManager::RemoveNonEnzymatic(enzyme_, test_psms_, "test data");
     } else {
       if (VERB >= 4) {
         cerr << "Warning: non-enzymatic peptides cannot be detected unless the peptides"

@@ -47,7 +47,8 @@ class ParseOptions
     missed_cleavages(0),
     targetDb(""),
     decoyDb(""),
-    readProteins(false)
+    readProteins(false),
+    enzymeString("trypsin")
     {};
     bool calcQuadraticFeatures;
     bool calcAAFrequencies;
@@ -74,6 +75,7 @@ class ParseOptions
     std::string targetDb;
     std::string decoyDb;
     bool readProteins;
+    std::string enzymeString;
 };
 
 #endif // PARSEOPTIONS_H

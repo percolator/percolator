@@ -25,7 +25,7 @@ class SqtReader: public Reader {
 
  public:
   
-  SqtReader(ParseOptions *po);
+  SqtReader(ParseOptions po);
   
   virtual ~SqtReader();
   

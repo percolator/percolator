@@ -32,7 +32,7 @@ ProteinProbEstimator::ProteinProbEstimator(bool trivialGrouping, double absenceR
 
 ProteinProbEstimator::~ProteinProbEstimator() {}
 
-bool ProteinProbEstimator::initialize(Scores& peptideScores) {
+bool ProteinProbEstimator::initialize(Scores& peptideScores, const Enzyme* enzyme) {
   setTargetandDecoysNames(peptideScores);
   return true;
 }

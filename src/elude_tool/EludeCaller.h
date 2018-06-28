@@ -171,7 +171,7 @@ class EludeCaller{
    bool remove_common_peptides_;
    /* ignore the ptms */
    bool ignore_ptms_;
-   /* only th ehydrophobicity index should be trained */
+   /* only the hydrophobicity index should be trained */
    bool only_hydrophobicity_index_;
    /* train and test peptide-spectrum matches */
    std::vector<PSMDescription*> train_psms_;
@@ -194,6 +194,8 @@ class EludeCaller{
    LTSRegression *lts;
    /* supress final print */
    bool supress_print_;
+   /* cleavage enzyme */
+   Enzyme* enzyme_;
 };
 
 #endif /* ELUDE_ELUDECALLER_H_ */

@@ -96,7 +96,7 @@ class Protein {
 class Reader {
  public:
   
-  Reader(ParseOptions *po);
+  Reader(ParseOptions po);
   
   Reader();
   
@@ -177,10 +177,11 @@ class Reader {
    ::percolatorInNs::featureDescriptions f_seq;
    int maxCharge;
    int minCharge;
-   ParseOptions *po;
+   ParseOptions po;
    std::map<char, double> massMap_;
    std::map<int, vector<double> > scan2rt;
    std::vector<Protein*> proteins;
+   Enzyme* enzyme_;
 };
 
 #endif

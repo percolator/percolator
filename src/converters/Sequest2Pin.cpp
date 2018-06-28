@@ -27,7 +27,7 @@ int Sequest2Pin::run() {
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = outputFN;
-  reader = new SequestReader(&parseOptions);
+  reader = new SequestReader(parseOptions);
   
   reader->init();
   reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);

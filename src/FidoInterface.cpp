@@ -96,7 +96,7 @@ FidoInterface::~FidoInterface() {
   proteinGraph_ = 0;
 }
 
-bool FidoInterface::initialize(Scores& peptideScores) {  
+bool FidoInterface::initialize(Scores& peptideScores, const Enzyme* enzyme) {  
   doGridSearch_ = !(alpha_ != -1 && beta_ != -1 && gamma_ != -1);
   
   localPeptidePrior_ = kPeptidePrior;
@@ -113,7 +113,7 @@ bool FidoInterface::initialize(Scores& peptideScores) {
   
   peptideScorePtr_ = &peptideScores;
   
-  return ProteinProbEstimator::initialize(peptideScores);
+  return ProteinProbEstimator::initialize(peptideScores, enzyme);
 }
 
 double FidoInterface::estimatePriors(Scores& peptideScores) {

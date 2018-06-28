@@ -29,6 +29,9 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <functional>
+
+#include "Enzyme.h"
 
 class PSMDescription;
 class PSMDescriptionDOC;
@@ -53,11 +56,12 @@ class DataManager {
    static std::string GetMSPeptide(const std::string &peptide);
    /* check if child is in-source fragment of parent*/
    static bool IsFragmentOf(const PSMDescription* child, const PSMDescription* parent,
-                     const double &diff, const std::map<std::string, double> &index);
+                     const Enzyme* enzyme, const double &diff, const std::map<std::string, double> &index);
    /* remove in source fragments from the train data; if remove_from_test is true,
     * then we remove the fragments from the test data as well; return a list of
     * in-source fragment, Train/Test depending where the fragment was identified */
    static std::vector< std::pair<PSMDescription*, std::string> > RemoveInSourceFragments(
+       const Enzyme* enzyme,
        const double &diff, const std::map<std::string, double> &index,
        bool remove_from_test, std::vector<PSMDescription*> &train_psms,
        std::vector<PSMDescription*> &test_psms);
@@ -65,7 +69,7 @@ class DataManager {
    static std::vector< std::pair<std::pair<PSMDescription*, std::string>, bool> > CombineSets(
        std::vector<PSMDescription*> &train_psms, std::vector<PSMDescription*> &test_psms);
    /* remove non-enzymatic peptides*/
-   static std::vector<PSMDescription*> RemoveNonEnzymatic(std::vector<PSMDescription*> &psms,
+   static std::vector<PSMDescription*> RemoveNonEnzymatic(const Enzyme* enzyme, std::vector<PSMDescription*> &psms,
        const std::string &mesg);
    /* write in source fragments to file */
    static int WriteInSourceToFile(const std::string &file_name,

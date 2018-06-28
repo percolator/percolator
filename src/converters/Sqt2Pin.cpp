@@ -29,7 +29,7 @@ int Sqt2Pin::run() {
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = outputFN;
-  reader = new SqtReader(&parseOptions);
+  reader = new SqtReader(parseOptions);
   
   reader->init();
   reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);

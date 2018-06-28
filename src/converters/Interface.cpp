@@ -170,7 +170,7 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   
   //option e has been changed, see above
   if (cmd.optionSet("enzyme")) {
-    Enzyme::setEnzyme(cmd.options["enzyme"]);
+    parseOptions.enzymeString = cmd.options["enzyme"];
   }
   if (cmd.optionSet("PNGaseF")) parseOptions.pngasef = true;
   if (cmd.optionSet("aa-freq")) parseOptions.calcAAFrequencies = true;

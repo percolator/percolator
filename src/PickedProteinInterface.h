@@ -59,7 +59,7 @@ class PickedProteinInterface : public ProteinProbEstimator {
     double specCountQvalThreshold);
   virtual ~PickedProteinInterface();
   
-  bool initialize(Scores& fullset);
+  bool initialize(Scores& fullset, const Enzyme* enzyme);
   void run() {}
   void computeProbabilities(const std::string& fname = "");
   

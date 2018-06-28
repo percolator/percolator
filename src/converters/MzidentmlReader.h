@@ -45,7 +45,7 @@ class MzidentmlReader: public Reader
 
 public:
 
-  MzidentmlReader(ParseOptions *po);
+  MzidentmlReader(ParseOptions po);
 
   virtual ~MzidentmlReader();
 

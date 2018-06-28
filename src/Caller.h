@@ -43,6 +43,7 @@
 #include "PickedProteinInterface.h"
 #include "XMLInterface.h"
 #include "CrossValidation.h"
+#include "Enzyme.h"
 
 /*
 * Main class that starts and controls the calculations.
@@ -70,6 +71,7 @@ class Caller {
   Normalizer* pNorm_;
   SanityCheck* pCheck_;
   ProteinProbEstimator* protEstimator_;
+  Enzyme* enzyme_;
   
   // file input parameters
   bool tabInput_;

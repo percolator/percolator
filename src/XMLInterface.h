@@ -73,11 +73,11 @@ class XMLInterface {
   
   int readPin(istream& dataStream, const std::string& xmlInputFN, 
     SetHandler& setHandler, SanityCheck*& pCheck, 
-    ProteinProbEstimator* protEstimator);
+    ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
   int readAndScorePin(istream& dataStream, std::vector<double>& rawWeights, 
     Scores& allScores, const std::string& xmlInputFN,
     SetHandler& setHandler, SanityCheck*& pCheck, 
-    ProteinProbEstimator* protEstimator);
+    ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
   
   void writeXML_PSMs(Scores& fullset);
   void writeXML_Peptides(Scores& fullset);

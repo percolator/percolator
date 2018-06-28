@@ -34,7 +34,7 @@ const std::map<string,double> MsgfplusReader::msgfplusFeaturesDefaultValue =
     ("dM", 0.0)
     ("absdM", -1.0);
 
-MsgfplusReader::MsgfplusReader(ParseOptions *po) :
+MsgfplusReader::MsgfplusReader(ParseOptions po) :
 		MzidentmlReader(po),
 		useFragmentSpectrumFeatures(false),
 		additionalMsgfFeatures(false),
@@ -170,14 +170,14 @@ void MsgfplusReader::addFeatureDescriptions(bool doEnzyme)
     push_backFeatureDescription("enzInt");
   }
 
-  if (po->calcPTMs) {
+  if (po.calcPTMs) {
     push_backFeatureDescription("ptm");
   }
-  if (po->pngasef) {
+  if (po.pngasef) {
     push_backFeatureDescription("PNGaseF");
   }
 
-  if (po->calcAAFrequencies) {
+  if (po.calcAAFrequencies) {
     BOOST_FOREACH (const char aa, freqAA) {
       std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
@@ -258,9 +258,9 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       throw MyException(temp.str());
     }
 
-    if (po->iscombined && !po->reversedFeaturePattern.empty()) {
+    if (po.iscombined && !po.reversedFeaturePattern.empty()) {
       //NOTE taking the highest ranked PSM protein for combined search
-      isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
+      isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
     }
 
     double rank = item.rank();
@@ -377,10 +377,10 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     for (int c = minCharge; c <= maxCharge; c++) {
       f_seq.push_back(charge == c ? 1.0 : 0.0); // Charge
     }
-    if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-      f_seq.push_back(Enzyme::isEnzymatic(peptideSeqWithFlanks.at(0), peptideSeqWithFlanks.at(2)) ? 1.0 : 0.0);
-      f_seq.push_back(Enzyme::isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3), peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1)) ? 1.0 : 0.0);
-      f_seq.push_back((double) Enzyme::countEnzymatic(peptideSeq));
+    if (enzyme_->getEnzymeType() != Enzyme::NO_ENZYME) {
+      f_seq.push_back(enzyme_->isEnzymatic(peptideSeqWithFlanks.at(0), peptideSeqWithFlanks.at(2)) ? 1.0 : 0.0);
+      f_seq.push_back(enzyme_->isEnzymatic(peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 3), peptideSeqWithFlanks.at(peptideSeqWithFlanks.size() - 1)) ? 1.0 : 0.0);
+      f_seq.push_back((double) enzyme_->countEnzymatic(peptideSeq));
     }
 
     percolatorInNs::occurence::flankN_type flankN = peptideSeqWithFlanks.substr(0, 1);
@@ -422,13 +422,13 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       }
     }
     
-    if (po->calcPTMs) {
+    if (po.calcPTMs) {
       f_seq.push_back(numPTMs);
     }
-    if (po->pngasef) {
+    if (po.pngasef) {
       f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy));
     }
-    if (po->calcAAFrequencies) {
+    if (po.calcAAFrequencies) {
       computeAAFrequencies(peptideSeqWithFlanks, f_seq);
     }
 

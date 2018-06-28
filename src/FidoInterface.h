@@ -74,7 +74,7 @@ class FidoInterface : public ProteinProbEstimator {
     double specCountQvalThreshold = -1.0);
   virtual ~FidoInterface();
   
-  bool initialize(Scores& peptideScores);
+  bool initialize(Scores& peptideScores, const Enzyme* enzyme);
   void run();
   void computeProbabilities(const std::string& fname = "");
   

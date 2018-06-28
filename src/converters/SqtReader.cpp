@@ -14,7 +14,7 @@ boost::assign::map_list_of("lnrSp", 0.0)
 ("Charge2", 0.149)
 ("Charge3", -0.156);
 
-SqtReader::SqtReader(ParseOptions *po):Reader(po)
+SqtReader::SqtReader(ParseOptions po):Reader(po)
 {
 }
 
@@ -42,7 +42,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
   std::string protein;
   std::vector< std::string > proteinIds;
-  std::map<char,int> ptmMap = po->ptmScheme; 
+  std::map<char,int> ptmMap = po.ptmScheme; 
 
   while (getline(instr, line)) {
     if (line[0] == 'S') {
@@ -104,24 +104,24 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
         for (int c = minCharge; c <= maxCharge; c++)
           f_seq.push_back( charge == c ? 1.0 : 0.0); // Charge
 
-        if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-          f_seq.push_back( Enzyme::isEnzymatic(peptideNoMods.at(0),peptideNoMods.at(2)) ? 1.0 : 0.0);
-          f_seq.push_back( Enzyme::isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3),peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
-          std::string peptid2 = peptideNoMods.substr(2, peptideNoMods.length() - 4);
-          f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
+        if (enzyme_->getEnzymeType() != Enzyme::NO_ENZYME) {
+          f_seq.push_back( enzyme_->isEnzymatic(peptideNoMods.at(0),peptideNoMods.at(2)) ? 1.0 : 0.0);
+          f_seq.push_back( enzyme_->isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3),peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
+          std::string peptide2 = peptideNoMods.substr(2, peptideNoMods.length() - 4);
+          f_seq.push_back( (double)enzyme_->countEnzymatic(peptide2) );
         }
         
         f_seq.push_back( log(max(1.0, nSM)));
         f_seq.push_back( dM ); // obs - calc mass
         f_seq.push_back( abs(dM) ); // abs only defined for integers on some systems
         
-        if (po->calcPTMs) {
+        if (po.calcPTMs) {
 	        f_seq.push_back(cntPTMs(peptide, ptmMap));
 	      }
-	      if (po->pngasef) {
+	      if (po.pngasef) {
 	        f_seq.push_back(isPngasef(peptide, isDecoy));
 	      }
-        if (po->calcAAFrequencies) {
+        if (po.calcAAFrequencies) {
           computeAAFrequencies(peptideNoMods, f_seq);
         }
         gotL = false;
@@ -173,11 +173,11 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
     }  
   }
   
-  if (po->iscombined) {
+  if (po.iscombined) {
     // if one of the proteins is a target protein, we classify the PSM as a target PSM
     isDecoy = true;
     for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
-      if (i->find(po->reversedFeaturePattern, 0) == std::string::npos) {
+      if (i->find(po.reversedFeaturePattern, 0) == std::string::npos) {
         isDecoy = false;
         break;
       }
@@ -284,9 +284,9 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
     if (line[0] == 'L') {
       ++lines;
       buff << line << std::endl;
-      if ((int)theMs.size() < po->hitsPerSpectrum && 
-           ( !po->iscombined || !isDecoy || ( po->reversedFeaturePattern == "" || 
-           ((line.find(po->reversedFeaturePattern, 0) != std::string::npos))))) {
+      if ((int)theMs.size() < po.hitsPerSpectrum && 
+           ( !po.iscombined || !isDecoy || ( po.reversedFeaturePattern == "" || 
+           ((line.find(po.reversedFeaturePattern, 0) != std::string::npos))))) {
 	      theMs.insert(ms - 1);
       }
     }
@@ -388,15 +388,15 @@ void SqtReader::addFeatureDescriptions(bool doEnzyme)
   push_backFeatureDescription("lnNumSP");
   push_backFeatureDescription("dM");
   push_backFeatureDescription("absdM");
-  if (po->calcPTMs) 
+  if (po.calcPTMs) 
   {
     push_backFeatureDescription("ptm");
   }
-  if (po->pngasef) 
+  if (po.pngasef) 
   {
     push_backFeatureDescription("PNGaseF");
   }
-  if (po->calcAAFrequencies)
+  if (po.calcAAFrequencies)
   {
     BOOST_FOREACH (const char aa, freqAA) {
       std::string temp = std::string(1,aa) + "-Freq";

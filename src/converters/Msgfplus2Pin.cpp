@@ -31,7 +31,7 @@ int Msgfplus2pin::run() {
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = outputFN;
-  reader = new MsgfplusReader(&parseOptions);
+  reader = new MsgfplusReader(parseOptions);
 
   reader->init();
   reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);

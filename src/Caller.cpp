@@ -28,8 +28,8 @@
 using namespace std;
 
 Caller::Caller() :
-    pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), tabInput_(true), 
-    readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true), 
+    pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL), 
+    tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true), 
     tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""), 
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
@@ -55,6 +55,10 @@ Caller::~Caller() {
     delete protEstimator_;
   }
   protEstimator_ = NULL;
+  if (enzyme_) {
+    delete enzyme_;
+  }
+  enzyme_ = NULL;
 }
 
 string Caller::extendedGreeter(time_t& startTime) {
@@ -280,7 +284,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
-      "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\". Default=\"trypsin\".",
+      "Type of enzyme used for in silico protein digestion for picked protein-level FDR estimation. One of \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"trypsinp\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\". Default=\"trypsin\".",
       "",
       "trypsin");
   cmd.defineOption("c",
@@ -453,6 +457,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       checkIsWritable(decoyPeptideResultFN_);
     }
   }
+  
+  if (cmd.optionSet("protein-enzyme")) {
+    enzyme_ = Enzyme::createEnzyme(cmd.options["protein-enzyme"]);
+  } else {
+    enzyme_ = Enzyme::createEnzyme(Enzyme::TRYPSIN);
+  }
 
   if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
   
@@ -522,15 +532,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       double pickedProteinPvalueCutoff = 1.0;
       bool pickedProteinReportFragmentProteins = false;
       bool pickedProteinReportDuplicateProteins = false;
-      if (cmd.optionSet("protein-enzyme")) {
-        Enzyme::setEnzyme(cmd.options["protein-enzyme"]);
-      }      
       //if (cmd.optionSet("Q")) pickedProteinPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
       if (cmd.optionSet("protein-report-fragments")) pickedProteinReportFragmentProteins = true;
       if (cmd.optionSet("protein-report-duplicates")) pickedProteinReportDuplicateProteins = true;
       
-      protEstimator_ = new PickedProteinInterface(fastaDatabase, pickedProteinPvalueCutoff,
-          pickedProteinReportFragmentProteins, pickedProteinReportDuplicateProteins,
+      protEstimator_ = new PickedProteinInterface(fastaDatabase,
+          pickedProteinPvalueCutoff, pickedProteinReportFragmentProteins, 
+          pickedProteinReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorAbsenceRatio, 
           protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
           protEstimatorPeptideQvalThreshold);
@@ -806,7 +814,7 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
     cerr << protEstimator_->printCopyright();
   }
   
-  protEstimator_->initialize(allScores);
+  protEstimator_->initialize(allScores, enzyme_);
   
   if (VERB > 1) {
     std::cerr << "Initialized protein inference engine." << std::endl;
@@ -896,7 +904,7 @@ int Caller::run() {
     if (VERB > 1) {
       std::cerr << "Reading pin-xml input from datafile " << inputFN_ << std::endl;
     }
-    success = xmlInterface.readPin(dataStream, inputFN_, setHandler, pCheck_, protEstimator_);
+    success = xmlInterface.readPin(dataStream, inputFN_, setHandler, pCheck_, protEstimator_, enzyme_);
   } else {
     if (VERB > 1) {
       std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << std::endl;
@@ -1038,7 +1046,7 @@ int Caller::run() {
     fileStream.clear();
     fileStream.seekg(0, ios::beg);
     if (!tabInput_) {
-      success = xmlInterface.readAndScorePin(fileStream, rawWeights, allScores, inputFN_, setHandler, pCheck_, protEstimator_);
+      success = xmlInterface.readAndScorePin(fileStream, rawWeights, allScores, inputFN_, setHandler, pCheck_, protEstimator_, enzyme_);
     } else {
       success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores, pCheck_);
     }
@@ -1094,6 +1102,5 @@ int Caller::run() {
   }
   // write output to file
   xmlInterface.writeXML(allScores, protEstimator_, call_);
-  Enzyme::destroy();
   return 1;
 }

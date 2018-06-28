@@ -26,7 +26,7 @@ int Tandem2Pin::run() {
   parseOptions.call = call;
   parseOptions.spectrumFN = spectrumFile;
   parseOptions.xmlOutputFN = outputFN;
-  reader = new TandemReader(&parseOptions);
+  reader = new TandemReader(parseOptions);
   
   reader->init();
   reader->print((outputFN == "") ? std::cout : outputStream, xmlOutput);

@@ -26,7 +26,7 @@ class SequestReader : public MzidentmlReader {
 
   public:
 
-    SequestReader(ParseOptions *po);
+    SequestReader(ParseOptions po);
     virtual ~SequestReader();
     bool checkValidity(const std::string &file);
     void addFeatureDescriptions(bool doEnzyme);

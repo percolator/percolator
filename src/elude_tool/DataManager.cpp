@@ -69,8 +69,8 @@ public:
    return psm.first;
  }
 
- static bool IsEnzymatic(const PSMDescription* psm) {
-   return Enzyme::isEnzymatic(psm->peptide);
+ static bool IsEnzymatic(const Enzyme* enzyme, const PSMDescription* psm) {
+   return enzyme->isEnzymatic(psm->peptide);
  }
 };
 
@@ -206,7 +206,7 @@ string DataManager::GetMSPeptide(const string& peptide) {
 
 /* check if child is in-source fragment from parent either the difference
  * in hydrophobicity is greater than difference according to the givem index*/
-bool DataManager::IsFragmentOf(const PSMDescription* child, const PSMDescription* parent,
+bool DataManager::IsFragmentOf(const PSMDescription* child, const PSMDescription* parent, const Enzyme* enzyme,
                                const double &diff, const map<string, double> &index) {
   string peptide_parent = parent->peptide;
   string ms_peptide_parent = GetMSPeptide(peptide_parent);
@@ -226,7 +226,7 @@ bool DataManager::IsFragmentOf(const PSMDescription* child, const PSMDescription
   }
   // parent enzymatic, child non enzymatic
   if (peptide_parent != ms_peptide_parent && peptide_child != ms_peptide_child &&
-      Enzyme::isEnzymatic(peptide_parent) && (!Enzyme::isEnzymatic(peptide_child))) {
+      enzyme->isEnzymatic(peptide_parent) && (!enzyme->isEnzymatic(peptide_child))) {
     return true;
   }
   // difference in retention sum > diff
@@ -259,6 +259,7 @@ vector< pair<pair<PSMDescription*, string>, bool> > DataManager::CombineSets(
 }
 
 vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
+  const Enzyme* enzyme,
   const double &diff, const map<string, double> &index,
   bool remove_from_test, vector<PSMDescription*> &train_psms,
   vector<PSMDescription*> &test_psms) {
@@ -286,7 +287,7 @@ vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
     is_in_source = false;
     while ((j >= 0) && (((rt_parent =
         combined_psms[j].first.first->getRetentionTime()) * 1.05) >= rt_child)) {
-      if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, diff, index)) {
+      if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, enzyme, diff, index)) {
         combined_psms[i].second = true;
         is_in_source = true;
         break;
@@ -297,7 +298,7 @@ vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
       j = i + 1;
       while ((j < number_psms) && (((rt_parent =
           combined_psms[j].first.first->getRetentionTime()) * 0.95) <= rt_child)) {
-        if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, diff, index)) {
+        if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, enzyme, diff, index)) {
           combined_psms[i].second = true;
           break;
         }
@@ -343,14 +344,14 @@ vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
 }
 
 /* return a list of non-enzymatic peptides; this peptides are removed from the psms */
-vector<PSMDescription*> DataManager::RemoveNonEnzymatic(vector<PSMDescription*> &psms,
-    const string &mesg) {
+vector<PSMDescription*> DataManager::RemoveNonEnzymatic(const Enzyme* enzyme,
+    vector<PSMDescription*> &psms, const string &mesg) {
   if (VERB >= 4) {
     cerr << "Removing non enzymatic peptides from the " << mesg << "..." << endl;
   }
   int initial_size = psms.size();
   vector<PSMDescription*>::iterator it =
-      partition(psms.begin(), psms.end(), Utilities::IsEnzymatic);
+      partition(psms.begin(), psms.end(), std::bind1st(ptr_fun(Utilities::IsEnzymatic), enzyme));
   vector<PSMDescription*> non_enzymatic(it, psms.end());
   //for(int i = 0; i < non_enzymatic.size(); ++i)
   //   cout << non_enzymatic[i].peptide << endl;

@@ -14,23 +14,22 @@ const std::map<unsigned, double> Reader::ptmMass =
                                 (730, 0.0) (364, 0.0) (29, 0.0) (27, 0.0);
 
 
-Reader::Reader(ParseOptions *__po)
-:po(__po)
-{
+Reader::Reader(ParseOptions __po) : po(__po) {
   tmpDirs = std::vector<char*>();
   tmpFNs = std::vector<std::string>();
   maxCharge = -1;
   minCharge = 10000;
-  initMassMap(po->monoisotopic);
+  initMassMap(po.monoisotopic);
+  enzyme_ = Enzyme::createEnzyme(po.enzymeString);
 }
 
-Reader::Reader() {
-  po = 0;
+Reader::Reader() : po() {
   tmpDirs = std::vector<char*>();
   tmpFNs = std::vector<std::string>();
   maxCharge = -1;
   minCharge = 10000;
-  initMassMap(po->monoisotopic);
+  initMassMap(po.monoisotopic);
+  enzyme_ = Enzyme::createEnzyme(po.enzymeString);
 }
 
 
@@ -41,10 +40,14 @@ Reader::~Reader() {
     }
     free(tmpDirs[i]);
   }
+  if (enzyme_) {
+    delete enzyme_;
+  }
+  enzyme_ = NULL;
 }
 
 void Reader::init() {
-  MassHandler::setMonoisotopicMass(po->monoisotopic);
+  MassHandler::setMonoisotopicMass(po.monoisotopic);
   
   // initializing xercesc objects corresponding to pin element...
   xercesc::XMLPlatformUtils::Initialize ();
@@ -53,7 +56,7 @@ void Reader::init() {
   std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p (new ::percolatorInNs::featureDescriptions());
 
   // ... <process_info>
-  percolatorInNs::process_info::command_line_type command_line = po->call;
+  percolatorInNs::process_info::command_line_type command_line = po.call;
   std::auto_ptr<percolatorInNs::process_info> proc_info (new ::percolatorInNs::process_info(command_line));
 
   // ... <experiment>
@@ -64,29 +67,29 @@ void Reader::init() {
 
   bool isMeta = false;
 
-  if (po->readProteins) {
-    readProteins(po->targetDb,po->decoyDb);
+  if (po.readProteins) {
+    readProteins(po.targetDb,po.decoyDb);
   }
 
   // check files exists and if they are metafiles or not
-  if (!po->iscombined) {
-    std::ifstream targetFileIn(po->targetFN.data(), std::ios::in);
-    std::ifstream decoyFileIn(po->decoyFN.data(), std::ios::in);
+  if (!po.iscombined) {
+    std::ifstream targetFileIn(po.targetFN.data(), std::ios::in);
+    std::ifstream decoyFileIn(po.decoyFN.data(), std::ios::in);
     if (!targetFileIn) {
       targetFileIn.close();
       decoyFileIn.close();
       ostringstream temp;
-      temp << "Error : unable to open or read file " << po->targetFN << std::endl;
+      temp << "Error : unable to open or read file " << po.targetFN << std::endl;
       throw MyException(temp.str());
     } else if (!decoyFileIn) {
       targetFileIn.close();
       decoyFileIn.close();
       ostringstream temp;
-      temp << "Error : unable to open or read file " << po->decoyFN << std::endl;
+      temp << "Error : unable to open or read file " << po.decoyFN << std::endl;
       throw MyException(temp.str());
     }
-    bool isMetaTarget = checkIsMeta(po->targetFN);
-    bool isMetaDecoy = checkIsMeta(po->decoyFN);
+    bool isMetaTarget = checkIsMeta(po.targetFN);
+    bool isMetaDecoy = checkIsMeta(po.decoyFN);
     if (isMetaTarget == isMetaDecoy) {
       isMeta = isMetaTarget;
     } else {
@@ -96,13 +99,13 @@ void Reader::init() {
       throw MyException(temp.str());
     }
   } else {
-    isMeta = checkIsMeta(po->targetFN);
+    isMeta = checkIsMeta(po.targetFN);
   }
   // NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters.
   //      tandemReader for instance checks if a certain attribute is present or not.
   if (isMeta) {
     std::string line;
-    std::ifstream meta(po->targetFN.data(), std::ios::in);
+    std::ifstream meta(po.targetFN.data(), std::ios::in);
     while (getline(meta, line)) {
       if (line.size() > 0 && line[0] != '#') {
         line.erase(std::remove(line.begin(),line.end(),' '),line.end());
@@ -111,8 +114,8 @@ void Reader::init() {
       }
     }
     meta.close();
-    if (!po->iscombined) {
-      meta.open(po->decoyFN.data(), std::ios::in);
+    if (!po.iscombined) {
+      meta.open(po.decoyFN.data(), std::ios::in);
       while (getline(meta, line)) {
         if (line.size() > 0 && line[0] != '#') {
           line.erase(std::remove(line.begin(),line.end(),' '),line.end());
@@ -123,26 +126,26 @@ void Reader::init() {
       meta.close();
     }
   } else {
-    checkValidity(po->targetFN);
-    getMaxMinCharge(po->targetFN,false);
-    if (!po->iscombined){
-      checkValidity(po->decoyFN);
-      getMaxMinCharge(po->decoyFN,true);
+    checkValidity(po.targetFN);
+    getMaxMinCharge(po.targetFN,false);
+    if (!po.iscombined){
+      checkValidity(po.decoyFN);
+      getMaxMinCharge(po.decoyFN,true);
     }
   }
   //once I have max/min charge I can put in the features
-  addFeatureDescriptions(Enzyme::getEnzymeType() != Enzyme::NO_ENZYME);
+  addFeatureDescriptions(enzyme_->getEnzymeType() != Enzyme::NO_ENZYME);
 
-  if (!po->iscombined) {
-    translateFileToXML(po->targetFN, false /* is_decoy */,0,isMeta);
-    translateFileToXML(po->decoyFN, true /* is_decoy */,0,isMeta);
+  if (!po.iscombined) {
+    translateFileToXML(po.targetFN, false /* is_decoy */,0,isMeta);
+    translateFileToXML(po.decoyFN, true /* is_decoy */,0,isMeta);
   } else {
-    translateFileToXML(po->targetFN, false /* is_decoy */,0,isMeta);
+    translateFileToXML(po.targetFN, false /* is_decoy */,0,isMeta);
   }
 
   // read retention time if the converter was invoked with -2 option
-  if (po->spectrumFN.size() > 0) {
-    readRetentionTime(po->spectrumFN);
+  if (po.spectrumFN.size() > 0) {
+    readRetentionTime(po.spectrumFN);
     databases[0]->initRTime(&scan2rt);
     storeRetentionTime(databases[0]);
   }
@@ -165,23 +168,23 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
         "-" + schema_minor + "/src/xml/percolator_in.xsd\"> \n";
 
     outputStream << headerStr;
-    if (VERB>2 && po->xmlOutputFN == "")
-      cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
+    if (VERB>2 && po.xmlOutputFN == "")
+      cerr <<  "The output will be written to " << po.xmlOutputFN << endl;
     
-    string enzymeStr = "\n<enzyme>" + Enzyme::getStringEnzyme() + "</enzyme>\n";
+    string enzymeStr = "\n<enzyme>" + enzyme_->getStringEnzyme() + "</enzyme>\n";
 
     outputStream << enzymeStr;
 
-    if (po->readProteins) {
+    if (po.readProteins) {
       serializer ser;
       ser.start (outputStream);
 
-      ::percolatorInNs::databases databases(po->targetDb,po->decoyDb);
+      ::percolatorInNs::databases databases(po.targetDb,po.decoyDb);
       ser.next ( PERCOLATOR_IN_NAMESPACE, "databases",databases);
     }
 
     string commandLine = "\n<process_info>\n" +
-        string("  <command_line>") + po->call.substr(0,po->call.length()-1)
+        string("  <command_line>") + po.call.substr(0,po.call.length()-1)
         + "</command_line>\n" + "</process_info>\n";
     outputStream << commandLine;
     
@@ -211,7 +214,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
     }
     
     // print proteins
-    if (po->readProteins && !proteins.empty()) {
+    if (po.readProteins && !proteins.empty()) {
       outputStream << "\n";
 
       serializer ser;
@@ -233,8 +236,8 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
 
     xercesc::XMLPlatformUtils::Terminate();
   } else { // tab delimited input files
-    if (VERB>2 && po->xmlOutputFN != "")
-      cerr <<  "The output will be written to " << po->xmlOutputFN << endl;
+    if (VERB>2 && po.xmlOutputFN != "")
+      cerr <<  "The output will be written to " << po.xmlOutputFN << endl;
     
     if (VERB>2)
       cerr << "\nWriting output:\n";
@@ -411,7 +414,7 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge) {
     if (freqAA.find(pepsequence[i]) != string::npos) {
       mass += massMap_[pepsequence[i]];
     } else if(modifiedAA.find(pepsequence[i]) != std::string::npos) {
-      unsigned annotation = po->ptmScheme[pepsequence[i]];
+      unsigned annotation = po.ptmScheme[pepsequence[i]];
       mass += ptmMass.at(annotation);
     } else {
       ostringstream temp;
@@ -540,7 +543,7 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
 	        std::string protein_seq;
 	        read_from_fasta(buffer,protein_name,protein_seq);
 	        //std::cerr << " Reading " << protein_name << " " << protein_seq << std::endl;
-	        if(isCombined) isDecoy = protein_name.find(po->reversedFeaturePattern,0) != std::string::npos;
+	        if(isCombined) isDecoy = protein_name.find(po.reversedFeaturePattern,0) != std::string::npos;
 	        std::set<std::string> peptides;
 	        double totalMass = 0.0;
 	        //NOTE here I should check the enzyme and do the according digestion a switch
@@ -575,7 +578,7 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
   }
 
   std::string type = isDecoy ?  "decoy" : "target";
-  if (po->iscombined) type = "target and decoy";
+  if (po.iscombined) type = "target and decoy";
 
   if (proteins_counter == 0) {
     ostringstream temp;
@@ -601,7 +604,7 @@ unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
     if (start == 0 || ( protsequence[start+1] != 'P'
         && ( protsequence[start] == 'K' || protsequence[start] == 'R' ) ) ) {
       unsigned int numMisCleavages = 0;
-      for(size_t end=start+1;( end<=length && numMisCleavages <= po->missed_cleavages );end++) {
+      for(size_t end=start+1;( end<=length && numMisCleavages <= po.missed_cleavages );end++) {
     	//NOTE I am missing the case when a tryptip digested peptide has a K|R and P at the end of the sequence
         if ( (protsequence[end] == 'K' || protsequence[end] == 'R')
 	          && (protsequence[end+1] != 'P' || end == length ) ) {
@@ -612,10 +615,10 @@ unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
             finish++;
           }
           std::string peptide = protsequence.substr(begin,finish);
-          if (peptide.size() >= po->peptidelength && peptide.size() <= po->maxpeplength) {
+          if (peptide.size() >= po.peptidelength && peptide.size() <= po.maxpeplength) {
 	          double mass = calculatePepMAss(peptide);
 
-	          if ((mass > po->minmass) && (mass < po->maxmass) ) {
+	          if ((mass > po.minmass) && (mass < po.maxmass) ) {
 		          peptides.insert(peptide);
 		          totalMass+=mass;
 	          }

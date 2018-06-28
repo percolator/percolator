@@ -11,7 +11,7 @@ boost::assign::map_list_of("sequest:PeptideRankSp", 0)
                                   ("sequest:PeptideIdnumber", 6)
                                   ("sequest:PeptideNumber", 7);
 
-SequestReader::SequestReader(ParseOptions *po) : MzidentmlReader(po) {}
+SequestReader::SequestReader(ParseOptions po) : MzidentmlReader(po) {}
 
 SequestReader::~SequestReader() {}
 
@@ -91,14 +91,14 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
     push_backFeatureDescription("enzInt");
   }
 
-  if (po->calcPTMs) {
+  if (po.calcPTMs) {
     push_backFeatureDescription("ptm");
   }
-  if (po->pngasef) {
+  if (po.pngasef) {
     push_backFeatureDescription("PNGaseF");
   }
 
-  if (po->calcAAFrequencies) {
+  if (po.calcAAFrequencies) {
     BOOST_FOREACH (const char aa, freqAA) {
       std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
@@ -161,9 +161,9 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
       throw MyException(temp.str());
     }
 
-    if (po->iscombined && !po->reversedFeaturePattern.empty()) {
+    if (po.iscombined && !po.reversedFeaturePattern.empty()) {
       //NOTE taking the highest ranked PSM protein for combined search
-      isDecoy = proteinIds.front().find(po->reversedFeaturePattern, 0) != std::string::npos;
+      isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
     }
 
     double rank = item.rank();
@@ -173,7 +173,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
-    std::map<char, int> ptmMap = po->ptmScheme;
+    std::map<char, int> ptmMap = po.ptmScheme;
     std::string peptideNoMods = removePTMs(peptideSeqWithFlanks, ptmMap);
     psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
             boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
@@ -218,20 +218,20 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     for (int c = minCharge; c <= maxCharge; c++) {
       f_seq.push_back(charge == c ? 1.0 : 0.0); // Charge
     }
-    if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
-      f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(0), peptideNoMods.at(2)) ? 1.0 : 0.0);
-      f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3), peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
-      std::string peptid2 = peptideNoMods.substr(2, peptideNoMods.size() - 4);
-      f_seq.push_back((double) Enzyme::countEnzymatic(peptid2));
+    if (enzyme_->getEnzymeType() != Enzyme::NO_ENZYME) {
+      f_seq.push_back(enzyme_->isEnzymatic(peptideNoMods.at(0), peptideNoMods.at(2)) ? 1.0 : 0.0);
+      f_seq.push_back(enzyme_->isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3), peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
+      std::string peptide2 = peptideNoMods.substr(2, peptideNoMods.size() - 4);
+      f_seq.push_back((double) enzyme_->countEnzymatic(peptide2));
     }
 
-    if (po->calcPTMs) {
+    if (po.calcPTMs) {
       f_seq.push_back(cntPTMs(peptideSeqWithFlanks, ptmMap));
     }
-    if (po->pngasef) {
+    if (po.pngasef) {
       f_seq.push_back(isPngasef(peptideSeqWithFlanks, isDecoy));
     }
-    if (po->calcAAFrequencies) {
+    if (po.calcAAFrequencies) {
       computeAAFrequencies(peptideSeqWithFlanks, f_seq);
     }
 

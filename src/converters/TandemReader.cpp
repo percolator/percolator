@@ -24,7 +24,7 @@ static const std::string scheme_namespace = TANDEM_NAMESPACE;
 static const std::string schema_major = boost::lexical_cast<string>(TANDEM_VERSION);
 static const std::string schema_minor = boost::lexical_cast<string>(TANDEM_VERSION);
 
-TandemReader::TandemReader(ParseOptions *po):Reader(po) {
+TandemReader::TandemReader(ParseOptions po):Reader(po) {
   x_score = false;
   y_score = false;
   z_score = false;
@@ -172,15 +172,15 @@ void TandemReader::addFeatureDescriptions(bool doEnzyme) {
     push_backFeatureDescription("enzInt","",tandemFeaturesDefaultValue.at("enzInt"));
   }
   
-  if (po->calcPTMs) {
+  if (po.calcPTMs) {
     push_backFeatureDescription("ptm");
   }
   
-  if (po->pngasef) {
+  if (po.pngasef) {
     push_backFeatureDescription("PNGaseF");
   }
   
-  if (po->calcAAFrequencies) {
+  if (po.calcAAFrequencies) {
     BOOST_FOREACH (const char aa, freqAA) {
       std::string temp = std::string(1,aa) + "-Freq";
       push_backFeatureDescription(temp.c_str());
@@ -315,7 +315,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
     for (tandem_ns::peptide::domain_iterator iter = peptideObj.domain().begin();
       	  iter != peptideObj.domain().end(); ++iter) {
       tandem_ns::peptide::domain_type domain = *iter;
-      if (++rank <= po->hitsPerSpectrum) {
+      if (++rank <= po.hitsPerSpectrum) {
 	      fileId = fn;
 	      size_t spos = fileId.rfind('/');
 	      if (spos != std::string::npos) fileId.erase(0, spos + 1);
@@ -334,7 +334,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
 //Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
 void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,
     peptideProteinMapType &peptideProteinMap, bool& isDecoy) {
-  if (po->iscombined) isDecoy = true; // Adjust isDecoy if combined file
+  if (po.iscombined) isDecoy = true; // Adjust isDecoy if combined file
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) {
     std::string proteinName = getRidOfUnprintables(protObj.label());
     tandem_ns::peptide peptideObj = protObj.peptide();
@@ -346,8 +346,8 @@ void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,
     }
     
     // Adjust isDecoy if combined file
-    if (po->iscombined && isDecoy) {
-  	  isDecoy = proteinName.find(po->reversedFeaturePattern, 0) != std::string::npos;
+    if (po.iscombined && isDecoy) {
+  	  isDecoy = proteinName.find(po.reversedFeaturePattern, 0) != std::string::npos;
     }
   }
 }
@@ -358,7 +358,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
     bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
     const peptideProteinMapType &peptideProteinMap,const string &psmId, 
     int spectraId) {
-  std::map<char,int> ptmMap = po->ptmScheme;
+  std::map<char,int> ptmMap = po.ptmScheme;
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
   //double expect_value = boost::lexical_cast<double>(domain.expect());
@@ -480,24 +480,24 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   }
 
   //Enzyme
-  if (Enzyme::getEnzymeType() != Enzyme::NO_ENZYME) {
+  if (enzyme_->getEnzymeType() != Enzyme::NO_ENZYME) {
     std::string peptideNoMods = removePTMs(peptide, ptmMap);
-    f_seq.push_back( Enzyme::isEnzymatic(peptideNoMods.at(0),peptideNoMods.at(2)) ? 1.0 : 0.0);
-    f_seq.push_back(Enzyme::isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3),peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
-    std::string peptid2 = peptideNoMods.substr(2, peptideNoMods.length() - 4);
-    f_seq.push_back( (double)Enzyme::countEnzymatic(peptid2) );
+    f_seq.push_back(enzyme_->isEnzymatic(peptideNoMods.at(0),peptideNoMods.at(2)) ? 1.0 : 0.0);
+    f_seq.push_back(enzyme_->isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3),peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
+    std::string peptide2 = peptideNoMods.substr(2, peptideNoMods.length() - 4);
+    f_seq.push_back( (double)enzyme_->countEnzymatic(peptide2) );
   }
 
   //PTM
-  if (po->calcPTMs) {
+  if (po.calcPTMs) {
     f_seq.push_back(cntPTMs(fullpeptide, ptmMap));
   }
   //PNGA
-  if (po->pngasef) {
+  if (po.pngasef) {
     f_seq.push_back(isPngasef(fullpeptide,isDecoy));
   }
   //AA FREQ
-  if (po->calcAAFrequencies) {
+  if (po.calcAAFrequencies) {
     computeAAFrequencies(fullpeptide, f_seq);
   }
 

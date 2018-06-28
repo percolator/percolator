@@ -34,7 +34,7 @@ class TandemReader: public Reader {
 
  public:
   
-  TandemReader(ParseOptions* po);
+  TandemReader(ParseOptions po);
   
   virtual ~TandemReader();
   

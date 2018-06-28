@@ -208,9 +208,11 @@ TEST_F(DataManagerTest, TestRemoveInSourceFragments) {
   test.push_back(PSMDescription("R.AAAR.A", 10.1));
   train.push_back(PSMDescription("R.YYYYYYY.A", 11.0));
   test.push_back(PSMDescription("R.YYY.A", 11.1));
+  Enzyme* enzyme = Enzyme::createEnzyme(Enzyme::TRYPSIN);
+  
   // Case 1: we only delete from the train data
   vector< pair<PSMDescription, string> > fragments =
-      DataManager::RemoveInSourceFragments(1.0, idx, false, train, test);
+      DataManager::RemoveInSourceFragments(enzyme, 1.0, idx, false, train, test);
   EXPECT_EQ(2, test.size()) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
   EXPECT_EQ(1, train.size()) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
   EXPECT_EQ(2, fragments.size()) <<"TestRemoveInSourceFragments error, CASE 1" << endl;
@@ -224,7 +226,7 @@ TEST_F(DataManagerTest, TestRemoveInSourceFragments) {
 
   // Case 1: we delete from both train and test
   train.push_back(PSMDescription("R.AAA.A", 10.0));
-  fragments = DataManager::RemoveInSourceFragments(1.0, idx, true, train, test);
+  fragments = DataManager::RemoveInSourceFragments(enzyme, 1.0, idx, true, train, test);
   EXPECT_EQ(1, test.size()) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
   EXPECT_EQ(1, train.size()) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
   EXPECT_EQ(2, fragments.size()) <<"TestRemoveInSourceFragments error, CASE 2" << endl;
@@ -239,7 +241,7 @@ TEST_F(DataManagerTest, TestRemoveInSourceFragments) {
   train.push_back(PSMDescription("R.AAA.A", 30.0));
   test.push_back(PSMDescription("R.YYY.A", 11.1));
   test.push_back(PSMDescription("R.Y.A", 11.1));
-  fragments = DataManager::RemoveInSourceFragments(1.0, idx, true, train, test);
+  fragments = DataManager::RemoveInSourceFragments(enzyme, 1.0, idx, true, train, test);
   EXPECT_EQ(1, test.size()) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
   EXPECT_EQ(2, train.size()) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
   EXPECT_EQ(2, fragments.size()) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
@@ -250,6 +252,8 @@ TEST_F(DataManagerTest, TestRemoveInSourceFragments) {
   EXPECT_EQ("test",fragments[0].second) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
   EXPECT_EQ("test",fragments[1].second) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
   EXPECT_EQ("R.AAAR.A", test[0].peptide) <<"TestRemoveInSourceFragments error, CASE 3" << endl;
+  
+  delete enzyme;
 }
 
 TEST_F(DataManagerTest, TestRemoveNonEnzymatic) {
@@ -260,8 +264,10 @@ TEST_F(DataManagerTest, TestRemoveNonEnzymatic) {
   psms.push_back(PSMDescription("R.YYY.A", 11.1));
   psms.push_back(PSMDescription("R.Y[unimod:21]YK.A", 11.1));
   psms.push_back(PSMDescription("-.Y[unimod:21]YK.A", 11.1));
-
-  vector<PSMDescription> nze= DataManager::RemoveNonEnzymatic(psms, "test");
+  
+  Enzyme* enzyme = Enzyme::createEnzyme(Enzyme::TRYPSIN);
+  
+  vector<PSMDescription> nze= DataManager::RemoveNonEnzymatic(enzyme, psms, "test");
   EXPECT_EQ(2, nze.size()) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
   EXPECT_EQ("R.YYY.A", nze[0].peptide) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
   EXPECT_EQ("Z.YYYYYYR.A", nze[1].peptide) <<"TestRemoveNonEnzymatic error, incorrect non enzymatic set" << endl;
@@ -270,6 +276,8 @@ TEST_F(DataManagerTest, TestRemoveNonEnzymatic) {
   EXPECT_EQ("R.AAA.-", psms[1].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
   EXPECT_EQ("-.Y[unimod:21]YK.A", psms[2].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
   EXPECT_EQ("R.Y[unimod:21]YK.A", psms[3].peptide) <<"TestRemoveNonEnzymatic error, incorrect psms set" << endl;
+  
+  delete enzyme;
 }
 
 TEST_F(DataManagerTest, TestWriteInSourceToFile) {
@@ -285,10 +293,12 @@ TEST_F(DataManagerTest, TestWriteInSourceToFile) {
   test.push_back(PSMDescription("R.AAAR.A", 10.1));
   train.push_back(PSMDescription("R.YYYYYYY.A", 11.0));
   test.push_back(PSMDescription("R.YYY.A", 11.1));
+  Enzyme* enzyme = Enzyme::createEnzyme(Enzyme::TRYPSIN);
   // Case 1: we only delete from the train data
   DataManager::WriteInSourceToFile(tmp_file,
-      DataManager::RemoveInSourceFragments(1.0, idx, false, train, test));
-
+      DataManager::RemoveInSourceFragments(enzyme, 1.0, idx, false, train, test));
+  delete enzyme;
+  
   ifstream in(tmp_file.c_str(), ios::in);
   if (in.fail()) {
     ADD_FAILURE() <<  "TestWriteInSourceToFile error: unable to open " << tmp_file << endl ;

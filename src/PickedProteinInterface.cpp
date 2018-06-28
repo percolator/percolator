@@ -34,37 +34,36 @@ PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
 
 PickedProteinInterface::~PickedProteinInterface() {}
 
-bool PickedProteinInterface::initialize(Scores& peptideScores) {
+bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enzyme) {
   int min_peptide_length = 1000, max_peptide_length = 0;
   int max_miscleavages = 0, max_non_enzymatic_flanks = 0;
   int total_non_enzymatic_flanks = 0;
   
-  ENZYME_T enzyme;
-  if (Enzyme::getEnzymeType() == Enzyme::TRYPSIN) {
-    enzyme = TRYPSIN;
-  } else if (Enzyme::getEnzymeType() == Enzyme::TRYPSINP) {
-    enzyme = TRYPSINP;
-  } else if (Enzyme::getEnzymeType() == Enzyme::CHYMOTRYPSIN) {
-    enzyme = CHYMOTRYPSIN;
-  } else if (Enzyme::getEnzymeType() == Enzyme::ELASTASE) {
-    enzyme = ELASTASE;
-  } else if (Enzyme::getEnzymeType() == Enzyme::LYSN) {
-    enzyme = LYSN;
-  } else if (Enzyme::getEnzymeType() == Enzyme::LYSC) {
-    enzyme = LYSC;
-  } else if (Enzyme::getEnzymeType() == Enzyme::ARGC) {
-    enzyme = ARGC;
-  } else if (Enzyme::getEnzymeType() == Enzyme::ASPN) {
-    enzyme = ASPN;
-  } else if (Enzyme::getEnzymeType() == Enzyme::GLUC) {
-    enzyme = GLUC;
+  ENZYME_T cruxEnzyme;
+  if (enzyme->getEnzymeType() == Enzyme::TRYPSIN) {
+    cruxEnzyme = TRYPSIN;
+  } else if (enzyme->getEnzymeType() == Enzyme::TRYPSINP) {
+    cruxEnzyme = TRYPSINP;
+  } else if (enzyme->getEnzymeType() == Enzyme::CHYMOTRYPSIN) {
+    cruxEnzyme = CHYMOTRYPSIN;
+  } else if (enzyme->getEnzymeType() == Enzyme::ELASTASE) {
+    cruxEnzyme = ELASTASE;
+  } else if (enzyme->getEnzymeType() == Enzyme::LYSN) {
+    cruxEnzyme = LYSN;
+  } else if (enzyme->getEnzymeType() == Enzyme::LYSC) {
+    cruxEnzyme = LYSC;
+  } else if (enzyme->getEnzymeType() == Enzyme::ARGC) {
+    cruxEnzyme = ARGC;
+  } else if (enzyme->getEnzymeType() == Enzyme::ASPN) {
+    cruxEnzyme = ASPN;
+  } else if (enzyme->getEnzymeType() == Enzyme::GLUC) {
+    cruxEnzyme = GLUC;
   } else {
     // not supported yet: THERMOLYSIN, PROTEINASEK, PEPSIN
-    std::cerr << "Warning: specified protease " << Enzyme::getStringEnzyme()
+    std::cerr << "Warning: specified protease " << enzyme->getStringEnzyme()
               << " currently not supported, using trypsin to identify"
               << " duplicate and fragment proteins" << std::endl;
-    Enzyme::setEnzyme(Enzyme::TRYPSIN);
-    enzyme = TRYPSIN;
+    cruxEnzyme = TRYPSIN;
   }
   
   for (std::vector<ScoreHolder>::iterator shIt = peptideScores.begin(); 
@@ -78,19 +77,19 @@ bool PickedProteinInterface::initialize(Scores& peptideScores) {
     min_peptide_length = std::min(min_peptide_length, peptide_length);
     max_peptide_length = std::max(max_peptide_length, peptide_length);
     
-    int miscleavages = Enzyme::countEnzymatic(peptideSequence);
+    int miscleavages = enzyme->countEnzymatic(peptideSequence);
     if (miscleavages > max_miscleavages && VERB > 1) {
       std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
       max_miscleavages = std::max(max_miscleavages, miscleavages);
     }
     
     int non_enzymatic_flanks = 0;
-    if (!Enzyme::isEnzymatic(peptideSequenceFlanked[0], 
+    if (!enzyme->isEnzymatic(peptideSequenceFlanked[0], 
                              peptideSequenceFlanked[2]) 
            && peptideSequenceFlanked.substr(0,1) != "M") { // ignore protein N-term methionine cleavage
       ++non_enzymatic_flanks;
     }
-    if (!Enzyme::isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
+    if (!enzyme->isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
                              peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
       ++non_enzymatic_flanks;
     }
@@ -116,18 +115,18 @@ bool PickedProteinInterface::initialize(Scores& peptideScores) {
     digestString = "partial";
   } else {
     digest = NON_SPECIFIC_DIGEST;
-    enzyme = NO_ENZYME;
+    cruxEnzyme = NO_ENZYME;
     digestString = "non-specific";
   }
   if (VERB > 1) {
     std::cerr << "Protein digestion parameters for duplicate/fragment detection (detected from PSM input):\n"
-              << " enzyme=" << Enzyme::getStringEnzyme() 
+              << " enzyme=" << enzyme->getStringEnzyme() 
               << ", digestion=" << digestString
               << ", min-pept-length=" << min_peptide_length
               << ", max-pept-length=" << max_peptide_length
               << ", max-miscleavages=" << max_miscleavages << std::endl;
   }
-  fisherCaller_.initConstraints(enzyme, digest, min_peptide_length, 
+  fisherCaller_.initConstraints(cruxEnzyme, digest, min_peptide_length, 
                                 max_peptide_length, max_miscleavages);
   
   groupProteins(peptideScores);
