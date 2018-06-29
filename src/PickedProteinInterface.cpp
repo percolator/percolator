@@ -37,72 +37,139 @@ PickedProteinInterface::~PickedProteinInterface() {}
 bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enzyme) {
   int min_peptide_length = 1000, max_peptide_length = 0;
   int max_miscleavages = 0, max_non_enzymatic_flanks = 0;
+  int max_miscleavages_trypsinp = 0, max_non_enzymatic_flanks_trypsinp = 0;
   int total_non_enzymatic_flanks = 0;
   
+  std::string enzymeString = enzyme->getStringEnzyme();
+  
   ENZYME_T cruxEnzyme;
-  if (enzyme->getEnzymeType() == Enzyme::TRYPSIN) {
-    cruxEnzyme = TRYPSIN;
-  } else if (enzyme->getEnzymeType() == Enzyme::TRYPSINP) {
-    cruxEnzyme = TRYPSINP;
-  } else if (enzyme->getEnzymeType() == Enzyme::CHYMOTRYPSIN) {
-    cruxEnzyme = CHYMOTRYPSIN;
-  } else if (enzyme->getEnzymeType() == Enzyme::ELASTASE) {
-    cruxEnzyme = ELASTASE;
-  } else if (enzyme->getEnzymeType() == Enzyme::LYSN) {
-    cruxEnzyme = LYSN;
-  } else if (enzyme->getEnzymeType() == Enzyme::LYSC) {
-    cruxEnzyme = LYSC;
-  } else if (enzyme->getEnzymeType() == Enzyme::ARGC) {
-    cruxEnzyme = ARGC;
-  } else if (enzyme->getEnzymeType() == Enzyme::ASPN) {
-    cruxEnzyme = ASPN;
-  } else if (enzyme->getEnzymeType() == Enzyme::GLUC) {
-    cruxEnzyme = GLUC;
-  } else {
-    // not supported yet: THERMOLYSIN, PROTEINASEK, PEPSIN
-    std::cerr << "Warning: specified protease " << enzyme->getStringEnzyme()
-              << " currently not supported, using trypsin to identify"
-              << " duplicate and fragment proteins" << std::endl;
-    cruxEnzyme = TRYPSIN;
+  bool tryTrypsinP = false;
+  Enzyme* trypsinP = NULL;  
+  switch (enzyme->getEnzymeType()) {
+    case Enzyme::TRYPSIN:
+      cruxEnzyme = TRYPSIN;
+      tryTrypsinP = true;
+      trypsinP = Enzyme::createEnzyme(Enzyme::TRYPSINP);
+      break;
+    case Enzyme::TRYPSINP:
+      cruxEnzyme = TRYPSINP;
+      break;
+    case Enzyme::CHYMOTRYPSIN:
+      cruxEnzyme = CHYMOTRYPSIN;
+      break;
+    case Enzyme::ELASTASE:
+      cruxEnzyme = ELASTASE;
+      break;
+    case Enzyme::LYSN:
+      cruxEnzyme = LYSN;
+      break;
+    case Enzyme::LYSC:
+      cruxEnzyme = LYSC;
+      break;
+    case Enzyme::ARGC:
+      cruxEnzyme = ARGC;
+      break;
+    case Enzyme::ASPN:
+      cruxEnzyme = ASPN;
+      break;
+    case Enzyme::GLUC:
+      cruxEnzyme = GLUC;
+      break;
+    case Enzyme::NO_ENZYME:
+    default:
+      if (enzyme->getEnzymeType() != Enzyme::NO_ENZYME) {
+        if (VERB > 1) {
+          std::cerr << "Warning: specified protease " << enzyme->getStringEnzyme()
+                << " currently not supported. Using unspecific digestion to identify"
+                << " duplicate and fragment proteins" << std::endl;
+        }
+        enzymeString = NoEnzyme::getString();
+      }
+      cruxEnzyme = NO_ENZYME;
+      max_non_enzymatic_flanks = 2;
+      break;
   }
   
-  for (std::vector<ScoreHolder>::iterator shIt = peptideScores.begin(); 
-           shIt != peptideScores.end(); ++shIt) {    
-    std::string peptideSequenceFlanked = shIt->pPSM->getFullPeptideSequence();
-    
-    peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
-    std::string peptideSequence = PSMDescription::removeFlanks(peptideSequenceFlanked);
-    
-    int peptide_length = peptideSequence.size();
-    min_peptide_length = std::min(min_peptide_length, peptide_length);
-    max_peptide_length = std::max(max_peptide_length, peptide_length);
-    
-    int miscleavages = enzyme->countEnzymatic(peptideSequence);
-    if (miscleavages > max_miscleavages && VERB > 1) {
-      std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
-      max_miscleavages = std::max(max_miscleavages, miscleavages);
+  if (max_non_enzymatic_flanks != 2) {
+    for (std::vector<ScoreHolder>::iterator shIt = peptideScores.begin(); 
+             shIt != peptideScores.end(); ++shIt) {    
+      std::string peptideSequenceFlanked = shIt->pPSM->getFullPeptideSequence();
+      
+      peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
+      std::string peptideSequence = PSMDescription::removeFlanks(peptideSequenceFlanked);
+      
+      int peptide_length = peptideSequence.size();
+      min_peptide_length = std::min(min_peptide_length, peptide_length);
+      max_peptide_length = std::max(max_peptide_length, peptide_length);
+      
+      int miscleavages = enzyme->countEnzymatic(peptideSequence);
+      if (miscleavages > max_miscleavages) {
+        if (VERB > 1) {
+          std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
+        }
+        max_miscleavages = std::max(max_miscleavages, miscleavages);
+      }
+      
+      if (tryTrypsinP) {
+        int miscleavages_trypsinp = trypsinP->countEnzymatic(peptideSequence);
+        if (miscleavages_trypsinp > max_miscleavages_trypsinp) {
+          max_miscleavages_trypsinp = std::max(max_miscleavages_trypsinp, miscleavages_trypsinp);
+        }
+      }
+      
+      int non_enzymatic_flanks = 0;
+      int non_enzymatic_flanks_trypsinp = 0;
+      if (!enzyme->isEnzymatic(peptideSequenceFlanked[0], 
+                               peptideSequenceFlanked[2]) 
+             && peptideSequenceFlanked.substr(0,1) != "M") { // ignore protein N-term methionine cleavage
+        ++non_enzymatic_flanks;
+        if (tryTrypsinP && !trypsinP->isEnzymatic(peptideSequenceFlanked[0], 
+                               peptideSequenceFlanked[2]) 
+             && peptideSequenceFlanked.substr(0,1) != "M") {
+          ++non_enzymatic_flanks_trypsinp;
+        }
+      }
+      if (!enzyme->isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
+                               peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
+        ++non_enzymatic_flanks;
+        if (tryTrypsinP && !trypsinP->isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3], 
+                               peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
+          ++non_enzymatic_flanks_trypsinp;
+        }
+      }
+      if (non_enzymatic_flanks > max_non_enzymatic_flanks) {
+        if (VERB > 1) {
+          std::cerr << "Non enzymatic flank detected: " << peptideSequenceFlanked << std::endl;
+        }
+        max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
+      }
+      total_non_enzymatic_flanks += non_enzymatic_flanks;
+      
+      if (tryTrypsinP && non_enzymatic_flanks_trypsinp > max_non_enzymatic_flanks_trypsinp) {
+        max_non_enzymatic_flanks_trypsinp = std::max(max_non_enzymatic_flanks_trypsinp, non_enzymatic_flanks_trypsinp);
+      }
+      
     }
     
-    int non_enzymatic_flanks = 0;
-    if (!enzyme->isEnzymatic(peptideSequenceFlanked[0], 
-                             peptideSequenceFlanked[2]) 
-           && peptideSequenceFlanked.substr(0,1) != "M") { // ignore protein N-term methionine cleavage
-      ++non_enzymatic_flanks;
+    if (tryTrypsinP && max_non_enzymatic_flanks_trypsinp < max_non_enzymatic_flanks) {
+      if (VERB > 1) {
+        std::cerr << "Detected TrypsinP as protease instead of Trypsin, allowing (R|K).P cleavages." << std::endl;
+      }
+      max_non_enzymatic_flanks = max_non_enzymatic_flanks_trypsinp;
+      max_miscleavages = max_miscleavages_trypsinp;
+      cruxEnzyme = TRYPSINP;
+      enzymeString = TrypsinP::getString();
     }
-    if (!enzyme->isEnzymatic(peptideSequenceFlanked[peptideSequenceFlanked.size() - 3],
-                             peptideSequenceFlanked[peptideSequenceFlanked.size() - 1])) {
-      ++non_enzymatic_flanks;
+    
+    // if more than half of the flanks or non enzymatic, probably the protease is wrong
+    if (total_non_enzymatic_flanks > peptideScores.size()) {
+      std::cerr << "Warning: more than half of the cleavage sites are non enzymatic, "
+                << "please verify that the right protease was specified." << std::endl;
     }
-    if (non_enzymatic_flanks > max_non_enzymatic_flanks && VERB > 1) {
-      std::cerr << "Non enzymatic flank detected: " << peptideSequenceFlanked << std::endl;
-      max_non_enzymatic_flanks = std::max(max_non_enzymatic_flanks, non_enzymatic_flanks);
+    
+    if (trypsinP) {
+      delete trypsinP;
     }
-    total_non_enzymatic_flanks += non_enzymatic_flanks;
-  }
-  // if more than half of the flanks or non enzymatic, probably the protease is wrong
-  if (total_non_enzymatic_flanks > peptideScores.size()) {
-    std::cerr << "Warning: more than half of the cleavage sites are non enzymatic, "
-              << "please verify that the right protease was specified." << std::endl;
   }
   
   DIGEST_T digest;
@@ -115,12 +182,12 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
     digestString = "partial";
   } else {
     digest = NON_SPECIFIC_DIGEST;
-    cruxEnzyme = NO_ENZYME;
+    cruxEnzyme = TRYPSIN; // Use trypsin to create candidate protein groups
     digestString = "non-specific";
   }
   if (VERB > 1) {
     std::cerr << "Protein digestion parameters for duplicate/fragment detection (detected from PSM input):\n"
-              << " enzyme=" << enzyme->getStringEnzyme() 
+              << " enzyme=" << enzymeString 
               << ", digestion=" << digestString
               << ", min-pept-length=" << min_peptide_length
               << ", max-pept-length=" << max_peptide_length

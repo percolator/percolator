@@ -66,22 +66,24 @@ class PickedProteinCaller{
   bool getPeptideProteinMap(PercolatorCrux::Database& db, 
     PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein,
     bool generateDecoys);
   void addProteinToPeptideProteinMap(PercolatorCrux::Database& db, 
     size_t protein_idx, PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
+    std::map<size_t, size_t>& num_peptides_per_protein,
     bool generateDecoys);
   
   bool getFragmentProteinMap(PercolatorCrux::Database& db, 
     PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
-    std::map<size_t, size_t>& num_peptides_per_protein);
+    std::map<size_t, size_t>& num_peptides_per_protein,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map);
   void addProteinToFragmentProteinMap(PercolatorCrux::Database& db, 
     size_t protein_idx, PercolatorCrux::PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
-    std::map<size_t, size_t>& num_peptides_per_protein);
+    std::map<size_t, size_t>& num_peptides_per_protein,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map);
   
   bool getProteinFragmentsAndDuplicatesExtraDigest(PercolatorCrux::Database& db, 
     PercolatorCrux::PeptideConstraint& peptide_constraint,
