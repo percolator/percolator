@@ -96,7 +96,7 @@ class Caller {
   double selectionFdr_, initialSelectionFdr_, testFdr_;
   unsigned int numIterations_, maxPSMs_, nestedXvalBins_;
   double selectedCpos_, selectedCneg_;
-  bool reportEachIteration_, quickValidation_, trainBestPositive_;
+  bool reportEachIteration_, quickValidation_, trainBestPositive_, doTron_;
   
   // reporting parameters
   std::string call_;

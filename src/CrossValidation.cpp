@@ -17,6 +17,9 @@
 
 #include "CrossValidation.h"
 
+// #define NOMAP
+#define THREADS (Globals::getInstance()->getNumThreads())
+
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
 #ifdef _OPENMP
@@ -30,12 +33,12 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, int niter, bool usePi0,
-  int nestedXvalBins, bool trainBestPositive) :
-    quickValidation_(quickValidation), usePi0_(usePi0),
-    reportPerformanceEachIteration_(reportPerformanceEachIteration), 
-    testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
-    selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
-    nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive) {}
+				 int nestedXvalBins, bool trainBestPositive, bool doTron) :
+  quickValidation_(quickValidation), usePi0_(usePi0),
+  reportPerformanceEachIteration_(reportPerformanceEachIteration), 
+  testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
+  selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
+  nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),  doTron_(doTron) {}
 
 
 CrossValidation::~CrossValidation() { 
@@ -368,7 +371,23 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
         svmInput->setCost(cpos, cpos * cfrac);
         
         // Call SVM algorithm (see ssl.cpp)
-        L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+        // L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+	if(doTron_) {
+	  // cout << "TRON, nr=" << THREADS << endl;
+	  if(THREADS <=1 ){
+	    tron_nrOne(*svmInput, pOptions, pWeights, Outputs);
+	  } else {
+	    tron(*svmInput, pOptions, pWeights, Outputs);
+	  }
+	} else {
+	  // L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+	  // cout << "CGLS, nr=" << THREADS << endl;
+	  if(THREADS <=1 ){
+	    L2_SVM_MFN_nrOne(*svmInput, pOptions, pWeights, Outputs);
+	  } else {
+	    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+	  }
+	}
         
         for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
           ww[i] = pWeights->vec[i];
