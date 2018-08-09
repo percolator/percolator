@@ -25,21 +25,25 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 using namespace std;
 
 Caller::Caller() :
-    pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL), 
-    tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true), 
-    tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
-    psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""), 
-    decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true), 
-    targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
-    selectionFdr_(0.01), initialSelectionFdr_(0.01), testFdr_(0.01), 
-    numIterations_(10), maxPSMs_(0u),
-    nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
-    reportEachIteration_(false), quickValidation_(false), 
-    trainBestPositive_(false) {
+  pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL), 
+  tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true), 
+  tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
+  psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""), 
+  decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
+  xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true), 
+  targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
+  selectionFdr_(0.01), initialSelectionFdr_(0.01), testFdr_(0.01), 
+  numIterations_(10), maxPSMs_(0u),
+  nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
+  reportEachIteration_(false), quickValidation_(false), 
+  trainBestPositive_(false), doTron_(false) {
 }
 
 Caller::~Caller() {
@@ -186,6 +190,15 @@ bool Caller::parseOptions(int argc, char **argv) {
       "verbose",
       "Set verbosity of output: 0=no processing info, 5=all. Default = 2",
       "level");
+  cmd.defineOption("nr",
+      "num-threads",
+      "Set number of threads to be used in TRON. Default = 1",
+      "level");
+  cmd.defineOption("TRON",
+      "do-tron",
+      "Use TRON SVM learning algorithm.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("o",
       "no-terminate",
       "Do not stop execution when encountering questionable SVM inputs or results.",
@@ -389,6 +402,14 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   if (cmd.optionSet("no-terminate")) {
     Globals::getInstance()->setNoTerminate(true);
+  }
+
+  if (cmd.optionSet("num-threads")) {
+#ifdef _OPENMP
+    Globals::getInstance()->setNumThreads(cmd.getInt("num-threads", 1, omp_get_max_threads()));
+#else
+    Globals::getInstance()->setNumThreads(cmd.getInt("num-threads", 1, 1));
+#endif
   }
   
   // now query the parsing results
@@ -638,6 +659,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("decoy-xml-output")) {
     xmlPrintDecoys_ = true;
+  }
+  if (cmd.optionSet("do-tron")) {
+    doTron_ = true;
   }
   if (cmd.optionSet("post-processing-mix-max")) {
     if (cmd.optionSet("post-processing-tdc")) {
@@ -995,7 +1019,7 @@ int Caller::run() {
   CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_, 
                                   selectedCneg_, numIterations_, useMixMax_,
-                                  nestedXvalBins_, trainBestPositive_);
+                                  nestedXvalBins_, trainBestPositive_, doTron_);
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"

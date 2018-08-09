@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 *******************************************************************************/
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+// #define NOMAP
 
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
@@ -130,6 +135,28 @@ class Globals {
     void setVerbose(int verb) {
       verbose = verb;
     }
+    int getNumThreads() {
+      return nr_thread;
+    }
+    void setNumThreads(int threads) {
+    // #ifndef NOMAP
+#ifdef _OPENMP
+      omp_set_nested(1); // turn on nested parallelism
+      omp_set_dynamic(0);
+
+      // divide supplied threads amongst number of cross-validation folds
+      if(nr_thread > omp_get_max_threads()){
+        cout << "Num threads " << nr_thread << " greater than " <<
+        omp_get_max_threads() << " max system threads, defaulting to system max.\n";
+        nr_thread = omp_get_max_threads() / 3;
+      } else {
+        nr_thread = threads / 3;
+      }
+#else
+      nr_thread = threads;
+#endif
+    }
+
     void decVerbose() {
       verbose--;
     }
@@ -150,6 +177,7 @@ class Globals {
   private:
     Globals();
     int verbose;
+    int nr_thread;
     bool noTerminate_;
     static Globals* glob;
     Logger *log;

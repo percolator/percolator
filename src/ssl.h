@@ -11,6 +11,14 @@
 
 using namespace std;
 
+// #define TRONDEBUG
+// #define TRUST
+/* #define BLASC */
+// #define COMBFUNGRAD
+// #define BOUNDARY
+// #define G0
+// #define NROPT
+
 /* OPTIMIZATION CONSTANTS */
 #define CGITERMAX 10000 /* maximum number of CGLS iterations */
 #define SMALL_CGITERMAX 10 /* for heuristic 1 in reference [2] */
@@ -29,7 +37,8 @@ class AlgIn {
     int n; /* number of features */
     int positives;
     int negatives;
-    const double** vals;
+  /* const double** vals; */
+    double** vals;
     double* Y; /* labels */
     double* C; /* cost associated with each example */
     void setCost(double pos, double neg) {
@@ -129,13 +138,61 @@ int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
          const double epsilon, const struct vector_int* Subset,
          struct vector_double* Weights, struct vector_double* Outputs);
 
+/* /\* Linear Modified Finite Newton L2-SVM*\/ */
+/* /\* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 *\/ */
+/* int L2_SVM_MFN(const AlgIn& set, struct options* Options, */
+/*                struct vector_double* Weights, */
+/*                struct vector_double* Outputs); */
+/* double line_search(double* w, double* w_bar, double lambda, double* o, */
+/*                    double* o_bar, const double* Y, const double* C, int d, */
+/*                    int l); */
+
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
+int L2_SVM_MFN_nrOne(const AlgIn& set, struct options* Options,
+		     struct vector_double* Weights,
+		     struct vector_double* Outputs);
+
 int L2_SVM_MFN(const AlgIn& set, struct options* Options,
                struct vector_double* Weights,
                struct vector_double* Outputs);
+
 double line_search(double* w, double* w_bar, double lambda, double* o,
                    double* o_bar, const double* Y, const double* C, int d,
                    int l);
+
+double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
+			 double* o_bar, const double* Y, const double* C, int d, /* data dimensionality -- 'n' */
+			 int l);
+
+void troninfo(const char *fmt,...);
+
+int tron(const AlgIn& set, struct options* Options,
+         struct vector_double* Weights,
+         struct vector_double* Outputs);
+
+double fun(double *w, int w_size, int l,
+           const double* y, double* z, const double* C, double** X);
+
+////////////////// single threaded tron headers
+int tron_nrOne(const AlgIn& data, struct options* Options,
+	       struct vector_double* Weights,
+	       struct vector_double* Outputs);
+int trcg(double delta, double *g, double *s, double *r, bool *reach_boundary, 
+	 int n, const double* C, double* X, const int* Id, int sizeI, 
+	 const int cgitermax, const double eps_cg);
+
+double fun(double *w, int w_size, int l,
+	   const double* y, double* z, const double* C, double* X);
+
+int grad(double *w, double *g, int w_size, int l,
+	 const double* cProdY, double* z, double* X,
+	 int* Id);
+
+void subXTv(double *v, double *XTv, int w_size,
+	    double* X, const int* Id, int sizeI);
+
+void Hv(double *s, double *Hs, int w_size,
+        const double* C, double* X, const int *Id, int sizeI);
 
 #endif
