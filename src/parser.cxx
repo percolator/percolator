@@ -109,7 +109,7 @@ class parser_impl : public DefaultHandler {
 
 const XMLCh ls[] = {chLatin_L, chLatin_S, chNull};
 
-std::auto_ptr<SAX2XMLReader> create_parser(XMLGrammarPool* pool) {
+std::auto_ptr<SAX2XMLReader> create_parser(XMLGrammarPool* pool, bool validate) {
   std::auto_ptr<SAX2XMLReader> parser(
     pool
     ? XMLReaderFactory::createXMLReader(XMLPlatformUtils::fgMemoryManager, pool)
@@ -118,7 +118,7 @@ std::auto_ptr<SAX2XMLReader> create_parser(XMLGrammarPool* pool) {
   // Commonly useful configuration.
   parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
   parser->setFeature(XMLUni::fgSAX2CoreNameSpacePrefixes, true);
-  parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+  parser->setFeature(XMLUni::fgSAX2CoreValidation, validate);
 
   // Enable validation.
   parser->setFeature(XMLUni::fgXercesSchema, true);
@@ -171,13 +171,13 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is,
     
     // Load the schemas into the grammar pool.
     {
-      std::auto_ptr<SAX2XMLReader> parser(create_parser(gp_.get()));
+      std::auto_ptr<SAX2XMLReader> parser(create_parser(gp_.get(), val));
       parser->setErrorHandler(&error_handler_);
       
       string s(schemaDefinition);
       size_t n(s.size());
 
-      if (!parser->loadGrammar(s.c_str(), Grammar::SchemaGrammarType, true)) {
+      if (val && !parser->loadGrammar(s.c_str(), Grammar::SchemaGrammarType, true)) {
         cerr << s << ": error: unable to load" << endl;
         r = 1;
         break;
@@ -197,7 +197,7 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is,
     gp_->lockPool();
 
     // Parse the XML documents.
-    parser_ = create_parser(gp_.get());  
+    parser_ = create_parser(gp_.get(), val);  
     parser_->setErrorHandler(&error_handler_);  
     parser_->setContentHandler(this);
     
