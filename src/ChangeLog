@@ -1,3 +1,7 @@
+v3.02.1
+* Fixed protein digestion issues due to trypsin/p (#191)
+* Skip XSD schema loading when -s flag is set
+
 v3.02
 * Changed FDR calculation for initial direction selection to the more liberal decoys/targets (#208)
 * Added parameter file option instead of only command line specification (#149)

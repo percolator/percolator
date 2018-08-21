@@ -233,9 +233,6 @@ mkdir -p ${release};
 cp -v ${tmp_dir}/per*.${package_ext} ${release};
 cp -v ${tmp_dir}/elude*.${package_ext} ${release};
 
-
-#cp -v ${tmp_dir}/build_${post}/percolator/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};
-#cp -v ${tmp_dir}/build_${post}/converters/{per*.rpm,per*.deb,per*.exe,per*.dmg} ${release};
 #---------------------------------------------------------------------------------------
 
 if [[ -z ${alive} ]]; then
