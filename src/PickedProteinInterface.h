@@ -23,11 +23,13 @@
 #include <cfloat>
 //#include <boost/math/special_functions/gamma.hpp>
 
+#include "MyException.h"
 #include "ProteinProbEstimator.h"
 #include "PosteriorEstimator.h"
 #include "PickedProteinCaller.h"
 #include "Enzyme.h"
 #include "PseudoRandom.h"
+
 
 /* 
 * Protein inference methods:
@@ -67,7 +69,8 @@ class PickedProteinInterface : public ProteinProbEstimator {
   string printCopyright();
 
  private:
-  void groupProteins(Scores& peptideScores);
+  void groupProteins(Scores& peptideScores, 
+    PickedProteinCaller& pickedProteinCaller);
   
   void pickedProteinStrategy();
   bool pickedProteinCheckId(std::string& proteinId, bool isDecoy,
@@ -80,7 +83,6 @@ class PickedProteinInterface : public ProteinProbEstimator {
   ProteinInferenceMethod protInferenceMethod_;
   std::string fastaProteinFN_;
   bool reportFragmentProteins_, reportDuplicateProteins_;
-  PickedProteinCaller fisherCaller_;
   double maxPeptidePval_;
   
 };

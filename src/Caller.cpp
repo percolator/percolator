@@ -408,15 +408,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   
   if (cmd.optionSet("only-psms")) {
-    // the different "hacks" below are mainly to keep backwards compatibility with old Mascot versions
-    if (cmd.optionSet("fido-protein")){
-      cerr
-      << "ERROR: The -U/--only-psms option cannot be used in conjunction with -A/--fido-protein: peptide level statistics\n"
-      << "are needed to calculate protein level ones.";
-      return 0;
-    }
     reportUniquePeptides_ = false;
     
+    // the different "hacks" below are mainly to keep backwards compatibility with old Mascot versions
     if (cmd.optionSet("results-peptides")) {
       if (!cmd.optionSet("results-psms")) {
         if (VERB > 0) {
@@ -1079,7 +1073,7 @@ int Caller::run() {
   }
   
   // calculate unique peptides level probabilities WOTE
-  if (reportUniquePeptides_){
+  if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
     isUniquePeptideRun = true;
     calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
 #ifdef CRUX

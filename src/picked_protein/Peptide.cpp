@@ -415,6 +415,35 @@ char* Peptide::getSequencePointer() {
 }
 
 /**
+ * \brief Return a char for the amino acid n-terminal to the peptide
+ * in the peptide src at the given index.
+ *
+ * \returns A char (A-Z) or - if peptide is the first in the protein.
+ */
+char Peptide::getNTermFlankingAA() {
+  PeptideSrc* src = getPeptideSrc();
+  if (src == NULL) {
+    return '-';
+  }
+
+  // get protein seq
+  Protein* protein = src->getParentProtein();
+
+  // get peptide start idx, protein index starts at 1
+  int start_index = src->getStartIdx();
+
+  char* protein_seq = protein->getSequencePointer();
+
+  char aa = '-';
+  // if not at beginning, return char
+  if( start_index > 1 ){
+    aa = protein_seq[start_index - 2]; // -1 for 1-based shift
+                                       // -1 for aa before start
+  }
+  return aa;
+}
+
+/**
  * Examines the peptide sequence and counts how many tryptic missed
  * cleavage sites exist. 
  *\returns the number of missed cleavage sites in the peptide
