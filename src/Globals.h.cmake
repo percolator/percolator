@@ -139,11 +139,7 @@ class Globals {
       return nr_thread;
     }
     void setNumThreads(int threads) {
-    // #ifndef NOMAP
 #ifdef _OPENMP
-      omp_set_nested(1); // turn on nested parallelism
-      omp_set_dynamic(0);
-
       // divide supplied threads amongst number of cross-validation folds
       if(nr_thread > omp_get_max_threads()){
         cout << "Num threads " << nr_thread << " greater than " <<
@@ -151,6 +147,11 @@ class Globals {
         nr_thread = omp_get_max_threads() / 3;
       } else {
         nr_thread = threads / 3;
+      }
+
+      if(nr_thread > 1){ // turn on nested parallelism
+        omp_set_nested(1); 
+      	omp_set_dynamic(0);
       }
 #else
       nr_thread = threads;

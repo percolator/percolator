@@ -408,8 +408,11 @@ bool Caller::parseOptions(int argc, char **argv) {
 #ifdef _OPENMP
     Globals::getInstance()->setNumThreads(cmd.getInt("num-threads", 1, omp_get_max_threads()));
 #else
-    Globals::getInstance()->setNumThreads(cmd.getInt("num-threads", 1, 1));
+    // Globals::getInstance()->setNumThreads(cmd.getInt("num-threads", 1, 1));
+    Globals::getInstance()->setNumThreads(1);
 #endif
+  } else {
+    Globals::getInstance()->setNumThreads(1);
   }
   
   // now query the parsing results

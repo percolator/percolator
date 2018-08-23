@@ -388,7 +388,6 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
 	    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
 	  }
 	}
-        
         for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
           ww[i] = pWeights->vec[i];
         }
