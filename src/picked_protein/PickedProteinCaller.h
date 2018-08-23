@@ -27,6 +27,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <ctime>
 #include <iostream>
 #include <algorithm>
 
