@@ -1919,12 +1919,6 @@ int tron_nrOne(const AlgIn& data, struct options* Options,
   // Parameters for updating the trust region size delta.
   double sigma1 = 0.25, sigma2 = 0.5, sigma3 = 4;
 
-  // ////////////// features
-  // double** X = data.vals; // array of values
-
-  // const double** set = data.vals; // array of values
-  //// used as follows:
-  // const double* val = set[ii];
   double eps = 0.01;
   double eps_cg = 0.1;
   int max_iter = Options->mfnitermax;
@@ -1958,6 +1952,7 @@ int tron_nrOne(const AlgIn& data, struct options* Options,
 
   for(i = 0; i < l; i++){
     memcpy(X+ind, X0[i], sizeof(double)*n);
+    X[ind+n-1] = 1.0;
     ind += n;
   }
   // cout << numZeros << " zero entries of " << ind << " total features\n";
@@ -2037,8 +2032,6 @@ int tron_nrOne(const AlgIn& data, struct options* Options,
             delta = max(delta, min(alpha*snorm, sigma3*delta));
         }
 
-      // troninfo("iter %2d act %5.3e pre %5.3e delta %5.3e f %5.3e |g| %5.3e CG %3d\n", iter, actred, prered, delta, f, gnorm, cg_iter);
-
       if (actred > eta0*prered)
         {
           iter++;
@@ -2068,7 +2061,6 @@ int tron_nrOne(const AlgIn& data, struct options* Options,
       if (fabs(actred) <= 1.0e-12*fabs(f) &&
           fabs(prered) <= 1.0e-12*fabs(f))
         {
-          // troninfo("WARNING: actred and prered too small\n");
           break;
         }
     }
@@ -2096,7 +2088,6 @@ int trcg(double delta, double *g, double *s, double *r, bool *reach_boundary,
   double *Hd = new double[n];
   double *Xs = new double[sizeI];
   double rTr, rnewTrnew, alpha, beta, cgtol;
-  // prepare smaller feature matrix for faster computation
 
   *reach_boundary = false;
   for (i=0; i<n; i++)
@@ -2209,14 +2200,12 @@ double fun(double *w, int w_size, int l,
   double f=0;
   double d = 0;
   int inc = 1;
-  int w_size0 = w_size - 1;
   
 // #ifdef BLASC
 //   f = cblas_ddot(w_size, w, 1, w, 1);
 // #else
   f = ddot_(&w_size, w, &inc, w, &inc) / 2.0;
 // #endif
-//   f /= 2.0;
 
 // #ifdef BLASC
 //   cblas_dgemv(CblasRowMajor, CblasNoTrans,
@@ -2231,14 +2220,9 @@ double fun(double *w, int w_size, int l,
 	 w, &inc, &beta, z, &inc);
   // #endif
 
-  // cblas_daxpy(l, w[w_size - 1], ones, 1, z, 1);
-  // cblas_dsbmv(CblasRowMajor, CblasLower, l, 0, 1.0,
-  // 	      y, 1, ones, 1, 0.0, z, 1);
   for(i=0;i<l;i++)
     {
-      // z[i]=y[i]*(cblas_ddot(w_size, w, 1, X[i], 1) + w[w_size - 1]);
-      z[i]=y[i]*(z[i] + w[w_size - 1]);
-      // z[i]*=y[i];
+      z[i]=y[i]*z[i];
       d = 1-z[i];
       if (d > 0)
         f += C[i]*d*d;
@@ -2254,10 +2238,6 @@ int grad(double *w, double *g, int w_size, int l,
   int i;
   int sizeI = 0;
 
-  // cblas_dcopy(l, cProdY, 1, zTemp, 1);
-  // cblas_dsbmv(CblasRowMajor, CblasLower, l, 0, 1.0,
-  // 	      cProdY, 1, z, 1, -1.0, zTemp, 1);
-        
   for (i=0;i<l;i++){
     if (z[i] < 1) {
       z[sizeI] = cProdY[i]*(z[i]-1);
@@ -2280,7 +2260,6 @@ void Hv(double *s, double *Hs, int w_size,
   int inc = 1;
   unsigned int ind = 0;
   double xTs = 0;
-  int w_size0 = w_size - 1;
 
   for(i=0;i<w_size;i++)
     Hs[i]=0;
@@ -2291,11 +2270,9 @@ void Hv(double *s, double *Hs, int w_size,
 //       xTs = C[Id[i]] * (cblas_ddot(w_size, s, inc, X + Id[i] * w_size, inc) + s[w_size - 1]);
 //       cblas_daxpy(w_size, xTs, X + Id[i] * w_size, inc, Hs, inc);
 // #else
-      xTs = C[Id[i]] * (ddot_(&w_size, s, &inc, X + Id[i] * w_size, &inc) + s[w_size - 1]);
+      xTs = C[Id[i]] * ddot_(&w_size, s, &inc, X + Id[i] * w_size, &inc); // + s[w_size - 1]);
       daxpy_(&w_size, &xTs, X + Id[i] * w_size, &inc, Hs, &inc);
       // #endif
-      // add back in bias term
-      Hs[w_size - 1] += xTs;
     }
   for(i=0;i<w_size;i++)
     Hs[i] = s[i] + 2*Hs[i];
@@ -2306,7 +2283,6 @@ void subXTv(double *v, double *XTv, int w_size,
 {
   int i;
   int inc = 1;
-  int w_size0 = w_size - 1;
 
   for(i=0;i<w_size;i++)
     XTv[i]=0;
@@ -2317,8 +2293,6 @@ void subXTv(double *v, double *XTv, int w_size,
 // #else
       daxpy_(&w_size, &(v[i]), X + Id[i] * w_size, &inc, XTv, &inc);
       // #endif
-      // add back in bias term
-      XTv[w_size - 1] += v[i];
     }
 
 }
