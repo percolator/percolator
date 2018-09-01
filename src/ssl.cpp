@@ -888,31 +888,27 @@ static double l2SvmMfnFun2(double* diffs, int m, const double* Y,
 
 // double cglsFun1(int active, int* J, const double* C, double** set, int n0,
 // 		int n, double* q, double* p){
-#ifdef NROPT
 double cglsFun1(int active, int* J, const double* C, double* set2, int n0,
 		int n, double* q, double* p){
-#else
-double cglsFun1(int active, int* J, const double* C, double** set, int n0,
-		int n, double* q, double* p){
-#endif
+// double cglsFun1(int active, int* J, const double* C, double** set, int n0,
+// 		int n, double* q, double* p){
   double omega_q = 0.0;
   int inc = 1;
   int i = 0;
 
-#ifdef NROPT
-  char trans = 'T';
-  double alpha = 1.0;
-  double beta = 0.0;
-  dgemv_(&trans, &n, &active,
-	 &alpha, set2, &n,
-	 p, &inc, &beta, q, &inc);
-#endif
+// #ifdef NROPT
+//   char trans = 'T';
+//   double alpha = 1.0;
+//   double beta = 0.0;
+//   dgemv_(&trans, &n, &active,
+// 	 &alpha, set2, &n,
+// 	 p, &inc, &beta, q, &inc);
+// #endif
 
   #pragma omp parallel for private(i) reduction(+:omega_q) schedule(guided)
   for (i = 0; i < active; i++) {
-#ifndef NROPT
-    q[i] = ddot_(&n0, set[J[i]], &inc, p, &inc) + p[n-1];
-#endif
+    // q[i] = ddot_(&n0, set2 + J[i] * n, &inc, p, &inc) + p[n-1];
+  q[i] = ddot_(&n, set2 + J[i] * n, &inc, p, &inc); // + p[n-1];
     omega_q += C[J[i]] * (q[i]) * (q[i]);
   }
 
@@ -920,8 +916,9 @@ double cglsFun1(int active, int* J, const double* C, double** set, int n0,
 }
 
 static void cglsFun2(int active, int* J, const double* C, double** set, 
-    int n0, int n, double* q, double* o, double* z, double* r, 
-    Reduce_Vectors *reduce_vectors){
+		     double* set2,
+		     int n0, int n, double* q, double* o, double* z, double* r, 
+		     Reduce_Vectors *reduce_vectors){
   int i;
   int inc = 1;
   int ind = 0;
@@ -940,22 +937,19 @@ static void cglsFun2(int active, int* J, const double* C, double** set,
   for (i = 0; i < active; i++) {
     o[J[i]] += q[i];
     z[i] -= C[J[i]] * q[i];
-    reduce_vectors->sum_scale_x(z[i], set[J[i]]);
+    reduce_vectors->sum_scale_x(z[i], set2 + J[i] * n);
   }
   reduce_vectors->reduce_sum_cgls(r);
 }
 
-#ifdef NROPT
 static void cglsFun0(int active, int* J, const double* C, 
 		     const double* Y, double** set, double* set2,
 		     int n0, int n, double* o, double* z, double* r, 
 		     Reduce_Vectors *reduce_vectors){
-#else
-static void cglsFun0(int active, int* J, const double* C, 
-		     const double* Y, double** set, 
-		     int n0, int n, double* o, double* z, double* r, 
-		     Reduce_Vectors *reduce_vectors){
-#endif
+// static void cglsFun0(int active, int* J, const double* C, 
+// 		     const double* Y, double** set, 
+// 		     int n0, int n, double* o, double* z, double* r, 
+// 		     Reduce_Vectors *reduce_vectors){
   int i;
   int ii = 0;
   int inc = 1;
@@ -970,10 +964,8 @@ static void cglsFun0(int active, int* J, const double* C,
   reduce_vectors->init();
   #pragma omp parallel for private(i) schedule(guided)
   for (i = 0; i < active; i++) {
-#ifndef NROPT
     z[i] = C[J[i]] * (Y[J[i]] - o[J[i]]);
-#endif
-    reduce_vectors->sum_scale_x(z[i], set[J[i]]);
+    reduce_vectors->sum_scale_x(z[i], set2 + J[i] * n);
   }
   reduce_vectors->reduce_sum_cgls(r);
 }
@@ -1006,15 +998,15 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   int inc = 1;
   double one = 1;
   double negLambda = -lambda;
-#ifdef NROPT
+
   int rowStart = 0;
   double* set2 = new double[n*active];
-#endif
+
   double* r = new double[n];
   for (i = n; i--;) {
     r[i] = 0.0;
   }
-#ifdef NROPT
+
   for (i = 0; i < active; i++) {
     ii = J[i];
     z[i] = C[ii] * (Y[ii] - o[ii]);
@@ -1022,18 +1014,11 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     memcpy(set2 + rowStart, set[J[i]], sizeof(double)*n0);
     set2[rowStart + n0] = 1.0;
   }
-#endif
-  // for (i = 0; i < active; i++) {
-  //   ii = J[i];
-  //   z[i] = C[ii] * (Y[ii] - o[ii]);
-  //   daxpy_(&n0, &(z[i]), set[ii], &inc, r, &inc);
-  //   r[n - 1] += z[i];
-  // }
-#ifdef NROPT
+
+
   cglsFun0(active, J, C, Y, set, set2, n0, n, o, z, r, reduce_vectors);
-#else
-  cglsFun0(active, J, C, Y, set, n0, n, o, z, r, reduce_vectors);
-#endif
+  // cglsFun0(active, J, C, Y, set, n0, n, o, z, r, reduce_vectors);
+
   double* p = new double[n];
   daxpy_(&n, &negLambda, beta, &inc, r, &inc);
   memcpy(p, r, sizeof(double)*n);
@@ -1053,11 +1038,8 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     cgiter++;
     // omega_q = 0.0;
     double t = 0.0;
-#ifdef NROPT
     omega_q = cglsFun1(active, J, C, set2, n0, n, q, p);
-#else
-    omega_q = cglsFun1(active, J, C, set, n0, n, q, p);
-#endif
+    // omega_q = cglsFun1(active, J, C, set, n0, n, q, p);
 
     gamma = omega1 / (lambda * omega_p + omega_q);
     inv_omega2 = 1 / omega1;
@@ -1068,7 +1050,7 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     daxpy_(&n, &gamma, p, &inc, beta, &inc);
     dscal_(&active, &gamma, q, &inc);
 
-    cglsFun2(active, J, C, set,
+    cglsFun2(active, J, C, set, set2,
 	     n0, n, q, o, z, r, reduce_vectors);
 
     omega_z = ddot_(&active, z, &inc, z, &inc);
@@ -1101,9 +1083,7 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   delete[] q;
   delete[] r;
   delete[] p;
-#ifdef NROPT
   delete[] set2;
-#endif
   return optimality;
 }
 
@@ -1135,14 +1115,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   ActiveSubset->d = m;
 
   int nr_thread = THREADS;
-  // if(nr_thread > omp_get_max_threads() / 3){
-  //   cout << "Num threads " << nr_thread << " greater than " <<
-  //     omp_get_max_threads() << " max system threads, defaulting to system max.\n";
-  //   nr_thread = omp_get_max_threads() / 3;
-  // }
-
-  // omp_set_nested(1);
-  // omp_set_dynamic(0);
   omp_set_num_threads(nr_thread);
 
   // Need accumulators for OMP
