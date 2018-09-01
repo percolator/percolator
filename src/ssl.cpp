@@ -1522,8 +1522,8 @@ static double norm_inf(int n, double *x)
 }
 
 
-double fun(double *w, int w_size, int l,
-           const double* y, double* z, const double* C, double** X)
+double fun_omp(double *w, int w_size, int l,
+	       const double* y, double* z, const double* C, double* X)
 {
   unsigned int i;
   int inc = 1;
@@ -1542,7 +1542,7 @@ f = ddot_(&w_size, w, &inc, w, &inc) / 2.0;
 // #ifdef BLASC
 //       z[i]=y[i]*(cblas_ddot(w_size, w, 1, X[i], 1) + w[w_size - 1]);
 // #else
-      z[i]=y[i]*(ddot_(&w_size, w, &inc, X[i], &inc) + w[w_size - 1]);
+      z[i]=y[i]*(ddot_(&w_size, w, &inc, X + i * w_size, &inc) + w[w_size - 1]);
       // #endif
 
       double d = 1-z[i];
@@ -1554,7 +1554,7 @@ f = ddot_(&w_size, w, &inc, w, &inc) / 2.0;
 }
 
 static void subXTv(double *v, double *XTv, int w_size,
-    double** X, const int* Id, int sizeI, Reduce_Vectors *reduce_vectors)
+    double* X, const int* Id, int sizeI, Reduce_Vectors *reduce_vectors)
 {
   int i;
   int inc = 1;
@@ -1564,13 +1564,13 @@ static void subXTv(double *v, double *XTv, int w_size,
 
 #pragma omp parallel for private(i) schedule(guided)
   for(i=0;i<sizeI;i++)
-    reduce_vectors->sum_scale_x(v[i], X[Id[i]]);
+    reduce_vectors->sum_scale_x(v[i], X + Id[i] * w_size);
   
   reduce_vectors->reduce_sum(XTv);
 }
 
 static int grad(double *w, double *g, int w_size, int l,
-		const double* y, double* z, const double* C, double** X,
+		const double* y, double* z, const double* C, double* X,
 		int* Id, Reduce_Vectors *reduce_vectors)
 {
   int i;
@@ -1592,7 +1592,7 @@ static int grad(double *w, double *g, int w_size, int l,
 }
 
 static void Hv(double *s, double *Hs, int w_size,
-	       const double* C, double** X, const int *Id, int sizeI,
+	       const double* C, double* X, const int *Id, int sizeI,
 	       Reduce_Vectors *reduce_vectors)
 {
   int i;
@@ -1602,7 +1602,7 @@ static void Hv(double *s, double *Hs, int w_size,
 #pragma omp parallel for private(i) schedule(guided)
   for(i=0;i<sizeI;i++)
     {
-      double* xi = X[Id[i]];
+      double* xi = X + Id[i] * w_size;
 // #ifdef BLASC
 //       double xTs = C[Id[i]]*(cblas_ddot(w_size, s, inc, xi, inc) + s[w_size - 1]);
 // #else
@@ -1616,7 +1616,7 @@ static void Hv(double *s, double *Hs, int w_size,
 }
 
 static int trcg(double delta, double *g, double *s, double *r, bool *reach_boundary, 
-		int n, const double* C, double** X, const int* Id, int sizeI, 
+		int n, const double* C, double* X, const int* Id, int sizeI, 
 		const int cgitermax, 
 		Reduce_Vectors *reduce_vectors,
 		const double eps_cg = 0.1)
@@ -1733,13 +1733,6 @@ int tron(const AlgIn& data, struct options* Options,
   tictoc.restart();
 
   int nr_thread = THREADS;
-  // if(nr_thread > omp_get_max_threads() / 3){
-  //   cout << "Num threads " << nr_thread << " greater than " <<
-  //     omp_get_max_threads() << " max system threads, defaulting to system max.\n";
-  //   nr_thread = omp_get_max_threads() / 3;
-  // }
-  // omp_set_nested(1);
-  // omp_set_dynamic(0);
   omp_set_num_threads(nr_thread);
 
   // Parameters for updating the iterates.
@@ -1748,11 +1741,6 @@ int tron(const AlgIn& data, struct options* Options,
   // Parameters for updating the trust region size delta.
   double sigma1 = 0.25, sigma2 = 0.5, sigma3 = 4;
 
-  ////////////// features
-  double** X = data.vals; // array of values
-  // const double** set = data.vals; // array of values
-  //// used as follows:
-  // const double* val = set[ii];
   double eps = 0.01;
   double eps_cg = 0.1;
   int max_iter = Options->mfnitermax;
@@ -1775,6 +1763,18 @@ int tron(const AlgIn& data, struct options* Options,
   int sizeI;
   int ini = 0;
 
+  double** X0 = data.vals; // array of values
+
+  double* X = new double[l * n];
+  unsigned int ind = 0;
+  unsigned int numZeros = 0;
+
+  for(i = 0; i < l; i++){
+    memcpy(X+ind, X0[i], sizeof(double)*n);
+    X[ind+n-1] = 1.0;
+    ind += n;
+  }
+
   // Need accumulators for OMP
   Reduce_Vectors *reduce_vectors = new Reduce_Vectors(n);
 
@@ -1782,8 +1782,8 @@ int tron(const AlgIn& data, struct options* Options,
   // double* o = Outputs->vec; // predictions of w on x
   // if the above is needed, set: double* o = z; and update the arrays accordingly
 
-  f = fun(w, n, l,
-          Y, z, C, X);
+  f = fun_omp(w, n, l,
+	      Y, z, C, X);
   sizeI = grad(w, g, n, l,
                Y, z, C, X, Id, reduce_vectors);
 
@@ -1821,8 +1821,8 @@ int tron(const AlgIn& data, struct options* Options,
       prered = -0.5*(gs-ddot_(&n, s, &inc, r, &inc));
       // #endif
 
-      fnew = fun(w_new, n, l,
-                 Y, z, C, X);
+      fnew = fun_omp(w_new, n, l,
+		     Y, z, C, X);
       // Compute the actual reduction.
       actred = f - fnew;
 

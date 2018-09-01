@@ -171,8 +171,8 @@ int tron(const AlgIn& set, struct options* Options,
          struct vector_double* Weights,
          struct vector_double* Outputs);
 
-double fun(double *w, int w_size, int l,
-           const double* y, double* z, const double* C, double** X);
+double fun_omp(double *w, int w_size, int l,
+	       const double* y, double* z, const double* C, double* X);
 
 ////////////////// single threaded tron headers
 int tron_nrOne(const AlgIn& data, struct options* Options,
