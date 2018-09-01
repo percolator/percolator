@@ -100,9 +100,9 @@ void Reduce_Vectors::sum_scale_x(double scalar, double* x)
 // #ifdef BLASC
 //   cblas_daxpy(size0, scalar, x, inc, tmp_array[thread_id], inc);
 // #else
-  daxpy_(&size0, &scalar, x, &inc, tmp_array[thread_id], &inc);
+  daxpy_(&size, &scalar, x, &inc, tmp_array[thread_id], &inc);
   // #endif
-  tmp_array[thread_id][size-1] += scalar;
+  // tmp_array[thread_id][size-1] += scalar;
 
 // #ifdef BLASC
 //   cblas_daxpy(size, scalar, x, inc, tmp_array[thread_id], inc);
@@ -1537,12 +1537,12 @@ f = ddot_(&w_size, w, &inc, w, &inc) / 2.0;
 
   // #pragma omp parallel for private(i) reduction(+:f) schedule(static)
   #pragma omp parallel for private(i) reduction(+:f) schedule(guided)
-  for(i=0;i<l;i++)
-    {
+  for(i=0;i<l;i++){
+  z[i]=y[i]*ddot_(&w_size, w, &inc, X + i * w_size, &inc); // + w[w_size - 1]);
 // #ifdef BLASC
 //       z[i]=y[i]*(cblas_ddot(w_size, w, 1, X[i], 1) + w[w_size - 1]);
 // #else
-      z[i]=y[i]*(ddot_(&w_size, w, &inc, X + i * w_size, &inc) + w[w_size - 1]);
+  
       // #endif
 
       double d = 1-z[i];
@@ -1606,7 +1606,7 @@ static void Hv(double *s, double *Hs, int w_size,
 // #ifdef BLASC
 //       double xTs = C[Id[i]]*(cblas_ddot(w_size, s, inc, xi, inc) + s[w_size - 1]);
 // #else
-      double xTs = C[Id[i]]*(ddot_(&w_size, s, &inc, xi, &inc) + s[w_size - 1]);
+      double xTs = C[Id[i]]*ddot_(&w_size, s, &inc, xi, &inc); // + s[w_size - 1]);
       // #endif
       reduce_vectors->sum_scale_x(xTs, xi);
     }
