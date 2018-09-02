@@ -886,86 +886,52 @@ static double l2SvmMfnFun2(double* diffs, int m, const double* Y,
   return(F);
 }
 
-// double cglsFun1(int active, int* J, const double* C, double** set, int n0,
-// 		int n, double* q, double* p){
-double cglsFun1(int active, int* J, const double* C, double* set2, int n0,
+double cglsFun1(int active, int* J, const double* C, double* set, int n0,
 		int n, double* q, double* p){
-// double cglsFun1(int active, int* J, const double* C, double** set, int n0,
-// 		int n, double* q, double* p){
   double omega_q = 0.0;
   int inc = 1;
   int i = 0;
 
-// #ifdef NROPT
-//   char trans = 'T';
-//   double alpha = 1.0;
-//   double beta = 0.0;
-//   dgemv_(&trans, &n, &active,
-// 	 &alpha, set2, &n,
-// 	 p, &inc, &beta, q, &inc);
-// #endif
-
   #pragma omp parallel for private(i) reduction(+:omega_q) schedule(guided)
   for (i = 0; i < active; i++) {
-    // q[i] = ddot_(&n0, set2 + J[i] * n, &inc, p, &inc) + p[n-1];
-  q[i] = ddot_(&n, set2 + J[i] * n, &inc, p, &inc); // + p[n-1];
+  q[i] = ddot_(&n, set + i * n, &inc, p, &inc); // + p[n-1];
     omega_q += C[J[i]] * (q[i]) * (q[i]);
   }
 
   return(omega_q);
 }
 
-static void cglsFun2(int active, int* J, const double* C, double** set, 
-		     double* set2,
+static void cglsFun2(int active, int* J, const double* C, double* set, 
 		     int n0, int n, double* q, double* o, double* z, double* r, 
 		     Reduce_Vectors *reduce_vectors){
   int i;
   int inc = 1;
   int ind = 0;
   double temp = 0.0;
-  
-//   #pragma omp parallel for private(i) schedule(guided)
-//   for (i = 0; i < active; i++) {
-//   o[J[i]] += q[i];
-//   z[i] -= C[J[i]] * q[i];
-//   // daxpy_(&n0, &(z[i]), set[J[i]], &inc, r, &inc);
-//   // r[n - 1] += z[i];
-// }
 
   reduce_vectors->init();
-  #pragma omp parallel for private(i) schedule(guided)
+#pragma omp parallel for private(i) schedule(guided)
   for (i = 0; i < active; i++) {
     o[J[i]] += q[i];
     z[i] -= C[J[i]] * q[i];
-    reduce_vectors->sum_scale_x(z[i], set2 + J[i] * n);
+    reduce_vectors->sum_scale_x(z[i], set + i * n);
   }
   reduce_vectors->reduce_sum_cgls(r);
 }
 
 static void cglsFun0(int active, int* J, const double* C, 
-		     const double* Y, double** set, double* set2,
+		     const double* Y, double* set, 
 		     int n0, int n, double* o, double* z, double* r, 
 		     Reduce_Vectors *reduce_vectors){
-// static void cglsFun0(int active, int* J, const double* C, 
-// 		     const double* Y, double** set, 
-// 		     int n0, int n, double* o, double* z, double* r, 
-// 		     Reduce_Vectors *reduce_vectors){
   int i;
   int ii = 0;
   int inc = 1;
-
-  // for (i = 0; i < active; i++) {
-  //   ii = J[i];
-  //   z[i] = C[ii] * (Y[ii] - o[ii]);
-  //   daxpy_(&n0, &(z[i]), set[ii], &inc, r, &inc);
-  //   r[n - 1] += z[i];
-  // }
 
   reduce_vectors->init();
   #pragma omp parallel for private(i) schedule(guided)
   for (i = 0; i < active; i++) {
     z[i] = C[J[i]] * (Y[J[i]] - o[J[i]]);
-    reduce_vectors->sum_scale_x(z[i], set2 + J[i] * n);
+    reduce_vectors->sum_scale_x(z[i], set + i * n);
   }
   reduce_vectors->reduce_sum_cgls(r);
 }
@@ -1009,15 +975,12 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
 
   for (i = 0; i < active; i++) {
     ii = J[i];
-    z[i] = C[ii] * (Y[ii] - o[ii]);
     rowStart = i * n;
     memcpy(set2 + rowStart, set[J[i]], sizeof(double)*n0);
     set2[rowStart + n0] = 1.0;
   }
 
-
-  cglsFun0(active, J, C, Y, set, set2, n0, n, o, z, r, reduce_vectors);
-  // cglsFun0(active, J, C, Y, set, n0, n, o, z, r, reduce_vectors);
+  cglsFun0(active, J, C, Y, set2, n0, n, o, z, r, reduce_vectors);
 
   double* p = new double[n];
   daxpy_(&n, &negLambda, beta, &inc, r, &inc);
@@ -1039,7 +1002,6 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     // omega_q = 0.0;
     double t = 0.0;
     omega_q = cglsFun1(active, J, C, set2, n0, n, q, p);
-    // omega_q = cglsFun1(active, J, C, set, n0, n, q, p);
 
     gamma = omega1 / (lambda * omega_p + omega_q);
     inv_omega2 = 1 / omega1;
@@ -1050,7 +1012,7 @@ static int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     daxpy_(&n, &gamma, p, &inc, beta, &inc);
     dscal_(&active, &gamma, q, &inc);
 
-    cglsFun2(active, J, C, set, set2,
+    cglsFun2(active, J, C, set2,
 	     n0, n, q, o, z, r, reduce_vectors);
 
     omega_z = ddot_(&active, z, &inc, z, &inc);
@@ -1159,8 +1121,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   vector_double* Outputs_bar = new vector_double[1];
   double* w_bar = new double[n];
   double* o_bar = new double[m];
-  // double* w_barD = new double[n];
-  // double* o_barD = new double[m];
   Weights_bar->vec = w_bar;
   Outputs_bar->vec = o_bar;
   Weights_bar->d = n;
@@ -1870,6 +1830,7 @@ int tron(const AlgIn& data, struct options* Options,
   delete[] s;
   delete[] Id;
   delete [] z; 
+  delete [] X;
   delete reduce_vectors;
 
   tictoc.stop();
