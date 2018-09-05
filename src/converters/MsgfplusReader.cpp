@@ -266,8 +266,9 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     double rank = item.rank();
     //double PI = boost::lexical_cast<double>(item.calculatedPI().get());
     int charge = item.chargeState();
-    double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
+    double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge().get());
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
+    
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
 
@@ -347,7 +348,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     	// std::cerr << "Skipping PSM with id " << psmid << " because MeanErrorTop7 = 0" << std::endl; // disabled this warning because it occurs a lot
     	return;
     }
-
+    
     //The raw theoretical mass from MSGF+ is often of the wrong isotope
     double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
     //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
