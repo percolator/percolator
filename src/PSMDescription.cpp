@@ -54,6 +54,15 @@ std::string PSMDescription::removePTMs(const string& peptide) {
       } else {
         peptideSequence.erase(ix--, posEnd + 1);
       }
+    } else if (peptideSequence[ix] == '(') {
+      size_t posEnd = peptideSequence.substr(ix).find_first_of(')');
+      if (posEnd == string::npos) {
+        ostringstream temp;
+        temp << "Error : Peptide sequence " << peptide << " contains an invalid modification" << endl;
+        throw MyException(temp.str());
+      } else {
+        peptideSequence.erase(ix--, posEnd + 1);
+      }
     }
   }
   return peptide.substr(0,1) + std::string(".") + peptideSequence + std::string(".") + peptide.substr(peptide.size() - 1,1);
