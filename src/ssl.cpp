@@ -17,6 +17,8 @@ using namespace std;
 #include "Globals.h"
 #include "ssl.h"
 
+#include <stdarg.h>
+#include <cstring>
 
 extern "C" {
   extern double dnrm2_(int *, double *, int *);
@@ -34,7 +36,7 @@ extern "C" {
 // for compatibility issues, not using log2
 
 AlgIn::AlgIn(const int size, const int numFeat) {
-  vals = new const double*[size];
+  vals = new double*[size];
   Y = new double[size];
   C = new double[size];
   n = numFeat;
@@ -47,7 +49,7 @@ AlgIn::~AlgIn() {
   delete[] C;
 }
 
-double cglsFun1(int active, int* J,
+double cglsFun1(int active, int* J, const double* Y,
 		double* set2, int n, double* q, 
 		double* p, double cpos, double cneg){
   double omega_q = 0.0;
@@ -62,13 +64,13 @@ double cglsFun1(int active, int* J,
 	 p, &inc, &beta, q, &inc);
 
   for (i = 0; i < active; i++) {
-    omega_q += (Y[J[i]]==1)? cpos : cneg) * (q[i]) * (q[i]);
+    omega_q += ((Y[J[i]]==1)? cpos : cneg) * (q[i]) * (q[i]);
   }
 
   return(omega_q);
 }
 
-void cglsFun2(int active, int* J,
+void cglsFun2(int active, int* J, const double* Y,
 	      double* set2, int n0, int n, double* q, 
 	      double* o, double* z, double* r, 
 	      double cpos, double cneg){
@@ -79,7 +81,7 @@ void cglsFun2(int active, int* J,
   
   for (i = 0; i < active; i++) {
     o[J[i]] += q[i];
-    z[i] -= (Y[J[i]]==1)? cpos : cneg) * q[i];
+    z[i] -= ((Y[J[i]]==1)? cpos : cneg) * q[i];
     daxpy_(&n, &(z[i]), set2 + i * n, &inc, r, &inc);
   }
 }
@@ -96,10 +98,10 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   tictoc.restart();
   int active = Subset->d;
   int* J = Subset->vec;
-  const double** set = data.vals;
+  double** set = data.vals;
   const double* Y = data.Y;
   //const double* C = data.C;
-  const int n = data.n;
+  int n = data.n;
   //  int m  = pSet->size();
   double* beta = Weights->vec;
   double* o = Outputs->vec;
@@ -165,7 +167,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   // iterate
   while (cgiter < cgitermax) {
     cgiter++;
-    omega_q = cglsFun1(active, J, set2, n, q, p, cpos, cneg);
+    omega_q = cglsFun1(active, J, Y, set2, n, q, p, cpos, cneg);
     gamma = omega1 / (lambda * omega_p + omega_q);
     inv_omega2 = 1 / omega1;
 
@@ -175,7 +177,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     daxpy_(&n, &gamma, p, &inc, beta, &inc);
     dscal_(&active, &gamma, q, &inc);
 
-    cglsFun2(active, J, set2,
+    cglsFun2(active, J, Y, set2,
 	     n0, n, q, o, z, r, cpos, cneg);
 
     omega_z = ddot_(&active, z, &inc, z, &inc);
@@ -275,10 +277,10 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   /* Disassemble the structures */
   timer tictoc;
   tictoc.restart();
-  const double** set = data.vals;
+  double** set = data.vals;
   const double* Y = data.Y;
   //const double* C = data.C;
-  const int n = Weights->d;
+  int n = Weights->d;
   const int m = data.m;
   double lambda = Options->lambda;
   double epsilon = BIG_EPSILON;
@@ -481,7 +483,7 @@ double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
     diff = Y[i] * (o_bar[i] - o[i]);
     if (Y[i] * o[i] < 1) {
       // d2 = C[i] * (o_bar[i] - o[i]);
-      d2 = (Y[i]==1)? cpos : cneg) * (o_bar[i] - o[i]);
+      d2 = ((Y[i]==1)? cpos : cneg) * (o_bar[i] - o[i]);
       L += (o[i] - Y[i]) * d2;
       R += (o_bar[i] - Y[i]) * d2;
       if (diff > 0) {
@@ -508,7 +510,7 @@ double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
     }
     ii = deltas[i].index;
     // diff = (deltas[i].s) * C[ii] * (o_bar[ii] - o[ii]);
-    diff = (deltas[i].s) * (Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
+    diff = (deltas[i].s) * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
     L += diff * (o[ii] - Y[ii]);
     R += diff * (o_bar[ii] - Y[ii]);
   }

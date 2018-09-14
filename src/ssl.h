@@ -29,7 +29,7 @@ class AlgIn {
     int n; /* number of features */
     int positives;
     int negatives;
-    const double** vals;
+    double** vals;
     double* Y; /* labels */
     double* C; /* cost associated with each example */
     void setCost(double pos, double neg) {
