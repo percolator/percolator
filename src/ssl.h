@@ -137,5 +137,8 @@ int L2_SVM_MFN(const AlgIn& set, struct options* Options,
 double line_search(double* w, double* w_bar, double lambda, double* o,
                    double* o_bar, const double* Y, const double* C, int d,
                    int l, double cpos, double cneg);
+double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
+			 double* o_bar, const double* Y, int d, int l, 
+			  double cpos, double cneg);
 
 #endif
