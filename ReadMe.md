@@ -12,5 +12,3 @@ different platforms can be found in: admin/builders/
 
 The cleanest way to build is to use the vagrant virtual machine
 system, which can be setup using the script: admin/vagrant/manager.sh
-
-Lukas Käll
