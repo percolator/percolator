@@ -121,6 +121,18 @@ void Clear(struct vector_int* a); /* deletes a */
 double norm_square(const vector_double* A); /* returns squared length of A */
 
 /* svmlin algorithms and their subroutines */
+double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
+			 double* o_bar, const double* Y, const double* C, int d,
+			 int l, double cpos, double cneg);
+
+double cglsFun1(int active, int* J, const double* Y,
+		double* set2, int n, double* q, 
+		double* p, double cpos, double cneg);
+
+void cglsFun2(int active, int* J, const double* Y,
+	      double* set2, int n0, int n, double* q, 
+	      double* o, double* z, double* r, 
+	      double cpos, double cneg);
 
 /* Conjugate Gradient for Sparse Linear Least Squares Problems */
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_{i in Subset} Data->C[i] (Y[i]- w' x_i)^2 */
@@ -128,17 +140,37 @@ double norm_square(const vector_double* A); /* returns squared length of A */
 int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
          const double epsilon, const struct vector_int* Subset,
          struct vector_double* Weights, struct vector_double* Outputs, double cpos, double cneg);
-
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
 int L2_SVM_MFN(const AlgIn& set, struct options* Options,
                struct vector_double* Weights,
                struct vector_double* Outputs, double cpos, double cneg);
-double line_search(double* w, double* w_bar, double lambda, double* o,
-                   double* o_bar, const double* Y, const double* C, int d,
-                   int l, double cpos, double cneg);
-double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
-			 double* o_bar, const double* Y, int d, int l, 
-			  double cpos, double cneg);
+/* double line_search(double* w, double* w_bar, double lambda, double* o, */
+/*                    double* o_bar, const double* Y, const double* C, int d, */
+/*                    int l, double cpos, double cneg); */
 
+// for WINDOWS: original implementations
+double line_search_nrOne(double* w, double* w_bar, double lambda, double* o,
+			 double* o_bar, const double* Y, const double* C, int d,
+			 int l);
+
+double cglsFun1(int active, int* J, const double* C, 
+		      double* set2, int n, double* q, 
+		      double* p);
+
+void cglsFun2(int active, int* J, const double* C, 
+	      double* set2, int n0, int n, double* q, 
+	      double* o, double* z, double* r);
+
+int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
+	 const double epsilon, const struct vector_int* Subset,
+	 struct vector_double* Weights, struct vector_double* Outputs);
+
+int L2_SVM_MFN(const AlgIn& set, struct options* Options,
+               struct vector_double* Weights,
+               struct vector_double* Outputs);
+
+/* double line_search(double* w, double* w_bar, double lambda, double* o, */
+/*                    double* o_bar, const double* Y, const double* C, int d, */
+/*                    int l); */
 #endif

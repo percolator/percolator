@@ -16,7 +16,10 @@
  *******************************************************************************/
 
 #include "CrossValidation.h"
+
+#ifndef IS_WINDOWS
 #include "threadpool.h"
+#endif
 
 #if defined(_GLIBCXX_PARALLEL)
 #define USE_MULTIPLE_PTHREAD(x) x > 1
@@ -298,6 +301,7 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   return estTruePos / (numFolds_ - 1);
 }
 
+#ifndef IS_WINDOWS
 struct thread_arguments
 {
   pthread_mutex_t* mutex;
@@ -355,6 +359,7 @@ void train_one_svm(void* arg){
   delete pWeights;
 }
 
+#endif
 /** 
  * Train one of the crossvalidation bins 
  * @param set identification number of the bin that is processed
@@ -397,8 +402,8 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
   
   AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
   std::map<std::pair<double, double>, int> intermediateResults;
-
-
+#ifndef IS_WINDOWS
+  // Create storage vector for parallel nested SVM algorithms (inner-folds of cross-validation bins)
   vector<vector_double*> Outputss;
   vector<double *> models;
   vector<double  > scores;
@@ -417,9 +422,7 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
       Outputss.push_back(Outputs);
     }
   }
-
-
-
+#endif
 
   for (unsigned int nestedFold = 0; nestedFold < nestedXvalBins_; ++nestedFold) {
     nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
@@ -431,6 +434,63 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
         << svmInput->negatives << " negatives" << std::endl;
     }
 
+#ifdef IS_WINDOWS
+    // Create storage vector for SVM algorithm
+    struct vector_double* Outputs = new vector_double;
+    size_t numInputs = svmInput->positives + svmInput->negatives;
+    Outputs->vec = new double[numInputs];
+    Outputs->d = numInputs;
+    
+    // Find soft margin parameters with highest estimate of true positives
+    std::vector<double>::const_iterator itCpos = cposCandidates.begin();
+    for ( ; itCpos != cposCandidates.end(); ++itCpos) {
+      double cpos = *itCpos;  
+      std::vector<double>::const_iterator itCfrac = cfracCandidates.begin();
+      for ( ; itCfrac != cfracCandidates.end(); ++itCfrac) {
+        double cfrac = *itCfrac;
+        if (VERB > 3) cerr << "- cross-validation with Cpos=" << cpos
+            << ", Cneg=" << cfrac*cpos << endl;
+        int tp = 0;
+        for (int ix = 0; ix < pWeights->d; ix++) {
+          pWeights->vec[ix] = 0;
+        }
+        for (int ix = 0; ix < Outputs->d; ix++) {
+          Outputs->vec[ix] = 0;
+        }
+        svmInput->setCost(cpos, cpos * cfrac);
+        
+        // Call SVM algorithm (see ssl.cpp)
+        L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+        
+        for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+          ww[i] = pWeights->vec[i];
+        }
+        
+        tp = nestedTestScores[nestedFold].calcScores(ww, testFdr_, skipDecoysPlusOne);
+        if (VERB > 3) {
+          cerr << "- cross-validation found " << tp
+               << " training set PSMs with q_liberal<" << testFdr_ << "." << endl;
+        }
+        
+        if (nestedXvalBins_ > 1) {
+          intermediateResults[std::make_pair(cpos, cfrac)] += tp;
+        } else {
+          if (tp >= bestTruePos) {
+            if (VERB > 3) {
+              cerr << "Better than previous result, store this." << endl;
+            }
+            bestTruePos = tp;
+            bestW = ww;
+            bestCpos = cpos;
+            bestCfrac = cfrac;
+          }
+        }
+      }
+    }
+    delete[] Outputs->vec;
+    delete Outputs;
+
+#else
     size_t numInputs = svmInput->positives + svmInput->negatives;
     
     if(numInputs > Outputss[0]->d){
@@ -519,7 +579,8 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
     delete[] Outputss[i]->vec;
     delete Outputss[i];
   }
-  
+#endif  
+
   if (nestedXvalBins_ > 1) {
     // Find soft margin parameters with highest estimate of true positives
     std::vector<double>::const_iterator itCpos = cposCandidates.begin();
@@ -555,8 +616,15 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
       Outputs->vec[ix] = 0;
     }
     svmInput->setCost(bestCpos, bestCpos * bestCfrac);
-    
+
+#ifdef IS_WINDOWS
+    // Call SVM algorithm (see ssl.cpp)
+    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+
+#else    
+
     L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCpos, bestCpos * bestCfrac);
+#endif
 
     for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
       bestW[i] = pWeights->vec[i];

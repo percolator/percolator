@@ -21,6 +21,11 @@
 #include <iomanip>
 #include <vector>
 
+// Check for Windows
+#if defined (__WIN32__) || defined (__MINGW__) || defined (MINGW) || defined (_WIN32)
+#define IS_WINDOWS
+#endif
+
 #include "Globals.h"
 #include "FeatureNames.h"
 #include "Normalizer.h"
