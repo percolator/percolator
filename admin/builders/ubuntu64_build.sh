@@ -68,7 +68,7 @@ else
 fi
 
 # issue with XercesC in Ubuntu 16.04: https://github.com/percolator/percolator/issues/188
-if [[ $(lsb_release -a) == *"16.04"* ]]; then
+if [[ $(lsb_release -a) == *"16.04"* ]] || [[ $(lsb_release -a) == *"18.04"* ]]; then
   if [[ ! -d ${ubuntu_xerces}/lib ]]; then
     # download, compile and link xerces
     wget --quiet ${ubuntu_xerces_url}

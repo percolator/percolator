@@ -277,12 +277,17 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
     vector<double> cp(1, bestCpos), cf(1, bestCfrac);
   #pragma omp parallel for schedule(dynamic, 1) ordered
     for (int set = 1; set < numFolds_; ++set) {
+      struct vector_double* pWeightsTmp = new vector_double;
+      pWeightsTmp->d = pWeights->d;
+      pWeightsTmp->vec = new double[pWeights->d];
       int estTruePosFold = processSingleFold(set, selectionFdr, cp, cf, bestCpos, 
-                                      bestCfrac, pWeights, pOptions);
+                                      bestCfrac, pWeightsTmp, pOptions);
       #pragma omp critical (add_tps)
       {
         estTruePos += estTruePosFold;
-      }  
+      }
+      delete[] pWeightsTmp->vec;
+      delete pWeightsTmp;
     }
     delete[] pWeights->vec;
     delete pWeights;
