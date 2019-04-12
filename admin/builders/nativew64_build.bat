@@ -77,7 +77,9 @@ set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 
-set ZIP_URL=https://downloads.sourceforge.net/sevenzip/7z920.exe
+PowerShell "Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\.NetFramework\v4.0.30319' -Name 'SchUseStrongCrypto' -Value '1' -Type DWord"
+
+set ZIP_URL=http://downloads.sourceforge.net/sevenzip/7z920.exe
 if not exist "%INSTALL_DIR%\7zip" (
   echo Downloading and installing 7-Zip
   call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.exe
@@ -89,7 +91,8 @@ set CMAKE_BASE=cmake-3.5.2-win32-x86
 set CMAKE_URL=https://cmake.org/files/v3.5/%CMAKE_BASE%.zip
 if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
   echo Downloading and installing CMake
-  call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
+  PowerShell "Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\.NetFramework\v4.0.30319' -Name 'SchUseStrongCrypto' -Value '1' -Type DWord"
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%CMAKE_URL%','%INSTALL_DIR%\cmake.zip')"
   %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
 )
 set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
@@ -175,7 +178,7 @@ if not exist "%SQLITE_DIR%" (
   call :downloadfile %SQLITE_DLL_URL% %INSTALL_DIR%\sqlite_dll.zip
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%" > NUL
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_dll.zip" -o"%SQLITE_DIR%" > NUL
-  
+
   ::: Generate lib from dll
   cd /D "%SQLITE_DIR%"
   ren sqlite-amalgamation-3080803 src
@@ -189,39 +192,36 @@ if not exist "%SQLITE_DIR%" (
   lib /DEF:"!DEF_FILE!" /MACHINE:X64
   endlocal
 )
-set SQLITE_DIR=%SQLITE_DIR%;%SQLITE_DIR%\src
+
+::: Needed for speedup version package :::
+set PTHREAD_DIR=%INSTALL_DIR%\pthread_x64
+set PTHREAD_ZIP_URL=ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip
+if not exist "%PTHREAD_DIR%" (
+  echo Downloading and installing PThreads
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%PTHREAD_ZIP_URL%','%INSTALL_DIR%\pthreads-w32-2-9-1-release.zip')"
+  %ZIP_EXE% x "%INSTALL_DIR%\pthreads-w32-2-9-1-release.zip" -o"%PTHREAD_DIR%" > NUL
+)
+set PTHREAD_LIB_DIR="%PTHREAD_DIR%\Pre-built.2\lib\x86\"
+set PTHREAD_INCLUDE_DIR="%PTHREAD_DIR%\Pre-built.2\include\"
+set PTHREAD_FIND_DIR="%PTHREAD_DIR%\Pre-built.2\"
 
 ::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib_x64
-set ZLIB_SRC_URL=http://win32builder.gnome.org/packages/3.6/zlib-dev_1.2.7-1_win64.zip
-set ZLIB_DLL_URL=http://win32builder.gnome.org/packages/3.6/zlib_1.2.7-1_win64.zip
-if not exist "%ZLIB_DIR%" (
+set ZLIB_URL=https://www.bruot.org/hp/media/files/libraries/zlib_1_2_8_msvc2015_64.zip
+f not exist "%ZLIB_DIR%" (
   echo Downloading and installing ZLIB
-  call :downloadfile %ZLIB_SRC_URL% %INSTALL_DIR%\zlib_src.zip
-  call :downloadfile %ZLIB_DLL_URL% %INSTALL_DIR%\zlib_dll.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib_src.zip" -o"%ZLIB_DIR%" > NUL
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib_dll.zip" -o"%ZLIB_DIR%" > NUL
-  
-  ::: Generate lib from dll
-  setlocal enableDelayedExpansion
-  set DLL_BASE=%ZLIB_DIR%\bin\zlib1
-  set DEF_FILE=!DLL_BASE!.def
-  set write=0
-  echo EXPORTS> "!DEF_FILE!"
-  for /f "usebackq tokens=4" %%i in (`dumpbin /exports "!DLL_BASE!.dll"`) do if "!write!"=="1" (echo %%i >> "!DEF_FILE!") else (if %%i==name set write=1)
-  cd /D "%ZLIB_DIR%\bin"
-  lib /DEF:"!DEF_FILE!" /MACHINE:X64
-  endlocal
-)
-set ZLIB_DIR=%ZLIB_DIR%\bin;%ZLIB_DIR%\include
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%ZLIB_URL%','%INSTALL_DIR%\zlib_1_2_8_msvc2015_64.zip')"
+  %ZIP_EXE% x "%INSTALL_DIR%\zlib_1_2_8_msvc2015_64.zip" -o"%ZLIB_DIR%" > NUL
+  )
+set ZLIB_DIR=%ZLIB_DIR%\msvc2015_64\lib\zlib\;%ZLIB_DIR%\msvc2015_64\include\zlib\
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
 set DIRENT_H_PATH=%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\VC\include\dirent.h
 set DIRENT_H_URL=https://github.com/tronkko/dirent/archive/1.23.1.zip
-if not exist "%DIRENT_H_PATH%" ( 
-  echo Downloading and installing dirent.h 
-  call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
+if not exist "%DIRENT_H_PATH%" (
+  echo Downloading and installing dirent.h
+  PowerShell "(new-object System.Net.WebClient).DownloadFile('%DIRENT_H_URL%','%INSTALL_DIR%\dirent.zip')"
   %ZIP_EXE% x -aoa "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent"
   copy "%INSTALL_DIR%\dirent\dirent-1.23.1\include\dirent.h" "%DIRENT_H_PATH%"
 )
@@ -253,7 +253,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 cd /D "%BUILD_DIR%\percolator"
 echo cmake percolator.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%PTHREAD_FIND_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
@@ -264,14 +264,14 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
 echo cmake converters.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%;%PTHREAD_FIND_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
-::::: Building elude ::::::: 
+::::: Building elude :::::::
 if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
 cd /D "%BUILD_DIR%\elude"
 echo cmake elude.....

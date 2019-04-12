@@ -21,6 +21,11 @@
 #include <iomanip>
 #include <vector>
 
+// Check for Windows
+#if defined (__WIN32__) || defined (__MINGW__) || defined (MINGW) || defined (_WIN32)
+#define IS_WINDOWS
+#endif
+
 #include "Globals.h"
 #include "FeatureNames.h"
 #include "Normalizer.h"
@@ -36,7 +41,7 @@ class CrossValidation {
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0, 
-    int nestedXvalBins, bool trainBestPositive);
+    int nestedXvalBins, bool trainBestPositive, int ncposthreads);
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
@@ -74,6 +79,8 @@ class CrossValidation {
   bool quickValidation_;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
+
+  int ncposthreads_;
   
   double testFdr_; // fdr used for cross validation performance measuring
   double selectionFdr_; // fdr used for determining positive training set
