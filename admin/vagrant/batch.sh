@@ -1,37 +1,34 @@
 #!/bin/bash
 export LANG=en_US.UTF-8
 export LC_ALL="en_US.UTF-8"
+trap 'echo "Batch script killed"; exit 1' INT TERM
+
 release_dir=${HOME}/release
 
-echo "Building Ubuntu binaries"
-./manager.sh -p ubuntu -r ${release_dir}/ubuntu64 > ubuntu_output.txt 2>&1
-if [[ $? -eq 0 ]]; then
-  echo "Building of Ubuntu binaries succeeded"
-fi
+platforms=()
+platforms+=(osx)
+#platforms+=(win64)
+#platforms+=(win32)
+#platforms+=(centos)
+#platforms+=(fedora)
+#platforms+=(ubuntu)
 
-echo "Building Fedora binaries"
-./manager.sh -p fedora -r ${release_dir}/fedora64  > fedora_output.txt 2>&1
-if [[ $? -eq 0 ]]; then
-  echo "Building of Fedora binaries succeeded"
-fi
+for platform in ${platforms[@]}; do
+  echo "Building $platform binaries"
+  ./manager.sh -p $platform -r ${release_dir}/$platform > ${platform}_output.txt 2>&1
+  if [[ $? -eq 0 ]]; then
+    echo "Building of ${platform} binaries succeeded"
+  else
+    echo "Building of ${platform} binaries failed"
+  fi
+done
 
-echo "Building CentOS binaries"
-./manager.sh -p centos -r ${release_dir}/centos64  > centos_output.txt 2>&1
-if [[ $? -eq 0 ]]; then
-  echo "Building of CentOS binaries succeeded"
-fi
-
-echo "Building native 64-bit Windows binaries"
-./manager.sh -p nw64 -r ${release_dir}/win64  > nw64_output.txt 2>&1
-if [[ $? -eq 0 ]]; then
-  echo "Building of native 64-bin Windows binaries succeeded"
-fi
-
-echo "Building native 32-bit Windows binaries"
-./manager.sh -p nw32 -r ${release_dir}/win32  > nw32_output.txt 2>&1
-if [[ $? -eq 0 ]]; then
-  echo "Building of 32-bit native Windows binaries succeeded"
-fi
-
-#./manager.sh -p w32 > w32_output.txt 2>&1 # MINGW32
-#./manager.sh -p w64 > w64_output.txt 2>&1 # MINGW64
+# for the osx build, root priviliges are necessary but we can skip the password prompt:
+# Vagrant NFS access https://www.vagrantup.com/docs/synced-folders/nfs.html#root-privilege-requirement
+# add the following lines with $sudo visudo
+#Cmnd_Alias VAGRANT_EXPORTS_CHOWN = /bin/chown 0\:0 /tmp/*
+#Cmnd_Alias VAGRANT_EXPORTS_MV = /bin/mv -f /tmp/* /etc/exports
+#Cmnd_Alias VAGRANT_NFSD_CHECK = /etc/init.d/nfs-kernel-server status
+#Cmnd_Alias VAGRANT_NFSD_START = /bin/systemctl start nfs-server.service
+#Cmnd_Alias VAGRANT_NFSD_APPLY = /usr/sbin/exportfs -ar
+#%sudo ALL=(root) NOPASSWD: VAGRANT_EXPORTS_CHOWN, VAGRANT_EXPORTS_MV, VAGRANT_NFSD_CHECK, VAGRANT_NFSD_START, VAGRANT_NFSD_APPLY
