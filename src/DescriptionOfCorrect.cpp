@@ -42,10 +42,7 @@ DescriptionOfCorrect::~DescriptionOfCorrect() {
 
 void DescriptionOfCorrect::calcRegressionFeature(PSMDescription* psm) {
   string peptide = psm->getFullPeptide();
-  // existence of pos1 and pos2, as well as pos1 > pos2 are guaranteed by checks in DataSet.cpp
-  string::size_type pos1 = peptide.find('.');
-  string::size_type pos2 = peptide.rfind('.');
-  string pep = peptide.substr(pos1, pos2 - pos1);
+  string pep = PSMDescription::removePTMs(peptide);
   psm->setIsoElectricPoint(isoElectricPoint(pep));
   if (psm->getRetentionFeatures()) {
     RTModel::fillFeaturesAllIndex(pep, psm->getRetentionFeatures());
