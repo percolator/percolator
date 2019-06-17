@@ -59,7 +59,7 @@ class TandemReader: public Reader {
 		  boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn);
   
   void getPeptideProteinMap(const tandem_ns::group &groupObj,
-      peptideProteinMapType &peptideProteinMap, bool& isDecoy);
+      peptideProteinMapType &peptideProteinMap);
   
   void createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
 		  double sumI,double maxI,bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
