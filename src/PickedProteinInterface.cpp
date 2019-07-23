@@ -385,7 +385,19 @@ bool PickedProteinInterface::pickedProteinCheckId(std::string& proteinId, bool i
     std::set<std::string>& targetProts, std::set<std::string>& decoyProts) {
   bool found = false;
   if (isDecoy) {
-    std::string targetId = proteinId.substr(decoyPattern_.size());
+    std::string targetId = proteinId;
+    if (decoyPattern_.size() >= proteinId.size()) {
+      ostringstream oss;
+      oss << "ERROR: Could not detect the decoy prefix \"" << decoyPattern_ 
+          << "\" for the decoy protein identifier \"" << proteinId << "\"." << std::endl;
+      if (NO_TERMINATE) {
+        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping removal of decoyPrefix." << std::endl;
+      } else {
+        throw MyException(oss.str());
+      }
+    } else {
+      targetId = proteinId.substr(decoyPattern_.size());
+    }
     if (targetProts.find(targetId) != targetProts.end()) {
       found = true;
     } else {
