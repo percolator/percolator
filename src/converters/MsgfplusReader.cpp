@@ -215,7 +215,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
-  std::string psmid = "";
 
   try
   {
@@ -284,9 +283,8 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     {
       fileId.erase(spos);
     }
-    std::string psmid = fileId + "_" + boost::lexical_cast<string > (item.id()) + "_" +
-    		boost::lexical_cast<string > (useScanNumber) + "_" +
-            boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
+    std::string psmId = createPsmId(fileId + "_" + boost::lexical_cast<string > (item.id()), 
+        observed_mass, useScanNumber, charge, rank);
 
     double RawScore = 0.0;
     double DeNovoScore = 0.0;
@@ -434,7 +432,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     }
 
     ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch
-            (features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
+            (features_p, peptide_p, psmId, isDecoy, observed_mass, theoretic_mass, charge);
     std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
 
     for (std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i) {

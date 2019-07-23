@@ -286,10 +286,9 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
 //All psms are read, features calculated and the psm saved.
 void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
     boost::shared_ptr<FragSpectrumScanDatabase> database, const std::string &fn) {
-  std::ostringstream id;
   std::string fileId, proteinName;
   int rank = 1, spectraId;
-  double parenIonMass = 0.0;
+  double parentIonMass = 0.0;
   unsigned charge = 0;
   double sumI = 0.0;
   double maxI = 0.0;
@@ -300,7 +299,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
   
   if (groupObj.mh().present() && groupObj.z().present() && groupObj.sumI().present() && 
     groupObj.maxI().present() && groupObj.fI().present()&& groupObj.id().present()) {
-    parenIonMass = boost::lexical_cast<double>(groupObj.mh().get());//the parent ion mass (plus a proton) from the spectrum
+    parentIonMass = boost::lexical_cast<double>(groupObj.mh().get());//the parent ion mass (plus a proton) from the spectrum
     charge = boost::lexical_cast<unsigned>(groupObj.z().get()); 	//the parent ion charge from the spectrum
     sumI = boost::lexical_cast<double>(groupObj.sumI().get());	//the log10 value of the sum of all of the fragment ion intensities
     maxI = boost::lexical_cast<double>(groupObj.maxI().get());	//the maximum fragment ion intensity
@@ -329,10 +328,8 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
 	      spos = fileId.find('.');
 	      if (spos != std::string::npos) fileId.erase(spos);
 	      //Create id
-	      id.str("");
-	      id << fileId << '_' << spectraId << '_' << charge << '_' << rank;
-	      std::string psmId=id.str();
-      	createPSM(domain, parenIonMass, charge, sumI, maxI, isDecoy, database, peptideProteinMap, psmId, spectraId);
+	      std::string psmId = createPsmId(fileId, parentIonMass, spectraId, charge, rank);
+      	createPSM(domain, parentIonMass, charge, sumI, maxI, isDecoy, database, peptideProteinMap, psmId, spectraId);
       	++rank;
       }//End of if rank<=po.hitsPerSpectrum
     }
@@ -356,7 +353,7 @@ void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,
 
 //Calculates some features then creates the psm and saves it
 void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
-    double parenIonMass, unsigned charge, double sumI, double maxI, 
+    double parentIonMass, unsigned charge, double sumI, double maxI, 
     bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
     const peptideProteinMapType &peptideProteinMap,const string &psmId, 
     int spectraId) {
@@ -483,7 +480,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   if (y_score) f_seq.push_back(yions / peptide.size());
   if (z_score) f_seq.push_back(zions / peptide.size());
   //Mass
-  f_seq.push_back(parenIonMass);
+  f_seq.push_back(parentIonMass);
   f_seq.push_back(mass_diff);
   f_seq.push_back(abs(mass_diff));
   //peptide length
@@ -519,7 +516,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   //Save the psm
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p(
       new percolatorInNs::peptideSpectrumMatch(features_p, peptide_p, psmId, 
-      isDecoy, parenIonMass, calculated_mass, charge));
+      isDecoy, parentIonMass, calculated_mass, charge));
   
   std::vector<std::string>::const_iterator poIt;
   for (poIt = proteinOccurences.begin(); poIt != proteinOccurences.end(); ++poIt) {

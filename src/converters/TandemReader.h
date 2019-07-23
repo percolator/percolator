@@ -38,7 +38,8 @@ class TandemReader: public Reader {
   
   virtual ~TandemReader();
   
-  void read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  void read(const std::string &fn, bool isDecoy, 
+      boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   bool checkValidity(const std::string &file);
   
@@ -55,15 +56,18 @@ class TandemReader: public Reader {
   bool firstPSM;
   
   //Functions
-  void readSpectra(const tandem_ns::group &groupObj,bool isDecoy,
-		  boost::shared_ptr<FragSpectrumScanDatabase> database,const std::string &fn);
+  void readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
+		  boost::shared_ptr<FragSpectrumScanDatabase> database,
+		  const std::string &fn);
   
   void getPeptideProteinMap(const tandem_ns::group &groupObj,
       peptideProteinMapType &peptideProteinMap);
   
-  void createPSM(const tandem_ns::peptide::domain_type &domain,double parenIonMass,unsigned charge,
-		  double sumI,double maxI,bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
-		  const peptideProteinMapType &peptideProteinMap,const string &psmId, int spectraId);
+  void createPSM(const tandem_ns::peptide::domain_type &domain, 
+      double parentIonMass, unsigned charge, double sumI, double maxI, 
+      bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
+		  const peptideProteinMapType &peptideProteinMap, const string &psmId, 
+		  int spectraId);
   
   static const std::map<string,double> tandemFeaturesDefaultValue;
 };
