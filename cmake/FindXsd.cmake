@@ -20,7 +20,7 @@ PATH_SUFFIXES
 
 FIND_PROGRAM(XSD_EXECUTABLE 
   NAMES 
-    xsd xsdcxx
+    xsdcxx xsd
   PATHS
     $ENV{XSDDIR}/bin
     /usr/local/bin

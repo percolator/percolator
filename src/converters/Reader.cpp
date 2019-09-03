@@ -294,9 +294,9 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 	      char * tcd;
 	      string str;
 
-	      //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
-	      //boost filesystem when we dont use them
 #ifndef __APPLE__
+        //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
+	      //boost filesystem when we don't use them
         try {
           boost::filesystem::path ph = boost::filesystem::unique_path();
           boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
@@ -359,6 +359,14 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
     }
     meta.close();
   }
+}
+
+std::string Reader::createPsmId(const std::string& fileId, double expMass, unsigned int scan, int charge, unsigned int rank) {
+  std::ostringstream id;
+  id << fileId << '_';
+  if (po.expMassInPsmId) id << expMass << '_';
+  id << scan << '_' << charge << '_' << rank;
+  return id.str();
 }
   
 void Reader::push_backFeatureDescription(const char * str, const char *description, double initvalue) {

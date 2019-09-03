@@ -123,7 +123,9 @@ class Reader {
   void storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   void push_backFeatureDescription(const char *str, const char *description = "", double initvalue = 0.0);
-
+  
+  std::string createPsmId(const std::string& fileId, double expMass, unsigned int scan, int charge, unsigned int rank);
+  
   void computeAAFrequencies(const string& pep,
 			    percolatorInNs::features::feature_sequence & f_seq);
   

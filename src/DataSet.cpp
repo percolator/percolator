@@ -17,6 +17,13 @@
 
 #include "DataSet.h"
 
+#ifdef WIN32
+#include <float.h>
+#define isfinite _finite
+#else
+#include <cmath>
+#endif
+
 bool DataSet::calcDOC_ = false;
 FeatureNames DataSet::featureNames_;
 
@@ -185,6 +192,18 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
     featureRow[j] = reader.readDouble();
+    if (!isfinite(featureRow[j])) {
+      ostringstream oss;
+      oss << "ERROR: Reached strange feature with val=" << featureRow[j]
+           << " col=" << j << " for PSM with id " << myPsm->getId() << endl;
+      if (NO_TERMINATE) {
+        cerr << oss.str();
+        std::cerr << "No-terminate flag set: setting value to 0 and ignoring the error." << std::endl;
+        featureRow[j] = 0.0;
+      } else {
+        throw MyException(oss.str() + "Terminating.\n");
+      }
+    }
   }
   if (reader.error()) {
     ostringstream temp;

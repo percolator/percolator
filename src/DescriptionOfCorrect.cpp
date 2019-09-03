@@ -42,9 +42,7 @@ DescriptionOfCorrect::~DescriptionOfCorrect() {
 
 void DescriptionOfCorrect::calcRegressionFeature(PSMDescription* psm) {
   string peptide = psm->getFullPeptide();
-  string::size_type pos1 = peptide.find('.');
-  string::size_type pos2 = peptide.find('.', ++pos1);
-  string pep = peptide.substr(pos1, pos2 - pos1);
+  string pep = PSMDescription::removePTMs(peptide);
   psm->setIsoElectricPoint(isoElectricPoint(pep));
   if (psm->getRetentionFeatures()) {
     RTModel::fillFeaturesAllIndex(pep, psm->getRetentionFeatures());

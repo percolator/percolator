@@ -119,14 +119,12 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
       optionalFields.push_back(EXPMASS);
     } else if (optionalHeader == "calcmass") {
       optionalFields.push_back(CALCMASS);
-    } else if (DataSet::getCalcDoc()) {
-      if (optionalHeader == "rt" || optionalHeader == "retentiontime") {
-        optionalFields.push_back(RETTIME);
-        hasRt = true;
-      } else if (optionalHeader == "dm" || optionalHeader == "deltamass") {
-        optionalFields.push_back(DELTAMASS);
-        hasDm = true;
-      }
+    } else if (DataSet::getCalcDoc() && (optionalHeader == "rt" || optionalHeader == "retentiontime")) {
+      optionalFields.push_back(RETTIME);
+      hasRt = true;
+    } else if (DataSet::getCalcDoc() && (optionalHeader == "dm" || optionalHeader == "deltamass")) {
+      optionalFields.push_back(DELTAMASS);
+      hasDm = true;
     } else {
       break;
     }

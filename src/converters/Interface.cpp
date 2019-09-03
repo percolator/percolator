@@ -95,6 +95,11 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
       "Type of enzyme \"no_enzyme\",\"elastase\",\"pepsin\",\"proteinasek\",\"thermolysin\",\"chymotrypsin\",\"lys-n\",\"lys-c\",\"arg-c\",\"asp-n\",\"glu-c\",\"trypsin\" default=\"trypsin\"",
       "",
       "trypsin");
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "id-with-exp-mass",
+      "Include experimental mass in PSMid for easier correlation with search engine results.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("N",
       "PNGaseF",
       "Calculate feature based on N-linked glycosylation pattern resulting from a PNGaseF treatment. (N[*].[ST])",
@@ -172,6 +177,7 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   if (cmd.optionSet("enzyme")) {
     parseOptions.enzymeString = cmd.options["enzyme"];
   }
+  if (cmd.optionSet("id-with-exp-mass")) parseOptions.expMassInPsmId = true;
   if (cmd.optionSet("PNGaseF")) parseOptions.pngasef = true;
   if (cmd.optionSet("aa-freq")) parseOptions.calcAAFrequencies = true;
   if (cmd.optionSet("PTM")) parseOptions.calcPTMs = true;

@@ -1,3 +1,19 @@
+v3.03
+* Added check for inf or nan valued features (#177)
+* Added option to add expMass to PSMid in converters (#232)
+* Added check for protein length < decoy prefix length in picked protein (#242)
+* Added support for N- and C-term modifications formatted as M.n[37]A[16]AERc[16].G
+* Fixes for DOC feature option
+* Fixed tandem2pin incorrect decoy label bug (#238)
+* Fixed tandem2pin duplicate entries for shared peptides
+* Fixed CMake XSD package detection (#234)
+* Fixed quickvalidation issue with resetting of score vector (#235)
+* Fixed rounding error for experimental mass in msgf2pin (#223)
+* Added missing #include for <ctime> (#225)
+* Fixed duplicate peptide identifications in protein output (#222)
+* Added OSX vagrant build
+* Updated XercesC version
+
 v3.02.1
 * Fixed protein digestion issues due to trypsin/p (#191)
 * Skip XSD schema loading when -s flag is set

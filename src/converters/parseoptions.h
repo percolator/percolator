@@ -34,6 +34,7 @@ class ParseOptions
     pngasef(false),
     iscombined(false),
     monoisotopic(false),
+    expMassInPsmId(false),
     boost_serialization(true),
     reversedFeaturePattern("random"),
     targetFN(""),
@@ -60,6 +61,7 @@ class ParseOptions
     bool pngasef;
     bool iscombined;
     bool monoisotopic;
+    bool expMassInPsmId;
     bool boost_serialization;
     std::string reversedFeaturePattern;
     std::string targetFN;

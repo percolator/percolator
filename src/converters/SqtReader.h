@@ -33,10 +33,10 @@ class SqtReader: public Reader {
 		    boost::shared_ptr<FragSpectrumScanDatabase> database);
 
   void readSectionS(const std::string &record,std::set<int> &theMs, bool isDecoy,
-	            std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database);
+	            std::string& fileId,boost::shared_ptr<FragSpectrumScanDatabase> database);
 
-  void readPSM(bool isDecoy, const std::string &in,int match, 
-	       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database);
+  void readPSM(bool isDecoy, const std::string &in, int match, 
+	       std::string& fileId, boost::shared_ptr<FragSpectrumScanDatabase> database);
   
   bool checkValidity(const std::string &file);
   

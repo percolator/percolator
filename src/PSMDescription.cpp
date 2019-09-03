@@ -52,6 +52,11 @@ std::string PSMDescription::removePTMs(const string& peptide) {
         temp << "Error : Peptide sequence " << peptide << " contains an invalid modification" << endl;
         throw MyException(temp.str());
       } else {
+        if (ix > 0 && ((peptideSequence[ix-1] == 'n' && ix == 1) || 
+              (peptideSequence[ix-1] == 'c' && posEnd + ix + 1 == peptideSequence.size()))) {
+          ix--;
+          posEnd++;
+        }
         peptideSequence.erase(ix--, posEnd + 1);
       }
     }
