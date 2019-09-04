@@ -53,7 +53,7 @@ def canPercRunThis(testName,flags,testFile,testFileFlag="",checkValidXml=True):
   if exitStatus is not None:
     print(cmd)
     print("...TEST FAILED: percolator ("+testName+") terminated with " + os.strerror(exitStatus) + " exit status")
-    print("check "+ txtOutput +" for details") 
+    print("check "+ txtOutput +" for details")
     success = False
   if checkValidXml:
     success = success and validate(testName,xmlOutput)
@@ -111,6 +111,12 @@ T.doTest(canPercRunThisTab("tab_D4on","-y -D 4 -U","percolator/tab/percolatorTab
 
 print("(*) running percolator with subset training option...")
 T.doTest(canPercRunThisTab("tab_subset_training","-y -N 1000 -U","percolator/tab/percolatorTab"))
+
+print("(*) running percolator with static model option...")
+with tempfile.TemporaryDirectory() as tmp:
+  weights = os.path.join(tmp, "weights.txt")
+  T.doTest(canPercRunThisTab("save_weights", "-w %s".format(weights), "percolator/tab/percolatorTab"))
+  T.doTest(canPercRunThisTab("static_model", "--static -W %s".format(weights), "percolator/tab/percolatorTab"))
 
 # if no errors were encountered, succeed
 if T.failures == 0:

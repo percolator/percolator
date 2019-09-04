@@ -172,12 +172,17 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("w",
       "weights",
-      "Output final weights to given file",
+      "Output final weights to the given file",
       "filename");
   cmd.defineOption("W",
       "init-weights",
-      "Read initial weights from given file (one per line)",
+      "Read the unnormalized initial weights from the third line of the given file. This can be the output of the --weights option from a previous Percolator analysis. Note that the weights must be in the same order as the features in the PSM input file(s).",
       "filename");
+  cmd.defineOption(Option::NO_SHORT_OPT,
+      "static",
+      "Use the provided initial weights as a static model. If used, the --init-weights option must be specified.",
+      "",
+      TRUE_IF_SET);
   cmd.defineOption("V",
       "default-direction",
       "Use given feature name as initial search direction, can be negated to indicate that a lower value is better.",
@@ -336,7 +341,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gridsearch-mse-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
       "value");
-  
+
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "nested-xval-bins",
@@ -665,7 +670,23 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0;
     }
   }
-  
+
+  // If a static model is used, no nested CV is needed for Cpos and Cneg.
+  // Also, their values don't matter.
+  if (cmd.optionSet("static")) {
+    numIterations_ = 0;
+    selectedCpos_ = 0.5;
+    selectedCneg_ = 0.5;
+    skipNormalizeScores_ = true;
+    if (!cmd.optionSet("init-weights")) {
+      std:cerr << "Error: the --static option requires the --init-weights "
+        << "option to be specified." << std::endl;
+      return 0;
+    }
+  } else {
+    skipNormalizeScores_ = false;
+  }
+
   if (cmd.optionSet("nested-xval-bins")) {
     nestedXvalBins_ = cmd.getInt("nested-xval-bins", 1, 1000);
   }
@@ -1059,7 +1080,10 @@ int Caller::run() {
     
     allScores.postMergeStep();
     allScores.calcQ(selectionFdr_);
-    allScores.normalizeScores(selectionFdr_);
+
+    if (!skipNormalizeScores_) {
+      allScores.normalizeScores(selectionFdr_);
+    }
   }
   
   // calculate psms level probabilities TDA or TDC
