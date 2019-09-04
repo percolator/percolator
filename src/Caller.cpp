@@ -1010,7 +1010,7 @@ int Caller::run() {
   CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_, 
                                   selectedCneg_, numIterations_, useMixMax_,
-                                  nestedXvalBins_, trainBestPositive_);
+                                  nestedXvalBins_, trainBestPositive_, skipNormalizeScores_);
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"
@@ -1080,10 +1080,7 @@ int Caller::run() {
     
     allScores.postMergeStep();
     allScores.calcQ(selectionFdr_);
-
-    if (!skipNormalizeScores_) {
-      allScores.normalizeScores(selectionFdr_);
-    }
+    allScores.normalizeScores(selectionFdr_);
   }
   
   // calculate psms level probabilities TDA or TDC

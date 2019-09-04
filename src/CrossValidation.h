@@ -36,7 +36,7 @@ class CrossValidation {
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0, 
-    int nestedXvalBins, bool trainBestPositive);
+    int nestedXvalBins, bool trainBestPositive, bool normalizeScores);
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
@@ -85,6 +85,7 @@ class CrossValidation {
   unsigned int nestedXvalBins_;
   
   bool trainBestPositive_;
+  bool skipNormalizeScores_;
   
   const static double requiredIncreaseOver2Iterations_;
   

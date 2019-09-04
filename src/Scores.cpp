@@ -154,13 +154,15 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass,
   }
 }
 
-void Scores::merge(std::vector<Scores>& sv, double fdr) {
+void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores) {
   scores_.clear();
   for (std::vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
     sort(a->begin(), a->end(), greater<ScoreHolder> ());
     a->checkSeparationAndSetPi0();
     a->calcQ(fdr);
-    a->normalizeScores(fdr);
+    if (!skipNormalizeScores) {
+      a->normalizeScores(fdr);
+    }
     copy(a->begin(), a->end(), back_inserter(scores_));
   }
   postMergeStep();

@@ -172,7 +172,7 @@ class Scores {
     targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
     totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
   ~Scores() {}
-  void merge(vector<Scores>& sv, double fdr);
+  void merge(vector<Scores>& sv, double fdr, bool skipNormalizeScores);
   void postMergeStep();
   
   std::vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
