@@ -113,10 +113,10 @@ print("(*) running percolator with subset training option...")
 T.doTest(canPercRunThisTab("tab_subset_training","-y -N 1000 -U","percolator/tab/percolatorTab"))
 
 print("(*) running percolator with static model option...")
-with tempfile.TemporaryDirectory() as tmp:
-  weights = os.path.join(tmp, "weights.txt")
-  T.doTest(canPercRunThisTab("save_weights", "-w {}".format(weights), "percolator/tab/percolatorTab"))
-  T.doTest(canPercRunThisTab("static_model", "--static -W {}".format(weights), "percolator/tab/percolatorTab"))
+weights = os.path.join(tempfile.gettempdir(), "test_weights.txt")
+T.doTest(canPercRunThisTab("save_weights", "-w %s" % weights, "percolator/tab/percolatorTab"))
+T.doTest(canPercRunThisTab("static_model", "--static -W %s" % weights, "percolator/tab/percolatorTab"))
+os.remove(weights)
 
 # if no errors were encountered, succeed
 if T.failures == 0:
