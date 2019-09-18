@@ -30,12 +30,13 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, int niter, bool usePi0,
-  int nestedXvalBins, bool trainBestPositive) :
+  int nestedXvalBins, bool trainBestPositive, bool skipNormalizeScores) :
     quickValidation_(quickValidation), usePi0_(usePi0),
     reportPerformanceEachIteration_(reportPerformanceEachIteration), 
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
-    nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive) {}
+    nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
+    skipNormalizeScores_(skipNormalizeScores) {}
 
 
 CrossValidation::~CrossValidation() { 
@@ -474,7 +475,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     // TODO: take the average instead of the first DOC model?
     fullset.getDOC().copyDOCparameters(testScores_[0].getDOC());
   }
-  fullset.merge(testScores_, selectionFdr_);
+  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_);
 }
 
 /**
