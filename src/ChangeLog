@@ -1,3 +1,6 @@
+v3.04
+* Added full support for static models (#247)
+
 v3.03
 * Added check for inf or nan valued features (#177)
 * Added option to add expMass to PSMid in converters (#232)
