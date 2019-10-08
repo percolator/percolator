@@ -193,27 +193,13 @@ set SQLITE_DIR=%SQLITE_DIR%;%SQLITE_DIR%\src
 
 ::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib_x64
-set ZLIB_SRC_URL=http://win32builder.gnome.org/packages/3.6/zlib-dev_1.2.7-1_win64.zip
-set ZLIB_DLL_URL=http://win32builder.gnome.org/packages/3.6/zlib_1.2.7-1_win64.zip
+set ZLIB_URL=https://www.libs4win.com/libzlib/libzlib-1.2.11-msvc2017-amd64-release.zip
 if not exist "%ZLIB_DIR%" (
   echo Downloading and installing ZLIB
-  call :downloadfile %ZLIB_SRC_URL% %INSTALL_DIR%\zlib_src.zip
-  call :downloadfile %ZLIB_DLL_URL% %INSTALL_DIR%\zlib_dll.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib_src.zip" -o"%ZLIB_DIR%" > NUL
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib_dll.zip" -o"%ZLIB_DIR%" > NUL
-  
-  ::: Generate lib from dll
-  setlocal enableDelayedExpansion
-  set DLL_BASE=%ZLIB_DIR%\bin\zlib1
-  set DEF_FILE=!DLL_BASE!.def
-  set write=0
-  echo EXPORTS> "!DEF_FILE!"
-  for /f "usebackq tokens=4" %%i in (`dumpbin /exports "!DLL_BASE!.dll"`) do if "!write!"=="1" (echo %%i >> "!DEF_FILE!") else (if %%i==name set write=1)
-  cd /D "%ZLIB_DIR%\bin"
-  lib /DEF:"!DEF_FILE!" /MACHINE:X64
-  endlocal
+  call :downloadfile %ZLIB_URL% %INSTALL_DIR%\zlib.zip
+  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%ZLIB_DIR%" > NUL
 )
-set ZLIB_DIR=%ZLIB_DIR%\bin;%ZLIB_DIR%\include
+set ZLIB_DIR=%ZLIB_DIR%\lib;%ZLIB_DIR%\include;%ZLIB_DIR%\bin
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::

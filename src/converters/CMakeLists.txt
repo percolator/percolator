@@ -439,8 +439,8 @@ if(MSVC)
   list(REMOVE_ITEM SQLITE3_LIBRARIES optimized)
   string(REPLACE "sqlite3.lib" "sqlite3.dll;" SQLITE3_DLL_LIBRARIES ${SQLITE3_LIBRARIES})
   message( STATUS "      Installing Sqlite3 DLL: ${SQLITE3_DLL_LIBRARIES}")
-  string(REPLACE "zdll.lib" "zlib1.dll" ZLIB_DLL_LIBRARIES ${ZLIB_LIBRARIES})
-  string(REPLACE "zlib1.lib" "zlib1.dll" ZLIB_DLL_LIBRARIES ${ZLIB_DLL_LIBRARIES})
+  string(REPLACE "zdll.lib" "zlib1.dll" ZLIB_DLL_LIBRARIES ${ZLIB_LIBRARIES}) # win32
+  string(REPLACE "lib/zlib.lib" "bin/zlib.dll" ZLIB_DLL_LIBRARIES ${ZLIB_DLL_LIBRARIES}) # win64
   message( STATUS "      Installing Zlib DLL: ${ZLIB_DLL_LIBRARIES}")
   set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${XERCESC_DLL_LIBRARIES} ${ZLIB_DLL_LIBRARIES} ${SQLITE3_DLL_LIBRARIES} )
   include( InstallRequiredSystemLibraries )
