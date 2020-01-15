@@ -210,8 +210,9 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   parser p;
   
   try {
+    bool validateSchema = true;
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> 
-    doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace,true));
+    doc (p.start (ifs, fn.c_str(), validateSchema, schemaDefinition, schema_major, schema_minor, scheme_namespace,true));
     assert(doc.get());
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ()) {  
@@ -270,6 +271,11 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
     temp << "ERROR parsing the xml file: " << fn << endl;
     temp << e << endl;
     throw MyException(temp.str());
+  } catch (MyException e) {
+	  std::cerr << "Error reading file: " << fn << "\n  " << e.what() << std::endl;
+	  exit(1);
+  } catch (std::exception e) {
+    std::cerr << "Error reading file: " << fn << "\n  Unknown exception in getMaxMinCharge: " << e.what() << std::endl;
   }
   
   ifs.close();

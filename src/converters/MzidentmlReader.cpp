@@ -60,9 +60,9 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   try {
     ifs.open(fn.c_str());
     parser p;
-    bool schemaVal = true;
+    bool validateSchema = true;
     xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
-        (p.start(ifs, fn.c_str(), schemaVal, schemaDefinition, schema_major, 
+        (p.start(ifs, fn.c_str(), validateSchema, schemaDefinition, schema_major, 
                  schema_minor, scheme_namespace));
 
     // MT: This seems to be a bit slow for doing nothing
@@ -84,18 +84,18 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
       }
     }
   } catch (ifstream::failure e) {
-    cerr << "Exception opening/reading file :" << fn << endl;
+    std::cerr << "Exception opening/reading file:" << fn << std::endl;
   } catch (const xercesc::DOMException& e) {
     char * tmpStr = XMLString::transcode(e.getMessage());
-    std::cerr << "catch xercesc::DOMException=" << tmpStr << std::endl;
+    std::cerr << "Error parsing file: " << fn << "\n  xercesc::DOMException=" << tmpStr << std::endl;
     XMLString::release(&tmpStr);
   } catch (const xml_schema::exception& e) {
-    cerr << "XML schema exception in getMaxMinCharge: " << e << endl;
+    std::cerr << "Error parsing file: " << fn << "\n  XML schema exception in getMaxMinCharge: " << e << std::endl;
   } catch (MyException e) {
-	  cerr << e.what() << endl;
+	  std::cerr << "Error reading file: " << fn << "\n  " << e.what() << std::endl;
 	  exit(1);
   } catch (std::exception e) {
-    cerr << "Some unknown exception in getMaxMinCharge: " << e.what() << endl;
+    std::cerr << "Error reading file: " << fn << "\n  Unknown exception in getMaxMinCharge: " << e.what() << std::endl;
   }
   ifs.close();
   return;

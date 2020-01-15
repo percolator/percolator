@@ -104,6 +104,10 @@ void Reader::init() {
   // NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters.
   //      tandemReader for instance checks if a certain attribute is present or not.
   if (isMeta) {
+    // we hopefully found a meta file
+    if (VERB > 1)
+      std::cerr << "Found a meta file: " << po.targetFN <<std::endl;
+    
     std::string line;
     std::ifstream meta(po.targetFN.data(), std::ios::in);
     while (getline(meta, line)) {
@@ -115,6 +119,10 @@ void Reader::init() {
     }
     meta.close();
     if (!po.iscombined) {
+      // we hopefully found a meta file
+      if (VERB > 1)
+        std::cerr << "Found a meta file: " << po.decoyFN <<std::endl;
+        
       meta.open(po.decoyFN.data(), std::ios::in);
       while (getline(meta, line)) {
         if (line.size() > 0 && line[0] != '#') {
@@ -336,11 +344,7 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
     }
 
     read(fn,isDecoy,databases[lineNumber_par]);
-  } else {
-    // we hopefully found a meta file
-    if (VERB>1)
-      std::cerr << "Found a meta file: " << fn <<std::endl;
-      
+  } else {      
     unsigned int lineNumber=0;
     std::string line2;
     std::ifstream meta(fn.data(), std::ios::in);

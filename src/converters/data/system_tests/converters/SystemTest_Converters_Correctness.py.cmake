@@ -85,12 +85,28 @@ def runTest(binary, testName, extraOptions = "", expectedResult = True):
     ext = "bogus"
   
   print("(*): running %s with %s..." % (binary, testName))
-  cmd = ' '.join([doubleQuote(os.path.join(pathToBinaries, binary)),
-    doubleQuote(os.path.join(pathToData, "converters/%s/target.%s" % (binary, ext))),
-    doubleQuote(os.path.join(pathToData, "converters/%s/decoy.%s" % (binary, ext))),
-    extraOptions,
-    "2>&1 >", 
-    doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
+  
+  if testName == "metafile":
+    with open(os.path.join(pathToOutputData, "target_metafile.%s.txt" % (binary)), 'w') as f:
+      f.write(os.path.join(pathToData, "converters/%s/target.%s" % (binary, ext)))
+    
+    with open(os.path.join(pathToOutputData, "decoy_metafile.%s.txt" % (binary)), 'w') as f:
+      f.write(os.path.join(pathToData, "converters/%s/decoy.%s" % (binary, ext)))
+      
+    cmd = ' '.join([doubleQuote(os.path.join(pathToBinaries, binary)),
+      doubleQuote(os.path.join(pathToOutputData, "target_metafile.%s.txt" % (binary))),
+      doubleQuote(os.path.join(pathToOutputData, "decoy_metafile.%s.txt" % (binary))),
+      extraOptions,
+      "2>&1 >", 
+      doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
+  else:
+    cmd = ' '.join([doubleQuote(os.path.join(pathToBinaries, binary)),
+      doubleQuote(os.path.join(pathToData, "converters/%s/target.%s" % (binary, ext))),
+      doubleQuote(os.path.join(pathToData, "converters/%s/decoy.%s" % (binary, ext))),
+      extraOptions,
+      "2>&1 >", 
+      doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
+    
   processFile = os.popen(cmd)
   exitStatus = processFile.close()
   result = (exitStatus is None)
@@ -101,11 +117,21 @@ def runTest(binary, testName, extraOptions = "", expectedResult = True):
   
   testName += "_combined"
   extraOptions += " -P decoy "
-  cmd = ' '.join([doubleQuote(os.path.join(pathToBinaries, binary)),
-    doubleQuote(os.path.join(pathToData, "converters/%s/combined.%s" % (binary, ext))),
-    extraOptions,
-    "2>&1 >", 
-    doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
+  if "metafile" in testName:
+    with open(os.path.join(pathToOutputData, "combined_metafile.%s.txt" % (binary)), 'w') as f:
+      f.write(os.path.join(pathToData, "converters/%s/combined.%s" % (binary, ext)))
+    
+    cmd = ' '.join([doubleQuote(os.path.join(pathToBinaries, binary)),
+      doubleQuote(os.path.join(pathToOutputData, "combined_metafile.%s.txt" % (binary))),
+      extraOptions,
+      "2>&1 >", 
+      doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
+  else:
+    cmd = ' '.join([doubleQuote(os.path.join(pathToBinaries, binary)),
+      doubleQuote(os.path.join(pathToData, "converters/%s/combined.%s" % (binary, ext))),
+      extraOptions,
+      "2>&1 >", 
+      doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
   processFile = os.popen(cmd)
   exitStatus = processFile.close()
   result = (exitStatus is None)
@@ -146,6 +172,13 @@ for binary, nt1, nd1, nt2, nd2 in zip(binaries, numTargetsSeparate, numDecoysSep
   #T.doTest(checkNumLines(pinTabFile, n+2)) # add 2 for header and default direction lines
   T.doTest(checkNumTargetsAndDecoys(pinTabFile, nt1, nd1))
   pinTabFile = os.path.join(pathToOutputData, "%s_%s.txt" % (binary, "no_options_combined"))
+  T.doTest(checkNumTargetsAndDecoys(pinTabFile, nt2, nd2))
+  
+  # run without any options using metafile
+  T.doTest(runTest(binary, "metafile"))
+  pinTabFile = os.path.join(pathToOutputData, "%s_%s.txt" % (binary, "metafile"))
+  T.doTest(checkNumTargetsAndDecoys(pinTabFile, nt1, nd1))
+  pinTabFile = os.path.join(pathToOutputData, "%s_%s.txt" % (binary, "metafile_combined"))
   T.doTest(checkNumTargetsAndDecoys(pinTabFile, nt2, nd2))
   
   # run with option to add retention times as an extra column for "DOC" option in percolator
