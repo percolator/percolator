@@ -319,6 +319,13 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
     }
     ActiveSubset->d = active;
     if (fabs(F - F_old) < RELATIVE_STOP_EPS * fabs(F_old)) {
+      delete[] ActiveSubset->vec;
+      delete[] ActiveSubset;
+      delete[] o_bar;
+      delete[] w_bar;
+      delete[] Weights_bar;
+      delete[] Outputs_bar;
+      tictoc.stop();
       //    cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
       return 2;
     }

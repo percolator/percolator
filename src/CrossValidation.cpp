@@ -104,6 +104,34 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
     vector<Scores> myset(1, fullset);
     numPositive = pCheck->getInitDirection(myset, myset, pNorm, w_, testFdr_, initialSelectionFdr_);
   }
+
+  // Form cpos, cneg, set pairs
+  cpCnTriple cpCnFold;
+  for (int set = 0; set < numFolds_; ++set) {
+    for (int nestedSet = 0; nestedSet < nestedXvalBins_; nestedSet++) {
+      std::vector<double>::const_iterator itCpos = candidatesCpos_.begin();
+      for ( ; itCpos != candidatesCpos_.end(); ++itCpos) {
+	double cpos = *itCpos;
+	std::vector<double>::const_iterator itCfrac = candidatesCfrac_.begin();
+	for ( ; itCfrac != candidatesCfrac_.end(); ++itCfrac) {
+	  double cfrac = *itCfrac;
+	  cpCnFold.cpos = cpos;
+	  cpCnFold.cneg = cfrac * cpos;
+	  cpCnFold.set = set;
+	  cpCnFold.nestedSet = nestedSet;
+	  cpCnFold.tp = 0;
+	  for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+	    cpCnFold.ww.push_back(0);
+	  }	  
+	  classWeightsPerFold_.push_back(cpCnFold);
+	}
+      }
+    }
+  }
+  // cout << "Num (cp,cn,set,nestedFold) = " << classWeightsPerFold_.size() << "\n";
+  // for (int trip = 0; trip < classWeightsPerFold_.size(); trip++){
+  //   cout << classWeightsPerFold_[trip].cpos << ", " << classWeightsPerFold_[trip].cneg  << ", " << classWeightsPerFold_[trip].set << ", " << classWeightsPerFold_[trip].nestedSet << "\n";
+  // }
   
   if (DataSet::getCalcDoc()) {
     for (int set = 0; set < numFolds_; ++set) {

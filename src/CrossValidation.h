@@ -30,6 +30,15 @@
 #include "FeatureMemoryPool.h"
 #include "ssl.h"
 
+struct cpCnTriple {
+  double cpos;
+  double cneg;
+  unsigned int set;
+  int nestedSet;
+  vector<double> ww;
+  int tp;
+};
+
 class CrossValidation {
   
  public:
@@ -70,6 +79,7 @@ class CrossValidation {
  protected:
   std::vector<AlgIn*> svmInputs_;
   std::vector< std::vector<double> > w_; // svm weights for each fold
+  std::vector<cpCnTriple> classWeightsPerFold_; // svm weights for each fold
   
   bool quickValidation_;
   bool usePi0_;
