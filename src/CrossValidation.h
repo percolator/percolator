@@ -32,7 +32,7 @@
 
 struct cpCnTriple {
   double cpos;
-  double cneg;
+  double cfrac;
   unsigned int set;
   int nestedSet;
   vector<double> ww;

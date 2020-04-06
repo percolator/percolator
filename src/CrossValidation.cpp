@@ -116,7 +116,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
 	for ( ; itCfrac != candidatesCfrac_.end(); ++itCfrac) {
 	  double cfrac = *itCfrac;
 	  cpCnFold.cpos = cpos;
-	  cpCnFold.cneg = cfrac * cpos;
+	  cpCnFold.cfrac = cfrac;
 	  cpCnFold.set = set;
 	  cpCnFold.nestedSet = nestedSet;
 	  cpCnFold.tp = 0;
@@ -128,9 +128,9 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
       }
     }
   }
-  // cout << "Num (cp,cn,set,nestedFold) = " << classWeightsPerFold_.size() << "\n";
+  // cout << "Num (cp,cfrac,set,nestedFold) = " << classWeightsPerFold_.size() << "\n";
   // for (int trip = 0; trip < classWeightsPerFold_.size(); trip++){
-  //   cout << classWeightsPerFold_[trip].cpos << ", " << classWeightsPerFold_[trip].cneg  << ", " << classWeightsPerFold_[trip].set << ", " << classWeightsPerFold_[trip].nestedSet << "\n";
+  //   cout << classWeightsPerFold_[trip].cpos << ", " << classWeightsPerFold_[trip].cfrac  << ", " << classWeightsPerFold_[trip].set << ", " << classWeightsPerFold_[trip].nestedSet << "\n";
   // }
   
   if (DataSet::getCalcDoc()) {
@@ -360,8 +360,20 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
   }
   
   AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
+  unsigned int nestedFold = 0;
+  double cpos = 0;
+  double cfrac = 0;
+
   std::map<std::pair<double, double>, int> intermediateResults;
-  for (unsigned int nestedFold = 0; nestedFold < nestedXvalBins_; ++nestedFold) {
+  std::vector<cpCnTriple>::const_iterator itClassweights = classWeightsPerFold_.begin();
+  for ( ; itClassweights != classWeightsPerFold_.end(); ++itClassweights) {
+    cpCnTriple cpCnFold = *itClassweights;
+    if(cpCnFold.set != set){
+      continue;
+    }
+    nestedFold = cpCnFold.nestedSet;
+    cpos = cpCnFold.cpos;
+    cfrac = cpCnFold.cfrac;
     nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
     nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     
@@ -376,51 +388,43 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
     size_t numInputs = svmInput->positives + svmInput->negatives;
     Outputs->vec = new double[numInputs];
     Outputs->d = numInputs;
-    
-    // Find soft margin parameters with highest estimate of true positives
-    std::vector<double>::const_iterator itCpos = cposCandidates.begin();
-    for ( ; itCpos != cposCandidates.end(); ++itCpos) {
-      double cpos = *itCpos;  
-      std::vector<double>::const_iterator itCfrac = cfracCandidates.begin();
-      for ( ; itCfrac != cfracCandidates.end(); ++itCfrac) {
-        double cfrac = *itCfrac;
-        if (VERB > 3) cerr << "- cross-validation with Cpos=" << cpos
-            << ", Cneg=" << cfrac*cpos << endl;
-        int tp = 0;
-        for (int ix = 0; ix < pWeights->d; ix++) {
-          pWeights->vec[ix] = 0;
-        }
-        for (int ix = 0; ix < Outputs->d; ix++) {
-          Outputs->vec[ix] = 0;
-        }
-        svmInput->setCost(cpos, cpos * cfrac);
+
+    if (VERB > 3) cerr << "- cross-validation with Cpos=" << cpos
+		       << ", Cneg=" << cfrac * cpos << endl;
+    int tp = 0;
+    for (int ix = 0; ix < pWeights->d; ix++) {
+      pWeights->vec[ix] = 0;
+    }
+    for (int ix = 0; ix < Outputs->d; ix++) {
+      Outputs->vec[ix] = 0;
+    }
+    svmInput->setCost(cpos, cfrac * cpos);
         
-        // Call SVM algorithm (see ssl.cpp)
-        L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+    // Call SVM algorithm (see ssl.cpp)
+    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
         
-        for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-          ww[i] = pWeights->vec[i];
-        }
+    for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+      ww[i] = pWeights->vec[i];
+      cpCnFold.ww[i] = pWeights->vec[i];
+    }
         
-        tp = nestedTestScores[nestedFold].calcScores(ww, testFdr_, skipDecoysPlusOne);
-        if (VERB > 3) {
-          cerr << "- cross-validation found " << tp
-               << " training set PSMs with q_liberal<" << testFdr_ << "." << endl;
-        }
+    tp = nestedTestScores[nestedFold].calcScores(ww, testFdr_, skipDecoysPlusOne);
+    if (VERB > 3) {
+      cerr << "- cross-validation found " << tp
+	   << " training set PSMs with q_liberal<" << testFdr_ << "." << endl;
+    }
         
-        if (nestedXvalBins_ > 1) {
-          intermediateResults[std::make_pair(cpos, cfrac)] += tp;
-        } else {
-          if (tp >= bestTruePos) {
-            if (VERB > 3) {
-              cerr << "Better than previous result, store this." << endl;
-            }
-            bestTruePos = tp;
-            bestW = ww;
-            bestCpos = cpos;
-            bestCfrac = cfrac;
-          }
-        }
+    if (nestedXvalBins_ > 1) {
+      intermediateResults[std::make_pair(cpos, cfrac)] += tp;
+    } else {
+      if (tp >= bestTruePos) {
+	if (VERB > 3) {
+	  cerr << "Better than previous result, store this." << endl;
+	}
+	bestTruePos = tp;
+	bestW = ww;
+	bestCpos = cpos;
+	bestCfrac = cfrac;
       }
     }
     delete[] Outputs->vec;
