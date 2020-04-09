@@ -109,6 +109,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   cpCnTriple cpCnFold;
   for (int set = 0; set < numFolds_; ++set) {
     for (int nestedSet = 0; nestedSet < nestedXvalBins_; nestedSet++) {
+      if(!quickValidation_) {
       std::vector<double>::const_iterator itCpos = candidatesCpos_.begin();
       for ( ; itCpos != candidatesCpos_.end(); ++itCpos) {
 	double cpos = *itCpos;
@@ -126,6 +127,17 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
 	  classWeightsPerFold_.push_back(cpCnFold);
 	}
       }
+      } else {
+	  cpCnFold.cpos = 1;
+	  cpCnFold.cfrac = 1;
+	  cpCnFold.set = set;
+	  cpCnFold.nestedSet = nestedSet;
+	  cpCnFold.tp = 0;
+	  for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+	    cpCnFold.ww.push_back(0);
+	  }	  
+	  classWeightsPerFold_.push_back(cpCnFold);
+	}
     }
   }
   // cout << "Num (cp,cfrac,set,nestedFold) = " << classWeightsPerFold_.size() << "\n";
@@ -270,48 +282,22 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
     }
   }
   
-  if (!quickValidation_) {
-  #pragma omp parallel for schedule(dynamic, 1) ordered
-    for (int set = 0; set < numFolds_; ++set) {
-      struct vector_double* pWeights = new vector_double;
-      pWeights->d = FeatureNames::getNumFeatures() + 1;
-      pWeights->vec = new double[pWeights->d];
-      
-      double bestCpos = 1, bestCfrac = 1;
-      
-      int estTruePosFold = processSingleFold(set, selectionFdr, candidatesCpos_, 
-                                      candidatesCfrac_, bestCpos, bestCfrac, 
-                                      pWeights, pOptions);
-      #pragma omp critical (add_tps)
-      {
-        estTruePos += estTruePosFold;
-      }
-      
-      delete[] pWeights->vec;
-      delete pWeights;
-    }
-  } else {
+#pragma omp parallel for schedule(dynamic, 1) ordered
+  for (int set = 0; set < numFolds_; ++set) {
     struct vector_double* pWeights = new vector_double;
     pWeights->d = FeatureNames::getNumFeatures() + 1;
     pWeights->vec = new double[pWeights->d];
-    
+      
     double bestCpos = 1, bestCfrac = 1;
-    
-    // Use limited internal cross validation, i.e take the cpos and cfrac 
-    // values of the first bin and use it for the subsequent bins 
-    estTruePos += processSingleFold(0, selectionFdr, candidatesCpos_, 
-                                    candidatesCfrac_, bestCpos, bestCfrac, 
-                                    pWeights, pOptions);
-    vector<double> cp(1, bestCpos), cf(1, bestCfrac);
-  #pragma omp parallel for schedule(dynamic, 1) ordered
-    for (int set = 1; set < numFolds_; ++set) {
-      int estTruePosFold = processSingleFold(set, selectionFdr, cp, cf, bestCpos, 
-                                      bestCfrac, pWeights, pOptions);
-      #pragma omp critical (add_tps)
-      {
-        estTruePos += estTruePosFold;
-      }  
+      
+    int estTruePosFold = processSingleFold(set, selectionFdr, candidatesCpos_, 
+					   candidatesCfrac_, bestCpos, bestCfrac, 
+					   pWeights, pOptions);
+#pragma omp critical (add_tps)
+    {
+      estTruePos += estTruePosFold;
     }
+      
     delete[] pWeights->vec;
     delete pWeights;
   }
