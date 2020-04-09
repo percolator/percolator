@@ -282,31 +282,33 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
     }
   }
 
-  std::map<std::pair<int, int>, int> svmInputMap;
-  int svmInputIndex = 0;
-  // Create parallelizable data
-   std::vector<AlgIn*> svmInputsLocal;
+  // std::map<std::pair<int, int>, int> svmInputMap;
+  // int svmInputIndex = 0;
+  // Create SVM input data for parallelization
+   std::vector<AlgIn*> svmInputsVec;
+   std::vector< std::vector< Scores > > nestedTestScoresVec;
    for (int set = 0; set < numFolds_; ++set) {
      std::vector<Scores> nestedTrainScores(nestedXvalBins_, usePi0_), nestedTestScores(nestedXvalBins_, usePi0_);
      if (nestedXvalBins_ > 1) {
        FeatureMemoryPool featurePool;
-// #pragma omp ordered
-//        {
+#pragma omp ordered
+       {
 	 trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool);
-       // }
+       }
      } else {
        // sub-optimal cross validation
        nestedTrainScores[0] = trainScores_[set];
        nestedTestScores[0] = trainScores_[set];
      }
+     nestedTestScoresVec.push_back(nestedTestScores);
      // Set SVM input data for L2-SVM-MFN
      for (int nestedFold = 0; nestedFold < nestedXvalBins_; ++nestedFold) 
        {
 	 AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
 	 nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
 	 nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
-	 svmInputsLocal.push_back(svmInput);
-	 svmInputMap[std::make_pair(set, nestedFold)] = svmInputIndex++;
+	 svmInputsVec.push_back(svmInput);
+	 // svmInputMap[std::make_pair(set, nestedFold)] = svmInputIndex++;
        }
 
    }
@@ -321,7 +323,8 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
       
     int estTruePosFold = processSingleFold(set, selectionFdr, candidatesCpos_, 
 					   candidatesCfrac_, bestCpos, bestCfrac, 
-					   pWeights, pOptions);
+					   pWeights, pOptions,
+					   svmInputsVec, nestedTestScoresVec);
 #pragma omp critical (add_tps)
     {
       estTruePos += estTruePosFold;
@@ -345,9 +348,10 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
  * @param pOptions options for the SVM algorithm
 */
 int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
-    const vector<double>& cposCandidates, const vector<double>& cfracCandidates, 
-    double &bestCpos, double &bestCfrac, vector_double* pWeights, 
-    options * pOptions) {
+				       const vector<double>& cposCandidates, const vector<double>& cfracCandidates, 
+				       double &bestCpos, double &bestCfrac, vector_double* pWeights, 
+				       options * pOptions, vector<AlgIn*> svmInputs,
+				       vector< vector<Scores> >& nestedTestScoresVec) {
   // for determining the number of positives, the decoys+1 in the FDR estimates 
   // is too restrictive for small datasets
   bool skipDecoysPlusOne = true;
@@ -361,20 +365,20 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
          << numFolds_ << endl;
   }
   
-  std::vector<Scores> nestedTrainScores(nestedXvalBins_, usePi0_), nestedTestScores(nestedXvalBins_, usePi0_);
-  if (nestedXvalBins_ > 1) {
-    FeatureMemoryPool featurePool;
-  #pragma omp ordered
-    {
-      trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool);
-    }
-  } else {
-    // sub-optimal cross validation
-    nestedTrainScores[0] = trainScores_[set];
-    nestedTestScores[0] = trainScores_[set];
-  }
+  // std::vector<Scores> nestedTrainScores(nestedXvalBins_, usePi0_), nestedTestScores(nestedXvalBins_, usePi0_);
+  // if (nestedXvalBins_ > 1) {
+  //   FeatureMemoryPool featurePool;
+  // #pragma omp ordered
+  //   {
+  //     trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool);
+  //   }
+  // } else {
+  //   // sub-optimal cross validation
+  //   nestedTrainScores[0] = trainScores_[set];
+  //   nestedTestScores[0] = trainScores_[set];
+  // }
   
-  AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
+  // AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
   unsigned int nestedFold = 0;
   double cpos = 0;
   double cfrac = 0;
@@ -389,8 +393,9 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
     nestedFold = cpCnFold.nestedSet;
     cpos = cpCnFold.cpos;
     cfrac = cpCnFold.cfrac;
-    nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
-    nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
+    AlgIn* svmInput = svmInputs[set * nestedXvalBins_];
+    // nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
+    // nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     
     if (VERB > 2) {
       cerr << "Split " << set + 1 << ": Training with " 
@@ -423,7 +428,8 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
       cpCnFold.ww[i] = pWeights->vec[i];
     }
         
-    tp = nestedTestScores[nestedFold].calcScores(ww, testFdr_, skipDecoysPlusOne);
+    // tp = nestedTestScores[nestedFold].calcScores(ww, testFdr_, skipDecoysPlusOne);
+    tp = nestedTestScoresVec[set][nestedFold].calcScores(ww, testFdr_, skipDecoysPlusOne);
     if (VERB > 3) {
       cerr << "- cross-validation found " << tp
 	   << " training set PSMs with q_liberal<" << testFdr_ << "." << endl;
@@ -448,25 +454,45 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
   
   if (nestedXvalBins_ > 1) {
     // Find soft margin parameters with highest estimate of true positives
-    std::vector<double>::const_iterator itCpos = cposCandidates.begin();
-    for ( ; itCpos != cposCandidates.end(); ++itCpos) {
-      double cpos = *itCpos;  
-      std::vector<double>::const_iterator itCfrac = cfracCandidates.begin();
-      for ( ; itCfrac != cfracCandidates.end(); ++itCfrac) {
-        double cfrac = *itCfrac;
-        int tp = intermediateResults[std::make_pair(cpos, cfrac)];
-        if (tp >= bestTruePos) {
-          if (VERB > 3) {
-            cerr << "Better than previous result, store this: tp = " << tp << ", cpos = " << cpos << ", cneg = " << cfrac*cpos << endl;
-          }
-          bestTruePos = tp;
-          bestCpos = cpos;
-          bestCfrac = cfrac;
-        }
-      }
-    }    
-    trainScores_[set].generateNegativeTrainingSet(*svmInput, 1.0);
-    trainScores_[set].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
+    // std::vector<double>::const_iterator itCpos = cposCandidates.begin();
+    // for ( ; itCpos != cposCandidates.end(); ++itCpos) {
+    //   double cpos = *itCpos;  
+    //   std::vector<double>::const_iterator itCfrac = cfracCandidates.begin();
+    //   for ( ; itCfrac != cfracCandidates.end(); ++itCfrac) {
+    //     double cfrac = *itCfrac;
+    //     int tp = intermediateResults[std::make_pair(cpos, cfrac)];
+    //     if (tp >= bestTruePos) {
+    //       if (VERB > 3) {
+    //         cerr << "Better than previous result, store this: tp = " << tp << ", cpos = " << cpos << ", cneg = " << cfrac*cpos << endl;
+    //       }
+    //       bestTruePos = tp;
+    //       bestCpos = cpos;
+    //       bestCfrac = cfrac;
+    //     }
+    //   }
+    // }
+    std::vector<cpCnTriple>::const_iterator itClassweights = classWeightsPerFold_.begin();
+    for ( ; itClassweights != classWeightsPerFold_.end(); ++itClassweights) {
+      cpCnTriple cpCnFold = *itClassweights;
+      if(cpCnFold.set != set){
+        continue;
+     }
+      nestedFold = cpCnFold.nestedSet;
+      cpos = cpCnFold.cpos;
+      cfrac = cpCnFold.cfrac;
+      int tp = intermediateResults[std::make_pair(cpos, cfrac)];
+      if (tp >= bestTruePos) {
+         if (VERB > 3) {
+             cerr << "Better than previous result, store this: tp = " << tp << ", cpos = " << cpos << ", cneg = " << cfrac*cpos << endl;
+         }
+      bestTruePos = tp;
+      bestCpos = cpos;
+      bestCfrac = cfrac;
+     }
+    }
+    AlgIn* svmInput = svmInputs[set * nestedXvalBins_ + nestedFold];
+    // trainScores_[set].generateNegativeTrainingSet(*svmInput, 1.0);
+    // trainScores_[set].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     
     // Create storage vector for SVM algorithm
     struct vector_double* Outputs = new vector_double;

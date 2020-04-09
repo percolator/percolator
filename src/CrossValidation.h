@@ -104,10 +104,12 @@ class CrossValidation {
   std::vector<double> candidatesCpos_, candidatesCfrac_;
   
   int processSingleFold(unsigned int set, double selectionFdr,
-                         const vector<double>& cpos_vec, 
-                         const vector<double>& cfrac_vec, 
-                         double& best_cpos, double& best_cfrac, 
-                         vector_double* pWeights, options* pOptions);
+			const vector<double>& cpos_vec, 
+			const vector<double>& cfrac_vec, 
+			double& best_cpos, double& best_cfrac, 
+			vector_double* pWeights, options* pOptions,
+			std::vector<AlgIn*> svmInputs,
+			std::vector< std::vector<Scores> >& nestedTestScoresVec);
   int doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr);
   
   void printSetWeights(ostream & weightStream, unsigned int set);
