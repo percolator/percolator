@@ -281,6 +281,35 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
       testScores_[set].setDOCFeatures(pNorm);
     }
   }
+
+  std::map<std::pair<int, int>, int> svmInputMap;
+  int svmInputIndex = 0;
+  // Create parallelizable data
+   std::vector<AlgIn*> svmInputsLocal;
+   for (int set = 0; set < numFolds_; ++set) {
+     std::vector<Scores> nestedTrainScores(nestedXvalBins_, usePi0_), nestedTestScores(nestedXvalBins_, usePi0_);
+     if (nestedXvalBins_ > 1) {
+       FeatureMemoryPool featurePool;
+// #pragma omp ordered
+//        {
+	 trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool);
+       // }
+     } else {
+       // sub-optimal cross validation
+       nestedTrainScores[0] = trainScores_[set];
+       nestedTestScores[0] = trainScores_[set];
+     }
+     // Set SVM input data for L2-SVM-MFN
+     for (int nestedFold = 0; nestedFold < nestedXvalBins_; ++nestedFold) 
+       {
+	 AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
+	 nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
+	 nestedTrainScores[nestedFold].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
+	 svmInputsLocal.push_back(svmInput);
+	 svmInputMap[std::make_pair(set, nestedFold)] = svmInputIndex++;
+       }
+
+   }
   
 #pragma omp parallel for schedule(dynamic, 1) ordered
   for (int set = 0; set < numFolds_; ++set) {
