@@ -15,9 +15,12 @@
 
  *******************************************************************************/
 
+#include <omp.h>
 #include "CrossValidation.h"
 
 // #define CPPAR
+// #define THREADS (Globals::getInstance()->getNumThreads())
+#define THREADS 16
 
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
@@ -266,6 +269,12 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   pOptions->cgitermax = CGITERMAX;
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
+
+  if(THREADS > omp_get_max_threads()){
+    omp_set_num_threads(omp_get_max_threads());
+  } else {
+    omp_set_num_threads(THREADS);
+  }
   
   // for determining an appropriate positive training set, the decoys+1 in the 
   // FDR estimates is too restrictive for small datasets
@@ -316,62 +325,62 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
        }
    }
 
-#ifdef CPPAR
-   unsigned int set = 0;
-   std::vector<cpCnTriple>::iterator itClassweights = classWeightsPerFold_.begin();
-   for ( ; itClassweights != classWeightsPerFold_.end(); ++itClassweights) {
-    struct vector_double* pWeights = new vector_double;
-    pWeights->d = FeatureNames::getNumFeatures() + 1;
-    pWeights->vec = new double[pWeights->d];
-    
-    cpCnTriple cpCnFold = *itClassweights;
-    set = cpCnFold.set;
-    AlgIn* svmInput = svmInputsVec[set * nestedXvalBins_];
-    processSingleCpCnPair(*itClassweights,
-      pWeights, pOptions,
-      svmInput,
-      nestedTestScoresVec);
-    delete[] pWeights->vec;
-    delete pWeights;
-  }  
+  //  int pairIdx;
+  //  #pragma omp parallel for
+  //  for (pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
+  //   cpCnTriple* cpCnFold = &classWeightsPerFold_[pairIdx];
+  //   AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_];
+  //   processSingleCpCnPair(*cpCnFold,
+  //     pOptions,
+  //     svmInput,
+  //     nestedTestScoresVec);
+  // }  
 
+   int pairIdx;
+#pragma omp parallel for schedule(dynamic, 1) ordered
+   for (pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
+    cpCnTriple* cpCnFold = &classWeightsPerFold_[pairIdx];
+    AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_];
+    trainCpCnPair(*cpCnFold,
+      pOptions,
+      svmInput);
+  }  
+  // validateCpCnPairs(nestedTestScoresVec);
 
   struct vector_double* pWeights = new vector_double;
   pWeights->d = FeatureNames::getNumFeatures() + 1;
   pWeights->vec = new double[pWeights->d];
 
-  estTruePos = mergeCpCnPairs(pWeights, selectionFdr, pOptions);
+  estTruePos = mergeCpCnPairs(pWeights, selectionFdr, pOptions, nestedTestScoresVec);
   
   delete[] pWeights->vec;
   delete pWeights;
   delete pOptions;
   return estTruePos;
 
-#else
-// #pragma omp parallel for schedule(dynamic, 1) ordered
-  for (int set = 0; set < numFolds_; ++set) {
-    struct vector_double* pWeights = new vector_double;
-    pWeights->d = FeatureNames::getNumFeatures() + 1;
-    pWeights->vec = new double[pWeights->d];
+// // #pragma omp parallel for schedule(dynamic, 1) ordered
+//   for (int set = 0; set < numFolds_; ++set) {
+//     struct vector_double* pWeights = new vector_double;
+//     pWeights->d = FeatureNames::getNumFeatures() + 1;
+//     pWeights->vec = new double[pWeights->d];
       
-    double bestCpos = 1, bestCfrac = 1;
+//     double bestCpos = 1, bestCfrac = 1;
       
-    int estTruePosFold = processSingleFold(set, selectionFdr,
-					   bestCpos, bestCfrac, 
-					   pWeights, pOptions,
-					   svmInputsVec, nestedTestScoresVec);
-// #pragma omp critical (add_tps)
-//     {
-      estTruePos += estTruePosFold;
-    // }
+//     int estTruePosFold = processSingleFold(set, selectionFdr,
+// 					   bestCpos, bestCfrac, 
+// 					   pWeights, pOptions,
+// 					   svmInputsVec, nestedTestScoresVec);
+// // #pragma omp critical (add_tps)
+// //     {
+//       estTruePos += estTruePosFold;
+//     // }
       
-    delete[] pWeights->vec;
-    delete pWeights;
-  }
+//     delete[] pWeights->vec;
+//     delete pWeights;
+//   }
 
-  delete pOptions;
-  return estTruePos / (numFolds_ - 1);
-#endif
+//   delete pOptions;
+//   return estTruePos / (numFolds_ - 1);
 }
 
 /** 
@@ -380,12 +389,15 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
  * @param pOptions options for the SVM algorithm
 */
 void CrossValidation::processSingleCpCnPair(cpCnTriple& cpCnFold,
-					    vector_double* pWeights, 
 					    options * pOptions, AlgIn* svmInput,
 					    vector< vector<Scores> >& nestedTestScoresVec) {
   // for determining the number of positives, the decoys+1 in the FDR estimates 
   // is too restrictive for small datasets
   bool skipDecoysPlusOne = true;
+
+  struct vector_double* pWeights = new vector_double;
+  pWeights->d = FeatureNames::getNumFeatures() + 1;
+  pWeights->vec = new double[pWeights->d];
 
   unsigned int set = cpCnFold.set;
   unsigned int nestedFold = cpCnFold.nestedSet;
@@ -407,16 +419,18 @@ void CrossValidation::processSingleCpCnPair(cpCnTriple& cpCnFold,
   for (int ix = 0; ix < Outputs->d; ix++) {
     Outputs->vec[ix] = 0;
   }
-  svmInput->setCost(cpos, cfrac * cpos);
+  // svmInput->setCost(cpos, cfrac * cpos);
         
   // Call SVM algorithm (see ssl.cpp)
-  L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+  L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, cpos, cfrac * cpos);
         
   for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
     cpCnFold.ww[i] = pWeights->vec[i];
   }
-        
+  #pragma omp critical
+  {
   tp = nestedTestScoresVec[set][nestedFold].calcScores(cpCnFold.ww, testFdr_, skipDecoysPlusOne);
+  }
   cpCnFold.tp = tp;
   // cout << "set=" << set << ", nestedFold=" << nestedFold << ", cpos=" << cpos << ", cfrac=" << cfrac << ", tp=" << tp << "\n";
   if (VERB > 3) {
@@ -425,20 +439,93 @@ void CrossValidation::processSingleCpCnPair(cpCnTriple& cpCnFold,
   }
   delete[] Outputs->vec;
   delete Outputs;
+  delete[] pWeights->vec;
+  delete pWeights;
 }
 
 /** 
- * Train one of the crossvalidation bins 
- * @param set identification number of the bin that is processed
- * @param cposCandidates candidate soft margin parameters for positives
- * @param cfracCandidates candidate soft margin parameters for fraction neg/pos
- * @param bestCpos best soft margin parameter for positives
- * @param bestCfrac best soft margin parameter for fraction neg/pos
+ * Train SVM over a single (cpos, cneg) pair
+ * @param cpCnFold contains cpos, cneg pair and SVM learned weights
+ * @param pOptions options for the SVM algorithm
+ * @param svmInput training data for this particular nested CV fold
+*/
+void CrossValidation::trainCpCnPair(cpCnTriple& cpCnFold,
+      options * pOptions, AlgIn* svmInput) {
+
+  struct vector_double* pWeights = new vector_double;
+  pWeights->d = FeatureNames::getNumFeatures() + 1;
+  pWeights->vec = new double[pWeights->d];
+
+  unsigned int set = cpCnFold.set;
+  unsigned int nestedFold = cpCnFold.nestedSet;
+  double cpos = cpCnFold.cpos;
+  double cfrac = cpCnFold.cfrac;
+    
+  // Create storage vector for SVM algorithm
+  struct vector_double* Outputs = new vector_double;
+  size_t numInputs = svmInput->positives + svmInput->negatives;
+  Outputs->vec = new double[numInputs];
+  Outputs->d = numInputs;
+
+  if (VERB > 3) cerr << "- cross-validation with Cpos=" << cpos
+		     << ", Cneg=" << cfrac * cpos << endl;
+  int tp = 0;
+  for (int ix = 0; ix < pWeights->d; ix++) {
+    pWeights->vec[ix] = 0;
+  }
+  for (int ix = 0; ix < Outputs->d; ix++) {
+    Outputs->vec[ix] = 0;
+  }
+  // svmInput->setCost(cpos, cfrac * cpos);
+        
+  // Call SVM algorithm (see ssl.cpp)
+  L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, cpos, cfrac * cpos);
+        
+  for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+    cpCnFold.ww[i] = pWeights->vec[i];
+  }
+  delete[] Outputs->vec;
+  delete Outputs;
+  delete[] pWeights->vec;
+  delete pWeights;
+}
+
+/** 
+ * Validate weights learned per cpos,cneg pairs per nested CV fold per CV fold
+ * @param nestedTestScoresVec 2D vector, test sets per nested CV fold per CV fold
+*/
+void CrossValidation::validateCpCnPairs(vector< vector<Scores> >& nestedTestScoresVec) {
+  // for determining the number of positives, the decoys+1 in the FDR estimates 
+  // is too restrictive for small datasets
+  bool skipDecoysPlusOne = true;
+  unsigned int set = 0;
+  unsigned int nestedFold = 0;
+  int tp = 0;
+  double cpos = 0;
+  double cfrac = 0;
+
+  unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
+
+  #pragma omp parallel for schedule(dynamic, 1) ordered
+  for (set = 0; set < numFolds_; ++set) {
+    unsigned int a = set * numCpCnPairsPerSet;
+    unsigned int b = (set+1) * numCpCnPairsPerSet;
+    std::vector<cpCnTriple>::iterator itCpCnPair;
+    for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
+      itCpCnPair->tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
+    }
+  }
+}
+
+
+/** 
+ * Validate and merge weights learned per cpos,cneg pairs per nested CV fold per CV fold
  * @param pWeights results vector from the SVM algorithm
  * @param pOptions options for the SVM algorithm
+ * @param nestedTestScoresVec 2D vector, test sets per nested CV fold per CV fold
 */
 int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr,
-				    options * pOptions) {
+    options * pOptions, vector< vector<Scores> >& nestedTestScoresVec) {
   // for determining the number of positives, the decoys+1 in the FDR estimates 
   // is too restrictive for small datasets
   bool skipDecoysPlusOne = true;
@@ -449,27 +536,35 @@ int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr
   
   unsigned int set = 0;
   unsigned int nestedFold = 0;
-  int tp = 0;
+  // int tp = 0;
   double cpos = 0;
   double cfrac = 0;
 
-  std::vector<cpCnTriple>::const_iterator itClassweights = classWeightsPerFold_.begin();
-  for ( ; itClassweights != classWeightsPerFold_.end(); ++itClassweights) {
-    cpCnTriple cpCnFold = *itClassweights;
-    set = cpCnFold.set;
-    nestedFold = cpCnFold.nestedSet;
-    cpos = cpCnFold.cpos;
-    cfrac = cpCnFold.cfrac;
-    tp = cpCnFold.tp;
-    if(tp >= bestTruePoses[set]){
+  // Validate learned parameters per (cpos,cneg) pair per CV fold
+  // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
+  //       scoring calculation in calcScores.  See processSingleCpCnPair for an example
+  unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
+  
+#pragma omp parallel for schedule(dynamic, 1) ordered
+  for (set = 0; set < numFolds_; ++set) {
+    unsigned int a = set * numCpCnPairsPerSet;
+    unsigned int b = (set+1) * numCpCnPairsPerSet;
+    int tp = 0;
+    std::vector<cpCnTriple>::iterator itCpCnPair;
+    for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
+      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
+      itCpCnPair->tp = tp;
+      if(tp >= bestTruePoses[set]){
 	bestTruePoses[set] = tp;
-	w_[set] = cpCnFold.ww;
-	bestCposes[set] = cpos;
-	bestCfracs[set] = cfrac;
+	w_[set] = itCpCnPair->ww;
+	bestCposes[set] = itCpCnPair->cpos;
+	bestCfracs[set] = itCpCnPair->cfrac;
+      }
     }
   }
   
   if (nestedXvalBins_ > 1) {
+#pragma omp parallel for schedule(dynamic, 1) ordered
     for (int s = 0; s < numFolds_; ++s) {
       AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
       trainScores_[s].generateNegativeTrainingSet(*svmInput, 1.0);
@@ -487,9 +582,8 @@ int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr
       for (int ix = 0; ix < Outputs->d; ix++) {
 	Outputs->vec[ix] = 0;
       }
-      svmInput->setCost(bestCposes[s], bestCposes[s] * bestCfracs[s]);
       // Call SVM algorithm (see ssl.cpp)
-      L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+      L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCposes[s], bestCposes[s] * bestCfracs[s]);
     
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
 	  w_[s][i] = pWeights->vec[i];
@@ -570,10 +664,10 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
     for (int ix = 0; ix < Outputs->d; ix++) {
       Outputs->vec[ix] = 0;
     }
-    svmInput->setCost(cpos, cfrac * cpos);
+    // svmInput->setCost(cpos, cfrac * cpos);
         
     // Call SVM algorithm (see ssl.cpp)
-    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, cpos, cfrac * cpos);
         
     for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
       ww[i] = pWeights->vec[i];
@@ -641,10 +735,10 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
     for (int ix = 0; ix < Outputs->d; ix++) {
       Outputs->vec[ix] = 0;
     }
-    svmInput->setCost(bestCpos, bestCpos * bestCfrac);
+    // svmInput->setCost(bestCpos, bestCpos * bestCfrac);
     
     // Call SVM algorithm (see ssl.cpp)
-    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs);
+    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCpos, bestCpos * bestCfrac);
     
     for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
       bestW[i] = pWeights->vec[i];
