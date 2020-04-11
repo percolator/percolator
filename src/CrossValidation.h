@@ -110,7 +110,7 @@ class CrossValidation {
 			    std::vector< std::vector<Scores> >& nestedTestScoresVec);
   void trainCpCnPair(cpCnTriple& cpCnFold,
 		     options * pOptions, AlgIn* svmInput);
-  void validateCpCnPairs(std::vector< std::vector<Scores> >& nestedTestScoresVec);
+
   int mergeCpCnPairs(vector_double* pWeights, double selectionFdr,
 		     options * pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec);
   int processSingleFold(unsigned int set, double selectionFdr,

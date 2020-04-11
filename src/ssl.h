@@ -2,7 +2,12 @@
  * SVMlin
  * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago.
  * Adapted to Percolator by Lukas Käll at the University of Washington
- *
+ * Sped up by John Halloran at the University of California, Davis, as detailed in:
+ ******************************
+ * A Matter of Time: Faster Percolator Analysis via Efficient SVM Learning for 
+ * Large-Scale Proteomics
+ * John T. Halloran and David M. Rocke
+ * Journal of Proteome Research 2018 17 (5), 1978-1982
  *******************************************************************************/
 #ifndef _svmlin_H
 #define _svmlin_H
@@ -29,7 +34,7 @@ class AlgIn {
     int n; /* number of features */
     int positives;
     int negatives;
-    const double** vals;
+    double** vals;
     double* Y; /* labels */
     double* C; /* cost associated with each example */
     void setCost(double pos, double neg) {
@@ -136,7 +141,7 @@ int L2_SVM_MFN(const AlgIn& set, struct options* Options,
                struct vector_double* Weights,
                struct vector_double* Outputs, double cpos, double cneg);
 double line_search(double* w, double* w_bar, double lambda, double* o,
-                   double* o_bar, const double* Y, const double* C, int d,
-                   int l, double cpos, double cneg);
+			 double* o_bar, const double* Y, int d, int l, 
+			  double cpos, double cneg);
 
 #endif
