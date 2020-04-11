@@ -30,13 +30,22 @@
 #include "FeatureMemoryPool.h"
 #include "ssl.h"
 
+struct cpCnTriple {
+  double cpos;
+  double cfrac;
+  unsigned int set;
+  int nestedSet;
+  vector<double> ww;
+  int tp;
+};
+
 class CrossValidation {
   
  public:
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0, 
-    int nestedXvalBins, bool trainBestPositive);
+		  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads);
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
@@ -70,10 +79,13 @@ class CrossValidation {
  protected:
   std::vector<AlgIn*> svmInputs_;
   std::vector< std::vector<double> > w_; // svm weights for each fold
+  std::vector<cpCnTriple> classWeightsPerFold_; // svm weights for each fold
   
   bool quickValidation_;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
+
+  unsigned int numThreads_;
   
   double testFdr_; // fdr used for cross validation performance measuring
   double selectionFdr_; // fdr used for determining positive training set
@@ -92,12 +104,20 @@ class CrossValidation {
   const static unsigned int numAlgInObjects_;
   std::vector<Scores> trainScores_, testScores_;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
-  
+
+  void processSingleCpCnPair(cpCnTriple& cpCnFold,
+			    options * pOptions, AlgIn* svmInput,
+			    std::vector< std::vector<Scores> >& nestedTestScoresVec);
+  void trainCpCnPair(cpCnTriple& cpCnFold,
+		     options * pOptions, AlgIn* svmInput);
+
+  int mergeCpCnPairs(vector_double* pWeights, double selectionFdr,
+		     options * pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec);
   int processSingleFold(unsigned int set, double selectionFdr,
-                         const vector<double>& cpos_vec, 
-                         const vector<double>& cfrac_vec, 
-                         double& best_cpos, double& best_cfrac, 
-                         vector_double* pWeights, options* pOptions);
+			double& best_cpos, double& best_cfrac, 
+			vector_double* pWeights, options* pOptions,
+			std::vector<AlgIn*> svmInputs,
+			std::vector< std::vector<Scores> >& nestedTestScoresVec);
   int doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr);
   
   void printSetWeights(ostream & weightStream, unsigned int set);

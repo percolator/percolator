@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 *******************************************************************************/
+// #ifdef _OPENMP
+// #include <omp.h>
+// #endif
 
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
@@ -142,6 +145,19 @@ class Globals {
     bool getNoTerminate() {
       return noTerminate_;
     }
+    // int getNumThreads() {
+    //   return numThreads;
+    // }
+    // void setNumThreads(int threads) {
+    //   omp_set_nested(1);
+    //   omp_set_dynamic(0);
+    //   if(numThreads < 3){
+    // 	numThreads = 3;
+    //   }	
+    //   if(numThreads_ > omp_get_max_threads()){
+    // 	numThreads = omp_get_max_threads();
+    //   }
+    // }
     void setLogFile(const std::string& filename);
     void initLogger();
     int redirectBuffer();
@@ -149,6 +165,7 @@ class Globals {
     const std::string getXMLDir(bool isConverter = false);    
   private:
     Globals();
+    // int numThreads;
     int verbose;
     bool noTerminate_;
     static Globals* glob;
