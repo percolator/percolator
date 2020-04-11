@@ -270,8 +270,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
 
-  cout << "threads=" << numThreads_ << "\n";
-  
   if(numThreads_ > omp_get_max_threads()){
     omp_set_num_threads(omp_get_max_threads());
   } else if (numThreads_ < 3){
@@ -329,27 +327,14 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
        }
    }
 
-  //  int pairIdx;
-  //  #pragma omp parallel for
-  //  for (pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
-  //   cpCnTriple* cpCnFold = &classWeightsPerFold_[pairIdx];
-  //   AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_];
-  //   processSingleCpCnPair(*cpCnFold,
-  //     pOptions,
-  //     svmInput,
-  //     nestedTestScoresVec);
-  // }  
-
-   int pairIdx;
 #pragma omp parallel for schedule(dynamic, 1) ordered
-   for (pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
+   for (int pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
     cpCnTriple* cpCnFold = &classWeightsPerFold_[pairIdx];
     AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_];
     trainCpCnPair(*cpCnFold,
       pOptions,
       svmInput);
   }  
-  // validateCpCnPairs(nestedTestScoresVec);
 
   struct vector_double* pWeights = new vector_double;
   pWeights->d = FeatureNames::getNumFeatures() + 1;
@@ -361,30 +346,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   delete pWeights;
   delete pOptions;
   return estTruePos;
-
-// // #pragma omp parallel for schedule(dynamic, 1) ordered
-//   for (int set = 0; set < numFolds_; ++set) {
-//     struct vector_double* pWeights = new vector_double;
-//     pWeights->d = FeatureNames::getNumFeatures() + 1;
-//     pWeights->vec = new double[pWeights->d];
-      
-//     double bestCpos = 1, bestCfrac = 1;
-      
-//     int estTruePosFold = processSingleFold(set, selectionFdr,
-// 					   bestCpos, bestCfrac, 
-// 					   pWeights, pOptions,
-// 					   svmInputsVec, nestedTestScoresVec);
-// // #pragma omp critical (add_tps)
-// //     {
-//       estTruePos += estTruePosFold;
-//     // }
-      
-//     delete[] pWeights->vec;
-//     delete pWeights;
-//   }
-
-//   delete pOptions;
-//   return estTruePos / (numFolds_ - 1);
 }
 
 /** 
@@ -540,7 +501,6 @@ int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr
   
   unsigned int set = 0;
   unsigned int nestedFold = 0;
-  // int tp = 0;
   double cpos = 0;
   double cfrac = 0;
 
