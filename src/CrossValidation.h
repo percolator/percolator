@@ -45,7 +45,7 @@ class CrossValidation {
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0, 
-    int nestedXvalBins, bool trainBestPositive);
+		  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads);
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
@@ -84,6 +84,8 @@ class CrossValidation {
   bool quickValidation_;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
+
+  unsigned int numThreads_;
   
   double testFdr_; // fdr used for cross validation performance measuring
   double selectionFdr_; // fdr used for determining positive training set

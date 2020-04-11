@@ -39,7 +39,7 @@ Caller::Caller() :
     numIterations_(10), maxPSMs_(0u),
     nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false), 
-    trainBestPositive_(false) {
+  trainBestPositive_(false), numThreads_(1u) {
 }
 
 Caller::~Caller() {
@@ -339,6 +339,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "num-threads",
+      "Number of total parallel threads for SVM training during cross validation. Default (no parallelism) = 1.",
+      "value");
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "nested-xval-bins",
       "Number of nested cross validation bins within each cross validation bin. This should reduce overfitting of the hyperparameters. Default = 1.",
       "value");
@@ -619,6 +623,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("maxiter")) {
     numIterations_ = cmd.getInt("maxiter", 0, 1000);
+  }
+  if (cmd.optionSet("num-threads")) {
+    // Globals::getInstance()->setNumThreads(cmd.getIntLowerBound("num-threads", 3));
+    numThreads_ = cmd.getInt("num-threads", 3, 128);
   }
   if (cmd.optionSet("subset-max-train")) {
     maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
@@ -995,7 +1003,7 @@ int Caller::run() {
   CrossValidation crossValidation(quickValidation_, reportEachIteration_, 
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_, 
                                   selectedCneg_, numIterations_, useMixMax_,
-                                  nestedXvalBins_, trainBestPositive_);
+                                  nestedXvalBins_, trainBestPositive_, numThreads_);
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"

@@ -20,7 +20,7 @@
 
 // #define CPPAR
 // #define THREADS (Globals::getInstance()->getNumThreads())
-#define THREADS 16
+// #define THREADS 16
 
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
@@ -35,12 +35,12 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, int niter, bool usePi0,
-  int nestedXvalBins, bool trainBestPositive) :
+				 int nestedXvalBins, bool trainBestPositive, unsigned int numThreads) :
     quickValidation_(quickValidation), usePi0_(usePi0),
     reportPerformanceEachIteration_(reportPerformanceEachIteration), 
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
-    nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive) {}
+  nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive), numThreads_(numThreads) {}
 
 
 CrossValidation::~CrossValidation() { 
@@ -270,10 +270,14 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
 
-  if(THREADS > omp_get_max_threads()){
+  cout << "threads=" << numThreads_ << "\n";
+  
+  if(numThreads_ > omp_get_max_threads()){
     omp_set_num_threads(omp_get_max_threads());
-  } else {
-    omp_set_num_threads(THREADS);
+  } else if (numThreads_ < 3){
+    omp_set_num_threads(3);
+  }else{
+    omp_set_num_threads(numThreads_);
   }
   
   // for determining an appropriate positive training set, the decoys+1 in the 
