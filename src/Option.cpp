@@ -91,17 +91,6 @@ int CommandLineParser::getInt(std::string dest, int lower, int upper) {
   return val;
 }
 
-int CommandLineParser::getIntLowerBound(string dest, int lower) {
-  int val;
-  if (!from_string<int> (val, options[dest]) || val < lower) 
-  {
-    ostringstream temp;
-    temp << "-" << dest << " option must be greater than or equal to " << lower << endl;
-    throw MyException(temp.str());
-  }
-  return val;
-}
-
 void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
                                      std::string help, std::string helpType,
                                      OptionOption typ, std::string dfault) {

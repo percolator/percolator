@@ -27,10 +27,12 @@ using namespace std;
 #include <cstring>
 
 extern "C" {
-  extern double dnrm2_(int *, double *, int *);
-  extern double ddot_(int *, double *, int *, double *, int *);
-  extern int daxpy_(int *, double *, double *, int *, double *, int *);
-  extern int dscal_(int *, double *, double *, int *);
+  extern double dnrm2_(int *, double *, int *); // Return the Euclidian norm of a vector
+  extern double ddot_(int *, double *, int *, double *, int *); // compute the dot product of two vectors
+  extern int daxpy_(int *, double *, double *, int *, double *, int *); // compute y := alpha * x + y
+  extern int dscal_(int *, double *, double *, int *); // Compute y := alpha * y
+  // dgemv - perform one of the matrix-vector operations, y  :=
+  // alpha*A*x + beta*y or y := alpha*A'*x + beta*y
   extern int dgemv_(char *, int *, int *,
 		    double *, double *, int *,
 		    double *, int *,  double *,

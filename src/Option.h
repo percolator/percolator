@@ -73,7 +73,6 @@ class CommandLineParser {
   }
   double getDouble(std::string dest, double lower, double upper);
   int getInt(std::string dest, int lower, int upper);
-  int getIntLowerBound(string dest, int lower);
   void help();
   void htmlHelp();
   std::map<std::string, std::string> options;

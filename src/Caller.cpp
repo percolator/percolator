@@ -625,7 +625,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     numIterations_ = cmd.getInt("maxiter", 0, 1000);
   }
   if (cmd.optionSet("num-threads")) {
-    // Globals::getInstance()->setNumThreads(cmd.getIntLowerBound("num-threads", 3));
     numThreads_ = cmd.getInt("num-threads", 3, 128);
   }
   if (cmd.optionSet("subset-max-train")) {

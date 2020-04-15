@@ -14,10 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 *******************************************************************************/
-// #ifdef _OPENMP
-// #include <omp.h>
-// #endif
-
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 

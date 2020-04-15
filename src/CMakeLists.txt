@@ -40,7 +40,7 @@ endif(XML_SUPPORT)
 # COMPILE BLAS
 #########################################
 add_subdirectory(blas)
-set (EXTRA_LIBS ${EXTRA_LIBS} blas)
+set (BLAS_LIBRARIES ${BLAS_LIBRARIES} blas)
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -144,12 +144,12 @@ ELSE(CRUX)
    
   # SET LIBRARIES FOR PERCOLATOR
   if(MSVC)
-    target_link_libraries(percolator perclibrary ${EXTRA_LIBS} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+    target_link_libraries(percolator perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
   else(MSVC)
     if (APPLE)
-      target_link_libraries(percolator perclibrary ${EXTRA_LIBS} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} )
+      target_link_libraries(percolator perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} )
     else(APPLE)
-      target_link_libraries(percolator perclibrary ${EXTRA_LIBS} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
+      target_link_libraries(percolator perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
     endif (APPLE)
   endif()
    

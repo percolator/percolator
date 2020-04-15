@@ -15,12 +15,12 @@
 
  *******************************************************************************/
 
-#include <omp.h>
 #include "CrossValidation.h"
 
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
 #ifdef _OPENMP
+#include <omp.h>
 const unsigned int CrossValidation::numAlgInObjects_ = CrossValidation::numFolds_;
 #else
 const unsigned int CrossValidation::numAlgInObjects_ = 1u;
@@ -107,44 +107,40 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   }
 
   // Form cpos, cneg pairs per nested CV fold
-  cpCnTriple cpCnFold;
+  candidateCposCfrac cpCnFold;
   for (int set = 0; set < numFolds_; ++set) {
     for (int nestedSet = 0; nestedSet < nestedXvalBins_; nestedSet++) {
       if(!quickValidation_) {
-      std::vector<double>::const_iterator itCpos = candidatesCpos_.begin();
-      for ( ; itCpos != candidatesCpos_.end(); ++itCpos) {
-	double cpos = *itCpos;
-	std::vector<double>::const_iterator itCfrac = candidatesCfrac_.begin();
-	for ( ; itCfrac != candidatesCfrac_.end(); ++itCfrac) {
-	  double cfrac = *itCfrac;
-	  cpCnFold.cpos = cpos;
-	  cpCnFold.cfrac = cfrac;
-	  cpCnFold.set = set;
-	  cpCnFold.nestedSet = nestedSet;
-	  cpCnFold.tp = 0;
-	  for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-	    cpCnFold.ww.push_back(0);
-	  }	  
-	  classWeightsPerFold_.push_back(cpCnFold);
+	std::vector<double>::const_iterator itCpos = candidatesCpos_.begin();
+	for ( ; itCpos != candidatesCpos_.end(); ++itCpos) {
+	  double cpos = *itCpos;
+	  std::vector<double>::const_iterator itCfrac = candidatesCfrac_.begin();
+	  for ( ; itCfrac != candidatesCfrac_.end(); ++itCfrac) {
+	    double cfrac = *itCfrac;
+	    cpCnFold.cpos = cpos;
+	    cpCnFold.cfrac = cfrac;
+	    cpCnFold.set = set;
+	    cpCnFold.nestedSet = nestedSet;
+	    cpCnFold.tp = 0;
+	    for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+	      cpCnFold.ww.push_back(0);
+	    }	  
+	    classWeightsPerFold_.push_back(cpCnFold);
+	  }
 	}
-      }
       } else {
-	  cpCnFold.cpos = 1;
-	  cpCnFold.cfrac = 1;
-	  cpCnFold.set = set;
-	  cpCnFold.nestedSet = nestedSet;
-	  cpCnFold.tp = 0;
-	  for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-	    cpCnFold.ww.push_back(0);
-	  }	  
-	  classWeightsPerFold_.push_back(cpCnFold);
-	}
+	cpCnFold.cpos = 1;
+	cpCnFold.cfrac = 1;
+	cpCnFold.set = set;
+	cpCnFold.nestedSet = nestedSet;
+	cpCnFold.tp = 0;
+	for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
+	  cpCnFold.ww.push_back(0);
+	}	  
+	classWeightsPerFold_.push_back(cpCnFold);
+      }
     }
   }
-  // cout << "Num (cp,cfrac,set,nestedFold) = " << classWeightsPerFold_.size() << "\n";
-  // for (int trip = 0; trip < classWeightsPerFold_.size(); trip++){
-  //   cout << classWeightsPerFold_[trip].cpos << ", " << classWeightsPerFold_[trip].cfrac  << ", " << classWeightsPerFold_[trip].set << ", " << classWeightsPerFold_[trip].nestedSet << "\n";
-  // }
   
   if (DataSet::getCalcDoc()) {
     for (int set = 0; set < numFolds_; ++set) {
@@ -266,14 +262,15 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
 
-  // omp_set_dynamic(0);
+#ifdef _OPENMP
   if(numThreads_ > omp_get_max_threads()){
     omp_set_num_threads(omp_get_max_threads());
-  } else if (numThreads_ < 3){
-    omp_set_num_threads(3);
+  } else if (numThreads_ < 1){
+    omp_set_num_threads(1);
   }else{
     omp_set_num_threads(numThreads_);
   }
+#endif
   
   // for determining an appropriate positive training set, the decoys+1 in the 
   // FDR estimates is too restrictive for small datasets
@@ -336,9 +333,8 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
    }
 
 #pragma omp parallel for schedule(dynamic, 1) ordered 
-   //#pragma omp parallel for schedule(static)
    for (int pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
-    cpCnTriple* cpCnFold = &classWeightsPerFold_[pairIdx];
+    candidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
     AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_];
     trainCpCnPair(*cpCnFold,
       pOptions,
@@ -363,7 +359,7 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
  * @param pOptions options for the SVM algorithm
  * @param svmInput training data for this particular nested CV fold
 */
-void CrossValidation::trainCpCnPair(cpCnTriple& cpCnFold,
+void CrossValidation::trainCpCnPair(candidateCposCfrac& cpCnFold,
       options * pOptions, AlgIn* svmInput) {
 
   struct vector_double* pWeights = new vector_double;
@@ -390,7 +386,6 @@ void CrossValidation::trainCpCnPair(cpCnTriple& cpCnFold,
   for (int ix = 0; ix < Outputs->d; ix++) {
     Outputs->vec[ix] = 0;
   }
-  // svmInput->setCost(cpos, cfrac * cpos);
         
   // Call SVM algorithm (see ssl.cpp)
   L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, cpos, cfrac * cpos);
@@ -435,7 +430,7 @@ int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr
     unsigned int a = set * numCpCnPairsPerSet;
     unsigned int b = (set+1) * numCpCnPairsPerSet;
     int tp = 0;
-    std::vector<cpCnTriple>::iterator itCpCnPair;
+    std::vector<candidateCposCfrac>::iterator itCpCnPair;
     for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
       tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
       itCpCnPair->tp = tp;
@@ -491,7 +486,7 @@ int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr
  * @param pOptions options for the SVM algorithm
  * @param nestedTestScoresVec 2D vector, test sets per nested CV fold per CV fold
 */
-void CrossValidation::processSingleCpCnPair(cpCnTriple& cpCnFold,
+void CrossValidation::processSingleCpCnPair(candidateCposCfrac& cpCnFold,
 					    options * pOptions, AlgIn* svmInput,
 					    vector< vector<Scores> >& nestedTestScoresVec) {
   // for determining the number of positives, the decoys+1 in the FDR estimates 
@@ -522,7 +517,6 @@ void CrossValidation::processSingleCpCnPair(cpCnTriple& cpCnFold,
   for (int ix = 0; ix < Outputs->d; ix++) {
     Outputs->vec[ix] = 0;
   }
-  // svmInput->setCost(cpos, cfrac * cpos);
         
   // Call SVM algorithm (see ssl.cpp)
   L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, cpos, cfrac * cpos);
@@ -535,7 +529,6 @@ void CrossValidation::processSingleCpCnPair(cpCnTriple& cpCnFold,
   tp = nestedTestScoresVec[set][nestedFold].calcScores(cpCnFold.ww, testFdr_, skipDecoysPlusOne);
   }
   cpCnFold.tp = tp;
-  // cout << "set=" << set << ", nestedFold=" << nestedFold << ", cpos=" << cpos << ", cfrac=" << cfrac << ", tp=" << tp << "\n";
   if (VERB > 3) {
     cerr << "- cross-validation found " << tp
 	 << " training set PSMs with q_liberal<" << testFdr_ << "." << endl;
@@ -578,9 +571,9 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
   double cfrac = 0;
 
   std::map<std::pair<double, double>, int> intermediateResults;
-  std::vector<cpCnTriple>::const_iterator itClassweights = classWeightsPerFold_.begin();
+  std::vector<candidateCposCfrac>::const_iterator itClassweights = classWeightsPerFold_.begin();
   for ( ; itClassweights != classWeightsPerFold_.end(); ++itClassweights) {
-    cpCnTriple cpCnFold = *itClassweights;
+    candidateCposCfrac cpCnFold = *itClassweights;
     if(cpCnFold.set != set){
       continue;
     }
@@ -646,9 +639,9 @@ int CrossValidation::processSingleFold(unsigned int set, double selectionFdr,
   }
   
   if (nestedXvalBins_ > 1) {
-    std::vector<cpCnTriple>::const_iterator itClassweights = classWeightsPerFold_.begin();
+    std::vector<candidateCposCfrac>::const_iterator itClassweights = classWeightsPerFold_.begin();
     for ( ; itClassweights != classWeightsPerFold_.end(); ++itClassweights) {
-      cpCnTriple cpCnFold = *itClassweights;
+      candidateCposCfrac cpCnFold = *itClassweights;
       if(cpCnFold.set != set){
         continue;
      }

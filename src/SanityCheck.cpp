@@ -17,7 +17,6 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <omp.h>
 using namespace std;
 #include "DataSet.h"
 #include "Scores.h"
@@ -121,7 +120,6 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
       }
     } else {
       // I want to assign the default vector that is present in the input file
-      #pragma omp parallel for schedule(dynamic, 1)
       for (size_t set = 0; set < w.size(); ++set) {
         for (size_t ix = 0; ix < w[set].size(); ix++) {
           w[set][ix] = 0;
@@ -132,7 +130,6 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
       }
     }
   } else {
-    #pragma omp parallel for schedule(dynamic, 1)
     for (size_t set = 0; set < w.size(); ++set) {
       for (size_t ix = 0; ix < w[set].size(); ix++) {
         w[set][ix] = 0;

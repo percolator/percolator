@@ -30,7 +30,7 @@
 #include "FeatureMemoryPool.h"
 #include "ssl.h"
 
-struct cpCnTriple {
+struct candidateCposCfrac {
   double cpos;
   double cfrac;
   unsigned int set;
@@ -79,7 +79,7 @@ class CrossValidation {
  protected:
   std::vector<AlgIn*> svmInputs_;
   std::vector< std::vector<double> > w_; // svm weights for each fold
-  std::vector<cpCnTriple> classWeightsPerFold_; // svm weights for each fold
+  std::vector<candidateCposCfrac> classWeightsPerFold_; // cpos, cneg pairs to train for each nested CV fold
   
   bool quickValidation_;
   bool usePi0_;
@@ -105,10 +105,10 @@ class CrossValidation {
   std::vector<Scores> trainScores_, testScores_;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
 
-  void processSingleCpCnPair(cpCnTriple& cpCnFold,
+  void processSingleCpCnPair(candidateCposCfrac& cpCnFold,
 			    options * pOptions, AlgIn* svmInput,
 			    std::vector< std::vector<Scores> >& nestedTestScoresVec);
-  void trainCpCnPair(cpCnTriple& cpCnFold,
+  void trainCpCnPair(candidateCposCfrac& cpCnFold,
 		     options * pOptions, AlgIn* svmInput);
 
   int mergeCpCnPairs(vector_double* pWeights, double selectionFdr,
