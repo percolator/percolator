@@ -215,7 +215,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
-  std::string psmid = "";
 
   try
   {
@@ -266,8 +265,9 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     double rank = item.rank();
     //double PI = boost::lexical_cast<double>(item.calculatedPI().get());
     int charge = item.chargeState();
-    double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge());
+    double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge().get());
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
+    
     std::string peptideSeqWithFlanks = __flankN + std::string(".") + peptideSeq + std::string(".") + __flankC;
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
 
@@ -283,9 +283,8 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     {
       fileId.erase(spos);
     }
-    std::string psmid = fileId + "_" + boost::lexical_cast<string > (item.id()) + "_" +
-    		boost::lexical_cast<string > (useScanNumber) + "_" +
-            boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
+    std::string psmId = createPsmId(fileId + "_" + boost::lexical_cast<string > (item.id()), 
+        observed_mass, useScanNumber, charge, rank);
 
     double RawScore = 0.0;
     double DeNovoScore = 0.0;
@@ -347,7 +346,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     	// std::cerr << "Skipping PSM with id " << psmid << " because MeanErrorTop7 = 0" << std::endl; // disabled this warning because it occurs a lot
     	return;
     }
-
+    
     //The raw theoretical mass from MSGF+ is often of the wrong isotope
     double dM = (observed_mass - (IsotopeError * neutron / charge) - theoretic_mass) / observed_mass;
     //double dM = massDiff(observed_mass, theoretic_mass, charge);  // Gives trouble because of isotopes
@@ -433,7 +432,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     }
 
     ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch
-            (features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
+            (features_p, peptide_p, psmId, isDecoy, observed_mass, theoretic_mass, charge);
     std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
 
     for (std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i) {

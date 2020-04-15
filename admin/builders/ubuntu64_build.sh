@@ -20,7 +20,7 @@ if [[ -z ${src_dir} ]]; then
     src_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
     git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
   else
-    src_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../../../
+    src_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"/../../../
   fi
 fi
 if [[ -z ${release_dir} ]]; then
@@ -57,6 +57,7 @@ cd ${build_dir}
 # download and patch xsd
 if [[ $(lsb_release -a) == *"14.04"* ]]; then
   if [ ! -d ${ubuntu_xsd} ]; then
+    echo "Installing XSD"
     wget --quiet ${ubuntu_xsd_url}
     tar xjf ${ubuntu_xsd}.tar.bz2
     sed -i 's/setg/this->setg/g' ${ubuntu_xsd}/libxsd/xsd/cxx/zc-istream.txx
@@ -68,15 +69,16 @@ else
 fi
 
 # issue with XercesC in Ubuntu 16.04: https://github.com/percolator/percolator/issues/188
-if [[ $(lsb_release -a) == *"16.04"* ]]; then
+if [[ $(lsb_release -a) == *"16.04"* ]] || [[ $(lsb_release -a) == *"18.04"* ]]; then
   if [[ ! -d ${ubuntu_xerces}/lib ]]; then
+    echo "Installing XercesC"
     # download, compile and link xerces
     wget --quiet ${ubuntu_xerces_url}
     tar xzf ${ubuntu_xerces}.tar.gz 
     cd ${ubuntu_xerces}/
-    ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu
-    make -j 4
-    make install
+    ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu > ../xercesc_config.log 2>&1
+    make -j 4 > ../xercesc_make.log 2>&1
+    make install > ../xercesc_install.log 2>&1
   fi
 else
   sudo apt-get -y install libxerces-c-dev

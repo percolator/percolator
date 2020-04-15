@@ -346,7 +346,7 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   if (VERB >= 4) {
     cerr << "Loading model from file " << file_name << "..." << endl;
   }
-  FILE* fp = fopen(file_name.c_str(), "r");
+  FILE* fp = fopen(file_name.c_str(), "rb");
   if (fp == NULL) {
     ostringstream temp;
     temp << "Error: Unable to open " << file_name << ". Execution aborted" << endl;

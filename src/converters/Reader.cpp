@@ -104,6 +104,10 @@ void Reader::init() {
   // NOTE getMaxMinCharge does more than get max charge and min charge for some types of converters.
   //      tandemReader for instance checks if a certain attribute is present or not.
   if (isMeta) {
+    // we hopefully found a meta file
+    if (VERB > 1)
+      std::cerr << "Found a meta file: " << po.targetFN <<std::endl;
+    
     std::string line;
     std::ifstream meta(po.targetFN.data(), std::ios::in);
     while (getline(meta, line)) {
@@ -115,6 +119,10 @@ void Reader::init() {
     }
     meta.close();
     if (!po.iscombined) {
+      // we hopefully found a meta file
+      if (VERB > 1)
+        std::cerr << "Found a meta file: " << po.decoyFN <<std::endl;
+        
       meta.open(po.decoyFN.data(), std::ios::in);
       while (getline(meta, line)) {
         if (line.size() > 0 && line[0] != '#') {
@@ -294,9 +302,9 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 	      char * tcd;
 	      string str;
 
-	      //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
-	      //boost filesystem when we dont use them
 #ifndef __APPLE__
+        //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
+	      //boost filesystem when we don't use them
         try {
           boost::filesystem::path ph = boost::filesystem::unique_path();
           boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
@@ -336,11 +344,7 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
     }
 
     read(fn,isDecoy,databases[lineNumber_par]);
-  } else {
-    // we hopefully found a meta file
-    if (VERB>1)
-      std::cerr << "Found a meta file: " << fn <<std::endl;
-      
+  } else {      
     unsigned int lineNumber=0;
     std::string line2;
     std::ifstream meta(fn.data(), std::ios::in);
@@ -359,6 +363,14 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
     }
     meta.close();
   }
+}
+
+std::string Reader::createPsmId(const std::string& fileId, double expMass, unsigned int scan, int charge, unsigned int rank) {
+  std::ostringstream id;
+  id << fileId << '_';
+  if (po.expMassInPsmId) id << expMass << '_';
+  id << scan << '_' << charge << '_' << rank;
+  return id.str();
 }
   
 void Reader::push_backFeatureDescription(const char * str, const char *description, double initvalue) {

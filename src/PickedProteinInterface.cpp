@@ -193,30 +193,55 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
               << ", max-pept-length=" << max_peptide_length
               << ", max-miscleavages=" << max_miscleavages << std::endl;
   }
-  fisherCaller_.initConstraints(cruxEnzyme, digest, min_peptide_length, 
+  PickedProteinCaller pickedProteinCaller;
+  pickedProteinCaller.initConstraints(cruxEnzyme, digest, min_peptide_length, 
                                 max_peptide_length, max_miscleavages);
   
-  groupProteins(peptideScores);
+  groupProteins(peptideScores, pickedProteinCaller);
   
   return true;
 }
 
-void PickedProteinInterface::groupProteins(Scores& peptideScores) {
+void PickedProteinInterface::groupProteins(Scores& peptideScores,
+    PickedProteinCaller& pickedProteinCaller) {
   std::map<std::string, std::string> fragment_map, duplicate_map;
   if (fastaProteinFN_ != "auto") {
-    fisherCaller_.setFastaDatabase(fastaProteinFN_);
+    pickedProteinCaller.setFastaDatabase(fastaProteinFN_, decoyPattern_);
     
     if (VERB > 1) {
       std::cerr << "Detecting protein fragments/duplicates in target database" << std::endl;
     }
-    bool generateDecoys = false;
-    fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
-    
-    if (VERB > 1) {
-      std::cerr << "Detecting protein fragments/duplicates in decoy database" << std::endl;
+    bool reverseProteinSeqs = false;
+    bool fail = pickedProteinCaller.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, reverseProteinSeqs);
+    if (fail) {
+      ostringstream oss;
+      oss << "ERROR: Could not process the fasta database, check if path is correct." << std::endl;
+      if (NO_TERMINATE) {
+        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping protein grouping." << std::endl;
+      } else {
+        throw MyException(oss.str());
+      }
     }
-    generateDecoys = true;
-    fisherCaller_.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, generateDecoys);
+    
+    if (!pickedProteinCaller.fastaHasDecoys()) {
+      if (VERB > 1) {
+        std::cerr << "Detecting protein fragments/duplicates in decoy database" << std::endl;
+      }
+      reverseProteinSeqs = true;
+      fail = pickedProteinCaller.getProteinFragmentsAndDuplicates(fragment_map, duplicate_map, reverseProteinSeqs);
+      if (fail) {
+        ostringstream oss;
+        oss << "ERROR: Could not process the fasta database, check if path is correct." << std::endl;
+        if (NO_TERMINATE) {
+          std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping protein grouping." << std::endl;
+        } else {
+          throw MyException(oss.str());
+        }
+      }
+    } else if (VERB > 1) {
+      std::cerr << "Decoy proteins detected in fasta database, "
+                << "no need to generate decoy database" << std::endl;
+    }
   }
   
   std::map<std::string, std::set<std::string> > groupProteinIds;
@@ -360,7 +385,19 @@ bool PickedProteinInterface::pickedProteinCheckId(std::string& proteinId, bool i
     std::set<std::string>& targetProts, std::set<std::string>& decoyProts) {
   bool found = false;
   if (isDecoy) {
-    std::string targetId = proteinId.substr(decoyPattern_.size());
+    std::string targetId = proteinId;
+    if (decoyPattern_.size() >= proteinId.size()) {
+      ostringstream oss;
+      oss << "ERROR: Could not detect the decoy prefix \"" << decoyPattern_ 
+          << "\" for the decoy protein identifier \"" << proteinId << "\"." << std::endl;
+      if (NO_TERMINATE) {
+        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping removal of decoyPrefix." << std::endl;
+      } else {
+        throw MyException(oss.str());
+      }
+    } else {
+      targetId = proteinId.substr(decoyPattern_.size());
+    }
     if (targetProts.find(targetId) != targetProts.end()) {
       found = true;
     } else {

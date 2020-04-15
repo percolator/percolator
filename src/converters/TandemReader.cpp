@@ -1,3 +1,6 @@
+// The file specification of the X!Tandem output is given here:
+//   https://www.thegpm.org/docs/X_series_output_form.pdf
+
 #include "TandemReader.h"
 
 //default score vector //TODO move this to a file or input parameter                          
@@ -207,8 +210,9 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   parser p;
   
   try {
+    bool validateSchema = true;
     xml_schema::dom::auto_ptr< xercesc::DOMDocument> 
-    doc (p.start (ifs, fn.c_str(),true, schemaDefinition,schema_major, schema_minor, scheme_namespace,true));
+    doc (p.start (ifs, fn.c_str(), validateSchema, schemaDefinition, schema_major, schema_minor, scheme_namespace,true));
     assert(doc.get());
     
     for (doc = p.next(); doc.get() != 0; doc = p.next ()) {  
@@ -267,6 +271,11 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
     temp << "ERROR parsing the xml file: " << fn << endl;
     temp << e << endl;
     throw MyException(temp.str());
+  } catch (MyException e) {
+	  std::cerr << "Error reading file: " << fn << "\n  " << e.what() << std::endl;
+	  exit(1);
+  } catch (std::exception e) {
+    std::cerr << "Error reading file: " << fn << "\n  Unknown exception in getMaxMinCharge: " << e.what() << std::endl;
   }
   
   ifs.close();
@@ -279,24 +288,24 @@ void TandemReader::getMaxMinCharge(const std::string &fn, bool isDecoy){
   return;
 }
 
-//Get the groupObject which contains one spectra but might contain several psm. 
+//Get the groupObject which contains one spectra but might contain several psms. 
 //All psms are read, features calculated and the psm saved.
 void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
     boost::shared_ptr<FragSpectrumScanDatabase> database, const std::string &fn) {
-  std::ostringstream id;
   std::string fileId, proteinName;
-  int rank = 0, spectraId;
-  double parenIonMass = 0.0;
+  int rank = 1, spectraId;
+  double parentIonMass = 0.0;
   unsigned charge = 0;
   double sumI = 0.0;
   double maxI = 0.0;
   //double fI = 0.0;
   spectraId = boost::lexical_cast<int>(groupObj.id());
   peptideProteinMapType peptideProteinMap;
-  getPeptideProteinMap(groupObj, peptideProteinMap, isDecoy); 
+  getPeptideProteinMap(groupObj, peptideProteinMap);
+  
   if (groupObj.mh().present() && groupObj.z().present() && groupObj.sumI().present() && 
     groupObj.maxI().present() && groupObj.fI().present()&& groupObj.id().present()) {
-    parenIonMass = boost::lexical_cast<double>(groupObj.mh().get());//the parent ion mass (plus a proton) from the spectrum
+    parentIonMass = boost::lexical_cast<double>(groupObj.mh().get());//the parent ion mass (plus a proton) from the spectrum
     charge = boost::lexical_cast<unsigned>(groupObj.z().get()); 	//the parent ion charge from the spectrum
     sumI = boost::lexical_cast<double>(groupObj.sumI().get());	//the log10 value of the sum of all of the fragment ion intensities
     maxI = boost::lexical_cast<double>(groupObj.maxI().get());	//the maximum fragment ion intensity
@@ -306,6 +315,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
     temp << "Error : A required attribute is not present in the group/spectra element in file: " << fn << endl;
     throw MyException(temp.str());
   }
+  std::set<std::string> seenPeptides;
   //Loop through the protein objects
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) {
     proteinName = getRidOfUnprintables(protObj.label());
@@ -315,17 +325,18 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
     for (tandem_ns::peptide::domain_iterator iter = peptideObj.domain().begin();
       	  iter != peptideObj.domain().end(); ++iter) {
       tandem_ns::peptide::domain_type domain = *iter;
-      if (++rank <= po.hitsPerSpectrum) {
+      std::string peptide = boost::lexical_cast<std::string>(domain.seq());
+      if (rank <= po.hitsPerSpectrum && seenPeptides.find(peptide) == seenPeptides.end()) {
+        seenPeptides.insert(peptide);
 	      fileId = fn;
 	      size_t spos = fileId.rfind('/');
 	      if (spos != std::string::npos) fileId.erase(0, spos + 1);
 	      spos = fileId.find('.');
 	      if (spos != std::string::npos) fileId.erase(spos);
 	      //Create id
-	      id.str("");
-	      id << fileId << '_' << spectraId << '_' << charge << '_' << rank;
-	      std::string psmId=id.str();
-      	createPSM(domain, parenIonMass, charge, sumI, maxI, isDecoy, database, peptideProteinMap, psmId, spectraId);
+	      std::string psmId = createPsmId(fileId, parentIonMass, spectraId, charge, rank);
+      	createPSM(domain, parentIonMass, charge, sumI, maxI, isDecoy, database, peptideProteinMap, psmId, spectraId);
+      	++rank;
       }//End of if rank<=po.hitsPerSpectrum
     }
   } //End of boost protein
@@ -333,8 +344,7 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
 
 //Loops through the spectra(group object) and makes a map of peptides with a set of proteins as value
 void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,
-    peptideProteinMapType &peptideProteinMap, bool& isDecoy) {
-  if (po.iscombined) isDecoy = true; // Adjust isDecoy if combined file
+    peptideProteinMapType &peptideProteinMap) {
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) {
     std::string proteinName = getRidOfUnprintables(protObj.label());
     tandem_ns::peptide peptideObj = protObj.peptide();
@@ -344,17 +354,12 @@ void TandemReader::getPeptideProteinMap(const tandem_ns::group &groupObj,
       std::string peptide = (*iter).seq();
       peptideProteinMap[peptide].insert(proteinName);
     }
-    
-    // Adjust isDecoy if combined file
-    if (po.iscombined && isDecoy) {
-  	  isDecoy = proteinName.find(po.reversedFeaturePattern, 0) != std::string::npos;
-    }
   }
 }
 
 //Calculates some features then creates the psm and saves it
 void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
-    double parenIonMass, unsigned charge, double sumI, double maxI, 
+    double parentIonMass, unsigned charge, double sumI, double maxI, 
     bool isDecoy, boost::shared_ptr<FragSpectrumScanDatabase> database,
     const peptideProteinMapType &peptideProteinMap,const string &psmId, 
     int spectraId) {
@@ -368,6 +373,19 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   double next_hyperscore = boost::lexical_cast<double>(domain.nextscore());
   //double missed_cleavages = boost::lexical_cast<unsigned>(domain.missed_cleavages());
   std::string peptide = boost::lexical_cast<std::string>(domain.seq());
+  
+  std::set<std::string> proteinOccuranceSet = peptideProteinMap.at(peptide);
+  assert(proteinOccuranceSet.size() > 0);
+  std::vector<std::string> proteinOccurences;
+  set<std::string>::iterator posIt;
+  if (po.iscombined) isDecoy = true; // Adjust isDecoy if combined file
+  for (posIt = proteinOccuranceSet.begin(); posIt != proteinOccuranceSet.end(); ++posIt) {
+    if (po.iscombined && isDecoy) {
+  	  isDecoy = posIt->find(po.reversedFeaturePattern, 0) != std::string::npos;
+    }
+    proteinOccurences.push_back(*posIt);
+  }
+  
   std::string pre = boost::lexical_cast<std::string>(domain.pre());
   if (pre=="[") {
 	  pre = "-";
@@ -468,7 +486,7 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   if (y_score) f_seq.push_back(yions / peptide.size());
   if (z_score) f_seq.push_back(zions / peptide.size());
   //Mass
-  f_seq.push_back(parenIonMass);
+  f_seq.push_back(parentIonMass);
   f_seq.push_back(mass_diff);
   f_seq.push_back(abs(mass_diff));
   //peptide length
@@ -499,21 +517,19 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   //AA FREQ
   if (po.calcAAFrequencies) {
     computeAAFrequencies(fullpeptide, f_seq);
-  }
-
+  }  
+    
   //Save the psm
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p(
       new percolatorInNs::peptideSpectrumMatch(features_p, peptide_p, psmId, 
-      isDecoy, parenIonMass, calculated_mass, charge));
+      isDecoy, parentIonMass, calculated_mass, charge));
   
-  std::set<std::string> proteinOccuranceSet = peptideProteinMap.at(peptide);
-  assert(proteinOccuranceSet.size() > 0);
-  set<std::string>::iterator it;
-  for (it = proteinOccuranceSet.begin(); it != proteinOccuranceSet.end(); it++) {
-    std::auto_ptr< percolatorInNs::occurence > oc_p(new percolatorInNs::occurence (*it,flankN, flankC)); 
+  std::vector<std::string>::const_iterator poIt;
+  for (poIt = proteinOccurences.begin(); poIt != proteinOccurences.end(); ++poIt) {
+    std::auto_ptr< percolatorInNs::occurence > oc_p(new percolatorInNs::occurence(*poIt, flankN, flankC));
     psm_p->occurence().push_back(oc_p);
   }
-
+  
   database->savePsm(spectraId, psm_p);
 }
 

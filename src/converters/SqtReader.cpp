@@ -23,8 +23,8 @@ SqtReader::~SqtReader()
 
 }
 
-void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,  
-			std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database) {
+void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,  
+			std::string& fileId, boost::shared_ptr<FragSpectrumScanDatabase> database) {
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   unsigned int scan;
   int charge;
@@ -184,9 +184,12 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in,int match,
     }
   }
   
-  std::auto_ptr< percolatorInNs::peptideSpectrumMatch >  
-  psm_p(new percolatorInNs::peptideSpectrumMatch
-  (features_p,  peptide_p,psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge));
+  unsigned int rank = match + 1;
+  std::string psmId = createPsmId(fileId, observedMassCharge, scan, charge, rank);
+  
+  std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p(
+      new percolatorInNs::peptideSpectrumMatch(features_p, peptide_p, psmId, 
+          isDecoy, observedMassCharge, calculatedMassToCharge, charge));
 
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
     std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
@@ -229,13 +232,12 @@ void SqtReader::getMaxMinCharge(const std::string &fn, bool isDecoy)
 }
 
 
-void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragSpectrumScanDatabase> database) {
+void SqtReader::read(const std::string &fn, bool isDecoy, 
+    boost::shared_ptr<FragSpectrumScanDatabase> database) {
   std::string ptmAlphabet;
   std::string fileId;
-  int charge;
   int ms = 0;
   std::string line, tmp, prot;
-  std::istringstream lineParse;
   std::ifstream sqtIn;
   sqtIn.open(fn.c_str(), std::ios::in);
   if (!sqtIn) {
@@ -254,25 +256,19 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
   if (spos != std::string::npos) {
     fileId.erase(spos);
   }
-  std::ostringstream buff, id;
+  std::ostringstream buff;
   int lines = 0;
-  std::string scan;
   std::set<int> theMs;
 
   while (getline(sqtIn, line)) {
     if (line[0] == 'S') {
       if (lines > 1) {
-        readSectionS( buff.str(), theMs, isDecoy,id.str(), database);
+        readSectionS( buff.str(), theMs, isDecoy, fileId, database);
       }
       buff.str("");
       buff.clear();
-      id.str("");
       lines = 1;
       buff << line << std::endl;
-      lineParse.clear();
-      lineParse.str(line);
-      lineParse >> tmp >> tmp >> scan >> charge;
-      id << fileId << '_' << scan << '_' << charge;
       ms = 0;
       theMs.clear();
     }
@@ -292,18 +288,16 @@ void SqtReader::read(const std::string &fn, bool isDecoy,boost::shared_ptr<FragS
     }
   }
   if (lines > 1) {
-    readSectionS(buff.str(), theMs, isDecoy, id.str(), database);
+    readSectionS(buff.str(), theMs, isDecoy, fileId, database);
   }
   sqtIn.close();
 }
 
-void SqtReader::readSectionS(const std::string &record,std::set<int> & theMs, bool isDecoy,
-			       std::string psmId,boost::shared_ptr<FragSpectrumScanDatabase> database) {
+void SqtReader::readSectionS(const std::string &record, std::set<int>& theMs, bool isDecoy,
+			       std::string& fileId, boost::shared_ptr<FragSpectrumScanDatabase> database) {
   std::set<int>::const_iterator it;
   for (it = theMs.begin(); it != theMs.end(); it++) {
-    std::ostringstream stream;
-    stream << psmId << "_" << (*it + 1);
-    readPSM(isDecoy,record,*it, stream.str(), database);
+    readPSM(isDecoy, record, *it, fileId, database);
   }
   return;
 }

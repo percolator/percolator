@@ -31,13 +31,13 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, int niter, bool usePi0,
-				 int nestedXvalBins, bool trainBestPositive, unsigned int numThreads) :
+  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores) :
     quickValidation_(quickValidation), usePi0_(usePi0),
     reportPerformanceEachIteration_(reportPerformanceEachIteration), 
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
-  nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive), numThreads_(numThreads) {}
-
+    nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
+    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {}
 
 CrossValidation::~CrossValidation() { 
   for (unsigned int set = 0; set < numAlgInObjects_; ++set) {
@@ -466,7 +466,7 @@ int CrossValidation::mergeCpCnPairs(vector_double* pWeights, double selectionFdr
       L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCposes[s], bestCposes[s] * bestCfracs[s]);
     
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-	  w_[s][i] = pWeights->vec[i];
+	        w_[s][i] = pWeights->vec[i];
       }
       delete[] Outputs->vec;
       delete Outputs;
@@ -710,7 +710,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     // TODO: take the average instead of the first DOC model?
     fullset.getDOC().copyDOCparameters(testScores_[0].getDOC());
   }
-  fullset.merge(testScores_, selectionFdr_);
+  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_);
 }
 
 /**

@@ -128,7 +128,6 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
   std::vector< std::string > proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
-  std::string psmid = "";
 
   try
   {
@@ -140,7 +139,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
       //NOTE check that there are not quimera peptides
       if (peptideId != std::string(pepEv->peptide_ref())) {
 	      std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
-		        << " contains different quimera peptide sequences. "
+		        << " contains different chimeric peptide sequences. "
 		        << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
 		        << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
       } else {
@@ -157,7 +156,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
 
     if(__flankC.empty() || __flankN.empty()) {
       ostringstream temp;
-      temp << "Error : The PSM " << boost::lexical_cast<string > (item.id()) << " is bad-formed." << std::endl;
+      temp << "Error : The PSM " << boost::lexical_cast<string > (item.id()) << " is ill-formed." << std::endl;
       throw MyException(temp.str());
     }
 
@@ -175,8 +174,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
     std::map<char, int> ptmMap = po.ptmScheme;
     std::string peptideNoMods = removePTMs(peptideSeqWithFlanks, ptmMap);
-    psmid = boost::lexical_cast<string > (item.id()) + "_" + boost::lexical_cast<string > (useScanNumber) + "_" +
-            boost::lexical_cast<string > (charge) + "_" + boost::lexical_cast<string > (rank);
+    std::string psmId = createPsmId(item.id(), observed_mass, useScanNumber, charge, rank);
 
     double lnrSP = 0.0;
     double deltaCN = 0.0;
@@ -266,7 +264,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     }
 
     ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch
-            (features_p, peptide_p, psmid, isDecoy, observed_mass, theoretic_mass, charge);
+            (features_p, peptide_p, psmId, isDecoy, observed_mass, theoretic_mass, charge);
     std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
 
     for (std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i) {

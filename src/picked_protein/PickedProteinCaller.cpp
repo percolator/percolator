@@ -25,7 +25,7 @@ using namespace PercolatorCrux;
 
 PickedProteinCaller::PickedProteinCaller() : enzyme_(TRYPSIN), digestion_(FULL_DIGEST),
     min_peptide_length_(6), max_peptide_length_(50), max_miscleavages_(0),
-    decoyPattern_("decoy_") {}
+    decoyPattern_("decoy_"), fasta_has_decoys_(false) {}
 
 PickedProteinCaller::~PickedProteinCaller() {}
 
@@ -94,53 +94,14 @@ bool PickedProteinCaller::parseOptions(int argc, char** argv) {
   return true;
 }
 
-bool PickedProteinCaller::getPeptideProteinMap(Database& db, 
-    PeptideConstraint& peptide_constraint,
-    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    std::map<size_t, size_t>& num_peptides_per_protein,
-    bool generateDecoys) {
-  std::vector< std::pair<std::string, size_t> > peptideProteinIdxMap;
-  for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
-       ++protein_idx) {
-    addProteinToPeptideProteinMap(db, protein_idx, peptide_constraint, 
-        peptide_protein_map, num_peptides_per_protein, generateDecoys);
-  }
-  /*
-  std::string prevPeptide = "";
-  size_t count = 0;
-  std::vector<size_t> proteinIdxs;
-  std::sort(peptideProteinIdxMap.begin(), peptideProteinIdxMap.end());
-  for (size_t i = 0; i < peptideProteinIdxMap.size(); ++i) {
-    if (peptideProteinIdxMap[i].first == prevPeptide) {
-      ++count;
-      proteinIdxs.push_back(peptideProteinIdxMap[i-1].second);
-    } else {
-      if (count > 0) {
-        proteinIdxs.push_back(peptideProteinIdxMap[i-1].second);
-        peptide_protein_map[prevPeptide] = proteinIdxs;
-        proteinIdxs.clear();
-        count = 0;
-      }
-      prevPeptide = peptideProteinIdxMap[i].first;
-    }
-  }
-  
-  if (count > 0) {
-    proteinIdxs.push_back(peptideProteinIdxMap[i-1].second);
-    peptide_protein_map[prevPeptide] = proteinIdxs;
-  }
-  */
-  return true;
-}
-
-void PickedProteinCaller::addProteinToPeptideProteinMap(Database& db, 
+void PickedProteinCaller::addToPeptideProteinMap(Database& db, 
     size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
-    bool generateDecoys) {
+    bool reverseProteinSeqs) {
   PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
-    
-  if (generateDecoys) {
+  
+  if (reverseProteinSeqs) {
     protein->shuffle(PROTEIN_REVERSE_DECOYS);
     
     // MT: the crux interface will change the protein identifier. If we are
@@ -150,6 +111,11 @@ void PickedProteinCaller::addProteinToPeptideProteinMap(Database& db,
       currentId = decoyPattern_ + currentId;
       protein->setId(currentId.c_str());
     }
+  } else if (!fasta_has_decoys_) {
+    std::string currentId(protein->getIdPointer());
+    if (currentId.substr(0, decoyPattern_.size()) == decoyPattern_) {
+      fasta_has_decoys_ = true;
+    }
   }
   
   ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
@@ -158,23 +124,15 @@ void PickedProteinCaller::addProteinToPeptideProteinMap(Database& db,
     PercolatorCrux::Peptide* peptide = cur_protein_peptide_iterator.next();
     std::string sequence(peptide->getSequencePointer(), peptide->getLength());
     peptide_protein_map[sequence].push_back(protein_idx);
-    delete peptide;
+    if (sequence[0] == 'M' && peptide->getNTermFlankingAA() == '-'
+          && peptide->getLength() - 1 >= min_peptide_length_) {
+      std::string metCleavedSequence(sequence.substr(1, peptide->getLength() - 1));
+      peptide_protein_map[metCleavedSequence].push_back(protein_idx);
+    }
+    PercolatorCrux::Peptide::free(peptide);
     ++numPeptides;
   }
   num_peptides_per_protein[protein_idx] = numPeptides;
-}
-
-bool PickedProteinCaller::getFragmentProteinMap(Database& db, 
-    PeptideConstraint& peptide_constraint,
-    std::map<std::string, std::vector<size_t> >& peptide_protein_map,
-    std::map<size_t, size_t>& num_peptides_per_protein,
-    std::map<size_t, std::vector<size_t> >& fragment_protein_map) {
-  for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
-       ++protein_idx) {
-    addProteinToFragmentProteinMap(db, protein_idx, peptide_constraint,
-        peptide_protein_map, num_peptides_per_protein, fragment_protein_map);
-  }
-  return true;
 }
 
 //!
@@ -188,7 +146,7 @@ bool PickedProteinCaller::getFragmentProteinMap(Database& db,
 //!   identical sets and which ones are proper subsets.
 //! @param[out] fragment_protein_map groups of proteins with same or subset peptides
 //!
-void PickedProteinCaller::addProteinToFragmentProteinMap(Database& db, 
+void PickedProteinCaller::findFragmentProteins(Database& db, 
     size_t protein_idx, PeptideConstraint& peptide_constraint,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
@@ -199,13 +157,10 @@ void PickedProteinCaller::addProteinToFragmentProteinMap(Database& db,
   
   // find all proteins of which the current protein's peptides are a subset (possibly identical)
   bool is_first = true;
-  size_t num_sequences = 0;
   std::vector<size_t> protein_idx_intersection;
   while (cur_protein_peptide_iterator.hasNext()) {
     PercolatorCrux::Peptide* peptide = cur_protein_peptide_iterator.next();
-    std::string sequence(peptide->getSequencePointer(), peptide->getLength());    
-    delete peptide;
-    ++num_sequences;
+    std::string sequence(peptide->getSequencePointer(), peptide->getLength());   
     
     if (is_first) {
       protein_idx_intersection = peptide_protein_map[sequence]; // proteins sharing the first peptide
@@ -220,39 +175,62 @@ void PickedProteinCaller::addProteinToFragmentProteinMap(Database& db,
       protein_idx_intersection = newprotein_idx_intersection;
     }
     
+    if (sequence[0] == 'M' && peptide->getNTermFlankingAA() == '-'
+          && peptide->getLength() - 1 >= min_peptide_length_) {
+      std::string metCleavedSequence(sequence.substr(1, peptide->getLength() - 1));
+      std::vector<size_t> newprotein_idx_intersection(protein_idx_intersection.size());
+      std::vector<size_t>::iterator it = std::set_intersection(
+          protein_idx_intersection.begin(), protein_idx_intersection.end(), 
+          peptide_protein_map[metCleavedSequence].begin(), peptide_protein_map[metCleavedSequence].end(), 
+          newprotein_idx_intersection.begin());
+      newprotein_idx_intersection.resize(it - newprotein_idx_intersection.begin());
+      protein_idx_intersection = newprotein_idx_intersection;
+    }
+     
+    PercolatorCrux::Peptide::free(peptide);
     if (protein_idx_intersection.size() < 2) break;
   }
   
-  if (protein_idx_intersection.size() > 1) {    
-    // sort in descending order such that the first element will be the last one
-    // to be visited
-    std::sort(protein_idx_intersection.rbegin(), protein_idx_intersection.rend());
-    fragment_protein_map[protein_idx_intersection[0]].push_back(protein_idx);
+  // if there are still proteins left in the intersection, it means that the 
+  // current protein is a subset of at least one another protein
+  if (protein_idx_intersection.size() > 1) {
+    addToFragmentProteinMap(protein_idx, protein_idx_intersection, 
+        num_peptides_per_protein, fragment_protein_map);
+  }
+}
+  
+void PickedProteinCaller::addToFragmentProteinMap(
+    const size_t protein_idx, std::vector<size_t>& protein_idx_intersection,
+    std::map<size_t, size_t>& num_peptides_per_protein,
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map) {
+  // sort in descending order such that the first element will be the last one
+  // to be visited
+  std::sort(protein_idx_intersection.rbegin(), protein_idx_intersection.rend());
+  fragment_protein_map[protein_idx_intersection[0]].push_back(protein_idx);
+  
+  if (protein_idx_intersection[0] == protein_idx) {
+    size_t largestProteinIdx = 0;
+    size_t largestProteinNumPeptides = 0;
+    for (std::vector<size_t>::iterator it = protein_idx_intersection.begin(); it != protein_idx_intersection.end(); ++it) {
+      if (num_peptides_per_protein[*it] > largestProteinNumPeptides) {
+        largestProteinIdx = *it;
+        largestProteinNumPeptides = num_peptides_per_protein[*it];
+      }
+    }
     
-    if (protein_idx_intersection[0] == protein_idx) {
-      size_t largestProteinIdx = 0;
-      size_t largestProteinNumPeptides = 0;
-      for (std::vector<size_t>::iterator it = protein_idx_intersection.begin(); it != protein_idx_intersection.end(); ++it) {
-        if (num_peptides_per_protein[*it] > largestProteinNumPeptides) {
-          largestProteinIdx = *it;
-          largestProteinNumPeptides = num_peptides_per_protein[*it];
-        }
-      }
-      
-      if (largestProteinIdx != protein_idx) {
-        // if there are other proteins that are subsets of the current protein,
-        // move them together with the current protein
-        fragment_protein_map[largestProteinIdx].insert(
-            fragment_protein_map[largestProteinIdx].end(),
-            fragment_protein_map[protein_idx].begin(), 
-            fragment_protein_map[protein_idx].end());
-        fragment_protein_map.erase(protein_idx);
-      }
+    if (largestProteinIdx != protein_idx) {
+      // if there are other proteins that are subsets of the current protein,
+      // move them together with the current protein
+      fragment_protein_map[largestProteinIdx].insert(
+          fragment_protein_map[largestProteinIdx].end(),
+          fragment_protein_map[protein_idx].begin(), 
+          fragment_protein_map[protein_idx].end());
+      fragment_protein_map.erase(protein_idx);
     }
   }
 }
 
-bool PickedProteinCaller::getProteinFragmentsAndDuplicates(Database& db,
+void PickedProteinCaller::findFragmentsAndDuplicates(Database& db,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 
@@ -278,135 +256,183 @@ bool PickedProteinCaller::getProteinFragmentsAndDuplicates(Database& db,
       }
     }
   }
-  return true;
 }
 
-//! creates a local peptide->protein map for each candidate protein group based on a full digest
-bool PickedProteinCaller::getProteinFragmentsAndDuplicatesExtraDigest(Database& db, 
+//! creates a local peptide->protein map for each candidate protein group that 
+//! which was based on a full digest with max_len <= 50 and max_misclv <= 2
+void PickedProteinCaller::findFragmentsAndDuplicatesExtraDigest(Database& db, 
     PeptideConstraint& peptide_constraint,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map,
-    std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<std::string, std::string>& fragment_map, 
     std::map<std::string, std::string>& duplicate_map) {
-  bool generateDecoys = false;
+  bool reverseProteinSeqs = false;
   std::map<size_t, std::vector<size_t> >::iterator it;
   for (it = fragment_protein_map.begin(); it != fragment_protein_map.end(); ++it) {
     size_t i = it->first;
+    if (std::find(it->second.begin(), it->second.end(), i) == it->second.end()) {
+      it->second.push_back(i);
+    }
+    std::sort(it->second.begin(), it->second.end());
     
     std::map<std::string, std::vector<size_t> > peptide_protein_map;
     std::map<size_t, size_t> num_peptides_per_protein_local;
-    addProteinToPeptideProteinMap(db, i, peptide_constraint, 
-          peptide_protein_map, num_peptides_per_protein_local, generateDecoys);
     for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-      size_t j = *it2;
-      if (i != j) {
-        addProteinToPeptideProteinMap(db, j, peptide_constraint, 
-            peptide_protein_map, num_peptides_per_protein_local, generateDecoys);
-      }
+      addToPeptideProteinMap(db, *it2, peptide_constraint, 
+          peptide_protein_map, num_peptides_per_protein_local, reverseProteinSeqs);
     }
     
     std::map<size_t, std::vector<size_t> > fragment_protein_map_local;
-    
-    addProteinToFragmentProteinMap(db, i, peptide_constraint, 
+    for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+      findFragmentProteins(db, *it2, peptide_constraint, 
           peptide_protein_map, num_peptides_per_protein_local, 
           fragment_protein_map_local);
+    }
+    
+    findFragmentsAndDuplicates(db, fragment_protein_map_local, 
+        num_peptides_per_protein_local, fragment_map, duplicate_map);
+  }
+}
+
+void PickedProteinCaller::findFragmentsAndDuplicatesNonSpecificDigest(
+    Database& db, 
+    std::map<size_t, std::vector<size_t> >& fragment_protein_map,
+    std::map<std::string, std::string>& fragment_map, 
+    std::map<std::string, std::string>& duplicate_map) {
+  std::map<size_t, std::vector<size_t> >::iterator it;
+  for (it = fragment_protein_map.begin(); it != fragment_protein_map.end(); ++it) {
+    size_t i = it->first;
+    if (std::find(it->second.begin(), it->second.end(), i) == it->second.end()) {
+      it->second.push_back(i);
+    }
+    std::sort(it->second.begin(), it->second.end());
+    
+    std::vector<std::string> sequences;
+    std::map<size_t, size_t> num_peptides_per_protein_local;
     for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-      size_t j = *it2;
-      if (i != j) {
-        addProteinToFragmentProteinMap(db, j, peptide_constraint, 
-            peptide_protein_map, num_peptides_per_protein_local, 
-            fragment_protein_map_local);
+      size_t protein_idx = *it2;
+      PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
+      std::string sequence(protein->getSequencePointer(), protein->getLength());
+      sequences.push_back(sequence);
+      num_peptides_per_protein_local[protein_idx] = protein->getLength();
+    }
+    
+    // In a non-specific digest the only possibility for one protein to be subset
+    // of another is if the entire string is contained (except for some very
+    // unlikely cases where a region longer than max_len is repeated more than twice)
+    std::map<size_t, std::vector<size_t> > fragment_protein_map_local;
+    std::vector<std::string>::iterator sit2 = sequences.begin();
+    for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2, ++sit2) {
+      size_t protein_idx = *it2;
+      
+      std::vector<size_t> protein_idx_intersection;
+      std::vector<size_t>::iterator it3 = it->second.begin();
+      for (std::vector<std::string>::iterator sit3 = sequences.begin(); sit3 != sequences.end(); ++sit3, ++it3) {
+        if (sit3->find(*sit2) != std::string::npos) {
+          protein_idx_intersection.push_back(*it3);
+        }
+      }
+      
+      if (protein_idx_intersection.size() > 1) {
+        addToFragmentProteinMap(protein_idx, protein_idx_intersection, 
+            num_peptides_per_protein_local, fragment_protein_map_local);
       }
     }
     
-    getProteinFragmentsAndDuplicates(db, fragment_protein_map_local, 
+    findFragmentsAndDuplicates(db, fragment_protein_map_local, 
         num_peptides_per_protein_local, fragment_map, duplicate_map);
   }
-  return true;
 }
 
 bool PickedProteinCaller::getProteinFragmentsAndDuplicates(
     std::map<std::string, std::string>& fragment_map,
     std::map<std::string, std::string>& duplicate_map,
-    bool generateDecoys) {
+    bool reverseProteinSeqs) {
   time_t startTime;
   time(&startTime);
   clock_t startClock = clock();
   
-  // now create a database
-  Database db(protein_db_file_.c_str(), false);
+  bool is_memmap = false;
+  Database db(protein_db_file_.c_str(), is_memmap);
   
-  if(!db.parse()){
-    std::cerr << "Failed to parse database, cannot create new index for " << protein_db_file_ << std::endl;
+  if (!db.parse()) {
+    std::cerr << "Failed to parse database, cannot create index for " 
+              << protein_db_file_ << std::endl;
     return EXIT_FAILURE;
   }
   
+  if (VERB > 3) reportProgress("Creating database", startTime, startClock);
+  
+  bool success = true;
+  
+  // First do a "basic" digest to get candidates for protein grouping*
+  //
+  // * there are some rare cases in which fragment proteins have
+  // distinct subsets in a full digest, but form a proper subset in a
+  // partial or non-enzymatic digest (e.g. if one would add a single
+  // amino acid to the beginning of a protein sequence). It's too hard 
+  // to check for these at the moment...
+  //
+  PeptideConstraint peptide_constraint(enzyme_, FULL_DIGEST, 
+      min_peptide_length_, (std::min)(50, max_peptide_length_), 
+      (std::min)(2, max_miscleavages_) );
+  std::map<std::string, std::vector<size_t> > peptide_protein_map;
+  std::map<size_t, size_t> num_peptides_per_protein;
+  for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
+       ++protein_idx) {
+    addToPeptideProteinMap(db, protein_idx, peptide_constraint, 
+        peptide_protein_map, num_peptides_per_protein, reverseProteinSeqs);
+  }
+  
+  if (VERB > 3) {
+    reportProgress("Creating protein peptide map", startTime, startClock);
+  }
+  
+  // Find all proteins whose peptides form a subset (possibly identical) 
+  // of another protein
+  std::map<size_t, std::vector<size_t> > fragment_protein_map;
+  for (size_t protein_idx = 0; protein_idx < db.getNumProteins(); 
+       ++protein_idx) {
+    findFragmentProteins(db, protein_idx, peptide_constraint,
+        peptide_protein_map, num_peptides_per_protein, fragment_protein_map);
+  }
+  
+  if (VERB > 3) {
+    reportProgress("Creating fragment protein map", startTime, startClock);
+  }
+  
+  // If the actual digest was more permissive than the basic digest (see above), 
+  // check validity of each candidate protein group
+  if (digestion_ == FULL_DIGEST && max_miscleavages_ <= 2 
+          && max_peptide_length_ <= 50) {
+    findFragmentsAndDuplicates(db, fragment_protein_map, 
+                  num_peptides_per_protein, fragment_map, duplicate_map);
+  } else if (digestion_ != NON_SPECIFIC_DIGEST) {
+    PeptideConstraint peptide_constraint_extra_digest(
+        enzyme_, digestion_, min_peptide_length_, max_peptide_length_, 
+        max_miscleavages_);
+    findFragmentsAndDuplicatesExtraDigest(db, 
+                  peptide_constraint_extra_digest, fragment_protein_map, 
+                  fragment_map, duplicate_map);
+  } else {
+    findFragmentsAndDuplicatesNonSpecificDigest(db, 
+                  fragment_protein_map, fragment_map, duplicate_map);
+  }
+  
+  if (VERB > 2) {
+    reportProgress("Resolving protein fragments and duplicates", 
+                      startTime, startClock);
+  }
+  
+  return EXIT_SUCCESS;
+}
+
+void PickedProteinCaller::reportProgress(const std::string& msg,
+    const time_t& startTime, const clock_t& startClock) {
   time_t procStart;
   clock_t procStartClock = clock();
   time(&procStart);
   double diff = difftime(procStart, startTime);
-  if (VERB > 3) cerr << "Creating database took "
+  if (VERB > 3) cerr << msg << " took "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff << " seconds wall time" << endl;
-  
-  bool success = true;
-  // First do a full digest to get candidates for protein grouping
-  PeptideConstraint peptide_constraint(enzyme_, FULL_DIGEST, 
-      min_peptide_length_, max_peptide_length_, max_miscleavages_);
-  std::map<std::string, std::vector<size_t> > peptide_protein_map;
-  std::map<size_t, size_t> num_peptides_per_protein;
-  success = getPeptideProteinMap(db, peptide_constraint, peptide_protein_map, num_peptides_per_protein, generateDecoys);
-  
-  if (!success) {
-    std::cerr << "Failed to create peptide protein map." << std::endl;
-    return EXIT_FAILURE;
-  }
-  
-  procStartClock = clock();
-  time(&procStart);
-  diff = difftime(procStart, startTime);
-  if (VERB > 3) cerr << "Creating protein peptide map took "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall time" << endl;
-      
-  std::map<size_t, std::vector<size_t> > fragment_protein_map;
-  success = getFragmentProteinMap(db, peptide_constraint, peptide_protein_map, num_peptides_per_protein, fragment_protein_map);
-  
-  if (!success) {
-    std::cerr << "Failed to create fragment protein map." << std::endl;
-    return EXIT_FAILURE;
-  }
-  
-  procStartClock = clock();
-  time(&procStart);
-  diff = difftime(procStart, startTime);
-  if (VERB > 3) cerr << "Creating fragment protein map took "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall time" << endl;
-  
-  // If not a full digest, check validity of each candidate protein group
-  if (digestion_ == FULL_DIGEST) {
-    success = getProteinFragmentsAndDuplicates(db, fragment_protein_map, num_peptides_per_protein, fragment_map, duplicate_map);
-  } else {
-    PeptideConstraint peptide_constraint_extra_digest(enzyme_, digestion_, 
-        min_peptide_length_, max_peptide_length_, max_miscleavages_);
-    success = getProteinFragmentsAndDuplicatesExtraDigest(db, 
-        peptide_constraint_extra_digest, fragment_protein_map, 
-        num_peptides_per_protein, fragment_map, duplicate_map);
-  }
-  
-  procStartClock = clock();
-  time(&procStart);
-  diff = difftime(procStart, startTime);
-  if (VERB > 2) cerr << "Resolving protein fragments and duplicates map took "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall time" << endl;
-  
-  
-  if (!success) {
-    std::cerr << "Failed to get protein fragments and duplicates." << std::endl;
-    return EXIT_FAILURE;
-  }
-  
-  return EXIT_SUCCESS;
 }

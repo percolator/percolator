@@ -533,10 +533,22 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
       pi0s.push_back(pi0);
     }
   }
+  
   if (pi0s.size() == 0) {
-    cerr << "Error in the input data: too good separation between target "
-        << "and decoy PSMs.\nImpossible to estimate pi0. Terminating.\n";
-    return -1;
+    ostringstream oss;
+    oss << "Error in the input data: too good separation between target "
+        << "and decoy PSMs.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str();
+      if (usePi0_) {
+        std::cerr << "No-terminate flag set: setting pi0 = 1 and ignoring error." << std::endl;
+        return 1.0;
+      } else {
+        std::cerr << "No-terminate flag set: ignoring error." << std::endl;
+      }
+    } else {
+      throw MyException(oss.str() + "Terminating.\n");
+    }
   }
   double minPi0 = *min_element(pi0s.begin(), pi0s.end());
   

@@ -1,3 +1,4 @@
+## Percolator
 [![https://travis-ci.org/percolator/percolator.svg?branch=master](https://travis-ci.org/percolator/percolator.svg?branch=master)](https://travis-ci.org/percolator/percolator)
 
 This repository holds the source code for percolator and format
