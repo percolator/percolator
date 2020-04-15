@@ -625,7 +625,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     numIterations_ = cmd.getInt("maxiter", 0, 1000);
   }
   if (cmd.optionSet("num-threads")) {
-    numThreads_ = cmd.getInt("num-threads", 3, 128);
+    numThreads_ = cmd.getInt("num-threads", 1, 128);
   }
   if (cmd.optionSet("subset-max-train")) {
     maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
