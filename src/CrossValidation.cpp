@@ -265,8 +265,8 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
 #ifdef _OPENMP
   if(numThreads_ > omp_get_max_threads()){
     omp_set_num_threads(omp_get_max_threads());
-  } else if (numThreads_ < 1){
-    omp_set_num_threads(1);
+  } else if (numThreads_ < 3){
+    omp_set_num_threads(3);
   }else{
     omp_set_num_threads(numThreads_);
   }

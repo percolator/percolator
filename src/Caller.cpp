@@ -345,7 +345,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "num-threads",
-      "Number of total parallel threads for SVM training during cross validation. Default (no parallelism) = 1.",
+      "Number of total parallel threads for SVM training during cross validation. Default (one thread per CV fold) = 3.",
       "value");
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "nested-xval-bins",
@@ -624,7 +624,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     numIterations_ = cmd.getInt("maxiter", 0, 1000);
   }
   if (cmd.optionSet("num-threads")) {
-    numThreads_ = cmd.getInt("num-threads", 1, 128);
+    numThreads_ = cmd.getInt("num-threads", 3, 128);
   }
   if (cmd.optionSet("subset-max-train")) {
     maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
