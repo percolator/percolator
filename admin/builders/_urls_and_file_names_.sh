@@ -9,7 +9,7 @@
 mac_os_xsd='xsd-3.3.0-i686-macosx'
 mac_os_xsd_url='http://www.codesynthesis.com/download/xsd/3.3/macosx/i686/'${mac_os_xsd}'.tar.bz2'
 # -- xerces --
-mac_os_xerces='xerces-c-3.2.2'
+mac_os_xerces='xerces-c-3.2.3'
 mac_os_xerces_url='http://apache.mirrors.spacedump.net/xerces/c/3/sources/'${mac_os_xerces}'.tar.gz'
 
 #
@@ -29,7 +29,7 @@ fedora_xsd_url='http://www.codesynthesis.com/download/xsd/4.0/linux-gnu/x86_64/'
 # Ubuntu
 #
 # -- xerces --
-ubuntu_xerces='xerces-c-3.2.2'
+ubuntu_xerces='xerces-c-3.2.3'
 ubuntu_xerces_url='http://apache.mirrors.spacedump.net/xerces/c/3/sources/'${ubuntu_xerces}'.tar.gz'
 # -- xsd --
 ubuntu_xsd='xsd-3.3.0-x86_64-linux-gnu'
