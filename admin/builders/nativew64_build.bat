@@ -193,11 +193,13 @@ set SQLITE_DIR=%SQLITE_DIR%;%SQLITE_DIR%\src
 
 ::: Needed for converters package and for system tests :::
 set ZLIB_DIR=%INSTALL_DIR%\zlib_x64
-set ZLIB_URL=https://www.libs4win.com/libzlib/libzlib-1.2.11-msvc2017-amd64-release.zip
+set ZLIB_URL=https://nsis.sourceforge.io/mediawiki/images/b/bb/Zlib-1.2.8-win64-AMD64.zip
 if not exist "%ZLIB_DIR%" (
   echo Downloading and installing ZLIB
   call :downloadfile %ZLIB_URL% %INSTALL_DIR%\zlib.zip
   %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%ZLIB_DIR%" > NUL
+  mkdir "%ZLIB_DIR%\bin"
+  move "%ZLIB_DIR%\zlib1.dll" "%ZLIB_DIR%\bin\zlib.dll"
 )
 set ZLIB_DIR=%ZLIB_DIR%\lib;%ZLIB_DIR%\include;%ZLIB_DIR%\bin
 set PATH=%PATH%;%ZLIB_DIR%
