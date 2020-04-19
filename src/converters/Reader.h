@@ -39,6 +39,7 @@
 #include <boost/algorithm/string.hpp> 
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "Globals.h"
 #include "config.h"
