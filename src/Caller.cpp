@@ -39,7 +39,7 @@ Caller::Caller() :
     numIterations_(10), maxPSMs_(0u),
     nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false), 
-  trainBestPositive_(false), numThreads_(1u) {
+  trainBestPositive_(false), numThreads_(3u) {
 }
 
 Caller::~Caller() {
@@ -624,7 +624,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     numIterations_ = cmd.getInt("maxiter", 0, 1000);
   }
   if (cmd.optionSet("num-threads")) {
-    numThreads_ = cmd.getInt("num-threads", 3, 128);
+    numThreads_ = cmd.getInt("num-threads", 1, 128);
   }
   if (cmd.optionSet("subset-max-train")) {
     maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
