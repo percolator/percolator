@@ -1,0 +1,24 @@
+name: ubuntu
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: preinstall
+      run: sudo apt-get install libxml2-utils
+    - name: create_dirs
+      run: mkdir -p ~/my_rel ~/my_build
+    - name: configure_and_make
+      run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
+    - name: test
+      run: cd ~/my_build/percolator && sudo make install && make test ARGS="-V"
+ 
