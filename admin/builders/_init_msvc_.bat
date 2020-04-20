@@ -53,7 +53,8 @@ if %MSVC_VER% EQU 0 (
   EXIT /B 1
 )
 
-set PROGRAM_FILES_DIR=C:\Program Files
+set PROGRAM_FILES_DIR=%ProgramFiles%
+:::set PROGRAM_FILES_DIR=C:\Program Files
 set BUILD_PLATFORM=32bit
 ::: REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup\VS > nul 2> nul
 REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup > nul 2> nul
