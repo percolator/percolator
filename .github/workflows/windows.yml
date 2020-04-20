@@ -29,6 +29,7 @@ jobs:
         cd ..
         SET base_dir=%cd%
         ECHO %base_dir%
+        ECHO %ProgramFiles%
         dir %ProgramFiles%
         dir %ProgramFiles%\Microsoft Visual Studio\
         dir %ProgramFiles%\Microsoft Visual Studio\2019\Enterprise

@@ -62,7 +62,7 @@ if %ERRORLEVEL% EQU 0 (
   echo platform detected: 64-bit
   set BUILD_PLATFORM=64bit
   ::: double quotes around set command ensure that string is not evaluated
-  set "PROGRAM_FILES_DIR=C:\Program Files (x86)"
+  ::: set "PROGRAM_FILES_DIR=C:\Program Files (x86)"
 ) else (
   :: reset ERRORLEVEL to 0
   cd .
