@@ -21,7 +21,7 @@ jobs:
         dir ..
         mkdir my_rel my_build
     - name: configure_and_make
-      working-directory: ${{working-directory}}\percolator
+#      working-directory: ${{working-directory}}\percolator
       run: .\admin\builders\nativew64_build.sh -s .. -r ..\my_rel -b ..\my_build
     - name: cd_to_build
       run: cd ..\my_build\percolator
