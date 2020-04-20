@@ -24,7 +24,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliar
 if %errorlevel% NEQ 0 (
   EXIT /B %errorlevel%
 )
-set VCTARGET="%VSINSTALLDIR%MSBuild\Microsoft\VC\v160\VCTargets\"
+set VCTARGET=%VSINSTALLDIR%MSBuild\Microsoft\VC\v160\VCTargets\
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
