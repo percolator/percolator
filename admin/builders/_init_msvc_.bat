@@ -3,7 +3,7 @@ set BUILD_TARGET=%1
 set MSVC_VER=0
 
 :: use VS2019 if available
-REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.16.0 > nul 2> nul
+REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.16.0 > nul 2> nul  
 if %ERRORLEVEL% EQU 0 (
   echo Using Visual Studio 2019
   set MSVC_VER=16
@@ -13,7 +13,7 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 :: use VS2017 if available (cannot check %ERRORLEVEL% inside an if statement!)
-REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.15.0 > nul 2> nul
+REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.15.0 > nul 2> nul  
 if %ERRORLEVEL% EQU 0 (
   if %MSVC_VER% EQU 0 (
     echo Using Visual Studio 2017
@@ -25,7 +25,7 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 :: use VS2015 if available
-REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0 > nul 2> nul
+REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0 > nul 2> nul  
 if %ERRORLEVEL% EQU 0 (
   if %MSVC_VER% EQU 0 (
     echo Using Visual Studio 2015
@@ -37,7 +37,7 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 :: use VS2013 if available
-REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.12.0 > nul 2> nul
+REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.12.0 > nul 2> nul  
 if %ERRORLEVEL% EQU 0 (
   if %MSVC_VER% EQU 0 (
     echo Using Visual Studio 2013
@@ -50,7 +50,7 @@ if %ERRORLEVEL% EQU 0 (
 
 if %MSVC_VER% EQU 0 (
   echo Could not find a suitable Visual Studio version; supported versions: VS2013, VS2015, VS2017, VS2019
-  EXIT /B 1
+  EXIT /B 1  
 )
 
 set PROGRAM_FILES_DIR=C:\Program Files
@@ -62,15 +62,8 @@ if %ERRORLEVEL% EQU 0 (
   ::: double quotes around set command ensure that string is not evaluated
   set "PROGRAM_FILES_DIR=C:\Program Files (x86)"
 ) else (
-  REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup > nul 2> nul
-  if %ERRORLEVEL% EQU 0 (
-    echo platform detected: 64-bit
-    set BUILD_PLATFORM=64bit
-    set “MSBUILD_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\”
-  ) else (
-    :: reset ERRORLEVEL to 0
-    cd .
-  )
+  :: reset ERRORLEVEL to 0
+  cd .
 )
 
 set VCTARGET=%PROGRAM_FILES_DIR%\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0
