@@ -19,7 +19,8 @@ GOTO parse
 
 cd /D "%SRC_DIR%"
 
-call percolator\admin\builders\_init_msvc_.bat 64bit
+:: Set the right paths and directories
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
 if %errorlevel% NEQ 0 (
   EXIT /B %errorlevel%
 )
@@ -27,10 +28,8 @@ if %errorlevel% NEQ 0 (
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+call percolator\admin\builders\_urls_and_file_names_.bat
 
-:: Set the right paths and directories
-
-call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
 set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
