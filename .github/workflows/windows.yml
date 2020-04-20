@@ -21,7 +21,7 @@ jobs:
       working-directory: ${{env.working-directory}}\..
       run: |
         mkdir my_rel my_build
-        dir
+        dir 
 
     - name: configure_and_make
       working-directory: ${{env.working-directory}}\..
