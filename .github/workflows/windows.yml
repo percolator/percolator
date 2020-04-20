@@ -20,23 +20,19 @@ jobs:
     - uses: actions/checkout@v2
     - name: create_dirs
       run: |
-        SET var=%cd%
-        ECHO %var%
-        dir
         mkdir ..\my_rel ..\my_build
         dir ..
-        dir ..\my_rel
-        dir ..\my_build
 
     - name: configure_and_make
 #      working-directory: ${{working-directory}}\percolator
       run: |
+        cd ..
+        SET base_dir=%cd%
+        ECHO %base_dir%
+        percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+    - name: install_and_test
+      run: |
+        cd %base_dir%\my_build\percolator
         dir
-        dir admin\builders
-        admin\builders\nativew64_build.bat -s .. -r ..\my_rel -b ..\my_build
-    - name: cd_to_build
-      run: cd ..\my_build\percolator
-    - name: install
-      run: make install
-    - name: test
-      run: make test ARGS="-V"
+        make install
+        make test ARGS="-V"
