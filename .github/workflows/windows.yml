@@ -26,7 +26,9 @@ jobs:
         dir
 
     - name: display env
-      run: ECHO %GITHUB_WORKSPACE%
+      run: |
+        ECHO %GITHUB_WORKSPACE%
+        ECHO %HOME%
 
     - name: configure_and_make
       run: |
