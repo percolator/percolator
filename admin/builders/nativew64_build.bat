@@ -1,4 +1,5 @@
-@echo off
+:::: @echo off
+@echo on
 
 setlocal
 
@@ -118,7 +119,7 @@ if not exist "%SQLITE_DIR%" (
   call :downloadfile %SQLITE_64_DLL_URL% %INSTALL_DIR%\sqlite_dll.zip
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_src.zip" -o"%SQLITE_DIR%" > NUL
   %ZIP_EXE% x "%INSTALL_DIR%\sqlite_dll.zip" -o"%SQLITE_DIR%" > NUL
-  
+
   ::: Generate lib from dll
   cd /D "%SQLITE_DIR%"
   ren %SQLITE_64_SRC_BASE% src
@@ -148,8 +149,8 @@ set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
 set DIRENT_H_PATH=%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\VC\include\dirent.h
-if not exist "%DIRENT_H_PATH%" ( 
-  echo Downloading and installing dirent.h 
+if not exist "%DIRENT_H_PATH%" (
+  echo Downloading and installing dirent.h
   call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
   %ZIP_EXE% x -aoa "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent" > NUL
   copy "%INSTALL_DIR%\dirent\dirent-%DIRENT_H_VERSION%\include\dirent.h" "%DIRENT_H_PATH%" > NUL
@@ -200,7 +201,7 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
-::::: Building elude ::::::: 
+::::: Building elude :::::::
 if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
 cd /D "%BUILD_DIR%\elude"
 echo cmake elude.....
