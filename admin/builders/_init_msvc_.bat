@@ -53,19 +53,24 @@ if %MSVC_VER% EQU 0 (
   EXIT /B 1
 )
 
-set PROGRAM_FILES_DIR=%ProgramFiles%
-:::set PROGRAM_FILES_DIR=C:\Program Files
+set PROGRAM_FILES_DIR=%ProgramFiles(x86)%
+::: set PROGRAM_FILES_DIR=C:\Program Files
 set BUILD_PLATFORM=32bit
-::: REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup\VS > nul 2> nul
-REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup > nul 2> nul
+REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup\VS > nul 2> nul
 if %ERRORLEVEL% EQU 0 (
   echo platform detected: 64-bit
   set BUILD_PLATFORM=64bit
   ::: double quotes around set command ensure that string is not evaluated
   ::: set "PROGRAM_FILES_DIR=C:\Program Files (x86)"
 ) else (
-  :: reset ERRORLEVEL to 0
-  cd .
+  REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\%MSVC_VER%.0\Setup > nul 2> nul
+  if %ERRORLEVEL% EQU 0 (
+    echo platform detected: 64-bit
+    set BUILD_PLATFORM=64bit
+  ) else (
+    :: reset ERRORLEVEL to 0
+    cd .
+  )
 )
 
 set VCTARGET=%PROGRAM_FILES_DIR%\MSBuild\Microsoft.Cpp\v4.0\V%MSVC_VER%0

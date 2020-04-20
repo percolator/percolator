@@ -29,11 +29,11 @@ jobs:
         cd ..
         SET base_dir=%cd%
         ECHO %base_dir%
-        ECHO %ProgramFiles%
-        dir %ProgramFiles%
-        dir %ProgramFiles%\Microsoft Visual Studio\
-        dir %ProgramFiles%\Microsoft Visual Studio\2019\Enterprise
-        dir %ProgramFiles%\Microsoft Visual Studio 16.0\VC
+        ECHO Listing %ProgramFiles(x86)%
+        dir %ProgramFiles(x86)%
+        ECHO Listing %ProgramFiles%\Microsoft Visual Studio
+        dir '%ProgramFiles(x86)%\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Auxiliary\\Build'
+        ECHO Executing: percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
         percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
 #        dir C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\VC
     - name: install_and_test
