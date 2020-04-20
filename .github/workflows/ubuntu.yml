@@ -2,9 +2,10 @@ name: ubuntu
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [ nonexisting_branch_debug ]
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
 
 jobs:
   build:
@@ -21,4 +22,3 @@ jobs:
       run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
     - name: test
       run: cd ~/my_build/percolator && sudo make install && make test ARGS="-V"
- 
