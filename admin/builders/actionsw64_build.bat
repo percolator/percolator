@@ -173,7 +173,7 @@ if not exist "%BUILD_DIR%" (md "%BUILD_DIR%")
 if not exist "%BUILD_DIR%\percolator-noxml" (md "%BUILD_DIR%\percolator-noxml")
 cd /D "%BUILD_DIR%\percolator-noxml"
 echo cmake percolator-noxml.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
+%CMAKE_EXE% -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
