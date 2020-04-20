@@ -20,6 +20,7 @@ GOTO parse
 cd /D "%SRC_DIR%"
 
 :: Set the right paths and directories
+set VCTARGET="C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V160"
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
 if %errorlevel% NEQ 0 (
   EXIT /B %errorlevel%
