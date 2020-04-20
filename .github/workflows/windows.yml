@@ -9,7 +9,6 @@ on:
 defaults:
   run:
     shell: cmd
-    working-directory: ${{GITHUB_WORKSPACE}}
 
 jobs:
   build:
@@ -19,16 +18,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
+      working-directory: ${{GITHUB_WORKSPACE}}
       run: |
         mkdir my_rel my_build
         dir
 
     - name: configure_and_make
+      working-directory: ${{GITHUB_WORKSPACE}}
       run: |
         SET base_dir=%cd%
         ECHO %base_dir%
         call percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
     - name: install_and_test
+      working-directory: ${{GITHUB_WORKSPACE}}
       run: |
         cd my_build\percolator
         dir
