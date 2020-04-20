@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ master ]
 
+defaults:
+  run:
+    shell: cmd
+#    working-directory: scripts
+
 jobs:
   build:
 
