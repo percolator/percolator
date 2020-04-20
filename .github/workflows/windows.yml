@@ -29,6 +29,7 @@ jobs:
         cd ..
         SET base_dir=%cd%
         ECHO %base_dir%
+        REG QUERY HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio /s
         percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
     - name: install_and_test
       run: |
