@@ -28,8 +28,8 @@ jobs:
 
     - name: configure_and_make
       run: |
-        dir /s /w /p "C:\Program Files\Microsoft Visual Studio"
         dir /s /w /p "C:\Program Files\Microsoft Visual Studio\2019\Enterprise"
+        dir /s /w /p "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise"
         ECHO %base_dir%
         ECHO Executing: percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
         percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
