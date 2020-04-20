@@ -29,6 +29,8 @@ jobs:
         cd ..
         SET base_dir=%cd%
         ECHO %base_dir%
+        dir C:\Program Files\
+        dir C:\Program Files\Microsoft Visual Studio\
         dir C:\Program Files\Microsoft Visual Studio\2019\Enterprise
         dir C:\Program Files\Microsoft Visual Studio 16.0\VC
         percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
