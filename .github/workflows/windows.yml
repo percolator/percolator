@@ -12,26 +12,28 @@ defaults:
 
 jobs:
   build:
-
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
 
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
-      working-directory: ${{env.working-directory}}\..
       run: |
+        cd ..
         mkdir my_rel my_build
-        dir 
+        dir
 
     - name: configure_and_make
-      working-directory: ${{env.working-directory}}\..
       run: |
+        cd ..
         SET base_dir=%cd%
         ECHO %base_dir%
         call percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
     - name: install_and_test
-      working-directory: ${{env.working-directory}}\..\my_build\percolator
       run: |
+        cd ..\my_build\percolator
         dir
         make install
         make test ARGS="-V"
