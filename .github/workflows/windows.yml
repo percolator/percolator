@@ -30,7 +30,7 @@ jobs:
       run: |
         ECHO %base_dir%
         ECHO Executing: percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
-        percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+        percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
 #        dir C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\VC
     - name: install_and_test
       run: |
