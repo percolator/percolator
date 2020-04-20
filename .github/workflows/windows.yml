@@ -29,8 +29,9 @@ jobs:
         cd ..
         SET base_dir=%cd%
         ECHO %base_dir%
-        dir C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\VC
+        dir C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0
         percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+#        dir C:\Program Files\Microsoft Visual Studio %MSVC_VER%.0\VC
     - name: install_and_test
       run: |
         cd %base_dir%\my_build\percolator
