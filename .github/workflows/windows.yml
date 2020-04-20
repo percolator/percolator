@@ -20,14 +20,13 @@ jobs:
     - uses: actions/checkout@v2
     - name: create_dirs
       run: |
-        mkdir ..\my_rel ..\my_build
         cd ..
-        SET base_dir=%cd%
-        ECHO %base_dir%
-        dir "%base_dir%"
+        mkdir my_rel my_build
+        dir
 
     - name: configure_and_make
       run: |
+        SET base_dir=%cd%
         ECHO %base_dir%
         ECHO Executing: percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
         call percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
