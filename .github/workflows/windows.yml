@@ -28,7 +28,6 @@ jobs:
 
     - name: configure_and_make
       run: |
-        dir /s /w /p "C:\Program Files"
         dir /s /w /p "C:\Program Files\Microsoft Visual Studio"
         dir /s /w /p "C:\Program Files\Microsoft Visual Studio\2019\Enterprise"
         ECHO %base_dir%
