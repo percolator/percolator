@@ -25,6 +25,27 @@ jobs:
         name: ubuntu-packages
         path: /home/runner/work/percolator/my_rel
 
+  build-osx:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: chech Applications
+      run: ls /Applications
+    - name: dir_names
+      run: echo ${HOME}
+    - name: create_dirs
+      run: mkdir -p ${HOME}/work/percolator/my_rel ${HOME}/work/percolator/my_build
+    - name: configure_and_make
+      run: admin/builders/osx64_build.sh -s . -r ${HOME}/work/percolator/my_rel -b ${HOME}/work/percolator/my_build
+    - name: test
+      run: cd /home/runner/work/percolator/my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: Upload packages
+      uses: actions/upload-artifact@v1
+      with:
+        name: osx-packages
+        path: ${HOME}/work/percolator/my_rel
+
+
   build-windows:
     runs-on: windows-latest
     defaults:
