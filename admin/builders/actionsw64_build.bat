@@ -148,17 +148,9 @@ set ZLIB_DIR=%ZLIB_DIR%\lib;%ZLIB_DIR%\include;%ZLIB_DIR%\bin
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
-:: Extract first part of include path
-SET _test=%VC_IncludePath%
-:: To delete everything after the string ';'
-:: first delete ';' and everything before it
-SET _endbit=%_test:*^;
-::Now remove this from the original string
-CALL SET first_include_path=%%_test:%_endbit%=%%
-echo Installing header files in: %first_include_path%
 
-:: Copying this header file to source file directory. Dirty.
-set DIRENT_H_PATH=%SRC_DIR%\percolator\src\elude_tool\dirent.h
+:: Copying this header file to boost source file directory. Dirty.
+set DIRENT_H_PATH=%BOOST_ROOT%\dirent.h
 if not exist "%DIRENT_H_PATH%" (
   echo Downloading and installing dirent.h
   call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
