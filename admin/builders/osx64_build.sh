@@ -100,10 +100,12 @@ $package_manager install $other_packages
 $package_manager install $boost_install_options
 
 cd ${src_dir}
+echo ${src_dir}
+ls -hl
+ls -hl percolator/admin/builders/
 
 # read all urls and file names from a centralized kb file
-source percolator/admin/builders/_urls_and_file_names_.sh
-
+source ./percolator/admin/builders/_urls_and_file_names_.sh
 mkdir -p ${build_dir}
 cd ${build_dir}
 
