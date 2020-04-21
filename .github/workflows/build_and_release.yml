@@ -25,7 +25,6 @@ jobs:
         name: ubuntu-packages
         path: ~/my_rel
 
-jobs:
   build-windows:
     runs-on: windows-latest
     defaults:
