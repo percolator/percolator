@@ -149,8 +149,8 @@ set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
 
-:: Copying this header file to boost source file directory. Dirty.
-set DIRENT_H_PATH=%BOOST_ROOT%\dirent.h
+:: Copying this header file to source file directory. Dirty.
+set DIRENT_H_PATH=%SRC_DIR%\percolator\src\dirent.h
 if not exist "%DIRENT_H_PATH%" (
   echo Downloading and installing dirent.h
   call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
