@@ -20,15 +20,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
-      run: |
-        cd ..
-        mkdir my_rel my_build
-        dir
+      run: cd .. || mkdir my_rel my_build
 
-    - name: display env
-      run: |
-        ECHO %GITHUB_WORKSPACE%
-        ECHO %HOME%
+#    - name: display env
+#      run: |
+#        ECHO %GITHUB_WORKSPACE%
 
     - name: configure_and_make
       run: |
@@ -36,9 +32,3 @@ jobs:
         SET base_dir=%cd%
         ECHO %base_dir%
         call percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
-    - name: install_and_test
-      run: |
-        cd ..\my_build\percolator
-        dir
-        make install
-        make test ARGS="-V"
