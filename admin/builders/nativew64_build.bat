@@ -95,10 +95,10 @@ if not exist "%LIBXML_DIR%" (
 set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
-set XERCES_DIR=%INSTALL_DIR%\%XERCES_BASE%
+set XERCES_DIR=%INSTALL_DIR%\%XERCES_64_BASE%
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
-  call :downloadfile %XERCES_URL% %INSTALL_DIR%\xerces.zip
+  call :downloadfile %XERCES_64_URL% %INSTALL_DIR%\xerces.zip
   %ZIP_EXE% x "%INSTALL_DIR%\xerces.zip" -o"%INSTALL_DIR%" > NUL
 )
 

@@ -29,6 +29,8 @@ set GETTEXT_URL=https://ftp.gnu.org/gnu/gettext/gettext-runtime-0.13.1.bin.woe32
 ::: XercesC
 set XERCES_BASE=xerces-c-3.1.1-x86-windows-vc-10.0
 set XERCES_URL=https://archive.apache.org/dist/xerces/c/3/binaries/%XERCES_BASE%.zip
+set XERCES_64_BASE=xerces-c-3.1.1-x86_64-windows-vc-10.0
+set XERCES_64_URL=https://archive.apache.org/dist/xerces/c/3/binaries/%XERCES_64_BASE%.zip
 
 ::: XSD
 set XSD_BASE=xsd-3.3.0-i686-windows

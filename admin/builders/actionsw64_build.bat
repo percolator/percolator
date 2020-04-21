@@ -98,10 +98,10 @@ if not exist "%LIBXML_DIR%" (
 set PATH=%PATH%;%LIBXML_DIR%\bin
 
 ::: Needed for converters package and xml support in percolator package :::
-set XERCES_DIR=%INSTALL_DIR%\%XERCES_BASE%
+set XERCES_DIR=%INSTALL_DIR%\%XERCES_64_BASE%
 if not exist "%XERCES_DIR%" (
   echo Downloading and installing Xerces-C
-  call :downloadfile %XERCES_URL% %INSTALL_DIR%\xerces.zip
+  call :downloadfile %XERCES_64_URL% %INSTALL_DIR%\xerces.zip
   %ZIP_EXE% x "%INSTALL_DIR%\xerces.zip" -o"%INSTALL_DIR%" > NUL
 )
 
@@ -190,7 +190,6 @@ echo cmake percolator.....
 ::%CMAKE_EXE% -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
-::msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -200,9 +199,9 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
 echo cmake converters.....
-%CMAKE_EXE% -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
+cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -211,9 +210,9 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
 cd /D "%BUILD_DIR%\elude"
 echo cmake elude.....
-%CMAKE_EXE% -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
+cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
 echo build elude (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
