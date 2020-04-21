@@ -14,11 +14,11 @@ jobs:
     - name: preinstall
       run: sudo apt-get install libxml2-utils
     - name: create_dirs
-      run: mkdir -p /home/runner/work/percolator/my_rel /home/runner/work/percolator/my_build
+      run: mkdir -p ${HOME}/my_rel ${HOME}/my_build
     - name: configure_and_make
-      run: admin/builders/ubuntu64_build.sh -s /home/runner/work/percolator -r /home/runner/work/percolator/my_rel -b /home/runner/work/percolator/my_build
+      run: admin/builders/ubuntu64_build.sh -s ${GITHUB_WORKSPACE}/.. -r ${HOME}/my_rel -b ${HOME}/my_build
     - name: test
-      run: cd /home/runner/work/percolator/my_build/percolator && sudo make install && make test ARGS="-V"
+      run: cd ${HOME}/my_build/percolator/my_build/percolator && sudo make install && make test ARGS="-V"
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
@@ -29,21 +29,17 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: chech Applications
-      run: ls /Applications
-    - name: dir_names
-      run: echo ${HOME}
     - name: create_dirs
-      run: mkdir -p ${HOME}/work/percolator/my_rel ${HOME}/work/percolator/my_build
+      run: mkdir -p ${HOME}/my_rel ${HOME}/my_build
     - name: configure_and_make
-      run: admin/builders/osx64_build.sh -s ${HOME}/work/percolator -r ${HOME}/work/percolator/my_rel -b ${HOME}/work/percolator/my_build
+      run: admin/builders/osx64_build.sh -s ${GITHUB_WORKSPACE}/.. -r ${HOME}/my_rel -b ${HOME}/my_build
     - name: test
-      run: cd /home/runner/work/percolator/my_build/percolator && sudo make install && make test ARGS="-V"
+      run: cd ${HOME}/my_build/percolator && sudo make install && make test ARGS="-V"
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
         name: osx-packages
-        path: ${HOME}/work/percolator/my_rel
+        path: ${HOME}/my_rel
 
 
   build-windows:
