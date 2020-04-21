@@ -20,6 +20,12 @@ jobs:
       run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r ~/my_rel -b ~/my_build
     - name: test
       run: cd ~/my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: Upload packages
+      uses: actions/upload-artifact@v1
+      with:
+        name: ubuntu-packages
+        path: ~/my_rel
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -37,3 +43,8 @@ jobs:
         ECHO %base_dir%
         CALL percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
         EXIT /B
+    - name: Upload packages
+      uses: actions/upload-artifact@v1
+      with:
+        name: ubuntu-packages
+        path: %cd%\..\my_rel
