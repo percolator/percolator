@@ -45,5 +45,5 @@ jobs:
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
-        name: ubuntu-packages
-        path: %cd%\..\my_rel
+        name: windows-packages
+        path: ..\my_rel
