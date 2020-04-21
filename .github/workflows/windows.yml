@@ -18,9 +18,6 @@ jobs:
     - name: create_dirs
       run: cd .. || mkdir my_rel my_build
 
-#    - name: display env
-#      run: |
-#        ECHO %GITHUB_WORKSPACE%
 
     - name: configure_and_make
       run: |
