@@ -2,10 +2,9 @@ name: ubuntu
 
 on:
   push:
-    branches: [ nonexisting_branch_debug ]
-#    branches: [ master ]
-#  pull_request:
-#    branches: [ master ]
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build-ubuntu:
