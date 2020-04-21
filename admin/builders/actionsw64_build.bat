@@ -1,5 +1,4 @@
-:::: @echo off
-@echo on
+@echo off
 
 setlocal
 
@@ -154,7 +153,7 @@ set PATH=%PATH%;%ZLIB_DIR%
 SET _test=%VC_IncludePath%
 :: To delete everything after the string ';'
 :: first delete ';' and everything before it
-SET _endbit="%_test:*;"
+SET _endbit=%_test:*^;
 ::Now remove this from the original string
 CALL SET first_include_path=%%_test:%_endbit%=%%
 echo Installing header files in: %first_include_path%
@@ -185,7 +184,6 @@ cd /D "%BUILD_DIR%\percolator-noxml"
 echo cmake percolator-noxml.....
 cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
-dir
 msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -233,11 +231,11 @@ echo Copying installers to %RELEASE_DIR%
 xcopy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
 set exit_code=%ERRORLEVEL%
 xcopy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
-set exit_code=%exit_code%||%ERRORLEVEL%
+set exit_code=%exit_code% || %ERRORLEVEL%
 xcopy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
-set exit_code=%exit_code%||%ERRORLEVEL%
+set exit_code=%exit_code% || %ERRORLEVEL%
 xcopy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
-set exit_code=%exit_code%||%ERRORLEVEL%
+set exit_code=%exit_code% || %ERRORLEVEL%
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 
@@ -251,5 +249,6 @@ SET "%1=%~f2"
 EXIT /B
 
 :downloadfile
+echo Downloading "%1" to "%2"
 PowerShell "[Net.ServicePointManager]::SecurityProtocol = 'tls12, tls11, tls'; (new-object System.Net.WebClient).DownloadFile('%1','%2')"
 EXIT /B
