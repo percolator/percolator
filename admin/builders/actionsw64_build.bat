@@ -154,10 +154,10 @@ set PATH=%PATH%;%ZLIB_DIR%
 SET _test=%VC_IncludePath%
 :: To delete everything after the string ';'
 :: first delete ';' and everything before it
-SET _endbit=%_test:*;
+SET _endbit="%_test:*;"
 ::Now remove this from the original string
 CALL SET first_include_path=%%_test:%_endbit%=%%
-echo %first_include_path%
+echo Installing header files in: %first_include_path%
 
 set DIRENT_H_PATH=%first_include_path%\dirent.h
 if not exist "%DIRENT_H_PATH%" (
@@ -230,13 +230,13 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 :::::::::::::::::::::::::::::::::::::::
 
 echo Copying installers to %RELEASE_DIR%
-copy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
+xcopy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
 set exit_code=%ERRORLEVEL%
-copy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
+xcopy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
 set exit_code=%exit_code%||%ERRORLEVEL%
-copy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
+xcopy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
 set exit_code=%exit_code%||%ERRORLEVEL%
-copy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
+xcopy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
 set exit_code=%exit_code%||%ERRORLEVEL%
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
