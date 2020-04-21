@@ -23,7 +23,6 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliar
 if %errorlevel% NEQ 0 (
   EXIT /B %errorlevel%
 )
-set VCTARGET=%VSINSTALLDIR%MSBuild\Microsoft\VC\v160\VCTargets\
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
@@ -158,7 +157,8 @@ SET _endbit=%_test:*^;
 CALL SET first_include_path=%%_test:%_endbit%=%%
 echo Installing header files in: %first_include_path%
 
-set DIRENT_H_PATH=%first_include_path%\dirent.h
+:: Copying this header file to source file directory. Dirty.
+set DIRENT_H_PATH=%SRC_DIR%\percolator\src\elude_tool\dirent.h
 if not exist "%DIRENT_H_PATH%" (
   echo Downloading and installing dirent.h
   call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
@@ -229,13 +229,13 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 echo Copying installers to %RELEASE_DIR%
 xcopy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
-set exit_code=%ERRORLEVEL%
+set /A exit_code=%ERRORLEVEL%
 xcopy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
-set exit_code=%exit_code% || %ERRORLEVEL%
+set /A exit_code=exit_code+%ERRORLEVEL%
 xcopy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
-set exit_code=%exit_code% || %ERRORLEVEL%
+set /A exit_code=exit_code+%ERRORLEVEL%
 xcopy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
-set exit_code=%exit_code% || %ERRORLEVEL%
+set /A exit_code=exit_code+%ERRORLEVEL%
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 

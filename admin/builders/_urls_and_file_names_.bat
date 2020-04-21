@@ -22,7 +22,7 @@ set PYTHON_URL=https://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 
 ::: Libxml
 set LIBXML_BASE=libxml2-2.7.8.win32
-set LIBXML_URL=http://xmlsoft.org/sources/win32/%LIB_XML_BASE%.zip
+set LIBXML_URL=http://xmlsoft.org/sources/win32/%LIBXML_BASE%.zip
 set ICONV_URL=https://sourceforge.net/projects/gettext/files/libiconv-win32/1.9.1/libiconv-1.9.1.bin.woe32.zip/download
 set GETTEXT_URL=https://ftp.gnu.org/gnu/gettext/gettext-runtime-0.13.1.bin.woe32.zip
 
