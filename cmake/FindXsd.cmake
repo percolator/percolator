@@ -9,7 +9,7 @@
 FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx
 PATHS
   $ENV{XSDDIR}
-  /usr/local/Cellar
+  /usr/local/opt
   /usr/local
   /usr
 PATH_SUFFIXES
@@ -24,7 +24,7 @@ FIND_PROGRAM(XSD_EXECUTABLE
     xsdcxx xsd
   PATHS
     $ENV{XSDDIR}/bin
-    /usr/local/Cellar/bin 
+    /usr/local/Cellar/bin
     /usr/local/bin
     /usr/bin
   NO_SYSTEM_ENVIRONMENT_PATH

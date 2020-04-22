@@ -123,9 +123,9 @@ cd ${build_dir}
 
 # XSD installation
 if [ ! -d ${mac_os_xsd} ]; then
-  if [ $package_manager == "sudo port" ]; then
-     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
-  fi
+#  if [ $package_manager == "sudo port" ]; then
+#     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
+#  fi
   curl -OL ${mac_os_xsd_url}
   tar -xjf ${mac_os_xsd}.tar.bz2
   sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
