@@ -6,9 +6,10 @@
 # XSD_EXECUTABLE, the exe file
 # XSD_FOUND, If false, don't try to use it.
 
-FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx 
+FIND_PATH(XSD_INCLUDE_DIR xsd/cxx/parser/elements.hxx
 PATHS
   $ENV{XSDDIR}
+  /usr/local/Cellar
   /usr/local
   /usr
 PATH_SUFFIXES
@@ -18,11 +19,12 @@ PATH_SUFFIXES
   NO_CMAKE_FIND_ROOT_PATH
 )
 
-FIND_PROGRAM(XSD_EXECUTABLE 
-  NAMES 
+FIND_PROGRAM(XSD_EXECUTABLE
+  NAMES
     xsdcxx xsd
   PATHS
     $ENV{XSDDIR}/bin
+    /usr/local/Cellar/bin 
     /usr/local/bin
     /usr/bin
   NO_SYSTEM_ENVIRONMENT_PATH
@@ -40,4 +42,4 @@ ENDIF(XSD_INCLUDE_DIR)
 MARK_AS_ADVANCED(
   XSD_INCLUDE_DIR
   XSD_EXECUTABLE
-) 
+)
