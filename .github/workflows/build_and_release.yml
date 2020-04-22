@@ -26,7 +26,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: ubuntu-packages
-        path: ${{RELEASE_PATH}}
+        path: $RELEASE_PATH
 
   build-osx:
     runs-on: macos-latest
@@ -46,7 +46,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: osx-packages
-        path: ${{RELEASE_PATH}}
+        path: $RELEASE_PATH
 
 
   build-windows:
