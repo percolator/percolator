@@ -133,7 +133,7 @@ double norm_square(const vector_double* A); /* returns squared length of A */
 int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
          const double epsilon, const struct vector_int* Subset,
          struct vector_double* Weights, struct vector_double* Outputs,
-	 double cpos, double cneg);
+         double cpos, double cneg);
 
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
@@ -141,6 +141,6 @@ int L2_SVM_MFN(const AlgIn& set, struct options* Options,
                struct vector_double* Weights,
                struct vector_double* Outputs, double cpos, double cneg);
 double line_search(double* w, double* w_bar, double lambda, double* o,
-			 double* o_bar, const double* Y, int d, int l,
-			  double cpos, double cneg);
+                         double* o_bar, const double* Y, int d, int l,
+                          double cpos, double cneg);
 #endif

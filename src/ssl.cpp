@@ -33,9 +33,9 @@ extern "C" {
   // dgemv - perform one of the matrix-vector operations, y  :=
   // alpha*A*x + beta*y or y := alpha*A'*x + beta*y
   extern int dgemv_(char *, int *, int *,
-		    double *, double *, int *,
-		    double *, int *,  double *,
-		    double *, int *);
+                    double *, double *, int *,
+                    double *, int *,  double *,
+                    double *, int *);
 }
 
 #define VERBOSE 1
@@ -57,8 +57,8 @@ AlgIn::~AlgIn() {
 }
 
 double cglsFun1(int active, int* J, const double* Y,
-		double* set2, int n, double* q, 
-		double* p, double cpos, double cneg){
+                double* set2, int n, double* q, 
+                double* p, double cpos, double cneg){
   double omega_q = 0.0;
   int inc = 1;
   int i = 0;
@@ -67,8 +67,8 @@ double cglsFun1(int active, int* J, const double* Y,
   double alpha = 1.0;
   double beta = 0.0;
   dgemv_(&trans, &n, &active,
-	 &alpha, set2, &n,
-	 p, &inc, &beta, q, &inc);
+         &alpha, set2, &n,
+         p, &inc, &beta, q, &inc);
 
   for (i = 0; i < active; i++) {
     omega_q += ((Y[J[i]]==1)? cpos : cneg) * (q[i]) * (q[i]);
@@ -78,9 +78,9 @@ double cglsFun1(int active, int* J, const double* Y,
 }
 
 void cglsFun2(int active, int* J, const double* Y,
-	      double* set2, int n0, int n, double* q, 
-	      double* o, double* z, double* r, 
-	      double cpos, double cneg){
+              double* set2, int n0, int n, double* q, 
+              double* o, double* z, double* r, 
+              double cpos, double cneg){
   int i;
   int inc = 1;
   int ind = 0;
@@ -160,7 +160,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     dscal_(&active, &gamma, q, &inc);
 
     cglsFun2(active, J, Y, set2,
-	     n0, n, q, o, z, r, cpos, cneg);
+             n0, n, q, o, z, r, cpos, cneg);
 
     omega_z = ddot_(&active, z, &inc, z, &inc);
     omega1 = ddot_(&n, r, &inc, r, &inc);
@@ -296,8 +296,8 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
         }
         continue;
       } else {
-	memcpy(w, w_bar, sizeof(double)*n);
-	memcpy(o, o_bar, sizeof(double)*m);
+        memcpy(w, w_bar, sizeof(double)*n);
+        memcpy(o, o_bar, sizeof(double)*m);
         delete[] ActiveSubset->vec;
         delete[] ActiveSubset;
         delete[] o_bar;
@@ -359,8 +359,8 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
 }
 
 double line_search(double* w, double* w_bar, double lambda, double* o,
-		   double* o_bar, const double* Y, int d, /* data dimensionality -- 'n' */
-		   int l, double cpos, double cneg){
+                   double* o_bar, const double* Y, int d, /* data dimensionality -- 'n' */
+                   int l, double cpos, double cneg){
   int inc = 1;
   int i = 0;
   double omegaL = 0.0;

@@ -45,7 +45,7 @@ class CrossValidation {
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0,
-	  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads,
+          int nestedXvalBins, bool trainBestPositive, unsigned int numThreads,
     bool skipNormalizeScores);
   
   ~CrossValidation();
@@ -109,12 +109,12 @@ class CrossValidation {
   std::vector<double> candidatesCpos_, candidatesCfrac_;
 
   void trainCpCnPair(candidateCposCfrac& cpCnFold,
-		     options * pOptions, AlgIn* svmInput);
+                     options * pOptions, AlgIn* svmInput);
 
   int mergeCpCnPairs(double selectionFdr,
-		     options * pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec,
-		     const vector<double>& cpos_vec, 
-		     const vector<double>& cfrac_vec);
+                     options * pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec,
+                     const vector<double>& cpos_vec, 
+                     const vector<double>& cfrac_vec);
   int doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr);
   
   void printSetWeights(ostream & weightStream, unsigned int set);
