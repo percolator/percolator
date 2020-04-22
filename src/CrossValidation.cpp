@@ -420,7 +420,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
   //       scoring calculation in calcScores.
   unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
-  // #pragma omp parallel for schedule(dynamic, 1) ordered
+#pragma omp parallel for schedule(dynamic, 1) ordered
   for (set = 0; set < numFolds_; ++set) {
     unsigned int a = set * numCpCnPairsPerSet;
     unsigned int b = (set+1) * numCpCnPairsPerSet;
@@ -471,7 +471,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   }
   
   if (nestedXvalBins_ > 1) {
-    #pragma omp parallel for schedule(dynamic, 1) ordered
+#pragma omp parallel for schedule(dynamic, 1) ordered
     for (set = 0; set < numFolds_; ++set) {
 #ifdef DEBUG
       cout << "set=" << set << ", best tp=" << bestTruePoses[set] << ", best cpos=" << bestCposes[set] << ", best cfrac=" << bestCfracs[set] << std::endl;
@@ -481,7 +481,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
       pWeights->d = FeatureNames::getNumFeatures() + 1;
       pWeights->vec = new double[pWeights->d];
 
-      AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
+      AlgIn* svmInput = svmInputs_[set * nestedXvalBins_];
       trainScores_[set].generateNegativeTrainingSet(*svmInput, 1.0);
       trainScores_[set].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     
