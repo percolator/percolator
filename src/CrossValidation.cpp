@@ -17,7 +17,6 @@
 
 #include "CrossValidation.h"
 
-// #define DEBUG
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
 #ifdef _OPENMP
@@ -42,7 +41,6 @@ CrossValidation::CrossValidation(bool quickValidation,
     numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {}
 
 CrossValidation::~CrossValidation() { 
-  // for (unsigned int set = 0; set < numAlgInObjects_; ++set) {
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
     if (svmInputs_[set]) {
       delete svmInputs_[set];
@@ -65,12 +63,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   // initialize weights vector for all folds
   w_ = vector<vector<double> >(numFolds_, 
            vector<double> (FeatureNames::getNumFeatures() + 1));
-  
-  // // One input set, to be reused multiple times
-  // for (unsigned int set = 0; set < numAlgInObjects_; ++set) {
-  //   svmInputs_.push_back(new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1));
-  //   assert( svmInputs_.back() );
-  // }
+
   // One input set, to be reused multiple times
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
     svmInputs_.push_back(new AlgIn(fullset.size(), FeatureNames::getNumFeatures() + 1));
@@ -149,11 +142,6 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
       }
     }
   }
-
-  // cout << "Num (set,nestedFold, cp,cfrac) = " << classWeightsPerFold_.size() << "\n";
-  // for (int trip = 0; trip < classWeightsPerFold_.size(); trip++){
-  //   cout << classWeightsPerFold_[trip].set << ", " << classWeightsPerFold_[trip].nestedSet << classWeightsPerFold_[trip].cpos << ", " << classWeightsPerFold_[trip].cfrac  << ", " << "\n";
-  // }
   
   if (DataSet::getCalcDoc()) {
     for (int set = 0; set < numFolds_; ++set) {
@@ -324,7 +312,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
      // Set SVM input data for L2-SVM-MFN
      for (int nestedFold = 0; nestedFold < nestedXvalBins_; ++nestedFold)
        {
-	 // AlgIn* svmInput = svmInputs_[set % numAlgInObjects_];
 	 AlgIn* svmInput = svmInputs_[set * nestedXvalBins_ + nestedFold];
 	 if ((VERB > 2) && (nestedFold==0)){
 	   cerr << "Split " << set + 1 << ": Training with " 
@@ -431,14 +418,6 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
       tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
       intermediateResults[std::make_pair(itCpCnPair->cpos, itCpCnPair->cfrac)] += tp;
       itCpCnPair->tp = tp;
-#ifdef DEBUG
-      cout << "set=" << set << ", local set=" << itCpCnPair->set << ", nested set=" << itCpCnPair->nestedSet << ", tp=" << tp << ", cpos=" << itCpCnPair->cpos << ", cfrac=" << itCpCnPair->cfrac << std::endl;
-      cout << "weights=";
-      for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-	cout << itCpCnPair->ww[i] << " ";
-      }
-      cout << std::endl;
-#endif
       if (nestedXvalBins_ <= 1) {
 	if(tp >= bestTruePoses[set]){
 	  bestTruePoses[set] = tp;
@@ -457,9 +436,6 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
 	for ( ; itCfrac != cfracCandidates.end(); ++itCfrac) {
 	  double cfrac = *itCfrac;
 	  tp = intermediateResults[std::make_pair(cpos, cfrac)];
-#ifdef DEBUG
-	  cout << "set=" << set << ", tp=" << tp << ", cpos=" << cpos << ", cfrac=" << cfrac << std::endl;
-#endif
 	  if(tp >= bestTruePoses[set]){
 	    bestTruePoses[set] = tp;
 	    bestCposes[set] = cpos;
@@ -473,10 +449,6 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   if (nestedXvalBins_ > 1) {
 #pragma omp parallel for schedule(dynamic, 1) ordered
     for (set = 0; set < numFolds_; ++set) {
-#ifdef DEBUG
-      cout << "set=" << set << ", best tp=" << bestTruePoses[set] << ", best cpos=" << bestCposes[set] << ", best cfrac=" << bestCfracs[set] << std::endl;
-#endif
-
       struct vector_double* pWeights = new vector_double;
       pWeights->d = FeatureNames::getNumFeatures() + 1;
       pWeights->vec = new double[pWeights->d];
