@@ -52,14 +52,14 @@ elif [[ -f ${HOME}/bin/brew ]]
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib xerces-c xsd"
 elif [[ -f /usr/local/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib xerces-c xsd"
 
 else
     package_manager_installed=false
@@ -122,7 +122,7 @@ fi
 cd ${build_dir}
 
 # XSD installation
-if [ ! -d ${mac_os_xsd} ]; then
+if [ ! -d ${mac_os_xsd} ] && [ $package_manager == "sudo port" ]; then
   curl -OL ${mac_os_xsd_url}
   tar -xjf ${mac_os_xsd}.tar.bz2
   sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
