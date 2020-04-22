@@ -74,7 +74,7 @@ if [[ $(lsb_release -a) == *"16.04"* ]] || [[ $(lsb_release -a) == *"18.04"* ]];
     echo "Installing XercesC"
     # download, compile and link xerces
     wget --quiet ${ubuntu_xerces_url}
-    tar xzf ${ubuntu_xerces}.tar.gz 
+    tar xzf ${ubuntu_xerces}.tar.gz
     cd ${ubuntu_xerces}/
     ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu > ../xercesc_config.log 2>&1
     make -j 4 > ../xercesc_make.log 2>&1
@@ -135,6 +135,6 @@ make -j 4;
 make -j 4 package;
 
 ###########################
-cp $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};
+cp -v $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};
 echo "Finished buildscript execution";
 echo "in build directory ${build_dir}";

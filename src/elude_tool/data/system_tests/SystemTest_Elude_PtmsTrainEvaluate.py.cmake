@@ -61,7 +61,7 @@ def TrainTestSameAlphabet():
   
   print("...TEST SUCCEEDED")
 
-# context format, test includes rt 
+# context format, test includes rt which tests the in-source fragmentation functionality
 # the alphabet of the train includes the alphabet of the test
 # save and check the index 
 def TrainTestDifferentAlphabet():
@@ -92,9 +92,9 @@ def TrainTestDifferentAlphabet():
   
   # check content of the output file 
   if not utility.checkOutputFile("EludePtmsTrainEvaluateTest::TrainTestDifferentAlphabet",
-      out_file, 1410, [860, 1390, 1409], ["K.TVDAPILAAIK.K", 
+      out_file, 1410, [961, 1326, 1409], ["K.TVDAPILAAIK.K", 
       "K.HYGAGWLSMANAGADTNGSQFFITTVK.T", "R.IPQLQDVS[unimod:21]DFLKLLLLLLLLLLK.D"],
-      [62.16, 118.92, 236.57], [58.51, 84.53, 83.68]):
+      [65.46, 105.63, 219.67], [58.51, 84.53, 83.68]):
     utility.cleanUp([out_file, log_file, index_file])
     exit(1)
 

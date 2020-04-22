@@ -48,8 +48,10 @@ class Utilities {
 public:
  static bool ComparePairs(const pair<pair<PSMDescription*, string>, bool> &psm1,
                   const pair<pair<PSMDescription*, string>, bool> &psm2) {
-  return psm1.first.first->getRetentionTime() < psm2.first.first->getRetentionTime();
-}
+   return (psm1.first.first->getRetentionTime() < psm2.first.first->getRetentionTime()) || 
+          (psm1.first.first->getRetentionTime() == psm2.first.first->getRetentionTime() && 
+             psm1.first.first->getFullPeptideSequence() < psm2.first.first->getFullPeptideSequence());
+ }
  static bool IsInSource(const pair<pair<PSMDescription*, string>, bool> &psm) {
    return psm.second;
  }

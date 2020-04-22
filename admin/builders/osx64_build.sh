@@ -24,21 +24,21 @@ if [[ ! -d /Applications/XCode.app ]]
     exit 1
 fi
 
-if [[ ! -d /Applications/PackageMaker.app ]]
-  then
-    echo "Apple developer PackageManager is required and expected in the "
-    echo "/Applications folder. If you have moved it elsewhere, please change this script"
-    echo ""
-    echo "It is part of the Auxiliary tools for XCode - Late July 2012"
-    echo "Yes, 2012! since then Apple moved to the app store and requires"
-    echo "packages and dmgs to be build differently. "
-    echo "However, the old packagemaker still works with 10.11"
-    echo
-    echo "You can find it here: "
-    echo "http://adcdownload.apple.com/Developer_Tools/auxiliary_tools_for_xcode__late_july_2012/xcode44auxtools6938114a.dmg"
-    echo ""
-    exit 1
-fi
+#if [[ ! -d /Applications/PackageMaker.app ]]
+#  then
+#    echo "Apple developer PackageManager is required and expected in the "
+#    echo "/Applications folder. If you have moved it elsewhere, please change this script"
+#    echo ""
+#    echo "It is part of the Auxiliary tools for XCode - Late July 2012"
+#    echo "Yes, 2012! since then Apple moved to the app store and requires"
+#    echo "packages and dmgs to be build differently. "
+#    echo "However, the old packagemaker still works with 10.11"
+#    echo
+#    echo "You can find it here: "
+#    echo "http://adcdownload.apple.com/Developer_Tools/auxiliary_tools_for_xcode__late_july_2012/xcode44auxtools6938114a.dmg"
+#    echo ""
+#    exit 1
+#fi
 
 package_manager_installed=true
 if [[ -d /opt/local/var/macports ]]
@@ -52,14 +52,14 @@ elif [[ -f ${HOME}/bin/brew ]]
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib xerces-c xsd"
 elif [[ -f /usr/local/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib xerces-c xsd"
 
 else
     package_manager_installed=false
@@ -97,13 +97,14 @@ fi
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for user" `whoami`
 $package_manager install $other_packages
+if [ $package_manager == "brew" ]; then
+  $package_manager link --overwrite xsd
+fi
 $package_manager install $boost_install_options
-
 cd ${src_dir}
 
 # read all urls and file names from a centralized kb file
-source percolator/admin/builders/_urls_and_file_names_.sh
-
+source ./percolator/admin/builders/_urls_and_file_names_.sh
 mkdir -p ${build_dir}
 cd ${build_dir}
 
@@ -123,7 +124,10 @@ fi
 cd ${build_dir}
 
 # XSD installation
-if [ ! -d ${mac_os_xsd} ]; then
+if [ ! -d ${mac_os_xsd} ] && [ $package_manager == "sudo port" ]; then
+#  if [ $package_manager == "sudo port" ]; then
+#     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
+#  fi
   curl -OL ${mac_os_xsd_url}
   tar -xjf ${mac_os_xsd}.tar.bz2
   sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
@@ -150,7 +154,7 @@ cd ${build_dir}/percolator-noxml
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
-cp -v per*.dmg ${release_dir}
+cp -v per*.pkg ${release_dir}
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
@@ -158,7 +162,7 @@ cd ${build_dir}/percolator
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
-cp -v per*.dmg ${release_dir}
+cp -v per*.pkg ${release_dir}
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
@@ -166,7 +170,7 @@ cd ${build_dir}/converters
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 2
 make -j 2 package
-cp -v per*.dmg ${release_dir}
+cp -v per*.pkg ${release_dir}
 
 mkdir -p ${build_dir}/elude
 cd ${build_dir}/elude
@@ -174,7 +178,7 @@ cd ${build_dir}/elude
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" ${src_dir}/percolator/src/elude_tool
 make -j 2
 make -j 2 package
-cp -v elude*.dmg ${release_dir}
+cp -v elude*.pkg ${release_dir}
 #--------------------------------------------
 
 echo "build directory was : ${build_dir}";

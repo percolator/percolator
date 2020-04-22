@@ -22,13 +22,15 @@ set PYTHON_URL=https://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
 
 ::: Libxml
 set LIBXML_BASE=libxml2-2.7.8.win32
-set LIBXML_URL=http://xmlsoft.org/sources/win32/%LIB_XML_BASE%.zip
+set LIBXML_URL=http://xmlsoft.org/sources/win32/%LIBXML_BASE%.zip
 set ICONV_URL=https://sourceforge.net/projects/gettext/files/libiconv-win32/1.9.1/libiconv-1.9.1.bin.woe32.zip/download
 set GETTEXT_URL=https://ftp.gnu.org/gnu/gettext/gettext-runtime-0.13.1.bin.woe32.zip
 
 ::: XercesC
 set XERCES_BASE=xerces-c-3.1.1-x86-windows-vc-10.0
 set XERCES_URL=https://archive.apache.org/dist/xerces/c/3/binaries/%XERCES_BASE%.zip
+set XERCES_64_BASE=xerces-c-3.1.1-x86_64-windows-vc-10.0
+set XERCES_64_URL=https://archive.apache.org/dist/xerces/c/3/binaries/%XERCES_64_BASE%.zip
 
 ::: XSD
 set XSD_BASE=xsd-3.3.0-i686-windows

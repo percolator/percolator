@@ -18,7 +18,8 @@ GOTO parse
 
 cd /D "%SRC_DIR%"
 
-call percolator\admin\builders\_init_msvc_.bat 64bit
+:: Set the right paths and directories
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
 if %errorlevel% NEQ 0 (
   EXIT /B %errorlevel%
 )
@@ -26,8 +27,8 @@ if %errorlevel% NEQ 0 (
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
 call percolator\admin\builders\_urls_and_file_names_.bat
+
 
 set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
@@ -40,12 +41,12 @@ if not exist "%INSTALL_DIR%\7zip" (
 )
 set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 
-if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
-  echo Downloading and installing CMake
-  call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
-)
-set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
+:: if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
+::   echo Downloading and installing CMake
+::   call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
+::   %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
+:: )
+:: set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
 
 :: The windows binary release takes up 3GB, therefore we build only the libraries we need from source.
 set BOOST_ROOT=%INSTALL_DIR%\%BOOST_BASE%
@@ -147,7 +148,9 @@ set ZLIB_DIR=%ZLIB_DIR%\lib;%ZLIB_DIR%\include;%ZLIB_DIR%\bin
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
-set DIRENT_H_PATH=%PROGRAM_FILES_DIR%\Microsoft Visual Studio %MSVC_VER%.0\VC\include\dirent.h
+
+:: Copying this header file to source file directory. Dirty.
+set DIRENT_H_PATH=%SRC_DIR%\percolator\src\dirent.h
 if not exist "%DIRENT_H_PATH%" (
   echo Downloading and installing dirent.h
   call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
@@ -171,9 +174,9 @@ if not exist "%BUILD_DIR%" (md "%BUILD_DIR%")
 if not exist "%BUILD_DIR%\percolator-noxml" (md "%BUILD_DIR%\percolator-noxml")
 cd /D "%BUILD_DIR%\percolator-noxml"
 echo cmake percolator-noxml.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
+cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DXML_SUPPORT=OFF "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -182,9 +185,10 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 cd /D "%BUILD_DIR%\percolator"
 echo cmake percolator.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
+::%CMAKE_EXE% -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
+cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -193,9 +197,9 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
 echo cmake converters.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
+cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -204,9 +208,9 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
 cd /D "%BUILD_DIR%\elude"
 echo cmake elude.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER% Win64" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
+cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
 echo build elude (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
+msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
@@ -216,16 +220,20 @@ msbuild PACKAGE.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TY
 :::::::::::::::::::::::::::::::::::::::
 
 echo Copying installers to %RELEASE_DIR%
-copy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
-copy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
-copy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
-copy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
+xcopy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
+set /A exit_code=%ERRORLEVEL%
+xcopy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
+set /A exit_code=exit_code+%ERRORLEVEL%
+xcopy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
+set /A exit_code=exit_code+%ERRORLEVEL%
+xcopy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
+set /A exit_code=exit_code+%ERRORLEVEL%
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 
 cd "%SRC_DIR%\percolator\admin\builders"
 
-EXIT /B %errorlevel%
+EXIT /B %exit_code%
 
 ::: subroutines
 :getabspath
@@ -233,5 +241,6 @@ SET "%1=%~f2"
 EXIT /B
 
 :downloadfile
+echo Downloading "%1" to "%2"
 PowerShell "[Net.ServicePointManager]::SecurityProtocol = 'tls12, tls11, tls'; (new-object System.Net.WebClient).DownloadFile('%1','%2')"
 EXIT /B
