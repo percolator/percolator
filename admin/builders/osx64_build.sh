@@ -97,8 +97,10 @@ fi
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for user" `whoami`
 $package_manager install $other_packages
+if [ $package_manager == "brew" ]; then
+  $package_manager link --overwrite xsd
+fi
 $package_manager install $boost_install_options
-
 cd ${src_dir}
 
 # read all urls and file names from a centralized kb file
