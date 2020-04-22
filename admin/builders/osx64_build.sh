@@ -122,7 +122,7 @@ fi
 cd ${build_dir}
 
 # XSD installation
-if [ ! -d ${mac_os_xsd} ]; then
+if [ ! -d ${mac_os_xsd} ] && [ $package_manager == "sudo port" ]; then
 #  if [ $package_manager == "sudo port" ]; then
 #     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
 #  fi

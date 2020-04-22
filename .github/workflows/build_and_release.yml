@@ -36,10 +36,6 @@ jobs:
 # Skip tests for now
 #    - name: test
 #      run: cd ${HOME}/my_build/percolator && sudo make install && make test ARGS="-V"
-    - name: Debug printout
-      run: ls -R /usr/local/Cellar/xsd*
-    - name: Debug printout 2
-      run: ls -R /usr/local/include/xsd*
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
