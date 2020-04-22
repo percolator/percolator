@@ -9,30 +9,36 @@ on:
 jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
+    env:
+      BUILD_PATH: ${HOME}/my_build
+      RELEASE_PATH: ${HOME}/my_rel
     steps:
     - uses: actions/checkout@v2
     - name: preinstall
       run: sudo apt-get install libxml2-utils
     - name: create_dirs
-      run: mkdir -p ${HOME}/my_rel ${HOME}/my_build
+      run: mkdir -p ${BUILD_PATH} ${RELEASE_PATH}
     - name: configure_and_make
-      run: admin/builders/ubuntu64_build.sh -s ${GITHUB_WORKSPACE}/.. -r ${HOME}/my_rel -b ${HOME}/my_build
+      run: admin/builders/ubuntu64_build.sh -s ${GITHUB_WORKSPACE}/.. -r ${RELEASE_PATH} -b ${BUILD_PATH}
     - name: test
-      run: cd ${HOME}/my_build/percolator && sudo make install && make test ARGS="-V"
+      run: cd ${BUILD_PATH}/percolator && sudo make install && make test ARGS="-V"
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
         name: ubuntu-packages
-        path: /home/runner/work/percolator/my_rel
+        path: ${{RELEASE_PATH}}
 
   build-osx:
     runs-on: macos-latest
+    env:
+      BUILD_PATH: ${HOME}/my_build
+      RELEASE_PATH: ${HOME}/my_rel
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
-      run: mkdir -p ${HOME}/my_rel ${HOME}/my_build
+      run: mkdir -p ${BUILD_PATH} ${RELEASE_PATH}
     - name: configure_and_make
-      run: admin/builders/osx64_build.sh -s ${GITHUB_WORKSPACE}/.. -r ${HOME}/my_rel -b ${HOME}/my_build
+      run: admin/builders/osx64_build.sh -s ${GITHUB_WORKSPACE}/.. -r ${RELEASE_PATH} -b ${BUILD_PATH}
 # Skip tests for now
 #    - name: test
 #      run: cd ${HOME}/my_build/percolator && sudo make install && make test ARGS="-V"
@@ -40,7 +46,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: osx-packages
-        path: ${HOME}/my_rel
+        path: ${{RELEASE_PATH}}
 
 
   build-windows:
