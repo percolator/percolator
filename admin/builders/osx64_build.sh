@@ -133,8 +133,10 @@ if [ ! -d ${mac_os_xsd} ]; then
   mv tmp_file libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx
   make CPPFLAGS=-I../${mac_os_xerces}/src LDFLAGS=-L../${mac_os_xerces}/src/.libs
   ./xsd/xsd/xsd --version
+  # Move Binary, to the right include files
+  mv xsd/xsd/xsd xsd/libxsd/xsd/
   cd ..
-  export XSDDIR=${build_dir}/${mac_os_xsd}/xsd
+  export XSDDIR=${build_dir}/${mac_os_xsd}/xsd/libxsd
 else
   echo "XSD is already installed."
 fi
