@@ -52,14 +52,14 @@ elif [[ -f ${HOME}/bin/brew ]]
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib xerces-c xsd"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
 elif [[ -f /usr/local/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib xerces-c xsd"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib"
 
 else
     package_manager_installed=false
@@ -97,9 +97,6 @@ fi
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for user" `whoami`
 $package_manager install $other_packages
-if [ $package_manager == "brew" ]; then
-  $package_manager link --overwrite xsd
-fi
 $package_manager install $boost_install_options
 cd ${src_dir}
 
@@ -124,22 +121,20 @@ fi
 cd ${build_dir}
 
 # XSD installation
-if [ ! -d ${mac_os_xsd} ] && [ $package_manager == "sudo port" ]; then
+if [ ! -d ${mac_os_xsd} ]; then
 #  if [ $package_manager == "sudo port" ]; then
 #     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
 #  fi
   curl -OL ${mac_os_xsd_url}
   tar -xjf ${mac_os_xsd}.tar.bz2
-  sed -i -e 's/setg/this->setg/g' ${mac_os_xsd}/libxsd/xsd/cxx/zc-istream.txx
-  sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/parsing.txx
-  sed -i -e 's/ push_back/ this->push_back/g' ${mac_os_xsd}/libxsd/xsd/cxx/tree/stream-extraction.hxx
-
-  extr=${mac_os_xsd}/libxsd/xsd/cxx/tree/xdr-stream-extraction.hxx
-  inse=${mac_os_xsd}/libxsd/xsd/cxx/tree/xdr-stream-insertion.hxx
-  sed -i -e 's/ uint8_t/ unsigned char/g' ${extr} ${inse}
-  sed -i -e 's/ int8_t/ char/g' ${extr} ${inse}
-  sed -i -e 's/xdr_int8_t/xdr_char/g' ${extr} ${inse}
-  sed -i -e 's/xdr_uint8_t/xdr_u_char/g' ${extr} ${inse}
+  cd ${mac_os_xsd}
+  echo '#include <iostream>' > tmp_file
+  cat libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx >>  tmp_file
+  mv tmp_file libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx
+  make CPPFLAGS=-I../${mac_os_xerces}/src LDFLAGS=-L../${mac_os_xerces}/src/.libs
+  ./xsd/xsd/xsd --version
+  cd ..
+  export XSDDIR=${build_dir}/${mac_os_xsd}/xsd
 else
   echo "XSD is already installed."
 fi
