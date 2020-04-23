@@ -27,12 +27,15 @@
 #include "Normalizer.h"
 #include "Globals.h"
 
+#define PATH_TO_DATA string("")
+#define PATH_TO_WRITABLE string("")
+
 class RetentionModelTest : public ::testing::Test {
  protected:
    virtual void SetUp() {
-     train_file = string(PATH_TO_DATA) + "/standalone/train.txt";
-     train_file_ptms = string(PATH_TO_DATA) + "/standalone/train_2.txt";
-     test_file = string(PATH_TO_DATA) + "/standalone/test.txt";
+     train_file = PATH_TO_DATA + "elude/standalone/train.txt";
+     train_file_ptms = PATH_TO_DATA + "elude/standalone/train_2.txt";
+     test_file = PATH_TO_DATA + "elude/standalone/test.txt";
      DataManager::LoadPeptides(train_file, true, true, psms, aa_alphabet);
      DataManager::LoadPeptides(train_file_ptms, true, true, psms_ptms, aa_alphabet_ptms);
      DataManager::LoadPeptides(test_file, false, true, test_psms, aa_alphabet_test);
@@ -164,7 +167,7 @@ TEST_F(RetentionModelTest, PredictRTTestPtms) {
 }
 
 TEST_F(RetentionModelTest, SaveModelToFileTest) {
-  string tmp = string(PATH_TO_WRITABLE) + "tmp.txt";
+  string tmp = PATH_TO_WRITABLE + "tmp.txt";
   map<string, double> index = rtmodel->BuildRetentionIndex(aa_alphabet_ptms, false, psms_ptms);
   rtmodel->TrainRetentionModel(aa_alphabet_ptms, index, true, psms_ptms);
   rtmodel->SaveModelToFile(tmp);
@@ -214,7 +217,7 @@ TEST_F(RetentionModelTest, SaveModelToFileTest) {
 }
 
 TEST_F(RetentionModelTest, LoadModelFromFileTest) {
-  string tmp = string(PATH_TO_WRITABLE) + "tmp.txt";
+  string tmp = PATH_TO_WRITABLE + "tmp.txt";
   map<string, double> index = rtmodel->BuildRetentionIndex(aa_alphabet_ptms, false, psms_ptms);
   rtmodel->TrainRetentionModel(aa_alphabet_ptms, index, true, psms_ptms);
   rtmodel->SaveModelToFile(tmp);

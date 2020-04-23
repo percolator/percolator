@@ -2,7 +2,12 @@
  * SVMlin
  * Copyright (c) 2006 Vikas Sindhwani at the University of Chicago.
  * Adapted to Percolator by Lukas Käll at the University of Washington
- *
+ * Sped up by John Halloran at the University of California, Davis, as detailed in:
+ ******************************
+ * A Matter of Time: Faster Percolator Analysis via Efficient SVM Learning for 
+ * Large-Scale Proteomics
+ * John T. Halloran and David M. Rocke
+ * Journal of Proteome Research 2018 17 (5), 1978-1982
  *******************************************************************************/
 #ifndef _svmlin_H
 #define _svmlin_H
@@ -29,7 +34,7 @@ class AlgIn {
     int n; /* number of features */
     int positives;
     int negatives;
-    const double** vals;
+    double** vals;
     double* Y; /* labels */
     double* C; /* cost associated with each example */
     void setCost(double pos, double neg) {
@@ -127,15 +132,15 @@ double norm_square(const vector_double* A); /* returns squared length of A */
 /* over a subset of examples x_i specified by vector_int Subset */
 int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
          const double epsilon, const struct vector_int* Subset,
-         struct vector_double* Weights, struct vector_double* Outputs);
+         struct vector_double* Weights, struct vector_double* Outputs,
+         double cpos, double cneg);
 
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
 int L2_SVM_MFN(const AlgIn& set, struct options* Options,
                struct vector_double* Weights,
-               struct vector_double* Outputs);
+               struct vector_double* Outputs, double cpos, double cneg);
 double line_search(double* w, double* w_bar, double lambda, double* o,
-                   double* o_bar, const double* Y, const double* C, int d,
-                   int l);
-
+                         double* o_bar, const double* Y, int d, int l,
+                          double cpos, double cneg);
 #endif

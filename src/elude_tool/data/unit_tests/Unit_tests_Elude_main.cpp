@@ -23,10 +23,10 @@
  * Just run all tests
  */
 #include "UnitTest_Elude_RetentionFeatures.cpp"
+#include "UnitTest_Elude_EludeCaller.cpp" 
 #include "UnitTest_Elude_DataManager.cpp"
 #include "UnitTest_Elude_LibSVRModel.cpp"
 #include "UnitTest_Elude_RetentionModel.cpp"
-#include "UnitTest_Elude_EludeCaller.cpp"
 
 
 int main(int argc, char** argv) {

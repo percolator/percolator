@@ -23,11 +23,13 @@
 
 #include "LibSVRModel.h"
 
+#define PATH_TO_DATA string("")
+#define PATH_TO_WRITABLE string("")
 
 class LibSVRModelTest : public ::testing::Test {
  protected:
    virtual void SetUp() {
-     train_file = string(PATH_TO_DATA) + "/standalone/train.txt";
+     train_file = PATH_TO_DATA + "elude/standalone/train.txt";
      rf.set_svr_index(RetentionFeatures::k_kyte_doolittle());
      DataManager::LoadPeptides(train_file, true, true, psms, aa_alphabet);
      no_features = rf.GetTotalNumberFeatures();
