@@ -23,9 +23,10 @@ FIND_PROGRAM(XSD_EXECUTABLE
   NAMES
     xsdcxx xsd
   PATHS
+    $ENV{XSDDIR}/xsd
     $ENV{XSDDIR}/bin
-    /usr/local/Cellar/bin
     /usr/local/bin
+    /usr/local/
     /usr/bin
   NO_SYSTEM_ENVIRONMENT_PATH
 )
