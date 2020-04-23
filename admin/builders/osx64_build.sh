@@ -135,6 +135,7 @@ if [ ! -d ${mac_os_xsd} ]; then
   ./xsd/xsd/xsd --version
   # Move Binary, to the right include files
   mv xsd/xsd/xsd xsd/libxsd/xsd/
+  rm -fr xsd/xsd
   cd ..
   export XSDDIR=${build_dir}/${mac_os_xsd}/xsd/libxsd
 else
