@@ -34,8 +34,11 @@ if(XML_SUPPORT)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
   endif(XSD_FOUND)
   include_directories(${XSD_INCLUDE_DIR})
-
 endif(XML_SUPPORT)
+
+if (APPLE AND OPENMP_FOUND)
+  include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+else(APPLE AND OPENMP_FOUND)
 
 #########################################
 # COMPILE BLAS
