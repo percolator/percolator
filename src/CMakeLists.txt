@@ -36,9 +36,9 @@ if(XML_SUPPORT)
   include_directories(${XSD_INCLUDE_DIR})
 endif(XML_SUPPORT)
 
-if (APPLE AND OPENMP_FOUND)
+if(APPLE AND OPENMP_FOUND)
   include_directories(${OpenMP_CXX_INCLUDE_DIRS})
-else(APPLE AND OPENMP_FOUND)
+endif(APPLE AND OPENMP_FOUND)
 
 #########################################
 # COMPILE BLAS
