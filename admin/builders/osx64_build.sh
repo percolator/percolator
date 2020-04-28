@@ -152,7 +152,6 @@ cd ${build_dir}/percolator-noxml
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
-cp -v per*.pkg ${release_dir}
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
@@ -160,7 +159,6 @@ cd ${build_dir}/percolator
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
-cp -v per*.pkg ${release_dir}
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
@@ -168,7 +166,6 @@ cd ${build_dir}/converters
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 2
 make -j 2 package
-cp -v per*.pkg ${release_dir}
 
 mkdir -p ${build_dir}/elude
 cd ${build_dir}/elude
@@ -176,7 +173,8 @@ cd ${build_dir}/elude
 cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" ${src_dir}/percolator/src/elude_tool
 make -j 2
 make -j 2 package
-cp -v elude*.pkg ${release_dir}
 #--------------------------------------------
 
 echo "build directory was : ${build_dir}";
+
+cp -v ${build_dir}/{percolator-noxml,percolator,converters,elude}/*.pkg ${release_dir};

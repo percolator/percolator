@@ -937,7 +937,7 @@ int Caller::run() {
   // Reading input files (pin or temporary file)
   if (!success) {
     std::cerr << "ERROR: Failed to read in file, check if the correct " <<
-                 "file-format was used.";
+                 "file-format was used." << std::endl;
     return 0;
   }
 

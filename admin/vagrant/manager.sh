@@ -84,7 +84,7 @@ while getopts “hab:s:r:p:” OPTION; do
                     ;;
                 osx)
                     post="osx64"
-                    package_ext="dmg"
+                    package_ext="pkg"
                     vagbox_name="osx-sierra-0.3.1"
                     vagbox_url="https://vagrant-osx.nyc3.digitaloceanspaces.com/osx-sierra-0.3.1.box"
                     ;;

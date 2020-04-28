@@ -57,8 +57,7 @@ jobs:
         CD ..
         SET base_dir=%cd%
         ECHO %base_dir%
-        CALL percolator\admin\builders\actionsw64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
-        EXIT /B
+        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:

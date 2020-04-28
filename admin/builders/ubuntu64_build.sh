@@ -135,6 +135,8 @@ make -j 4;
 make -j 4 package;
 
 ###########################
-cp -v $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};
+
 echo "Finished buildscript execution";
 echo "in build directory ${build_dir}";
+
+cp -v $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};
