@@ -58,7 +58,6 @@ class TabReader {
     if (pch == NULL) {
       err = 1;
     } else {
-      err = errno;
       advance(pch);
     }
   }
@@ -69,11 +68,12 @@ class TabReader {
   
   double readDouble() {
     char* next = NULL;
+    errno = 0;
     double d = strtod(f_, &next);
     if (next == f_) {
       err = 1;
     } else {
-      err = errno;
+      err = errno ? errno : err;
     }
     advance(next);
     return d;
@@ -81,11 +81,12 @@ class TabReader {
   
   int readInt() {
     char* next = NULL;
+    errno=0;
     int i = strtol(f_, &next, 10);
     if (next == f_) {
       err = 1;
     } else {
-      err = errno;
+      err = errno ? errno : err;
     }
     advance(next);
     return i;
@@ -97,7 +98,6 @@ class TabReader {
       err = 1;
       return std::string(f_);
     } else {
-      err = errno;
       std::string s(f_, pch - f_);
       advance(pch);
       return s;
