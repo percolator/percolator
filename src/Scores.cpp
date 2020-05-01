@@ -359,7 +359,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
 
     unsigned long pep_token = 1u;
     for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) { pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx); }
-//    std::cout << "peptide=" << sh.pPSM->getPeptideSequence() <<"\tunmod_pep="<< unmod_pep <<"\tpep_token="<< pep_token << std::endl;
+    if (mod_cnt > 0) std::cout << "peptide=" << sh.pPSM->getPeptideSequence() <<"\tunmod_pep="<< unmod_pep <<"\tpep_token="<< pep_token << std::endl;
 
     size_t randIndex = pep_token % xval_fold;
     foldcnt[randIndex] += 1;
