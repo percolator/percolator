@@ -342,6 +342,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
       "value");
 
+
+  /// added by Yang
+  cmd.defineOption("TDMap",
+        "target-decoy-mapping",
+        "the filename to store the mapping between targets and decoys",
+        "filename");
+
+
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "num-threads",
@@ -677,6 +685,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0;
     }
   }
+
+  /// added by Yang
+  if (cmd.optionSet("target-decoy-mapping")) {
+	  targetDecoyMapURL = cmd.options["target-decoy-mapping"];
+	  std::cout << "-----------------------------------------------------------" << std::endl;
+	  std::cout << targetDecoyMapURL << std::endl;
+  }
+
 
   // If a static model is used, no nested CV is needed for Cpos and Cneg.
   // Also, their values don't matter.

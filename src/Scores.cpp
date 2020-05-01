@@ -29,6 +29,7 @@
 #include <cmath>
 #include <memory>
 
+
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
@@ -310,15 +311,23 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
   test.resize(xval_fold, Scores(usePi0_));
-  // remain keeps track of residual space available in each fold
-  std::vector<int> remain(xval_fold);
-  // set values for remain: initially each fold is assigned (tot number of
-  // scores_ / tot number of folds)
-  int fold = xval_fold, ix = scores_.size();
-  while (fold--) {
-    remain[fold] = ix / (fold + 1);
-    ix -= remain[fold];
-  }
+
+  /// commented by Yang
+//  // remain keeps track of residual space available in each fold
+//  std::vector<int> remain(xval_fold);
+//  // set values for remain: initially each fold is assigned (tot number of
+//  // scores_ / tot number of folds)
+//  int fold = xval_fold, ix = scores_.size();
+//  while (fold--) {
+//    remain[fold] = ix / (fold + 1);
+//    ix -= remain[fold];
+//  }
+//  size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
+//  unsigned int previousSpectrum = spectraScores.begin()->first;
+
+  ///added by Tabg
+  std::vector<int> foldcnt(xval_fold);
+
 
   // store possible spectra with relative scores_
   multimap<unsigned int,ScoreHolder> spectraScores;
@@ -331,8 +340,6 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // put scores into the folds; choose a fold (at random) and change it only
   // when scores from a new spectra are encountered
   // note: this works because multimap is an ordered container!
-  unsigned int previousSpectrum = spectraScores.begin()->first;
-  size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
   for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin(); 
         it != spectraScores.end(); ++it) {
     const unsigned int curScan = (*it).first;
@@ -340,13 +347,32 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
     
-    if (previousSpectrum != curScan) {
-      randIndex = PseudoRandom::lcg_rand() % xval_fold;
-      // allow only indexes of folds that are non-full
-      while (remain[randIndex] <= 0){
-        randIndex = PseudoRandom::lcg_rand() % xval_fold;
-      }
+    /// added by Yang
+    std::string unmod_pep = sh.pPSM->getPeptideSequence();
+    size_t mod_cnt = std::count(unmod_pep.begin(), unmod_pep.end(), '[');
+    for (int mod_idx=0; mod_idx<mod_cnt; ++mod_idx) {
+    	size_t mod_start = unmod_pep.find('[');
+    	size_t mod_end = unmod_pep.find(']', mod_start);
+    	unmod_pep.erase(mod_start,mod_end-mod_start+1);
     }
+    sort(unmod_pep.begin(), unmod_pep.end());
+
+    unsigned long pep_token = 1u;
+    for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) { pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx); }
+//    std::cout << "peptide=" << sh.pPSM->getPeptideSequence() <<"\tunmod_pep="<< unmod_pep <<"\tpep_token="<< pep_token << std::endl;
+
+    size_t randIndex = pep_token % xval_fold;
+    foldcnt[randIndex] += 1;
+
+    /// commented by Yang
+//    if (previousSpectrum != curScan) {
+//      randIndex = PseudoRandom::lcg_rand() % xval_fold;
+//      // allow only indexes of folds that are non-full
+//      while (remain[randIndex] <= 0){
+//        randIndex = PseudoRandom::lcg_rand() % xval_fold;
+//      }
+//    }
+
     // insert
     for (unsigned int i = 0; i < xval_fold; ++i) {
       if (i == randIndex) {
@@ -355,11 +381,17 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
         train[i].addScoreHolder(sh);
       }
     }
-    // update number of free position for used fold
-    --remain[randIndex];
-    // set previous spectrum to current one for next iteration
-    previousSpectrum = curScan;
+
+    /// commented by Yang
+//    // update number of free position for used fold
+//    --remain[randIndex];
+//    // set previous spectrum to current one for next iteration
+//    previousSpectrum = curScan;
+
   }
+
+  /// added by Yang
+  std::cout << "total=" << scores_.size() <<"\tfold1="<< foldcnt[0] <<"\tfold2="<< foldcnt[1] <<"\tfold3="<< foldcnt[2] << std::endl;
 
   // calculate ratios of target over decoy for train and test set
   for (unsigned int i = 0; i < xval_fold; ++i) {

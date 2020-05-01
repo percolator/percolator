@@ -107,6 +107,11 @@ class Caller {
   void calculateProteinProbabilities(Scores& allScores);
   void checkIsWritable(const std::string& filePath);
   
+  /// added by Yang
+  std::string targetDecoyMapURL;
+
+
+
 #ifdef CRUX
   virtual void processPsmScores(Scores& allScores) {}
   virtual void processPeptideScores(Scores& allScores) {}
