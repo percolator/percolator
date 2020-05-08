@@ -24,6 +24,7 @@
 #include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <boost/functional/hash.hpp>
 
 using namespace std;
 
@@ -933,13 +934,30 @@ void Caller::httpRequest(const std::string& url, const std::string& data) {
   ip::tcp::resolver::iterator endpoint = resolver.resolve(ip::tcp::resolver::query(host, "80"));
   ip::tcp::socket sock(service);
   connect(sock, endpoint);
-
-  // Determine method (GET if no data; otherwise POST)
-  std::string method = data.empty() ? "GET" : "POST";
-  std::ostringstream lengthString;
-  lengthString << data.length();
   
-  std::string contentLengthHeader = data.empty()
+  std::size_t seed = 0;
+  boost::hash_combine(seed, ip::host_name());
+  boost::hash_combine(seed, sock.local_endpoint().address().to_string());
+  std::stringstream stream;
+  stream << std::hex << seed;
+  
+  std::string placeholder = "CID_PLACEHOLDER";
+  std::string cid = stream.str();
+  
+  std::string newData(data);
+  
+  if (VERB > 3) {
+    std::cerr << "Analytics data string: " << newData << std::endl;
+  }
+  
+  newData.replace(newData.find(placeholder), placeholder.length(), cid);
+  
+  // Determine method (GET if no data; otherwise POST)
+  std::string method = newData.empty() ? "GET" : "POST";
+  std::ostringstream lengthString;
+  lengthString << newData.length();
+  
+  std::string contentLengthHeader = newData.empty()
     ? ""
     : "Content-Length: " + lengthString.str() + "\r\n";
   // Send the HTTP request
@@ -948,7 +966,7 @@ void Caller::httpRequest(const std::string& url, const std::string& data) {
     "Host: " + host + "\r\n" +
     contentLengthHeader +
     "Connection: close\r\n"
-    "\r\n" + data;
+    "\r\n" + newData;
   sock.send(buffer(request));
 }
 
@@ -959,10 +977,7 @@ void Caller::postToAnalytics(const std::string& appName) {
     std::stringstream paramBuilder;
     paramBuilder << "v=1"                // Protocol verison
                  << "&tid=UA-165948942-1" // Tracking ID
-                 // TODO Generate UUID for cid
-                 // The Client ID (cid) anonymously identifies a particular user
-                 // or device and should be a random UUID
-                 << "&cid=35009a79-1a05-49d7-b876-2b884d0f825b"
+                 << "&cid=CID_PLACEHOLDER" // Unique device ID
                  << "&t=event"           // Hit type
                  << "&ec=percolator"     // Event category
                  << "&ea=" << appName    // Event action
@@ -995,7 +1010,7 @@ int Caller::run() {
   time(&startTime);
   clock_t startClock = clock();
   if (VERB > 0) {
-    cerr << extendedGreeter(startTime);
+    std::cerr << extendedGreeter(startTime);
   }
   
   std::string appName = "percolator";
