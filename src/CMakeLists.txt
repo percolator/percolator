@@ -40,6 +40,12 @@ if(APPLE AND OPENMP_FOUND)
   include_directories(${OpenMP_CXX_INCLUDE_DIRS})
 endif(APPLE AND OPENMP_FOUND)
 
+# Boost header libraries only for async io header library (asio.hpp)
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
+add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED)
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+include_directories(${Boost_INCLUDE_DIRS})
+
 #########################################
 # COMPILE BLAS
 #########################################

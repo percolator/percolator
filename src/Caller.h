@@ -45,6 +45,8 @@
 #include "CrossValidation.h"
 #include "Enzyme.h"
 
+#include <boost/asio.hpp>
+
 /*
 * Main class that starts and controls the calculations.
 *
@@ -101,6 +103,11 @@ class Caller {
   
   // reporting parameters
   std::string call_;
+  
+  // google analytics
+  bool parseUrl(std::string url, std::string* host, std::string* path);
+  void httpRequest(const std::string& url, const std::string& data);
+  void postToAnalytics(const std::string& appName);
   
   void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
       time_t& procStart, clock_t& procStartClock, double& diff);
