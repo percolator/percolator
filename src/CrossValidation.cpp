@@ -70,43 +70,37 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
     assert( svmInputs_.back() );
   }
   
-  int numPositive = 0;
-  if (selectedCpos_ >= 0 && selectedCneg_ >= 0) {
-    trainScores_.resize(numFolds_, Scores(usePi0_));
-    testScores_.resize(numFolds_, Scores(usePi0_));
-    
-    fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool);
-    
-    if (selectionFdr_ <= 0.0) {
-      selectionFdr_ = testFdr_;
-    }
-    if (selectedCpos_ > 0) {
-      candidatesCpos_.push_back(selectedCpos_);
-    } else {
-      candidatesCpos_.push_back(10);
-      candidatesCpos_.push_back(1);
-      candidatesCpos_.push_back(0.1);
-      if (VERB > 0) {
-        cerr << "Selecting Cpos by cross-validation." << endl;
-      }
-    }
-    if (selectedCpos_ > 0 && selectedCneg_ > 0) {
-      candidatesCfrac_.push_back(selectedCneg_ / selectedCpos_);
-    } else {
-      candidatesCfrac_.push_back(1.0 * fullset.getTargetDecoySizeRatio());
-      candidatesCfrac_.push_back(3.0 * fullset.getTargetDecoySizeRatio());
-      candidatesCfrac_.push_back(10.0 * fullset.getTargetDecoySizeRatio());
-      if (VERB > 0) {
-        cerr << "Selecting Cneg by cross-validation." << endl;
-      }
-    }
-    numPositive = pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
-                                           testFdr_, initialSelectionFdr_);
-  } else {
-    vector<Scores> myset(1, fullset);
-    numPositive = pCheck->getInitDirection(myset, myset, pNorm, w_, testFdr_, initialSelectionFdr_);
+  trainScores_.resize(numFolds_, Scores(usePi0_));
+  testScores_.resize(numFolds_, Scores(usePi0_));
+  
+  fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool);
+  
+  if (selectionFdr_ <= 0.0) {
+    selectionFdr_ = testFdr_;
   }
-
+  if (selectedCpos_ > 0) {
+    candidatesCpos_.push_back(selectedCpos_);
+  } else {
+    candidatesCpos_.push_back(10);
+    candidatesCpos_.push_back(1);
+    candidatesCpos_.push_back(0.1);
+    if (VERB > 0) {
+      cerr << "Selecting Cpos by cross-validation." << endl;
+    }
+  }
+  if (selectedCpos_ > 0 && selectedCneg_ > 0) {
+    candidatesCfrac_.push_back(selectedCneg_ / selectedCpos_);
+  } else {
+    candidatesCfrac_.push_back(1.0 * fullset.getTargetDecoySizeRatio());
+    candidatesCfrac_.push_back(3.0 * fullset.getTargetDecoySizeRatio());
+    candidatesCfrac_.push_back(10.0 * fullset.getTargetDecoySizeRatio());
+    if (VERB > 0) {
+      cerr << "Selecting Cneg by cross-validation." << endl;
+    }
+  }
+  int numPositive = pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
+                                         testFdr_, initialSelectionFdr_);
+  
   // Form cpos, cneg pairs per nested CV fold
   candidateCposCfrac cpCnFold;
   for (int set = 0; set < numFolds_; ++set) {
@@ -201,7 +195,7 @@ void CrossValidation::train(Normalizer* pNorm) {
         foundTestPositives += testScores_[set].calcScores(w_[set], testFdr_);
       }
       if (VERB > 1) {
-        cerr << "Found " << foundTestPositives << " test set PSMs with q<" 
+        std::cerr << "Found " << foundTestPositives << " test set PSMs with q<" 
              << testFdr_ << endl;
       }
     } else if (VERB > 1) {
@@ -262,10 +256,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   pOptions->cgitermax = CGITERMAX;
   pOptions->mfnitermax = MFNITERMAX;
   int estTruePos = 0;
-
-#ifdef _OPENMP
-  omp_set_num_threads(std::min((unsigned int)omp_get_max_threads(), numThreads_));
-#endif
   
   // for determining an appropriate positive training set, the decoys+1 in the 
   // FDR estimates is too restrictive for small datasets

@@ -26,6 +26,10 @@
 #include <sys/stat.h>
 #include <boost/functional/hash.hpp>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 using namespace std;
 
 Caller::Caller() :
@@ -1015,6 +1019,10 @@ int Caller::run() {
   
   std::string appName = "percolator";
   postToAnalytics(appName);
+
+#ifdef _OPENMP
+  omp_set_num_threads(std::min((unsigned int)omp_get_max_threads(), numThreads_));
+#endif
 
   int success = 0;
   std::ifstream fileStream;

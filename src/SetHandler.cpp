@@ -290,6 +290,9 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     unsigned int targetIdx = 0u, decoyIdx = 0u;
     std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
     do {
+      if (lineNr % 1000000 == 0 && VERB > 1) {
+        std::cerr << "Reading line " << lineNr << std::endl;
+      }
       psmLine = rtrim(psmLine);
       int label = 0;
       ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
