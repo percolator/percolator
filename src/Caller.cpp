@@ -980,7 +980,7 @@ void Caller::postToAnalytics(const std::string& appName) {
   try {
     std::stringstream paramBuilder;
     paramBuilder << "v=1"                // Protocol verison
-                 << "&tid=UA-165948942-1" // Tracking ID
+                 << "&tid=UA-71657517-2" // Tracking ID
                  << "&cid=CID_PLACEHOLDER" // Unique device ID
                  << "&t=event"           // Hit type
                  << "&ec=percolator"     // Event category
