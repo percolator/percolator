@@ -55,8 +55,8 @@ void SetHandler::push_back_dataset( DataSet * ds ) {
   subsets_.push_back(ds);
 }
 
-void SetHandler::fillFeatures(vector<ScoreHolder> &scores, int label) {
-  subsets_[getSubsetIndexFromLabel(label)]->fillFeatures(scores);
+void SetHandler::populateScoresWithPSMs(vector<ScoreHolder> &scores, int label) {
+  subsets_[getSubsetIndexFromLabel(label)]->fillScores(scores);
 }
 
 void SetHandler::normalizeFeatures(Normalizer*& pNorm) {

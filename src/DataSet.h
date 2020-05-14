@@ -143,7 +143,7 @@ class DataSet {
   void print_10features();
   void print_features();
 
-  void fillFeatures(std::vector<ScoreHolder>& scores);
+  void fillScores(std::vector<ScoreHolder>& scores);
   void fillFeatures(std::vector<double*>& features);
   void fillDOCFeatures(std::vector<double*>& features);
   void fillRtFeatures(std::vector<double*>& rtFeatures);

@@ -1119,10 +1119,9 @@ int Caller::run() {
     }
   }
   assert(!(useMixMax_ && targetDecoyCompetition_));
-
-  // Copy feature data pointers to Scores object
+  
   Scores allScores(useMixMax_);
-  allScores.fillFeatures(setHandler);
+  allScores.populateWithPSMs(setHandler);
 
   if (VERB > 0 && useMixMax_ &&
         abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {

@@ -24,7 +24,7 @@
 
 class FeatureMemoryPool {
  private:
-   static const unsigned int kBlockSize = 65536; // in number of doubles
+   static const unsigned int kBlockSize = 65536; // in number of doubles, e.g. 0.5MB if sizeof(double) = 8
    unsigned int numRowsPerBlock_, numFeatures_, initializedRows_;
    std::vector<double*> memStarts_;
    std::vector<double*> freeRows_;
@@ -39,7 +39,7 @@ class FeatureMemoryPool {
   void createNewBlock();
   void destroyPool();
   
-  bool isInitialized() const { return isInitialized_; }
+  inline bool isInitialized() const { return isInitialized_; }
 
   double* addressFromIdx(unsigned int i) const;
 
