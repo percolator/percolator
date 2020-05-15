@@ -35,7 +35,7 @@
 #include "Normalizer.h"
 #include "FeatureMemoryPool.h"
 
-#include <boost/unordered_map.hpp>
+#include <boost/unordered/unordered_map.hpp>
 
 class Scores;
 
