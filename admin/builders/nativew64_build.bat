@@ -147,12 +147,12 @@ set ZLIB_DIR=%ZLIB_DIR%\lib;%ZLIB_DIR%\include;%ZLIB_DIR%\bin
 set PATH=%PATH%;%ZLIB_DIR%
 
 ::: needed for Elude :::
-set DIRENT_H_PATH=%MSVC_INSTALL_DIR%\VC\%AUXILIARY_PATH%\include\dirent.h
+set DIRENT_H_PATH=%VCToolsInstallDir%\include\dirent.h
 if not exist "%DIRENT_H_PATH%" (
   echo Downloading and installing dirent.h
   call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
-  %ZIP_EXE% x -aoa "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%\dirent" > NUL
-  copy "%INSTALL_DIR%\dirent\dirent-%DIRENT_H_VERSION%\include\dirent.h" "%DIRENT_H_PATH%" > NUL
+  %ZIP_EXE% x -aoa "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%" > NUL
+  copy "%INSTALL_DIR%\dirent-%DIRENT_H_VERSION%\include\dirent.h" "%DIRENT_H_PATH%" > NUL
 )
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -207,14 +207,11 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 :::::::::::::::::::::::::::::::::::::::
 
 echo Copying installers to %RELEASE_DIR%
-xcopy "%BUILD_DIR%\percolator-noxml\per*.exe" "%RELEASE_DIR%"
-set /A exit_code=%ERRORLEVEL%
-xcopy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
-set /A exit_code=exit_code+%ERRORLEVEL%
-xcopy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
-set /A exit_code=exit_code+%ERRORLEVEL%
-xcopy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
-set /A exit_code=exit_code+%ERRORLEVEL%
+set /A exit_code=0
+call :copytorelease "%BUILD_DIR%\percolator-noxml\per*.exe"
+call :copytorelease "%BUILD_DIR%\percolator\per*.exe"
+call :copytorelease "%BUILD_DIR%\converters\per*.exe"
+call :copytorelease "%BUILD_DIR%\elude\elude*.exe"
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 
@@ -230,4 +227,11 @@ EXIT /B
 :downloadfile
 echo Downloading "%1" to "%2"
 PowerShell "[Net.ServicePointManager]::SecurityProtocol = 'tls12, tls11, tls'; (new-object System.Net.WebClient).DownloadFile('%1','%2')"
+EXIT /B
+
+:copytorelease
+echo Copying "%1" to "%RELEASE_DIR%"
+xcopy %1 "%RELEASE_DIR%" /Y
+dir %1 /b /a-d >nul 2>&1
+set /A exit_code=exit_code+%ERRORLEVEL%
 EXIT /B

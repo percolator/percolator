@@ -44,6 +44,9 @@ endif(APPLE AND OPENMP_FOUND)
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED)
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+if(WIN32)
+  add_definitions(-DBOOST_ALL_NO_LIB) # disable autolinking in boost
+endif(WIN32)
 include_directories(${Boost_INCLUDE_DIRS})
 
 #########################################

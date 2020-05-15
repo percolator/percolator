@@ -58,6 +58,12 @@ if not defined DevEnvDir (
   )
 )
 
+if %MSVC_VER% LEQ 14 (
+  set "VCToolsInstallDir=%MSVC_INSTALL_DIR%\VC\"
+)
+
+echo VCToolsInstallDir = %VCToolsInstallDir%
+
 EXIT /B %ERRORLEVEL%
 
 :downloadfile
