@@ -45,6 +45,7 @@
 #include "CrossValidation.h"
 #include "Enzyme.h"
 
+#define  NO_BOOST_DATE_TIME_INLINE
 #include <boost/asio.hpp>
 #include <boost/functional/hash_fwd.hpp>
 
