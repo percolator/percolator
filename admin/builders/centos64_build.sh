@@ -32,12 +32,28 @@ whoami;
 
 sudo yum install -y gcc gcc-c++ wget rpm-build cmake
 sudo yum install -y sqlite-devel zlib-devel bzip2-devel
-sudo yum install -y tokyocabinet-devel xerces-c-devel boost-static boost-devel
+sudo yum install -y tokyocabinet-devel xerces-c-devel
 
 cd ${src_dir}
 
 # read all urls and file names from a centralized kb file
 source percolator/admin/builders/_urls_and_file_names_.sh
+
+cd ${build_dir}
+
+# download and install boost for CentOS < 8, since these install boost <= 1.56 which has problems with the header only library includes
+if [[ $(rpm -q --queryformat '%{VERSION}' centos-release) < 8 ]]; then
+  if [ ! -d ${centos_boost} ]; then
+    echo "  Installing boost"
+    wget --quiet -O ${centos_boost}.tar.bz2 ${centos_boost_url}
+    tar xjf ${centos_boost}.tar.bz2
+    cd ${centos_boost}/
+    ./bootstrap.sh
+    ./b2 address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
+  fi
+else
+  sudo yum install -y boost-static boost-devel
+fi
 
 # download and install xsd
 
@@ -55,25 +71,25 @@ echo "Installing percolator"
 
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF ${src_dir}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=OFF ${src_dir}/percolator
 make -j 4;
 make -j 4 package;
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=ON ${src_dir}/percolator
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=ON ${src_dir}/percolator
 make -j 4;
 make -j 4 package;
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 4;
 make -j 4 package;
 
 mkdir -p ${build_dir}/elude
 cd ${build_dir}/elude
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator/src/elude_tool
+cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" ${src_dir}/percolator/src/elude_tool
 make -j 4;
 make -j 4 package;
 

@@ -1,3 +1,11 @@
+v3.05
+* Fixed problem with Elude model reading on windows (#249)
+* Better error messages for converters (#251)
+* Fixed several build errors (#188, #250)
+* Parallel nested CV SVM training using a single OMP threadpool, Percolator can now handle up to 27 parallel threads to significantly speed up processing and uses parallel STL algorithms on linux (#254)
+* Fix TabReader error handling (#255)
+* Continuous integration with GitHub Actions with nightly releases for Windows, OSX and Ubuntu (https://github.com/percolator/percolator/actions)
+
 v3.04
 * Added full support for static models (#247)
 

@@ -1,4 +1,4 @@
-[![https://travis-ci.org/percolator/percolator.svg?branch=master](https://travis-ci.org/percolator/percolator.svg?branch=master)](https://travis-ci.org/percolator/percolator)
+[![https://github.com/percolator/percolator/actions?query=workflow%3A%22Build+and+release%22](https://github.com/percolator/percolator/workflows/Build%20and%20release/badge.svg)](https://github.com/percolator/percolator/actions?query=workflow%3A%22Build+and+release%22)
 
 This repository holds the source code for percolator and format
 converters software packages; a software for postprocessing of shotgun

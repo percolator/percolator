@@ -288,6 +288,13 @@ fi
 #---------------------------------------------------------------------------------------
 vagrant up
 
+if [[ $? -eq 0 ]]; then
+  echo "Building of binaries succeeded"
+else
+  echo "Building of binaries failed"
+  alive="1"
+fi
+
 #---------------------------------------------------------------------------------------
 # release:
 
@@ -296,12 +303,6 @@ echo "Copying ready made packages from ${tmp_dir} to ${release}"
 mkdir -p ${release};
 for package_prefix in ${package_prefixes[@]}; do
   cp -v ${tmp_dir}/${package_prefix}*.${package_ext} ${release};
-  if [[ $? -eq 0 ]]; then
-    echo "Building of ${package_prefix} binaries succeeded"
-  else
-    echo "Building of ${package_prefix} binaries failed"
-    alive="1"
-  fi
 done
 
 #---------------------------------------------------------------------------------------
