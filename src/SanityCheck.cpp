@@ -181,12 +181,11 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
 }
 
 void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
-  char buffer[1024], c;
-  while (!(((c = weightStream.get()) == '-') || (c >= '0' && c <= '9'))) {
-    weightStream.getline(buffer, 1024);
+  std::string line;
+  // Find first line with weights, but skip this and get second line containing raw features
+  while (std::getline(weightStream, line)) {
+    if (line[0] == '-' || (line[0] >= '0' && line[0] <= '9')) break;
   }
-  weightStream.getline(buffer, 1024);
-  // Get second line containing raw features
   for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures() + 1; ix++) {
     weightStream >> w[ix];
   }
