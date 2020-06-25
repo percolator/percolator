@@ -34,8 +34,20 @@ if(XML_SUPPORT)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
   endif(XSD_FOUND)
   include_directories(${XSD_INCLUDE_DIR})
-
 endif(XML_SUPPORT)
+
+if(APPLE AND OPENMP_FOUND)
+  include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+endif(APPLE AND OPENMP_FOUND)
+
+# Boost header libraries only for async io header library (asio.hpp)
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
+add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED)
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+if(WIN32)
+  add_definitions(-DBOOST_ALL_NO_LIB) # disable autolinking in boost
+endif(WIN32)
+include_directories(${Boost_INCLUDE_DIRS})
 
 #########################################
 # COMPILE BLAS
@@ -135,22 +147,23 @@ ELSE(CRUX)
 
   if(PROFILING AND UNIX)
     set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
   endif()
-
+  
   # SET LIBRARIES FOR PERCOLATOR
+  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
   if(MSVC)
-    target_link_libraries(percolator perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+    target_link_libraries(percolator ${COMMON_LIBRARIES})
   else(MSVC)
     if (APPLE)
-      target_link_libraries(percolator perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} )
+      target_link_libraries(percolator ${COMMON_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
     else(APPLE)
-      target_link_libraries(percolator perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} stdc++)
+      target_link_libraries(percolator ${COMMON_LIBRARIES} stdc++)
     endif (APPLE)
   endif()
 

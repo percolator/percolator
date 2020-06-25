@@ -81,7 +81,7 @@ class SetHandler {
     DataSet* targetSet, DataSet* decoySet);
   
   void writeTab(const string& dataFN, SanityCheck* pCheck);
-  void fillFeatures(vector<ScoreHolder> &scores, int label);
+  void populateScoresWithPSMs(vector<ScoreHolder> &scores, int label);
   void normalizeFeatures(Normalizer*& pNorm);
   void normalizeDOCFeatures(Normalizer* pNorm);
   

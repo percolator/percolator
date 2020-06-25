@@ -85,7 +85,7 @@ void DataSet::print_10features() {
 }
 
 // TODO: find a way to make these three functions generic
-void DataSet::fillFeatures(std::vector<ScoreHolder>& scores) {
+void DataSet::fillScores(std::vector<ScoreHolder>& scores) {
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;

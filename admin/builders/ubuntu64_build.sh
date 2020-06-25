@@ -40,7 +40,7 @@ echo "Checking necessary packages for building percolator...";
 
 # Do not apt-upgrade if this is a travis-ci job
 sudo apt-get update;
-if [ -z "$TRAVIS" ]; then
+if [ -z "$TRAVIS" ] && [ -z "$CI" ]; then
   # trap 'echo "EXIT (rc: $?)" && exit 1' ERR
   sudo apt-get upgrade;
   sudo apt-get -y install g++ make cmake rpm fakeroot;
@@ -135,6 +135,8 @@ make -j 4;
 make -j 4 package;
 
 ###########################
-cp -v $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};
+
 echo "Finished buildscript execution";
 echo "in build directory ${build_dir}";
+
+cp -v $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};

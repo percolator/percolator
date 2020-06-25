@@ -45,6 +45,10 @@
 #include "CrossValidation.h"
 #include "Enzyme.h"
 
+#define  NO_BOOST_DATE_TIME_INLINE
+#include <boost/asio.hpp>
+#include <boost/functional/hash_fwd.hpp>
+
 /*
 * Main class that starts and controls the calculations.
 *
@@ -101,6 +105,11 @@ class Caller {
   
   // reporting parameters
   std::string call_;
+  
+  // google analytics
+  static bool parseUrl(std::string url, std::string* host, std::string* path);
+  static void httpRequest(const std::string& url, const std::string& data);
+  static void postToAnalytics(const std::string& appName);
   
   void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
       time_t& procStart, clock_t& procStartClock, double& diff);

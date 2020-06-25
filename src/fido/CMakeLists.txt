@@ -12,7 +12,12 @@
 
 #add_library(fido STATIC ${FIDO_SOURCES})
 
+if(CRUX)
+  ADD_DEFINITIONS(-DCRUX)
+  include_directories(${PERCOLATOR_SOURCE_DIR}/src ${CRUX} ${CRUX}/src ${EXT_BINARY_DIR})
+else(CRUX)
 include_directories(${PERCOLATOR_SOURCE_DIR}/src)
+endif(CRUX)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 
 file(GLOB FIDO_SOURCES Set.cpp Vector.cpp Numerical.cpp Random.cpp BasicBigraph.cpp BasicGroupBigraph.cpp GroupPowerBigraph.cpp)

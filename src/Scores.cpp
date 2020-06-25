@@ -253,10 +253,10 @@ void Scores::print(int label, std::ostream& os) {
 #endif
 }
 
-void Scores::fillFeatures(SetHandler& setHandler) {
+void Scores::populateWithPSMs(SetHandler& setHandler) {
   scores_.clear();
-  setHandler.fillFeatures(scores_,1);
-  setHandler.fillFeatures(scores_,-1);
+  setHandler.populateScoresWithPSMs(scores_, 1);
+  setHandler.populateScoresWithPSMs(scores_, -1);
   totalNumberOfTargets_ = setHandler.getSizeFromLabel(1);
   totalNumberOfDecoys_ = setHandler.getSizeFromLabel(-1);
   targetDecoySizeRatio_ = (double)totalNumberOfTargets_ / totalNumberOfDecoys_;
@@ -319,24 +319,17 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     remain[fold] = ix / (fold + 1);
     ix -= remain[fold];
   }
-
-  // store possible spectra with relative scores_
-  multimap<unsigned int,ScoreHolder> spectraScores;
-  // populate spectraScores
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    spectraScores.insert(std::make_pair(scoreIt->pPSM->scan, *scoreIt));
-  }
-
+  
+  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
+  
   // put scores into the folds; choose a fold (at random) and change it only
   // when scores from a new spectra are encountered
-  // note: this works because multimap is an ordered container!
-  unsigned int previousSpectrum = spectraScores.begin()->first;
+  unsigned int previousSpectrum = scores_.begin()->pPSM->scan;
   size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
-  for (multimap<unsigned int, ScoreHolder>::iterator it = spectraScores.begin(); 
-        it != spectraScores.end(); ++it) {
-    const unsigned int curScan = (*it).first;
-    const ScoreHolder sh = (*it).second;
+  for (std::vector<ScoreHolder>::iterator it = scores_.begin(); 
+        it != scores_.end(); ++it) {
+    const unsigned int curScan = (*it).pPSM->scan;
+    const ScoreHolder sh = (*it);
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
     
@@ -368,7 +361,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   }
   
   if (featurePool.isInitialized()) {
-    std::map<double*, double*> movedAddresses;
+    boost::unordered_map<double*, double*> movedAddresses;
     size_t idx = 0;
     for (unsigned int i = 0; i < xval_fold; ++i) {
       bool isTarget = true;
@@ -394,7 +387,7 @@ void Scores::recalculateSizes() {
 }
 
 void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool, 
-    bool isTarget, std::map<double*, double*>& movedAddresses, size_t& idx) {
+    bool isTarget, boost::unordered_map<double*, double*>& movedAddresses, size_t& idx) {
   size_t numFeatures = FeatureNames::getNumFeatures();
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {

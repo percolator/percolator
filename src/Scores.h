@@ -35,6 +35,8 @@
 #include "Normalizer.h"
 #include "FeatureMemoryPool.h"
 
+#include <boost/unordered/unordered_map.hpp>
+
 class Scores;
 
 /*
@@ -186,7 +188,7 @@ class Scores {
   void recalculateDescriptionOfCorrect(const double fdr);
   void calcPep();
   
-  void fillFeatures(SetHandler& setHandler);
+  void populateWithPSMs(SetHandler& setHandler);
   
   int getInitDirection(const double initialSelectionFdr, std::vector<double>& direction);
   void createXvalSetsBySpectrum(std::vector<Scores>& train, 
@@ -254,7 +256,7 @@ class Scores {
   double* targetPtr_;
   
   void reorderFeatureRows(FeatureMemoryPool& featurePool, bool isTarget,
-    std::map<double*, double*>& movedAddresses, size_t& idx);
+    boost::unordered_map<double*, double*>& movedAddresses, size_t& idx);
   void getScoreLabelPairs(std::vector<pair<double, bool> >& combined);
   void checkSeparationAndSetPi0();
 };

@@ -2,6 +2,13 @@
 # NAME AND VERSION
 ###############################################################################
 cmake_minimum_required (VERSION 2.6)
+
+if(APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
+  # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang 
+  # (https://gitlab.kitware.com/cmake/cmake/issues/19067)
+  cmake_policy(SET CMP0025 NEW)
+endif()
+
 project(PERCOLATOR_ELUDE)
 set(PERCOLATOR_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 include("${PERCOLATOR_SOURCE_DIR}/CommonCMake.txt")
@@ -79,6 +86,10 @@ add_executable(elude EludeCaller.cpp)
 
 target_link_libraries(elude eludelibrary ${Boost_LIBRARIES})
 
+if(APPLE)
+  target_link_libraries(elude ${OpenMP_CXX_LIBRARIES})
+endif(APPLE)
+
 IF(MINGW OR WIN32)
   set_property(TARGET elude PROPERTY LINK_SEARCH_END_STATIC ON)
   set_target_properties(elude PROPERTIES LINK_FLAGS "-Wl -Bstatic -static-libgcc")
@@ -91,12 +102,12 @@ endif(APPLE)
 
 if(PROFILING AND UNIX)
   set_target_properties(elude PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}-O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}-O3 ${PROFILING_COMMON_FLAGS}")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
 endif()
 
 ###############################################################################
