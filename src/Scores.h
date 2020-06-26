@@ -28,6 +28,7 @@
 #include <map>
 #include <iostream>
 
+#include "LayerArithmetic.hpp"
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
@@ -168,11 +169,13 @@ class AlgIn;
 * TDC - Target Decoy Competition
 *
 */
+
+
 class Scores {
  public:
-  Scores(bool usePi0) : usePi0_(usePi0), pi0_(1.0), 
-    targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
-    totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
+  Scores(bool usePi0) : usePi0_(usePi0), pi0_(1.0),
+    targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),total_number_of_decoys(0),
+    totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) , highest_fdr_calculated(0.0), fdr_has_been_calculated(false), largest_index_lt_fdr(0) {}
   ~Scores() {}
   void merge(vector<Scores>& sv, double fdr, bool skipNormalizeScores);
   void postMergeStep();
@@ -180,11 +183,16 @@ class Scores {
   std::vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
   std::vector<ScoreHolder>::iterator end() { return scores_.end(); }
   
+  void set_total_number_of_decoys();
+  double* get_vector_of_just_decoy_scores();
   double calcScore(const double* features, const std::vector<double>& w) const;
   void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);
   int calcScores(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
-  int calcQ(double fdr, bool skipDecoysPlusOne = false);
+  double get_fdr(unsigned tps, unsigned fps);
+  int calcScoresLOH(const double fdr_threshold, const pair<double, bool> *const orig_combined_begin, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_seen_so_far, int num_fps_seen_so_far, LayerArithmetic* la);
+  int calcScoresSorted(vector<double>& w, double fdr, bool skipDecoysPlusOne = false, bool print_scores=false);
+  int calcQ(double fdr, bool skipDecoysPlusOne = false, bool print_scores=false);
   void recalculateDescriptionOfCorrect(const double fdr);
   void calcPep();
   
@@ -243,7 +251,12 @@ class Scores {
   
  protected:
   bool usePi0_;
-  
+
+  double highest_fdr_calculated;
+  bool fdr_has_been_calculated;
+  int largest_index_lt_fdr;
+  unsigned long total_number_of_decoys;
+
   double pi0_;
   double targetDecoySizeRatio_;
   int totalNumberOfDecoys_, totalNumberOfTargets_;
