@@ -29,6 +29,10 @@
 #include <cmath>
 #include <memory>
 
+#include "trick_score.hpp"
+#include "Singleton.hpp"
+#include "LayerOrderedHeap.hpp"
+#include "Clock.hpp"
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
@@ -412,7 +416,7 @@ void Scores::normalizeScores(double fdr) {
   std::vector<ScoreHolder>::iterator it = scores_.begin();
   double fdrScore = it->score;
   double medianDecoyScore = fdrScore + 1.0;
-
+  std::cout << "called normalizeScores" << std::endl;
   for (; it != scores_.end(); ++it) {
     if (it->q < fdr)
       fdrScore = it->score;
@@ -444,12 +448,9 @@ void Scores::normalizeScores(double fdr) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+
+int Scores::calcScoresSorted(std::vector<double>& w, double fdr, bool skipDecoysPlusOne, bool print_scores) {
   unsigned int ix;
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    scoreIt->score = calcScore(scoreIt->pPSM->features, w);
-  }
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
   if (VERB > 3) {
     if (scores_.size() >= 10) {
@@ -465,7 +466,129 @@ int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOn
       cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores found)." << endl;
     }
   }
-  return calcQ(fdr, skipDecoysPlusOne);
+  return calcQ(fdr, skipDecoysPlusOne, print_scores);
+}
+
+double Scores::get_fdr(unsigned tps, unsigned fps) {
+  double max_bias_correction = fps*(1.0-pi0_);
+  return (double(fps+max_bias_correction)) / tps; //fixme: / max(1,tps)
+}
+
+int Scores::calcScoresLOH(const double fdr_threshold, const pair<double, bool> *const orig_combined_begin, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer, LayerArithmetic* la) {
+  // For starters just have pi0=1
+  unsigned long n = combined_end - combined_begin;
+  LayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, la);
+
+  // Iterate through layers in loh
+  for (int i=loh.n_layers()-1; i>=0; --i) {
+    pair<double, bool>* layer_begin = loh.layer_begin(i);
+    pair<double, bool>* layer_end = loh.layer_end(i);
+
+    unsigned layer_size = layer_end - layer_begin;
+    
+    if (i < loh.n_layers()-1)
+      if (layer_begin[layer_size-1] == layer_begin[layer_size])
+	std::cout << "TIE AT LAYER" << std::endl;
+
+    // count number of targets and decoys in layer to calculate best and worst possible q values
+    unsigned num_tps_in_layer = 0;
+    for (auto layer_iter = layer_begin; layer_iter < layer_end; ++layer_iter)
+      num_tps_in_layer += layer_iter->second;
+
+    unsigned num_fps_in_layer = (layer_end-layer_begin) - num_tps_in_layer;
+
+    num_tps_at_start_of_layer -= num_tps_in_layer;
+    num_fps_at_start_of_layer -= num_fps_in_layer;      
+
+    //fixme: can do something special with homogeneous layers (BOTH IN TARGET/DECOY AND IN TIED SCORES)
+    //if (num_tps_in_layer == 0 || num_fps_in_layer == 0)
+    //  continue;
+
+    // optimistic fdr
+    double fdr_optimistic = get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer);
+
+    // pessemistic fdr
+    double fdr_pessemistic = get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer + num_fps_in_layer);
+
+    // fdr_threshold is between the highest and lowest q values, then recurse
+    if (fdr_optimistic <= fdr_threshold && fdr_threshold <= fdr_pessemistic) {
+      if (n > 1) {
+        int result = calcScoresLOH(fdr_threshold, orig_combined_begin, layer_begin, layer_end, num_tps_at_start_of_layer+num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer, la);
+	if (result != -1)
+	  return result;
+      }
+      else {
+	return num_tps_at_start_of_layer + num_tps_in_layer+num_fps_at_start_of_layer + num_fps_in_layer;
+      }
+    }
+  }
+  return -1;
+}
+
+int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
+  for ( ; scoreIt != scores_.end(); ++scoreIt) {
+    scoreIt->score = calcScore(scoreIt->pPSM->features, w);
+  }
+
+  constexpr bool print_time = false;
+  constexpr bool USE_SORT =false;
+  constexpr bool USE_LOH = true;
+
+  int loh_score, sort_score;
+  std::vector<pair<double, bool> > combined;
+
+  if (USE_LOH) {
+    std::cout << "USING LOH" << std::endl;
+    // else use layer-ordered heap
+    Clock c;
+    getScoreLabelPairs(combined);
+    constexpr double ALPHA = 2;
+    Singleton<LayerArithmetic, double> s_la;
+    LayerArithmetic*la = &s_la.get_instance(ALPHA);
+
+    // todo: is there a count of all decoys and all targets identified
+    // in data? we may not need this O(n) pass.
+    unsigned long total_num_tps = 0;
+
+    for (unsigned long i=0; i<combined.size(); ++i, ++scoreIt) {
+      total_num_tps += combined[i].second;
+    }
+
+    unsigned long total_num_fps = combined.size() - total_num_tps;
+
+    if (skipDecoysPlusOne) 
+      loh_score = calcScoresLOH(fdr, &combined[0], &combined[0], &combined[0]+combined.size(),total_num_tps,total_num_fps, la);
+    else
+      // fixme: should we add +1 below? compare against their results
+      loh_score = calcScoresLOH(fdr, &combined[0], &combined[0], &combined[0]+combined.size(),total_num_tps,total_num_fps+1,la);
+
+    double loh_time = c.tock();
+    std::cout << "LOH TIME " << loh_time << std::endl;
+
+    double eps=0.000001;
+    unsigned long i=0;
+
+    std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
+    for (; scoreIt != scores_.end(); ++scoreIt, ++i) {
+      if (i < loh_score)
+	scoreIt->q = fdr-0.001;
+      else
+	scoreIt->q = fdr+0.001;
+    }
+
+    
+
+    return loh_score;
+  }
+
+  if (USE_SORT) {
+    Clock c;
+    sort_score = calcScoresSorted(w,fdr,skipDecoysPlusOne,false);
+    double sort_time = c.tock();
+    std::cout << "SORT TIME " << sort_time << std::endl;
+    return sort_score;
+  }
 }
 
 void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
@@ -480,7 +603,7 @@ void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
+int Scores::calcQ(double fdr, bool skipDecoysPlusOne, bool print_scores) {
   assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
   
   std::vector<pair<double, bool> > combined;
@@ -489,7 +612,13 @@ int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
   std::vector<double> qvals;
   PosteriorEstimator::setNegative(true); // also get q-values for decoys
   PosteriorEstimator::getQValues(pi0_, combined, qvals, skipDecoysPlusOne);
-  
+  if (print_scores) {
+    std::cout << "Q VALUES: ";
+    for (int i=0; i < qvals.size(); ++i)
+      std::cout << qvals[i] << ", ";
+    std::cout << std::endl;    
+  }
+
   // set q-values and count number of positives
   std::vector<double>::const_iterator qIt = qvals.begin();
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
@@ -526,7 +655,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     lastUniqueIt = std::unique(scores_.begin(), scores_.end(), UniqueScanLabel());
     std::sort(scores_.begin(), lastUniqueIt, greater<ScoreHolder> ());
   }
-  
+  std::cout << "called generate positive training set" << std::endl;
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != lastUniqueIt; ++scoreIt) {
     if (scoreIt->isTarget()) {
@@ -626,6 +755,7 @@ void Scores::weedOutRedundantMixMax() {
 
 void Scores::recalculateDescriptionOfCorrect(const double fdr) {
   doc_.clear();
+  std::cout << "called recalculateDescriptionOfCorrect" << std::endl;
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget() && scoreIt->q <= fdr) {
@@ -745,6 +875,7 @@ void Scores::calcPep() {
 unsigned Scores::getQvaluesBelowLevel(double level) {
   unsigned hits = 0;
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
+  std::cout << "called getQvaluesBelowLevel " << level << std::endl;
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget() && scoreIt->q < level) {
       hits++;
