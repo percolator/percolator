@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "CrossValidation.h"
+#include "Clock.hpp"
 
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
@@ -139,7 +140,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   
   if (DataSet::getCalcDoc()) {
     for (int set = 0; set < numFolds_; ++set) {
-      trainScores_[set].calcScores(w_[set], selectionFdr_);
+      trainScores_[set].calcScoresSorted(w_[set], selectionFdr_);
     }
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < numFolds_; ++set) {
@@ -192,7 +193,8 @@ void CrossValidation::train(Normalizer* pNorm) {
     if (reportPerformanceEachIteration_) {
       int foundTestPositives = 0;
       for (size_t set = 0; set < numFolds_; ++set) {
-        foundTestPositives += testScores_[set].calcScores(w_[set], testFdr_);
+	//fixme: can this be sorted?
+        foundTestPositives += testScores_[set].calcScoresSorted(w_[set], testFdr_);
       }
       if (VERB > 1) {
         std::cerr << "Found " << foundTestPositives << " test set PSMs with q<" 
@@ -230,7 +232,9 @@ void CrossValidation::train(Normalizer* pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    foundPositives += testScores_[set].calcScores(w_[set], testFdr_);
+    // fixme: can this be sorted?
+
+    foundPositives += testScores_[set].calcScoresSorted(w_[set], testFdr_);
   }
   if (VERB > 0) {
     std::cerr << "Found " << foundPositives << 
@@ -261,10 +265,11 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   // FDR estimates is too restrictive for small datasets
   bool skipDecoysPlusOne = true; 
   for (int set = 0; set < numFolds_; ++set) {
-    trainScores_[set].calcScores(w_[set], selectionFdr, skipDecoysPlusOne);
+    trainScores_[set].calcScoresSorted(w_[set], selectionFdr, skipDecoysPlusOne); 
   }
   
   if (DataSet::getCalcDoc() && updateDOC) {
+    //fixme: (remove this comment) not called here
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < numFolds_; ++set) {
       trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr);
@@ -393,7 +398,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   int set = 0;
   // Validate learned parameters per (cpos,cneg) pair per nested CV fold
   // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
-  //       scoring calculation in calcScores.
+  //       scoring calculation in calcScores method.
   unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
 #pragma omp parallel for schedule(dynamic, 1) ordered
   for (set = 0; set < numFolds_; ++set) {
@@ -403,7 +408,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
     std::vector<candidateCposCfrac>::iterator itCpCnPair;
     std::map<std::pair<double, double>, int> intermediateResults;
     for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
-      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
+      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresLOH(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
       intermediateResults[std::make_pair(itCpCnPair->cpos, itCpCnPair->cfrac)] += tp;
       itCpCnPair->tp = tp;
       if (nestedXvalBins_ <= 1) {
@@ -472,7 +477,9 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
 
   double bestTruePos = 0;
   for (set = 0; set < numFolds_; ++set) {
-    bestTruePos += trainScores_[set].calcScores(w_[set], testFdr_);
+    // fixme: gives - PSMS with q<0.01
+    // but gives good SVM numbers
+    bestTruePos += trainScores_[set].calcScoresSorted(w_[set], testFdr_);
   }
   return bestTruePos / (numFolds_ - 1);
 }
@@ -481,7 +488,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck* pCheck) {
   if (!pCheck->validateDirection(w_)) {
     for (int set = 0; set < numFolds_; ++set) {
-      testScores_[set].calcScores(w_[0], selectionFdr_);
+      testScores_[set].calcScoresSorted(w_[0], selectionFdr_);
     }
   }
   if (DataSet::getCalcDoc()) {
