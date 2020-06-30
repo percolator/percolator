@@ -28,11 +28,12 @@
 #include <string>
 #include <cmath>
 #include <memory>
-
+#include <math.h>
 #include "Singleton.hpp"
+// fixme remove 
 //#include "QuickLayerOrderedHeap.hpp"
-#include "LayerOrderedHeap.hpp"
 //#include "MaxOptimalLayerOrderedHeap.hpp"
+#include "LayerOrderedHeap.hpp"
 #include "Clock.hpp"
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -495,41 +496,49 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
     unsigned layer_size = layer_end - layer_begin;
 
     // fixme: implement tie  
-    //if (i < loh.n_layers()-1)
-    //  if (layer_begin[layer_size-1] == layer_begin[layer_size])
-    //	std::cout << "TIE AT LAYER" << std::endl;
+    //if (i > 0)
+    //  if (*(layer_begin-1) == layer_begin[0])
+    //	std::cout << "TIE AT START OF LAYER" << std::endl;
 
 
     // count number of targets and decoys in layer to calculate best and worst possible q values
     unsigned num_tps_in_layer = 0;
-
     for (auto layer_iter = layer_begin; layer_iter < layer_end; ++layer_iter) 
       num_tps_in_layer += layer_iter->second;
-    
-    unsigned num_fps_in_layer = (layer_end-layer_begin) - num_tps_in_layer;
-
+    unsigned num_fps_in_layer = layer_size - num_tps_in_layer;
     num_tps_at_start_of_layer -= num_tps_in_layer;
     num_fps_at_start_of_layer -= num_fps_in_layer;      
 
-    //fixme: can do something special with homogeneous layers (BOTH IN TARGET/DECOY AND IN TIED SCORES)
-    //if (num_tps_in_layer == 0 || num_fps_in_layer == 0)
-    //  continue;
 
-    // optimistic fdr
-    double fdr_optimistic = get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer);
+    // The layer is entirely TPs, so FDR can only increase
+    if (num_fps_in_layer==0) 
+      continue;
 
     // pessemistic fdr
     double fdr_pessemistic = get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer + num_fps_in_layer);
 
+    // optimistic fdr
+    double fdr_optimistic = get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer);
+
     // fdr_threshold is between the highest and lowest q values, then recurse
     if (fdr_optimistic <= fdr_threshold && fdr_threshold <= fdr_pessemistic) {
+      if (num_tps_in_layer==0) {
+	// The layer is entire FPs, therefore the FDR is increasing
+	// and the FDR after the layer is equal to fdr_pessemistic The
+	// FDR before the layer is equal to fdr_optimistic Therefore,
+	// the FDR crosses fdr_threshold in this layer and we can
+	// return directly from here.
+
+	// Return value is calculated by setting FPs*(2-PI0)/TPs = tau and solving for FPs, then return TPs+FPs
+	return floor(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
+      }
       if (n > 1) {
         int result = calcScoresLOHHelper(fdr_threshold, orig_combined_begin, layer_begin, layer_end, num_tps_at_start_of_layer+num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer, la);
 	if (result != -1)
 	  return result;
       }
       else if (get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer) < fdr_threshold){
-	return num_tps_at_start_of_layer + num_tps_in_layer+num_fps_at_start_of_layer + num_fps_in_layer;
+	return num_tps_at_start_of_layer + num_tps_in_layer + num_fps_at_start_of_layer + num_fps_in_layer;
       }
       else {
 	return -1;
