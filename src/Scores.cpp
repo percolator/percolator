@@ -30,8 +30,9 @@
 #include <memory>
 
 #include "Singleton.hpp"
-#include "QuickLayerOrderedHeap.hpp"
+//#include "QuickLayerOrderedHeap.hpp"
 #include "LayerOrderedHeap.hpp"
+//#include "MaxOptimalLayerOrderedHeap.hpp"
 #include "Clock.hpp"
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -487,6 +488,7 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
   //QuickLayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, [](const auto & lhs, const auto & rhs){return lhs>rhs;});
 
   // Iterate through layers in loh
+
   for (int i=loh.n_layers()-1; i>=0; --i) {
     pair<double, bool>* layer_begin = loh.layer_begin(i);
     pair<double, bool>* layer_end = loh.layer_end(i);
@@ -500,11 +502,11 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
 
     // count number of targets and decoys in layer to calculate best and worst possible q values
     unsigned num_tps_in_layer = 0;
+
     for (auto layer_iter = layer_begin; layer_iter < layer_end; ++layer_iter) 
       num_tps_in_layer += layer_iter->second;
     
     unsigned num_fps_in_layer = (layer_end-layer_begin) - num_tps_in_layer;
-
 
     num_tps_at_start_of_layer -= num_tps_in_layer;
     num_fps_at_start_of_layer -= num_fps_in_layer;      
@@ -526,8 +528,11 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
 	if (result != -1)
 	  return result;
       }
-      else {
+      else if (get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer) < fdr_threshold){
 	return num_tps_at_start_of_layer + num_tps_in_layer+num_fps_at_start_of_layer + num_fps_in_layer;
+      }
+      else {
+	return -1;
       }
     }
   }
@@ -542,6 +547,7 @@ void Scores::calc_score_and_decoys_retscore_label_pair_array(std::vector<double>
   // Here, we calculate the scores, grab the <double, bool> pair, and
   // keep the cumulative decoy count.
   total_number_of_decoys_ = 0;
+
   for (unsigned long i=0; i<scores_.size(); ++i) {
     scores_[i].score = calcScore(scores_[i].pPSM->features, w);
     score_label_pairs[i] = {scores_[i].score, scores_[i].isTarget()};
