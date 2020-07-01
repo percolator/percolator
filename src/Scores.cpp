@@ -31,9 +31,9 @@
 #include <math.h>
 #include "Singleton.hpp"
 // fixme remove 
-//#include "QuickLayerOrderedHeap.hpp"
+#include "QuickLayerOrderedHeap.hpp"
 //#include "MaxOptimalLayerOrderedHeap.hpp"
-#include "LayerOrderedHeap.hpp"
+//#include "LayerOrderedHeap.hpp"
 #include "Clock.hpp"
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -482,24 +482,23 @@ double Scores::get_fdr(unsigned tps, unsigned fps) {
 }
 
 int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, bool> *const orig_combined_begin, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer, LayerArithmetic* la) {
-
-  // For starters just have pi0=1
   unsigned long n = combined_end - combined_begin;
-  LayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, la);
-  //QuickLayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, [](const auto & lhs, const auto & rhs){return lhs>rhs;});
+  //LayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, la);
+  QuickLayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, [](const auto & lhs, const auto & rhs){return lhs>rhs;});
 
   // Iterate through layers in loh
-
   for (int i=loh.n_layers()-1; i>=0; --i) {
     pair<double, bool>* layer_begin = loh.layer_begin(i);
     pair<double, bool>* layer_end = loh.layer_end(i);
     unsigned layer_size = layer_end - layer_begin;
 
-    // fixme: implement tie  
-    //if (i > 0)
-    //  if (*(layer_begin-1) == layer_begin[0])
-    //	std::cout << "TIE AT START OF LAYER" << std::endl;
-
+    // Check if there is a tie between current layer and next layer,
+    // if so then merge the layers
+    while (i > 0 && *(layer_begin-1) == *layer_begin) {
+      --i;
+      layer_begin = loh.layer_begin(i);
+      layer_size = layer_end - layer_begin;	
+    }
 
     // count number of targets and decoys in layer to calculate best and worst possible q values
     unsigned num_tps_in_layer = 0;
@@ -509,6 +508,11 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
     num_tps_at_start_of_layer -= num_tps_in_layer;
     num_fps_at_start_of_layer -= num_fps_in_layer;      
 
+    // Entire layer have same score Crosses fdr_threshold then return
+    // number number fps, tps after layer ends
+    if (*layer_begin == *(layer_end-1))
+      if (get_fdr(num_tps_at_start_of_layer,num_fps_at_start_of_layer) <=  fdr_threshold && fdr_threshold <= get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer))
+	return num_tps_at_start_of_layer + num_tps_in_layer + num_fps_at_start_of_layer + num_fps_in_layer;
 
     // The layer is entirely TPs, so FDR can only increase
     if (num_fps_in_layer==0) 
@@ -523,14 +527,13 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
     // fdr_threshold is between the highest and lowest q values, then recurse
     if (fdr_optimistic <= fdr_threshold && fdr_threshold <= fdr_pessemistic) {
       if (num_tps_in_layer==0) {
-	// The layer is entire FPs, therefore the FDR is increasing
-	// and the FDR after the layer is equal to fdr_pessemistic The
-	// FDR before the layer is equal to fdr_optimistic Therefore,
-	// the FDR crosses fdr_threshold in this layer and we can
-	// return directly from here.
-
-	// Return value is calculated by setting FPs*(2-PI0)/TPs = tau and solving for FPs, then return TPs+FPs
-	//return floor(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
+      	// The layer is entire FPs, therefore the FDR is increasing
+      	// and the FDR after the layer is equal to fdr_pessemistic The
+      	// FDR before the layer is equal to fdr_optimistic Therefore,
+      	// the FDR crosses fdr_threshold in this layer and we can
+      	// return directly from here.
+      
+      	// Return value is calculated by setting FPs*(2-PI0)/TPs = tau and solving for FPs, then return TPs+FPs
         return ceil(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
       }
       if (n > 1) {
