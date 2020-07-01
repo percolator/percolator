@@ -530,7 +530,8 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
 	// return directly from here.
 
 	// Return value is calculated by setting FPs*(2-PI0)/TPs = tau and solving for FPs, then return TPs+FPs
-	return floor(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
+	//return floor(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
+        return ceil(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
       }
       if (n > 1) {
         int result = calcScoresLOHHelper(fdr_threshold, orig_combined_begin, layer_begin, layer_end, num_tps_at_start_of_layer+num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer, la);
