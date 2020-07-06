@@ -1,4 +1,4 @@
-/*******************************************************************************
+ /*******************************************************************************
  Copyright 2006-2012 Lukas Käll <lukas.kall@scilifelab.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -193,7 +193,6 @@ void CrossValidation::train(Normalizer* pNorm) {
     if (reportPerformanceEachIteration_) {
       int foundTestPositives = 0;
       for (size_t set = 0; set < numFolds_; ++set) {
-	//fixme: can this be sorted?
         foundTestPositives += testScores_[set].calcScoresSorted(w_[set], testFdr_);
       }
       if (VERB > 1) {
@@ -232,8 +231,6 @@ void CrossValidation::train(Normalizer* pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    // fixme: can this be sorted?
-
     foundPositives += testScores_[set].calcScoresSorted(w_[set], testFdr_);
   }
   if (VERB > 0) {
@@ -269,7 +266,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   }
   
   if (DataSet::getCalcDoc() && updateDOC) {
-    //fixme: (remove this comment) not called here
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < numFolds_; ++set) {
       trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr);
@@ -400,7 +396,8 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
   //       scoring calculation in calcScores method.
   unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
-#pragma omp parallel for schedule(dynamic, 1) ordered
+  Clock c;
+  #pragma omp parallel for schedule(dynamic, 1) ordered
   for (set = 0; set < numFolds_; ++set) {
     unsigned int a = set * numCpCnPairsPerSet;
     unsigned int b = (set+1) * numCpCnPairsPerSet;
@@ -408,7 +405,14 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
     std::vector<candidateCposCfrac>::iterator itCpCnPair;
     std::map<std::pair<double, double>, int> intermediateResults;
     for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
+      //fixme: clean
+      //Clock c;
       tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresLOH(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
+      //tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresSorted(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);      
+      //double time = c.tock();
+      //std::cout << std::endl;
+      //std::cout << "calcscores took " << time << std::endl;
+      
       intermediateResults[std::make_pair(itCpCnPair->cpos, itCpCnPair->cfrac)] += tp;
       itCpCnPair->tp = tp;
       if (nestedXvalBins_ <= 1) {
@@ -437,6 +441,9 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
         }
       }
     }
+    double time = c.tock();
+    std::cout << std::endl;
+    std::cout << "calcscores took " << time << std::endl;
   }
   
   if (nestedXvalBins_ > 1) {

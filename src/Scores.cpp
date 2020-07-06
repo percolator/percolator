@@ -30,10 +30,8 @@
 #include <memory>
 #include <math.h>
 #include "Singleton.hpp"
-// fixme remove 
+#include "LayerOrderedHeap.hpp"
 #include "QuickLayerOrderedHeap.hpp"
-//#include "MaxOptimalLayerOrderedHeap.hpp"
-//#include "LayerOrderedHeap.hpp"
 #include "Clock.hpp"
 #include "DataSet.h"
 #include "Normalizer.h"
@@ -47,6 +45,7 @@
 #ifdef CRUX
 #include "app/PercolatorAdapter.h"
 #endif
+
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score) 
@@ -459,6 +458,7 @@ int Scores::calcScoresSorted(std::vector<double>& w, double fdr, bool skipDecoys
 
   unsigned int ix;
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
+
   if (VERB > 3) {
     if (scores_.size() >= 10) {
       cerr << "10 best scores and labels" << endl;
@@ -476,15 +476,37 @@ int Scores::calcScoresSorted(std::vector<double>& w, double fdr, bool skipDecoys
   return calcQ(fdr, skipDecoysPlusOne);
 }
 
-double Scores::get_fdr(unsigned tps, unsigned fps) {
-  double max_bias_correction = fps*(1.0-pi0_);
-  return (double(fps+max_bias_correction)) / tps; //fixme: / max(1,tps)
+LOH_FLOAT_TYPE Scores::get_fdr(unsigned tps, unsigned fps) {
+  LOH_FLOAT_TYPE max_bias_correction = fps*(1.0-pi0_);
+  return (LOH_FLOAT_TYPE(fps+max_bias_correction)) / (std::max(1u,tps));
 }
 
-int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, bool> *const orig_combined_begin, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer, LayerArithmetic* la) {
+int Scores::calcScoresLOHSortSmallLayer(const double fdr_threshold, pair<double, bool> *layer_begin, pair<double, bool> *layer_end, const int num_tps_at_start_of_layer, const int num_fps_at_start_of_layer) {
+  std::sort(layer_begin, layer_end, greater<std::pair<double, bool>> ());
+  unsigned long number_tps_in_layer = 0;
+  const unsigned long layer_size = layer_end-layer_begin;
+
+  for (unsigned long i=0; i< layer_size; ++i) {
+    number_tps_in_layer += layer_begin[i].second;
+    if (i == layer_size-1) {
+      LOH_FLOAT_TYPE fdr = get_fdr(num_tps_at_start_of_layer + number_tps_in_layer, num_fps_at_start_of_layer + ((i+1) - number_tps_in_layer));
+      if (fdr >= fdr_threshold)
+	return  num_tps_at_start_of_layer + num_fps_at_start_of_layer + (i+1);
+    }
+
+    else if (i < (layer_size-1) && layer_begin[i].first != layer_begin[i+1].first) {
+      LOH_FLOAT_TYPE fdr = get_fdr(num_tps_at_start_of_layer + number_tps_in_layer, num_fps_at_start_of_layer + ((i+1) - number_tps_in_layer)); 
+      if (fdr >= fdr_threshold)
+	return  num_tps_at_start_of_layer + num_fps_at_start_of_layer + (i+1);
+    }
+  }
+  return -1;
+}
+
+int Scores::calcScoresLOHHelper(const double fdr_threshold, pair<double, bool>* __restrict combined_begin, pair<double, bool>* __restrict combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer, LayerArithmetic* la) {
+  constexpr unsigned MAX_SIZE_TO_SORT = 8;
   unsigned long n = combined_end - combined_begin;
-  //LayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, la);
-  QuickLayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, [](const auto & lhs, const auto & rhs){return lhs>rhs;});
+  LayerOrderedHeap<pair<double, bool>> loh(combined_begin, n, la);
 
   // Iterate through layers in loh
   for (int i=loh.n_layers()-1; i>=0; --i) {
@@ -497,8 +519,8 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
     while (i > 0 && *(layer_begin-1) == *layer_begin) {
       --i;
       layer_begin = loh.layer_begin(i);
-      layer_size = layer_end - layer_begin;	
     }
+    layer_size = layer_end - layer_begin;	
 
     // count number of targets and decoys in layer to calculate best and worst possible q values
     unsigned num_tps_in_layer = 0;
@@ -519,13 +541,17 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
       continue;
 
     // pessemistic fdr
-    double fdr_pessemistic = get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer + num_fps_in_layer);
+    LOH_FLOAT_TYPE fdr_pessemistic = get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer + num_fps_in_layer);
 
     // optimistic fdr
-    double fdr_optimistic = get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer);
+    LOH_FLOAT_TYPE fdr_optimistic = get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer);
 
     // fdr_threshold is between the highest and lowest q values, then recurse
-    if (fdr_optimistic <= fdr_threshold && fdr_threshold <= fdr_pessemistic) {
+    if (fdr_optimistic < fdr_threshold && fdr_threshold < fdr_pessemistic) {
+      if (layer_size < MAX_SIZE_TO_SORT && get_fdr(num_tps_in_layer, num_fps_in_layer) <= fdr_threshold) {
+	return calcScoresLOHSortSmallLayer(fdr_threshold, layer_begin, layer_end, num_tps_at_start_of_layer, num_fps_at_start_of_layer);
+      }
+
       if (num_tps_in_layer==0) {
       	// The layer is entire FPs, therefore the FDR is increasing
       	// and the FDR after the layer is equal to fdr_pessemistic The
@@ -537,22 +563,94 @@ int Scores::calcScoresLOHHelper(const double fdr_threshold, const pair<double, b
         return ceil(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
       }
       if (n > 1) {
-        int result = calcScoresLOHHelper(fdr_threshold, orig_combined_begin, layer_begin, layer_end, num_tps_at_start_of_layer+num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer, la);
+        int result = calcScoresLOHHelper(fdr_threshold, layer_begin, layer_end, num_tps_at_start_of_layer+num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer, la);
 	if (result != -1)
 	  return result;
       }
-      else if (get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer) < fdr_threshold){
+      else if (get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer) < fdr_threshold)
 	return num_tps_at_start_of_layer + num_tps_in_layer + num_fps_at_start_of_layer + num_fps_in_layer;
-      }
-      else {
+      else
 	return -1;
-      }
     }
   }
   return -1;
 }
 
-void Scores::calc_score_and_decoys_retscore_label_pair_array(std::vector<double> &w, std::pair<double, bool>* score_label_pairs, unsigned long* cumulative_counts_of_decoys) {
+int Scores::calcScoresQuickLOHHelper(const double fdr_threshold, pair<double, bool>* __restrict combined_begin, pair<double, bool>* __restrict combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer) {
+  constexpr unsigned MAX_SIZE_TO_SORT = 8;
+  unsigned long n = combined_end - combined_begin;
+  QuickLayerOrderedHeap<std::pair<double,bool>> loh(combined_begin,n, [](auto lhs, auto rhs){ return lhs >= rhs;});
+
+  // Iterate through layers in loh
+  for (int i=loh.n_layers()-1; i>=0; --i) {
+    pair<double, bool>* layer_begin = loh.layer_begin(i);
+    pair<double, bool>* layer_end = loh.layer_end(i);
+    unsigned layer_size = layer_end - layer_begin;
+
+    // Check if there is a tie between current layer and next layer,
+    // if so then merge the layers
+    //while (i > 0 && *(layer_begin-1) == *layer_begin) {
+    //  --i;
+    //  layer_begin = loh.layer_begin(i);
+    //}
+    //layer_size = layer_end - layer_begin;	
+
+    // count number of targets and decoys in layer to calculate best and worst possible q values
+    unsigned num_tps_in_layer = 0;
+    for (auto layer_iter = layer_begin; layer_iter < layer_end; ++layer_iter) 
+      num_tps_in_layer += layer_iter->second;
+    unsigned num_fps_in_layer = layer_size - num_tps_in_layer;
+    num_tps_at_start_of_layer -= num_tps_in_layer;
+    num_fps_at_start_of_layer -= num_fps_in_layer;      
+
+    // Entire layer have same score Crosses fdr_threshold then return
+    // number number fps, tps after layer ends
+    if (*layer_begin == *(layer_end-1))
+      if (get_fdr(num_tps_at_start_of_layer,num_fps_at_start_of_layer) <=  fdr_threshold && fdr_threshold <= get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer))
+	return num_tps_at_start_of_layer + num_tps_in_layer + num_fps_at_start_of_layer + num_fps_in_layer;
+
+    // The layer is entirely TPs, so FDR can only increase
+    if (num_fps_in_layer==0) 
+      continue;
+
+    // pessemistic fdr
+    LOH_FLOAT_TYPE fdr_pessemistic = get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer + num_fps_in_layer);
+
+    // optimistic fdr
+    LOH_FLOAT_TYPE fdr_optimistic = get_fdr(num_tps_at_start_of_layer + num_tps_in_layer, num_fps_at_start_of_layer);
+
+    // fdr_threshold is between the highest and lowest q values, then recurse
+    if (fdr_optimistic < fdr_threshold && fdr_threshold < fdr_pessemistic) {
+      if (layer_size < MAX_SIZE_TO_SORT && get_fdr(num_tps_in_layer, num_fps_in_layer) <= fdr_threshold) {
+	return calcScoresLOHSortSmallLayer(fdr_threshold, layer_begin, layer_end, num_tps_at_start_of_layer, num_fps_at_start_of_layer);
+      }
+
+      if (num_tps_in_layer==0) {
+      	// The layer is entire FPs, therefore the FDR is increasing
+      	// and the FDR after the layer is equal to fdr_pessemistic The
+      	// FDR before the layer is equal to fdr_optimistic Therefore,
+      	// the FDR crosses fdr_threshold in this layer and we can
+      	// return directly from here.
+      
+      	// Return value is calculated by setting FPs*(2-PI0)/TPs = tau and solving for FPs, then return TPs+FPs
+        return ceil(num_tps_at_start_of_layer + (fdr_threshold * num_tps_at_start_of_layer)/(2.0-pi0_));
+      }
+      if (n > 1) {
+        int result = calcScoresQuickLOHHelper(fdr_threshold, layer_begin, layer_end, num_tps_at_start_of_layer+num_tps_in_layer, num_fps_at_start_of_layer + num_fps_in_layer);
+	if (result != -1)
+	  return result;
+      }
+      else if (get_fdr(num_tps_at_start_of_layer, num_fps_at_start_of_layer) < fdr_threshold)
+	return num_tps_at_start_of_layer + num_tps_in_layer + num_fps_at_start_of_layer + num_fps_in_layer;
+      else
+	return -1;
+    }
+  }
+  return -1;
+}
+
+
+void Scores::calc_score_and_decoys_retscore_label_pair_array(std::vector<double> &w, std::pair<double, bool>* score_label_pairs) {
   // In order to best perform the calcScoresLOH function, several
   // linear passes must be done. Instead, collect all the information
   // in this one linear pass.
@@ -563,30 +661,36 @@ void Scores::calc_score_and_decoys_retscore_label_pair_array(std::vector<double>
 
   for (unsigned long i=0; i<scores_.size(); ++i) {
     scores_[i].score = calcScore(scores_[i].pPSM->features, w);
-    score_label_pairs[i] = {scores_[i].score, scores_[i].isTarget()};
+    const bool  is_target = scores_[i].isTarget();
+    score_label_pairs[i] = {scores_[i].score, is_target};
     // Set cumulative_counts_of_decoys before increasing
     // total_number_of_decoys_ so that cumulative_counts_of_decoys[i]
     // is the number seen up until the ith target/decoy
-    cumulative_counts_of_decoys[i] = total_number_of_decoys_;
-    total_number_of_decoys_ += !scores_[i].isTarget();
+    total_number_of_decoys_ += !is_target;
   }
-  cumulative_counts_of_decoys[scores_.size()] = total_number_of_decoys_;
 }
 
 
 int Scores::calcScoresLOH(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
   std::pair<double, bool>* score_label_pairs = new std::pair<double, bool>[scores_.size()];
-  unsigned long* cumulative_counts_of_decoys = new unsigned long[scores_.size()+1];
-  calc_score_and_decoys_retscore_label_pair_array(w, score_label_pairs, cumulative_counts_of_decoys);
+  calc_score_and_decoys_retscore_label_pair_array(w, score_label_pairs);
 
-  
+  //fixme: dont use la if using quicksort
   constexpr double ALPHA = 2;
   Singleton<LayerArithmetic, double> s_la;
   LayerArithmetic*la = &s_la.get_instance(ALPHA);
+
   unsigned long total_num_tps = scores_.size() - total_number_of_decoys_;
 
-  // fixme: should we add +1 below? compare against their results
-  int loh_score = calcScoresLOHHelper(fdr, score_label_pairs, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne), la);
+
+  int loh_score = calcScoresLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne), la);
+  //fixme
+  //int loh_score = calcScoresQuickLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne));
+
+  // score == -1 means it never hit the threshold,
+  // so return n
+  if (loh_score == -1)
+    return scores_.size();
 
   return loh_score;
 }

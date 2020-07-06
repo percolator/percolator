@@ -23,7 +23,7 @@ void max_random_lohify(T*x, T*x_end, unsigned long*partition_ranks, unsigned lon
     T pivot_val = x[pivot_index];
 
     std::swap(x[n-1], x[pivot_index]);
-    T*second_half_of_x = std::partition(x, x_end, [pivot_val](auto val) {return val > pivot_val;});
+    T*second_half_of_x = std::partition(x, x_end, [pivot_val](auto val) {return val >= pivot_val;});
     // pivot element will be moved to last element of the right half; swap it back so that it begins the right half:
     std::swap(*second_half_of_x, *(x_end-1));
 
@@ -55,7 +55,6 @@ template <typename T, int MINIMUM_LAYER_SIZE=128, bool RANDOMIZE=true, bool FORC
 void max_quick_lohify(T*__restrict x, T*__restrict x_end, PrimitiveVector<unsigned long> & partition_ranks, std::function<bool(const T&,const T&)> compare) {
   unsigned long n = x_end - x;
   while (n > MINIMUM_LAYER_SIZE) {
-
     unsigned long pivot_index;
     if (RANDOMIZE)
       pivot_index = rand() % n;
@@ -64,10 +63,20 @@ void max_quick_lohify(T*__restrict x, T*__restrict x_end, PrimitiveVector<unsign
     T pivot_val = x[pivot_index];
 
     std::swap(x[n-1], x[pivot_index]);
+    unsigned layer_is_all_tied=false;
+    T*second_half_of_x = std::partition(x, x_end, [&layer_is_all_tied,pivot_val,&compare](auto val) {layer_is_all_tied += (val!=pivot_val); return compare(val,pivot_val);});
 
-    T*second_half_of_x = std::partition(x, x_end, [pivot_val,&compare](auto val) {return compare(val,pivot_val);});
+    // in the extremely unlikely case all thats left are tied, just end there
+    if (layer_is_all_tied==0)
+      break;
+
+    // if nothing was peeled from the loh, don't bother with anything else
+    if (second_half_of_x==x_end) 
+      continue;
+      
     // pivot element will be moved to last element of the right half; swap it back so that it begins the right half:
     std::swap(*second_half_of_x, *(x_end-1));
+
     partition_ranks.push_back(second_half_of_x - x);
 
     x_end = second_half_of_x;
@@ -83,8 +92,5 @@ void max_quick_lohify(T*__restrict x, T*__restrict x_end, PrimitiveVector<unsign
 
   std::reverse(partition_ranks.begin(), partition_ranks.end());
 }
-
-
-
 
 #endif
