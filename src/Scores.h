@@ -28,7 +28,6 @@
 #include <map>
 #include <iostream>
 
-#include "LayerArithmetic.hpp"
 #include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
@@ -188,7 +187,6 @@ class Scores {
                       FeatureMemoryPool& featurePool);
   LOH_FLOAT_TYPE get_fdr(unsigned tps, unsigned fps);
   void calc_score_and_decoys_retscore_label_pair_array(std::vector<double> &w, std::pair<double, bool>* score_label_pairs);
-  int calcScoresLOHHelper(const double fdr_threshold, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer, LayerArithmetic* la);
   int calcScoresQuickLOHHelper(const double fdr_threshold, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer);
   int calcScoresLOHSortSmallLayer(const double fdr_threshold, pair<double, bool> *layer_begin, pair<double, bool> *layer_end, const int num_tps_at_start_of_layer, const int num_fps_at_start_of_layer);
   int calcScoresLOH(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
