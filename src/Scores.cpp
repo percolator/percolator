@@ -683,9 +683,9 @@ int Scores::calcScoresLOH(std::vector<double>& w, double fdr, bool skipDecoysPlu
   unsigned long total_num_tps = scores_.size() - total_number_of_decoys_;
 
 
-  int loh_score = calcScoresLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne), la);
+  //int loh_score = calcScoresLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne), la);
   //fixme
-  //int loh_score = calcScoresQuickLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne));
+  int loh_score = calcScoresQuickLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne));
 
   // score == -1 means it never hit the threshold,
   // so return n
