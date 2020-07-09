@@ -16,7 +16,6 @@
  *******************************************************************************/
 
 #include "CrossValidation.h"
-#include "Clock.hpp"
 
 // number of folds for cross validation
 const unsigned int CrossValidation::numFolds_ = 3u;
@@ -396,7 +395,6 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
   //       scoring calculation in calcScores method.
   unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
-  Clock c;
   #pragma omp parallel for schedule(dynamic, 1) ordered
   for (set = 0; set < numFolds_; ++set) {
     unsigned int a = set * numCpCnPairsPerSet;
@@ -405,14 +403,9 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
     std::vector<candidateCposCfrac>::iterator itCpCnPair;
     std::map<std::pair<double, double>, int> intermediateResults;
     for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
-      //fixme: clean
-      //Clock c;
-      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresLOH(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
-      //tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresSorted(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);      
-      //double time = c.tock();
-      //std::cout << std::endl;
-      //std::cout << "calcscores took " << time << std::endl;
-      
+      // Here, the layer-ordered heap version is used
+      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresLOH(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);      
+
       intermediateResults[std::make_pair(itCpCnPair->cpos, itCpCnPair->cfrac)] += tp;
       itCpCnPair->tp = tp;
       if (nestedXvalBins_ <= 1) {
@@ -441,10 +434,8 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
         }
       }
     }
-    double time = c.tock();
-    std::cout << std::endl;
-    std::cout << "calcscores took " << time << std::endl;
   }
+
   
   if (nestedXvalBins_ > 1) {
 #pragma omp parallel for schedule(dynamic, 1) ordered
@@ -484,8 +475,6 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
 
   double bestTruePos = 0;
   for (set = 0; set < numFolds_; ++set) {
-    // fixme: gives - PSMS with q<0.01
-    // but gives good SVM numbers
     bestTruePos += trainScores_[set].calcScoresSorted(w_[set], testFdr_);
   }
   return bestTruePos / (numFolds_ - 1);
