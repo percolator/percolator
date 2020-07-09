@@ -29,10 +29,8 @@
 #include <cmath>
 #include <memory>
 #include <math.h>
-#include "Singleton.hpp"
-#include "LayerOrderedHeap.hpp"
+
 #include "QuickLayerOrderedHeap.hpp"
-#include "Clock.hpp"
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "SetHandler.h"
