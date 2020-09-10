@@ -69,7 +69,9 @@ set(tests
 set(system_tests_names ${tests})
 set(system_tests_dir ${CMAKE_CURRENT_BINARY_DIR})
 
-# TO RUN THE TESTS: BUILD, COMPILE, INSTALL AND INVOKE 'make test' FROM BUILD FOLDER
-foreach(current_system_test ${system_tests_names})
-  add_test(${current_system_test} python ${system_tests_dir}/${current_system_test}.py)
-endforeach(current_system_test)
+# Temporarily disabled so that "make test" only runs unit tests.
+# TODO(breadbox): Give this section its own build target.
+#
+#foreach(current_system_test ${system_tests_names})
+#  add_test(${current_system_test} python ${system_tests_dir}/${current_system_test}.py)
+#endforeach(current_system_test)
