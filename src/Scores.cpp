@@ -311,6 +311,8 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
   test.resize(xval_fold, Scores(usePi0_));
+
+
   // remain keeps track of residual space available in each fold
   std::vector<int> remain(xval_fold);
   // set values for remain: initially each fold is assigned (tot number of
@@ -333,14 +335,39 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     const ScoreHolder sh = (*it);
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
-    
-    if (previousSpectrum != curScan) {
-      randIndex = PseudoRandom::lcg_rand() % xval_fold;
-      // allow only indexes of folds that are non-full
-      while (remain[randIndex] <= 0){
-        randIndex = PseudoRandom::lcg_rand() % xval_fold;
-      }
+
+    /// start by Yang
+    if (peptideInSameFold) {
+        // get the unmodified peptide
+        std::string unmod_pep = sh.pPSM->getPeptideSequence();
+        size_t mod_cnt = std::count(unmod_pep.begin(), unmod_pep.end(), '[');
+        for (int mod_idx=0; mod_idx<mod_cnt; ++mod_idx) {
+            size_t mod_start = unmod_pep.find('[');
+            size_t mod_end = unmod_pep.find(']', mod_start);
+            unmod_pep.erase(mod_start,mod_end-mod_start+1);
+        }
+        // sort the unmodified peptide
+        sort(unmod_pep.begin(), unmod_pep.end());
+
+        // convert the unmodified peptide to a peptide token by using ASCII
+        unsigned long pep_token = 1u;
+        for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) { pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx); }
+        randIndex = pep_token % xval_fold;
+
     }
+    /// end by Yang
+    else {
+        if (previousSpectrum != curScan) {
+          randIndex = PseudoRandom::lcg_rand() % xval_fold;
+          // allow only indexes of folds that are non-full
+          while (remain[randIndex] <= 0){
+            randIndex = PseudoRandom::lcg_rand() % xval_fold;
+          }
+        }
+
+    }
+
+
     // insert
     for (unsigned int i = 0; i < xval_fold; ++i) {
       if (i == randIndex) {
