@@ -293,7 +293,7 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
      std::vector<Scores> nestedTrainScores(nestedXvalBins_, usePi0_), nestedTestScores(nestedXvalBins_, usePi0_);
      if (nestedXvalBins_ > 1) {
        FeatureMemoryPool featurePool;
-       trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool);
+       trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool, peptideInSameFold_);
      } else {
        // sub-optimal cross validation
        nestedTrainScores[0] = trainScores_[set];
