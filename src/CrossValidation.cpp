@@ -32,13 +32,14 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, int niter, bool usePi0,
-  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores) :
+  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores, bool peptideInSameFold) :
     quickValidation_(quickValidation), usePi0_(usePi0),
     reportPerformanceEachIteration_(reportPerformanceEachIteration), 
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
     nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
-    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {}
+    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores),
+	peptideInSameFold_(peptideInSameFold) {}
 
 CrossValidation::~CrossValidation() { 
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
@@ -73,7 +74,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   trainScores_.resize(numFolds_, Scores(usePi0_));
   testScores_.resize(numFolds_, Scores(usePi0_));
   
-  fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool);
+  fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool, peptideInSameFold_);
   
   if (selectionFdr_ <= 0.0) {
     selectionFdr_ = testFdr_;

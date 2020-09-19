@@ -193,7 +193,7 @@ class Scores {
   int getInitDirection(const double initialSelectionFdr, std::vector<double>& direction);
   void createXvalSetsBySpectrum(std::vector<Scores>& train, 
       std::vector<Scores>& test, const unsigned int xval_fold,
-      FeatureMemoryPool& featurePool);
+	  FeatureMemoryPool& featurePool, bool peptideInSameFold);
   
   void generatePositiveTrainingSet(AlgIn& data, const double fdr,
       const double cpos, const bool trainBestPositive);
