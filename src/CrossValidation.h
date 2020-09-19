@@ -46,7 +46,7 @@ class CrossValidation {
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0,
           int nestedXvalBins, bool trainBestPositive, unsigned int numThreads,
-		  bool skipNormalizeScores, bool peptideInSameFold);
+    bool skipNormalizeScores);
   
   ~CrossValidation();
   
@@ -100,10 +100,6 @@ class CrossValidation {
   
   bool trainBestPositive_;
   bool skipNormalizeScores_;
-
-  /// start by Yang
-  bool peptideInSameFold_;
-  /// end by Yang
   
   const static double requiredIncreaseOver2Iterations_;
   
