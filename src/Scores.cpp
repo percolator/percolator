@@ -303,10 +303,11 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
  * @param xval_fold: number of folds in train and test
+ * @param peptideInSameFold: whether to put the PSMs corresponding to the same target/decoy pair in the same fold
  */
 void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
     std::vector<Scores>& test, const unsigned int xval_fold, 
-    FeatureMemoryPool& featurePool) {
+    FeatureMemoryPool& featurePool, bool peptideInSameFold) {
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
   test.resize(xval_fold, Scores(usePi0_));

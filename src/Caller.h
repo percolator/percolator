@@ -106,6 +106,10 @@ class Caller {
   // reporting parameters
   std::string call_;
   
+  /// start by Yang
+  bool peptideInSameFold_;
+  /// end by Yang
+  
   // google analytics
   static bool parseUrl(std::string url, std::string* host, std::string* path);
   static void httpRequest(const std::string& url, const std::string& data);
