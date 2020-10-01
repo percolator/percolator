@@ -22,8 +22,7 @@
  * Main file for Google Test
  * Just run all tests
  */
-
-#include "UnitTest_Percolator_Fido.cpp"
+#include <gtest/gtest.h>
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

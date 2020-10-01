@@ -21,11 +21,8 @@
 /* This file include test cases for the EludeCaller class */
 #include <gtest/gtest.h>
 
-#include "PackedVector.cpp"
-#include "PackedMatrix.cpp"
-#include "Set.cpp"
-#include "Numerical.cpp"
-#include "Vector.cpp"
+#include "PackedVector.h"
+#include "PackedMatrix.h"
 #include "BaseSpline.h"
 
 class FidoVectorTest : public ::testing::Test {
