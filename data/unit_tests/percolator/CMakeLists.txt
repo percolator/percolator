@@ -35,9 +35,15 @@ if(GOOGLE_TEST)
 endif(GOOGLE_TEST)
 
 # Linking and building unit tests
-include_directories(${GTEST_INCLUDE_DIRS} ${PERCOLATOR_SOURCE_DIR}/src ${PERCOLATOR_SOURCE_DIR}/src/fido ${PERCOLATOR_SOURCE_DIR}/data/tests ${CMAKE_BINARY_DIR}/src)
-add_executable(gtest_unit Unit_tests_Percolator_main.cpp)
-target_link_libraries(gtest_unit perclibrary gtest gtest_main pthread)
+include_directories(${GTEST_INCLUDE_DIRS}
+    ${PERCOLATOR_SOURCE_DIR}/src
+    ${PERCOLATOR_SOURCE_DIR}/src/fido
+    ${PERCOLATOR_SOURCE_DIR}/data/tests
+    ${CMAKE_BINARY_DIR}/src)
+add_executable(gtest_unit
+    Unit_tests_Percolator_main.cpp
+    UnitTest_Percolator_Fido.cpp)
+target_link_libraries(gtest_unit perclibrary fido gtest gtest_main pthread)
 add_test(UnitTest_Percolator_RunAllTests gtest_unit)
 
 # Important to use relative paths here (used by CPack)!
