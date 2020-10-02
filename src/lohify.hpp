@@ -41,6 +41,12 @@ void max_quick_lohify(T*__restrict x, T*__restrict x_end, PrimitiveVector<unsign
     n = second_half_of_x - x;
   }
 
+  // The first layer, by default, starts at 0 so do not include a
+  // partition rank at 0 else you will always have layer_end[0] ==
+  // layer_begin[0] which may cause problems
+  if (partition_ranks.back() == 0)
+    partition_ranks.pop_back();
+
   if (FORCE_FIRST_LAYER_TO_HAVE_SIZE_1) {
     std::sort(x,x_end,compare);
 

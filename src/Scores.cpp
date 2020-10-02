@@ -594,6 +594,8 @@ int Scores::calcScoresLOH(std::vector<double>& w, double fdr, bool skipDecoysPlu
 
   int loh_score = calcScoresQuickLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps,total_number_of_decoys_ + (!skipDecoysPlusOne));
 
+  delete[] score_label_pairs;
+
   // score == -1 means it never hit the threshold,
   // so return n
   if (loh_score == -1)
