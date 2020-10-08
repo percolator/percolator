@@ -42,7 +42,8 @@ include_directories(${GTEST_INCLUDE_DIRS}
     ${CMAKE_BINARY_DIR}/src)
 add_executable(gtest_unit
     Unit_tests_Percolator_main.cpp
-    UnitTest_Percolator_Fido.cpp)
+    UnitTest_Percolator_Fido.cpp
+    UnitTest_Percolator_Option.cpp)
 target_link_libraries(gtest_unit perclibrary fido gtest gtest_main pthread)
 add_test(UnitTest_Percolator_RunAllTests gtest_unit)
 
