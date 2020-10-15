@@ -800,7 +800,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
     diff = difftime(end, procStart);
     ostringstream timerValues;
     timerValues.precision(4);
-    timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
+    timerValues << fixed << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
                 << " cpu seconds or " << diff << " seconds wall clock time." << endl;
     std::cerr << timerValues.str();
   }
@@ -876,7 +876,7 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   if (VERB > 1) {
     ostringstream timerValues;
     timerValues.precision(4);
-    timerValues << "Estimating protein probabilities took : "
+    timerValues << fixed << "Estimating protein probabilities took : "
       << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
       << " cpu seconds or " << diff_time << " seconds wall clock time." << endl;
     std::cerr << timerValues.str();
