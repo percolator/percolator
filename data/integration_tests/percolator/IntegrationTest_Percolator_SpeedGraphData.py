@@ -27,15 +27,16 @@ import pandas as pd
 from itertools import (takewhile,repeat)
 
 testScriptPath = pathToTestScripts + "/IntegrationTest_Percolator_Speed.py"
-minNumLines = -1 #The amount of input lines that also determine the step size between tests. Tests are made with increasing input size determined by number of lines with PSMs.
+#The amount of input lines that also determine the step size between tests. Tests are made with increasing input size determined by number of PSMs.
+minNumLines = -1
 processText = 'IntegrationTest_Percolator_SpeedGraphData.py'
 
 
 def getArguments():
     parser = ArgumentParser(description="Measure speed of perculator application with varying input and creates a graph.")
     parser._action_groups.pop()
-    required = parser.add_argument_group('Required arguments')
-    optional = parser.add_argument_group('Optional arguments')
+    required = parser.add_argument_group('required arguments')
+    optional = parser.add_argument_group('optional arguments')
 
     required.add_argument('-d','--data', type=str, metavar='', required=True, help="Path to input-data used by percolator.")
     optional.add_argument('-py','--python_version', type=str, metavar='', default="python3" , required=False, help="Python version to call other python modules from.")
@@ -83,37 +84,53 @@ def getTerminalCommand(args, data):
 def generateInputFiles(args):
     maxNumLines = countLinesInFile(args.data)
     dataFilename = Path(args.data).stem
-    numDataFiles = 0
+    numDataFiles = 1
+
+    intialNumLines = getInitialNumLines()
+    makeReducedFile(args.data, "{}/{}".format(pathToOutputData, getTemporaryInDataFileName(intialNumLines, dataFilename)), intialNumLines)
+
     for i in range(0, int(maxNumLines/minNumLines)):
-        numDataFiles += 1
         fileNumber = minNumLines*numDataFiles
-        makeReducedFile(args.data, pathToOutputData + "/" + getTemporaryInDataFileName(fileNumber, dataFilename), fileNumber)
+        numDataFiles += 1
+        makeReducedFile(args.data, "{}/{}".format(pathToOutputData, getTemporaryInDataFileName(fileNumber, dataFilename)), fileNumber)
     if numDataFiles == 0:
-        print("Error, data input file must contain at least " + str(minNumLines) + " lines of PSMs.")
+        print("Error, data input file must contain at least {} lines of PSMs.".format(minNumLines))
         exit(1)
     return numDataFiles
+
+def runCommandAndWait(terminalCommand, runTimes):
+    p = subprocess.Popen(terminalCommand, stderr=PIPE , stdout=PIPE , text=True, shell=True)
+    print("Running subprocess: " + str(p.pid))
+    p.wait()
+    result = p.stdout.read()
+    print(p.stderr.read())
+    result = result.splitlines()
+    for item in result:
+        if "Min" in item:
+            #This regex script depends on the output from IntegrationTest_Percolator_Speed.py to be in a very specific format.
+            runTime = re.findall(r"[+]?\d*\.\d+|\d+", item)
+            runTime = [float(i) for i in runTime]
+            runTimes.append(runTime)
+
+def getInitialNumLines():
+    return 10**(len(str(minNumLines)) -1 )
 
 def getRunTimes(args):
     runTimes = []
     dataFilename = Path(args.data).stem
-    for i in range(1, numDataFiles+1):
+    intialNumLines = getInitialNumLines()
+    terminalCommand = getTerminalCommand(args, "{}/{}".format(pathToOutputData, getTemporaryInDataFileName(intialNumLines, dataFilename)) )
+    runCommandAndWait(terminalCommand, runTimes)
+    for i in range(1, numDataFiles):
         terminalCommand = getTerminalCommand(args, "{}/{}".format(pathToOutputData, getTemporaryInDataFileName(minNumLines*i, dataFilename)) )
-        p = subprocess.Popen(terminalCommand, stderr=PIPE , stdout=PIPE , text=True, shell=True)
-        print("Running subprocess: " + str(p.pid))
-        p.wait()
-        result = p.stdout.read()
-        print(p.stderr.read())
-        result = result.splitlines()
-        for item in result:
-            if "Min" in item:
-                runTime = re.findall(r"[+]?\d*\.\d+|\d+", item) #This regex script depends on the output from IntegrationTest_Percolator_Speed.py to be in a very specific format.
-                runTime = [float(i) for i in runTime]
-                runTimes.append(runTime)
+        runCommandAndWait(terminalCommand, runTimes)
     return runTimes
 
 def getXNumLines(numDataFiles):
     x_numLines = []
-    for i in range(1, numDataFiles+1):
+    intialNumLines = getInitialNumLines()
+    x_numLines.append(intialNumLines)
+    for i in range(1, numDataFiles):
         x_numLines.append(i*minNumLines)
     return x_numLines
 
@@ -134,7 +151,7 @@ def waitForProcess(pid):
             if numIterations == 0 or numIterations > 60*delayMultiplier:
                 delayMultiplier = delayMultiplier * 2
                 numIterations = 1
-                print("Waiting for PID " + str(pid) + " to finish. (" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ")")
+                print("Waiting for PID {} to finish. ({})".format(pid, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             time.sleep(45)
         else:
             return
@@ -169,6 +186,6 @@ runTimes = getRunTimes(args)
 x_numLines = getXNumLines(numDataFiles)
 saveData(args, runTimes, x_numLines)
 
-print("...TEST SUCCEEDED")
+print("...TEST FINISHED")
 
 

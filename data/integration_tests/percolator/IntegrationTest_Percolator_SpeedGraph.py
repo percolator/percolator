@@ -1,5 +1,5 @@
 # Marcus Andersson - Percolator Project
-# Takes data from IntegrationTest_Percolator_SpeedGraphData.py and outputs graph images.
+# Takes data from IntegrationTest_Percolator_SpeedGraphData.py and output graph images.
 # Input: Any number of data files, but at least 1.
 
 pathToOutputData = "@pathToOutputData@"
@@ -22,6 +22,8 @@ from matplotlib.ticker import FormatStrFormatter
 markers = ["o","v","^","<",">","1","s","p","P","*","H","x","d","|","+"]
 outputFilename = "outGraph"
 
+#This function is used to get the number of zeroes for the smallest x-value. 
+#This enables the x-ticks length to be reduced by writing them as multiplications of 10^(exponent).
 def getMinExponent(xStepValue):
     exponent = 1
     while xStepValue % 10 == 0 and xStepValue > 0:
@@ -76,10 +78,9 @@ def setLinePlotLegends(data, colors):
     handles = [plt.Line2D([0,0],[0,1], color=legendColors[label], marker=legendMarkers[label], linestyle='-') for label in labels]
     plt.legend(handles, labels)
 
-def setDescriptiveText(minExponent, titleName):
-    plt.suptitle(titleName, fontsize='xx-large')
-    plt.xlabel('Number of PSM Lines x$10^{}$'.format(str(len(str(minExponent))-1)), fontsize='x-large')
-    plt.ylabel('Time in Seconds', fontsize='x-large')
+def setDescriptiveText(minExponent, yTitleName):
+    plt.xlabel('Number of PSMs x$10^{}$'.format(len(str(minExponent))-1), fontsize='x-large')
+    plt.ylabel(yTitleName, fontsize='x-large')
 
 def getBarChart(data):
     colors = getPlotColors()
@@ -140,16 +141,16 @@ def getXValues(file):
     xSteps = [int(item/minExponent) for item in xSteps]
     return xSteps, minExponent
 
-def makeBarChart(data, minExponent, titleName, outputFilename):
+def makeBarChart(data, minExponent, yTitleName, outputFilename):
     chart = getBarChart(data)
-    setDescriptiveText(minExponent, titleName)
+    setDescriptiveText(minExponent, yTitleName)
     plt.tight_layout()
     chart.savefig("{}/{}.png".format(pathToOutputData, outputFilename + "Bar"))
     chart.close()
 
-def makeLineChart(data, minExponent, titleName, outputFilename):
+def makeLineChart(data, minExponent, yTitleName, outputFilename):
     chart = getLineChart(data)
-    setDescriptiveText(minExponent, titleName)
+    setDescriptiveText(minExponent, yTitleName)
     plt.tight_layout()
     chart.savefig("{}/{}.png".format(pathToOutputData, outputFilename + "Line"))
     chart.close()
@@ -157,11 +158,14 @@ def makeLineChart(data, minExponent, titleName, outputFilename):
 
 files, fileNames = getFiles()
 xSteps, minExponent = getXValues(files[0]) #Assumes all plots share the same step size for the horizontal line, x.
+print(xSteps)
+print(minExponent)
 dataWall, dataCPU = getPlotData(files, fileNames, xSteps)
 
-makeBarChart(dataWall, minExponent,  'Wall Clock Speed', outputFilename + "Wall")
-makeBarChart(dataCPU, minExponent,   'CPU Clock Speed', outputFilename + "CPU")
-makeLineChart(dataWall, minExponent, 'Wall Clock Speed', outputFilename + "Wall")
-makeLineChart(dataCPU, minExponent,  'CPU Clock Speed', outputFilename + "CPU")
+
+makeBarChart(dataWall, minExponent,  'Wall Time in Seconds', outputFilename + "Wall")
+makeBarChart(dataCPU, minExponent,   'CPU Time in Seconds', outputFilename + "CPU")
+makeLineChart(dataWall, minExponent, 'Wall Time in Seconds', outputFilename + "Wall")
+makeLineChart(dataCPU, minExponent,  'CPU Time in Seconds', outputFilename + "CPU")
 
 
