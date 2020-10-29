@@ -20,7 +20,6 @@ from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as mtick
 import math
 
-import numpy as np
 
 markers = ["o","v","^","<",">","1","s","p","P","*","H","x","d","|","+"]
 outputFilename = "outGraph"
