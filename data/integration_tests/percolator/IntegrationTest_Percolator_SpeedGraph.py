@@ -20,7 +20,6 @@ from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as mtick
 import math
 
-
 markers = ["o","v","^","<",">","1","s","p","P","*","H","x","d","|","+"]
 outputFilename = "outGraph"
 
@@ -66,6 +65,7 @@ def setBarPlotLegends(data, colors, counterStart = 0):
         counter += 1      
     labels = list(legendColors.keys())
     handles = [plt.Rectangle((0,0),1,1, color=legendColors[label]) for label in labels]
+    labels = [label.replace("_", " ") for label in labels]
     plt.legend(handles, labels)
 
 def setLinePlotLegends(data, colors):
@@ -78,6 +78,7 @@ def setLinePlotLegends(data, colors):
         counter += 1      
     labels = list(legendColors.keys())
     handles = [plt.Line2D([0,0],[0,1], color=legendColors[label], marker=legendMarkers[label], linestyle='-') for label in labels]
+    labels = [label.replace("_", " ") for label in labels]
     plt.legend(handles, labels)
 
 def setDescriptiveText(minExponent, yTitleName):
@@ -191,9 +192,12 @@ def nextClosePowerOf2(x):
     if x >= 1:
         x = int(x)
         return 1 if x == 0 else 2**(x - 1).bit_length()
-    x = int(x*1000.0)
-    x = 2**(x - 1).bit_length()
-    x /= 1000.0
+
+    minDivisionOf2 = 1
+    while minDivisionOf2 >= x:
+        minDivisionOf2 /= 2
+    x = minDivisionOf2
+    
     return x
 
 def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
@@ -203,8 +207,10 @@ def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
     setRelativePercentages(tmpData, referenceValues)
 
     min_value, max_value = getMaxAndMinPercentage(tmpData)
-    min_value = nextClosePowerOf2(min_value)/2
+    min_value = nextClosePowerOf2(min_value)
     max_value = nextClosePowerOf2(max_value)
+    max_value = max(max_value, 2)
+    min_value = min(min_value, 0.5)
 
     ax = plt.gca()
     ax.grid(True, which="both", zorder=0)
@@ -213,6 +219,7 @@ def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
     plt.axhline(y=1, color='silver', linestyle='--', linewidth=1)
     addRelativeLines(tmpData, xTicks, colors)
     ax.set_ylim(bottom=min_value, top=max_value)
+
     setDescriptiveText(minExponent, yTitleName)
     ax.yaxis.set_major_formatter(mtick.ScalarFormatter())
     ax.yaxis.get_major_formatter().set_scientific(False)
