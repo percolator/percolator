@@ -66,7 +66,7 @@ def setBarPlotLegends(data, colors, counterStart = 0):
     labels = list(legendColors.keys())
     handles = [plt.Rectangle((0,0),1,1, color=legendColors[label]) for label in labels]
     labels = [label.replace("_", " ") for label in labels]
-    plt.legend(handles, labels)
+    plt.legend(handles, labels, loc="upper left")
 
 def setLinePlotLegends(data, colors):
     counter = 0
@@ -144,7 +144,7 @@ def getXValues(file):
 
 def savePlot(name):
     plt.tight_layout()
-    plt.savefig("{}/{}.png".format(pathToOutputData, name))
+    plt.savefig("{}/{}.png".format(pathToOutputData, name), dpi=200)
     plt.close()
 
 def makeBarChart(data, minExponent, yTitleName, outputFilename):
@@ -158,11 +158,11 @@ def makeLineChart(data, minExponent, yTitleName, outputFilename):
     savePlot(outputFilename + "Line")
 
 def getMaxAndMinPercentage(data):
-    minVal = 999999999999
-    maxVal = -99999999999
+    minVal = sys.maxsize
+    maxVal = -sys.maxsize
     for value in data.values():
         percentages = list(value.values())
-        maxVal = max(maxVal, math.ceil(max(percentages))) #max av all kommande data
+        maxVal = max(maxVal, math.ceil(max(percentages)))
         minVal = min(minVal, min(percentages))
     return minVal, maxVal
 
@@ -170,13 +170,15 @@ def setRelativePercentages(data, referenceValues):
     for key in data.keys():
         relativeValues = data[key].values()
         percentages = [y/x for x, y in zip(referenceValues, relativeValues)] #Assume it's impossible for any run-time to be 0.
+        #Note that since "semilogy" is used to plot graphs with "base=2" all values are distorted unless they are transformed to be powers of 2.
+        #When not transformed, they will be placed "strangely" on the y-axis. The formula used for plotting is 2^(?)=x where x is the original value and ? the y-position.
+        #The distortion can be easily observed by adding a plot value of 1.5 when the limits are between 1 and 2, as the point will not be in the exact middle.
         percentages = [ round(elem, 3) for elem in percentages ]
         data[key].update(zip(data[key], percentages))
 
 def addRelativeLines(data, xTicks, colors):
     counter = 1
     for key in data.keys():
-        #print(data[key].values())
         plt.semilogy(xTicks, data[key].values(), color=colors[counter], marker=markers[counter], base=2)
         counter += 1
 
@@ -191,14 +193,41 @@ def extractReferenceValuesAndXTicks(tmpData):
 def nextClosePowerOf2(x):  
     if x >= 1:
         x = int(x)
-        return 1 if x == 0 else 2**(x - 1).bit_length()
+        return 1 if x == 0 else 1 << (x-1).bit_length()
 
     minDivisionOf2 = 1
     while minDivisionOf2 >= x:
         minDivisionOf2 /= 2
-    x = minDivisionOf2
-    
-    return x
+    return minDivisionOf2
+
+def isPowerOf2(n): #https://stackoverflow.com/a/57025941
+    n = int(n)
+    return (n & (n-1) == 0) and n != 0
+
+def plotIntermediateGridlinesSemiLogYBase2(min_value, max_value):
+    plt.axhline(y=1, color='silver', linestyle='--', linewidth=0.5, zorder=0)
+    yLineLocation = 1
+    multiplier = 1
+    while yLineLocation <= max_value:
+        yLineLocation += 0.1*multiplier
+        yLineLocation = round(yLineLocation, 6)
+        plt.axhline(y=yLineLocation, color='silver', linestyle='--', linewidth=0.5, zorder=0)
+        if yLineLocation.is_integer() and isPowerOf2(yLineLocation):
+            multiplier = 1 << (multiplier).bit_length()
+    yLineLocationUpwards = 1
+    yLineLocationDownwards = 1
+    multiplier = 1
+    divisor = 2
+    while yLineLocationDownwards >= min_value:
+        yLineLocationUpwards += 0.1*multiplier
+        yLineLocationDownwards -= (0.1*multiplier)/divisor
+        yLineLocationUpwards = round(yLineLocationUpwards, 6)
+        yLineLocationDownwards = round(yLineLocationDownwards, 6)
+        plt.axhline(y=yLineLocationDownwards, color='silver', linestyle='--', linewidth=0.5, zorder=0)
+        if yLineLocationUpwards.is_integer() and isPowerOf2(yLineLocationUpwards):
+            multiplier = 1 << (multiplier).bit_length()
+            divisor = 1 << (divisor*2).bit_length()
+
 
 def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
     colors = getPlotColors()
@@ -212,11 +241,10 @@ def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
     max_value = max(max_value, 2)
     min_value = min(min_value, 0.5)
 
+    plotIntermediateGridlinesSemiLogYBase2(min_value, max_value)
     ax = plt.gca()
     ax.grid(True, which="both", zorder=0)
     setBarPlotLegends(tmpData, colors, 1)
-
-    plt.axhline(y=1, color='silver', linestyle='--', linewidth=1)
     addRelativeLines(tmpData, xTicks, colors)
     ax.set_ylim(bottom=min_value, top=max_value)
 
@@ -227,6 +255,7 @@ def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
     ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
     ax.set_xticks(xTicks)
     plt.setp(plt.xticks()[1], rotation=0)
+
     savePlot(outputFilename + "Relative")
     
 
@@ -240,8 +269,8 @@ makeBarChart(dataCPU, minExponent,   'CPU Time in Seconds', outputFilename + "CP
 makeLineChart(dataWall, minExponent, 'Wall Time in Seconds', outputFilename + "Wall")
 makeLineChart(dataCPU, minExponent,  'CPU Time in Seconds', outputFilename + "CPU")
 
-makeRelativeGraph(dataWall, minExponent, "Fraction of Original {} Time".format("Wall"), outputFilename + "Wall")
-makeRelativeGraph(dataCPU, minExponent, "Fraction of Original {} Time".format("CPU"), outputFilename + "CPU")
+makeRelativeGraph(dataWall, minExponent, "Fraction of Original {} Time (log₂-scale)".format("Wall"), outputFilename + "Wall")
+makeRelativeGraph(dataCPU, minExponent, "Fraction of Original {} Time (log₂-scale)".format("CPU"), outputFilename + "CPU")
 
 
 
