@@ -267,8 +267,8 @@ makeBarChart(dataCPU, minExponent,   'CPU Time in Seconds', outputFilename + "CP
 makeLineChart(dataWall, minExponent, 'Wall Time in Seconds', outputFilename + "Wall")
 makeLineChart(dataCPU, minExponent,  'CPU Time in Seconds', outputFilename + "CPU")
 
-makeRelativeGraph(dataWall, minExponent, "Fraction of Original {} Time (log₂-scale)".format("Wall"), outputFilename + "Wall")
-makeRelativeGraph(dataCPU, minExponent, "Fraction of Original {} Time (log₂-scale)".format("CPU"), outputFilename + "CPU")
+makeRelativeGraph(dataWall, minExponent, "Fraction of Original {} Time".format("Wall"), outputFilename + "Wall")
+makeRelativeGraph(dataCPU, minExponent, "Fraction of Original {} Time".format("CPU"), outputFilename + "CPU")
 
 
 
