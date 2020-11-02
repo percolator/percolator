@@ -166,13 +166,20 @@ def getMaxAndMinPercentage(data):
         minVal = min(minVal, min(percentages))
     return minVal, maxVal
 
+def nextClosePowerOf2(x):  
+    if x >= 1:
+        x = int(x)
+        return 1 if x == 0 else 1 << (x-1).bit_length()
+
+    minDivisionOf2 = 1
+    while minDivisionOf2 >= x:
+        minDivisionOf2 /= 2
+    return minDivisionOf2
+
 def setRelativePercentages(data, referenceValues):
     for key in data.keys():
         relativeValues = data[key].values()
         percentages = [y/x for x, y in zip(referenceValues, relativeValues)] #Assume it's impossible for any run-time to be 0.
-        #Note that since "semilogy" is used to plot graphs with "base=2" all values are distorted unless they are transformed to be powers of 2.
-        #When not transformed, they will be placed "strangely" on the y-axis. The formula used for plotting is 2^(?)=x where x is the original value and ? the y-position.
-        #The distortion can be easily observed by adding a plot value of 1.5 when the limits are between 1 and 2, as the point will not be in the exact middle.
         percentages = [ round(elem, 3) for elem in percentages ]
         data[key].update(zip(data[key], percentages))
 
@@ -189,16 +196,6 @@ def extractReferenceValuesAndXTicks(tmpData):
     xTicks = list(tmpData[firstKey].keys())
     del tmpData[firstKey]
     return referenceValues, xTicks
-
-def nextClosePowerOf2(x):  
-    if x >= 1:
-        x = int(x)
-        return 1 if x == 0 else 1 << (x-1).bit_length()
-
-    minDivisionOf2 = 1
-    while minDivisionOf2 >= x:
-        minDivisionOf2 /= 2
-    return minDivisionOf2
 
 def isPowerOf2(n): #https://stackoverflow.com/a/57025941
     n = int(n)
@@ -218,9 +215,11 @@ def plotIntermediateGridlinesSemiLogYBase2(min_value, max_value):
     yLineLocationDownwards = 1
     multiplier = 1
     divisor = 2
+    #The scaling changes for numbers below 1. For values higher than 1 the scale goes in terms of 100% but for values below 1, like the range 1 to 0.5, "50%" becomes 100%.
+    #Thus, we need more spacing between lines to show margins with 10% spacing. This is why we double the distance with "0.2" instead of "0.1" like it's done above.
     while yLineLocationDownwards >= min_value:
-        yLineLocationUpwards += 0.1*multiplier
-        yLineLocationDownwards -= (0.1*multiplier)/divisor
+        yLineLocationUpwards += 0.2*multiplier
+        yLineLocationDownwards -= (0.2*multiplier)/divisor
         yLineLocationUpwards = round(yLineLocationUpwards, 6)
         yLineLocationDownwards = round(yLineLocationDownwards, 6)
         plt.axhline(y=yLineLocationDownwards, color='silver', linestyle='--', linewidth=0.5, zorder=0)
@@ -257,7 +256,6 @@ def makeRelativeGraph(data, minExponent, yTitleName, outputFilename):
     plt.setp(plt.xticks()[1], rotation=0)
 
     savePlot(outputFilename + "Relative")
-    
 
     
 files, fileNames = getFiles()
