@@ -64,6 +64,7 @@ add_subdirectory(src)
 # Enabling system level tests (Ctest)
 enable_testing()
 # Scheduling system level tests
+add_subdirectory(data/integration_tests/percolator)
 add_subdirectory(data/system_tests/percolator)
 # Scheduling unit level tests
 if(GOOGLE_TEST)
