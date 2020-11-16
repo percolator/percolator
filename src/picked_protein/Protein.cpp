@@ -522,9 +522,6 @@ bool Protein::readRawSequence
  */
 void Protein::shuffle(
   DECOY_TYPE_T decoy_type){ ///< method for shuffling
-  //char* decoy_str = decoy_type_to_string(decoy_type);
-  //carp(CARP_DEBUG, "Shuffling protein %s as %s", id_, decoy_str);
-  //free(decoy_str);
 
   switch(decoy_type){
   case NO_DECOYS:
@@ -540,6 +537,8 @@ void Protein::shuffle(
   case NUMBER_DECOY_TYPES:
     //carp(CARP_FATAL, "Illegal decoy type for shuffling protein.");
     break;
+  default:
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -592,8 +591,8 @@ void Protein::setId(
   const char* id ///< the sequence to add -in
   )
 {
-  free(id_);
   int id_length = strlen(id) +1; // +\0
+  free(id_);
   char* copy_id = 
     (char *)malloc(sizeof(char)*id_length);
   id_ =
@@ -640,8 +639,8 @@ void Protein::setSequence(
   )
 {
 
-  free(sequence_);
   unsigned int sequence_length = strlen(sequence) +1; // +\0
+  free(sequence_);
   char * copy_sequence = 
     (char *)malloc(sizeof(char)*sequence_length);
   sequence_ =

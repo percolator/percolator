@@ -183,6 +183,6 @@ class ProteinPeptideIterator {
  * End:
  */
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 #endif

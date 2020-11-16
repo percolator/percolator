@@ -465,7 +465,7 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 
 // assumes pep are sorted in ascending order
 void PosteriorEstimator::getQValuesFromPEP(const vector<double>& pep, vector<double>& q) {
-	int nP = 1, queue = 0;
+	int nP = 1;
 	double sum = 0.0;
 	for (vector<double>::const_iterator myP = pep.begin(); myP != pep.end(); ++myP, ++nP) {
 	  sum += *myP;

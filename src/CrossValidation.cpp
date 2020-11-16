@@ -340,8 +340,6 @@ void CrossValidation::trainCpCnPair(candidateCposCfrac& cpCnFold,
   pWeights->d = FeatureNames::getNumFeatures() + 1;
   pWeights->vec = new double[pWeights->d];
 
-  unsigned int set = cpCnFold.set;
-  unsigned int nestedFold = cpCnFold.nestedSet;
   double cpos = cpCnFold.cpos;
   double cfrac = cpCnFold.cfrac;
     
@@ -353,7 +351,6 @@ void CrossValidation::trainCpCnPair(candidateCposCfrac& cpCnFold,
 
   if (VERB > 3) cerr << "- cross-validation with Cpos=" << cpos
                      << ", Cneg=" << cfrac * cpos << endl;
-  int tp = 0;
   for (int ix = 0; ix < pWeights->d; ix++) {
     pWeights->vec[ix] = 0;
   }

@@ -249,7 +249,7 @@ double Matrix::frobeniusNorm() const
       tot += pow(rows[k].norm(), 2.0);
     }
 
-  return sqrt(tot);;
+  return sqrt(tot);
 }
 
 Matrix operator +(const Matrix & lhs, const Matrix & rhs)

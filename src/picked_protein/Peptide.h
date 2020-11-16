@@ -466,7 +466,7 @@ char residue_iterator_next(
   RESIDUE_ITERATOR_T* residue_iterator  ///< the query iterator -in
   );
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 #endif
 

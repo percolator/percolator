@@ -203,8 +203,6 @@ void Database::print(
   FILE* file    ///< output file stream -out             
   )
 {
-  Protein* protein = NULL;
-
   fprintf(file, "filename:%s\n", fasta_filename_.c_str());
 }
 

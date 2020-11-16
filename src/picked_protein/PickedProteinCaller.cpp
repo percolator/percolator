@@ -362,8 +362,6 @@ bool PickedProteinCaller::getProteinFragmentsAndDuplicates(
   
   if (VERB > 3) reportProgress("Creating database", startTime, startClock);
   
-  bool success = true;
-  
   // First do a "basic" digest to get candidates for protein grouping*
   //
   // * there are some rare cases in which fragment proteins have

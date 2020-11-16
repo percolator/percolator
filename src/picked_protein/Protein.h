@@ -340,7 +340,7 @@ class Protein {
  */
 bool protein_id_less_than(Protein* protein_one, Protein* protein_two);
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 /*
  * Local Variables:

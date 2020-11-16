@@ -83,8 +83,6 @@ void cglsFun2(int active, int* J, const double* Y,
               double cpos, double cneg){
   int i;
   int inc = 1;
-  int ind = 0;
-  double temp = 0.0;
   
   for (i = 0; i < active; i++) {
     o[J[i]] += q[i];
@@ -114,7 +112,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   double* z = new double[active];
   double* q = new double[active];
   int ii = 0;
-  register int i, j;
+  register int i;
   int n0 = n-1;
   int inc = 1;
   double one = 1;
@@ -248,7 +246,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   Weights_bar->d = n;
   Outputs_bar->d = m;
   double delta = 0.0;
-  double t = 0.0;
   int ii = 0;
   while (iter < Options->mfnitermax) {
     iter++;
@@ -361,7 +358,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
 double line_search(double* w, double* w_bar, double lambda, double* o,
                    double* o_bar, const double* Y, int d, /* data dimensionality -- 'n' */
                    int l, double cpos, double cneg){
-  int inc = 1;
   int i = 0;
   double omegaL = 0.0;
   double omegaR = 0.0;

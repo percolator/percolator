@@ -144,7 +144,7 @@ double FidoInterface::estimatePriors(Scores& peptideScores) {
 	      tmp_prior = (tmp_prior * prior_protein * (size - index)) / (index + 1);
 	      prior +=  pow(-1.0,(int)index) * tmp_prior;
       }
-      /* update computed prior */
+      //update computed prior
       prior_peptide += (1.0-prior);
       if(psm->q <= 0.1) ++confident_peptides;
       prior_peptide2 += (1.0-psm->pep);
@@ -553,9 +553,7 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> peps;
   for (unsigned int k = 0; k < proteinNames.size(); ++k) {
-    double prob = probabilities[k];
     unsigned tpChange = countTargets(proteinNames[k]);
-    unsigned fpChange = proteinNames[k].size() - tpChange;
     bool isDecoy = (tpChange == 0);
     combined.push_back(make_pair(probabilities[k], !isDecoy));
     peps.push_back(probabilities[k]);
@@ -615,11 +613,9 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
     //or different size or all zeroes 
     //mse = mseThreshold_;
     mse = 1.0;
-    //mse1 = mse2 = mse3 = mse4 = 1.0;
     return;
   }
   mse = 0.0;
-  //mse1 = mse2 = mse3 = mse4 = 0.0;
   double x1,x2,y1,y2;
 
   for (unsigned k = 0; k < estFDR.size()-1; k++) {
@@ -644,23 +640,11 @@ void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR,
     
     if ( x1 != x2 && x2 != 0 && y2 != 0 ) { //if there is an area
       x2 = min(x2,mseThreshold_); //in case x2 is above mseThreshold_
-      //mse2 += trapezoid_area(x1,x2,y1,y2);
-      //mse3 += abs(area(x1, y1, x2, y2));
       mse += areaSq(x1, y1, x2, y2);
     }
-    
-    //mse1 += pow(y1,2);
   }
-
-  //mse1 += pow(y2,2); //last element of diff between vectors
   
   double normalizer1 = abs(std::min(estFDR.back(),mseThreshold_) - estFDR.front()); //normalize by x axis range (mseThreshold_ on top always)
-  //double normalizer2 = (double)estFDR.size(); //normalize by the number of elements
-  //std::cerr << estFDR[estFDR.size() - 2] << " " << estFDR.back() << std::endl;
-  //std::cerr << empFDR[empFDR.size() - 2] << " " << empFDR.back() << std::endl;
-  //mse1 /= normalizer2;
-  //mse2 /= normalizer1;
-  //mse3 /= normalizer1;
   mse /= (normalizer1*normalizer1*normalizer1)/3;
   return;
 }

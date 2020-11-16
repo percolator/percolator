@@ -341,7 +341,6 @@ void PickedProteinInterface::computeProbabilities(const std::string& fname) {
     switch (protInferenceMethod_) {
       case FISHER: {
         double fisher = 0.0;
-        int significantPeptides = 0;
         for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
           fisher += log(itP->p / maxPeptidePval_);

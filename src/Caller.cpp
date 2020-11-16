@@ -374,22 +374,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
       "filename");
 
-  /*
-  cmd.defineOption(Option::NO_SHORT_OPT,
-      "fido-protein-group-level-inference",
-      "Uses protein group level inference, each cluster of proteins is either present or not, therefore when grouping proteins discard all possible combinations for each group.(Only valid if option -A is active and -N is inactive).",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption(Option::NO_SHORT_OPT,
-      "fisher-pval-cutoff",
-      "The p-value cutoff for peptides when inferring proteins with fisher's method. Default = 1.0",
-      "value");
-  cmd.defineOption(Option::NO_SHORT_OPT,
-      "protein-absence-ratio",
-      "The ratio of absent proteins, used for calculating protein-level q-values with a null hypothesis of \"Protein P is absent\". This uses the \"classic\" protein FDR in favor of the \"picked\" protein FDR.",
-      "value");
-  */
-
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
 
@@ -483,10 +467,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     double protEstimatorAbsenceRatio = 1.0;
     double protEstimatorPeptideQvalThreshold = -1.0;
 
-    //if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
     protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
     if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
-    //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
     if (cmd.optionSet("spectral-counting-fdr")) {
       protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
     }
@@ -540,7 +522,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       double pickedProteinPvalueCutoff = 1.0;
       bool pickedProteinReportFragmentProteins = false;
       bool pickedProteinReportDuplicateProteins = false;
-      //if (cmd.optionSet("Q")) pickedProteinPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
       if (cmd.optionSet("protein-report-fragments")) pickedProteinReportFragmentProteins = true;
       if (cmd.optionSet("protein-report-duplicates")) pickedProteinReportDuplicateProteins = true;
 
@@ -691,7 +672,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     selectedCneg_ = 0.5;
     skipNormalizeScores_ = true;
     if (!cmd.optionSet("init-weights")) {
-      std:cerr << "Error: the --static option requires the --init-weights "
+      std::cerr << "Error: the --static option requires the --init-weights "
         << "option to be specified." << std::endl;
       return 0;
     }
@@ -768,9 +749,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
         << allScores.posSize() << " target PSMs and "
         << allScores.negSize() << " decoy PSMs." << std::endl;
     }
-  }/* else {
-    allScores.weedOutRedundantMixMax();
-  }*/
+  }
 
   if (VERB > 0 && writeOutput) {
     if (useMixMax_) {

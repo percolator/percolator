@@ -87,10 +87,6 @@ void SetHandler::normalizeDOCFeatures(Normalizer* pNorm) {
   pNorm->normalizeSet(featuresDOC, offset, numFeatures);
 }
 
-/*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
-  return subsets_[setPos]->getFeatures(ixPos);
-}*/
-
 int const SetHandler::getLabel(int setPos) {
   assert(setPos >= 0 && setPos < (signed int)subsets_.size());
   return subsets_[setPos]->getLabel();
@@ -155,13 +151,10 @@ int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) 
   TabReader reader(line);
   reader.skip(2u + optionalFieldCount); // remove id, label and optional fields
   
-  double a = reader.readDouble();
   int numFeatures = 0;
-  while (!reader.error()) {
+  while (!reader.error() && reader.readDouble())
     ++numFeatures;
-    a = reader.readDouble();
-  }
-  
+
   return numFeatures;
 }
 
@@ -287,7 +280,6 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     
     addQueueToSets(subsetPSMs, targetSet, decoySet);
   } else { // simply read all PSMs
-    unsigned int targetIdx = 0u, decoyIdx = 0u;
     std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {

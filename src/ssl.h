@@ -118,7 +118,6 @@ class Delta { /* used in line search */
 inline bool operator<(const Delta& a, const Delta& b) {
   return (a.delta < b.delta);
 }
-;
 
 void Clear(struct data* a); /* deletes a */
 void Clear(struct vector_double* a); /* deletes a */

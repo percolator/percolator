@@ -56,7 +56,7 @@ int dgemv_(char *trans, int *m, int *n,
 
 /*     Quick return if possible. */
 
-    if (*m == 0 || *n == 0 || *alpha == 0.0 && *beta == 1.0) {
+    if (*m == 0 || *n == 0 || (*alpha == 0.0 && *beta == 1.0)) {
 	return 0;
     }
 

@@ -369,28 +369,6 @@ char* Peptide::getUnshuffledSequence() {
 }
 
 /**
- * \brief Check whether a given sequence is equal to a given peptide.
- * \returns A Boolean indicating equality or not.
- */
-static bool equal_peptides(
- char* peptide_sequence, ///< peptide sequence -in
- Peptide* peptide_object ///< peptide object -in
- )
-{
-  char* parent_sequence = 
-    peptide_object->getPeptideSrc()->getParentProtein()->
-    getSequencePointer();
-  int start_idx = peptide_object->getPeptideSrc()->getStartIdx();
-
-  int result = strncmp(peptide_sequence, 
-                       &(parent_sequence[start_idx-1]), 
-                       peptide_object->getLength());
-
-  // Return true if strncmp returns 0.
-  return((bool)(!result));
-}
-
-/**
  * \brief Get a pointer to the peptide sequence that is NOT null
  * terminated.
  * USE WITH CAUTION.  Pointer is to the parent protein sequence and
