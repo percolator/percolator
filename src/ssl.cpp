@@ -340,7 +340,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
       delete[] Weights_bar;
       delete[] Outputs_bar;
       tictoc.stop();
-      //    cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
       return 2;
     }
   }
@@ -351,7 +350,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   delete[] Weights_bar;
   delete[] Outputs_bar;
   tictoc.stop();
-  //  cout << "L2_SVM_MFN converged (max iter exceeded) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
   return 0;
 }
 

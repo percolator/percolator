@@ -25,8 +25,6 @@
 
 class BaseSpline {
   public:
-    //  BaseSpline() : pTransf(NULL) {;}
-    //  virtual ~BaseSpline() {if (pTransf) delete pTransf;}
     BaseSpline(){};
     virtual ~BaseSpline(){};
     double splineEval(double xx);

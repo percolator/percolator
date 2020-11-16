@@ -554,16 +554,11 @@ void Reader::parseDataBase(const char* seqfile, bool isDecoy, bool isCombined, u
 	        std::string protein_name;
 	        std::string protein_seq;
 	        read_from_fasta(buffer,protein_name,protein_seq);
-	        //std::cerr << " Reading " << protein_name << " " << protein_seq << std::endl;
 	        if(isCombined) isDecoy = protein_name.find(po.reversedFeaturePattern,0) != std::string::npos;
 	        std::set<std::string> peptides;
 	        double totalMass = 0.0;
 	        //NOTE here I should check the enzyme and do the according digestion a switch
-	        //unsigned num_tryptic = calculateProtLengthElastase(protein_seq,peptides,totalMass);
 	        unsigned num_tryptic = calculateProtLengthTrypsin(protein_seq,peptides,totalMass);
-	        //unsigned num_tryptic = calculateProtLengthChymotrypsin(protein_seq,peptides,totalMass);
-	        //unsigned num_tryptic = calculateProtLengthThermolysin(protein_seq,peptides,totalMass);
-	        //unsigned num_tryptic = calculateProtLengthProteinasek(protein_seq,peptides,totalMass);
 	        Protein *tmp = new Protein();
 	        tmp->id = ++proteins_counter;
 	        tmp->name = protein_name;

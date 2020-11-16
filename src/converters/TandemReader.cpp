@@ -41,32 +41,6 @@ TandemReader::~TandemReader() {}
 
 
 //NOTE Function to add namespace to a dom documents all elements except elements that has the namespace www.bioml.com/gaml/
-/*
-void add_namespace (xercesc::DOMDocument* doc,xercesc::DOMElement* e,const XMLCh* ns) {
-  DOMElement* ne;
-  XMLCh* GAML_XMLCH=XMLString::transcode("www.bioml.com/gaml/");
-  
-  //Check if gaml namespace
-  if (XMLString::equals(e->getNamespaceURI(),GAML_XMLCH)) {
-    ne=e;
-  } else {
-    ne =static_cast<DOMElement*> (doc->renameNode (e, ns, e->getLocalName ()));
-  }
-  DOMNodeList* childList=ne->getChildNodes();
- 
-  for (int iter=0; iter<childList->getLength();iter++) {
-    //std::cerr << "Lvl: " << lvl << " For iter" << std::endl;
-    if (childList->item(iter)->getNodeType () == DOMNode::ELEMENT_NODE) {
-      add_namespace (doc, static_cast<DOMElement*> (childList->item(iter)), ns);
-    }
-  }
-  XMLString::release(&GAML_XMLCH); 
-}
-
-void add_namespace(xercesc::DOMDocument* doc,xercesc::DOMElement* e,const std::string& ns) {
-  add_namespace(doc, e, xsd::cxx::xml::string(ns).c_str());
-}
-*/
 
 //Checks validity of the file and also if the defaultNameSpace is declared or not.
 bool TandemReader::checkValidity(const std::string &file) {
@@ -309,7 +283,6 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
     charge = boost::lexical_cast<unsigned>(groupObj.z().get()); 	//the parent ion charge from the spectrum
     sumI = boost::lexical_cast<double>(groupObj.sumI().get());	//the log10 value of the sum of all of the fragment ion intensities
     maxI = boost::lexical_cast<double>(groupObj.maxI().get());	//the maximum fragment ion intensity
-    //fI = boost::lexical_cast<double>(groupObj.fI().get()); // 	constant to unnormalize
   } else {
     ostringstream temp;
     temp << "Error : A required attribute is not present in the group/spectra element in file: " << fn << endl;
@@ -319,7 +292,6 @@ void TandemReader::readSpectra(const tandem_ns::group &groupObj, bool isDecoy,
   //Loop through the protein objects
   BOOST_FOREACH(const tandem_ns::protein &protObj, groupObj.protein()) {
     proteinName = getRidOfUnprintables(protObj.label());
-    //spectraId = boost::lexical_cast<int>(protObj.id());
 
     tandem_ns::peptide peptideObj = protObj.peptide();
     for (tandem_ns::peptide::domain_iterator iter = peptideObj.domain().begin();
@@ -366,12 +338,10 @@ void TandemReader::createPSM(const tandem_ns::peptide::domain_type &domain,
   std::map<char,int> ptmMap = po.ptmScheme;
   std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
   percolatorInNs::features::feature_sequence & f_seq =  features_p->feature();
-  //double expect_value = boost::lexical_cast<double>(domain.expect());
   double calculated_mass = boost::lexical_cast<double>(domain.mh());
   double mass_diff = boost::lexical_cast<double>(domain.delta());
   double hyperscore = boost::lexical_cast<double>(domain.hyperscore());
   double next_hyperscore = boost::lexical_cast<double>(domain.nextscore());
-  //double missed_cleavages = boost::lexical_cast<unsigned>(domain.missed_cleavages());
   std::string peptide = boost::lexical_cast<std::string>(domain.seq());
   
   std::set<std::string> proteinOccuranceSet = peptideProteinMap.at(peptide);

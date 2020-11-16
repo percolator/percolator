@@ -268,7 +268,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < numFolds_; ++set) {
       trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr);
-      //trainScores_[set].setDOCFeatures(pNorm); // this overwrites features of overlapping training folds...
       testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
       testScores_[set].setDOCFeatures(pNorm);
     }

@@ -181,11 +181,7 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is,
         cerr << s << ": error: unable to load" << endl;
         r = 1;
         break;
-      }/*
-      if (eh.failed()) {
-        r = 1;
-        break;
-      }*/
+      }
 
       if (r != 0) break;
     }
@@ -213,10 +209,6 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is,
     if (!r)
       return xml::dom::auto_ptr<DOMDocument>(0);
 
-    /*if (eh.failed ()) {
-      r = 1;
-      break;
-    }*/
     break;
   }
   return doc_;
@@ -274,14 +266,12 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::next() {
 
   while (r && doc_.get() == 0) {
     r = parser_->parseNext (token_);
-    //error_handler_.throw_if_failed<tree::parsing<char> >();
   }
   if (!r)
     return xml::dom::auto_ptr<DOMDocument>(0);
 
   while (r && depth_ != docDepth_) {
     r = parser_->parseNext (token_);
-    //error_handler_.throw_if_failed<tree::parsing<char> >();
   }
 
   if (!r)
@@ -293,7 +283,6 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::next() {
 void parser_impl::startElement(const XMLCh* const uri,
     const XMLCh* const /*lname*/, const XMLCh* const qname,
     const Attributes& attr) {
-  //std::cerr << depth_ << " " << XMLString::transcode(qname) << std::endl;
   if (depth_ == 0 || depth_ == 1 || 
       (depth_== 4 && XMLString::equals(qname, spectrumIdentificationResultStr))) {
     doc_.reset(dom_impl_.createDocument(uri, qname, 0));
@@ -322,7 +311,6 @@ void parser_impl::startElement(const XMLCh* const uri,
        ns = XMLUni::fgXMLNSURIName;
 
     cur_->setAttributeNS(ns, qn, attr.getValue (i));
-    //std::cerr << XMLString::transcode(attr.getValue(i)) << std::endl;
   }
   depth_++;
 }
@@ -331,7 +319,6 @@ void parser_impl::endElement (const XMLCh* const /*uri*/,
     const XMLCh* const /*lname*/, const XMLCh* const /*qname*/) {
   // We have an element parent only on depth 2 or greater.
 
-  //  doc_.reset ();
   --depth_;
 
   if (doc_.get () != 0 && depth_ >= docDepth_ )

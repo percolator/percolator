@@ -721,13 +721,6 @@ void Solver::Solve(int l, const QMatrix& Q, const double* p_,
       alpha_[active_set[i]] = alpha[i];
     }
   }
-  // juggle everything back
-  /*{
-   for(int i=0;i<l;i++)
-   while(active_set[i] != i)
-   swap_index(i,active_set[i]);
-   // or Q.swap_index(i,active_set[i]);
-   }*/
   si->upper_bound_p = Cp;
   si->upper_bound_n = Cn;
   info("\noptimization finished, #iter = %d\n", iter);

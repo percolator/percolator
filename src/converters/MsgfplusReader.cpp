@@ -263,7 +263,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     }
 
     double rank = item.rank();
-    //double PI = boost::lexical_cast<double>(item.calculatedPI().get());
     int charge = item.chargeState();
     double theoretic_mass = boost::lexical_cast<double>(item.calculatedMassToCharge().get());
     double observed_mass = boost::lexical_cast<double>(item.experimentalMassToCharge());
@@ -356,7 +355,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
     f_seq.push_back((std::max)(-1.0, RawScore / (DeNovoScore+0.0001)));  // ScoreRatio
     f_seq.push_back(DeNovoScore - RawScore);  // Score difference, or Energy
     f_seq.push_back(-log(EValue));
-    //f_seq.push_back(-log(SpecEValue));
     f_seq.push_back(IsotopeError);
     f_seq.push_back(log(ExplainedIonCurrentRatio+0.0001));
     f_seq.push_back(log(NTermIonCurrentRatio+0.0001));
@@ -404,7 +402,6 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
 	             << boost::lexical_cast<string > (cv_ref.accession())  << std::endl;
           throw MyException(errs.str());
         }
-        // cerr <<  cv_ref.accession() << endl;
         int mod_loc = boost::lexical_cast<int>(mod_ref.location());
         std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(mod_loc));
         if (cv_ref.accession() == "MS:1001460") {

@@ -181,10 +181,6 @@ class RTModel {
     static double noConsecHydrophobicAA(const string& peptide);
     static double noPolarAA(const string& peptide);
     static double noConsecPolarAA(const string& peptide);
-    /*static double noSmallAA(const string& peptide);
-     static double noConsecAliphatic(const string& peptide);
-     static double noBBranchedAA(const string& peptide);
-     static double noConsecRepeats(const string& peptides, const char& letter);*/
     double* fillHydrophobicFeatures(const string& peptide,
                                     double* features);
     double* fillPolarFeatures(const string& peptide, double* features);

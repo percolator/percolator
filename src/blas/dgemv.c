@@ -4,10 +4,6 @@
 extern "C" {
 #endif
 
-/* int dgemv_(char *trans, long int *m, long int *n,  */
-/* 	   double* alpha, double *a, long int *lda,  */
-/* 	   double *x, long int *incx,  double *beta,  */
-/* 	   double *y, long int *incy) */
 int dgemv_(char *trans, int *m, int *n, 
 	   double* alpha, double *a, int *lda, 
 	   double *x, int *incx,  double *beta, 
@@ -32,7 +28,6 @@ int dgemv_(char *trans, int *m, int *n,
 
     /* Function Body */
     info = 0;
-    /* if (! lsame_(trans, "N") && ! lsame_(trans, "T") && ! lsame_(trans, "C") */
     if (! ((*trans == 'N') || (*trans == 'n'))&& 
 	! ((*trans == 'T') || (*trans == 't'))&& 
 	! ((*trans == 'C') || (*trans == 'c'))
@@ -124,7 +119,6 @@ int dgemv_(char *trans, int *m, int *n,
     if (*alpha == 0.) {
 	return 0;
     }
-    /* if (lsame_(trans, "N")) { */
     if ((*trans == 'N') || (*trans == 'n')) {
 
 /*        Form  y := alpha*A*x + y. */
