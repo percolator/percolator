@@ -58,6 +58,11 @@
 * 
 */
 class Caller {
+
+  std::istream& getDataInStream(std::ifstream& fileStream);
+  bool loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
+  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, time_t& procStart, clock_t& procStartClock, double& diff);
+
  public:
   enum SetHandlerType {
     NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3

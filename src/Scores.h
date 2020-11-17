@@ -239,7 +239,7 @@ class Scores {
     totalNumberOfTargets_ = 0;
     totalNumberOfDecoys_ = 0;
   }
-  
+  void setUsePi0(bool usePi0);
  protected:
   bool usePi0_;
   

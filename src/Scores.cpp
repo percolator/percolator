@@ -752,3 +752,7 @@ unsigned Scores::getQvaluesBelowLevel(double level) {
   }
   return hits;
 }
+
+void Scores::setUsePi0(bool usePi0){
+  usePi0_ = usePi0;
+}

@@ -151,9 +151,12 @@ int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) 
   TabReader reader(line);
   reader.skip(2u + optionalFieldCount); // remove id, label and optional fields
   
+  reader.readDouble();
   int numFeatures = 0;
-  while (!reader.error() && reader.readDouble())
+  while (!reader.error()){
     ++numFeatures;
+    reader.readDouble();
+  }
 
   return numFeatures;
 }

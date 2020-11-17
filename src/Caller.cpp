@@ -980,45 +980,20 @@ void Caller::postToAnalytics(const std::string& appName) {
   }
 }
 
-/**
- * Executes the flow of the percolator process:
- * 1. reads in the input file
- * 2. trains the SVM
- * 3. calculate PSM probabilities
- * 4. (optional) calculate peptide probabilities
- * 5. (optional) calculate protein probabilities
- */
-int Caller::run() {
-  time_t startTime;
-  time(&startTime);
-  clock_t startClock = clock();
-  if (VERB > 0) {
-    std::cerr << extendedGreeter(startTime);
-  }
-  
-  std::string appName = "percolator";
-  postToAnalytics(appName);
 
-#ifdef _OPENMP
-  omp_set_num_threads(std::min((unsigned int)omp_get_max_threads(), numThreads_));
-#endif
-
-  int success = 0;
-  std::ifstream fileStream;
+std::istream& Caller::getDataInStream(std::ifstream& fileStream){
   if (!readStdIn_) {
     if (!tabInput_) fileStream.exceptions(ifstream::badbit | ifstream::failbit);
     fileStream.open(inputFN_.c_str(), ios::in);
   } else if (maxPSMs_ > 0u) {
     maxPSMs_ = 0u;
-    std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading "
-              << "from stdin, training on all data instead." << std::endl;
+    std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading from stdin, training on all data instead." << std::endl;
   }
+  return readStdIn_ ? std::cin : fileStream;
+}
 
-  std::istream &dataStream = readStdIn_ ? std::cin : fileStream;
-
-  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_,
-                            xmlPrintDecoys_, xmlPrintExpMass_);
-  SetHandler setHandler(maxPSMs_);
+bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores){
+  bool success;
   if (!tabInput_) {
     if (VERB > 1) {
       std::cerr << "Reading pin-xml input from datafile " << inputFN_ << std::endl;
@@ -1035,7 +1010,7 @@ int Caller::run() {
   if (!success) {
     std::cerr << "ERROR: Failed to read in file, check if the correct " <<
                  "file-format was used." << std::endl;
-    return 0;
+    return false;
   }
 
   if (VERB > 2) {
@@ -1043,6 +1018,9 @@ int Caller::run() {
   }
 
   setHandler.normalizeFeatures(pNorm_);
+
+
+  ////////////////////////////////////DONE retrieving data
 
   /*
   auto search-input detection cases:
@@ -1098,8 +1076,8 @@ int Caller::run() {
     }
   }
   assert(!(useMixMax_ && targetDecoyCompetition_));
-  
-  Scores allScores(useMixMax_);
+
+  allScores.setUsePi0(useMixMax_);
   allScores.populateWithPSMs(setHandler);
 
   if (VERB > 0 && useMixMax_ &&
@@ -1109,6 +1087,40 @@ int Caller::run() {
       << "# decoys (" << allScores.negSize() << "). "
       << "Consider using target-decoy competition (-Y flag)." << std::endl;
   }
+  return success;
+}
+
+/**
+ * Executes the flow of the percolator process:
+ * 1. reads in the input file
+ * 2. trains the SVM
+ * 3. calculate PSM probabilities
+ * 4. (optional) calculate peptide probabilities
+ * 5. (optional) calculate protein probabilities
+ */
+int Caller::run() {
+  time_t startTime;
+  time(&startTime);
+  clock_t startClock = clock();
+  if (VERB > 0) {
+    std::cerr << extendedGreeter(startTime);
+  }
+  
+  std::string appName = "percolator";
+  postToAnalytics(appName);
+
+#ifdef _OPENMP
+  omp_set_num_threads(std::min((unsigned int)omp_get_max_threads(), numThreads_));
+#endif
+
+  int success = 0;
+  std::ifstream fileStream;
+  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
+  SetHandler setHandler(maxPSMs_);
+  Scores allScores(useMixMax_);
+
+  if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
+    exit(EXIT_FAILURE);
 
   CrossValidation crossValidation(quickValidation_, reportEachIteration_,
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_,
@@ -1116,6 +1128,7 @@ int Caller::run() {
                                   nestedXvalBins_, trainBestPositive_, numThreads_, skipNormalizeScores_);
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
+
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"
         << testFdr_ << " in initial direction" << endl;
@@ -1172,14 +1185,12 @@ int Caller::run() {
 
     // Reading input files (pin or temporary file)
     if (!success) {
-      std::cerr << "ERROR: Failed to read in file, check if the correct " <<
-                   "file-format was used.";
+      std::cerr << "ERROR: Failed to read in file, check if the correct " << "file-format was used.";
       return 0;
     }
 
     if (VERB > 1) {
-      cerr << "Evaluated set contained " << allScores.posSize()
-          << " positives and " << allScores.negSize() << " negatives." << endl;
+      cerr << "Evaluated set contained " << allScores.posSize() << " positives and " << allScores.negSize() << " negatives." << endl;
     }
 
     allScores.postMergeStep();
@@ -1187,12 +1198,19 @@ int Caller::run() {
     allScores.normalizeScores(selectionFdr_);
   }
 
+  calcAndOutputResult(allScores, xmlInterface, procStart, procStartClock, diff);
+  return 1;
+}
+
+
+void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, time_t& procStart, clock_t& procStartClock, double& diff){
   // calculate psms level probabilities TDA or TDC
   bool isUniquePeptideRun = false;
   calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
 #ifdef CRUX
   processPsmScores(allScores);
 #endif
+
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
@@ -1221,5 +1239,5 @@ int Caller::run() {
   }
   // write output to file
   xmlInterface.writeXML(allScores, protEstimator_, call_);
-  return 1;
 }
+
