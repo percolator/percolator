@@ -157,6 +157,9 @@ ELSE(CRUX)
   
   # SET LIBRARIES FOR PERCOLATOR
   set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+  if(COVERAGE)
+    set(COMMON_LIBRARIES -fprofile-arcs ${COMMON_LIBRARIES})
+  endif(COVERAGE)
   if(MSVC)
     target_link_libraries(percolator ${COMMON_LIBRARIES})
   else(MSVC)
