@@ -913,9 +913,6 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
 
   setHandler.normalizeFeatures(pNorm_);
 
-
-  ////////////////////////////////////DONE retrieving data
-
   /*
   auto search-input detection cases:
   true search   detected search  mix-max  tdc  flag for mix-max       flag for tdc
