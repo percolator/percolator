@@ -24,6 +24,7 @@ using namespace std;
 
 #include <stdarg.h>
 #include <cstring>
+#include "Timer.h"
 
 extern "C" {
   extern double dnrm2_(int *, double *, int *); // Return the Euclidian norm of a vector
@@ -99,8 +100,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     cout << "CGLS starting..." << endl;
   }
   /* Disassemble the structures */
-  timer tictoc;
-  tictoc.restart();
+  Timer tictoc;
   int active = Subset->d;
   int* J = Subset->vec;
   double** set = data.vals;
@@ -183,7 +183,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   tictoc.stop();
   if (VERB > 4) {
     cerr << "CGLS converged in " << cgiter << " iteration(s) and "
-        << tictoc.time() << " seconds." << endl;
+        << tictoc.getCPUTimeStr() << " CPU seconds." << endl;
   }
   delete[] z;
   delete[] q;
@@ -197,8 +197,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
                struct vector_double* Weights,
                struct vector_double* Outputs, double cpos, double cneg) {
   /* Disassemble the structures */
-  timer tictoc;
-  tictoc.restart();
+  Timer tictoc;
   double** set = data.vals;
   const double* Y = data.Y;
   int n = Weights->d;
@@ -304,7 +303,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
         tictoc.stop();
         if (VERB > 3) {
           cerr << "L2_SVM_MFN converged (optimality) in " << iter
-              << " iteration(s) and " << tictoc.time() << " seconds. \n"
+              << " iteration(s) and " << tictoc.getCPUTimeStr() << " CPU seconds. \n"
               << endl;
         }
         return 1;

@@ -17,6 +17,7 @@
 
 #ifndef CALLER_H_
 #define CALLER_H_
+#include "Timer.h"
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -68,7 +69,7 @@ class Caller {
   virtual ~Caller();
   
   static string greeter();
-  string extendedGreeter(time_t& startTime);
+  string extendedGreeter();
   bool parseOptions(int argc, char **argv);    
   int run();
   
@@ -106,13 +107,14 @@ class Caller {
   
   // reporting parameters
   std::string call_;
+
+  Timer timer;
   
   std::istream& getDataInStream(std::ifstream& fileStream);
   bool loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
-  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, time_t& procStart, clock_t& procStartClock, double& diff);
+  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
   
-  void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
-      time_t& procStart, clock_t& procStartClock, double& diff);
+  void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
   void calculateProteinProbabilities(Scores& allScores);
   void checkIsWritable(const std::string& filePath);
   

@@ -82,27 +82,6 @@ struct options {
 
 };
 
-class timer { /* to output run time */
-  protected:
-    double start, finish;
-  public:
-    vector<double> times;
-    void record() {
-      times.push_back(time());
-    }
-    void reset_vectors() {
-      times.erase(times.begin(), times.end());
-    }
-    void restart() {
-      start = clock();
-    }
-    void stop() {
-      finish = clock();
-    }
-    double time() const {
-      return ((double)(finish - start)) / CLOCKS_PER_SEC;
-    }
-};
 class Delta { /* used in line search */
   public:
     Delta() {

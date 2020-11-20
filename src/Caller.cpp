@@ -67,12 +67,12 @@ Caller::~Caller() {
   enzyme_ = NULL;
 }
 
-string Caller::extendedGreeter(time_t& startTime) {
+string Caller::extendedGreeter() {
   ostringstream oss;
   char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call_ << endl;
-  oss << "Started " << ctime(&startTime) << endl;
+  oss << "Started " << timer.getStartTimeStr() << endl;
   oss.seekp(-1, ios_base::cur);
   if (host) oss << " on " << host << endl;
   oss << "Hyperparameters: selectionFdr=" << selectionFdr_
@@ -719,12 +719,8 @@ bool Caller::parseOptions(int argc, char **argv) {
 
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities
- * @param procStart clock time when process started
- * @param procStartClock clock associated with procStart
- * @param diff runtime of the calculations
  */
-void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
-    time_t& procStart, clock_t& procStartClock, double& diff){
+void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides_ option was switched on OR if this is not the unique
   // peptide run and the option was switched off
@@ -775,14 +771,9 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
   allScores.calcPep();
 
   if (VERB > 1 && writeOutput) {
-    time_t end;
-    time(&end);
-    diff = difftime(end, procStart);
-    ostringstream timerValues;
-    timerValues.precision(4);
-    timerValues << fixed << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
-                << " cpu seconds or " << diff << " seconds wall clock time." << endl;
-    std::cerr << timerValues.str();
+    timer.stop();
+    std::cerr << "Processing took " << timer.getCPUTimeStr()
+                << " cpu seconds or " << timer.getWallTimeStr() << " seconds wall clock time." << endl;
   }
 
   std::string targetFN, decoyFN;
@@ -811,10 +802,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
  * the results to XML
  */
 void Caller::calculateProteinProbabilities(Scores& allScores) {
-  time_t startTime;
-  clock_t startClock;
-  time(&startTime);
-  startClock = clock();
+  Timer localTimer;
 
   if (VERB > 0) {
     cerr << "\nCalculating protein level probabilities.\n";
@@ -848,18 +836,10 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
 
   protEstimator_->computeStatistics();
 
-  time_t procStart;
-  clock_t procStartClock = clock();
-  time(&procStart);
-  double diff_time = difftime(procStart, startTime);
-
+  localTimer.stop();
   if (VERB > 1) {
-    ostringstream timerValues;
-    timerValues.precision(4);
-    timerValues << fixed << "Estimating protein probabilities took : "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff_time << " seconds wall clock time." << endl;
-    std::cerr << timerValues.str();
+    std::cerr << "Estimating protein probabilities took : " << localTimer.getCPUTimeStr() << 
+      " cpu seconds or " << localTimer.getWallTimeStr() << " seconds wall clock time." << endl;
   }
 
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);
@@ -991,11 +971,10 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
  * 5. (optional) calculate protein probabilities
  */
 int Caller::run() {
-  time_t startTime;
-  time(&startTime);
-  clock_t startClock = clock();
+  timer.reset();
+
   if (VERB > 0) {
-    std::cerr << extendedGreeter(startTime);
+    std::cerr << extendedGreeter();
   }
   
   GoogleAnalytics::postToAnalytics("percolator");
@@ -1029,13 +1008,10 @@ int Caller::run() {
     setHandler.normalizeDOCFeatures(pNorm_);
   }
 
-  time_t procStart;
-  clock_t procStartClock = clock();
-  time(&procStart);
-  double diff = difftime(procStart, startTime);
+  timer.stop();
   if (VERB > 1) cerr << "Reading in data and feature calculation took "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall clock time." << endl;
+      << timer.getCPUTimeStr() << " cpu seconds or " << timer.getWallTimeStr() << " seconds wall clock time." << endl;
+  timer.reset();
 
   if (tabOutputFN_.length() > 0) {
     setHandler.writeTab(tabOutputFN_, pCheck_);
@@ -1089,15 +1065,15 @@ int Caller::run() {
     allScores.normalizeScores(selectionFdr_);
   }
 
-  calcAndOutputResult(allScores, xmlInterface, procStart, procStartClock, diff);
+  calcAndOutputResult(allScores, xmlInterface);
   return 1;
 }
 
 
-void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, time_t& procStart, clock_t& procStartClock, double& diff){
+void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   // calculate psms level probabilities TDA or TDC
   bool isUniquePeptideRun = false;
-  calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
+  calculatePSMProb(allScores, isUniquePeptideRun);
 #ifdef CRUX
   processPsmScores(allScores);
 #endif
@@ -1109,7 +1085,7 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, 
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
     isUniquePeptideRun = true;
-    calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
+    calculatePSMProb(allScores, isUniquePeptideRun);
 #ifdef CRUX
     processPeptideScores(allScores);
 #endif
