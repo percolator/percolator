@@ -144,7 +144,7 @@ double FidoInterface::estimatePriors(Scores& peptideScores) {
 	      tmp_prior = (tmp_prior * prior_protein * (size - index)) / (index + 1);
 	      prior +=  pow(-1.0,(int)index) * tmp_prior;
       }
-      //update computed prior
+      /* update computed prior */
       prior_peptide += (1.0-prior);
       if(psm->q <= 0.1) ++confident_peptides;
       prior_peptide2 += (1.0-psm->pep);

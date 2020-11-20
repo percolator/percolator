@@ -13,5 +13,4 @@ public:
     static void postToAnalytics(const std::string &appName);
 };
 
-
 #endif

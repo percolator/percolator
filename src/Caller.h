@@ -59,10 +59,6 @@
 */
 class Caller {
 
-  std::istream& getDataInStream(std::ifstream& fileStream);
-  bool loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
-  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, time_t& procStart, clock_t& procStartClock, double& diff);
-
  public:
   enum SetHandlerType {
     NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
@@ -111,10 +107,9 @@ class Caller {
   // reporting parameters
   std::string call_;
   
-  // google analytics
-  static bool parseUrl(std::string url, std::string* host, std::string* path);
-  static void httpRequest(const std::string& url, const std::string& data);
-  static void postToAnalytics(const std::string& appName);
+  std::istream& getDataInStream(std::ifstream& fileStream);
+  bool loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
+  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface, time_t& procStart, clock_t& procStartClock, double& diff);
   
   void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
       time_t& procStart, clock_t& procStartClock, double& diff);

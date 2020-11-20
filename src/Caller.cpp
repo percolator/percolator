@@ -881,7 +881,8 @@ std::istream& Caller::getDataInStream(std::ifstream& fileStream){
     fileStream.open(inputFN_.c_str(), ios::in);
   } else if (maxPSMs_ > 0u) {
     maxPSMs_ = 0u;
-    std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading from stdin, training on all data instead." << std::endl;
+    std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading "
+              << "from stdin, training on all data instead." << std::endl;
   }
   return readStdIn_ ? std::cin : fileStream;
 }
