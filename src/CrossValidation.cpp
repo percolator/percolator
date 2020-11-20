@@ -335,38 +335,34 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
 void CrossValidation::trainCpCnPair(candidateCposCfrac& cpCnFold,
       options * pOptions, AlgIn* svmInput) {
 
-  struct vector_double* pWeights = new vector_double;
-  pWeights->d = FeatureNames::getNumFeatures() + 1;
-  pWeights->vec = new double[pWeights->d];
+  vector_double pWeights;
+  pWeights.d = FeatureNames::getNumFeatures() + 1;
+  pWeights.vec = new double[pWeights.d];
 
   double cpos = cpCnFold.cpos;
   double cfrac = cpCnFold.cfrac;
     
   // Create storage vector for SVM algorithm
-  struct vector_double* Outputs = new vector_double;
+  vector_double Outputs;
   size_t numInputs = svmInput->positives + svmInput->negatives;
-  Outputs->vec = new double[numInputs];
-  Outputs->d = numInputs;
+  Outputs.vec = new double[numInputs];
+  Outputs.d = numInputs;
 
   if (VERB > 3) cerr << "- cross-validation with Cpos=" << cpos
                      << ", Cneg=" << cfrac * cpos << endl;
-  for (int ix = 0; ix < pWeights->d; ix++) {
-    pWeights->vec[ix] = 0;
+  for (int ix = 0; ix < pWeights.d; ix++) {
+    pWeights.vec[ix] = 0;
   }
-  for (int ix = 0; ix < Outputs->d; ix++) {
-    Outputs->vec[ix] = 0;
+  for (int ix = 0; ix < Outputs.d; ix++) {
+    Outputs.vec[ix] = 0;
   }
         
   // Call SVM algorithm (see ssl.cpp)
   L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, cpos, cfrac * cpos);
         
   for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-    cpCnFold.ww[i] = pWeights->vec[i];
+    cpCnFold.ww[i] = pWeights.vec[i];
   }
-  delete[] Outputs->vec;
-  delete Outputs;
-  delete[] pWeights->vec;
-  delete pWeights;
 }
 
 /** 
@@ -433,36 +429,32 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   if (nestedXvalBins_ > 1) {
 #pragma omp parallel for schedule(dynamic, 1) ordered
     for (set = 0; set < numFolds_; ++set) {
-      struct vector_double* pWeights = new vector_double;
-      pWeights->d = FeatureNames::getNumFeatures() + 1;
-      pWeights->vec = new double[pWeights->d];
+      vector_double pWeights;
+      pWeights.d = FeatureNames::getNumFeatures() + 1;
+      pWeights.vec = new double[pWeights.d];
 
       AlgIn* svmInput = svmInputs_[set * nestedXvalBins_];
       trainScores_[set].generateNegativeTrainingSet(*svmInput, 1.0);
       trainScores_[set].generatePositiveTrainingSet(*svmInput, selectionFdr, 1.0, trainBestPositive_);
     
       // Create storage vector for SVM algorithm
-      struct vector_double* Outputs = new vector_double;
+      vector_double Outputs;
       size_t numInputs = svmInput->positives + svmInput->negatives;
-      Outputs->vec = new double[numInputs];
-      Outputs->d = numInputs;
+      Outputs.vec = new double[numInputs];
+      Outputs.d = numInputs;
     
-      for (int ix = 0; ix < pWeights->d; ix++) {
-        pWeights->vec[ix] = 0;
+      for (int ix = 0; ix < pWeights.d; ix++) {
+        pWeights.vec[ix] = 0;
       }
-      for (int ix = 0; ix < Outputs->d; ix++) {
-        Outputs->vec[ix] = 0;
+      for (int ix = 0; ix < Outputs.d; ix++) {
+        Outputs.vec[ix] = 0;
       }
       // Call SVM algorithm (see ssl.cpp)
       L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCposes[set], bestCposes[set] * bestCfracs[set]);
     
       for (int i = FeatureNames::getNumFeatures() + 1; i--;) {
-        w_[set][i] = pWeights->vec[i];
+        w_[set][i] = pWeights.vec[i];
       }
-      delete[] pWeights->vec;
-      delete pWeights;
-      delete[] Outputs->vec;
-      delete Outputs;
     }
   }
 

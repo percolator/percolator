@@ -93,21 +93,21 @@ void cglsFun2(int active, int* J, const double* Y,
 }
 
 int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
-         const double epsilon, const struct vector_int* Subset,
-         struct vector_double* Weights, struct vector_double* Outputs,
+         const double epsilon, const vector_int& Subset,
+         vector_double& Weights, vector_double& Outputs,
          double cpos, double cneg) {
   if (VERBOSE_CGLS) {
     cout << "CGLS starting..." << endl;
   }
   /* Disassemble the structures */
   Timer tictoc;
-  int active = Subset->d;
-  int* J = Subset->vec;
+  int active = Subset.d;
+  int* J = Subset.vec;
   double** set = data.vals;
   const double* Y = data.Y;
   int n = data.n;
-  double* beta = Weights->vec;
-  double* o = Outputs->vec;
+  double* beta = Weights.vec;
+  double* o = Outputs.vec;
   // initialize z
   double* z = new double[active];
   double* q = new double[active];
@@ -193,29 +193,29 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   return optimality;
 }
 
-int L2_SVM_MFN(const AlgIn& data, struct options* Options,
-               struct vector_double* Weights,
-               struct vector_double* Outputs, double cpos, double cneg) {
+int L2_SVM_MFN(const AlgIn& data, options* Options,
+               vector_double& Weights,
+               vector_double& Outputs, double cpos, double cneg) {
   /* Disassemble the structures */
   Timer tictoc;
   double** set = data.vals;
   const double* Y = data.Y;
-  int n = Weights->d;
+  int n = Weights.d;
   const int m = data.m;
   double lambda = Options->lambda;
   double epsilon = BIG_EPSILON;
   int cgitermax = SMALL_CGITERMAX;
-  double* w = Weights->vec;
-  double* o = Outputs->vec;
+  double* w = Weights.vec;
+  double* o = Outputs.vec;
   double F_old = 0.0;
   double F = 0.0;
   double diff = 0.0;
   int ini = 0;
   int n0 = n-1;
   int inc = 1;
-  vector_int* ActiveSubset = new vector_int[1];
-  ActiveSubset->vec = new int[m];
-  ActiveSubset->d = m;
+  vector_int ActiveSubset;
+  ActiveSubset.vec = new int[m];
+  ActiveSubset.d = m;
   // initialize
   F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
   int active = 0;
@@ -223,27 +223,27 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   for (int i = 0; i < m; i++) {
     diff = 1 - Y[i] * o[i];
     if (diff > 0) {
-      ActiveSubset->vec[active] = i;
+      ActiveSubset.vec[active] = i;
       active++;
       // C[i]
       F += 0.5 * ((Y[i]==1)? cpos : cneg) * diff * diff;
     } else {
-      ActiveSubset->vec[inactive] = i;
+      ActiveSubset.vec[inactive] = i;
       inactive--;
     }
   }
-  ActiveSubset->d = active;
+  ActiveSubset.d = active;
   int iter = 0;
   int opt = 0;
   int opt2 = 0;
-  vector_double* Weights_bar = new vector_double[1];
-  vector_double* Outputs_bar = new vector_double[1];
+  vector_double Weights_bar;
+  vector_double Outputs_bar;
   double* w_bar = new double[n];
   double* o_bar = new double[m];
-  Weights_bar->vec = w_bar;
-  Outputs_bar->vec = o_bar;
-  Weights_bar->d = n;
-  Outputs_bar->d = m;
+  Weights_bar.vec = w_bar;
+  Outputs_bar.vec = o_bar;
+  Weights_bar.d = n;
+  Outputs_bar.d = m;
   double delta = 0.0;
   int ii = 0;
   while (iter < Options->mfnitermax) {
@@ -263,7 +263,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
                Weights_bar,
                Outputs_bar, cpos, cneg);
     for (register int i = active; i < m; i++) {
-      ii = ActiveSubset->vec[i];
+      ii = ActiveSubset.vec[i];
       o_bar[ii] = ddot_(&n0, set[ii], &inc, w_bar, &inc) + w_bar[n - 1];
     }
     if (ini == 0) {
@@ -272,7 +272,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
     };
     opt2 = 1;
     for (int i = 0; i < m; i++) {
-      ii = ActiveSubset->vec[i];
+      ii = ActiveSubset.vec[i];
       if (i < active) {
         opt2 = (opt2 && (Y[ii] * o_bar[ii] <= 1 + epsilon));
       } else {
@@ -294,12 +294,6 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
       } else {
         memcpy(w, w_bar, sizeof(double)*n);
         memcpy(o, o_bar, sizeof(double)*m);
-        delete[] ActiveSubset->vec;
-        delete[] ActiveSubset;
-        delete[] o_bar;
-        delete[] w_bar;
-        delete[] Weights_bar;
-        delete[] Outputs_bar;
         tictoc.stop();
         if (VERB > 3) {
           cerr << "L2_SVM_MFN converged (optimality) in " << iter
@@ -321,34 +315,19 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
       o[i] += delta * (o_bar[i] - o[i]);
       diff = 1 - Y[i] * o[i];
       if (diff > 0) {
-        ActiveSubset->vec[active] = i;
+        ActiveSubset.vec[active] = i;
         active++;
         F += 0.5 * ((Y[i]==1)? cpos : cneg) * diff * diff;
       } else {
-        ActiveSubset->vec[inactive] = i;
+        ActiveSubset.vec[inactive] = i;
         inactive--;
       }
     }
-    ActiveSubset->d = active;
+    ActiveSubset.d = active;
     if (fabs(F - F_old) < RELATIVE_STOP_EPS * fabs(F_old)) {
-      // Memory leak fix below
-      delete[] ActiveSubset->vec;
-      delete[] ActiveSubset;
-      delete[] o_bar;
-      delete[] w_bar;
-      delete[] Weights_bar;
-      delete[] Outputs_bar;
-      tictoc.stop();
       return 2;
     }
   }
-  delete[] ActiveSubset->vec;
-  delete[] ActiveSubset;
-  delete[] o_bar;
-  delete[] w_bar;
-  delete[] Weights_bar;
-  delete[] Outputs_bar;
-  tictoc.stop();
   return 0;
 }
 
@@ -408,30 +387,4 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
   }
   delete[] deltas;
   return (-L / (R - L));
-}
-/********************** UTILITIES ********************/
-
-void Clear(struct data* a) {
-  delete[] a->val;
-  delete[] a->rowptr;
-  delete[] a->colind;
-  delete[] a->Y;
-  delete[] a->C;
-  delete a;
-  return;
-}
-void Clear(struct vector_double* c) {
-  delete[] c->vec;
-  delete[] c;
-  return;
-}
-void Clear(struct vector_int* c) {
-  delete[] c->vec;
-  delete[] c;
-  return;
-}
-void Clear(struct options* opt) {
-  delete[] opt;
-  delete[] opt;
-  return;
 }
