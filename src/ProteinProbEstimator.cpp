@@ -195,7 +195,7 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold,
 double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) {
   std::vector<double> pvalues;
   std::transform(proteins_.begin(), proteins_.end(), 
-    std::back_inserter(pvalues), std::mem_fun_ref(&ProteinScoreHolder::getP));
+    std::back_inserter(pvalues), std::mem_fn(&ProteinScoreHolder::getP));
   
   double pi0 = 1.0;
   bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvalues);
@@ -304,7 +304,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
 }
 
 void ProteinProbEstimator::setTargetandDecoysNames(Scores& peptideScores) {
-  unsigned int numGroups = 0;
+  int numGroups = 0;
   bool decoyFound = false;
   std::vector<ScoreHolder>::iterator psm = peptideScores.begin();
   for (; psm!= peptideScores.end(); ++psm) {

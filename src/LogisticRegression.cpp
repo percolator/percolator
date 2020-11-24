@@ -58,7 +58,7 @@ void LogisticRegression::limitgamma() {
 
 void LogisticRegression::calcPZW() {
 
-  for (int ix = z.numberEntries(); ix--;) {
+  for (std::size_t ix = static_cast<std::size_t>(z.numberEntries()); ix--;) {
     assert(isfinite(g[ix]));
     double e = exp(g[ix]);
     assert(isfinite(e));
@@ -79,7 +79,7 @@ void LogisticRegression::initg() {
   int n = x.size();
   p.resize(n);
   gnew = PackedVector(n);
-  for (int ix = g.size(); ix--;) {
+  for (std::size_t ix = static_cast<std::size_t>(g.size()); ix--;) {
     double p = (y[ix] + 0.05) / (m[ix] + 0.1);
     gnew.packedReplace(ix, log(p / (1 - p)));
     assert(isfinite(p));

@@ -498,12 +498,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       // Options for controlling speed
       bool fidoNoPartitioning = false; // cannot be set on cmd line
       bool fidoNoClustering = false; // cannot be set on cmd line
-      unsigned fidoGridSearchDepth = 0;
+      unsigned int fidoGridSearchDepth = 0;
       bool fidoNoPruning = false;
       double fidoGridSearchThreshold = 0.0;
       double fidoProteinThreshold = 0.01;
       double fidoMseThreshold = 0.1;
-      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getInt("fido-gridsearch-depth", 0, 4);
+      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getUInt("fido-gridsearch-depth", 0, 4);
       if (cmd.optionSet("fido-fast-gridsearch")) fidoGridSearchThreshold = cmd.getDouble("fido-fast-gridsearch", 0.0, 1.0);
       if (cmd.optionSet("fido-no-split-large-components")) fidoNoPruning = true;
       if (cmd.optionSet("fido-protein-truncation-threshold")) fidoProteinThreshold = cmd.getDouble("fido-protein-truncation-threshold", 0.0, 1.0);
@@ -608,20 +608,20 @@ bool Caller::parseOptions(int argc, char **argv) {
     testFdr_ = cmd.getDouble("testFDR", 0.0, 1.0);
   }
   if (cmd.optionSet("maxiter")) {
-    numIterations_ = cmd.getInt("maxiter", 0, 1000);
+    numIterations_ = cmd.getUInt("maxiter", 0, 1000);
   }
   if (cmd.optionSet("num-threads")) {
-    numThreads_ = cmd.getInt("num-threads", 1, 128);
+    numThreads_ = cmd.getUInt("num-threads", 1, 128);
   }
   if (cmd.optionSet("subset-max-train")) {
-    maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
+    maxPSMs_ = cmd.getUInt("subset-max-train", 0, 100000000);
   }
   if (cmd.optionSet("seed")) {
-    PseudoRandom::setSeed(cmd.getInt("seed", 1, 20000));
+    PseudoRandom::setSeed(static_cast<unsigned long int>(cmd.getInt("seed", 1, 20000)));
   }
   if (cmd.optionSet("doc")) {
     DataSet::setCalcDoc(true);
-    DescriptionOfCorrect::setDocType(cmd.getInt("doc", 0, 15));
+    DescriptionOfCorrect::setDocType(cmd.getUInt("doc", 0, 15));
   }
   if (cmd.optionSet("klammer")) {
     DescriptionOfCorrect::setKlammer(true);
@@ -682,7 +682,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
 
   if (cmd.optionSet("nested-xval-bins")) {
-    nestedXvalBins_ = cmd.getInt("nested-xval-bins", 1, 1000);
+    nestedXvalBins_ = cmd.getUInt("nested-xval-bins", 1, 1000);
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -980,7 +980,8 @@ int Caller::run() {
   GoogleAnalytics::postToAnalytics("percolator");
 
 #ifdef _OPENMP
-  omp_set_num_threads(std::min((unsigned int)omp_get_max_threads(), numThreads_));
+  omp_set_num_threads(static_cast<int>(
+    std::min((unsigned int)omp_get_max_threads(), numThreads_)));
 #endif
 
   int success = 0;

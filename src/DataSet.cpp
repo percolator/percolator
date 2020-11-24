@@ -66,8 +66,8 @@ bool DataSet::writeTabData(ofstream& out) {
 }
 
 void DataSet::print_features() {
-  for (int i = 0; i < getSize(); i++) {
-    for (unsigned int j = 0; j < FeatureNames::getNumFeatures(); j++) {
+  for (std::size_t i = 0; i < getSize(); i++) {
+    for (std::size_t j = 0; j < FeatureNames::getNumFeatures(); j++) {
       cerr << j + 1 << ":" << psms_[i]->features[j] << " ";
     }
     cerr << endl;
@@ -76,8 +76,8 @@ void DataSet::print_features() {
 
 void DataSet::print_10features() {
   cerr << DataSet::getFeatureNames().getFeatureNames() << endl;
-  for (int i = 0; i < 10; i++) {
-    for (unsigned int j = 0; j < FeatureNames::getNumFeatures(); j++) {
+  for (std::size_t i = 0; i < 10; i++) {
+    for (std::size_t j = 0; j < FeatureNames::getNumFeatures(); j++) {
       cerr << psms_[i]->features[j] << "\t";
     }
     cerr << endl;
@@ -152,7 +152,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   for ( ; it != optionalFields.end(); ++it) {
     switch (*it) {
       case SCANNR: {
-        myPsm->scan = reader.readInt();
+        myPsm->scan = static_cast<unsigned int>(reader.readInt());
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number of PSM " 

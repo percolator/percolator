@@ -54,7 +54,7 @@ double BaseSpline::splineEval(double xx) {
     double gx = g[n - 1] + (xx - x[n - 1]) * derl;
     return gx;
   }
-  size_t rix = right - x.begin();
+  std::size_t rix = static_cast<std::size_t>(right - x.begin());
   if (*right == xx) {
     return g[rix];
   }
@@ -137,7 +137,7 @@ void BaseSpline::iterativeReweightedLeastSquares(double alpha) {
   do {
     g = gnew;
     calcPZW();
-    PackedMatrix diag = PackedMatrix::packedDiagonalMatrix(PackedVector(n, 1) / w).packedMultiply(alpha);
+    PackedMatrix diag = PackedMatrix::packedDiagonalMatrix(PackedVector(static_cast<int>(n), 1) / w).packedMultiply(alpha);
     PackedMatrix aWiQ = (diag).packedMultiply(Q);
     PackedMatrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
     gamma = Qt.packedMultiply(z);
@@ -225,9 +225,9 @@ double BaseSpline::alphaLinearSearchBA(double min_p,
 }
 
 void BaseSpline::initiateQR() {
-  int n = x.size();
+  std::size_t n = x.size();
   dx.resize(n-1);
-  for (int ix = 0; ix < n - 1; ix++) {
+  for (std::size_t ix = 0; ix < n - 1; ix++) {
     dx.addElement(ix, x[ix + 1] - x[ix]);
     assert(dx[ix] > 0);
   }
@@ -290,14 +290,14 @@ double BaseSpline::evaluateSlope(double alpha) {
 
 
 double BaseSpline::crossValidation(double alpha) {
-  int n = R.numRows();
+  std::size_t n = static_cast<std::size_t>(R.numRows());
   //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n), k1(n), k2(n);
   PackedMatrix B = R.packedAdd( ((Qt.packedMultiply(alpha)).packedMultiply(
       PackedMatrix::packedDiagonalMatrix(Vector(n+2, 1.0) / w)).packedMultiply(Q)));
   // Get the diagonals from K
   // ka[i]=B[i,i+a]=B[i+a,i]
-  for (int row = 0; row < n; ++row) {
+  for (std::size_t row = 0; row < n; ++row) {
     for (int rowPos = B[row].numberEntries(); rowPos--;) {
       int col = B[row].index(rowPos);
       if (col == row) {
@@ -317,7 +317,7 @@ double BaseSpline::crossValidation(double alpha) {
   d[0] = k0[0];
   l1[0] = k1[0] / d[0];
   d[1] = k0[1] - l1[0] * l1[0] * d[0];
-  for (int row = 2; row < n; ++row) {
+  for (std::size_t row = 2; row < n; ++row) {
     l2[row - 2] = k2[row - 2] / d[row - 2];
     l1[row - 1] = (k1[row - 1] - l1[row - 2] * l2[row - 2] * d[row - 2])
         / d[row - 1];
@@ -328,7 +328,7 @@ double BaseSpline::crossValidation(double alpha) {
   // ba[i]=B^{-1}[i+a,i]=B^{-1}[i,i+a]
   //  Vec b0(n),b1(n),b2(n);
   vector<double> b0(n), b1(n), b2(n);
-  for (int row = n; --row;) {
+  for (std::size_t row = n; --row;) {
     if (row == n - 1) {
       b0[n - 1] = 1 / d[n - 1];
     } else if (row == n - 2) {
@@ -349,10 +349,10 @@ double BaseSpline::crossValidation(double alpha) {
   // (expanding q according to p12)
   //  Vec a(n+2),c(n+1);
   vector<double> a(n), c(n - 1);
-  for (int ix = 0; ix < n - 1; ix++) {
+  for (std::size_t ix = 0; ix < n - 1; ix++) {
     c[ix] = 1 / dx[ix];
   }
-  for (int ix = 0; ix < n; ix++) {
+  for (std::size_t ix = 0; ix < n; ix++) {
     if (ix > 0) {
       a[ix] += b0[ix - 1] * c[ix - 1] * c[ix - 1];
       if (ix < n - 1) {
@@ -368,7 +368,7 @@ double BaseSpline::crossValidation(double alpha) {
   }
   // Calculating weighted cross validation as described in p
   double cv = 0.0;
-  for (int ix = 0; ix < n; ix++) {
+  for (std::size_t ix = 0; ix < n; ix++) {
     double f = (z[ix] - gnew[ix]) * w[ix] / (alpha * a[ix]);
     //    double f =(z[ix]-gnew[ix])/(alpha*alpha*a[ix]*a[ix]);
     cv += f * f * w[ix];

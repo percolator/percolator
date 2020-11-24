@@ -77,7 +77,7 @@ void DescriptionOfCorrect::trainCorrect() {
 void DescriptionOfCorrect::setFeatures(PSMDescription* psm) {
   assert(DataSet::getFeatureNames().getDocFeatNum() > 0);
   psm->setPredictedRetentionTime(rtModel.estimateRT(psm->getRetentionFeatures()));
-  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
+  size_t docFeatNum = static_cast<std::size_t>(DataSet::getFeatureNames().getDocFeatNum());
   double dm = abs(psm->getMassDiff() - avgDM);
   double drt = abs(psm->getRetentionTime() - psm->getPredictedRetentionTime());
   if (docFeatures & 1) {
@@ -96,7 +96,7 @@ void DescriptionOfCorrect::setFeatures(PSMDescription* psm) {
 
 void DescriptionOfCorrect::setFeaturesNormalized(PSMDescription* psm, Normalizer* pNorm) {
   setFeatures(psm);
-  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
+  size_t docFeatNum = static_cast<std::size_t>(DataSet::getFeatureNames().getDocFeatNum());
   if (docFeatures & 1) {
     psm->features[docFeatNum] = pNorm->normalize(psm->features[docFeatNum], docFeatNum);
   }

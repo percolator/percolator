@@ -5,7 +5,7 @@ template <typename D>
 bool HashTable<D>::add(const D & data)
 {
   // add the entry to the table
-  int index = hash(data);
+  int index = static_cast<int>(hash(data));
 
   if (! table[index].empty() )
     {
@@ -29,7 +29,7 @@ bool HashTable<D>::add(const D & data)
 template <typename D>
 int HashTable<D>::lookup(const D & data) const
 {
-  int index = hash(data);
+  int index = static_cast<int>(hash(data));
   
   return searchList( table[index], data );
 }

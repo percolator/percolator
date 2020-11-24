@@ -59,7 +59,7 @@ class Peptide {
    * Includes a null terminating character.
    * The string is heap allocated; thus, user must free.
    */
-  char* copy_string_part(const char* src, int length){
+  char* copy_string_part(const char* src, std::size_t length){
     char* copy = (char*)calloc(length+1, sizeof(char));
     strncpy(copy, src, length);
     copy[length] = '\0';

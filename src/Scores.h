@@ -245,7 +245,7 @@ class Scores {
   
   double pi0_;
   double targetDecoySizeRatio_;
-  int totalNumberOfDecoys_, totalNumberOfTargets_;
+  unsigned int totalNumberOfDecoys_, totalNumberOfTargets_;
   
   std::vector<ScoreHolder> scores_;
   std::map<PSMDescription*, std::vector<PSMDescription*> > peptidePsmMap_;

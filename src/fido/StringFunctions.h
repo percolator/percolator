@@ -8,27 +8,25 @@
 
 using namespace std;
 
-
 class StringFunctions
 {
- public:
-  static unsigned int simpleStringHash(const string & str)
+public:
+  static unsigned int simpleStringHash(const string &str)
   {
     unsigned long int i = 0;
-    int n = str.length();
-    for (int k=0; k < n; k++)
-      {
-	// appropriate if the characters in this string are late...                                                       
-	i += int(str[k]) - int('0');
-	i *= 255;
-      }
-    return int (i << 2);
+    size_t n = str.length();
+    for (size_t k = 0; k < n; k++)
+    {
+      // appropriate if the characters in this string are late...
+      i += static_cast<unsigned long int>(int(str[k]) - int('0'));
+      i *= 255;
+    }
+    return uint(i << 2);
   }
 
-  static unsigned int nucleotideStringHash(const string & str);
- private:
-  
+  static unsigned int nucleotideStringHash(const string &str);
+
+private:
 };
 
 #endif
-

@@ -333,7 +333,8 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
   {
     unsigned tp = targets - fp;
     unsigned w = N - tp;
-    double prob = hypergeometric(fp,N,w,cf);
+    double prob = hypergeometric(static_cast<int>(fp),static_cast<int>(N),
+      static_cast<int>(w),static_cast<int>(cf));
     logprob.push_back(prob);
   }
   //normalization

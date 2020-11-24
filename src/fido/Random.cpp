@@ -57,7 +57,7 @@ int Random::inRange(int a, int b)
   if ( b == a )
     return a;
 
-  return lcg_rand() % (b-a) + a;
+  return static_cast<int>(lcg_rand() % static_cast<unsigned long>(b-a)) + a;
 }
 
 void Random::fillRandomUniform(Array<double> & lhs, double low, double high)

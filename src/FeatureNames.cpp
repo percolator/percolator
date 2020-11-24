@@ -64,7 +64,7 @@ string FeatureNames::getFeatureNames(bool skipDOC) {
       : (int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
-    int featNum = 0;
+    std::size_t featNum = 0;
     oss << featureNames[featNum++];
     for (; featNum < n; ++featNum) {
       oss << "\t" << featureNames[featNum];
@@ -84,7 +84,7 @@ int FeatureNames::getFeatureNumber(const string& featureName) {
           break;
         }
       }
-      if (isEqual) return fnum + 1;
+      if (isEqual) return static_cast<int>(fnum + 1);
     } 
   }
   return 0;

@@ -98,7 +98,7 @@ class TabReader {
       err = 1;
       return std::string(f_);
     } else {
-      std::string s(f_, pch - f_);
+      std::string s(f_, static_cast<std::basic_string<char>::size_type>(pch - f_));
       advance(pch);
       return s;
     }

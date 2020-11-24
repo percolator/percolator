@@ -43,7 +43,7 @@ extern "C" {
 #define LOG2(x) 1.4426950408889634*log(x)
 // for compatibility issues, not using log2
 
-AlgIn::AlgIn(const int size, const int numFeat) {
+AlgIn::AlgIn(const unsigned int size, const int numFeat) {
   vals = new double*[size];
   Y = new double[size];
   C = new double[size];
@@ -127,13 +127,13 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     ii = J[i];
     z[i] = ((Y[ii]==1)? cpos : cneg) * (Y[ii] - o[ii]);
     rowStart = i * n;
-    memcpy(set2 + rowStart, set[ii], sizeof(double)*n0);
+    memcpy(set2 + rowStart, set[ii], sizeof(double)*static_cast<std::size_t>(n0));
     set2[rowStart + n0] = 1.0;
     daxpy_(&n, &(z[i]), set2 + i*n, &inc, r, &inc);
   }
   double* p = new double[n];
   daxpy_(&n, &negLambda, beta, &inc, r, &inc);
-  memcpy(p, r, sizeof(double)*n);
+  memcpy(p, r, sizeof(double)*static_cast<std::size_t>(n));
   double omega1 = ddot_(&n, r, &inc, r, &inc);
   double omega_p = omega1;
   double omega_q = 0.0;
@@ -151,7 +151,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     gamma = omega1 / (lambda * omega_p + omega_q);
     inv_omega2 = 1 / omega1;
 
-    memcpy(r, beta, sizeof(double)*n);
+    memcpy(r, beta, sizeof(double)*static_cast<std::size_t>(n));
     dscal_(&n, &negLambda, r, &inc);
 
     daxpy_(&n, &gamma, p, &inc, beta, &inc);
@@ -193,7 +193,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   return optimality;
 }
 
-int L2_SVM_MFN(const AlgIn& data, options* Options,
+int L2_SVM_MFN(const AlgIn& data, options& Options,
                vector_double& Weights,
                vector_double& Outputs, double cpos, double cneg) {
   /* Disassemble the structures */
@@ -202,7 +202,7 @@ int L2_SVM_MFN(const AlgIn& data, options* Options,
   const double* Y = data.Y;
   int n = Weights.d;
   const int m = data.m;
-  double lambda = Options->lambda;
+  double lambda = Options.lambda;
   double epsilon = BIG_EPSILON;
   int cgitermax = SMALL_CGITERMAX;
   double* w = Weights.vec;
@@ -238,23 +238,23 @@ int L2_SVM_MFN(const AlgIn& data, options* Options,
   int opt2 = 0;
   vector_double Weights_bar;
   vector_double Outputs_bar;
-  double* w_bar = new double[n];
-  double* o_bar = new double[m];
+  double* w_bar = new double[static_cast<std::size_t>(n)];
+  double* o_bar = new double[static_cast<std::size_t>(m)];
   Weights_bar.vec = w_bar;
   Outputs_bar.vec = o_bar;
   Weights_bar.d = n;
   Outputs_bar.d = m;
   double delta = 0.0;
   int ii = 0;
-  while (iter < Options->mfnitermax) {
+  while (iter < Options.mfnitermax) {
     iter++;
     if (VERB > 4) {
       cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active
           << " active examples, " << " objective_value = " << F << ")"
           << endl;
     }
-    memcpy(w_bar, w, sizeof(double)*n);
-    memcpy(o_bar, o, sizeof(double)*m);
+    memcpy(w_bar, w, sizeof(double)*static_cast<std::size_t>(n));
+    memcpy(o_bar, o, sizeof(double)*static_cast<std::size_t>(m));
     opt = CGLS(data,
                lambda,
                cgitermax,
@@ -284,7 +284,7 @@ int L2_SVM_MFN(const AlgIn& data, options* Options,
     }
     if (opt && opt2) { // l
       if (epsilon == BIG_EPSILON) {
-        epsilon = Options->epsilon;
+        epsilon = Options.epsilon;
         if (VERB > 4) {
           cerr << "  epsilon = " << BIG_EPSILON
             << " case converged (speedup heuristic 2). Continuing with epsilon="
@@ -292,10 +292,10 @@ int L2_SVM_MFN(const AlgIn& data, options* Options,
         }
         continue;
       } else {
-        memcpy(w, w_bar, sizeof(double)*n);
-        memcpy(o, o_bar, sizeof(double)*m);
-        tictoc.stop();
+        memcpy(w, w_bar, sizeof(double)*static_cast<std::size_t>(n));
+        memcpy(o, o_bar, sizeof(double)*static_cast<std::size_t>(m));
         if (VERB > 3) {
+          tictoc.stop();
           cerr << "L2_SVM_MFN converged (optimality) in " << iter
               << " iteration(s) and " << tictoc.getCPUTimeStr() << " CPU seconds. \n"
               << endl;

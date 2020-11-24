@@ -289,7 +289,7 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
           groupProteinIds[lastProteinId] = proteinsInGroup;
         }
         ProteinScoreHolder newProtein(lastProteinId, peptideIt->isDecoy(),
-            peptide, ++numGroups);
+            peptide, static_cast<int>(++numGroups));
         proteinToIdxMap_[lastProteinId] = proteins_.size();
         proteins_.push_back(newProtein);
         if (lastProteinId.find(decoyPattern_) == std::string::npos) {

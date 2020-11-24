@@ -57,7 +57,7 @@ static double COARSE_GRID_EPSILON[] = { INITIAL_EPSILON / 10,
                                         INITIAL_EPSILON, INITIAL_EPSILON
                                             * 10 };
 // no of points smaller than the parameter value found using the coarse grid (the fine grid will include NO_POINTS_FINE_GRID*2 for one parameter)
-static int NO_POINTS_FINE_GRID = 7;
+static std::size_t NO_POINTS_FINE_GRID = 7;
 // step is give as the exponent of 2 (the actual step value is 2^(STEP_FINE_GRID))
 static double STEP_FINE_GRID = 0.25;
 
@@ -252,7 +252,7 @@ RTModel::RTModel() :
   // compute the total number of features depending on the selected feature groups
   for (int i = 0; i < NO_FEATURE_GROUPS; i++)
     if (selected_features & 1 << i) {
-      noFeaturesToCalc += no_features_per_group[i];
+      noFeaturesToCalc += static_cast<std::size_t>(no_features_per_group[i]);
     }
   //cerr << endl; this pollutes Percolator's cerr!
 }
@@ -293,7 +293,7 @@ void RTModel::setSelectFeatures(const int sf) {
   noFeaturesToCalc = 0;
   for (int i = 0; i < NO_FEATURE_GROUPS; i++)
     if (selected_features & 1 << i) {
-      noFeaturesToCalc += no_features_per_group[i];
+      noFeaturesToCalc += static_cast<std::size_t>(no_features_per_group[i]);
     }
 }
 
@@ -394,7 +394,7 @@ double* RTModel::hydrophobicMoment(const float* index,
   double minHMoment, maxHMoment, hMoment;
   // calculate the angle in radians
   double angle = angleDegrees * M_PI / 180;
-  for (int i = 0; i < min(lengthPeptide, w); ++i) {
+  for (std::size_t i = 0; i < min(lengthPeptide, w); ++i) {
     sum1 += index[peptide[i] - 'A'] * sin((i + 1) * angle);
     sum2 += index[peptide[i] - 'A'] * cos((i + 1) * angle);
   }
@@ -402,10 +402,10 @@ double* RTModel::hydrophobicMoment(const float* index,
   minHMoment = hMoment;
   maxHMoment = hMoment;
   if (lengthPeptide > w) {
-    for (int i = 1; i <= lengthPeptide - w; ++i) {
+    for (std::size_t i = 1; i <= lengthPeptide - w; ++i) {
       sum1 = 0.0;
       sum2 = 0.0;
-      for (int j = 0; j < w; j++) {
+      for (std::size_t j = 0; j < w; j++) {
         sum1 += index[peptide[i + j] - 'A'] * sin((j + 1) * angle);
         sum2 += index[peptide[i + j] - 'A'] * cos((j + 1) * angle);
       }
@@ -538,7 +538,7 @@ double* RTModel::indexPartialSum(const float* index,
   double sum = 0.0;
   size_t window = min(win, peptide.size() - 1);
   string::const_iterator lead = peptide.begin(), lag = peptide.begin();
-  for (; lead != (peptide.begin() + window); ++lead) {
+  for (; lead != (peptide.begin() + static_cast<long int>(window)); ++lead) {
     sum += index[*lead - 'A'];
   }
   double minS = sum, maxS = sum;
@@ -770,37 +770,37 @@ void RTModel::copyModel(svm_model* from) {
   model->nr_class = from->nr_class;
   model->l = from->l; // total #SV
   // _DENSE_REP
-  model->SV = (svm_node*)malloc(sizeof(svm_node) * model->l);
+  model->SV = (svm_node*)malloc(sizeof(svm_node) * static_cast<std::size_t>(model->l));
   for (int i = 0; i < model->l; ++i) {
     model->SV[i].dim = from->SV[i].dim;
     model->SV[i].values = (double*)malloc(sizeof(double)
-        * model->SV[i].dim);
+        * static_cast<std::size_t>(model->SV[i].dim));
     memcpy(model->SV[i].values, from->SV[i].values, sizeof(double)
-        * model->SV[i].dim);
+        * static_cast<std::size_t>(model->SV[i].dim));
   }
   model->sv_coef = (double**)malloc(sizeof(double*)
-      * (model->nr_class - 1));
+      * static_cast<std::size_t>(model->nr_class - 1));
   for (int i = 0; i < model->nr_class - 1; ++i) {
-    model->sv_coef[i] = (double*)malloc(sizeof(double) * (model->l));
+    model->sv_coef[i] = (double*)malloc(sizeof(double) * static_cast<std::size_t>(model->l));
     memcpy(model->sv_coef[i], from->sv_coef[i], sizeof(double)
-        * (model->l));
+        * static_cast<std::size_t>(model->l));
   }
   int n = model->nr_class * (model->nr_class - 1) / 2;
   if (from->rho) {
-    model->rho = (double*)malloc(sizeof(double) * n);
-    memcpy(model->rho, from->rho, sizeof(double) * n);
+    model->rho = (double*)malloc(sizeof(double) * static_cast<std::size_t>(n));
+    memcpy(model->rho, from->rho, sizeof(double) * static_cast<std::size_t>(n));
   } else {
     model->rho = NULL;
   }
   if (from->probA) {
-    model->probA = (double*)malloc(sizeof(double) * n);
-    memcpy(model->probA, from->probA, sizeof(double) * n);
+    model->probA = (double*)malloc(sizeof(double) * static_cast<std::size_t>(n));
+    memcpy(model->probA, from->probA, sizeof(double) * static_cast<std::size_t>(n));
   } else {
     model->probA = NULL;
   }
   if (from->probB) {
-    model->probB = (double*)malloc(sizeof(double) * n);
-    memcpy(model->probB, from->probB, sizeof(double) * n);
+    model->probB = (double*)malloc(sizeof(double) * static_cast<std::size_t>(n));
+    memcpy(model->probB, from->probB, sizeof(double) * static_cast<std::size_t>(n));
   } else {
     model->probB = NULL;
   }
@@ -825,7 +825,7 @@ int RTModel::getSelect(int sel_features, int max, size_t* finalNumFeatures) {
       retValue += (int)pow(2., i);
       noFeat += no_features_per_group[i];
     }
-  (*finalNumFeatures) = noFeat;
+  (*finalNumFeatures) = static_cast<std::size_t>(noFeat);
   return retValue;
 }
 
@@ -952,7 +952,7 @@ double RTModel::computeKfoldCV(const vector<PSMDescription*> & psms,
         train.push_back(psms[j]);
       }
     }
-    trainRetention(train, c, gamma, epsilon, noPsms);
+    trainRetention(train, c, gamma, epsilon, static_cast<int>(noPsms))  ;
     PEk = testRetention(test);
     sumPEs += PEk;
   }
@@ -992,7 +992,7 @@ double RTModel::computeSimpleEvaluation(
     }
   }
   // train the model and test it
-  trainRetention(train, c, gamma, epsilon, noPsms);
+  trainRetention(train, c, gamma, epsilon, static_cast<int>(noPsms));
   ms = testRetention(test);
   if (VERB > 2) {
     cerr << "Done." << endl;
@@ -1081,7 +1081,7 @@ void RTModel::trainSVM(vector<PSMDescription*> & psms) {
         << gamma << ", " << epsilon << ", " << c << ") with Error = "
         << bestError << endl;
     // define the fine grid
-    for (int i = -1*noPointsFineGrid; (i < 0) || static_cast<unsigned int>(i) <= noPointsFineGrid; ++i) {
+    for (int i = -1*static_cast<int>(noPointsFineGrid); (i < 0) || static_cast<unsigned int>(i) <= noPointsFineGrid; ++i) {
       offset = pow(2., stepFineGrid * i);
       fGridC.push_back(c * offset);
       fGridGamma.push_back(gamma * offset);
@@ -1182,38 +1182,38 @@ void RTModel::copyIndexModel(svm_model* from) {
   index_model->nr_class = from->nr_class;
   index_model->l = from->l; // total #SV
   // _DENSE_REP
-  index_model->SV = (svm_node*)malloc(sizeof(svm_node) * index_model->l);
+  index_model->SV = (svm_node*)malloc(sizeof(svm_node) * static_cast<std::size_t>(index_model->l));
   for (int i = 0; i < index_model->l; ++i) {
     index_model->SV[i].dim = from->SV[i].dim;
     index_model->SV[i].values = (double*)malloc(sizeof(double)
-        * index_model->SV[i].dim);
+        * static_cast<std::size_t>(index_model->SV[i].dim));
     memcpy(index_model->SV[i].values, from->SV[i].values, sizeof(double)
-        * index_model->SV[i].dim);
+        * static_cast<std::size_t>(index_model->SV[i].dim));
   }
   index_model->sv_coef = (double**)malloc(sizeof(double*)
-      * (index_model->nr_class - 1));
+      * static_cast<std::size_t>(index_model->nr_class - 1));
   for (int i = 0; i < index_model->nr_class - 1; ++i) {
     index_model->sv_coef[i] = (double*)malloc(sizeof(double)
-        * (index_model->l));
+        * static_cast<std::size_t>(index_model->l));
     memcpy(index_model->sv_coef[i], from->sv_coef[i], sizeof(double)
-        * (index_model->l));
+        * static_cast<std::size_t>(index_model->l));
   }
   int n = index_model->nr_class * (index_model->nr_class - 1) / 2;
   if (from->rho) {
-    index_model->rho = (double*)malloc(sizeof(double) * n);
-    memcpy(index_model->rho, from->rho, sizeof(double) * n);
+    index_model->rho = (double*)malloc(sizeof(double) * static_cast<std::size_t>(n));
+    memcpy(index_model->rho, from->rho, sizeof(double) * static_cast<std::size_t>(n));
   } else {
     index_model->rho = NULL;
   }
   if (from->probA) {
-    index_model->probA = (double*)malloc(sizeof(double) * n);
-    memcpy(index_model->probA, from->probA, sizeof(double) * n);
+    index_model->probA = (double*)malloc(sizeof(double) * static_cast<std::size_t>(n));
+    memcpy(index_model->probA, from->probA, sizeof(double) * static_cast<std::size_t>(n));
   } else {
     index_model->probA = NULL;
   }
   if (from->probB) {
-    index_model->probB = (double*)malloc(sizeof(double) * n);
-    memcpy(index_model->probB, from->probB, sizeof(double) * n);
+    index_model->probB = (double*)malloc(sizeof(double) * static_cast<std::size_t>(n));
+    memcpy(index_model->probB, from->probB, sizeof(double) * static_cast<std::size_t>(n));
   } else {
     index_model->probB = NULL;
   }
@@ -1449,18 +1449,19 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
   PSMDescriptionDOC::setPSMSet(psms);
   PSMDescriptionDOC::normalizeRetentionTimes(psms);
   normalizer = Normalizer::getNormalizer();
-  normalizer->resizeVecs(noFeat);
+  normalizer->resizeVecs(static_cast<std::size_t>(noFeat));
   // scale the values of the features between 0 and 1
   vector<double*> tmp;
   vector<double*> tRetFeat = PSMDescriptionDOC::getRetFeatures(psms);
-  normalizer->setSet(tmp, tRetFeat, (size_t)0, noFeat);
+  normalizer->setSet(tmp, tRetFeat, (size_t)0, static_cast<std::size_t>(noFeat));
   normalizer->normalizeSet(tmp, tRetFeat);
   // train retention
   trainIndexSVR(psms);
   // calculate the weights of each aa
-  std::vector< std::vector<double> > a(noFeat + 1,std::vector<double>(noFeat));
-  for (int i = 0; i < noFeat + 1; ++i)
-    for (int j = 0; j < noFeat; ++j)
+  std::vector< std::vector<double> > a(static_cast<std::size_t>(noFeat + 1),
+    std::vector<double>(static_cast<std::size_t>(noFeat)));
+  for (std::size_t i = 0; i < noFeat + 1; ++i)
+    for (std::size_t j = 0; j < noFeat; ++j)
       if (j == (i - 1)) {
         a[i][j] = 1.0;
       } else {
@@ -1468,7 +1469,7 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
       }
   // get weights
   double background = estimateIndexRT(&a[0][0]);
-  for (int i = 1; i < noFeat + 1; ++i) {
+  for (std::size_t i = 1; i < noFeat + 1; ++i) {
     our_index[aaAlphabet[i - 1] - 'A'] = static_cast<float>(estimateIndexRT(&a[i][0])
         - background);
   }

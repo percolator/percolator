@@ -208,7 +208,7 @@ class Protein {
    * user must free the return sequence 
    */
   virtual char* getSequence(
-    int offset=0
+    std::size_t offset=0
   );
 
   /**

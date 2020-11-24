@@ -165,8 +165,8 @@ void ProteinPeptideIterator::selectPeptides(
     for (cterm_idx = previous_cterm_cleavage_start; 
          cterm_idx < cterm_num_cleavages; cterm_idx++){
 
-      if ((*cumulative_cleavages_)[cterm_allowed_cleavages[cterm_idx]-1] - \
-          (*cumulative_cleavages_)[nterm_allowed_cleavages[nterm_idx]]  \
+      if ((*cumulative_cleavages_)[static_cast<std::size_t>(cterm_allowed_cleavages[cterm_idx]-1)] - \
+          (*cumulative_cleavages_)[static_cast<std::size_t>(nterm_allowed_cleavages[nterm_idx])]  \
           > int_num_skip_cleavages) {
         break;
       }
@@ -239,7 +239,7 @@ void ProteinPeptideIterator::prepareMc(
 
   // calculate our cleavage positions and masses
   for(start_idx = 1; start_idx < protein->getLength()+1; start_idx++){
-    int sequence_idx = start_idx - 1;
+    int sequence_idx = static_cast<int>(start_idx - 1);
     char amino_acid = protein->getSequencePointer()[sequence_idx];
 
     if( amino_acid == 'B' || amino_acid == 'X' || amino_acid == 'Z' ){
@@ -262,10 +262,10 @@ void ProteinPeptideIterator::prepareMc(
 
   // put in the implicit cleavage at end of protein
   if (cleavage_positions[cleavage_position_idx-1] != (int)protein->getLength()){
-    cleavage_positions[cleavage_position_idx++] = protein->getLength(); 
+    cleavage_positions[cleavage_position_idx++] = static_cast<int>(protein->getLength()); 
   }
 
-  all_positions[protein->getLength()] = (int)protein->getLength();
+  all_positions[protein->getLength()] = static_cast<int>(protein->getLength());
 
   int num_cleavage_positions = cleavage_position_idx;
   int num_non_cleavage_positions = non_cleavage_position_idx;
@@ -290,7 +290,7 @@ void ProteinPeptideIterator::prepareMc(
   case PARTIAL_DIGEST:
       // add the C-term tryptic cleavage positions.
       this->selectPeptides(
-        all_positions, protein->getLength(),
+        all_positions, static_cast<int>(protein->getLength()),
         cleavage_positions+1, num_cleavage_positions-1, 
         missed_cleavages);
 
@@ -306,8 +306,8 @@ void ProteinPeptideIterator::prepareMc(
 
   case NON_SPECIFIC_DIGEST:
       this->selectPeptides(
-        all_positions, protein->getLength(),
-        all_positions+1, protein->getLength(), // len-1?
+        all_positions, static_cast<int>(protein->getLength()),
+        all_positions+1, static_cast<int>(protein->getLength()), // len-1?
         500); // for unspecific ends, allow internal cleavage sites
       break;
 
@@ -345,17 +345,17 @@ void ProteinPeptideIterator::prepareMc(
  * formed from a protein of the given length.  No enzyme specificity
  * assumed.  
  */
-unsigned int ProteinPeptideIterator::countMaxPeptides(
- unsigned int protein_length,   ///< length of protein
- unsigned int min_seq_length,   ///< min peptide length
- unsigned int max_seq_length)  ///< max peptide length
+int ProteinPeptideIterator::countMaxPeptides(
+ int protein_length,   ///< length of protein
+ int min_seq_length,   ///< min peptide length
+ int max_seq_length)  ///< max peptide length
 {
   if( max_seq_length > protein_length ){
     max_seq_length = protein_length;
   }
 
-  unsigned int total_peptides = 0;
-  for(unsigned int len = min_seq_length; len <= max_seq_length; len++){
+  int total_peptides = 0;
+  for(int len = min_seq_length; len <= max_seq_length; len++){
     total_peptides += protein_length + 1 - len;
   }
   return total_peptides;
@@ -395,8 +395,8 @@ ProteinPeptideIterator::ProteinPeptideIterator(
   cumulative_cleavages_ = new vector<int>();
 
   // estimate array size and reserve space to avoid resizing vector
-  int max_peptides = countMaxPeptides(protein->getLength(), 
-      peptide_constraint->getMinLength(), peptide_constraint->getMaxLength());
+  std::size_t max_peptides = static_cast<std::size_t>(countMaxPeptides(static_cast<int>(protein->getLength()), 
+      peptide_constraint->getMinLength(), peptide_constraint->getMaxLength()));
   nterm_cleavage_positions_->reserve(max_peptides); 
   peptide_lengths_->reserve(max_peptides);
   cumulative_cleavages_->reserve(max_peptides);
@@ -438,7 +438,7 @@ PercolatorCrux::Peptide* ProteinPeptideIterator::next()
     return NULL;
   }
 
-  int cleavage_idx = current_cleavage_idx_;
+  std::size_t cleavage_idx = static_cast<std::size_t>(current_cleavage_idx_);
   int current_start = (*nterm_cleavage_positions_)[cleavage_idx];
   int current_length = (*peptide_lengths_)[cleavage_idx];
 

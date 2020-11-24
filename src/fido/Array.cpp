@@ -5,13 +5,13 @@
 class Set;
 template <typename T>
 Array<T>::Array(int n) :
-  data(n)
+  data(static_cast<std::size_t>(n))
 {
 }
 
 template <typename T>
 Array<T>::Array(int n, const T & element) :
-  data(n, element)
+  data(std::size_t(n), element)
 {
 }
 
@@ -25,14 +25,14 @@ template <typename T>
 const T & Array<T>::operator [] (int k) const
 {
   boundsCheck(k);
-  return data[k];
+  return data[static_cast<std::size_t>(k)];
 }
 
 template <typename T>
 T & Array<T>::operator [] (int k)
 {
   boundsCheck(k);
-  return data[k];
+  return data[static_cast<std::size_t>(k)];
 }
 
 template <typename T>
@@ -91,11 +91,11 @@ void Array<T>::resize(int n)
   if ( n < 0 )
     throw ResizeException();
 
-  data.resize(n);
+  data.resize(static_cast<std::size_t>(n));
 }
 
 template <typename T>
-int Array<T>::size() const
+size_t Array<T>::size() const
 {
   return data.size();
 }
@@ -255,14 +255,14 @@ bool Array<T>::operator ==(const Array<T> & rhs) const {
 template <typename T>
 Array<int> Array<T>::sort() {
   vector<pair<T, int> > sortie(size());
-  for (int k = 0; k < size(); k++) {
+  for (std::size_t k = 0; k < size(); k++) {
     sortie[k] = pair<T, int>( (*this)[k], k);
   }
 
   ::sort( sortie.begin(), sortie.end() , std::greater<std::pair<T, int> >() );
   
   Array<int> result(size());
-  for (int k = 0; k < size(); k++) {
+  for (std::size_t k = 0; k < size(); k++) {
     (*this)[k] = sortie[k].first;
     result[k] = sortie[k].second;
   }
@@ -280,7 +280,7 @@ Array<int> Array<T>::sortA() {
   ::sort(sortie.begin(), sortie.end());
   
   Array<int> result(size());
-  for (int k = 0; k < size(); k++) {
+  for (std::size_t k = 0; k < size(); k++) {
     (*this)[k] = sortie[k].first;
     result[k] = sortie[k].second;
   }

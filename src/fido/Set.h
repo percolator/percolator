@@ -36,7 +36,7 @@ class Set : public Array<int> {
   static unsigned int sumSetElements(const Set & s) {
     unsigned int sum = 0;
     for (int k=0; k<s.size(); k++)
-      sum += s[k];
+      sum += static_cast<unsigned int>(s[k]);
     return sum;
   }
 

@@ -109,6 +109,7 @@ class CommandLineParser {
    */
   double getDouble(std::string dest, double lower, double upper);
   int getInt(std::string dest, int lower, int upper);
+  unsigned int getUInt(std::string dest, int lower, int upper);
 
   /* Output the help text and exit. */
   void help();

@@ -61,7 +61,7 @@ public:
   void remove(int k);
 
   // accessors
-  virtual int size() const;
+  virtual std::size_t size() const;
 
   // bound checking function
   bool inBounds(int i) const;

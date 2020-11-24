@@ -996,7 +996,7 @@ char* Peptide::getProteinIds() {
 
       // Allocate more memory if needed, allow space for comma and null
       if (protein_field_free < (protein_id_len + 2)) {
-        size_t tail_offset = protein_field_tail - protein_field;
+        size_t tail_offset = static_cast<std::size_t>(protein_field_tail - protein_field);
         protein_field = (char*)realloc(
           protein_field, 
           sizeof(char) * ((allocation_factor * (protein_id_len + 1)) + protein_field_len)

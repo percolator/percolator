@@ -257,7 +257,7 @@ bool Database::parseTextFasta()
     return false;
   }
    
-  working_index = ftell(file);
+  working_index = static_cast<unsigned long>(ftell(file));
   // check each line until reach '>' line
   while((line_length =  getline(&new_line, &buf_length, file)) != -1){
     if(new_line[0] == '>'){
@@ -272,7 +272,7 @@ bool Database::parseTextFasta()
       }
       else{
         // rewind to the beginning of the protein to include ">" line
-        fseek(file, working_index, SEEK_SET);
+        fseek(file, static_cast<long>(working_index), SEEK_SET);
         
         // failed to parse the protein from fasta file
         // protein offset is set in the parse_protein_fasta_file method
@@ -294,7 +294,7 @@ bool Database::parseTextFasta()
       new_protein->setProteinIdx(proteins_->size()-1);
       new_protein->setDatabase(this);
     }
-    working_index = ftell(file);
+    working_index = static_cast<unsigned long>(ftell(file));
   }
   free(new_line);
   

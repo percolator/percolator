@@ -302,7 +302,7 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
   double estPx_lt_zj = 0.0;
   double E_f1_mod_run_tot = 0.0;
   
-  int binsLeft = noIntervals - 1;
+  int binsLeft = static_cast<int>(noIntervals - 1);
   double targetedBinSize = max(combined.size() / (double)(noIntervals), 1.0);
   
   std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
@@ -318,9 +318,9 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
     // handles ties
     if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
       if (pi0 < 1.0 && decoyQueue > 0) {
-        int j = h_w_le_z.size() - sum_n_z_ge_w - n_z_ge_w;
-        int cnt_w = h_w_le_z.at(j);
-        int cnt_z = h_z_le_z.at(j);
+        int j = static_cast<int>(h_w_le_z.size()) - sum_n_z_ge_w - n_z_ge_w;
+        int cnt_w = h_w_le_z.at(static_cast<std::size_t>(j));
+        int cnt_z = h_z_le_z.at(static_cast<std::size_t>(j));
         estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
         estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
         estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
@@ -328,8 +328,8 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
       }
       decoyQueue = 0;
       
-      if (combined.size() - binStartIdx - psmsInBin <= binsLeft * targetedBinSize) {
-        double median = combined.at(binStartIdx + psmsInBin / 2).first;
+      if (static_cast<int>(combined.size()) - binStartIdx - psmsInBin <= binsLeft * targetedBinSize) {
+        double median = combined.at(static_cast<std::size_t>(binStartIdx + psmsInBin / 2)).first;
         double numNegatives = n_z_ge_w * pi0 + E_f1_mod_run_tot;
         double numPsmsCorrected = psmsInBin - n_z_ge_w + numNegatives;
         
@@ -424,9 +424,9 @@ void PosteriorEstimator::getQValues(double pi0,
     // handles ties
     if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
       if (pi0 < 1.0 && decoyQueue > 0) {
-        int j = h_w_le_z.size() - (n_z_ge_w - 1);
-        int cnt_w = h_w_le_z.at(j);
-        int cnt_z = h_z_le_z.at(j);
+        int j = static_cast<int>(h_w_le_z.size()) - (n_z_ge_w - 1);
+        int cnt_w = h_w_le_z.at(static_cast<std::size_t>(j));
+        int cnt_z = h_z_le_z.at(static_cast<std::size_t>(j));
         estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
         estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
         estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
@@ -505,7 +505,7 @@ bool PosteriorEstimator::checkSeparation(std::vector<double>& p) {
   // N.B. Assumes p is sorted in ascending order.
   std::vector<double>::iterator start = lower_bound(p.begin(), p.end(), minLambda);
   // Calculates the difference in index between start and end
-  size_t Wl = distance(start, p.end());
+  size_t Wl = static_cast<std::size_t>(distance(start, p.end()));
   return (Wl == 0u);
 }
 
@@ -733,7 +733,7 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
   if (cmd.optionSet("number-of-bins")) {
-    noIntervals = cmd.getInt("number-of-bins", 1, INT_MAX);
+    noIntervals = cmd.getUInt("number-of-bins", 1, INT_MAX);
   }
   if (cmd.optionSet("epsilon-cross-validation")) {
     BaseSpline::convergeEpsilon = cmd.getDouble("epsilon-cross-validation", 0.0, 1.0);

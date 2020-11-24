@@ -127,12 +127,6 @@ class RTModel {
     size_t getRTFeat() {
       return noFeaturesToCalc;
     }
-    int getNoFeaturesToCalc() {
-      return noFeaturesToCalc;
-    }
-    int getSelectFeatures() {
-      return selected_features;
-    }
     int getSelect(int sel_features, int max, size_t* finalNumFeatures);
     string getGridType();
     string getEvaluationType();
@@ -149,9 +143,6 @@ class RTModel {
     void setSelectFeatures(const int sf);
     void setCalibrationFile(const string calFile) {
       calibrationFile = calFile;
-    }
-    void setK(const int newk) {
-      k = newk;
     }
     void setEvaluationType(const EvaluationType e) {
       eType = e;

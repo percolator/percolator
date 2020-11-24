@@ -126,7 +126,7 @@ void Protein::print(
   )
 {
   int   sequence_index;
-  int   sequence_length = getLength();
+  int   sequence_length = static_cast<int>(getLength());
   char* sequence = getSequence();
   char* id = getId();
   char* annotation = getAnnotation();
@@ -205,8 +205,8 @@ void Protein::serialize(
   )
 {
   
-  int id_length = strlen(id_);
-  int annotation_length = strlen(annotation_);
+  std::size_t id_length = strlen(id_);
+  std::size_t annotation_length = strlen(annotation_);
 
   // write the protein id length
   fwrite(&id_length, sizeof(int), 1, file);
@@ -322,7 +322,7 @@ bool Protein::parseProteinBinaryMemmap(
   
   // read sequence length
   sequence_length = *((int *) *memmap);
-  length_ = sequence_length;
+  length_ = static_cast<unsigned int>(sequence_length);
 
   // reset pointer to start of sequence
   *memmap += sizeof(int);
@@ -405,7 +405,7 @@ bool Protein::readTitleLine
     }  
   }
   // set protein offset                   FIXME: might not need to "-1" -CHRIS
-  offset_ = ftell(fasta_file) - 1;
+  offset_ = static_cast<unsigned long>(ftell(fasta_file) - 1);
 
   /**
    * chris edited, added this block to make sure all of comment line
@@ -563,7 +563,7 @@ char* Protein::getId()
     //carp(CARP_FATAL, "Cannot get ID from light protein.");
   }
   
-  int id_length = strlen(id_) +1; // +\0
+  std::size_t id_length = strlen(id_) +1; // +\0
   char* copy_id = 
     (char *)malloc(sizeof(char)*id_length);
   
@@ -591,7 +591,7 @@ void Protein::setId(
   const char* id ///< the sequence to add -in
   )
 {
-  int id_length = strlen(id) +1; // +\0
+  std::size_t id_length = strlen(id) +1; // +\0
   free(id_);
   char* copy_id = 
     (char *)malloc(sizeof(char)*id_length);
@@ -606,12 +606,12 @@ void Protein::setId(
  * assumes that the protein is heavy
  */
 char* Protein::getSequence(
-  int offset
+  std::size_t offset
 ) {
   if(is_light_){
     //carp(CARP_FATAL, "Cannot get sequence from light protein.");
   }
-  unsigned int sequence_length = strlen(sequence_) +1-offset; // +\0
+  std::size_t sequence_length = strlen(sequence_) +1-offset; // +\0
   char * copy_sequence = 
     (char *)malloc(sizeof(char)*sequence_length);
   return strncpy(copy_sequence, sequence_+offset, sequence_length);  
@@ -677,7 +677,7 @@ char* Protein::getAnnotation()
   if(is_light_){
     //carp(CARP_FATAL, "Cannot get annotation from light protein.");
   }
-  int annotation_length = strlen(annotation_) +1; // +\0
+  std::size_t annotation_length = strlen(annotation_) +1; // +\0
   char * copy_annotation = 
     (char *)malloc(sizeof(char)*annotation_length);
   return strncpy(copy_annotation, annotation_, annotation_length);  

@@ -28,7 +28,7 @@ using namespace std;
 
 class AlgIn {
   public:
-    AlgIn(const int size, const int numFeat);
+    AlgIn(const unsigned int size, const int numFeat);
     virtual ~AlgIn();
     int m; /* number of examples */
     int n; /* number of features */
@@ -116,7 +116,7 @@ int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
 
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
-int L2_SVM_MFN(const AlgIn& set, options* Options,
+int L2_SVM_MFN(const AlgIn& set, options& Options,
                vector_double& Weights,
                vector_double& Outputs, double cpos, double cneg);
 double line_search(double* w, double* w_bar, double lambda, double* o,

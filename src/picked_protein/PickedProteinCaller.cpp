@@ -126,7 +126,7 @@ void PickedProteinCaller::addToPeptideProteinMap(Database& db,
     peptide_protein_map[sequence].push_back(protein_idx);
     if (sequence[0] == 'M' && peptide->getNTermFlankingAA() == '-'
           && peptide->getLength() - 1 >= min_peptide_length_) {
-      std::string metCleavedSequence(sequence.substr(1, peptide->getLength() - 1));
+      std::string metCleavedSequence(sequence.substr(1, static_cast<std::size_t>(peptide->getLength() - 1)));
       peptide_protein_map[metCleavedSequence].push_back(protein_idx);
     }
     PercolatorCrux::Peptide::free(peptide);
@@ -171,19 +171,19 @@ void PickedProteinCaller::findFragmentProteins(Database& db,
           protein_idx_intersection.begin(), protein_idx_intersection.end(), 
           peptide_protein_map[sequence].begin(), peptide_protein_map[sequence].end(), 
           newprotein_idx_intersection.begin());
-      newprotein_idx_intersection.resize(it - newprotein_idx_intersection.begin());
+      newprotein_idx_intersection.resize(static_cast<std::size_t>(it - newprotein_idx_intersection.begin()));
       protein_idx_intersection = newprotein_idx_intersection;
     }
     
     if (sequence[0] == 'M' && peptide->getNTermFlankingAA() == '-'
           && peptide->getLength() - 1 >= min_peptide_length_) {
-      std::string metCleavedSequence(sequence.substr(1, peptide->getLength() - 1));
+      std::string metCleavedSequence(sequence.substr(1, static_cast<std::size_t>(peptide->getLength() - 1)));
       std::vector<size_t> newprotein_idx_intersection(protein_idx_intersection.size());
       std::vector<size_t>::iterator it = std::set_intersection(
           protein_idx_intersection.begin(), protein_idx_intersection.end(), 
           peptide_protein_map[metCleavedSequence].begin(), peptide_protein_map[metCleavedSequence].end(), 
           newprotein_idx_intersection.begin());
-      newprotein_idx_intersection.resize(it - newprotein_idx_intersection.begin());
+      newprotein_idx_intersection.resize(static_cast<std::size_t>(it - newprotein_idx_intersection.begin()));
       protein_idx_intersection = newprotein_idx_intersection;
     }
      

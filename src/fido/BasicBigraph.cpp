@@ -135,7 +135,7 @@ void BasicBigraph::printGraphStats() const
   int edgeCount = 0;
   for (int k=0; k<PSMsToProteins.size(); k++)
     {
-      edgeCount += PSMsToProteins.associations[k].size();
+      edgeCount += static_cast<int>(PSMsToProteins.associations[k].size());
     }
 
   cout << "      and \t" << edgeCount << " edges" << endl;
@@ -223,7 +223,7 @@ void BasicBigraph::clonePSM(int pepIndex) {
 
   // (remove the associations to proteins)
   PSMsToProteins[ pepIndex ].association = Set();
-  numberClones += sections.size()-1;
+  numberClones += static_cast<int>(sections.size()-1);
 }
 
 void BasicBigraph::reindex() {
