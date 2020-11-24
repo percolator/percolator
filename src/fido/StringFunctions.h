@@ -21,7 +21,8 @@ public:
       i += static_cast<unsigned long int>(int(str[k]) - int('0'));
       i *= 255;
     }
-    return uint(i << 2);
+    unsigned int result = static_cast<unsigned int>(int(i << 2));
+    return result;
   }
 
   static unsigned int nucleotideStringHash(const string &str);
