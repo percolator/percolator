@@ -44,7 +44,7 @@ double BaseSpline::scaleAlpha = 1;
 
 double BaseSpline::splineEval(double xx) {
   xx = transf(xx);
-  std::size_t n = static_cast<std::size_t>(x.size());
+  std::size_t n = x.size();
   vector<double>::iterator left, right = lower_bound(x.begin(),
                                                      x.end(),
                                                      xx);

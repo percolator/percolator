@@ -36,6 +36,20 @@ T & Array<T>::operator [] (int k)
 }
 
 template <typename T>
+const T & Array<T>::operator [] (std::size_t k) const
+{
+  boundsCheck(static_cast<int>(k));
+  return data[k];
+}
+
+template <typename T>
+T & Array<T>::operator [] (std::size_t k)
+{
+  boundsCheck(static_cast<int>(k));
+  return data[k];
+}
+
+template <typename T>
 void Array<T>::add(const T & element)
 {
   data.push_back( element );

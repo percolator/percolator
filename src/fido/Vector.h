@@ -48,6 +48,11 @@ public:
     return values[k];
   }
 
+  const double & operator [](std::size_t k) const
+  {
+    return values[k];
+  }
+
   
   Set::Iterator beginNonzero() const
     {

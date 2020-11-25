@@ -38,6 +38,8 @@ public:
   // important vector functions
   virtual const T & operator [] (int k) const;
   virtual T & operator [] (int k);
+  virtual const T & operator [] (std::size_t k) const;
+  virtual T & operator [] (std::size_t k);
   virtual Array<T> operator [](const Array<int> & rhs) const;
 
   //Set operator ==(const T & rhs) const;
