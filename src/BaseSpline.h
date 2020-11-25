@@ -42,17 +42,17 @@ class BaseSpline {
     }
     static void solveInPlace(PackedMatrix& mat, PackedVector& res);
   protected:
-    virtual void calcPZW() {;}
+    virtual void calcPZW() {}
     virtual void initg() {
-      int n = x.size();
+      int n = static_cast<int>(x.size());
       g = PackedVector(n);
       gnew = PackedVector(n);
       w = PackedVector(n);
       z = PackedVector(n,0.5);
       gamma = PackedVector(n-2);
     }
-    virtual void limitg() {;}
-    virtual void limitgamma() {;}
+    virtual void limitg() {}
+    virtual void limitgamma() {}
     void initiateQR();
     double crossValidation(double alpha);
     double evaluateSlope(double alpha);

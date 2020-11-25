@@ -53,7 +53,7 @@ class Set : public Array<int> {
   }
   
   int randomElement() const {
-    return (*this)[ Random::lcg_rand() % size() ];
+    return (*this)[static_cast<int>(Random::lcg_rand() % size())];
   }
 
  private:

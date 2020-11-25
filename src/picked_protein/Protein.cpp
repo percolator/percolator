@@ -161,7 +161,7 @@ int Protein::findStart(
   if (prev_aa == "-") {
     return 1;
   } else if (next_aa == "-") {
-    return getLength() - peptide_sequence.length();
+    return static_cast<int>(getLength() - peptide_sequence.length());
   } else {
     //use the flanking amino acids to further constrain our search in the sequence
     size_t pos = string::npos; 
@@ -177,9 +177,9 @@ int Protein::findStart(
         //carp(CARP_ERROR, "could not %s in protein %s\n%s", seq.c_str(), getIdPointer(), protein_seq.c_str());
         return -1;
       }
-      return (pos+1);
+      return (static_cast<int>(pos)+1);
     }
-    return (pos+2);
+    return (static_cast<int>(pos)+2);
   }
 
 }
@@ -418,7 +418,7 @@ bool Protein::readTitleLine
     int line_length;
     size_t buf_length = 0;
 
-    if((line_length =  getline(&new_line, &buf_length, fasta_file)) == -1){
+    if((line_length = static_cast<int>(getline(&new_line, &buf_length, fasta_file))) == -1){
       //carp(CARP_FATAL, "Error reading Fasta file.\n");
     }
     strncpy(id_line, new_line, LONGEST_LINE-1);
@@ -460,7 +460,7 @@ bool Protein::readRawSequence
   bool return_value = true;
 
   // Start at the end of the given sequence.
-  i_seq = strlen(raw_sequence);
+  i_seq = static_cast<unsigned int>(strlen(raw_sequence));
   assert((unsigned int)strlen(raw_sequence) < max_chars);
 
   // Read character by character.
@@ -494,7 +494,7 @@ bool Protein::readRawSequence
         a_char = 'X';
       }
       
-      raw_sequence[i_seq] = a_char;
+      raw_sequence[i_seq] = static_cast<char>(a_char);
       i_seq++;
     }
     if (i_seq >= max_chars) {
@@ -639,7 +639,7 @@ void Protein::setSequence(
   )
 {
 
-  unsigned int sequence_length = strlen(sequence) +1; // +\0
+  unsigned int sequence_length = static_cast<unsigned int>(strlen(sequence)) +1; // +\0
   free(sequence_);
   char * copy_sequence = 
     (char *)malloc(sizeof(char)*sequence_length);

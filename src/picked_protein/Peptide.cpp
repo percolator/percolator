@@ -283,7 +283,7 @@ PeptideSrcIterator Peptide::getPeptideSrcEnd() {
  */
 int Peptide::getNumPeptideSrc(){
 
-  return peptide_srcs_.size();
+  return static_cast<int>(peptide_srcs_.size());
 }
 
 /**
@@ -848,7 +848,7 @@ int Peptide::getProteinInfo(vector<string>& protein_ids,
 
   } 
 
-  return protein_ids.size();
+  return static_cast<int>(protein_ids.size());
 }
 
 

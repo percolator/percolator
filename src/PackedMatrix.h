@@ -41,7 +41,7 @@ class PackedMatrix
       return rows[k];
     }
     int numRows() const {
-      return rows.size();
+      return static_cast<int>(rows.size());
     }
     int numCols() const {
       return cols;

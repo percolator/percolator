@@ -168,7 +168,7 @@ void CommandLineParser::parseArgsParamFile(const std::string paramFile) {
     perc_argv.push_back(i->c_str());
   }
   
-  parseArgs(perc_args_vec.size(), (char**)&perc_argv.front());
+  parseArgs(static_cast<int>(perc_args_vec.size()), (char**)&perc_argv.front());
 }
 
 void CommandLineParser::error(std::string msg) {

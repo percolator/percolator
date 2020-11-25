@@ -443,7 +443,7 @@ PercolatorCrux::Peptide* ProteinPeptideIterator::next()
   int current_length = (*peptide_lengths_)[cleavage_idx];
 
   // create new peptide
-  Peptide* peptide = new Peptide(current_length, protein_, current_start);//, peptide_type);
+  Peptide* peptide = new Peptide(static_cast<unsigned char>(current_length), protein_, current_start);//, peptide_type);
   // update position of iterator
   ++current_cleavage_idx_;
 

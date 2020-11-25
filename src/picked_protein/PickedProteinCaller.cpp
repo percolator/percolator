@@ -99,7 +99,7 @@ void PickedProteinCaller::addToPeptideProteinMap(Database& db,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     bool reverseProteinSeqs) {
-  PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
+  PercolatorCrux::Protein* protein = db.getProteinAtIdx(static_cast<unsigned int>(protein_idx));
   
   if (reverseProteinSeqs) {
     protein->shuffle(PROTEIN_REVERSE_DECOYS);
@@ -151,7 +151,7 @@ void PickedProteinCaller::findFragmentProteins(Database& db,
     std::map<std::string, std::vector<size_t> >& peptide_protein_map,
     std::map<size_t, size_t>& num_peptides_per_protein,
     std::map<size_t, std::vector<size_t> >& fragment_protein_map) {
-  PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
+  PercolatorCrux::Protein* protein = db.getProteinAtIdx(static_cast<unsigned int>(protein_idx));
   
   ProteinPeptideIterator cur_protein_peptide_iterator(protein, &peptide_constraint);
   
@@ -238,13 +238,13 @@ void PickedProteinCaller::findFragmentsAndDuplicates(Database& db,
   std::map<size_t, std::vector<size_t> >::iterator it;
   for (it = fragment_protein_map.begin(); it != fragment_protein_map.end(); ++it) {
     size_t i = it->first;
-    std::string this_protein_id(db.getProteinAtIdx(i)->getIdPointer());
+    std::string this_protein_id(db.getProteinAtIdx(static_cast<unsigned int>(i))->getIdPointer());
     
     for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
       size_t j = *it2;
       
       if (i != j) {
-        std::string that_protein_id(db.getProteinAtIdx(j)->getIdPointer());
+        std::string that_protein_id(db.getProteinAtIdx(static_cast<unsigned int>(j))->getIdPointer());
         
         if (num_peptides_per_protein[i] == num_peptides_per_protein[j]) {
           duplicate_map[that_protein_id] = this_protein_id;
@@ -310,7 +310,7 @@ void PickedProteinCaller::findFragmentsAndDuplicatesNonSpecificDigest(
     std::map<size_t, size_t> num_peptides_per_protein_local;
     for (std::vector<size_t>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
       size_t protein_idx = *it2;
-      PercolatorCrux::Protein* protein = db.getProteinAtIdx(protein_idx);
+      PercolatorCrux::Protein* protein = db.getProteinAtIdx(static_cast<unsigned int>(protein_idx));
       std::string sequence(protein->getSequencePointer(), protein->getLength());
       sequences.push_back(sequence);
       num_peptides_per_protein_local[protein_idx] = protein->getLength();

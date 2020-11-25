@@ -215,7 +215,7 @@ void Database::addProtein(
   // add protein to database
   proteins_->push_back(protein);
   
-  protein->setProteinIdx(proteins_->size()-1);
+  protein->setProteinIdx(static_cast<unsigned int>(proteins_->size())-1);
 
   if (is_hashed_) {
     char* id = protein->getIdPointer();
@@ -259,7 +259,7 @@ bool Database::parseTextFasta()
    
   working_index = static_cast<unsigned long>(ftell(file));
   // check each line until reach '>' line
-  while((line_length =  getline(&new_line, &buf_length, file)) != -1){
+  while((line_length =  static_cast<int>(getline(&new_line, &buf_length, file))) != -1){
     if(new_line[0] == '>'){
       // the new protein to be added
       new_protein = new Protein();
@@ -291,7 +291,7 @@ bool Database::parseTextFasta()
       // add protein to database
       proteins_->push_back(new_protein);
       // set protein index, database
-      new_protein->setProteinIdx(proteins_->size()-1);
+      new_protein->setProteinIdx(static_cast<unsigned int>(proteins_->size())-1);
       new_protein->setDatabase(this);
     }
     working_index = static_cast<unsigned long>(ftell(file));
@@ -363,7 +363,7 @@ DECOY_TYPE_T Database::getDecoyType(){
  */
 unsigned int Database::getNumProteins()
 {
-  return proteins_->size();
+  return static_cast<unsigned int>(proteins_->size());
 }
 
 /**

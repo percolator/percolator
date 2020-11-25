@@ -44,7 +44,7 @@ double BaseSpline::scaleAlpha = 1;
 
 double BaseSpline::splineEval(double xx) {
   xx = transf(xx);
-  size_t n = x.size();
+  std::size_t n = static_cast<std::size_t>(x.size());
   vector<double>::iterator left, right = lower_bound(x.begin(),
                                                      x.end(),
                                                      xx);
@@ -54,7 +54,7 @@ double BaseSpline::splineEval(double xx) {
     double gx = g[n - 1] + (xx - x[n - 1]) * derl;
     return gx;
   }
-  std::size_t rix = static_cast<std::size_t>(right - x.begin());
+  int rix = static_cast<int>(right - x.begin());
   if (*right == xx) {
     return g[rix];
   }
@@ -133,7 +133,7 @@ void BaseSpline::roughnessPenaltyIRLS() {
 void BaseSpline::iterativeReweightedLeastSquares(double alpha) {
   double step = 0.0;
   int iter = 0;
-  unsigned int n = x.size();
+  unsigned int n = static_cast<unsigned int>(x.size());
   do {
     g = gnew;
     calcPZW();
@@ -225,7 +225,7 @@ double BaseSpline::alphaLinearSearchBA(double min_p,
 }
 
 void BaseSpline::initiateQR() {
-  std::size_t n = x.size();
+  int n = static_cast<int>(x.size());
   dx.resize(n-1);
   for (std::size_t ix = 0; ix < n - 1; ix++) {
     dx.addElement(ix, x[ix + 1] - x[ix]);
