@@ -44,7 +44,7 @@ Caller::Caller() :
     numIterations_(10), maxPSMs_(0u),
     nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false), 
-    trainBestPositive_(false), numThreads_(3u) {
+    trainBestPositive_(false), numThreads_(3u), useQLOH_(false) {
 }
 
 Caller::~Caller() {
@@ -346,6 +346,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gridsearch-mse-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
       "value");
+  cmd.defineOption("QL",
+      "quick-lohify",
+      "Use the Quick-LOHify (QLOH) algorithm made by Oliver Serang et al. QLOH replace normal sorting in some parts of the code. This potentially improve run-time. QLOH has an expected time-complexity of O(n) and worst time complexity O(n²).",
+      "",
+      TRUE_IF_SET);
 
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
@@ -701,6 +706,9 @@ bool Caller::parseOptions(int argc, char **argv) {
 
   if (cmd.optionSet("nested-xval-bins")) {
     nestedXvalBins_ = cmd.getInt("nested-xval-bins", 1, 1000);
+  }
+  if(cmd.optionSet("quick-lohify")){
+    useQLOH_ = true;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -1134,7 +1142,7 @@ int Caller::run() {
   CrossValidation crossValidation(quickValidation_, reportEachIteration_,
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_,
                                   selectedCneg_, numIterations_, useMixMax_,
-                                  nestedXvalBins_, trainBestPositive_, numThreads_, skipNormalizeScores_);
+                                  nestedXvalBins_, trainBestPositive_, numThreads_, skipNormalizeScores_, useQLOH_);
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
   if (VERB > 0) {

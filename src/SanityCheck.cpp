@@ -103,7 +103,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   }
   initPositives_ = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives_ += (*pTestset)[set].calcScoresSorted(w[set], test_fdr);
+    initPositives_ += (*pTestset)[set].calcScores(w[set], test_fdr);
   }
   return initPositives_;
 }
@@ -151,7 +151,7 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   }
   int overFDR = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    overFDR += (*pTestset)[set].calcScoresSorted(w[set], test_fdr_);
+    overFDR += (*pTestset)[set].calcScores(w[set], test_fdr_);
   }
   if (overFDR <= 0) {
     cerr << "No targets found with q<" << test_fdr_ << endl;

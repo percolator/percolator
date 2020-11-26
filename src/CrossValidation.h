@@ -46,7 +46,7 @@ class CrossValidation {
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, int niter, bool usePi0,
           int nestedXvalBins, bool trainBestPositive, unsigned int numThreads,
-    bool skipNormalizeScores);
+    bool skipNormalizeScores, bool useQLOH);
   
   ~CrossValidation();
   
@@ -100,6 +100,7 @@ class CrossValidation {
   
   bool trainBestPositive_;
   bool skipNormalizeScores_;
+  bool useQLOH_;
   
   const static double requiredIncreaseOver2Iterations_;
   

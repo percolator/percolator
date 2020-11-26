@@ -102,6 +102,7 @@ class Caller {
   double selectedCpos_, selectedCneg_;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
     skipNormalizeScores_;
+  bool useQLOH_;
   
   // reporting parameters
   std::string call_;

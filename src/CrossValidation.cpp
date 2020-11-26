@@ -1,4 +1,4 @@
- /******************************************************************************
+/*******************************************************************************
  Copyright 2006-2012 Lukas Käll <lukas.kall@scilifelab.se>
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 
- ******************************************************************************/
+ *******************************************************************************/
 
 #include "CrossValidation.h"
 
@@ -32,13 +32,13 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, int niter, bool usePi0,
-  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores) :
+  int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores, bool useQLOH) :
     quickValidation_(quickValidation), usePi0_(usePi0),
     reportPerformanceEachIteration_(reportPerformanceEachIteration), 
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
     nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
-    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {}
+    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores), useQLOH_(useQLOH) {}
 
 CrossValidation::~CrossValidation() { 
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
@@ -139,7 +139,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   
   if (DataSet::getCalcDoc()) {
     for (int set = 0; set < numFolds_; ++set) {
-      trainScores_[set].calcScoresSorted(w_[set], selectionFdr_);
+      trainScores_[set].calcScores(w_[set], selectionFdr_);
     }
   #pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < numFolds_; ++set) {
@@ -192,7 +192,7 @@ void CrossValidation::train(Normalizer* pNorm) {
     if (reportPerformanceEachIteration_) {
       int foundTestPositives = 0;
       for (size_t set = 0; set < numFolds_; ++set) {
-        foundTestPositives += testScores_[set].calcScoresSorted(w_[set], testFdr_);
+        foundTestPositives += testScores_[set].calcScores(w_[set], testFdr_);
       }
       if (VERB > 1) {
         std::cerr << "Found " << foundTestPositives << " test set PSMs with q<" 
@@ -230,7 +230,7 @@ void CrossValidation::train(Normalizer* pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    foundPositives += testScores_[set].calcScoresSorted(w_[set], testFdr_);
+    foundPositives += testScores_[set].calcScores(w_[set], testFdr_, useQLOH_);
   }
   if (VERB > 0) {
     std::cerr << "Found " << foundPositives << 
@@ -261,7 +261,7 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
   // FDR estimates is too restrictive for small datasets
   bool skipDecoysPlusOne = true; 
   for (int set = 0; set < numFolds_; ++set) {
-    trainScores_[set].calcScoresSorted(w_[set], selectionFdr, skipDecoysPlusOne); 
+    trainScores_[set].calcScores(w_[set], selectionFdr, skipDecoysPlusOne);
   }
   
   if (DataSet::getCalcDoc() && updateDOC) {
@@ -393,9 +393,9 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   int set = 0;
   // Validate learned parameters per (cpos,cneg) pair per nested CV fold
   // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
-  //       scoring calculation in calcScores method.
+  //       scoring calculation in calcScores.
   unsigned int numCpCnPairsPerSet = classWeightsPerFold_.size() / numFolds_;
-  #pragma omp parallel for schedule(dynamic, 1) ordered
+#pragma omp parallel for schedule(dynamic, 1) ordered
   for (set = 0; set < numFolds_; ++set) {
     unsigned int a = set * numCpCnPairsPerSet;
     unsigned int b = (set+1) * numCpCnPairsPerSet;
@@ -403,9 +403,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
     std::vector<candidateCposCfrac>::iterator itCpCnPair;
     std::map<std::pair<double, double>, int> intermediateResults;
     for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
-      // Here, the layer-ordered heap version is used
-      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScoresLOH(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);      
-
+      tp = nestedTestScoresVec[set][itCpCnPair->nestedSet].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne, useQLOH_);
       intermediateResults[std::make_pair(itCpCnPair->cpos, itCpCnPair->cfrac)] += tp;
       itCpCnPair->tp = tp;
       if (nestedXvalBins_ <= 1) {
@@ -435,7 +433,6 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
       }
     }
   }
-
   
   if (nestedXvalBins_ > 1) {
 #pragma omp parallel for schedule(dynamic, 1) ordered
@@ -475,7 +472,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
 
   double bestTruePos = 0;
   for (set = 0; set < numFolds_; ++set) {
-    bestTruePos += trainScores_[set].calcScoresSorted(w_[set], testFdr_);
+    bestTruePos += trainScores_[set].calcScores(w_[set], testFdr_);
   }
   return bestTruePos / (numFolds_ - 1);
 }
@@ -484,7 +481,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck* pCheck) {
   if (!pCheck->validateDirection(w_)) {
     for (int set = 0; set < numFolds_; ++set) {
-      testScores_[set].calcScoresSorted(w_[0], selectionFdr_);
+      testScores_[set].calcScores(w_[0], selectionFdr_);
     }
   }
   if (DataSet::getCalcDoc()) {
