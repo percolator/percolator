@@ -375,6 +375,8 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   }
 }
 
+
+// Count the number of Target and Decoy scores in the score vector
 void Scores::recalculateSizes() {
   totalNumberOfTargets_ = 0;
   totalNumberOfDecoys_ = 0;
@@ -442,20 +444,14 @@ void Scores::normalizeScores(double fdr) {
 }
 
 /**
- * Calculates the SVM cost/score of each PSM and sorts them
- * @param w normal vector used for SVM cost
+ * sorts scores and calculate q-valuesfor each PSM
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-
-int Scores::calcScoresSorted(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    scoreIt->score = calcScore(scoreIt->pPSM->features, w);
-  }
+int Scores::sortScoresCalcQ(double fdr, bool skipDecoysPlusOne) {
 
   unsigned int ix;
-  sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
+  std::sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
 
   if (VERB > 3) {
     if (scores_.size() >= 10) {
@@ -472,6 +468,21 @@ int Scores::calcScoresSorted(std::vector<double>& w, double fdr, bool skipDecoys
     }
   }
   return calcQ(fdr, skipDecoysPlusOne);
+}
+
+/**
+ * Calculates the SVM cost/score of each PSM and sorts them
+ * @param w normal vector used for SVM cost
+ * @param fdr FDR threshold specified by user (default 0.01)
+ * @return number of true positives
+ */
+
+int Scores::calcScoresSorted(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
+  for ( ; scoreIt != scores_.end(); ++scoreIt) {
+    scoreIt->score = calcScore(scoreIt->pPSM->features, w);
+  }
+  return sortScoresCalcQ(fdr, skipDecoysPlusOne);
 }
 
 LOH_FLOAT_TYPE Scores::get_fdr(unsigned tps, unsigned fps) {
@@ -567,11 +578,14 @@ int Scores::calcScoresQuickLOHHelper(const double fdr_threshold, pair<double, bo
 }
 
 
-void Scores::calc_score_and_decoys_retscore_label_pair_array(std::vector<double> &w, std::pair<double, bool>* score_label_pairs) {
+void Scores::scoreLabelPairArray(std::vector<double> &w, std::pair<double, bool>* score_label_pairs) {
+
   // In order to best perform the calcScoresLOH function, several
   // linear passes must be done. Instead, collect all the information
   // in this one linear pass.
 
+  // Check tthat the size figures add up.
+  assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
 
   for (unsigned long i=0; i<scores_.size(); ++i) {
     scores_[i].score = calcScore(scores_[i].pPSM->features, w);
@@ -582,7 +596,7 @@ void Scores::calc_score_and_decoys_retscore_label_pair_array(std::vector<double>
 
 int Scores::calcScoresLOH(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
   std::pair<double, bool>* score_label_pairs = new std::pair<double, bool>[scores_.size()];
-  calc_score_and_decoys_retscore_label_pair_array(w, score_label_pairs);
+  scoreLabelPairArray(w, score_label_pairs);
   unsigned long total_num_tps = scores_.size() - negSize();
 
   int loh_score = calcScoresQuickLOHHelper(fdr, score_label_pairs, score_label_pairs+scores_.size(),total_num_tps, negSize() + (!skipDecoysPlusOne));
@@ -606,6 +620,7 @@ void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
 /**
  * Calculates the q-value for each psm in scores_: the q-value is the minimal
  * FDR of any set that includes the particular psm
+ * This function the scores to be sorted before the call.
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
@@ -772,6 +787,11 @@ void Scores::setDOCFeatures(Normalizer* pNorm) {
   }
 }
 
+// Find the best discrimitanting single feature direction.
+// The routine tests one direction at the time, first in forward
+// and then in backward direction.
+// The function populates the vector direction with a 1/-1 for the
+// best discriminating feature, all other weights are set to 0.
 int Scores::getInitDirection(const double initialSelectionFdr, std::vector<double>& direction) {
   int bestPositives = -1;
   int bestFeature = -1;
@@ -786,7 +806,7 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
          scoreIt != scores_.end(); ++scoreIt) {
       scoreIt->score = scoreIt->pPSM->features[featNo];
     }
-    sort(scores_.begin(), scores_.end());
+    std::sort(scores_.begin(), scores_.end());
     // check once in forward direction (i = 0, higher scores are better) and
     // once in backward direction (i = 1, lower scores are better)
     for (int i = 0; i < 2; i++) {

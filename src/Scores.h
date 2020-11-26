@@ -186,11 +186,12 @@ class Scores {
   void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);
   LOH_FLOAT_TYPE get_fdr(unsigned tps, unsigned fps);
-  void calc_score_and_decoys_retscore_label_pair_array(std::vector<double> &w, std::pair<double, bool>* score_label_pairs);
+  void scoreLabelPairArray(std::vector<double> &w, std::pair<double, bool>* score_label_pairs);
   int calcScoresQuickLOHHelper(const double fdr_threshold, pair<double, bool> *combined_begin, pair<double, bool> *combined_end, int num_tps_at_start_of_layer, int num_fps_at_start_of_layer);
   int calcScoresLOHSortSmallLayer(const double fdr_threshold, pair<double, bool> *layer_begin, pair<double, bool> *layer_end, const int num_tps_at_start_of_layer, const int num_fps_at_start_of_layer);
   int calcScoresLOH(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
   int calcScoresSorted(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
+  int sortScoresCalcQ(double fdr, bool skipDecoysPlusOne);
 
   int calcQ(double fdr, bool skipDecoysPlusOne = false);
   void recalculateDescriptionOfCorrect(const double fdr);
