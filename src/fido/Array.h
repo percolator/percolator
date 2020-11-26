@@ -30,6 +30,7 @@ public:
  Array():data() {}
 
   explicit Array(int n);
+  explicit Array(std::size_t n);
   Array(int n, const T & defaultValue);
   Array(const vector<T> & newvector);
   // destructor
@@ -112,7 +113,7 @@ public:
   }
 
   Iterator end() const {
-    return Iterator(this, size());
+    return Iterator(this, static_cast<int>(size()));
   }
 
   // exception classes

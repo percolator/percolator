@@ -38,7 +38,7 @@ FeatureNames::~FeatureNames() {
 
 void FeatureNames::initFeatures(bool calcDOC) {
   if (calcDOC) {
-    docFeatNum = featureNames.size();
+    docFeatNum = static_cast<int>(featureNames.size());
     featureNames.push_back("docpI");
     featureNames.push_back("docdM");
     featureNames.push_back("docRT");

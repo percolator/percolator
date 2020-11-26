@@ -228,7 +228,7 @@ void BaseSpline::initiateQR() {
   int n = static_cast<int>(x.size());
   dx.resize(n-1);
   for (std::size_t ix = 0; ix < n - 1; ix++) {
-    dx.addElement(ix, x[ix + 1] - x[ix]);
+    dx.addElement(static_cast<int>(ix), x[ix + 1] - x[ix]);
     assert(dx[ix] > 0);
   }
   Q = PackedMatrix(n,n-2);
@@ -294,7 +294,7 @@ double BaseSpline::crossValidation(double alpha) {
   //  Vec k0(n),k1(n),k2(n);
   vector<double> k0(n), k1(n), k2(n);
   PackedMatrix B = R.packedAdd( ((Qt.packedMultiply(alpha)).packedMultiply(
-      PackedMatrix::packedDiagonalMatrix(Vector(n+2, 1.0) / w)).packedMultiply(Q)));
+      PackedMatrix::packedDiagonalMatrix(Vector(static_cast<int>(n)+2, 1.0) / w)).packedMultiply(Q)));
   // Get the diagonals from K
   // ka[i]=B[i,i+a]=B[i+a,i]
   for (std::size_t row = 0; row < n; ++row) {

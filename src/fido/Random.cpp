@@ -30,7 +30,7 @@ double Random::uniform(double a, double b)
 	}
     }
 
-  double u = lcg_rand() % 1000000 / 999999.0;
+  double u = static_cast<double>(lcg_rand() % 1000000) / 999999.0;
   return u * (b-a) + a;
 }
 

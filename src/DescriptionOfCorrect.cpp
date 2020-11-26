@@ -64,8 +64,8 @@ void DescriptionOfCorrect::trainCorrect() {
     avgPI = 0.0;
     avgDM = 0.0;
   } else {
-    avgPI = piSum / psms.size();
-    avgDM = dMSum / psms.size();
+    avgPI = piSum / static_cast<double>(psms.size());
+    avgDM = dMSum / static_cast<double>(psms.size());
   }
   rtModel.trainRetention(psms);
   if (VERB > 2) {

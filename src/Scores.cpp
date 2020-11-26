@@ -170,12 +170,12 @@ void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores
 
 void Scores::postMergeStep() {
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
-  totalNumberOfDecoys_ = count_if(scores_.begin(),
+  totalNumberOfDecoys_ = static_cast<unsigned int>(count_if(scores_.begin(),
       scores_.end(),
-      mem_fn(&ScoreHolder::isDecoy));
-  totalNumberOfTargets_ = count_if(scores_.begin(),
+      mem_fn(&ScoreHolder::isDecoy)));
+  totalNumberOfTargets_ = static_cast<unsigned int>(count_if(scores_.begin(),
       scores_.end(),
-      mem_fn(&ScoreHolder::isTarget));
+      mem_fn(&ScoreHolder::isTarget)));
   targetDecoySizeRatio_ = totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
   checkSeparationAndSetPi0();
 }
@@ -201,7 +201,7 @@ double Scores::calcScore(const double* feat, const std::vector<double>& w) const
 
 void Scores::scoreAndAddPSM(ScoreHolder& sh, 
     const std::vector<double>& rawWeights, FeatureMemoryPool& featurePool) {
-  const unsigned int numFeatures = FeatureNames::getNumFeatures();
+  const unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   if (DataSet::getCalcDoc()) {
     size_t numRTFeatures = RTModel::totalNumRTFeatures();
     double* rtFeatures = new double[numRTFeatures]();
@@ -392,7 +392,7 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget() == isTarget) {
-      double* newAddress = featurePool.addressFromIdx(idx++);
+      double* newAddress = featurePool.addressFromIdx(static_cast<unsigned int>(idx++));
       double* oldAddress = scoreIt->pPSM->features;
       while (movedAddresses.find(oldAddress) != movedAddresses.end()) {
         oldAddress = movedAddresses[oldAddress];
@@ -445,7 +445,7 @@ void Scores::normalizeScores(double fdr) {
  * @return number of true positives
  */
 int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
-  unsigned int ix;
+  std::size_t ix;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     scoreIt->score = calcScore(scoreIt->pPSM->features, w);
@@ -513,7 +513,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
       data.C[ix2++] = cneg;
     }
   }
-  data.negatives = ix2;
+  data.negatives = static_cast<int>(ix2);
 }
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
@@ -540,7 +540,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     }
   }
   data.positives = p;
-  data.m = ix2;
+  data.m = static_cast<int>(ix2);
 }
 
 void Scores::weedOutRedundant() {

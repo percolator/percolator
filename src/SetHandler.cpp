@@ -272,7 +272,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
           PSMDescriptionPriority del = subsetPSMs.top();
-          upperLimit = del.priority;
+          upperLimit = static_cast<unsigned int>(del.priority);
           featurePool_.deallocate(del.psm->features);
           PSMDescription::deletePtr(del.psm);
           subsetPSMs.pop();

@@ -10,6 +10,12 @@ Array<T>::Array(int n) :
 }
 
 template <typename T>
+Array<T>::Array(std::size_t n) :
+  data(n)
+{
+}
+
+template <typename T>
 Array<T>::Array(int n, const T & element) :
   data(std::size_t(n), element)
 {
@@ -132,7 +138,7 @@ void Array<T>::boundsCheck(int i) const
 template <typename T>
 Array<T> Array<T>::operator [](const Array<int> & rhs) const
 {
-  Array<T> result(rhs.size());
+  Array<T> result(static_cast<int>(rhs.size()));
 
   int counter = 0;
   for (Array<int>::Iterator iter = rhs.begin(); iter != rhs.end(); iter++, counter++)
@@ -275,7 +281,7 @@ Array<int> Array<T>::sort() {
 
   ::sort( sortie.begin(), sortie.end() , std::greater<std::pair<T, int> >() );
   
-  Array<int> result(size());
+  Array<int> result(static_cast<int>(size()));
   for (std::size_t k = 0; k < size(); k++) {
     (*this)[k] = sortie[k].first;
     result[k] = sortie[k].second;

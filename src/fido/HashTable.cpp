@@ -53,7 +53,7 @@ int HashTable<D>::searchList(const list<Node> & li, const D & data) const
 template <typename D>
 unsigned int HashTable<D>::hash(const D & data) const
 {
-  return defined_hash(data) % table.size();
+  return static_cast<unsigned int>(defined_hash(data) % table.size());
 }
 
 template <typename D>

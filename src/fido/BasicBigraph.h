@@ -49,7 +49,7 @@ struct GraphLayer {
   }
   
   int size() const {
-    return associations.size();
+    return static_cast<int>(associations.size());
   }
 };
 

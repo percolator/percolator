@@ -6,7 +6,7 @@
 const Matrix & Matrix::operator =(const Array<Array<double> > & rhs)
 {
   // note: this will not accept arrays with no rows
-  Matrix temp(rhs.size(), rhs[0].size());
+  Matrix temp(static_cast<int>(rhs.size()), static_cast<int>(rhs[0].size()));
   for (int k=0; k<rhs.size(); k++)
     {
       temp.rows[k] = Vector(rhs[k]);

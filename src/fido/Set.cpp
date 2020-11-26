@@ -20,7 +20,7 @@ const Set& Set::operator &=(const Set & rhs) {
 int Set::find(int x) const {
   if (size() == 0)
     return -1;
-  return findHelper(0, size()-1, x);
+  return findHelper(0, static_cast<int>(size()-1), x);
 }
 
 int Set::findHelper(int low, int high, int x) const {
@@ -77,7 +77,7 @@ Set Set::reindexToFind(const Set& base) {
 
   int lastFind = 0;
   for (Set::Iterator iter = begin(); iter != end(); iter++) {
-    int loc = base.findHelper(lastFind, base.size()-1, *iter);
+    int loc = base.findHelper(lastFind, static_cast<int>(base.size()-1), *iter);
     //cout << "\t\t\tOld school " << (base == *iter) << endl;
     if ( loc == -1 ) {
       // skips an element of iter

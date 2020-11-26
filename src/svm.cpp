@@ -536,14 +536,14 @@ void Solver::Solve(int l, const QMatrix& Q, const double* p_,
   // initialize alpha_status
   {
     alpha_status = new char[l];
-    for (std::size_t i = 0; i < l; i++) {
+    for (int i = 0; i < l; i++) {
       update_alpha_status(i);
     }
   }
   // initialize active set (for shrinking)
   {
     active_set = new int[l];
-    for (std::size_t i = 0; i < l; i++) {
+    for (int i = 0; i < l; i++) {
       active_set[i] = i;
     }
     active_size = l;
@@ -772,7 +772,7 @@ int Solver::select_working_set(int& out_i, int& out_j) {
         }
         if (grad_diff > 0) {
           double obj_diff;
-          double quad_coef = Q_i[i] + QD[j] - 2 * y[i] * Q_i[j];
+          double quad_coef = Q_i[i] + QD[j] - 2.f * y[i] * Q_i[j];
           if (quad_coef > 0) {
             obj_diff = -(grad_diff * grad_diff) / quad_coef;
           } else {
@@ -792,7 +792,7 @@ int Solver::select_working_set(int& out_i, int& out_j) {
         }
         if (grad_diff > 0) {
           double obj_diff;
-          double quad_coef = Q_i[i] + QD[j] + 2 * y[i] * Q_i[j];
+          double quad_coef = Q_i[i] + QD[j] + 2.f * y[i] * Q_i[j];
           if (quad_coef > 0) {
             obj_diff = -(grad_diff * grad_diff) / quad_coef;
           } else {
@@ -897,7 +897,7 @@ double Solver::calculate_rho() {
   double r;
   int nr_free = 0;
   double ub = INF, lb = -INF, sum_free = 0;
-  for (std::size_t i = 0; i < active_size; i++) {
+  for (int i = 0; i < active_size; i++) {
     double yG = y[i] * G[i];
     if (is_upper_bound(i)) {
       if (y[i] == -1) {
@@ -1122,7 +1122,7 @@ double Solver_NU::calculate_rho() {
   double ub1 = INF, ub2 = INF;
   double lb1 = -INF, lb2 = -INF;
   double sum_free1 = 0, sum_free2 = 0;
-  for (std::size_t i = 0; i < active_size; i++) {
+  for (int i = 0; i < active_size; i++) {
     if (y[i] == +1) {
       if (is_upper_bound(i)) {
         lb1 = max(lb1, G[i]);
@@ -1165,11 +1165,11 @@ class SVC_Q : public Kernel {
   public:
     SVC_Q(const svm_problem& prob, const svm_parameter& param,
           const schar* y_) :
-      Kernel(prob.l, prob.x, param) {
-      clone(y, y_, prob.l);
+      Kernel(static_cast<int>(prob.l), prob.x, param) {
+      clone(y, y_, static_cast<int>(prob.l));
       cache = new Cache(prob.l, (long int)(param.cache_size * (1 << 20)));
       QD = new Qfloat[prob.l];
-      for (std::size_t i = 0; i < prob.l; i++) {
+      for (int i = 0; i < prob.l; i++) {
         QD[i] = (Qfloat)(this->*kernel_function)(i, i);
       }
     }
@@ -1210,10 +1210,10 @@ class SVC_Q : public Kernel {
 class ONE_CLASS_Q : public Kernel {
   public:
     ONE_CLASS_Q(const svm_problem& prob, const svm_parameter& param) :
-      Kernel(prob.l, prob.x, param) {
+      Kernel(static_cast<int>(prob.l), prob.x, param) {
       cache = new Cache(prob.l, (long int)(param.cache_size * (1 << 20)));
       QD = new Qfloat[prob.l];
-      for (std::size_t i = 0; i < prob.l; i++) {
+      for (int i = 0; i < prob.l; i++) {
         QD[i] = (Qfloat)(this->*kernel_function)(i, i);
       }
     }
@@ -1251,7 +1251,7 @@ class ONE_CLASS_Q : public Kernel {
 class SVR_Q : public Kernel {
   public:
     SVR_Q(const svm_problem& prob, const svm_parameter& param) :
-      Kernel(prob.l, prob.x, param) {
+      Kernel(static_cast<int>(prob.l), prob.x, param) {
       l = prob.l;
       cache = new Cache(l, (long int)(param.cache_size * (1 << 20)));
       QD = new Qfloat[2 * l];
@@ -1260,9 +1260,9 @@ class SVR_Q : public Kernel {
       for (std::size_t k = 0; k < l; k++) {
         sign[k] = 1;
         sign[k + l] = -1;
-        index[k] = k;
-        index[k + l] = k;
-        QD[k] = (Qfloat)(this->*kernel_function)(k, k);
+        index[k] = static_cast<int>(k);
+        index[k + l] = static_cast<int>(k);
+        QD[k] = (Qfloat)(this->*kernel_function)(static_cast<int>(k), static_cast<int>(k));
         QD[k + l] = QD[k];
       }
       buffer[0] = new Qfloat[2 * l];
@@ -1279,7 +1279,7 @@ class SVR_Q : public Kernel {
     Qfloat* get_Q(int i, int len) const {
       Qfloat* data;
       int real_i = index[i];
-      if (cache->get_data(real_i, &data, l) < l) {
+      if (cache->get_data(real_i, &data, static_cast<int>(l)) < l) {
         for (int j = 0; j < l; j++) {
           data[j] = (Qfloat)(this->*kernel_function)(real_i, j);
         }
@@ -1289,7 +1289,7 @@ class SVR_Q : public Kernel {
       next_buffer = 1 - next_buffer;
       schar si = sign[i];
       for (int j = 0; j < len; j++) {
-        buf[j] = si * sign[j] * data[index[j]];
+        buf[j] = static_cast<Qfloat>(si * sign[j]) * data[index[j]];
       }
       return buf;
     }
@@ -1336,7 +1336,7 @@ static void solve_c_svc(const svm_problem* prob,
     }
   }
   Solver s;
-  s.Solve(l,
+  s.Solve(static_cast<int>(l),
           SVC_Q(*prob, *param, y),
           minus_ones,
           y,
@@ -1351,7 +1351,7 @@ static void solve_c_svc(const svm_problem* prob,
     sum_alpha += alpha[i];
   }
   if (Cp == Cn) {
-    info("nu = %f\n", sum_alpha / (Cp * prob->l));
+    info("nu = %f\n", sum_alpha / (Cp * static_cast<double>(prob->l)));
   }
   for (i = 0; i < l; i++) {
     alpha[i] *= y[i];
@@ -1373,8 +1373,8 @@ static void solve_nu_svc(const svm_problem* prob,
     } else {
       y[i] = -1;
     }
-  double sum_pos = nu * l / 2;
-  double sum_neg = nu * l / 2;
+  double sum_pos = nu * static_cast<double>(l) / 2.;
+  double sum_neg = nu * static_cast<double>(l) / 2.;
   for (i = 0; i < l; i++)
     if (y[i] == +1) {
       alpha[i] = min(1.0, sum_pos);
@@ -1388,7 +1388,7 @@ static void solve_nu_svc(const svm_problem* prob,
     zeros[i] = 0;
   }
   Solver_NU s;
-  s.Solve(l,
+  s.Solve(static_cast<int>(l),
           SVC_Q(*prob, *param, y),
           zeros,
           y,
@@ -1418,12 +1418,12 @@ static void solve_one_class(const svm_problem* prob,
   double* zeros = new double[l];
   schar* ones = new schar[l];
   int i;
-  int n = (int)(param->nu * prob->l); // # of alpha's at upper bound
+  int n = (int)(param->nu * static_cast<double>(prob->l)); // # of alpha's at upper bound
   for (i = 0; i < n; i++) {
     alpha[i] = 1;
   }
   if (n < prob->l) {
-    alpha[n] = param->nu * prob->l - n;
+    alpha[n] = param->nu * static_cast<double>(prob->l) - n;
   }
   for (i = n + 1; i < l; i++) {
     alpha[i] = 0;
@@ -1433,7 +1433,7 @@ static void solve_one_class(const svm_problem* prob,
     ones[i] = 1;
   }
   Solver s;
-  s.Solve(l,
+  s.Solve(static_cast<int>(l),
           ONE_CLASS_Q(*prob, *param),
           zeros,
           ones,
@@ -1464,7 +1464,7 @@ static void solve_epsilon_svr(const svm_problem* prob,
     y[i + l] = -1;
   }
   Solver s;
-  s.Solve(2 * l,
+  s.Solve(2 * static_cast<int>(l),
           SVR_Q(*prob, *param),
           linear_term,
           y,
@@ -1479,7 +1479,7 @@ static void solve_epsilon_svr(const svm_problem* prob,
     alpha[i] = alpha2[i] - alpha2[i + l];
     sum_alpha += fabs(alpha[i]);
   }
-  info("nu = %f\n", sum_alpha / (param->C * l));
+  info("nu = %f\n", sum_alpha / (param->C * static_cast<double>(l)));
   delete[] alpha2;
   delete[] linear_term;
   delete[] y;
@@ -1494,7 +1494,7 @@ static void solve_nu_svr(const svm_problem* prob,
   double* linear_term = new double[2 * l];
   schar* y = new schar[2 * l];
   std::size_t i;
-  double sum = C * param->nu * l / 2;
+  double sum = C * param->nu * static_cast<double>(l) / 2.;
   for (i = 0; i < l; i++) {
     alpha2[i] = alpha2[i + l] = min(sum, C);
     sum -= alpha2[i];
@@ -1504,7 +1504,7 @@ static void solve_nu_svr(const svm_problem* prob,
     y[i + l] = -1;
   }
   Solver_NU s;
-  s.Solve(2 * l,
+  s.Solve(2 * static_cast<int>(l),
           SVR_Q(*prob, *param),
           linear_term,
           y,
@@ -1696,12 +1696,12 @@ double sigmoid_predict(double decision_value, double A, double B) {
 // Method 2 from the multiclass_prob paper by Wu, Lin, and Weng
 void multiclass_probability(std::size_t k, double** r, double* p) {
   std::size_t t, j;
-  int iter = 0, max_iter = max(static_cast<std::size_t>(100), k);
+  int iter = 0, max_iter = static_cast<int>(max(static_cast<std::size_t>(100), k));
   double** Q = Malloc(double*, k);
   double* Qp = Malloc(double, k);
   double pQp, eps = 0.005 / static_cast<double>(k);
   for (t = 0; t < k; t++) {
-    p[t] = 1.0 / k; // Valid if k = 1
+    p[t] = 1.0 / static_cast<int>(k); // Valid if k = 1
     Q[t] = Malloc(double, k);
     Q[t][t] = 0;
     for (j = 0; j < t; j++) {
@@ -1773,8 +1773,8 @@ void svm_binary_svc_probability(const svm_problem* prob,
     swap(perm[i], perm[j]);
   }
   for (i = 0; i < nr_fold; i++) {
-    int begin = static_cast<std::size_t>(i) * prob->l / nr_fold;
-    int end = static_cast<std::size_t>(i + 1) * prob->l / nr_fold;
+    int begin = static_cast<int>(static_cast<std::size_t>(i) * prob->l / nr_fold);
+    int end = static_cast<int>(static_cast<std::size_t>(i + 1) * prob->l / nr_fold);
     int j, k;
     struct svm_problem subprob;
     subprob.l = prob->l - static_cast<std::size_t>(end - begin);
@@ -1862,7 +1862,7 @@ double svm_svr_probability(const svm_problem* prob,
     ymv[i] = prob->y[i] - ymv[i];
     mae += fabs(ymv[i]);
   }
-  mae /= prob->l;
+  mae /= static_cast<double>(prob->l);
   double std = sqrt(2 * mae * mae);
   int count = 0;
   mae = 0;
@@ -1925,7 +1925,7 @@ void svm_group_classes(const svm_problem* prob, int* nr_class_ret,
   for (i = 1; i < nr_class; i++) {
     start[i] = start[i - 1] + count[i - 1];
   }
-  *nr_class_ret = nr_class;
+  *nr_class_ret = static_cast<int>(nr_class);
   *label_ret = label;
   *start_ret = start;
   *count_ret = count;
@@ -1962,7 +1962,7 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
       if (fabs(f.alpha[i]) > 0) {
         ++nSV;
       }
-    model->l = nSV;
+    model->l = static_cast<int>(nSV);
 #ifdef _DENSE_REP
     model->SV = Malloc(svm_node, nSV);
 #else
@@ -2764,7 +2764,7 @@ svm_model* svm_load_model(const char* model_file_name) {
       }
     }
     int* d = &(model->SV[i].dim);
-    while ((c = getc(fp)) != '\n') {
+    while ((c = static_cast<char>(getc(fp))) != '\n') {
       if (!isspace(c)) {
         ungetc(c, fp);
         if(fscanf(fp, "%d:%lf", &index, &value) == EOF)

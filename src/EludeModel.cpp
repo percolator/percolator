@@ -333,7 +333,7 @@ double* RTModel::amphipathicityHelix(const float* index,
                                      const string& peptide,
                                      double* features) {
   double min = 0.0, max = 0.0, hWindow = 0.0;
-  int n = peptide.length();
+  int n = static_cast<int>(peptide.length());
   double cos300, cos400;
   // value to be added to the peptides < 9
   double cst;
@@ -344,7 +344,7 @@ double* RTModel::amphipathicityHelix(const float* index,
   for (int i = 0; i < 'Z' - 'A' + 1; ++i) {
     avgHydrophobicityIndex += index[i];
   }
-  avgHydrophobicityIndex = avgHydrophobicityIndex / aaAlphabet.size();
+  avgHydrophobicityIndex = avgHydrophobicityIndex / static_cast<double>(aaAlphabet.size());
   cst = avgHydrophobicityIndex * (1 + 2 * cos300 + 2 * cos400);
   // if the peptide is too short, use cst
   if (n < 9) {
@@ -390,13 +390,13 @@ double* RTModel::hydrophobicMoment(const float* index,
                                    const double angleDegrees, const int w,
                                    double* features) {
   double sum1 = 0.0, sum2 = 0.0;
-  int lengthPeptide = peptide.length();
+  int lengthPeptide = static_cast<int>(peptide.length());
   double minHMoment, maxHMoment, hMoment;
   // calculate the angle in radians
   double angle = angleDegrees * M_PI / 180;
   for (std::size_t i = 0; i < min(lengthPeptide, w); ++i) {
-    sum1 += index[peptide[i] - 'A'] * sin((i + 1) * angle);
-    sum2 += index[peptide[i] - 'A'] * cos((i + 1) * angle);
+    sum1 += index[peptide[i] - 'A'] * sin(static_cast<double>(i + 1) * angle);
+    sum2 += index[peptide[i] - 'A'] * cos(static_cast<double>(i + 1) * angle);
   }
   hMoment = sqrt((sum1 * sum1) + (sum2 * sum2));
   minHMoment = hMoment;
@@ -406,8 +406,8 @@ double* RTModel::hydrophobicMoment(const float* index,
       sum1 = 0.0;
       sum2 = 0.0;
       for (std::size_t j = 0; j < w; j++) {
-        sum1 += index[peptide[i + j] - 'A'] * sin((j + 1) * angle);
-        sum2 += index[peptide[i + j] - 'A'] * cos((j + 1) * angle);
+        sum1 += index[peptide[i + j] - 'A'] * sin(static_cast<double>(j + 1) * angle);
+        sum2 += index[peptide[i + j] - 'A'] * cos(static_cast<double>(j + 1) * angle);
       }
       hMoment = sqrt((sum1 * sum1) + (sum2 * sum2));
       if (hMoment > maxHMoment) {
@@ -446,14 +446,14 @@ void RTModel::fillFeaturesAllIndex(const string& pep, double* features) {
         - 2, 1), features);
     char Ct = peptide[peptide.size() - 1];
     *(features++) = ((Ct == 'K' || Ct == 'R') ? 1.0 : 0.0);
-    *(features++) = peptide.size();
+    *(features++) = static_cast<double>(peptide.size());
     *(features++) = indexSum(aa_weights, peptide) + 1.0079 + 17.0073; //MV
   } else {
     // fill in the features characteristic to each of the three hydrophobicity indices
     features = fillFeaturesIndex(peptide, krokhin_index, features);
     features = fillFeaturesIndex(peptide, krokhin100_index, features);
     features = fillFeaturesIndex(peptide, krokhinTFA_index, features);
-    *(features++) = peptide.size();
+    *(features++) = static_cast<double>(peptide.size());
     *(features++) = (double)ptms;
     // fill all the aa features
     features = fillAAFeatures(aaAlphabet, peptide, features);
@@ -706,7 +706,7 @@ void RTModel::calcRetentionFeatures(PSMDescription* psm) {
       //cout << "hessa_index" << endl;
     }
     if (selected_features & 1 << 7) {
-      *(features++) = pep.size();
+      *(features++) = static_cast<double>(pep.size());
       //cout << "length" << endl;
     }
     if (selected_features & 1 << 8) {
@@ -858,7 +858,7 @@ void RTModel::trainRetention(vector<PSMDescription*>& trainset,
   data.y = new double[data.l];
   for (size_t ix1 = 0; ix1 < trainset.size(); ix1++) {
     data.x[ix1].values = trainset[ix1]->getRetentionFeatures();
-    data.x[ix1].dim = noFeaturesToCalc;
+    data.x[ix1].dim = static_cast<int>(noFeaturesToCalc);
     data.y[ix1] = trainset[ix1]->getRetentionTime();
   }
   // build a model by training the SVM on the given training set
@@ -906,7 +906,7 @@ void RTModel::trainRetention(vector<PSMDescription*>& psms) {
                          *cNow,
                          (*gammaNow) / ((double)psms.size()),
                          *epsilonNow,
-                         train.size());
+                         static_cast<int>(train.size()));
           double rms = testRetention(test);
           if (rms < bestRms) {
             c = *cNow;
@@ -925,7 +925,7 @@ void RTModel::trainRetention(vector<PSMDescription*>& psms) {
                  c,
                  gamma / ((double)psms.size()),
                  epsilon,
-                 psms.size());
+                 static_cast<int>(psms.size()));
 }
 
 // perform k-validation and return as estimate of the prediction error CV = 1/k (sum(PE(k))), where PE(k)=(sum(yi - yi_pred)^2)/size
@@ -936,7 +936,7 @@ double RTModel::computeKfoldCV(const vector<PSMDescription*> & psms,
   unsigned int noPsms;
   // sum of prediction errors
   double sumPEs, PEk;
-  noPsms = psms.size();
+  noPsms = static_cast<unsigned int>(psms.size());
   sumPEs = 0;
   if (VERB > 2) {
     cerr << k << " fold cross validation..." << endl;
@@ -974,7 +974,7 @@ double RTModel::computeSimpleEvaluation(
   // how many parts will the data be split in
   size_t test_frac;
   test_frac = 4u;
-  noPsms = psms.size();
+  noPsms = static_cast<unsigned int>(psms.size());
   // give a warning if there is little data
   if ((VERB >= 2) && (noPsms < test_frac * 10u)) {
     cerr << "Warning: very little data to calibrate parameters (just "
@@ -1002,7 +1002,7 @@ double RTModel::computeSimpleEvaluation(
 
 // train the Support Vector Regressor
 void RTModel::trainSVM(vector<PSMDescription*> & psms) {
-  int noPsms = psms.size();
+  int noPsms = static_cast<int>(psms.size());
   if (VERB >= 2) {
     cerr << endl << "Training the SVR model..." << endl;
   }
@@ -1020,8 +1020,8 @@ void RTModel::trainSVM(vector<PSMDescription*> & psms) {
   double gamma = 0.0, epsilon = 0.0, c = 0.0;
   double bestError = 1e100, error;
   vector<double>::iterator it1, it2, it3;
-  int totalIterations = grids.gridGamma.size() * grids.gridC.size()
-      * grids.gridEpsilon.size();
+  int totalIterations = static_cast<int>(grids.gridGamma.size() * grids.gridC.size()
+      * grids.gridEpsilon.size());
   int step = 0;
   if (saveCalibration) {
     calFile.open(calibrationFile.c_str(), ios::out);
@@ -1086,7 +1086,7 @@ void RTModel::trainSVM(vector<PSMDescription*> & psms) {
       fGridC.push_back(c * offset);
       fGridGamma.push_back(gamma * offset);
     }
-    totalIterations = fGridGamma.size() * fGridC.size();
+    totalIterations = static_cast<int>(fGridGamma.size() * fGridC.size());
     step = 0;
     // fine grid search to calibrate parameters
     for (it1 = fGridGamma.begin(); it1 != fGridGamma.end(); ++it1) {
@@ -1151,7 +1151,7 @@ double RTModel::testRetention(vector<PSMDescription*>& testset) {
     double diff = estimatedRT - testset[ix1]->getRetentionTime();
     rms += diff * diff;
   }
-  return rms / testset.size();
+  return rms / static_cast<double>(testset.size());
 }
 
 // estimate the retention time using the svm model
@@ -1159,7 +1159,7 @@ double RTModel::estimateRT(double* features) {
   double predicted_value;
   svm_node node;
   node.values = features;
-  node.dim = noFeaturesToCalc;
+  node.dim = static_cast<int>(noFeaturesToCalc);
   predicted_value = svm_predict(model, &node);
   if (!isfinite(predicted_value)) {
     predicted_value = 0.0;
@@ -1249,7 +1249,7 @@ void RTModel::trainIndexRetention(vector<PSMDescription*>& trainset,
   data.y = new double[data.l];
   for (size_t ix1 = 0; ix1 < trainset.size(); ++ix1) {
     data.x[ix1].values = trainset[ix1]->getRetentionFeatures();
-    data.x[ix1].dim = inhouseIndexAlphabet.size();
+    data.x[ix1].dim = static_cast<int>(inhouseIndexAlphabet.size());
     data.y[ix1] = trainset[ix1]->getRetentionTime();
   }
   // build a model by training the SVM on the given training set
@@ -1279,7 +1279,7 @@ double RTModel::computeKfoldCVIndex(const vector<PSMDescription*> & psms,
   unsigned int noPsms;
   // sum of prediction errors
   double sumPEs, PEk;
-  noPsms = psms.size();
+  noPsms = static_cast<unsigned int>(psms.size());
   sumPEs = 0;
   if (VERB > 2) {
     cerr << k << " fold cross validation on " << noPsms << " psms..."
@@ -1315,7 +1315,7 @@ double RTModel::testIndexRetention(vector<PSMDescription*>& testset) {
     double diff = estimatedRT - testset[ix1]->getRetentionTime();
     ms += diff * diff;
   }
-  return ms / testset.size();
+  return ms / static_cast<double>(testset.size());
 }
 
 // estimate the retention time using the svm model
@@ -1323,7 +1323,7 @@ double RTModel::estimateIndexRT(double* features) {
   double predicted_value;
   svm_node node;
   node.values = features;
-  node.dim = inhouseIndexAlphabet.size();
+  node.dim = static_cast<int>(inhouseIndexAlphabet.size());
   predicted_value = svm_predict(index_model, &node);
   return predicted_value;
 }
@@ -1338,7 +1338,7 @@ void RTModel::trainIndexSVRNoCCalibration(vector<PSMDescription*>& psms,
   // calibrate only epsilon
   double bestError = 1e100, error;
   vector<double>::iterator it3;
-  int totalIterations = grids.gridEpsilon.size();
+  int totalIterations = static_cast<int>(grids.gridEpsilon.size());
   int step = 0;
   if (VERB > 2) {
     cerr << "Calibrating epsilon..." << endl;
@@ -1394,7 +1394,7 @@ void RTModel::trainIndexSVR(vector<PSMDescription*> & psms) {
   // calibrate parameters using the normal grid
   double bestError = 1e100, error;
   vector<double>::iterator it2, it3;
-  int totalIterations = grid_c.size() * grid_e.size();
+  int totalIterations = static_cast<int>(grid_c.size() * grid_e.size());
   int step = 0;
   if (VERB > 2) {
     cerr << endl << "Calibrating SVM parameters (C, epsilon)..." << endl;
@@ -1434,7 +1434,7 @@ void RTModel::trainIndexSVR(vector<PSMDescription*> & psms) {
 void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
   vector<PSMDescription*>::iterator it;
   Normalizer* normalizer;
-  const int noFeat = inhouseIndexAlphabet.length();
+  const int noFeat = static_cast<int>(inhouseIndexAlphabet.length());
   for (int i = 0; i < ('Z' - 'A' + 1); ++i) {
     our_index[i] = 0.0;
   }

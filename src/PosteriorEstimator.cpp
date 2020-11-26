@@ -66,7 +66,7 @@ bool isMixed(const pair<double, bool>& aPair) {
 template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
                                  size_t max_size = 1000) {
   out.clear();
-  double n = in.size();
+  double n = static_cast<double>(in.size());
   size_t num_draw = min(in.size(), max_size);
   for (size_t ix = 0; ix < num_draw; ++ix) {
     size_t draw = (size_t)((double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * n);
@@ -303,7 +303,7 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
   double E_f1_mod_run_tot = 0.0;
   
   int binsLeft = static_cast<int>(noIntervals - 1);
-  double targetedBinSize = max(combined.size() / (double)(noIntervals), 1.0);
+  double targetedBinSize = max(static_cast<double>(combined.size()) / (double)(noIntervals), 1.0);
   
   std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
   int n_z_ge_w = 0, sum_n_z_ge_w = 0; // N_{z>=w} in bin and total
@@ -319,8 +319,8 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
     if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
       if (pi0 < 1.0 && decoyQueue > 0) {
         int j = static_cast<int>(h_w_le_z.size()) - sum_n_z_ge_w - n_z_ge_w;
-        int cnt_w = h_w_le_z.at(static_cast<std::size_t>(j));
-        int cnt_z = h_z_le_z.at(static_cast<std::size_t>(j));
+        int cnt_w = static_cast<int>(h_w_le_z.at(static_cast<std::size_t>(j)));
+        int cnt_z = static_cast<int>(h_z_le_z.at(static_cast<std::size_t>(j)));
         estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
         estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
         estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
@@ -425,8 +425,8 @@ void PosteriorEstimator::getQValues(double pi0,
     if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
       if (pi0 < 1.0 && decoyQueue > 0) {
         int j = static_cast<int>(h_w_le_z.size()) - (n_z_ge_w - 1);
-        int cnt_w = h_w_le_z.at(static_cast<std::size_t>(j));
-        int cnt_z = h_z_le_z.at(static_cast<std::size_t>(j));
+        int cnt_w = static_cast<int>(h_w_le_z.at(static_cast<std::size_t>(j)));
+        int cnt_z = static_cast<int>(h_z_le_z.at(static_cast<std::size_t>(j)));
         estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
         estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
         estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
@@ -487,7 +487,8 @@ void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
     }
     if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
       for (size_t ix = 0; ix < posSame; ++ix) {
-        p.push_back(nDecoys + negSame * (ix + 1) / (double)(posSame + 1) );
+        p.push_back(static_cast<double>(nDecoys) + 
+          static_cast<double>(negSame * (ix + 1)) / (double)(posSame + 1) );
       }
       nDecoys += negSame;
       negSame = 0;
@@ -527,7 +528,7 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
     start = lower_bound(p.begin(), p.end(), lambda);
     // Calculates the difference in index between start and end
     double Wl = (double)distance(start, p.end());
-    double pi0 = Wl / n / (1 - lambda);
+    double pi0 = Wl / static_cast<double>(n) / (1. - lambda);
     if (pi0 > 0.0) {
       lambdas.push_back(lambda);
       pi0s.push_back(pi0);
@@ -563,14 +564,14 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
     for (unsigned int ix = 0; ix < lambdas.size(); ++ix) {
       start = lower_bound(pBoot.begin(), pBoot.end(), lambdas[ix]);
       double Wl = (double)distance(start, pBoot.end());
-      double pi0Boot = Wl / n / (1 - lambdas[ix]);
+      double pi0Boot = Wl / static_cast<double>(n) / (1. - lambdas[ix]);
       // Estimated mean-squared error.
       mse[ix] += (pi0Boot - minPi0) * (pi0Boot - minPi0);
     }
   }
   // Which index did the iterator get?
-  unsigned int minIx = distance(mse.begin(), 
-                                min_element(mse.begin(), mse.end()));
+  unsigned int minIx = static_cast<unsigned int>(distance(mse.begin(), 
+                                min_element(mse.begin(), mse.end())));
   double pi0 = max(min(pi0s[minIx], 1.0), 0.0);
   return pi0;
 }
@@ -606,7 +607,7 @@ int PosteriorEstimator::run() {
     size_t nDec = pvals.size();
     double step = 1.0 / 2.0 / (double)nDec;
     for (size_t ix = 0; ix < nDec; ++ix) {
-      combined.push_back(make_my_pair(step * (1 + 2 * ix), false));
+      combined.push_back(make_my_pair(step * static_cast<double>(1 + 2 * ix), false));
     }
     reversed = true;
     if (VERB > 0) {

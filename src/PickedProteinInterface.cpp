@@ -98,11 +98,11 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
       std::string peptideSequence = PSMDescription::removeFlanks(peptideSequenceFlanked);
       
-      int peptide_length = peptideSequence.size();
+      int peptide_length = static_cast<int>(peptideSequence.size());
       min_peptide_length = std::min(min_peptide_length, peptide_length);
       max_peptide_length = std::max(max_peptide_length, peptide_length);
       
-      int miscleavages = enzyme->countEnzymatic(peptideSequence);
+      int miscleavages = static_cast<int>(enzyme->countEnzymatic(peptideSequence));
       if (miscleavages > max_miscleavages) {
         if (VERB > 1) {
           std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
@@ -111,7 +111,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       }
       
       if (tryTrypsinP) {
-        int miscleavages_trypsinp = trypsinP->countEnzymatic(peptideSequence);
+        int miscleavages_trypsinp = static_cast<int>(trypsinP->countEnzymatic(peptideSequence));
         if (miscleavages_trypsinp > max_miscleavages_trypsinp) {
           max_miscleavages_trypsinp = std::max(max_miscleavages_trypsinp, miscleavages_trypsinp);
         }

@@ -134,13 +134,13 @@ double FidoInterface::estimatePriors(Scores& peptideScores) {
   for (vector<ScoreHolder>::iterator psm = peptideScores.begin(); 
          psm!= peptideScores.end(); ++psm) {
     if(!psm->isDecoy()) {
-      unsigned size = psm->pPSM->proteinIds.size();
+      unsigned size = static_cast<unsigned>(psm->pPSM->proteinIds.size());
       double prior = prior_protein * size;
       double tmp_prior = prior;
       // for each protein
       for(std::vector<std::string>::iterator protIt = psm->pPSM->proteinIds.begin(); 
 	          protIt != psm->pPSM->proteinIds.end(); protIt++) {
-	      unsigned index = std::distance(psm->pPSM->proteinIds.begin(), protIt);
+	      unsigned index = static_cast<unsigned>(std::distance(psm->pPSM->proteinIds.begin(), protIt));
 	      tmp_prior = (tmp_prior * prior_protein * (size - index)) / (index + 1);
 	      prior +=  pow(-1.0,(int)index) * tmp_prior;
       }
@@ -201,7 +201,7 @@ void FidoInterface::updateTargetDecoySizes() {
   numberDecoyProteins_ = 0;
   for (unsigned int k = 0; k < proteinNames.size(); ++k) {
     unsigned tpChange = countTargets(proteinNames[k]);
-    unsigned fpChange = proteinNames[k].size() - tpChange;
+    unsigned fpChange = static_cast<unsigned>(proteinNames[k].size() - tpChange);
     if (trivialGrouping_) {
       if (tpChange > 0) {
         tpChange = 1;
@@ -509,7 +509,7 @@ void FidoInterface::getROC_AUC(const std::vector<std::vector<string> > &names,
   for (unsigned k = 0; k < names.size() && fp <= rocN_; k++) {
     double prob = probabilities[k];
     unsigned tpChange = countTargets(names[k]);
-    unsigned fpChange = names[k].size() - tpChange;
+    unsigned fpChange = static_cast<unsigned>(names[k].size() - tpChange);
     //if ties activated count groups as 1 protein
     if (trivialGrouping_) {
       if (tpChange > 0) {

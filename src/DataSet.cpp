@@ -41,9 +41,9 @@ DataSet::~DataSet() {
 }*/
 
 bool DataSet::writeTabData(ofstream& out) {
-  unsigned int nf = FeatureNames::getNumFeatures();
+  unsigned int nf = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   if (calcDOC_) {
-    nf -= DescriptionOfCorrect::numDOCFeatures();
+    nf -= static_cast<unsigned int>(DescriptionOfCorrect::numDOCFeatures());
   }
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
@@ -184,9 +184,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
   if (!hasScannr) myPsm->scan = lineNr;
   
-  unsigned int numFeatures = FeatureNames::getNumFeatures();
+  unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   if (calcDOC_) {
-    numFeatures -= DescriptionOfCorrect::numDOCFeatures();
+    numFeatures -= static_cast<unsigned int>(DescriptionOfCorrect::numDOCFeatures());
   }
   double* featureRow = featurePool.allocate();
   myPsm->features = featureRow;

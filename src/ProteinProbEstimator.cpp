@@ -231,7 +231,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
   }
   
   if (trivialGrouping_) {
-    return identifiedGroupIds.size();
+    return static_cast<unsigned>(identifiedGroupIds.size());
   } else {
     return nP;
   }
@@ -249,7 +249,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level) {
   }
   
   if (trivialGrouping_) {
-    return identifiedGroupIds.size();
+    return static_cast<unsigned>(identifiedGroupIds.size());
   } else {
     return nP;
   }
@@ -334,8 +334,8 @@ void ProteinProbEstimator::setTargetandDecoysNames(Scores& peptideScores) {
     }
   }
   if (!useDecoyPrefix) {
-    numberDecoyProteins_ = falsePosSet_.size();
-    numberTargetProteins_ = truePosSet_.size();
+    numberDecoyProteins_ = static_cast<unsigned int>(falsePosSet_.size());
+    numberTargetProteins_ = static_cast<unsigned int>(truePosSet_.size());
   }
   
   if (!decoyFound) {
@@ -355,7 +355,7 @@ void ProteinProbEstimator::addSpectralCounts(Scores& peptideScores) {
     std::set<unsigned int> seenProteinIdxs;
     for (; protIt != psm->pPSM->proteinIds.end(); protIt++) {
       if (proteinToIdxMap_.find(*protIt) != proteinToIdxMap_.end()) {
-        unsigned int proteinIdx = proteinToIdxMap_[*protIt];
+        unsigned int proteinIdx = static_cast<unsigned int>(proteinToIdxMap_[*protIt]);
         if (seenProteinIdxs.find(proteinIdx) == seenProteinIdxs.end()) {
           seenProteinIdxs.insert(proteinIdx);
         }

@@ -18,7 +18,7 @@
 #include "FeatureMemoryPool.h"
 
 void FeatureMemoryPool::createPool(size_t numFeatures) {
-  numFeatures_ = numFeatures;
+  numFeatures_ = static_cast<unsigned int>(numFeatures);
   numRowsPerBlock_ = kBlockSize / numFeatures_;
   isInitialized_ = true;
 }
