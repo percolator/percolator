@@ -16,6 +16,10 @@ include("${PERCOLATOR_SOURCE_DIR}/CommonCMake.txt")
 ###############################################################################
 # PREPARING TO INSTALL
 ###############################################################################
+IF(APPLE)
+  # Fix linking on 10.14+. See https://stackoverflow.com/questions/54068035
+  LINK_DIRECTORIES(/usr/local/lib)
+ENDIF()
 
 my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
 my_set(CMAKE_PREFIX_PATH "../" "Default path to packages")

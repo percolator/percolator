@@ -33,9 +33,8 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: admin/builders/osx64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-# Skip tests for now
-#    - name: test
-#      run: cd ${HOME}/my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: test
+      run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
