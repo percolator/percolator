@@ -174,7 +174,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     unsigned peptide_length = peptideLength(peptideSeqWithFlanks);
     std::map<char, int> ptmMap = po.ptmScheme;
     std::string peptideNoMods = removePTMs(peptideSeqWithFlanks, ptmMap);
-    std::string psmId = createPsmId(item.id(), observed_mass, useScanNumber, charge, rank);
+    std::string psmId = createPsmId(item.id(), observed_mass, useScanNumber, charge, static_cast<unsigned int>(rank));
 
     double lnrSP = 0.0;
     double deltaCN = 0.0;
@@ -182,7 +182,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     double Sp = 0.0;
     double ionMatched = 0.0;
     double ionTotal = 0.0;
-    double dM = massDiff(observed_mass, theoretic_mass, charge);
+    double dM = massDiff(observed_mass, theoretic_mass, static_cast<unsigned int>(charge));
 
 
     BOOST_FOREACH (const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) {
@@ -256,7 +256,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
       if (freqAA.find(peptideS[ix]) == string::npos) {
         int accession = ptmMap[peptideS[ix]];
         std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-        std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
+        std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
         mod_p->uniMod(um_p);
         peptide_p->modification().push_back(mod_p);      
         peptideS.erase(ix--,1);      

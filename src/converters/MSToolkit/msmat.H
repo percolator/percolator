@@ -513,11 +513,6 @@ public:
   void sample_values ( std::vector<float> & vals, const int num_vals, float min_threshold=0.0f, float max_threshold=0.0f );    
   void scan_scramble();
 
-  std::pair<mz_type, mz_type> get_transition_by_idx () const {
-  }
-  int get_idx_by_transition ( std::pair<mz_type, mz_type> ) const {
-  }
-
   
 
 

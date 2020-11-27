@@ -426,7 +426,7 @@ double Reader::calculatePepMAss(const std::string &pepsequence,double charge) {
     if (freqAA.find(pepsequence[i]) != string::npos) {
       mass += massMap_[pepsequence[i]];
     } else if(modifiedAA.find(pepsequence[i]) != std::string::npos) {
-      unsigned annotation = po.ptmScheme[pepsequence[i]];
+      unsigned annotation = static_cast<unsigned>(po.ptmScheme[pepsequence[i]]);
       mass += ptmMass.at(annotation);
     } else {
       ostringstream temp;
@@ -621,7 +621,7 @@ unsigned int Reader::calculateProtLengthTrypsin(const string &protsequence,
             begin--;
             finish++;
           }
-          std::string peptide = protsequence.substr(begin,finish);
+          std::string peptide = protsequence.substr(static_cast<std::size_t>(begin),static_cast<std::size_t>(finish));
           if (peptide.size() >= po.peptidelength && peptide.size() <= po.maxpeplength) {
 	          double mass = calculatePepMAss(peptide);
 
@@ -659,11 +659,11 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   char b[BUFFER_LEN+1];
   b[BUFFER_LEN] = '\0';
   stringstream buf;
-  char c = buffer.peek();
+  char c = static_cast<char>(buffer.peek());
 
   while (!buffer.eof() && (c == ' ' || c == '\n')) {
     buffer.ignore(1);
-    if (!buffer.eof()) c = buffer.peek();
+    if (!buffer.eof()) c = static_cast<char>(buffer.peek());
   }
 
   if (!buffer.eof() && c != '>') {
@@ -692,8 +692,8 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
   }
 
   if (pos > 0) {
-    comment = name.substr(pos+1,name.length());
-    name = name.substr(0,pos);
+    comment = name.substr(static_cast<std::size_t>(pos+1),name.length());
+    name = name.substr(0,static_cast<std::size_t>(pos));
   }
 
   string temp;
@@ -710,11 +710,11 @@ void Reader::read_from_fasta(istream &buffer, std::string &name , std::string &s
       }
     }
 
-    c = buffer.peek();
+    c = static_cast<char>(buffer.peek());
 
     while (!buffer.eof() && (c == ' ' || c == '\n' || c == '\r')) {
       buffer.ignore(1);
-      if (!buffer.eof()) c = buffer.peek();
+      if (!buffer.eof()) c = static_cast<char>(buffer.peek());
     }
   }
   seq = string(buf.str());
@@ -838,8 +838,8 @@ void Reader::storeRetentionTime(boost::shared_ptr<FragSpectrumScanDatabase> data
     int scanNr = i.first;
     // related retention times
     vector<double>* rTimes = &(i.second);
-    if (database->getFSS(scanNr).get()!=0) {
-      fragSpectrumScan fss = *(database->getFSS(scanNr));
+    if (database->getFSS(static_cast<unsigned int>(scanNr)).get()!=0) {
+      fragSpectrumScan fss = *(database->getFSS(static_cast<unsigned int>(scanNr)));
       fragSpectrumScan::peptideSpectrumMatch_sequence& psmSeq = fss.peptideSpectrumMatch();
       // retention time to be stored
       double storeMe = 0;

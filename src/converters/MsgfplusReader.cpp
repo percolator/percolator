@@ -283,7 +283,7 @@ void MsgfplusReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemT
       fileId.erase(spos);
     }
     std::string psmId = createPsmId(fileId + "_" + boost::lexical_cast<string > (item.id()), 
-        observed_mass, useScanNumber, charge, rank);
+        observed_mass, useScanNumber, charge, static_cast<unsigned int>(rank));
 
     double RawScore = 0.0;
     double DeNovoScore = 0.0;
