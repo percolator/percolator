@@ -644,12 +644,6 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
       scoreIt->score = scoreIt->pPSM->features[featNo];
     }
 
-
-  //  calc_score_and_decoys_retscore_label_pair_array(w, score_label_pairs);
-  //  unsigned long total_num_tps = scores_.size() - total_number_of_decoys_;
-  //  int loh_score = calcScoresQuickLOHHelper(fdr, score_label_pairs, score_label_pairs + scores_.size(), total_num_tps, total_number_of_decoys_ + (!skipDecoysPlusOne));
-
-
     sort(scores_.begin(), scores_.end());
     int positives = calcQ(initialSelectionFdr, skipDecoysPlusOne);
 
@@ -902,10 +896,8 @@ unsigned Scores::getQvaluesBelowLevel(double level) {
     return loh_score;
   }
 
-  int Scores::calcScores(vector<double>& w, double fdr, bool skipDecoysPlusOne, bool useQLOH){ //merge getinitdirection calcscoressorted, alla sorteringar i samband med calcQ.
+  int Scores::calcScores(vector<double>& w, double fdr, bool skipDecoysPlusOne, bool useQLOH){
     if(useQLOH)
       return calcScoresLOH(w, fdr, skipDecoysPlusOne);
     return calcScoresSorted(w, fdr, skipDecoysPlusOne);
   }
-
-  //4 olika ställen i scores
