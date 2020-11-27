@@ -44,6 +44,12 @@ add_executable(gtest_unit
     Unit_tests_Percolator_main.cpp
     UnitTest_Percolator_Fido.cpp
     UnitTest_Percolator_Option.cpp)
+# Flags for generating coverage data
+if(COVERAGE)
+  target_compile_options(perclibrary PUBLIC -ftest-coverage -fprofile-arcs)
+  target_compile_options(gtest_unit PUBLIC -ftest-coverage -fprofile-arcs)
+  target_link_libraries(gtest_unit -fprofile-arcs)
+endif(COVERAGE)
 target_link_libraries(gtest_unit perclibrary fido gtest gtest_main pthread)
 add_test(UnitTest_Percolator_RunAllTests gtest_unit)
 
