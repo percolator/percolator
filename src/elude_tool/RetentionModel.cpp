@@ -45,9 +45,9 @@ int RetentionModel::NormalizeFeatures(const bool set_set,
   vector<double*> tmp;
   vector<double*> tmp_ret_feat = PSMDescriptionDOC::getRetFeatures(psms);
   int number_active_features = retention_features_.GetTotalNumberFeatures();
-  the_normalizer_->resizeVecs(number_active_features);
+  the_normalizer_->resizeVecs(static_cast<std::size_t>(number_active_features));
   if (set_set) {
-    the_normalizer_->setSet(tmp, tmp_ret_feat, 0, number_active_features);
+    the_normalizer_->setSet(tmp, tmp_ret_feat, 0, static_cast<std::size_t>(number_active_features));
     vsub_ = the_normalizer_->GetVSub();
     vdiv_ = the_normalizer_->GetVDiv();
   } else {
@@ -59,7 +59,7 @@ int RetentionModel::NormalizeFeatures(const bool set_set,
 }
 
 void RetentionModel::PrintSub() {
-  for(int i = 0; i < vsub_.size(); ++i)
+  for(std::size_t i = 0; i < vsub_.size(); ++i)
      cout << vsub_[i] << " ";
 }
 
@@ -79,13 +79,13 @@ int RetentionModel::InitSVR(const bool linear_svr) {
 //map<string, double> RetentionModel::GetRetentionIndex() {
 map<string, double> RetentionModel::GetRetentionIndex() {
   const int no_features = retention_features_.GetTotalNumberFeatures();
-  std::vector< std::vector<double> > temp(no_features + 1, std::vector<double>(no_features));
+  std::vector< std::vector<double> > temp(static_cast<std::size_t>(no_features + 1), std::vector<double>(static_cast<std::size_t>(no_features)));
   for (int i = 0; i < no_features + 1; ++i) {
     for (int j = 0; j < no_features; ++j) {
       if (j == (i - 1)) {
-        temp[i][j] = 1.0;
+        temp[static_cast<std::size_t>(i)][static_cast<std::size_t>(j)] = 1.0;
       } else {
-        temp[i][j] = 0.0;
+        temp[static_cast<std::size_t>(i)][static_cast<std::size_t>(j)] = 0.0;
       }
     }
   }
@@ -93,7 +93,7 @@ map<string, double> RetentionModel::GetRetentionIndex() {
   double background = svr_model_->PredictRT(no_features, &temp[0][0]);
   vector<string> aa_alphabet = retention_features_.amino_acids_alphabet();
   map<string, double> svr_index;
-  for (int i = 1; i < no_features + 1; ++i) {
+  for (std::size_t i = 1; i < no_features + 1; ++i) {
     svr_index[aa_alphabet[i-1]] = svr_model_->PredictRT(no_features, &temp[i][0])
         - background;
   }
@@ -372,13 +372,13 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   ret = fscanf(fp, "%s %lf", dummy, &div_);
   // load vsub and vdiv to scale the features
   ret = fscanf(fp, "%s", dummy);
-  vsub_.resize(number_features);
-  for(int i = 0; i < number_features; ++i) {
+  vsub_.resize(static_cast<std::size_t>(number_features));
+  for(std::size_t i = 0; i < number_features; ++i) {
     ret = fscanf(fp, "%lf", &vsub_[i]);
   }
   ret = fscanf(fp, "%s", dummy);
-  vdiv_.resize(number_features);
-  for(int i = 0; i < number_features; ++i) {
+  vdiv_.resize(static_cast<std::size_t>(number_features));
+  for(std::size_t i = 0; i < number_features; ++i) {
    ret =  fscanf(fp, "%lf", &vdiv_[i]);
   }
   // the retention index
@@ -387,7 +387,7 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   double val;
   char aa[50];
   ret = fscanf(fp, "%s %d", dummy, &size);
-  for(int i = 0; i < size; ++i) {
+  for(std::size_t i = 0; i < size; ++i) {
     ret = fscanf(fp, "%s %lf", aa, &val);
     index[aa] = val;
   }
@@ -395,7 +395,7 @@ int RetentionModel::LoadModelFromFile(const std::string &file_name) {
   // the aa alphabet
   vector<string> alphabet;
   ret = fscanf(fp, "%s %d", dummy, &size);
-  alphabet.reserve(size);
+  alphabet.reserve(static_cast<std::size_t>(size));
   for(int i = 0; i < size; ++i) {
     ret = fscanf(fp, "%s", aa);
     alphabet.push_back(aa);
