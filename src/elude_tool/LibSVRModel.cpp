@@ -281,4 +281,5 @@ int LibSVRModel::LoadModel(FILE *fp) {
     
     throw MyException(temp.str());
   }
+  return 0;
 }
