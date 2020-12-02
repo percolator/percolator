@@ -43,7 +43,7 @@ int msmat_header_parser::read_header(msmat * m, FILE * header_fh, bool get_class
   {
     cout << "Error reading file msmat header parser";
   }
-  int last_line_start = ftell(header_fh);
+  int last_line_start = static_cast<int>(ftell(header_fh));
   /* should be at next line */;
 
   while ( 1 ) {
@@ -195,8 +195,8 @@ int msmat_header_parser::process_field(msmat * m, FILE * header_fh, char * field
     cerr << "field_len of " << field_len << " processing " << field_name << endl;
   }
   else {
-    char * field_data_input = (char*)calloc(field_len, sizeof(char) );
-    if(!fread(field_data_input,sizeof(char),field_len,header_fh))
+    char * field_data_input = (char*)calloc(static_cast<std::size_t>(field_len), sizeof(char) );
+    if(!fread(field_data_input,sizeof(char),static_cast<std::size_t>(field_len),header_fh))
     {
       cerr << "Error processing " << field_name << endl;
     }
@@ -207,8 +207,8 @@ int msmat_header_parser::process_field(msmat * m, FILE * header_fh, char * field
   char should_be_newline = (char)fgetc(header_fh);
   if ( should_be_newline != '\n') {
     char tmp_data[65];
-    size_t fpos = ftell(header_fh);
-    (void) fseek(header_fh,fpos-32,SEEK_SET);
+    size_t fpos = static_cast<std::size_t>(ftell(header_fh));
+    (void) fseek(header_fh,static_cast<long>(fpos)-32,SEEK_SET);
     if(!fread(tmp_data,sizeof(char),64,header_fh))
     {
       cerr << "Error processing temp filename in msmat_header_parser" << endl;
@@ -218,7 +218,7 @@ int msmat_header_parser::process_field(msmat * m, FILE * header_fh, char * field
     fprintf(stdout,"Flanking: %s\n",tmp_data + 31);
     exit(-1);
   }
-  return (ftell(header_fh));
+  return static_cast<int>(ftell(header_fh));
 }
 
 void msmat_header_parser::set_field(msmat * msmat, char * field_name, const char * field_data, int data_len) {
@@ -233,12 +233,12 @@ void msmat_header_parser::set_field(msmat * msmat, char * field_name, const char
     }
   }
   else if ( strcmp(field_name, "rts") == 0 ) {
-    vector<float> tmp_rts(data_len / sizeof(float) );
+    vector<float> tmp_rts(static_cast<std::size_t>(data_len) / sizeof(float) );
     load_array<float>(&tmp_rts[0],field_data,data_len);
     msmat->set_rts(tmp_rts);
   }
   else if ( strcmp( field_name, "mzs") == 0) {	
-    vector<float> tmp_mzs(data_len / sizeof(float));
+    vector<float> tmp_mzs(static_cast<std::size_t>(data_len) / sizeof(float));
     load_array<float>(&tmp_mzs[0],field_data,data_len);
     msmat->set_mzs(tmp_mzs);
 
@@ -256,13 +256,13 @@ void msmat_header_parser::set_field(msmat * msmat, char * field_name, const char
     //load_not_implemented()
   }
   else if ( strcmp (field_name, "bp_chrom" ) == 0 ) {
-    vector<float> bp_chrom(data_len / sizeof(float));
+    vector<float> bp_chrom(static_cast<std::size_t>(data_len) / sizeof(float));
     load_array<float>(&bp_chrom[0],field_data,data_len);
     msmat->bp_chrom.resize(bp_chrom.size());
     copy(bp_chrom.begin(), bp_chrom.end(), msmat->bp_chrom.begin());
   }
   else if ( strcmp (field_name, "tic_chrom" ) == 0 ) {
-    vector<float> tic_chrom(data_len / sizeof(float));
+    vector<float> tic_chrom(static_cast<std::size_t>(data_len) / sizeof(float));
     load_array<float>(&tic_chrom[0],field_data,data_len);
     msmat->tic_chrom.resize(tic_chrom.size());
     copy(tic_chrom.begin(), tic_chrom.end(), msmat->tic_chrom.begin());
@@ -295,19 +295,19 @@ void msmat_header_parser::write_header_field ( FILE * header_fh, const char * fi
 
 void msmat_header_parser::load_map_from_str( flt_map & t_t_map , const char * field_data , int field_len ) {
   //check that the size of the field makes sense
-  if ( field_len % ( 2 * sizeof(flt_map_type ) ) != 0 ) {
+  if ( static_cast<std::size_t>(field_len) % ( 2 * sizeof(flt_map_type ) ) != 0 ) {
 #ifdef CRAW_LOGGING
     LOGH(LOG_V1,std::cerr) << "invalid length of flt_map field" << std::endl; exit(1);
 #endif
   }
-  uint num_items = (field_len / 2) / sizeof(flt_map_type);
-  uint items_length = field_len / 2;
+  std::size_t num_items = static_cast<std::size_t>(field_len / 2) / sizeof(flt_map_type);
+  uint items_length = static_cast<uint>(field_len) / 2;
 
   flt_map_type * k = new flt_map_type[num_items];
   flt_map_type * v = new flt_map_type[num_items];
 
-  load_array( k , field_data , items_length);
-  load_array( v , field_data + items_length , items_length);
+  load_array( k , field_data , static_cast<int>(items_length));
+  load_array( v , field_data + items_length , static_cast<int>(items_length));
   for ( uint i = 0 ; i < num_items ; i++ ) {
     t_t_map.insert(pair<flt_map_type, flt_map_type>( k[i], v[i] ));
   }
@@ -339,34 +339,26 @@ void msmat_header_parser::load_strmap_from_str( std::map< std::string , float > 
 	    return m
     
 */
-
-  int c1_loc, c2_loc,key_fields_len, key_last_loc, key_data_len, key_len, val_len;
+  std::size_t c1_loc;
+  int c2_loc,key_fields_len, key_last_loc, key_data_len, key_len, val_len;
   char key_len_data[128], val_len_data[128];
   std::string field_data_str(field_data);
-  c1_loc = -1;
   
   c1_loc = field_data_str.find(char(1));
-
-  if ( c1_loc == -1 ) {
-     #ifdef CRAW_LOGGING
-    LOGH(LOG_V1,std::cerr) << "invalid length of flt_map field" << std::endl; exit(1);
-    #endif
-    exit(1);
-  }
   
   std::string key_len_str(field_data_str,0,c1_loc);
   key_len = atoi(key_len_str.c_str());
   assert(key_len > 0);
-  int key_last = c1_loc + key_len;
+  int key_last = static_cast<int>(c1_loc) + key_len;
   assert(field_data[key_last] == char(0));
-  std::string key_data(field_data_str,c1_loc+1,key_len);
+  std::string key_data(field_data_str,c1_loc+1,static_cast<std::size_t>(key_len));
   std::vector< std::string> key_toks;
   
   //go through key_data, splitting on nulls, into strings
   
   int key_data_idx;
   std::string sbuf;
-  for ( int i = c1_loc+1 ; i < key_last+1 ; i++ ) {
+  for ( std::size_t i = c1_loc+1 ; i < key_last+1 ; i++ ) {
       if ( field_data[i] == '\0' ) {
         key_toks.push_back(sbuf);
         sbuf.clear();
@@ -377,14 +369,14 @@ void msmat_header_parser::load_strmap_from_str( std::map< std::string , float > 
   }
   
   
-  c2_loc = field_data_str.find(char(1),key_last);
-  std::string val_len_str(field_data_str,key_last+1,(c2_loc-(key_last+1)));
+  c2_loc = static_cast<int>(field_data_str.find(char(1),static_cast<std::size_t>(key_last)));
+  std::string val_len_str(field_data_str,static_cast<std::size_t>(key_last+1),static_cast<std::size_t>(c2_loc-(key_last+1)));
   val_len = atoi(val_len_str.c_str());
 
 
   assert(c2_loc+1+val_len == field_data_str.size());
   
-  std::string value_data(field_data_str,c2_loc+1,val_len);
+  std::string value_data(field_data_str,static_cast<std::size_t>(c2_loc+1),static_cast<std::size_t>(val_len));
   const char * value_data_chr = value_data.c_str();
   float * values = new float[val_len];
   load_array( values , value_data_chr , val_len);
@@ -402,13 +394,13 @@ void msmat_header_parser::load_strmap_from_str( std::map< std::string , float > 
 
 void msmat_header_parser::write_header_field_float_map ( FILE * header_fh, const char * field_name,
                                                              flt_map & float_map ) {
-                                                               int num_elements = float_map.size();
+                                                               std::size_t num_elements = float_map.size();
                                                                size_t map_array_len = num_elements * 2 * sizeof(float);
                                                                fprintf(header_fh,"%s:%zd,",field_name,map_array_len);
                                                                if  ( num_elements > 0 ) {
                                                                  vector<float> map_keys(num_elements);
                                                                  vector<float> map_vals(num_elements);
-                                                                 int ele_count = 0;
+                                                                 std::size_t ele_count = 0;
                                                                  flt_map::const_iterator i = float_map.begin();
                                                                  for ( ; i != float_map.end() ; i++, ele_count++ ) {
                                                                    float key = i->first;
@@ -428,13 +420,12 @@ void msmat_header_parser::write_header_field_float_map ( FILE * header_fh, const
 
   void msmat_header_parser::write_header_field_string_list ( FILE * header_fh, const char * field_name,
 							    const vector<std::string> & s ) {
-    int num_elements = s.size();
-    uint total_len = 0;
+    std::size_t total_len = 0;
     for ( uint i = 0 ; i < s.size() ; i++ ) {
       total_len += s[i].length();
     }
     total_len += s.size(); // for null characters
-    fprintf(header_fh,"%s:%d,",field_name,total_len);
+    fprintf(header_fh,"%s:%zu,",field_name,total_len);
     for ( uint i = 0 ; i < s.size() ; i++ ) {
       fwrite(s[i].c_str(), sizeof(char), s[i].size() + 1, header_fh); 
     }

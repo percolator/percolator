@@ -15,7 +15,7 @@ MSObject::~MSObject(){
 };
 
 MSObject::MSObject(const MSObject& m){
-  int i;
+  std::size_t i;
   vSpectrum = new vector<Spectrum>;
 
   for(i=0;i<m.vSpectrum->size();i++){
@@ -29,7 +29,7 @@ MSObject::MSObject(const MSObject& m){
 };
 
 MSObject& MSObject::operator=(const MSObject& m){
-  int i;
+  std::size_t i;
   if (this!=&m){
     delete vSpectrum;
     vSpectrum = new vector<Spectrum>;
@@ -93,6 +93,6 @@ void MSObject::setHeader(const MSHeader& h){
 };
 
 int MSObject::size(){
-  return vSpectrum->size();
+  return static_cast<int>(vSpectrum->size());
 };
 

@@ -114,7 +114,7 @@ class matrix_dim {
 };
 
 
-static MSMAT_MZ_TYPE TRANSITION_MATCH_MZ_TOL = 1E-6;
+static MSMAT_MZ_TYPE TRANSITION_MATCH_MZ_TOL = static_cast<MSMAT_MZ_TYPE>(1E-6);
 
 
 
@@ -160,7 +160,6 @@ struct transition_manager {
     std::vector<MSMAT_MZ_TYPE> precursors;
     std::vector< std::vector< int > > products_by_transitions;
 
-    std::vector<transition_info> get_trans_by_precursor( MSMAT_MZ_TYPE precursor );
     std::vector<transition_info> get_trans_by_precursor_idx (int idx);
     transition_manager ( std::vector<transition_info> transitions );
     transition_manager() {};
@@ -344,10 +343,10 @@ public:
   int rt_to_rtidx ( float rt ) const;
 
   float mzidx_to_mz ( int mz_idx ) const {
-     return mzs[mz_idx];
+     return mzs[static_cast<std::size_t>(mz_idx)];
   };
   float rtidx_to_rt ( int rt_idx ) const {
-     return rts[rt_idx];
+     return rts[static_cast<std::size_t>(rt_idx)];
   };
 
 

@@ -190,7 +190,7 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
 	        mzLen = (uLong)i;
 	        fread(&i,4,1,fileIn);
 	        intensityLen = (uLong)i;
-	        fseek(fileIn,mzLen+intensityLen,1);
+	        fseek(fileIn,static_cast<__off_t>(mzLen+intensityLen),1);
 	      } else {
 	        fseek(fileIn,ms.numDataPoints*12,1);
 	      }
@@ -271,7 +271,7 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
       }
 
       //scan next character in the file
-      ch=fgetc(fileIn);
+      ch=static_cast<char>(fgetc(fileIn));
       ungetc(ch,fileIn);
 
       switch(ch){
@@ -453,7 +453,7 @@ int MSReader::getLastScan(){
 
 int MSReader::getPercent(){
   if(fileIn!=NULL){
-    return (int)((double)ftell(fileIn)/lEnd*100);
+    return (int)((double)ftell(fileIn)/static_cast<double>(lEnd)*100.0);
   }
   if(rampFileIn!=NULL){
     return (int)((double)rampIndex/rampLastScan*100);
@@ -506,18 +506,18 @@ void MSReader::writeFile(const char* c, bool text, MSObject& m){
 	}
 
 	//output spectra;
-  for(i=0;i<m.size();i++){
+  for(unsigned int j=0;j<m.size();j++){
 
 		//output spectrum header
-		writeSpecHeader(fileOut,text,m.at(i));
+		writeSpecHeader(fileOut,text,m.at(j));
 
 		//output scan
 		if(text){
-			writeTextSpec(fileOut,m.at(i));
+			writeTextSpec(fileOut,m.at(j));
 		} else if(compressMe){
-			writeCompressSpec(fileOut,m.at(i));
+			writeCompressSpec(fileOut,m.at(j));
 		} else {
-			writeBinarySpec(fileOut,m.at(i));
+			writeBinarySpec(fileOut,m.at(j));
 		}
 
   }
@@ -913,7 +913,7 @@ void MSReader::appendFile(Spectrum& s)
       else
 	{
 
-	  for(int i=0; i<chgs.size(); i++)
+	  for(std::size_t i=0; i<chgs.size(); i++)
 	    {
 	      chg=chgs.at(i);
 	      MH = s.getMZ()*chg -(chg-1)*1.008;
@@ -984,15 +984,15 @@ void MSReader::appendFile(char* c, bool text, MSObject& m){
   for(i=0;i<m.size();i++){
 
 		//output spectrum header
-		writeSpecHeader(fileOut,text,m.at(i));
+		writeSpecHeader(fileOut,text,m.at(static_cast<unsigned int>(i)));
 
 		//output spectrum
 		if(text){
-			writeTextSpec(fileOut,m.at(i));
+			writeTextSpec(fileOut,m.at(static_cast<unsigned int>(i)));
 		} else if(compressMe){
-			writeCompressSpec(fileOut,m.at(i));
+			writeCompressSpec(fileOut,m.at(static_cast<unsigned int>(i)));
 		} else {
-			writeBinarySpec(fileOut,m.at(i));
+			writeBinarySpec(fileOut,m.at(static_cast<unsigned int>(i)));
 		};
 
 	};
@@ -1004,7 +1004,7 @@ void MSReader::appendFile(char* c, MSObject& m){
 
   MSFileFormat ff;
   FILE* fileOut;
-  int i;
+  unsigned int i;
 
   if(c == NULL) return;
   ff=checkFileFormat(c);
@@ -1293,12 +1293,12 @@ void MSReader::getUncompressedPeaks(Spectrum& s, int& numPeaks, int& mzLen, unsi
   float *intensity;
 
   mz = new double[numPeaks];
-  uncomprLen=numPeaks*sizeof(double);
-  uncompress((Bytef*)mz, &uncomprLen, comprM, mzLen);
+  uncomprLen=static_cast<std::size_t>(numPeaks)*sizeof(double);
+  uncompress((Bytef*)mz, &uncomprLen, comprM, static_cast<uLong>(mzLen));
 
   intensity = new float[numPeaks];
-  uncomprLen=numPeaks*sizeof(float);
-  uncompress((Bytef*)intensity, &uncomprLen, comprI, intensityLen);
+  uncomprLen=static_cast<std::size_t>(numPeaks)*sizeof(float);
+  uncompress((Bytef*)intensity, &uncomprLen, comprI, static_cast<uLong>(intensityLen));
 
   for(i=0;i<numPeaks;i++){
     s.add(mz[i],intensity[i]);
@@ -1673,14 +1673,14 @@ void MSReader::readCompressSpec(FILE* fileIn, MSScanInfo& ms, Spectrum& s){
 
 	compr = new unsigned char[mzLen];
 	mz = new double[ms.numDataPoints];
-	uncomprLen=ms.numDataPoints*sizeof(double);
+	uncomprLen=static_cast<std::size_t>(ms.numDataPoints)*sizeof(double);
 	fread(compr,mzLen,1,fileIn);
 	uncompress((Bytef*)mz, &uncomprLen, compr, mzLen);
 	delete [] compr;
 
 	compr = new unsigned char[intensityLen];
 	intensity = new float[ms.numDataPoints];
-	uncomprLen=ms.numDataPoints*sizeof(float);
+	uncomprLen=static_cast<std::size_t>(ms.numDataPoints)*sizeof(float);
 	fread(compr,intensityLen,1,fileIn);
 	uncompress((Bytef*)intensity, &uncomprLen, compr, intensityLen);
 	delete [] compr;
@@ -1698,7 +1698,8 @@ void MSReader::readCompressSpec(FILE* fileIn, MSScanInfo& ms, Spectrum& s){
 
 void MSReader::writeTextSpec(FILE* fileOut, Spectrum& s) {
 
-	int i,j,k;
+	int i,j;
+  std::size_t k;
 	char t[64];
 
   if(exportMGF){
@@ -1908,7 +1909,7 @@ MSFileFormat MSReader::checkFileFormat(const char *fn){
   int i;
 
   //check extension first - we must trust MS1 & MS2 & ZS & UZS
-  i=strlen(fn);
+  i=static_cast<int>(strlen(fn));
   if(strcmp(fn+(i-4),".ms1")==0 || strcmp(fn+(i-4),".MS1")==0 ) return ms1;
   if(strcmp(fn+(i-4),".ms2")==0 || strcmp(fn+(i-4),".MS2")==0 ) return ms2;
   if(strcmp(fn+(i-3),".zs")==0 || strcmp(fn+(i-3),".ZS")==0 ) return zs;
