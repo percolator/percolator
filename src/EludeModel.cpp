@@ -1434,7 +1434,7 @@ void RTModel::trainIndexSVR(vector<PSMDescription*> & psms) {
 void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
   vector<PSMDescription*>::iterator it;
   Normalizer* normalizer;
-  const int noFeat = static_cast<int>(inhouseIndexAlphabet.length());
+  std::size_t noFeat = inhouseIndexAlphabet.length();
   for (int i = 0; i < ('Z' - 'A' + 1); ++i) {
     our_index[i] = 0.0;
   }
@@ -1449,17 +1449,17 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
   PSMDescriptionDOC::setPSMSet(psms);
   PSMDescriptionDOC::normalizeRetentionTimes(psms);
   normalizer = Normalizer::getNormalizer();
-  normalizer->resizeVecs(static_cast<std::size_t>(noFeat));
+  normalizer->resizeVecs(noFeat);
   // scale the values of the features between 0 and 1
   vector<double*> tmp;
   vector<double*> tRetFeat = PSMDescriptionDOC::getRetFeatures(psms);
-  normalizer->setSet(tmp, tRetFeat, (size_t)0, static_cast<std::size_t>(noFeat));
+  normalizer->setSet(tmp, tRetFeat, (size_t)0, noFeat);
   normalizer->normalizeSet(tmp, tRetFeat);
   // train retention
   trainIndexSVR(psms);
   // calculate the weights of each aa
-  std::vector< std::vector<double> > a(static_cast<std::size_t>(noFeat + 1),
-    std::vector<double>(static_cast<std::size_t>(noFeat)));
+  std::vector< std::vector<double> > a(noFeat + 1,
+    std::vector<double>(noFeat));
   for (std::size_t i = 0; i < noFeat + 1; ++i)
     for (std::size_t j = 0; j < noFeat; ++j)
       if (j == (i - 1)) {
@@ -1475,7 +1475,7 @@ void RTModel::computeHydrophobicityIndex(vector<PSMDescription*> & psms) {
   }
   cerr << "------------------------------" << endl;
   for (unsigned int i = 0; i < psms.size(); ++i)
-    for (int j = 0; j < noFeat; ++j) {
+    for (std::size_t j = 0; j < noFeat; ++j) {
       psms[i]->getRetentionFeatures()[j] = 0.0;
     }
   PSMDescriptionDOC::unnormalizeRetentionTimes(psms);

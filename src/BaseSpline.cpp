@@ -63,7 +63,7 @@ double BaseSpline::splineEval(double xx) {
     left--;
     double dr = *right - xx;
     double dl = xx - *left;
-    double gamr = (rix < (n - 1) ? gamma[rix - 1] : 0.0);
+    double gamr = (rix < static_cast<int>(n - 1) ? gamma[rix - 1] : 0.0);
     double gaml = (rix > 1 ? gamma[rix - 1 - 1] : 0.0);
     double h = *right - *left;
     double gx = (dl * g[rix] + dr * g[rix - 1]) / h - dl * dr / 6 * ((1.0
@@ -227,7 +227,7 @@ double BaseSpline::alphaLinearSearchBA(double min_p,
 void BaseSpline::initiateQR() {
   int n = static_cast<int>(x.size());
   dx.resize(n-1);
-  for (std::size_t ix = 0; ix < n - 1; ix++) {
+  for (std::size_t ix = 0; static_cast<int>(ix) < n - 1; ix++) {
     dx.addElement(static_cast<int>(ix), x[ix + 1] - x[ix]);
     assert(dx[ix] > 0);
   }
@@ -299,7 +299,7 @@ double BaseSpline::crossValidation(double alpha) {
   // ka[i]=B[i,i+a]=B[i+a,i]
   for (std::size_t row = 0; row < n; ++row) {
     for (int rowPos = B[row].numberEntries(); rowPos--;) {
-      int col = B[row].index(rowPos);
+      std::size_t col = static_cast<std::size_t>(B[row].index(rowPos));
       if (col == row) {
         k0[row] = B[row][rowPos];
       } else if (col + 1 == row) {

@@ -66,7 +66,7 @@ string FeatureNames::getFeatureNames(bool skipDOC) {
   if (!featureNames.empty()) {
     std::size_t featNum = 0;
     oss << featureNames[featNum++];
-    for (; featNum < n; ++featNum) {
+    for (; static_cast<int>(featNum) < n; ++featNum) {
       oss << "\t" << featureNames[featNum];
     }
   }

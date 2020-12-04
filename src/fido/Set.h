@@ -35,7 +35,7 @@ class Set : public Array<int> {
   // for hashing sets
   static unsigned int sumSetElements(const Set & s) {
     unsigned int sum = 0;
-    for (int k=0; k<s.size(); k++)
+    for (std::size_t k=0; k<s.size(); k++)
       sum += static_cast<unsigned int>(s[k]);
     return sum;
   }

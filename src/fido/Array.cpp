@@ -64,7 +64,7 @@ void Array<T>::add(const T & element)
 template <typename T>
 void Array<T>::append(const Array<T> & elements)
 {
-  for (int k=0; k<elements.size(); k++)
+  for (std::size_t k=0; k<elements.size(); k++)
     {
       add(elements[k]);
     }
@@ -193,7 +193,7 @@ ostream & operator <<(ostream & os, const Array<T> & rhs)
   int w = static_cast<int>(os.width());
   os << "{ ";
 
-  int k;
+  std::size_t k;
   for (k=0; k<rhs.size(); k++)
     {
       os.width(4);

@@ -190,7 +190,7 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
 	        mzLen = (uLong)i;
 	        fread(&i,4,1,fileIn);
 	        intensityLen = (uLong)i;
-	        fseek(fileIn,static_cast<int>(mzLen+intensityLen),1);
+	        fseek(fileIn,static_cast<int64_t>(mzLen+intensityLen),1);
 	      } else {
 	        fseek(fileIn,ms.numDataPoints*12,1);
 	      }

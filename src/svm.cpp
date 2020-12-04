@@ -290,7 +290,7 @@ Kernel::Kernel(int l, svm_node* const* x_, const svm_parameter& param)
   clone(x, x_, l);
   if (kernel_type == RBF) {
     x_square = new double[l];
-    for (std::size_t i = 0; i < l; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < l; i++) {
       x_square[i] = dot(x[i], x[i]);
     }
   } else {
@@ -307,7 +307,7 @@ Kernel::~Kernel() {
 double Kernel::dot(const svm_node* px, const svm_node* py) {
   double sum = 0;
   int dim = min(px->dim, py->dim);
-  for (std::size_t i = 0; i < dim; i++) {
+  for (std::size_t i = 0; static_cast<int>(i) < dim; i++) {
     sum += (px->values)[i] * (py->values)[i];
   }
   return sum;
@@ -316,7 +316,7 @@ double Kernel::dot(const svm_node* px, const svm_node* py) {
 double Kernel::dot(const svm_node& px, const svm_node& py) {
   double sum = 0;
   int dim = min(px.dim, py.dim);
-  for (std::size_t i = 0; i < dim; i++) {
+  for (std::size_t i = 0; static_cast<int>(i) < dim; i++) {
     sum += px.values[i] * py.values[i];
   }
   return sum;
@@ -671,7 +671,7 @@ void Solver::Solve(int l, const QMatrix& Q, const double* p_,
     // update G
     double delta_alpha_i = alpha[i] - old_alpha_i;
     double delta_alpha_j = alpha[j] - old_alpha_j;
-    for (std::size_t k = 0; k < active_size; k++) {
+    for (std::size_t k = 0; static_cast<int>(k) < active_size; k++) {
       G[k] += Q_i[k] * delta_alpha_i + Q_j[k] * delta_alpha_j;
     }
     // update alpha_status and G_bar
@@ -718,7 +718,7 @@ void Solver::Solve(int l, const QMatrix& Q, const double* p_,
   }
   // put back the solution
   {
-    for (std::size_t i = 0; i < l; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < l; i++) {
       alpha_[active_set[i]] = alpha[i];
     }
   }
@@ -1169,7 +1169,7 @@ class SVC_Q : public Kernel {
       clone(y, y_, static_cast<int>(prob.l));
       cache = new Cache(prob.l, (long int)(param.cache_size * (1 << 20)));
       QD = new Qfloat[prob.l];
-      for (int i = 0; i < prob.l; i++) {
+      for (int i = 0; static_cast<std::size_t>(i) < prob.l; i++) {
         QD[i] = (Qfloat)(this->*kernel_function)(i, i);
       }
     }
@@ -1213,7 +1213,7 @@ class ONE_CLASS_Q : public Kernel {
       Kernel(static_cast<int>(prob.l), prob.x, param) {
       cache = new Cache(prob.l, (long int)(param.cache_size * (1 << 20)));
       QD = new Qfloat[prob.l];
-      for (int i = 0; i < prob.l; i++) {
+      for (int i = 0; static_cast<std::size_t>(i) < prob.l; i++) {
         QD[i] = (Qfloat)(this->*kernel_function)(i, i);
       }
     }
@@ -1279,8 +1279,8 @@ class SVR_Q : public Kernel {
     Qfloat* get_Q(int i, int len) const {
       Qfloat* data;
       int real_i = index[i];
-      if (cache->get_data(real_i, &data, static_cast<int>(l)) < l) {
-        for (int j = 0; j < l; j++) {
+      if (cache->get_data(real_i, &data, static_cast<int>(l)) < static_cast<int>(l)) {
+        for (int j = 0; static_cast<std::size_t>(j) < l; j++) {
           data[j] = (Qfloat)(this->*kernel_function)(real_i, j);
         }
       }
@@ -1326,7 +1326,7 @@ static void solve_c_svc(const svm_problem* prob,
   double* minus_ones = new double[l];
   schar* y = new schar[l];
   int i;
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     alpha[i] = 0;
     minus_ones[i] = -1;
     if (prob->y[i] > 0) {
@@ -1347,13 +1347,13 @@ static void solve_c_svc(const svm_problem* prob,
           si,
           param->shrinking);
   double sum_alpha = 0;
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     sum_alpha += alpha[i];
   }
   if (Cp == Cn) {
     info("nu = %f\n", sum_alpha / (Cp * static_cast<double>(prob->l)));
   }
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     alpha[i] *= y[i];
   }
   delete[] minus_ones;
@@ -1367,7 +1367,7 @@ static void solve_nu_svc(const svm_problem* prob,
   std::size_t l = prob->l;
   double nu = param->nu;
   schar* y = new schar[l];
-  for (i = 0; i < l; i++)
+  for (i = 0; i < static_cast<int>(l); i++)
     if (prob->y[i] > 0) {
       y[i] = +1;
     } else {
@@ -1375,7 +1375,7 @@ static void solve_nu_svc(const svm_problem* prob,
     }
   double sum_pos = nu * static_cast<double>(l) / 2.;
   double sum_neg = nu * static_cast<double>(l) / 2.;
-  for (i = 0; i < l; i++)
+  for (i = 0; i < static_cast<int>(l); i++)
     if (y[i] == +1) {
       alpha[i] = min(1.0, sum_pos);
       sum_pos -= alpha[i];
@@ -1384,7 +1384,7 @@ static void solve_nu_svc(const svm_problem* prob,
       sum_neg -= alpha[i];
     }
   double* zeros = new double[l];
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     zeros[i] = 0;
   }
   Solver_NU s;
@@ -1400,7 +1400,7 @@ static void solve_nu_svc(const svm_problem* prob,
           param->shrinking);
   double r = si->r;
   info("C = %f\n", 1 / r);
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     alpha[i] *= y[i] / r;
   }
   si->rho /= r;
@@ -1422,13 +1422,13 @@ static void solve_one_class(const svm_problem* prob,
   for (i = 0; i < n; i++) {
     alpha[i] = 1;
   }
-  if (n < prob->l) {
+  if (n < static_cast<int>(prob->l)) {
     alpha[n] = param->nu * static_cast<double>(prob->l) - n;
   }
-  for (i = n + 1; i < l; i++) {
+  for (i = n + 1; i < static_cast<int>(l); i++) {
     alpha[i] = 0;
   }
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     zeros[i] = 0;
     ones[i] = 1;
   }
@@ -1763,16 +1763,16 @@ void svm_binary_svc_probability(const svm_problem* prob,
   int* perm = Malloc(int, prob->l);
   double* dec_values = Malloc(double, prob->l);
   // random shuffle
-  for (i = 0; i < prob->l; i++) {
+  for (i = 0; i < static_cast<int>(prob->l); i++) {
     perm[i] = i;
   }
-  for (i = 0; i < prob->l; i++) {
+  for (i = 0; i < static_cast<int>(prob->l); i++) {
     int j = i + static_cast<int>(
       PseudoRandom::lcg_rand() % 
       static_cast<long unsigned int>(static_cast<int>(prob->l) - i));
     swap(perm[i], perm[j]);
   }
-  for (i = 0; i < nr_fold; i++) {
+  for (i = 0; i < static_cast<int>(nr_fold); i++) {
     int begin = static_cast<int>(static_cast<std::size_t>(i) * prob->l / nr_fold);
     int end = static_cast<int>(static_cast<std::size_t>(i + 1) * prob->l / nr_fold);
     int j, k;
@@ -1790,7 +1790,7 @@ void svm_binary_svc_probability(const svm_problem* prob,
       subprob.y[k] = prob->y[perm[j]];
       ++k;
     }
-    for (j = end; j < prob->l; j++) {
+    for (j = end; j < static_cast<int>(prob->l); j++) {
       subprob.x[k] = prob->x[perm[j]];
       subprob.y[k] = prob->y[perm[j]];
       ++k;
@@ -1858,7 +1858,7 @@ double svm_svr_probability(const svm_problem* prob,
   svm_parameter newparam = *param;
   newparam.probability = 0;
   svm_cross_validation(prob, &newparam, nr_fold, ymv);
-  for (i = 0; i < prob->l; i++) {
+  for (i = 0; i < static_cast<int>(prob->l); i++) {
     ymv[i] = prob->y[i] - ymv[i];
     mae += fabs(ymv[i]);
   }
@@ -1866,7 +1866,7 @@ double svm_svr_probability(const svm_problem* prob,
   double std = sqrt(2 * mae * mae);
   int count = 0;
   mae = 0;
-  for (i = 0; i < prob->l; i++)
+  for (i = 0; i < static_cast<int>(prob->l); i++)
     if (fabs(ymv[i]) > 5 * std) {
       count = count + 1;
     } else {
@@ -1891,17 +1891,17 @@ void svm_group_classes(const svm_problem* prob, int* nr_class_ret,
   int* count = Malloc(int, max_nr_class);
   int* data_label = Malloc(int, l);
   int i;
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     int this_label = (int)prob->y[i];
     int j;
-    for (j = 0; j < nr_class; j++) {
+    for (j = 0; j < static_cast<int>(nr_class); j++) {
       if (this_label == label[j]) {
         ++count[j];
         break;
       }
     }
     data_label[i] = j;
-    if (j == nr_class) {
+    if (j == static_cast<int>(nr_class)) {
       if (nr_class == max_nr_class) {
         max_nr_class *= 2;
         label = (int*)realloc(label, max_nr_class * sizeof(int));
@@ -1914,15 +1914,15 @@ void svm_group_classes(const svm_problem* prob, int* nr_class_ret,
   }
   int* start = Malloc(int, nr_class);
   start[0] = 0;
-  for (i = 1; i < nr_class; i++) {
+  for (i = 1; i < static_cast<int>(nr_class); i++) {
     start[i] = start[i - 1] + count[i - 1];
   }
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     perm[start[data_label[i]]] = i;
     ++start[data_label[i]];
   }
   start[0] = 0;
-  for (i = 1; i < nr_class; i++) {
+  for (i = 1; i < static_cast<int>(nr_class); i++) {
     start[i] = start[i - 1] + count[i - 1];
   }
   *nr_class_ret = static_cast<int>(nr_class);
@@ -1993,7 +1993,7 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
     svm_node** x = Malloc(svm_node*, l);
 #endif
     int i;
-    for (i = 0; i < l; i++) {
+    for (i = 0; i < static_cast<int>(l); i++) {
       x[i] = prob->x[perm[i]];
     }
     // calculate weighted C
@@ -2017,7 +2017,7 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
     }
     // train k*(k-1)/2 models
     bool* nonzero = Malloc(bool, l);
-    for (i = 0; i < l; i++) {
+    for (i = 0; i < static_cast<int>(l); i++) {
       nonzero[i] = false;
     }
     std::size_t allocationSize = static_cast<std::size_t>(nr_class * (nr_class - 1) / 2);
@@ -2081,13 +2081,13 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
       model->label[i] = label[i];
     }
     model->rho = Malloc(double, allocationSize);
-    for (i = 0; i < allocationSize; i++) {
+    for (i = 0; i < static_cast<int>(allocationSize); i++) {
       model->rho[i] = f[i].rho;
     }
     if (param->probability) {
       model->probA = Malloc(double, allocationSize);
       model->probB = Malloc(double, allocationSize);
-      for (i = 0; i < allocationSize; i++) {
+      for (i = 0; i < static_cast<int>(allocationSize); i++) {
         model->probA[i] = probA[i];
         model->probB[i] = probB[i];
       }
@@ -2116,7 +2116,7 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
     model->SV = Malloc(svm_node*, static_cast<std::size_t>(total_sv));
 #endif
     p = 0;
-    for (i = 0; i < l; i++)
+    for (i = 0; i < static_cast<int>(l); i++)
       if (nonzero[i]) {
         model->SV[p++] = x[i];
       }
@@ -2161,7 +2161,7 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
     free(x);
     free(weighted_C);
     free(nonzero);
-    for (i = 0; i < allocationSize; i++) {
+    for (i = 0; i < static_cast<int>(allocationSize); i++) {
       free(f[i].alpha);
     }
     free(f);
@@ -2183,7 +2183,7 @@ void svm_cross_validation(const svm_problem* prob,
   // stratified cv may not give leave-one-out rate
   // Each class to l folds -> some folds may have zero elements
   if ((param->svm_type == C_SVC || param->svm_type == NU_SVC) && nr_fold
-      < l) {
+      < static_cast<int>(l)) {
     int* start = NULL;
     int* label = NULL;
     int* count = NULL;
@@ -2192,7 +2192,7 @@ void svm_cross_validation(const svm_problem* prob,
     int* fold_count = Malloc(int, static_cast<std::size_t>(nr_fold));
     int c;
     int* index = Malloc(int, l);
-    for (i = 0; i < l; i++) {
+    for (i = 0; i < static_cast<int>(l); i++) {
       index[i] = perm[i];
     }
     for (c = 0; c < nr_class; c++)
@@ -2231,10 +2231,10 @@ void svm_cross_validation(const svm_problem* prob,
     free(index);
     free(fold_count);
   } else {
-    for (i = 0; i < l; i++) {
+    for (i = 0; i < static_cast<int>(l); i++) {
       perm[i] = i;
     }
-    for (i = 0; i < l; i++) {
+    for (i = 0; i < static_cast<int>(l); i++) {
       int j = i + static_cast<int>(
         PseudoRandom::lcg_rand() % static_cast<unsigned long>(static_cast<int>(l) - i));
       swap(perm[i], perm[j]);
@@ -2261,7 +2261,7 @@ void svm_cross_validation(const svm_problem* prob,
       subprob.y[k] = prob->y[perm[j]];
       ++k;
     }
-    for (j = end; j < l; j++) {
+    for (j = end; j < static_cast<int>(l); j++) {
       subprob.x[k] = prob->x[perm[j]];
       subprob.y[k] = prob->y[perm[j]];
       ++k;
@@ -2303,7 +2303,7 @@ int svm_get_nr_class(const svm_model* model) {
 }
 
 void svm_get_labels(const svm_model* model, int* label) {
-  if (model->label != NULL) for (std::size_t i = 0; i < model->nr_class; i++) {
+  if (model->label != NULL) for (std::size_t i = 0; static_cast<int>(i) < model->nr_class; i++) {
     label[i] = model->label[i];
   }
 }
@@ -2324,7 +2324,7 @@ void svm_predict_values(const svm_model* model, const svm_node* x,
       == EPSILON_SVR || model->param.svm_type == NU_SVR) {
     double* sv_coef = model->sv_coef[0];
     double sum = 0;
-    for (std::size_t i = 0; i < model->l; i++)
+    for (std::size_t i = 0; static_cast<int>(i) < model->l; i++)
 #ifdef _DENSE_REP
       sum += sv_coef[i] * Kernel::k_function(x,
                                              model->SV + i,
@@ -2339,7 +2339,7 @@ void svm_predict_values(const svm_model* model, const svm_node* x,
     int nr_class = model->nr_class;
     std::size_t l = static_cast<std::size_t>(model->l);
     double* kvalue = Malloc(double, l);
-    for (i = 0; i < l; i++)
+    for (i = 0; i < static_cast<int>(l); i++)
 #ifdef _DENSE_REP
       kvalue[i] = Kernel::k_function(x, model->SV + i, model->param);
 #else
@@ -2392,12 +2392,12 @@ double svm_predict(const svm_model* model, const svm_node* x) {
     double* dec_values = Malloc(double, nr_class * (nr_class - 1) / 2);
     svm_predict_values(model, x, dec_values);
     int* vote = Malloc(int, nr_class);
-    for (i = 0; i < nr_class; i++) {
+    for (i = 0; i < static_cast<int>(nr_class); i++) {
       vote[i] = 0;
     }
     int pos = 0;
-    for (i = 0; i < nr_class; i++)
-      for (int j = i + 1; j < nr_class; j++) {
+    for (i = 0; i < static_cast<int>(nr_class); i++)
+      for (int j = i + 1; j < static_cast<int>(nr_class); j++) {
         if (dec_values[pos++] > 0) {
           ++vote[i];
         } else {
@@ -2405,7 +2405,7 @@ double svm_predict(const svm_model* model, const svm_node* x) {
         }
       }
     int vote_max_idx = 0;
-    for (i = 1; i < nr_class; i++)
+    for (i = 1; i < static_cast<int>(nr_class); i++)
       if (vote[i] > vote[vote_max_idx]) {
         vote_max_idx = i;
       }
@@ -2425,12 +2425,12 @@ double svm_predict_probability(const svm_model* model, const svm_node* x,
     svm_predict_values(model, x, dec_values);
     double min_prob = 1e-7;
     double** pairwise_prob = Malloc(double*, nr_class);
-    for (i = 0; i < nr_class; i++) {
+    for (i = 0; i < static_cast<int>(nr_class); i++) {
       pairwise_prob[i] = Malloc(double, nr_class);
     }
     std::size_t k = 0;
-    for (i = 0; i < nr_class; i++)
-      for (int j = i + 1; j < nr_class; j++) {
+    for (i = 0; i < static_cast<int>(nr_class); i++)
+      for (std::size_t j = static_cast<std::size_t>(i) + 1; j < nr_class; j++) {
         pairwise_prob[i][j] = min(max(sigmoid_predict(dec_values[k],
                                                       model->probA[k],
                                                       model->probB[k]),
@@ -2440,11 +2440,11 @@ double svm_predict_probability(const svm_model* model, const svm_node* x,
       }
     multiclass_probability(nr_class, pairwise_prob, prob_estimates);
     int prob_max_idx = 0;
-    for (i = 1; i < nr_class; i++)
+    for (i = 1; i < static_cast<int>(nr_class); i++)
       if (prob_estimates[i] > prob_estimates[prob_max_idx]) {
         prob_max_idx = i;
       }
-    for (i = 0; i < nr_class; i++) {
+    for (i = 0; i < static_cast<int>(nr_class); i++) {
       free(pairwise_prob[i]);
     }
     free(dec_values);
@@ -2485,35 +2485,35 @@ int svm_save_model(const char* model_file_name, const svm_model* model) {
   fprintf(fp, "total_sv %zu\n", l);
   {
     fprintf(fp, "rho");
-    for (std::size_t i = 0; i < nr_class * (nr_class - 1) / 2; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < nr_class * (nr_class - 1) / 2; i++) {
       fprintf(fp, " %g", model->rho[i]);
     }
     fprintf(fp, "\n");
   }
   if (model->label) {
     fprintf(fp, "label");
-    for (std::size_t i = 0; i < nr_class; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < nr_class; i++) {
       fprintf(fp, " %d", model->label[i]);
     }
     fprintf(fp, "\n");
   }
   if (model->probA) { // regression has probA only
     fprintf(fp, "probA");
-    for (std::size_t i = 0; i < nr_class * (nr_class - 1) / 2; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < nr_class * (nr_class - 1) / 2; i++) {
       fprintf(fp, " %g", model->probA[i]);
     }
     fprintf(fp, "\n");
   }
   if (model->probB) {
     fprintf(fp, "probB");
-    for (std::size_t i = 0; i < nr_class * (nr_class - 1) / 2; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < nr_class * (nr_class - 1) / 2; i++) {
       fprintf(fp, " %g", model->probB[i]);
     }
     fprintf(fp, "\n");
   }
   if (model->nSV) {
     fprintf(fp, "nr_sv");
-    for (std::size_t i = 0; i < nr_class; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < nr_class; i++) {
       fprintf(fp, " %d", model->nSV[i]);
     }
     fprintf(fp, "\n");
@@ -2646,7 +2646,7 @@ svm_model* svm_load_model(const char* model_file_name) {
     } else if (strcmp(cmd, "rho") == 0) {
       int n = model->nr_class * (model->nr_class - 1) / 2;
       model->rho = Malloc(double, static_cast<std::size_t>(n));
-      for (std::size_t i = 0; i < n; i++) {
+      for (std::size_t i = 0; static_cast<int>(i) < n; i++) {
         if(fscanf(fp, "%lf", &model->rho[i]) == EOF)
 	{
 	  /*do nothing*/
@@ -2655,7 +2655,7 @@ svm_model* svm_load_model(const char* model_file_name) {
     } else if (strcmp(cmd, "label") == 0) {
       int n = model->nr_class;
       model->label = Malloc(int, static_cast<std::size_t>(n));
-      for (std::size_t i = 0; i < n; i++) {
+      for (std::size_t i = 0; static_cast<int>(i) < n; i++) {
         if(fscanf(fp, "%d", &model->label[i]) == EOF)
 	{
 	  /*do nothing*/
@@ -2664,7 +2664,7 @@ svm_model* svm_load_model(const char* model_file_name) {
     } else if (strcmp(cmd, "probA") == 0) {
       int n = model->nr_class * (model->nr_class - 1) / 2;
       model->probA = Malloc(double, n);
-      for (std::size_t i = 0; i < n; i++) {
+      for (std::size_t i = 0; static_cast<int>(i) < n; i++) {
         if(fscanf(fp, "%lf", &model->probA[i]) == EOF)
 	{
 	  /*do nothing*/
@@ -2673,7 +2673,7 @@ svm_model* svm_load_model(const char* model_file_name) {
     } else if (strcmp(cmd, "probB") == 0) {
       int n = model->nr_class * (model->nr_class - 1) / 2;
       model->probB = Malloc(double, n);
-      for (std::size_t i = 0; i < n; i++) {
+      for (std::size_t i = 0; static_cast<int>(i) < n; i++) {
         if(fscanf(fp, "%lf", &model->probB[i]) == EOF)
 	{
 	  /*do nothing*/
@@ -2682,7 +2682,7 @@ svm_model* svm_load_model(const char* model_file_name) {
     } else if (strcmp(cmd, "nr_sv") == 0) {
       int n = model->nr_class;
       model->nSV = Malloc(int, n);
-      for (std::size_t i = 0; i < n; i++) {
+      for (std::size_t i = 0; static_cast<int>(i) < n; i++) {
         if(fscanf(fp, "%d", &model->nSV[i]) == EOF)
 	{
 	  /*do nothing*/
@@ -2754,10 +2754,10 @@ svm_model* svm_load_model(const char* model_file_name) {
   }
 #ifdef _DENSE_REP
   model->SV = Malloc(svm_node, l);
-  for (i = 0; i < l; i++) {
+  for (i = 0; i < static_cast<int>(l); i++) {
     model->SV[i].values = Malloc(double, elements);
     model->SV[i].dim = 0;
-    for (std::size_t k = 0; k < m; k++) {
+    for (std::size_t k = 0; static_cast<int>(k) < m; k++) {
       if(fscanf(fp, "%lf", &model->sv_coef[k][i]) == EOF)
       {
 	/* do nothing */
@@ -2816,13 +2816,13 @@ svm_model* svm_load_model(const char* model_file_name) {
 void svm_destroy_model(svm_model* model) {
   if (model->free_sv && model->l > 0)
 #ifdef _DENSE_REP
-    for (std::size_t i = 0; i < model->l; i++) {
+    for (std::size_t i = 0; static_cast<int>(i) < model->l; i++) {
       free(model->SV[i].values);
     }
 #else
   free((void*)(model->SV[0]));
 #endif
-  for (std::size_t i = 0; i < model->nr_class - 1; i++) {
+  for (std::size_t i = 0; static_cast<int>(i) < model->nr_class - 1; i++) {
     free(model->sv_coef[i]);
   }
   free(model->SV);
@@ -2892,15 +2892,15 @@ const char* svm_check_parameter(const svm_problem* prob,
     int* label = Malloc(int, max_nr_class);
     int* count = Malloc(int, max_nr_class);
     int i;
-    for (i = 0; i < l; i++) {
+    for (i = 0; static_cast<std::size_t>(i) < l; i++) {
       int this_label = (int)prob->y[i];
       int j;
-      for (j = 0; j < nr_class; j++)
+      for (j = 0; static_cast<std::size_t>(j) < nr_class; j++)
         if (this_label == label[j]) {
           ++count[j];
           break;
         }
-      if (j == nr_class) {
+      if (static_cast<std::size_t>(j) == nr_class) {
         if (nr_class == max_nr_class) {
           max_nr_class *= 2;
           label = (int*)realloc(label, max_nr_class * sizeof(int));
@@ -2911,9 +2911,9 @@ const char* svm_check_parameter(const svm_problem* prob,
         ++nr_class;
       }
     }
-    for (i = 0; i < nr_class; i++) {
+    for (i = 0; static_cast<std::size_t>(i) < nr_class; i++) {
       int n1 = count[i];
-      for (int j = i + 1; j < nr_class; j++) {
+      for (int j = i + 1; static_cast<std::size_t>(j) < nr_class; j++) {
         int n2 = count[j];
         if (param->nu * (n1 + n2) / 2 > min(n1, n2)) {
           free(label);

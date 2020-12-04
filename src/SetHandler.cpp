@@ -481,7 +481,7 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
                                      init_values);
   }
-  if (hasDefaultValues && init_values.size() > numFeatures) {
+  if (hasDefaultValues && init_values.size() > static_cast<std::size_t>(numFeatures)) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too many default values present." << std::endl;
     if (NO_TERMINATE) {
