@@ -388,3 +388,4 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
   delete[] deltas;
   return (-L / (R - L));
 }
+

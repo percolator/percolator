@@ -1697,13 +1697,13 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
       if (isCompressed) {
         int err;
         //        printf("Decompressing data\n");
-        uLong uncomprLen =
-            static_cast<uLong>(dataPerPeak * peaksCount * (precision / 8) + 1);
-        pUncompr = (Byte*)calloc((uInt)uncomprLen, 1);
+        unsigned long uncomprLen =
+            static_cast<unsigned long>(dataPerPeak * peaksCount * (precision / 8) + 1);
+        pUncompr = (Byte*)calloc((unsigned int)uncomprLen, 1);
         err = uncompress(pUncompr,
                          &uncomprLen,
                          (const Bytef*)pDecoded,
-                         static_cast<uLong>(decodedSize));
+                         static_cast<unsigned long>(decodedSize));
         free(pDecoded);
         pToBeCorrected = (char*)pUncompr;
       } else {

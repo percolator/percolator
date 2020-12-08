@@ -129,7 +129,7 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
   //off_t fpoint;
 
   //variables for compressed files
-  uLong mzLen, intensityLen;
+  unsigned long mzLen, intensityLen;
 
   //clear any spectrum data
   s.clear();
@@ -187,9 +187,9 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
 
 	      if(compressMe){
 	        fread(&i,4,1,fileIn);
-	        mzLen = (uLong)i;
+	        mzLen = (unsigned long)i;
 	        fread(&i,4,1,fileIn);
-	        intensityLen = (uLong)i;
+	        intensityLen = (unsigned long)i;
 	        fseek(fileIn,static_cast<int64_t>(mzLen+intensityLen),1);
 	      } else {
 	        fseek(fileIn,ms.numDataPoints*12,1);
@@ -748,13 +748,13 @@ void MSReader::appendFile(Spectrum& s)
 
   //file compression
   int err;
-  uLong len;
+  unsigned long len;
   unsigned char *comprM, *comprI;
-  uLong comprLenM, comprLenI;
+  unsigned long comprLenM, comprLenI;
   double *pD;
   float *pF;
-  uLong sizeM;
-  uLong sizeI;
+  unsigned long sizeM;
+  unsigned long sizeI;
 
   //Build arrays to hold scan prior to compression
 
@@ -766,17 +766,17 @@ void MSReader::appendFile(Spectrum& s)
   }
 
   //compress mz
-  len = (uLong)s.size()*sizeof(double);
+  len = (unsigned long)s.size()*sizeof(double);
   sizeM = len;
   comprLenM = compressBound(len);
-  comprM = (unsigned char*)calloc((uInt)comprLenM, 1);
+  comprM = (unsigned char*)calloc((unsigned int)comprLenM, 1);
   err = compress(comprM, &comprLenM, (const Bytef*)pD, len);
 
   //compress intensity
-  len = (uLong)s.size()*sizeof(float);
+  len = (unsigned long)s.size()*sizeof(float);
   sizeI = len;
   comprLenI = compressBound(len);
-  comprI = (unsigned char*)calloc((uInt)comprLenI, 1);
+  comprI = (unsigned char*)calloc((unsigned int)comprLenI, 1);
   err = compress(comprI, &comprLenI, (const Bytef*)pF, len);
 
    //insert into table
@@ -1288,17 +1288,17 @@ void MSReader::getUncompressedPeaks(Spectrum& s, int& numPeaks, int& mzLen, unsi
 
 
   //variables for compressed files
-  uLong uncomprLen;
+  unsigned long uncomprLen;
   double *mz;
   float *intensity;
 
   mz = new double[numPeaks];
   uncomprLen=static_cast<std::size_t>(numPeaks)*sizeof(double);
-  uncompress((Bytef*)mz, &uncomprLen, comprM, static_cast<uLong>(mzLen));
+  uncompress((Bytef*)mz, &uncomprLen, comprM, static_cast<unsigned long>(mzLen));
 
   intensity = new float[numPeaks];
   uncomprLen=static_cast<std::size_t>(numPeaks)*sizeof(float);
-  uncompress((Bytef*)intensity, &uncomprLen, comprI, static_cast<uLong>(intensityLen));
+  uncompress((Bytef*)intensity, &uncomprLen, comprI, static_cast<unsigned long>(intensityLen));
 
   for(i=0;i<numPeaks;i++){
     s.add(mz[i],intensity[i]);
@@ -1608,13 +1608,13 @@ void MSReader::writeCompressSpec(FILE* fileOut, Spectrum& s){
 
 	//file compression
 	int err;
-	uLong len;
+	unsigned long len;
 	unsigned char *comprM, *comprI;
-  uLong comprLenM, comprLenI;
+  unsigned long comprLenM, comprLenI;
 	double *pD;
 	float *pF;
-	uLong sizeM;
-	uLong sizeI;
+	unsigned long sizeM;
+	unsigned long sizeI;
 
 	//Build arrays to hold scan prior to compression
 	// Ideally, we would just use the scan vectors, but I don't know how yet.
@@ -1626,17 +1626,17 @@ void MSReader::writeCompressSpec(FILE* fileOut, Spectrum& s){
 	};
 
 	//compress mz
-	len = (uLong)s.size()*sizeof(double);
+	len = (unsigned long)s.size()*sizeof(double);
 	sizeM = len;
 	comprLenM = compressBound(len);
-	comprM = (unsigned char*)calloc((uInt)comprLenM, 1);
+	comprM = (unsigned char*)calloc((unsigned int)comprLenM, 1);
 	err = compress(comprM, &comprLenM, (const Bytef*)pD, len);
 
 	//compress intensity
-	len = (uLong)s.size()*sizeof(float);
+	len = (unsigned long)s.size()*sizeof(float);
 	sizeI = len;
 	comprLenI = compressBound(len);
-	comprI = (unsigned char*)calloc((uInt)comprLenI, 1);
+	comprI = (unsigned char*)calloc((unsigned int)comprLenI, 1);
 	err = compress(comprI, &comprLenI, (const Bytef*)pF, len);
 
 	j=(int)comprLenM;
@@ -1660,16 +1660,16 @@ void MSReader::readCompressSpec(FILE* fileIn, MSScanInfo& ms, Spectrum& s){
 	Peak_T p;
 
 	//variables for compressed files
-	uLong uncomprLen;
-	uLong mzLen, intensityLen;
+	unsigned long uncomprLen;
+	unsigned long mzLen, intensityLen;
 	unsigned char *compr;
 	double *mz;
 	float *intensity;
 
 	fread(&i,4,1,fileIn);
-	mzLen = (uLong)i;
+	mzLen = (unsigned long)i;
 	fread(&i,4,1,fileIn);
-	intensityLen = (uLong)i;
+	intensityLen = (unsigned long)i;
 
 	compr = new unsigned char[mzLen];
 	mz = new double[ms.numDataPoints];

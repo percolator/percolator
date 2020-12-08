@@ -107,7 +107,6 @@ typedef __int64 off64_t; //off_t is only 32-bit on 32-bit windows
 #define ALLZERO_SPECTRA_COMPARISON -2.0f;
 
 typedef float flt_map_type;
-typedef unsigned int uint;
 typedef std::set<flt_map_type> flt_set;
 typedef std::map<flt_map_type, flt_map_type> flt_map;
 typedef std::map<flt_map_type, int> flt_idx_map;
@@ -143,7 +142,7 @@ const static double SQRSUM_NULL = -1.0;
 
 ///summarizes the dimensions of a 2D array
 
-uint rand_in_range( uint low, uint high);
+unsigned int rand_in_range( unsigned int low, unsigned int high);
 
 void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num_rts_segments,
                         std::vector<std::pair<int,int> > & mzs_segs,
@@ -354,9 +353,9 @@ double area_under_curve ( const std::vector<T> & vals ) {
 ///reverses a vector in-place
 template<typename data_type>
 void reverse_vect( std::vector<data_type> & v ) {
-  uint last = v.size() - 1;
+  unsigned int last = v.size() - 1;
   data_type t;
-  for ( uint i = 0 ; i < v.size() / 2 ; i++ ) {
+  for ( unsigned int i = 0 ; i < v.size() / 2 ; i++ ) {
     t = v[i];
     v[i] = v[last-i];
     v[last-i] = t;
@@ -496,7 +495,7 @@ template<typename data_type>
 std::vector<double> vect_multd( std::vector<data_type> & a, std::vector<data_type> & b) {
 	assert(a.size() == b.size());
 	std::vector<double> t(a.size());
-	for ( uint i = 0 ; i < a.size() ; i++ ) {
+	for ( unsigned int i = 0 ; i < a.size() ; i++ ) {
 		t[i] = a[i] * b[i];
 	}
 	return t;
@@ -506,9 +505,9 @@ std::vector<double> vect_multd( std::vector<data_type> & a, std::vector<data_typ
 template <typename data_type>
 data_type mult_accum_vects( const std::vector<data_type> & a, const std::vector<data_type> & b ) {
     assert(a.size() == b.size());
-    uint lim = static_cast<uint>(a.size());
+    unsigned int lim = static_cast<unsigned int>(a.size());
     data_type accum = (data_type)0.0;
-	for ( uint i = 0 ; i < lim ; i++ ) {
+	for ( unsigned int i = 0 ; i < lim ; i++ ) {
        accum += a[i] * b[i];
 	}
     return accum;
@@ -564,16 +563,16 @@ bool Comp_PairFloatOther_LessThan(const std::pair<float,T>& a, const std::pair<f
 }
 
 template<typename data_type>
-uint max_idx_vect( std::vector<data_type> & v ) {
+unsigned int max_idx_vect( std::vector<data_type> & v ) {
   return max_idx_vect_bound(v,0,v.size());
 };
 
 ///returns maximum index within bounds [ start, stop ) (not inclusive of stop)
 template<typename data_type>
-uint max_idx_vect_bound( std::vector<data_type> & v , uint start, uint stop ) {
-  uint max_idx = start;
+unsigned int max_idx_vect_bound( std::vector<data_type> & v , unsigned int start, unsigned int stop ) {
+  unsigned int max_idx = start;
   data_type max = (data_type)0;
-  for ( uint i = start; i < stop ; i++ ) {
+  for ( unsigned int i = start; i < stop ; i++ ) {
     if ( max < v[i] ) {
       max = v[i];
       max_idx = i;
@@ -584,10 +583,10 @@ uint max_idx_vect_bound( std::vector<data_type> & v , uint start, uint stop ) {
 
 ///returns index of minimum values within bounds [ start, stop ) (not inclusive of stop)
 template<typename data_type>
-uint min_idx_vect_bound( std::vector<data_type> & v , uint start, uint stop ) {
-  uint min_idx = start;
+unsigned int min_idx_vect_bound( std::vector<data_type> & v , unsigned int start, unsigned int stop ) {
+  unsigned int min_idx = start;
   data_type min = (data_type)0;
-  for ( uint i = start; i < stop ; i++ ) {
+  for ( unsigned int i = start; i < stop ; i++ ) {
     if ( min > v[i] ) {
       min = v[i];
       min_idx = i;
@@ -655,7 +654,7 @@ double round_to_dbl(double n, double r);
 ///are all values in the vector unique
 template<typename T>
 bool unique_vect ( std::vector<T> & v) {
-	for ( uint i = 0 ; i < v.size() - 1 ; i++ ) {
+	for ( unsigned int i = 0 ; i < v.size() - 1 ; i++ ) {
 		if ( v[i] == v[i+1] ) {
 			return false;
 		}
@@ -666,7 +665,7 @@ bool unique_vect ( std::vector<T> & v) {
 ///is the vector monotonically increasing?				
 template<typename T> 
 bool monotonic_vect ( std::vector<T> & v) {
-	for ( uint i = 0 ; i < v.size() - 1 ; i++ ) {
+	for ( unsigned int i = 0 ; i < v.size() - 1 ; i++ ) {
 		if ( v[i+1] < v[i] ) 
 			return false;
 	}
@@ -696,10 +695,10 @@ double sqrsum(std::vector<T> & a );
 //TODO -- calculate sqrsum...
 
 //template< typename data_type>
-//uint get_lh_idx (std::vector<data_type> & v, data_type lookup );
+//unsigned int get_lh_idx (std::vector<data_type> & v, data_type lookup );
 
-//uint get_lh_idx (std::vector<float> & v, float lookup );
-//uint get_lh_idx (std::vector<int> & v, int lookup );
+//unsigned int get_lh_idx (std::vector<float> & v, float lookup );
+//unsigned int get_lh_idx (std::vector<int> & v, int lookup );
 
 
 /** get_lh_idx --
@@ -711,7 +710,7 @@ double sqrsum(std::vector<T> & a );
 
 */
 template< typename T>
-uint get_lh_idx (std::vector<T> & v, T lookup ) {
+unsigned int get_lh_idx (std::vector<T> & v, T lookup ) {
     assert(monotonic_vect(v));
     typename std::vector<T>::iterator begin = v.begin();
     typename std::vector<T>::iterator end = v.end();
@@ -733,7 +732,7 @@ template <typename T>
 void output_vector ( std::ostream & o, std::vector<T> & v, char delim=' ' ) {
     //o << '[';
     if ( v.size() > 0 ) {
-	for ( uint i = 0; i < v.size() - 1; i++ ) {
+	for ( unsigned int i = 0; i < v.size() - 1; i++ ) {
          o << v[i] << delim;
 	}
     o << v[v.size()-1];
@@ -758,11 +757,11 @@ int retain_vector ( const std::vector<int> & idxs,  const std::vector<T> & vals,
 	 std::sort(idxs_c.begin(), idxs_c.end());
      
 	 std::list<T> keep_vals(0);
-	 for ( uint i = 0 ; i < vals.size() ; i++ ) {
+	 for ( unsigned int i = 0 ; i < vals.size() ; i++ ) {
           keep_vals.push_back(vals[i]);
 	 }
      typename std::list<T >::iterator ki = keep_vals.begin();
-     uint i_idx = 0;
+     unsigned int i_idx = 0;
 
 
      int retained = 0;
@@ -788,7 +787,7 @@ int retain_vector ( const std::vector<int> & idxs,  const std::vector<T> & vals,
 	 }
      ret.resize(keep_vals.size());
      typename std::list<T>::iterator k = keep_vals.begin();
-	 for ( uint i = 0 ; i < keep_vals.size() ; i++ ) {
+	 for ( unsigned int i = 0 ; i < keep_vals.size() ; i++ ) {
           ret[i] = *k;
           k++;
 	 }
@@ -803,9 +802,9 @@ template <typename T>
 void average_mat_2d ( const std::vector< std::vector<T> > & data, std::vector<T> & avg ) {
    assert(data[0].size() == avg.size());
    //iterate over each member of data (i) 
-   for ( uint avg_idx = 0 ; avg_idx < avg.size() ; avg_idx++ ) {
+   for ( unsigned int avg_idx = 0 ; avg_idx < avg.size() ; avg_idx++ ) {
        T s = (T)0;
-       for ( uint data_idx = 0; data_idx < data.size() ; data_idx++ ) {
+       for ( unsigned int data_idx = 0; data_idx < data.size() ; data_idx++ ) {
           s += data[data_idx][avg_idx];
        }
        avg[avg_idx] = s / static_cast<T>(data.size());
@@ -816,7 +815,7 @@ void average_mat_2d ( const std::vector< std::vector<T> > & data, std::vector<T>
 template <typename T>
 void allocate_2D_vector ( size_t d1, size_t d2 , std::vector< std::vector<T> > & mod_vect ) {
   mod_vect.resize(d1);
-  for ( uint i = 0; i < d1 ; i++ ) {
+  for ( unsigned int i = 0; i < d1 ; i++ ) {
     mod_vect[i].resize(d2);
   }  
 }

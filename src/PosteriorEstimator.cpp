@@ -38,7 +38,7 @@ using namespace std;
 #include "Transform.h"
 #include "Globals.h"
 
-static unsigned int noIntervals = 500;
+static int noIntervals = 500;
 static unsigned int numLambda = 100;
 static double maxLambda = 0.5;
 
@@ -302,7 +302,7 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
   double estPx_lt_zj = 0.0;
   double E_f1_mod_run_tot = 0.0;
   
-  int binsLeft = static_cast<int>(noIntervals - 1);
+  int binsLeft = noIntervals - 1;
   double targetedBinSize = max(static_cast<double>(combined.size()) / (double)(noIntervals), 1.0);
   
   std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
@@ -734,7 +734,7 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
   if (cmd.optionSet("number-of-bins")) {
-    noIntervals = cmd.getUInt("number-of-bins", 1, INT_MAX);
+    noIntervals = cmd.getInt("number-of-bins", 1, INT_MAX);
   }
   if (cmd.optionSet("epsilon-cross-validation")) {
     BaseSpline::convergeEpsilon = cmd.getDouble("epsilon-cross-validation", 0.0, 1.0);
