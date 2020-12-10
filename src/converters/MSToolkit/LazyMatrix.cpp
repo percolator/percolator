@@ -20,7 +20,7 @@ LazyMatrix * flip_lazy_matrix( LazyMatrix & lm ) {
 	LazyMatrix * new_lm = new LazyMatrix(lm.cols(), lm.rows(), LM_FULL_DATA , lm.matrix_fh );
 	for ( uint j = 0 ; j < lm.rows() ; j++ ) {
 		for ( uint i = 0 ; i < lm.cols() ; i++ ) {
-			new_lm->set_val(i,j, lm(j,i) );
+			new_lm->set_val(static_cast<int>(i),static_cast<int>(j), lm(static_cast<int>(j),static_cast<int>(i)) );
 		}
 	}
 	return new_lm;
@@ -32,16 +32,16 @@ LazyMatrix::LazyMatrix() : m(), nrows(0), ncols(0),
 }
   
     	
-LazyMatrix::LazyMatrix(int r, int c, sparse_level l, FILE * fh, off_t data_start_offset) : m(r), nrows(r),
+LazyMatrix::LazyMatrix(int r, int c, sparse_level l, FILE * fh, off_t data_start_offset) : m(static_cast<std::size_t>(r)), nrows(r),
 								  ncols(c), sp_level(l), matrix_fh(fh), data_offset(data_start_offset) {
   common_init();
   if ( sp_level == LM_FULL_DATA ) {
-    for ( int i = 0 ; i < nrows ; i++ ) {
-      m[i] = new vector<value_type>(ncols);
+    for ( std::size_t i = 0 ; i < nrows ; i++ ) {
+      m[i] = new vector<value_type>(static_cast<std::size_t>(ncols));
     }	
   }
   else {
-    for ( int i = 0 ; i < nrows; i++ ) {
+    for ( std::size_t i = 0 ; i < nrows; i++ ) {
       m[i] = NULL;
     }
   } 
@@ -98,13 +98,13 @@ LazyMatrix::LazyMatrix( const self & x ) : m(x.m), nrows(x.nrows), ncols(x.ncols
   void LazyMatrix::to_full_data(bool force) {
       if ( force ||  !( sp_level == LM_FULL_DATA) ) { 
           sp_level = LM_FULL_DATA;
-          for ( int i = 0 ; i < m.size() ; i++ ) {
+          for ( std::size_t i = 0 ; i < m.size() ; i++ ) {
               if ( m[i] == NULL ) {
-                  m[i] = new vector<value_type>(cols());
+                  m[i] = new vector<value_type>(static_cast<std::size_t>(cols()));
                   //TODO -- actually read from file here...
               }
               else if ( m[i]->size() == 0 ) {
-                  m[i]->resize(cols());
+                  m[i]->resize(static_cast<std::size_t>(cols()));
               }
           }
       }
@@ -112,13 +112,13 @@ LazyMatrix::LazyMatrix( const self & x ) : m(x.m), nrows(x.nrows), ncols(x.ncols
 void LazyMatrix::to_full_data(const value_type v, bool force) {
       if ( force || !( sp_level == LM_FULL_DATA) ) { 
 	sp_level = LM_FULL_DATA;
-	  for ( int i = 0 ; i < m.size() ; i++ ) {
+	  for ( std::size_t i = 0 ; i < m.size() ; i++ ) {
 	    if ( m[i] == NULL ) {
-	      m[i] = new vector<value_type>(cols(),v);
+	      m[i] = new vector<value_type>(static_cast<std::size_t>(cols()),v);
               //TODO -- actually read from file here...
 	    }
 	    else if ( m[i]->size() == 0 ) {
-              m[i]->resize(cols(),v);
+              m[i]->resize(static_cast<std::size_t>(cols()),v);
 	    }
 	  }
 	  
@@ -136,10 +136,10 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 
   void LazyMatrix::set_row( vector<float> & r_values, int i ) {
 	  assert(r_values.size() == cols());
-	  if ( m[i] == NULL ) {
-		  m[i] = new vector<float>(r_values.size());
+	  if ( m[static_cast<std::size_t>(i)] == NULL ) {
+		  m[static_cast<std::size_t>(i)] = new vector<float>(r_values.size());
 	  }
-	  copy(r_values.begin(),r_values.end(),m[i]->begin());
+	  copy(r_values.begin(),r_values.end(),m[static_cast<std::size_t>(i)]->begin());
   }
 
   void LazyMatrix::set_col( vector<float> & c_values, int j ) {
@@ -147,19 +147,19 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 		  cerr << "converting matrix to full_data mode" << endl;
 		  to_full_data();
 	  }
-	  for ( int i = 0 ; i < nrows ; i++ ) {
-		  set_val(i,j,c_values[i]);
+	  for ( std::size_t i = 0 ; i < nrows ; i++ ) {
+		  set_val(static_cast<int>(i),j,c_values[i]);
 	  }
   }
 
   void LazyMatrix::_get_row_lazy ( vector<float> & r_out , int i ) const {
       
-      if ( m[i] == NULL ) {
-          FSEEK(matrix_fh, (off64_t)this->data_offset + i * cols() * sizeof(value_type) , SEEK_SET);
+      if ( m[static_cast<std::size_t>(i)] == NULL ) {
+          FSEEK(matrix_fh, (off64_t)this->data_offset + (off64_t)(static_cast<std::size_t>(i * cols()) * sizeof(value_type)) , SEEK_SET);
 #ifdef DEBUG
 	  //          std::cerr << "lazy reading row # " << i << ", offset:" << FTELL(matrix_fh) << std::endl;
 #endif
-          if(!fread(&(r_out[0]), sizeof(float) , cols() , matrix_fh))
+          if(!fread(&(r_out[0]), sizeof(float) , static_cast<std::size_t>(cols()) , matrix_fh))
 	  {
 	    cerr << "Error reading file in LazyMatrix.cpp" << endl;
 	  }
@@ -170,18 +170,18 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
       //seek to the correct position in the file
   }
   void LazyMatrix::_get_row_retain ( vector<float> & r_out, int i ) {
-        if ( m[i] == NULL ) {
-             m[i] = new vector<float>(cols());
-             FSEEK(matrix_fh, (off64_t)this->data_offset + i * cols() * sizeof(value_type) , SEEK_SET);
+        if ( m[static_cast<std::size_t>(i)] == NULL ) {
+             m[static_cast<std::size_t>(i)] = new vector<float>(static_cast<std::size_t>(cols()));
+             FSEEK(matrix_fh, (off64_t)this->data_offset + (off64_t)(static_cast<std::size_t>(i * cols()) * sizeof(value_type)) , SEEK_SET);
 #ifdef DEBUG
           std::cerr << "lazy reading row # " << i << ", offset:" << FTELL(matrix_fh) << std::endl;
 #endif
-             std::vector<float>::iterator b = this->m[i]->begin();
-             if(!fread(&(r_out[0]), sizeof(float) , cols() , matrix_fh))
+             std::vector<float>::iterator b = this->m[static_cast<std::size_t>(i)]->begin();
+             if(!fread(&(r_out[0]), sizeof(float) , static_cast<std::size_t>(cols()) , matrix_fh))
 	     {
 	      cerr << "Error reading file in LazyMatrix.cpp" << endl;
 	     }
-             copy(r_out.begin(), r_out.end(), m[i]->begin() );
+             copy(r_out.begin(), r_out.end(), m[static_cast<std::size_t>(i)]->begin() );
         }
         else {
            _get_row_full( r_out, i);
@@ -207,7 +207,7 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 
   void LazyMatrix::_get_row_full( vector<float> & r_out , int i ) const{
 	  assert(r_out.size() == cols() );
-	  copy(m[i]->begin(),m[i]->end(),r_out.begin());
+	  copy(m[static_cast<std::size_t>(i)]->begin(),m[static_cast<std::size_t>(i)]->end(),r_out.begin());
   }
 
   void LazyMatrix::get_col ( vector<float> & c_out, int j ) {
@@ -217,7 +217,7 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 	  }
     assert(c_out.size() == nrows);
     for ( int i = 0 ; i < nrows ; i++ ) {
-      c_out[i] = (*this)(i,j);
+      c_out[static_cast<std::size_t>(i)] = (*this)(i,j);
     }
   }
   
@@ -287,7 +287,7 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
   void LazyMatrix::remove_cols( int start_idx, int stop_idx ) {
      assert( (start_idx >= 0 && start_idx <= rows() && start_idx <= stop_idx ) && 
                   ( stop_idx >= 0 && stop_idx <= rows() ) );
-	  for ( int i = start_idx; i < stop_idx ; i++ ) {
+	  for ( std::size_t i = static_cast<std::size_t>(start_idx); i < stop_idx ; i++ ) {
 		  m[i]->erase(m[i]->begin() + start_idx, m[i]->begin() + stop_idx);
 	  }
 	  ncols = cols() - ( start_idx - stop_idx + 1);
@@ -295,14 +295,14 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 
 
   void LazyMatrix::remove_start_cols( int n ) {
-	  for ( int i = 0 ; i < rows() ; i++ ) {
+	  for ( std::size_t i = 0 ; i < rows() ; i++ ) {
 		  m[i]->erase(m[i]->begin(), m[i]->begin() + n);
 	  }
 	  ncols = cols() - n;
 
   }
   void LazyMatrix::remove_stop_cols( int n ) {
-	  for ( int i =0 ; i < rows() ; i++ ) {
+	  for ( std::size_t i =0 ; i < rows() ; i++ ) {
 		  m[i]->erase(m[i]->end() - n , m[i]->end());
 	  }
 	  ncols = cols() - n;
@@ -310,35 +310,35 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 
   void LazyMatrix::add_val ( float v ) {
      to_full_data();
-	 for ( uint i = 0 ; i < nrows ; i++ ) {
+	 for ( int i = 0 ; i < nrows ; i++ ) {
         vector<float> * r = get_row_p(i);
-		for ( uint e = 0 ; e < r->size(); e++ ) {
+		for ( std::size_t e = 0 ; e < r->size(); e++ ) {
            (*r)[e] += v;
 		}
 	 }
   }
   void LazyMatrix::mult_val ( float v ) {
      to_full_data();
-	 for ( uint i = 0 ; i < nrows ; i++ ) {
+	 for ( int i = 0 ; i < nrows ; i++ ) {
         vector<float> * r = get_row_p(i);
-		for ( uint e = 0 ; e < r->size(); e++ ) {
+		for ( std::size_t e = 0 ; e < r->size(); e++ ) {
            (*r)[e] *= v;
 		}
 	 }
   }
   void LazyMatrix::div_val ( float v ) {
      to_full_data();
-	 for ( uint i = 0 ; i < nrows ; i++ ) {
+	 for ( int i = 0 ; i < nrows ; i++ ) {
         vector<float> * r = get_row_p(i);
-		for ( uint e = 0 ; e < r->size(); e++ ) {
+		for ( std::size_t e = 0 ; e < r->size(); e++ ) {
            (*r)[e] /= v;
 		}
 	 }
   }
   void LazyMatrix::set_min_val( float v ) {
-    for ( uint i = 0 ; i < nrows ; i++ ) {
+    for ( int i = 0 ; i < nrows ; i++ ) {
       vector<float> * r = get_row_p(i);
-      for ( uint e = 0 ; e < r->size(); e++ ) {
+      for ( std::size_t e = 0 ; e < r->size(); e++ ) {
 	if ( (*r)[e] < v  ) {
 	  (*r)[e] = v;
 	}
@@ -348,9 +348,9 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
   }
 
   void LazyMatrix::set_max_val( float v ) {
-    for ( uint i = 0 ; i < nrows ; i++ ) {
+    for ( int i = 0 ; i < nrows ; i++ ) {
       vector<float> * r = get_row_p(i);
-      for ( uint e = 0 ; e < r->size(); e++ ) {
+      for ( std::size_t e = 0 ; e < r->size(); e++ ) {
 	if ( (*r)[e] > v  ) {
 	  (*r)[e] = v;
 	}
@@ -365,15 +365,15 @@ void LazyMatrix::to_full_data(const value_type v, bool force) {
 /* TODO FIX THIS TO ACTUALLY SHIFT LINEARLY, AND ADD THAT FUNCTIONALITY TO CRAW_C TO TEST FIRST */
 
 void LazyMatrix::column_shift( int shift ) {
-  vector<value_type> tmp_row(cols(),(value_type)0);
+  vector<value_type> tmp_row(static_cast<std::size_t>(cols()),(value_type)0);
   for ( uint i = 0 ;i < rows() ; i++ ) {
     for ( uint j = 0 ; j < cols() ; j++ ) {
-      uint dest_idx = j + shift;
+      uint dest_idx = j + static_cast<uint>(shift);
       if ( dest_idx < 0 ) continue;
       if ( dest_idx >= cols() ) break;
-      tmp_row[dest_idx] = (*this)(i,j);
+      tmp_row[dest_idx] = (*this)(static_cast<int>(i),static_cast<int>(j));
     }
-    set_row(tmp_row,i);
+    set_row(tmp_row,static_cast<int>(i));
 
     // a little inefficient, but this ensures that we zero-out data
     // beyond the shift constraints
@@ -388,29 +388,29 @@ void LazyMatrix::linear_shift( int shift ) {
     //fill the buffer with the first shift rows
     for ( uint i = 0; i < shift ; i++ ) {
       buf.push_back(m[i]);
-      m[i] = new vector<value_type>(cols(),(value_type)0);
+      m[i] = new vector<value_type>(static_cast<std::size_t>(cols()),(value_type)0);
     }
-    for ( uint i = shift; i < nrows; i++ ) {
+    for ( std::size_t i = static_cast<std::size_t>(shift); i < nrows; i++ ) {
       buf.push_back(m[i]);
       m[i] = buf[0];
       buf.pop_front();
     }
-    for ( uint i = 0 ; i < buf.size() ; i++ ) {
+    for ( std::size_t i = 0 ; i < buf.size() ; i++ ) {
       delete(buf[i]);
     }
   }
 
   else if ( shift < 0 ) {
-    uint offset = abs(shift);
+    uint offset = static_cast<uint>(abs(shift));
     for ( uint i = 0 ; i < offset ; i++ ) {
       delete(m[i]);
       m[i] = m[i+offset];
     }
-    for ( uint i = offset ; i < nrows - offset; i++ ) {
+    for ( uint i = offset ; i < nrows - static_cast<int>(offset); i++ ) {
       m[i] = m[i+offset];
     }
-    for ( uint i = nrows - offset ; i < nrows; i++ ) {
-      m[i] = new vector<value_type>(cols(),(value_type)0);
+    for ( uint i = static_cast<uint>(nrows - static_cast<int>(offset)) ; i < nrows; i++ ) {
+      m[i] = new vector<value_type>(static_cast<std::size_t>(cols()),(value_type)0);
     }
   }
 }  

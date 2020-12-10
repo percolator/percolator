@@ -39,7 +39,8 @@ void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::frag
     tabOutputStream << psm.id() << '\t' << label << '\t' << fss->scanNumber();
     tabOutputStream << '\t' << psm.experimentalMass() << '\t' << psm.calculatedMass();
     if (psm.observedTime().present()) {
-      tabOutputStream << '\t' << psm.observedTime() << '\t' << MassHandler::massDiff(psm.experimentalMass() ,psm.calculatedMass(),psm.chargeState());
+      tabOutputStream << '\t' << psm.observedTime() << '\t' << MassHandler::massDiff(psm.experimentalMass() ,
+        psm.calculatedMass(),static_cast<unsigned int>(psm.chargeState()));
     }
     BOOST_FOREACH (const double feature, psm.features().feature()) {
       tabOutputStream << '\t' << feature;
@@ -78,7 +79,7 @@ std::string FragSpectrumScanDatabase::decoratePeptide(const ::percolatorInNs::pe
   std::list<std::pair<int,std::string> >::const_iterator it;
   for (it = mods.begin(); it != mods.end(); ++it) {
     if (it->first <= peptideSeq.length()) {
-      peptideSeq.insert(it->first, it->second);
+      peptideSeq.insert(static_cast<std::size_t>(it->first), it->second);
     } else {
       peptideSeq.insert(peptideSeq.length(), it->second);
     }

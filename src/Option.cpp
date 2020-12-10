@@ -91,6 +91,10 @@ int CommandLineParser::getInt(std::string dest, int lower, int upper) {
   return val;
 }
 
+unsigned int CommandLineParser::getUInt(std::string dest, int lower, int upper){
+  return static_cast<unsigned int>(getInt(dest, lower, upper));
+}
+
 void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
                                      std::string help, std::string helpType,
                                      OptionOption typ, std::string dfault) {
@@ -164,7 +168,7 @@ void CommandLineParser::parseArgsParamFile(const std::string paramFile) {
     perc_argv.push_back(i->c_str());
   }
   
-  parseArgs(perc_args_vec.size(), (char**)&perc_argv.front());
+  parseArgs(static_cast<int>(perc_args_vec.size()), (char**)&perc_argv.front());
 }
 
 void CommandLineParser::error(std::string msg) {
@@ -193,7 +197,7 @@ void CommandLineParser::help() {
       desc += " <" + opts[i].helpType + ">";
     }
     while (j < opts[i].help.length()) {
-      std::cerr.width(descLen);
+      std::cerr.width(static_cast<std::streamsize>(descLen));
       std::cerr << left << desc;
       desc = " ";
       std::cerr.width(0);

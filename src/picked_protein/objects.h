@@ -145,7 +145,7 @@ namespace PercolatorCrux {
    * conjunction with DIGEST_T to define how peptides are generated.
    */
   typedef enum _enzyme_type ENZYME_T;
-};
+}
 
 
 

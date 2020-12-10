@@ -29,12 +29,12 @@
 
 svm_model* libsvm_wrapper::TrainModel(const std::vector<PSMDescription*> &psms, const int &number_features, const svm_parameter &parameter) {
   svm_model *svr_model;
-  int number_examples = psms.size();
+  int number_examples = static_cast<int>(psms.size());
   svm_problem data;
-  data.l = number_examples;
+  data.l = static_cast<std::size_t>(number_examples);
   data.x = new svm_node[number_examples];
   data.y = new double[number_examples];
-  for (int i = 0; i < number_examples; i++) {
+  for (std::size_t i = 0; i < number_examples; i++) {
     data.x[i].values = psms[i]->getRetentionFeatures();
     data.x[i].dim = number_features;
     data.y[i] = psms[i]->getRetentionTime();
@@ -226,33 +226,33 @@ svm_model* libsvm_wrapper::LoadModel(FILE* fp) {
     } else if (strcmp(cmd, "total_sv") == 0) {
       ret = fscanf(fp, "%d", &model->l);
     } else if (strcmp(cmd, "rho") == 0) {
-      int n = model->nr_class * (model->nr_class - 1) / 2;
+      std::size_t n = static_cast<std::size_t>(model->nr_class * (model->nr_class - 1) / 2);
       model->rho = (double *)malloc(n*sizeof(double));
-      for (int i = 0; i < n; i++) {
+      for (std::size_t i = 0; i < n; i++) {
         ret = fscanf(fp, "%lf", &model->rho[i]);
       }
     } else if (strcmp(cmd, "label") == 0) {
-      int n = model->nr_class;
+      std::size_t n = static_cast<std::size_t>(model->nr_class);
       model->label = (int *)malloc(n*sizeof(int));
-      for (int i = 0; i < n; i++) {
+      for (std::size_t i = 0; i < n; i++) {
         ret = fscanf(fp, "%d", &model->label[i]);
       }
     } else if (strcmp(cmd, "probA") == 0) {
-      int n = model->nr_class * (model->nr_class - 1) / 2;
+      std::size_t n = static_cast<std::size_t>(model->nr_class * (model->nr_class - 1) / 2);
       model->probA = (double *)malloc(n*sizeof(double));
-      for (int i = 0; i < n; i++) {
+      for (std::size_t i = 0; i < n; i++) {
         ret = fscanf(fp, "%lf", &model->probA[i]);
       }
     } else if (strcmp(cmd, "probB") == 0) {
-      int n = model->nr_class * (model->nr_class - 1) / 2;
+      std::size_t n = static_cast<std::size_t>(model->nr_class * (model->nr_class - 1) / 2);
       model->probB = (double *)malloc(n*sizeof(double));
-      for (int i = 0; i < n; i++) {
+      for (std::size_t i = 0; i < n; i++) {
         ret = fscanf(fp, "%lf", &model->probB[i]);
       }
     } else if (strcmp(cmd, "nr_sv") == 0) {
-      int n = model->nr_class;
+      std::size_t n = static_cast<std::size_t>(model->nr_class);
       model->nSV = (int *)malloc(n*sizeof(int));
-      for (int i = 0; i < n; i++) {
+      for (std::size_t i = 0; i < n; i++) {
         ret = fscanf(fp, "%d", &model->nSV[i]);
       }
     } else if (strcmp(cmd, "SV") == 0) {
@@ -280,7 +280,7 @@ svm_model* libsvm_wrapper::LoadModel(FILE* fp) {
   double value;
   int index = 0;
   // read the max dimension of all vectors
-  while ((c = fgetc(fp)) != EOF) {
+  while ((c = static_cast<char>(fgetc(fp))) != EOF) {
     if (isspace(c)) {
       index = 0;
     } else if (c == ':') {
@@ -310,8 +310,8 @@ svm_model* libsvm_wrapper::LoadModel(FILE* fp) {
   out:
 #endif
   fseek(fp, pos, SEEK_SET);
-  int m = model->nr_class - 1;
-  int l = model->l;
+  std::size_t m = static_cast<std::size_t>(model->nr_class - 1);
+  std::size_t l = static_cast<std::size_t>(model->l);
   model->sv_coef =  (double **)malloc(m*sizeof(double*));
   int i;
   for (i = 0; i < m; i++) {
@@ -320,13 +320,13 @@ svm_model* libsvm_wrapper::LoadModel(FILE* fp) {
 #ifdef _DENSE_REP
   model->SV = (svm_node*) malloc(l*sizeof(svm_node));
   for (i = 0; i < l; i++) {
-    model->SV[i].values =  (double *)malloc(elements*sizeof(double));
+    model->SV[i].values =  (double *)malloc(static_cast<std::size_t>(elements)*sizeof(double));
     model->SV[i].dim = 0;
     for (int k = 0; k < m; k++) {
       ret = fscanf(fp, "%lf", &model->sv_coef[k][i]);
     }
     int* d = &(model->SV[i].dim);
-    while ((c = getc(fp)) != '\n') {
+    while ((c = static_cast<char>(getc(fp))) != '\n') {
       if (!isspace(c)) {
         ungetc(c, fp);
         ret = fscanf(fp, "%d:%lf", &index, &value);

@@ -506,7 +506,7 @@ std::vector<double> vect_multd( std::vector<data_type> & a, std::vector<data_typ
 template <typename data_type>
 data_type mult_accum_vects( const std::vector<data_type> & a, const std::vector<data_type> & b ) {
     assert(a.size() == b.size());
-    uint lim = a.size();
+    uint lim = static_cast<uint>(a.size());
     data_type accum = (data_type)0.0;
 	for ( uint i = 0 ; i < lim ; i++ ) {
        accum += a[i] * b[i];
@@ -605,7 +605,7 @@ uint min_idx_vect_bound( std::vector<data_type> & v , uint start, uint stop ) {
 template <typename data_type>
 void  load_type(data_type * d, const char * field_data, int data_len) {
 	//assert(data_len == sizeof(data_type));
-		memcpy(d,field_data,data_len);
+		memcpy(d,field_data,static_cast<std::size_t>(data_len));
 }
 
 ///crude serializer for arrays. writes an array to an ostream as bytes
@@ -621,7 +621,7 @@ void load_int_type( data_type * out_val, char * field_data, int data_len );
 template <typename data_type>
 void load_array( data_type * out_val, const char * field_data, int char_len ) {
 	//TODO -- deal with different endianness in the data
-	memcpy((void*)out_val, (void*)field_data, char_len );	
+	memcpy((void*)out_val, (void*)field_data, static_cast<std::size_t>(char_len) );	
 };
 
 
@@ -727,8 +727,6 @@ uint get_lh_idx (std::vector<T> & v, T lookup ) {
     else { return ( lh - 1 - begin ) ; }
 }
 
-std::vector<std::string> * split_string( std::string & s, char c );
-
 
 
 template <typename T>
@@ -810,7 +808,7 @@ void average_mat_2d ( const std::vector< std::vector<T> > & data, std::vector<T>
        for ( uint data_idx = 0; data_idx < data.size() ; data_idx++ ) {
           s += data[data_idx][avg_idx];
        }
-       avg[avg_idx] = s / data.size();
+       avg[avg_idx] = s / static_cast<T>(data.size());
    }
 }
 
@@ -838,7 +836,7 @@ void mydelete ( T* & in_arg ) {
 namespace crawstats {
 
 
-    const float LOG2(0.69314718055994530942);
+    const float LOG2(static_cast<float>(0.69314718055994530942));
 
 template <typename T>
     double median ( const std::vector<T> & v ) {
@@ -859,7 +857,7 @@ template <typename T>
         }
         //even
         else {
-          int rh_mid = v_c.size() / 2;
+          std::size_t rh_mid = v_c.size() / 2;
           return (v_c[rh_mid] + v_c[rh_mid-1]) / 2.0;
         }
     }

@@ -47,7 +47,6 @@ void DescriptionOfCorrect::calcRegressionFeature(PSMDescription* psm) {
   if (psm->getRetentionFeatures()) {
     RTModel::fillFeaturesAllIndex(pep, psm->getRetentionFeatures());
   }
-  //cout <<  peptide << " " << pep << " " << psm->getRetentionFeatures()[0] << endl;
 }
 
 void DescriptionOfCorrect::trainCorrect() {
@@ -65,8 +64,8 @@ void DescriptionOfCorrect::trainCorrect() {
     avgPI = 0.0;
     avgDM = 0.0;
   } else {
-    avgPI = piSum / psms.size();
-    avgDM = dMSum / psms.size();
+    avgPI = piSum / static_cast<double>(psms.size());
+    avgDM = dMSum / static_cast<double>(psms.size());
   }
   rtModel.trainRetention(psms);
   if (VERB > 2) {
@@ -78,7 +77,7 @@ void DescriptionOfCorrect::trainCorrect() {
 void DescriptionOfCorrect::setFeatures(PSMDescription* psm) {
   assert(DataSet::getFeatureNames().getDocFeatNum() > 0);
   psm->setPredictedRetentionTime(rtModel.estimateRT(psm->getRetentionFeatures()));
-  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
+  size_t docFeatNum = static_cast<std::size_t>(DataSet::getFeatureNames().getDocFeatNum());
   double dm = abs(psm->getMassDiff() - avgDM);
   double drt = abs(psm->getRetentionTime() - psm->getPredictedRetentionTime());
   if (docFeatures & 1) {
@@ -90,7 +89,6 @@ void DescriptionOfCorrect::setFeatures(PSMDescription* psm) {
   if (docFeatures & 4) {
     psm->features[docFeatNum + 2] = drt;
   }
-  // double ddrt=drt/(1+log(max(1.0,PSMDescriptionDOC::unnormalize(psm->getRetentionTime))));
   if (docFeatures & 8) {
     psm->features[docFeatNum + 3] = sqrt(dm * drt);
   }
@@ -98,7 +96,7 @@ void DescriptionOfCorrect::setFeatures(PSMDescription* psm) {
 
 void DescriptionOfCorrect::setFeaturesNormalized(PSMDescription* psm, Normalizer* pNorm) {
   setFeatures(psm);
-  size_t docFeatNum = DataSet::getFeatureNames().getDocFeatNum();
+  size_t docFeatNum = static_cast<std::size_t>(DataSet::getFeatureNames().getDocFeatNum());
   if (docFeatures & 1) {
     psm->features[docFeatNum] = pNorm->normalize(psm->features[docFeatNum], docFeatNum);
   }
@@ -108,7 +106,6 @@ void DescriptionOfCorrect::setFeaturesNormalized(PSMDescription* psm, Normalizer
   if (docFeatures & 4) {
     psm->features[docFeatNum + 2] = pNorm->normalize(psm->features[docFeatNum + 2], docFeatNum + 2);
   }
-  // double ddrt=drt/(1+log(max(1.0,PSMDescription::unnormalize(psm->getRetentionTime))));
   if (docFeatures & 8) {
     psm->features[docFeatNum + 3] = pNorm->normalize(psm->features[docFeatNum + 3], docFeatNum + 3);
   }

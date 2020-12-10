@@ -22,6 +22,17 @@
  *  version.                                                                *
  ***************************************************************************/
 
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+  #define GCC_COMPILER 1
+#else
+  #define GCC_COMPILER 0
+#endif
+#if GCC_COMPILER
+  #pragma GCC diagnostic ignored "-Wunused-result"
+  #pragma GCC diagnostic ignored "-Wformat-overflow="
+#endif
+
+
 #ifndef _RAMP_H
 #define _RAMP_H
 

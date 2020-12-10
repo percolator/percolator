@@ -117,7 +117,7 @@ TEST_F(DataManagerTest, TestInitCleanFeatureTable) {
   DataManager::LoadPeptides(test_file1, false, true, psms, aa_alphabet);
   double *feat = NULL;
   feat = dm.InitFeatureTable(10, psms);
-  ASSERT_TRUE(feat != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;;
+  ASSERT_TRUE(feat != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;
   vector<PSMDescription>::iterator it = psms.begin();
   for( ; it != psms.end(); ++it) {
     EXPECT_TRUE(it->getRetentionFeatures() != NULL) << "TestInitCleanFeatureTable (Init step) error" << endl;

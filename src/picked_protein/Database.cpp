@@ -203,8 +203,6 @@ void Database::print(
   FILE* file    ///< output file stream -out             
   )
 {
-  Protein* protein = NULL;
-
   fprintf(file, "filename:%s\n", fasta_filename_.c_str());
 }
 
@@ -217,7 +215,7 @@ void Database::addProtein(
   // add protein to database
   proteins_->push_back(protein);
   
-  protein->setProteinIdx(proteins_->size()-1);
+  protein->setProteinIdx(static_cast<unsigned int>(proteins_->size())-1);
 
   if (is_hashed_) {
     char* id = protein->getIdPointer();
@@ -259,9 +257,9 @@ bool Database::parseTextFasta()
     return false;
   }
    
-  working_index = ftell(file);
+  working_index = static_cast<unsigned long>(ftell(file));
   // check each line until reach '>' line
-  while((line_length =  getline(&new_line, &buf_length, file)) != -1){
+  while((line_length =  static_cast<int>(getline(&new_line, &buf_length, file))) != -1){
     if(new_line[0] == '>'){
       // the new protein to be added
       new_protein = new Protein();
@@ -274,7 +272,7 @@ bool Database::parseTextFasta()
       }
       else{
         // rewind to the beginning of the protein to include ">" line
-        fseek(file, working_index, SEEK_SET);
+        fseek(file, static_cast<long>(working_index), SEEK_SET);
         
         // failed to parse the protein from fasta file
         // protein offset is set in the parse_protein_fasta_file method
@@ -293,10 +291,10 @@ bool Database::parseTextFasta()
       // add protein to database
       proteins_->push_back(new_protein);
       // set protein index, database
-      new_protein->setProteinIdx(proteins_->size()-1);
+      new_protein->setProteinIdx(static_cast<unsigned int>(proteins_->size())-1);
       new_protein->setDatabase(this);
     }
-    working_index = ftell(file);
+    working_index = static_cast<unsigned long>(ftell(file));
   }
   free(new_line);
   
@@ -365,7 +363,7 @@ DECOY_TYPE_T Database::getDecoyType(){
  */
 unsigned int Database::getNumProteins()
 {
-  return proteins_->size();
+  return static_cast<unsigned int>(proteins_->size());
 }
 
 /**

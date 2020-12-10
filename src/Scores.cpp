@@ -170,12 +170,12 @@ void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores
 
 void Scores::postMergeStep() {
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder> ());
-  totalNumberOfDecoys_ = count_if(scores_.begin(),
+  totalNumberOfDecoys_ = static_cast<unsigned int>(count_if(scores_.begin(),
       scores_.end(),
-      mem_fun_ref(&ScoreHolder::isDecoy));
-  totalNumberOfTargets_ = count_if(scores_.begin(),
+      mem_fn(&ScoreHolder::isDecoy)));
+  totalNumberOfTargets_ = static_cast<unsigned int>(count_if(scores_.begin(),
       scores_.end(),
-      mem_fun_ref(&ScoreHolder::isTarget));
+      mem_fn(&ScoreHolder::isTarget)));
   targetDecoySizeRatio_ = totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
   checkSeparationAndSetPi0();
 }
@@ -191,7 +191,7 @@ void Scores::printRetentionTime(ostream& outs, double fdr) {
 }
 
 double Scores::calcScore(const double* feat, const std::vector<double>& w) const {
-  register int ix = FeatureNames::getNumFeatures();
+  register std::size_t ix = FeatureNames::getNumFeatures();
   register double score = w[ix];
   for (; ix--;) {
     score += feat[ix] * w[ix];
@@ -201,7 +201,7 @@ double Scores::calcScore(const double* feat, const std::vector<double>& w) const
 
 void Scores::scoreAndAddPSM(ScoreHolder& sh, 
     const std::vector<double>& rawWeights, FeatureMemoryPool& featurePool) {
-  const unsigned int numFeatures = FeatureNames::getNumFeatures();
+  const unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   if (DataSet::getCalcDoc()) {
     size_t numRTFeatures = RTModel::totalNumRTFeatures();
     double* rtFeatures = new double[numRTFeatures]();
@@ -257,8 +257,8 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
   scores_.clear();
   setHandler.populateScoresWithPSMs(scores_, 1);
   setHandler.populateScoresWithPSMs(scores_, -1);
-  totalNumberOfTargets_ = setHandler.getSizeFromLabel(1);
-  totalNumberOfDecoys_ = setHandler.getSizeFromLabel(-1);
+  totalNumberOfTargets_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(1));
+  totalNumberOfDecoys_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(-1));
   targetDecoySizeRatio_ = (double)totalNumberOfTargets_ / totalNumberOfDecoys_;
   
   if (VERB > 1) {
@@ -314,10 +314,10 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   std::vector<int> remain(xval_fold);
   // set values for remain: initially each fold is assigned (tot number of
   // scores_ / tot number of folds)
-  int fold = xval_fold, ix = scores_.size();
+  int fold = static_cast<int>(xval_fold), ix = static_cast<int>(scores_.size());
   while (fold--) {
-    remain[fold] = ix / (fold + 1);
-    ix -= remain[fold];
+    remain[static_cast<std::size_t>(fold)] = ix / (fold + 1);
+    ix -= remain[static_cast<std::size_t>(fold)];
   }
   
   std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
@@ -392,7 +392,7 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isTarget() == isTarget) {
-      double* newAddress = featurePool.addressFromIdx(idx++);
+      double* newAddress = featurePool.addressFromIdx(static_cast<unsigned int>(idx++));
       double* oldAddress = scoreIt->pPSM->features;
       while (movedAddresses.find(oldAddress) != movedAddresses.end()) {
         oldAddress = movedAddresses[oldAddress];
@@ -445,7 +445,7 @@ void Scores::normalizeScores(double fdr) {
  * @return number of true positives
  */
 int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
-  unsigned int ix;
+  std::size_t ix;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     scoreIt->score = calcScore(scoreIt->pPSM->features, w);
@@ -471,7 +471,7 @@ int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOn
 void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
   combined.clear();
   transform(scores_.begin(), scores_.end(), back_inserter(combined),
-            mem_fun_ref(&ScoreHolder::toPair));
+            mem_fn(&ScoreHolder::toPair));
 }
 
 /**
@@ -504,7 +504,7 @@ int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
 }
 
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
-  unsigned int ix2 = 0;
+  std::size_t ix2 = 0;
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isDecoy()) {
@@ -513,12 +513,13 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
       data.C[ix2++] = cneg;
     }
   }
-  data.negatives = ix2;
+  data.negatives = static_cast<int>(ix2);
 }
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     const double cpos, const bool trainBestPositive) {
-  unsigned int ix2 = data.negatives, p = 0;
+  std::size_t ix2 = static_cast<std::size_t>(data.negatives); 
+  int p = 0;
   
   std::vector<ScoreHolder>::iterator lastUniqueIt = scores_.end();
   if (trainBestPositive) {
@@ -539,7 +540,7 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     }
   }
   data.positives = p;
-  data.m = ix2;
+  data.m = static_cast<int>(ix2);
 }
 
 void Scores::weedOutRedundant() {
@@ -666,12 +667,12 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
       int positives = calcQ(initialSelectionFdr, skipDecoysPlusOne);
       if (positives > bestPositives) {
         bestPositives = positives;
-        bestFeature = featNo;
+        bestFeature = static_cast<int>(featNo);
         lowBest = (i == 0);
       }
     }
   }
-  for (int ix = FeatureNames::getNumFeatures(); ix--;) {
+  for (std::size_t ix = FeatureNames::getNumFeatures(); ix--;) {
     direction[ix] = 0;
   }
   
@@ -691,7 +692,7 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
   }
   
   if (bestFeature >= 0) {
-    direction[bestFeature] = (lowBest ? -1 : 1);
+    direction[static_cast<std::size_t>(bestFeature)] = (lowBest ? -1 : 1);
   }
   
   if (VERB > 1) {
@@ -751,4 +752,8 @@ unsigned Scores::getQvaluesBelowLevel(double level) {
     }
   }
   return hits;
+}
+
+void Scores::setUsePi0(bool usePi0){
+  usePi0_ = usePi0;
 }

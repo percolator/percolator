@@ -73,7 +73,7 @@ namespace crawutils {
     else {
       filename = std::string(last_pathsep+1);
       original_filename = filename;
-      dirpath = std::string(fname,(last_pathsep - fname));
+      dirpath = std::string(fname,static_cast<std::size_t>(last_pathsep - fname));
       original_dirpath = dirpath;
       std::cerr << "filename is " << filename << ", dirpath is:" << dirpath << std::endl;
     }
@@ -157,8 +157,8 @@ namespace crawutils {
   }	
 
 std::string trim_whitespace ( const std::string & in_str ) {
-   int start_ws = in_str.find_first_not_of(" \t\n\r");
-   int stop_ws  = in_str.find_last_not_of(" \t\n\r");
+   std::size_t start_ws = in_str.find_first_not_of(" \t\n\r");
+   std::size_t stop_ws  = in_str.find_last_not_of(" \t\n\r");
    return in_str.substr(start_ws, stop_ws - start_ws + 1);
 }
 
@@ -224,7 +224,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
       return 0.0f;
     }
     // c = (2*bin_size) / num_bins
-    double c =  4 * resolution / s1.size();
+    double c =  4.0 * resolution / static_cast<double>(s1.size());
     double denom = sqrt(s1_sqrsum) * sqrt(s2_sqrsum);
     double numerator = c * sum_vect(s1) * sum_vect(s2);
     return (float)(numerator / denom);
@@ -261,17 +261,17 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     int start_idx = -1;
     int stop_idx = -1;
     float last_seen = v[0];
-    for ( int i = 1 ; i < (int)v.size() ; i++ ) {
+    for ( std::size_t i = 1 ; i < v.size() ; i++ ) {
       if ( v[i] != last_seen ) {
 	if ( tied_idxs.size() > 1 ) {
 	  float avg = (float)sum_vect(tied_idxs) / (float)tied_idxs.size();
-	  for ( int t = 0 ; t < (int)tied_idxs.size() ; t++ ) {
-	    v[tied_idxs[t]] = avg;
+	  for ( std::size_t t = 0 ; t < tied_idxs.size() ; t++ ) {
+	    v[static_cast<std::size_t>(tied_idxs[t])] = avg;
 	  }
 	}
 	tied_idxs.clear();
       }
-      tied_idxs.push_back(i);
+      tied_idxs.push_back(static_cast<int>(i));
       last_seen = v[i];
     }
   }
@@ -284,7 +284,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     std::vector< std::pair<float,int> > s1_sort(0);
     std::vector< std::pair<float,int> > s2_sort(0);
     int saved_idx = 0;
-    for ( int i = 0 ; i < (int)s1.size();  i++ ) {
+    for ( std::size_t i = 0 ; i < s1.size();  i++ ) {
       if ( s1[i] <= 0.0f && s2[i] <= 0.0f ) {
 	continue;
       }
@@ -306,14 +306,14 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     std::vector<int> rank_by_pos_s2(s1_sort.size());
     //number of elements is equal to saved_idx
 
-    for ( int i = 0 ; i < (int)s1_sort.size() ; i++ ) {
-      rank_by_pos_s1[s1_sort[i].second] = i;
-      rank_by_pos_s2[s2_sort[i].second] = i;
+    for ( std::size_t i = 0 ; i < s1_sort.size() ; i++ ) {
+      rank_by_pos_s1[static_cast<std::size_t>(s1_sort[i].second)] = static_cast<int>(i);
+      rank_by_pos_s2[static_cast<std::size_t>(s2_sort[i].second)] = static_cast<int>(i);
     }
 
     double dist = 0.0;
 
-    for ( int i = 0 ; i< (int)s1_sort.size() ; i++ ) {
+    for ( std::size_t i = 0 ; i< s1_sort.size() ; i++ ) {
       float t = (float)(rank_by_pos_s1[i] - rank_by_pos_s2[i]);
       dist += t * t;
     }
@@ -328,7 +328,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
   
     init_rand();
     std::vector< std::pair<int,int> > new_pair_vect;
-    new_pair_vect.reserve(series_size);
+    new_pair_vect.reserve(static_cast<std::size_t>(series_size));
     for ( int i = 0 ; i < series_size ; i++ ) {
       int j = (int)floor(get_rand() * i+1 );
       new_pair_vect.push_back( std::pair<int,int> ( i,j ) );
@@ -351,7 +351,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
       if ( i >= (int)sorted_by_i.size() ) {
 	break;
       }
-      if ( ( i != (sorted_by_i.size() ) ) && ( sorted_by_i[i].first == last_val) ) {
+      if ( ( i != (sorted_by_i.size() ) ) && ( sorted_by_i[static_cast<std::size_t>(i)].first == last_val) ) {
 	if ( ! in_tie ) {
 	  in_tie = true;
 	  tie_start = i;
@@ -363,7 +363,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
       else {
 	if ( in_tie == false ) {
 	  //we are not ending a tie
-	  to_rank[sorted_by_i[i].second] = (float)i;
+	  to_rank[static_cast<std::size_t>(sorted_by_i[static_cast<std::size_t>(i)].second)] = (float)i;
 	}
 	else {
 	  //we are ending a tie
@@ -376,18 +376,18 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
 	    }
 	    float tied_rank = (float)rank_total / (float)tie_size;
 	    for ( j = tie_start ;  j < i ; j++ ) {
-	      to_rank[sorted_by_i[i].second] = tied_rank;
+	      to_rank[static_cast<std::size_t>(sorted_by_i[static_cast<std::size_t>(i)].second)] = tied_rank;
 	    }
 	  }
 	  else {
 	    //use the floor of the start of the ranks
 	    float tie_rank_floor = (float)tie_start;
 	    for ( int j = tie_start; j < i ; j++ ) {
-	      to_rank[sorted_by_i[i].second] = tie_rank_floor;
+	      to_rank[static_cast<std::size_t>(sorted_by_i[static_cast<std::size_t>(i)].second)] = tie_rank_floor;
 	    }
 	  }
 	  //since we are not ending a tie..
-	  last_val = sorted_by_i[i].first;
+	  last_val = sorted_by_i[static_cast<std::size_t>(i)].first;
 	  in_tie = false;
 	}
       }
@@ -407,7 +407,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
       if ( i >= (int)sorted_by_i.size() ) {
 	break;
       }
-      to_rank[sorted_by_i[i].second] = (float)i;
+      to_rank[static_cast<std::size_t>(sorted_by_i[static_cast<std::size_t>(i)].second)] = (float)i;
       i++;
     } 
   }
@@ -419,7 +419,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     std::vector< std::pair<float,int> > s1_sort(0);
     std::vector< std::pair<float,int> > s2_sort(0);
     int saved_idx = 0;
-    for ( int i = 0 ; i < (int)s1.size();  i++ ) {
+    for ( std::size_t i = 0 ; i < s1.size();  i++ ) {
       if ( s1[i] <= 0.0f || s2[i] <= 0.0f ) {
 	continue;
       }
@@ -452,7 +452,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     std::vector< std::pair<float,int> > s1_sort(0);
     std::vector< std::pair<float,int> > s2_sort(0);
     int saved_idx = 0;
-    for ( int i = 0 ; i < (int)s1.size();  i++ ) {
+    for ( std::size_t i = 0 ; i < (int)s1.size();  i++ ) {
       if ( s1[i] <= 0.0f || s2[i] <= 0.0f ) {
 	continue;
       }
@@ -485,7 +485,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     std::vector< std::pair<float,int> > s1_sort(0);
     std::vector< std::pair<float,int> > s2_sort(0);
     int saved_idx = 0;
-    for ( int i = 0 ; i < (int)s1.size();  i++ ) {
+    for ( std::size_t i = 0 ; i < (int)s1.size();  i++ ) {
       s1_sort.push_back(std::pair<float,int>(s1[i],saved_idx));
       s2_sort.push_back(std::pair<float,int>(s2[i],saved_idx));
       saved_idx++;
@@ -521,7 +521,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     std::vector< std::pair<float,int> > s1_sort(0);
     std::vector< std::pair<float,int> > s2_sort(0);
     int saved_idx = 0;
-    for ( int i = 0 ; i < (int)s1.size();  i++ ) {
+    for ( std::size_t i = 0 ; i < s1.size();  i++ ) {
       s1_sort.push_back(std::pair<float,int>(s1[i],saved_idx));
       s2_sort.push_back(std::pair<float,int>(s2[i],saved_idx));
       saved_idx++;
@@ -582,7 +582,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     }
     std::vector<float> s1_tmp; s1_tmp.reserve(s1.size());
     std::vector<float> s2_tmp; s2_tmp.reserve(s2.size());
-    for ( int i = 0 ; i < (int)s1.size(); i++ ) {
+    for ( std::size_t i = 0 ; i < s1.size(); i++ ) {
       if ( s1[i] <= min_val || s2[i] <= min_val ) {
 	continue;
       }
@@ -620,11 +620,11 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     if ( s1_sqrsum == 0 || s2_sqrsum == 0 ) {
       return 0.0f;
     }
-    double meanS1 = sum_vect(s1) / s1.size();
-    double meanS2 = sum_vect(s2) / s2.size();
+    double meanS1 = sum_vect(s1) / static_cast<double>(s1.size());
+    double meanS2 = sum_vect(s2) / static_cast<double>(s2.size());
     std::vector<float> ns1(s1);
     std::vector<float> ns2(s2);
-    for ( int i = 0 ; i < (int)s1.size() ; i++ ) {
+    for ( std::size_t i = 0 ; i < s1.size() ; i++ ) {
       ns1[i] = (float)(ns1[i] - meanS1);
       ns2[i] = (float)(ns2[i] - meanS2);
     }
@@ -644,7 +644,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
 
   double vector_magnitude ( const std::vector<float> & s ) {
      double t = 0.0;
-     for ( int i = 0 ; i < (int)s.size() ; i++ ) {
+     for ( std::size_t i = 0 ; i < s.size() ; i++ ) {
         t += s[i] * s[i];
      }
      return sqrt(t);
@@ -653,7 +653,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
   float spectra_tic_geometric_distance ( const std::vector<float> & s1, const std::vector<float> & s2, double d1 , double ) {
     assert(s1.size() == s2.size());
     double total = 0.0;
-    for ( int i = 0 ; i < (int)s1.size() ; i++ ) {
+    for ( std::size_t i = 0 ; i < s1.size() ; i++ ) {
       double d = s1[i] - s2[i];
       total += d*d;
     }
@@ -898,12 +898,12 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     float diff = *rh - *lh;
     assert( half_val >= *lh && *rh >= half_val);
     assert(diff >= 0);
-    uint lh_idx = lh - cum_sum.begin();
+    uint lh_idx = static_cast<uint>(lh - cum_sum.begin());
     if ( diff == 0 ) {
-      return lh_idx + 0.5f;
+      return static_cast<float>(lh_idx) + 0.5f;
     }
     else {
-      return lh_idx + (half_val - *lh) / diff;
+      return static_cast<float>(lh_idx) + (half_val - *lh) / diff;
     }
   }
 
@@ -926,8 +926,8 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
 
     std::vector<float> cumulative_area;
     cumulative_area.push_back(0.);
-    int idx;
-    for (idx = 1; idx < (int)y.size(); idx++)
+    std::size_t idx;
+    for (idx = 1; idx < y.size(); idx++)
       {
 	if (y[idx] < 0.)
 	  {
@@ -944,8 +944,8 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     if (cumulative_area.size() == idx)
       idx--; // for safety's sake, in case we can't rely upon two floats truly equalling one another
     if (cumulative_area[idx] - half_total_auc < half_total_auc - cumulative_area[idx-1])
-      return idx;
-    return idx - 1;
+      return static_cast<int>(idx);
+    return static_cast<int>(idx) - 1;
   }
 
   // This version assumes vector x holds the x values
@@ -972,7 +972,7 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
 
     std::vector<float> cumulative_area;
     cumulative_area.push_back(0.);
-    int idx;
+    std::size_t idx;
     for (idx = 1; idx < (int)y.size(); idx++)
       {
 	if (y[idx] < 0. || x[idx] < 0.)
@@ -990,8 +990,8 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     if (cumulative_area.size() == idx)
       idx--; // for safety's sake, in case we can't rely upon two floats truly equalling one another
     if (cumulative_area[idx] - half_total_auc < half_total_auc - cumulative_area[idx-1])
-      return idx;
-    return idx - 1;
+      return static_cast<int>(idx);
+    return static_cast<int>(idx) - 1;
   }
 
 
@@ -1021,41 +1021,10 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
     char * delim_pos = strrchr((char*)str, delim);
     if ( delim_pos == NULL ) return NULL;
    
-    uint len = delim_pos - str;
+    uint len = static_cast<uint>(delim_pos - str);
     strncpy( new_str, str, len);
     new_str[len] = '\0';
     return new_str;
-  }
-
-
-
-  std::vector<std::string> * split_string( std::string & s, char c ) {
-    std::vector<std::string> * v = new std::vector<std::string>();
-    std::vector<size_t> ps;
-    int pos = 0;
-    while ( true ) {
-      pos = s.find(c, pos);
-      if ( pos < 0 ) {
-	break;
-      }
-      else {
-	ps.push_back(pos);
-      }
-      pos++;
-    }
-    if ( ps.size() < 2 ) {
-      v->push_back(s);
-      return v;
-    }
-    else {
-      v->push_back(s.substr(0,ps[0]));
-      for ( uint i = 0 ; i < ps.size() - 1 ; i++ ) {
-	v->push_back(s.substr(ps[i]+1, (ps[i+1] - 1  - ps[i])  ));
-      }
-      v->push_back(s.substr(ps[ps.size()-1]+1,s.length() - 1 - ps[ps.size() - 1] ) );
-      return v;
-    }
- 
   }
 
 
@@ -1065,14 +1034,14 @@ void make_idx_segments ( int num_mzs, int num_rts, int num_mzs_segments, int num
       return -1;
     }
     int strbuf_size = 256;
-    char * strbuf = (char*)malloc(strbuf_size);
+    char * strbuf = (char*)malloc(static_cast<std::size_t>(strbuf_size));
     int data_idx = 0;
     int str_idx = 0;
 
     while ( data_idx < data_length ) {
       if ( str_idx >= strbuf_size ) {
 	strbuf_size = strbuf_size * 2;
-	strbuf = (char*)realloc((void*)strbuf,strbuf_size);
+	strbuf = (char*)realloc((void*)strbuf,static_cast<std::size_t>(strbuf_size));
       }
       if ( string_data[data_idx] == '\0' ) {
 	strbuf[str_idx] = '\0';
@@ -1188,7 +1157,7 @@ return drand48();
               throw("invalid");
           }
           std::random_shuffle( v.begin(), v.end() );
-          v.resize(N);
+          v.resize(static_cast<std::size_t>(N));
           return v;
   }
 
@@ -1210,8 +1179,7 @@ return drand48();
 
 std::vector< TwoGroupsType >
 permute_two_groups ( IdxGroupType g1, IdxGroupType g2 ) {
-   int g1_len = g1.size();
-   int g2_len = g2.size();
+   int g1_len = static_cast<int>(g1.size());
   
    //vector for storing all selections of size(len(g1))
    std::vector< std::vector< int > > g1_permutes;   
@@ -1232,7 +1200,7 @@ permute_two_groups ( IdxGroupType g1, IdxGroupType g2 ) {
    //}
    std::vector< std::vector< int > > new_g1s = unique_selections ( all_idxs, g1_len );
    std::vector< TwoGroupsType > r(0);
-   for ( int i = 0 ; i < (int)new_g1s.size(); i++ ) {
+   for ( std::size_t i = 0 ; i < new_g1s.size(); i++ ) {
        IdxGroupType new_g1(new_g1s[i].begin(), new_g1s[i].end());
        IdxGroupType new_g2;
        std::insert_iterator< IdxGroupType > ii( new_g2, new_g2.begin());
@@ -1256,7 +1224,7 @@ std::vector< std::vector< int > > unique_selections ( std::vector< int > vals , 
     }
     else if ( N == 1 ) {
         std::vector< std::vector< int > > r(0);
-        for ( int i = 0 ; i < (int)vals.size() ; i++ ) {
+        for ( std::size_t i = 0 ; i < vals.size() ; i++ ) {
             std::vector<int> v (1,vals[i]);
             r.push_back(v);
         }
@@ -1267,8 +1235,8 @@ std::vector< std::vector< int > > unique_selections ( std::vector< int > vals , 
         for ( int i = 0 ; i < (int)vals.size() ; i++ ) {
             std::vector< int > sub( vals.begin() + i + 1 , vals.end() );
             std::vector< std::vector< int > > u = unique_selections ( sub, N - 1 );
-            for ( int u_idx = 0 ; u_idx < (int)u.size() ; u_idx++ ) {
-                std::vector< int > seed(1,vals[i]);
+            for ( std::size_t u_idx = 0 ; u_idx < u.size() ; u_idx++ ) {
+                std::vector< int > seed(1,vals[static_cast<std::size_t>(i)]);
                 seed.insert(seed.end(), u[u_idx].begin(), u[u_idx].end() );               
                 r.push_back(seed);
             }
@@ -1308,15 +1276,15 @@ std::vector< std::vector< int > > unique_selections ( std::vector< int > vals , 
   }
 
   void spectra_sqrt ( std::vector<float> & s, void * p ) {
-    int size = s.size();
-    for ( int i = 0 ; i < size ; i++ ) {
+    std::size_t size = s.size();
+    for ( std::size_t i = 0 ; i < size ; i++ ) {
       float intensity = s[i];
       s[i] = sqrtf(intensity);
     }
   }
   void spectra_log10 ( std::vector<float> & s, void * p){
-    int size = s.size();
-    for ( int i = 0 ; i < size ; i ++ ) {
+    std::size_t size = s.size();
+    for ( std::size_t i = 0 ; i < size ; i ++ ) {
       float intensity = s[i];
       if ( intensity <= 0.0f ) {
 	s[i] = 0.0f;
@@ -1329,7 +1297,7 @@ std::vector< std::vector< int > > unique_selections ( std::vector< int > vals , 
 
   void spectra_filtby_I( std::vector<float> & s, void * p ) {
     float threshold = *(float*)p;
-    for ( int i = 0; i < (int)s.size() ; i++ ) {
+    for ( std::size_t i = 0; i < s.size() ; i++ ) {
       if ( s[i] < threshold ) {
 	s[i] = 0.0f;
       }
@@ -1339,34 +1307,34 @@ std::vector< std::vector< int > > unique_selections ( std::vector< int > vals , 
   ///zeros out all but the top N signals in a spectrum
   void spectra_topN ( std::vector<float> & s , void * p ) {
     int n = *(int*)p;
-    int size = s.size();
+    int size = static_cast<int>(s.size());
     std::vector< std::pair<float,int> > sorted(s.size());
     for ( int i = 0 ; i < (int)s.size() ; i++ ) {
-      sorted[i].second = i;
-      sorted[i].first = s[i];
+      sorted[static_cast<std::size_t>(i)].second = i;
+      sorted[static_cast<std::size_t>(i)].first = s[static_cast<std::size_t>(i)];
     }
     std::sort(sorted.begin(),sorted.end());
     std::fill(s.begin(),s.end(),0.0f);
     for ( int i = 0 ; i < n ; i++ ) {
-      std::pair<float,int> & p = sorted[size - 1 - i];
-      s[p.second] = p.first;
+      std::pair<float,int> & p = sorted[static_cast<std::size_t>(size - 1 - i)];
+      s[static_cast<std::size_t>(p.second)] = p.first;
     }
   }
   ///converts a spectrum to the top N rank values, the rest are zero
   void spectra_topN_rank ( std::vector<float> & s , void * p ) {
-    int size = s.size();
+    int size = static_cast<int>(s.size());
     int n = *(int*)p;
     std::vector< std::pair<float,int> > sorted(s.size());
-    for ( int i = 0 ; i < (int)s.size() ; i++ ) {
-      sorted[i].second = i;
+    for ( std::size_t i = 0 ; i < s.size() ; i++ ) {
+      sorted[i].second = static_cast<int>(i);
       sorted[i].first = s[i];
     }
     //std::pair is sorted first by 'first' field, i.e intensity, from lowest to highest
     std::sort(sorted.begin(),sorted.end());
     std::fill(s.begin(),s.end(),0.0f);
     for ( int i = 0 ; i < n ; i++ ) {
-      std::pair<float,int> & p = sorted[size - 1 - i];
-      s[p.second] = (float)(n - i);
+      std::pair<float,int> & p = sorted[static_cast<std::size_t>(size - 1 - i)];
+      s[static_cast<std::size_t>(p.second)] = (float)(n - i);
     }
   }
 
@@ -1375,10 +1343,10 @@ std::vector< std::vector< int > > unique_selections ( std::vector< int > vals , 
   std::vector<std::pair<int,int> > unique_ranges ( std::vector< std::pair<int, int> > pairs , bool adjacent) {
     std::sort(pairs.begin(), pairs.end());
     std::vector<std::pair< int,int > > out_pairs(0);
-    for ( int lh_pair = 0 ; lh_pair < (int)pairs.size(); lh_pair++ ) {
+    for ( std::size_t lh_pair = 0 ; lh_pair < pairs.size(); lh_pair++ ) {
       int np_start = pairs[lh_pair].first;
       int np_stop  = pairs[lh_pair].second;
-      for ( int rh_cand_pair = lh_pair + 1; rh_cand_pair < (int)pairs.size() ; rh_cand_pair++ ) {
+      for ( std::size_t rh_cand_pair = lh_pair + 1; rh_cand_pair < pairs.size() ; rh_cand_pair++ ) {
 	int lh_test = pairs[rh_cand_pair].first;
 	if ( adjacent ) { lh_test = lh_test - 1; }
 	if ( lh_test <= np_stop) {
@@ -1428,10 +1396,10 @@ float crawstats::pi0_from_StoreySplineFit(const std::vector<std::pair<float, flo
   float c(0.), v, term(0.), h(xydata[1].first - xydata[0].first);
   float v_coeff(6.0f/(h*h)); // avoid redundant recalculations of this
   float z_nMinus1;
-  float x_n(xydata[n].first), x_nMinus1(xydata[n-1].first),
-    y_n(xydata[n].second), y_nMinus1(xydata[n-1].second);
+  float x_n(xydata[static_cast<std::size_t>(n)].first), x_nMinus1(xydata[static_cast<std::size_t>(n-1)].first),
+    y_n(xydata[static_cast<std::size_t>(n)].second), y_nMinus1(xydata[static_cast<std::size_t>(n-1)].second);
 
-  for (int i = 1; i <= n - 1; i++)
+  for (std::size_t i = 1; i <= n - 1; i++)
     {
       v = (float)(v_coeff*(xydata[i+1].second - 2.*xydata[i].second + xydata[i-1].second));
       c = (float)(1./(4. - c)); // yes, a continued fraction!
@@ -1460,7 +1428,7 @@ long crawstats::factorial(int n) {
 }
 
 int crawstats::permutations_from_twogroups ( int grpsize1, int grpsize2 ) {
-   return ( factorial(grpsize1+grpsize2) / ( factorial(grpsize1) * factorial(grpsize2) ) );
+   return static_cast<int>( factorial(grpsize1+grpsize2) / ( factorial(grpsize1) * factorial(grpsize2) ) );
 }
 
 
