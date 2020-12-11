@@ -116,8 +116,9 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
     while (in >> peptide_sequence >> retention_time) {
       psms.push_back(new PSMDescriptionDOC(peptide_sequence, retention_time));
       if (includes_context) {
-        len = peptide_sequence.length();
-        peptide_sequence = peptide_sequence[0] + peptide_sequence.substr(2, len - 4) + peptide_sequence[len - 1];
+        len = static_cast<int>(peptide_sequence.length());
+        peptide_sequence = peptide_sequence[0] + peptide_sequence.substr(2, 
+          static_cast<std::size_t>(len - 4)) + peptide_sequence[static_cast<std::size_t>(len - 1)];
       }
       amino_acids = RetentionFeatures::GetAminoAcids(peptide_sequence);
       aa_alphabet.insert(amino_acids.begin(), amino_acids.end());
@@ -126,8 +127,9 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
     while (in >> peptide_sequence) {
       psms.push_back(new PSMDescriptionDOC(peptide_sequence, -1.0));
       if (includes_context) {
-        len = peptide_sequence.length();
-        peptide_sequence = peptide_sequence[0] + peptide_sequence.substr(2, len - 4) + peptide_sequence[len - 1];
+        len = static_cast<int>(peptide_sequence.length());
+        peptide_sequence = peptide_sequence[0] + peptide_sequence.substr(2, 
+          static_cast<std::size_t>(len - 4)) + peptide_sequence[static_cast<std::size_t>(len - 1)];
       }
       amino_acids = RetentionFeatures::GetAminoAcids(peptide_sequence);
       aa_alphabet.insert(amino_acids.begin(), amino_acids.end());
@@ -142,7 +144,7 @@ int DataManager::LoadPeptides(const string &file_name, const bool includes_rt, c
 
 /* memory allocation for the feature table; return a pointer to the feature table*/
 double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescription*> &psms) {
-  int no_records = psms.size();
+  int no_records = static_cast<int>(psms.size());
   if (VERB >= 4) {
     cerr << "Initializing feature table for " << no_records << " records and "
          << no_features << " features..." << endl;
@@ -156,7 +158,7 @@ double* DataManager::InitFeatureTable(const int &no_features, vector<PSMDescript
     throw MyException(temp.str());
   } else {
     double *ptr = feat_pointer;
-    for (int i = 0; i < no_records; i++, ptr += no_features) {
+    for (std::size_t i = 0; i < no_records; i++, ptr += no_features) {
       psms[i]->setRetentionFeatures(ptr);
     }
     if (VERB >= 4) {
@@ -179,7 +181,7 @@ int DataManager::RemoveCommonPeptides(const vector<PSMDescription*> &test_psms,
   if (VERB >= 4) {
     cerr << "Removing from the train set the peptides featuring in the test set..." << endl;
   }
-  int initial_number = train_psms.size();
+  int initial_number = static_cast<int>(train_psms.size());
   if (train_psms.empty()) {
     if (VERB >= 4) {
       cerr << "Warning: no train data available, thus no common peptides "
@@ -193,7 +195,7 @@ int DataManager::RemoveCommonPeptides(const vector<PSMDescription*> &test_psms,
                      train_psms.end());
   }
   if (VERB >= 4) {
-    cerr << (train_psms.size() - initial_number) << " peptides were removed."
+    cerr << (static_cast<int>(train_psms.size()) - initial_number) << " peptides were removed."
          << endl << endl;
   }
   return 0;
@@ -201,8 +203,8 @@ int DataManager::RemoveCommonPeptides(const vector<PSMDescription*> &test_psms,
 
 // get the peptide information (for A.MCD.E -> return MCD)
 string DataManager::GetMSPeptide(const string& peptide) {
-  int pos1 = peptide.find('.');
-  int pos2 = peptide.find('.', ++pos1);
+  std::size_t pos1 = peptide.find('.');
+  std::size_t pos2 = peptide.find('.', ++pos1);
   return peptide.substr(pos1, pos2 - pos1);
 }
 
@@ -277,20 +279,20 @@ vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
       CombineSets(train_psms, test_psms);
   // sort the psms according to retention time
   sort(combined_psms.begin(), combined_psms.end(), Utilities::ComparePairs);
-  int number_psms = combined_psms.size();
+  int number_psms = static_cast<int>(combined_psms.size());
 
   // check in source fragmentation
   double rt_child, rt_parent;
   bool is_in_source;
   int i, j;
   for (i = 0; i < number_psms; ++i) {
-    rt_child = combined_psms[i].first.first->getRetentionTime();
+    rt_child = combined_psms[static_cast<std::size_t>(i)].first.first->getRetentionTime();
     j = i - 1;
     is_in_source = false;
     while ((j >= 0) && (((rt_parent =
-        combined_psms[j].first.first->getRetentionTime()) * 1.05) >= rt_child)) {
-      if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, enzyme, diff, index)) {
-        combined_psms[i].second = true;
+        combined_psms[static_cast<std::size_t>(j)].first.first->getRetentionTime()) * 1.05) >= rt_child)) {
+      if (IsFragmentOf(combined_psms[static_cast<std::size_t>(i)].first.first, combined_psms[static_cast<std::size_t>(j)].first.first, enzyme, diff, index)) {
+        combined_psms[static_cast<std::size_t>(i)].second = true;
         is_in_source = true;
         break;
       }
@@ -299,9 +301,9 @@ vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
     if (!is_in_source) {
       j = i + 1;
       while ((j < number_psms) && (((rt_parent =
-          combined_psms[j].first.first->getRetentionTime()) * 0.95) <= rt_child)) {
-        if (IsFragmentOf(combined_psms[i].first.first, combined_psms[j].first.first, enzyme, diff, index)) {
-          combined_psms[i].second = true;
+          combined_psms[static_cast<std::size_t>(j)].first.first->getRetentionTime()) * 0.95) <= rt_child)) {
+        if (IsFragmentOf(combined_psms[static_cast<std::size_t>(i)].first.first, combined_psms[static_cast<std::size_t>(j)].first.first, enzyme, diff, index)) {
+          combined_psms[static_cast<std::size_t>(i)].second = true;
           break;
         }
         j++;
@@ -321,15 +323,15 @@ vector< pair<PSMDescription*, string> > DataManager::RemoveInSourceFragments(
   if (!remove_from_test) {
     it1 = partition(combined_psms.begin(), it1, Utilities::IsInSourceAndTrain);
   }
-  int initial_train_size = train_psms.size();
+  int initial_train_size = static_cast<int>(train_psms.size());
   // remove in source fragments
   combined_psms.erase(combined_psms.begin(), it1);
   // remove fragments from initial sets
   it1 = partition(combined_psms.begin(), combined_psms.end(), Utilities::IsInTrain);
   transform(combined_psms.begin(), it1, train_psms.begin(), Utilities::GetPSM);
-  train_psms.resize(distance(combined_psms.begin(), it1));
+  train_psms.resize(static_cast<std::size_t>(distance(combined_psms.begin(), it1)));
   transform(it1, combined_psms.end(), test_psms.begin(), Utilities::GetPSM);
-  test_psms.resize(distance(it1, combined_psms.end()));
+  test_psms.resize(static_cast<std::size_t>(distance(it1, combined_psms.end())));
   if (VERB >= 4) {
     if (!remove_from_test && (initial_train_size != train_psms.size())) {
       cerr << fragments.size() << " in-source fragments were identified in both training and "
@@ -351,13 +353,13 @@ vector<PSMDescription*> DataManager::RemoveNonEnzymatic(const Enzyme* enzyme,
   if (VERB >= 4) {
     cerr << "Removing non enzymatic peptides from the " << mesg << "..." << endl;
   }
-  int initial_size = psms.size();
+  int initial_size = static_cast<int>(psms.size());
   vector<PSMDescription*>::iterator it =
       partition(psms.begin(), psms.end(), std::bind1st(ptr_fun(Utilities::IsEnzymatic), enzyme));
   vector<PSMDescription*> non_enzymatic(it, psms.end());
   //for(int i = 0; i < non_enzymatic.size(); ++i)
   //   cout << non_enzymatic[i].peptide << endl;
-  psms.resize(distance(psms.begin(), it));
+  psms.resize(static_cast<std::size_t>(distance(psms.begin(), it)));
   if (VERB >= 4) {
     cerr << non_enzymatic.size() << " non-enzymatic peptides were identified " << endl;
     cerr << "The " << mesg << " includes now " << psms.size() << " peptides." << endl << endl;

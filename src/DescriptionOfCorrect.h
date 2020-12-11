@@ -50,8 +50,6 @@ class DescriptionOfCorrect {
     void trainCorrect();
     void setFeatures(PSMDescription* psm);
     void setFeaturesNormalized(PSMDescription* psm, Normalizer* pNorm);
-    //static size_t totalNumRTFeatures() {return (doKlammer?64:minimumNumRTFeatures() + 20);}
-    //static size_t minimumNumRTFeatures() {return 3*10+1+3;}
     void print_10features();
     svm_model* getModel() {
       return rtModel.getModel();
@@ -63,7 +61,6 @@ class DescriptionOfCorrect {
       return 4;
     }
     void copyDOCparameters(DescriptionOfCorrect& other) {
-      //    avgPI = other.avgPI; avgDM = other.avgDM; rtW = other.rtW; numRTFeat = other.numRTFeat;
       avgPI = other.avgPI;
       avgDM = other.avgDM;
       rtModel.copyModel(other.getModel());
@@ -76,7 +73,6 @@ class DescriptionOfCorrect {
   protected:
     double avgPI, avgDM;
     std::vector<PSMDescription*> psms;
-    //  vector<double> rtW;
     double c, gamma, epsilon;
     RTModel rtModel;
     static string isoAlphabet;

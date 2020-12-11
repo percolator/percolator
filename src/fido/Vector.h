@@ -48,6 +48,11 @@ public:
     return values[k];
   }
 
+  const double & operator [](std::size_t k) const
+  {
+    return values[k];
+  }
+
   
   Set::Iterator beginNonzero() const
     {
@@ -70,12 +75,12 @@ public:
 
   int size() const
   {
-    return values.size();
+    return static_cast<int>(values.size());
   }
 
   int numberEntries() const
   {
-    return nonzeroIndices.size();
+    return static_cast<int>(nonzeroIndices.size());
   }
  
   friend Vector operator /(const Vector & lhs, const Vector & rhs);

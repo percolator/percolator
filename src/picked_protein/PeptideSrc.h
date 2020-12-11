@@ -157,5 +157,5 @@ class PeptideSrc {
  * End:
  */
  
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 #endif

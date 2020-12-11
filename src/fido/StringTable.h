@@ -26,7 +26,7 @@ public:
   static StringTable AddElements(const Array<string> & elements)
   {
     StringTable result;
-    for (int k=0; k<elements.size(); k++)
+    for (int k=0; static_cast<std::size_t>(k)<elements.size(); k++)
       {
 	result.add(elements[k]);
       }

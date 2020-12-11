@@ -69,7 +69,7 @@ public:
 
   int numRows() const
   {
-    return rows.size();
+    return static_cast<int>(rows.size());
   }
   int numCols() const
   {

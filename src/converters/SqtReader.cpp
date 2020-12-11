@@ -91,7 +91,8 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
         
         peptideNoMods = removePTMs(peptide, ptmMap);
         // difference between observed and calculated mass
-        double dM = massDiff(observedMassCharge, calculatedMassToCharge,charge);
+        double dM = massDiff(observedMassCharge, 
+          calculatedMassToCharge,static_cast<unsigned int>(charge));
 	
         f_seq.push_back( log(max(1.0, rSp))); // rank by Sp
         f_seq.push_back( 0.0 ); // delt5Cn (leave until last M line)
@@ -156,9 +157,9 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
   // Register the ptms
   for (unsigned int ix = 0;ix < peptideSequence.size();++ix) {
     if (freqAA.find(peptideSequence[ix]) == string::npos) {
-      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(ix));
+      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
       if (peptideSequence[ix] == '[') {
-        unsigned int posEnd = peptideSequence.substr(ix).find_first_of(']');
+        unsigned int posEnd = static_cast<unsigned int>(peptideSequence.substr(ix).find_first_of(']'));
         std::string modAcc = peptideSequence.substr(ix + 1, posEnd - 1);
         std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(modAcc));
         mod_p->freeMod(fm_p);
@@ -184,7 +185,7 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
     }
   }
   
-  unsigned int rank = match + 1;
+  unsigned int rank = static_cast<unsigned int>(match + 1);
   std::string psmId = createPsmId(fileId, observedMassCharge, scan, charge, rank);
   
   std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p(

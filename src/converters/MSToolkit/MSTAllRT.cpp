@@ -48,7 +48,7 @@ int main(int argc, char *argv[]){
     scan_numbers.push_back(s.getScanNumber());
     mzs.push_back(s.getMZ());
   }
-  for ( int i = 0 ; i < rts.size() ; i++ ) {
+  for ( std::size_t i = 0 ; i < rts.size() ; i++ ) {
     std::cout << scan_numbers[i] <<"\t" << rts[i] << "\t" << mzs[i] << std::endl;
   }
   

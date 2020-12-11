@@ -16,7 +16,7 @@ struct svm_node {
 };
 
 struct svm_problem {
-    int l;
+    std::size_t l;
     double* y;
     struct svm_node* x;
 };

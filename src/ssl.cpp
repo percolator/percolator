@@ -24,6 +24,7 @@ using namespace std;
 
 #include <stdarg.h>
 #include <cstring>
+#include "Timer.h"
 
 extern "C" {
   extern double dnrm2_(int *, double *, int *); // Return the Euclidian norm of a vector
@@ -42,7 +43,7 @@ extern "C" {
 #define LOG2(x) 1.4426950408889634*log(x)
 // for compatibility issues, not using log2
 
-AlgIn::AlgIn(const int size, const int numFeat) {
+AlgIn::AlgIn(const unsigned int size, const int numFeat) {
   vals = new double*[size];
   Y = new double[size];
   C = new double[size];
@@ -83,8 +84,6 @@ void cglsFun2(int active, int* J, const double* Y,
               double cpos, double cneg){
   int i;
   int inc = 1;
-  int ind = 0;
-  double temp = 0.0;
   
   for (i = 0; i < active; i++) {
     o[J[i]] += q[i];
@@ -94,27 +93,26 @@ void cglsFun2(int active, int* J, const double* Y,
 }
 
 int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
-         const double epsilon, const struct vector_int* Subset,
-         struct vector_double* Weights, struct vector_double* Outputs,
+         const double epsilon, const vector_int& Subset,
+         vector_double& Weights, vector_double& Outputs,
          double cpos, double cneg) {
   if (VERBOSE_CGLS) {
     cout << "CGLS starting..." << endl;
   }
   /* Disassemble the structures */
-  timer tictoc;
-  tictoc.restart();
-  int active = Subset->d;
-  int* J = Subset->vec;
+  Timer tictoc;
+  int active = Subset.d;
+  int* J = Subset.vec;
   double** set = data.vals;
   const double* Y = data.Y;
   int n = data.n;
-  double* beta = Weights->vec;
-  double* o = Outputs->vec;
+  double* beta = Weights.vec;
+  double* o = Outputs.vec;
   // initialize z
   double* z = new double[active];
   double* q = new double[active];
   int ii = 0;
-  register int i, j;
+  register int i;
   int n0 = n-1;
   int inc = 1;
   double one = 1;
@@ -129,13 +127,13 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     ii = J[i];
     z[i] = ((Y[ii]==1)? cpos : cneg) * (Y[ii] - o[ii]);
     rowStart = i * n;
-    memcpy(set2 + rowStart, set[ii], sizeof(double)*n0);
+    memcpy(set2 + rowStart, set[ii], sizeof(double)*static_cast<std::size_t>(n0));
     set2[rowStart + n0] = 1.0;
     daxpy_(&n, &(z[i]), set2 + i*n, &inc, r, &inc);
   }
   double* p = new double[n];
   daxpy_(&n, &negLambda, beta, &inc, r, &inc);
-  memcpy(p, r, sizeof(double)*n);
+  memcpy(p, r, sizeof(double)*static_cast<std::size_t>(n));
   double omega1 = ddot_(&n, r, &inc, r, &inc);
   double omega_p = omega1;
   double omega_q = 0.0;
@@ -153,7 +151,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     gamma = omega1 / (lambda * omega_p + omega_q);
     inv_omega2 = 1 / omega1;
 
-    memcpy(r, beta, sizeof(double)*n);
+    memcpy(r, beta, sizeof(double)*static_cast<std::size_t>(n));
     dscal_(&n, &negLambda, r, &inc);
 
     daxpy_(&n, &gamma, p, &inc, beta, &inc);
@@ -185,7 +183,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   tictoc.stop();
   if (VERB > 4) {
     cerr << "CGLS converged in " << cgiter << " iteration(s) and "
-        << tictoc.time() << " seconds." << endl;
+        << tictoc.getCPUTimeStr() << " CPU seconds." << endl;
   }
   delete[] z;
   delete[] q;
@@ -195,30 +193,29 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   return optimality;
 }
 
-int L2_SVM_MFN(const AlgIn& data, struct options* Options,
-               struct vector_double* Weights,
-               struct vector_double* Outputs, double cpos, double cneg) {
+int L2_SVM_MFN(const AlgIn& data, options& Options,
+               vector_double& Weights,
+               vector_double& Outputs, double cpos, double cneg) {
   /* Disassemble the structures */
-  timer tictoc;
-  tictoc.restart();
+  Timer tictoc;
   double** set = data.vals;
   const double* Y = data.Y;
-  int n = Weights->d;
+  int n = Weights.d;
   const int m = data.m;
-  double lambda = Options->lambda;
+  double lambda = Options.lambda;
   double epsilon = BIG_EPSILON;
   int cgitermax = SMALL_CGITERMAX;
-  double* w = Weights->vec;
-  double* o = Outputs->vec;
+  double* w = Weights.vec;
+  double* o = Outputs.vec;
   double F_old = 0.0;
   double F = 0.0;
   double diff = 0.0;
   int ini = 0;
   int n0 = n-1;
   int inc = 1;
-  vector_int* ActiveSubset = new vector_int[1];
-  ActiveSubset->vec = new int[m];
-  ActiveSubset->d = m;
+  vector_int ActiveSubset;
+  ActiveSubset.vec = new int[m];
+  ActiveSubset.d = m;
   // initialize
   F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
   int active = 0;
@@ -226,39 +223,38 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
   for (int i = 0; i < m; i++) {
     diff = 1 - Y[i] * o[i];
     if (diff > 0) {
-      ActiveSubset->vec[active] = i;
+      ActiveSubset.vec[active] = i;
       active++;
       // C[i]
       F += 0.5 * ((Y[i]==1)? cpos : cneg) * diff * diff;
     } else {
-      ActiveSubset->vec[inactive] = i;
+      ActiveSubset.vec[inactive] = i;
       inactive--;
     }
   }
-  ActiveSubset->d = active;
+  ActiveSubset.d = active;
   int iter = 0;
   int opt = 0;
   int opt2 = 0;
-  vector_double* Weights_bar = new vector_double[1];
-  vector_double* Outputs_bar = new vector_double[1];
-  double* w_bar = new double[n];
-  double* o_bar = new double[m];
-  Weights_bar->vec = w_bar;
-  Outputs_bar->vec = o_bar;
-  Weights_bar->d = n;
-  Outputs_bar->d = m;
+  vector_double Weights_bar;
+  vector_double Outputs_bar;
+  double* w_bar = new double[static_cast<std::size_t>(n)];
+  double* o_bar = new double[static_cast<std::size_t>(m)];
+  Weights_bar.vec = w_bar;
+  Outputs_bar.vec = o_bar;
+  Weights_bar.d = n;
+  Outputs_bar.d = m;
   double delta = 0.0;
-  double t = 0.0;
   int ii = 0;
-  while (iter < Options->mfnitermax) {
+  while (iter < Options.mfnitermax) {
     iter++;
     if (VERB > 4) {
       cerr << "L2_SVM_MFN Iteration# " << iter << " (" << active
           << " active examples, " << " objective_value = " << F << ")"
           << endl;
     }
-    memcpy(w_bar, w, sizeof(double)*n);
-    memcpy(o_bar, o, sizeof(double)*m);
+    memcpy(w_bar, w, sizeof(double)*static_cast<std::size_t>(n));
+    memcpy(o_bar, o, sizeof(double)*static_cast<std::size_t>(m));
     opt = CGLS(data,
                lambda,
                cgitermax,
@@ -267,7 +263,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
                Weights_bar,
                Outputs_bar, cpos, cneg);
     for (register int i = active; i < m; i++) {
-      ii = ActiveSubset->vec[i];
+      ii = ActiveSubset.vec[i];
       o_bar[ii] = ddot_(&n0, set[ii], &inc, w_bar, &inc) + w_bar[n - 1];
     }
     if (ini == 0) {
@@ -276,7 +272,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
     };
     opt2 = 1;
     for (int i = 0; i < m; i++) {
-      ii = ActiveSubset->vec[i];
+      ii = ActiveSubset.vec[i];
       if (i < active) {
         opt2 = (opt2 && (Y[ii] * o_bar[ii] <= 1 + epsilon));
       } else {
@@ -288,7 +284,7 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
     }
     if (opt && opt2) { // l
       if (epsilon == BIG_EPSILON) {
-        epsilon = Options->epsilon;
+        epsilon = Options.epsilon;
         if (VERB > 4) {
           cerr << "  epsilon = " << BIG_EPSILON
             << " case converged (speedup heuristic 2). Continuing with epsilon="
@@ -296,18 +292,12 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
         }
         continue;
       } else {
-        memcpy(w, w_bar, sizeof(double)*n);
-        memcpy(o, o_bar, sizeof(double)*m);
-        delete[] ActiveSubset->vec;
-        delete[] ActiveSubset;
-        delete[] o_bar;
-        delete[] w_bar;
-        delete[] Weights_bar;
-        delete[] Outputs_bar;
-        tictoc.stop();
+        memcpy(w, w_bar, sizeof(double)*static_cast<std::size_t>(n));
+        memcpy(o, o_bar, sizeof(double)*static_cast<std::size_t>(m));
         if (VERB > 3) {
+          tictoc.stop();
           cerr << "L2_SVM_MFN converged (optimality) in " << iter
-              << " iteration(s) and " << tictoc.time() << " seconds. \n"
+              << " iteration(s) and " << tictoc.getCPUTimeStr() << " CPU seconds. \n"
               << endl;
         }
         return 1;
@@ -325,43 +315,25 @@ int L2_SVM_MFN(const AlgIn& data, struct options* Options,
       o[i] += delta * (o_bar[i] - o[i]);
       diff = 1 - Y[i] * o[i];
       if (diff > 0) {
-        ActiveSubset->vec[active] = i;
+        ActiveSubset.vec[active] = i;
         active++;
         F += 0.5 * ((Y[i]==1)? cpos : cneg) * diff * diff;
       } else {
-        ActiveSubset->vec[inactive] = i;
+        ActiveSubset.vec[inactive] = i;
         inactive--;
       }
     }
-    ActiveSubset->d = active;
+    ActiveSubset.d = active;
     if (fabs(F - F_old) < RELATIVE_STOP_EPS * fabs(F_old)) {
-      // Memory leak fix below
-      delete[] ActiveSubset->vec;
-      delete[] ActiveSubset;
-      delete[] o_bar;
-      delete[] w_bar;
-      delete[] Weights_bar;
-      delete[] Outputs_bar;
-      tictoc.stop();
-      //    cout << "L2_SVM_MFN converged (rel. criterion) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
       return 2;
     }
   }
-  delete[] ActiveSubset->vec;
-  delete[] ActiveSubset;
-  delete[] o_bar;
-  delete[] w_bar;
-  delete[] Weights_bar;
-  delete[] Outputs_bar;
-  tictoc.stop();
-  //  cout << "L2_SVM_MFN converged (max iter exceeded) in " << iter << " iterations and "<< tictoc.time() << " seconds. \n" << endl;
   return 0;
 }
 
 double line_search(double* w, double* w_bar, double lambda, double* o,
                    double* o_bar, const double* Y, int d, /* data dimensionality -- 'n' */
                    int l, double cpos, double cneg){
-  int inc = 1;
   int i = 0;
   double omegaL = 0.0;
   double omegaR = 0.0;
@@ -416,29 +388,4 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
   delete[] deltas;
   return (-L / (R - L));
 }
-/********************** UTILITIES ********************/
 
-void Clear(struct data* a) {
-  delete[] a->val;
-  delete[] a->rowptr;
-  delete[] a->colind;
-  delete[] a->Y;
-  delete[] a->C;
-  delete a;
-  return;
-}
-void Clear(struct vector_double* c) {
-  delete[] c->vec;
-  delete[] c;
-  return;
-}
-void Clear(struct vector_int* c) {
-  delete[] c->vec;
-  delete[] c;
-  return;
-}
-void Clear(struct options* opt) {
-  delete[] opt;
-  delete[] opt;
-  return;
-}

@@ -240,7 +240,7 @@ void ProteinFDRestimator::binProteinsEqualDeepth()
 {
   //assuming lengths sorted from less to bigger
   std::sort(lengths.begin(),lengths.end());
-  unsigned entries = lengths.size();
+  unsigned entries = static_cast<unsigned>(lengths.size());
   //integer divion and its residue
   unsigned nr_bins = (unsigned)((entries - entries%nbins) / nbins);
   unsigned residues = entries % nbins;
@@ -333,7 +333,8 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
   {
     unsigned tp = targets - fp;
     unsigned w = N - tp;
-    double prob = hypergeometric(fp,N,w,cf);
+    double prob = hypergeometric(static_cast<int>(fp),static_cast<int>(N),
+      static_cast<int>(w),static_cast<int>(cf));
     logprob.push_back(prob);
   }
   //normalization
@@ -369,7 +370,7 @@ unsigned int ProteinFDRestimator::countProteins(unsigned int bin,const std::set<
 
 unsigned int ProteinFDRestimator::getBinProteins(unsigned int bin)
 {
-  return binnedProteins[bin].size();
+  return static_cast<unsigned int>(binnedProteins[bin].size());
 }
 
 

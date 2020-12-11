@@ -107,7 +107,7 @@ public:
 
 
   vector<float> * get_row_p ( int i ) const {
-    return m[i];
+    return m[static_cast<std::size_t>(i)];
   }
 
   void get_col ( vector<float> & c_out, int j );
@@ -124,7 +124,7 @@ public:
   inline int rows() const { return nrows; }
   inline int cols() const { return ncols; }
   inline int size() const { return nrows * ncols; }
-  inline size_t byte_size() const { return (size_t)( size() * sizeof(data_type)) ; }
+  inline size_t byte_size() const { return static_cast<std::size_t>(size()) * sizeof(data_type); }
 
   
   
@@ -142,20 +142,20 @@ public:
     ncols = x.ncols; sp_level = x.sp_level; return *this; 
   }
 
-  vector<value_type> * at(int i) const {   return m.at(i); };
+  vector<value_type> * at(int i) const {   return m.at(static_cast<std::size_t>(i)); };
   //vector<value_type> * operator[](int i) const { return m[i]; };
-  vector<value_type> * operator()(int i) const { return m[i]; };
+  vector<value_type> * operator()(int i) const { return m[static_cast<std::size_t>(i)]; };
   inline float operator() (int i, int j) const { 
-    return (*(m[i]))[j];
+    return (*(m[static_cast<std::size_t>(i)]))[static_cast<std::size_t>(j)];
   }
   inline float get_val(int i, int j) const { 
     return (*this)(i,j);
   }
   void set_val( int i , int j, float v) {
-	  (*(m[i]))[j] = v;
+	  (*(m[static_cast<std::size_t>(i)]))[static_cast<std::size_t>(j)] = v;
   }
 
-  const vector<value_type> * operator[](int n) const { return m[n]; }
+  const vector<value_type> * operator[](int n) const { return m[static_cast<std::size_t>(n)]; }
 
   void remove_start_rows(int n );
 

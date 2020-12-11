@@ -28,7 +28,7 @@ using namespace std;
 
 class AlgIn {
   public:
-    AlgIn(const int size, const int numFeat);
+    AlgIn(const unsigned int size, const int numFeat);
     virtual ~AlgIn();
     int m; /* number of examples */
     int n; /* number of features */
@@ -64,12 +64,18 @@ struct data {
 
 struct vector_double { /* defines a vector of doubles */
     int d; /* number of elements */
-    double* vec; /* ptr to vector elements*/
+    double* vec = nullptr; /* ptr to vector elements*/
+    ~vector_double(){
+      delete[] vec;
+    }
 };
 
 struct vector_int { /* defines a vector of ints for index subsets */
     int d; /* number of elements */
-    int* vec; /* ptr to vector elements */
+    int* vec = nullptr; /* ptr to vector elements */
+    ~vector_int(){
+      delete[] vec;
+    }
 };
 
 struct options {
@@ -82,27 +88,6 @@ struct options {
 
 };
 
-class timer { /* to output run time */
-  protected:
-    double start, finish;
-  public:
-    vector<double> times;
-    void record() {
-      times.push_back(time());
-    }
-    void reset_vectors() {
-      times.erase(times.begin(), times.end());
-    }
-    void restart() {
-      start = clock();
-    }
-    void stop() {
-      finish = clock();
-    }
-    double time() const {
-      return ((double)(finish - start)) / CLOCKS_PER_SEC;
-    }
-};
 class Delta { /* used in line search */
   public:
     Delta() {
@@ -118,12 +103,6 @@ class Delta { /* used in line search */
 inline bool operator<(const Delta& a, const Delta& b) {
   return (a.delta < b.delta);
 }
-;
-
-void Clear(struct data* a); /* deletes a */
-void Clear(struct vector_double* a); /* deletes a */
-void Clear(struct vector_int* a); /* deletes a */
-double norm_square(const vector_double* A); /* returns squared length of A */
 
 /* svmlin algorithms and their subroutines */
 
@@ -131,15 +110,15 @@ double norm_square(const vector_double* A); /* returns squared length of A */
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_{i in Subset} Data->C[i] (Y[i]- w' x_i)^2 */
 /* over a subset of examples x_i specified by vector_int Subset */
 int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
-         const double epsilon, const struct vector_int* Subset,
-         struct vector_double* Weights, struct vector_double* Outputs,
+         const double epsilon, const vector_int& Subset,
+         vector_double& Weights, vector_double& Outputs,
          double cpos, double cneg);
 
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
-int L2_SVM_MFN(const AlgIn& set, struct options* Options,
-               struct vector_double* Weights,
-               struct vector_double* Outputs, double cpos, double cneg);
+int L2_SVM_MFN(const AlgIn& set, options& Options,
+               vector_double& Weights,
+               vector_double& Outputs, double cpos, double cneg);
 double line_search(double* w, double* w_bar, double lambda, double* o,
                          double* o_bar, const double* Y, int d, int l,
                           double cpos, double cneg);
