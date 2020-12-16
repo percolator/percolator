@@ -19,6 +19,7 @@
 
 #include <string>
 #include <cassert>
+#include <cctype>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -70,10 +71,9 @@ class TabReader {
     char* next = NULL;
     errno = 0;
     double d = strtod(f_, &next);
-    if (next == f_) {
-      err = 1;
-    } else {
-      err = errno ? errno : err;
+    if (next == f_ || (*next != '\0' && !isspace(*next))
+                   || ((d == HUGE_VAL || d == -HUGE_VAL) && errno == ERANGE)) {
+      err = errno ? errno : 1;
     }
     advance(next);
     return d;
@@ -82,14 +82,13 @@ class TabReader {
   int readInt() {
     char* next = NULL;
     errno=0;
-    int i = static_cast<int>(strtol(f_, &next, 10));
-    if (next == f_) {
-      err = 1;
-    } else {
-      err = errno ? errno : err;
+    long val = strtol(f_, &next, 10);
+    if (next == f_ || (*next != '\0' && !isspace(*next))
+                   || val < INT_MIN || val > INT_MAX) {
+      err = errno ? errno : 1;
     }
     advance(next);
-    return i;
+    return static_cast<int>(val);
   }
   
   std::string readString() {

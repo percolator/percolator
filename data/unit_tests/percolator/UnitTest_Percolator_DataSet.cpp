@@ -82,19 +82,22 @@ TEST_F(DataSetTest, CheckPsmParsingWithFeatures)
             1, optionalFields, true, myPsm, featurePool);
 }
 
-// Verify that only numerical features are accepted.
+// Verify that only integer values are accepted for the label.
 TEST_F(DataSetTest, CheckFeatureParsing)
 {
     optionalFields.clear();
+    DataSet::readPsm("Id\t1\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool);
+    DataSet::readPsm("Id\t-1\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool);
+    EXPECT_THROW(DataSet::readPsm("Id\t-1.3\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool), MyException);
 
-    DataSet::readPsm("Id\t1\t-1\tPEPTIDE\tProteinList",
-        1, optionalFields, true, myPsm, featurePool);
-    DataSet::readPsm("Id\t1\t+1.\tPEPTIDE\tProteinList",
-        1, optionalFields, true, myPsm, featurePool);
-    DataSet::readPsm("Id\t1\t-0.1\tPEPTIDE\tProteinList",
-        1, optionalFields, true, myPsm, featurePool);
+    DataSet::readPsm("Id\t100000000\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool);
+    EXPECT_THROW(DataSet::readPsm("Id\t100000000000000000000\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool), MyException);
 }
-
 
 // Verify that features are successfully read.
 TEST_F(DataSetTest, CheckOptionalFieldsParsing)
@@ -112,11 +115,8 @@ TEST_F(DataSetTest, CheckOptionalFieldsParsing)
     ASSERT_EQ(2.5, myPsm->calcMass);
     ASSERT_EQ(42, myPsm->scan);
 
-    // XXX: If the parser expects an int, it will silently ignore the
-    // fractional part of the entry.
-    DataSet::readPsm("Id\t-1\t42\t2.5\tPEPTIDE\tProteinList",
-            1, optionalFields, true, myPsm, featurePool);
-    ASSERT_TRUE(myPsm != NULL);
-    ASSERT_EQ(42.0, myPsm->calcMass);
-    ASSERT_EQ(2, myPsm->scan);
+    EXPECT_THROW(DataSet::readPsm("Id\t-1\t2:5\t42\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool), MyException);
+    EXPECT_THROW(DataSet::readPsm("Id\t-1\t2.5\t4I2\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool), MyException);
 }

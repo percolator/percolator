@@ -69,9 +69,12 @@ TEST_F(TabReaderTest, CheckReadInt)
     tryInvalidInt("- 125");
     tryValidInt("-125 ", -125);
     tryInvalidInt("x125");
+    tryInvalidInt("125x");
 
-    // XXX: The parser will ignore extra trailing characters.
-    tryValidInt("125x", 125);
+    tryValidInt("2147483647", 2147483647);
+    tryValidInt("-2147483648", -2147483648);
+    tryInvalidInt("100000000000000000000000");
+    tryInvalidInt("-100000000000000000000000");
 }
 
 // What is and isn't a valid real number.
@@ -79,13 +82,11 @@ TEST_F(TabReaderTest, CheckReadDouble)
 {
     tryInvalidDouble("");
     tryValidDouble("1.5", 1.5);
-    tryValidDouble("-1.5 ", -1.5);
+    tryValidDouble("+1.5\n", +1.5);
+    tryValidDouble("-1.5\t", -1.5);
     tryInvalidDouble("x1.5");
-
-    // XXX: The parser will ignore extra trailing characters.
-    tryValidDouble("1.5+", 1.5);
-    tryValidDouble("15x", 15.0);
-    tryValidDouble("1x5", 1.0);
+    tryInvalidDouble("1:5");
+    tryInvalidDouble("15:");
 }
 
 // Tests reading a sequence of fields, including skipping fields.
