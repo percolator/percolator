@@ -1,6 +1,6 @@
 
-set(pathToTestScripts ${CMAKE_BINARY_DIR}/data/integration_tests/percolator)
-set(pathToOutputData ${CMAKE_BINARY_DIR}/data/integration_tests/percolator/testData)
+set(pathToTestScripts ${CMAKE_BINARY_DIR}/tests/integration_tests/percolator)
+set(pathToOutputData ${CMAKE_BINARY_DIR}/tests/integration_tests/percolator/testData)
 set(pathToBinaries ${CMAKE_BINARY_DIR}/src)
 
 file(MAKE_DIRECTORY ${pathToOutputData})

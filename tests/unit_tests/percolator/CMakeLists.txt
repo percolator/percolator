@@ -38,7 +38,6 @@ endif(GOOGLE_TEST)
 include_directories(${GTEST_INCLUDE_DIRS}
     ${PERCOLATOR_SOURCE_DIR}/src
     ${PERCOLATOR_SOURCE_DIR}/src/fido
-    ${PERCOLATOR_SOURCE_DIR}/data/tests
     ${CMAKE_BINARY_DIR}/src)
 add_executable(gtest_unit
     Unit_tests_Percolator_main.cpp
