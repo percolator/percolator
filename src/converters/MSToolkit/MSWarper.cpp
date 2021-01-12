@@ -84,7 +84,7 @@ int main(int argc, char *argv[]){
   }
   //Set up the output file
 
-  for ( int f_idx = 0; f_idx < ms1_file_names.size() ; f_idx++ ) {
+  for ( std::size_t f_idx = 0; f_idx < ms1_file_names.size() ; f_idx++ ) {
     
     //since I don't know if this is reusable from file to file, keep it as a separate variable for each iteration
     MSReader r;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
     r.readFile((char*)ms1_file_names[f_idx],s);
 
     string ms1_tmp_name(ms1_file_names[f_idx]);
-    int last_dot_pos = ms1_tmp_name.rfind('.');
+    std::size_t last_dot_pos = ms1_tmp_name.rfind('.');
     ms1_tmp_name.insert(last_dot_pos,string(".warped"));
     char * ms1_name = (char*)ms1_tmp_name.c_str();
     

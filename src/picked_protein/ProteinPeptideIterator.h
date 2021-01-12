@@ -106,10 +106,10 @@ class ProteinPeptideIterator {
    * formed from a protein of the given length.  No enzyme specificity
    * assumed.  
    */
-  unsigned int countMaxPeptides(
-    unsigned int protein_length,   ///< length of protein
-    unsigned int min_seq_length,   ///< min peptide length
-    unsigned int max_seq_length);  ///< max peptide length
+  int countMaxPeptides(
+    int protein_length,   ///< length of protein
+    int min_seq_length,   ///< min peptide length
+    int max_seq_length);  ///< max peptide length
 
  public:
   /**
@@ -183,6 +183,6 @@ class ProteinPeptideIterator {
  * End:
  */
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 #endif

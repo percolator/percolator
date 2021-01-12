@@ -58,7 +58,7 @@ void LogisticRegression::limitgamma() {
 
 void LogisticRegression::calcPZW() {
 
-  for (int ix = z.numberEntries(); ix--;) {
+  for (std::size_t ix = static_cast<std::size_t>(z.numberEntries()); ix--;) {
     assert(isfinite(g[ix]));
     double e = exp(g[ix]);
     assert(isfinite(e));
@@ -66,9 +66,9 @@ void LogisticRegression::calcPZW() {
     p[ix] = min(max(e / (1 + e), epsilon), 1
         - epsilon);
     assert(isfinite(p[ix]));
-    w.packedReplace(ix, max(m[ix] * p[ix] * (1 - p[ix]), epsilon));
+    w.packedReplace(static_cast<int>(ix), max(m[ix] * p[ix] * (1 - p[ix]), epsilon));
     assert(isfinite(w[ix]));
-    z.packedReplace(ix, min(gRange, max(-gRange, g[ix] +
+    z.packedReplace(static_cast<int>(ix), min(gRange, max(-gRange, g[ix] +
         (y[ix] - p[ix] * m[ix]) / w[ix])));
     assert(isfinite(z[ix]));
   }
@@ -76,12 +76,12 @@ void LogisticRegression::calcPZW() {
 
 void LogisticRegression::initg() {
   BaseSpline::initg();
-  int n = x.size();
+  int n = static_cast<int>(x.size());
   p.resize(n);
   gnew = PackedVector(n);
-  for (int ix = g.size(); ix--;) {
+  for (std::size_t ix = static_cast<std::size_t>(g.size()); ix--;) {
     double p = (y[ix] + 0.05) / (m[ix] + 0.1);
-    gnew.packedReplace(ix, log(p / (1 - p)));
+    gnew.packedReplace(static_cast<int>(ix), log(p / (1 - p)));
     assert(isfinite(p));
     assert(isfinite(g[ix]));
   }

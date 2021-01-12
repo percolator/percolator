@@ -19,6 +19,7 @@
 
 #include <string>
 #include <cassert>
+#include <cctype>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -70,10 +71,9 @@ class TabReader {
     char* next = NULL;
     errno = 0;
     double d = strtod(f_, &next);
-    if (next == f_) {
-      err = 1;
-    } else {
-      err = errno ? errno : err;
+    if (next == f_ || (*next != '\0' && !isspace(*next))
+                   || ((d == HUGE_VAL || d == -HUGE_VAL) && errno == ERANGE)) {
+      err = errno ? errno : 1;
     }
     advance(next);
     return d;
@@ -82,14 +82,13 @@ class TabReader {
   int readInt() {
     char* next = NULL;
     errno=0;
-    int i = strtol(f_, &next, 10);
-    if (next == f_) {
-      err = 1;
-    } else {
-      err = errno ? errno : err;
+    long val = strtol(f_, &next, 10);
+    if (next == f_ || (*next != '\0' && !isspace(*next))
+                   || val < INT_MIN || val > INT_MAX) {
+      err = errno ? errno : 1;
     }
     advance(next);
-    return i;
+    return static_cast<int>(val);
   }
   
   std::string readString() {
@@ -98,7 +97,7 @@ class TabReader {
       err = 1;
       return std::string(f_);
     } else {
-      std::string s(f_, pch - f_);
+      std::string s(f_, static_cast<std::basic_string<char>::size_type>(pch - f_));
       advance(pch);
       return s;
     }
@@ -126,7 +125,7 @@ class DataSet {
   void inline setLabel(int l) { label_ = l; }
   int inline getLabel() const { return label_; }
   
-  unsigned int inline getSize() const { return psms_.size(); }
+  unsigned int inline getSize() const { return static_cast<unsigned int>(psms_.size()); }
   
   static inline void setCalcDoc(bool on) { calcDOC_ = on; }
   static inline bool getCalcDoc() { return calcDOC_; }
@@ -136,7 +135,7 @@ class DataSet {
     featureNames_ = FeatureNames();
     FeatureNames::resetNumFeatures();
   }
-  static unsigned getNumFeatures() { return featureNames_.getNumFeatures(); }
+  static unsigned getNumFeatures() { return static_cast<unsigned>(featureNames_.getNumFeatures()); }
   
   bool writeTabData(std::ofstream& out);
   

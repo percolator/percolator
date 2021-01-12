@@ -143,7 +143,7 @@ class PeptideConstraint {
 
 };
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 #endif
 

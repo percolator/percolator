@@ -87,13 +87,9 @@ void SetHandler::normalizeDOCFeatures(Normalizer* pNorm) {
   pNorm->normalizeSet(featuresDOC, offset, numFeatures);
 }
 
-/*const double* SetHandler::getFeatures(const int setPos, const int ixPos) const {
-  return subsets_[setPos]->getFeatures(ixPos);
-}*/
-
 int const SetHandler::getLabel(int setPos) {
   assert(setPos >= 0 && setPos < (signed int)subsets_.size());
-  return subsets_[setPos]->getLabel();
+  return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }
 
 int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
@@ -153,15 +149,15 @@ bool SetHandler::isDefaultDirectionLine(const std::string& defaultDirectionLine)
 
 int SetHandler::getNumFeatures(const std::string& line, int optionalFieldCount) {
   TabReader reader(line);
-  reader.skip(2u + optionalFieldCount); // remove id, label and optional fields
+  reader.skip(static_cast<std::size_t>(2 + optionalFieldCount)); // remove id, label and optional fields
   
-  double a = reader.readDouble();
+  reader.readDouble();
   int numFeatures = 0;
-  while (!reader.error()) {
+  while (!reader.error()){
     ++numFeatures;
-    a = reader.readDouble();
+    reader.readDouble();
   }
-  
+
   return numFeatures;
 }
 
@@ -169,7 +165,7 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
     int numFeatures, int optionalFieldCount, FeatureNames& featureNames) {
   TabReader reader(headerLine);
   // removes enumerator, label and if present optional fields
-  reader.skip(2u + optionalFieldCount);
+  reader.skip(static_cast<std::size_t>(2 + optionalFieldCount));
   int numFeatLeft = numFeatures;
   while (!reader.error()) {
     std::string tmp = reader.readString();
@@ -186,7 +182,7 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
     int optionalFieldCount, std::vector<double>& init_values) {
   TabReader reader(defaultDirectionLine);
   // removes enumerator, label and if present optional fields
-  reader.skip(2u + optionalFieldCount);
+  reader.skip(static_cast<std::size_t>(2 + optionalFieldCount));
   
   bool hasDefaultValues = false;
   unsigned int ix = 0;
@@ -276,7 +272,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
           PSMDescriptionPriority del = subsetPSMs.top();
-          upperLimit = del.priority;
+          upperLimit = static_cast<unsigned int>(del.priority);
           featurePool_.deallocate(del.psm->features);
           PSMDescription::deletePtr(del.psm);
           subsetPSMs.pop();
@@ -287,7 +283,6 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     
     addQueueToSets(subsetPSMs, targetSet, decoySet);
   } else { // simply read all PSMs
-    unsigned int targetIdx = 0u, decoyIdx = 0u;
     std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -424,7 +419,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
       }
     }
   }
-  if (!hasScannr) scanId.first = lineNr;
+  if (!hasScannr) scanId.first = static_cast<int>(lineNr);
   
   return scanId;
 }
@@ -486,12 +481,12 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
                                      init_values);
   }
-  if (hasDefaultValues && init_values.size() > numFeatures) {
+  if (hasDefaultValues && init_values.size() > static_cast<std::size_t>(numFeatures)) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too many default values present." << std::endl;
     if (NO_TERMINATE) {
       cerr << oss.str() << "No-terminate flag set: ignoring error and trimming default value vector." << std::endl;
-      init_values.resize(numFeatures);
+      init_values.resize(static_cast<std::size_t>(numFeatures));
     } else {
       throw MyException(oss.str());
     }

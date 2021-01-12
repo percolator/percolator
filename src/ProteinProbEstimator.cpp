@@ -195,7 +195,7 @@ void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold,
 double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) {
   std::vector<double> pvalues;
   std::transform(proteins_.begin(), proteins_.end(), 
-    std::back_inserter(pvalues), std::mem_fun_ref(&ProteinScoreHolder::getP));
+    std::back_inserter(pvalues), std::mem_fn(&ProteinScoreHolder::getP));
   
   double pi0 = 1.0;
   bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvalues);
@@ -231,7 +231,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
   }
   
   if (trivialGrouping_) {
-    return identifiedGroupIds.size();
+    return static_cast<unsigned>(identifiedGroupIds.size());
   } else {
     return nP;
   }
@@ -249,7 +249,7 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level) {
   }
   
   if (trivialGrouping_) {
-    return identifiedGroupIds.size();
+    return static_cast<unsigned>(identifiedGroupIds.size());
   } else {
     return nP;
   }
@@ -304,7 +304,7 @@ void ProteinProbEstimator::estimateQValuesEmp() {
 }
 
 void ProteinProbEstimator::setTargetandDecoysNames(Scores& peptideScores) {
-  unsigned int numGroups = 0;
+  int numGroups = 0;
   bool decoyFound = false;
   std::vector<ScoreHolder>::iterator psm = peptideScores.begin();
   for (; psm!= peptideScores.end(); ++psm) {
@@ -334,8 +334,8 @@ void ProteinProbEstimator::setTargetandDecoysNames(Scores& peptideScores) {
     }
   }
   if (!useDecoyPrefix) {
-    numberDecoyProteins_ = falsePosSet_.size();
-    numberTargetProteins_ = truePosSet_.size();
+    numberDecoyProteins_ = static_cast<unsigned int>(falsePosSet_.size());
+    numberTargetProteins_ = static_cast<unsigned int>(truePosSet_.size());
   }
   
   if (!decoyFound) {
@@ -355,7 +355,7 @@ void ProteinProbEstimator::addSpectralCounts(Scores& peptideScores) {
     std::set<unsigned int> seenProteinIdxs;
     for (; protIt != psm->pPSM->proteinIds.end(); protIt++) {
       if (proteinToIdxMap_.find(*protIt) != proteinToIdxMap_.end()) {
-        unsigned int proteinIdx = proteinToIdxMap_[*protIt];
+        unsigned int proteinIdx = static_cast<unsigned int>(proteinToIdxMap_[*protIt]);
         if (seenProteinIdxs.find(proteinIdx) == seenProteinIdxs.end()) {
           seenProteinIdxs.insert(proteinIdx);
         }

@@ -134,7 +134,7 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
       for (size_t ix = 0; ix < w[set].size(); ix++) {
         w[set][ix] = 0;
       }
-      w[set][abs(initDefaultDir) - 1] = (initDefaultDir < 0 ? -1 : 1);
+      w[set][static_cast<std::size_t>(abs(initDefaultDir) - 1)] = (initDefaultDir < 0 ? -1 : 1);
     }
   }
 }
@@ -166,7 +166,7 @@ bool SanityCheck::validateDirection(vector<vector<double> >& w) {
   }
   if (initDefaultDir) {
     for (size_t set = 0; set < w.size(); ++set) {
-      if (w[set][abs(initDefaultDir) - 1] * initDefaultDir <= 0) {
+      if (w[set][static_cast<std::size_t>(abs(initDefaultDir) - 1)] * initDefaultDir <= 0) {
         if (VERB > 1) {
           cerr
             << "Warning, wrong sign of the weight for main scoring direction"

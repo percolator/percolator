@@ -98,11 +98,11 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       peptideSequenceFlanked = PSMDescription::removePTMs(peptideSequenceFlanked);
       std::string peptideSequence = PSMDescription::removeFlanks(peptideSequenceFlanked);
       
-      int peptide_length = peptideSequence.size();
+      int peptide_length = static_cast<int>(peptideSequence.size());
       min_peptide_length = std::min(min_peptide_length, peptide_length);
       max_peptide_length = std::max(max_peptide_length, peptide_length);
       
-      int miscleavages = enzyme->countEnzymatic(peptideSequence);
+      int miscleavages = static_cast<int>(enzyme->countEnzymatic(peptideSequence));
       if (miscleavages > max_miscleavages) {
         if (VERB > 1) {
           std::cerr << "Miscleavage detected: " << peptideSequenceFlanked << std::endl;
@@ -111,7 +111,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       }
       
       if (tryTrypsinP) {
-        int miscleavages_trypsinp = trypsinP->countEnzymatic(peptideSequence);
+        int miscleavages_trypsinp = static_cast<int>(trypsinP->countEnzymatic(peptideSequence));
         if (miscleavages_trypsinp > max_miscleavages_trypsinp) {
           max_miscleavages_trypsinp = std::max(max_miscleavages_trypsinp, miscleavages_trypsinp);
         }
@@ -289,7 +289,7 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
           groupProteinIds[lastProteinId] = proteinsInGroup;
         }
         ProteinScoreHolder newProtein(lastProteinId, peptideIt->isDecoy(),
-            peptide, ++numGroups);
+            peptide, static_cast<int>(++numGroups));
         proteinToIdxMap_[lastProteinId] = proteins_.size();
         proteins_.push_back(newProtein);
         if (lastProteinId.find(decoyPattern_) == std::string::npos) {
@@ -341,12 +341,10 @@ void PickedProteinInterface::computeProbabilities(const std::string& fname) {
     switch (protInferenceMethod_) {
       case FISHER: {
         double fisher = 0.0;
-        int significantPeptides = 0;
         for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
               itP != peptides.end(); itP++) {
           fisher += log(itP->p / maxPeptidePval_);
         }
-        //double proteinPvalue = boost::math::gamma_q(peptides.size(), -1.0*fisher);
         double proteinPvalue = 0.0;
         if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
         it->setP(proteinPvalue);

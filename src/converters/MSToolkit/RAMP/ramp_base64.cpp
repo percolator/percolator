@@ -185,9 +185,9 @@ static void b64_init() {
     for (i = '+'; i <= 'z'; i++) {
       for (j = '+'; j <= 'z'; j++) {
         int index = (i << 8) | j;
-        lookup1[index] = (lookup[i] << 2) | (lookup[j] >> 4);
-        lookup2[index] = (lookup[i] << 4) | (lookup[j] >> 2);
-        lookup3[index] = (lookup[i] << 6) | (lookup[j]);
+        lookup1[index] = static_cast<unsigned char>((lookup[i] << 2) | (lookup[j] >> 4));
+        lookup2[index] = static_cast<unsigned char>((lookup[i] << 4) | (lookup[j] >> 2));
+        lookup3[index] = static_cast<unsigned char>((lookup[i] << 6) | (lookup[j]));
       }
     }
     for (i = '+'; i <= 'z'; i++) {
@@ -197,9 +197,9 @@ static void b64_init() {
           if (bLittleEndian) {
             char* c = (char*)&index4;
             index4 = 0;
-            *c++ = i;
-            *c++ = j;
-            *c = k;
+            *c++ = static_cast<char>(i);
+            *c++ = static_cast<char>(j);
+            *c = static_cast<char>(k);
             index4 *= 2;
           } else {
             index4 = 2 * ((i << 16) | (j << 8) | k);
@@ -260,9 +260,9 @@ void b64_decode(char* out, const char* in, int outlen) {
   }
   // pick up the last bit of conversion
   while (count--) {
-    *dest++ = lookup1[f = (((*src) << 8) | (*(src + 1)))];
+    *dest++ = lookup1[f = static_cast<unsigned short>(((*src) << 8) | (*(src + 1)))];
     if (count--) {
-      *dest++ = lookup2[f = ((f << 8) | (*(src + 2)))];
+      *dest++ = lookup2[f = static_cast<unsigned short>((f << 8) | (*(src + 2)))];
       if (count--) {
         *dest++ = lookup3[(short int)((f << 8) | (*(src + 3)))];
       } else {

@@ -95,10 +95,7 @@ void PackedVector::packedReplace(int ind, double val)
 {
   assert(ind<size());
   assert(size()==numberEntries());
-  //if ( sparseChecker.isNonzero(val) )
-  //{
-    values[ ind ] = val;
-  //}
+  values[ ind ] = val;
 }
 
 void PackedVector::packedAddElement(int ind, double val)

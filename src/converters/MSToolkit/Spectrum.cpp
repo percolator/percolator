@@ -72,7 +72,7 @@ Spectrum::Spectrum(const Spectrum& s){
 
 Spectrum& Spectrum::operator=(const Spectrum& s){
   //cout<<"in Spectrum operator="<<endl;
-  int i;
+  std::size_t i;
   if (this != &s) {
     delete vPeaks;
     delete vEZ;
@@ -108,7 +108,7 @@ Spectrum& Spectrum::operator=(const Spectrum& s){
 }
 
 Peak_T& Spectrum::operator[](const int& i) {
-	return vPeaks->operator[](i);
+	return vPeaks->operator[](static_cast<std::size_t>(i));
 }
 
 
@@ -153,7 +153,7 @@ void Spectrum::addZState(int i, double d){
 
 /* Returns Result struct of single element in the spectrum. */
 Peak_T& Spectrum::at(const int& i){
-  return vPeaks->operator [](i);
+  return vPeaks->operator [](static_cast<std::size_t>(i));
 };
 
 Peak_T& Spectrum::at(const unsigned int& i){
@@ -161,7 +161,7 @@ Peak_T& Spectrum::at(const unsigned int& i){
 };
 
 EZState& Spectrum::atEZ(const int& i){
-	return vEZ->operator [](i);
+	return vEZ->operator [](static_cast<std::size_t>(i));
 }
 
 EZState& Spectrum::atEZ(const unsigned int& i){
@@ -169,11 +169,11 @@ EZState& Spectrum::atEZ(const unsigned int& i){
 }
 
 ZState& Spectrum::atZ(const int& i){
-	return vZ->operator [](i);
+	return vZ->operator [](static_cast<std::size_t>(i));
 };
 
 ZState& Spectrum::atZ(const unsigned int& i){
-	return vZ->operator [](i);
+	return vZ->operator [](static_cast<std::size_t>(i));
 };
 
 /* Clears the spectrum */
@@ -371,22 +371,22 @@ void Spectrum::setScanID(int scanid)
 }
 /* Returns the number of elements in the spectrum. */
 int Spectrum::size(){
-  return vPeaks->size();
+  return static_cast<int>(vPeaks->size());
 };
 
 int Spectrum::sizeEZ(){
-	return vEZ->size();
+	return static_cast<int>(vEZ->size());
 }
 
 int Spectrum::sizeZ(){
-	return vZ->size();
+	return static_cast<int>(vZ->size());
 };
 
 float Spectrum::getTotalIntensity()
 {
   float totalIntensity = 0;
 
-  for(int i=0; i<vPeaks->size(); i++)
+  for(std::size_t i=0; i<vPeaks->size(); i++)
     totalIntensity += (vPeaks->at(i)).intensity;
 
   return totalIntensity;
@@ -425,7 +425,7 @@ void Spectrum::setPeaks(vector<Peak_T> peaks)
   if(!vPeaks->empty())
     vPeaks->clear();
 
-  for(int i=0; i<peaks.size(); i++)
+  for(std::size_t i=0; i<peaks.size(); i++)
     {
       vPeaks->push_back(peaks.at(i));
     }
@@ -450,7 +450,7 @@ void Spectrum::printMe()
   
   
 
-  for(int i=0; i<vPeaks->size(); i++)
+  for(std::size_t i=0; i<vPeaks->size(); i++)
     {
       cout << setprecision (10) <<(vPeaks->at(i)).mz<< "  "<<(vPeaks->at(i)).intensity <<endl;
     }

@@ -45,22 +45,22 @@ bool compareDataPoints(dataPoint x, dataPoint y) {
 // set the data points
 void LTSRegression::setData(vector<double> & x, vector<double> & y) {
   dataPoint tmp;
-  for (int i = 0; i < x.size(); ++i) {
+  for (std::size_t i = 0; i < x.size(); ++i) {
     tmp.x = x[i];
     tmp.y = y[i];
     tmp.absr = -1.0;
     data.push_back(tmp);
   }
   // since we definitely expect less than 25% contamination, we set h as 0.75*n
-  h = (int)round(percentageH * x.size());
+  h = (int)round(percentageH * static_cast<double>(x.size()));
 }
 
 // for our case, constructing a random p-subset is equivalent to build the equation of a line through 2 randomly
 // chosen points
 vector<dataPoint> LTSRegression::getInitialHSubset() {
   double a, b;
-  int i1, i2;
-  int n = data.size();
+  std::size_t i1, i2;
+  std::size_t n = data.size();
   // generate two random indices
   i1 = PseudoRandom::lcg_rand() % n;
   i2 = PseudoRandom::lcg_rand() % n;
@@ -81,7 +81,7 @@ vector<dataPoint> LTSRegression::getInitialHSubset() {
 
 // fill the absolute values of the residuals
 void LTSRegression::fillResiduals(pair<double, double> par) {
-  for (int i = 0; i < data.size(); ++i) {
+  for (std::size_t i = 0; i < data.size(); ++i) {
     data[i].absr = abs(data[i].y - (par.first * data[i].x + par.second));
   }
 }
@@ -90,7 +90,7 @@ void LTSRegression::fillResiduals(pair<double, double> par) {
 pair<double, double> LTSRegression::fitLSLine(vector<dataPoint> hdata) {
   double sumxy = 0.0, sumx = 0.0, sumy = 0.0, sumxsq = 0.0;
   double a, b;
-  for (int i = 0; i < h; ++i) {
+  for (std::size_t i = 0; i < h; ++i) {
     sumx += hdata[i].x;
     sumy += hdata[i].y;
     sumxy += hdata[i].x * hdata[i].y;
@@ -120,7 +120,7 @@ vector<dataPoint> LTSRegression::performCstep(vector<dataPoint> hOld) {
 // calculate the sum of squared residuals
 double LTSRegression::calculateQ() {
   double res = 0.0;
-  for (int i = 0; i < h; ++i) {
+  for (std::size_t i = 0; i < h; ++i) {
     res += pow(data[i].absr, 2);
   }
   return res;
@@ -131,7 +131,7 @@ void LTSRegression::runLTS() {
   pair<double, double> par;
   vector<dataPoint> hold, hnew, besth(data.begin(), data.begin() + h);
   vector<vector<dataPoint> > best10Subsets;
-  int noBestSubsets = 0, indexLargestQ = 0;
+  std::size_t noBestSubsets = 0, indexLargestQ = 0;
   vector<double> Q;
   if (VERB > 3) {
     cerr << "Regression parameters: " << endl;
@@ -139,7 +139,7 @@ void LTSRegression::runLTS() {
         << "%, no_initial_subsets = " << noSubsets << ", epsilon = "
         << epsilon << endl;
   }
-  srand(time(NULL));
+  srand(static_cast<unsigned int>(time(NULL)));
   for (int i = 0; i < noSubsets; ++i) {
     // get the first subset (data will be sorted according to abs(residuals)
     hold = getInitialHSubset();
@@ -165,7 +165,7 @@ void LTSRegression::runLTS() {
         Q[indexLargestQ] = q1;
         largestQ = Q[0];
         indexLargestQ = 0;
-        for (int i = 1; i < Q.size(); ++i)
+        for (std::size_t i = 1; i < Q.size(); ++i)
           if (Q[i] > largestQ) {
             largestQ = Q[i];
             indexLargestQ = i;
@@ -174,7 +174,7 @@ void LTSRegression::runLTS() {
     }
   }
   // for the best 10 h-subset perform C-steps until convergence
-  for (int j = 0; j < best10Subsets.size(); ++j) {
+  for (std::size_t j = 0; j < best10Subsets.size(); ++j) {
     hold = best10Subsets[j];
     par = fitLSLine(hold);
     fillResiduals(par);
@@ -206,18 +206,18 @@ void LTSRegression::runLTS() {
 }
 
 void LTSRegression::printVector(vector<dataPoint> v) {
-  for (int i = 0; i < v.size(); ++i) {
+  for (std::size_t i = 0; i < v.size(); ++i) {
     cerr << v[i].x << " " << v[i].y << endl;
   }
   cerr << endl;
 }
 
 void LTSRegression::printDataPoints() {
-  for (int i = 0; i < h; ++i) {
+  for (std::size_t i = 0; i < h; ++i) {
     cout << data[i].x << " " << data[i].y << " " << data[i].absr << endl;
   }
   cout << "----" << endl;
-  for (int i = h; i < data.size(); ++i) {
+  for (std::size_t i = static_cast<std::size_t>(h); i < data.size(); ++i) {
     cout << data[i].x << " " << data[i].y << " " << data[i].absr << endl;
   }
 }

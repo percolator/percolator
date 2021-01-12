@@ -40,8 +40,14 @@ class PackedMatrix
     const PackedVector & operator [](int k) const {
       return rows[k];
     }
+    PackedVector & operator [](std::size_t k){
+      return rows[k];
+    }
+    const PackedVector & operator [](std::size_t k) const {
+      return rows[k];
+    }
     int numRows() const {
-      return rows.size();
+      return static_cast<int>(rows.size());
     }
     int numCols() const {
       return cols;

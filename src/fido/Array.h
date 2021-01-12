@@ -30,6 +30,7 @@ public:
  Array():data() {}
 
   explicit Array(int n);
+  explicit Array(std::size_t n);
   Array(int n, const T & defaultValue);
   Array(const vector<T> & newvector);
   // destructor
@@ -38,6 +39,8 @@ public:
   // important vector functions
   virtual const T & operator [] (int k) const;
   virtual T & operator [] (int k);
+  virtual const T & operator [] (std::size_t k) const;
+  virtual T & operator [] (std::size_t k);
   virtual Array<T> operator [](const Array<int> & rhs) const;
 
   //Set operator ==(const T & rhs) const;
@@ -61,7 +64,7 @@ public:
   void remove(int k);
 
   // accessors
-  virtual int size() const;
+  virtual std::size_t size() const;
 
   // bound checking function
   bool inBounds(int i) const;
@@ -110,7 +113,7 @@ public:
   }
 
   Iterator end() const {
-    return Iterator(this, size());
+    return Iterator(this, static_cast<int>(size()));
   }
 
   // exception classes

@@ -53,7 +53,6 @@ class ScoreHolder {
   double score, q, pep, p;
   PSMDescription* pPSM;
   int label;
-  //std::vector<std::string> psms_list;
   
   ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
   ScoreHolder(const double s, const int l, PSMDescription* psm = NULL) :
@@ -240,13 +239,13 @@ class Scores {
     totalNumberOfTargets_ = 0;
     totalNumberOfDecoys_ = 0;
   }
-  
+  void setUsePi0(bool usePi0);
  protected:
   bool usePi0_;
   
   double pi0_;
   double targetDecoySizeRatio_;
-  int totalNumberOfDecoys_, totalNumberOfTargets_;
+  unsigned int totalNumberOfDecoys_, totalNumberOfTargets_;
   
   std::vector<ScoreHolder> scores_;
   std::map<PSMDescription*, std::vector<PSMDescription*> > peptidePsmMap_;

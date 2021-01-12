@@ -87,7 +87,7 @@ class SetHandler {
   
   int const getLabel(int setPos);
   inline int getSizeFromLabel(int label) {
-    return (subsets_[getSubsetIndexFromLabel(label)]->getSize());
+    return static_cast<int>(subsets_[getSubsetIndexFromLabel(label)]->getSize());
   }
   
   inline DataSet* getSubset(unsigned int ix) { return (subsets_[ix]); }

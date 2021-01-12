@@ -53,8 +53,6 @@ class LibSVRModel : public SVRModel {
    int setLinearSVRParam(const double &eps, const double &C);
    /* set epsilon, C, gamma */
    int setRBFSVRParam(const double &eps, const double &C, const double &gamma);
-   /* check if the model is null */
-   inline bool IsModelNull() const { svr_ == NULL ? true : false; }
    /* train a svr model */
    virtual int TrainModel(const std::vector<PSMDescription*> &train_psms,
                           const int &number_features);

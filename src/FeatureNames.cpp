@@ -38,7 +38,7 @@ FeatureNames::~FeatureNames() {
 
 void FeatureNames::initFeatures(bool calcDOC) {
   if (calcDOC) {
-    docFeatNum = featureNames.size();
+    docFeatNum = static_cast<int>(featureNames.size());
     featureNames.push_back("docpI");
     featureNames.push_back("docdM");
     featureNames.push_back("docRT");
@@ -64,9 +64,9 @@ string FeatureNames::getFeatureNames(bool skipDOC) {
       : (int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
-    int featNum = 0;
+    std::size_t featNum = 0;
     oss << featureNames[featNum++];
-    for (; featNum < n; ++featNum) {
+    for (; static_cast<int>(featNum) < n; ++featNum) {
       oss << "\t" << featureNames[featNum];
     }
   }
@@ -84,7 +84,7 @@ int FeatureNames::getFeatureNumber(const string& featureName) {
           break;
         }
       }
-      if (isEqual) return fnum + 1;
+      if (isEqual) return static_cast<int>(fnum + 1);
     } 
   }
   return 0;
