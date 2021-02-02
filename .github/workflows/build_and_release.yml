@@ -29,7 +29,7 @@ jobs:
 
   build-centos:
     runs-on: ubuntu-latest
-    container: 'trinitronx/build-tools:centos-7'
+    container: 'bemehiser/centos-cmake-build'
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
