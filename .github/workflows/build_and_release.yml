@@ -27,6 +27,25 @@ jobs:
         name: ubuntu-packages
         path: ../my_rel
 
+  build-centos:
+    runs-on: ubuntu-latest
+    container: 'centos:latest'
+    steps:
+    - uses: actions/checkout@v2
+    - name: create_dirs
+      run: mkdir -p ../my_rel ../my_build
+    - name: configure_and_make
+      run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
+    - name: test
+      run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: zip raw binary
+      run: zip -j ../my_rel/percolator-noxml.zip ../my_build/percolator-noxml/src/percolator
+    - name: Upload packages
+      uses: actions/upload-artifact@v1
+      with:
+        name: centos-packages
+        path: ../my_rel
+
   build-osx:
     runs-on: macos-latest
     steps:
@@ -65,7 +84,7 @@ jobs:
       run: |
         SET base_dir=%cd%
         ECHO %base_dir%
-        tar.exe -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
+        TAR -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
