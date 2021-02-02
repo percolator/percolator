@@ -37,6 +37,8 @@ jobs:
       run: admin/builders/osx64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
     - name: test
       run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: zip raw binary
+      run: zip -j ../my_rel/percolator-noxml.zip ../my_build/percolator-noxml/Release/src/percolator
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
@@ -59,6 +61,8 @@ jobs:
         SET base_dir=%cd%
         ECHO %base_dir%
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+    - name: zip raw binary
+      run: zstd %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe -o %base_dir%\my_rel\percolator-noxml.zip
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
