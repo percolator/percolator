@@ -65,7 +65,7 @@ jobs:
       run: |
         SET base_dir=%cd%
         ECHO %base_dir%
-        tar.exe -czf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
+        tar.exe -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
