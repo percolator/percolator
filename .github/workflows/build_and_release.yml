@@ -81,11 +81,7 @@ jobs:
         ECHO %base_dir%
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
     - name: zip raw binary
-      run: |
-        SET base_dir=%cd%
-        ECHO %base_dir%
-        ECHO TAR -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
-        TAR -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
+      run: TAR -czvf ..\my_rel\percolator-noxml.zip ..\my_build\percolator-noxml\src\Release\percolator.exe
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
