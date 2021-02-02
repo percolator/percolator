@@ -29,13 +29,9 @@ jobs:
 
   build-centos:
     runs-on: ubuntu-latest
-    container: 'centos:latest'
+    container: 'trinitronx/build-tools:centos-7'
     steps:
     - uses: actions/checkout@v2
-    - name: preinstall
-      run:
-         sudo dnf -y install cmake gcc gcc-c++ make
-         sudo dnf -y install libxml2-utils
     - name: create_dirs
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
@@ -88,6 +84,7 @@ jobs:
       run: |
         SET base_dir=%cd%
         ECHO %base_dir%
+        ECHO TAR -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
         TAR -czvf %base_dir%\my_rel\percolator-noxml.zip %base_dir%\my_build\percolator-noxml\src\Release\percolator.exe
     - name: Upload packages
       uses: actions/upload-artifact@v1
