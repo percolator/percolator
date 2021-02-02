@@ -32,6 +32,10 @@ jobs:
     container: 'centos:latest'
     steps:
     - uses: actions/checkout@v2
+    - name: preinstall
+      run:
+         sudo dnf -y install cmake gcc gcc-c++ make
+         sudo dnf -y install libxml2-utils
     - name: create_dirs
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
