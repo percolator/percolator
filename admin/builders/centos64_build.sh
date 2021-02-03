@@ -76,6 +76,10 @@ cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/us
 make -j 4;
 make -j 4 package;
 
+# Fix to handle alt. rpc location
+export CXXFLAGS=/usr/include/tirpc
+
+
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=ON ${src_dir}/percolator
