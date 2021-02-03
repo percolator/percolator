@@ -77,7 +77,7 @@ make -j 4;
 make -j 4 package;
 
 # Fix to handle alt. rpc location
-export CXXFLAGS=/usr/include/tirpc
+export CXXFLAGS= -I/usr/include/tirpc
 
 
 mkdir -p ${build_dir}/percolator
