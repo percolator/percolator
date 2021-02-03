@@ -50,7 +50,7 @@ void BasicGroupBigraph::groupProteinsBy(const Array<Set> & groups) {
       // each group is either present or absent
       originalN[k] = Counter( 1 );
     } else {
-      originalN[k] = Counter(groups[k].size());
+      originalN[k] = Counter(static_cast<int>(groups[k].size()));
     }
   }
 

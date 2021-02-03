@@ -24,11 +24,12 @@
 #include <set>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <boost/functional/hash.hpp>
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+#include "GoogleAnalytics.h"
 
 using namespace std;
 
@@ -66,12 +67,12 @@ Caller::~Caller() {
   enzyme_ = NULL;
 }
 
-string Caller::extendedGreeter(time_t& startTime) {
+string Caller::extendedGreeter() {
   ostringstream oss;
   char* host = getenv("HOSTNAME");
   oss << greeter();
   oss << "Issued command:" << endl << call_ << endl;
-  oss << "Started " << ctime(&startTime) << endl;
+  oss << "Started " << timer.getStartTimeStr() << endl;
   oss.seekp(-1, ios_base::cur);
   if (host) oss << " on " << host << endl;
   oss << "Hyperparameters: selectionFdr=" << selectionFdr_
@@ -380,23 +381,6 @@ bool Caller::parseOptions(int argc, char **argv) {
 	  "",
 	  TRUE_IF_SET);
   
-
-  /*
-  cmd.defineOption(Option::NO_SHORT_OPT,
-      "fido-protein-group-level-inference",
-      "Uses protein group level inference, each cluster of proteins is either present or not, therefore when grouping proteins discard all possible combinations for each group.(Only valid if option -A is active and -N is inactive).",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption(Option::NO_SHORT_OPT,
-      "fisher-pval-cutoff",
-      "The p-value cutoff for peptides when inferring proteins with fisher's method. Default = 1.0",
-      "value");
-  cmd.defineOption(Option::NO_SHORT_OPT,
-      "protein-absence-ratio",
-      "The ratio of absent proteins, used for calculating protein-level q-values with a null hypothesis of \"Protein P is absent\". This uses the \"classic\" protein FDR in favor of the \"picked\" protein FDR.",
-      "value");
-  */
-
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
 
@@ -490,10 +474,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     double protEstimatorAbsenceRatio = 1.0;
     double protEstimatorPeptideQvalThreshold = -1.0;
 
-    //if (cmd.optionSet("I")) protEstimatorAbsenceRatio = cmd.getDouble("I", 0.0, 1.0);
     protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
     if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
-    //if (cmd.optionSet("Q")) protEstimatorTrivialGrouping = false;
     if (cmd.optionSet("spectral-counting-fdr")) {
       protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
     }
@@ -522,12 +504,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       // Options for controlling speed
       bool fidoNoPartitioning = false; // cannot be set on cmd line
       bool fidoNoClustering = false; // cannot be set on cmd line
-      unsigned fidoGridSearchDepth = 0;
+      unsigned int fidoGridSearchDepth = 0;
       bool fidoNoPruning = false;
       double fidoGridSearchThreshold = 0.0;
       double fidoProteinThreshold = 0.01;
       double fidoMseThreshold = 0.1;
-      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getInt("fido-gridsearch-depth", 0, 4);
+      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getUInt("fido-gridsearch-depth", 0, 4);
       if (cmd.optionSet("fido-fast-gridsearch")) fidoGridSearchThreshold = cmd.getDouble("fido-fast-gridsearch", 0.0, 1.0);
       if (cmd.optionSet("fido-no-split-large-components")) fidoNoPruning = true;
       if (cmd.optionSet("fido-protein-truncation-threshold")) fidoProteinThreshold = cmd.getDouble("fido-protein-truncation-threshold", 0.0, 1.0);
@@ -547,7 +529,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       double pickedProteinPvalueCutoff = 1.0;
       bool pickedProteinReportFragmentProteins = false;
       bool pickedProteinReportDuplicateProteins = false;
-      //if (cmd.optionSet("Q")) pickedProteinPvalueCutoff = cmd.getDouble("Q", 0.0, 1.0);
       if (cmd.optionSet("protein-report-fragments")) pickedProteinReportFragmentProteins = true;
       if (cmd.optionSet("protein-report-duplicates")) pickedProteinReportDuplicateProteins = true;
 
@@ -633,20 +614,20 @@ bool Caller::parseOptions(int argc, char **argv) {
     testFdr_ = cmd.getDouble("testFDR", 0.0, 1.0);
   }
   if (cmd.optionSet("maxiter")) {
-    numIterations_ = cmd.getInt("maxiter", 0, 1000);
+    numIterations_ = cmd.getUInt("maxiter", 0, 1000);
   }
   if (cmd.optionSet("num-threads")) {
-    numThreads_ = cmd.getInt("num-threads", 1, 128);
+    numThreads_ = cmd.getUInt("num-threads", 1, 128);
   }
   if (cmd.optionSet("subset-max-train")) {
-    maxPSMs_ = cmd.getInt("subset-max-train", 0, 100000000);
+    maxPSMs_ = cmd.getUInt("subset-max-train", 0, 100000000);
   }
   if (cmd.optionSet("seed")) {
-    PseudoRandom::setSeed(cmd.getInt("seed", 1, 20000));
+    PseudoRandom::setSeed(static_cast<unsigned long int>(cmd.getInt("seed", 1, 20000)));
   }
   if (cmd.optionSet("doc")) {
     DataSet::setCalcDoc(true);
-    DescriptionOfCorrect::setDocType(cmd.getInt("doc", 0, 15));
+    DescriptionOfCorrect::setDocType(cmd.getUInt("doc", 0, 15));
   }
   if (cmd.optionSet("klammer")) {
     DescriptionOfCorrect::setKlammer(true);
@@ -702,7 +683,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     selectedCneg_ = 0.5;
     skipNormalizeScores_ = true;
     if (!cmd.optionSet("init-weights")) {
-      std:cerr << "Error: the --static option requires the --init-weights "
+      std::cerr << "Error: the --static option requires the --init-weights "
         << "option to be specified." << std::endl;
       return 0;
     }
@@ -711,7 +692,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
 
   if (cmd.optionSet("nested-xval-bins")) {
-    nestedXvalBins_ = cmd.getInt("nested-xval-bins", 1, 1000);
+    nestedXvalBins_ = cmd.getUInt("nested-xval-bins", 1, 1000);
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -748,12 +729,8 @@ bool Caller::parseOptions(int argc, char **argv) {
 
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities
- * @param procStart clock time when process started
- * @param procStartClock clock associated with procStart
- * @param diff runtime of the calculations
  */
-void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
-    time_t& procStart, clock_t& procStartClock, double& diff){
+void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
   // write output (cerr or xml) if this is the unique peptide run and the
   // reportUniquePeptides_ option was switched on OR if this is not the unique
   // peptide run and the option was switched off
@@ -779,9 +756,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
         << allScores.posSize() << " target PSMs and "
         << allScores.negSize() << " decoy PSMs." << std::endl;
     }
-  }/* else {
-    allScores.weedOutRedundantMixMax();
-  }*/
+  }
 
   if (VERB > 0 && writeOutput) {
     if (useMixMax_) {
@@ -806,14 +781,9 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
   allScores.calcPep();
 
   if (VERB > 1 && writeOutput) {
-    time_t end;
-    time(&end);
-    diff = difftime(end, procStart);
-    ostringstream timerValues;
-    timerValues.precision(4);
-    timerValues << "Processing took " << ((double)(clock() - procStartClock)) / (double)CLOCKS_PER_SEC
-                << " cpu seconds or " << diff << " seconds wall clock time." << endl;
-    std::cerr << timerValues.str();
+    timer.stop();
+    std::cerr << "Processing took " << timer.getCPUTimeStr()
+                << " cpu seconds or " << timer.getWallTimeStr() << " seconds wall clock time." << endl;
   }
 
   std::string targetFN, decoyFN;
@@ -842,10 +812,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun,
  * the results to XML
  */
 void Caller::calculateProteinProbabilities(Scores& allScores) {
-  time_t startTime;
-  clock_t startClock;
-  time(&startTime);
-  startClock = clock();
+  Timer localTimer;
 
   if (VERB > 0) {
     cerr << "\nCalculating protein level probabilities.\n";
@@ -879,18 +846,10 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
 
   protEstimator_->computeStatistics();
 
-  time_t procStart;
-  clock_t procStartClock = clock();
-  time(&procStart);
-  double diff_time = difftime(procStart, startTime);
-
+  localTimer.stop();
   if (VERB > 1) {
-    ostringstream timerValues;
-    timerValues.precision(4);
-    timerValues << "Estimating protein probabilities took : "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff_time << " seconds wall clock time." << endl;
-    std::cerr << timerValues.str();
+    std::cerr << "Estimating protein probabilities took : " << localTimer.getCPUTimeStr() << 
+      " cpu seconds or " << localTimer.getWallTimeStr() << " seconds wall clock time." << endl;
   }
 
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);
@@ -906,137 +865,7 @@ void Caller::checkIsWritable(const std::string& filePath) {
   }
 }
 
-// adapted from https://github.com/crux-toolkit/crux-toolkit/blob/master/src/util/crux-utils.cpp
-bool Caller::parseUrl(std::string url, std::string* host, std::string* path) {
-  if (!host || !path) {
-    return false;
-  }
-  // find protocol
-  size_t protocolSuffix = url.find("://");
-  if (protocolSuffix != std::string::npos) {
-    url = url.substr(protocolSuffix + 3);
-  }
-  size_t pathBegin = url.find('/');
-  if (pathBegin == std::string::npos) {
-    *host = url;
-    *path = "/";
-  } else {
-    *host = url.substr(0, pathBegin);
-    *path = url.substr(pathBegin);
-  }
-  if (host->empty()) {
-    *host = *path = "";
-    return false;
-  }
-  return true;
-}
-
-void Caller::httpRequest(const std::string& url, const std::string& data) {
-  // Parse URL into host and path components
-  std::string host, path;
-  if (!parseUrl(url, &host, &path)) {
-    if (VERB > 2) {
-      std::cerr << "Warning: Failed parsing URL " << url << std::endl;
-    }
-    return;
-  }
-
-  using namespace boost::asio;
-
-  // Establish TCP connection to host on port 80
-  io_service service;
-  ip::tcp::resolver resolver(service);
-  ip::tcp::resolver::iterator endpoint = resolver.resolve(ip::tcp::resolver::query(host, "80"));
-  ip::tcp::socket sock(service);
-  connect(sock, endpoint);
-  
-  std::size_t seed = 0;
-  boost::hash_combine(seed, ip::host_name());
-  boost::hash_combine(seed, sock.local_endpoint().address().to_string());
-  std::stringstream stream;
-  stream << std::hex << seed;
-  
-  std::string placeholder = "CID_PLACEHOLDER";
-  std::string cid = stream.str();
-  
-  std::string newData(data);
-  
-  if (VERB > 3) {
-    std::cerr << "Analytics data string: " << newData << std::endl;
-  }
-  
-  newData.replace(newData.find(placeholder), placeholder.length(), cid);
-  
-  // Determine method (GET if no data; otherwise POST)
-  std::string method = newData.empty() ? "GET" : "POST";
-  std::ostringstream lengthString;
-  lengthString << newData.length();
-  
-  std::string contentLengthHeader = newData.empty()
-    ? ""
-    : "Content-Length: " + lengthString.str() + "\r\n";
-  // Send the HTTP request
-  std::string request =
-    method + " " + path + " HTTP/1.1\r\n"
-    "Host: " + host + "\r\n" +
-    contentLengthHeader +
-    "Connection: close\r\n"
-    "\r\n" + newData;
-  sock.send(buffer(request));
-}
-
-void Caller::postToAnalytics(const std::string& appName) {
-  // Post data to Google Analytics
-  // For more information, see: https://developers.google.com/analytics/devguides/collection/protocol/v1/devguide
-  try {
-    std::stringstream paramBuilder;
-    paramBuilder << "v=1"                // Protocol verison
-                 << "&tid=UA-71657517-2" // Tracking ID
-                 << "&cid=CID_PLACEHOLDER" // Unique device ID
-                 << "&t=event"           // Hit type
-                 << "&ec=percolator"     // Event category
-                 << "&ea=" << appName    // Event action
-                 << "&el="               // Event label
-#ifdef _MSC_VER
-                      "win"
-#elif __APPLE__
-                      "mac"
-#else
-                      "linux"
-#endif
-                   << '-' << VERSION;
-    httpRequest(
-      "http://www.google-analytics.com/collect",
-      paramBuilder.str());
-  } catch (...) {
-  }
-}
-
-/**
- * Executes the flow of the percolator process:
- * 1. reads in the input file
- * 2. trains the SVM
- * 3. calculate PSM probabilities
- * 4. (optional) calculate peptide probabilities
- * 5. (optional) calculate protein probabilities
- */
-int Caller::run() {
-  time_t startTime;
-  time(&startTime);
-  clock_t startClock = clock();
-  if (VERB > 0) {
-    std::cerr << extendedGreeter(startTime);
-  }
-  
-  std::string appName = "percolator";
-  postToAnalytics(appName);
-
-#ifdef _OPENMP
-  omp_set_num_threads(std::min((unsigned int)omp_get_max_threads(), numThreads_));
-#endif
-
-  int success = 0;
-  std::ifstream fileStream;
+std::istream& Caller::getDataInStream(std::ifstream& fileStream){
   if (!readStdIn_) {
     if (!tabInput_) fileStream.exceptions(ifstream::badbit | ifstream::failbit);
     fileStream.open(inputFN_.c_str(), ios::in);
@@ -1045,12 +874,11 @@ int Caller::run() {
     std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading "
               << "from stdin, training on all data instead." << std::endl;
   }
+  return readStdIn_ ? std::cin : fileStream;
+}
 
-  std::istream &dataStream = readStdIn_ ? std::cin : fileStream;
-
-  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_,
-                            xmlPrintDecoys_, xmlPrintExpMass_);
-  SetHandler setHandler(maxPSMs_);
+bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores){
+  bool success;
   if (!tabInput_) {
     if (VERB > 1) {
       std::cerr << "Reading pin-xml input from datafile " << inputFN_ << std::endl;
@@ -1067,7 +895,7 @@ int Caller::run() {
   if (!success) {
     std::cerr << "ERROR: Failed to read in file, check if the correct " <<
                  "file-format was used." << std::endl;
-    return 0;
+    return false;
   }
 
   if (VERB > 2) {
@@ -1130,8 +958,8 @@ int Caller::run() {
     }
   }
   assert(!(useMixMax_ && targetDecoyCompetition_));
-  
-  Scores allScores(useMixMax_);
+
+  allScores.setUsePi0(useMixMax_);
   allScores.populateWithPSMs(setHandler);
 
   if (VERB > 0 && useMixMax_ &&
@@ -1141,6 +969,39 @@ int Caller::run() {
       << "# decoys (" << allScores.negSize() << "). "
       << "Consider using target-decoy competition (-Y flag)." << std::endl;
   }
+  return success;
+}
+
+/**
+ * Executes the flow of the percolator process:
+ * 1. reads in the input file
+ * 2. trains the SVM
+ * 3. calculate PSM probabilities
+ * 4. (optional) calculate peptide probabilities
+ * 5. (optional) calculate protein probabilities
+ */
+int Caller::run() {
+  timer.reset();
+
+  if (VERB > 0) {
+    std::cerr << extendedGreeter();
+  }
+  
+  GoogleAnalytics::postToAnalytics("percolator");
+
+#ifdef _OPENMP
+  omp_set_num_threads(static_cast<int>(
+    std::min((unsigned int)omp_get_max_threads(), numThreads_)));
+#endif
+
+  int success = 0;
+  std::ifstream fileStream;
+  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
+  SetHandler setHandler(maxPSMs_);
+  Scores allScores(useMixMax_);
+
+  if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
+    exit(EXIT_FAILURE);
 
   CrossValidation crossValidation(quickValidation_, reportEachIteration_,
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_,
@@ -1148,6 +1009,7 @@ int Caller::run() {
                                   nestedXvalBins_, trainBestPositive_, numThreads_, skipNormalizeScores_, peptideLevelFolds_);
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
+
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"
         << testFdr_ << " in initial direction" << endl;
@@ -1157,13 +1019,10 @@ int Caller::run() {
     setHandler.normalizeDOCFeatures(pNorm_);
   }
 
-  time_t procStart;
-  clock_t procStartClock = clock();
-  time(&procStart);
-  double diff = difftime(procStart, startTime);
+  timer.stop();
   if (VERB > 1) cerr << "Reading in data and feature calculation took "
-      << ((double)(procStartClock - startClock)) / (double)CLOCKS_PER_SEC
-      << " cpu seconds or " << diff << " seconds wall clock time." << endl;
+      << timer.getCPUTimeStr() << " cpu seconds or " << timer.getWallTimeStr() << " seconds wall clock time." << endl;
+  timer.reset();
 
   if (tabOutputFN_.length() > 0) {
     setHandler.writeTab(tabOutputFN_, pCheck_);
@@ -1204,14 +1063,12 @@ int Caller::run() {
 
     // Reading input files (pin or temporary file)
     if (!success) {
-      std::cerr << "ERROR: Failed to read in file, check if the correct " <<
-                   "file-format was used.";
+      std::cerr << "ERROR: Failed to read in file, check if the correct " << "file-format was used.";
       return 0;
     }
 
     if (VERB > 1) {
-      cerr << "Evaluated set contained " << allScores.posSize()
-          << " positives and " << allScores.negSize() << " negatives." << endl;
+      cerr << "Evaluated set contained " << allScores.posSize() << " positives and " << allScores.negSize() << " negatives." << endl;
     }
 
     allScores.postMergeStep();
@@ -1219,12 +1076,19 @@ int Caller::run() {
     allScores.normalizeScores(selectionFdr_);
   }
 
+  calcAndOutputResult(allScores, xmlInterface);
+  return 1;
+}
+
+
+void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   // calculate psms level probabilities TDA or TDC
   bool isUniquePeptideRun = false;
-  calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
+  calculatePSMProb(allScores, isUniquePeptideRun);
 #ifdef CRUX
   processPsmScores(allScores);
 #endif
+
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
@@ -1232,7 +1096,7 @@ int Caller::run() {
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
     isUniquePeptideRun = true;
-    calculatePSMProb(allScores, isUniquePeptideRun, procStart, procStartClock, diff);
+    calculatePSMProb(allScores, isUniquePeptideRun);
 #ifdef CRUX
     processPeptideScores(allScores);
 #endif
@@ -1253,5 +1117,5 @@ int Caller::run() {
   }
   // write output to file
   xmlInterface.writeXML(allScores, protEstimator_, call_);
-  return 1;
 }
+

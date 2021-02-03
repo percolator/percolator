@@ -214,9 +214,9 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     parseOptions.readProteins = true;
   }
   
-  if (cmd.optionSet("cleavages")) parseOptions.missed_cleavages = cmd.getInt("cleavages", 0, 10);
-  if (cmd.optionSet("min-length")) parseOptions.peptidelength = cmd.getInt("min-length",4,20);
-  if (cmd.optionSet("max-length")) parseOptions.maxpeplength = cmd.getInt("max-length",6,100);
+  if (cmd.optionSet("cleavages")) parseOptions.missed_cleavages = static_cast<unsigned int>(cmd.getInt("cleavages", 0, 10));
+  if (cmd.optionSet("min-length")) parseOptions.peptidelength = static_cast<unsigned int>(cmd.getInt("min-length",4,20));
+  if (cmd.optionSet("max-length")) parseOptions.maxpeplength = static_cast<unsigned int>(cmd.getInt("max-length",6,100));
   if (cmd.optionSet("min-mass")) parseOptions.minmass = cmd.getInt("min-mass",100,1000);
   if (cmd.optionSet("max-mass")) parseOptions.maxmass = cmd.getInt("max-mass",100,10000);
   

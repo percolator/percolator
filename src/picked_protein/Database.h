@@ -350,6 +350,6 @@ PercolatorCrux::Peptide* void_database_sorted_peptide_iterator_next(
  * End:
  */
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 #endif

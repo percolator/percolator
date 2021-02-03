@@ -208,7 +208,7 @@ class Protein {
    * user must free the return sequence 
    */
   virtual char* getSequence(
-    int offset=0
+    std::size_t offset=0
   );
 
   /**
@@ -340,7 +340,7 @@ class Protein {
  */
 bool protein_id_less_than(Protein* protein_one, Protein* protein_two);
 
-}; // end namespace PercolatorCrux
+} // end namespace PercolatorCrux
 
 /*
  * Local Variables:

@@ -1,7 +1,7 @@
 #############################################################################
 # NAME AND VERSION
 ###############################################################################
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.11)
 
 if(NOT CRUX AND APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
   # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang 
@@ -65,9 +65,10 @@ add_subdirectory(src)
 enable_testing()
 # Scheduling system level tests
 add_subdirectory(data/system_tests/percolator)
+add_subdirectory(tests/integration_tests/percolator)
 # Scheduling unit level tests
 if(GOOGLE_TEST)
-  add_subdirectory(data/unit_tests/percolator)
+  add_subdirectory(tests/unit_tests/percolator)
 endif()
 
 ###############################################################################

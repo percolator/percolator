@@ -183,7 +183,7 @@ void GroupPowerBigraph::initialize(BasicBigraph& basicBigraph) {
     else
       subBasic = iterativePartitionSubgraphs(basicBigraph, peptideThreshold_);
 
-    subgraphs_ = Array<BasicGroupBigraph>(subBasic.size(), BasicGroupBigraph(peptidePrior_));
+    subgraphs_ = Array<BasicGroupBigraph>(static_cast<int>(subBasic.size()), BasicGroupBigraph(peptidePrior_));
 
     for (int k = 0; k < subBasic.size(); k++) {
       subgraphs_[k] = BasicGroupBigraph(peptidePrior_, subBasic[k], noClustering_, trivialGrouping_);

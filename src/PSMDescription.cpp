@@ -43,6 +43,11 @@ void PSMDescription::deletePtr(PSMDescription* psm) {
 
 std::string PSMDescription::removePTMs(const string& peptide) {
   std::string peptideSequence = peptide;
+  if (peptide.size() < 4) {
+    ostringstream temp;
+    temp << "Error : Peptide sequence \"" << peptide << "\" is invalid" << endl;
+    throw MyException(temp.str());
+  }
   peptideSequence = peptide.substr(2, peptide.size()- 4);
   for (unsigned int ix = 0; ix < peptideSequence.size(); ++ix) {
     if (peptideSequence[ix] == '[') {

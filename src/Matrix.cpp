@@ -6,7 +6,7 @@
 const Matrix & Matrix::operator =(const Array<Array<double> > & rhs)
 {
   // note: this will not accept arrays with no rows
-  Matrix temp(rhs.size(), rhs[0].size());
+  Matrix temp(static_cast<int>(rhs.size()), static_cast<int>(rhs[0].size()));
   for (int k=0; k<rhs.size(); k++)
     {
       temp.rows[k] = Vector(rhs[k]);
@@ -35,8 +35,6 @@ void Matrix::add(const Vector & rhs)
 
 Vector operator *(const Matrix & lhs, const Vector & rhs)
 {
-  //  if ( lhs.numCols() == 0 )
-  //    throw Matrix::SizeException();
 
   Array<double> result( lhs.numRows() );
 
@@ -175,7 +173,6 @@ Matrix operator *(const Matrix & lhs, const Matrix & rhs)
       Array<double> nextRow( rhs.numCols() );
       for (j=0; j<rhsTrans.numRows(); j++)
   {
-    //    nextRow[j] = lhs[k].unpack() * rhsTrans[j].unpack();
     nextRow[j] = lhs[k] * rhsTrans[j];
   }
       result[k] = Vector(nextRow);
@@ -234,7 +231,6 @@ Matrix ShermanMorrison(const Matrix & mat, const Vector & u, const Vector & v)
   Matrix lhs = Matrix(coef * (mat*u) ).transpose();
   Matrix rhs = Matrix(v*mat);
 
-  //  cout << "\tTerm to add in ShermanMorrison is: " << endl << lhs*rhs << endl << endl;
   result -= lhs * rhs;
 
   return result;
@@ -249,7 +245,7 @@ double Matrix::frobeniusNorm() const
       tot += pow(rows[k].norm(), 2.0);
     }
 
-  return sqrt(tot);;
+  return sqrt(tot);
 }
 
 Matrix operator +(const Matrix & lhs, const Matrix & rhs)
@@ -355,29 +351,11 @@ void Matrix::invert()
 
   Matrix id = identityMatrix( numRows() );
 
-  //  cout << "Pre inverse: " << endl;
-  //  displayMatrix();
-  //  cout << endl;
-
   // eliminate
   for (int k=0; k<numRows(); k++)
     {
       eliminate(k, id);
-
-      /***
-      cout << "After row " << k << " mat and ID are: " << endl;
-      displayMatrix();
-      cout << endl;
-      id.displayMatrix();
-      cout << endl << endl;
-      ***/
     }
-
-  /***
-  cout << "Hopefully looks like ID Matrix: " << endl;
-  cout << *this << endl;
-  displayMatrix();
-  ***/
 
   *this = id;
 }
@@ -406,19 +384,12 @@ void Matrix::eliminate(int k, Matrix & id)
   id.rows[k] /= valueK;
   rows[k] /= valueK;
 
-  //  id.rows[k] *= 1/rows[k].leadingElement();
-  //  rows[k] *= 1/rows[k].leadingElement();
-
   for (int j=0; j<numRows() && j < id.numRows(); j++)
     {
       if ( j == k )
   continue;
 
-      //      int i = rows[k].leadingIndex();
-
       double mult = rows[j][k];
-
-      //      if ( mult != 0.0 )
       if ( Vector::sparseChecker.isNonzero(mult) )
   {
     id.rows[j].addEqScaled( -mult, id.rows[k]);
@@ -451,22 +422,15 @@ void Matrix::eliminateRRE(int k, Matrix & id)
   id.rows[k] /= valueK;
   rows[k] /= valueK;
 
-  //  id.rows[k] *= 1/rows[k].leadingElement();
-  //  rows[k] *= 1/rows[k].leadingElement();
-
   for (int j=0; j<numRows() && j < id.numRows(); j++)
     {
       if ( j == k )
   continue;
 
-      //      int i = rows[k].leadingIndex();
-
       double mult = rows[j][k];
 
       // note: this prevents unnecessary operations, but could be done
       // more cleanly later
-
-      //      if ( mult != 0.0 )
       if ( Vector::sparseChecker.isNonzero(mult) )
   {
     id.rows[j].addEqScaled( -mult, id.rows[k] );
@@ -514,12 +478,6 @@ Matrix Matrix::identityMatrix(int n)
   Matrix result(n);
   for (int k=0; k<n; k++)
     {
-      /***
-      Array<double> idRow(n, 0.0);
-      idRow[k] = 1.0;
-
-      result.add( Vector(idRow) );
-      ***/
 
       Vector idRowK(n);
       idRowK.addElement(k, 1.0);
@@ -541,23 +499,6 @@ Matrix Matrix::RRE()
 
   return subID[ Set::FullSet(0, numCols()-1) ];
 }
-
- /***
-Matrix Matrix::transpose() const
-{
-  Matrix result(numCols(), numRows());
-
-  for (int k=0; k<numRows(); k++)
-    {
-      for (int j=0; j<numCols(); j++)
-  {
-    result.rows[j][k] = (*this)[k][j];
-  }
-    }
-
-  return result;
-}
- ***/
 
 Vector Matrix::column(int k) const
 {
@@ -629,8 +570,6 @@ Vector fastSolve(const Matrix & A, const Vector & b)
   for (int k=1; k<100; k++)
     {
       lastLTerm = L * lastLTerm;
-      //      cumulative.addEqScaled( 1, b );
-      //      cumulative.addEqScaled( -1, lastLTerm);
       cumulative.addEqScaled( 1, lastLTerm);
     }
 

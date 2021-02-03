@@ -127,12 +127,6 @@ class RTModel {
     size_t getRTFeat() {
       return noFeaturesToCalc;
     }
-    int getNoFeaturesToCalc() {
-      return noFeaturesToCalc;
-    }
-    int getSelectFeatures() {
-      return selected_features;
-    }
     int getSelect(int sel_features, int max, size_t* finalNumFeatures);
     string getGridType();
     string getEvaluationType();
@@ -149,9 +143,6 @@ class RTModel {
     void setSelectFeatures(const int sf);
     void setCalibrationFile(const string calFile) {
       calibrationFile = calFile;
-    }
-    void setK(const int newk) {
-      k = newk;
     }
     void setEvaluationType(const EvaluationType e) {
       eType = e;
@@ -181,10 +172,6 @@ class RTModel {
     static double noConsecHydrophobicAA(const string& peptide);
     static double noPolarAA(const string& peptide);
     static double noConsecPolarAA(const string& peptide);
-    /*static double noSmallAA(const string& peptide);
-     static double noConsecAliphatic(const string& peptide);
-     static double noBBranchedAA(const string& peptide);
-     static double noConsecRepeats(const string& peptides, const char& letter);*/
     double* fillHydrophobicFeatures(const string& peptide,
                                     double* features);
     double* fillPolarFeatures(const string& peptide, double* features);

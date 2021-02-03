@@ -317,7 +317,7 @@ ramp_fileoffset_t getIndexOffset(RAMPFILE* pFI) {
     const char* target = "<indexOffset>";
     int nread;
     ramp_fseek(pFI, indexOffsetOffset, SEEK_END);
-    nread = ramp_fread(seekbuf, (int)strlen(target), pFI);
+    nread = static_cast<int>(ramp_fread(seekbuf, strlen(target), pFI));
     seekbuf[nread] = '\0';
     if (!strcmp(seekbuf, target)) {
       break;
@@ -409,7 +409,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
       // HENRY - in this new implementation, n should start at zero
       n = 0;
       pScanIndex = (ramp_fileoffset_t*)malloc(sizeof(ramp_fileoffset_t)
-          * reallocSize); // allocate space for the scan index info
+          * static_cast<std::size_t>(reallocSize)); // allocate space for the scan index info
       if (!pScanIndex) {
         printf("Cannot allocate memory\n");
         return NULL;
@@ -444,7 +444,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
             pScanIndex
                 = (ramp_fileoffset_t*)realloc(pScanIndex,
                                               sizeof(ramp_fileoffset_t)
-                                                  * reallocSize);
+                                                  * static_cast<std::size_t>(reallocSize));
             if (!pScanIndex) {
               printf("Cannot allocate memory\n");
               return NULL;
@@ -472,7 +472,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
            }
            */
         }
-        nread = (int)(strlen(look) + (look - buf));
+        nread = (int)(strlen(look) + static_cast<std::size_t>(look - buf));
         if (*look && strchr(scantag, buf[nread - 1]) && !ramp_feof(pFI)) { // check last char of buffer
           // possible that next scantag overhangs end of buffer
           ramp_fseek(pFI, -taglen, SEEK_CUR); // so next get includes it
@@ -489,7 +489,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
       // HENRY -- reset n to zero. Note that it should be zero here, not one -- as n points to the previous record in
       // my nomenclature (and newN to the newly read record).
       n = 0;
-      if ((pScanIndex = (ramp_fileoffset_t*)malloc(reallocSize
+      if ((pScanIndex = (ramp_fileoffset_t*)malloc(static_cast<std::size_t>(reallocSize)
           * sizeof(ramp_fileoffset_t))) == NULL) {
         printf("Cannot allocate memory\n");
         return NULL;
@@ -510,7 +510,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
           continue;
         }
         beginOffsetId += 4;
-        newN = atol(beginOffsetId);
+        newN = static_cast<int>(atol(beginOffsetId));
         // HENRY -- check if the new id is past the max size of the pScanIndex array
         // Note that it should be reallocSize - 1, because the very last record is set to offset=-1
         // (see below)! In case newN is the very last record, we need to prepare the space for the offset=-1 thingy.
@@ -519,7 +519,7 @@ ramp_fileoffset_t* readIndex(RAMPFILE* pFI, ramp_fileoffset_t indexOffset,
           // HENRY -- we don't know how much newN is bigger than the old realloc size. In case it is more than 500 bigger,
           // then the old way of always reallocating for 500 more will break. Instead we jump to newN + 500.
           reallocSize = newN + 500;
-          pTmp = (ramp_fileoffset_t*)realloc(pScanIndex, reallocSize
+          pTmp = (ramp_fileoffset_t*)realloc(pScanIndex, static_cast<std::size_t>(reallocSize)
               * sizeof(ramp_fileoffset_t));
           if (pTmp == NULL) {
             printf("Cannot allocate memory\n");
@@ -811,7 +811,7 @@ void readHeader(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex, // look here
           sscanf(pStr, "%lf", &(scanHeader->highMZ));
         } else if ((pStr = findMzDataTagValue(attrib, "ScanMode"))) {
           if ((pStr2 = (char*)findquot(pStr))) {
-            memcpy(&(scanHeader->scanType), pStr, pStr2 - pStr);
+            memcpy(&(scanHeader->scanType), pStr, static_cast<std::size_t>(pStr2 - pStr));
             scanHeader->scanType[pStr2 - pStr] = '\0';
           }
         }
@@ -923,8 +923,8 @@ void readHeader(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex, // look here
           sscanf(pStr, "%lf", &(scanHeader->highMZ));
         } else if ((pStr = matchAttr(attrib, "scanType", 8))) {
           if ((pStr2 = (char*)findquot(pStr))) {
-            memcpy(&(scanHeader->scanType), pStr, sizeof(char) * ((pStr2
-                - pStr)));
+            memcpy(&(scanHeader->scanType), pStr, sizeof(char) * static_cast<std::size_t>(pStr2
+                - pStr));
             scanHeader->scanType[pStr2 - pStr] = '\0';
           }
         } else if ((pStr = matchAttr(attrib, "collisionEnergy", 15))) {
@@ -956,7 +956,7 @@ void readHeader(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex, // look here
           pStr3 = pStr2 + 18;
           if ((pStr2 = (char*)findquot(pStr3))) {
             memcpy(&(scanHeader->activationMethod), pStr3, sizeof(char)
-                * ((pStr2 - pStr3)));
+                * static_cast<std::size_t>(pStr2 - pStr3));
             scanHeader->activationMethod[pStr2 - pStr3] = '\0';
           }
         }
@@ -1060,7 +1060,7 @@ int readMsLevel(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
   beginMsLevel += 9; // We need to move the length of msLevel="
   endMsLevel = (char*)findquot(beginMsLevel);
   msLevelLen = (int)(endMsLevel - beginMsLevel);
-  strncpy(szLevel, beginMsLevel, msLevelLen);
+  strncpy(szLevel, beginMsLevel, static_cast<std::size_t>(msLevelLen));
   szLevel[msLevelLen] = '\0';
   return atoi(szLevel);
 }
@@ -1201,8 +1201,8 @@ char* rampConstructInputPath(char* inbuf, // put the result here
       }
     }
     if (basename_in == inbuf) { // same pointer
-      char* basename_buff = (char*)malloc(inbuflen);
-      strncpy(basename_buff, basename, inbuflen);
+      char* basename_buff = (char*)malloc(static_cast<std::size_t>(inbuflen));
+      strncpy(basename_buff, basename, static_cast<std::size_t>(inbuflen));
       basename = basename_buff;
     }
     *tmpbuf = 0;
@@ -1284,7 +1284,7 @@ int rampValidateOrDeriveInputFilename(char* inbuf, int inbuflen,
   rampConstructInputFileName(tryName, (int)len, tryName); // .mzXML or .mzData
   if (((int)strlen(tryName) < inbuflen) && !stat(tryName, &buf)) {
     // success!
-    strncpy(inbuf, tryName, inbuflen);
+    strncpy(inbuf, tryName, static_cast<std::size_t>(inbuflen));
     result = inbuf;
   }
   free(tryName);
@@ -1467,16 +1467,16 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
         // for every 3 bytes base64 emits 4 characters - 1, 2 or 3 byte input emits 4 bytes
         triplets = (bytes / 3) + ((bytes % 3) != 0);
         peaksLen = (4 * triplets) + 1; // read the "<" from </data> too, to confirm lack of whitespace
-        if ((pData = (char*)realloc(pData, 1 + peaksLen)) == NULL) {
+        if ((pData = (char*)realloc(pData, static_cast<std::size_t>(1 + peaksLen))) == NULL) {
           printf("Cannot allocate memory\n");
           return NULL;
         }
         // copy in any partial read of peak data, and complete the read
-        strncpy(pData, pBeginData, peaksLen);
+        strncpy(pData, pBeginData, static_cast<std::size_t>(peaksLen));
         pData[peaksLen] = 0;
         partial = (int)strlen(pData);
         if (partial < peaksLen) {
-          ramp_fread(pData + partial, (int)(peaksLen - partial), pFI);
+          ramp_fread(pData + partial, static_cast<std::size_t>(peaksLen - partial), pFI);
         }
         // whitespace may be present in base64 char stream
         while (pData[peaksLen - 1] != '<') {
@@ -1485,25 +1485,25 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
           // didn't read all the peak info - must be whitespace
           for (cp = pData; *cp;) {
             if (strchr("\t\n\r ", *cp)) {
-              memmove(cp, cp + 1, peaksLen - (partial + cp - pData));
+              memmove(cp, cp + 1, static_cast<std::size_t>(peaksLen - (partial + cp - pData)));
               partial++;
             } else {
               cp++;
             }
           }
-          if (!ramp_fread(pData + peaksLen - partial, partial, pFI)) {
+          if (!ramp_fread(pData + peaksLen - partial, static_cast<std::size_t>(partial), pFI)) {
             break;
           }
         }
         pData[peaksLen - 1] = 0; // pure base64 now
-        if ((pDecoded = (char*)realloc(pDecoded, peaksCount * (precision
-            / 8) + 1)) == NULL) {
+        if ((pDecoded = (char*)realloc(pDecoded, static_cast<std::size_t>(peaksCount * (precision
+            / 8) + 1))) == NULL) {
           printf("Cannot allocate memory\n");
           return NULL;
         }
         // Base64 decoding
         b64_decode(pDecoded, pData, peaksCount * (precision / 8));
-        if ((!pPeaks) && ((pPeaks = (RAMPREAL*)malloc((peaksCount + 1) * 2
+        if ((!pPeaks) && ((pPeaks = (RAMPREAL*)malloc(static_cast<std::size_t>((peaksCount + 1) * 2)
             * sizeof(RAMPREAL) + 1)) == NULL)) {
           printf("Cannot allocate memory\n");
           return NULL;
@@ -1598,7 +1598,7 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
             const char* pEndAttrValue;
             pEndAttrValue = strchr(pBeginData + strlen("contentType=\"")
                 + 1, '\"');
-            int len = pEndAttrValue - pBeginData;
+            int len = static_cast<int>(pEndAttrValue - pBeginData);
             fprintf(stderr, "%.*s Unsupported content type\n", len, pBeginData);
             return NULL;
           }
@@ -1612,7 +1612,7 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
             const char* pEndAttrValue;
             pEndAttrValue = strchr(pBeginData
                 + strlen("compressionType=\"") + 1, '\"');
-            int len = pEndAttrValue - pBeginData;
+            int len = static_cast<int>(pEndAttrValue - pBeginData);
             fprintf(stderr,
                     "%.*s Unsupported compression type\n",
                     len, pBeginData);
@@ -1646,16 +1646,16 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
       // for every 3 bytes base64 emits 4 characters - 1, 2 or 3 byte input emits 4 bytes
       triplets = (bytes / 3) + ((bytes % 3) != 0);
       peaksLen = (4 * triplets) + 1; // read the "<" from </data> too, to confirm lack of whitespace
-      if ((pData = (char*)malloc(1 + peaksLen)) == NULL) {
+      if ((pData = (char*)malloc(static_cast<std::size_t>(1 + peaksLen))) == NULL) {
         printf("Cannot allocate memory\n");
         return NULL;
       }
       pData[peaksLen] = 0;
       // copy in any partial read of peak data, and complete the read
-      strncpy(pData, pBeginData, peaksLen);
+      strncpy(pData, pBeginData, static_cast<std::size_t>(peaksLen));
       partial = (int)strlen(pData);
       if (partial < peaksLen) {
-        ramp_fread(pData + partial, peaksLen - partial, pFI);
+        ramp_fread(pData + partial, static_cast<std::size_t>(peaksLen - partial), pFI);
       }
       // whitespace may be present in base64 char stream
       while (pData[peaksLen - 1] != '<') {
@@ -1664,13 +1664,13 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
         // didn't read all the peak info - must be whitespace
         for (cp = pData; *cp;) {
           if (strchr("\t\n\r ", *cp)) {
-            memmove(cp, cp + 1, peaksLen + 1 - (partial + cp - pData));
+            memmove(cp, cp + 1, static_cast<std::size_t>(peaksLen + 1 - (partial + cp - pData)));
             partial++;
           } else {
             cp++;
           }
         }
-        if (!ramp_fread(pData + peaksLen - partial, partial, pFI)) {
+        if (!ramp_fread(pData + peaksLen - partial, static_cast<std::size_t>(partial), pFI)) {
           break;
         }
       }
@@ -1681,14 +1681,14 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
         decodedSize = dataPerPeak * peaksCount * (precision / 8) + 1;
       }
       pData[peaksLen - 1] = 0; // pure base64 now
-      if ((pDecoded = (char*)malloc(decodedSize)) == NULL) {
+      if ((pDecoded = (char*)malloc(static_cast<std::size_t>(decodedSize))) == NULL) {
         printf("Cannot allocate memory\n");
         return NULL;
       }
       // Base64 decoding
       b64_decode(pDecoded, pData, decodedSize - 1);
       free(pData);
-      if ((!pPeaks) && ((pPeaks = (RAMPREAL*)malloc((peaksCount + 1) * 2
+      if ((!pPeaks) && ((pPeaks = (RAMPREAL*)malloc(static_cast<std::size_t>((peaksCount + 1) * 2)
           * sizeof(RAMPREAL) + 1)) == NULL)) {
         printf("Cannot allocate memory\n");
         return NULL;
@@ -1697,13 +1697,13 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
       if (isCompressed) {
         int err;
         //        printf("Decompressing data\n");
-        uLong uncomprLen =
-            (dataPerPeak * peaksCount * (precision / 8) + 1);
-        pUncompr = (Byte*)calloc((uInt)uncomprLen, 1);
+        unsigned long uncomprLen =
+            static_cast<unsigned long>(dataPerPeak * peaksCount * (precision / 8) + 1);
+        pUncompr = (Byte*)calloc((unsigned int)uncomprLen, 1);
         err = uncompress(pUncompr,
                          &uncomprLen,
                          (const Bytef*)pDecoded,
-                         decodedSize);
+                         static_cast<unsigned long>(decodedSize));
         free(pDecoded);
         pToBeCorrected = (char*)pUncompr;
       } else {
@@ -1745,7 +1745,7 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
         RAMPREAL deltaMass = 0;
         int multiplier = 0;
         int j = 0;
-        if ((pPeaksDeRuled = (RAMPREAL*)malloc((peaksCount + 1) * 2
+        if ((pPeaksDeRuled = (RAMPREAL*)malloc(static_cast<std::size_t>((peaksCount + 1) * 2)
             * sizeof(RAMPREAL) + 1)) == NULL) {
           printf("Cannot allocate memory\n");
           return NULL;
@@ -1885,10 +1885,10 @@ static int setTagValue(const char* text, char* storage, int maxlen,
     char tail = *(result + leadlen - 1); // nab the quote char (is it single or double quote?)
     term = strchr(result + leadlen, tail);
     if (term != NULL) {
-      if ((int)(strlen(result) - strlen(term) - leadlen) < len) {
+      if ((int)(strlen(result) - strlen(term) - static_cast<std::size_t>(leadlen)) < len) {
         len = (int)strlen(result) - (int)strlen(term) - leadlen;
       }
-      strncpy(storage, result + leadlen, len);
+      strncpy(storage, result + leadlen, static_cast<std::size_t>(len));
       storage[len] = 0;
       return 1;
     } // if term
@@ -2079,9 +2079,9 @@ struct ScanCacheStruct* getScanCache(int size) {
   cache->seqNumStart = 0;
   cache->size = size;
   cache->headers
-      = (struct ScanHeaderStruct*)calloc(size,
+      = (struct ScanHeaderStruct*)calloc(static_cast<std::size_t>(size),
                                          sizeof(struct ScanHeaderStruct));
-  cache->peaks = (RAMPREAL**)calloc(size, sizeof(RAMPREAL*));
+  cache->peaks = (RAMPREAL**)calloc(static_cast<std::size_t>(size), sizeof(RAMPREAL*));
   return cache;
 }
 
@@ -2110,7 +2110,7 @@ void clearScanCache(struct ScanCacheStruct* cache) {
     free(cache->peaks[i]);
     cache->peaks[i] = NULL;
   }
-  memset(cache->headers, 0, cache->size * sizeof(struct ScanHeaderStruct));
+  memset(cache->headers, 0, static_cast<std::size_t>(cache->size) * sizeof(struct ScanHeaderStruct));
 }
 
 // Shift the cache start index by a number of scans.  This moves the cache
@@ -2131,14 +2131,14 @@ void shiftScanCache(struct ScanCacheStruct* cache, int nScans) {
         free(cache->peaks[i]);
       }
     }
-    memmove(cache->peaks, cache->peaks + nScans, (cache->size - nScans)
+    memmove(cache->peaks, cache->peaks + nScans, static_cast<std::size_t>(cache->size - nScans)
         * sizeof(RAMPREAL*));
-    memset(cache->peaks + cache->size - nScans, 0, nScans
+    memset(cache->peaks + cache->size - nScans, 0, static_cast<std::size_t>(nScans)
         * sizeof(RAMPREAL*));
     memmove(cache->headers,
             cache->headers + nScans,
-            (cache->size - nScans) * sizeof(struct ScanHeaderStruct));
-    memset(cache->headers + cache->size - nScans, 0, nScans
+            static_cast<std::size_t>(cache->size - nScans) * sizeof(struct ScanHeaderStruct));
+    memset(cache->headers + cache->size - nScans, 0, static_cast<std::size_t>(nScans)
         * sizeof(struct ScanHeaderStruct));
   } else if (nScans < 0) {
     // Shifting window to the left.  Memory moves right, with new
@@ -2150,13 +2150,13 @@ void shiftScanCache(struct ScanCacheStruct* cache, int nScans) {
         free(cache->peaks[cache->size - 1 - i]);
       }
     }
-    memmove(cache->peaks + nScans, cache->peaks, (cache->size - nScans)
+    memmove(cache->peaks + nScans, cache->peaks, static_cast<std::size_t>(cache->size - nScans)
         * sizeof(RAMPREAL*));
-    memset(cache->peaks, 0, nScans * sizeof(RAMPREAL*));
+    memset(cache->peaks, 0, static_cast<std::size_t>(nScans) * sizeof(RAMPREAL*));
     memmove(cache->headers + nScans,
             cache->headers,
-            (cache->size - nScans) * sizeof(struct ScanHeaderStruct));
-    memset(cache->headers, 0, nScans * sizeof(struct ScanHeaderStruct));
+            static_cast<std::size_t>(cache->size - nScans) * sizeof(struct ScanHeaderStruct));
+    memset(cache->headers, 0, static_cast<std::size_t>(nScans) * sizeof(struct ScanHeaderStruct));
   }
 }
 

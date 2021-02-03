@@ -66,12 +66,12 @@ set(tests
 #)
 #ENDIF()
 
-set(system_tests_names ${tests})
+# Define the "test-install" target to run the system test scripts
+# against the percolator installation.
 set(system_tests_dir ${CMAKE_CURRENT_BINARY_DIR})
-
-# Temporarily disabled so that "make test" only runs unit tests.
-# TODO(breadbox): Give this section its own build target.
-#
-#foreach(current_system_test ${system_tests_names})
-#  add_test(${current_system_test} python ${system_tests_dir}/${current_system_test}.py)
-#endforeach(current_system_test)
+set(system_tests_commands)
+foreach(current_system_test ${tests})
+  list(APPEND system_tests_commands
+              COMMAND python ${system_tests_dir}/${current_system_test}.py)
+endforeach(current_system_test)
+add_custom_target(test-install ${system_tests_commands} VERBATIM)

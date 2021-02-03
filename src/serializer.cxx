@@ -137,11 +137,6 @@ create (const string& ns, const string& qname)
     xml::string (ns).c_str (), xml::string (qname).c_str ());
 }
 
-//void serializer_impl::
-//remove (DOMElement* oldChild)
-//{
-//  doc_->removeChild(oldChild); // this would be a good idea if the method were not pure virtual
-//}
 
 void serializer_impl::
 serialize (DOMElement& e)

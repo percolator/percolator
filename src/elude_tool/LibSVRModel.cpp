@@ -153,7 +153,7 @@ double LibSVRModel::EstimatePredictionError(const int &number_features, const ve
 /* perform k-fold cross validation; return error value */
 double LibSVRModel::ComputeKFoldValidation(const std::vector<PSMDescription*> &psms, const int &number_features) {
   vector<PSMDescription*> train, test;
-  int len = psms.size();
+  int len = static_cast<int>(psms.size());
   // sum of prediction errors
   double sum_pek = 0.0, pek = 0.0;
 
@@ -163,9 +163,9 @@ double LibSVRModel::ComputeKFoldValidation(const std::vector<PSMDescription*> &p
      // get training and testing sets
      for (int j = 0; j < len; ++j) {
        if ((j % k) == i) {
-         test.push_back(psms[j]);
+         test.push_back(psms[static_cast<std::size_t>(j)]);
        } else {
-         train.push_back(psms[j]);
+         train.push_back(psms[static_cast<std::size_t>(j)]);
        }
      }
      TrainModel(train, number_features);
@@ -281,4 +281,5 @@ int LibSVRModel::LoadModel(FILE *fp) {
     
     throw MyException(temp.str());
   }
+  return 0;
 }

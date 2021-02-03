@@ -17,6 +17,7 @@
 
 #ifndef CALLER_H_
 #define CALLER_H_
+#include "Timer.h"
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -58,6 +59,7 @@
 * 
 */
 class Caller {
+
  public:
   enum SetHandlerType {
     NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
@@ -67,7 +69,7 @@ class Caller {
   virtual ~Caller();
   
   static string greeter();
-  string extendedGreeter(time_t& startTime);
+  string extendedGreeter();
   bool parseOptions(int argc, char **argv);    
   int run();
   
@@ -105,16 +107,17 @@ class Caller {
   
   // reporting parameters
   std::string call_;
+
+  Timer timer;
   
   bool peptideLevelFolds_;
   
-  // google analytics
-  static bool parseUrl(std::string url, std::string* host, std::string* path);
-  static void httpRequest(const std::string& url, const std::string& data);
-  static void postToAnalytics(const std::string& appName);
+  std::istream& getDataInStream(std::ifstream& fileStream);
+  bool loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
+  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
+
   
-  void calculatePSMProb(Scores& allScores, bool uniquePeptideRun, 
-      time_t& procStart, clock_t& procStartClock, double& diff);
+  void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
   void calculateProteinProbabilities(Scores& allScores);
   void checkIsWritable(const std::string& filePath);
   

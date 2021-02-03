@@ -46,7 +46,7 @@ class Counter {
   }
   
   static void start(Array<Counter> & cA) {
-    for (int k=0; k<cA.size(); k++)
+    for (int k=0; static_cast<std::size_t>(k)<cA.size(); k++)
       cA[k].start();
   }
 
@@ -55,9 +55,9 @@ class Counter {
   }
 
   static void advance(Array<Counter> & cA) {
-    for (int k=0; k<cA.size(); k++) {
+    for (int k=0; static_cast<std::size_t>(k)<cA.size(); k++) {
 	    cA[k].advance();
-	    if ( ! cA[k].inRange() && k != cA.size() - 1 ) {
+	    if ( ! cA[k].inRange() && static_cast<std::size_t>(k) != cA.size() - 1 ) {
 	      // do not reset the last one so that you know when it is not inRange
 	      cA[k].start();
 	    } else {

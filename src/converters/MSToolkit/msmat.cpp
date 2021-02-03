@@ -33,20 +33,10 @@
 
 /* msmat */
 
-std::vector<transition_info> transition_manager::get_trans_by_precursor( MSMAT_MZ_TYPE precursor ) {
-       for ( int i = 0 ; i < precursors.size() ; i++ ) 
-       {
-           if ( fabs(precursor - precursors[i]) < TRANSITION_MATCH_MZ_TOL ) {
-               return get_trans_by_precursor(i);
-           }
-       }
-       //if precursor not found, throw an error
-       throw("did not find precursor...");
-    }
 std::vector<transition_info> transition_manager::get_trans_by_precursor_idx (int idx) {
-        std::vector<transition_info> ti( products_by_transitions[idx].size() );
-        for ( int i = 0 ; i < ti.size() ; i++ ) {
-           ti[i] = transitions[ products_by_transitions[idx][i] ];
+        std::vector<transition_info> ti( products_by_transitions[static_cast<std::size_t>(idx)].size() );
+        for ( std::size_t i = 0 ; i < ti.size() ; i++ ) {
+           ti[i] = transitions[ static_cast<std::size_t>(products_by_transitions[static_cast<std::size_t>(idx)][i]) ];
         }
         return ti;
     }
@@ -55,11 +45,11 @@ transition_manager::transition_manager ( std::vector<transition_info> transition
       typedef std::map< MSMAT_MZ_TYPE, std::vector<int> > tbp_t;
       tbp_t trans_by_precs;
       for ( int  i = 0 ; i < transitions.size() ; i++ ) {
-          tbp_t::iterator k = trans_by_precs.find(transitions[i].precursor_mz);
+          tbp_t::iterator k = trans_by_precs.find(transitions[static_cast<std::size_t>(i)].precursor_mz);
           if ( k == trans_by_precs.end() ) {
               std::vector<int> idxs;
              idxs.push_back(i);
-             trans_by_precs[transitions[i].precursor_mz] = idxs;
+             trans_by_precs[transitions[static_cast<std::size_t>(i)].precursor_mz] = idxs;
           }
           else {
               k->second.push_back(i);
@@ -69,11 +59,11 @@ transition_manager::transition_manager ( std::vector<transition_info> transition
 
 
 std::pair<MSMAT_MZ_TYPE, MSMAT_MZ_TYPE> transition_info::trans_from_str ( const std::string & s ) {
-    int dash_pos = s.find('-');
+    std::size_t dash_pos = s.find('-');
     std::string prec_str = s.substr(0,dash_pos);
     std::string trans_str = s.substr(dash_pos+1, s.size() - (dash_pos+1) );
-    MSMAT_MZ_TYPE prec_val = atof(prec_str.c_str());
-    MSMAT_MZ_TYPE trans_val = atof(trans_str.c_str());
+    MSMAT_MZ_TYPE prec_val = static_cast<MSMAT_MZ_TYPE>(atof(prec_str.c_str()));
+    MSMAT_MZ_TYPE trans_val = static_cast<MSMAT_MZ_TYPE>(atof(trans_str.c_str()));
     return std::pair<MSMAT_MZ_TYPE, MSMAT_MZ_TYPE>(prec_val, trans_val);
 }
 
@@ -84,7 +74,7 @@ void msmat::init_transitions_from_labels() {
    }
    this->transitions.reserve(this->labels.size());
    for ( int i = 0 ; i < labels.size() ; i++ ) {
-      this->transitions.push_back( transition_info(this->labels[i],i) );
+      this->transitions.push_back( transition_info(this->labels[static_cast<std::size_t>(i)],i) );
    }
 }
 
@@ -114,10 +104,8 @@ void msmat::tabular_input  ( std::ifstream & is ) {
      std::vector<float> chrom_data;
      chrom_data.resize(this->get_num_rts());
      float t;
-     int num_chroms = this->get_num_mzs();
-     int num_rts = this->get_num_rts();
      for ( int mz_idx = 0 ; mz_idx < this->get_num_mzs() ; mz_idx++ ) {
-         for ( int c_idx = 0 ; c_idx < this->get_num_rts() ; c_idx++ ) {
+         for ( std::size_t c_idx = 0 ; c_idx < this->get_num_rts() ; c_idx++ ) {
              is >> t;
              chrom_data.at(c_idx) = t;
          }
@@ -153,7 +141,7 @@ void msmat::set_mzs ( float * in_mzs, int num_mzs ) {
   /* less efficient since I cannot use copy, I believe */
 
   mzs.clear();
-  mzs.resize(num_mzs);
+  mzs.resize(static_cast<std::size_t>(num_mzs));
   copy(in_mzs,in_mzs+num_mzs,mzs.begin());
 
 }
@@ -165,7 +153,7 @@ void msmat::set_rts ( const vector<float> & in_rts ) {
 }
 void msmat::set_rts ( float * in_rts, int num_rts ) {
   rts.clear();
-  rts.resize(num_rts);
+  rts.resize(static_cast<std::size_t>(num_rts));
   copy(in_rts, in_rts+num_rts, rts.begin());
 }
 
@@ -194,7 +182,7 @@ void msmat::zero_chrom( int chrom_idx, int start_scan_idx, int stop_scan_idx ) {
   
   vector<float> tmpchr(get_num_rts(),0.0f);
   get_chrom(chrom_idx,tmpchr);
-  for ( int i = start_scan_idx ; i <= stop_scan_idx ; i++ ) {
+  for ( std::size_t i = static_cast<std::size_t>(start_scan_idx) ; i <= stop_scan_idx ; i++ ) {
     tmpchr[i] = 0.0f;
   }
   set_chrom(tmpchr, chrom_idx); 
@@ -205,7 +193,7 @@ void msmat::zero_chrom( int chrom_idx, int start_scan_idx, int stop_scan_idx ) {
 
 void msmat::zero_chrom ( int chrom_idx , float start_rt , float stop_rt ) {
   int start_rt_idx = 0;
-  int stop_rt_idx = get_num_rts() - 1; 
+  int stop_rt_idx = static_cast<int>(get_num_rts()) - 1; 
   if ( start_rt == -1 && stop_rt == -1 ) {
     
   }
@@ -244,15 +232,15 @@ void msmat::retain_chrom_set ( int chrom_idx , std::vector< std::pair< int,  int
 
     int del_start = retain_range[0].second + 1; 
     int del_stop;
-    for ( int i = 1 ; i < retain_range.size() ; i++ ) {
+    for ( std::size_t i = 1 ; i < retain_range.size() ; i++ ) {
         del_stop = retain_range[i].first;
         delete_range.push_back(std::pair<int,int>(del_start, del_stop) );
         del_start = retain_range[i].second + 1;
     }
-    del_stop = get_num_rts() - 1;
+    del_stop = static_cast<int>(get_num_rts()) - 1;
     delete_range.push_back(std::pair<int,int>(del_start,del_stop) );
 
-    for ( int i = 0 ; i < delete_range.size() ; i++ ) {
+    for ( std::size_t i = 0 ; i < delete_range.size() ; i++ ) {
        this->zero_chrom(chrom_idx,delete_range[i].first, delete_range[i].second);
     }
     this->summary_data_ok = false;
@@ -260,10 +248,10 @@ void msmat::retain_chrom_set ( int chrom_idx , std::vector< std::pair< int,  int
 
 void msmat::retain_chrom ( int chrom_idx, int start_scan_idx, int stop_scan_idx ) {
   vector<float> tmpchr(get_num_rts(),0.0f);
-  for ( int i = 0 ; i < start_scan_idx ; i++ ) {
+  for ( std::size_t i = 0 ; i < start_scan_idx ; i++ ) {
     tmpchr[i] = 0.0f;
   }
-  for ( int i = stop_scan_idx + 1 ; i < get_num_rts() ; i++ ) {
+  for ( std::size_t i = static_cast<std::size_t>(stop_scan_idx) + 1 ; i < get_num_rts() ; i++ ) {
     tmpchr[i] = 0.0f;
   }
   set_chrom(tmpchr,chrom_idx);
@@ -324,7 +312,7 @@ int msmat::get_scan_idx_by_rt ( float rt ) const {
   //TODO -- check that rts is sorted when it is assigned
   vector<float>::const_iterator nr_val = find_nearest( rts, rt);
   /* now we see if we can determine the index of this iterator */
-  int p_diff = nr_val - rts.begin();
+  int p_diff = static_cast<int>(nr_val - rts.begin());
   assert(rts[p_diff] == *nr_val);
   return p_diff;
 }
@@ -332,7 +320,7 @@ int msmat::get_scan_idx_by_rt ( float rt ) const {
 int msmat::get_chrom_idx_by_mz(float mz) const {
   vector<float>::const_iterator nr_val = find_nearest( mzs, mz );
   /* now we see if we can determine the index of this iterator */
-  int p_diff = nr_val - mzs.begin();
+  int p_diff = static_cast<int>(nr_val - mzs.begin());
   assert(mzs[p_diff] == *nr_val);
   return p_diff;
 }
@@ -353,15 +341,15 @@ void msmat::trim_mzs_data_bound ( int start_idx, int stop_idx ) {
 
 void msmat::trim_mzs_start( float keep_start_mz ) {
   mzs_type::iterator lk = lower_bound(mzs.begin(), mzs.end(), keep_start_mz);
-  int lk_nmzs = lk - mzs.begin();  
+  int lk_nmzs = static_cast<int>(lk - mzs.begin());  
   _trim_start_mzs(lk_nmzs);
   _trim_start_mzs_list(lk_nmzs);
 }
 void msmat::trim_mzs_stop( float keep_stop_mz ) {
   mzs_type::iterator uk = lower_bound(mzs.begin(), mzs.end(), keep_stop_mz);
-  int uk_nmzs = uk - mzs.begin();
-  _trim_stop_mzs(mzs.size() - 1 - uk_nmzs);
-  _trim_stop_mzs_list(mzs.size() - 1 - uk_nmzs);
+  int uk_nmzs = static_cast<int>(uk - mzs.begin());
+  _trim_stop_mzs(static_cast<int>(mzs.size()) - 1 - uk_nmzs);
+  _trim_stop_mzs_list(static_cast<int>(mzs.size()) - 1 - uk_nmzs);
 
 }
 
@@ -400,7 +388,7 @@ void msmat::trim_mzs( float keep_start_mz , float keep_stop_mz ) {
      }
 
      std::vector<float>::const_iterator lb = std::upper_bound( this->mzs.begin() , this->mzs.end() , mz );
-     int iter_delt = lb - this->mzs.begin() - 1;
+     int iter_delt = static_cast<int>(lb - this->mzs.begin() - 1);
      return iter_delt;
   }
 
@@ -413,24 +401,24 @@ int msmat::rt_to_rtidx ( float rt ) const {
      }
 
      std::vector<float>::const_iterator lb = std::upper_bound( this->rts.begin() , this->rts.end() , rt );
-     int iter_delt = lb - this->rts.begin() - 1;
+     std::size_t iter_delt = static_cast<std::size_t>(lb - this->rts.begin() - 1);
      if ( iter_delt == rts.size() - 1 ) 
      {
          if ( fabs(rts[iter_delt] - rt) > 0.0001 ) {
             throw(RTRangeError(RTRangeError::RTHighError));
          }
          else {
-           return iter_delt;
+           return static_cast<int>(iter_delt);
          }
      }
      float lh_rt, rh_rt;
      lh_rt = rts[iter_delt];
      rh_rt = rts[iter_delt+1];
      if ( (rt - lh_rt) < (rh_rt - rt ) ) {
-       return iter_delt;
+       return static_cast<int>(iter_delt);
      }
      else {
-       return iter_delt + 1;
+       return static_cast<int>(iter_delt + 1);
      }
 }
 
@@ -492,7 +480,7 @@ void msmat::trim_start (int nscans) {
 }
 void msmat::trim_start( rt_type rt ) {
   rts_type::iterator ub = upper_bound(rts.begin(), rts.end(), rt );
-  int nscans = ub - rts.begin();
+  int nscans = static_cast<int>(ub - rts.begin());
   if ( nscans == 0 ) {
     cerr << "Complete trimming of run at trim_start " << rt << endl;
   }
@@ -512,7 +500,7 @@ void msmat::trim_stop( int nscans ) {
 }
 void msmat::trim_stop( rt_type rt ) {
   rts_type::iterator lb = lower_bound(rts.begin(), rts.end(), rt);
-  int nscans = rts.end() - lb;
+  int nscans = static_cast<int>(rts.end() - lb);
   if ( nscans == 0 )  {
     cerr << "Complete trimming of run at trim_stop " << rt << endl;
   }
@@ -557,25 +545,25 @@ void msmat_chroms::_trim_stop_mzs( int nscans ) {
 
 
 void msmat::_trim_start_rts( int nscans ) {
-  vector<float> new_rts(get_num_rts() - nscans);
+  vector<float> new_rts(get_num_rts() - static_cast<std::size_t>(nscans));
   copy(rts.begin() + nscans, rts.end(), new_rts.begin());
   rts.swap(new_rts);
 }
 
 void msmat::_trim_stop_rts ( int nscans ) {
-  vector<float> new_rts(get_num_rts() - nscans);
+  vector<float> new_rts(get_num_rts() - static_cast<std::size_t>(nscans));
   copy(rts.begin(), rts.end() - nscans, new_rts.begin());
   rts.swap(new_rts);
 }
 
 void msmat::_trim_start_mzs_list ( int nscans ) {
-  vector<float> new_mzs(get_num_mzs() - nscans);
+  vector<float> new_mzs(get_num_mzs() - static_cast<std::size_t>(nscans));
   copy(mzs.begin() + nscans, mzs.end(), new_mzs.begin());
   mzs.swap(new_mzs);
 }
 
 void msmat::_trim_stop_mzs_list ( int nscans ) {
-  vector<float> new_mzs(get_num_mzs() - nscans);
+  vector<float> new_mzs(get_num_mzs() - static_cast<std::size_t>(nscans));
   copy(mzs.begin(), mzs.end() - nscans, new_mzs.begin());
   mzs.swap(new_mzs);
 }
@@ -598,7 +586,7 @@ void msmat::trim_start_stop( rt_type start_rt, rt_type stop_rt) {
 
 void msmat::init_data() {
   matrix_dim d = get_data_dim();
-  data = new LazyMatrix(d.row_num,d.row_size,get_sparse_level(), this->msmat_file, data_start_offset );  
+  data = new LazyMatrix(static_cast<int>(d.row_num),static_cast<int>(d.row_size),get_sparse_level(), this->msmat_file, data_start_offset );  
   cerr << "allocated matrix:" << d.row_num << "," << d.row_size << endl;
   cerr << "matrix size:" << data->m.size() << endl;
 }
@@ -635,7 +623,7 @@ void msmat::copy_from_msmat_mzs (msmat & t , const std::vector<int> mzidxs) {
   vector<float> v(this->get_num_mzs());
   for ( uint i = 0 ; i < mzidxs.size() ; i++ ) {
     t.get_chrom(mzidxs[i], v);
-    this->set_chrom(v, i);
+    this->set_chrom(v, static_cast<int>(i));
   }
   this->summary_data_ok = false;
 }
@@ -644,8 +632,8 @@ void msmat::copy_from_msmat_mzs (msmat & t , const std::vector<int> mzidxs) {
 void msmat::retain_mzs_nodata( const vector<int> mzidxs ) {
   //new_mzs is made from our current set of mzs
   vector<float> new_mzs(mzidxs.size());
-  for ( uint i = 0; i < mzidxs.size() ; i++ ) {
-    new_mzs[i] = mzs[mzidxs[i]];
+  for ( std::size_t i = 0; i < mzidxs.size() ; i++ ) {
+    new_mzs[i] = mzs[static_cast<std::size_t>(mzidxs[i])];
   }
   mzs.swap(new_mzs);
   this->summary_data_ok = false;
@@ -677,7 +665,7 @@ void msmat::clear_data() {
 }
 
 void msmat::calc_bp_chrom() {
-  int scan_idx, num_scans, scan_length;
+  std::size_t scan_idx, num_scans, scan_length;
   scan_idx = 0;
   num_scans = get_num_rts();
   scan_length = get_num_mzs();
@@ -685,14 +673,14 @@ void msmat::calc_bp_chrom() {
   vector<float> scan(get_num_mzs());
   for ( ; scan_idx < num_scans; scan_idx++ ) {
 
-    get_scan(scan_idx,scan);
+    get_scan(static_cast<int>(scan_idx),scan);
     float scan_max = *(max_element(scan.begin(), scan.end()));
     bp_chrom[scan_idx] = scan_max;
   }
 }
 
 void msmat::calc_tic_chrom() {
-  int scan_idx, num_scans, scan_length;
+  std::size_t scan_idx, num_scans, scan_length;
   scan_idx = 0;
   num_scans = get_num_rts();
   scan_length = get_num_mzs();
@@ -701,7 +689,7 @@ void msmat::calc_tic_chrom() {
   for ( ; scan_idx < num_scans; scan_idx++ ) {
     //get the ptr to the first element
 
-    get_scan(scan_idx,scan);
+    get_scan(static_cast<int>(scan_idx),scan);
 
     float * scan_ptr = &(scan[0]);
     float scan_sum = sum_list<float>(scan_ptr, scan_length);
@@ -743,12 +731,12 @@ void msmat::get_mode_rt_intervals(float granularity, float lb, float rb, std::ve
 
   for ( uint i = 1; i < rts.size() ; i++ ) {
     float interval = rts[i] - rts[i-1];
-    int bin_idx;
+    std::size_t bin_idx;
     if ( interval > rb ) {
       bins[bins.size() - 1]++;
     }
     else {
-      bin_idx = (uint)(interval / granularity );
+      bin_idx = static_cast<std::size_t>(interval / granularity );
       bins[bin_idx]++;
     }
   }
@@ -760,14 +748,14 @@ double msmat::get_mode_rt_interval() const {
   const float lb = 0.0;
   const float rb = 1.0;
   const float nbins_f = (rb - lb) / granularity;
-  int nbins = (int)round(nbins_f);
+  std::size_t nbins = static_cast<std::size_t>(round(nbins_f));
   vector<uint> bins(nbins,0);
 
   get_mode_rt_intervals(granularity, lb, rb, bins);
 
   vector<uint>::iterator me = max_element(bins.begin(), bins.end());
-  int me_idx = me - bins.begin();
-  float interval = me_idx * granularity;
+  int me_idx = static_cast<int>(me - bins.begin());
+  float interval = static_cast<float>(me_idx) * granularity;
   return (interval); 
 }
 
@@ -784,7 +772,7 @@ void msmat::pad_start_stop( int start_mapped_coord,
                                     vector<float> nv(null_vect);
                                     set_scan(nv,i);
                                   }
-                                  for ( uint i = stop_mapped_coord+1 ; i < get_num_rts()  ; i++  ) {
+                                  for ( int i = stop_mapped_coord+1 ; i < get_num_rts()  ; i++  ) {
                                     vector<float> nv(null_vect);
                                     set_scan(nv,i);
                                   }
@@ -878,7 +866,7 @@ void msmat::warp_average_new_output (const vector<float> & t_coords,
 	                                  the mapping for that run lost?												   
 													   
 					  */
-                                      float al_coord = (float)std::min( std::max((int)(a_coords[i] - linear_scans_offset),0),
+                                      float al_coord = (float)std::min( std::max((int)(a_coords[i] - static_cast<float>(linear_scans_offset)),0),
                                                                           (int)align.get_num_rts() - 1);
                                                          
 
@@ -888,13 +876,13 @@ void msmat::warp_average_new_output (const vector<float> & t_coords,
 
 
                                       /* interpolate the appropriate align scan */
-                                      if ( a_coords[i] >= align.get_num_rts() - 1 ) {
-                                        align.get_scan(align.get_num_rts() - 1, interpolated_scan);
+                                      if ( a_coords[i] >= static_cast<float>(align.get_num_rts()) - 1 ) {
+                                        align.get_scan(static_cast<int>(align.get_num_rts()) - 1, interpolated_scan);
                                       }
                                       else {
                                         int lh_idx = (int)a_coords[i];
                                         int rh_idx = lh_idx + 1;
-                                        float xdelt = a_coords[i] - lh_idx;
+                                        float xdelt = a_coords[i] - static_cast<float>(lh_idx);
                                         //derive new scan
                                         align.get_scan(lh_idx, lh_scan);
                                         align.get_scan(rh_idx, rh_scan);
@@ -964,14 +952,14 @@ void msmat::warp_to_template( const vector<float> & t_coords,
 
 
                                       /* interpolate the appropriate align scan */
-                                      if ( a_coords[i] >= align.get_num_rts() - 1 ) {
+                                      if ( a_coords[i] >= static_cast<float>(align.get_num_rts()) - 1 ) {
                                         align.get_scan_interp((float)(align.get_num_rts() - 1), interpolated_scan);
                                       }
                                       else {
 					//align.get_scan_interp((al_coord),interpolated_scan);
                                         int lh_idx = (int)a_coords[i];
                                         int rh_idx = lh_idx + 1;
-                                        float xdelt = a_coords[i] - lh_idx;
+                                        float xdelt = a_coords[i] - static_cast<float>(lh_idx);
                                         //derive new scan
                                         align.get_scan(lh_idx, lh_scan);
                                         align.get_scan(rh_idx, rh_scan);
@@ -1043,16 +1031,16 @@ void msmat::time_interpolate(double interval, msmat & new_matrix) {
   */
 
   double new_len = new_end - new_start;
-  int num_new_scans = (int)round(new_len / interval);
+  std::size_t num_new_scans = static_cast<std::size_t>(round(new_len / interval));
 
   cerr << "new_start, new_end, new_len, num_new_scans:" << new_start << " " << new_end << " " << 
     new_len << " " << num_new_scans << endl;
   // create new retention times
   vector<float> new_rts(num_new_scans);
 
-  new_rts[0] = new_start;
+  new_rts[0] = static_cast<float>(new_start);
   for ( uint i = 1 ; i < new_rts.size() ; i++ ) {
-    new_rts[i] = new_rts[i-1] + interval;
+    new_rts[i] = new_rts[i-1] + static_cast<float>(interval);
   }
 
   new_matrix.set_rts(new_rts);
@@ -1105,8 +1093,8 @@ void msmat::time_interpolate(double interval, msmat & new_matrix) {
       assert(rts[old_rts_idx+jmp_idx] >= new_rt );
     }
     assert(new_rt >= rts[last_lower_old] && new_rt <= rts[last_lower_old+1]);
-    vector<float> new_scan = interpolate_scan_by_rt(new_rt, last_lower_old,last_lower_old+1);
-    new_matrix.set_scan(new_scan,new_rts_idx);
+    vector<float> new_scan = interpolate_scan_by_rt(new_rt, static_cast<int>(last_lower_old),static_cast<int>(last_lower_old)+1);
+    new_matrix.set_scan(new_scan,static_cast<int>(new_rts_idx));
     old_rts_idx = last_lower_old;
     jmp_idx = 0;
     new_rts_idx++;
@@ -1120,7 +1108,7 @@ vector<float> msmat::interpolate_scan_by_idx ( float new_idx ){
   this->summary_data_ok = false;
   lh_idx = (int)floor(new_idx);
   rh_idx = (int)ceil(new_idx);
-  float dx = new_idx - lh_idx;
+  float dx = new_idx - static_cast<float>(lh_idx);
   vector<float> lh_scan(get_num_mzs()), rh_scan(get_num_mzs());
   get_scan(lh_idx,lh_scan);
   get_scan(rh_idx,rh_scan);
@@ -1243,8 +1231,8 @@ void msmat::write_to_file( FILE * msmat_fh ) {
 double msmat::total_current ( float start_rt, float stop_rt, float threshold ) const {
   uint start_scan_idx, stop_scan_idx;
   if ( start_rt > 0 || stop_rt > 0 ) {
-    start_scan_idx = this->get_scan_idx_by_rt( start_rt );
-    stop_scan_idx = this->get_scan_idx_by_rt( stop_rt );
+    start_scan_idx = static_cast<uint>(this->get_scan_idx_by_rt( start_rt ));
+    stop_scan_idx = static_cast<uint>(this->get_scan_idx_by_rt( stop_rt ));
     return total_current(start_scan_idx,stop_scan_idx,threshold);
   }
   else {
@@ -1256,7 +1244,7 @@ double msmat::total_current (  uint start_scan , uint last_scan,  float threshol
   vector<float> t(get_num_cols(),0.0f);
   vector<float> s(get_num_cols(),0.0f);
   for ( uint i = start_scan ; i <= last_scan ; i++ ) {
-    data->get_row(s,i);
+    data->get_row(s,static_cast<int>(i));
     for ( uint i = 0 ; i < s.size() ; i++ ) {
       t[i] += s[i];
     }
@@ -1274,7 +1262,7 @@ double msmat::get_avg() const {
 
 double msmat::get_median() const {
   vector<float> data_sorted(this->get_num_rows() * this->get_num_cols());
-  int cnt = 0;
+  std::size_t cnt = 0;
   for ( int i = 0 ; i < this->get_num_rows() ; i++ ) {
     for ( int j = 0 ; j < this->get_num_cols() ; j++ ) {
       data_sorted[cnt] = this->data->get_val(i,j);
@@ -1286,20 +1274,20 @@ double msmat::get_median() const {
 
 double msmat::get_avg( int offset ) const  {
   assert(abs(offset) <= get_num_rts() / 2 );
-  vector<double> avgs(get_num_rts() - abs(offset));
+  vector<double> avgs(get_num_rts() - static_cast<std::size_t>(abs(offset)));
   vector<float> scan_vec(get_num_mzs());
-  int num_rts = get_num_rts();
-  int avg_idx = 0;
+  int num_rts = static_cast<int>(get_num_rts());
+  std::size_t avg_idx = 0;
   for ( int i = offset ; i < (offset + num_rts) ; i++ ) {
     if ( i < 0 || i >= get_num_rts()  ) {
       continue;
     }
     else {
       this->get_scan(i,scan_vec);
-      avgs[avg_idx++] = crawutils::sum_vect(  scan_vec ) / get_num_mzs();
+      avgs[avg_idx++] = crawutils::sum_vect(  scan_vec ) / static_cast<float>(get_num_mzs());
     }
   }
-  return (crawutils::sum_vect(avgs) / avgs.size());
+  return crawutils::sum_vect(avgs) / static_cast<double>(avgs.size());
 }
 
 
@@ -1331,7 +1319,7 @@ double msmat::calc_twomat_num( const msmat & other,
                                        double sct = 0.0;
                                        get_scan(self_idx,this_scan);
                                        other.get_scan(other_idx,other_scan);
-                                       uint num_mzs = get_num_mzs();
+                                       uint num_mzs = static_cast<uint>(get_num_mzs());
                                        for ( uint i = 0 ; i < num_mzs ; i++ ) {
                                          sct += (this_scan[i] - self_mean)*(other_scan[i] - other_mean);
                                        }
@@ -1345,7 +1333,7 @@ double msmat::calc_twomat_num( const msmat & other,
 double msmat::calc_mat_denom( double mean, int offset )  const{
   double d = 0.0;
   vector<float> scan_ref(get_num_mzs());
-  int rts_num = get_num_rts();
+  int rts_num = static_cast<int>(get_num_rts());
   for ( int i = offset ; i < rts_num + offset ; i++ ) {
     if ( i < 0 || i >= get_num_rts() ) {
       continue;
@@ -1382,7 +1370,7 @@ double msmat::correlation_w_shift ( const msmat & other, int shift ) const {
 
 double msmat::total_current ( float threshold ) const {
   uint start_idx = 0;
-  uint stop_idx  = get_num_rows() - 1;
+  uint stop_idx  = static_cast<uint>(get_num_rows()) - 1;
   return total_current( start_idx, stop_idx, threshold);
 }
 double msmat::total_current () const {
@@ -1418,10 +1406,10 @@ msmat_scans
 
   msmat_chroms * msmat_chroms::extract_mzidx_range( int r_start, int r_stop ) {
     assert(r_stop < mzs.size() );
-    vector<int> mz_range(r_stop - r_start);
+    vector<int> mz_range(static_cast<std::size_t>(r_stop - r_start));
     int foo = 5;
-    for ( int i = 0;  i < r_stop - r_start ; i++ ) {
-      mz_range[i] = r_start + i;
+    for ( std::size_t i = 0;  i < r_stop - r_start ; i++ ) {
+      mz_range[i] = r_start + static_cast<int>(i);
     }
     return _extract_mzidx_range(mz_range);  
   };
@@ -1498,42 +1486,42 @@ void msmat_scans::get_chrom( int mz_idx, vector<float> & inv ) const {
   msmat * volatile_this;
   //change the to_full_data to just modify the internal data object, keeping this const.. ?
   this->to_full_data();
-  inv.resize(data->rows());
+  inv.resize(static_cast<std::size_t>(data->rows()));
   data->get_col(inv, mz_idx);
 }
 
 vector<float> msmat_scans::get_scan( int scan_idx ) const {
-  vector<float> v(data->cols());
+  vector<float> v(static_cast<std::size_t>(data->cols()));
   data->get_row(v,scan_idx);
   return v;
 }
 
 
 vector<float>  msmat_scans::get_chrom( int mz_idx ) const {
-  vector<float> v(data->rows());
+  vector<float> v(static_cast<std::size_t>(data->rows()));
   data->get_col(v,mz_idx);
   return v;
 }
 
 void msmat_chroms::get_scan( int scan_idx, vector<float> & inv ) const {
   this->to_full_data();
-  inv.resize(data->rows());
+  inv.resize(static_cast<std::size_t>(data->rows()));
   data->get_col(inv,scan_idx);
 }
 
 void msmat_chroms::get_chrom( int mz_idx, vector<float> & inv ) const {
-  inv.resize(data->cols());
+  inv.resize(static_cast<std::size_t>(data->cols()));
   data->get_row(inv, mz_idx);
 }
 
 vector<float> msmat_chroms::get_scan( int scan_idx ) const {
-  vector<float> v(data->rows());
+  vector<float> v(static_cast<std::size_t>(data->rows()));
   data->get_col(v,scan_idx);
   return v;
 }
 
 vector<float>  msmat_chroms::get_chrom( int mz_idx ) const {
-  vector<float> v(data->cols());
+  vector<float> v(static_cast<std::size_t>(data->cols()));
   data->get_row(v,mz_idx);
   return v;
 }
@@ -1552,13 +1540,13 @@ void msmat_chroms::zero_pixel(int chrom_idx, int scan_idx) {
 
 void msmat::scan_scramble() {
   std::vector<int> scan_idxs( get_num_rts());
-  for ( int i = 0 ; i < get_num_rts() ; i++ ) {
-    scan_idxs[i] = i;
+  for ( std::size_t i = 0 ; i < get_num_rts() ; i++ ) {
+    scan_idxs[i] = static_cast<int>(i);
   }
-  std::vector< std::pair<int, int> > scram_cmds = crawutils::fyates_shuffle_commands(get_num_rts());
+  std::vector< std::pair<int, int> > scram_cmds = crawutils::fyates_shuffle_commands(static_cast<int>(get_num_rts()));
   std::vector<float> tmp_scan1(get_num_mzs());
   std::vector<float> tmp_scan2(get_num_mzs());
-  for ( int i = 0 ; i < scram_cmds.size() ; i++ ) {
+  for ( std::size_t i = 0 ; i < scram_cmds.size() ; i++ ) {
     get_scan( scram_cmds[i].first, tmp_scan1 );
     get_scan( scram_cmds[i].second, tmp_scan2 );
     set_scan( tmp_scan1, scram_cmds[i].second );
@@ -1743,7 +1731,7 @@ msmat * msmat_from_thevoid
   if ( mzs.size() != chroms.size() ) {
     /* barf */
   }
-  for ( int i = 0 ; i < chroms.size() ; i++ ){
+  for ( std::size_t i = 0 ; i < chroms.size() ; i++ ){
     if ( chroms[i].size() != rts.size() ) {
       /* barf */
     }
@@ -1759,8 +1747,8 @@ msmat * msmat_from_thevoid
   out_mat->set_mzs(mzs);
   out_mat->set_rts(rts);
   out_mat->to_full_data();
-  for ( int i = 0 ; i < chroms.size() ; i++ ){
-    out_mat->set_chrom( chroms[i], i );
+  for ( std::size_t i = 0 ; i < chroms.size() ; i++ ){
+    out_mat->set_chrom( chroms[i], static_cast<int>(i) );
   }
   return out_mat;
   
@@ -1773,8 +1761,8 @@ msmat * msmat_from_thevoid
 
 vector<float> msmat::interpolate_scan_by_rt( float new_rt, int lh_idx, int rh_idx ) {
   float lh_rt, rh_rt;
-  lh_rt = rts[lh_idx];
-  rh_rt = rts[rh_idx];
+  lh_rt = rts[static_cast<std::size_t>(lh_idx)];
+  rh_rt = rts[static_cast<std::size_t>(rh_idx)];
   assert((new_rt >= lh_rt) && (new_rt <= rh_rt));
   float gap = rh_rt - lh_rt;
   float dx = ( new_rt - lh_rt ) / gap;
@@ -1789,10 +1777,10 @@ vector<float> msmat::interpolate_scan_by_rt( float new_rt, int lh_idx, int rh_id
 }
 
 void msmat::_decimate_rts( int decimate_size ) {
-  int new_num_rts = rts.size() / decimate_size;
+  std::size_t new_num_rts = rts.size() / static_cast<std::size_t>(decimate_size);
   vector<float> tmp_rts(new_num_rts);
-  int old_idx = 0;          
-  for ( int i = 0 ; i < new_num_rts ; i++, old_idx += decimate_size ) {
+  std::size_t old_idx = 0;          
+  for ( std::size_t i = 0 ; i < new_num_rts ; i++, old_idx += static_cast<std::size_t>(decimate_size) ) {
     assert(old_idx < rts.size());
     tmp_rts[i] = rts[old_idx];
   }
@@ -1802,10 +1790,10 @@ void msmat::_decimate_rts( int decimate_size ) {
 
 
 void msmat::_decimate_mzs( int decimate_size ) {
-  int new_num_mzs = mzs.size() / decimate_size;
+  std::size_t new_num_mzs = mzs.size() / static_cast<std::size_t>(decimate_size);
   vector<float> tmp_mzs(new_num_mzs);
-  int old_idx = 0;          
-  for ( int i = 0 ; i < new_num_mzs ; i++, old_idx += decimate_size ) {
+  std::size_t old_idx = 0;          
+  for ( std::size_t i = 0 ; i < new_num_mzs ; i++, old_idx += static_cast<std::size_t>(decimate_size)) {
     assert(old_idx < mzs.size());
     tmp_mzs[i] = mzs[old_idx];
   }
@@ -1817,18 +1805,18 @@ void msmat::decimate_mzs_by_avg(int decimate_size) {
   assert(decimate_size > 0);
   _decimate_mzs(decimate_size);
 
-  vector< vector<float>  > tmp_chroms(decimate_size);
+  vector< vector<float>  > tmp_chroms(static_cast<std::size_t>(decimate_size));
   matrix_dim d = this->get_data_dim();
-  LazyMatrix * new_data = new LazyMatrix(d.row_num,d.row_size,LM_FULL_DATA, this->msmat_file, data_start_offset );  
+  LazyMatrix * new_data = new LazyMatrix(static_cast<int>(d.row_num),static_cast<int>(d.row_size),LM_FULL_DATA, this->msmat_file, data_start_offset );  
   for ( uint i = 0; i < tmp_chroms.size() ; i++ ) {
     tmp_chroms[i].resize(this->get_num_rts());
   }
-  int old_mz_idx = 0;
+  std::size_t old_mz_idx = 0;
   for ( int new_cnt = 0; 
     new_cnt < mzs.size() ;
-    new_cnt++, old_mz_idx += decimate_size ) {
-      for ( int i = 0 ; i < decimate_size ; i++ ) {
-        this->get_chrom(old_mz_idx + i,tmp_chroms[i]);
+    new_cnt++, old_mz_idx += static_cast<std::size_t>(decimate_size) ) {
+      for ( std::size_t i = 0 ; i < decimate_size ; i++ ) {
+        this->get_chrom(static_cast<int>(old_mz_idx + i),tmp_chroms[i]);
       }
       vector<float> chrom_avg(this->get_num_rts());
       crawutils::average_mat_2d( tmp_chroms, chrom_avg);
@@ -1847,18 +1835,18 @@ void msmat::decimate_rts_by_avg(int decimate_size) {
   assert(decimate_size > 0);
   _decimate_rts(decimate_size);
 
-  vector< vector<float>  > tmp_scans(decimate_size);
+  vector< vector<float>  > tmp_scans(static_cast<std::size_t>(decimate_size));
   matrix_dim d = this->get_data_dim();
-  LazyMatrix * new_data = new LazyMatrix(d.row_num,d.row_size, LM_FULL_DATA, this->msmat_file, data_start_offset );  
+  LazyMatrix * new_data = new LazyMatrix(static_cast<int>(d.row_num),static_cast<int>(d.row_size), LM_FULL_DATA, this->msmat_file, data_start_offset );  
   for ( uint i = 0; i < tmp_scans.size() ; i++ ) {
     tmp_scans[i].resize(this->get_num_mzs());
   }
-  int old_rt_idx = 0;
+  std::size_t old_rt_idx = 0;
   for ( int new_cnt = 0; 
     new_cnt < rts.size() ;
-    new_cnt++, old_rt_idx += decimate_size ) {
-      for ( int i = 0 ; i < decimate_size ; i++ ) {
-        this->get_scan(old_rt_idx + i,tmp_scans[i]);
+    new_cnt++, old_rt_idx += static_cast<std::size_t>(decimate_size) ) {
+      for ( std::size_t i = 0 ; i < decimate_size ; i++ ) {
+        this->get_scan(static_cast<int>(old_rt_idx + i),tmp_scans[i]);
       }
       vector<float> scan_avg(this->get_num_mzs());
       crawutils::average_mat_2d( tmp_scans, scan_avg);
@@ -1873,12 +1861,12 @@ void msmat::decimate_mzs_by_sample(int decimate_size) {
   assert(decimate_size > 0);
   _decimate_mzs(decimate_size);
   matrix_dim d = this->get_data_dim();
-  LazyMatrix * new_data = new LazyMatrix(d.row_num,d.row_size, LM_FULL_DATA, this->msmat_file, data_start_offset );  
+  LazyMatrix * new_data = new LazyMatrix(static_cast<int>(d.row_num),static_cast<int>(d.row_size), LM_FULL_DATA, this->msmat_file, data_start_offset );  
   int old_mz_idx = 0;
   vector<float> t_chrom(this->get_num_rts());
   for ( int new_cnt = 0; 
     new_cnt < mzs.size() ;
-    new_cnt++, old_mz_idx += mzs.size() ) {
+    new_cnt++, old_mz_idx += static_cast<int>(mzs.size()) ) {
       get_chrom(old_mz_idx,t_chrom);
       set_chrom(t_chrom, new_cnt, new_data);
   }
@@ -1891,12 +1879,12 @@ void msmat::decimate_rts_by_sample(int decimate_size) {
   assert(decimate_size > 0);
   _decimate_rts(decimate_size);
   matrix_dim d = this->get_data_dim();
-  LazyMatrix * new_data = new LazyMatrix(d.row_num,d.row_size, LM_FULL_DATA, this->msmat_file, data_start_offset );  
+  LazyMatrix * new_data = new LazyMatrix(static_cast<int>(d.row_num),static_cast<int>(d.row_size), LM_FULL_DATA, this->msmat_file, data_start_offset );  
   int old_rt_idx = 0;
   vector<float> t_scan(this->get_num_mzs());
   for ( int new_cnt = 0; 
     new_cnt < rts.size() ;
-    new_cnt++, old_rt_idx += rts.size() ) {
+    new_cnt++, old_rt_idx += static_cast<int>(rts.size()) ) {
       get_scan(old_rt_idx,t_scan);
       set_scan(t_scan, new_cnt, new_data);
   }
@@ -1916,8 +1904,8 @@ bool msmat::equals_dimensions( const msmat & other ) const {
 }
 
 bool msmat::equals_data ( const msmat & other, double tolerance )  const {
-  vector<float> r(data->cols());
-  vector<float> other_r(other.data->cols());
+  vector<float> r(static_cast<std::size_t>(data->cols()));
+  vector<float> other_r(static_cast<std::size_t>(other.data->cols()));
   for ( int i = 0 ; i < get_num_rows() ; i++ ) {
     data->get_row(r,i);
     other.data->get_row(other_r,i);
@@ -1955,18 +1943,18 @@ double msmat::sum_abs_diffs ( const msmat & other ) const {
 }
 
 float msmat::rt_from_scannum( int scannum ) const {
-  return rts.at(scannum);
+  return rts.at(static_cast<std::size_t>(scannum));
 }
 float msmat::rt_from_scannum( float scannum ) const {
-  int base_scannum;
-  if ( scannum > rts.size() - 1 || scannum < 0 ) {
+  std::size_t base_scannum;
+  if ( scannum > static_cast<float>(rts.size()) - 1 || scannum < 0 ) {
     std::cerr << "Error with scan number interpolation: scannum, rts.size()" << scannum << " , " << rts.size() << std::endl;
     base_scannum = rts.size() - 1;
   }
   else {
-      base_scannum = (int)scannum;
+      base_scannum = static_cast<std::size_t>(scannum);
   }
-  float delt = scannum - base_scannum;
+  float delt = scannum - static_cast<float>(base_scannum);
   if ( delt == 0.0 ) {
     return rts.at(base_scannum);
   }
@@ -1980,20 +1968,20 @@ float msmat::rt_from_scannum( float scannum ) const {
 void msmat::tabular_output ( std::ostream & o , int mz_idx_start , int mz_idx_stop ,
 				  int rt_idx_start , int rt_idx_stop , bool labels, char delim ) {
   if ( mz_idx_stop == - 1 ) {
-    mz_idx_stop = this->get_num_mzs() - 1;
+    mz_idx_stop = static_cast<int>(this->get_num_mzs()) - 1;
   } 
   if  ( rt_idx_stop == - 1 ) {
-    rt_idx_stop = this->get_num_rts() - 1;
+    rt_idx_stop = static_cast<int>(this->get_num_rts()) - 1;
   }
   assert( mz_idx_stop > mz_idx_start);
   assert( rt_idx_stop > rt_idx_start);
-  const int num_mzs = get_num_mzs();
+  const int num_mzs = static_cast<int>(get_num_mzs());
   const int slice_rt_size = rt_idx_stop - rt_idx_start + 1;
   const int slice_mz_size = mz_idx_stop - mz_idx_start + 1;
   vector<float> tmp_chrom(get_num_rts());
-  vector<float> out_chrom(rt_idx_stop - rt_idx_start + 1);
-  vector<float> rts_slice(slice_rt_size);
-  vector<float> mzs_slice(slice_mz_size);
+  vector<float> out_chrom(static_cast<std::size_t>(rt_idx_stop - rt_idx_start + 1));
+  vector<float> rts_slice(static_cast<std::size_t>(slice_rt_size));
+  vector<float> mzs_slice(static_cast<std::size_t>(slice_mz_size));
   //note copy is [start,stop) not [start,stop], hence adding 1 to the second arg.
   std::copy(this->rts.begin() + rt_idx_start , this->rts.begin() + rt_idx_stop + 1,rts_slice.begin());
   std::copy(this->mzs.begin() + mz_idx_start , this->mzs.begin() + mz_idx_stop + 1,mzs_slice.begin());
@@ -2001,14 +1989,14 @@ void msmat::tabular_output ( std::ostream & o , int mz_idx_start , int mz_idx_st
 
   if ( labels ) {
     o << "M/Z" << delim;
-    for ( int i = 0 ; i < rts_slice.size() - 1 ; i++ ) {
+    for ( std::size_t i = 0 ; i < rts_slice.size() - 1 ; i++ ) {
       o << rts_slice[i] << delim;
     }
     o << rts_slice[rts_slice.size() - 1] << std::endl;
   }
 
-  for ( int i = 0 ; i < mzs_slice.size() ; i++ ) {
-    int mz_idx = mz_idx_start + i;
+  for ( std::size_t i = 0 ; i < mzs_slice.size() ; i++ ) {
+    int mz_idx = mz_idx_start + static_cast<int>(i);
 
     this->get_chrom(mz_idx,tmp_chrom);
     copy(tmp_chrom.begin() + rt_idx_start , tmp_chrom.begin() + rt_idx_stop + 1 , out_chrom.begin());
@@ -2016,7 +2004,7 @@ void msmat::tabular_output ( std::ostream & o , int mz_idx_start , int mz_idx_st
       cerr << "mzs_slice[" << i << "] :" << mzs_slice[i];
       o << 0.0 + mzs_slice[i] << delim;
     }
-    for ( int j = 0 ; j < out_chrom.size() - 1 ; j++ ) {
+    for ( std::size_t j = 0 ; j < out_chrom.size() - 1 ; j++ ) {
       o << out_chrom[j] << delim;
     }
     o << out_chrom[out_chrom.size() - 1] << std::endl;
@@ -2047,7 +2035,7 @@ void msmat::adjust_ort_wrt_map_linear ( float rt ) {
     }
 }
 void msmat::adjust_ort_wrt_map_linear ( int nscans ) {
-    this->adjust_ort_wrt_map_linear( nscans * (rts[1] - rts[0]) );
+    this->adjust_ort_wrt_map_linear( static_cast<float>(nscans) * (rts[1] - rts[0]) );
 }
 
 /* ---------------END MSMAT -------- */
@@ -2056,7 +2044,7 @@ void msmat::adjust_ort_wrt_map_linear ( int nscans ) {
 
 
 void msmat_scans::get_scan_interp( float scan_idx, vector<float> & inv ) const {
-  if ( scan_idx > get_num_rts() - 1 ) {
+  if ( scan_idx > static_cast<float>(get_num_rts()) - 1 ) {
     return get_scan((int)floorf(scan_idx),inv);
   }
   
@@ -2068,7 +2056,7 @@ void msmat_scans::get_scan_interp( float scan_idx, vector<float> & inv ) const {
   data->get_row(s1,(int)floorf(scan_idx));
   data->get_row(s2,(int)ceilf(scan_idx));
   float delta = scan_idx - ceilf(scan_idx);
-  for ( int i = 0 ; i < s1.size() ;i++ ) {
+  for ( std::size_t i = 0 ; i < s1.size() ;i++ ) {
     inv[i] = s1[i] + ( s2[i] - s1[i] ) * delta;
   }
 }
@@ -2080,7 +2068,7 @@ vector<float>  msmat_scans::get_scan_interp( float scan_idx ) const {
 }
 
 void msmat_chroms::get_scan_interp( float scan_idx, vector<float> & inv ) const {
-  if ( scan_idx > get_num_rts() - 1 ) {
+  if ( scan_idx > static_cast<float>(get_num_rts()) - 1 ) {
     return get_scan((int)floorf(scan_idx),inv);
   }
   
@@ -2092,7 +2080,7 @@ void msmat_chroms::get_scan_interp( float scan_idx, vector<float> & inv ) const 
   data->get_row(s1,(int)floorf(scan_idx));
   data->get_row(s2,(int)ceilf(scan_idx));
   float delta = scan_idx - ceilf(scan_idx);
-  for ( int i = 0 ; i < s1.size() ;i++ ) {
+  for ( std::size_t i = 0 ; i < s1.size() ;i++ ) {
     inv[i] = s1[i] + ( s2[i] - s1[i] ) * delta;
   }
 }

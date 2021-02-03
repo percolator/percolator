@@ -265,7 +265,7 @@ bool EludeCaller::ParseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("lib-path")) {
     library_path_ = cmd.options["lib-path"];
-    int n = library_path_.length();
+    std::size_t n = library_path_.length();
     if (library_path_[n - 1] != '\\' && library_path_[n - 1] != '/') {
       library_path_ += "/";
     }
@@ -515,15 +515,15 @@ int EludeCaller::AddModelLibrary() const {
     struct tm* time_info = localtime(&current_time);
     file_name = asctime(time_info);
     file_name = file_name.substr(4, (file_name.length() - 10));
-    int found = file_name.find_first_of(" ");
+    int found = static_cast<int>(file_name.find_first_of(" "));
       while (found != string::npos) {
-        file_name.replace(found, 1, "_");
-        found = file_name.find_first_of(" ");
+        file_name.replace(static_cast<std::size_t>(found), 1, "_");
+        found = static_cast<int>(file_name.find_first_of(" "));
       }
   }
-  int last_char = library_path_.length() - 1;
-  if (last_char >= 0 && library_path_[last_char] != '/'
-      && library_path_[last_char] != '\\') {
+  int last_char = static_cast<int>(library_path_.length()) - 1;
+  if (last_char >= 0 && library_path_[static_cast<std::size_t>(last_char)] != '/'
+      && library_path_[static_cast<std::size_t>(last_char)] != '\\') {
     library_path_ += "/";
   }
   file_name = library_path_ + file_name;
@@ -534,7 +534,7 @@ int EludeCaller::AddModelLibrary() const {
 /* save the retention index to a file */
 int EludeCaller::SaveIndexToFile(const int &best_model_index) const {
   if (automatic_model_sel_ && best_model_index >= 0) {
-    rt_models_[best_model_index]->SaveRetentionIndexToFile(index_file_);
+    rt_models_[static_cast<std::size_t>(best_model_index)]->SaveRetentionIndexToFile(index_file_);
   } else if (rt_model_ != NULL) {
     rt_model_->SaveRetentionIndexToFile(index_file_);
   } else {
@@ -645,10 +645,10 @@ int EludeCaller::Run() {
         }
         return 0;
       }
-      rt_models_[index]->PredictRT(test_aa_alphabet_, ignore_ptms_, "test psms",
+      rt_models_[static_cast<std::size_t>(index)]->PredictRT(test_aa_alphabet_, ignore_ptms_, "test psms",
           test_psms_);
       if (linear_calibration_ && train_psms_.size() > 1) {
-        rt_models_[index]->PredictRT(train_aa_alphabet_, ignore_ptms_, "calibration psms",
+        rt_models_[static_cast<std::size_t>(index)]->PredictRT(train_aa_alphabet_, ignore_ptms_, "calibration psms",
             train_psms_);
       }
     } else {
@@ -808,7 +808,7 @@ pair<int, double> EludeCaller::AutomaticModelSelection() {
       if (rank_correl > best_correl) {
         best_correl = rank_correl;
         best_index = index;
-        original_index = i;
+        original_index = static_cast<int>(i);
       }
     } else if (VERB >= 4) {
         cerr << "Warning: inconsistent alphabet between model and data. "
@@ -821,7 +821,7 @@ pair<int, double> EludeCaller::AutomaticModelSelection() {
 
   if (VERB >= 4 && best_index != -1.0) {
     cerr << "-------------------------" << endl;
-    cerr << "Best model: " << model_files[original_index] << endl << endl;
+    cerr << "Best model: " << model_files[static_cast<std::size_t>(original_index)] << endl << endl;
   }
 
   return make_pair(best_index, best_correl);
@@ -902,8 +902,8 @@ bool ComparePsmsDeltaRT(PSMDescription* psm1, PSMDescription* psm2) {
 /*compute Delta t(95%) window */
 double EludeCaller::ComputeWindow(vector<PSMDescription*> &psms) {
   double win, diff;
-  int nr = (int) round(kFractionPeptides * (double) psms.size());
-  int k = psms.size() - nr, i = 1;
+  std::size_t nr = static_cast<std::size_t>(round(kFractionPeptides * (double) psms.size()));
+  std::size_t k = psms.size() - nr, i = 1;
 
   sort(psms.begin(), psms.end(), ComparePsmsDeltaRT);
   win = (psms[nr - 1]->getPredictedRetentionTime() - psms[nr - 1]->getRetentionTime())
@@ -939,7 +939,7 @@ bool ComparePsmsPRT(pair<PSMDescription*, const double> psm1,
 double EludeCaller::ComputeRankCorrelation(vector<PSMDescription*> &psms) {
   double corr = 0.0, d = 0.0, avg_rank, rank_p;
   int i, j;
-  int n = psms.size();
+  int n = static_cast<int>(psms.size());
   vector<pair<PSMDescription*, double> > rankedPsms;
 
   if (VERB >= 4) {
@@ -953,13 +953,13 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription*> &psms) {
   i = 0;
   while (i < n) {
     avg_rank = j = i + 1;
-    while ((j < n) && (psms[i]->getRetentionTime()
-        == psms[j]->getRetentionTime())) {
+    while ((j < n) && (psms[static_cast<std::size_t>(i)]->getRetentionTime()
+        == psms[static_cast<std::size_t>(j)]->getRetentionTime())) {
       avg_rank += ++j;
     }
     avg_rank = avg_rank / (double)(j - i);
     for (int k = i; k < j; ++k) {
-      rankedPsms.push_back(make_pair(psms[k], avg_rank));
+      rankedPsms.push_back(make_pair(psms[static_cast<std::size_t>(k)], avg_rank));
     }
     i = j;
   }
@@ -970,14 +970,14 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription*> &psms) {
   while (i < n) {
     // calculate rank of predicted rt
     rank_p = j = i + 1;
-    while ((j < n) && (rankedPsms[i].first->getPredictedRetentionTime()
-        == rankedPsms[j].first->getPredictedRetentionTime())) {
+    while ((j < n) && (rankedPsms[static_cast<std::size_t>(i)].first->getPredictedRetentionTime()
+        == rankedPsms[static_cast<std::size_t>(j)].first->getPredictedRetentionTime())) {
       rank_p += ++j;
     }
     rank_p = rank_p / (double)(j - i);
     // calculate and add squared difference
     for (int k = i; k < j; ++k) {
-      d += pow(rankedPsms[k].second - rank_p, 2);
+      d += pow(rankedPsms[static_cast<std::size_t>(k)].second - rank_p, 2);
     }
     // increase i
     i = j;
@@ -992,12 +992,12 @@ double EludeCaller::ComputeRankCorrelation(vector<PSMDescription*> &psms) {
 
 /* Compute Pearson's correlation coefficient */
 double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription*> & psms) {
-  int no_psms = psms.size();
+  int no_psms = static_cast<int>(psms.size());
   // calculate means
   double sum_obs = 0.0, sum_pred = 0.0;
   for (int i = 0; i < no_psms; i++) {
-    sum_obs += psms[i]->getRetentionTime();
-    sum_pred += psms[i]->getPredictedRetentionTime();
+    sum_obs += psms[static_cast<std::size_t>(i)]->getRetentionTime();
+    sum_pred += psms[static_cast<std::size_t>(i)]->getPredictedRetentionTime();
   }
   double avg_obs = sum_obs / no_psms;
   double avg_pred = sum_pred / no_psms;
@@ -1007,8 +1007,8 @@ double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription*> & psms) {
   double dev_obs, dev_pred;
   double numerator = 0.0;
   for (int i = 0; i < no_psms; i++) {
-    dev_obs = psms[i]->getRetentionTime() - avg_obs;
-    dev_pred = psms[i]->getPredictedRetentionTime() - avg_pred;
+    dev_obs = psms[static_cast<std::size_t>(i)]->getRetentionTime() - avg_obs;
+    dev_pred = psms[static_cast<std::size_t>(i)]->getPredictedRetentionTime() - avg_pred;
     numerator += dev_obs * dev_pred;
     sum_obs += pow(dev_obs, 2);
     sum_pred += pow(dev_pred, 2);
@@ -1023,14 +1023,14 @@ double EludeCaller::ComputePearsonCorrelation(vector<PSMDescription*> & psms) {
 /* get the filename from a path (excluding the extension) */
 string EludeCaller::GetFileName(const string &path) {
   int pos1, pos2;
-  if ((pos1 = path.find_last_of("/")) == string::npos) {
-    if ((pos1 = path.find_last_of("\\"))== string::npos) {
+  if ((pos1 = static_cast<int>(path.find_last_of("/"))) == string::npos) {
+    if ((pos1 = static_cast<int>(path.find_last_of("\\")))== string::npos) {
       pos1 = -1;
     }
   }
-  string file_name = path.substr(pos1 + 1, string::npos);
-  if ((pos2 = file_name.find_last_of(".")) != string::npos) {
-    file_name = file_name.substr(0, pos2);
+  string file_name = path.substr(static_cast<std::size_t>(pos1 + 1), string::npos);
+  if ((pos2 = static_cast<int>(file_name.find_last_of("."))) != string::npos) {
+    file_name = file_name.substr(0, static_cast<std::size_t>(pos2));
   }
   return file_name;
 }
@@ -1044,9 +1044,9 @@ set<string> EludeCaller::GetAAAlphabet(const vector<PSMDescription*> &psms) cons
   int pos1, pos2;
   for ( ; it != psms.end(); ++it) {
     peptide = (*it)->peptide;
-	  pos1 = peptide.find('.');
-	  pos2 = peptide.find('.', ++pos1);
-	  peptide_sequence = peptide.substr(pos1, pos2 - pos1);
+	  pos1 = static_cast<int>(peptide.find('.'));
+	  pos2 = static_cast<int>(peptide.find('.', static_cast<std::size_t>(++pos1)));
+	  peptide_sequence = peptide.substr(static_cast<std::size_t>(pos1), static_cast<std::size_t>(pos2 - pos1));
     amino_acids = RetentionFeatures::GetAminoAcids(peptide_sequence);
     aa_alphabet.insert(amino_acids.begin(), amino_acids.end());
   }
@@ -1096,8 +1096,8 @@ int EludeCaller::SelectTestModel(std::vector<PSMDescription*> &calibration_psms,
     return 1;
   }
 
-  rt_models_[index]->PredictRT(test_aa_alphabet_, false, "test psms", test_psms_);
-  rt_models_[index]->PredictRT(train_aa_alphabet_, false, "calibration psms",
+  rt_models_[static_cast<std::size_t>(index)]->PredictRT(test_aa_alphabet_, false, "test psms", test_psms_);
+  rt_models_[static_cast<std::size_t>(index)]->PredictRT(train_aa_alphabet_, false, "calibration psms",
       train_psms_);
   pair<vector<double> , vector<double> > rts = GetRTs(train_psms_);
   lts = new LTSRegression();

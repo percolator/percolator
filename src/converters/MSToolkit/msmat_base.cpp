@@ -33,7 +33,7 @@ int write_float_vect ( vector<float> & data, FILE * ofh ) {
 
 int read_float_vect ( vector<float> & data, FILE * ofh , int num_fields ) {
   size_t cnt;
-  data.resize(num_fields);
+  data.resize(static_cast<std::size_t>(num_fields));
   cnt = fread((void*)&data[0], sizeof(float), data.size(), ofh);
   if ( cnt != data.size() ) {
     return 0;
@@ -48,7 +48,7 @@ float is_msmat( const char * fname) {
   //float version  = 0.0 ;
   float status = 0;
   char line[LINE_LEN_LIM];
-  int linelen;
+  std::size_t linelen;
   FILE * ms_fh = fopen(fname,"rb");
   if (fgets(line,LINE_LEN_LIM,ms_fh) == NULL ) {
     //TODO raise error

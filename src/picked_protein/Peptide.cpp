@@ -283,7 +283,7 @@ PeptideSrcIterator Peptide::getPeptideSrcEnd() {
  */
 int Peptide::getNumPeptideSrc(){
 
-  return peptide_srcs_.size();
+  return static_cast<int>(peptide_srcs_.size());
 }
 
 /**
@@ -366,28 +366,6 @@ char* Peptide::getUnshuffledSequence() {
                                          length_);
  
   return copy_sequence; 
-}
-
-/**
- * \brief Check whether a given sequence is equal to a given peptide.
- * \returns A Boolean indicating equality or not.
- */
-static bool equal_peptides(
- char* peptide_sequence, ///< peptide sequence -in
- Peptide* peptide_object ///< peptide object -in
- )
-{
-  char* parent_sequence = 
-    peptide_object->getPeptideSrc()->getParentProtein()->
-    getSequencePointer();
-  int start_idx = peptide_object->getPeptideSrc()->getStartIdx();
-
-  int result = strncmp(peptide_sequence, 
-                       &(parent_sequence[start_idx-1]), 
-                       peptide_object->getLength());
-
-  // Return true if strncmp returns 0.
-  return((bool)(!result));
 }
 
 /**
@@ -870,7 +848,7 @@ int Peptide::getProteinInfo(vector<string>& protein_ids,
 
   } 
 
-  return protein_ids.size();
+  return static_cast<int>(protein_ids.size());
 }
 
 
@@ -1018,7 +996,7 @@ char* Peptide::getProteinIds() {
 
       // Allocate more memory if needed, allow space for comma and null
       if (protein_field_free < (protein_id_len + 2)) {
-        size_t tail_offset = protein_field_tail - protein_field;
+        size_t tail_offset = static_cast<std::size_t>(protein_field_tail - protein_field);
         protein_field = (char*)realloc(
           protein_field, 
           sizeof(char) * ((allocation_factor * (protein_id_len + 1)) + protein_field_len)
