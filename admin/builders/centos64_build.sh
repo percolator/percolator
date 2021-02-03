@@ -77,7 +77,7 @@ make -j 4;
 make -j 4 package;
 
 # Fix to handle alt. rpc location
-CFLAGS+=`pkg-config --cflags libtirpc`
+export CFLAGS=`pkg-config --cflags libtirpc`
 #export CXXFLAGS=-I/usr/include/tirpc
 
 
