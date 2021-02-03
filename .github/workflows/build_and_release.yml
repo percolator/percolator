@@ -43,8 +43,8 @@ jobs:
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
-        name: centos-packages
-        path: ../my_rel
+         name: centos-packages
+         path: ../my_rel
 
   build-osx:
     runs-on: macos-latest
