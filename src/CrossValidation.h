@@ -101,9 +101,7 @@ class CrossValidation {
   bool trainBestPositive_;
   bool skipNormalizeScores_;
   
-  /// start by Yang
-  bool peptideInSameFold_;
-  /// end by Yang
+  bool peptideLevelFolds_;
   
   const static double requiredIncreaseOver2Iterations_;
   

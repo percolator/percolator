@@ -336,7 +336,6 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
 
-    /// start by Yang
     if (peptideInSameFold) {
         // get the unmodified peptide
         std::string unmod_pep = sh.pPSM->getPeptideSequence();
@@ -351,11 +350,12 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
 
         // convert the unmodified peptide to a peptide token by using ASCII
         unsigned long pep_token = 1u;
-        for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) { pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx); }
+        for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) {
+        	pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx);
+        }
         randIndex = pep_token % xval_fold;
 
     }
-    /// end by Yang
     else {
         if (previousSpectrum != curScan) {
           randIndex = PseudoRandom::lcg_rand() % xval_fold;
