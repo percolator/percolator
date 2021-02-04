@@ -40,7 +40,7 @@ CrossValidation::CrossValidation(bool quickValidation,
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
     nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
     numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores),
-	peptideLevelFolds_(peptideLevelFolds) {}
+    peptideLevelFolds_(peptideLevelFolds) {}
 
 CrossValidation::~CrossValidation() { 
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {

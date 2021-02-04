@@ -376,10 +376,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
 
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
-	  "peptideLevelFolds",
-	  "Enforce that, the PSMs corresponding to the same target/decoy pair are placed in the same cross-validation fold.",
-	  "",
-	  TRUE_IF_SET);
+      "peptide-level-folds",
+      "Enforce that, the PSMs corresponding to the same target/decoy pair are placed in the same cross-validation fold.",
+      "",
+      TRUE_IF_SET);
   
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -671,8 +671,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
   }
   
-  if (cmd.optionSet("peptideLevelFolds")) {
-	  peptideLevelFolds_ = true;
+  if (cmd.optionSet("peptide-level-folds")) {
+      peptideLevelFolds_ = true;
   }
 
   // If a static model is used, no nested CV is needed for Cpos and Cneg.

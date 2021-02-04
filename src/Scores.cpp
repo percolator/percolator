@@ -351,7 +351,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
         // convert the unmodified peptide to a peptide token by using ASCII
         unsigned long pep_token = 1u;
         for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) {
-        	pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx);
+            pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx);
         }
         randIndex = pep_token % xval_fold;
 
@@ -366,7 +366,6 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
         }
 
     }
-
 
     // insert
     for (unsigned int i = 0; i < xval_fold; ++i) {
@@ -386,8 +385,18 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   for (unsigned int i = 0; i < xval_fold; ++i) {
     train[i].recalculateSizes();
     test[i].recalculateSizes();
+
+    // show the size of each fold
+    /*
+     * The intuition of why the splits are approximately balanced:
+     * Imagine you have a random generator which generates random integers.
+     * Now you randomly assigned the generated numbers into k fold by MOD k,
+     * As long as you generate sufficient numbers, it's very likely to get approximately even split.
+     */
+    std::cerr << "Fold=" << i << "\tTrain size=" << train[i].size() << "\tTest size=" << test[i].size() << std::endl;
   }
   
+
   if (featurePool.isInitialized()) {
     boost::unordered_map<double*, double*> movedAddresses;
     size_t idx = 0;
