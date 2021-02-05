@@ -357,7 +357,7 @@ ADD_DEPENDENCIES(converters generate_perc_xsdfiles)
 
 #target_link_libraries(converters ${XERCESC_LIBRARIES} ${PTHREADS_LIBRARIES} ${Boost_LIBRARIES})
 
-target_link_libraries(converters ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(converters ${XERCESC_LIBRARIES} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${RPC_LIBRARIES})
 
 if(APPLE)
   target_link_libraries(converters ${OpenMP_CXX_LIBRARIES})
