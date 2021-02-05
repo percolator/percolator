@@ -37,7 +37,7 @@ jobs:
     - name: configure_and_make
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
     - name: test
-      run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
+      run: cd ../my_build/percolator && make install && make test ARGS="-V"
     - name: zip raw binary
       run: zip -j ../my_rel/percolator-noxml.zip ../my_build/percolator-noxml/src/percolator
     - name: Upload packages
