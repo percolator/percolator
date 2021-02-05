@@ -123,6 +123,7 @@ include_directories(${XERCESC_INCLUDE_DIR})
 find_package(Xsd REQUIRED) # CODESYNTHESIS
 if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
+  message(STATUS "                     Executable: ${XSD_EXECUTABLE}")
 else(XSD_FOUND)
   message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
 endif(XSD_FOUND)
