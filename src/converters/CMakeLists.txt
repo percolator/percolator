@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 2.6)
 
 if(APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
-  # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang 
+  # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang
   # (https://gitlab.kitware.com/cmake/cmake/issues/19067)
   cmake_policy(SET CMP0025 NEW)
 endif()
@@ -35,11 +35,11 @@ MESSAGE( STATUS
 )
 MESSAGE( STATUS "Building PERCOLATOR-CONVERTERS:" )
 MESSAGE( STATUS "change a configuration variable with: cmake -D<Variable>=<Value>" )
-MESSAGE( STATUS "Indicate the type of XML serialization scheme : 
-		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\" 
+MESSAGE( STATUS "Indicate the type of XML serialization scheme :
+		  -DSERIALIZE=\"Boost\" or -DSERIALIZE=\"TokyoCabinet\"
 		  or -DSERIALIZE=\"LevelDB\".
-		  By setting up the variable SERIALIZE to either Boost 
-		  or TokyoCabinet or LevelDB you will choose the serialization 
+		  By setting up the variable SERIALIZE to either Boost
+		  or TokyoCabinet or LevelDB you will choose the serialization
 		  scheme that will be used to build Converters.
 		  Boost serialization option will be used as default if no option is given.")
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
@@ -125,7 +125,7 @@ if(XSD_FOUND)
   message(STATUS "Package CodeSynthesis XSD found: ${XSD_INCLUDE_DIR}")
 else(XSD_FOUND)
   message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
-endif(XSD_FOUND)  
+endif(XSD_FOUND)
 include_directories(${XSD_INCLUDE_DIR})
 
 if(LEVELDB)
@@ -144,7 +144,7 @@ elseif(TOKYODB)
     message(FATAL_ERROR "The package Tokyo Cabinet has not been found")
   endif(TokyoCabinet_FOUND)
   include_directories(${TokyoCabinet_INCLUDE_DIR})
-  
+
   find_package(BZip2 REQUIRED)
   if(BZIP2_FOUND)
     message(STATUS  "Bzip2 found")
@@ -207,6 +207,23 @@ if(TOKYODB AND MINGW)
 
 endif()
 
+if(UNIX)
+    set(CMAKE_PREFIX_PATH ${RPCDIR})
+    find_package(RPC QUIET)
+    set(HAVE_RPC ${RPC_FOUND})
+    if(RPC_FOUND)
+        set(LIBRARIES ${LIBRARIES} ${RPC_LIBRARIES})
+        include_directories(${RPC_INCLUDE_DIR})
+    else(RPC_FOUND)
+        message(FATAL_ERROR "RPC support is mandatory.\n"
+        "Note that SunRPC has been removed in glibc-2.26 and later, "
+        "while being optional in earlier versions. Consider using the "
+        "recommended and more modern libtirpc instead.\n"
+        "Use -DRPCDIR=DIR to specify the rpc directory tree.\n")
+    endif(RPC_FOUND)
+endif()
+
+
 if(WIN32 AND BOOSTDB)
   find_package( ZLIB REQUIRED )
   if(ZLIB_FOUND)
@@ -215,7 +232,7 @@ if(WIN32 AND BOOSTDB)
     message(FATAL_ERROR "The package ZLIB has not been found")
   endif(ZLIB_FOUND)
   include_directories(${ZLIB_INCLUDE_DIRS})
-  
+
   find_package( Sqlite3 REQUIRED )
   if(SQLITE3_FOUND)
     message(STATUS "SQL Lite 3 found: ${SQLITE3_INCLUDE_DIR}")
@@ -247,8 +264,8 @@ message(STATUS "Generating classes from xsd-schema using CodeSynthesis")
 set(perc_in_xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
 set(percolator_in xml/percolator_in.xsd)
 add_custom_command(
-  OUTPUT ${perc_in_xsdfiles}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags} --root-element-all  
+  OUTPUT ${perc_in_xsdfiles}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags} --root-element-all
   --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -258,8 +275,8 @@ add_custom_command(
 set(perc_out_xsdfiles ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
 set(percolator_out xml/percolator_out.xsd)
 add_custom_command(
-  OUTPUT ${perc_out_xsdfiles}   
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags} --root-element-all  
+  OUTPUT ${perc_out_xsdfiles}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags} --root-element-all
   --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${percolator_out}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -272,8 +289,8 @@ ADD_CUSTOM_TARGET(generate_perc_xsdfiles DEPENDS ${perc_in_xsdfiles} ${perc_out_
 set(mzIdentMLxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.cxx ${CMAKE_CURRENT_BINARY_DIR}/mzIdentML1.1.0.hxx )
 set(mzIdentML_in xml/mzIdentML1.1.0.xsd)
 add_custom_command(
-  OUTPUT ${mzIdentMLxsdfiles}  
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+  OUTPUT ${mzIdentMLxsdfiles}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all
   --namespace-map http://psidev.info/psi/pi/mzIdentML/1.1=mzIdentML_ns  ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${mzIdentML_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -284,8 +301,8 @@ set(gaml_tandemxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/gaml_tandem1.0.cxx ${CMAKE_C
 set(gaml_tandem_in xml/gaml_tandem1.0.xsd)
 message(STATUS "Generating ${gaml_tandemxsdfiles}")
 add_custom_command(
-  OUTPUT ${gaml_tandemxsdfiles}  
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+  OUTPUT ${gaml_tandemxsdfiles}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all
   --namespace-map http://www.bioml.com/gaml/=gaml_tandem_ns ${CMAKE_CURRENT_SOURCE_DIR}/../${gaml_tandem_in}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../${gaml_tandem_in}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -296,8 +313,8 @@ add_custom_command(
 set(tandemxsdfiles ${CMAKE_CURRENT_BINARY_DIR}/tandem2011.12.01.1.cxx ${CMAKE_CURRENT_BINARY_DIR}/tandem2011.12.01.1.hxx )
 set(tandem_in xml/tandem2011.12.01.1.xsd)
 add_custom_command(
-  OUTPUT ${tandemxsdfiles}  
-  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all 
+  OUTPUT ${tandemxsdfiles}
+  COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree --generate-serialization ${xdr_flags}  --root-element-all
   --namespace-map http://www.thegpm.org/TANDEM/2011.12.01.1=tandem_ns
   --namespace-map =tandem_ns
   --namespace-map http://www.bioml.com/gaml/=gaml_tandem_ns ${CMAKE_CURRENT_SOURCE_DIR}/../${tandem_in}
@@ -314,14 +331,14 @@ endforeach()
 # COMPILING
 ###############################################################################
 
-# include MSToolkit 
+# include MSToolkit
 add_subdirectory(MSToolkit)
 include_directories(MSToolkit/RAMP MSToolkit )
 
 # include and link code from percolator
 include_directories(${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
-add_library(perclibrary_part STATIC ${perc_in_xsdfiles} ${perc_out_xsdfiles} 
+add_library(perclibrary_part STATIC ${perc_in_xsdfiles} ${perc_out_xsdfiles}
 	    ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp ../MyException.cpp)
 
 # compile converter base files
@@ -329,8 +346,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 message( STATUS "Using FragSpectrumScanDatabase${SERDB}db.cpp")
-add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles} 
-	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp 
+add_library(converters STATIC ${mzIdentMLxsdfiles} ${gaml_tandemxsdfiles} ${tandemxsdfiles}
+	       Reader.cpp SqtReader.cpp MzidentmlReader.cpp SequestReader.cpp MsgfplusReader.cpp TandemReader.cpp
 	       FragSpectrumScanDatabase.cpp Interface.cpp FragSpectrumScanDatabase${SERDB}db.cpp)
 
 ADD_DEPENDENCIES(converters generate_perc_xsdfiles)
@@ -402,7 +419,7 @@ if(APPLE)
 #  set_property(TARGET msgf2pin PROPERTY MACOSX_BUNDLE ON)
 #  set_property(TARGET sqt2pin PROPERTY MACOSX_BUNDLE ON)
 #  set_property(TARGET tandem2pin PROPERTY MACOSX_BUNDLE ON)
-#  set_property(TARGET sequest2pin PROPERTY MACOSX_BUNDLE ON) 
+#  set_property(TARGET sequest2pin PROPERTY MACOSX_BUNDLE ON)
 endif(APPLE)
 
 
@@ -434,7 +451,7 @@ add_subdirectory(data/system_tests/converters)
     install(TARGETS tandem2pin EXPORT tandem2pin  DESTINATION bin)
 #    install(TARGETS sequest2pin EXPORT sequest2pin DESTINATION bin)
 #endif(APPLE)
-  
+
 install(FILES ../xml/mzIdentML1.1.0.xsd DESTINATION ${WRITABLE_DIR}/${MZIDENTML_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 install(FILES ../xml/gaml_tandem1.0.xsd DESTINATION ${WRITABLE_DIR}/${GAML_TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
 install(FILES ../xml/tandem2011.12.01.1.xsd DESTINATION ${WRITABLE_DIR}/${TANDEM_SCHEMA_LOCATION} PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)
