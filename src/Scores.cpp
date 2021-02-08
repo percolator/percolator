@@ -329,6 +329,8 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // when scores from a new spectra are encountered
   unsigned int previousSpectrum = scores_.begin()->pPSM->scan;
   size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
+  size_t randShift = PseudoRandom::lcg_rand();
+
   for (std::vector<ScoreHolder>::iterator it = scores_.begin(); 
         it != scores_.end(); ++it) {
     const unsigned int curScan = (*it).pPSM->scan;
@@ -349,7 +351,8 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
         sort(unmod_pep.begin(), unmod_pep.end());
 
         // convert the unmodified peptide to a peptide token by using ASCII
-        unsigned long pep_token = 1u;
+        // adding a fixed random number will guarnatee the randomization at each run
+        unsigned long pep_token = 1u + randShift;
         for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) {
             pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx);
         }
@@ -385,14 +388,6 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   for (unsigned int i = 0; i < xval_fold; ++i) {
     train[i].recalculateSizes();
     test[i].recalculateSizes();
-
-    // show the size of each fold
-    /*
-     * The intuition of why the splits are approximately balanced:
-     * Imagine you have a random generator which generates random integers.
-     * Now you randomly assigned the generated numbers into k fold by MOD k,
-     * As long as you generate sufficient numbers, it's very likely to get approximately even split.
-     */
     std::cerr << "Fold=" << i << "\tTrain size=" << train[i].size() << "\tTest size=" << test[i].size() << std::endl;
   }
   
