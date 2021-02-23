@@ -28,7 +28,6 @@ void max_quick_lohify(T*__restrict x, T*__restrict x_end, PrimitiveVector<unsign
 
     T pivot_val = x[pivot_index];
     std::swap(x[n-1], x[pivot_index]);
-    unsigned layer_is_all_tied=false;
 
     T*second_half_of_x = triple_partition_naive<T>(x, x_end, pivot_val);
     
@@ -43,7 +42,7 @@ void max_quick_lohify(T*__restrict x, T*__restrict x_end, PrimitiveVector<unsign
   }
 
   if (FORCE_FIRST_LAYER_TO_HAVE_SIZE_1) {
-    std::sort(x,x_end,compare);
+    std::sort(x,x_end,[](auto lhs, auto rhs) { return lhs > rhs; });
 
     for (auto iter=x_end-1; iter>x; --iter)
       partition_ranks.push_back(iter-x);
