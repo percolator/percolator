@@ -33,6 +33,7 @@ whoami;
 sudo yum install -y gcc gcc-c++ wget rpm-build cmake
 sudo yum install -y sqlite-devel zlib-devel bzip2-devel
 sudo yum install -y tokyocabinet-devel xerces-c-devel
+sudo yum install -y libtirpc libtirpc-devel
 
 cd ${src_dir}
 
@@ -75,6 +76,10 @@ cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/us
 make -j 4;
 make -j 4 package;
 
+# Fix to handle alt. rpc location
+# export CFLAGS=`pkg-config --cflags libtirpc`
+# export CXXFLAGS=-I/usr/include/tirpc
+
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=ON ${src_dir}/percolator
@@ -96,4 +101,3 @@ make -j 4 package;
 echo "build directory was : ${build_dir}";
 
 cp -v ${build_dir}/{percolator-noxml,percolator,converters,elude}/*.rpm ${release_dir};
-
