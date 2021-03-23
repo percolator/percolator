@@ -48,20 +48,20 @@ using namespace boost::algorithm;
 #endif
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
-  return (one.score > other.score) 
-      || (one.score == other.score && one.pPSM->scan > other.pPSM->scan) 
-      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+  return (one.score > other.score)
+      || (one.score == other.score && one.pPSM->scan > other.pPSM->scan)
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan &&
             one.pPSM->expMass > other.pPSM->expMass)
-      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan &&
             one.pPSM->expMass == other.pPSM->expMass && one.label > other.label);
 }
 
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
-  return (one.score < other.score) 
-      || (one.score == other.score && one.pPSM->scan < other.pPSM->scan) 
-      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+  return (one.score < other.score)
+      || (one.score == other.score && one.pPSM->scan < other.pPSM->scan)
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan &&
             one.pPSM->expMass < other.pPSM->expMass)
-      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && 
+      || (one.score == other.score && one.pPSM->scan == other.pPSM->scan &&
             one.pPSM->expMass == other.pPSM->expMass && one.label < other.label);
 }
 
@@ -81,24 +81,26 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
     if (printDecoys) {
       if (isDecoy())
         os << " p:decoy=\"true\"";
-      else 
+      else
         os << " p:decoy=\"false\"";
     }
     os << ">" << endl;
-    
+
     os << "      <svm_score>" << fixed      << score << "</svm_score>" << endl;
     os << "      <q_value>"   << scientific << q     << "</q_value>" << endl;
     os << "      <pep>"       << scientific << pep   << "</pep>" << endl;
-    
+
     if (printExpMass) {
       os << "      <exp_mass>" << fixed << setprecision (4) << pPSM->expMass << "</exp_mass>" << endl;
-    }   
-    
+    }
+
     os << "      <calc_mass>" << fixed << setprecision (3) << pPSM->calcMass << "</calc_mass>" << endl;
-    os << "      <retention_time>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retention_time>" << endl;
-    
+    if (isfinite(pPSM->getRetentionTime())) {
+      os << "      <retention_time>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retention_time>" << endl;
+    }
+
     if (DataSet::getCalcDoc()) {
-      os << "      <retentionTime observed=\"" 
+      os << "      <retentionTime observed=\""
          << pPSM->getUnnormalizedRetentionTime()
          << "\" predicted=\""
          << PSMDescriptionDOC::unnormalize(pPSM->getPredictedRetentionTime()) << "\"/>"
@@ -111,12 +113,12 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
       string centpep = pPSM->getPeptideSequence();
       os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
     }
-    
+
     std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
     }
-    
+
     os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
     os << "    </psm>" << endl;
   }
@@ -129,7 +131,7 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
   /* Pase name info from name: Symb_Proteome_DIA_RAW_S03_Q1.53511.53511.1_1 */
   std::string s = pPSM->getId();
   std::string delimiter = ".";
-  
+
   size_t pos = 0;
   size_t i = 0;
 
@@ -155,10 +157,10 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
 
   string centpep = pPSM->getPeptideSequence();
 
-  
+
 
   regex regexp("\\[(.*?)\\]");
-  
+
 
   map<char, float> amino2weight; // Enter required types and name
   amino2weight['A'] = 71.04;
@@ -184,34 +186,34 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
 
 
   std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
-  
-  
+
+
   string subject(trimmed_pep);
-  smatch match; 
-  regex r("\\[(.*?)\\]"); 
+  smatch match;
+  regex r("\\[(.*?)\\]");
 
 
   std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
-  
+
   long int mod_pos = 0;
 
   float mod_weight;
 
-   
+
   os << "    <ns0:spectrum_query assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << end_scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << start_scan << "\">" << endl;
 
   os << "    <ns0:search_result>" << endl;
-  
+
 
   size_t n_protein = 0;
-  
+
   std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       if (n_protein==0) {
         os << "    <ns0:search_hit hit_rank=\"0\" massdiff=\"0\" peptide=\"" << peptide_sequence << "\" protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\">" << endl;
-        
+
       } else {
-        
+
         os << "    <ns0:alternative_protein protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\"/>" << endl;
       }
 
@@ -222,29 +224,29 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
   /* os << "    <ns0:modification_info>" << endl; */
 
   size_t n_mod = 0;
-  while (regex_search(subject, match, r)) { 
+  while (regex_search(subject, match, r)) {
       mod_pos += match.position(0);
 
-      // suffix to find the rest of the string. 
-      
+      // suffix to find the rest of the string.
+
       if (mod_pos==0) {
         mod_weight = std::stof(match.str(1)) + 1.0074;
         if (n_mod ==0) {
           os << "    <ns0:modification_info mod_nterm_mass=\"" << round(mod_weight * 1000) / 1000 <<"\">" << endl;
         }
       } else {
-        
+
         mod_weight = amino2weight[peptide_sequence.at(mod_pos - 1)] + std::stof(match.str(1));
         if (n_mod == 0) {
           os << "    <ns0:modification_info>" << endl;
         }
-        os << "    <ns0:mod_aminoacid_mass mass=\""<< round(mod_weight * 1000) / 1000  <<"\" position=\""<< std::to_string(mod_pos) << "\" />" << endl;  
+        os << "    <ns0:mod_aminoacid_mass mass=\""<< round(mod_weight * 1000) / 1000  <<"\" position=\""<< std::to_string(mod_pos) << "\" />" << endl;
       }
-      
-      
 
-      
-      subject = match.suffix().str(); 
+
+
+
+      subject = match.suffix().str();
       n_mod++;
   }
 
@@ -252,16 +254,16 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
     os << "    </ns0:modification_info>" << endl;
     }
 
-  
+
 
   os << "    <ns0:analysis_result analysis=\"percolator\">" << endl;
   os << "    <ns0:percolator_result pep=\"" << scientific << pep   << "\" />" << endl;
   os << "    </ns0:analysis_result>" << endl;
 
-  
 
 
-  
+
+
   os << "    </ns0:search_hit>"<< endl;
 
   os << "    </ns0:search_result>" << endl;
@@ -275,24 +277,24 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
     if (printDecoys) {
       if (isDecoy())
         os << " p:decoy=\"true\"";
-      else 
+      else
         os << " p:decoy=\"false\"";
     }
     os << ">" << endl;
-    
+
     os << "      <svm_score>" << fixed      << score << "</svm_score>" << endl;
     os << "      <q_value>"   << scientific << q     << "</q_value>" << endl;
     os << "      <pep>"       << scientific << pep   << "</pep>" << endl;
-    
+
     if (printExpMass) {
       os << "      <exp_mass>" << fixed << setprecision (4) << pPSM->expMass << "</exp_mass>" << endl;
-    }   
-    
+    }
+
     os << "      <calc_mass>" << fixed << setprecision (3) << pPSM->calcMass << "</calc_mass>" << endl;
     os << "      <retention_time>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retention_time>" << endl;
-    
+
     if (DataSet::getCalcDoc()) {
-      os << "      <retentionTime observed=\"" 
+      os << "      <retentionTime observed=\""
          << pPSM->getUnnormalizedRetentionTime()
          << "\" predicted=\""
          << PSMDescriptionDOC::unnormalize(pPSM->getPredictedRetentionTime()) << "\"/>"
@@ -305,45 +307,45 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
       string centpep = pPSM->getPeptideSequence();
       os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
     }
-    
+
     std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
     }
-    
+
     os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
     os << "    </psm>" << endl;
   } */
 }
 
 void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset) {
-  if (!isDecoy() || printDecoys) {  
+  if (!isDecoy() || printDecoys) {
     os << "    <peptide p:peptide_id=\"" << pPSM->getPeptideSequence() << "\"";
     if (printDecoys) {
       if (isDecoy())
         os << " p:decoy=\"true\"";
-      else 
+      else
         os << " p:decoy=\"false\"";
     }
     os << ">" << endl;
-    
+
     os << "      <svm_score>" << fixed       << score     << "</svm_score>" << endl;
     os << "      <q_value>"   << scientific  << q   << "</q_value>" << endl;
     os << "      <pep>"        << scientific  << pep << "</pep>" << endl;
-    
+
     if (printExpMass) {
       os << "      <exp_mass>" << fixed << setprecision (4) << pPSM->expMass << "</exp_mass>" << endl;
     }
     os << "      <calc_mass>" << fixed << setprecision (3)  << pPSM->calcMass << "</calc_mass>" << endl;
-    
+
     std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
     }
-    
+
     os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
     os << "      <psm_ids>" << endl;
-    
+
     // output all psms that contain the peptide
     std::vector<PSMDescription*>::const_iterator psmIt = fullset.getPsms(pPSM).begin();
     for ( ; psmIt != fullset.getPsms(pPSM).end() ; ++psmIt) {
@@ -383,7 +385,7 @@ void Scores::postMergeStep() {
 void Scores::printRetentionTime(ostream& outs, double fdr) {
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget()) 
+    if (scoreIt->isTarget())
       outs << scoreIt->pPSM->getUnnormalizedRetentionTime() << "\t"
         << PSMDescriptionDOC::unnormalize(doc_.estimateRT(scoreIt->pPSM->getRetentionFeatures()))
         << "\t" << scoreIt->pPSM->peptide << endl;
@@ -399,7 +401,7 @@ double Scores::calcScore(const double* feat, const std::vector<double>& w) const
   return score;
 }
 
-void Scores::scoreAndAddPSM(ScoreHolder& sh, 
+void Scores::scoreAndAddPSM(ScoreHolder& sh,
     const std::vector<double>& rawWeights, FeatureMemoryPool& featurePool) {
   const unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   if (DataSet::getCalcDoc()) {
@@ -412,21 +414,21 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
     sh.pPSM->setRetentionFeatures(rtFeatures);
     doc_.setFeatures(sh.pPSM);
   }
-  
+
   for (unsigned int j = 0; j < numFeatures; j++) {
     sh.score += sh.pPSM->features[j] * rawWeights[j];
   }
   sh.score += rawWeights[numFeatures];
-  
+
   featurePool.deallocate(sh.pPSM->features);
   sh.pPSM->deleteRetentionFeatures();
-  
+
   if (sh.label == 1) {
     ++totalNumberOfTargets_;
   } else if (sh.label == -1) {
     ++totalNumberOfDecoys_;
   }
-  
+
   if (sh.label != 1 && sh.label != -1) {
     std::cerr << "Warning: the PSM " << sh.pPSM->getId()
         << " has a label not in {1,-1} and will be ignored." << std::endl;
@@ -460,14 +462,14 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
   totalNumberOfTargets_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(1));
   totalNumberOfDecoys_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(-1));
   targetDecoySizeRatio_ = (double)totalNumberOfTargets_ / totalNumberOfDecoys_;
-  
+
   if (VERB > 1) {
     cerr << "Train/test set contains " << totalNumberOfTargets_
         << " positives and " << totalNumberOfDecoys_
         << " negatives, size ratio=" << targetDecoySizeRatio_
         << " and pi0=" << pi0_ << endl;
   }
-  
+
   if (totalNumberOfTargets_ == 0) {
     ostringstream oss;
     oss << "Error: no target PSMs were provided.\n";
@@ -477,7 +479,7 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
       throw MyException(oss.str());
     }
   }
-  
+
   if (totalNumberOfDecoys_ == 0) {
     ostringstream oss;
     oss << "Error: no decoy PSMs were provided.\n";
@@ -487,7 +489,7 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
       throw MyException(oss.str());
     }
   }
-  
+
   // check for the minimum recommended number of positive and negative hits
   if (totalNumberOfTargets_ <= (unsigned)(FeatureNames::getNumFeatures() * 5)) {
     std::cerr << "Warning : the number of positive samples read is too small to perform a correct classification.\n" << std::endl;
@@ -504,8 +506,8 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
  * @param test vector containing the test sets of PSMs
  * @param xval_fold: number of folds in train and test
  */
-void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
-    std::vector<Scores>& test, const unsigned int xval_fold, 
+void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
+    std::vector<Scores>& test, const unsigned int xval_fold,
     FeatureMemoryPool& featurePool) {
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
@@ -519,20 +521,20 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     remain[static_cast<std::size_t>(fold)] = ix / (fold + 1);
     ix -= remain[static_cast<std::size_t>(fold)];
   }
-  
+
   std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
-  
+
   // put scores into the folds; choose a fold (at random) and change it only
   // when scores from a new spectra are encountered
   unsigned int previousSpectrum = scores_.begin()->pPSM->scan;
   size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
-  for (std::vector<ScoreHolder>::iterator it = scores_.begin(); 
+  for (std::vector<ScoreHolder>::iterator it = scores_.begin();
         it != scores_.end(); ++it) {
     const unsigned int curScan = (*it).pPSM->scan;
     const ScoreHolder sh = (*it);
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
-    
+
     if (previousSpectrum != curScan) {
       randIndex = PseudoRandom::lcg_rand() % xval_fold;
       // allow only indexes of folds that are non-full
@@ -559,7 +561,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     train[i].recalculateSizes();
     test[i].recalculateSizes();
   }
-  
+
   if (featurePool.isInitialized()) {
     boost::unordered_map<double*, double*> movedAddresses;
     size_t idx = 0;
@@ -586,7 +588,7 @@ void Scores::recalculateSizes() {
   targetDecoySizeRatio_ = totalNumberOfTargets_ / (double)totalNumberOfDecoys_;
 }
 
-void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool, 
+void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
     bool isTarget, boost::unordered_map<double*, double*>& movedAddresses, size_t& idx) {
   size_t numFeatures = FeatureNames::getNumFeatures();
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
@@ -607,7 +609,7 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
 }
 
 // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
-void Scores::normalizeScores(double fdr) {  
+void Scores::normalizeScores(double fdr) {
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys_/2u),decoys=0u;
   std::vector<ScoreHolder>::iterator it = scores_.begin();
   double fdrScore = it->score;
@@ -623,11 +625,11 @@ void Scores::normalizeScores(double fdr) {
       }
     }
   }
-  
-  //NOTE perhaps I should also check when fdrScore and medianDecoyScore are both 
-  //  negative. In such cases the normalization could give negative scores which 
+
+  //NOTE perhaps I should also check when fdrScore and medianDecoyScore are both
+  //  negative. In such cases the normalization could give negative scores which
   //  would cause an assertion to fail in qvality
-  
+
   double diff = fdrScore - medianDecoyScore;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
@@ -682,24 +684,24 @@ void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
  */
 int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
   assert(totalNumberOfDecoys_+totalNumberOfTargets_==size());
-  
+
   std::vector<pair<double, bool> > combined;
   getScoreLabelPairs(combined);
-  
+
   std::vector<double> qvals;
   PosteriorEstimator::setNegative(true); // also get q-values for decoys
   PosteriorEstimator::getQValues(pi0_, combined, qvals, skipDecoysPlusOne);
-  
+
   // set q-values and count number of positives
   std::vector<double>::const_iterator qIt = qvals.begin();
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  
+
   int numPos = 0;
   for (; qIt != qvals.end(); ++qIt, ++scoreIt) {
     scoreIt->q = *qIt;
     if (scoreIt->q < fdr && scoreIt->isTarget()) ++numPos;
   }
-  
+
   return numPos;
 }
 
@@ -718,16 +720,16 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
     const double cpos, const bool trainBestPositive) {
-  std::size_t ix2 = static_cast<std::size_t>(data.negatives); 
+  std::size_t ix2 = static_cast<std::size_t>(data.negatives);
   int p = 0;
-  
+
   std::vector<ScoreHolder>::iterator lastUniqueIt = scores_.end();
   if (trainBestPositive) {
     std::sort(scores_.begin(), scores_.end(), OrderScanLabel());
     lastUniqueIt = std::unique(scores_.begin(), scores_.end(), UniqueScanLabel());
     std::sort(scores_.begin(), lastUniqueIt, greater<ScoreHolder> ());
   }
-  
+
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for ( ; scoreIt != lastUniqueIt; ++scoreIt) {
     if (scoreIt->isTarget()) {
@@ -756,12 +758,12 @@ void Scores::weedOutRedundant() {
 void Scores::weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts, double specCountQvalThreshold) {
   // lexicographically order the scores_ (based on peptides names,labels and scores)
   std::sort(scores_.begin(), scores_.end(), lexicOrderProb());
-  
+
   /*
   * much simpler version but it does not fill up the peptide-PSM map:
   * scores_.erase(std::unique(scores_.begin(), scores_.end(), mycmp), scores_.end());
   */
-  
+
   std::string previousPeptide = "";
   int previousLabel = 0;
   size_t lastWrittenIdx = 0u;
@@ -789,9 +791,9 @@ void Scores::weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCo
  */
 void Scores::weedOutRedundantTDC() {
   // order the scores (based on spectra id and score)
-  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());  
+  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
   scores_.erase(std::unique(scores_.begin(), scores_.end(), UniqueScanMassCharge()), scores_.end());
-  
+
   /* does not actually release memory because of memory fragmentation
   double previousExpMass = 0.0;
   unsigned int previousScan = 0u;
@@ -814,14 +816,14 @@ void Scores::weedOutRedundantTDC() {
 }
 
 /**
- * Routine that sees to that only 1 target and 1 decoy spectra are kept for 
+ * Routine that sees to that only 1 target and 1 decoy spectra are kept for
  * mix-max when using multiple hits per spectrum and separate searches
  */
 void Scores::weedOutRedundantMixMax() {
   // order the scores (based on spectra id and score)
-  std::sort(scores_.begin(), scores_.end(), OrderScanMassLabelCharge());  
+  std::sort(scores_.begin(), scores_.end(), OrderScanMassLabelCharge());
   scores_.erase(std::unique(scores_.begin(), scores_.end(), UniqueScanMassLabelCharge()), scores_.end());
-  
+
   postMergeStep();
 }
 
@@ -847,18 +849,18 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
   int bestPositives = -1;
   int bestFeature = -1;
   bool lowBest = false;
-  
-  // for determining the initial direction, the decoys+1 in the FDR estimates 
+
+  // for determining the initial direction, the decoys+1 in the FDR estimates
   // is too restrictive for small datasets
-  bool skipDecoysPlusOne = true; 
-  
+  bool skipDecoysPlusOne = true;
+
   for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures(); featNo++) {
-    for (std::vector<ScoreHolder>::iterator scoreIt = scores_.begin(); 
+    for (std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
          scoreIt != scores_.end(); ++scoreIt) {
       scoreIt->score = scoreIt->pPSM->features[featNo];
     }
     sort(scores_.begin(), scores_.end());
-    // check once in forward direction (i = 0, higher scores are better) and 
+    // check once in forward direction (i = 0, higher scores are better) and
     // once in backward direction (i = 1, lower scores are better)
     for (int i = 0; i < 2; i++) {
       if (i == 1) {
@@ -875,10 +877,10 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
   for (std::size_t ix = FeatureNames::getNumFeatures(); ix--;) {
     direction[ix] = 0;
   }
-  
+
   if (bestPositives <= 0) {
     ostringstream oss;
-    oss << "Error in the input data: cannot find an initial direction with " 
+    oss << "Error in the input data: cannot find an initial direction with "
         << "positive training examples. "
         << "Consider setting/raising the initial training FDR threshold (--train-initial-fdr)." << std::endl;
     if (NO_TERMINATE) {
@@ -890,11 +892,11 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
       throw MyException(oss.str() + "Terminating.\n");
     }
   }
-  
+
   if (bestFeature >= 0) {
     direction[static_cast<std::size_t>(bestFeature)] = (lowBest ? -1 : 1);
   }
-  
+
   if (VERB > 1) {
     cerr << "Selected feature " << bestFeature + 1
         << " as initial direction. Could separate "
@@ -906,10 +908,10 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
 void Scores::checkSeparationAndSetPi0() {
   std::vector<pair<double, bool> > combined;
   getScoreLabelPairs(combined);
-  
+
   std::vector<double> pvals;
   PosteriorEstimator::getPValues(combined, pvals);
-  
+
   pi0_ = 1.0;
   bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvals);
   if (tooGoodSeparation) {
@@ -934,7 +936,7 @@ void Scores::checkSeparationAndSetPi0() {
 void Scores::calcPep() {
   std::vector<pair<double, bool> > combined;
   getScoreLabelPairs(combined);
-  
+
   std::vector<double> peps;
   // Logistic regression on the data
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
