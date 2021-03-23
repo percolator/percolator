@@ -32,64 +32,59 @@
 *
 */
 class PSMDescriptionDOC : public PSMDescription {
-  
- public: 
+
+ public:
   PSMDescriptionDOC();
   PSMDescriptionDOC(const std::string peptide, const double retTime);
-  
+
   ~PSMDescriptionDOC();
-  
-  inline void setRetentionFeatures(double* retentionFeatures) { 
-    retentionFeatures_ = retentionFeatures; 
+
+  inline void setRetentionFeatures(double* retentionFeatures) {
+    retentionFeatures_ = retentionFeatures;
   }
   inline double* getRetentionFeatures() { return retentionFeatures_; }
   void deleteRetentionFeatures();
-  
+
   inline void setIsoElectricPoint(const double pI) { pI_ = pI; }
   inline double getIsoElectricPoint() const { return pI_; }
-  
-  inline void setRetentionTime(const double retentionTime) {
-    retentionTime_ = retentionTime;
-  }
-  inline double getRetentionTime() const { return retentionTime_; }
-  
+
   inline void setUnnormalizedRetentionTime(const double retentionTime) {
     retentionTime_ = normalize(retentionTime);
   }
   inline double getUnnormalizedRetentionTime() const { return unnormalize(retentionTime_); }
-  
+
   inline void setPredictedRetentionTime(const double predictedTime) {
     predictedTime_ = predictedTime;
   }
   inline double getPredictedRetentionTime() const { return predictedTime_; }
-  
+
   inline void setMassDiff(const double dm) {
     massDiff_ = dm;
   }
   inline double getMassDiff() const { return massDiff_; }
-  
+
   std::string& getFullPeptide() { return getAParent()->peptide; }
   PSMDescription* getAParent() {
     if (parentFragment_) return parentFragment_->getAParent();
     else return this;
   }
-  
+
   friend std::ostream& operator<<(std::ostream& out, PSMDescriptionDOC& psm);
-  
+
   // static methods and members for retention time normalization
   static double normDivRT_, normSubRT_;
-  
+
   static void setPSMSet(std::vector<PSMDescription*>& psms);
   static void normalizeRetentionTimes(std::vector<PSMDescription*>& psms);
   static double normalize(double unnormalizedTime);
   static void unnormalizeRetentionTimes(std::vector<PSMDescription*>& psms);
   static double unnormalize(double normalizedTime);
-  
+
   static std::vector<double*> getRetFeatures(std::vector<PSMDescription*>& psms);
  private:
   double* retentionFeatures_;
   PSMDescription* parentFragment_;
-  double pI_, massDiff_, predictedTime_, retentionTime_;
+  double pI_, massDiff_, predictedTime_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescriptionDOC& psm) {

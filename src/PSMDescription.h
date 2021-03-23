@@ -31,22 +31,22 @@
 *
 */
 class PSMDescription {
-  
- public: 
+
+ public:
   PSMDescription();
   PSMDescription(const std::string& peptide);
-  
+
   virtual ~PSMDescription();
   static void deletePtr(PSMDescription* psm);
   virtual void deleteRetentionFeatures() {}
-  
+
   void clear() { proteinIds.clear(); }
   double* getFeatures() { return features; }
-  
+
   // TODO: move these static functions somewhere else
   static std::string removePTMs(const std::string& peptideSeq);
-  static std::string removeFlanks(const std::string& peptideSeq) { 
-    return peptideSeq.substr(2, peptideSeq.size()-4); 
+  static std::string removeFlanks(const std::string& peptideSeq) {
+    return peptideSeq.substr(2, peptideSeq.size()-4);
   }
   static bool ptrLess(PSMDescription* one, PSMDescription* other) {
     return *one < *other;
@@ -54,69 +54,71 @@ class PSMDescription {
   static bool ptrEqual(PSMDescription* one, PSMDescription* other) {
     return *one == *other;
   }
-  
+
   std::string getPeptideSequence() { return peptide.substr(2, peptide.size()-4); }
   std::string& getFullPeptideSequence() { return peptide; }
-  std::string getFlankN() { return peptide.substr(0, 1); }    
-  std::string getFlankC() { return peptide.substr(peptide.size()-1, peptide.size()); }  
-  
+  std::string getFlankN() { return peptide.substr(0, 1); }
+  std::string getFlankC() { return peptide.substr(peptide.size()-1, peptide.size()); }
+
   friend std::ostream& operator<<(std::ostream& out, PSMDescription& psm);
   void printProteins(std::ostream& out);
-  
+
   bool operator<(const PSMDescription& other) const {
-    return (peptide < other.peptide) || 
+    return (peptide < other.peptide) ||
            (peptide == other.peptide && getRetentionTime() < other.getRetentionTime());
   }
-  
+
   bool operator==(const PSMDescription& other) const {
     return (peptide == other.peptide);
   }
-  
+
   virtual inline void setId(const std::string& id) { id_ = id; }
   virtual inline std::string& getId() { return id_; }
-  
+
   // Virtual functions for PSMDescriptionDOC
   virtual std::string& getFullPeptide() { return peptide; }
   virtual PSMDescription* getAParent() { return this; }
   virtual void checkFragmentPeptides(
       std::vector<PSMDescription*>::reverse_iterator other,
       std::vector<PSMDescription*>::reverse_iterator theEnd) {}
-  
+
   virtual void setRetentionFeatures(double* retentionFeatures) {}
   virtual double* getRetentionFeatures() { return NULL; }
-  
+
   virtual void setParentFragment(PSMDescription* ) {}
   virtual PSMDescription* getParentFragment() { return NULL; }
-  
-  virtual inline void setRetentionTime(const double retentionTime) {}
-  virtual inline double getRetentionTime() const { return 0.0; }
-  
-  virtual inline void setUnnormalizedRetentionTime(const double retentionTime) {}
-  virtual inline double getUnnormalizedRetentionTime() const { 
-    std::cerr << "Warning: no retention time available" << std::endl;
-    return 0.0; 
+
+  inline void setRetentionTime(const double retentionTime) {
+    retentionTime_ = retentionTime;
   }
-  
+  inline double getRetentionTime() const { return retentionTime_; }
+
+  virtual inline void setUnnormalizedRetentionTime(const double retentionTime) {}
+  virtual inline double getUnnormalizedRetentionTime() const {
+    std::cerr << "Warning: no retention time available" << std::endl;
+    return 0.0;
+  }
+
   virtual inline void setMassDiff(const double dm) {}
-  virtual inline double getMassDiff() const { 
+  virtual inline double getMassDiff() const {
     std::cerr << "Warning: no mass difference available" << std::endl;
     return 0.0;
   }
-  
+
   virtual inline void setIsoElectricPoint(const double pI) {}
-  virtual inline double getIsoElectricPoint() const { 
+  virtual inline double getIsoElectricPoint() const {
     std::cerr << "Warning: no iso electric point available" << std::endl;
     return 0.0;
   }
-  
+
   virtual inline void setPredictedRetentionTime(const double predictedTime) {}
-  virtual inline double getPredictedRetentionTime() const { 
+  virtual inline double getPredictedRetentionTime() const {
     std::cerr << "Warning: no retention time available" << std::endl;
-    return 0.0; 
+    return 0.0;
   }
-  
+
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
-  double expMass, calcMass;
+  double expMass, calcMass, retentionTime_;
   unsigned int scan;
   std::string id_;
   std::string peptide;

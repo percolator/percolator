@@ -22,12 +22,12 @@
 #include "DescriptionOfCorrect.h"
 
 PSMDescription::PSMDescription() :
-    features(NULL), expMass(0.), calcMass(0.), scan(0),
+    features(NULL), expMass(0.), calcMass(0.), retentionTime_(0.), scan(0),
     id_(""), peptide("") {
 }
 
 PSMDescription::PSMDescription(const std::string& pep) :
-    features(NULL), expMass(0.), calcMass(0.), scan(0),
+    features(NULL), expMass(0.), calcMass(0.), retentionTime_(0.), scan(0),
     id_(""), peptide(pep) {
 }
 
@@ -57,7 +57,7 @@ std::string PSMDescription::removePTMs(const string& peptide) {
         temp << "Error : Peptide sequence " << peptide << " contains an invalid modification" << endl;
         throw MyException(temp.str());
       } else {
-        if (ix > 0 && ((peptideSequence[ix-1] == 'n' && ix == 1) || 
+        if (ix > 0 && ((peptideSequence[ix-1] == 'n' && ix == 1) ||
               (peptideSequence[ix-1] == 'c' && posEnd + ix + 1 == peptideSequence.size()))) {
           ix--;
           posEnd++;

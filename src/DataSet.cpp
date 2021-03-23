@@ -49,7 +49,7 @@ bool DataSet::writeTabData(ofstream& out) {
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     double* featureRow = psm->features;
-    out << psm->getId() << '\t' << label_ << '\t' << psm->scan << '\t' 
+    out << psm->getId() << '\t' << label_ << '\t' << psm->scan << '\t'
         << psm->expMass << '\t' << psm->calcMass;
     if (calcDOC_) {
       out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
@@ -75,7 +75,7 @@ void DataSet::print_features() {
 }
 
 void DataSet::print_10features() {
-  
+
   for (std::size_t i = 0; i < 10; i++) {
     for (std::size_t j = 0; j < FeatureNames::getNumFeatures(); j++) {
       cerr << psms_[i]->features[j] << "\t";
@@ -126,7 +126,7 @@ void DataSet::fillRtFeatures(std::vector<double*>& rtFeatures) {
  * @param line tab delimited string containing the psm details
  */
 void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
-    const std::vector<OptionalField>& optionalFields, FeatureMemoryPool& featurePool) { 
+    const std::vector<OptionalField>& optionalFields, FeatureMemoryPool& featurePool) {
   PSMDescription* myPsm = NULL;
   bool readProteins = true;
   readPsm(line, lineNr, optionalFields, readProteins, myPsm, featurePool);
@@ -138,16 +138,15 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool) {
   TabReader reader(line);
   std::string tmp;
-  
+
   if (calcDOC_) {
     myPsm = new PSMDescriptionDOC();
   } else {
-    /* myPsm = new PSMDescription(); */
-    myPsm = new PSMDescriptionDOC();
+    myPsm = new PSMDescription();
   }
   myPsm->setId(reader.readString());
   int label = reader.readInt();
-  
+
   bool hasScannr = false;
   std::vector<OptionalField>::const_iterator it = optionalFields.begin();
   for ( ; it != optionalFields.end(); ++it) {
@@ -156,7 +155,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         myPsm->scan = static_cast<unsigned int>(reader.readInt());
         if (reader.error()) {
           ostringstream temp;
-          temp << "ERROR: Reading tab file, error reading scan number of PSM " 
+          temp << "ERROR: Reading tab file, error reading scan number of PSM "
               << myPsm->getId() << ". Check if scan number is an integer." << std::endl;
           throw MyException(temp.str());
         } else {
@@ -184,7 +183,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     }
   }
   if (!hasScannr) myPsm->scan = lineNr;
-  
+
   unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   if (calcDOC_) {
     numFeatures -= static_cast<unsigned int>(DescriptionOfCorrect::numDOCFeatures());
@@ -208,36 +207,36 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
   if (reader.error()) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading in feature vector of PSM " 
+    temp << "ERROR: Reading tab file, error reading in feature vector of PSM "
       << myPsm->getId() << ". Check if there are enough features on this line and "
       << "if they are all floating point numbers or integers." << std::endl;
     throw MyException(temp.str());
   }
-  
+
   std::string peptide_seq = reader.readString();
   myPsm->peptide = peptide_seq;
   if (reader.error()) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM " << myPsm->getId() 
+    temp << "ERROR: Reading tab file, error reading PSM " << myPsm->getId()
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
   } else if (calcDOC_ || ProteinProbEstimator::getCalcProteinLevelProb()) {
-    // MT: we only need the peptide sequences to be well formatted if DOC features 
+    // MT: we only need the peptide sequences to be well formatted if DOC features
     // are calculated, or if protein inference is applied
     if (peptide_seq.size() < 5) {
       ostringstream temp;
-      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
+      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq
         << " with PSM id " << myPsm->getId() << " is too short." << std::endl;
       throw MyException(temp.str());
     } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
       ostringstream temp;
-      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
+      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq
         << " with PSM id " << myPsm->getId() << " does not contain one or two of its"
         << " flanking amino acids." << std::endl;
       throw MyException(temp.str());
     }
   }
-  
+
   if (readProteins) {
     std::vector<std::string> proteins;
     while (!reader.error()) {
@@ -246,7 +245,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     }
     proteins.swap(myPsm->proteinIds); // shrink to fit
   }
-  
+
   return label;
 }
 
@@ -257,7 +256,7 @@ void DataSet::registerPsm(PSMDescription* myPsm) {
     default:  { throw MyException("ERROR : Reading PSM, class DataSet has not been initiated\
     to neither target nor decoy label\n");}
   }
-  
+
   if (calcDOC_) {
     myPsm->setRetentionFeatures(new double[RTModel::totalNumRTFeatures()]());
     DescriptionOfCorrect::calcRegressionFeature(myPsm);
