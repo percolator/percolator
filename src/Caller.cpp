@@ -36,7 +36,7 @@ using namespace std;
 Caller::Caller() :
     pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL),
     tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true),
-    tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
+    tabOutputFN_(""), xmlOutputFN_(""), PEPxmlOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
@@ -119,6 +119,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("X",
       "xmloutput",
       "Path to xml-output (pout) file.",
+      "filename");
+  cmd.defineOption("PX",
+      "pep.xmloutput",
+      "Path to pep.xml-output (pout) file.",
       "filename");
   cmd.defineOption("",
       "stdinput-tab",
@@ -393,7 +397,14 @@ bool Caller::parseOptions(int argc, char **argv) {
   // now query the parsing results
   if (cmd.optionSet("xmloutput")) {
     xmlOutputFN_ = cmd.options["xmloutput"];
+    std::cerr << xmlOutputFN_ << std::endl;
     checkIsWritable(xmlOutputFN_);
+  }
+
+  // now query the parsing results
+  if (cmd.optionSet("pep.xmloutput")) {
+    PEPxmlOutputFN_ = cmd.options["pep.xmloutput"];
+    checkIsWritable(PEPxmlOutputFN_);
   }
 
   // filenames for outputting results to file
@@ -986,7 +997,7 @@ int Caller::run() {
 
   int success = 0;
   std::ifstream fileStream;
-  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
+  XMLInterface xmlInterface(xmlOutputFN_, PEPxmlOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
   Scores allScores(useMixMax_);
 
@@ -1083,6 +1094,10 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
     xmlInterface.writeXML_PSMs(allScores);
   }
 
+  if (xmlInterface.getXmlOutputFN().size() > 0){
+    xmlInterface.writePEPXML_PSMs(allScores);
+  }
+
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
     isUniquePeptideRun = true;
@@ -1107,5 +1122,6 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   }
   // write output to file
   xmlInterface.writeXML(allScores, protEstimator_, call_);
+  xmlInterface.writePEPXML(allScores, protEstimator_, call_);
 }
 

@@ -54,7 +54,7 @@
 class XMLInterface {
   
  public:
-  XMLInterface(const std::string& xmlOutputFN, const bool xmlSchemaValidation,
+  XMLInterface(const std::string& xmlOutputFN, const std::string& PEPxmlOutputFN, const bool xmlSchemaValidation,
                bool printDecoys, bool printExpMass);
   ~XMLInterface();
   
@@ -80,19 +80,26 @@ class XMLInterface {
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
   
   void writeXML_PSMs(Scores& fullset);
+  void writePEPXML_PSMs(Scores& fullset);
+
   void writeXML_Peptides(Scores& fullset);
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);
   void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
+
+  void writePEPXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
+                std::string call);
   
  protected:
   std::string xmlOutputFN_; 
+  std::string PEPxmlOutputFN_;
   bool schemaValidation_;
   std::string otherCall_;
   
   bool printDecoys_, printExpMass_;
   
   std::string xmlOutputFN_PSMs;
+  std::string pepxmlOutputFN_PSMs;
   std::string xmlOutputFN_Peptides;
   std::string xmlOutputFN_Proteins;
   

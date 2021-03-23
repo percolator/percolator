@@ -108,14 +108,21 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     // transform to lower case for case insensitive matching
     std::transform(optionalHeader.begin(), optionalHeader.end(), 
                    optionalHeader.begin(), ::tolower);
+
+    
+    std::cerr << optionalHeader << std::endl;
+    std::cerr << DataSet::getCalcDoc() << std::endl;
+    std::cerr << "----------------" << std::endl;
+
     if (optionalHeader == "scannr") {
       optionalFields.push_back(SCANNR);
       hasScannr = true;
     } else if (optionalHeader == "expmass") {
+      std::cerr << "hello" << std::endl;
       optionalFields.push_back(EXPMASS);
     } else if (optionalHeader == "calcmass") {
       optionalFields.push_back(CALCMASS);
-    } else if (DataSet::getCalcDoc() && (optionalHeader == "rt" || optionalHeader == "retentiontime")) {
+    } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
       hasRt = true;
     } else if (DataSet::getCalcDoc() && (optionalHeader == "dm" || optionalHeader == "deltamass")) {
@@ -165,11 +172,14 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
     int numFeatures, int optionalFieldCount, FeatureNames& featureNames) {
   TabReader reader(headerLine);
   // removes enumerator, label and if present optional fields
+
+  
   reader.skip(static_cast<std::size_t>(2 + optionalFieldCount));
   int numFeatLeft = numFeatures;
   while (!reader.error()) {
     std::string tmp = reader.readString();
     if (numFeatLeft-- > 0) { 
+      
       featureNames.insertFeature(tmp);
     }
   }
@@ -473,6 +483,9 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   } else {
     featurePool_.createPool(DataSet::getNumFeatures());
   }  
+
+
+  
   
   // fill in the default weights if present
   std::vector<double> init_values;
@@ -481,6 +494,7 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     hasDefaultValues = getInitValues(defaultDirectionLine, optionalFieldCount, 
                                      init_values);
   }
+
   if (hasDefaultValues && init_values.size() > static_cast<std::size_t>(numFeatures)) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too many default values present." << std::endl;

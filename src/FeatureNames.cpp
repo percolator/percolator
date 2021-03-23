@@ -37,6 +37,9 @@ FeatureNames::~FeatureNames() {
 }
 
 void FeatureNames::initFeatures(bool calcDOC) {
+
+  
+
   if (calcDOC) {
     docFeatNum = static_cast<int>(featureNames.size());
     featureNames.push_back("docpI");
@@ -50,6 +53,7 @@ void FeatureNames::initFeatures(bool calcDOC) {
   }
   if (VERB>1) {
     std::cerr << "Features:\n";
+    
     std::copy( featureNames.begin(), featureNames.end(),
         std::ostream_iterator<std::string>(std::cerr, " "));
     std::cerr << "\n";

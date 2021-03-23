@@ -75,7 +75,7 @@ void DataSet::print_features() {
 }
 
 void DataSet::print_10features() {
-  cerr << DataSet::getFeatureNames().getFeatureNames() << endl;
+  
   for (std::size_t i = 0; i < 10; i++) {
     for (std::size_t j = 0; j < FeatureNames::getNumFeatures(); j++) {
       cerr << psms_[i]->features[j] << "\t";
@@ -142,7 +142,8 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (calcDOC_) {
     myPsm = new PSMDescriptionDOC();
   } else {
-    myPsm = new PSMDescription();
+    /* myPsm = new PSMDescription(); */
+    myPsm = new PSMDescriptionDOC();
   }
   myPsm->setId(reader.readString());
   int label = reader.readInt();

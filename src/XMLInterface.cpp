@@ -55,9 +55,10 @@ static const XMLCh fragSpectrumScanStr[] = {
       
 #endif //XML_SUPPORT
 
-XMLInterface::XMLInterface(const std::string& outputFN, 
+XMLInterface::XMLInterface(const std::string& outputFN,
+  const std::string& PEPoutputFN, 
     bool schemaValidation, bool printDecoys, bool printExpMass) : 
-  xmlOutputFN_(outputFN), schemaValidation_(schemaValidation), 
+  xmlOutputFN_(outputFN), PEPxmlOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation), 
   otherCall_(""), reportUniquePeptides_(false), printDecoys_(printDecoys), 
   printExpMass_(printExpMass) {}
 
@@ -420,9 +421,33 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
+void XMLInterface::writePEPXML_PSMs(Scores& fullset) {
+  pi0Psms_ = fullset.getPi0();
+  numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
+  
+  ofstream os;
+  std::cerr << PEPxmlOutputFN_ << std::endl;
+  pepxmlOutputFN_PSMs = PEPxmlOutputFN_;
+  pepxmlOutputFN_PSMs.append("writePEPXML_PSMs");
+  os.open(pepxmlOutputFN_PSMs.c_str(), ios::out);
+  
+  os << "  <psms>" << endl;
+  for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
+       psm != fullset.end(); ++psm) {
+    psm->printPSM_PEP(os, printDecoys_, printExpMass_);
+  }
+  os << "  </psms>" << endl << endl;
+  os.close();
+}
+
+
+
+
 /** 
  * Subroutine of @see XMLInterface::writeXML() for peptide output
  */
+
+
 void XMLInterface::writeXML_Peptides(Scores& fullset) {
   pi0Peptides_ = fullset.getPi0();
   reportUniquePeptides_ = true;
@@ -441,6 +466,8 @@ void XMLInterface::writeXML_Peptides(Scores& fullset) {
   os.close();
 }
 
+
+
 /** 
  * Subroutine of @see XMLInterface::writeXML() for protein output
  */
@@ -453,6 +480,7 @@ void XMLInterface::writeXML_Proteins(ProteinProbEstimator * protEstimator) {
 /** 
  * Writes the output of percolator to an pout XML file
  */
+ 
 void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
   ofstream os;
   const string space = PERCOLATOR_OUT_NAMESPACE;
@@ -500,7 +528,10 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   ifstream ifs_psms(xmlOutputFN_PSMs.data(), ios::in | ios::binary);
   os << ifs_psms.rdbuf();
   ifs_psms.close();
+
   remove(xmlOutputFN_PSMs.c_str());
+
+
   // append Peptides
   if (reportUniquePeptides_){
     ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
@@ -516,6 +547,87 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
     remove(xmlOutputFN_Proteins.c_str());
   }
   os << "</percolator_output>" << endl;
+  os.close();
+}
+
+
+
+void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
+  ofstream os;
+  const string space = PERCOLATOR_OUT_NAMESPACE;
+  const string schema = space +
+      " https://github.com/percolator/percolator/raw/pout-" + POUT_VERSION_MAJOR +
+      "-" + POUT_VERSION_MINOR + "/src/xml/percolator_out.xsd";
+
+  
+  os.open(PEPxmlOutputFN_.data(), ios::out | ios::binary);
+  os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
+  os << "<root xmlns:ns0=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
+  
+
+
+  std::string pepPath = PEPxmlOutputFN_.data();
+  /* TODO: MUST FIX */
+  std::string base_name = pepPath.substr(0, pepPath.find("."));
+
+
+  os << "    <ns0:msms_run_summary base_name=\"" << base_name << "\">" << endl;
+  os << "    <ns0:search_summary>" << endl;
+  os << "    <ns0:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+  os << "    </ns0:search_summary>" << endl;
+
+  
+
+  ifstream ifs_psms(pepxmlOutputFN_PSMs.data(), ios::in | ios::binary);
+  os << ifs_psms.rdbuf();
+  ifs_psms.close();
+  remove(pepxmlOutputFN_PSMs.c_str());
+
+  /* os << "    <ns0:spectrum_query assumed_charge=\"3\" end_scan=\"14062\" index=\"0\" retention_time_sec=\"6426.016\" start_scan=\"14062\">" << endl;
+
+  os << "    <ns0:search_hit hit_rank=\"0\" massdiff=\"0\" peptide=\"FWEVISDEHGIDPTGTYHGDSDLQLER\" protein=\"AIPGENE20512\">" << endl;
+  os << "    <ns0:alternative_protein protein=\"AIPGENE10493\"/>" << endl;
+  os << "    <ns0:modification_info />" << endl;
+
+  os << "    <ns0:analysis_result analysis=\"percolator\">" << endl;
+  os << "    <ns0:percolator_result pep=\"6.305117e-16\" />" << endl;
+  os << "    </ns0:analysis_result>" << endl;
+  
+  
+  os << "    </ns0:search_hit>"<< endl;
+
+  os << "    <ns0:search_result>" << endl;
+
+
+  os << "    </ns0:search_result>" << endl;
+
+  os << "    </ns0:spectrum_query>" << endl; */
+
+  os << "    </ns0:msms_run_summary>" << endl;
+
+
+
+
+  /* // append PSMs
+  ifstream ifs_psms(xmlOutputFN_PSMs.data(), ios::in | ios::binary);
+  os << ifs_psms.rdbuf();
+  ifs_psms.close();
+  remove(xmlOutputFN_PSMs.c_str());
+  // append Peptides
+  if (reportUniquePeptides_){
+    ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
+    os << ifs_peptides.rdbuf();
+    ifs_peptides.close();
+    remove(xmlOutputFN_Peptides.c_str());
+  }
+  // append Proteins
+  if (ProteinProbEstimator::getCalcProteinLevelProb()){
+    ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
+    os << ifs_proteins.rdbuf();
+    ifs_proteins.close();
+    remove(xmlOutputFN_Proteins.c_str());
+  } */
+  os << "</root>" << endl;
   os.close();
 }
 
