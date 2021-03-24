@@ -1,0 +1,2 @@
+/usr/bin/ar qc libfido.a  CMakeFiles/fido.dir/Set.cpp.o CMakeFiles/fido.dir/Vector.cpp.o CMakeFiles/fido.dir/Numerical.cpp.o CMakeFiles/fido.dir/Random.cpp.o CMakeFiles/fido.dir/BasicBigraph.cpp.o CMakeFiles/fido.dir/BasicGroupBigraph.cpp.o CMakeFiles/fido.dir/GroupPowerBigraph.cpp.o
+/usr/bin/ranlib libfido.a

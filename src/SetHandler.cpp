@@ -109,16 +109,11 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     std::transform(optionalHeader.begin(), optionalHeader.end(), 
                    optionalHeader.begin(), ::tolower);
 
-    
-    std::cerr << optionalHeader << std::endl;
-    std::cerr << DataSet::getCalcDoc() << std::endl;
-    std::cerr << "----------------" << std::endl;
 
     if (optionalHeader == "scannr") {
       optionalFields.push_back(SCANNR);
       hasScannr = true;
     } else if (optionalHeader == "expmass") {
-      std::cerr << "hello" << std::endl;
       optionalFields.push_back(EXPMASS);
     } else if (optionalHeader == "calcmass") {
       optionalFields.push_back(CALCMASS);

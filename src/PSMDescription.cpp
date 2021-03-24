@@ -22,12 +22,12 @@
 #include "DescriptionOfCorrect.h"
 
 PSMDescription::PSMDescription() :
-    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan()), scan(0),
+    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0),
     id_(""), peptide("") {
 }
 
 PSMDescription::PSMDescription(const std::string& pep) :
-    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan()), scan(0),
+    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0),
     id_(""), peptide(pep) {
 }
 

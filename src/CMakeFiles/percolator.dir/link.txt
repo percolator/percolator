@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wno-deprecated-declarations -D_GLIBCXX_PARALLEL -fopenmp  -rdynamic CMakeFiles/percolator.dir/main.cpp.o  -o percolator libperclibrary.a blas/libblas.a fido/libfido.a picked_protein/libpicked_protein.a -lstdc++ 

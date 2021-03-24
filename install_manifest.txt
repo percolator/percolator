@@ -1,0 +1,4 @@
+/usr/local/share/xml/percolator/xml-pin-1-3/percolator_in.xsd
+/usr/local/share/xml/percolator/xml-pout-1-5/percolator_out.xsd
+/usr/local/bin/percolator
+/usr/local/./bin/qvality

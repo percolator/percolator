@@ -582,50 +582,10 @@ void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstima
   ifs_psms.close();
   remove(pepxmlOutputFN_PSMs.c_str());
 
-  /* os << "    <ns0:spectrum_query assumed_charge=\"3\" end_scan=\"14062\" index=\"0\" retention_time_sec=\"6426.016\" start_scan=\"14062\">" << endl;
-
-  os << "    <ns0:search_hit hit_rank=\"0\" massdiff=\"0\" peptide=\"FWEVISDEHGIDPTGTYHGDSDLQLER\" protein=\"AIPGENE20512\">" << endl;
-  os << "    <ns0:alternative_protein protein=\"AIPGENE10493\"/>" << endl;
-  os << "    <ns0:modification_info />" << endl;
-
-  os << "    <ns0:analysis_result analysis=\"percolator\">" << endl;
-  os << "    <ns0:percolator_result pep=\"6.305117e-16\" />" << endl;
-  os << "    </ns0:analysis_result>" << endl;
-
-
-  os << "    </ns0:search_hit>"<< endl;
-
-  os << "    <ns0:search_result>" << endl;
-
-
-  os << "    </ns0:search_result>" << endl;
-
-  os << "    </ns0:spectrum_query>" << endl; */
 
   os << "    </ns0:msms_run_summary>" << endl;
 
 
-
-
-  /* // append PSMs
-  ifstream ifs_psms(xmlOutputFN_PSMs.data(), ios::in | ios::binary);
-  os << ifs_psms.rdbuf();
-  ifs_psms.close();
-  remove(xmlOutputFN_PSMs.c_str());
-  // append Peptides
-  if (reportUniquePeptides_){
-    ifstream ifs_peptides(xmlOutputFN_Peptides.data(), ios::in | ios::binary);
-    os << ifs_peptides.rdbuf();
-    ifs_peptides.close();
-    remove(xmlOutputFN_Peptides.c_str());
-  }
-  // append Proteins
-  if (ProteinProbEstimator::getCalcProteinLevelProb()){
-    ifstream ifs_proteins(xmlOutputFN_Proteins.data(), ios::in | ios::binary);
-    os << ifs_proteins.rdbuf();
-    ifs_proteins.close();
-    remove(xmlOutputFN_Proteins.c_str());
-  } */
   os << "</root>" << endl;
   os.close();
 }

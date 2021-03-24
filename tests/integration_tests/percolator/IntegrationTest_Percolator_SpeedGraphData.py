@@ -2,8 +2,8 @@
 # Script that tests the performances of percolator for different data input sizes. Produces a file containing data for graphs.
 # psutil is imported in the case that the script should wait for other integration-test scripts to finish.
 
-pathToOutputData = "@pathToOutputData@"
-pathToTestScripts = "@pathToTestScripts@"
+pathToOutputData = "/home/ekvall/percolator/tests/integration_tests/percolator/testData"
+pathToTestScripts = "/home/ekvall/percolator/tests/integration_tests/percolator"
 
 import os
 import sys

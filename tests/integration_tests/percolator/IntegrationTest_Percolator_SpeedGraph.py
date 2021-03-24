@@ -2,8 +2,8 @@
 # Takes data from IntegrationTest_Percolator_SpeedGraphData.py and output graph images.
 # Input: Any number of data files, but at least 1.
 
-pathToOutputData = "@pathToOutputData@"
-pathToTestScripts = "@pathToTestScripts@"
+pathToOutputData = "/home/ekvall/percolator/tests/integration_tests/percolator/testData"
+pathToTestScripts = "/home/ekvall/percolator/tests/integration_tests/percolator"
 
 import sys
 

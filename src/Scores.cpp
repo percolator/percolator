@@ -43,6 +43,7 @@ using namespace boost::algorithm;
 #include "ssl.h"
 #include "MassHandler.h"
 
+
 #ifdef CRUX
 #include "app/PercolatorAdapter.h"
 #endif
@@ -124,44 +125,7 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
   }
 }
 
-
-void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass) {
-
-  if (q < 1) {
-  /* Pase name info from name: Symb_Proteome_DIA_RAW_S03_Q1.53511.53511.1_1 */
-  std::string s = pPSM->getId();
-  std::string delimiter = ".";
-
-  size_t pos = 0;
-  size_t i = 0;
-
-  std::string end_scan;
-  std::string start_scan;
-
-  std::string token;
-
-  while ((pos = s.find(delimiter)) != std::string::npos) {
-      token = s.substr(0, pos);
-      if (i==1) {
-        start_scan = token;
-      } else if (i==2) {
-        end_scan = token;
-      }
-      s.erase(0, pos + delimiter.length());
-      i++;
-  }
-
-  std::string assumed_charge = s.substr(0, s.find("_"));
-
-  double RT = pPSM->getRetentionTime();
-
-  string centpep = pPSM->getPeptideSequence();
-
-
-
-  regex regexp("\\[(.*?)\\]");
-
-
+map<char, float> getAminoDict() {
   map<char, float> amino2weight; // Enter required types and name
   amino2weight['A'] = 71.04;
   amino2weight['C'] = 103.01;
@@ -183,28 +147,67 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
   amino2weight['V'] = 99.07;
   amino2weight['W'] = 186.08;
   amino2weight['Y'] = 163.06;
+  return amino2weight;
+
+}
+
+void getScanIds(string id, string *start_scan, string *end_scan) {
+  /* Pase name info from name: Symb_Proteome_DIA_RAW_S03_Q1.53511.53511.1_1 -> start_scan=53511 and end_scan=53511*/
+
+  std::string token;
+  std::string delimiter = ".";
+  size_t i = 0;
+  size_t pos = 0;
+
+  while ((pos = id.find(delimiter)) != std::string::npos) {
+      token = id.substr(0, pos);
+      if (i==1) {
+        *start_scan = token;
+      } else if (i==2) {
+        *end_scan = token;
+      }
+      id.erase(0, pos + delimiter.length());
+      i++;
+  }
+
+}
+
+std::string getCharge(string id) {return id.substr(0, id.find("_"));}
 
 
-  std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
 
 
-  string subject(trimmed_pep);
-  smatch match;
-  regex r("\\[(.*?)\\]");
+void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass) {
 
+  
+  /* Get PSM id */
+  std::string id = pPSM->getId();
+  
 
-  std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
+  /* Get scan ids */
+  std::string end_scan;
+  std::string start_scan;
+  getScanIds(id, &start_scan, &end_scan);
 
-  long int mod_pos = 0;
+  /* Get charge */
+  std::string assumed_charge = getCharge(id);
 
-  float mod_weight;
+  /* Get RT */
+  double RT = pPSM->getRetentionTime();
 
 
   os << "    <ns0:spectrum_query assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << end_scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << start_scan << "\">" << endl;
 
+  
+  std::string centpep = pPSM->getPeptideSequence();
+  std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
+  regex r("\\[(.*?)\\]");
+  std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
+
+  
   os << "    <ns0:search_result>" << endl;
 
-
+  /* Print protein information */
   size_t n_protein = 0;
 
   std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
@@ -221,9 +224,15 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
     }
 
 
-  /* os << "    <ns0:modification_info>" << endl; */
 
+  /* Print modification */
+  map<char, float> amino2weight = getAminoDict();
+  string subject(trimmed_pep);
+  smatch match;
+  long int mod_pos = 0;
+  float mod_weight;
   size_t n_mod = 0;
+
   while (regex_search(subject, match, r)) {
       mod_pos += match.position(0);
 
@@ -255,7 +264,7 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
     }
 
 
-
+  /* Print Percolator information */
   os << "    <ns0:analysis_result analysis=\"percolator\">" << endl;
   os << "    <ns0:percolator_result pep=\"" << scientific << pep   << "\" />" << endl;
   os << "    </ns0:analysis_result>" << endl;
@@ -270,52 +279,7 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
 
   os << "    </ns0:spectrum_query>" << endl;
 
-  }
-
-  /* if (!isDecoy() || printDecoys) {
-    os << "    <psm p:psm_id=\"" << pPSM->getId() << "\"";
-    if (printDecoys) {
-      if (isDecoy())
-        os << " p:decoy=\"true\"";
-      else
-        os << " p:decoy=\"false\"";
-    }
-    os << ">" << endl;
-
-    os << "      <svm_score>" << fixed      << score << "</svm_score>" << endl;
-    os << "      <q_value>"   << scientific << q     << "</q_value>" << endl;
-    os << "      <pep>"       << scientific << pep   << "</pep>" << endl;
-
-    if (printExpMass) {
-      os << "      <exp_mass>" << fixed << setprecision (4) << pPSM->expMass << "</exp_mass>" << endl;
-    }
-
-    os << "      <calc_mass>" << fixed << setprecision (3) << pPSM->calcMass << "</calc_mass>" << endl;
-    os << "      <retention_time>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retention_time>" << endl;
-
-    if (DataSet::getCalcDoc()) {
-      os << "      <retentionTime observed=\""
-         << pPSM->getUnnormalizedRetentionTime()
-         << "\" predicted=\""
-         << PSMDescriptionDOC::unnormalize(pPSM->getPredictedRetentionTime()) << "\"/>"
-         << endl;
-    }
-
-    if (pPSM->getPeptideSequence().size() > 0) {
-      string n = pPSM->getFlankN();
-      string c = pPSM->getFlankC();
-      string centpep = pPSM->getPeptideSequence();
-      os << "      <peptide_seq n=\"" << n << "\" c=\"" << c << "\" seq=\"" << centpep << "\"/>" << endl;
-    }
-
-    std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
-    for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
-      os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
-    }
-
-    os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
-    os << "    </psm>" << endl;
-  } */
+  
 }
 
 void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset) {

@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wno-deprecated-declarations -D_GLIBCXX_PARALLEL -fopenmp  -rdynamic CMakeFiles/qvality.dir/qvality_main.cpp.o  -o qvality  -L/home/ekvall/percolator/src -Wl,-rpath,/home/ekvall/percolator/src: ../libperclibrary.a ../fido/libfido.a 
