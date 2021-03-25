@@ -1072,6 +1072,8 @@ int Caller::run() {
       cerr << "Evaluated set contained " << allScores.posSize() << " positives and " << allScores.negSize() << " negatives." << endl;
     }
 
+    
+
     allScores.postMergeStep();
     allScores.calcQ(selectionFdr_);
     allScores.normalizeScores(selectionFdr_);
@@ -1094,8 +1096,9 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
     xmlInterface.writeXML_PSMs(allScores);
   }
 
+  
   if (xmlInterface.getXmlOutputFN().size() > 0){
-    xmlInterface.writePEPXML_PSMs(allScores);
+    xmlInterface.writePEPXML_PSMs(allScores, selectionFdr_);
   }
 
   // calculate unique peptides level probabilities WOTE

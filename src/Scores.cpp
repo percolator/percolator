@@ -177,8 +177,9 @@ std::string getCharge(string id) {return id.substr(0, id.find("_"));}
 
 
 
-void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass) {
+void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_) {
 
+  if (q < selectionFdr_) {
   
   /* Get PSM id */
   std::string id = pPSM->getId();
@@ -278,6 +279,8 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass)
   os << "    </ns0:search_result>" << endl;
 
   os << "    </ns0:spectrum_query>" << endl;
+
+  }
 
   
 }

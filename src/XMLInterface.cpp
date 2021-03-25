@@ -421,12 +421,12 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
-void XMLInterface::writePEPXML_PSMs(Scores& fullset) {
+void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
   pi0Psms_ = fullset.getPi0();
   numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
 
   ofstream os;
-  std::cerr << PEPxmlOutputFN_ << std::endl;
+  
   pepxmlOutputFN_PSMs = PEPxmlOutputFN_;
   pepxmlOutputFN_PSMs.append("writePEPXML_PSMs");
   os.open(pepxmlOutputFN_PSMs.c_str(), ios::out);
@@ -434,7 +434,7 @@ void XMLInterface::writePEPXML_PSMs(Scores& fullset) {
   os << "  <psms>" << endl;
   for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
        psm != fullset.end(); ++psm) {
-    psm->printPSM_PEP(os, printDecoys_, printExpMass_);
+    psm->printPSM_PEP(os, printDecoys_, printExpMass_, selectionFdr_);
   }
   os << "  </psms>" << endl << endl;
   os.close();

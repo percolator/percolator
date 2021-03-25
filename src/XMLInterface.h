@@ -80,7 +80,7 @@ class XMLInterface {
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
   
   void writeXML_PSMs(Scores& fullset);
-  void writePEPXML_PSMs(Scores& fullset);
+  void writePEPXML_PSMs(Scores& fullset, double selectionFdr_);
 
   void writeXML_Peptides(Scores& fullset);
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);

@@ -17,7 +17,7 @@
 
 !define VER_MAJOR "3"
 !define VER_MINOR "05"
-!define VER_BUILD "nightly-110-f41c42ca-dirty"
+!define VER_BUILD "nightly-111-c27321ce-dirty"
 !define VERSION "3.05"
 !define REVISION ""
 
