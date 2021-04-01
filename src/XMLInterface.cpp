@@ -59,7 +59,7 @@ XMLInterface::XMLInterface(const std::string& outputFN,
   const std::string& PEPoutputFN,
     bool schemaValidation, bool printDecoys, bool printExpMass) :
   xmlOutputFN_(outputFN), PEPxmlOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
-  otherCall_(""), reportUniquePeptides_(false), printDecoys_(printDecoys),
+  otherCall_(""), reportUniquePeptides_(false),reportPEPXML_(false), printDecoys_(printDecoys),
   printExpMass_(printExpMass) {}
 
 XMLInterface::~XMLInterface() {
@@ -412,6 +412,7 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   xmlOutputFN_PSMs.append("writeXML_PSMs");
   os.open(xmlOutputFN_PSMs.c_str(), ios::out);
 
+  
   os << "  <psms>" << endl;
   for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
        psm != fullset.end(); ++psm) {
@@ -422,6 +423,9 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
 }
 
 void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
+
+  
+
   pi0Psms_ = fullset.getPi0();
   numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
 
@@ -464,6 +468,31 @@ void XMLInterface::writeXML_Peptides(Scores& fullset) {
   }
   os << "  </peptides>" << endl << endl;
   os.close();
+}
+
+
+void XMLInterface::writeTSV_PSM_Peptides(Scores& fullset, double selectionFdr_) {
+  pi0Peptides_ = fullset.getPi0();
+  reportUniquePeptides_ = true;
+
+  ofstream peptideTSV;
+  peptideTSV.open("peptide.tsv");
+
+  ofstream psmTSV;
+  psmTSV.open("psm.tsv");
+
+  psmTSV << "Spectrum" << "\t" << "Spectrum File" << "\t" << "Peptide" << "\n";
+  peptideTSV << "Peptide" << "\t" << "Gene" << "\t" << "Protein ID" << "\n";
+
+  // append PEPTIDEs
+  
+  for (vector<ScoreHolder>::iterator psm = fullset.begin();
+       psm != fullset.end(); ++psm) {
+    psm->print_tsv_psm_peptide(peptideTSV, psmTSV, printDecoys_, printExpMass_, fullset, selectionFdr_);
+  }
+  
+  peptideTSV.close();
+  psmTSV.close();
 }
 
 
@@ -553,6 +582,8 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
 
 
 void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
+
+  
   ofstream os;
 //  const string space = PERCOLATOR_OUT_NAMESPACE;
   const string schema = // space +
@@ -576,7 +607,7 @@ void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstima
   os << "    </ns0:search_summary>" << endl;
 
 
-
+  std::cerr << pepxmlOutputFN_PSMs.data() << std::endl;
   ifstream ifs_psms(pepxmlOutputFN_PSMs.data(), ios::in | ios::binary);
   os << ifs_psms.rdbuf();
   ifs_psms.close();

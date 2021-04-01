@@ -69,6 +69,7 @@ class ScoreHolder {
   void printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_);
   
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
+  void print_tsv_psm_peptide(ofstream& peptideTSV, ofstream& psmTSV, bool printDecoys, bool printExpMass, Scores& fullset, double selectionFdr_);
 };
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);

@@ -53,7 +53,6 @@ void FeatureNames::initFeatures(bool calcDOC) {
   }
   if (VERB>1) {
     std::cerr << "Features:\n";
-    
     std::copy( featureNames.begin(), featureNames.end(),
         std::ostream_iterator<std::string>(std::cerr, " "));
     std::cerr << "\n";

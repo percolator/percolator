@@ -40,6 +40,7 @@ Caller::Caller() :
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
+    reportPEPXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
     selectionFdr_(0.01), initialSelectionFdr_(0.01), testFdr_(0.01),
     numIterations_(10), maxPSMs_(0u),
@@ -397,7 +398,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   // now query the parsing results
   if (cmd.optionSet("xmloutput")) {
     xmlOutputFN_ = cmd.options["xmloutput"];
-    std::cerr << xmlOutputFN_ << std::endl;
     checkIsWritable(xmlOutputFN_);
   }
 
@@ -405,6 +405,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("pep.xmloutput")) {
     PEPxmlOutputFN_ = cmd.options["pep.xmloutput"];
     checkIsWritable(PEPxmlOutputFN_);
+    reportPEPXML_=true;
   }
 
   // filenames for outputting results to file
@@ -547,24 +548,30 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
 
   if (cmd.optionSet("xml-in")) {
+    
     tabInput_ = false;
     inputFN_ = cmd.options["xml-in"];
   }
 
   if (cmd.optionSet("stdinput-xml")) {
+    
     readStdIn_ = true;
     tabInput_ = false;
   }
 
   if (cmd.optionSet("tab-in")) {
+    
     tabInput_ = true;
     inputFN_ = cmd.options["tab-in"];
   }
 
   if (cmd.optionSet("stdinput-tab")) {
+    
     readStdIn_ = true;
     tabInput_ = true;
   }
+
+  
 
   if (cmd.optionSet("Cpos")) {
     selectedCpos_ = cmd.getDouble("Cpos", 0.0, 1e127);
@@ -720,11 +727,189 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
-    cerr << "Error: too many arguments.";
-    cerr << "\nInvoke with -h option for help\n";
-    return 0; // ...error
-  }
+    bool allPin = true;
+    for(const string &text : cmd.arguments) {
+      if(text.substr(text.find_last_of(".") + 1) != "pin") {
+        allPin=false;
+      };
+    };
+    if (!allPin) {
+      cerr << "Error: too many arguments.";
+      cerr << "\nInvoke with -h option for help\n";
+      return 0; // ...error
+    } else {
+      tabInput_ = true;
 
+
+      std::ifstream pinFileStream;
+
+      
+      /* Complete column position to header name */
+      std::map<int,std::string> columnMap = {};
+      /* Temporary mapper while searching for complete position-to-header mapper */
+      std::map<int,std::string> tmpMap;
+
+      /* Keep track on col index */
+      int column_index;
+
+      /* Loop through all files to search for column headers */
+      for(const string &text : cmd.arguments) {
+        
+        /* Get header */
+        pinFileStream.open(text.c_str(), ios::in);
+        std::string hederRow;
+  
+        getline(pinFileStream, hederRow);
+
+        TabReader reader(hederRow);
+
+        column_index = 0;
+        while (!reader.error()) {
+          std::string optionalHeader = reader.readString();
+
+          tmpMap[column_index] = optionalHeader;
+
+
+            column_index++;
+        }
+
+        /* Get header from file with the most columns */
+        if (columnMap.size() < tmpMap.size()) {
+          columnMap = tmpMap;
+        }
+        tmpMap.clear();
+
+        pinFileStream.close();
+      }
+
+      /* File to write all pin files to, and then feed to Percolator */
+      ofstream outFile;
+      inputFN_ = "tmp_conc_files.tmp";
+      outFile.open(inputFN_);
+      
+
+      /* Only want to print header once */
+      bool firstFile = true;
+      /* If go to next column when going though missing charge states */
+      bool nextColumn;
+
+      
+      
+      /* Start appending pin files to one pin file. */
+      for(const string &text : cmd.arguments) {
+        std::cerr << "Reading file: " << text.c_str() << std::endl;
+        /* Keep track of missing charge columns for a given file */
+        std::vector<int> missingCols;
+        
+        /* Read pin file */
+        pinFileStream.open(text.c_str(), ios::in);
+        std::string hederRow;
+        getline(pinFileStream, hederRow);
+        TabReader reader(hederRow);
+        
+        /* Keep track on column index */
+        column_index = 0;
+        /* Go through all columns to print header and search for missing charge state */
+        while (!reader.error()) {
+          std::string optionalHeader = reader.readString();
+          
+          /* Check if charge state is missing */
+          if (columnMap[column_index] != optionalHeader) {
+            
+            /* Charge state is missing at  'column_index' */
+            missingCols.push_back(column_index);
+            nextColumn=true;
+
+            if (firstFile) {
+              outFile << columnMap[column_index] << "\t";
+            }
+            /* Check if there are any adjacent missing charge states */
+            while(nextColumn) {
+              
+              column_index++;
+              
+              if (columnMap[column_index] == optionalHeader) {
+                /* No missing charge state, continue */
+                nextColumn=false;
+              } else {
+                /* Missing charge state */
+                missingCols.push_back(column_index);
+
+                if (firstFile) {
+                  outFile << columnMap[column_index] << "\t";
+                }
+                
+              }
+
+            }
+          } 
+
+          if (firstFile) {
+            outFile << columnMap[column_index] << "\t";
+          }
+
+
+          column_index++;
+        }
+
+        if (firstFile) {
+          outFile <<  "\n";
+          }
+
+        
+
+        /* Go through rest of the rows in pin-file */
+        std::string nextRow;
+        
+        while(getline(pinFileStream, nextRow)) {
+          
+          TabReader readerRow(nextRow);
+
+          /* Keep track on column for missing charge states */
+          int col = 0;
+          while (!readerRow.error()) { 
+            
+            std::string value = readerRow.readString();
+            
+
+            /* Check for missing charge state */
+            if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
+              nextColumn=true;
+              outFile << 0 << "\t";
+              col++;
+
+
+              /* Check for adjecent missing charge states */
+              while(nextColumn) {
+
+                if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
+                  /* Missing adjecent charge state  */
+                  outFile << 0 << "\t";
+                  col++;
+                } else {
+                  /* Charge states  */
+                  nextColumn = false;
+                }
+              }  
+            }
+            outFile << value << "\t";
+            col++;
+          }
+
+          outFile << "\n";
+          
+          }
+       
+        pinFileStream.close();
+        firstFile = false;
+        
+      }
+    
+      outFile.close();
+      
+  }
+  }
+  std::cerr << "All files have been read" << std::endl;
   return true;
 }
 
@@ -869,8 +1054,11 @@ void Caller::checkIsWritable(const std::string& filePath) {
 std::istream& Caller::getDataInStream(std::ifstream& fileStream){
   if (!readStdIn_) {
     if (!tabInput_) fileStream.exceptions(ifstream::badbit | ifstream::failbit);
+    
     fileStream.open(inputFN_.c_str(), ios::in);
   } else if (maxPSMs_ > 0u) {
+
+    
     maxPSMs_ = 0u;
     std::cerr << "Warning: cannot use subset-max-train (-N flag) when reading "
               << "from stdin, training on all data instead." << std::endl;
@@ -888,7 +1076,11 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
   } else {
     if (VERB > 1) {
       std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << std::endl;
+      
     }
+
+    
+
     success = setHandler.readTab(dataStream, pCheck_);
   }
 
@@ -1001,6 +1193,8 @@ int Caller::run() {
   SetHandler setHandler(maxPSMs_);
   Scores allScores(useMixMax_);
 
+  
+
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
     exit(EXIT_FAILURE);
 
@@ -1092,12 +1286,13 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   processPsmScores(allScores);
 #endif
 
+  
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
 
   
-  if (xmlInterface.getXmlOutputFN().size() > 0){
+  if (xmlInterface.getPEPXmlOutputFN().size() > 0){
     xmlInterface.writePEPXML_PSMs(allScores, selectionFdr_);
   }
 
@@ -1123,8 +1318,16 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
       xmlInterface.writeXML_Proteins(protEstimator_);
     }
   }
+
+  if (reportPEPXML_) {
+    xmlInterface.writeTSV_PSM_Peptides(allScores, selectionFdr_);
+    xmlInterface.writePEPXML(allScores, protEstimator_, call_);
+  }
+  
   // write output to file
+
   xmlInterface.writeXML(allScores, protEstimator_, call_);
-  xmlInterface.writePEPXML(allScores, protEstimator_, call_);
+  
+
 }
 

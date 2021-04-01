@@ -60,6 +60,9 @@ class XMLInterface {
   
   inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN_ = outputFN; }
   inline std::string getXmlOutputFN() { return xmlOutputFN_; }
+
+  inline void setPEPXmlOutputFN(std::string outputFN) { PEPxmlOutputFN_ = outputFN; }
+  inline std::string getPEPXmlOutputFN() { return PEPxmlOutputFN_; }
   
   inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
   inline void setPrintDecoys(bool decoysOut) { 
@@ -83,6 +86,8 @@ class XMLInterface {
   void writePEPXML_PSMs(Scores& fullset, double selectionFdr_);
 
   void writeXML_Peptides(Scores& fullset);
+  void writeTSV_PSM_Peptides(Scores& fullset, double selectionFdr_);
+
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);
   void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
@@ -104,6 +109,7 @@ class XMLInterface {
   std::string xmlOutputFN_Proteins;
   
   bool reportUniquePeptides_;
+  bool reportPEPXML_;
   double pi0Psms_;
   double pi0Peptides_;
   unsigned int numberQpsms_;

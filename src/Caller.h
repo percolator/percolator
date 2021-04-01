@@ -94,6 +94,7 @@ class Caller {
   
   // report level parameters
   bool reportUniquePeptides_;
+  bool reportPEPXML_;
   bool targetDecoyCompetition_;
   bool useMixMax_;
   std::string inputSearchType_;

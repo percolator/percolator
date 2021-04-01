@@ -27,11 +27,11 @@ limitations under the License.
 #endif
 
 #ifndef VERSION_PATCH
-   #define VERSION_PATCH "nightly-111-c27321ce-dirty"
+   #define VERSION_PATCH "nightly-112-c9e2f0cc-dirty"
 #endif
 
 #ifndef VERSION
-  #define VERSION "3.05.nightly-111-c27321ce-dirty"
+  #define VERSION "3.05.nightly-112-c9e2f0cc-dirty"
 #endif
 
 #ifndef VERSION_NAME

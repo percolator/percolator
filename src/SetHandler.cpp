@@ -431,6 +431,8 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
 
 int SetHandler::readAndScoreTab(istream& dataStream, 
     std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck) {
+
+  
   if (!dataStream) {
     std::cerr << "ERROR: Cannot open data stream." << std::endl;
     return 0;
@@ -439,6 +441,7 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   
   getline(dataStream, headerLine); // line with feature names
   headerLine = rtrim(headerLine);
+
   if (headerLine.substr(0,5) == "<?xml") {
     std::cerr << "ERROR: Cannot read Tab delimited input from data stream.\n" << 
        "Input file seems to be in XML format, use the -k flag for XML input." << 
