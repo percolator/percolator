@@ -172,7 +172,12 @@ void getScanIds(string id, string *start_scan, string *end_scan) {
 
 }
 
-std::string getCharge(string id) {return id.substr(0, id.find("_"));}
+std::string getCharge(string id) {
+  /* Aposymb_Proteome_DIA_RAW_A01_Q1.00148.00148.1_2 -> 1_2*/
+  std::string last_element(id.substr(id.rfind(".") + 1));
+  /* 1_2 -> 1 */
+  return last_element.substr(0, last_element.find("_"));
+  }
 
 
 
@@ -183,8 +188,8 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass,
   
   /* Get PSM id */
   std::string id = pPSM->getId();
-  
 
+  
   /* Get scan ids */
   std::string end_scan;
   std::string start_scan;
@@ -335,9 +340,6 @@ void ScoreHolder::print_tsv_psm_peptide(ofstream& peptideTSV, ofstream& psmTSV, 
     std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
 
     std::vector<PSMDescription*>::const_iterator psmIt = fullset.getPsms(pPSM).begin();
-
-
-    
 
 
     for ( ; psmIt != fullset.getPsms(pPSM).end() ; ++psmIt) {
