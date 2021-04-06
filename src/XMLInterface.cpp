@@ -422,6 +422,8 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
+
+
 void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
 
   
@@ -435,12 +437,21 @@ void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
   pepxmlOutputFN_PSMs.append("writePEPXML_PSMs");
   os.open(pepxmlOutputFN_PSMs.c_str(), ios::out);
 
-  os << "  <psms>" << endl;
+  /* os << "  <psms>" << endl; */
+
+  /* Sort psms based on base name  */
+  std::sort(fullset.begin(), fullset.end(), less_than_base_name());
+
   for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
        psm != fullset.end(); ++psm) {
     psm->printPSM_PEP(os, printDecoys_, printExpMass_, selectionFdr_);
   }
-  os << "  </psms>" << endl << endl;
+
+
+  
+  /* os << "  </psms>" << endl << endl; */
+
+
   os.close();
 }
 
@@ -601,13 +612,10 @@ void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstima
   std::string base_name = pepPath.substr(0, pepPath.find("."));
 
 
-  os << "    <ns0:msms_run_summary base_name=\"" << base_name << "\">" << endl;
-  os << "    <ns0:search_summary>" << endl;
-  os << "    <ns0:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
-  os << "    </ns0:search_summary>" << endl;
+  
 
 
-  std::cerr << pepxmlOutputFN_PSMs.data() << std::endl;
+  
   ifstream ifs_psms(pepxmlOutputFN_PSMs.data(), ios::in | ios::binary);
   os << ifs_psms.rdbuf();
   ifs_psms.close();
@@ -615,6 +623,23 @@ void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstima
 
 
   os << "    </ns0:msms_run_summary>" << endl;
+  /* os << "  </psms>" << endl << endl; */
+
+
+  /* os << "    <ns0:msms_run_summary base_name=\"" << base_name << "\">" << endl;
+  os << "    <ns0:search_summary>" << endl;
+  os << "    <ns0:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+  os << "    </ns0:search_summary>" << endl;
+
+
+  
+  ifstream ifs_psms(pepxmlOutputFN_PSMs.data(), ios::in | ios::binary);
+  os << ifs_psms.rdbuf();
+  ifs_psms.close();
+  remove(pepxmlOutputFN_PSMs.c_str());
+
+
+  os << "    </ns0:msms_run_summary>" << endl; */
 
 
   os << "</root>" << endl;

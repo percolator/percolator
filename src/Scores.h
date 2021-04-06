@@ -48,6 +48,8 @@ class Scores;
 * PSM - Peptide Spectrum Match
 *
 */
+
+
 class ScoreHolder {
  public:
   double score, q, pep, p;
@@ -70,6 +72,16 @@ class ScoreHolder {
   
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
   void print_tsv_psm_peptide(ofstream& peptideTSV, ofstream& psmTSV, bool printDecoys, bool printExpMass, Scores& fullset, double selectionFdr_);
+};
+
+struct less_than_base_name
+{
+    inline bool operator() (const ScoreHolder& struct1, const ScoreHolder& struct2)
+    {
+        std::string id1 = struct1.pPSM->getId();
+        std::string id2 = struct2.pPSM->getId();
+        return (id1 < id2);
+    }
 };
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);

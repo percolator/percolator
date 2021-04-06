@@ -181,19 +181,49 @@ std::string getCharge(string id) {
 
 
 
+std::string pepXMLBaseName = "";
+bool first_msms_summary = true;
 
 void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_) {
-  
+  /* std::cerr << pepXMLBaseName << std::endl; */
+
   if (q < selectionFdr_) {
   
   /* Get PSM id */
   std::string id = pPSM->getId();
 
   
+  auto baseName = id.substr(0, id.find('.'));
+
+  if (baseName != pepXMLBaseName) {
+      /*  Start of a new msms run*/
+      pepXMLBaseName = baseName;
+    if (first_msms_summary) {
+      first_msms_summary = false;
+    } else {
+      /* End of msms run */
+      os << "    </ns0:msms_run_summary>" << endl;
+    }
+    
+    /* New msms run! */
+    os << "    <ns0:msms_run_summary base_name=\"" << baseName << "\">" << endl;
+    os << "    <ns0:search_summary>" << endl;
+    os << "    <ns0:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+    os << "    </ns0:search_summary>" << endl;
+
+  
+
+  }
+
+  std::cerr << baseName << std::endl;
+
+  
   /* Get scan ids */
   std::string end_scan;
   std::string start_scan;
   getScanIds(id, &start_scan, &end_scan);
+
+  int native_id = std::stoi(start_scan) - 1;
 
   /* Get charge */
   std::string assumed_charge = getCharge(id);
@@ -202,7 +232,9 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass,
   double RT = pPSM->getRetentionTime();
 
 
-  os << "    <ns0:spectrum_query assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << end_scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << start_scan << "\">" << endl;
+  os << "    <ns0:spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << end_scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << start_scan << "\">" << endl;
+
+  /* baseName2output[baseName] = baseName2output[baseName] +  "    <ns0:spectrum_query native_id=\"index=" + native_id + "\" spectrum=\"" + id + "\" assumed_charge=\"" + assumed_charge + "\" end_scan=\"" + end_scan + "\" index=\"0\" retention_time_sec=\"" + fixed + setprecision (3) + pPSM->getRetentionTime() + "\" start_scan=\"" + start_scan + "\">" */
 
   
   std::string centpep = pPSM->getPeptideSequence();
