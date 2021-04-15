@@ -214,9 +214,6 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass,
   
 
   }
-
-  std::cerr << baseName << std::endl;
-
   
   /* Get scan ids */
   std::string end_scan;
