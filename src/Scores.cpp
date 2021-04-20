@@ -212,7 +212,8 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
     sh.pPSM->setRetentionFeatures(rtFeatures);
     doc_.setFeatures(sh.pPSM);
   }
-  
+
+  // TODO: Replace this with a call to calcScore().
   for (unsigned int j = 0; j < numFeatures; j++) {
     sh.score += sh.pPSM->features[j] * rawWeights[j];
   }
@@ -254,6 +255,7 @@ void Scores::print(int label, std::ostream& os) {
 }
 
 void Scores::populateWithPSMs(SetHandler& setHandler) {
+
   scores_.clear();
   setHandler.populateScoresWithPSMs(scores_, 1);
   setHandler.populateScoresWithPSMs(scores_, -1);
