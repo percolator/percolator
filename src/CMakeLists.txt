@@ -34,6 +34,24 @@ if(XML_SUPPORT)
     message(FATAL_ERROR "The package CodeSynthesis XSD has not been found")
   endif(XSD_FOUND)
   include_directories(${XSD_INCLUDE_DIR})
+
+  if(UNIX)
+      set(CMAKE_PREFIX_PATH ${RPCDIR})
+      find_package(RPC QUIET)
+      set(HAVE_RPC ${RPC_FOUND})
+      if(RPC_FOUND)
+          message(STATUS "RPC found, will include headers from: ${RPC_INCLUDE_DIR}")
+          message(STATUS "and libraries from                  : ${RPC_LIBRARIES}")
+          set(LIBRARIES ${LIBRARIES} ${RPC_LIBRARIES})
+          include_directories(${RPC_INCLUDE_DIR})
+      else(RPC_FOUND)
+          message(FATAL_ERROR "RPC support is mandatory.\n"
+          "Note that SunRPC has been removed in glibc-2.26 and later, "
+          "while being optional in earlier versions. Consider using the "
+          "recommended and more modern libtirpc instead.\n"
+          "Use -DRPCDIR=DIR to specify the rpc directory tree.\n")
+      endif(RPC_FOUND)
+  endif()
 endif(XML_SUPPORT)
 
 if(APPLE AND OPENMP_FOUND)
@@ -154,9 +172,9 @@ ELSE(CRUX)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
   endif()
-  
+
   # SET LIBRARIES FOR PERCOLATOR
-  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${RPC_LIBRARIES})
   if(COVERAGE)
     set(COMMON_LIBRARIES -fprofile-arcs ${COMMON_LIBRARIES})
   endif(COVERAGE)
