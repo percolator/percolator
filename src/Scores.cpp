@@ -298,6 +298,10 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass,
     os << "    </ns0:modification_info>" << endl;
     }
 
+    
+    os << "    <ns0:search_score x=\"X\" y=\"Y\">" << endl;
+    os << "    </ns0:search_score >" << endl;
+
 
   /* Print Percolator information */
   os << "    <ns0:analysis_result analysis=\"percolator\">" << endl;
