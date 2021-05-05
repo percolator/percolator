@@ -361,50 +361,7 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass,
   }
 }
 
-std::vector<std::string> peptideList; 
 
-void ScoreHolder::print_tsv_psm_peptide(ofstream& peptideTSV, ofstream& psmTSV, bool printDecoys, bool printExpMass, Scores& fullset, double selectionFdr_) {
-
-  
-  if (q < selectionFdr_) {
-    
-
-    std::string centpep = pPSM->getPeptideSequence();
-    std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
-    regex r("\\[(.*?)\\]");
-    std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
-
-    std::vector<PSMDescription*>::const_iterator psmIt = fullset.getPsms(pPSM).begin();
-
-
-    for ( ; psmIt != fullset.getPsms(pPSM).end() ; ++psmIt) {
-        std::string psmID = (*psmIt)->getId();
-
-        auto file_name = psmID.substr(0, psmID.find('.'));
-        /* psm file filter away all decoys */
-        if (!isDecoy()) {
-          psmTSV << psmID << "\t" << file_name + ".mzML" << "\t" << peptide_sequence << "\n";
-        }
-        
-        
-      }
-
-  /* Only take one protein per peptide. Take first protein*/
-  std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
-  for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
-    bool exists = std::find(std::begin(peptideList), std::end(peptideList), peptide_sequence) != std::end(peptideList);
-      /* Check that peptide is not matched in previous PSM */
-      if (!exists) {
-        peptideTSV << peptide_sequence << "\t" << "" << "\t" << getRidOfUnprintablesAndUnicode(*pidIt) << "\n";
-        peptideList.push_back(peptide_sequence);
-      }
-      break;
-  }
-
-  }
-
-  
-}
 
 void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores) {
   scores_.clear();

@@ -482,29 +482,6 @@ void XMLInterface::writeXML_Peptides(Scores& fullset) {
 }
 
 
-void XMLInterface::writeTSV_PSM_Peptides(Scores& fullset, double selectionFdr_) {
-  pi0Peptides_ = fullset.getPi0();
-  reportUniquePeptides_ = true;
-
-  ofstream peptideTSV;
-  peptideTSV.open("peptide.tsv");
-
-  ofstream psmTSV;
-  psmTSV.open("psm.tsv");
-
-  psmTSV << "Spectrum" << "\t" << "Spectrum File" << "\t" << "Peptide" << "\n";
-  peptideTSV << "Peptide" << "\t" << "Gene" << "\t" << "Protein ID" << "\n";
-
-  // append PEPTIDEs
-  
-  for (vector<ScoreHolder>::iterator psm = fullset.begin();
-       psm != fullset.end(); ++psm) {
-    psm->print_tsv_psm_peptide(peptideTSV, psmTSV, printDecoys_, printExpMass_, fullset, selectionFdr_);
-  }
-  
-  peptideTSV.close();
-  psmTSV.close();
-}
 
 
 

@@ -1320,7 +1320,6 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   }
 
   if (reportPEPXML_) {
-    xmlInterface.writeTSV_PSM_Peptides(allScores, selectionFdr_);
     xmlInterface.writePEPXML(allScores, protEstimator_, call_);
   }
   
