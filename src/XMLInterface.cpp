@@ -56,9 +56,10 @@ static const XMLCh fragSpectrumScanStr[] = {
 #endif //XML_SUPPORT
 
 XMLInterface::XMLInterface(const std::string& outputFN, 
+const std::string& PEPoutputFN,
     bool schemaValidation, bool printDecoys, bool printExpMass) : 
-  xmlOutputFN_(outputFN), schemaValidation_(schemaValidation), 
-  otherCall_(""), reportUniquePeptides_(false), printDecoys_(printDecoys), 
+  xmlOutputFN_(outputFN), PEPxmlOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
+  otherCall_(""), reportUniquePeptides_(false),reportPEPXML_(false), printDecoys_(printDecoys),
   printExpMass_(printExpMass) {}
 
 XMLInterface::~XMLInterface() {
@@ -420,6 +421,37 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
+void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
+
+  
+
+  pi0Psms_ = fullset.getPi0();
+  numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
+
+  ofstream os;
+  
+  pepxmlOutputFN_PSMs = PEPxmlOutputFN_;
+  pepxmlOutputFN_PSMs.append("writePEPXML_PSMs");
+  os.open(pepxmlOutputFN_PSMs.c_str(), ios::out);
+
+  /* os << "  <psms>" << endl; */
+
+  /* Sort psms based on base name  */
+  std::sort(fullset.begin(), fullset.end(), less_than_base_name());
+
+  for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
+       psm != fullset.end(); ++psm) {
+    psm->printPSM_PEP(os, printDecoys_, printExpMass_, selectionFdr_);
+  }
+
+
+  
+  /* os << "  </psms>" << endl << endl; */
+
+
+  os.close();
+}
+
 /** 
  * Subroutine of @see XMLInterface::writeXML() for peptide output
  */
@@ -519,3 +551,33 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   os.close();
 }
 
+void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
+
+  
+  ofstream os;
+//  const string space = PERCOLATOR_OUT_NAMESPACE;
+  const string schema = // space +
+      "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";
+
+
+  os.open(PEPxmlOutputFN_.data(), ios::out | ios::binary);
+  os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
+  os << "<root xmlns:ns0=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
+
+
+
+  std::string pepPath = PEPxmlOutputFN_.data();
+  /* TODO: MUST FIX */
+  std::string base_name = pepPath.substr(0, pepPath.find("."));
+
+  ifstream ifs_psms(pepxmlOutputFN_PSMs.data(), ios::in | ios::binary);
+  os << ifs_psms.rdbuf();
+  ifs_psms.close();
+  remove(pepxmlOutputFN_PSMs.c_str());
+
+
+  os << "    </ns0:msms_run_summary>" << endl;
+  
+  os << "</root>" << endl;
+  os.close();
+}

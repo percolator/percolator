@@ -115,7 +115,7 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
       optionalFields.push_back(EXPMASS);
     } else if (optionalHeader == "calcmass") {
       optionalFields.push_back(CALCMASS);
-    } else if (DataSet::getCalcDoc() && (optionalHeader == "rt" || optionalHeader == "retentiontime")) {
+    } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
       hasRt = true;
     } else if (DataSet::getCalcDoc() && (optionalHeader == "dm" || optionalHeader == "deltamass")) {

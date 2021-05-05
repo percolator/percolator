@@ -88,8 +88,10 @@ class PSMDescription {
   virtual void setParentFragment(PSMDescription* ) {}
   virtual PSMDescription* getParentFragment() { return NULL; }
   
-  virtual inline void setRetentionTime(const double retentionTime) {}
-  virtual inline double getRetentionTime() const { return 0.0; }
+  inline void setRetentionTime(const double retentionTime) {
+    retentionTime_ = retentionTime;
+  }
+  inline double getRetentionTime() const { return retentionTime_; }
   
   virtual inline void setUnnormalizedRetentionTime(const double retentionTime) {}
   virtual inline double getUnnormalizedRetentionTime() const { 
@@ -116,7 +118,7 @@ class PSMDescription {
   }
   
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
-  double expMass, calcMass;
+  double expMass, calcMass, retentionTime_;
   unsigned int scan;
   std::string id_;
   std::string peptide;

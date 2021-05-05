@@ -66,9 +66,18 @@ class ScoreHolder {
   inline bool isTarget() const { return label != -1; }
   inline bool isDecoy() const { return label == -1; }
   void printPSM(ostream& os, bool printDecoys, bool printExpMass);
+  void printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_);
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
 };
-
+struct less_than_base_name
+{
+    inline bool operator() (const ScoreHolder& struct1, const ScoreHolder& struct2)
+    {
+        std::string id1 = struct1.pPSM->getId();
+        std::string id2 = struct2.pPSM->getId();
+        return (id1 < id2);
+    }
+};
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
   
