@@ -121,7 +121,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "xmloutput",
       "Path to xml-output (pout) file.",
       "filename");
-  cmd.defineOption("PX",
+  cmd.defineOption("Q",
       "pep.xmloutput",
       "Path to pep.xml-output (pout) file.",
       "filename");
