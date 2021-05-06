@@ -176,11 +176,11 @@ std::string getCharge(string id) {
 
 
 
-std::string pepXMLBaseName = "";
+std::string peptideXMLBaseName = "";
 bool first_msms_summary = true;
 
 void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_) {
-  /* std::cerr << pepXMLBaseName << std::endl; */
+  /* std::cerr << peptideXMLBaseName << std::endl; */
 
   if (q < selectionFdr_) {
   
@@ -190,9 +190,9 @@ void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass,
   
   auto baseName = id.substr(0, id.find('.'));
 
-  if (baseName != pepXMLBaseName) {
+  if (baseName != peptideXMLBaseName) {
       /*  Start of a new msms run*/
-      pepXMLBaseName = baseName;
+      peptideXMLBaseName = baseName;
     if (first_msms_summary) {
       first_msms_summary = false;
     } else {

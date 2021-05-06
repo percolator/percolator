@@ -54,15 +54,15 @@
 class XMLInterface {
   
  public:
-  XMLInterface(const std::string& xmlOutputFN, const std::string& PEPxmlOutputFN, const bool xmlSchemaValidation,
+  XMLInterface(const std::string& xmlOutputFN, const std::string& xmlPeptideOutputFN, const bool xmlSchemaValidation,
                bool printDecoys, bool printExpMass);
   ~XMLInterface();
   
   inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN_ = outputFN; }
   inline std::string getXmlOutputFN() { return xmlOutputFN_; }
 
-  inline void setPEPXmlOutputFN(std::string outputFN) { PEPxmlOutputFN_ = outputFN; }
-  inline std::string getPEPXmlOutputFN() { return PEPxmlOutputFN_; }
+  inline void setxmlPeptideOutputFN(std::string outputFN) { xmlPeptideOutputFN_ = outputFN; }
+  inline std::string getxmlPeptideOutputFN() { return xmlPeptideOutputFN_; }
   
   inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
   inline void setPrintDecoys(bool decoysOut) { 
@@ -83,28 +83,28 @@ class XMLInterface {
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
   
   void writeXML_PSMs(Scores& fullset);
-  void writePEPXML_PSMs(Scores& fullset, double selectionFdr_);
+  void writePeptideXML_PSMs(Scores& fullset, double selectionFdr_);
   void writeXML_Peptides(Scores& fullset);
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);
   void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
-  void writePEPXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
+  void writePeptideXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
  protected:
   std::string xmlOutputFN_; 
-  std::string PEPxmlOutputFN_;
+  std::string xmlPeptideOutputFN_;
   bool schemaValidation_;
   std::string otherCall_;
   
   bool printDecoys_, printExpMass_;
   
   std::string xmlOutputFN_PSMs;
-  std::string pepxmlOutputFN_PSMs;
+  std::string xmlpeptideOutputFN_PSMs;
   std::string xmlOutputFN_Peptides;
   std::string xmlOutputFN_Proteins;
   
   bool reportUniquePeptides_;
-  bool reportPEPXML_;
+  bool reportPeptideXML_;
   double pi0Psms_;
   double pi0Peptides_;
   unsigned int numberQpsms_;

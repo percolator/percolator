@@ -58,8 +58,8 @@ static const XMLCh fragSpectrumScanStr[] = {
 XMLInterface::XMLInterface(const std::string& outputFN, 
 const std::string& PEPoutputFN,
     bool schemaValidation, bool printDecoys, bool printExpMass) : 
-  xmlOutputFN_(outputFN), PEPxmlOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
-  otherCall_(""), reportUniquePeptides_(false),reportPEPXML_(false), printDecoys_(printDecoys),
+  xmlOutputFN_(outputFN), xmlPeptideOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
+  otherCall_(""), reportUniquePeptides_(false),reportPeptideXML_(false), printDecoys_(printDecoys),
   printExpMass_(printExpMass) {}
 
 XMLInterface::~XMLInterface() {
@@ -421,7 +421,7 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
-void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
+void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
 
   
 
@@ -430,9 +430,9 @@ void XMLInterface::writePEPXML_PSMs(Scores& fullset, double selectionFdr_) {
 
   ofstream os;
   
-  pepxmlOutputFN_PSMs = PEPxmlOutputFN_;
-  pepxmlOutputFN_PSMs.append("writePEPXML_PSMs");
-  os.open(pepxmlOutputFN_PSMs.c_str(), ios::out);
+  /* xmlpeptideOutputFN_ = xmlPeptideOutputFN_; */
+  xmlpeptideOutputFN_PSMs.append("writePeptideXML_PSMs");
+  os.open(xmlpeptideOutputFN_PSMs.c_str(), ios::out);
 
   /* os << "  <psms>" << endl; */
 
@@ -551,7 +551,7 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   os.close();
 }
 
-void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
+void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
 
   
   ofstream os;
@@ -560,20 +560,20 @@ void XMLInterface::writePEPXML(Scores& fullset, ProteinProbEstimator* protEstima
       "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";
 
 
-  os.open(PEPxmlOutputFN_.data(), ios::out | ios::binary);
+  os.open(xmlPeptideOutputFN_.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<root xmlns:ns0=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
 
 
 
-  std::string pepPath = PEPxmlOutputFN_.data();
+  std::string pepPath = xmlPeptideOutputFN_.data();
   /* TODO: MUST FIX */
   std::string base_name = pepPath.substr(0, pepPath.find("."));
 
-  ifstream ifs_psms(pepxmlOutputFN_PSMs.data(), ios::in | ios::binary);
+  ifstream ifs_psms(xmlpeptideOutputFN_PSMs.data(), ios::in | ios::binary);
   os << ifs_psms.rdbuf();
   ifs_psms.close();
-  remove(pepxmlOutputFN_PSMs.c_str());
+  remove(xmlpeptideOutputFN_PSMs.c_str());
 
 
   os << "    </ns0:msms_run_summary>" << endl;
