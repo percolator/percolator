@@ -1,3 +1,5 @@
+set (CMAKE_CXX_STANDARD 11)
+
 macro(my_set variable default options)
   if(NOT DEFINED ${variable})
     set(${variable} ${default} CACHE STRING ${options} FORCE)
