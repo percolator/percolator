@@ -1,6 +1,10 @@
 #############################################################################
 # NAME AND VERSION
 ###############################################################################
+
+set (CMAKE_CXX_STANDARD 11)
+
+
 cmake_minimum_required (VERSION 2.8.11)
 
 if(NOT CRUX AND APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
