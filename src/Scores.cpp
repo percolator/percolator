@@ -179,7 +179,7 @@ std::string getCharge(string id) {
 std::string peptideXMLBaseName = "";
 bool first_msms_summary = true;
 
-void ScoreHolder::printPSM_PEP(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_) {
+void ScoreHolder::printXMLPeptide(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_) {
   /* std::cerr << peptideXMLBaseName << std::endl; */
 
   if (q < selectionFdr_) {

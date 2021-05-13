@@ -441,7 +441,7 @@ void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
 
   for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
        psm != fullset.end(); ++psm) {
-    psm->printPSM_PEP(os, printDecoys_, printExpMass_, selectionFdr_);
+    psm->printXMLPeptide(os, printDecoys_, printExpMass_, selectionFdr_);
   }
 
 
