@@ -157,9 +157,7 @@ ELSE(CRUX)
   if(APPLE)
     set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
     set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
-  #  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
   elseif(MINGW)
-  #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
     set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc")
   endif()
 
@@ -189,11 +187,7 @@ ELSE(CRUX)
   endif()
 
   # INSTALL PERCOLATOR
-  #if(APPLE)
-  #  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-  #else()
-    install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
-  #endif()
+  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
 ENDIF(CRUX)
 
 ###############################################################################
