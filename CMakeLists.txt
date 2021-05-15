@@ -2,13 +2,10 @@
 # NAME AND VERSION
 ###############################################################################
 
-set (CMAKE_CXX_STANDARD 11)
-
-
 cmake_minimum_required (VERSION 2.8.11)
 
 if(NOT CRUX AND APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
-  # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang 
+  # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang
   # (https://gitlab.kitware.com/cmake/cmake/issues/19067)
   cmake_policy(SET CMP0025 NEW)
 endif()

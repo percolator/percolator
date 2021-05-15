@@ -1,5 +1,3 @@
-set (CMAKE_CXX_STANDARD 11)
-
 macro(my_set variable default options)
   if(NOT DEFINED ${variable})
     set(${variable} ${default} CACHE STRING ${options} FORCE)
@@ -132,6 +130,9 @@ set(Boost_ADDITIONAL_VERSIONS "1.46" "1.47.0" "1.47"
 ###############################################################################
 # SET COMPILER OPTIONS
 ###############################################################################
+
+set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD_REQUIRED YES)
 
 IF(APPLE)
   add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
