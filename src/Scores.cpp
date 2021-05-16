@@ -168,22 +168,25 @@ std::string getCharge(string id) {
   return last_element.substr(0, last_element.find("_"));
 }
 
+
 void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   /* std::cerr << pepXMLBaseName << std::endl; */
 
   std::string id = pPSM->getId();
   /* Get scan ids */
-  unsigned int native_id = pPSM->scan - 1; 
+  
+  
+  unsigned int scan = pPSM->scan;
+  unsigned int native_id = scan - 1;
 
+  
   /* Get charge */
   std::string assumed_charge = getCharge(id);
 
   /* Get RT */
   double RT = pPSM->getRetentionTime();
 
-  // FIXME: check that this is okay.
-  // os << "    <ns0:spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << end_scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << start_scan << "\">" << endl;
-  os << "    <ns0:spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << native_id << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << native_id << "\">" << endl;
+  os << "    <ns0:spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << scan << "\">" << endl;
   std::string centpep = pPSM->getPeptideSequence();
   std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
   regex r("\\[(.*?)\\]");
