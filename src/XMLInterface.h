@@ -24,6 +24,7 @@
 #include <list>
 #include <memory>
 #include <cassert>
+#include <boost/assign.hpp>
 
 #include "Globals.h"
 #include "SetHandler.h"
