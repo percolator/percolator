@@ -168,9 +168,9 @@ std::string getCharge(string id) {
   return last_element.substr(0, last_element.find("_"));
 }
 
-// FIXME: You do not seem to need all the arguments for this function. Remove extra arguments.
-// FIXME: chose a name that makes it obvious that you are printing a pepXML.
-void ScoreHolder::printXMLPeptide(ostream& os, map<char,float>& aaWeight) {
+
+
+void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   /* std::cerr << pepXMLBaseName << std::endl; */
 
   std::string id = pPSM->getId();

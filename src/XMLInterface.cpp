@@ -588,7 +588,7 @@ void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
       os << "    </ns0:search_summary>" << endl;
     }
     if (sh->q < selectionFdr_)
-      sh->printXMLPeptide(os, aaDict);
+      sh->printPepXML(os, aaDict);
   }
   /* os << "  </psms>" << endl << endl; */
   os.close();
