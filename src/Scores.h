@@ -66,7 +66,7 @@ class ScoreHolder {
   inline bool isTarget() const { return label != -1; }
   inline bool isDecoy() const { return label == -1; }
   void printPSM(ostream& os, bool printDecoys, bool printExpMass);
-  void printXMLPeptide(ostream& os, double selectionFdr_, map<char,float> &aaWeight);
+  void printXMLPeptide(ostream& os, map<char,float> &aaWeight);
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
 };
 struct less_than_base_name
