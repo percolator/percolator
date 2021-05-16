@@ -170,7 +170,7 @@ std::string getCharge(string id) {
 
 // FIXME: You do not seem to need all the arguments for this function. Remove extra arguments.
 // FIXME: chose a name that makes it obvious that you are printing a pepXML.
-void ScoreHolder::printXMLPeptide(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_, map<char,float>& aaWeight) {
+void ScoreHolder::printXMLPeptide(ostream& os, double selectionFdr_, map<char,float>& aaWeight) {
   /* std::cerr << pepXMLBaseName << std::endl; */
 
   std::string id = pPSM->getId();
