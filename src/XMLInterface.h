@@ -92,7 +92,7 @@ class XMLInterface {
   void writePeptideXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
  protected:
-  map<char, float>& getRoughAminoWeightDict();
+  map<char, float> getRoughAminoWeightDict();
   
   std::string xmlOutputFN_; 
   std::string xmlPeptideOutputFN_;
