@@ -168,18 +168,12 @@ std::string getCharge(string id) {
   return last_element.substr(0, last_element.find("_"));
 }
 
-
-
 void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   /* std::cerr << pepXMLBaseName << std::endl; */
 
   std::string id = pPSM->getId();
   /* Get scan ids */
-  // std::string end_scan;
-  // std::string start_scan;
-  // getScanIds(id, &start_scan, &end_scan);
-  // int native_id = std::stoi(start_scan) - 1;
-  unsigned int native_id = pPSM->scan; // FIXME: Markus, remove this comment if this operation is okay. (What is a native_id?)
+  unsigned int native_id = pPSM->scan - 1; 
 
   /* Get charge */
   std::string assumed_charge = getCharge(id);
@@ -247,26 +241,7 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   os << "    </ns0:spectrum_query>" << endl;
 }
 
-void getScanIds(string id, string *start_scan, string *end_scan) {
-  /* Pase name info from name: Symb_Proteome_DIA_RAW_S03_Q1.53511.53511.1_1 -> start_scan=53511 and end_scan=53511*/
 
-  std::string token;
-  std::string delimiter = ".";
-  size_t i = 0;
-  size_t pos = 0;
-
-  while ((pos = id.find(delimiter)) != std::string::npos) {
-      token = id.substr(0, pos);
-      if (i==1) {
-        *start_scan = token;
-      } else if (i==2) {
-        *end_scan = token;
-      }
-      id.erase(0, pos + delimiter.length());
-      i++;
-  }
-
-}
 
 
 
