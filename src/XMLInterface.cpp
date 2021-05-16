@@ -421,36 +421,6 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
-void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
-
-  
-
-  pi0Psms_ = fullset.getPi0();
-  numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
-
-  ofstream os;
-  
-  /* xmlpeptideOutputFN_ = xmlPeptideOutputFN_; */
-  xmlpeptideOutputFN_PSMs.append("writePeptideXML_PSMs");
-  os.open(xmlpeptideOutputFN_PSMs.c_str(), ios::out);
-
-  /* os << "  <psms>" << endl; */
-
-  /* Sort psms based on base name  */
-  std::sort(fullset.begin(), fullset.end(), less_than_base_name());
-
-  for (std::vector<ScoreHolder>::iterator psm = fullset.begin();
-       psm != fullset.end(); ++psm) {
-    psm->printXMLPeptide(os, printDecoys_, printExpMass_, selectionFdr_);
-  }
-
-
-  
-  /* os << "  </psms>" << endl << endl; */
-
-
-  os.close();
-}
 
 /** 
  * Subroutine of @see XMLInterface::writeXML() for peptide output
@@ -555,7 +525,6 @@ void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEs
 
   
   ofstream os;
-//  const string space = PERCOLATOR_OUT_NAMESPACE;
   const string schema = // space +
       "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";
 
@@ -563,8 +532,6 @@ void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEs
   os.open(xmlPeptideOutputFN_.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<root xmlns:ns0=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
-
-
 
   std::string pepPath = xmlPeptideOutputFN_.data();
   /* TODO: MUST FIX */
@@ -581,3 +548,81 @@ void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEs
   os << "</root>" << endl;
   os.close();
 }
+
+// Change this function name to something including a string pepXML
+void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
+
+  pi0Psms_ = fullset.getPi0();
+  numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
+
+  ofstream os;
+  
+  /* xmlpeptideOutputFN_ = xmlPeptideOutputFN_; */
+  xmlpeptideOutputFN_PSMs.append("writePeptideXML_PSMs");
+  os.open(xmlpeptideOutputFN_PSMs.c_str(), ios::out);
+
+  /* os << "  <psms>" << endl; */
+  map<char,double> aaDict = getRoughAminoWeightDict();
+  /* Sort psms based on base name  */
+  std::sort(fullset.begin(), fullset.end(), less_than_base_name());
+  std::string pepXMLBaseName = "";
+  bool first_msms_summary = true;
+
+  for (std::vector<ScoreHolder>::iterator sh = fullset.begin();sh != fullset.end(); ++sh) {
+    std::string id = sh->pPSM->getId();
+    auto baseName = id.substr(0, id.find('.'));
+    if (baseName != pepXMLBaseName) {
+      /*  Start of a new msms run*/
+      pepXMLBaseName = baseName;
+      if (first_msms_summary) {
+        first_msms_summary = false;
+      } else {
+        /* End of msms run */
+        os << "    </ns0:msms_run_summary>" << endl;
+      }
+    
+      /* New msms run! */
+      os << "    <ns0:msms_run_summary base_name=\"" << baseName << "\">" << endl;
+      os << "    <ns0:search_summary>" << endl;
+      os << "    <ns0:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+      os << "    </ns0:search_summary>" << endl;
+    }
+    if (sh->q < selectionFdr_)
+      sh->printXMLPeptide(os, printDecoys_, printExpMass_, selectionFdr_, aaDict);
+  }
+  /* os << "  </psms>" << endl << endl; */
+  os.close();
+}
+
+
+
+map<char, float>& XMLInterface::getRoughAminoWeightDict() {
+  // This function gives an approximate amino acid weight
+  // with two digits precision. For parsing purposes.
+  map<char, float> roughAminoAcidWeight =
+    boost::assign::map_list_of('A',71.04)
+      ('C',103.01)
+      ('D',115.03)
+      ('E',129.04)
+      ('F',147.07)
+      ('G',57.02)
+      ('H',137.06)
+      ('I',113.08)
+      ('K',128.09)
+      ('L',113.08)
+      ('M',131.04)
+      ('N',114.04)
+      ('P',97.05)
+      ('Q',128.06)
+      ('R',156.10)
+      ('S',87.03)
+      ('T',101.05)
+      ('V',99.07)
+      ('W',186.08)
+      ('Y',163.06);
+  return roughAminoAcidWeight;
+
+}
+
+
+
