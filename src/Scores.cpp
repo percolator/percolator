@@ -161,6 +161,13 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass,
   }
 }
 
+std::string getCharge(string id) {
+  /* Aposymb_Proteome_DIA_RAW_A01_Q1.00148.00148.1_2 -> 1_2*/
+  std::string last_element(id.substr(id.rfind(".") + 1));
+  /* 1_2 -> 1 */
+  return last_element.substr(0, last_element.find("_"));
+}
+
 // FIXME: You do not seem to need all the arguments for this function. Remove extra arguments.
 // FIXME: chose a name that makes it obvious that you are printing a pepXML.
 void ScoreHolder::printXMLPeptide(ostream& os, bool printDecoys, bool printExpMass, double selectionFdr_, map<char,float>& aaWeight) {
@@ -261,12 +268,7 @@ void getScanIds(string id, string *start_scan, string *end_scan) {
 
 }
 
-std::string getCharge(string id) {
-  /* Aposymb_Proteome_DIA_RAW_A01_Q1.00148.00148.1_2 -> 1_2*/
-  std::string last_element(id.substr(id.rfind(".") + 1));
-  /* 1_2 -> 1 */
-  return last_element.substr(0, last_element.find("_"));
-}
+
 
 void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores) {
   scores_.clear();
