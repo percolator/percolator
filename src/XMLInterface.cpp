@@ -562,7 +562,7 @@ void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
   os.open(xmlpeptideOutputFN_PSMs.c_str(), ios::out);
 
   /* os << "  <psms>" << endl; */
-  map<char,double> aaDict = getRoughAminoWeightDict();
+  map<char,float> aaDict = getRoughAminoWeightDict();
   /* Sort psms based on base name  */
   std::sort(fullset.begin(), fullset.end(), less_than_base_name());
   std::string pepXMLBaseName = "";
