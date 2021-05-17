@@ -236,8 +236,8 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   }
 
   /* Print Percolator information */
-  os << "    <ns0:analysis_result analysis=\"percolator\">" << endl;
-  os << "    <ns0:percolator_result pep=\"" << scientific << pep   << "\" />" << endl; // FIXME: I do not get this, there is no information about this tag in the xsd.
+  os << "    <ns0:analysis_result analysis=\"peptideprophet\">" << endl;
+  os << "    <ns0:peptideprophet_result pep=\"" << scientific << pep   << "\" />" << endl;
   os << "    </ns0:analysis_result>" << endl; 
   os << "    </ns0:search_hit>"<< endl;
   os << "    </ns0:search_result>" << endl;
