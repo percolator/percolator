@@ -78,8 +78,8 @@ void Normalizer::setType(int type) {
 void Normalizer::endScoreNormalizeWeights(const std::vector<double>& in, 
     std::vector<double>& out, double subScore, double scale) {
   double sum = 0;
-  unsigned int i = 0;
-  for (; i < numFeatures; i++) {
+  size_t i = 0;
+  for (; i < in.size()-1; i++) {
     out[i] = in[i] / scale;
   }
   out[i] = (in[i] - subScore)/scale;
