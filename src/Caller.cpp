@@ -36,7 +36,7 @@ using namespace std;
 Caller::Caller() :
     pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL),
     tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true),
-    tabOutputFN_(""), xmlOutputFN_(""), xmlPeptideOutputFN_(""),weightOutputFN_(""),
+    tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
@@ -402,8 +402,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // pepXML
   if (cmd.optionSet("pep.xmloutput")) {
-    xmlPeptideOutputFN_ = cmd.options["pep.xmloutput"];
-    checkIsWritable(xmlPeptideOutputFN_);
+    pepXMLOutputFN_ = cmd.options["pep.xmloutput"];
+    checkIsWritable(pepXMLOutputFN_);
     reportPeptideXML_=true;
   }
 
@@ -1175,7 +1175,7 @@ int Caller::run() {
 
   int success = 0;
   std::ifstream fileStream;
-  XMLInterface xmlInterface(xmlOutputFN_, xmlPeptideOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
+  XMLInterface xmlInterface(xmlOutputFN_, pepXMLOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
   Scores allScores(useMixMax_);
 

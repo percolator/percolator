@@ -58,7 +58,7 @@ static const XMLCh fragSpectrumScanStr[] = {
 XMLInterface::XMLInterface(const std::string& outputFN, 
 const std::string& PEPoutputFN,
     bool schemaValidation, bool printDecoys, bool printExpMass) : 
-  xmlOutputFN_(outputFN), xmlPeptideOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
+  xmlOutputFN_(outputFN), pepXMLOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
   otherCall_(""), reportUniquePeptides_(false),reportPeptideXML_(false), printDecoys_(printDecoys),
   printExpMass_(printExpMass) {}
 
@@ -529,11 +529,11 @@ void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEs
       "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";
 
 
-  os.open(xmlPeptideOutputFN_.data(), ios::out | ios::binary);
+  os.open(pepXMLOutputFN_.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   os << "<root xmlns:ns0=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
 
-  std::string pepPath = xmlPeptideOutputFN_.data();
+  std::string pepPath = pepXMLOutputFN_.data();
   /* TODO: MUST FIX */
   std::string base_name = pepPath.substr(0, pepPath.find("."));
 
@@ -557,7 +557,7 @@ void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
 
   ofstream os;
   
-  /* xmlpeptideOutputFN_ = xmlPeptideOutputFN_; */
+  /* xmlpeptideOutputFN_ = pepXMLOutputFN_; */
   xmlpeptideOutputFN_PSMs.append("writePeptideXML_PSMs");
   os.open(xmlpeptideOutputFN_PSMs.c_str(), ios::out);
 

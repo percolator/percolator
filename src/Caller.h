@@ -86,7 +86,7 @@ class Caller {
   bool xmlSchemaValidation_;
   
   // file output parameters
-  std::string tabOutputFN_, xmlOutputFN_, xmlPeptideOutputFN_;
+  std::string tabOutputFN_, xmlOutputFN_, pepXMLOutputFN_;
   std::string weightOutputFN_;
   std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
   std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;

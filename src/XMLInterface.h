@@ -62,8 +62,8 @@ class XMLInterface {
   inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN_ = outputFN; }
   inline std::string getXmlOutputFN() { return xmlOutputFN_; }
 
-  inline void setxmlPeptideOutputFN(std::string outputFN) { xmlPeptideOutputFN_ = outputFN; }
-  inline std::string getxmlPeptideOutputFN() { return xmlPeptideOutputFN_; }
+  inline void setxmlPeptideOutputFN(std::string outputFN) { pepXMLOutputFN_ = outputFN; }
+  inline std::string getxmlPeptideOutputFN() { return pepXMLOutputFN_; }
   
   inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
   inline void setPrintDecoys(bool decoysOut) { 
@@ -95,7 +95,7 @@ class XMLInterface {
   map<char, float> getRoughAminoWeightDict();
   
   std::string xmlOutputFN_; 
-  std::string xmlPeptideOutputFN_;
+  std::string pepXMLOutputFN_;
   bool schemaValidation_;
   std::string otherCall_;
   
