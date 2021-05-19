@@ -1063,7 +1063,7 @@ int Caller::run() {
 
     allScores.postMergeStep();
     allScores.calcQ(selectionFdr_);
-    allScores.normalizeScores(selectionFdr_);
+    allScores.normalizeScores(selectionFdr_, rawWeights);
   }
 
   calcAndOutputResult(allScores, xmlInterface);
