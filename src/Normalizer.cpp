@@ -77,7 +77,6 @@ void Normalizer::setType(int type) {
 // This function is designed to transform weights so that they give scores in that range.
 void Normalizer::endScoreNormalizeWeights(const std::vector<double>& in, 
     std::vector<double>& out, double subScore, double scale) {
-  double sum = 0;
   size_t i = 0;
   for (; i < in.size()-1; i++) {
     out[i] = in[i] / scale;
