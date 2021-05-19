@@ -154,16 +154,19 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass,
   }
 }
 
-void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores) {
+void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores, std::vector< std::vector<double> >& all_w) {
   scores_.clear();
-  for (std::vector<Scores>::iterator a = sv.begin(); a != sv.end(); a++) {
-    sort(a->begin(), a->end(), greater<ScoreHolder> ());
-    a->checkSeparationAndSetPi0();
-    a->calcQ(fdr);
+  std::vector<Scores>::iterator cvBinScores = sv.begin();
+  std::vector< std::vector<double> >::iterator weights = all_w.begin();
+  for (; cvBinScores != sv.end(); cvBinScores++) {
+    weights++;
+    sort(cvBinScores->begin(), cvBinScores->end(), greater<ScoreHolder> ());
+    cvBinScores->checkSeparationAndSetPi0();
+    cvBinScores->calcQ(fdr);
     if (!skipNormalizeScores) {
-      a->normalizeScores(fdr);
+      cvBinScores->normalizeScores(fdr, *weights);
     }
-    copy(a->begin(), a->end(), back_inserter(scores_));
+    copy(cvBinScores->begin(), cvBinScores->end(), back_inserter(scores_));
   }
   postMergeStep();
 }
@@ -407,7 +410,7 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
 }
 
 // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
-void Scores::normalizeScores(double fdr) {  
+void Scores::normalizeScores(double fdr, std::vector<double>& weights) {  
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys_/2u),decoys=0u;
   std::vector<ScoreHolder>::iterator it = scores_.begin();
   double fdrScore = it->score;
@@ -436,6 +439,7 @@ void Scores::normalizeScores(double fdr) {
       scoreIt->score /= diff;
     }
   }
+  Normalizer::endScoreNormalizeWeights(weights, weights, fdrScore, diff);
 }
 
 /**

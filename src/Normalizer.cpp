@@ -72,3 +72,15 @@ void Normalizer::setType(int type) {
   assert(type == UNI || type == STDV);
   subclass_type = type;
 }
+
+// Before merging cross validation bins, the scores are renormalized to an uniform range.
+// This function is designed to transform weights so that they give scores in that range.
+void Normalizer::endScoreNormalizeWeights(const std::vector<double>& in, 
+    std::vector<double>& out, double subScore, double scale) {
+  double sum = 0;
+  unsigned int i = 0;
+  for (; i < numFeatures; i++) {
+    out[i] = in[i] / scale;
+  }
+  out[i] = (in[i] - subScore)/scale;
+}

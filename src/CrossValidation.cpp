@@ -476,7 +476,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     // TODO: take the average instead of the first DOC model?
     fullset.getDOC().copyDOCparameters(testScores_[0].getDOC());
   }
-  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_);
+  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, w_);
 }
 
 /**
