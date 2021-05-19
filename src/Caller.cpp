@@ -718,193 +718,195 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
+
+  
+
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
-    bool allPin = true;
-    for(const string &text : cmd.arguments) {
-      if(text.substr(text.find_last_of(".") + 1) != "pin") {
-        allPin=false;
-      };
+    for(const string &file : cmd.arguments) {
+      if(!detect_tab(file))
+     {
+         std::cerr<< file << " is not comma delimited!\n";
+         return 0;
+     } 
     };
-    if (!allPin) {
-      cerr << "Error: too many arguments.";
-      cerr << "\nInvoke with -h option for help\n";
-      return 0; // ...error
-    } else {
-      tabInput_ = true;
-
-
-      std::ifstream pinFileStream;
-
-      
-      /* Complete column position to header name */
-      std::map<int,std::string> columnMap = {};
-      /* Temporary mapper while searching for complete position-to-header mapper */
-      std::map<int,std::string> tmpMap;
-
-      /* Keep track on col index */
-      int column_index;
-
-      /* Loop through all files to search for column headers */
-      for(const string &text : cmd.arguments) {
-        
-        /* Get header */
-        pinFileStream.open(text.c_str(), ios::in);
-        std::string hederRow;
   
-        getline(pinFileStream, hederRow);
-
-        TabReader reader(hederRow);
-
-        column_index = 0;
-        while (!reader.error()) {
-          std::string optionalHeader = reader.readString();
-
-          tmpMap[column_index] = optionalHeader;
+    tabInput_ = true;
 
 
-            column_index++;
-        }
+    std::ifstream pinFileStream;
 
-        /* Get header from file with the most columns */
-        if (columnMap.size() < tmpMap.size()) {
-          columnMap = tmpMap;
-        }
-        tmpMap.clear();
+    
+    /* Complete column position to header name */
+    std::map<int,std::string> columnMap = {};
+    /* Temporary mapper while searching for complete position-to-header mapper */
+    std::map<int,std::string> tmpMap;
 
-        pinFileStream.close();
+    /* Keep track on col index */
+    int column_index;
+
+    /* Loop through all files to search for column headers */
+    for(const string &text : cmd.arguments) {
+      
+      /* Get header */
+      pinFileStream.open(text.c_str(), ios::in);
+      std::string hederRow;
+
+      getline(pinFileStream, hederRow);
+
+      TabReader reader(hederRow);
+
+      column_index = 0;
+      while (!reader.error()) {
+        std::string optionalHeader = reader.readString();
+
+        tmpMap[column_index] = optionalHeader;
+
+
+          column_index++;
       }
 
-      /* File to write all pin files to, and then feed to Percolator */
-      ofstream outFile;
-      inputFN_ = "tmp_conc_files.tmp";
-      outFile.open(inputFN_);
-      
+      /* Get header from file with the most columns */
+      if (columnMap.size() < tmpMap.size()) {
+        columnMap = tmpMap;
+      }
+      tmpMap.clear();
 
-      /* Only want to print header once */
-      bool firstFile = true;
-      /* If go to next column when going though missing charge states */
-      bool nextColumn;
+      pinFileStream.close();
+    }
 
+    /* File to write all pin files to, and then feed to Percolator */
+    ofstream outFile;
+    inputFN_ = "tmp_conc_files.tmp";
+    outFile.open(inputFN_);
+    
+
+    /* Only want to print header once */
+    bool firstFile = true;
+    /* If go to next column when going though missing charge states */
+    bool nextColumn;
+
+    
+    
+    /* Start appending pin files to one pin file. */
+    for(const string &text : cmd.arguments) {
+      std::cerr << "Reading file: " << text.c_str() << std::endl;
+      /* Keep track of missing charge columns for a given file */
+      std::vector<int> missingCols;
       
+      /* Read pin file */
+      pinFileStream.open(text.c_str(), ios::in);
+      std::string hederRow;
+      getline(pinFileStream, hederRow);
+      TabReader reader(hederRow);
       
-      /* Start appending pin files to one pin file. */
-      for(const string &text : cmd.arguments) {
-        std::cerr << "Reading file: " << text.c_str() << std::endl;
-        /* Keep track of missing charge columns for a given file */
-        std::vector<int> missingCols;
+      /* Keep track on column index */
+      column_index = 0;
+      /* Go through all columns to print header and search for missing charge state */
+      while (!reader.error()) {
+        std::string optionalHeader = reader.readString();
         
-        /* Read pin file */
-        pinFileStream.open(text.c_str(), ios::in);
-        std::string hederRow;
-        getline(pinFileStream, hederRow);
-        TabReader reader(hederRow);
-        
-        /* Keep track on column index */
-        column_index = 0;
-        /* Go through all columns to print header and search for missing charge state */
-        while (!reader.error()) {
-          std::string optionalHeader = reader.readString();
+        /* Check if charge state is missing */
+        if (columnMap[column_index] != optionalHeader) {
           
-          /* Check if charge state is missing */
-          if (columnMap[column_index] != optionalHeader) {
-            
-            /* Charge state is missing at  'column_index' */
-            missingCols.push_back(column_index);
-            nextColumn=true;
-
-            if (firstFile) {
-              outFile << columnMap[column_index] << "\t";
-            }
-            /* Check if there are any adjacent missing charge states */
-            while(nextColumn) {
-              
-              column_index++;
-              
-              if (columnMap[column_index] == optionalHeader) {
-                /* No missing charge state, continue */
-                nextColumn=false;
-              } else {
-                /* Missing charge state */
-                missingCols.push_back(column_index);
-
-                if (firstFile) {
-                  outFile << columnMap[column_index] << "\t";
-                }
-                
-              }
-
-            }
-          } 
+          /* Charge state is missing at  'column_index' */
+          missingCols.push_back(column_index);
+          nextColumn=true;
 
           if (firstFile) {
             outFile << columnMap[column_index] << "\t";
           }
+          /* Check if there are any adjacent missing charge states */
+          while(nextColumn) {
+            
+            column_index++;
+            
+            if (columnMap[column_index] == optionalHeader) {
+              /* No missing charge state, continue */
+              nextColumn=false;
+            } else {
+              /* Missing charge state */
+              missingCols.push_back(column_index);
 
+              if (firstFile) {
+                outFile << columnMap[column_index] << "\t";
+              }
+              
+            }
 
-          column_index++;
-        }
+          }
+        } 
 
         if (firstFile) {
-          outFile <<  "\n";
-          }
-
-        
-
-        /* Go through rest of the rows in pin-file */
-        std::string nextRow;
-        
-        while(getline(pinFileStream, nextRow)) {
-          
-          TabReader readerRow(nextRow);
-
-          /* Keep track on column for missing charge states */
-          int col = 0;
-          while (!readerRow.error()) { 
-            
-            std::string value = readerRow.readString();
-            
-
-            /* Check for missing charge state */
-            if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
-              nextColumn=true;
-              outFile << 0 << "\t";
-              col++;
+          outFile << columnMap[column_index] << "\t";
+        }
 
 
-              /* Check for adjecent missing charge states */
-              while(nextColumn) {
-
-                if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
-                  /* Missing adjecent charge state  */
-                  outFile << 0 << "\t";
-                  col++;
-                } else {
-                  /* Charge states  */
-                  nextColumn = false;
-                }
-              }  
-            }
-            outFile << value << "\t";
-            col++;
-          }
-
-          outFile << "\n";
-          
-          }
-       
-        pinFileStream.close();
-        firstFile = false;
-        
+        column_index++;
       }
-    
-      outFile.close();
+
+      if (firstFile) {
+        outFile <<  "\n";
+        }
+
       
-  }
+
+      /* Go through rest of the rows in pin-file */
+      std::string nextRow;
+      
+      while(getline(pinFileStream, nextRow)) {
+        
+        TabReader readerRow(nextRow);
+
+        /* Keep track on column for missing charge states */
+        int col = 0;
+        while (!readerRow.error()) { 
+          
+          std::string value = readerRow.readString();
+          
+
+          /* Check for missing charge state */
+          if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
+            nextColumn=true;
+            outFile << 0 << "\t";
+            col++;
+
+
+            /* Check for adjecent missing charge states */
+            while(nextColumn) {
+
+              if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
+                /* Missing adjecent charge state  */
+                outFile << 0 << "\t";
+                col++;
+              } else {
+                /* Charge states  */
+                nextColumn = false;
+              }
+            }  
+          }
+          outFile << value << "\t";
+          col++;
+        }
+
+        outFile << "\n";
+        
+        }
+      
+      pinFileStream.close();
+      firstFile = false;
+      
+    }
+  
+    outFile.close();
+      
+  
   }
   std::cerr << "All files have been read" << std::endl;
   return true;
 }
+
+
 
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities

@@ -50,6 +50,9 @@
 #include <boost/asio.hpp>
 #include <boost/functional/hash_fwd.hpp>
 
+#include <algorithm>
+
+
 /*
 * Main class that starts and controls the calculations.
 *
@@ -124,7 +127,24 @@ class Caller {
   virtual void processPeptideScores(Scores& allScores) {}
   virtual void processProteinScores(ProteinProbEstimator* protEstimator) {}
 #endif
+
+bool detect_tab(std::string file_name)
+{
+    // open C++ stream to file
+    std::ifstream file(file_name.c_str());
+    // file not opened, return false
+    if(!file.is_open()) return false;
+    // read a line from the file       
+    std::string wtf;
+    std::istream &in= std::getline(file, wtf);
+    // unable to read the line, return false
+    if(!in) return false;
+    // try to find a comma, return true if comma is found within the string
+    return std::find(wtf.begin(), wtf.end(), '\t')!= wtf.end();
+}
     
 };
+
+
 
 #endif /*CALLER_H_*/
