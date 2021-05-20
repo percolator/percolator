@@ -1021,14 +1021,14 @@ int Caller::run() {
   // Do the SVM training
   crossValidation.train(pNorm_);
 
+  // Calculate the final SVM scores and clean up structures
+  crossValidation.postIterationProcessing(allScores, pCheck_);
+
   if (weightOutputFN_.size() > 0) {
     ofstream weightStream(weightOutputFN_.c_str(), ios::out);
     crossValidation.printAllWeights(weightStream, pNorm_);
     weightStream.close();
   }
-
-  // Calculate the final SVM scores and clean up structures
-  crossValidation.postIterationProcessing(allScores, pCheck_);
 
   if (VERB > 0 && DataSet::getCalcDoc()) {
     crossValidation.printDOC();
