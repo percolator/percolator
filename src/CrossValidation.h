@@ -115,9 +115,7 @@ class CrossValidation {
                      options& pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec,
                      const vector<double>& cpos_vec, 
                      const vector<double>& cfrac_vec);
-public:
   int doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr);
-protected:
   
   void printSetWeights(ostream & weightStream, unsigned int set);
   void printRawSetWeights(ostream & weightStream, unsigned int set, 
