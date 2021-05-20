@@ -109,5 +109,5 @@ TEST_F(CrossValidationTest, doStepTest)
     crossValidation->preIterationSetup(scores, pCheck, pNorm, featurePool);
 
     int found = crossValidation->doStep(true, pNorm, 0.01);
-    cerr << "---- got this far: found = " << found << "\n";
+    cerr << "---- doStep return value = " << found << "\n";
 }
