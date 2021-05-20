@@ -65,6 +65,9 @@ TEST_F(CrossValidationTest, doStepTest)
 
     SetHandler setHandler(0);
 
+    // Set the initial direction of feature 0 to 1, and feature 1 to 0.
+    // w_[3][2] weights set to flipping 1 to 0, and 0 set to 1.
+
     DataSet *targets = new DataSet();
     targets->setLabel(+1);
     for (int ix = 0 ; ix < 2 * N ; ++ix) {
