@@ -158,7 +158,7 @@ void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores
   scores_.clear();
   std::vector<Scores>::iterator cvBinScores = sv.begin();
   std::vector< std::vector<double> >::iterator weights = all_w.begin();
-  for (; cvBinScores != sv.end(); cvBinScores++) {
+  for (; cvBinScores != sv.end(); cvBinScores++,weights++) {
     sort(cvBinScores->begin(), cvBinScores->end(), greater<ScoreHolder> ());
     cvBinScores->checkSeparationAndSetPi0();
     cvBinScores->calcQ(fdr);
@@ -166,7 +166,6 @@ void Scores::merge(std::vector<Scores>& sv, double fdr, bool skipNormalizeScores
       cvBinScores->normalizeScores(fdr, *weights);
     }
     copy(cvBinScores->begin(), cvBinScores->end(), back_inserter(scores_));
-    weights++;
   }
   postMergeStep();
 }

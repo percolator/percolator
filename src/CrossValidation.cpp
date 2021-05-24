@@ -514,6 +514,9 @@ void CrossValidation::printRawSetWeights(ostream & weightStream, unsigned int se
 // used to save weights for reuse as weight input file
 void CrossValidation::printAllWeights(ostream & weightStream, 
                                       Normalizer * pNorm) {
+  weightStream << "# This file contains the weights from each cross validation bin from percolator training" << endl;
+  weightStream << "# First line is the feature names, followed by normalized weights, and the raw weights of bin 1" << endl;
+  weightStream << "# This is repeated for the other bins" << endl;
   for (unsigned int ix = 0; ix < numFolds_; ++ix) {
     printSetWeights(weightStream, ix);
     printRawSetWeights(weightStream, ix, pNorm);

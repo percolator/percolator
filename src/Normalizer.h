@@ -54,6 +54,8 @@ class Normalizer {
   static void setType(int type);
   const static int UNI = 0;
   const static int STDV = 1;
+  const static int NONORM = 2;
+  
   void resizeVecs(size_t size) {
     sub.resize(size, 0.0);
     div.resize(size, 1.0);

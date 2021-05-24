@@ -672,6 +672,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     selectedCpos_ = 0.5;
     selectedCneg_ = 0.5;
     skipNormalizeScores_ = true;
+    Normalizer::setType(Normalizer::NONORM);
     if (!cmd.optionSet("init-weights")) {
       std::cerr << "Error: the --static option requires the --init-weights "
         << "option to be specified." << std::endl;

@@ -23,6 +23,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
 #include "UniNormalizer.h"
+#include "NoNormalizer.h"
 #include "Globals.h"
 
 int Normalizer::subclass_type = STDV;
@@ -61,15 +62,20 @@ Normalizer* Normalizer::getNormalizer() {
   if (theNormalizer == NULL) {
     if (subclass_type == UNI) {
       theNormalizer = new UniNormalizer();
-    } else {
+    } else if (subclass_type == STDV) {
       theNormalizer = new StdvNormalizer();
+    } else {
+     theNormalizer = new NoNormalizer();
     }
+  } else {
+    assert(false);
+    cerr << "Multiple Sefinitions of Normalizer" << endl;
   }
   return theNormalizer;
 }
 
 void Normalizer::setType(int type) {
-  assert(type == UNI || type == STDV);
+  assert(type == UNI || type == STDV || type == NONORM);
   subclass_type = type;
 }
 
