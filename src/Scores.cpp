@@ -161,7 +161,7 @@ void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass,
   }
 }
 
-std::string getCharge(string id) {
+std::string ScoreHolder::getCharge(std::string id) {
   /* Aposymb_Proteome_DIA_RAW_A01_Q1.00148.00148.1_2 -> 1_2*/
   std::string last_element(id.substr(id.rfind(".") + 1));
   /* 1_2 -> 1 */
