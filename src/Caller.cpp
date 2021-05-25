@@ -1273,7 +1273,7 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
-if (xmlInterface.getxmlPeptideOutputFN().size() > 0){
+if (xmlInterface.getxmlPepOutputFN().size() > 0){
     xmlInterface.writePepXML_PSMs(allScores, selectionFdr_);
   }
   // calculate unique peptides level probabilities WOTE

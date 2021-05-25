@@ -63,7 +63,7 @@ class XMLInterface {
   inline std::string getXmlOutputFN() { return xmlOutputFN_; }
 
   inline void setxmlPeptideOutputFN(std::string outputFN) { pepXMLOutputFN_ = outputFN; }
-  inline std::string getxmlPeptideOutputFN() { return pepXMLOutputFN_; }
+  inline std::string getxmlPepOutputFN() { return pepXMLOutputFN_; }
   
   inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
   inline void setPrintDecoys(bool decoysOut) { 
