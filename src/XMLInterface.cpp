@@ -521,7 +521,7 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   os.close();
 }
 
-void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
+void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
 
   
   ofstream os;
@@ -550,7 +550,7 @@ void XMLInterface::writePeptideXML(Scores& fullset, ProteinProbEstimator* protEs
 }
 
 // Change this function name to something including a string pepXML
-void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
+void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
 
   pi0Psms_ = fullset.getPi0();
   numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
@@ -558,7 +558,7 @@ void XMLInterface::writePeptideXML_PSMs(Scores& fullset, double selectionFdr_) {
   ofstream os;
   
   /* xmlpeptideOutputFN_ = pepXMLOutputFN_; */
-  xmlpeptideOutputFN_PSMs.append("writePeptideXML_PSMs");
+  xmlpeptideOutputFN_PSMs.append("writePepXML_PSMs");
   os.open(xmlpeptideOutputFN_PSMs.c_str(), ios::out);
 
   /* os << "  <psms>" << endl; */

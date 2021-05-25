@@ -1274,7 +1274,7 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
     xmlInterface.writeXML_PSMs(allScores);
   }
 if (xmlInterface.getxmlPeptideOutputFN().size() > 0){
-    xmlInterface.writePeptideXML_PSMs(allScores, selectionFdr_);
+    xmlInterface.writePepXML_PSMs(allScores, selectionFdr_);
   }
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
@@ -1299,7 +1299,7 @@ if (xmlInterface.getxmlPeptideOutputFN().size() > 0){
     }
   }
   if (reportPeptideXML_) {
-    xmlInterface.writePeptideXML(allScores, protEstimator_, call_);
+    xmlInterface.writePepXML(allScores, protEstimator_, call_);
   }
   // write output to file
   xmlInterface.writeXML(allScores, protEstimator_, call_);

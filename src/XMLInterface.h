@@ -84,12 +84,12 @@ class XMLInterface {
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
   
   void writeXML_PSMs(Scores& fullset);
-  void writePeptideXML_PSMs(Scores& fullset, double selectionFdr_);
+  void writePepXML_PSMs(Scores& fullset, double selectionFdr_);
   void writeXML_Peptides(Scores& fullset);
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);
   void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
-  void writePeptideXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
+  void writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
  protected:
   map<char, float> getRoughAminoWeightDict();
