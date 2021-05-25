@@ -55,14 +55,14 @@
 class XMLInterface {
   
  public:
-  XMLInterface(const std::string& xmlOutputFN, const std::string& xmlPeptideOutputFN, const bool xmlSchemaValidation,
+  XMLInterface(const std::string& xmlOutputFN, const std::string& xmlPepOutputFN, const bool xmlSchemaValidation,
                bool printDecoys, bool printExpMass);
   ~XMLInterface();
   
   inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN_ = outputFN; }
   inline std::string getXmlOutputFN() { return xmlOutputFN_; }
 
-  inline void setxmlPeptideOutputFN(std::string outputFN) { pepXMLOutputFN_ = outputFN; }
+  inline void setxmlPepOutputFN(std::string outputFN) { pepXMLOutputFN_ = outputFN; }
   inline std::string getxmlPepOutputFN() { return pepXMLOutputFN_; }
   
   inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
