@@ -594,8 +594,6 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
   os.close();
 }
 
-
-
 map<char, float> XMLInterface::getRoughAminoWeightDict() {
   // This function gives an approximate amino acid weight
   // with two digits precision. For parsing purposes.
@@ -623,6 +621,3 @@ map<char, float> XMLInterface::getRoughAminoWeightDict() {
   return roughAminoAcidWeight;
 
 }
-
-
-
