@@ -69,7 +69,7 @@ Normalizer* Normalizer::getNormalizer() {
     }
   } else {
     assert(false);
-    cerr << "Multiple Sefinitions of Normalizer" << endl;
+    cerr << "Multiple instantiations of Normalizer" << endl;
   }
   return theNormalizer;
 }

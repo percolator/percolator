@@ -27,7 +27,6 @@ using namespace std;
 
 #include "Normalizer.h"
 #include "NoNormalizer.h"
-#include "Globals.h"
 
 
 NoNormalizer::NoNormalizer() {
@@ -61,8 +60,6 @@ void NoNormalizer::setSet(std::vector<double*>& featuresV,
   numRetentionFeatures = nrf;
   sub.resize(nf + nrf, 0.0);
   div.resize(nf + nrf, 0.0);
-  double n = 0.0;
-  double* features;
   size_t ix;
   for (ix = 0; ix < numFeatures; ++ix) {
     sub[ix] = 0.;
@@ -73,8 +70,6 @@ void NoNormalizer::setSet(std::vector<double*>& featuresV,
 
 void NoNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
                                size_t numFeatures) {
-  double n = 0.0;
-  double* features;
   size_t ix;
   for (ix = 0; ix < numFeatures; ++ix) {
     sub[ix] = 0.;
