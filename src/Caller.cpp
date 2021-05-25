@@ -40,7 +40,7 @@ Caller::Caller() :
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
-    reportPeptideXML_(false),
+    reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
     selectionFdr_(0.01), initialSelectionFdr_(0.01), testFdr_(0.01),
     numIterations_(10), maxPSMs_(0u),
@@ -404,7 +404,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("pep.xmloutput")) {
     pepXMLOutputFN_ = cmd.options["pep.xmloutput"];
     checkIsWritable(pepXMLOutputFN_);
-    reportPeptideXML_=true;
+    reportPepXML_=true;
   }
 
   // filenames for outputting results to file
@@ -1298,7 +1298,7 @@ if (xmlInterface.getxmlPepOutputFN().size() > 0){
       xmlInterface.writeXML_Proteins(protEstimator_);
     }
   }
-  if (reportPeptideXML_) {
+  if (reportPepXML_) {
     xmlInterface.writePepXML(allScores, protEstimator_, call_);
   }
   // write output to file

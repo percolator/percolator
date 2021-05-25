@@ -59,7 +59,7 @@ XMLInterface::XMLInterface(const std::string& outputFN,
 const std::string& PEPoutputFN,
     bool schemaValidation, bool printDecoys, bool printExpMass) : 
   xmlOutputFN_(outputFN), pepXMLOutputFN_(PEPoutputFN),schemaValidation_(schemaValidation),
-  otherCall_(""), reportUniquePeptides_(false),reportPeptideXML_(false), printDecoys_(printDecoys),
+  otherCall_(""), reportUniquePeptides_(false),reportPepXML_(false), printDecoys_(printDecoys),
   printExpMass_(printExpMass) {}
 
 XMLInterface::~XMLInterface() {

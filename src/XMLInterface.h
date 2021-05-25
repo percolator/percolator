@@ -107,7 +107,7 @@ class XMLInterface {
   std::string xmlOutputFN_Proteins;
   
   bool reportUniquePeptides_;
-  bool reportPeptideXML_;
+  bool reportPepXML_;
   double pi0Psms_;
   double pi0Peptides_;
   unsigned int numberQpsms_;
