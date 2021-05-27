@@ -83,7 +83,8 @@ class XMLInterface {
     Scores& allScores, const std::string& xmlInputFN,
     SetHandler& setHandler, SanityCheck*& pCheck, 
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
-  
+
+  std::string getAtomicTime();
   void writeXML_PSMs(Scores& fullset);
   void writePepXML_PSMs(Scores& fullset, double selectionFdr_);
   void writeXML_Peptides(Scores& fullset);

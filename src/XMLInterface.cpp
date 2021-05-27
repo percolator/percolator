@@ -521,14 +521,84 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   os.close();
 }
 
+std::string XMLInterface::getAtomicTime() {
+  time_t now = time(0);
+   
+   // convert now to string form
+   tm *ltm = localtime(&now);
+
+   std::string date = "";
+   std::string time = "";
+
+
+   int year = ltm->tm_year;
+   date += to_string(1900 + year);
+
+   int month = 1 + ltm->tm_mon;
+   std::string month_s = to_string(month);
+   
+   if (month_s.length() < 2) {
+     date +=  "-0" + month_s;
+   } else {
+     date +=  "-" + month_s;
+   }
+
+  int day = ltm->tm_mday;
+  std::string day_s = to_string(day);
+
+  if (day_s.length() < 2) {
+    date += "-0" + day_s;
+  } else {
+    date += "-" + day_s;
+  }
+
+   int hour = 5 + ltm->tm_hour;
+   std::string hour_s = to_string(hour);
+   if (hour_s.length() < 2) {
+    time += "0" + hour_s;
+  } else {
+    time +=  hour_s;
+  }
+
+   int min = ltm->tm_min;
+
+   std::string min_s = to_string(min);
+   if (min_s.length() < 2) {
+    time += ":0" + min_s;
+  } else {
+    time += ":" + min_s;
+  }
+
+   int sec = ltm->tm_sec;
+   std::string sec_s = to_string(sec);
+   if (sec_s.length() < 2) {
+    time += ":0" + sec_s;
+  } else {
+    time += ":" + sec_s;
+  }
+
+   std::string atomic_date = date + "T" + time;
+
+   return atomic_date;
+}
+
 void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
 
   time_t now = time(0);
    
    // convert now to string form
-   char* dt = ctime(&now);
+   tm *ltm = localtime(&now);
+
+   char year = ltm->tm_year;
+   char month = ltm->tm_mon;
+   char day = ltm->tm_mday;
+   char hour = ltm->tm_hour;
+   char min = ltm->tm_min;
+   char sec = ltm->tm_sec;
+   /* char dt = year  "-"  + month + "-" + day + "T" + hour + ":" + min + ":" + sec; */
 
   
+
   ofstream os;
   const string schema = // space +
       "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";
@@ -538,13 +608,14 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   /* os << "<schema xmlns:xs=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl; */
   /* os << "<msms_pipeline_analysis xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:pepx=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl; */
-  os << "<msms_pipeline_analysis date=\""<< dt <<"\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" summary_xml=\"/sdd/proteomics/DATA/PXD014076/iProphet3/interact-Symb_Proteome_DIA_RAW_S05_Q3.pep.xml\" xsi:schemaLocation=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">";
+  /* os << "<msms_pipeline_analysis date=\""<< 1900 + ltm->tm_year << "-" << "0" << 1 + ltm->tm_mon << "-" << ltm->tm_mday << "T" << 5 + ltm->tm_hour << ":" << ltm->tm_min << ":" <<ltm->tm_sec <<"\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" summary_xml=\"/sdd/proteomics/DATA/PXD014076/iProphet3/interact-Symb_Proteome_DIA_RAW_S05_Q3.pep.xml\" xsi:schemaLocation=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"; */
+  os << "<msms_pipeline_analysis date=\""<< getAtomicTime() <<"\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" summary_xml=\"/sdd/proteomics/DATA/PXD014076/iProphet3/interact-Symb_Proteome_DIA_RAW_S05_Q3.pep.xml\" xsi:schemaLocation=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">";
 
   
   std::string pepPath = pepXMLOutputFN_.data();
 
   std::cerr << pepPath << std::endl;
-  
+
   /* TODO: MUST FIX */
   std::string base_name = pepPath.substr(0, pepPath.find("."));
 
@@ -593,8 +664,8 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
       }
     
       /* New msms run! */
-      os << "    <msms_run_summary base_name=\"" << baseName << "\">" << endl;
-      os << "    <search_summary>" << endl;
+      os << "    <msms_run_summary base_name=\"" << baseName << "\" raw_data_type=\"mzML\" raw_data=\"mzML\">" << endl;
+      os << "    <search_summary base_name=\"" << baseName << "\" search_engine=\"X! Tandem\" precursor_mass_type=\"monoisotopic\" fragment_mass_type=\"monoisotopic\" search_id=\"1\">" << endl;
       os << "    <parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
       os << "    </search_summary>" << endl;
     }
