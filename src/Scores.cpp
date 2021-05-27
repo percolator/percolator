@@ -237,7 +237,7 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
 
   /* Print Percolator information */
   os << "    <xs:analysis_result analysis=\"peptideprophet\">" << endl;
-  os << "    <xs:peptideprophet_result pep=\"" << scientific << pep   << "\" />" << endl;
+  os << "    <xs:peptideprophet_result probability=\"" << scientific << 1.0 - pep   << "\" />" << endl;
   os << "    </xs:analysis_result>" << endl; 
   os << "    </xs:search_hit>"<< endl;
   os << "    </xs:search_result>" << endl;
