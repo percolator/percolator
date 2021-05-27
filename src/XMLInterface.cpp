@@ -531,7 +531,7 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
 
   os.open(pepXMLOutputFN_.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-  os << "<root xmlns:ns0=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
+  os << "<xs:schema xmlns:xs=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
 
   std::string pepPath = pepXMLOutputFN_.data();
   /* TODO: MUST FIX */
@@ -543,9 +543,9 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
   remove(xmlpeptideOutputFN_PSMs.c_str());
 
 
-  os << "    </ns0:msms_run_summary>" << endl;
+  os << "    </xs:msms_run_summary>" << endl;
   
-  os << "</root>" << endl;
+  os << "</xs:schema>" << endl;
   os.close();
 }
 
@@ -578,14 +578,14 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
         first_msms_summary = false;
       } else {
         /* End of msms run */
-        os << "    </ns0:msms_run_summary>" << endl;
+        os << "    </xs:msms_run_summary>" << endl;
       }
     
       /* New msms run! */
-      os << "    <ns0:msms_run_summary base_name=\"" << baseName << "\">" << endl;
-      os << "    <ns0:search_summary>" << endl;
-      os << "    <ns0:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
-      os << "    </ns0:search_summary>" << endl;
+      os << "    <xs:msms_run_summary base_name=\"" << baseName << "\">" << endl;
+      os << "    <xs:search_summary>" << endl;
+      os << "    <xs:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+      os << "    </xs:search_summary>" << endl;
     }
     if (sh->q < selectionFdr_)
       sh->printPepXML(os, aaDict);

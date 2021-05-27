@@ -186,13 +186,13 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   /* Get RT */
   double RT = pPSM->getRetentionTime();
 
-  os << "    <ns0:spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << scan << "\">" << endl;
+  os << "    <xs:spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << scan << "\">" << endl;
   std::string centpep = pPSM->getPeptideSequence();
   std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
   regex r("\\[(.*?)\\]");
   std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
 
-  os << "    <ns0:search_result>" << endl;
+  os << "    <xs:search_result>" << endl;
 
   /* Print protein information */
   size_t n_protein = 0;
@@ -200,9 +200,9 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
   for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
     if (n_protein==0) {
-      os << "    <ns0:search_hit hit_rank=\"0\" massdiff=\"0\" peptide=\"" << peptide_sequence << "\" protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\">" << endl;
+      os << "    <xs:search_hit hit_rank=\"0\" massdiff=\"0\" peptide=\"" << peptide_sequence << "\" protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\">" << endl;
     } else {
-      os << "    <ns0:alternative_protein protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\"/>" << endl;
+      os << "    <xs:alternative_protein protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\"/>" << endl;
     }
     n_protein++;
   }
@@ -219,29 +219,29 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
     if (mod_pos==0) {
       mod_weight = std::stof(match.str(1)) + 1.0074;
       if (n_mod ==0) {
-        os << "    <ns0:modification_info mod_nterm_mass=\"" << round(mod_weight * 1000) / 1000 <<"\">" << endl;
+        os << "    <xs:modification_info mod_nterm_mass=\"" << round(mod_weight * 1000) / 1000 <<"\">" << endl;
       }
     } else {
       mod_weight = aaWeight[peptide_sequence.at(mod_pos - 1)] + std::stof(match.str(1));
       if (n_mod == 0) {
-        os << "    <ns0:modification_info>" << endl;
+        os << "    <xs:modification_info>" << endl;
       }
-      os << "    <ns0:mod_aminoacid_mass mass=\""<< round(mod_weight * 1000) / 1000  <<"\" position=\""<< std::to_string(mod_pos) << "\" />" << endl;
+      os << "    <xs:mod_aminoacid_mass mass=\""<< round(mod_weight * 1000) / 1000  <<"\" position=\""<< std::to_string(mod_pos) << "\" />" << endl;
     }
     subject = match.suffix().str();
     n_mod++;
   }
   if (n_mod != 0) {
-    os << "    </ns0:modification_info>" << endl;
+    os << "    </xs:modification_info>" << endl;
   }
 
   /* Print Percolator information */
-  os << "    <ns0:analysis_result analysis=\"peptideprophet\">" << endl;
-  os << "    <ns0:peptideprophet_result pep=\"" << scientific << pep   << "\" />" << endl;
-  os << "    </ns0:analysis_result>" << endl; 
-  os << "    </ns0:search_hit>"<< endl;
-  os << "    </ns0:search_result>" << endl;
-  os << "    </ns0:spectrum_query>" << endl;
+  os << "    <xs:analysis_result analysis=\"peptideprophet\">" << endl;
+  os << "    <xs:peptideprophet_result pep=\"" << scientific << pep   << "\" />" << endl;
+  os << "    </xs:analysis_result>" << endl; 
+  os << "    </xs:search_hit>"<< endl;
+  os << "    </xs:search_result>" << endl;
+  os << "    </xs:spectrum_query>" << endl;
 }
 
 
