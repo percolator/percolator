@@ -68,6 +68,7 @@ class ScoreHolder {
   void printPSM(ostream& os, bool printDecoys, bool printExpMass);
   void printPepXML(ostream& os, map<char,float> &aaWeight);
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
+  std::string getCharge(std::string id);
 };
 struct less_than_base_name
 {

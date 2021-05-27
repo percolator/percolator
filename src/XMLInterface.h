@@ -33,6 +33,7 @@
 #include "Scores.h"
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
+#include <ctime>
 
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
@@ -55,15 +56,15 @@
 class XMLInterface {
   
  public:
-  XMLInterface(const std::string& xmlOutputFN, const std::string& xmlPeptideOutputFN, const bool xmlSchemaValidation,
+  XMLInterface(const std::string& xmlOutputFN, const std::string& xmlPepOutputFN, const bool xmlSchemaValidation,
                bool printDecoys, bool printExpMass);
   ~XMLInterface();
   
   inline void setXmlOutputFN(std::string outputFN) { xmlOutputFN_ = outputFN; }
   inline std::string getXmlOutputFN() { return xmlOutputFN_; }
 
-  inline void setxmlPeptideOutputFN(std::string outputFN) { xmlPeptideOutputFN_ = outputFN; }
-  inline std::string getxmlPeptideOutputFN() { return xmlPeptideOutputFN_; }
+  inline void setxmlPepOutputFN(std::string outputFN) { pepXMLOutputFN_ = outputFN; }
+  inline std::string getxmlPepOutputFN() { return pepXMLOutputFN_; }
   
   inline void setSchemaValidation(bool on) { schemaValidation_ = on; }
   inline void setPrintDecoys(bool decoysOut) { 
@@ -82,20 +83,21 @@ class XMLInterface {
     Scores& allScores, const std::string& xmlInputFN,
     SetHandler& setHandler, SanityCheck*& pCheck, 
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
-  
+
+  std::string getAtomicTime();
   void writeXML_PSMs(Scores& fullset);
-  void writePeptideXML_PSMs(Scores& fullset, double selectionFdr_);
+  void writePepXML_PSMs(Scores& fullset, double selectionFdr_);
   void writeXML_Peptides(Scores& fullset);
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);
   void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
-  void writePeptideXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
+  void writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, 
                 std::string call);
  protected:
-  map<char, float> getRoughAminoWeightDict();
+  static map<char, float> getRoughAminoWeightDict();
   
   std::string xmlOutputFN_; 
-  std::string xmlPeptideOutputFN_;
+  std::string pepXMLOutputFN_;
   bool schemaValidation_;
   std::string otherCall_;
   
@@ -107,7 +109,7 @@ class XMLInterface {
   std::string xmlOutputFN_Proteins;
   
   bool reportUniquePeptides_;
-  bool reportPeptideXML_;
+  bool reportPepXML_;
   double pi0Psms_;
   double pi0Peptides_;
   unsigned int numberQpsms_;
