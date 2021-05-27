@@ -523,6 +523,11 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
 
 void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
 
+  time_t now = time(0);
+   
+   // convert now to string form
+   char* dt = ctime(&now);
+
   
   ofstream os;
   const string schema = // space +
@@ -531,9 +536,15 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
 
   os.open(pepXMLOutputFN_.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-  os << "<xs:schema xmlns:xs=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl;
+  /* os << "<schema xmlns:xs=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl; */
+  /* os << "<msms_pipeline_analysis xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:pepx=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl; */
+  os << "<msms_pipeline_analysis date=\""<< dt <<"\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" summary_xml=\"/sdd/proteomics/DATA/PXD014076/iProphet3/interact-Symb_Proteome_DIA_RAW_S05_Q3.pep.xml\" xsi:schemaLocation=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">";
 
+  
   std::string pepPath = pepXMLOutputFN_.data();
+
+  std::cerr << pepPath << std::endl;
+  
   /* TODO: MUST FIX */
   std::string base_name = pepPath.substr(0, pepPath.find("."));
 
@@ -543,9 +554,9 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
   remove(xmlpeptideOutputFN_PSMs.c_str());
 
 
-  os << "    </xs:msms_run_summary>" << endl;
+  os << "    </msms_run_summary>" << endl;
   
-  os << "</xs:schema>" << endl;
+  os << "</msms_pipeline_analysis>" << endl;
   os.close();
 }
 
@@ -578,14 +589,14 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
         first_msms_summary = false;
       } else {
         /* End of msms run */
-        os << "    </xs:msms_run_summary>" << endl;
+        os << "    </msms_run_summary>" << endl;
       }
     
       /* New msms run! */
-      os << "    <xs:msms_run_summary base_name=\"" << baseName << "\">" << endl;
-      os << "    <xs:search_summary>" << endl;
-      os << "    <xs:parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
-      os << "    </xs:search_summary>" << endl;
+      os << "    <msms_run_summary base_name=\"" << baseName << "\">" << endl;
+      os << "    <search_summary>" << endl;
+      os << "    <parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+      os << "    </search_summary>" << endl;
     }
     if (sh->q < selectionFdr_)
       sh->printPepXML(os, aaDict);

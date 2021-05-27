@@ -33,6 +33,7 @@
 #include "Scores.h"
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
+#include <ctime>
 
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
