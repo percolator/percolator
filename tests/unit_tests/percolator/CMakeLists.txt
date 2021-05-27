@@ -45,7 +45,8 @@ add_executable(gtest_unit
     UnitTest_Percolator_Option.cpp
     UnitTest_Percolator_TabReader.cpp
     UnitTest_Percolator_DataSet.cpp
-    UnitTest_Percolator_Scores.cpp)
+    UnitTest_Percolator_Scores.cpp
+    UnitTest_Percolator_SetHandler.cpp)
 # Flags for generating coverage data
 if(COVERAGE)
   target_compile_options(perclibrary PUBLIC -ftest-coverage -fprofile-arcs)
