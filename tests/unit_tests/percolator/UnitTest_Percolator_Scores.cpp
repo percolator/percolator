@@ -164,3 +164,57 @@ TEST_F(ScoresTest, CheckPopulatingEmpty)
     setHandler.push_back_dataset(set2);
     EXPECT_THROW(scores.populateWithPSMs(setHandler), MyException);
 }
+
+TEST_F(ScoresTest, CheckMerging)
+{
+    DataSet *set1a = new DataSet();
+    DataSet *set1b = new DataSet();
+    DataSet *set2a = new DataSet();
+    DataSet *set2b = new DataSet();
+    set1a->setLabel(+1);
+    set1b->setLabel(-1);
+    set2a->setLabel(+1);
+    set2b->setLabel(-1);
+    for (int i = 0 ; i < 5 ; ++i) {
+        PSMDescription *psm;
+        psm = new PSMDescription("FOO");
+        psm->scan = 100 + i;
+        set1a->registerPsm(psm);
+        psm = new PSMDescription("BAR");
+        psm->scan = 94 - i;
+        set1b->registerPsm(psm);
+        psm = new PSMDescription("BAZ");
+        psm->scan = 99 - i;
+        set2a->registerPsm(psm);
+        psm = new PSMDescription("QUX");
+        psm->scan = 105 + i;
+        set2b->registerPsm(psm);
+    }
+    SetHandler setHandler1(0);
+    Scores scores1(true);
+    setHandler1.push_back_dataset(set1a);
+    setHandler1.push_back_dataset(set1b);
+    scores1.populateWithPSMs(setHandler1);
+    ASSERT_EQ(10, scores1.size());
+
+    SetHandler setHandler2(0);
+    Scores scores2(true);
+    setHandler2.push_back_dataset(set2a);
+    setHandler2.push_back_dataset(set2b);
+    scores2.populateWithPSMs(setHandler2);
+    ASSERT_EQ(10, scores2.size());
+
+    std::vector<Scores> vscores;
+    vscores.push_back(scores1);
+    vscores.push_back(scores2);
+    Scores fullset(true);
+    fullset.merge(vscores, 0.01, true);
+    ASSERT_EQ(20, fullset.size());
+
+    // Validate that the merged score set is in descending order.
+    for (std::vector<ScoreHolder>::const_iterator it = fullset.begin() ;
+            it != fullset.end() - 1 ;
+            it++) {
+        ASSERT_GE(it->pPSM->scan, (it + 1)->pPSM->scan);
+    }
+}
