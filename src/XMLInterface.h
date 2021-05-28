@@ -84,7 +84,13 @@ class XMLInterface {
     SetHandler& setHandler, SanityCheck*& pCheck, 
     ProteinProbEstimator* protEstimator, Enzyme*& enzyme);
 
-  std::string getAtomicTime();
+  std::string atomicDate;
+
+  void setAtomicTime();
+  /* std::string atomicDate = setAtomicTime();: */
+  std::string getAtomicTime() {return atomicDate; }
+  /* void setTime(std::string t) {atomicDate = t; }; */
+
   void writeXML_PSMs(Scores& fullset);
   void writePepXML_PSMs(Scores& fullset, double selectionFdr_);
   void writeXML_Peptides(Scores& fullset);
@@ -96,6 +102,7 @@ class XMLInterface {
  protected:
   static map<char, float> getRoughAminoWeightDict();
   
+
   std::string xmlOutputFN_; 
   std::string pepXMLOutputFN_;
   bool schemaValidation_;

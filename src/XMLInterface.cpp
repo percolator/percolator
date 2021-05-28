@@ -520,8 +520,8 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   os << "</percolator_output>" << endl;
   os.close();
 }
-
-std::string XMLInterface::getAtomicTime() {
+/* 
+  void XMLInterface::setAtomicTime() {
   time_t now = time(0);
    
    // convert now to string form
@@ -577,27 +577,15 @@ std::string XMLInterface::getAtomicTime() {
     time += ":" + sec_s;
   }
 
-   std::string atomic_date = date + "T" + time;
+   atomic_date = date + "T" + time;
+} */
 
-   return atomic_date;
-}
+/* std::string getAtomicTime() {return atomicDate} */
+
 
 void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
 
-  time_t now = time(0);
-   
-   // convert now to string form
-   tm *ltm = localtime(&now);
-
-   char year = ltm->tm_year;
-   char month = ltm->tm_mon;
-   char day = ltm->tm_mday;
-   char hour = ltm->tm_hour;
-   char min = ltm->tm_min;
-   char sec = ltm->tm_sec;
-   /* char dt = year  "-"  + month + "-" + day + "T" + hour + ":" + min + ":" + sec; */
-
-  
+  /* setAtomicTime(); */
 
   ofstream os;
   const string schema = // space +
@@ -606,10 +594,10 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
 
   os.open(pepXMLOutputFN_.data(), ios::out | ios::binary);
   os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
-  /* os << "<schema xmlns:xs=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl; */
-  /* os << "<msms_pipeline_analysis xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:pepx=\"http://regis-web.systemsbiology.net/pepXML\">\n"<< endl; */
-  /* os << "<msms_pipeline_analysis date=\""<< 1900 + ltm->tm_year << "-" << "0" << 1 + ltm->tm_mon << "-" << ltm->tm_mday << "T" << 5 + ltm->tm_hour << ":" << ltm->tm_min << ":" <<ltm->tm_sec <<"\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" summary_xml=\"/sdd/proteomics/DATA/PXD014076/iProphet3/interact-Symb_Proteome_DIA_RAW_S05_Q3.pep.xml\" xsi:schemaLocation=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"; */
   os << "<msms_pipeline_analysis date=\""<< getAtomicTime() <<"\" xmlns=\"http://regis-web.systemsbiology.net/pepXML\" summary_xml=\"/sdd/proteomics/DATA/PXD014076/iProphet3/interact-Symb_Proteome_DIA_RAW_S05_Q3.pep.xml\" xsi:schemaLocation=\"http://regis-web.systemsbiology.net/pepXML\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">";
+  os << "<analysis_summary analysis=\"peptideprophet\" time=\"" << getAtomicTime() << "\">";
+  os << "</analysis_summary>";
+  
 
   
   std::string pepPath = pepXMLOutputFN_.data();
@@ -631,8 +619,71 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
   os.close();
 }
 
+/* Get time-stamp for pepXML */
+void XMLInterface::setAtomicTime() {
+  time_t now = time(0);
+   
+   // convert now to string form
+   tm *ltm = localtime(&now);
+
+   std::string date = "";
+   std::string time = "";
+
+
+   int year = ltm->tm_year;
+   date += to_string(1900 + year);
+
+   int month = 1 + ltm->tm_mon;
+   std::string month_s = to_string(month);
+   
+   if (month_s.length() < 2) {
+     date +=  "-0" + month_s;
+   } else {
+     date +=  "-" + month_s;
+   }
+
+  int day = ltm->tm_mday;
+  std::string day_s = to_string(day);
+
+  if (day_s.length() < 2) {
+    date += "-0" + day_s;
+  } else {
+    date += "-" + day_s;
+  }
+
+   int hour = 5 + ltm->tm_hour;
+   std::string hour_s = to_string(hour);
+   if (hour_s.length() < 2) {
+    time += "0" + hour_s;
+  } else {
+    time +=  hour_s;
+  }
+
+   int min = ltm->tm_min;
+
+   std::string min_s = to_string(min);
+   if (min_s.length() < 2) {
+    time += ":0" + min_s;
+  } else {
+    time += ":" + min_s;
+  }
+
+   int sec = ltm->tm_sec;
+   std::string sec_s = to_string(sec);
+   if (sec_s.length() < 2) {
+    time += ":0" + sec_s;
+  } else {
+    time += ":" + sec_s;
+  }
+
+   atomicDate = date + "T" + time;
+   
+}
+
 // Change this function name to something including a string pepXML
 void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
+
+  setAtomicTime();
 
   pi0Psms_ = fullset.getPi0();
   numberQpsms_ = fullset.getQvaluesBelowLevel(0.01);
@@ -650,6 +701,7 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
   std::string pepXMLBaseName = "";
   bool first_msms_summary = true;
 
+  int index = 1;
   for (std::vector<ScoreHolder>::iterator sh = fullset.begin();sh != fullset.end(); ++sh) {
     std::string id = sh->pPSM->getId();
     auto baseName = id.substr(0, id.find('.'));
@@ -668,9 +720,11 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
       os << "    <search_summary base_name=\"" << baseName << "\" search_engine=\"X! Tandem\" precursor_mass_type=\"monoisotopic\" fragment_mass_type=\"monoisotopic\" search_id=\"1\">" << endl;
       os << "    <parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
       os << "    </search_summary>" << endl;
+      os << "    <analysis_timestamp analysis=\"peptideprophet\" time=\"" << getAtomicTime() << "\" id=\"1\"/>" << endl;
     }
     if (sh->q < selectionFdr_)
-      sh->printPepXML(os, aaDict);
+      sh->printPepXML(os, aaDict, index);
+      index++;
   }
   /* os << "  </psms>" << endl << endl; */
   os.close();

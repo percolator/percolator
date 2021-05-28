@@ -169,7 +169,7 @@ std::string ScoreHolder::getCharge(std::string id) {
 }
 
 
-void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
+void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight, int index) {
   /* std::cerr << pepXMLBaseName << std::endl; */
 
   std::string id = pPSM->getId();
@@ -186,7 +186,13 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   /* Get RT */
   double RT = pPSM->getRetentionTime();
 
-  os << "    <spectrum_query native_id=\"index=" << native_id << "\" spectrum=\"" << id << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << scan << "\" index=\"0\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << scan << "\">" << endl;
+  /*  uncalibrated_precursor_neutral_mass ? */
+  double expMass = pPSM->expMass;
+
+  /*  precursor_neutral_mass ? */
+  double calcMass = pPSM->calcMass;
+
+  os << "    <spectrum_query spectrum=\"" << id << "\" precursor_neutral_mass=\"" << expMass << "\" assumed_charge=\"" << assumed_charge << "\" end_scan=\"" << scan << "\" index=\"" << index << "\" retention_time_sec=\"" << fixed << setprecision (3) << pPSM->getRetentionTime() << "\" start_scan=\"" << scan << "\">" << endl;
   std::string centpep = pPSM->getPeptideSequence();
   std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
   regex r("\\[(.*?)\\]");
@@ -197,10 +203,19 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
   /* Print protein information */
   size_t n_protein = 0;
 
+  /* Placeholders */
+  int hit_rank = 1;
+  int massdiff = 1;
+  
+  /* num_tot_proteins */
+  int num_tot_proteins = pPSM->proteinIds.size();
+
+  
   std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
   for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
     if (n_protein==0) {
-      os << "    <search_hit hit_rank=\"0\" massdiff=\"0\" peptide=\"" << peptide_sequence << "\" protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\">" << endl;
+      /*  set calc_neutral_pep_mass  as calcMass as placeholder for now */
+      os << "    <search_hit calc_neutral_pep_mass=\"" << calcMass << "\" num_tot_proteins=\"" << num_tot_proteins << "\" hit_rank=\""<< hit_rank <<"\" massdiff=\"" << massdiff << "\" peptide=\"" << peptide_sequence << "\" protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\">" << endl;
     } else {
       os << "    <alternative_protein protein=\"" << getRidOfUnprintablesAndUnicode(*pidIt) << "\"/>" << endl;
     }
@@ -235,7 +250,7 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight) {
     os << "    </modification_info>" << endl;
   }
 
-  /* Print Percolator information */
+  /* Print Percolator information */ 
   os << "    <analysis_result analysis=\"peptideprophet\">" << endl;
   os << "    <peptideprophet_result probability=\"" << scientific << 1.0 - pep   << "\" />" << endl;
   os << "    </analysis_result>" << endl; 
