@@ -34,6 +34,7 @@
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
 #include <ctime>
+/* #include "Caller.h" */
 
 #ifdef XML_SUPPORT
   #include "Enzyme.h"
@@ -92,7 +93,7 @@ class XMLInterface {
   /* void setTime(std::string t) {atomicDate = t; }; */
 
   void writeXML_PSMs(Scores& fullset);
-  void writePepXML_PSMs(Scores& fullset, double selectionFdr_);
+  void writePepXML_PSMs(Scores& fullset, double selectionFdr_, std::string protEstimatorDecoyPrefix);
   void writeXML_Peptides(Scores& fullset);
   void writeXML_Proteins(ProteinProbEstimator* protEstimator);
   void writeXML(Scores& fullset, ProteinProbEstimator* protEstimator, 

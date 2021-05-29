@@ -602,8 +602,6 @@ void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstima
   
   std::string pepPath = pepXMLOutputFN_.data();
 
-  std::cerr << pepPath << std::endl;
-
   /* TODO: MUST FIX */
   std::string base_name = pepPath.substr(0, pepPath.find("."));
 
@@ -681,7 +679,7 @@ void XMLInterface::setAtomicTime() {
 }
 
 // Change this function name to something including a string pepXML
-void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
+void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_, std::string protEstimatorDecoyPrefix) {
 
   setAtomicTime();
 
@@ -714,11 +712,11 @@ void XMLInterface::writePepXML_PSMs(Scores& fullset, double selectionFdr_) {
         /* End of msms run */
         os << "    </msms_run_summary>" << endl;
       }
-    
+
       /* New msms run! */
       os << "    <msms_run_summary base_name=\"" << baseName << "\" raw_data_type=\"mzML\" raw_data=\"mzML\">" << endl;
       os << "    <search_summary base_name=\"" << baseName << "\" search_engine=\"X! Tandem\" precursor_mass_type=\"monoisotopic\" fragment_mass_type=\"monoisotopic\" search_id=\"1\">" << endl;
-      os << "    <parameter name=\"decoy_prefix\" value=\"rev_\" />" << endl;
+      os << "    <parameter name=\"decoy_prefix\" value=\"" << protEstimatorDecoyPrefix << "\" />" << endl;
       os << "    </search_summary>" << endl;
       os << "    <analysis_timestamp analysis=\"peptideprophet\" time=\"" << getAtomicTime() << "\" id=\"1\"/>" << endl;
     }
