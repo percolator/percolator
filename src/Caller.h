@@ -139,7 +139,7 @@ bool detect_tab(std::string file_name)
     std::istream &in= std::getline(file, wtf);
     // unable to read the line, return false
     if(!in) return false;
-    // try to find a comma, return true if comma is found within the string
+    // try to find a '\t', return true if '\t' is found within the string
     return std::find(wtf.begin(), wtf.end(), '\t')!= wtf.end();
 }
     

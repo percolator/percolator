@@ -296,7 +296,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. Default = \"random_\".",
+      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. Default = \"auto\", i.e., Percolator parses the protein-decoy-pattern from input-file.",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
@@ -475,7 +475,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     // Confidence estimation options (general protein prob options)
     bool protEstimatorOutputEmpirQVal = false;
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
-    std::string protEstimatorDecoyPrefix = "random_";
+    std::string protEstimatorDecoyPrefix = "auto";
     double protEstimatorAbsenceRatio = 1.0;
     double protEstimatorPeptideQvalThreshold = -1.0;
 
@@ -718,9 +718,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
-
-  
-
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
     for(const string &file : cmd.arguments) {
@@ -870,6 +867,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     }
     outFile.close();
   }
+
+
+  
   std::cerr << "All files have been read" << std::endl;
   return true;
 }
