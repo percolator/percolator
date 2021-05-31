@@ -87,14 +87,15 @@ fi
 # end of section to remove
 sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
+sudo apt-get -y install googletest;
 
 #------------------------------------------------------------------------
-mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters $build_dir/elude;
+mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/percolator-debug $build_dir/converters $build_dir/elude;
 
 ######percolator########
 #-----cmake-----
 cd $build_dir/percolator-noxml;
-echo -n "cmake percolator.....";
+echo -n "cmake percolator-noxml.....";
 cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
@@ -109,6 +110,14 @@ cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
+
+#-----cmake-----
+cd $build_dir/percolator-debug;
+echo -n "cmake percolator-debug.....";
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=1 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+#-----make------
+echo -n "make percolator (this will take few minutes).....";
+make -j 4;
 
 #######converters########
 cd $build_dir/converters
