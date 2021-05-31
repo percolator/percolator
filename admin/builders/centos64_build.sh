@@ -30,11 +30,11 @@ fi
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} and build=${build_dir} for the user"
 whoami;
 
-sudo yum install -y gcc gcc-c++ wget rpm-build cmake
-sudo yum install -y sqlite-devel zlib-devel bzip2-devel
-sudo yum install -y tokyocabinet-devel xerces-c-devel
-sudo yum install -y libtirpc libtirpc-devel
-sudo yum install -y gtest
+sudo dnf -y install gcc gcc-c++ wget rpm-build cmake
+sudo dnf install sqlite-devel zlib-devel bzip2-devel
+sudo dnf install tokyocabinet-devel xerces-c-devel
+sudo dnf install libtirpc libtirpc-devel
+sudo dnf -y --enablerepo=powertools install gtest
 
 cd ${src_dir}
 
