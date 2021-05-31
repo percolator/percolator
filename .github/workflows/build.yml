@@ -31,8 +31,10 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: test
-      run: cd ../my_build/percolator && make install && make test ARGS="-V"
+    - name: unit_tests
+      run: cd ../my_build/percolator-debug && make test
+    - name: system_test  
+      run: cd ../my_build/percolator-debug && sudo make install && make test-install
 
   build-osx:
     runs-on: macos-latest
@@ -42,8 +44,10 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: admin/builders/osx64_build.sh  -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: test
-      run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: unit_tests
+      run: cd ../my_build/percolator-debug && make test
+    - name: system_test  
+      run: cd ../my_build/percolator-debug && sudo make install && make test-install
 
 
   build-windows:
