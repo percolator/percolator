@@ -173,7 +173,7 @@ class Scores {
     targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
     totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
   ~Scores() {}
-  void merge(vector<Scores>& sv, double fdr, bool skipNormalizeScores);
+  void merge(vector<Scores>& sv, double fdr, bool skipNormalizeScores, std::vector< std::vector<double> >& all_w);
   void postMergeStep();
   
   std::vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
@@ -199,7 +199,7 @@ class Scores {
   void generateNegativeTrainingSet(AlgIn& data, const double cneg);
   
   void recalculateSizes();
-  void normalizeScores(double fdr);
+  void normalizeScores(double fdr, std::vector<double>& weights);
   
   void weedOutRedundant();
   void weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts, 

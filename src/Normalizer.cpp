@@ -23,6 +23,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
 #include "UniNormalizer.h"
+#include "NoNormalizer.h"
 #include "Globals.h"
 
 int Normalizer::subclass_type = STDV;
@@ -61,14 +62,30 @@ Normalizer* Normalizer::getNormalizer() {
   if (theNormalizer == NULL) {
     if (subclass_type == UNI) {
       theNormalizer = new UniNormalizer();
-    } else {
+    } else if (subclass_type == STDV) {
       theNormalizer = new StdvNormalizer();
+    } else {
+     theNormalizer = new NoNormalizer();
     }
+  } else {
+    assert(false);
+    cerr << "Multiple instantiations of Normalizer" << endl;
   }
   return theNormalizer;
 }
 
 void Normalizer::setType(int type) {
-  assert(type == UNI || type == STDV);
+  assert(type == UNI || type == STDV || type == NONORM);
   subclass_type = type;
+}
+
+// Before merging cross validation bins, the scores are renormalized to an uniform range.
+// This function is designed to transform weights so that they give scores in that range.
+void Normalizer::endScoreNormalizeWeights(const std::vector<double>& in, 
+    std::vector<double>& out, double subScore, double scale) {
+  size_t i = 0;
+  for (; i < in.size()-1; i++) {
+    out[i] = in[i] / scale;
+  }
+  out[i] = (in[i] - subScore)/scale;
 }
