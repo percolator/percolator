@@ -605,6 +605,7 @@ bool Caller::parseOptions(int argc, char **argv) {
     selectedCpos_ = 0.5;
     selectedCneg_ = 0.5;
     skipNormalizeScores_ = true;
+    Normalizer::setType(Normalizer::NONORM);
     if (!cmd.optionSet("init-weights")) {
       std::cerr << "Error: the --static option requires the --init-weights "
         << "option to be specified." << std::endl;
@@ -1212,14 +1213,14 @@ int Caller::run() {
   // Do the SVM training
   crossValidation.train(pNorm_);
 
+  // Calculate the final SVM scores and clean up structures
+  crossValidation.postIterationProcessing(allScores, pCheck_);
+
   if (weightOutputFN_.size() > 0) {
     ofstream weightStream(weightOutputFN_.c_str(), ios::out);
     crossValidation.printAllWeights(weightStream, pNorm_);
     weightStream.close();
   }
-
-  // Calculate the final SVM scores and clean up structures
-  crossValidation.postIterationProcessing(allScores, pCheck_);
 
   if (VERB > 0 && DataSet::getCalcDoc()) {
     crossValidation.printDOC();
@@ -1254,7 +1255,7 @@ int Caller::run() {
 
     allScores.postMergeStep();
     allScores.calcQ(selectionFdr_);
-    allScores.normalizeScores(selectionFdr_);
+    allScores.normalizeScores(selectionFdr_, rawWeights);
   }
 
   calcAndOutputResult(allScores, xmlInterface);
