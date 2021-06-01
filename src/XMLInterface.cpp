@@ -753,5 +753,4 @@ map<char, float> XMLInterface::getRoughAminoWeightDict() {
       ('W',186.08)
       ('Y',163.06);
   return roughAminoAcidWeight;
-
 }
