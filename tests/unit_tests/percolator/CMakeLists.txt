@@ -2,7 +2,7 @@
 # If GoogleTest is not installed, build and install a private copy.
 # Skip this step if GOOGLE_TEST is not defined.
 if(GOOGLE_TEST)
-  find_package(GoogleTest REQUIRED)
+  find_package(GTest)# REQUIRED)
   if(GTEST_FOUND)
     message(STATUS "Using installed GoogleTest at: ${GTEST_INCLUDE_DIRS}")
   else(GTEST_FOUND)
@@ -14,10 +14,11 @@ if(GOOGLE_TEST)
     if(result)
       message(FATAL_ERROR "Failed to download GoogleTest: ${result}.")
     endif()
-    message(STATUS "Building GoogleTest.")
+    message(STATUS "Building GoogleTest in ${CMAKE_CURRENT_BINARY_DIR}/googletest-download.")
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
       RESULT_VARIABLE result
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download
+      COMMAND_ECHO STDERR)
     if(result)
       message(FATAL_ERROR "Failed to build GoogleTest package: ${result}.")
     endif()
@@ -52,7 +53,11 @@ if(COVERAGE)
   target_compile_options(gtest_unit PUBLIC -ftest-coverage -fprofile-arcs)
   target_link_libraries(gtest_unit -fprofile-arcs)
 endif(COVERAGE)
-target_link_libraries(gtest_unit perclibrary fido ${GTEST_BOTH_LIBRARIES} pthread)
+if (GTEST_FOUND)
+  target_link_libraries(gtest_unit perclibrary fido pthread ${GTEST_BOTH_LIBRARIES})
+else (GTEST_FOUND)
+  target_link_libraries(gtest_unit perclibrary fido pthread gtest gtest_main)
+endif(GTEST_FOUND)
 add_test(UnitTest_Percolator_RunAllTests gtest_unit)
 
 # Important to use relative paths here (used by CPack)!

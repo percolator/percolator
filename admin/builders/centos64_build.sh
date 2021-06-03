@@ -71,10 +71,12 @@ fi
 
 echo "Installing percolator"
 
-echo -n "cmake percolator-noxml (without XML support) .....";
+echo "cmake percolator-noxml (without XML support) .....";
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
+(set -x; 
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=OFF ${src_dir}/percolator
+)
 make -j 4;
 make -j 4 package;
 
@@ -85,7 +87,9 @@ make -j 4 package;
 echo -n "cmake percolator (with XML support) .....";
 mkdir -p ${build_dir}/percolator;
 cd ${build_dir}/percolator;
+(set -x; 
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=ON ${src_dir}/percolator;
+)
 make -j 4;
 make -j 4 package;
 
@@ -93,20 +97,26 @@ make -j 4 package;
 echo -n "cmake percolator-test (for container builds, that do not have write permission to /usr/bin) .....";
 mkdir -p ${build_dir}/percolator-test;
 cd $build_dir/percolator-test;
+(set -x; 
 cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=1 -DCMAKE_INSTALL_PREFIX=./local-usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DXML_SUPPORT=ON ${src_dir}/percolator;
+)
 #-----make------
 make -j 4;
 
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
+(set -x; 
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+)
 make -j 4;
 make -j 4 package;
 
 mkdir -p ${build_dir}/elude
 cd ${build_dir}/elude
+(set -x; 
 cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${centos_boost}" ${src_dir}/percolator/src/elude_tool
+)
 make -j 4;
 make -j 4 package;
 
