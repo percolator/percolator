@@ -156,15 +156,9 @@ make -j 2 package
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
-
-mkdir -p ${build_dir}/percolator-debug
-cd ${build_dir}/percolator-debug
-
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=1 -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
-make -j 2
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters

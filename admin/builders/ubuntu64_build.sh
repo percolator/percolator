@@ -105,19 +105,11 @@ make -j 4 package;
 #-----cmake-----
 cd $build_dir/percolator;
 echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
 #-----make------
 echo -n "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
-
-#-----cmake-----
-cd $build_dir/percolator-debug;
-echo -n "cmake percolator-debug.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Debug -DGOOGLE_TEST=1 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
-#-----make------
-echo -n "make percolator (this will take few minutes).....";
-make -j 4;
 
 #######converters########
 cd $build_dir/converters
