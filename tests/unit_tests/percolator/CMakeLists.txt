@@ -17,8 +17,7 @@ if(GOOGLE_TEST)
     message(STATUS "Building GoogleTest in ${CMAKE_CURRENT_BINARY_DIR}/googletest-download.")
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
       RESULT_VARIABLE result
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download
-      COMMAND_ECHO STDERR)
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download)
     if(result)
       message(FATAL_ERROR "Failed to build GoogleTest package: ${result}.")
     endif()

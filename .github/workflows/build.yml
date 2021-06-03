@@ -66,3 +66,7 @@ jobs:
         SET base_dir=%cd%
         ECHO %base_dir%
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+    - name: unit_tests
+      run: |
+        CD ..\my_build\percolator
+        # make test
