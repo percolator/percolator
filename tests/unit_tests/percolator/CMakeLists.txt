@@ -44,6 +44,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_Fido.cpp
     UnitTest_Percolator_Option.cpp
     UnitTest_Percolator_TabReader.cpp
+    UnitTest_Percolator_SetHandler.cpp
     UnitTest_Percolator_DataSet.cpp
     UnitTest_Percolator_Scores.cpp)
 # Flags for generating coverage data
