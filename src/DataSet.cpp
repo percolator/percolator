@@ -126,16 +126,17 @@ void DataSet::fillRtFeatures(std::vector<double*>& rtFeatures) {
  * @param line tab delimited string containing the psm details
  */
 void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
-    const std::vector<OptionalField>& optionalFields, FeatureMemoryPool& featurePool) { 
+    const std::vector<OptionalField>& optionalFields, FeatureMemoryPool& featurePool,
+    std::string decoyPrefix) { 
   PSMDescription* myPsm = NULL;
   bool readProteins = true;
-  readPsm(line, lineNr, optionalFields, readProteins, myPsm, featurePool);
+  readPsm(line, lineNr, optionalFields, readProteins, myPsm, featurePool, decoyPrefix);
   registerPsm(myPsm);
 }
 
 int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription*& myPsm, FeatureMemoryPool& featurePool) {
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix) {
   TabReader reader(line);
   std::string tmp;
   
@@ -245,7 +246,16 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     }
     proteins.swap(myPsm->proteinIds); // shrink to fit
   }
-  
+
+  if (label == -1) {
+    for(auto const& value: myPsm->proteinIds) { 
+    std::string token = value.substr(0, value.find("_") + 1);
+    
+    if (token != decoyPrefix) {
+      std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
+    }
+  }
+  }
   return label;
 }
 

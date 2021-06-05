@@ -1070,7 +1070,7 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
     if (VERB > 1) {
       std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << std::endl;
     }
-    success = setHandler.readTab(dataStream, pCheck_);
+    success = setHandler.readTab(dataStream, pCheck_, protEstimatorDecoyPrefix);
   }
 
   // Reading input files (pin or temporary file)
@@ -1240,7 +1240,7 @@ int Caller::run() {
     if (!tabInput_) {
       success = xmlInterface.readAndScorePin(fileStream, rawWeights, allScores, inputFN_, setHandler, pCheck_, protEstimator_, enzyme_);
     } else {
-      success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores, pCheck_);
+      success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores, pCheck_,protEstimatorDecoyPrefix);
     }
 
     // Reading input files (pin or temporary file)

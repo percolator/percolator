@@ -74,9 +74,9 @@ class SetHandler {
   
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
-  int readTab(istream& dataStream, SanityCheck*& pCheck);
+  int readTab(istream& dataStream, SanityCheck*& pCheck, std::string decoyPrefix);
   int readAndScoreTab(istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck);
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck, std::string decoyPrefix);
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
@@ -122,10 +122,10 @@ class SetHandler {
     
   void readPSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, bool& separateSearches,
-    std::vector<OptionalField>& optionalFields);
+    std::vector<OptionalField>& optionalFields, std::string decoyPrefix);
   void readAndScorePSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
-    std::vector<double>& rawWeights, Scores& allScores);
+    std::vector<double>& rawWeights, Scores& allScores, std::string decoyPrefix);
 };
 
 #endif /*SETHANDLER_H_*/

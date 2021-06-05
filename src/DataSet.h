@@ -149,10 +149,10 @@ class DataSet {
   
   void readPsm(const std::string& line, const unsigned int lineNr,
                const std::vector<OptionalField>& optionalFields, 
-               FeatureMemoryPool& featurePool);
+               FeatureMemoryPool& featurePool, std::string decoyPrefix);
   static int readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription*& myPsm, FeatureMemoryPool& featurePool);
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix);
   
   void registerPsm(PSMDescription* myPsm);
   

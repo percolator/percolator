@@ -180,7 +180,6 @@ std::string detect_decoy_prefix(std::string file_name)
         
         TabReader readerRow(nextRow);
 
-        /* Keep track on column for missing charge states */
         int col = 0;
         bool isDecoy = false;
         while (!readerRow.error()) {
