@@ -630,7 +630,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
   /*  Get decoy prefix */
   std::string decoy_prefix;
-
+  SetHandler setHandler(maxPSMs_);
 
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
@@ -645,25 +645,21 @@ bool Caller::parseOptions(int argc, char **argv) {
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error
     }
-
-    decoy_prefix = detect_decoy_prefix(inputFN_);
     
+    decoy_prefix = setHandler.detect_decoy_prefix(inputFN_);
+    if (decoy_prefix=="error") {
+      return 0;
+    }
+  
   }
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
-    /* Check decoy-prefix */
-    /* TODO: Unnecessary to check for prefix in all files? */
-    for(const string &file : cmd.arguments) {
 
-      decoy_prefix = detect_decoy_prefix(file);
-
-      if (decoy_prefix=="error") {
-        std::cerr << "Couldn't parse decoy prefix from input-file!";
-        return 0;
-      }
-      break;
-      
-    };
+    decoy_prefix = setHandler.getDecoyPrefix(cmd.arguments);
+    if (decoy_prefix=="error") {
+      return 0;
+    }
+    
     
     for(const string &file : cmd.arguments) {
       if(!detect_tab(file))

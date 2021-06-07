@@ -536,3 +536,69 @@ std::string& SetHandler::rtrim(std::string &s) {
   s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
   return s;
 }
+
+std::string SetHandler::getDecoyPrefix(std::vector<std::string> fileList) {
+  std::string decoy_prefix;
+  for(const string &file : fileList) {
+        decoy_prefix = detect_decoy_prefix(file);
+        break;
+      };
+      return decoy_prefix;
+}
+
+std::string SetHandler::detect_decoy_prefix(std::string file_name)
+{
+    // open C++ stream to file
+    std::ifstream file(file_name.c_str());
+    // file not opened, return false
+    if(!file.is_open()) return "error";
+    // read a line from the file       
+    
+
+    int labelIndex;
+    int proteinIndex;
+    int columnIndex = 0;
+
+
+    std::string hederRow;
+    getline(file, hederRow);
+    TabReader reader(hederRow);
+      while (!reader.error()) {
+        std::string optionalHeader = reader.readString();
+
+        if (optionalHeader.find("Proteins") != std::string::npos) { 
+          
+          proteinIndex = columnIndex;
+        } else if (optionalHeader.find("Label") != std::string::npos){
+          labelIndex = columnIndex;
+          
+        }
+        columnIndex++;
+     }
+
+      std::string nextRow;
+      
+     while(getline(file, nextRow)) {
+        
+        TabReader readerRow(nextRow);
+
+        int col = 0;
+        bool isDecoy = false;
+        while (!readerRow.error()) {
+          std::string value = readerRow.readString();
+
+          if (col == labelIndex && value == "-1") {
+            isDecoy = true;
+          }
+          if (col == proteinIndex && isDecoy) {
+            std::string token = value.substr(0, value.find("_") + 1);
+            return token;
+          }
+
+          col++;
+        }
+     }
+     return "error";
+}
+
+
