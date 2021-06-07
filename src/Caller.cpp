@@ -630,7 +630,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
   /*  Get decoy prefix */
   std::string decoy_prefix;
-  SetHandler setHandler(maxPSMs_);
+  
 
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
@@ -646,8 +646,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
     
-    decoy_prefix = setHandler.detect_decoy_prefix(inputFN_);
+    /* Set these two tab checks to their own */
+    decoy_prefix = detect_decoy_prefix(inputFN_);
     if (decoy_prefix=="error") {
+      return 0;
+    }
+
+    if (!isTabFile(inputFN_)) {
       return 0;
     }
   
@@ -655,19 +660,14 @@ bool Caller::parseOptions(int argc, char **argv) {
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
 
-    decoy_prefix = setHandler.getDecoyPrefix(cmd.arguments);
+    decoy_prefix = getDecoyPrefix(cmd.arguments);
     if (decoy_prefix=="error") {
       return 0;
     }
     
-    
-    for(const string &file : cmd.arguments) {
-      if(!detect_tab(file))
-     {
-         std::cerr<< file << " is not comma delimited!\n";
-         return 0;
-     } 
-    };
+    if (!isTabFiles(cmd.arguments)) {
+      return 0;
+    }
   
     tabInput_ = true;
 

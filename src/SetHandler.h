@@ -101,9 +101,6 @@ class SetHandler {
   
   void reset();
 
-  std::string getDecoyPrefix(std::vector<std::string> fileList);
-  std::string detect_decoy_prefix(std::string file_name);
-  
  protected:
   size_t maxPSMs_;
   vector<DataSet*> subsets_;

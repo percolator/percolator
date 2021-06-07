@@ -102,12 +102,17 @@ class TabReader {
       return s;
     }
   }
-  
+
   bool error() { return err != 0; }
  private:
   const char* f_;
   int err;
 };
+
+bool isTabFile(std::string file_name);
+bool isTabFiles(std::vector<std::string> files);
+std::string getDecoyPrefix(std::vector<std::string> fileList);
+std::string detect_decoy_prefix(std::string file_name);
 
 
 // Optional columns in tab delimited input

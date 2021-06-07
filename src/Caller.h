@@ -129,20 +129,6 @@ class Caller {
   virtual void processProteinScores(ProteinProbEstimator* protEstimator) {}
 #endif
 
-bool detect_tab(std::string file_name)
-{
-    // open C++ stream to file
-    std::ifstream file(file_name.c_str());
-    // file not opened, return false
-    if(!file.is_open()) return false;
-    // read a line from the file       
-    std::string wtf;
-    std::istream &in= std::getline(file, wtf);
-    // unable to read the line, return false
-    if(!in) return false;
-    // try to find a '\t', return true if '\t' is found within the string
-    return std::find(wtf.begin(), wtf.end(), '\t')!= wtf.end();
-}
 
 };
 
