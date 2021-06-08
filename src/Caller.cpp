@@ -887,7 +887,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
 std::string Caller::createTempFile() {
   boost::filesystem::path temp = boost::filesystem::unique_path();
-  const std::string tempstr    = temp.native();
+  std::string tempstr    = temp.string();
   return tempstr;
 }
 
