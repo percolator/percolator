@@ -76,6 +76,7 @@ class Caller {
   string extendedGreeter();
   bool parseOptions(int argc, char **argv);    
   int run();
+  std::string createTempFile();
   
  protected:    
   Normalizer* pNorm_;

@@ -633,7 +633,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (!tabFileValidator.validateTabFiles(cmd.arguments, &decoy_prefix)) {
       return 0;
     }
-    
+
   // if there is one argument left...
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
@@ -692,9 +692,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       pinFileStream.close();
     }
 
-    /* File to write all pin files to, and then feed to Percolator */
+    /* Create a temporary tab file to concatenate tab files in to */
+
+    inputFN_ = createTempFile();
     ofstream outFile;
-    inputFN_ = "tmp_conc_files.tmp";
     outFile.open(inputFN_);
 
     /* Only want to print header once */
@@ -882,6 +883,13 @@ bool Caller::parseOptions(int argc, char **argv) {
 
 
   return true;
+}
+
+std::string Caller::createTempFile() {
+  char tempFileName[20]; 
+  strcpy(tempFileName, "/tmp/XXXXXX");
+  mkstemp(tempFileName);
+  return tempFileName;
 }
 
 
