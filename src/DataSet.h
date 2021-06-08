@@ -109,10 +109,16 @@ class TabReader {
   int err;
 };
 
-bool isTabFile(std::string file_name);
-bool isTabFiles(std::vector<std::string> files);
-std::string getDecoyPrefix(std::vector<std::string> fileList);
-std::string detect_decoy_prefix(std::string file_name);
+class TabFileValidator {
+  public:
+    bool isTabFile(std::string file_name);
+    bool isTabFiles(std::vector<std::string> files);
+    std::string getDecoyPrefix(std::vector<std::string> fileList);
+    std::string detect_decoy_prefix(std::string file_name);
+    bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
+    void getProteinIndex(std::string file_name, int* proteinIndex,int* labelIndex);
+    std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
+};
 
 
 // Optional columns in tab delimited input

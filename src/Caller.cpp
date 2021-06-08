@@ -626,12 +626,15 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
-  // if there is one argument left...
-
-  /*  Get decoy prefix */
-  std::string decoy_prefix;
   
-
+  /*  Validate tab file and get decoy prefix */
+  std::string decoy_prefix;
+  TabFileValidator tabFileValidator;
+  if (!tabFileValidator.validateTabFiles(cmd.arguments, &decoy_prefix)) {
+      return 0;
+    }
+    
+  // if there is one argument left...
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
     inputFN_ = cmd.arguments[0]; // then it's the pin input
@@ -645,36 +648,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       cerr << "\nInvoke with -h option for help.\n";
       return 0; // ...error
     }
-    
-    /* Set these two tab checks to their own */
-    decoy_prefix = detect_decoy_prefix(inputFN_);
-    if (decoy_prefix=="error") {
-      return 0;
-    }
-
-    if (!isTabFile(inputFN_)) {
-      return 0;
-    }
-  
   }
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
 
-    decoy_prefix = getDecoyPrefix(cmd.arguments);
-    if (decoy_prefix=="error") {
-      return 0;
-    }
-    
-    if (!isTabFiles(cmd.arguments)) {
-      return 0;
-    }
-  
     tabInput_ = true;
-
-
     std::ifstream pinFileStream;
 
-    
+  
     /* Complete column position to header name */
     std::map<int,std::string> columnMap = {};
     /* Temporary mapper while searching for complete position-to-header mapper */
