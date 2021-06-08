@@ -251,7 +251,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     for(auto const& value: myPsm->proteinIds) { 
     std::string token = value.substr(0, value.find("_") + 1);
     
-    if (token != decoyPrefix) {
+    if (token != decoyPrefix && VERB > 1) {
       std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
     }
   }
