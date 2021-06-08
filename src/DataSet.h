@@ -111,8 +111,8 @@ class TabReader {
 
 class TabFileValidator {
   public:
-    bool isTabFile(std::string file_name);
-    bool isTabFiles(std::vector<std::string> files);
+    static bool isTabFile(std::string file_name);
+    static bool isTabFiles(std::vector<std::string> files);
     std::string getDecoyPrefix(std::vector<std::string> fileList);
     std::string detect_decoy_prefix(std::string file_name);
     bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
