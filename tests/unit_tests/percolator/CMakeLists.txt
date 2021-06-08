@@ -53,7 +53,11 @@ if(COVERAGE)
   target_compile_options(gtest_unit PUBLIC -ftest-coverage -fprofile-arcs)
   target_link_libraries(gtest_unit -fprofile-arcs)
 endif(COVERAGE)
-target_link_libraries(gtest_unit perclibrary fido pthread ${GTEST_BOTH_LIBRARIES})
+if (GTEST_FOUND)
+  target_link_libraries(gtest_unit perclibrary fido pthread ${GTEST_BOTH_LIBRARIES})
+else (GTEST_FOUND)
+  target_link_libraries(gtest_unit perclibrary fido pthread gtest gtest_main)
+endif(GTEST_FOUND)
 add_test(UnitTest_Percolator_RunAllTests gtest_unit)
 
 # Important to use relative paths here (used by CPack)!
