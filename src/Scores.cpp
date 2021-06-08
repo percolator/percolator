@@ -83,7 +83,6 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
         os << " p:decoy=\"false\"";
     }
     os << ">" << endl;
-    
     os << "      <svm_score>" << fixed      << score << "</svm_score>" << endl;
     os << "      <q_value>"   << scientific << q     << "</q_value>" << endl;
     os << "      <pep>"       << scientific << pep   << "</pep>" << endl;
@@ -115,13 +114,11 @@ if (isfinite(pPSM->getRetentionTime())) {
     for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
       os << "      <protein_id>" << getRidOfUnprintablesAndUnicode(*pidIt) << "</protein_id>" << endl;
     }
-    
+
     os << "      <p_value>" << scientific << p << "</p_value>" <<endl;
     os << "    </psm>" << endl;
   }
 }
-
-
 
 void ScoreHolder::printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset) {
   if (!isDecoy() || printDecoys) {  
@@ -168,27 +165,18 @@ std::string ScoreHolder::getCharge(std::string id) {
   return last_element.substr(0, last_element.find("_"));
 }
 
-
 void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight, int index) {
   /* std::cerr << pepXMLBaseName << std::endl; */
-
   std::string id = pPSM->getId();
   /* Get scan ids */
-  
-  
   unsigned int scan = pPSM->scan;
   unsigned int native_id = scan - 1;
-
-  
   /* Get charge */
   std::string assumed_charge = getCharge(id);
-
   /* Get RT */
   double RT = pPSM->getRetentionTime();
-
   /*  uncalibrated_precursor_neutral_mass ? */
   double expMass = pPSM->expMass;
-
   /*  precursor_neutral_mass ? */
   double calcMass = pPSM->calcMass;
 
@@ -197,20 +185,16 @@ void ScoreHolder::printPepXML(ostream& os, map<char,float>& aaWeight, int index)
   std::string trimmed_pep = trim_left_copy_if(centpep, is_any_of("n"));
   regex r("\\[(.*?)\\]");
   std::string peptide_sequence = regex_replace(trimmed_pep, r, "");
-
   os << "    <search_result>" << endl;
 
   /* Print protein information */
   size_t n_protein = 0;
-
   /* Placeholders */
   int hit_rank = 1;
   int massdiff = 1;
-  
   /* num_tot_proteins */
   int num_tot_proteins = pPSM->proteinIds.size();
 
-  
   std::vector<std::string>::const_iterator pidIt = pPSM->proteinIds.begin();
   for ( ; pidIt != pPSM->proteinIds.end() ; ++pidIt) {
     if (n_protein==0) {

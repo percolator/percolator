@@ -421,10 +421,6 @@ void XMLInterface::writeXML_PSMs(Scores& fullset) {
   os.close();
 }
 
-
-/** 
- * Subroutine of @see XMLInterface::writeXML() for peptide output
- */
 void XMLInterface::writeXML_Peptides(Scores& fullset) {
   pi0Peptides_ = fullset.getPi0();
   reportUniquePeptides_ = true;
