@@ -516,73 +516,9 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
   os << "</percolator_output>" << endl;
   os.close();
 }
-/* 
-  void XMLInterface::setAtomicTime() {
-  time_t now = time(0);
-   
-   // convert now to string form
-   tm *ltm = localtime(&now);
-
-   std::string date = "";
-   std::string time = "";
-
-
-   int year = ltm->tm_year;
-   date += to_string(1900 + year);
-
-   int month = 1 + ltm->tm_mon;
-   std::string month_s = to_string(month);
-   
-   if (month_s.length() < 2) {
-     date +=  "-0" + month_s;
-   } else {
-     date +=  "-" + month_s;
-   }
-
-  int day = ltm->tm_mday;
-  std::string day_s = to_string(day);
-
-  if (day_s.length() < 2) {
-    date += "-0" + day_s;
-  } else {
-    date += "-" + day_s;
-  }
-
-   int hour = 5 + ltm->tm_hour;
-   std::string hour_s = to_string(hour);
-   if (hour_s.length() < 2) {
-    time += "0" + hour_s;
-  } else {
-    time +=  hour_s;
-  }
-
-   int min = ltm->tm_min;
-
-   std::string min_s = to_string(min);
-   if (min_s.length() < 2) {
-    time += ":0" + min_s;
-  } else {
-    time += ":" + min_s;
-  }
-
-   int sec = ltm->tm_sec;
-   std::string sec_s = to_string(sec);
-   if (sec_s.length() < 2) {
-    time += ":0" + sec_s;
-  } else {
-    time += ":" + sec_s;
-  }
-
-   atomic_date = date + "T" + time;
-} */
-
-/* std::string getAtomicTime() {return atomicDate} */
-
 
 void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
-
-  /* setAtomicTime(); */
-
+  
   ofstream os;
   const string schema = // space +
       "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";

@@ -886,10 +886,9 @@ bool Caller::parseOptions(int argc, char **argv) {
 }
 
 std::string Caller::createTempFile() {
-  char tempFileName[20]; 
-  strcpy(tempFileName, "/tmp/XXXXXX");
-  mkstemp(tempFileName);
-  return tempFileName;
+  boost::filesystem::path temp = boost::filesystem::unique_path();
+  const std::string tempstr    = temp.native();
+  return tempstr;
 }
 
 

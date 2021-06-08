@@ -50,6 +50,10 @@
 #include <boost/asio.hpp>
 #include <boost/functional/hash_fwd.hpp>
 
+
+#include <boost/filesystem.hpp>
+
+
 #include <algorithm>
 
 
