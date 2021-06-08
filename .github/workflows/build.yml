@@ -28,7 +28,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
-      run: mkdir -p ../my_rel ../my_build 
+      run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
     - name: unit_tests
