@@ -92,7 +92,8 @@ TEST_F(TabReaderTest, CheckReadDouble)
 // Tests reading a sequence of fields, including skipping fields.
 TEST_F(TabReaderTest, CheckSequentialReading)
 {
-    TabReader reader("1\t2\t3\t4\t5");
+    string test("1\t2\t3\t4\t5");
+    TabReader reader(test);
     ASSERT_EQ(1, reader.readInt());
     ASSERT_EQ(2, reader.readInt());
     ASSERT_EQ(3, reader.readInt());
