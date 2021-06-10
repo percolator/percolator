@@ -87,6 +87,7 @@ fi
 # end of section to remove
 sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
+sudo apt-get -y install googletest;
 
 #------------------------------------------------------------------------
 mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters $build_dir/elude;
@@ -94,30 +95,35 @@ mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters
 ######percolator########
 #-----cmake-----
 cd $build_dir/percolator-noxml;
-echo -n "cmake percolator.....";
+echo "cmake percolator-noxml.....";
+(set -x; 
 cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+)
 #-----make------
-echo -n "make percolator (this will take few minutes).....";
+echo "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
 
 #-----cmake-----
 cd $build_dir/percolator;
-echo -n "cmake percolator.....";
-cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+echo "cmake percolator.....";
+(set -x; 
+cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+)
 #-----make------
-echo -n "make percolator (this will take few minutes).....";
+echo "make percolator (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
 
 #######converters########
 cd $build_dir/converters
 #-----cmake-----
-echo -n "cmake converters.....";
+echo "cmake converters.....";
+(set -x; 
 cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
-
+)
 #-----make------
-echo -n "make converters (this will take few minutes).....";
+echo "make converters (this will take few minutes).....";
 
 make -j 4;
 make -j 4 package;
@@ -125,11 +131,12 @@ make -j 4 package;
 #######elude########
 cd $build_dir/elude
 #-----cmake-----
-echo -n "cmake elude.....";
+echo "cmake elude.....";
+(set -x; 
 cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release $src_dir/percolator/src/elude_tool;
-
+)
 #-----make------
-echo -n "make elude (this will take few minutes).....";
+echo "make elude (this will take few minutes).....";
 
 make -j 4;
 make -j 4 package;
