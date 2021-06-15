@@ -342,7 +342,7 @@ include_directories(MSToolkit/RAMP MSToolkit )
 include_directories(${PERCOLATOR_SOURCE_DIR}/src)
 link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 add_library(perclibrary_part STATIC ${perc_in_xsdfiles} ${perc_out_xsdfiles}
-	    ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp ../MyException.cpp)
+	    ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp ../MyException.cpp ../TmpDir.cpp)
 
 # compile converter base files
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
