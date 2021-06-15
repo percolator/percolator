@@ -305,8 +305,8 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 #ifndef __APPLE__
         //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
 	      //boost filesystem when we don't use them
-        
-        createTempFile(&tcf, &tcd);
+        TmpDir tmpDir;
+        tmpDir.createTempFile(&tcf, &tcd);
 
         tmpDirs.resize(lineNumber_par+1);
         tmpDirs[lineNumber_par]=tcd;

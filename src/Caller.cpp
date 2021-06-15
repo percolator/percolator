@@ -697,8 +697,8 @@ bool Caller::parseOptions(int argc, char **argv) {
     string tcf = "";
     char tcd;
 
-
-    createTempFile(&tcf, &tcd);
+    TmpDir tmpDir;
+    tmpDir.createTempFile(&tcf, &tcd);
     inputFN_ = tcf;
     ofstream outFile;
     outFile.open(inputFN_);
@@ -890,7 +890,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
-void Caller::createTempFile(string* tcf, char* tcd) {
+/* void Caller::createTempFile(string* tcf, char* tcd) {
   string str;
 
   try {
@@ -912,7 +912,7 @@ void Caller::createTempFile(string* tcf, char* tcd) {
         }
 }
 
-
+ */
 
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities

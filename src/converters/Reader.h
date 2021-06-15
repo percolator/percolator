@@ -35,7 +35,6 @@
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLString.hpp>
 #include <xsd/cxx/xml/string.hxx>
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp> 
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
@@ -50,7 +49,7 @@
 #include "MassHandler.h"
 #include "Spectrum.h"
 #include "Enzyme.h"
-#include "Caller.h"
+#include "TmpDir.h"
 
 #if defined (__WIN32__) || defined (__MINGW__) 
   #include <direct.h>

@@ -45,6 +45,7 @@
 #include "XMLInterface.h"
 #include "CrossValidation.h"
 #include "Enzyme.h"
+#include "TmpDir.h"
 
 #define  NO_BOOST_DATE_TIME_INLINE
 #include <boost/asio.hpp>
@@ -80,7 +81,7 @@ class Caller {
   string extendedGreeter();
   bool parseOptions(int argc, char **argv);    
   int run();
-  void createTempFile(string* tcf, char* tcd);
+  
   
  protected:    
   Normalizer* pNorm_;
