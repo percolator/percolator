@@ -80,7 +80,7 @@ class Caller {
   string extendedGreeter();
   bool parseOptions(int argc, char **argv);    
   int run();
-  std::string createTempFile();
+  void createTempFile(string* tcf, char* tcd);
   
  protected:    
   Normalizer* pNorm_;

@@ -50,6 +50,7 @@
 #include "MassHandler.h"
 #include "Spectrum.h"
 #include "Enzyme.h"
+#include "Caller.h"
 
 #if defined (__WIN32__) || defined (__MINGW__) 
   #include <direct.h>

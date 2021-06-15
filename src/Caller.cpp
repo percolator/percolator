@@ -694,7 +694,12 @@ bool Caller::parseOptions(int argc, char **argv) {
 
     /* Create a temporary tab file to concatenate tab files in to */
 
-    inputFN_ = createTempFile();
+    string tcf = "";
+    char tcd;
+
+
+    createTempFile(&tcf, &tcd);
+    inputFN_ = tcf;
     ofstream outFile;
     outFile.open(inputFN_);
 
@@ -885,10 +890,26 @@ bool Caller::parseOptions(int argc, char **argv) {
   return true;
 }
 
-std::string Caller::createTempFile() {
-  boost::filesystem::path temp = boost::filesystem::unique_path();
-  std::string tempstr    = temp.string();
-  return tempstr;
+void Caller::createTempFile(string* tcf, char* tcd) {
+  string str;
+
+  try {
+          boost::filesystem::path ph = boost::filesystem::unique_path();
+          boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
+          boost::filesystem::path file("converters-tmp.tcb");
+          *tcf = std::string((dir / file).string());
+          str =  dir.string();
+          tcd = new char[str.size() + 1];
+          std::copy(str.begin(), str.end(), tcd);
+          tcd[str.size()] = '\0';
+          if (boost::filesystem::is_directory(dir)) {
+            boost::filesystem::remove_all(dir);
+          }
+
+          boost::filesystem::create_directory(dir);
+        } catch (boost::filesystem::filesystem_error &e) {
+          std::cerr << e.what() << std::endl;
+        }
 }
 
 
