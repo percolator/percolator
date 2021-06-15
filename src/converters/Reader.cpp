@@ -309,7 +309,7 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
         tmpDir.createTempFile(&tcf, &tcd);
 
         tmpDirs.resize(lineNumber_par+1);
-        tmpDirs[lineNumber_par]=tcd;
+        tmpDirs[lineNumber_par]=&tcd;
         std::string tmpName = tcf;
 #else
         std::string tmpName = std::tmpnam(NULL);
