@@ -96,9 +96,15 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   </xsd:annotation>
 </xsd:element>
 
- <xsd:element name="calc_mass" type="xsd:double">
+<xsd:element name="calc_mass" type="xsd:double">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">The calculated mass of the PSM</xsd:documentation>
+  </xsd:annotation>
+</xsd:element>
+
+<xsd:element name="retentionTimeUnmodified" type="xsd:double">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">This field contains the retention time found in input file</xsd:documentation>
   </xsd:annotation>
 </xsd:element>
 
