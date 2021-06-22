@@ -92,9 +92,11 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
     }   
     
     os << "      <calc_mass>" << fixed << setprecision (3) << pPSM->calcMass << "</calc_mass>" << endl;
-if (pPSM->getRetentionTime() != NULL) {
-      os << "      <retentionTimeUnmodified>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retentionTimeUnmodified>" << endl;
-    }
+/* Remove this tag for now */
+/* if (isfinite(pPSM->getRetentionTime())) {
+      os << "      <retentionTime>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retentionTime>" << endl;
+    } */
+
     if (DataSet::getCalcDoc()) {
       os << "      <retentionTime observed=\"" 
          << pPSM->getUnnormalizedRetentionTime()

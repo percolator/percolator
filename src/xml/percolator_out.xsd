@@ -102,12 +102,6 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   </xsd:annotation>
 </xsd:element>
 
-<xsd:element name="retentionTimeUnmodified" type="xsd:double">
-  <xsd:annotation>
-    <xsd:documentation xml:lang="en">This field contains the retention time found in input file</xsd:documentation>
-  </xsd:annotation>
-</xsd:element>
-
 <xsd:element name="retentionTime">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">This field contains the observed and predicted retention time in minutes</xsd:documentation>
