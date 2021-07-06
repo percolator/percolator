@@ -1,8 +1,7 @@
-
-# If GoogleTest is not installed, build and install a private copy.
-# Skip this step if GOOGLE_TEST is not defined.
-if(GOOGLE_TEST)
-  find_package(GTest)# REQUIRED)
+# If the user builds without a dependency on GTest, then build nothing.
+if(NOT WITHOUT_GTEST)
+  # If GTest is not installed, build and install a private copy.
+  find_package(GTest)
   if(GTEST_FOUND)
     message(STATUS "Using installed GoogleTest at: ${GTEST_INCLUDE_DIRS}")
   else(GTEST_FOUND)
@@ -33,33 +32,33 @@ if(GOOGLE_TEST)
     set(GTEST_BOTH_LIBRARIES gtest gtestmain)
     message(STATUS "GoogleTest has been installed succesfully: ${GTEST_INCLUDE_DIRS}.")
   endif(GTEST_FOUND)
-endif(GOOGLE_TEST)
 
-# Linking and building unit tests
-include_directories(${GTEST_INCLUDE_DIRS}
-    ${PERCOLATOR_SOURCE_DIR}/src
-    ${PERCOLATOR_SOURCE_DIR}/src/fido
-    ${CMAKE_BINARY_DIR}/src)
-add_executable(gtest_unit
-    Unit_tests_Percolator_main.cpp
-    UnitTest_Percolator_Fido.cpp
-    UnitTest_Percolator_Option.cpp
-    UnitTest_Percolator_TabReader.cpp
-    UnitTest_Percolator_SetHandler.cpp
-    UnitTest_Percolator_DataSet.cpp
-    UnitTest_Percolator_Scores.cpp)
-# Flags for generating coverage data
-if(COVERAGE)
-  target_compile_options(perclibrary PUBLIC -ftest-coverage -fprofile-arcs)
-  target_compile_options(gtest_unit PUBLIC -ftest-coverage -fprofile-arcs)
-  target_link_libraries(gtest_unit -fprofile-arcs)
-endif(COVERAGE)
-if (GTEST_FOUND)
-  target_link_libraries(gtest_unit perclibrary fido pthread ${GTEST_BOTH_LIBRARIES})
-else (GTEST_FOUND)
-  target_link_libraries(gtest_unit perclibrary fido pthread gtest gtest_main)
-endif(GTEST_FOUND)
-add_test(UnitTest_Percolator_RunAllTests gtest_unit)
+  # Linking and building unit tests
+  include_directories(${GTEST_INCLUDE_DIRS}
+      ${PERCOLATOR_SOURCE_DIR}/src
+      ${PERCOLATOR_SOURCE_DIR}/src/fido
+      ${CMAKE_BINARY_DIR}/src)
+  add_executable(gtest_unit
+      Unit_tests_Percolator_main.cpp
+      UnitTest_Percolator_Fido.cpp
+      UnitTest_Percolator_Option.cpp
+      UnitTest_Percolator_TabReader.cpp
+      UnitTest_Percolator_SetHandler.cpp
+      UnitTest_Percolator_DataSet.cpp
+      UnitTest_Percolator_Scores.cpp)
+  # Flags for generating coverage data
+  if(COVERAGE)
+    target_compile_options(perclibrary PUBLIC -ftest-coverage -fprofile-arcs)
+    target_compile_options(gtest_unit PUBLIC -ftest-coverage -fprofile-arcs)
+    target_link_libraries(gtest_unit -fprofile-arcs)
+  endif(COVERAGE)
+  if (GTEST_FOUND)
+    target_link_libraries(gtest_unit perclibrary fido pthread ${GTEST_BOTH_LIBRARIES})
+  else (GTEST_FOUND)
+    target_link_libraries(gtest_unit perclibrary fido pthread gtest gtest_main)
+  endif(GTEST_FOUND)
+  add_test(UnitTest_Percolator_RunAllTests gtest_unit)
 
-# Important to use relative paths here (used by CPack)!
-install(TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin)
+  # Important to use relative paths here (used by CPack)!
+  install(TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin)
+endif(WITHOUT_GTEST)
