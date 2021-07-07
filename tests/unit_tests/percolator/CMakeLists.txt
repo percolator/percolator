@@ -46,19 +46,24 @@ if(NOT WITHOUT_GTEST)
       UnitTest_Percolator_SetHandler.cpp
       UnitTest_Percolator_DataSet.cpp
       UnitTest_Percolator_Scores.cpp)
-  # Flags for generating coverage data
+  # Link with all required libraries
+  set(UNIT_TEST_LIBRARIES perclibrary blas fido pthread)
+  if(APPLE)
+    set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+  endif(APPLE)
+  if(GTEST_FOUND)
+    set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} ${GTEST_BOTH_LIBRARIES})
+  else(GTEST_FOUND)
+    set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} gtest gtest_main)
+  endif(GTEST_FOUND)
   if(COVERAGE)
+    # Insert flags for generating coverage data
     target_compile_options(perclibrary PUBLIC -ftest-coverage -fprofile-arcs)
     target_compile_options(gtest_unit PUBLIC -ftest-coverage -fprofile-arcs)
-    target_link_libraries(gtest_unit -fprofile-arcs)
+    set(UNIT_TEST_LIBRARIES -fprofile-arcs ${UNIT_TEST_LIBRARIES})
   endif(COVERAGE)
-  if (GTEST_FOUND)
-    target_link_libraries(gtest_unit perclibrary fido pthread ${GTEST_BOTH_LIBRARIES})
-  else (GTEST_FOUND)
-    target_link_libraries(gtest_unit perclibrary fido pthread gtest gtest_main)
-  endif(GTEST_FOUND)
+  target_link_libraries(gtest_unit ${UNIT_TEST_LIBRARIES})
   add_test(UnitTest_Percolator_RunAllTests gtest_unit)
-
   # Important to use relative paths here (used by CPack)!
   install(TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin)
-endif(WITHOUT_GTEST)
+endif(NOT WITHOUT_GTEST)
