@@ -38,6 +38,13 @@ if(NOT WITHOUT_GTEST)
       ${PERCOLATOR_SOURCE_DIR}/src
       ${PERCOLATOR_SOURCE_DIR}/src/fido
       ${CMAKE_BINARY_DIR}/src)
+  find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
+  add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED)
+  add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+  if(WIN32)
+    add_definitions(-DBOOST_ALL_NO_LIB) # disable autolinking in boost
+  endif(WIN32)
+  include_directories(${Boost_INCLUDE_DIRS})
   add_executable(gtest_unit
       Unit_tests_Percolator_main.cpp
       UnitTest_Percolator_Fido.cpp
@@ -50,8 +57,6 @@ if(NOT WITHOUT_GTEST)
   set(UNIT_TEST_LIBRARIES perclibrary blas fido pthread)
   if(APPLE)
     set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-  else(APPLE)
-    set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} stdc++)
   endif(APPLE)
   if(GTEST_FOUND)
     set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} ${GTEST_BOTH_LIBRARIES})
