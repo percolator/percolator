@@ -96,7 +96,7 @@ elementFormDefault="qualified" attributeFormDefault="unqualified">
   </xsd:annotation>
 </xsd:element>
 
-<xsd:element name="calc_mass" type="xsd:double">
+ <xsd:element name="calc_mass" type="xsd:double">
   <xsd:annotation>
     <xsd:documentation xml:lang="en">The calculated mass of the PSM</xsd:documentation>
   </xsd:annotation>
