@@ -30,18 +30,18 @@ static std::string const psmNames[] = { "ABC", "DEF", "GHI", "JKL", "MNO" };
 
 class ScoreHolderTest : public ::testing::Test {
   protected:
-    bool checkOrder(std::vector<ScoreHolder> const *scores, ...);
+    bool checkOrder(std::vector<ScoreHolder> const &scores, ...);
 };
 
 // A simple function that verifies that the scores in a vector are in
 // a specific order. (The function is variadic so that the caller
 // doesn't need to declare an extra array.)
-bool ScoreHolderTest::checkOrder(std::vector<ScoreHolder> const *scores, ...)
+bool ScoreHolderTest::checkOrder(std::vector<ScoreHolder> const &scores, ...)
 {
     va_list values;
     va_start(values, scores);
-    for (std::vector<ScoreHolder>::const_iterator it = scores->begin() ;
-             it != scores->end() ; ++it) {
+    for (std::vector<ScoreHolder>::const_iterator it = scores.begin() ;
+             it != scores.end() ; ++it) {
         double score = va_arg(values, double);
         if (it->score != score)
             return false;
@@ -64,9 +64,9 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
         scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
     }
     std::sort(scores.begin(), scores.end(), lexicOrderProb());
-    ASSERT_TRUE(checkOrder(&scores, 1.0, 2.0, 3.0, 4.0, 5.0));
+    ASSERT_TRUE(checkOrder(scores, 1.0, 2.0, 3.0, 4.0, 5.0));
     std::sort(scores.begin(), scores.end(), OrderScanMassCharge());
-    ASSERT_TRUE(checkOrder(&scores, 3.0, 4.0, 5.0, 1.0, 2.0));
+    ASSERT_TRUE(checkOrder(scores, 3.0, 4.0, 5.0, 1.0, 2.0));
 
     // scan values are assigned [ 2, 2, 1, 1, 0 ]
     // labels are assigned [ -1, +1, -1, +1, -1 ]
@@ -77,7 +77,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
         scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? +1 : -1), pPSM));
     }
     std::sort(scores.begin(), scores.end(), OrderScanLabel());
-    ASSERT_TRUE(checkOrder(&scores, 5.0, 4.0, 3.0, 2.0, 1.0));
+    ASSERT_TRUE(checkOrder(scores, 5.0, 4.0, 3.0, 2.0, 1.0));
 }
 
 // Verify the ScoreHolder's uniqueness functions.
