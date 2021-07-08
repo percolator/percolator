@@ -34,17 +34,17 @@ if(NOT WITHOUT_GTEST)
   endif(GTEST_FOUND)
 
   # Linking and building unit tests
-  include_directories(${GTEST_INCLUDE_DIRS}
-      ${PERCOLATOR_SOURCE_DIR}/src
-      ${PERCOLATOR_SOURCE_DIR}/src/fido
-      ${CMAKE_BINARY_DIR}/src)
   find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
   add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED)
   add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
   if(WIN32)
     add_definitions(-DBOOST_ALL_NO_LIB) # disable autolinking in boost
   endif(WIN32)
-  include_directories(${Boost_INCLUDE_DIRS})
+  include_directories(${GTEST_INCLUDE_DIRS}
+      ${Boost_INCLUDE_DIRS}
+      ${PERCOLATOR_SOURCE_DIR}/src
+      ${PERCOLATOR_SOURCE_DIR}/src/fido
+      ${CMAKE_BINARY_DIR}/src)
   add_executable(gtest_unit
       Unit_tests_Percolator_main.cpp
       UnitTest_Percolator_Fido.cpp
