@@ -123,7 +123,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("Q",
       "pepxml-output",
-      "Write a rudementary pepXML file with psm-level statistics to the specified filename.",
+      "Write a rudimentary pepXML file with psm-level statistics to the specified filename.",
       "filename");
   cmd.defineOption("",
       "stdinput-tab",
@@ -296,7 +296,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. Default = \"auto\", i.e., Percolator parses the protein-decoy-pattern from input-file.",
+      "Specify the type of target-decoy search: \"auto\" (Percolator attempts to detect the search type automatically), \"concatenated\" (single search on concatenated target-decoy protein db) or \"separate\" (two searches, one against target and one against decoy protein db). Default = \"auto\".",
+      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm: \"auto\" (Percolator parses the protein-decoy-pattern from input-file) or \"'DECOY NAME'\" (search for decoys using 'DECOY NAME' pattern). Default = \"auto\".",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
@@ -710,7 +711,9 @@ bool Caller::parseOptions(int argc, char **argv) {
 
     /* Start appending pin files to one pin file. */
     for(const string &text : cmd.arguments) {
-      std::cerr << "Reading file: " << text.c_str() << std::endl;
+      if (VERB > 0) {
+        std::cerr << "Reading file: " << text.c_str() << std::endl;
+      }
       /* Keep track of missing charge columns for a given file */
       std::vector<int> missingCols;
       
@@ -796,10 +799,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     outFile.close();
   }
 
-
-
-  std::cerr << "All files have been read" << std::endl;
-
+  if (VERB > 0) {
+    std::cerr << "All files have been read" << std::endl;
+  }
+  
   if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
 
     if (protEstimatorDecoyPrefix == "auto") {
@@ -889,30 +892,6 @@ bool Caller::parseOptions(int argc, char **argv) {
 
   return true;
 }
-
-/* void Caller::createTempFile(string* tcf, char* tcd) {
-  string str;
-
-  try {
-          boost::filesystem::path ph = boost::filesystem::unique_path();
-          boost::filesystem::path dir = boost::filesystem::temp_directory_path() / ph;
-          boost::filesystem::path file("converters-tmp.tcb");
-          *tcf = std::string((dir / file).string());
-          str =  dir.string();
-          tcd = new char[str.size() + 1];
-          std::copy(str.begin(), str.end(), tcd);
-          tcd[str.size()] = '\0';
-          if (boost::filesystem::is_directory(dir)) {
-            boost::filesystem::remove_all(dir);
-          }
-
-          boost::filesystem::create_directory(dir);
-        } catch (boost::filesystem::filesystem_error &e) {
-          std::cerr << e.what() << std::endl;
-        }
-}
-
- */
 
 /** Calculates the PSM and/or peptide probabilities
  * @param isUniquePeptideRun boolean indicating if we want peptide or PSM probabilities

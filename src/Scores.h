@@ -70,7 +70,7 @@ class ScoreHolder {
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
   std::string getCharge(std::string id);
 };
-struct less_than_base_name
+struct lessThanBaseName
 {
     inline bool operator() (const ScoreHolder& struct1, const ScoreHolder& struct2)
     {

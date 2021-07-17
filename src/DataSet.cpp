@@ -249,12 +249,12 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
 
   if (label == -1) {
     for(auto const& value: myPsm->proteinIds) { 
-    std::string token = value.substr(0, value.find("_") + 1);
+      std::string token = value.substr(0, value.find("_") + 1);
     
-    if (token != decoyPrefix && VERB > 1) {
-      std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
+      if (token != decoyPrefix && VERB > 1) {
+        std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
+      }
     }
-  }
   }
   return label;
 }
@@ -274,128 +274,128 @@ void DataSet::registerPsm(PSMDescription* myPsm) {
   psms_.push_back(myPsm);
 }
 
-bool TabFileValidator::isTabFile(std::string file_name)
-{
-    // open C++ stream to file
-    std::ifstream file(file_name.c_str());
-    // file not opened, return false
-    if(!file.is_open()) return false;
-    // read a line from the file       
-    std::string wtf;
-    std::istream &in= std::getline(file, wtf);
-    // unable to read the line, return false
-    if(!in) {
+bool TabFileValidator::isTabFile(std::string file_name) {
+  // open C++ stream to file
+  std::ifstream file(file_name.c_str());
+  // file not opened, return false
+  if(!file.is_open()) return false;
+  // read a line from the file       
+  std::string wtf;
+  std::istream &in= std::getline(file, wtf);
+  // unable to read the line, return false
+  if(!in) {
+    if (VERB > 0) {
       std::cerr << "Cannot read" << file_name << "!" << std::endl;
-      return false;
     }
-    // try to find a '\t', return true if '\t' is found within the string
-    bool isTab = std::find(wtf.begin(), wtf.end(), '\t')!= wtf.end();
-    if (!isTab) {
-      std::cerr << file_name << " is not comma delimited!\n" << std::endl;
-    }
-    return isTab;
+    return false;
+  }
+  // try to find a '\t', return true if '\t' is found within the string
+  bool isTab = std::find(wtf.begin(), wtf.end(), '\t')!= wtf.end();
+  if (!isTab && VERB > 0) {
+    std::cerr << file_name << " is not comma delimited!\n" << std::endl;
+  }
+  return isTab;
 }
 
 bool TabFileValidator::isTabFiles(std::vector<std::string> files) {
-  for(const string &file : files) {
-      if(!isTabFile(file)) {
-        return false;
-      } 
-    };
-    return true;
+  for (const string &file : files) {
+    if(!isTabFile(file)) {
+      return false;
+    } 
+  };
+  return true;
 }
 
 std::string TabFileValidator::getDecoyPrefix(std::vector<std::string> fileList) {
   std::string decoy_prefix;
   for(const string &file : fileList) {
-        decoy_prefix = detect_decoy_prefix(file);
-        break;
-      };
-      return decoy_prefix;
+      decoy_prefix = detectDecoyPrefix(file);
+      break;
+  };
+  return decoy_prefix;
 }
 
 void TabFileValidator::getProteinIndex(std::string file_name,int* proteinIndex,int* labelIndex) {
   // open C++ stream to file
-    std::ifstream file(file_name.c_str());
+  std::ifstream file(file_name.c_str());
 
-    // file not opened, return false
-    if(!file.is_open()) {
-      return ;
+  // file not opened, return false
+  if(!file.is_open()) {
+    return ;
+  }
+
+  int columnIndex = 0;
+  std::string hederRow;
+  getline(file, hederRow);
+  TabReader reader(hederRow);
+    while (!reader.error()) {
+      std::string optionalHeader = reader.readString();
+      if (optionalHeader.find("Proteins") != std::string::npos) { 
+        *proteinIndex = columnIndex;
+      } else if (optionalHeader.find("Label") != std::string::npos){
+        *labelIndex = columnIndex;
+      }
+      columnIndex++;
     }
-
-    int columnIndex = 0;
-    std::string hederRow;
-    getline(file, hederRow);
-    TabReader reader(hederRow);
-      while (!reader.error()) {
-        std::string optionalHeader = reader.readString();
-        if (optionalHeader.find("Proteins") != std::string::npos) { 
-          *proteinIndex = columnIndex;
-        } else if (optionalHeader.find("Label") != std::string::npos){
-          *labelIndex = columnIndex;
-        }
-        columnIndex++;
-     }
 }
 
 std::string TabFileValidator::findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex) {
   // open C++ stream to file
-    std::ifstream file(file_name.c_str());
-    // file not opened, return false
-    if(!file.is_open()) return "error";
-    // read a line from the file  
+  std::ifstream file(file_name.c_str());
+  // file not opened, return false
+  if(!file.is_open()) return "error";
+  // read a line from the file  
 
-    /* Skip header */
-    std::string nextRow;
-    getline(file, nextRow);
-      
-    while(getline(file, nextRow)) {
-
-        TabReader readerRow(nextRow);
-        int col = 0;
-        bool isDecoy = false;
-
-        while (!readerRow.error()) {
-          std::string value = readerRow.readString();
-          if (col == labelIndex && value == "-1") {
-            isDecoy = true;
-          }
-          if (col == proteinIndex && isDecoy) {
-            std::string token = value.substr(0, value.find("_") + 1);
-            return token;
-          }
-          col++;
-        }
+  /* Skip header */
+  std::string nextRow;
+  getline(file, nextRow);
+    
+  while(getline(file, nextRow)) {
+    TabReader readerRow(nextRow);
+    int col = 0;
+    bool isDecoy = false;
+    
+    while (!readerRow.error()) {
+      std::string value = readerRow.readString();
+      if (col == labelIndex && value == "-1") {
+        isDecoy = true;
+      }
+      if (col == proteinIndex && isDecoy) {
+        std::string token = value.substr(0, value.find("_") + 1);
+        return token;
+      }
+      col++;
     }
-    std::cerr << "Couldn't find protein decoy-preix, i.e., 'decoyPattern_' in protein ids" << std::endl;
-    return "error";
-  
+  }
+  if (VERB > 0) {
+    std::cerr << "Couldn't find protein decoy-preix, i.e., 'decoyPattern_' in protein ids" << std::endl;  
+  }
+  return "error";
 }
 
-std::string TabFileValidator::detect_decoy_prefix(std::string file_name) {
+std::string TabFileValidator::detectDecoyPrefix(std::string file_name) {
+  int proteinIndex=-1;
+  int labelIndex=-1;
 
-    int proteinIndex=-1;
-    int labelIndex=-1;
-  
-    getProteinIndex(file_name, &proteinIndex, &labelIndex);
-    if (proteinIndex==-1 || labelIndex==-1) {
-      std::cerr << "Couldn't find Protein header in tab-file" << std::endl;
-      return "error";
+  getProteinIndex(file_name, &proteinIndex, &labelIndex);
+  if (proteinIndex==-1 || labelIndex==-1) {
+    if (VERB > 0) {
+        std::cerr << "Couldn't find Protein header in tab-file" << std::endl;
     }
-
-    return findDecoyPrefix(file_name, proteinIndex, labelIndex);
+    return "error";
+  }
+  return findDecoyPrefix(file_name, proteinIndex, labelIndex);
 }
 
 bool TabFileValidator::validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix) {
+  std::string tmpDecoyPrefix = getDecoyPrefix(files);
+  *decoy_prefix = tmpDecoyPrefix;
 
-    std::string _decoy_prefix = getDecoyPrefix(files);
-    *decoy_prefix = _decoy_prefix;
-
-    if (_decoy_prefix=="error") {
-      return false;
-    }
-    if (!isTabFiles(files)) {
-      return false;
-    }
-    return true;
+  if (tmpDecoyPrefix=="error") {
+    return false;
+  }
+  if (!isTabFiles(files)) {
+    return false;
+  }
+  return true;
 }
