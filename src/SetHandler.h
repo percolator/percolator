@@ -62,21 +62,29 @@ typedef std::pair<int, double> ScanId;
 * testing, Xval data sets, reads/writes from/to a file, prints them.
 *
 */
-class SetHandler {    
+class SetHandler {  
+ // Used to determine if a psm is a decoy
+ std::string decoyPrefix="rev_";
+
  public:
   SetHandler(unsigned int maxPSMs);
   virtual ~SetHandler();
 
   void push_back_dataset(DataSet* ds);
+
+  // set/get decoy prefix
+  std::string getDecoyPrefix() {return decoyPrefix;}
+  void setDecoyPrefix(std::string arg) {decoyPrefix = arg;}
+
      
   //const double* getFeatures(const int setPos, const int ixPos) const; 
   size_t getMaxPSMs() { return maxPSMs_; }
   
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
-  int readTab(istream& dataStream, SanityCheck*& pCheck, std::string decoyPrefix="rev_");
+  int readTab(istream& dataStream, SanityCheck*& pCheck);
   int readAndScoreTab(istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck, std::string decoyPrefix);
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck);
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
@@ -122,10 +130,10 @@ class SetHandler {
     
   void readPSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, bool& separateSearches,
-    std::vector<OptionalField>& optionalFields, std::string decoyPrefix);
+    std::vector<OptionalField>& optionalFields);
   void readAndScorePSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
-    std::vector<double>& rawWeights, Scores& allScores, std::string decoyPrefix);
+    std::vector<double>& rawWeights, Scores& allScores);
 };
 
 #endif /*SETHANDLER_H_*/

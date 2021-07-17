@@ -92,10 +92,10 @@ int const SetHandler::getLabel(int setPos) {
   return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }
 
-int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck, std::string decoyPrefix) {
+int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
   std::vector<double> noWeights;
   Scores noScores(true);
-  return readAndScoreTab(dataStream, noWeights, noScores, pCheck, decoyPrefix);
+  return readAndScoreTab(dataStream, noWeights, noScores, pCheck);
 }
 
 int SetHandler::getOptionalFields(const std::string& headerLine, 
@@ -228,7 +228,7 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
 
 void SetHandler::readPSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, bool& concatenatedSearch,
-    std::vector<OptionalField>& optionalFields, std::string decoyPrefix) {
+    std::vector<OptionalField>& optionalFields) {
   DataSet* targetSet = new DataSet();
   assert(targetSet);
   targetSet->setLabel(1);
@@ -299,7 +299,6 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       } else {
         scanIdLookUp[scanId] = isDecoy;
       }
-      
       if (label == 1) {
         targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix);
       } else if (label == -1) {
@@ -425,7 +424,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
 }
 
 int SetHandler::readAndScoreTab(istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck, std::string decoyPrefix) {
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck) {
   if (!dataStream) {
     std::cerr << "ERROR: Cannot open data stream." << std::endl;
     return 0;
@@ -494,14 +493,14 @@ int SetHandler::readAndScoreTab(istream& dataStream,
 
   // read in the data
   if (rawWeights.size() > 0) {
-    readAndScorePSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, rawWeights, allScores, decoyPrefix);
+    readAndScorePSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, rawWeights, allScores);
   } else {
     // detect if the input came from separate target and decoy searches or 
     // from a concatenated search by looking for scan+expMass combinations
     // that have both at least one target and decoy PSM
     bool concatenatedSearch = true;
     
-    readPSMs(dataStream, psmLine, hasInitialValueRow, concatenatedSearch, optionalFields, decoyPrefix);
+    readPSMs(dataStream, psmLine, hasInitialValueRow, concatenatedSearch, optionalFields);
     
     pCheck = new SanityCheck();
     pCheck->checkAndSetDefaultDir();
@@ -513,7 +512,7 @@ int SetHandler::readAndScoreTab(istream& dataStream,
 
 void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
-    std::vector<double>& rawWeights, Scores& allScores, std::string decoyPrefix) {
+    std::vector<double>& rawWeights, Scores& allScores) {
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   bool readProteins = true;
   do {

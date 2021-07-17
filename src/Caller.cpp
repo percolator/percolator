@@ -1054,7 +1054,8 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
     if (VERB > 1) {
       std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << std::endl;
     }
-    success = setHandler.readTab(dataStream, pCheck_, protEstimatorDecoyPrefix);
+    
+    success = setHandler.readTab(dataStream, pCheck_);
   }
 
   // Reading input files (pin or temporary file)
@@ -1164,6 +1165,7 @@ int Caller::run() {
   std::ifstream fileStream;
   XMLInterface xmlInterface(xmlOutputFN_, pepXMLOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
+  setHandler.setDecoyPrefix(protEstimatorDecoyPrefix);
   Scores allScores(useMixMax_);
 
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
@@ -1224,7 +1226,7 @@ int Caller::run() {
     if (!tabInput_) {
       success = xmlInterface.readAndScorePin(fileStream, rawWeights, allScores, inputFN_, setHandler, pCheck_, protEstimator_, enzyme_);
     } else {
-      success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores, pCheck_,protEstimatorDecoyPrefix);
+      success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores, pCheck_);
     }
 
     // Reading input files (pin or temporary file)
