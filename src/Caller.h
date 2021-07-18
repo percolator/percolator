@@ -44,7 +44,7 @@
 #include "XMLInterface.h"
 #include "CrossValidation.h"
 #include "Enzyme.h"
-#include "TmpDir.h"
+#include "ValidateTabFile.h"
 
 #define  NO_BOOST_DATE_TIME_INLINE
 #include <boost/asio.hpp>

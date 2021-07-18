@@ -653,8 +653,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
     tabInput_ = true;
-    TmpDir tmpDir;
-    inputFN_ = tmpDir.concatenateMultiplePINs(cmd.arguments);
+    ValidateTabFile validateTab;
+    inputFN_ = validateTab.concatenateMultiplePINs(cmd.arguments);
 
   }
 
