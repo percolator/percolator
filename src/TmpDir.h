@@ -2,8 +2,9 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include "DataSet.h"
 #include <fstream>
+
+#include "DataSet.h"
 
 class TmpDir {       
   public:             
