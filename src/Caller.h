@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <vector>
 #include <set>
-#include <map>
 #include <string>
 #include <memory>
 #ifdef HAVE_CONFIG_H
