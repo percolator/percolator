@@ -1,10 +1,9 @@
 #include "ValidateTabFile.h"
 
 std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_string<char>> fileNames) {
-
+  // Validate multiple tab-files, and then concatenate them.
   std::string inputFN_;
   std::ifstream pinFileStream;
-
 
   /* Complete column position to header name */
   std::map<int,std::string> columnMap = {};
@@ -41,8 +40,7 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
     pinFileStream.close();
   }
 
-  /* Create a temporary tab file to concatenate tab files in to */
-
+  /* Create a temporary tab file to concatenate tab files in to */ 
   string tcf = "";
   char tcd;
 
