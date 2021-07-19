@@ -115,7 +115,7 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
       optionalFields.push_back(EXPMASS);
     } else if (optionalHeader == "calcmass") {
       optionalFields.push_back(CALCMASS);
-    } else if (DataSet::getCalcDoc() && (optionalHeader == "rt" || optionalHeader == "retentiontime")) {
+    } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
       hasRt = true;
     } else if (DataSet::getCalcDoc() && (optionalHeader == "dm" || optionalHeader == "deltamass")) {
@@ -267,7 +267,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
         psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
-                                 readProteins, psmPriority.psm, featurePool_);
+                                 readProteins, psmPriority.psm, featurePool_, decoyPrefix);
         psmPriority.priority = randIdx;
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
@@ -299,11 +299,10 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       } else {
         scanIdLookUp[scanId] = isDecoy;
       }
-      
       if (label == 1) {
-        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_);
+        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix);
       } else if (label == -1) {
-        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_);
+        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix);
       } else {
         std::cerr << "Warning: the PSM on line " << lineNr
             << " has a label not in {1,-1} and will be ignored." << std::endl;
@@ -522,7 +521,7 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
     }
     psmLine = rtrim(psmLine);
     ScoreHolder sh;
-    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM, featurePool_);
+    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM, featurePool_, decoyPrefix);
     allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
     ++lineNr;
   } while (getline(dataStream, psmLine));
