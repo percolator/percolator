@@ -67,7 +67,7 @@ enable_testing()
 add_subdirectory(data/system_tests/percolator)
 add_subdirectory(tests/integration_tests/percolator)
 # Scheduling unit level tests
-if(GOOGLE_TEST)
+if(NOT WITHOUT_GTEST)
   add_subdirectory(tests/unit_tests/percolator)
 endif()
 
