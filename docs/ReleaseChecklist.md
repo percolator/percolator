@@ -1,5 +1,7 @@
+# Creating a new release version
+
 1. change version number in CommonCMake.txt
-2. create binaries for all platforms with vagrant and fix building bugs
+2. create binaries for all platforms with vagrant and fix build bugs
 3. verify that all system tests pass
 4. verify that crux-toolkit cucumber tests pass
 5. add information to changelog on master
