@@ -52,7 +52,8 @@ if(NOT WITHOUT_GTEST)
       UnitTest_Percolator_TabReader.cpp
       UnitTest_Percolator_SetHandler.cpp
       UnitTest_Percolator_DataSet.cpp
-      UnitTest_Percolator_Scores.cpp)
+      UnitTest_Percolator_Scores.cpp
+      UnitTest_Percolator_CrossValidation.cpp)
   # Link with all required libraries
   set(UNIT_TEST_LIBRARIES perclibrary blas fido)
   if(NOT MSVC)
