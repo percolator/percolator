@@ -338,39 +338,89 @@ void TabFileValidator::getProteinIndex(std::string file_name,int* proteinIndex,i
     }
 }
 
+std::string TabFileValidator::LongestCommonSubsequence(vector<string> arr)
+{
+    // Determine size of the array
+    int n = arr.size();
+ 
+    // Take first word from array as reference
+    string s = arr[0];
+    int len = s.length();
+ 
+    string res = "";
+ 
+    for (int i = 0; i < len; i++) {
+        for (int j = i + 1; j <= len; j++) {
+            // generating all possible substrings
+            // of our reference string arr[0] i.e s
+            string stem = s.substr(i, j);
+            int k = 1;
+            for (k = 1; k < n; k++) {
+                // Check if the generated stem is
+                // common to all words
+                if (arr[k].find(stem) == std::string::npos)
+                    break;
+            }
+ 
+            // If current substring is present in
+            // all strings and its length is greater
+            // than current result
+            if (k == n && res.length() < stem.length())
+                res = stem;
+        }
+    }
+ 
+    return res;
+}
+
 std::string TabFileValidator::findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex) {
   // open C++ stream to file
   std::ifstream file(file_name.c_str());
+
   // file not opened, return false
   if(!file.is_open()) return "error";
   // read a line from the file  
 
   /* Skip header */
   std::string nextRow;
+  
   getline(file, nextRow);
-    
+
+  std::vector<std::string> proteinNames;
   while(getline(file, nextRow)) {
     TabReader readerRow(nextRow);
     int col = 0;
     bool isDecoy = false;
-    
     while (!readerRow.error()) {
       std::string value = readerRow.readString();
       if (col == labelIndex && value == "-1") {
         isDecoy = true;
       }
       if (col == proteinIndex && isDecoy) {
-        std::string token = value.substr(0, value.find("_") + 1);
-        return token;
+        proteinNames.push_back(value);
+        
       }
       col++;
     }
   }
+
+  /* Shuffle protein ids  */
+  auto rng = std::default_random_engine {};
+  std::shuffle(std::begin(proteinNames), std::end(proteinNames), rng);
+  /* Check prefix for 10% of all protein ids  */
+  int n_elements = round(0.1 * proteinNames.size());
+  proteinNames.resize(n_elements);
+  
+  std::string prefix = LongestCommonSubsequence(proteinNames);
+
   if (VERB > 0) {
-    std::cerr << "Couldn't find protein decoy-preix, i.e., 'decoyPattern_' in protein ids" << std::endl;  
+    std::cerr << "Protein decoy-preix used is " << prefix << std::endl;  
   }
-  return "error";
+  
+  return prefix;
 }
+
+
 
 std::string TabFileValidator::detectDecoyPrefix(std::string file_name) {
   int proteinIndex=-1;

@@ -28,6 +28,7 @@
 #include <vector>
 #include <map>
 #include <cerrno>
+#include <random>
 
 #include "Scores.h"
 #include "ResultHolder.h"
@@ -118,6 +119,7 @@ class TabFileValidator {
     bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
     void getProteinIndex(std::string file_name, int* proteinIndex,int* labelIndex);
     std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
+    std::string LongestCommonSubsequence(std::vector<string> arr);
 };
 
 
