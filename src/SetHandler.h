@@ -64,7 +64,7 @@ typedef std::pair<int, double> ScanId;
 */
 class SetHandler {  
  // Used to determine if a psm is a decoy
- std::string decoyPrefix="rev_";
+ std::string decoyPrefix;
 
  public:
   SetHandler(unsigned int maxPSMs);
