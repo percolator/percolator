@@ -46,20 +46,20 @@ if [[ -d /opt/local/var/macports ]]
     echo "[ Package manager ] : MacPorts "
     package_manager="sudo port"
     boost_install_options="boost -no_static"
-    other_packages="cmake tokyocabinet bzip2 libiconv zlib"
+    other_packages="cmake tokyocabinet bzip2 libiconv zlib gtest"
 elif [[ -f ${HOME}/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp googletest"
 elif [[ -f /usr/local/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp googletest"
 
 else
     package_manager_installed=false
@@ -156,7 +156,7 @@ make -j 2 package
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
 

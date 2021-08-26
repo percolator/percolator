@@ -17,8 +17,10 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: test
-      run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: unit_tests
+      run: cd ../my_build/percolator && make test
+    - name: system_test  
+      run: cd ../my_build/percolator && sudo make install && make test-install
 
   build-centos:
     runs-on: ubuntu-latest
@@ -29,8 +31,11 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: test
-      run: cd ../my_build/percolator && make install && make test ARGS="-V"
+    - name: unit_tests
+      run: cd ../my_build/percolator-test && make test
+      # Decend into percolator-test, with an alternative install directory
+    - name: system_test  
+      run: cd ../my_build/percolator-test && make install && make test-install
 
   build-osx:
     runs-on: macos-latest
@@ -40,8 +45,10 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: admin/builders/osx64_build.sh  -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: test
-      run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
+    - name: unit_tests
+      run: cd ../my_build/percolator && make test
+    - name: system_test  
+      run: cd ../my_build/percolator && sudo make install && make test-install
 
 
   build-windows:
@@ -59,3 +66,7 @@ jobs:
         SET base_dir=%cd%
         ECHO %base_dir%
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+#    - name: unit_tests
+#      run: |
+#        CD ..\my_build\percolator
+#        make test

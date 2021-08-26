@@ -774,7 +774,7 @@ int Scores::getInitDirection(const double initialSelectionFdr, std::vector<doubl
     ostringstream oss;
     oss << "Error in the input data: cannot find an initial direction with " 
         << "positive training examples. "
-        << "Consider setting/raising the initial training FDR threshold (--train-initial-fdr)." << std::endl;
+        << "Consider setting/raising the initial training FDR threshold (--train-fdr-initial)." << std::endl;
     if (NO_TERMINATE) {
       cerr << oss.str();
       std::cerr << "No-terminate flag set: setting initial direction to the "
