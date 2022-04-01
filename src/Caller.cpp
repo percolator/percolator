@@ -36,10 +36,11 @@ using namespace std;
 Caller::Caller() :
     pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL),
     tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true),
-    tabOutputFN_(""), xmlOutputFN_(""), weightOutputFN_(""),
+    tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
+    reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
     selectionFdr_(0.01), initialSelectionFdr_(0.01), testFdr_(0.01),
     numIterations_(10), maxPSMs_(0u),
@@ -119,6 +120,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   cmd.defineOption("X",
       "xmloutput",
       "Path to xml-output (pout) file.",
+      "filename");
+  cmd.defineOption("Q",
+      "pepxml-output",
+      "Write a rudimentary pepXML file with psm-level statistics to the specified filename.",
       "filename");
   cmd.defineOption("",
       "stdinput-tab",
@@ -291,7 +296,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. Default = \"random_\".",
+      "Specify the type of target-decoy search: \"auto\" (Percolator attempts to detect the search type automatically), \"concatenated\" (single search on concatenated target-decoy protein db) or \"separate\" (two searches, one against target and one against decoy protein db). Default = \"auto\".",
+      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm: \"auto\" (Percolator parses the protein-decoy-pattern from input-file) or \"'DECOY NAME'\" (search for decoys using 'DECOY NAME' pattern). Default = \"auto\".",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
@@ -395,6 +401,12 @@ bool Caller::parseOptions(int argc, char **argv) {
     xmlOutputFN_ = cmd.options["xmloutput"];
     checkIsWritable(xmlOutputFN_);
   }
+  // pepXML
+  if (cmd.optionSet("pepxml-output")) {
+    pepXMLOutputFN_ = cmd.options["pepxml-output"];
+    checkIsWritable(pepXMLOutputFN_);
+    reportPepXML_ = true;
+  }
 
   // filenames for outputting results to file
   if (cmd.optionSet("results-psms")) {
@@ -455,84 +467,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     enzyme_ = Enzyme::createEnzyme(cmd.options["protein-enzyme"]);
   } else {
     enzyme_ = Enzyme::createEnzyme(Enzyme::TRYPSIN);
-  }
-
-  if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
-
-    ProteinProbEstimator::setCalcProteinLevelProb(true);
-
-    // Confidence estimation options (general protein prob options)
-    bool protEstimatorOutputEmpirQVal = false;
-    bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
-    std::string protEstimatorDecoyPrefix = "random_";
-    double protEstimatorAbsenceRatio = 1.0;
-    double protEstimatorPeptideQvalThreshold = -1.0;
-
-    protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
-    if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
-    if (cmd.optionSet("spectral-counting-fdr")) {
-      protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
-    }
-
-    // Output file options
-    if (cmd.optionSet("results-proteins")) {
-      proteinResultFN_ = cmd.options["results-proteins"];
-      checkIsWritable(proteinResultFN_);
-    }
-    if (cmd.optionSet("decoy-results-proteins")) {
-      decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
-      checkIsWritable(decoyProteinResultFN_);
-    }
-
-    if (cmd.optionSet("fido-protein")) {
-      /*fido parameters*/
-
-      // General Fido options
-      double fidoAlpha = -1;
-      double fidoBeta = -1;
-      double fidoGamma = -1;
-      if (cmd.optionSet("fido-alpha")) fidoAlpha = cmd.getDouble("fido-alpha", 0.00, 1.0);
-      if (cmd.optionSet("fido-beta")) fidoBeta = cmd.getDouble("fido-beta", 0.00, 1.0);
-      if (cmd.optionSet("fido-gamma")) fidoGamma = cmd.getDouble("fido-gamma", 0.00, 1.0);
-
-      // Options for controlling speed
-      bool fidoNoPartitioning = false; // cannot be set on cmd line
-      bool fidoNoClustering = false; // cannot be set on cmd line
-      unsigned int fidoGridSearchDepth = 0;
-      bool fidoNoPruning = false;
-      double fidoGridSearchThreshold = 0.0;
-      double fidoProteinThreshold = 0.01;
-      double fidoMseThreshold = 0.1;
-      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getUInt("fido-gridsearch-depth", 0, 4);
-      if (cmd.optionSet("fido-fast-gridsearch")) fidoGridSearchThreshold = cmd.getDouble("fido-fast-gridsearch", 0.0, 1.0);
-      if (cmd.optionSet("fido-no-split-large-components")) fidoNoPruning = true;
-      if (cmd.optionSet("fido-protein-truncation-threshold")) fidoProteinThreshold = cmd.getDouble("fido-protein-truncation-threshold", 0.0, 1.0);
-      if (cmd.optionSet("fido-gridsearch-mse-threshold")) fidoMseThreshold = cmd.getDouble("fido-gridsearch-mse-threshold",0.001,1.0);
-
-      protEstimator_ = new FidoInterface(fidoAlpha, fidoBeta, fidoGamma,
-                fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
-                fidoGridSearchDepth, fidoGridSearchThreshold,
-                fidoProteinThreshold, fidoMseThreshold,
-                protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
-                protEstimatorDecoyPrefix, protEstimatorTrivialGrouping,
-                protEstimatorPeptideQvalThreshold);
-    } else if (cmd.optionSet("picked-protein")) {
-      std::string fastaDatabase = cmd.options["picked-protein"];
-
-      // default options
-      double pickedProteinPvalueCutoff = 1.0;
-      bool pickedProteinReportFragmentProteins = false;
-      bool pickedProteinReportDuplicateProteins = false;
-      if (cmd.optionSet("protein-report-fragments")) pickedProteinReportFragmentProteins = true;
-      if (cmd.optionSet("protein-report-duplicates")) pickedProteinReportDuplicateProteins = true;
-
-      protEstimator_ = new PickedProteinInterface(fastaDatabase,
-          pickedProteinPvalueCutoff, pickedProteinReportFragmentProteins,
-          pickedProteinReportDuplicateProteins,
-          protEstimatorTrivialGrouping, protEstimatorAbsenceRatio,
-          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
-          protEstimatorPeptideQvalThreshold);
-    }
   }
 
   if (cmd.optionSet("xml-in")) {
@@ -693,6 +627,14 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
+  
+  /*  Validate tab file and get decoy prefix */
+  std::string decoy_prefix;
+  TabFileValidator tabFileValidator;
+  if (!tabFileValidator.validateTabFiles(cmd.arguments, &decoy_prefix)) {
+      return 0;
+    }
+
   // if there is one argument left...
   if (cmd.arguments.size() == 1) {
     tabInput_ = true;
@@ -710,10 +652,104 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   // if there is more then one argument left...
   if (cmd.arguments.size() > 1) {
-    cerr << "Error: too many arguments.";
-    cerr << "\nInvoke with -h option for help\n";
-    return 0; // ...error
+    tabInput_ = true;
+    ValidateTabFile validateTab;
+    inputFN_ = validateTab.concatenateMultiplePINs(cmd.arguments);
+
   }
+
+    
+
+  if (VERB > 0) {
+    std::cerr << "All files have been read" << std::endl;
+  }
+  
+  if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
+
+    if (protEstimatorDecoyPrefix == "auto") {
+      protEstimatorDecoyPrefix = decoy_prefix;
+    }
+
+
+  if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
+
+    ProteinProbEstimator::setCalcProteinLevelProb(true);
+
+    // Confidence estimation options (general protein prob options)
+    bool protEstimatorOutputEmpirQVal = false;
+    bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
+    double protEstimatorAbsenceRatio = 1.0;
+    double protEstimatorPeptideQvalThreshold = -1.0;
+
+    protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
+    
+    
+
+    if (cmd.optionSet("spectral-counting-fdr")) {
+      protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
+    }
+
+    // Output file options
+    if (cmd.optionSet("results-proteins")) {
+      proteinResultFN_ = cmd.options["results-proteins"];
+      checkIsWritable(proteinResultFN_);
+    }
+    if (cmd.optionSet("decoy-results-proteins")) {
+      decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
+      checkIsWritable(decoyProteinResultFN_);
+    }
+
+    if (cmd.optionSet("fido-protein")) {
+      /*fido parameters*/
+
+      // General Fido options
+      double fidoAlpha = -1;
+      double fidoBeta = -1;
+      double fidoGamma = -1;
+      if (cmd.optionSet("fido-alpha")) fidoAlpha = cmd.getDouble("fido-alpha", 0.00, 1.0);
+      if (cmd.optionSet("fido-beta")) fidoBeta = cmd.getDouble("fido-beta", 0.00, 1.0);
+      if (cmd.optionSet("fido-gamma")) fidoGamma = cmd.getDouble("fido-gamma", 0.00, 1.0);
+
+      // Options for controlling speed
+      bool fidoNoPartitioning = false; // cannot be set on cmd line
+      bool fidoNoClustering = false; // cannot be set on cmd line
+      unsigned int fidoGridSearchDepth = 0;
+      bool fidoNoPruning = false;
+      double fidoGridSearchThreshold = 0.0;
+      double fidoProteinThreshold = 0.01;
+      double fidoMseThreshold = 0.1;
+      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getUInt("fido-gridsearch-depth", 0, 4);
+      if (cmd.optionSet("fido-fast-gridsearch")) fidoGridSearchThreshold = cmd.getDouble("fido-fast-gridsearch", 0.0, 1.0);
+      if (cmd.optionSet("fido-no-split-large-components")) fidoNoPruning = true;
+      if (cmd.optionSet("fido-protein-truncation-threshold")) fidoProteinThreshold = cmd.getDouble("fido-protein-truncation-threshold", 0.0, 1.0);
+      if (cmd.optionSet("fido-gridsearch-mse-threshold")) fidoMseThreshold = cmd.getDouble("fido-gridsearch-mse-threshold",0.001,1.0);
+
+      protEstimator_ = new FidoInterface(fidoAlpha, fidoBeta, fidoGamma,
+                fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
+                fidoGridSearchDepth, fidoGridSearchThreshold,
+                fidoProteinThreshold, fidoMseThreshold,
+                protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
+                protEstimatorDecoyPrefix, protEstimatorTrivialGrouping,
+                protEstimatorPeptideQvalThreshold);
+    } else if (cmd.optionSet("picked-protein")) {
+      std::string fastaDatabase = cmd.options["picked-protein"];
+
+      // default options
+      double pickedProteinPvalueCutoff = 1.0;
+      bool pickedProteinReportFragmentProteins = false;
+      bool pickedProteinReportDuplicateProteins = false;
+      if (cmd.optionSet("protein-report-fragments")) pickedProteinReportFragmentProteins = true;
+      if (cmd.optionSet("protein-report-duplicates")) pickedProteinReportDuplicateProteins = true;
+
+      protEstimator_ = new PickedProteinInterface(fastaDatabase,
+          pickedProteinPvalueCutoff, pickedProteinReportFragmentProteins,
+          pickedProteinReportDuplicateProteins,
+          protEstimatorTrivialGrouping, protEstimatorAbsenceRatio,
+          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
+          protEstimatorPeptideQvalThreshold);
+    }
+  }
+
 
   return true;
 }
@@ -879,6 +915,7 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
     if (VERB > 1) {
       std::cerr << "Reading tab-delimited input from datafile " << inputFN_ << std::endl;
     }
+    
     success = setHandler.readTab(dataStream, pCheck_);
   }
 
@@ -987,8 +1024,9 @@ int Caller::run() {
 
   int success = 0;
   std::ifstream fileStream;
-  XMLInterface xmlInterface(xmlOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
+  XMLInterface xmlInterface(xmlOutputFN_, pepXMLOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
+  setHandler.setDecoyPrefix(protEstimatorDecoyPrefix);
   Scores allScores(useMixMax_);
 
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
@@ -1083,7 +1121,9 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
-
+if (xmlInterface.getxmlPepOutputFN().size() > 0){
+    xmlInterface.writePepXML_PSMs(allScores, selectionFdr_, protEstimatorDecoyPrefix);
+  }
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
     isUniquePeptideRun = true;
@@ -1105,6 +1145,9 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
     if (xmlInterface.getXmlOutputFN().size() > 0) {
       xmlInterface.writeXML_Proteins(protEstimator_);
     }
+  }
+  if (reportPepXML_) {
+    xmlInterface.writePepXML(allScores, protEstimator_, call_);
   }
   // write output to file
   xmlInterface.writeXML(allScores, protEstimator_, call_);

@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <vector>
 #include <set>
-#include <map>
 #include <string>
 #include <memory>
 #ifdef HAVE_CONFIG_H
@@ -45,10 +44,13 @@
 #include "XMLInterface.h"
 #include "CrossValidation.h"
 #include "Enzyme.h"
+#include "ValidateTabFile.h"
 
 #define  NO_BOOST_DATE_TIME_INLINE
 #include <boost/asio.hpp>
 #include <boost/functional/hash_fwd.hpp>
+
+#include <algorithm>
 
 /*
 * Main class that starts and controls the calculations.
@@ -64,6 +66,7 @@ class Caller {
   enum SetHandlerType {
     NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
   };
+  std::string protEstimatorDecoyPrefix = "auto";
   
   Caller();
   virtual ~Caller();
@@ -72,6 +75,7 @@ class Caller {
   string extendedGreeter();
   bool parseOptions(int argc, char **argv);    
   int run();
+  
   
  protected:    
   Normalizer* pNorm_;
@@ -86,7 +90,7 @@ class Caller {
   bool xmlSchemaValidation_;
   
   // file output parameters
-  std::string tabOutputFN_, xmlOutputFN_;
+  std::string tabOutputFN_, xmlOutputFN_, pepXMLOutputFN_;
   std::string weightOutputFN_;
   std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
   std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
@@ -94,6 +98,7 @@ class Caller {
   
   // report level parameters
   bool reportUniquePeptides_;
+  bool reportPepXML_;
   bool targetDecoyCompetition_;
   bool useMixMax_;
   std::string inputSearchType_;
@@ -123,7 +128,10 @@ class Caller {
   virtual void processPeptideScores(Scores& allScores) {}
   virtual void processProteinScores(ProteinProbEstimator* protEstimator) {}
 #endif
-    
+
+
 };
+
+
 
 #endif /*CALLER_H_*/

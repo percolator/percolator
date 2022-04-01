@@ -62,12 +62,20 @@ typedef std::pair<int, double> ScanId;
 * testing, Xval data sets, reads/writes from/to a file, prints them.
 *
 */
-class SetHandler {    
+class SetHandler {  
+ // Used to determine if a psm is a decoy
+ std::string decoyPrefix;
+
  public:
   SetHandler(unsigned int maxPSMs);
   virtual ~SetHandler();
 
   void push_back_dataset(DataSet* ds);
+
+  // set/get decoy prefix
+  std::string getDecoyPrefix() {return decoyPrefix;}
+  void setDecoyPrefix(std::string arg) {decoyPrefix = arg;}
+
      
   //const double* getFeatures(const int setPos, const int ixPos) const; 
   size_t getMaxPSMs() { return maxPSMs_; }
@@ -100,7 +108,7 @@ class SetHandler {
   FeatureMemoryPool& getFeaturePool() { return featurePool_; }
   
   void reset();
-  
+
  protected:
   size_t maxPSMs_;
   vector<DataSet*> subsets_;

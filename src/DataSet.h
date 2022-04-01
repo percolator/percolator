@@ -28,6 +28,7 @@
 #include <vector>
 #include <map>
 #include <cerrno>
+#include <random>
 
 #include "Scores.h"
 #include "ResultHolder.h"
@@ -102,11 +103,23 @@ class TabReader {
       return s;
     }
   }
-  
+
   bool error() { return err != 0; }
  private:
   const char* f_;
   int err;
+};
+
+class TabFileValidator {
+  public:
+    static bool isTabFile(std::string file_name);
+    static bool isTabFiles(std::vector<std::string> files);
+    std::string getDecoyPrefix(std::vector<std::string> fileList);
+    std::string detectDecoyPrefix(std::string file_name);
+    bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
+    void getProteinIndex(std::string file_name, int* proteinIndex,int* labelIndex);
+    std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
+    std::string LongestCommonSubsequence(std::vector<string> arr);
 };
 
 
@@ -149,10 +162,10 @@ class DataSet {
   
   void readPsm(const std::string& line, const unsigned int lineNr,
                const std::vector<OptionalField>& optionalFields, 
-               FeatureMemoryPool& featurePool);
+               FeatureMemoryPool& featurePool, std::string decoyPrefix);
   static int readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription*& myPsm, FeatureMemoryPool& featurePool);
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix);
   
   void registerPsm(PSMDescription* myPsm);
   

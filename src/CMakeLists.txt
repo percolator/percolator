@@ -59,7 +59,7 @@ if(APPLE AND OPENMP_FOUND)
 endif(APPLE AND OPENMP_FOUND)
 
 # Boost header libraries only for async io header library (asio.hpp)
-find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
+find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 add_definitions(-DBOOST_SYSTEM_NO_DEPRECATED)
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 if(WIN32)
@@ -116,13 +116,13 @@ if(XML_SUPPORT)
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
-								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp)
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp)
 else(XML_SUPPORT)
   add_library(perclibrary STATIC BaseSpline.cpp DescriptionOfCorrect.cpp MassHandler.cpp PSMDescription.cpp PSMDescriptionDOC.cpp ResultHolder.cpp
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp SqtSanityCheck.cpp ssl.cpp EludeModel.cpp PackedVector.cpp
-								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp)
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp)
 endif(XML_SUPPORT)
 
 
@@ -157,9 +157,7 @@ ELSE(CRUX)
   if(APPLE)
     set_property(TARGET percolator PROPERTY LINK_SEARCH_START_STATIC FALSE)
     set_property(TARGET percolator PROPERTY LINK_SEARCH_END_STATIC TRUE)
-  #  set_property(TARGET percolator PROPERTY MACOSX_BUNDLE ON)
   elseif(MINGW)
-  #  set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bstatic -static-libgcc -lcurl -liconv")
     set_target_properties(percolator PROPERTIES LINK_FLAGS "-Wl,-Bdynamic -static-libgcc")
   endif()
 
@@ -183,17 +181,13 @@ ELSE(CRUX)
     endif(APPLE)
   endif(NOT MSVC)
   if(COVERAGE)
-    target_link_libraries(percolator -fprofile-arcs ${COMMON_LIBRARIES})
+    target_link_libraries(percolator -fprofile-arcs ${COMMON_LIBRARIES} ${Boost_LIBRARIES})
   else(COVERAGE)
-    target_link_libraries(percolator ${COMMON_LIBRARIES})
+    target_link_libraries(percolator ${COMMON_LIBRARIES} ${Boost_LIBRARIES})
   endif(COVERAGE)
 
   # INSTALL PERCOLATOR
-  #if(APPLE)
-  #  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION ./bin BUNDLE DESTINATION ../Applications)
-  #else()
-    install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
-  #endif()
+  install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!
 ENDIF(CRUX)
 
 ###############################################################################

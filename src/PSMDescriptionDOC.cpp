@@ -25,11 +25,11 @@ double PSMDescriptionDOC::normSubRT_ = 0.0;
 
 PSMDescriptionDOC::PSMDescriptionDOC() : 
     PSMDescription(), retentionFeatures_(NULL), parentFragment_(NULL),
-    pI_(0.0), massDiff_(0.0), retentionTime_(0.0), predictedTime_(0.0) {}
+    pI_(0.0), massDiff_(0.0), predictedTime_(0.0) {}
 
 PSMDescriptionDOC::PSMDescriptionDOC(const string pep, const double retTime) :
     PSMDescription(pep), retentionFeatures_(NULL), parentFragment_(NULL),
-    pI_(0.0), massDiff_(0.0), retentionTime_(retTime), predictedTime_(0.0) {}
+    pI_(0.0), massDiff_(0.0), predictedTime_(0.0) {}
 
 PSMDescriptionDOC::~PSMDescriptionDOC() {}
 

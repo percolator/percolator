@@ -48,11 +48,6 @@ class PSMDescriptionDOC : public PSMDescription {
   inline void setIsoElectricPoint(const double pI) { pI_ = pI; }
   inline double getIsoElectricPoint() const { return pI_; }
   
-  inline void setRetentionTime(const double retentionTime) {
-    retentionTime_ = retentionTime;
-  }
-  inline double getRetentionTime() const { return retentionTime_; }
-  
   inline void setUnnormalizedRetentionTime(const double retentionTime) {
     retentionTime_ = normalize(retentionTime);
   }
