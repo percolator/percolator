@@ -110,7 +110,7 @@ if [[ -d /usr/local/include/xercesc ]] # this implies homebrew installation ...
 	then
 	echo "Xerces is already installed."
 else
-	curl -O ${mac_os_xerces_url}
+	curl -k -O ${mac_os_xerces_url}
 	tar xzf ${mac_os_xerces}.tar.gz
 	cd ${mac_os_xerces}/
 	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
