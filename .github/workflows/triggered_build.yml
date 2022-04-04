@@ -43,7 +43,7 @@ jobs:
         path: ../my_rel
 
   build-osx:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
@@ -62,7 +62,7 @@ jobs:
 
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     defaults:
       run:
         shell: cmd
