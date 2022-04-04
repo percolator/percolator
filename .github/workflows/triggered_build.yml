@@ -87,4 +87,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: boost-build-log
-        path: my_build\tools\boost_1_73_0\bootstrap.log
+        path: my_build\tools\boost_1_78_0\bootstrap.log

@@ -11,8 +11,8 @@ set CMAKE_BASE=cmake-%CMAKE_VERSION%-win32-x86
 set CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v%CMAKE_VERSION%/%CMAKE_BASE%.zip
 
 ::: Boost
-set BOOST_BASE=boost_1_73_0
-set BOOST_URL=https://sourceforge.net/projects/boost/files/boost/1.73.0/boost_1_73_0.7z/download
+set BOOST_BASE=boost_1_78_0
+set BOOST_URL=https://sourceforge.net/projects/boost/files/boost/1.78.0/boost_1_78_0.7z/download
 
 ::: NSIS
 set NSIS_URL=https://sourceforge.net/projects/nsis/files/NSIS 3/3.03/nsis-3.03-setup.exe/download
