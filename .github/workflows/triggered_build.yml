@@ -79,7 +79,12 @@ jobs:
     - name: zip raw binary
       run: TAR -czvf ..\my_rel\percolator-noxml.tgz ..\my_build\percolator-noxml\src\Release\percolator.exe
     - name: Upload packages
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: windows-packages
         path: ..\my_rel
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: boost-build-log
+        path: ..\my_build\tools\boost_1_73_0\bootstrap.log
