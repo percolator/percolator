@@ -71,6 +71,7 @@ jobs:
 #        CD ..\my_build\percolator
 #        make test
     - name: Archive Boost Bootstrap Log
+      if: always()
       uses: actions/upload-artifact@v3
       with:
         name: boost-build-log
