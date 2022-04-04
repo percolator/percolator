@@ -70,3 +70,8 @@ jobs:
 #      run: |
 #        CD ..\my_build\percolator
 #        make test
+    - name: Archive Boost Bootstrap Log
+      uses: actions/upload-artifact@v3
+      with:
+        name: boost-build-log
+        path: ..\my_build\tools\boost_1_73_0\bootstrap.log
