@@ -83,8 +83,8 @@ jobs:
       with:
         name: windows-packages
         path: ..\my_rel
-    - name: Archive code coverage results
+    - name: Archive Boost Bootstrap Log
       uses: actions/upload-artifact@v3
       with:
         name: boost-build-log
-        path: ..\my_build\tools\boost_1_73_0\bootstrap.log
+        path: %cd%\my_build\tools\boost_1_73_0\bootstrap.log
