@@ -73,7 +73,7 @@ if [[ $(lsb_release -a) == *"16.04"* ]] || [[ $(lsb_release -a) == *"18.04"* ]] 
   if [[ ! -d ${ubuntu_xerces}/lib ]]; then
     echo "Installing XercesC"
     # download, compile and link xerces
-    wget --quiet ${ubuntu_xerces_url}
+    wget --no-check-certificate --quiet ${ubuntu_xerces_url}
     tar xzf ${ubuntu_xerces}.tar.gz
     cd ${ubuntu_xerces}/
     ./configure --prefix=${build_dir}/${ubuntu_xerces} --disable-netaccessor-curl --disable-transcoder-icu > ../xercesc_config.log 2>&1
@@ -87,7 +87,6 @@ fi
 # end of section to remove
 sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
-sudo apt-get -y install googletest;
 
 #------------------------------------------------------------------------
 mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters $build_dir/elude;

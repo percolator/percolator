@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: preinstall
-      run: sudo apt-get install libxml2-utils
+      run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
@@ -38,7 +38,7 @@ jobs:
       run: cd ../my_build/percolator-test && make install && make test-install
 
   build-osx:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
@@ -52,7 +52,7 @@ jobs:
 
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     defaults:
       run:
         shell: cmd
@@ -68,5 +68,5 @@ jobs:
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
 #    - name: unit_tests
 #      run: |
-#        CD ..\my_build\percolator
+#        CD my_build\percolator
 #        make test
