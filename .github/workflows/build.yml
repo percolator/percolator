@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: preinstall
-      run: sudo apt-get install libxml2-utils
+      run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
