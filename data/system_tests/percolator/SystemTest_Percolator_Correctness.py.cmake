@@ -81,9 +81,6 @@ if xmlSupport:
   print("(*) running percolator to calculate protein probabilities with fido...")
   T.doTest(canPercRunThisXml("proteins-fido","-A -P decoy_","percolator/pin/pin.xml"))
 
-  print("(*) running percolator with description of correct features option...")
-  T.doTest(canPercRunThisXml("D4on","-y -D 4 -U","percolator/pin/pinDOC.xml"))
-
   print("(*) running percolator with subset training option...")
   T.doTest(canPercRunThisXml("subset_training","-y -N 1000 -U","percolator/pin/pin.xml"))
   
@@ -105,9 +102,6 @@ T.doTest(canPercRunThisTab("tab_proteins","-f auto -P decoy_","percolator/tab/pe
 
 print("(*) running percolator to calculate protein probabilities with fido...")
 T.doTest(canPercRunThisTab("tab_proteins-fido","-A -P decoy_","percolator/tab/percolatorTab"))
-
-print("(*) running percolator with description of correct features option...")
-T.doTest(canPercRunThisTab("tab_D4on","-y -D 4 -U","percolator/tab/percolatorTabDOC"))
 
 print("(*) running percolator with subset training option...")
 T.doTest(canPercRunThisTab("tab_subset_training","-y -N 1000 -U","percolator/tab/percolatorTab"))
