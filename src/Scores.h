@@ -28,7 +28,6 @@
 #include <map>
 #include <iostream>
 
-#include "DescriptionOfCorrect.h"
 #include "PSMDescription.h"
 #include "FeatureNames.h"
 #include "PseudoRandom.h"
@@ -171,7 +170,6 @@ class AlgIn;
 * of vectors of ScoreHolder.
 *
 * Here are some usefull abbreviations:
-* DOC - Description Of Correct
 * FDR - False Discovery Rate
 * Pi0 - prior probability of null hypothesis
 * TDC - Target Decoy Competition
@@ -220,12 +218,9 @@ class Scores {
   void printRetentionTime(ostream& outs, double fdr);
   unsigned getQvaluesBelowLevel(double level);
   
-  void setDOCFeatures(Normalizer* pNorm);
   
   void print(int label, std::ostream& os = std::cout);
-  
-  DescriptionOfCorrect& getDOC() { return doc_; }
-  
+    
   inline double getPi0() const { return pi0_; }
   inline double getTargetDecoySizeRatio() const { 
     return targetDecoySizeRatio_; 
@@ -259,7 +254,6 @@ class Scores {
   
   std::vector<ScoreHolder> scores_;
   std::map<PSMDescription*, std::vector<PSMDescription*> > peptidePsmMap_;
-  DescriptionOfCorrect doc_;
   
   double* decoyPtr_;
   double* targetPtr_;

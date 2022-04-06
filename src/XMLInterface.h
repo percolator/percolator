@@ -42,7 +42,6 @@
   #include "PseudoRandom.h"
   #include "FeatureMemoryPool.h"
   #include "PSMDescription.h"
-  #include "PSMDescriptionDOC.h"
   
   #include "parser.hxx"
   #include "serializer.hxx"

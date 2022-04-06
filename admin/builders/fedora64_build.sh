@@ -55,13 +55,7 @@ cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/us
 make -j 4;
 make -j 4 package;
 
-mkdir -p ${build_dir}/elude
-cd ${build_dir}/elude
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator/src/elude_tool
-make -j 4;
-make -j 4 package;
-
 echo "build directory was : ${build_dir}";
 
-cp -v ${build_dir}/{percolator-noxml,percolator,converters,elude}/*.rpm ${release_dir};
+cp -v ${build_dir}/{percolator-noxml,percolator,converters}/*.rpm ${release_dir};
 

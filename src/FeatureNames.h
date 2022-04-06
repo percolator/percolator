@@ -32,7 +32,7 @@ class FeatureNames {
   public:
     FeatureNames();
     virtual ~FeatureNames();
-    std::string getFeatureNames(bool skipDOC = false);
+    std::string getFeatureNames();
     inline std::string getFeatureName(unsigned int index) { return featureNames.at(index); }
     static inline size_t getNumFeatures() {
       return numFeatures;
@@ -46,7 +46,7 @@ class FeatureNames {
       numFeatures = 0;
     }
 
-    void initFeatures(bool calcDOC);
+    void initFeatures();
     
     void insertFeature(const string& featureName) {
       if(std::find(featureNames.begin(), featureNames.end(), featureName)==featureNames.end())
@@ -85,18 +85,12 @@ class FeatureNames {
       assert(1==0);
       return quadraticFeatNum;
     }
-    int getDocFeatNum() {
-      return docFeatNum;
-    }
-    void setDocFeatNum(int fn) {
-      docFeatNum = fn;
-    }
   protected:
     vector<string> featureNames;
     static size_t numFeatures;
     int minCharge, maxCharge;
     int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum,
-        intraSetFeatNum, quadraticFeatNum, docFeatNum;
+        intraSetFeatNum, quadraticFeatNum;
 };
 
 #endif /*FEATURENAMES_H_*/

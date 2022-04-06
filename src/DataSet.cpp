@@ -24,7 +24,6 @@
 #include <cmath>
 #endif
 
-bool DataSet::calcDOC_ = false;
 FeatureNames DataSet::featureNames_;
 
 DataSet::DataSet() {}
@@ -42,19 +41,12 @@ DataSet::~DataSet() {
 
 bool DataSet::writeTabData(ofstream& out) {
   unsigned int nf = static_cast<unsigned int>(FeatureNames::getNumFeatures());
-  if (calcDOC_) {
-    nf -= static_cast<unsigned int>(DescriptionOfCorrect::numDOCFeatures());
-  }
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;
     double* featureRow = psm->features;
     out << psm->getId() << '\t' << label_ << '\t' << psm->scan << '\t' 
         << psm->expMass << '\t' << psm->calcMass;
-    if (calcDOC_) {
-      out << '\t' << psm->getUnnormalizedRetentionTime() << '\t'
-          << psm->getMassDiff();
-    }
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << featureRow[ix];
     }
@@ -101,24 +93,6 @@ void DataSet::fillFeatures(std::vector<double*>& features) {
   }
 }
 
-void DataSet::fillDOCFeatures(std::vector<double*>& features) {
-  std::vector<PSMDescription*>::iterator it = psms_.begin();
-  for ( ; it != psms_.end(); ++it) {
-    PSMDescription* psm = *it;
-    features.push_back(psm->features + featureNames_.getDocFeatNum());
-  }
-}
-
-void DataSet::fillRtFeatures(std::vector<double*>& rtFeatures) {
-  double* features;
-  std::vector<PSMDescription*>::iterator it = psms_.begin();
-  for ( ; it != psms_.end(); ++it) {
-    PSMDescription* psm = *it;
-    if ((features = psm->getRetentionFeatures()))
-      rtFeatures.push_back(features);
-  }
-}
-
 /**
  * Read in psm details from a string out of tab delimited file
  * @param dataStream filestream of tab delimited file, only passed to close on exception
@@ -140,11 +114,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   TabReader reader(line);
   std::string tmp;
   
-  if (calcDOC_) {
-    myPsm = new PSMDescriptionDOC();
-  } else {
-    myPsm = new PSMDescription();
-  }
+  myPsm = new PSMDescription();
   myPsm->setId(reader.readString());
   int label = reader.readInt();
   
@@ -186,9 +156,6 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (!hasScannr) myPsm->scan = lineNr;
   
   unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
-  if (calcDOC_) {
-    numFeatures -= static_cast<unsigned int>(DescriptionOfCorrect::numDOCFeatures());
-  }
   double* featureRow = featurePool.allocate();
   myPsm->features = featureRow;
   for (register unsigned int j = 0; j < numFeatures; j++) {
@@ -221,9 +188,8 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     temp << "ERROR: Reading tab file, error reading PSM " << myPsm->getId() 
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
-  } else if (calcDOC_ || ProteinProbEstimator::getCalcProteinLevelProb()) {
-    // MT: we only need the peptide sequences to be well formatted if DOC features 
-    // are calculated, or if protein inference is applied
+  } else if (ProteinProbEstimator::getCalcProteinLevelProb()) {
+    // MT: we only need the peptide sequences to be well formatted if protein inference is applied
     if (peptide_seq.size() < 5) {
       ostringstream temp;
       temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
@@ -264,11 +230,6 @@ void DataSet::registerPsm(PSMDescription* myPsm) {
     case -1: { break; };
     default:  { throw MyException("ERROR : Reading PSM, class DataSet has not been initiated\
     to neither target nor decoy label\n");}
-  }
-  
-  if (calcDOC_) {
-    myPsm->setRetentionFeatures(new double[RTModel::totalNumRTFeatures()]());
-    DescriptionOfCorrect::calcRegressionFeature(myPsm);
   }
   psms_.push_back(myPsm);
 }

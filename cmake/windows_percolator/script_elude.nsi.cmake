@@ -24,19 +24,6 @@
 ; Installer configuration
 ;-------------------------------------------------------------------------------------------
 
-; HM NIS Edit Wizard helper defines
-!define PRODUCT_NAME "Elude"
-!define PRODUCT_VERSION "Elude-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
-!define PRODUCT_PUBLISHER "<Lukas Kall>"
-!define PRODUCT_WEB_SITE "http://per-colator.com/"
-!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
-!define PRODUCT_UNINST_ROOT_KEY "HKLM"
-!define EXECUTABLE "elude.exe"
-!define PROGICON "${NSI_PATH}\installer.ico"
-!define PROGICON2 "${NSI_PATH}\uninstall.ico"
-!define PROGICON3 "${NSI_PATH}\percolator.ico"
-!define SETUP_BITMAP "${NSI_PATH}\welcome.bmp"
-
 
 ; MUI 1.67 compatible ------
 !include "MUI2.nsh"

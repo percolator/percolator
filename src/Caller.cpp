@@ -109,8 +109,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   intro << "    id <tab> label <tab> scannr <tab> feature1 <tab> ... <tab>\n";
   intro << "    featureN <tab> peptide <tab> proteinId1 <tab> .. <tab> proteinIdM\n";
   intro << "  Labels are interpreted as 1 -- positive set and test set, -1 -- negative set.\n";
-  intro << "  When the --doc option the first and second feature should contain\n";
-  intro << "  the retention time and difference between observed and calculated mass;\n";
   intro << "pout.xml is where the output will be written (ensure to have read\n";
   intro << "and write access on the file)." << std::endl;
   // init
@@ -226,17 +224,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "seed",
       "Set seed of the random number generator. Default = 1",
       "value");
-  cmd.defineOption("D",
-      "doc",
-      "Include description of correct features, i.e. features describing the difference between the observed and predicted isoelectric point, retention time and precursor mass.",
-      "",
-      MAYBE,
-      "15");
-  cmd.defineOption("K",
-      "klammer",
-      "Retention time features are calculated as in Klammer et al. Only available if -D is set.",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("r",
       "results-peptides",
       "Output tab delimited results of peptides to a file instead of stdout (will be ignored if used with -U option)",
@@ -552,13 +539,6 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("seed")) {
     PseudoRandom::setSeed(static_cast<unsigned long int>(cmd.getInt("seed", 1, 20000)));
-  }
-  if (cmd.optionSet("doc")) {
-    DataSet::setCalcDoc(true);
-    DescriptionOfCorrect::setDocType(cmd.getUInt("doc", 0, 15));
-  }
-  if (cmd.optionSet("klammer")) {
-    DescriptionOfCorrect::setKlammer(true);
   }
   if (cmd.optionSet("no-schema-validation")) {
     xmlSchemaValidation_ = false;
@@ -1044,10 +1024,6 @@ int Caller::run() {
         << testFdr_ << " in initial direction" << endl;
   }
 
-  if (DataSet::getCalcDoc()) {
-    setHandler.normalizeDOCFeatures(pNorm_);
-  }
-
   timer.stop();
   if (VERB > 1) cerr << "Reading in data and feature calculation took "
       << timer.getCPUTimeStr() << " cpu seconds or " << timer.getWallTimeStr() << " seconds wall clock time." << endl;
@@ -1067,10 +1043,6 @@ int Caller::run() {
     ofstream weightStream(weightOutputFN_.c_str(), ios::out);
     crossValidation.printAllWeights(weightStream, pNorm_);
     weightStream.close();
-  }
-
-  if (VERB > 0 && DataSet::getCalcDoc()) {
-    crossValidation.printDOC();
   }
 
   if (setHandler.getMaxPSMs() > 0u) {
