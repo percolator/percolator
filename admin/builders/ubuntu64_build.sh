@@ -89,7 +89,7 @@ sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
 
 #------------------------------------------------------------------------
-mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters $build_dir/elude;
+mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters;
 
 ######percolator########
 #-----cmake-----
@@ -127,22 +127,10 @@ echo "make converters (this will take few minutes).....";
 make -j 4;
 make -j 4 package;
 
-#######elude########
-cd $build_dir/elude
-#-----cmake-----
-echo "cmake elude.....";
-(set -x; 
-cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release $src_dir/percolator/src/elude_tool;
-)
-#-----make------
-echo "make elude (this will take few minutes).....";
-
-make -j 4;
-make -j 4 package;
 
 ###########################
 
 echo "Finished buildscript execution";
 echo "in build directory ${build_dir}";
 
-cp -v $build_dir/{percolator-noxml,percolator,converters,elude}/*.deb ${release_dir};
+cp -v $build_dir/{percolator-noxml,percolator,converters}/*.deb ${release_dir};

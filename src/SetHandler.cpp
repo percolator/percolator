@@ -63,28 +63,14 @@ void SetHandler::normalizeFeatures(Normalizer*& pNorm) {
   std::vector<double*> featuresV, rtFeaturesV;
   for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
     subsets_[ix]->fillFeatures(featuresV);
-    subsets_[ix]->fillRtFeatures(rtFeaturesV);
   }
   pNorm = Normalizer::getNormalizer();
 
   pNorm->setSet(featuresV,
       rtFeaturesV,
       FeatureNames::getNumFeatures(),
-      DataSet::getCalcDoc() ? RTModel::totalNumRTFeatures() : 0);
+      0);
   pNorm->normalizeSet(featuresV, rtFeaturesV);
-}
-
-void SetHandler::normalizeDOCFeatures(Normalizer* pNorm) {
-  std::vector<double*> featuresDOC;
-  for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
-    subsets_[ix]->fillDOCFeatures(featuresDOC);
-  }
-
-  size_t numFeatures = DescriptionOfCorrect::numDOCFeatures();
-  size_t offset = FeatureNames::getNumFeatures() - numFeatures;
-  
-  pNorm->updateSet(featuresDOC, offset, numFeatures);
-  pNorm->normalizeSet(featuresDOC, offset, numFeatures);
 }
 
 int const SetHandler::getLabel(int setPos) {
@@ -118,9 +104,6 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
       hasRt = true;
-    } else if (DataSet::getCalcDoc() && (optionalHeader == "dm" || optionalHeader == "deltamass")) {
-      optionalFields.push_back(DELTAMASS);
-      hasDm = true;
     } else {
       break;
     }
@@ -128,12 +111,6 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
   if (!hasScannr && VERB > 0) {
     cerr << "\nWARNING: Tab delimited input does not contain ScanNr column," <<
             "\n         scan numbers will be assigned automatically.\n" << endl;
-  }
-  if (DataSet::getCalcDoc() && (!hasRt || !hasDm)) {
-    ostringstream temp;
-    temp << "ERROR: Could not find column with name \"rt\"/\"retentiontime\" and " <<
-      "\"dm\"/\"deltamass\" necessary for the calculation of DOC features." << std::endl;
-    throw MyException(temp.str());
   }
   return static_cast<int>(optionalFields.size());
 }
@@ -174,8 +151,8 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
     }
   }
   
-  featureNames.initFeatures(DataSet::getCalcDoc());
-  assert(numFeatures + (DataSet::getCalcDoc() ? DescriptionOfCorrect::numDOCFeatures() : 0u) == DataSet::getNumFeatures());
+  featureNames.initFeatures();
+  assert(numFeatures == DataSet::getNumFeatures());
 }
 
 bool SetHandler::getInitValues(const std::string& defaultDirectionLine, 
@@ -204,17 +181,11 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
 void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\t";
-  if (DataSet::getCalcDoc()) {
-    dataStream << "RT\tdM\t";
-  }
-  dataStream << DataSet::getFeatureNames().getFeatureNames(true)
+  dataStream << DataSet::getFeatureNames().getFeatureNames()
       << "\tPeptide\tProteins" << std::endl;
   vector<double> initial_values = pCheck->getDefaultWeights();
   if (initial_values.size() > 0) {
     dataStream << "DefaultDirection\t-\t-\t-\t-";
-    if (DataSet::getCalcDoc()) {
-      dataStream << "\t-\t-";
-    }
     for (size_t i = 0; i < initial_values.size(); ++i) {
       dataStream << '\t' << initial_values[i];
     }

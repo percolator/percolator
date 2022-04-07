@@ -75,7 +75,6 @@ class PSMDescription {
   virtual inline void setId(const std::string& id) { id_ = id; }
   virtual inline std::string& getId() { return id_; }
   
-  // Virtual functions for PSMDescriptionDOC
   virtual std::string& getFullPeptide() { return peptide; }
   virtual PSMDescription* getAParent() { return this; }
   virtual void checkFragmentPeptides(

@@ -21,50 +21,6 @@ set(tests
   SystemTest_Qvality_Correctness
   SystemTest_Qvality_Performance
 )
-# Defining list with all tests.
-#IF(EXCLUDE_ELUDE AND EXCLUDE_CONVERTERS)
-#set(tests
-#  SystemTest_Percolator_Correctness
-#  SystemTest_Qvality_Correctness
-#  SystemTest_Percolator_Performance
-#  SystemTest_Qvality_Performance
-#)
-#ELSEIF((NOT EXCLUDE_ELUDE) AND EXCLUDE_CONVERTERS)
-#set(tests
-#  SystemTest_Percolator_Correctness
-#  SystemTest_Qvality_Correctness
-#  SystemTest_Percolator_Performance
-#  SystemTest_Qvality_Performance
-#  SystemTest_Elude_AutomaticModel
-#  SystemTest_Elude_PtmsAutomaticModel
-#  SystemTest_Elude_PtmsSaveLoad
-#  SystemTest_Elude_PtmsTrainEvaluate
-#  SystemTest_Elude_SaveLoadEvaluate
-#  SystemTest_Elude_TrainEvaluate
-#)
-#ELSEIF(EXCLUDE_ELUDE AND (NOT EXCLUDE_CONVERTERS))
-#set(tests
-#  SystemTest_Percolator_Correctness
-#  SystemTest_Qvality_Correctness
-#  SystemTest_Percolator_Performance
-#  SystemTest_Qvality_Performance
-#  SystemTest_Sqt2pin_Correctness
-#)
-#ELSE()
-#set(tests
-#  SystemTest_Sqt2pin_Correctness
-#  SystemTest_Percolator_Correctness
-#  SystemTest_Qvality_Correctness
-#  SystemTest_Percolator_Performance
-#  SystemTest_Qvality_Performance
-#  SystemTest_Elude_AutomaticModel
-#  SystemTest_Elude_PtmsAutomaticModel
-#  SystemTest_Elude_PtmsSaveLoad
-#  SystemTest_Elude_PtmsTrainEvaluate
-#  SystemTest_Elude_SaveLoadEvaluate
-#  SystemTest_Elude_TrainEvaluate
-#)
-#ENDIF()
 
 # Define the "test-install" target to run the system test scripts
 # against the percolator installation.

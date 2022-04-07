@@ -59,7 +59,6 @@ class CrossValidation {
   
   void printAllWeights(ostream & weightStream, Normalizer* pNorm);
   
-  void printDOC();
   void getAvgWeights(std::vector<double>& weights, Normalizer* pNorm);
   
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
@@ -115,7 +114,7 @@ class CrossValidation {
                      options& pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec,
                      const vector<double>& cpos_vec, 
                      const vector<double>& cfrac_vec);
-  int doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr);
+  int doStep(Normalizer* pNorm, double selectionFdr);
   
   void printSetWeights(ostream & weightStream, unsigned int set);
   void printRawSetWeights(ostream & weightStream, unsigned int set, 

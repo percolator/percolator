@@ -38,8 +38,8 @@ public:
                           nestedXvalBins, trainBestPositive, numThreads,
                           skipNormalizeScores) { }
     virtual ~CrossValidationEx() { }
-    int doStepEx(bool updateDOC, Normalizer* pNorm, double selectionFdr) {
-        return doStep(updateDOC, pNorm, selectionFdr);
+    int doStepEx(Normalizer* pNorm, double selectionFdr) {
+        return doStep(pNorm, selectionFdr);
     }
     std::vector< std::vector<double> > const& weights(void) const {
         return w_;
@@ -146,7 +146,7 @@ TEST_F(CrossValidationTest, doStepTest)
     // One step of the training algorithm should find N positives
     // (plus some more, due to the elevated false detection rate).
 
-    int numIter = crossValidation->doStepEx(true, pNorm, 0.01);
+    int numIter = crossValidation->doStepEx(pNorm, 0.01);
     EXPECT_EQ(N * (1.0 + testFdr), numIter);
 
     delete crossValidation;

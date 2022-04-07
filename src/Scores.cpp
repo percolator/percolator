@@ -97,14 +97,6 @@ void ScoreHolder::printPSM(ostream& os, bool printDecoys, bool printExpMass) {
       os << "      <retentionTime>" << fixed << setprecision (3) << pPSM->getRetentionTime() << "</retentionTime>" << endl;
     } */
 
-    if (DataSet::getCalcDoc()) {
-      os << "      <retentionTime observed=\"" 
-         << pPSM->getUnnormalizedRetentionTime()
-         << "\" predicted=\""
-         << PSMDescriptionDOC::unnormalize(pPSM->getPredictedRetentionTime()) << "\"/>"
-         << endl;
-    }
-
     if (pPSM->getPeptideSequence().size() > 0) {
       string n = pPSM->getFlankN();
       string c = pPSM->getFlankC();
@@ -273,16 +265,6 @@ void Scores::postMergeStep() {
   checkSeparationAndSetPi0();
 }
 
-void Scores::printRetentionTime(ostream& outs, double fdr) {
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget()) 
-      outs << scoreIt->pPSM->getUnnormalizedRetentionTime() << "\t"
-        << PSMDescriptionDOC::unnormalize(doc_.estimateRT(scoreIt->pPSM->getRetentionFeatures()))
-        << "\t" << scoreIt->pPSM->getPeptide()<< endl;
-  }
-}
-
 double Scores::calcScore(const double* feat, const std::vector<double>& w) const {
   register std::size_t ix = FeatureNames::getNumFeatures();
   register double score = w[ix];
@@ -295,16 +277,6 @@ double Scores::calcScore(const double* feat, const std::vector<double>& w) const
 void Scores::scoreAndAddPSM(ScoreHolder& sh, 
     const std::vector<double>& rawWeights, FeatureMemoryPool& featurePool) {
   const unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
-  if (DataSet::getCalcDoc()) {
-    size_t numRTFeatures = RTModel::totalNumRTFeatures();
-    double* rtFeatures = new double[numRTFeatures]();
-    DescriptionOfCorrect::calcRegressionFeature(sh.pPSM);
-    for (size_t i = 0; i < numRTFeatures; ++i) {
-      rtFeatures[i] = Normalizer::getNormalizer()->normalize(rtFeatures[i], numFeatures + i);
-    }
-    sh.pPSM->setRetentionFeatures(rtFeatures);
-    doc_.setFeatures(sh.pPSM);
-  }
   
   for (unsigned int j = 0; j < numFeatures; j++) {
     sh.score += sh.pPSM->features[j] * rawWeights[j];
@@ -717,24 +689,6 @@ void Scores::weedOutRedundantMixMax() {
   scores_.erase(std::unique(scores_.begin(), scores_.end(), UniqueScanMassLabelCharge()), scores_.end());
   
   postMergeStep();
-}
-
-void Scores::recalculateDescriptionOfCorrect(const double fdr) {
-  doc_.clear();
-  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget() && scoreIt->q <= fdr) {
-      doc_.registerCorrect(scoreIt->pPSM);
-    }
-  }
-  doc_.trainCorrect();
-}
-
-void Scores::setDOCFeatures(Normalizer* pNorm) {
-  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for ( ; scoreIt != scores_.end(); ++scoreIt) {
-    doc_.setFeaturesNormalized(scoreIt->pPSM, pNorm);
-  }
 }
 
 int Scores::getInitDirection(const double initialSelectionFdr, std::vector<double>& direction) {

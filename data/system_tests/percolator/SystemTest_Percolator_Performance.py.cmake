@@ -99,39 +99,6 @@ def checkPep(what,file,expected):
       print("check "+file+" for details")
   return success
 
-# performance increase when description of correct features option is enabled
-def performanceD4On(docFile, psmFile):
-  success = True
-  print("(*): checking performance with description of correct features option...")
-  # old test checked the PSMs after cross validation, but this is not guaranteed to perform better due to overfitting
-  #output = getLine("New pi_0", docFile)
-  #extracted_D4on = int(output[39:42])
-  #output = getLine("New pi_0", psmFile)
-  #extracted_D4off = int(output[39:42])
-  output = getLine("Iteration 10", docFile)
-  extracted_D4on = output.split("Estimated ")[1].split(" PSMs")[0]
-  try:
-    extracted_D4on = float(extracted_D4on)
-  except ValueError:
-    print("...TEST FAILED: could not read number of PSMs from " + docFile)
-    extracted_D4on = 0
-    success = False
-    
-  output = getLine("Iteration 10", psmFile)
-  extracted_D4off = output.split("Estimated ")[1].split(" PSMs")[0]
-  try:
-    extracted_D4off = float(extracted_D4off)
-  except ValueError:
-    print("...TEST FAILED: could not read number of PSMs from " + psmFile)
-    extracted_D4off = 0
-    success = False
-  
-  if extracted_D4on < extracted_D4off:
-    print("...WARNING: percolator with -D 4 option performed worse than without it (" + str(extracted_D4on) + " vs. " + str(extracted_D4off) + ")")
-    print("check " + docFile + " and " + psmFile + " for details")
-  #  success = False
-  return success
-
 if xmlSupport:
   print("- PERCOLATOR PIN XML FORMAT")
 
@@ -139,7 +106,6 @@ if xmlSupport:
   peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
   proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
   proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_proteins-fido.txt")
-  docFile = os.path.join(pathToOutputData,"PERCOLATOR_D4on.txt")
 
   # number of significant psms within boundaries
   success=checkNumberOfSignificant("psms",psmFile,1137) and success
@@ -159,8 +125,6 @@ if xmlSupport:
   # peptide : pep within boundaries (old dataset)
   #expected=[4.47324e-14,3.52218e-09,1.7545e-07]
   #success = checkPep("peptides",peptideFile, expected);
-  # performance increase with -D 4 option
-  success = performanceD4On(docFile, psmFile) and success
 
 print("- PERCOLATOR TAB FORMAT")
 
@@ -168,7 +132,6 @@ psmFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_psms.txt")
 peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_peptides.txt")
 proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins.txt")
 proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins-fido.txt")
-docFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_D4on.txt")
 
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,1137) and success
@@ -182,8 +145,6 @@ success=checkNumberOfSignificant("proteins-fido",proteinFileFido,526) and succes
 success=checkPi0("psms",psmFile,0.8435) and success
 # peptides: pi0 within boundaries
 success=checkPi0("peptides",peptideFile,0.8655) and success
-# performance increase with -D 4 option
-success = performanceD4On(docFile, psmFile) and success
 
 # if no errors were encountered, succeed
 if success==True:

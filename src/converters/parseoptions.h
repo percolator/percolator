@@ -27,7 +27,6 @@ class ParseOptions
     ParseOptions(): calcQuadraticFeatures(false),
     calcAAFrequencies(false),
     calcPTMs(false),
-    calcDOC(false),
     isotopeMass(false),
     hitsPerSpectrum(1),
     peptidelength(6),
@@ -54,7 +53,6 @@ class ParseOptions
     bool calcQuadraticFeatures;
     bool calcAAFrequencies;
     bool calcPTMs;
-    bool calcDOC;
     bool isotopeMass;
     int hitsPerSpectrum;
     unsigned peptidelength;

@@ -204,16 +204,6 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 ::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 ::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
-::::: Building elude :::::::
-if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
-cd /D "%BUILD_DIR%\elude"
-echo cmake elude.....
-cmake.exe -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
-echo build elude (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
-
-::msbuild INSTALL.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
-::msbuild RUN_TESTS.vcxproj /p:VCTargetsPath="%VCTARGET%" /p:Configuration=%BUILD_TYPE% /m
 
 :::::::::::::::::::::::::::::::::::::::
 :::::::::::: END BUILD ::::::::::::::::
@@ -225,8 +215,6 @@ set /A exit_code=%ERRORLEVEL%
 xcopy "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
 set /A exit_code=exit_code+%ERRORLEVEL%
 xcopy "%BUILD_DIR%\converters\per*.exe" "%RELEASE_DIR%"
-set /A exit_code=exit_code+%ERRORLEVEL%
-xcopy "%BUILD_DIR%\elude\elude*.exe" "%RELEASE_DIR%"
 set /A exit_code=exit_code+%ERRORLEVEL%
 
 echo Finished buildscript execution in build directory %BUILD_DIR%

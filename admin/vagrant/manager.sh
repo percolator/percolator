@@ -32,7 +32,6 @@ tmp_src_dir=src/percolator
 git_url=https://github.com/percolator/percolator.git
 package_prefixes=()
 package_prefixes+=(percolator)
-package_prefixes+=(elude)
 
 # Default values:
 current_path=$PWD;
