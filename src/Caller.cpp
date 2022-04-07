@@ -545,6 +545,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("seed")) {
     PseudoRandom::setSeed(static_cast<unsigned long int>(cmd.getInt("seed", 1, 20000)));
   }
+  if (cmd.optionSet("protein-name-separator")){
+    PSMDescription::setProteinNameSeparator(cmd.options["protein-name-separator"]);
+  }
   if (cmd.optionSet("no-schema-validation")) {
     xmlSchemaValidation_ = false;
   }
