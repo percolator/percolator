@@ -117,12 +117,19 @@ class PSMDescription {
     return 0.0; 
   }
   
+  std::string& getPeptide() { return peptide; }
+  void setPeptide(std::string& pep) { peptide = pep; }
+  static std::string getProteinNameSeparator() { return proteinNameSeparator_; }
+  static void setProteinNameSeparator(std::string& separator) { proteinNameSeparator_ = separator; }
+
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
   double expMass, calcMass, retentionTime_;
   unsigned int scan;
+  std::vector<std::string> proteinIds;
+protected:
   std::string id_;
   std::string peptide;
-  std::vector<std::string> proteinIds;
+  static std::string proteinNameSeparator_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {

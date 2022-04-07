@@ -142,10 +142,10 @@ TEST_F(EludeCallerTest, TestProcessTrainDataNoContext)  {
   int count = 0;
   for( ; it != psms.end(); ++it)
   {
-    if (it->peptide == "SNYNFEKPFLWLAR") {
+    if (it->getPeptide() == "SNYNFEKPFLWLAR") {
       ++count;
     }
-    EXPECT_FALSE("DEGWMAEHMLIMGVTRPCGR" == it->peptide);
+    EXPECT_FALSE("DEGWMAEHMLIMGVTRPCGR" == it->getPeptide());
   }
   EXPECT_EQ(1, count);
   remove(tmp.c_str());

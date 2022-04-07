@@ -279,7 +279,7 @@ void Scores::printRetentionTime(ostream& outs, double fdr) {
     if (scoreIt->isTarget()) 
       outs << scoreIt->pPSM->getUnnormalizedRetentionTime() << "\t"
         << PSMDescriptionDOC::unnormalize(doc_.estimateRT(scoreIt->pPSM->getRetentionFeatures()))
-        << "\t" << scoreIt->pPSM->peptide << endl;
+        << "\t" << scoreIt->pPSM->getPeptide()<< endl;
   }
 }
 
@@ -337,7 +337,7 @@ void Scores::print(int label, std::ostream& os) {
     if (scoreIt->label == label) {
       std::ostringstream out;
       scoreIt->pPSM->printProteins(out);
-      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->getId(), scoreIt->pPSM->peptide, out.str());
+      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->getId(), scoreIt->pPSM->getPeptide(), out.str());
       os << rh << std::endl;
     }
   }

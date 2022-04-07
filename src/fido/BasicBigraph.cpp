@@ -22,7 +22,7 @@ void BasicBigraph::read(Scores* fullset, bool multiple_labeled_peptides) {
   vector<ScoreHolder>::iterator psm = fullset->begin();
   for (; psm!= fullset->end(); ++psm) {
     // e peptide_string
-    pepName = psm->pPSM->peptide;
+    pepName = psm->pPSM->getPeptide();
     
     if ( pepName[1] == '.' ) {
       // trim off the cleavage events

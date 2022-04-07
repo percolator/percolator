@@ -42,6 +42,6 @@ bool operator<(const ResultHolder& one, const ResultHolder& other) {
 
 ostream& operator<<(ostream& out, const ResultHolder& obj) {
   out << obj.id << "\t" << obj.score << "\t" << obj.q << "\t";
-  out << obj.posterior << "\t" << obj.pepSeq << obj.prot;
+  out << obj.posterior << "\t" << obj.pepSeq << "\t" << obj.prot;
   return out;
 }

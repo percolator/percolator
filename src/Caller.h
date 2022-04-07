@@ -95,7 +95,8 @@ class Caller {
   std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
   std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
   bool xmlPrintDecoys_, xmlPrintExpMass_;
-  
+  std::string proteinNameSeparator_;
+
   // report level parameters
   bool reportUniquePeptides_;
   bool reportPepXML_;

@@ -33,6 +33,8 @@ PSMDescription::PSMDescription(const std::string& pep) :
 
 PSMDescription::~PSMDescription() {}
 
+std::string PSMDescription::proteinNameSeparator_ = "\t";
+
 void PSMDescription::deletePtr(PSMDescription* psm) {
   if (psm != NULL) {
     psm->deleteRetentionFeatures();
@@ -71,7 +73,10 @@ std::string PSMDescription::removePTMs(const string& peptide) {
 
 void PSMDescription::printProteins(std::ostream& out) {
   std::vector<std::string>::const_iterator it = proteinIds.begin();
-  for ( ; it != proteinIds.end(); ++it) {
-    out << '\t' << *it;
+  if(++it != proteinIds.end()) {
+    out << *it;
+    for ( ; it != proteinIds.end(); ++it) {
+      out << PSMDescription::proteinNameSeparator_ << *it;
+    }
   }
 }

@@ -727,7 +727,7 @@ int EludeCaller::Run() {
 void EludeCaller::PrintPredictions(const vector<PSMDescription*> &psms) const {
   vector<PSMDescription*>::const_iterator it = psms.begin();
   for( ; it != psms.end(); ++it)
-    cout << (*it)->peptide << "\t" << (*it)->getPredictedRetentionTime() << endl;
+    cout << (*it)->getPeptide() << "\t" << (*it)->getPredictedRetentionTime() << endl;
 }
 
 void EludeCaller::PrintHydrophobicityIndex(const map<string, double> &index) const {

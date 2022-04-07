@@ -63,7 +63,7 @@ class PSMDescriptionDOC : public PSMDescription {
   }
   inline double getMassDiff() const { return massDiff_; }
   
-  std::string& getFullPeptide() { return getAParent()->peptide; }
+  std::string& getFullPeptide() { return getAParent()->getPeptide(); }
   PSMDescription* getAParent() {
     if (parentFragment_) return parentFragment_->getAParent();
     else return this;
