@@ -143,7 +143,10 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         myPsm->setRetentionTime(reader.readDouble());
         break;
       } case DELTAMASS: {
-        myPsm->setMassDiff(reader.readDouble());
+          ostringstream temp;
+          temp << "ERROR: The parser tries to allocate a deprecated delta mass field for the PSM " 
+              << myPsm->getId() << std::endl;
+          throw MyException(temp.str());
         break;
       } default: {
         ostringstream temp;
