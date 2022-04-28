@@ -30,20 +30,12 @@ FeatureNames::FeatureNames() {
   ptmFeatNum = -1;
   intraSetFeatNum = -1;
   quadraticFeatNum = -1;
-  docFeatNum = -1;
 }
 
 FeatureNames::~FeatureNames() {
 }
 
-void FeatureNames::initFeatures(bool calcDOC) {
-  if (calcDOC) {
-    docFeatNum = static_cast<int>(featureNames.size());
-    featureNames.push_back("docpI");
-    featureNames.push_back("docdM");
-    featureNames.push_back("docRT");
-    featureNames.push_back("docdMdRT");
-  }
+void FeatureNames::initFeatures() {
   setNumFeatures(featureNames.size());
   if (VERB>2) {
     std::cerr << "in FeatureNames::initFeatures\n";
@@ -59,9 +51,8 @@ void FeatureNames::initFeatures(bool calcDOC) {
   }
 }
 
-string FeatureNames::getFeatureNames(bool skipDOC) {
-  int n = (skipDOC && docFeatNum > 0) ? docFeatNum
-      : (int)featureNames.size();
+string FeatureNames::getFeatureNames() {
+  int n = (int)featureNames.size();
   ostringstream oss;
   if (!featureNames.empty()) {
     std::size_t featNum = 0;

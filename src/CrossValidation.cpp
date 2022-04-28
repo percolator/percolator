@@ -136,19 +136,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
       }
     }
   }
-  
-  if (DataSet::getCalcDoc()) {
-    for (std::size_t set = 0; set < numFolds_; ++set) {
-      trainScores_[set].calcScores(w_[set], selectionFdr_);
-    }
-  #pragma omp parallel for schedule(dynamic, 1)
-    for (int set = 0; set < numFolds_; ++set) {
-      trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr_);
-      testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
-      testScores_[set].setDOCFeatures(pNorm);
-    }
-  }
-  
+    
   return numPositive;
 }
 
@@ -182,12 +170,11 @@ void CrossValidation::train(Normalizer* pNorm) {
       cerr << "Iteration " << i + 1 << ":\t";
     }
     
-    bool updateDOC = true;
     double selectionFdr = selectionFdr_;
     if (i == 0u) {
       selectionFdr = initialSelectionFdr_;
     }
-    foundPositives = doStep(updateDOC, pNorm, selectionFdr);
+    foundPositives = doStep(pNorm, selectionFdr);
     
     if (reportPerformanceEachIteration_) {
       int foundTestPositives = 0;
@@ -243,11 +230,9 @@ void CrossValidation::train(Normalizer* pNorm) {
  * Executes a cross validation step
  * @param w_ list of the bins' normal vectors (in linear algebra sense) of the 
  *        hyperplane from SVM
- * @param updateDOC boolean deciding to recalculate retention features 
- *        @see DescriptionOfCorrect
  * @return Estimation of number of true positives
  */
-int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionFdr) {
+int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
   // Setup
   options pOptions;
   pOptions.lambda = 1.0;
@@ -264,15 +249,6 @@ int CrossValidation::doStep(bool updateDOC, Normalizer* pNorm, double selectionF
     trainScores_[set].calcScores(w_[set], selectionFdr, skipDecoysPlusOne);
   }
   
-  if (DataSet::getCalcDoc() && updateDOC) {
-  #pragma omp parallel for schedule(dynamic, 1)
-    for (int set = 0; set < numFolds_; ++set) {
-      trainScores_[set].recalculateDescriptionOfCorrect(selectionFdr);
-      testScores_[set].getDOC().copyDOCparameters(trainScores_[set].getDOC());
-      testScores_[set].setDOCFeatures(pNorm);
-    }
-  }
-
   // Below implements the series of speedups detailed in the following:
   // ////////////////////////////////
   // Speeding Up Percolator
@@ -472,10 +448,6 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
       testScores_[set].calcScores(w_[0], selectionFdr_);
     }
   }
-  if (DataSet::getCalcDoc()) {
-    // TODO: take the average instead of the first DOC model?
-    fullset.getDOC().copyDOCparameters(testScores_[0].getDOC());
-  }
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, w_);
 }
 
@@ -577,16 +549,4 @@ void CrossValidation::printAllRawWeightsColumns(ostream & weightStream,
     pNorm->unnormalizeweight(w_[set], ww[set]);
   }
   printAllWeightsColumns(ww, weightStream);
-}
-
-void CrossValidation::printDOC() {
-  cerr << "For the cross validation sets the average deltaMass are ";
-  for (size_t ix = 0; ix < testScores_.size(); ix++) {
-    cerr << testScores_[ix].getDOC().getAvgDeltaMass() << " ";
-  }
-  cerr << "and average pI are ";
-  for (size_t ix = 0; ix < testScores_.size(); ix++) {
-    cerr << testScores_[ix].getDOC().getAvgPI() << " ";
-  }
-  cerr << endl;
 }

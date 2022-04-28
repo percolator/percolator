@@ -194,14 +194,6 @@ echo cmake converters.....
 echo build converters (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
-::::: Building elude :::::::
-if not exist "%BUILD_DIR%\elude" (md "%BUILD_DIR%\elude")
-cd /D "%BUILD_DIR%\elude"
-echo cmake elude.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" "%SRC_DIR%\percolator\src\elude_tool"
-echo build elude (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
-
 :::::::::::::::::::::::::::::::::::::::
 :::::::::::: END BUILD ::::::::::::::::
 :::::::::::::::::::::::::::::::::::::::
@@ -211,7 +203,6 @@ set /A exit_code=0
 call :copytorelease "%BUILD_DIR%\percolator-noxml\per*.exe"
 call :copytorelease "%BUILD_DIR%\percolator\per*.exe"
 call :copytorelease "%BUILD_DIR%\converters\per*.exe"
-call :copytorelease "%BUILD_DIR%\elude\elude*.exe"
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
 

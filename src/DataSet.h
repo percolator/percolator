@@ -34,9 +34,7 @@
 #include "ResultHolder.h"
 #include "Globals.h"
 #include "PSMDescription.h"
-#include "PSMDescriptionDOC.h"
 #include "FeatureNames.h"
-#include "DescriptionOfCorrect.h"
 #include "FeatureMemoryPool.h"
 #include "ProteinProbEstimator.h"
 
@@ -139,10 +137,7 @@ class DataSet {
   int inline getLabel() const { return label_; }
   
   unsigned int inline getSize() const { return static_cast<unsigned int>(psms_.size()); }
-  
-  static inline void setCalcDoc(bool on) { calcDOC_ = on; }
-  static inline bool getCalcDoc() { return calcDOC_; }
-  
+    
   static FeatureNames& getFeatureNames() { return featureNames_; }
   static void resetFeatureNames() { 
     featureNames_ = FeatureNames();
@@ -157,8 +152,6 @@ class DataSet {
 
   void fillScores(std::vector<ScoreHolder>& scores);
   void fillFeatures(std::vector<double*>& features);
-  void fillDOCFeatures(std::vector<double*>& features);
-  void fillRtFeatures(std::vector<double*>& rtFeatures);
   
   void readPsm(const std::string& line, const unsigned int lineNr,
                const std::vector<OptionalField>& optionalFields, 
@@ -170,7 +163,6 @@ class DataSet {
   void registerPsm(PSMDescription* myPsm);
   
  protected:   
-  static bool calcDOC_;
   
   std::vector<PSMDescription*> psms_;
   int label_;

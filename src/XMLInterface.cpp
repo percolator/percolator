@@ -136,7 +136,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     for ( ; featureIt != featureDescriptions.featureDescription().end(); ++featureIt) {
       featureNames.insertFeature(featureIt->name());
     }
-    featureNames.initFeatures(DataSet::getCalcDoc());
+    featureNames.initFeatures();
     
     std::vector<double> init_values(FeatureNames::getNumFeatures());
     setHandler.getFeaturePool().createPool(FeatureNames::getNumFeatures());
@@ -347,12 +347,7 @@ std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& p
 PSMDescription* XMLInterface::readPsm(
     const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber, 
     bool readProteins, FeatureMemoryPool& featurePool) {
-  PSMDescription* myPsm;
-  if (DataSet::getCalcDoc()) {
-    myPsm = new PSMDescriptionDOC();
-  } else {
-    myPsm = new PSMDescription();
-  }
+  PSMDescription* myPsm = new PSMDescription();
   string mypept = decoratePeptide(psm.peptide());
 
   if (psm.occurence().size() <= 0) {
@@ -385,9 +380,6 @@ PSMDescription* XMLInterface::readPsm(
     myPsm->features[i] = psm.features().feature()[i];
   }
 
-  // myPsm.peptide = psmIter->peptide().peptideSequence();
-  myPsm->setMassDiff(MassHandler::massDiff(psm.experimentalMass(), 
-      psm.calculatedMass(), psm.chargeState()));
   return myPsm;
 }
 
@@ -486,12 +478,6 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
     os << "    <peptides_qlevel>" << fullset.getQvaluesBelowLevel(0.01) << "</peptides_qlevel>" << endl;
   if (ProteinProbEstimator::getCalcProteinLevelProb())
     os << "    <proteins_qlevel>" << protEstimator->getQvaluesBelowLevel(0.01) << "</proteins_qlevel>" << endl;  
-  if (DataSet::getCalcDoc()) {
-    os << "    <average_delta_mass>" << fullset.getDOC().getAvgDeltaMass()
-                   << "</average_delta_mass>" << endl;
-    os << "    <average_pi>" << fullset.getDOC().getAvgPI()
-                   << "</average_pi>" << endl;
-  }
   os << "  </process_info>" << endl << endl;
 
   // append PSMs

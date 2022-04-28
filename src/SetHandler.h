@@ -40,7 +40,6 @@
 #include "PSMDescription.h"
 #include "SanityCheck.h"
 #include "PseudoRandom.h"
-#include "DescriptionOfCorrect.h"
 #include "FeatureMemoryPool.h"
 
 using namespace std;
@@ -91,7 +90,6 @@ class SetHandler {
   void writeTab(const string& dataFN, SanityCheck* pCheck);
   void populateScoresWithPSMs(vector<ScoreHolder> &scores, int label);
   void normalizeFeatures(Normalizer*& pNorm);
-  void normalizeDOCFeatures(Normalizer* pNorm);
   
   int const getLabel(int setPos);
   inline int getSizeFromLabel(int label) {
