@@ -380,9 +380,6 @@ PSMDescription* XMLInterface::readPsm(
     myPsm->features[i] = psm.features().feature()[i];
   }
 
-  // myPsm.peptide = psmIter->peptide().peptideSequence();
-  myPsm->setMassDiff(MassHandler::massDiff(psm.experimentalMass(), 
-      psm.calculatedMass(), psm.chargeState()));
   return myPsm;
 }
 
