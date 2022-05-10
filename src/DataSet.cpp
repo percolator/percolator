@@ -50,7 +50,7 @@ bool DataSet::writeTabData(ofstream& out) {
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << featureRow[ix];
     }
-    out << '\t' << psm->getPeptide() << '\t';
+    out << '\t' << psm->getFullPeptide() << '\t';
     psm->printProteins(out);
     out << endl;
   }
