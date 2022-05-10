@@ -86,7 +86,7 @@ class PSMDescription {
   }
   static inline const std::string& getProteinNameSeparator() { return proteinNameSeparator_;}
   
-  void setSpectrumFileName(std::string& fileName) {
+  void setSpectrumFileName(std::string fileName) {
     size_t index(0);
     auto specFilePos = std::find(spectraFileNames_.begin(), spectraFileNames_.end(), fileName);
     if ( specFilePos != spectraFileNames_.end() ) {

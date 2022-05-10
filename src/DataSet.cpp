@@ -152,7 +152,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
           throw MyException(temp.str());
         break;
       } case FILENAME: {
-        myPSM->setSpectraFileName(reader.readString())
+        myPsm->setSpectrumFileName(reader.readString());
         break;
       } default: {
         ostringstream temp;
