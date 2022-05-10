@@ -95,7 +95,6 @@ class Caller {
   std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
   std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
   bool xmlPrintDecoys_, xmlPrintExpMass_;
-  std::string proteinNameSeparator_;
 
   // report level parameters
   bool reportUniquePeptides_;
@@ -109,7 +108,7 @@ class Caller {
   unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
   double selectedCpos_, selectedCneg_;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
-    skipNormalizeScores_;
+    skipNormalizeScores_, analytics_;
   
   // reporting parameters
   std::string call_;

@@ -39,7 +39,7 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    proteinNameSeparator_("\t"),
+    analytics_(true),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -345,7 +345,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "fido-gridsearch-mse-threshold",
       "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
       "value");
-
+  cmd.defineOption("",
+      "no-analytics",
+      "Swich off analytics reporting",
+      "", TRUE_IF_SET);
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "num-threads",
@@ -459,6 +462,9 @@ bool Caller::parseOptions(int argc, char **argv) {
     enzyme_ = Enzyme::createEnzyme(cmd.options["protein-enzyme"]);
   } else {
     enzyme_ = Enzyme::createEnzyme(Enzyme::TRYPSIN);
+  }
+  if (cmd.optionSet("no-analytics")) {
+    analytics_ = false;
   }
 
   if (cmd.optionSet("xml-in")) {
@@ -1003,8 +1009,8 @@ int Caller::run() {
   if (VERB > 0) {
     std::cerr << extendedGreeter();
   }
-  
-  GoogleAnalytics::postToAnalytics("percolator");
+  if (analytics_)
+    GoogleAnalytics::postToAnalytics("percolator");
 
 #ifdef _OPENMP
   omp_set_num_threads(static_cast<int>(
