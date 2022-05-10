@@ -81,6 +81,9 @@ class PSMDescription {
   void checkFragmentPeptides(
       std::vector<PSMDescription*>::reverse_iterator other,
       std::vector<PSMDescription*>::reverse_iterator theEnd) {}
+  static inline void setProteinNameSeparator(const std::string sep) {
+    proteinNameSeparator_ = sep;
+  }
   
   void setRetentionFeatures(double* retentionFeatures) {}
   double* getRetentionFeatures() { return NULL; }
