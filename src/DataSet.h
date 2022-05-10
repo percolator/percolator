@@ -123,7 +123,7 @@ class TabFileValidator {
 
 // Optional columns in tab delimited input
 enum OptionalField {
-  SCANNR, EXPMASS, CALCMASS, RETTIME, DELTAMASS
+  SCANNR, EXPMASS, CALCMASS, RETTIME, DELTAMASS, FILENAME
 };
 
 class DataSet {

@@ -548,6 +548,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("protein-name-separator")){
     PSMDescription::setProteinNameSeparator(cmd.options["protein-name-separator"]);
   }
+  
   if (cmd.optionSet("no-schema-validation")) {
     xmlSchemaValidation_ = false;
   }

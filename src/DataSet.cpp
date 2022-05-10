@@ -47,6 +47,9 @@ bool DataSet::writeTabData(ofstream& out) {
     double* featureRow = psm->features;
     out << psm->getId() << '\t' << label_ << '\t' << psm->scan << '\t' 
         << psm->expMass << '\t' << psm->calcMass;
+    if (psm->hasSpectrumFileName()) {
+      out << '\t' << psm->getSpectrumFileName();
+    }
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << featureRow[ix];
     }
@@ -147,6 +150,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
           temp << "ERROR: The parser tries to allocate a deprecated delta mass field for the PSM " 
               << myPsm->getId() << std::endl;
           throw MyException(temp.str());
+        break;
+      } case FILENAME: {
+        myPSM->setSpectraFileName(reader.readString())
         break;
       } default: {
         ostringstream temp;

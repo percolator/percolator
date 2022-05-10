@@ -86,6 +86,22 @@ class PSMDescription {
   }
   static inline const std::string& getProteinNameSeparator() { return proteinNameSeparator_;}
   
+  void setSpectrumFileName(const std::string& fileName) {
+    size_type index(0);
+    auto specFileNr = std::find(spectraFileNames_.begin(), spectraFileNames_.end(), fileName);
+    if ( specFile != spectraFileNames_.end() ) {
+      index = specFile - spectraFileNames_.begin();
+    } else {
+      index = spectraFileNames_.end() - spectraFileNames_.begin();
+      spectraFileNames_.push_back(fileName);
+    }
+    specFileNr = index;
+  }
+  inline const std::string& getSpectrumFileName() { 
+    return spectraFileNames_.at(specFileNr);
+  }
+  inline const bool static hasSpectrumFileName() { return !spectraFileNames_.empty();}
+  
   void setRetentionFeatures(double* retentionFeatures) {}
   double* getRetentionFeatures() { return NULL; }
   
@@ -100,11 +116,13 @@ class PSMDescription {
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
   double expMass, calcMass, retentionTime_;
   unsigned int scan;
+  int specFileNr;
   std::vector<std::string> proteinIds;
 protected:
   std::string id_;
   std::string peptide;
   static std::string proteinNameSeparator_;
+  static vector<std::string&> spectraFileNames_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {
