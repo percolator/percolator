@@ -53,7 +53,7 @@ TEST_F(DataSetTest, ChecMinimalPsmParsing)
             1, optionalFields, true, myPsm, featurePool, decoyPrefix);
     ASSERT_TRUE(myPsm != NULL);
     ASSERT_EQ("Id", myPsm->getId());
-    ASSERT_EQ("PEPTIDE", myPsm->getPeptide());
+    ASSERT_EQ("PEPTIDE", myPsm->getFullPeptide());
     ASSERT_EQ(1, myPsm->proteinIds.size());
     ASSERT_EQ("ProteinList", myPsm->proteinIds[0]);
 }

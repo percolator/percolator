@@ -309,7 +309,7 @@ void Scores::print(int label, std::ostream& os) {
     if (scoreIt->label == label) {
       std::ostringstream out;
       scoreIt->pPSM->printProteins(out);
-      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->getId(), scoreIt->pPSM->getPeptide(), out.str());
+      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep, scoreIt->pPSM->getId(), scoreIt->pPSM->getFullPeptide(), out.str());
       os << rh << std::endl;
     }
   }
