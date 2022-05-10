@@ -363,7 +363,7 @@ PSMDescription* XMLInterface::readPsm(
     if (readProteins) myPsm->proteinIds.push_back( occIt->proteinId() );
     // adding n-term and c-term residues to peptide
     //NOTE the residues for the peptide in the PSMs are always the same for every protein
-    myPsm->getPeptide() = occIt->flankN() + "." + mypept + "." + occIt->flankC();
+    myPsm->setPeptide(occIt->flankN() + "." + mypept + "." + occIt->flankC());
   }
 
   myPsm->setId(psm.id());
