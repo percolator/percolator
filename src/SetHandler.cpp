@@ -104,6 +104,8 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
       hasRt = true;
+    } else if ((optionalHeader == "filename" || optionalHeader == "spectrafile")) {
+      optionalFields.push_back(FILENAME);
     } else {
       break;
     }
@@ -181,6 +183,9 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
 void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\t";
+  if (PSMDescription::hasSpectrumFileName()) {
+    dataStream << "filename\t";
+  }
   dataStream << DataSet::getFeatureNames().getFeatureNames()
       << "\tPeptide\tProteins" << std::endl;
   vector<double> initial_values = pCheck->getDefaultWeights();
