@@ -97,8 +97,11 @@ class PSMDescription {
     }
     specFileNr = index;
   }
-  inline const std::string& getSpectrumFileName() { 
-    return spectraFileNames_.at(specFileNr);
+  inline const std::string getSpectrumFileName() { 
+    std::string fn("");
+    if (hasSpectrumFileName())
+      fn=spectraFileNames_.at(specFileNr);
+    return fn;
   }
   inline const bool static hasSpectrumFileName() { return !spectraFileNames_.empty();}
   
