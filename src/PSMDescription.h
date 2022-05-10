@@ -88,9 +88,9 @@ class PSMDescription {
   
   void setSpectrumFileName(std::string& fileName) {
     size_t index(0);
-    auto specFileNr = std::find(spectraFileNames_.begin(), spectraFileNames_.end(), fileName);
-    if ( specFile != spectraFileNames_.end() ) {
-      index = specFile - spectraFileNames_.begin();
+    auto specFilePos = std::find(spectraFileNames_.begin(), spectraFileNames_.end(), fileName);
+    if ( specFilePos != spectraFileNames_.end() ) {
+      index = specFilePos - spectraFileNames_.begin();
     } else {
       index = spectraFileNames_.end() - spectraFileNames_.begin();
       spectraFileNames_.push_back(fileName);
