@@ -122,7 +122,7 @@ protected:
   std::string id_;
   std::string peptide;
   static std::string proteinNameSeparator_;
-  static vector<std::string&> spectraFileNames_;
+  static vector<std::string> spectraFileNames_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {
