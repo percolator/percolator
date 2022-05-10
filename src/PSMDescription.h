@@ -84,6 +84,7 @@ class PSMDescription {
   static inline void setProteinNameSeparator(const std::string sep) {
     proteinNameSeparator_ = sep;
   }
+  static inline const std::string& getProteinNameSeparator() { return proteinNameSeparator_;}
   
   void setRetentionFeatures(double* retentionFeatures) {}
   double* getRetentionFeatures() { return NULL; }
