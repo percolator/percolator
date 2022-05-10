@@ -75,15 +75,9 @@ class PSMDescription {
   inline void setId(const std::string& id) { id_ = id; }
   inline std::string& getId() { return id_; }
   
-<<<<<<< HEAD
-  virtual std::string& getFullPeptide() { return peptide; }
-  virtual PSMDescription* getAParent() { return this; }
-  virtual void checkFragmentPeptides(
-=======
   std::string& getFullPeptide() { return peptide; }
   PSMDescription* getAParent() { return this; }
   void checkFragmentPeptides(
->>>>>>> master
       std::vector<PSMDescription*>::reverse_iterator other,
       std::vector<PSMDescription*>::reverse_iterator theEnd) {}
   
