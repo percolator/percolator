@@ -304,7 +304,11 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
 void Scores::print(int label, std::ostream& os) {
 #ifndef CRUX
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  os << "PSMId\tscore\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n";
+  os << "PSMId\t";
+  if(PSMDescription::hasSpectrumFileName()) {
+    os << "filename\t";
+  }
+  os << "score\tq-value\tposterior_error_prob\tpeptide\tproteinIds\n";
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->label == label) {
       std::ostringstream out;

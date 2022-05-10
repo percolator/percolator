@@ -386,6 +386,15 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
           throw MyException(temp.str());
         }
         break;
+      } case FILENAME: {
+        reader.skip();
+        if (reader.error()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading spectra file name on line " 
+              << lineNr << "." << std::endl;
+          throw MyException(temp.str());
+        }
+        break;
       } default: {
         ostringstream temp;
         temp << "ERROR: Unknown optional field." << std::endl;
@@ -419,7 +428,6 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   // Checking for optional headers "ScanNr", "ExpMass", "CalcMass", "Rt"/"RetentionTime" and "dM"/"DeltaMass"
   std::vector<OptionalField> optionalFields;
   int optionalFieldCount = getOptionalFields(headerLine, optionalFields);
-  
   // parse second line for default direction
   getline(dataStream, defaultDirectionLine);
   defaultDirectionLine = rtrim(defaultDirectionLine);

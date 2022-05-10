@@ -25,8 +25,8 @@ ResultHolder::ResultHolder() :
 
 ResultHolder::ResultHolder(const double sc, const double qq,
                            const double po, const string& i,
-                           const string& pe, const string& p) :
-  score(sc), q(qq), posterior(po), id(i), pepSeq(pe), prot(p) {
+                           const string& pe, const string& p, const string& fn) :
+  score(sc), q(qq), posterior(po), id(i), pepSeq(pe), prot(p), fileName(fn) {
 }
 
 ResultHolder::~ResultHolder() {
@@ -41,7 +41,11 @@ bool operator<(const ResultHolder& one, const ResultHolder& other) {
 }
 
 ostream& operator<<(ostream& out, const ResultHolder& obj) {
-  out << obj.id << "\t" << obj.score << "\t" << obj.q << "\t";
+  out << obj.id << "\t"; 
+  if (obj.fileName.size()>0) {
+    out << obj.fileName << "\t";
+  }
+  out << obj.score << "\t" << obj.q << "\t";
   out << obj.posterior << "\t" << obj.pepSeq << "\t" << obj.prot;
   return out;
 }

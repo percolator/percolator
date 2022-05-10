@@ -23,10 +23,10 @@ class ResultHolder {
     ResultHolder();
     ResultHolder(const double score, const double q, const double po,
                  const string& i, const string& pe = "", const string& p =
-                     "");
+                     "", const string& fn = "");
     virtual ~ResultHolder();
     double score, q, posterior;
-    string id, pepSeq, prot;
+    string id, pepSeq, prot, fileName;
 };
 
 bool operator>(const ResultHolder& one, const ResultHolder& other);
