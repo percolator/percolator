@@ -76,10 +76,34 @@ class PSMDescription {
   inline std::string& getId() { return id_; }
   
   std::string& getFullPeptide() { return peptide; }
+  void setPeptide(const std::string& pep_seq) { peptide=pep_seq; }
   PSMDescription* getAParent() { return this; }
   void checkFragmentPeptides(
       std::vector<PSMDescription*>::reverse_iterator other,
       std::vector<PSMDescription*>::reverse_iterator theEnd) {}
+  static inline void setProteinNameSeparator(const std::string sep) {
+    proteinNameSeparator_ = sep;
+  }
+  static inline const std::string& getProteinNameSeparator() { return proteinNameSeparator_;}
+  
+  void setSpectrumFileName(std::string fileName) {
+    size_t index(0);
+    auto specFilePos = std::find(spectraFileNames_.begin(), spectraFileNames_.end(), fileName);
+    if ( specFilePos != spectraFileNames_.end() ) {
+      index = specFilePos - spectraFileNames_.begin();
+    } else {
+      index = spectraFileNames_.end() - spectraFileNames_.begin();
+      spectraFileNames_.push_back(fileName);
+    }
+    specFileNr = index;
+  }
+  inline const std::string getSpectrumFileName() { 
+    std::string fn("");
+    if (hasSpectrumFileName())
+      fn=spectraFileNames_.at(specFileNr);
+    return fn;
+  }
+  inline const bool static hasSpectrumFileName() { return !spectraFileNames_.empty();}
   
   void setRetentionFeatures(double* retentionFeatures) {}
   double* getRetentionFeatures() { return NULL; }
@@ -95,9 +119,13 @@ class PSMDescription {
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
   double expMass, calcMass, retentionTime_;
   unsigned int scan;
+  int specFileNr;
+  std::vector<std::string> proteinIds;
+protected:
   std::string id_;
   std::string peptide;
-  std::vector<std::string> proteinIds;
+  static std::string proteinNameSeparator_;
+  static vector<std::string> spectraFileNames_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {

@@ -22,15 +22,18 @@
 
 PSMDescription::PSMDescription() :
     features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0),
-    id_(""), peptide("") {
+    id_(""), peptide(""), specFileNr(-1) {
 }
 
 PSMDescription::PSMDescription(const std::string& pep) :
     features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0),
-    id_(""), peptide(pep) {
+    id_(""), peptide(pep), specFileNr(-1) {
 }
 
 PSMDescription::~PSMDescription() {}
+
+std::string PSMDescription::proteinNameSeparator_ = "\t";
+std::vector<string> PSMDescription::spectraFileNames_(0);
 
 void PSMDescription::deletePtr(PSMDescription* psm) {
   if (psm != NULL) {
@@ -70,7 +73,10 @@ std::string PSMDescription::removePTMs(const string& peptide) {
 
 void PSMDescription::printProteins(std::ostream& out) {
   std::vector<std::string>::const_iterator it = proteinIds.begin();
-  for ( ; it != proteinIds.end(); ++it) {
-    out << '\t' << *it;
+  if(++it != proteinIds.end()) {
+    out << *it;
+    for ( ; it != proteinIds.end(); ++it) {
+      out << PSMDescription::proteinNameSeparator_ << *it;
+    }
   }
 }

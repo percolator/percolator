@@ -104,6 +104,8 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
       hasRt = true;
+    } else if ((optionalHeader == "filename" || optionalHeader == "spectrafile")) {
+      optionalFields.push_back(FILENAME);
     } else {
       break;
     }
@@ -181,6 +183,9 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
 void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\t";
+  if (PSMDescription::hasSpectrumFileName()) {
+    dataStream << "filename\t";
+  }
   dataStream << DataSet::getFeatureNames().getFeatureNames()
       << "\tPeptide\tProteins" << std::endl;
   vector<double> initial_values = pCheck->getDefaultWeights();
@@ -381,6 +386,15 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
           throw MyException(temp.str());
         }
         break;
+      } case FILENAME: {
+        reader.skip();
+        if (reader.error()) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, error reading spectra file name on line " 
+              << lineNr << "." << std::endl;
+          throw MyException(temp.str());
+        }
+        break;
       } default: {
         ostringstream temp;
         temp << "ERROR: Unknown optional field." << std::endl;
@@ -414,7 +428,6 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   // Checking for optional headers "ScanNr", "ExpMass", "CalcMass", "Rt"/"RetentionTime" and "dM"/"DeltaMass"
   std::vector<OptionalField> optionalFields;
   int optionalFieldCount = getOptionalFields(headerLine, optionalFields);
-  
   // parse second line for default direction
   getline(dataStream, defaultDirectionLine);
   defaultDirectionLine = rtrim(defaultDirectionLine);

@@ -47,10 +47,13 @@ bool DataSet::writeTabData(ofstream& out) {
     double* featureRow = psm->features;
     out << psm->getId() << '\t' << label_ << '\t' << psm->scan << '\t' 
         << psm->expMass << '\t' << psm->calcMass;
+    if (psm->hasSpectrumFileName()) {
+      out << '\t' << psm->getSpectrumFileName();
+    }
     for (unsigned int ix = 0; ix < nf; ix++) {
       out << '\t' << featureRow[ix];
     }
-    out << '\t' << psm->peptide;
+    out << '\t' << psm->getFullPeptide() << '\t';
     psm->printProteins(out);
     out << endl;
   }
@@ -148,6 +151,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
               << myPsm->getId() << std::endl;
           throw MyException(temp.str());
         break;
+      } case FILENAME: {
+        myPsm->setSpectrumFileName(reader.readString());
+        break;
       } default: {
         ostringstream temp;
         temp << "ERROR: Unknown optional field." << std::endl;
@@ -185,7 +191,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
   
   std::string peptide_seq = reader.readString();
-  myPsm->peptide = peptide_seq;
+  myPsm->setPeptide(peptide_seq);
   if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading PSM " << myPsm->getId() 
@@ -209,9 +215,21 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   
   if (readProteins) {
     std::vector<std::string> proteins;
-    while (!reader.error()) {
-      std::string tmp = reader.readString();
-      if (tmp.size() > 0) proteins.push_back(tmp);
+    if (PSMDescription::getProteinNameSeparator() == "\t") {
+      while (!reader.error()) {
+        std::string tmp = reader.readString();
+        if (tmp.size() > 0) proteins.push_back(tmp);
+      }
+    } else {
+      std::string names = reader.readString();
+      size_t pos = 0;
+      std::string token;
+      while ((pos = names.find(PSMDescription::getProteinNameSeparator())) != std::string::npos) {
+        token = names.substr(0, pos);
+        if (token.size() > 0) proteins.push_back(token);
+        names.erase(0, pos + PSMDescription::getProteinNameSeparator().length());
+      }
+      if (names.size() > 0) proteins.push_back(names);
     }
     proteins.swap(myPsm->proteinIds); // shrink to fit
   }
