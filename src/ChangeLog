@@ -1,3 +1,20 @@
+v3.06
+* Added extended unit tests.
+* Added code for quicker FDR calculation.
+* Updated urls to xerces and google test
+* Switched compiler to c++11
+* Added basic pepXML support.
+* Improved testing in Github actions:
+  - Made separate stages for unit and system tests for Ubuntu
+  - Introduced a test build for centos
+  - Moved unit and system tests to release code.
+  - Changed the dependency structure to gtest
+* Added command line argument to switch off reporting to analytics
+* Added possibility to include spectrum file name in tab-delimited input, that is carried over to tab-delimeted output.
+* Added possibility to include retention time in tab-delimited input.
+* Discontinued support of the Elude model
+* Removed all retention time modelling and all other DOC features
+
 v3.05
 * Fixed problem with Elude model reading on windows (#249)
 * Better error messages for converters (#251)
