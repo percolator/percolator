@@ -69,17 +69,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
-      run: CD .. || MKDIR my_rel my_build
+      run: MKDIR %homedrive%%homepath%\my_rel %homedrive%%homepath%\my_build
     - name: configure_and_make
       run: |
         CD ..
         SET base_dir=%cd%
         ECHO %base_dir%
-        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %homedrive%%homepath%\my_rel -b %homedrive%%homepath%\my_build
     - name: zip raw binary
-      run: CD .. || TAR -czvf my_rel\percolator-noxml.tgz my_build\percolator-noxml\src\Release\percolator.exe
+      run: TAR -czvf %homedrive%%homepath%\my_rel\percolator-noxml.tgz %homedrive%%homepath%\my_build\percolator-noxml\src\Release\percolator.exe
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:
         name: windows-packages
-        path: ..\my_rel
+        path: ~/my_rel/
