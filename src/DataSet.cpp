@@ -322,15 +322,15 @@ void TabFileValidator::getProteinIndex(std::string file_name,int* proteinIndex,i
 
 std::string TabFileValidator::LongestCommonSubsequence(vector<string> arr)
 {
+    string res = "";
     // Determine size of the array
     int n = arr.size();
+    if (n<=0) { return res; }
  
     // Take first word from array as reference
     string s = arr[0];
     int len = s.length();
- 
-    string res = "";
- 
+  
     for (int i = 0; i < len; i++) {
         for (int j = i + 1; j <= len; j++) {
             // generating all possible substrings
