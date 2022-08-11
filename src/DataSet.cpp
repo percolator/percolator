@@ -404,7 +404,7 @@ std::string TabFileValidator::findDecoyPrefix(std::string file_name, int protein
   }
 
   if (VERB > 0) {
-    std::cerr << "Protein decoy-preix used is " << prefix << std::endl;  
+    std::cerr << "Protein decoy-prefix used is " << prefix << std::endl;  
   }
   
   return prefix;
