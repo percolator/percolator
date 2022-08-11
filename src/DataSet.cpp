@@ -111,6 +111,8 @@ void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   registerPsm(myPsm);
 }
 
+bool TabFileValidator::decoyWarningTripped = false;
+
 int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix) {
@@ -237,8 +239,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (label == -1) {
     for(auto const& value: myPsm->proteinIds) { 
       std::string token = value.substr(0, value.find("_") + 1);
-      if (token != decoyPrefix && VERB > 1) {
+      if (token != decoyPrefix && VERB > 1 && TabFileValidator::decoyWarningTripped == false) {
         std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
+        TabFileValidator::decoyWarningTripped = true;
       }
     }
   }
@@ -395,6 +398,10 @@ std::string TabFileValidator::findDecoyPrefix(std::string file_name, int protein
   proteinNames.resize(n_elements);
   
   std::string prefix = LongestCommonSubsequence(proteinNames);
+  size_t loc = prefix.find("_");
+  if (loc != std::string::npos) {
+    prefix = prefix.substr(0, loc + 1);
+  }
 
   if (VERB > 0) {
     std::cerr << "Protein decoy-preix used is " << prefix << std::endl;  

@@ -118,6 +118,7 @@ class TabFileValidator {
     void getProteinIndex(std::string file_name, int* proteinIndex,int* labelIndex);
     std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
     std::string LongestCommonSubsequence(std::vector<string> arr);
+    static bool decoyWarningTripped;
 };
 
 
