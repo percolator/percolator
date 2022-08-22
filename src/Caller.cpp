@@ -1101,9 +1101,6 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   // calculate psms level probabilities TDA or TDC
   bool isUniquePeptideRun = false;
   calculatePSMProb(allScores, isUniquePeptideRun);
-#ifdef CRUX
-  processPsmScores(allScores);
-#endif
 
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
@@ -1115,9 +1112,7 @@ if (xmlInterface.getxmlPepOutputFN().size() > 0){
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){
     isUniquePeptideRun = true;
     calculatePSMProb(allScores, isUniquePeptideRun);
-#ifdef CRUX
-    processPeptideScores(allScores);
-#endif
+
     if (xmlInterface.getXmlOutputFN().size() > 0){
       xmlInterface.writeXML_Peptides(allScores);
     }
@@ -1126,9 +1121,7 @@ if (xmlInterface.getxmlPepOutputFN().size() > 0){
   // calculate protein level probabilities with Fido or Picked-protein
   if (ProteinProbEstimator::getCalcProteinLevelProb()) {
     calculateProteinProbabilities(allScores);
-#ifdef CRUX
-    processProteinScores(protEstimator_);
-#endif
+
     if (xmlInterface.getXmlOutputFN().size() > 0) {
       xmlInterface.writeXML_Proteins(protEstimator_);
     }
