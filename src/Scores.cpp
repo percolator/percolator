@@ -298,7 +298,6 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
 }
 
 void Scores::print(int label, std::ostream& os) {
-#ifndef CRUX
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   os << "PSMId\t";
   if(PSMDescription::hasSpectrumFileName()) {
@@ -313,9 +312,6 @@ void Scores::print(int label, std::ostream& os) {
       os << rh << std::endl;
     }
   }
-#else
-  PercolatorAdapter::printScores(this, label, os);
-#endif
 }
 
 void Scores::populateWithPSMs(SetHandler& setHandler) {
