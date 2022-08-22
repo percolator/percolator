@@ -41,10 +41,6 @@ using namespace boost::algorithm;
 #include "ssl.h"
 #include "MassHandler.h"
 
-#ifdef CRUX
-#include "app/PercolatorAdapter.h"
-#endif
-
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return (one.score > other.score) 
       || (one.score == other.score && one.pPSM->scan > other.pPSM->scan) 

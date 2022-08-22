@@ -123,13 +123,6 @@ class Caller {
   void calculateProteinProbabilities(Scores& allScores);
   void checkIsWritable(const std::string& filePath);
   
-#ifdef CRUX
-  virtual void processPsmScores(Scores& allScores) {}
-  virtual void processPeptideScores(Scores& allScores) {}
-  virtual void processProteinScores(ProteinProbEstimator* protEstimator) {}
-#endif
-
-
 };
 
 
