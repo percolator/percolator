@@ -299,7 +299,7 @@ std::string TabFileValidator::getDecoyPrefix(std::vector<std::string> fileList) 
   return decoy_prefix;
 }
 
-void TabFileValidator::getProteinIndex(std::string file_name,int* proteinIndex,int* labelIndex) {
+void TabFileValidator::getProteinIndex(std::string file_name, int* proteinIndex, int* labelIndex) {
   // open C++ stream to file
   std::ifstream file(file_name.c_str());
 
@@ -309,14 +309,16 @@ void TabFileValidator::getProteinIndex(std::string file_name,int* proteinIndex,i
   }
 
   int columnIndex = 0;
-  std::string hederRow;
-  getline(file, hederRow);
-  TabReader reader(hederRow);
+  std::string headerRow;
+  getline(file, headerRow);
+  TabReader reader(headerRow);
     while (!reader.error()) {
       std::string optionalHeader = reader.readString();
-      if (optionalHeader.find("Proteins") != std::string::npos) { 
+      std::transform(optionalHeader.begin(), optionalHeader.end(), optionalHeader.begin(),
+    [](unsigned char c){ return std::tolower(c); });
+      if (optionalHeader.find("proteins") != std::string::npos) { 
         *proteinIndex = columnIndex;
-      } else if (optionalHeader.find("Label") != std::string::npos){
+      } else if (optionalHeader.find("label") != std::string::npos){
         *labelIndex = columnIndex;
       }
       columnIndex++;
@@ -419,7 +421,9 @@ std::string TabFileValidator::detectDecoyPrefix(std::string file_name) {
   getProteinIndex(file_name, &proteinIndex, &labelIndex);
   if (proteinIndex==-1 || labelIndex==-1) {
     if (VERB > 0) {
-        std::cerr << "Couldn't find Protein header in tab-file" << std::endl;
+        std::cerr <<  proteinIndex << " " << labelIndex << std::endl;
+ 
+        std::cerr << "Couldn't find 'Proteins' column in tab-file" << std::endl;
     }
     return "error";
   }
