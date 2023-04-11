@@ -36,6 +36,7 @@ using namespace std;
 Caller::Caller() :
     pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL),
     tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true),
+    protEstimatorDecoyPrefix_("auto"),
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
@@ -288,8 +289,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Specify the type of target-decoy search: \"auto\" (Percolator attempts to detect the search type automatically), \"concatenated\" (single search on concatenated target-decoy protein db) or \"separate\" (two searches, one against target and one against decoy protein db). Default = \"auto\".",
-      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm: \"auto\" (Percolator parses the protein-decoy-pattern from input-file) or \"'DECOY NAME'\" (search for decoys using 'DECOY NAME' pattern). Default = \"auto\".",
+      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. One of \"auto\" (Percolator parses the protein-decoy-pattern from input-file) or \"'<DECOY NAME>'\" (search for decoys using '<DECOY NAME>' pattern). Default = \"auto\".",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
@@ -627,8 +627,8 @@ bool Caller::parseOptions(int argc, char **argv) {
   std::string decoy_prefix;
   TabFileValidator tabFileValidator;
   if (!tabFileValidator.validateTabFiles(cmd.arguments, &decoy_prefix)) {
-      return 0;
-    }
+    return 0;
+  }
 
   // if there is one argument left...
   if (cmd.arguments.size() == 1) {
@@ -659,12 +659,11 @@ bool Caller::parseOptions(int argc, char **argv) {
     std::cerr << "All files have been read" << std::endl;
   }
   
-  if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix = cmd.options["protein-decoy-pattern"];
+  if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix_ = cmd.options["protein-decoy-pattern"];
 
-    if (protEstimatorDecoyPrefix == "auto") {
-      protEstimatorDecoyPrefix = decoy_prefix;
-    }
-
+  if (protEstimatorDecoyPrefix_ == "auto") {
+    protEstimatorDecoyPrefix_ = decoy_prefix;
+  }
 
   if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
 
@@ -724,7 +723,7 @@ bool Caller::parseOptions(int argc, char **argv) {
                 fidoGridSearchDepth, fidoGridSearchThreshold,
                 fidoProteinThreshold, fidoMseThreshold,
                 protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
-                protEstimatorDecoyPrefix, protEstimatorTrivialGrouping,
+                protEstimatorDecoyPrefix_, protEstimatorTrivialGrouping,
                 protEstimatorPeptideQvalThreshold);
     } else if (cmd.optionSet("picked-protein")) {
       std::string fastaDatabase = cmd.options["picked-protein"];
@@ -740,7 +739,7 @@ bool Caller::parseOptions(int argc, char **argv) {
           pickedProteinPvalueCutoff, pickedProteinReportFragmentProteins,
           pickedProteinReportDuplicateProteins,
           protEstimatorTrivialGrouping, protEstimatorAbsenceRatio,
-          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix,
+          protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix_,
           protEstimatorPeptideQvalThreshold);
     }
   }
@@ -1021,7 +1020,7 @@ int Caller::run() {
   std::ifstream fileStream;
   XMLInterface xmlInterface(xmlOutputFN_, pepXMLOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
-  setHandler.setDecoyPrefix(protEstimatorDecoyPrefix);
+  setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
   Scores allScores(useMixMax_);
 
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
@@ -1105,8 +1104,8 @@ void Caller::calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface){
   if (xmlInterface.getXmlOutputFN().size() > 0){
     xmlInterface.writeXML_PSMs(allScores);
   }
-if (xmlInterface.getxmlPepOutputFN().size() > 0){
-    xmlInterface.writePepXML_PSMs(allScores, selectionFdr_, protEstimatorDecoyPrefix);
+  if (xmlInterface.getxmlPepOutputFN().size() > 0){
+    xmlInterface.writePepXML_PSMs(allScores, selectionFdr_, protEstimatorDecoyPrefix_);
   }
   // calculate unique peptides level probabilities WOTE
   if (reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb()){

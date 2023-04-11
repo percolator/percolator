@@ -237,9 +237,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
 
   if (label == -1) {
-    for(auto const& value: myPsm->proteinIds) { 
-      std::string token = value.substr(0, value.find("_") + 1);
-      if (token != decoyPrefix && VERB > 1 && TabFileValidator::decoyWarningTripped == false) {
+    for (auto const& proteinId: myPsm->proteinIds) { 
+      bool startsWithDecoyPrefix = (proteinId.rfind(decoyPrefix, 0) == 0);
+      if (!startsWithDecoyPrefix && VERB > 1 && !TabFileValidator::decoyWarningTripped) {
         std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
         TabFileValidator::decoyWarningTripped = true;
       }
