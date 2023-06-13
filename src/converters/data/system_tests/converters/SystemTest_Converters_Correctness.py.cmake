@@ -5,6 +5,7 @@
 import os
 import sys
 import csv
+import subprocess
 
 pathToBinaries = "@pathToBinaries@"
 pathToData = "@pathToData@"
@@ -18,14 +19,17 @@ class Tester:
     else:
       self.failures += 1
 
+
+def runCmd(cmd):
+  result = subprocess.run(cmd, shell=True)
+  return result.returncode == 0
+
 # validating output against schema
 def validate(pinXmlFile, expectedResult = True):
   print("(*): validating xml input...")
   pinSchema = doubleQuote(os.path.join(pathToData,"../../xml/percolator_in.xsd"))
-  processFile = os.popen("xmllint --noout --schema " + pinSchema + " " + pinXmlFile)
-  exitStatus = processFile.close()
-  result = (exitStatus is None)
-  if result != expectedResult:
+  ran_successfully = runCmd("xmllint --noout --schema " + pinSchema + " " + pinXmlFile)
+  if ran_successfully != expectedResult:
     print("...TEST FAILED: produced an invalid percolator xml input file")
     print("check "+pinXmlFile+" for details")
     return False
@@ -33,7 +37,7 @@ def validate(pinXmlFile, expectedResult = True):
 
 def checkNumLines(pinTabFile, expectedNumLines, expectedResult = True):
   print("(*): checking number of lines in %s..." % pinTabFile)
-  numLines = sum(1 for line in open(pinTabFile, 'rb'))
+  numLines = sum(1 for line in open(pinTabFile, 'r'))
   result = (numLines == expectedNumLines)
   if result != expectedResult:
     print("...TEST FAILED: number of lines not as expected: %d vs. %d" % (numLines, expectedNumLines))
@@ -42,7 +46,7 @@ def checkNumLines(pinTabFile, expectedNumLines, expectedResult = True):
 
 def checkNumTargetsAndDecoys(pinTabFile, expectedTargets, expectedDecoys, expectedResult = True):
   print("(*): checking number of target and decoy PSMs in %s..." % pinTabFile)
-  reader = csv.reader(open(pinTabFile, 'rb'), delimiter = '\t')
+  reader = csv.reader(open(pinTabFile, 'r'), delimiter = '\t')
   numTargets, numDecoys = 0, 0
   for row in reader:
     if row[0] != "SpecId" and row[0] != "DefaultDirection" and len(row) >= 2:
@@ -58,7 +62,7 @@ def checkNumTargetsAndDecoys(pinTabFile, expectedTargets, expectedDecoys, expect
   
 def hasColumnHeader(pinTabFile, colName, expectedResult = True):
   print("(*): checking if header %s is present in %s..." % (colName, pinTabFile))
-  with open(pinTabFile, 'rb') as f:
+  with open(pinTabFile, 'r') as f:
     headers = f.readline()
     result = (colName in headers.split("\t"))
     if result != expectedResult:
@@ -107,10 +111,8 @@ def runTest(binary, testName, extraOptions = "", expectedResult = True):
       "2>&1 >", 
       doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
     
-  processFile = os.popen(cmd)
-  exitStatus = processFile.close()
-  result = (exitStatus is None)
-  if result != expectedResult:
+  ran_successfully = runCmd(cmd)
+  if ran_successfully != expectedResult:
     print(cmd)
     print("...TEST FAILED: %s with %s terminated with %s exit status" % (binary, testName, str(exitStatus)) )
     return False
@@ -132,10 +134,8 @@ def runTest(binary, testName, extraOptions = "", expectedResult = True):
       extraOptions,
       "2>&1 >", 
       doubleQuote(os.path.join(pathToOutputData, "%s_%s.txt" % (binary,testName)))])
-  processFile = os.popen(cmd)
-  exitStatus = processFile.close()
-  result = (exitStatus is None)
-  if result != expectedResult:
+  ran_successfully = runCmd(cmd)
+  if ran_successfully != expectedResult:
     print(cmd)
     print("...TEST FAILED: %s with %s terminated with %s exit status" % (binary, testName, str(exitStatus)) )
     return False
