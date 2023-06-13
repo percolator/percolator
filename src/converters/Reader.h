@@ -162,7 +162,7 @@ class Reader {
   
  private:
   
-   std::vector<char*> tmpDirs;
+   std::vector<std::string> tmpDirs;
    std::vector<std::string> tmpFNs;
 
  protected:

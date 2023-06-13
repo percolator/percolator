@@ -15,7 +15,7 @@ const std::map<unsigned, double> Reader::ptmMass =
 
 
 Reader::Reader(ParseOptions __po) : po(__po) {
-  tmpDirs = std::vector<char*>();
+  tmpDirs = std::vector<std::string>();
   tmpFNs = std::vector<std::string>();
   maxCharge = -1;
   minCharge = 10000;
@@ -24,7 +24,7 @@ Reader::Reader(ParseOptions __po) : po(__po) {
 }
 
 Reader::Reader() : po() {
-  tmpDirs = std::vector<char*>();
+  tmpDirs = std::vector<std::string>();
   tmpFNs = std::vector<std::string>();
   maxCharge = -1;
   minCharge = 10000;
@@ -38,7 +38,6 @@ Reader::~Reader() {
     if (boost::filesystem::is_directory(tmpDirs[i])) {
       boost::filesystem::remove_all(tmpDirs[i]);
     }
-    free(tmpDirs[i]);
   }
   if (enzyme_) {
     delete enzyme_;
@@ -297,20 +296,14 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 	    //NOTE this is actually not needed in case we compile with the boost-serialization scheme
 	    //indicate this with a flag and avoid the creating of temp files when using boost-serialization
 	    if (database->toString() != "FragSpectrumScanDatabaseBoostdb") {
-	      // create temporary directory to store the pointer to the database
-	      string tcf = "";
-        char tcd;
-	      string str;
-
 #ifndef __APPLE__
-        //TODO it would be nice to somehow avoid these declararions and therefore avoid the linking to
-	      //boost filesystem when we don't use them
-        TmpDir tmpDir;
-        tmpDir.createTempFile(&tcf, &tcd);
+        // create temporary directory to store the pointer to the database
+	      std::string tmpName = "";
+        std::string temporaryDirectory = "";
 
-        tmpDirs.resize(lineNumber_par+1);
-        tmpDirs[lineNumber_par]=&tcd;
-        std::string tmpName = tcf;
+        TmpDir tmpDir;
+        tmpDir.createTempFile(tmpName, temporaryDirectory);
+        tmpDirs.push_back(temporaryDirectory);
 #else
         std::string tmpName = std::tmpnam(NULL);
 #endif
