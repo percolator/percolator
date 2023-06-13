@@ -69,7 +69,7 @@ else
 fi
 
 # issue with XercesC in Ubuntu 16.04: https://github.com/percolator/percolator/issues/188
-if [[ ! -z `echo -e "$(lsb_release -r)" | gawk '($2>="16.04"){print $2}'` ]]; then
+if [[ ! -z `echo -e "$(lsb_release -r)" | gawk '($2>="18.04"){print $2}'` ]]; then
   if [[ ! -d ${ubuntu_xerces}/lib ]]; then
     echo "Installing XercesC"
     # download, compile and link xerces
