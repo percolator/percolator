@@ -43,7 +43,7 @@ jobs:
         path: ../my_rel
 
   build-osx:
-    runs-on: macos-10.15
+    runs-on: macos-11
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
