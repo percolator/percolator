@@ -1,3 +1,15 @@
+v3.06.1
+* Added checks for number of decoy PSMs<=1 (#337)
+* Removing multiple warnings of decoyPrefix not being set (despite being set). (#338)
+* #ifdef CRUX macros removed (#340)
+* Fixed problem with missing protein IDs. (#342, #343, #329)
+* Fix inconsistent behavior of --train-fdr-initial when --trainFDR is zero (#349)
+* Extended fix for XercesC ICU dependency to Ubuntu 18.04 (#188)
+* Clean up char pointers in tmpFile creation (#346)
+* Removed binary reading mode and replace popen by subprocess (#330)
+* Better triggered workflow for github actions
+* Update GitHub MacOS runner to macos-11 because macos-10.15 is deprecated.
+
 v3.06
 * Added extended unit tests.
 * Added code for quicker FDR calculation.
