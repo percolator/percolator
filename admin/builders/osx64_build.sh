@@ -128,9 +128,14 @@ if [ ! -d ${mac_os_xsd} ]; then
   curl -OL ${mac_os_xsd_url}
   tar -xjf ${mac_os_xsd}.tar.bz2
   cd ${mac_os_xsd}
+  
+  # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000916.html
+  mv libxsd-frontend/version libxsd-frontend/version.txt 
+
   echo '#include <iostream>' > tmp_file
   cat libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx >>  tmp_file
   mv tmp_file libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx
+  
   make CPPFLAGS=-I../${mac_os_xerces}/src LDFLAGS=-L../${mac_os_xerces}/src/.libs
   ./xsd/xsd/xsd --version
   # Move Binary, to the right include files
