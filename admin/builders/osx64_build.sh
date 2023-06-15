@@ -130,7 +130,9 @@ if [ ! -d ${mac_os_xsd} ]; then
   cd ${mac_os_xsd}
   
   # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000916.html
-  mv libxsd-frontend/version libxsd-frontend/version.txt 
+  mv libxsd-frontend/version libxsd-frontend/version.txt
+  mv libcutl/version libcutl/version.txt
+  mv xsd/version xsd/version.txt
 
   echo '#include <iostream>' > tmp_file
   cat libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx >>  tmp_file
