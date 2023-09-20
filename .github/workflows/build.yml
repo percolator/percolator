@@ -38,7 +38,7 @@ jobs:
       run: cd ../my_build/percolator-test && make install && make test-install
 
   build-osx:
-    runs-on: macos-10.15
+    runs-on: macos-11
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs

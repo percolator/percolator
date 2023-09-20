@@ -77,6 +77,9 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   
   if (selectionFdr_ <= 0.0) {
     selectionFdr_ = testFdr_;
+    if (initialSelectionFdr_ <= 0.0) {
+      initialSelectionFdr_ = testFdr_;
+    }
   }
   if (selectedCpos_ > 0) {
     candidatesCpos_.push_back(selectedCpos_);

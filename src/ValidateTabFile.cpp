@@ -42,10 +42,10 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
 
   /* Create a temporary tab file to concatenate tab files in to */ 
   string tcf = "";
-  char tcd;
+  string tcd = "";
 
   TmpDir tmpDir;
-  tmpDir.createTempFile(&tcf, &tcd);
+  tmpDir.createTempFile(tcf, tcd);
   inputFN_ = tcf;
   ofstream outFile;
   outFile.open(inputFN_);

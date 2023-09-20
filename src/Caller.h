@@ -66,7 +66,6 @@ class Caller {
   enum SetHandlerType {
     NORMAL = 1, SHUFFLED = -1, SHUFFLED_TEST = 2, SHUFFLED_THRESHOLD = 3
   };
-  std::string protEstimatorDecoyPrefix = "auto";
   
   Caller();
   virtual ~Caller();
@@ -88,6 +87,7 @@ class Caller {
   bool readStdIn_;
   std::string inputFN_;
   bool xmlSchemaValidation_;
+  std::string protEstimatorDecoyPrefix_;
   
   // file output parameters
   std::string tabOutputFN_, xmlOutputFN_, pepXMLOutputFN_;

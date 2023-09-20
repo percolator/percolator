@@ -3,5 +3,5 @@
 
 class TmpDir {       
   public:             
-    void static createTempFile(std::string* tcf, char* tcd);
+    void static createTempFile(std::string& tcf, std::string& tcd);
 };
