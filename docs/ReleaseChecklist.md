@@ -1,8 +1,8 @@
 # Creating a new release version
 
 1. change version number in CommonCMake.txt
-2. create binaries for all platforms with vagrant and fix build bugs
-3. verify that all system tests pass
+2. create binaries for all platforms with GitHub Actions and fix build bugs
+3. verify that all system (from the build directory: `make test-install`) and unit tests (`make test`) pass
 4. verify that crux-toolkit cucumber tests pass
 5. add information to changelog on master
 6. commit and push to master on github

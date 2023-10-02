@@ -1,3 +1,6 @@
+v3.06.2
+* Take filename into account in TDC (#358)
+
 v3.06.1
 * Added checks for number of decoy PSMs<=1 (#337)
 * Removing multiple warnings of decoyPrefix not being set (despite being set). (#338)
