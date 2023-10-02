@@ -106,47 +106,50 @@ struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
 
 struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->scan < __y.pPSM->scan ) 
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+    return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan < __y.pPSM->scan) )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
        && (__x.score > __y.score) ) );
   }
 };
 
 struct OrderScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->scan < __y.pPSM->scan ) 
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+    return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan < __y.pPSM->scan) )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
        && (__x.label > __y.label) )
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
        && (__x.label == __y.label) && (__x.score > __y.score) ) );
   }
 };
 
 struct OrderScanLabel : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->scan < __y.pPSM->scan ) 
-    || ( (__x.pPSM->scan == __y.pPSM->scan) && (__x.label > __y.label) ) );
+    return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan < __y.pPSM->scan) )
+    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.label > __y.label) ) );
   }
 };
 
 
 struct UniqueScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass);
+    return (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass);
   }
 };
 
 struct UniqueScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label) && (__x.pPSM->expMass == __y.pPSM->expMass);
+    return (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label) && (__x.pPSM->expMass == __y.pPSM->expMass);
   }
 };
 
 struct UniqueScanLabel : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label);
+    return (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label);
   }
 };
 

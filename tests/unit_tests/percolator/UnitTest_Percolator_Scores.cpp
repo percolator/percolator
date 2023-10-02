@@ -60,13 +60,26 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
-        pPSM->scan = (i + 2) % 4;
+        pPSM->scan = (i + 2) % 5;
         scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
     }
     std::sort(scores.begin(), scores.end(), lexicOrderProb());
     ASSERT_TRUE(checkOrder(&scores, 1.0, 2.0, 3.0, 4.0, 5.0));
     std::sort(scores.begin(), scores.end(), OrderScanMassCharge());
-    ASSERT_TRUE(checkOrder(&scores, 3.0, 4.0, 5.0, 1.0, 2.0));
+    ASSERT_TRUE(checkOrder(&scores, 4.0, 5.0, 1.0, 2.0, 3.0));
+
+    // peptides are assigned in alphabetic order
+    // specFileNr values are assigned [ 0, 0, 1, 1, 2]
+    // scan values are assigned [ 2, 3, 4, 0, 1 ]
+    scores.clear();
+    for (int i = 0 ; i < 5 ; ++i) {
+        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        pPSM->specFileNr = i / 2;
+        pPSM->scan = (i + 2) % 5;
+        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+    }
+    std::sort(scores.begin(), scores.end(), OrderScanMassCharge());
+    ASSERT_TRUE(checkOrder(&scores, 1.0, 2.0, 4.0, 3.0, 5.0));
 
     // scan values are assigned [ 2, 2, 1, 1, 0 ]
     // labels are assigned [ -1, +1, -1, +1, -1 ]
@@ -78,6 +91,19 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     }
     std::sort(scores.begin(), scores.end(), OrderScanLabel());
     ASSERT_TRUE(checkOrder(&scores, 5.0, 4.0, 3.0, 2.0, 1.0));
+
+    // scan values are assigned [ 2, 2, 1, 1, 0 ]
+    // labels are assigned [ -1, +1, -1, +1, -1 ]
+    // specFileNr values are assigned [ 0, 0, 1, 1, 2]
+    scores.clear();
+    for (int i = 0 ; i < 5 ; ++i) {
+        PSMDescription *pPSM = new PSMDescription();
+        pPSM->specFileNr = i / 2;
+        pPSM->scan = 2 - i / 2;
+        scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? +1 : -1), pPSM));
+    }
+    std::sort(scores.begin(), scores.end(), OrderScanLabel());
+    ASSERT_TRUE(checkOrder(&scores, 2.0, 1.0, 4.0, 3.0, 5.0));
 }
 
 // Verify the ScoreHolder's uniqueness functions.
@@ -86,6 +112,8 @@ TEST_F(ScoreHolderTest, CheckUniquenessFilter)
     std::vector<ScoreHolder> scores;
 
     // use unique peptides but repeating scan values
+    // peptides are assigned in alphabetic order
+    // scan values are assigned [ 0, 0, 1, 1, 2 ]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
@@ -96,6 +124,22 @@ TEST_F(ScoreHolderTest, CheckUniquenessFilter)
     scores.erase(std::unique(scores.begin(), scores.end(), UniqueScanLabel()),
                  scores.end());
     ASSERT_EQ(3, scores.size());
+
+    // use unique peptides but repeating specFileNr and scan values
+    // peptides are assigned in alphabetic order
+    // specFileNr values are assigned [ 0, 0, 0, 1, 1]
+    // scan values are assigned [ 0, 0, 1, 1, 2 ]
+    scores.clear();
+    for (int i = 0 ; i < 5 ; ++i) {
+        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        pPSM->specFileNr = i / 3;
+        pPSM->scan = i / 2;
+        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+    }
+    ASSERT_EQ(5, scores.size());
+    scores.erase(std::unique(scores.begin(), scores.end(), UniqueScanLabel()),
+                 scores.end());
+    ASSERT_EQ(4, scores.size());
 }
 
 

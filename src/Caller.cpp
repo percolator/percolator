@@ -772,7 +772,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
   } else if (targetDecoyCompetition_) {
     allScores.weedOutRedundantTDC();
     if (VERB > 0) {
-      std::cerr << "Selected best-scoring PSM per scan+expMass"
+      std::cerr << "Selected best-scoring PSM per file+scan+expMass"
         << " (target-decoy competition): "
         << allScores.posSize() << " target PSMs and "
         << allScores.negSize() << " decoy PSMs." << std::endl;
