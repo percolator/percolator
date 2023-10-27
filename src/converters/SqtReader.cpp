@@ -164,6 +164,12 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
         std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(modAcc));
         mod_p->freeMod(fm_p);
         peptideSequence.erase(ix--, posEnd + 1);
+      } else if (peptideSequence[ix] == '(') {
+        unsigned int posEnd = peptideSequence.substr(ix).find_first_of(')');
+        std::string modAcc = peptideSequence.substr(ix + 1, posEnd - 1);
+        std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(modAcc));
+        mod_p->freeMod(fm_p);
+        peptideSequence.erase(ix--, posEnd + 1);
       } else {
         int accession = ptmMap[peptideSequence[ix]];
         std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
