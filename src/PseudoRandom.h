@@ -31,6 +31,7 @@ class PseudoRandom {
  public:
   inline static void setSeed(unsigned long s) { seed_ = s; }
   static unsigned long lcg_rand();
+  static double lcg_uniform_rand();
   const static uint64_t kRandMax = 4294967291u;
  protected:
   static uint64_t seed_;

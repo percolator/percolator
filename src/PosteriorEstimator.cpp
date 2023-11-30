@@ -69,7 +69,7 @@ template<class T> void bootstrap(const vector<T>& in, vector<T>& out,
   double n = static_cast<double>(in.size());
   size_t num_draw = min(in.size(), max_size);
   for (size_t ix = 0; ix < num_draw; ++ix) {
-    size_t draw = (size_t)((double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * n);
+    size_t draw = (size_t)(PseudoRandom::lcg_uniform_rand() * n);
     out.push_back(in[draw]);
   }
   // sort in desending order
@@ -197,7 +197,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
       negatives.clear();
       sizes.clear();
       for (; elem != combined.end(); ++elem) {
-        elem->first += (double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * 1e-20;
+        elem->first += PseudoRandom::lcg_uniform_rand() * 1e-20;
       }
       binData(combined, pi0, medians, negatives, sizes);
     } else {
@@ -212,7 +212,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
     if (NO_TERMINATE) {
       cerr << oss.str() << "No-terminate flag set: ignoring error and adding "
           << "additional bins to get 4 bins." << std::endl;
-      double random_offset = (double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * 1e-20;
+      double random_offset = PseudoRandom::lcg_uniform_rand() * 1e-20;
       for (int i = medians.size(); i < 4; ++i) {
         medians.push_back(medians.back() + i*random_offset);
         negatives.push_back(negatives.back());
