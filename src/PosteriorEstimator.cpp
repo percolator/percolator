@@ -191,7 +191,7 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
         << "no distinguishing feature present." << std::endl;
     if (NO_TERMINATE) {
       cerr << oss.str() << "No-terminate flag set: ignoring error and adding "
-          << "random noise to scores for PEP calculation." << std::endl;
+          << "random noise to scores to break ties for PEP calculation." << std::endl;
       vector<pair<double, bool> >::iterator elem = combined.begin();
       medians.clear();
       negatives.clear();
@@ -200,6 +200,24 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
         elem->first += (double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * 1e-20;
       }
       binData(combined, pi0, medians, negatives, sizes);
+    } else {
+      throw MyException(oss.str());
+    }
+  }
+
+  if (medians.size() < 4) {
+    ostringstream oss;
+    oss << "ERROR: Fewer than 4 bins available for PEP estimation, "
+        << "cannot perform quadratic spline." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error and adding "
+          << "additional bins to get 4 bins." << std::endl;
+      double random_offset = (double)PseudoRandom::lcg_rand() / ((double)PseudoRandom::kRandMax + (double)1) * 1e-20;
+      for (int i = medians.size(); i < 4; ++i) {
+        medians.push_back(medians.back() + i*random_offset);
+        negatives.push_back(negatives.back());
+        sizes.push_back(sizes.back());
+      }
     } else {
       throw MyException(oss.str());
     }
