@@ -1,3 +1,6 @@
+v3.06.3
+* Add check and fallback for <4 bins in BaseSpline PEP estimation. (#362)
+
 v3.06.2
 * Take filename into account in TDC (#358)
 
