@@ -78,7 +78,7 @@ jobs:
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %homedrive%%homepath%\my_rel -b %homedrive%%homepath%\my_build
     - name: zip raw binary
       shell: pwsh
-      run: Compress-Archive -Path %homedrive%%homepath%\my_build\percolator-noxml\src\Release\*.* -Destination %homedrive%%homepath%\my_rel\percolator-noxml-windows-portable.zip
+      run: Compress-Archive -Path ${env:homedrive}${env:homepath}\my_build\percolator-noxml\src\Release\*.* -Destination ${env:homedrive}${env:homepath}\my_rel\percolator-noxml-windows-portable.zip
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:
