@@ -192,12 +192,16 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
     if (NO_TERMINATE) {
       cerr << oss.str() << "No-terminate flag set: ignoring error and adding "
           << "random noise to scores to break ties for PEP calculation." << std::endl;
-      vector<pair<double, bool> >::iterator elem = combined.begin();
+
       medians.clear();
       negatives.clear();
       sizes.clear();
-      for (; elem != combined.end(); ++elem) {
-        elem->first += PseudoRandom::lcg_uniform_rand() * 1e-20;
+
+      double random_offset = PseudoRandom::lcg_uniform_rand() * 1e-20;
+      int i = 0;
+      vector<pair<double, bool> >::iterator elem = combined.begin();
+      for (; elem != combined.end(); ++elem, ++i) {
+        elem->first += i*random_offset;
       }
       binData(combined, pi0, medians, negatives, sizes);
     } else {
