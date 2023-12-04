@@ -1,3 +1,7 @@
+v3.06.4
+* Fix assertion problem with ties in calculating PEPs. (#365)
+* Upgrade to macos-12 on GH action builds. (#364, #366)
+
 v3.06.3
 * Add check and fallback for <4 bins in BaseSpline PEP estimation. (#362)
 
