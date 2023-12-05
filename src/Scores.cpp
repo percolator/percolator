@@ -364,13 +364,16 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
  * @param xval_fold: number of folds in train and test
+ * @param peptideInSameFold: whether to put the PSMs corresponding to the same target/decoy pair in the same fold
  */
 void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
     std::vector<Scores>& test, const unsigned int xval_fold, 
-    FeatureMemoryPool& featurePool) {
+    FeatureMemoryPool& featurePool, bool peptideInSameFold) {
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
   test.resize(xval_fold, Scores(usePi0_));
+
+
   // remain keeps track of residual space available in each fold
   std::vector<int> remain(xval_fold);
   // set values for remain: initially each fold is assigned (tot number of
@@ -387,20 +390,47 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // when scores from a new spectra are encountered
   unsigned int previousSpectrum = scores_.begin()->pPSM->scan;
   size_t randIndex = PseudoRandom::lcg_rand() % xval_fold;
+  size_t randShift = PseudoRandom::lcg_rand();
+
   for (std::vector<ScoreHolder>::iterator it = scores_.begin(); 
         it != scores_.end(); ++it) {
     const unsigned int curScan = (*it).pPSM->scan;
     const ScoreHolder sh = (*it);
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
-    
-    if (previousSpectrum != curScan) {
-      randIndex = PseudoRandom::lcg_rand() % xval_fold;
-      // allow only indexes of folds that are non-full
-      while (remain[randIndex] <= 0){
-        randIndex = PseudoRandom::lcg_rand() % xval_fold;
-      }
+
+    if (peptideInSameFold) {
+        // get the unmodified peptide
+        std::string unmod_pep = sh.pPSM->getPeptideSequence();
+        size_t mod_cnt = std::count(unmod_pep.begin(), unmod_pep.end(), '[');
+        for (int mod_idx=0; mod_idx<mod_cnt; ++mod_idx) {
+            size_t mod_start = unmod_pep.find('[');
+            size_t mod_end = unmod_pep.find(']', mod_start);
+            unmod_pep.erase(mod_start,mod_end-mod_start+1);
+        }
+        // sort the unmodified peptide
+        sort(unmod_pep.begin(), unmod_pep.end());
+
+        // convert the unmodified peptide to a peptide token by using ASCII
+        // adding a fixed random number will guarnatee the randomization at each run
+        unsigned long pep_token = 1u + randShift;
+        for (int char_idx=0; char_idx<unmod_pep.length(); ++char_idx) {
+            pep_token += (int)unmod_pep.at(char_idx) * (1+char_idx);
+        }
+        randIndex = pep_token % xval_fold;
+
     }
+    else {
+        if (previousSpectrum != curScan) {
+          randIndex = PseudoRandom::lcg_rand() % xval_fold;
+          // allow only indexes of folds that are non-full
+          while (remain[randIndex] <= 0){
+            randIndex = PseudoRandom::lcg_rand() % xval_fold;
+          }
+        }
+
+    }
+
     // insert
     for (unsigned int i = 0; i < xval_fold; ++i) {
       if (i == randIndex) {
@@ -419,8 +449,10 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   for (unsigned int i = 0; i < xval_fold; ++i) {
     train[i].recalculateSizes();
     test[i].recalculateSizes();
+    std::cerr << "Fold=" << i << "\tTrain size=" << train[i].size() << "\tTest size=" << test[i].size() << std::endl;
   }
   
+
   if (featurePool.isInitialized()) {
     boost::unordered_map<double*, double*> movedAddresses;
     size_t idx = 0;

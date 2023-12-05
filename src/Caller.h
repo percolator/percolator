@@ -115,9 +115,12 @@ class Caller {
 
   Timer timer;
   
+  bool peptideLevelFolds_;
+  
   std::istream& getDataInStream(std::ifstream& fileStream);
   bool loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
   void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
+
   
   void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
   void calculateProteinProbabilities(Scores& allScores);

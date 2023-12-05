@@ -32,13 +32,15 @@ const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
 CrossValidation::CrossValidation(bool quickValidation, 
   bool reportPerformanceEachIteration, double testFdr, double selectionFdr, 
   double initialSelectionFdr, double selectedCpos, double selectedCneg, unsigned int niter, bool usePi0,
-  unsigned int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores) :
+  unsigned int nestedXvalBins, bool trainBestPositive, unsigned int numThreads, bool skipNormalizeScores, bool peptideLevelFolds) :
+
     quickValidation_(quickValidation), usePi0_(usePi0),
     reportPerformanceEachIteration_(reportPerformanceEachIteration), 
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
     nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
-    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {}
+    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores),
+    peptideLevelFolds_(peptideLevelFolds) {}
 
 CrossValidation::~CrossValidation() { 
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
@@ -73,7 +75,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   trainScores_.resize(numFolds_, Scores(usePi0_));
   testScores_.resize(numFolds_, Scores(usePi0_));
   
-  fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool);
+  fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool, peptideLevelFolds_);
   
   if (selectionFdr_ <= 0.0) {
     selectionFdr_ = testFdr_;
@@ -270,7 +272,7 @@ int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
      std::vector<Scores> nestedTrainScores(nestedXvalBins_, usePi0_), nestedTestScores(nestedXvalBins_, usePi0_);
      if (nestedXvalBins_ > 1) {
        FeatureMemoryPool featurePool;
-       trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool);
+       trainScores_[set].createXvalSetsBySpectrum(nestedTrainScores, nestedTestScores, nestedXvalBins_, featurePool, peptideLevelFolds_);
      } else {
        // sub-optimal cross validation
        nestedTrainScores[0] = trainScores_[set];

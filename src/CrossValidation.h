@@ -45,8 +45,9 @@ class CrossValidation {
   CrossValidation(bool quickValidation, bool reportPerformanceEachIteration, 
     double testFdr, double selectionFdr, double initialSelectionFdr, 
     double selectedCpos, double selectedCneg, unsigned int niter, bool usePi0,
-          unsigned int nestedXvalBins, bool trainBestPositive, unsigned int numThreads,
-    bool skipNormalizeScores);
+    unsigned int nestedXvalBins, bool trainBestPositive, unsigned int numThreads,
+    bool skipNormalizeScores, bool peptideInSameFold);
+
   
   ~CrossValidation();
   
@@ -99,6 +100,8 @@ class CrossValidation {
   
   bool trainBestPositive_;
   bool skipNormalizeScores_;
+  
+  bool peptideLevelFolds_;
   
   const static double requiredIncreaseOver2Iterations_;
   

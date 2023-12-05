@@ -48,7 +48,7 @@ Caller::Caller() :
     numIterations_(10), maxPSMs_(0u),
     nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false), 
-    trainBestPositive_(false), numThreads_(3u) {
+    trainBestPositive_(false), numThreads_(3u), peptideLevelFolds_(false) {
 }
 
 Caller::~Caller() {
@@ -376,6 +376,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
       "filename");
 
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "peptide-level-folds",
+      "Enforce that, the PSMs corresponding to the same target/decoy pair are placed in the same cross-validation fold.",
+      "",
+      TRUE_IF_SET);
+  
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
 
@@ -592,6 +598,10 @@ bool Caller::parseOptions(int argc, char **argv) {
                 << "\"concatenated\", \"separate\" or \"auto\"." << std::endl;
       return 0;
     }
+  }
+  
+  if (cmd.optionSet("peptide-level-folds")) {
+      peptideLevelFolds_ = true;
   }
 
   // If a static model is used, no nested CV is needed for Cpos and Cneg.
@@ -1029,7 +1039,7 @@ int Caller::run() {
   CrossValidation crossValidation(quickValidation_, reportEachIteration_,
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_,
                                   selectedCneg_, numIterations_, useMixMax_,
-                                  nestedXvalBins_, trainBestPositive_, numThreads_, skipNormalizeScores_);
+                                  nestedXvalBins_, trainBestPositive_, numThreads_, skipNormalizeScores_, peptideLevelFolds_);
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
 
