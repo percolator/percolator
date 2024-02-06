@@ -213,7 +213,17 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   decoySet->setLabel(-1);
   
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
-  if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
+  if (psmLine.size() == 0) {
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, could not find any PSMs." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << temp.str() << "No-terminate flag set: ignoring error and continuing "
+          << "without PSMs." << std::endl;
+      
+    } else {
+      throw MyException(temp.str());
+    }
+  } else if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
     // ScanId -> (priority, isDecoy)
     std::map<ScanId, std::pair<size_t, bool> > scanIdLookUp;

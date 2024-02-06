@@ -917,7 +917,12 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
   if (!success) {
     std::cerr << "ERROR: Failed to read in file, check if the correct " <<
                  "file-format was used." << std::endl;
-    return false;
+    if (NO_TERMINATE) {
+      std::cerr << "No-terminate flag set: ignoring error and continuing "
+          << "without PSMs." << std::endl;
+    } else {
+      return false;
+    }
   }
 
   if (VERB > 2) {
@@ -1078,8 +1083,15 @@ int Caller::run() {
 
     // Reading input files (pin or temporary file)
     if (!success) {
-      std::cerr << "ERROR: Failed to read in file, check if the correct " << "file-format was used.";
-      return 0;
+      ostringstream temp;
+      std::cerr << "ERROR: Failed to read in file, check if the correct " 
+        << "file-format was used." << std::endl;
+      if (NO_TERMINATE) {
+        std::cerr << "No-terminate flag set: ignoring error and continuing "
+            << "without PSMs." << std::endl;
+      } else {
+        return 0;
+      }
     }
 
     if (VERB > 1) {

@@ -101,6 +101,8 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
   copy(peps.begin(), peps.end(), drIt);
   copy(xvals.begin(), xvals.end(), xvalIt);
 #endif
+  if (peps.size() == 0) return;
+  
   double top = min(1.0, exp(*max_element(peps.begin(), peps.end())));
   vector<double>::iterator pep = peps.begin();
   bool crap = false;
@@ -214,8 +216,15 @@ void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
     oss << "ERROR: Fewer than 4 bins available for PEP estimation, "
         << "cannot perform quadratic spline." << std::endl;
     if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error and adding "
-          << "additional bins to get 4 bins." << std::endl;
+      if (medians.size() > 0) {
+        cerr << oss.str() << "No-terminate flag set: ignoring error and adding "
+             << "additional bins to get 4 bins." << std::endl;
+      } else {
+        cerr << oss.str() << "No-terminate flag set: ignoring error and skipping "
+             << "PEP calculation." << std::endl;
+        return;
+      }
+
       double random_offset = PseudoRandom::lcg_uniform_rand() * 1e-20;
       for (int i = medians.size(); i < 4; ++i) {
         medians.push_back(medians.back() + i*random_offset);

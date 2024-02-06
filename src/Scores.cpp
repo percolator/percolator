@@ -382,6 +382,17 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   }
   
   std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
+
+  if (scores_.size() == 0) {
+    ostringstream oss;
+    oss << "Error: no scored PSMs were provided.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error." << std::endl;
+      return;
+    } else {
+      throw MyException(oss.str());
+    }
+  }
   
   // put scores into the folds; choose a fold (at random) and change it only
   // when scores from a new spectra are encountered
@@ -470,6 +481,18 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
 // sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
 void Scores::normalizeScores(double fdr, std::vector<double>& weights) {  
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys_/2u),decoys=0u;
+
+  if (scores_.size() == 0) {
+    ostringstream oss;
+    oss << "Error: no scored PSMs were provided.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: ignoring error." << std::endl;
+      return;
+    } else {
+      throw MyException(oss.str());
+    }
+  }
+
   std::vector<ScoreHolder>::iterator it = scores_.begin();
   double fdrScore = it->score;
   double medianDecoyScore = fdrScore + 1.0;

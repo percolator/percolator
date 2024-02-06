@@ -54,6 +54,9 @@ struct PSMDescriptionPriority {
   }
 };
 
+/*
+* ScanId is a tuple of (ScanNr, ExpMass).
+*/
 typedef std::pair<int, double> ScanId;
 
 /*
