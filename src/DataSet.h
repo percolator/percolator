@@ -115,9 +115,9 @@ class TabFileValidator {
     std::string getDecoyPrefix(std::vector<std::string> fileList);
     std::string detectDecoyPrefix(std::string file_name);
     bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
-    void getProteinIndex(std::string file_name, int* proteinIndex,int* labelIndex);
+    void getProteinAndLabelColumnIndices(std::string file_name, int &proteinIndex,int &labelIndex);
     std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
-    std::string LongestCommonSubsequence(std::vector<string> arr);
+    std::string getLongestCommonPrefix(std::vector<string> arr);
     static bool decoyWarningTripped;
 };
 
