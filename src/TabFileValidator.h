@@ -27,14 +27,14 @@
 
 class TabFileValidator {
   public:
-    static bool isTabFile(std::string file_name);
-    static bool isTabFiles(std::vector<std::string> files);
-    static std::string getDecoyPrefix(std::vector<std::string> fileList);
-    static std::string detectDecoyPrefix(std::string file_name);
-    static bool validateTabFiles(std::vector<std::string> files, std::string &decoy_prefix);
-    static void getProteinAndLabelColumnIndices(std::string file_name, int &proteinIndex,int &labelIndex);
-    static std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
-    static std::string getLongestCommonPrefix(std::vector<std::string> arr);
+    static bool isTabFile(std::string fileName);
+    static bool isTabFiles(std::vector<std::string> fileNames);
+    static std::string getDecoyPrefix(std::vector<std::string> fileNames);
+    static std::string detectDecoyPrefix(std::string fileName);
+    static bool validateTabFiles(std::vector<std::string> fileNames, std::string &decoyPrefix);
+    static void getProteinAndLabelColumnIndices(std::string fileName, int &proteinIndex, int &labelIndex);
+    static std::string findDecoyPrefix(std::string fileName, int proteinIndex, int labelIndex);
+    static std::string getLongestCommonPrefix(std::vector<std::string> strings);
 };
 
 #endif /*TABFILEVALIDATOR_H_*/

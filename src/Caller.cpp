@@ -289,7 +289,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. One of \"auto\" (Percolator parses the protein-decoy-pattern from input-file) or \"'<DECOY NAME>'\" (search for decoys using '<DECOY NAME>' pattern). Default = \"auto\".",
+      "Define the prefix to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. One of \"auto\" (Percolator guesses the prefix from the input file) or \"'<DECOY NAME>'\" (search for decoys using the '<DECOY NAME>' pattern). Default = \"auto\".",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",

@@ -239,7 +239,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     for (auto const& proteinId: myPsm->proteinIds) { 
       bool startsWithDecoyPrefix = (proteinId.rfind(decoyPrefix, 0) == 0);
       if (!startsWithDecoyPrefix && VERB > 1 && !decoyWarningTripped_) {
-        std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
+        std::cerr << "Warning: protein decoy prefix " << decoyPrefix 
+                  << " doesn't match the decoy protein identifier " 
+                  << proteinId << "." << std::endl;
         decoyWarningTripped_ = true;
       }
     }

@@ -17,50 +17,49 @@
 
 #include "TabFileValidator.h"
 
-bool TabFileValidator::isTabFile(std::string file_name) {
-  // open C++ stream to file
-  std::ifstream file(file_name.c_str());
-  // file not opened, return false
-  if(!file.is_open()) return false;
-  // read a line from the file       
-  std::string wtf;
-  std::istream &in= std::getline(file, wtf);
-  // unable to read the line, return false
-  if(!in) {
+bool TabFileValidator::isTabFile(std::string fileName) {
+  std::ifstream file(fileName.c_str());
+  
+  if (!file.is_open()) return false;
+  
+  std::string tmp;
+  std::istream &in = std::getline(file, tmp);
+  
+  if (!in) {
     if (VERB > 0) {
-      std::cerr << "Cannot read" << file_name << "!" << std::endl;
+      std::cerr << "Cannot read " << fileName << "!" << std::endl;
     }
     return false;
   }
   // try to find a '\t', return true if '\t' is found within the string
-  bool isTab = std::find(wtf.begin(), wtf.end(), '\t')!= wtf.end();
+  bool isTab = std::find(tmp.begin(), tmp.end(), '\t')!= tmp.end();
   if (!isTab && VERB > 0) {
-    std::cerr << file_name << " is not comma delimited!\n" << std::endl;
+    std::cerr << fileName << " is not tab delimited!\n" << std::endl;
   }
   return isTab;
 }
 
-bool TabFileValidator::isTabFiles(std::vector<std::string> files) {
-  for (const string &file : files) {
-    if(!isTabFile(file)) {
+bool TabFileValidator::isTabFiles(std::vector<std::string> fileNames) {
+  for (const string &fileName : fileNames) {
+    if (!isTabFile(fileName)) {
       return false;
     } 
   };
   return true;
 }
 
-std::string TabFileValidator::getDecoyPrefix(std::vector<std::string> fileList) {
-  std::string decoy_prefix;
-  for(const string &file : fileList) {
-      decoy_prefix = detectDecoyPrefix(file);
+std::string TabFileValidator::getDecoyPrefix(std::vector<std::string> fileNames) {
+  std::string decoyPrefix;
+  for (const string &fileName : fileNames) {
+      decoyPrefix = detectDecoyPrefix(fileName);
       break;
   };
-  return decoy_prefix;
+  return decoyPrefix;
 }
 
-void TabFileValidator::getProteinAndLabelColumnIndices(std::string file_name, int &proteinIndex, int &labelIndex) {
+void TabFileValidator::getProteinAndLabelColumnIndices(std::string fileName, int &proteinIndex, int &labelIndex) {
   // open C++ stream to file
-  std::ifstream file(file_name.c_str());
+  std::ifstream file(fileName.c_str());
 
   // file not opened, return false
   if(!file.is_open()) {
@@ -89,20 +88,20 @@ void TabFileValidator::getProteinAndLabelColumnIndices(std::string file_name, in
   }
 }
 
-std::string TabFileValidator::getLongestCommonPrefix(std::vector<std::string> string_array) {
-  size_t num_strings = string_array.size();
-  if (num_strings == 0) {
+std::string TabFileValidator::getLongestCommonPrefix(std::vector<std::string> strings) {
+  size_t numStrings = strings.size();
+  if (numStrings == 0) {
     return "";
   }
 
-  std::string reference_string = string_array.at(0);
-  int reference_string_length = reference_string.length();
+  std::string referenceString = strings.at(0);
+  int referenceStringLength = referenceString.length();
 
-  for (int j = reference_string_length; j > 0; --j) {
-    string stem = reference_string.substr(0, j);
+  for (int j = referenceStringLength; j > 0; --j) {
+    string stem = referenceString.substr(0, j);
     bool foundStem = true;
-    for (int k = 1; k < num_strings; ++k) {
-      if (string_array.at(k).find(stem) != 0) {
+    for (int k = 1; k < numStrings; ++k) {
+      if (strings.at(k).find(stem) != 0) {
         foundStem = false;
         break;
       }
@@ -114,8 +113,8 @@ std::string TabFileValidator::getLongestCommonPrefix(std::vector<std::string> st
   return "";
 }
 
-std::string TabFileValidator::findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex) {
-  std::ifstream file(file_name.c_str());
+std::string TabFileValidator::findDecoyPrefix(std::string fileName, int proteinIndex, int labelIndex) {
+  std::ifstream file(fileName.c_str());
 
   if (!file.is_open()) return "error";
 
@@ -140,12 +139,11 @@ std::string TabFileValidator::findDecoyPrefix(std::string file_name, int protein
     }
   }
 
-  /* Shuffle protein ids  */
+  /* Randomly sample 10% of the protein identifiers */
   auto rng = std::default_random_engine {};
   std::shuffle(std::begin(proteinNames), std::end(proteinNames), rng);
-  /* Check prefix for 10% of all protein ids  */
-  int n_elements = ceil(0.1 * proteinNames.size());
-  proteinNames.resize(n_elements);
+  int numElements = ceil(0.1 * proteinNames.size());
+  proteinNames.resize(numElements);
   
   std::string prefix = getLongestCommonPrefix(proteinNames);
   size_t loc = prefix.find("_");
@@ -160,13 +158,11 @@ std::string TabFileValidator::findDecoyPrefix(std::string file_name, int protein
   return prefix;
 }
 
-
-
-std::string TabFileValidator::detectDecoyPrefix(std::string file_name) {
+std::string TabFileValidator::detectDecoyPrefix(std::string fileName) {
   int proteinIndex = -1;
   int labelIndex = -1;
 
-  getProteinAndLabelColumnIndices(file_name, proteinIndex, labelIndex);
+  getProteinAndLabelColumnIndices(fileName, proteinIndex, labelIndex);
   if (proteinIndex == -1 || labelIndex == -1) {
     if (VERB > 0) {
         std::cerr <<  proteinIndex << " " << labelIndex << std::endl;
@@ -174,14 +170,14 @@ std::string TabFileValidator::detectDecoyPrefix(std::string file_name) {
     }
     return "error";
   }
-  return findDecoyPrefix(file_name, proteinIndex, labelIndex);
+  return findDecoyPrefix(fileName, proteinIndex, labelIndex);
 }
 
-bool TabFileValidator::validateTabFiles(std::vector<std::string> files, std::string& decoy_prefix) {
+bool TabFileValidator::validateTabFiles(std::vector<std::string> files, std::string& decoyPrefix) {
   std::string tmpDecoyPrefix = getDecoyPrefix(files);
-  decoy_prefix = tmpDecoyPrefix;
+  decoyPrefix = tmpDecoyPrefix;
 
-  if (tmpDecoyPrefix=="error") {
+  if (tmpDecoyPrefix == "error") {
     return false;
   }
   if (!isTabFiles(files)) {
