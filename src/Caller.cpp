@@ -626,7 +626,7 @@ bool Caller::parseOptions(int argc, char **argv) {
   /*  Validate tab file and get decoy prefix */
   std::string decoy_prefix;
   TabFileValidator tabFileValidator;
-  if (!tabFileValidator.validateTabFiles(cmd.arguments, &decoy_prefix)) {
+  if (!tabFileValidator.validateTabFiles(cmd.arguments, decoy_prefix)) {
     return 0;
   }
 

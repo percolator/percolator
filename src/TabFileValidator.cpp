@@ -177,9 +177,9 @@ std::string TabFileValidator::detectDecoyPrefix(std::string file_name) {
   return findDecoyPrefix(file_name, proteinIndex, labelIndex);
 }
 
-bool TabFileValidator::validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix) {
+bool TabFileValidator::validateTabFiles(std::vector<std::string> files, std::string& decoy_prefix) {
   std::string tmpDecoyPrefix = getDecoyPrefix(files);
-  *decoy_prefix = tmpDecoyPrefix;
+  decoy_prefix = tmpDecoyPrefix;
 
   if (tmpDecoyPrefix=="error") {
     return false;
