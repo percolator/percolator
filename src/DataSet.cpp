@@ -25,6 +25,7 @@
 #endif
 
 FeatureNames DataSet::featureNames_;
+bool DataSet::decoyWarningTripped_ = false;
 
 DataSet::DataSet() {}
 
@@ -237,9 +238,9 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   if (label == -1) {
     for (auto const& proteinId: myPsm->proteinIds) { 
       bool startsWithDecoyPrefix = (proteinId.rfind(decoyPrefix, 0) == 0);
-      if (!startsWithDecoyPrefix && VERB > 1 && !TabFileValidator::decoyWarningTripped) {
+      if (!startsWithDecoyPrefix && VERB > 1 && !decoyWarningTripped_) {
         std::cerr << "Warning: Set decoy prefix don't match" << std::endl;
-        TabFileValidator::decoyWarningTripped = true;
+        decoyWarningTripped_ = true;
       }
     }
   }

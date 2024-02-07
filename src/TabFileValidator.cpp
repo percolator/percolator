@@ -17,8 +17,6 @@
 
 #include "TabFileValidator.h"
 
-bool TabFileValidator::decoyWarningTripped = false;
-
 bool TabFileValidator::isTabFile(std::string file_name) {
   // open C++ stream to file
   std::ifstream file(file_name.c_str());

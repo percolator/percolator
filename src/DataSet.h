@@ -85,7 +85,9 @@ class DataSet {
   
   std::vector<PSMDescription*> psms_;
   int label_;
+  
   static FeatureNames featureNames_;
+  static bool decoyWarningTripped_;
 };
 
 #endif /*DATASET_H_*/

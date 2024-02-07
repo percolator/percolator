@@ -35,7 +35,6 @@ class TabFileValidator {
     static void getProteinAndLabelColumnIndices(std::string file_name, int &proteinIndex,int &labelIndex);
     static std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
     static std::string getLongestCommonPrefix(std::vector<std::string> arr);
-    static bool decoyWarningTripped;
 };
 
 #endif /*TABFILEVALIDATOR_H_*/
