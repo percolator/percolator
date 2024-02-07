@@ -29,12 +29,12 @@ class TabFileValidator {
   public:
     static bool isTabFile(std::string file_name);
     static bool isTabFiles(std::vector<std::string> files);
-    std::string getDecoyPrefix(std::vector<std::string> fileList);
-    std::string detectDecoyPrefix(std::string file_name);
-    bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
-    void getProteinAndLabelColumnIndices(std::string file_name, int &proteinIndex,int &labelIndex);
-    std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
-    std::string getLongestCommonPrefix(std::vector<std::string> arr);
+    static std::string getDecoyPrefix(std::vector<std::string> fileList);
+    static std::string detectDecoyPrefix(std::string file_name);
+    static bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
+    static void getProteinAndLabelColumnIndices(std::string file_name, int &proteinIndex,int &labelIndex);
+    static std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
+    static std::string getLongestCommonPrefix(std::vector<std::string> arr);
     static bool decoyWarningTripped;
 };
 
