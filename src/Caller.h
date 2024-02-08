@@ -86,6 +86,7 @@ class Caller {
   bool tabInput_;
   bool readStdIn_;
   std::string inputFN_;
+  std::vector<std::string> inputFNs_;
   bool xmlSchemaValidation_;
   std::string protEstimatorDecoyPrefix_;
   

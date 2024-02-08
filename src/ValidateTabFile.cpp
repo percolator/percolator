@@ -2,7 +2,7 @@
 
 std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_string<char>> fileNames) {
   // Validate multiple tab-files, and then concatenate them.
-  std::string inputFN_;
+  std::string inputFN;
   std::ifstream pinFileStream;
 
   /* Complete column position to header name */
@@ -18,11 +18,11 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
       
     /* Get header */
     pinFileStream.open(text.c_str(), std::ios::in);
-    std::string hederRow;
+    std::string headerRow;
 
-    getline(pinFileStream, hederRow);
+    getline(pinFileStream, headerRow);
 
-    TabReader reader(hederRow);
+    TabReader reader(headerRow);
 
     column_index = 0;
     while (!reader.error()) {
@@ -34,7 +34,7 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
 
     /* Get header from file with the most columns */
     if (columnMap.size() < tmpMap.size()) {
-        columnMap = tmpMap;
+      columnMap = tmpMap;
     }
     tmpMap.clear();
     pinFileStream.close();
@@ -46,9 +46,9 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
 
   TmpDir tmpDir;
   tmpDir.createTempFile(tcf, tcd);
-  inputFN_ = tcf;
+  inputFN = tcf;
   ofstream outFile;
-  outFile.open(inputFN_);
+  outFile.open(inputFN);
 
   /* Only want to print header once */
   bool firstFile = true;
@@ -65,10 +65,10 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
         
     /* Read pin file */
     pinFileStream.open(text.c_str(), std::ios::in);
-    std::string hederRow;
-    getline(pinFileStream, hederRow);
-    TabReader reader(hederRow);
-        
+    std::string headerRow;
+    getline(pinFileStream, headerRow);
+    TabReader reader(headerRow);
+
     /* Keep track on column index */
     column_index = 0;
     /* Go through all columns to print header and search for missing charge state */
@@ -104,14 +104,24 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
       column_index++;
     }
 
-    if (firstFile) {
-      outFile <<  "\n";
-    }
     /* Go through rest of the rows in pin-file */
     std::string nextRow;
-        
-    while(getline(pinFileStream, nextRow)) {
-      
+    getline(pinFileStream, nextRow);
+
+    if (firstFile) {
+      outFile <<  "\n";
+    } else {
+      std::string defaultDirectionString = "defaultdirection";
+      if (nextRow.size() >= defaultDirectionString.size()) {
+        std::string psmid = nextRow.substr(0, defaultDirectionString.size());
+        std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
+        if (psmid == defaultDirectionString) {
+          getline(pinFileStream, nextRow); // skip row with default direction
+        }
+      }
+    }
+
+    do {
       TabReader readerRow(nextRow);
 
       /* Keep track on column for missing charge states */
@@ -119,7 +129,7 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
       while (!readerRow.error()) {           
         std::string value = readerRow.readString();
         /* Check for missing charge state */
-        if(std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
+        if (std::find(missingCols.begin(), missingCols.end(), col) != missingCols.end()) {
           nextColumn=true;
           outFile << 0 << "\t";
           col++;
@@ -139,10 +149,10 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
         col++;
       }
       outFile << "\n";
-    }
+    } while (getline(pinFileStream, nextRow));
     pinFileStream.close();
     firstFile = false;      
   }
   outFile.close();
-  return inputFN_;
+  return inputFN;
 }

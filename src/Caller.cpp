@@ -35,8 +35,8 @@ using namespace std;
 
 Caller::Caller() :
     pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL),
-    tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true),
-    protEstimatorDecoyPrefix_("auto"),
+    tabInput_(true), readStdIn_(false), inputFN_(""), inputFNs_(), 
+    xmlSchemaValidation_(true), protEstimatorDecoyPrefix_("auto"),
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
@@ -622,18 +622,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
-  
-  /*  Validate tab file and get decoy prefix */
-  std::string decoy_prefix;
-  TabFileValidator tabFileValidator;
-  if (!tabFileValidator.validateTabFiles(cmd.arguments, decoy_prefix)) {
-    return 0;
-  }
 
-  // if there is one argument left...
-  if (cmd.arguments.size() == 1) {
+  // if there is at least one argument left...
+  if (cmd.arguments.size() >= 1) {
     tabInput_ = true;
-    inputFN_ = cmd.arguments[0]; // then it's the pin input
+    inputFNs_ = cmd.arguments; // then it's the pin input
     if (cmd.optionSet("xml-in") || cmd.optionSet("tab-in")){ // and if the tab input is also present
       cerr << "Error: use one of either pin-xml or tab-delimited input format.";
       cerr << "\nInvoke with -h option for help.\n";
@@ -645,25 +638,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
-  // if there is more then one argument left...
-  if (cmd.arguments.size() > 1) {
-    tabInput_ = true;
-    ValidateTabFile validateTab;
-    inputFN_ = validateTab.concatenateMultiplePINs(cmd.arguments);
 
-  }
-
-    
-
-  if (VERB > 0) {
-    std::cerr << "All files have been read" << std::endl;
-  }
-  
   if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix_ = cmd.options["protein-decoy-pattern"];
-
-  if (protEstimatorDecoyPrefix_ == "auto") {
-    protEstimatorDecoyPrefix_ = decoy_prefix;
-  }
 
   if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
 
@@ -676,8 +652,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     double protEstimatorPeptideQvalThreshold = -1.0;
 
     protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
-    
-    
 
     if (cmd.optionSet("spectral-counting-fdr")) {
       protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
@@ -840,7 +814,7 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
     cerr << protEstimator_->printCopyright();
   }
 
-  protEstimator_->initialize(allScores, enzyme_);
+  protEstimator_->initialize(allScores, enzyme_, protEstimatorDecoyPrefix_);
 
   if (VERB > 1) {
     std::cerr << "Initialized protein inference engine." << std::endl;
@@ -1020,6 +994,20 @@ int Caller::run() {
   omp_set_num_threads(static_cast<int>(
     std::min((unsigned int)omp_get_max_threads(), numThreads_)));
 #endif
+
+  /* Validate tab file and get decoy prefix */
+  TabFileValidator tabFileValidator;
+  if (!tabFileValidator.validateTabFiles(inputFNs_, protEstimatorDecoyPrefix_)) {
+    return 0;
+  }
+
+  if (inputFNs_.size() == 1) {
+    inputFN_ = inputFNs_.at(0);
+  } else if (inputFNs_.size() > 1) {
+    tabInput_ = true;
+    ValidateTabFile validateTab;
+    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_);
+  }
 
   int success = 0;
   std::ifstream fileStream;

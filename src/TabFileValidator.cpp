@@ -152,13 +152,16 @@ std::string TabFileValidator::findDecoyPrefix(std::string fileName, int proteinI
   }
 
   if (VERB > 0) {
-    std::cerr << "Protein decoy-prefix used is " << prefix << std::endl;  
+    std::cerr << "Using protein decoy prefix \"" << prefix << "\"" << std::endl;  
   }
   
   return prefix;
 }
 
 std::string TabFileValidator::detectDecoyPrefix(std::string fileName) {
+  if (VERB > 0) {
+    std::cerr << "Finding protein decoy prefix for " << fileName << std::endl;
+  }
   int proteinIndex = -1;
   int labelIndex = -1;
 
@@ -174,12 +177,14 @@ std::string TabFileValidator::detectDecoyPrefix(std::string fileName) {
 }
 
 bool TabFileValidator::validateTabFiles(std::vector<std::string> files, std::string& decoyPrefix) {
-  std::string tmpDecoyPrefix = getDecoyPrefix(files);
-  decoyPrefix = tmpDecoyPrefix;
-
-  if (tmpDecoyPrefix == "error") {
-    return false;
+  if (decoyPrefix == "auto") {
+    std::string tmpDecoyPrefix = getDecoyPrefix(files);
+    if (tmpDecoyPrefix == "error") {
+      return false;
+    }
+    decoyPrefix = tmpDecoyPrefix;
   }
+  
   if (!isTabFiles(files)) {
     return false;
   }

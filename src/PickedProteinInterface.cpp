@@ -34,7 +34,9 @@ PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
 
 PickedProteinInterface::~PickedProteinInterface() {}
 
-bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enzyme) {
+bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enzyme, std::string& protEstimatorDecoyPrefix) {
+  decoyPattern_ = protEstimatorDecoyPrefix;
+  
   int min_peptide_length = 1000, max_peptide_length = 0;
   int max_miscleavages = 0, max_non_enzymatic_flanks = 0;
   int max_miscleavages_trypsinp = 0, max_non_enzymatic_flanks_trypsinp = 0;
