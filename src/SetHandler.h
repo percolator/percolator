@@ -64,19 +64,14 @@ typedef std::pair<int, double> ScanId;
 * testing, Xval data sets, reads/writes from/to a file, prints them.
 *
 */
-class SetHandler {  
- // Used to determine if a psm is a decoy
- std::string decoyPrefix;
-
+class SetHandler {
  public:
   SetHandler(unsigned int maxPSMs);
   virtual ~SetHandler();
 
   void push_back_dataset(DataSet* ds);
 
-  // set/get decoy prefix
-  std::string getDecoyPrefix() {return decoyPrefix;}
-  void setDecoyPrefix(std::string arg) {decoyPrefix = arg;}
+  void setDecoyPrefix(std::string& decoyPrefix) { decoyPrefix_ = decoyPrefix; }
 
      
   //const double* getFeatures(const int setPos, const int ixPos) const; 
@@ -84,14 +79,14 @@ class SetHandler {
   
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
-  int readTab(istream& dataStream, SanityCheck*& pCheck);
-  int readAndScoreTab(istream& dataStream, 
+  int readTab(std::istream& dataStream, SanityCheck*& pCheck);
+  int readAndScoreTab(std::istream& dataStream, 
     std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck);
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
-  void writeTab(const string& dataFN, SanityCheck* pCheck);
-  void populateScoresWithPSMs(vector<ScoreHolder> &scores, int label);
+  void writeTab(const std::string& dataFN, SanityCheck* pCheck);
+  void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, int label);
   void normalizeFeatures(Normalizer*& pNorm);
   
   int const getLabel(int setPos);
@@ -114,6 +109,7 @@ class SetHandler {
   size_t maxPSMs_;
   vector<DataSet*> subsets_;
   FeatureMemoryPool featurePool_;
+  std::string decoyPrefix_; // Used to determine if a psm is a decoy
   
   unsigned int getSubsetIndexFromLabel(int label);
   static inline std::string &rtrim(std::string &s);

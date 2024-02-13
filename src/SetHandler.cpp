@@ -253,7 +253,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
         psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
-                                 readProteins, psmPriority.psm, featurePool_, decoyPrefix);
+                                 readProteins, psmPriority.psm, featurePool_, decoyPrefix_);
         psmPriority.priority = randIdx;
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
@@ -286,9 +286,9 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         scanIdLookUp[scanId] = isDecoy;
       }
       if (label == 1) {
-        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix);
+        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix_);
       } else if (label == -1) {
-        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix);
+        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix_);
       } else {
         std::cerr << "Warning: the PSM on line " << lineNr
             << " has a label not in {1,-1} and will be ignored." << std::endl;
@@ -515,7 +515,7 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
     }
     psmLine = rtrim(psmLine);
     ScoreHolder sh;
-    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM, featurePool_, decoyPrefix);
+    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM, featurePool_, decoyPrefix_);
     allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
     ++lineNr;
   } while (getline(dataStream, psmLine));
