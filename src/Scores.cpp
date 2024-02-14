@@ -363,7 +363,7 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
  * their spectrum scan number
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
- * @param xval_fold: number of folds in train and test
+ * @param xval_fold number of folds in train and test
  */
 void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train, 
     std::vector<Scores>& test, const unsigned int xval_fold, 
@@ -478,7 +478,11 @@ void Scores::reorderFeatureRows(FeatureMemoryPool& featurePool,
   }
 }
 
-// sets q=fdr to 0 and the median decoy to -1, linear transform the rest to fit
+/**
+ * Linear rescaling of SVM scores such that q=fdr = 0 and the median decoy = -1.
+ * @param fdr fdr-cutoff to use, typically --trainFDR
+ * @param weights SVM weights used to compute SVM scores
+ */
 void Scores::normalizeScores(double fdr, std::vector<double>& weights) {  
   unsigned int medianIndex = std::max(0u,totalNumberOfDecoys_/2u),decoys=0u;
 
@@ -507,18 +511,26 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
       }
     }
   }
-  
-  //NOTE perhaps I should also check when fdrScore and medianDecoyScore are both 
-  //  negative. In such cases the normalization could give negative scores which 
-  //  would cause an assertion to fail in qvality
-  
+
   double diff = fdrScore - medianDecoyScore;
+  if (diff <= 0) {
+    ostringstream oss;
+    oss << "Error: median decoy score <= score at " << fdr*100 
+        << "\% FDR. Cannot rescale scores to merge cross validation bins, try lowering --trainFDR.\n";
+    if (NO_TERMINATE) {
+      cerr << oss.str() << "No-terminate flag set: apply offset such that median "
+           << "decoy has score -1, but skipping rescaling." << std::endl;
+      diff = 1.0;
+      fdrScore += 1.0;
+    } else {
+      throw MyException(oss.str());
+    }
+  }
+  
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for ( ; scoreIt != scores_.end(); ++scoreIt) {
     scoreIt->score -= fdrScore;
-    if (diff > 0.0) {
-      scoreIt->score /= diff;
-    }
+    scoreIt->score /= diff;
   }
   Normalizer::endScoreNormalizeWeights(weights, weights, fdrScore, diff);
 }
