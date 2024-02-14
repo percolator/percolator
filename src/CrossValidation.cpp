@@ -120,6 +120,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
             cpCnFold.set = set;
             cpCnFold.nestedSet = nestedSet;
             cpCnFold.tp = 0;
+            cpCnFold.ww.clear();
             for (int i = static_cast<int>(FeatureNames::getNumFeatures()) + 1; i--;) {
               cpCnFold.ww.push_back(0);
             }     
@@ -132,6 +133,7 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
         cpCnFold.set = set;
         cpCnFold.nestedSet = nestedSet;
         cpCnFold.tp = 0;
+        cpCnFold.ww.clear();
         for (int i = static_cast<int>(FeatureNames::getNumFeatures()) + 1; i--;) {
           cpCnFold.ww.push_back(0);
         }         
