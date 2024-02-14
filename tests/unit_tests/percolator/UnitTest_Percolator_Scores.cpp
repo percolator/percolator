@@ -67,8 +67,22 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     ASSERT_TRUE(checkOrder(&scores, 1.0, 2.0, 3.0, 4.0, 5.0));
     std::sort(scores.begin(), scores.end(), OrderScanMassCharge());
     ASSERT_TRUE(checkOrder(&scores, 4.0, 5.0, 1.0, 2.0, 3.0));
+    
+    // specFileNr values are assigned [ 3, 3, 4, 4, 5]
+    // scan values are assigned [ 0, 0, 1, 1, 2]
+    scores.clear();
+    for (int i = 0 ; i < 5 ; ++i) {
+        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        pPSM->specFileNr = 3 + i / 2;
+        pPSM->scan = i / 2;
+        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+    }
+    std::sort(scores.begin(), scores.end(), OrderScanHash());
+    for (int i = 0 ; i < 5 ; ++i) {
+        std::cerr << scores.at(i).score << std::endl;
+    }
+    ASSERT_TRUE(checkOrder(&scores, 3.0, 4.0, 1.0, 2.0, 5.0));
 
-    // peptides are assigned in alphabetic order
     // specFileNr values are assigned [ 0, 0, 1, 1, 2]
     // scan values are assigned [ 2, 3, 4, 0, 1 ]
     scores.clear();

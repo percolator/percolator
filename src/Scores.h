@@ -104,6 +104,31 @@ struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
   }
 };
 
+/**
+ * Computes a fast hash for unsigned int using the function suggested at:
+ * https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+ * Note that std::hash is sometimes implemented as the identity function, defeating 
+ * the purpose of random shuffling.
+ */
+inline unsigned int fast_uint_hash(unsigned int x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
+}
+
+/**
+ * Orders ScoreHolders by a hash computed from the specFileNr and scan.
+ * Uses the hash combination function h1 ^ (h2 << 1) suggested in https://en.cppreference.com/w/cpp/utility/hash
+ */
+struct OrderScanHash : public binary_function<ScoreHolder, ScoreHolder, bool> {
+  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
+    size_t hash_x = fast_uint_hash(__x.pPSM->specFileNr) ^ (fast_uint_hash(__x.pPSM->scan) << 1);
+    size_t hash_y = fast_uint_hash(__y.pPSM->specFileNr) ^ (fast_uint_hash(__y.pPSM->scan) << 1);
+    return (hash_x < hash_y);
+  }
+};
+
 struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
   bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
     return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )

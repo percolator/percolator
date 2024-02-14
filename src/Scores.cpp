@@ -381,7 +381,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     ix -= remain[static_cast<std::size_t>(fold)];
   }
   
-  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
+  std::sort(scores_.begin(), scores_.end(), OrderScanHash());
 
   if (scores_.size() == 0) {
     ostringstream oss;
