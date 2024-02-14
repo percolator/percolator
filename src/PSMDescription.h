@@ -119,7 +119,7 @@ class PSMDescription {
   double* features; // owned by a FeatureMemoryPool instance, no need to delete
   double expMass, calcMass, retentionTime_;
   unsigned int scan;
-  int specFileNr;
+  unsigned int specFileNr;
   std::vector<std::string> proteinIds;
 protected:
   std::string id_;

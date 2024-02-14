@@ -21,13 +21,13 @@
 #include "PSMDescription.h"
 
 PSMDescription::PSMDescription() :
-    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0),
-    id_(""), peptide(""), specFileNr(-1) {
+    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0u),
+    id_(""), peptide(""), specFileNr(0u) {
 }
 
 PSMDescription::PSMDescription(const std::string& pep) :
-    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0),
-    id_(""), peptide(pep), specFileNr(-1) {
+    features(NULL), expMass(0.), calcMass(0.), retentionTime_(nan("")), scan(0u),
+    id_(""), peptide(pep), specFileNr(0u) {
 }
 
 PSMDescription::~PSMDescription() {}
