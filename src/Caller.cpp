@@ -385,6 +385,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
 
+  if(cmd.optionSet("output-retention-time")){
+    outputRT_ = true; 
+  }
+
   if (cmd.optionSet("parameter-file")) {
     cmd.parseArgsParamFile(cmd.options["parameter-file"]);
   }
@@ -672,13 +676,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
       checkIsWritable(decoyProteinResultFN_);
     }
-    // TODO Continue from here
-    //  For some reason - it seems the outputRT_ is not being set;
-    cerr << cmd.optionSet("output-retention-time");
-    if(cmd.optionSet("output-retention-time")){
-      cerr << "Got here";
-     outputRT_ = true; 
-    }
 
     if (cmd.optionSet("fido-protein")) {
       /*fido parameters*/
@@ -803,9 +800,6 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
     targetFN = psmResultFN_;
     decoyFN = decoyPsmResultFN_;
   }
-  cerr << outputRT_ << "YYYYYYYYYYYYYYYYYYYYYYYYY";
-  exit(0);
-  allScores.setOutputRT(outputRT_);
   if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
     allScores.print(NORMAL, targetStream);
@@ -1032,6 +1026,7 @@ int Caller::run() {
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
   Scores allScores(useMixMax_);
+  allScores.setOutputRT(outputRT_);
 
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
     exit(EXIT_FAILURE);

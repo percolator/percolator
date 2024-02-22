@@ -294,8 +294,6 @@ void Scores::print(int label, std::ostream& os) {
         os << "filename\t";
     }
     os << "score\tq-value\tposterior_error_prob\tpeptide\tproteinIds";
-    cerr << is_output_rt_ << "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
-    exit(0);
     if (is_output_rt_) {
         os << "\trt\n";
     } else {
