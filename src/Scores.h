@@ -273,6 +273,9 @@ class Scores {
     totalNumberOfDecoys_ = 0;
   }
   void setUsePi0(bool usePi0);
+  inline void setOutputRT(const bool is_output_rt){
+    is_output_rt_ = is_output_rt;
+  }
  protected:
   bool usePi0_;
   
@@ -290,6 +293,7 @@ class Scores {
     boost::unordered_map<double*, double*>& movedAddresses, size_t& idx);
   void getScoreLabelPairs(std::vector<pair<double, bool> >& combined);
   void checkSeparationAndSetPi0();
+  bool is_output_rt_ = false;
 };
 
 #endif /*SCORES_H_*/
