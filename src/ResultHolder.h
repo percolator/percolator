@@ -16,17 +16,20 @@
  *******************************************************************************/
 #ifndef RESULTHOLDER_H_
 #define RESULTHOLDER_H_
+#include <cmath>
+
 using namespace std;
 
 class ResultHolder {
-  public:
+   public:
     ResultHolder();
     ResultHolder(const double score, const double q, const double po,
-                 const string& i, const string& pe = "", const string& p =
-                     "", const string& fn = "");
+                 const string& i, const string& pe = "", const string& p = "", const string& fn = "");
     virtual ~ResultHolder();
     double score, q, posterior;
     string id, pepSeq, prot, fileName;
+    bool outputRT;
+    double retentionTime = nan("");
 };
 
 bool operator>(const ResultHolder& one, const ResultHolder& other);

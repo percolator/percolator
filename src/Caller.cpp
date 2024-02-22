@@ -375,6 +375,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       "parameter-file",
       "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
       "filename");
+  cmd.defineOption(
+    "RT",
+    "output-retention-time",
+    "Adds retention time column to the output file",
+    "",
+    TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -666,6 +672,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       decoyProteinResultFN_ = cmd.options["decoy-results-proteins"];
       checkIsWritable(decoyProteinResultFN_);
     }
+    // TODO Continue from here
+    //  For some reason - it seems the outputRT_ is not being set;
+    cerr << cmd.optionSet("output-retention-time");
+    if(cmd.optionSet("output-retention-time")){
+      cerr << "Got here";
+     outputRT_ = true; 
+    }
 
     if (cmd.optionSet("fido-protein")) {
       /*fido parameters*/
@@ -716,6 +729,7 @@ bool Caller::parseOptions(int argc, char **argv) {
           protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix_,
           protEstimatorPeptideQvalThreshold);
     }
+
   }
 
 
@@ -789,7 +803,9 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
     targetFN = psmResultFN_;
     decoyFN = decoyPsmResultFN_;
   }
-
+  cerr << outputRT_ << "YYYYYYYYYYYYYYYYYYYYYYYYY";
+  exit(0);
+  allScores.setOutputRT(outputRT_);
   if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
     allScores.print(NORMAL, targetStream);
@@ -972,6 +988,7 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
   }
   return success;
 }
+
 
 /**
  * Executes the flow of the percolator process:
