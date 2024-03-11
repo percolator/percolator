@@ -125,7 +125,7 @@ class ProteinProbEstimator {
   virtual ~ProteinProbEstimator();
   
   /** reads the proteins from the set of scored peptides from percolator **/
-  virtual bool initialize(Scores& peptideScores, const Enzyme* enzyme);
+  virtual bool initialize(Scores& peptideScores, const Enzyme* enzyme, std::string& protEstimatorDecoyPrefix);
   
   /** adds spectral counts if specCountQvalThreshold_ is set **/
   void addSpectralCounts(Scores& peptideScores);

@@ -140,14 +140,19 @@ TEST_F(CrossValidationTest, doStepTest)
     int numInit = crossValidation->preIterationSetup(scores, pCheck, pNorm,
                                                 setHandler.getFeaturePool());
     std::vector< std::vector<double> > const& w = crossValidation->weights();
-    EXPECT_EQ(1.0, w[0][0]);
-    EXPECT_EQ(0.0, w[0][1]);
+    for (int i = 0 ; i < 3 ; ++i) {
+        EXPECT_EQ(1.0, w[i][0]);
+        EXPECT_EQ(0.0, w[i][1]);
+    }
 
-    // One step of the training algorithm should find N positives
-    // (plus some more, due to the elevated false detection rate).
-
-    int numIter = crossValidation->doStepEx(pNorm, 0.01);
-    EXPECT_EQ(N * (1.0 + testFdr), numIter);
+    // One step of the training algorithm should find at least N positives.
+    // The number can be a bit higher because some targets with score < N are
+    // counted as positives. This can be either because the highest scoring decoy 
+    // in the cross validation fold has a lower score, or because it narrowly passes 
+    // the testFDR threshold.
+    int estimatedNumPositives = crossValidation->doStepEx(pNorm, 0.01);
+    EXPECT_LE(N, estimatedNumPositives);
+    EXPECT_GE(N * (1.0 + testFdr), estimatedNumPositives);
 
     delete crossValidation;
 }

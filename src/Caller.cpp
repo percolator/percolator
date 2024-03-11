@@ -35,8 +35,8 @@ using namespace std;
 
 Caller::Caller() :
     pNorm_(NULL), pCheck_(NULL), protEstimator_(NULL), enzyme_(NULL),
-    tabInput_(true), readStdIn_(false), inputFN_(""), xmlSchemaValidation_(true),
-    protEstimatorDecoyPrefix_("auto"),
+    tabInput_(true), readStdIn_(false), inputFN_(""), inputFNs_(), 
+    xmlSchemaValidation_(true), protEstimatorDecoyPrefix_("auto"),
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
@@ -289,7 +289,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
-      "Define the text pattern to identify decoy proteins in the database for the picked-protein algorithm. One of \"auto\" (Percolator parses the protein-decoy-pattern from input-file) or \"'<DECOY NAME>'\" (search for decoys using '<DECOY NAME>' pattern). Default = \"auto\".",
+      "Define the prefix to identify decoy proteins in the database for the picked-protein algorithm. This will have no effect on the target/decoy labels specified in the input file. One of \"auto\" (Percolator guesses the prefix from the input file) or \"'<DECOY NAME>'\" (search for decoys using the '<DECOY NAME>' pattern). Default = \"auto\".",
       "value");
   cmd.defineOption("z",
       "protein-enzyme",
@@ -375,9 +375,19 @@ bool Caller::parseOptions(int argc, char **argv) {
       "parameter-file",
       "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
       "filename");
+  cmd.defineOption(
+    "RT",
+    "output-retention-time",
+    "Adds retention time column to the output file",
+    "",
+    TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
+
+  if(cmd.optionSet("output-retention-time")){
+    outputRT_ = true; 
+  }
 
   if (cmd.optionSet("parameter-file")) {
     cmd.parseArgsParamFile(cmd.options["parameter-file"]);
@@ -622,18 +632,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
-  
-  /*  Validate tab file and get decoy prefix */
-  std::string decoy_prefix;
-  TabFileValidator tabFileValidator;
-  if (!tabFileValidator.validateTabFiles(cmd.arguments, &decoy_prefix)) {
-    return 0;
-  }
 
-  // if there is one argument left...
-  if (cmd.arguments.size() == 1) {
+  // if there is at least one argument left...
+  if (cmd.arguments.size() >= 1) {
     tabInput_ = true;
-    inputFN_ = cmd.arguments[0]; // then it's the pin input
+    inputFNs_ = cmd.arguments; // then it's the pin input
     if (cmd.optionSet("xml-in") || cmd.optionSet("tab-in")){ // and if the tab input is also present
       cerr << "Error: use one of either pin-xml or tab-delimited input format.";
       cerr << "\nInvoke with -h option for help.\n";
@@ -645,25 +648,8 @@ bool Caller::parseOptions(int argc, char **argv) {
       return 0; // ...error
     }
   }
-  // if there is more then one argument left...
-  if (cmd.arguments.size() > 1) {
-    tabInput_ = true;
-    ValidateTabFile validateTab;
-    inputFN_ = validateTab.concatenateMultiplePINs(cmd.arguments);
 
-  }
-
-    
-
-  if (VERB > 0) {
-    std::cerr << "All files have been read" << std::endl;
-  }
-  
   if (cmd.optionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix_ = cmd.options["protein-decoy-pattern"];
-
-  if (protEstimatorDecoyPrefix_ == "auto") {
-    protEstimatorDecoyPrefix_ = decoy_prefix;
-  }
 
   if (cmd.optionSet("fido-protein") || cmd.optionSet("picked-protein")) {
 
@@ -676,8 +662,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     double protEstimatorPeptideQvalThreshold = -1.0;
 
     protEstimatorOutputEmpirQVal = cmd.optionSet("fido-empirical-protein-q");
-    
-    
 
     if (cmd.optionSet("spectral-counting-fdr")) {
       protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
@@ -742,6 +726,7 @@ bool Caller::parseOptions(int argc, char **argv) {
           protEstimatorOutputEmpirQVal, protEstimatorDecoyPrefix_,
           protEstimatorPeptideQvalThreshold);
     }
+
   }
 
 
@@ -772,7 +757,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
   } else if (targetDecoyCompetition_) {
     allScores.weedOutRedundantTDC();
     if (VERB > 0) {
-      std::cerr << "Selected best-scoring PSM per scan+expMass"
+      std::cerr << "Selected best-scoring PSM per file+scan+expMass"
         << " (target-decoy competition): "
         << allScores.posSize() << " target PSMs and "
         << allScores.negSize() << " decoy PSMs." << std::endl;
@@ -815,7 +800,6 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
     targetFN = psmResultFN_;
     decoyFN = decoyPsmResultFN_;
   }
-
   if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
     allScores.print(NORMAL, targetStream);
@@ -840,7 +824,7 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
     cerr << protEstimator_->printCopyright();
   }
 
-  protEstimator_->initialize(allScores, enzyme_);
+  protEstimator_->initialize(allScores, enzyme_, protEstimatorDecoyPrefix_);
 
   if (VERB > 1) {
     std::cerr << "Initialized protein inference engine." << std::endl;
@@ -917,7 +901,12 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
   if (!success) {
     std::cerr << "ERROR: Failed to read in file, check if the correct " <<
                  "file-format was used." << std::endl;
-    return false;
+    if (NO_TERMINATE) {
+      std::cerr << "No-terminate flag set: ignoring error and continuing "
+          << "without PSMs." << std::endl;
+    } else {
+      return false;
+    }
   }
 
   if (VERB > 2) {
@@ -994,6 +983,7 @@ bool Caller::loadAndNormalizeData(std::istream &dataStream, XMLInterface& xmlInt
   return success;
 }
 
+
 /**
  * Executes the flow of the percolator process:
  * 1. reads in the input file
@@ -1016,12 +1006,27 @@ int Caller::run() {
     std::min((unsigned int)omp_get_max_threads(), numThreads_)));
 #endif
 
+  /* Validate tab file and get decoy prefix */
+  TabFileValidator tabFileValidator;
+  if (!tabFileValidator.validateTabFiles(inputFNs_, protEstimatorDecoyPrefix_)) {
+    return 0;
+  }
+
+  if (inputFNs_.size() == 1) {
+    inputFN_ = inputFNs_.at(0);
+  } else if (inputFNs_.size() > 1) {
+    tabInput_ = true;
+    ValidateTabFile validateTab;
+    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_);
+  }
+
   int success = 0;
   std::ifstream fileStream;
   XMLInterface xmlInterface(xmlOutputFN_, pepXMLOutputFN_, xmlSchemaValidation_, xmlPrintDecoys_, xmlPrintExpMass_);
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
   Scores allScores(useMixMax_);
+  allScores.setOutputRT(outputRT_);
 
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
     exit(EXIT_FAILURE);
@@ -1078,8 +1083,15 @@ int Caller::run() {
 
     // Reading input files (pin or temporary file)
     if (!success) {
-      std::cerr << "ERROR: Failed to read in file, check if the correct " << "file-format was used.";
-      return 0;
+      ostringstream temp;
+      std::cerr << "ERROR: Failed to read in file, check if the correct " 
+        << "file-format was used." << std::endl;
+      if (NO_TERMINATE) {
+        std::cerr << "No-terminate flag set: ignoring error and continuing "
+            << "without PSMs." << std::endl;
+      } else {
+        return 0;
+      }
     }
 
     if (VERB > 1) {

@@ -16,7 +16,7 @@ jobs:
     - name: test
       run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
     - name: zip raw binary
-      run: zip -j ../my_rel/percolator-noxml.zip ../my_build/percolator-noxml/src/percolator
+      run: zip -j ../my_rel/percolator-noxml-ubuntu-portable.zip ../my_build/percolator-noxml/src/percolator
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
@@ -35,7 +35,7 @@ jobs:
     - name: test
       run: cd ../my_build/percolator && make install && make test ARGS="-V"
     - name: zip raw binary
-      run: zip -j ../my_rel/percolator-noxml.zip ../my_build/percolator-noxml/src/percolator
+      run: zip -j ../my_rel/percolator-noxml-linux-portable.zip ../my_build/percolator-noxml/src/percolator
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
@@ -43,7 +43,7 @@ jobs:
         path: ../my_rel
 
   build-osx:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
     - uses: actions/checkout@v2
     - name: create_dirs
@@ -53,7 +53,7 @@ jobs:
     - name: test
       run: cd ../my_build/percolator && sudo make install && make test ARGS="-V"
     - name: zip raw binary
-      run: zip ../my_rel/percolator-noxml.zip ../my_build/percolator-noxml/src/percolator
+      run: zip ../my_rel/percolator-noxml-osx-portable.zip ../my_build/percolator-noxml/src/percolator
     - name: Upload packages
       uses: actions/upload-artifact@v1
       with:
@@ -77,7 +77,8 @@ jobs:
         ECHO %base_dir%
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %homedrive%%homepath%\my_rel -b %homedrive%%homepath%\my_build
     - name: zip raw binary
-      run: TAR -czvf %homedrive%%homepath%\my_rel\percolator-noxml.tgz %homedrive%%homepath%\my_build\percolator-noxml\src\Release\percolator.exe
+      shell: pwsh
+      run: Compress-Archive -Path ${env:homedrive}${env:homepath}\my_build\percolator-noxml\src\Release\*.exe -Destination ${env:homedrive}${env:homepath}\my_rel\percolator-noxml-windows-portable.zip
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:

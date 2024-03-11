@@ -24,6 +24,7 @@ using namespace std;
 #include "StdvNormalizer.h"
 #include "UniNormalizer.h"
 #include "NoNormalizer.h"
+#include "FeatureNames.h"
 #include "Globals.h"
 
 int Normalizer::subclass_type = STDV;
@@ -84,8 +85,8 @@ void Normalizer::setType(int type) {
 void Normalizer::endScoreNormalizeWeights(const std::vector<double>& in, 
     std::vector<double>& out, double subScore, double scale) {
   size_t i = 0;
-  for (; i < in.size()-1; i++) {
+  for (; i < FeatureNames::getNumFeatures(); i++) {
     out[i] = in[i] / scale;
   }
-  out[i] = (in[i] - subScore)/scale;
+  out[i] = (in[i] - subScore) / scale; // update the intercept m0
 }

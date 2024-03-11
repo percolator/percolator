@@ -225,6 +225,8 @@ double BaseSpline::alphaLinearSearchBA(double min_p,
 }
 
 void BaseSpline::initiateQR() {
+  // NOTE: at least 4 data points are needed to construct a quadratic spline!
+  assert(x.size() >= 4);
   int n = static_cast<int>(x.size());
   dx.resize(n-1);
   for (std::size_t ix = 0; static_cast<int>(ix) < n - 1; ix++) {

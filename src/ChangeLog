@@ -1,3 +1,21 @@
+v3.06.5
+* Allow empty pin-file with --no-terminate flag. (#371)
+* Skip protein decoy pattern detection if --protein-decoy-pattern is specified. (#356)
+* Delay tab file validation and decoy pattern detection to Caller::run().
+* Cleaned up and refactored TabFileValidator.
+* Deal with DefaultDirection row when merging multiple pin files.
+* Better names for portable artifacts.
+
+v3.06.4
+* Fix assertion problem with ties in calculating PEPs. (#365)
+* Upgrade to macos-12 on GH action builds. (#364, #366)
+
+v3.06.3
+* Add check and fallback for <4 bins in BaseSpline PEP estimation. (#362)
+
+v3.06.2
+* Take filename into account in TDC (#358)
+
 v3.06.1
 * Added checks for number of decoy PSMs<=1 (#337)
 * Removing multiple warnings of decoyPrefix not being set (despite being set). (#338)

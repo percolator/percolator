@@ -37,89 +37,7 @@
 #include "FeatureNames.h"
 #include "FeatureMemoryPool.h"
 #include "ProteinProbEstimator.h"
-
-// using char pointers is much faster than istringstream
-class TabReader {
- public:
-  TabReader(const std::string& line) : f_(line.c_str()), err(0) {
-    errno = 0;
-  }
-  
-  void advance(const char* next) {
-    if (*next != '\0') {
-      f_ = next + 1; // eats up the tab
-    } else {
-      f_ = next; // prevents pointing over the null byte
-    }
-  }
-  
-  void skip() {
-    const char* pch = strchr(f_, '\t');
-    if (pch == NULL) {
-      err = 1;
-    } else {
-      advance(pch);
-    }
-  }
-  
-  void skip(size_t numSkip) {
-    for (size_t i = 0; i < numSkip; ++i) skip();
-  }
-  
-  double readDouble() {
-    char* next = NULL;
-    errno = 0;
-    double d = strtod(f_, &next);
-    if (next == f_ || (*next != '\0' && !isspace(*next))
-                   || ((d == HUGE_VAL || d == -HUGE_VAL) && errno == ERANGE)) {
-      err = errno ? errno : 1;
-    }
-    advance(next);
-    return d;
-  }
-  
-  int readInt() {
-    char* next = NULL;
-    errno=0;
-    long val = strtol(f_, &next, 10);
-    if (next == f_ || (*next != '\0' && !isspace(*next))
-                   || val < INT_MIN || val > INT_MAX) {
-      err = errno ? errno : 1;
-    }
-    advance(next);
-    return static_cast<int>(val);
-  }
-  
-  std::string readString() {
-    const char* pch = strchr(f_, '\t');
-    if (pch == NULL) {
-      err = 1;
-      return std::string(f_);
-    } else {
-      std::string s(f_, static_cast<std::basic_string<char>::size_type>(pch - f_));
-      advance(pch);
-      return s;
-    }
-  }
-
-  bool error() { return err != 0; }
- private:
-  const char* f_;
-  int err;
-};
-
-class TabFileValidator {
-  public:
-    static bool isTabFile(std::string file_name);
-    static bool isTabFiles(std::vector<std::string> files);
-    std::string getDecoyPrefix(std::vector<std::string> fileList);
-    std::string detectDecoyPrefix(std::string file_name);
-    bool validateTabFiles(std::vector<std::string> files, std::string* decoy_prefix);
-    void getProteinIndex(std::string file_name, int* proteinIndex,int* labelIndex);
-    std::string findDecoyPrefix(std::string file_name, int proteinIndex, int labelIndex);
-    std::string LongestCommonSubsequence(std::vector<string> arr);
-    static bool decoyWarningTripped;
-};
+#include "TabFileValidator.h"
 
 
 // Optional columns in tab delimited input
@@ -167,7 +85,9 @@ class DataSet {
   
   std::vector<PSMDescription*> psms_;
   int label_;
+  
   static FeatureNames featureNames_;
+  static bool decoyWarningTripped_;
 };
 
 #endif /*DATASET_H_*/

@@ -1,5 +1,5 @@
 ## Percolator
-[![https://github.com/percolator/percolator/actions?query=workflow%3A%22Build+and+release%22](https://github.com/percolator/percolator/workflows/Build%20and%20release/badge.svg)](https://github.com/percolator/percolator/actions?query=workflow%3A%22Build+and+release%22) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
+[![Build status](https://github.com/percolator/percolator/actions/workflows/build.yml/badge.svg)](https://github.com/percolator/percolator/actions/workflows/build.yml) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
 
 This repository holds the source code for percolator and format
 converters software packages; a software for postprocessing of shotgun
