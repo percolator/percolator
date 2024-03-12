@@ -15,16 +15,16 @@ struct DJB2Hash {
     }
 };
 
-class PeptidepairScore;
-class ScoreBase;
+class ScoreHolder ;
 class Scores;
 
 class CompositionSorter {
     public:
-        int addPSMs(std::vector<ScoreBase>& psms); 
+        int addPSMs(Scores& psms); 
         std::string generateCompositionSignature(const std::string& peptide);
-        int fillPeptidepairs(Scores& scores); 
+        void sortScorePerPeptide();
+        Scores& inCompositionCompetition(unsigned int decoysPerTarget=1);
+        int psmAndPeptide(Scores& scores, unsigned int decoysPerTarget=1);
     protected:
-        std::unordered_map<std::string, std::map<std::string,std::vector<ScoreBase&>>, DJB2Hash> targetCompositionToPeptides_;
-        std::unordered_map<std::string, std::map<std::string,std::vector<ScoreBase&>>, DJB2Hash> decoyCompositionToPeptides_;
+        std::unordered_map<std::string, std::map<std::string,std::vector<const ScoreHolder&>>, DJB2Hash> compositionToPeptidesToScore_;
 };

@@ -64,6 +64,7 @@ class ScoreHolder {
   
   inline bool isTarget() const { return label != -1; }
   inline bool isDecoy() const { return label == -1; }
+  inline PSMDescription* getPSM() const { return pPSM; }
   void printPSM(ostream& os, bool printDecoys, bool printExpMass);
   void printPepXML(ostream& os, map<char,float> &aaWeight, int index);
   void printPeptide(ostream& os, bool printDecoys, bool printExpMass, Scores& fullset);
