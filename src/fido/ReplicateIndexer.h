@@ -7,6 +7,11 @@
 #include "HashTable.h"
 #include "Set.h"
 
+using namespace std;
+
+#include <iterator>
+#include <functional>
+
 template <typename T>
 class ReplicateIndexer
 {

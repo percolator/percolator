@@ -5,6 +5,7 @@
  *      Author: tomasoni
  */
 
+#include "Numerical.h"
 #include "PackedVector.h"
 #include "assert.h"
 

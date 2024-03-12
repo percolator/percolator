@@ -252,8 +252,8 @@ void Scores::postMergeStep() {
 }
 
 double Scores::calcScore(const double* feat, const std::vector<double>& w) const {
-    register std::size_t ix = FeatureNames::getNumFeatures();
-    register double score = w[ix];
+    std::size_t ix = FeatureNames::getNumFeatures();
+    double score = w[ix];
     for (; ix--;) {
         score += feat[ix] * w[ix];
     }

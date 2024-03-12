@@ -39,14 +39,14 @@ int CompositionSorter::addPSMs(Scores& scores) {
     for (const auto& scr : scores) {
         std::string peptide = scr.getPSM()->getPeptideSequence();
         std::string signature = generateCompositionSignature(peptide);
-        compositionToPeptidesToScore_[signature][peptide].push_back(scr);
+        compositionToPeptidesToScore_[signature][peptide].push_back(&scr);
     }
 }
 
 void CompositionSorter::sortScorePerPeptide() {
     // Comparator for sorting ScoreHolder references
-    auto compareScoreHolder = [](const ScoreHolder& lhs, const ScoreHolder& rhs) {
-        return lhs.score > rhs.score; // For descending order
+    auto compareScoreHolder = [](const ScoreHolder* lhs, const ScoreHolder* rhs) {
+        return lhs->score > rhs->score; // For descending order
     };
 
     // Iterating and sorting
@@ -70,11 +70,11 @@ Scores& CompositionSorter::inCompositionCompetition(unsigned int decoysPerTarget
             if (scoreHolders.empty()) {
                 continue;
             }
-            const ScoreHolder& firstScoreHolder = scoreHolders.front();
-            if (firstScoreHolder.label > 0) {
-                targets.push_back(&firstScoreHolder);
+            const ScoreHolder* firstScoreHolder = scoreHolders.front();
+            if (firstScoreHolder->label > 0) {
+                targets.push_back(firstScoreHolder);
             } else {
-                decoys.push_back(&firstScoreHolder);
+                decoys.push_back(firstScoreHolder);
             }
         }
         // Format tuples of targets and decoys. Now we are not checking if there are enough decoys for each target.
@@ -106,7 +106,7 @@ Scores& CompositionSorter::inCompositionCompetition(unsigned int decoysPerTarget
 }
        
 
-int CompositionSorter::psmAndPeptide(Scores& scores, unsigned int decoysPerTarget=1) {
+int CompositionSorter::psmAndPeptide(Scores& scores, unsigned int decoysPerTarget) {
     //    psmLevelCompetition(); // Should be handled by the reader?
 
     // Populate the structure with the winning PSMs

@@ -34,7 +34,6 @@ limitations under the License.
 #include "CrossValidation.h"
 #include "DataSet.h"
 #include "Enzyme.h"
-#include "FidoInterface.h"
 #include "Globals.h"
 #include "MyException.h"
 #include "Normalizer.h"

@@ -571,7 +571,7 @@ void FidoInterface::getEstimated_and_Empirical_FDR(
 }
 
 
-void FidoInterface::getFDR_MSE(const std::vector<double> &estFDR, 
+void rface::getFDR_MSE(const std::vector<double> &estFDR, 
          const std::vector<double> &empFDR,double &mse) {
   /* Estimate MSE mse1 as : 1/N multiply by the SUM from k=1 to N of (estFDR(k) - empFDR(k))^2 */
   

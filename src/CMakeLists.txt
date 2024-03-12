@@ -111,18 +111,18 @@ endif(XML_SUPPORT)
 ###############################################################################
 
 if(XML_SUPPORT)
-  add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx BaseSpline.cpp MassHandler.cpp
+  add_library(perclibrary STATIC ${xsdfiles_in} ${xsdfiles_out} parser.cxx serializer.cxx Array.cpp BaseSpline.cpp MassHandler.cpp
                   PSMDescription.cpp ResultHolder.cpp
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
-								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp
-								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
-								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp)
+								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
+								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
 else(XML_SUPPORT)
-  add_library(perclibrary STATIC BaseSpline.cpp MassHandler.cpp ResultHolder.cpp PSMDescription.cpp
+  add_library(perclibrary STATIC Array.cpp BaseSpline.cpp MassHandler.cpp ResultHolder.cpp PSMDescription.cpp
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
-								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Option.cpp PosteriorEstimator.cpp
-								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
-								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp FidoInterface.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp)
+								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
+								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
+								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp GoogleAnalytics.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
 endif(XML_SUPPORT)
 
 
@@ -131,7 +131,7 @@ endif(XML_SUPPORT)
 ###############################################################################
 
 #COMPILE FIDO
-add_subdirectory(fido)
+# add_subdirectory(fido)
 
 #COMPILE PICKED PROTEIN
 add_subdirectory(picked_protein)
@@ -140,7 +140,7 @@ add_subdirectory(picked_protein)
 include_directories(.)
 
 #INCLUDE FIDO HEADERS FOR PERCLIBRARY
-include_directories(fido)
+# include_directories(fido)
 
 #INCLUDE PICKED PROTEIN HEADERS FOR PERCLIBRARY
 include_directories(picked_protein)
@@ -172,7 +172,7 @@ ELSE(CRUX)
   endif()
 
   # SET LIBRARIES FOR PERCOLATOR
-  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} fido picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${RPC_LIBRARIES})
+  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${RPC_LIBRARIES})
   if(NOT MSVC)
     if(APPLE)
       set(COMMON_LIBRARIES ${COMMON_LIBRARIES} ${OpenMP_CXX_LIBRARIES})

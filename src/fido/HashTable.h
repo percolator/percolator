@@ -1,8 +1,8 @@
 // Written by Oliver Serang 2009
 // see license for more information
 
-#ifndef _HASHTABLE_H
-#define _HASHTABLE_H
+//#ifndef _HASHTABLE_H
+//#define _HASHTABLE_H
 
 #include "Array.h"
 #include <list>
@@ -11,6 +11,7 @@
 using namespace std;
 
 #include <iterator>
+#include <functional>
 
 #define default_size 1001
 
@@ -78,4 +79,4 @@ class HashTable
 
 #include "HashTable.cpp"
 
-#endif
+//#endif

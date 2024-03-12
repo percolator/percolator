@@ -112,7 +112,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   double* z = new double[active];
   double* q = new double[active];
   int ii = 0;
-  register int i;
+  int i;
   int n0 = n-1;
   int inc = 1;
   double one = 1;
@@ -262,7 +262,7 @@ int L2_SVM_MFN(const AlgIn& data, options& Options,
                ActiveSubset,
                Weights_bar,
                Outputs_bar, cpos, cneg);
-    for (register int i = active; i < m; i++) {
+    for (int i = active; i < m; i++) {
       ii = ActiveSubset.vec[i];
       o_bar[ii] = ddot_(&n0, set[ii], &inc, w_bar, &inc) + w_bar[n - 1];
     }

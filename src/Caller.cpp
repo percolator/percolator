@@ -677,39 +677,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       checkIsWritable(decoyProteinResultFN_);
     }
 
-    if (cmd.optionSet("fido-protein")) {
-      /*fido parameters*/
-
-      // General Fido options
-      double fidoAlpha = -1;
-      double fidoBeta = -1;
-      double fidoGamma = -1;
-      if (cmd.optionSet("fido-alpha")) fidoAlpha = cmd.getDouble("fido-alpha", 0.00, 1.0);
-      if (cmd.optionSet("fido-beta")) fidoBeta = cmd.getDouble("fido-beta", 0.00, 1.0);
-      if (cmd.optionSet("fido-gamma")) fidoGamma = cmd.getDouble("fido-gamma", 0.00, 1.0);
-
-      // Options for controlling speed
-      bool fidoNoPartitioning = false; // cannot be set on cmd line
-      bool fidoNoClustering = false; // cannot be set on cmd line
-      unsigned int fidoGridSearchDepth = 0;
-      bool fidoNoPruning = false;
-      double fidoGridSearchThreshold = 0.0;
-      double fidoProteinThreshold = 0.01;
-      double fidoMseThreshold = 0.1;
-      if (cmd.optionSet("fido-gridsearch-depth")) fidoGridSearchDepth = cmd.getUInt("fido-gridsearch-depth", 0, 4);
-      if (cmd.optionSet("fido-fast-gridsearch")) fidoGridSearchThreshold = cmd.getDouble("fido-fast-gridsearch", 0.0, 1.0);
-      if (cmd.optionSet("fido-no-split-large-components")) fidoNoPruning = true;
-      if (cmd.optionSet("fido-protein-truncation-threshold")) fidoProteinThreshold = cmd.getDouble("fido-protein-truncation-threshold", 0.0, 1.0);
-      if (cmd.optionSet("fido-gridsearch-mse-threshold")) fidoMseThreshold = cmd.getDouble("fido-gridsearch-mse-threshold",0.001,1.0);
-
-      protEstimator_ = new FidoInterface(fidoAlpha, fidoBeta, fidoGamma,
-                fidoNoClustering, fidoNoPartitioning, fidoNoPruning,
-                fidoGridSearchDepth, fidoGridSearchThreshold,
-                fidoProteinThreshold, fidoMseThreshold,
-                protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
-                protEstimatorDecoyPrefix_, protEstimatorTrivialGrouping,
-                protEstimatorPeptideQvalThreshold);
-    } else if (cmd.optionSet("picked-protein")) {
+    if (cmd.optionSet("picked-protein")) {
       std::string fastaDatabase = cmd.options["picked-protein"];
 
       // default options
