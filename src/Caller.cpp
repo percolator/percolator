@@ -30,7 +30,7 @@
 #endif
 
 #include "GoogleAnalytics.h"
-
+#include "Reset.h"
 using namespace std;
 
 Caller::Caller() :
@@ -40,7 +40,7 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    analytics_(true),
+    analytics_(true), use_reset_alg_(false),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -375,6 +375,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "parameter-file",
       "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
       "filename");
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "reset-algorithm",
+      "Run an implementation of the Percolator-RESET Algorithm.",
+      "", TRUE_IF_SET);
   cmd.defineOption(
     "RT",
     "output-retention-time",
@@ -476,7 +480,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.optionSet("no-analytics")) {
     analytics_ = false;
   }
-
+  if (cmd.optionSet("reset-algorithm")) {
+    use_reset_alg_ = true;
+  }
   if (cmd.optionSet("xml-in")) {
     tabInput_ = false;
     inputFN_ = cmd.options["xml-in"];
@@ -998,6 +1004,20 @@ int Caller::run() {
 
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
     exit(EXIT_FAILURE);
+
+  if (use_reset_alg_) {
+    if (VERB > 0) {
+      std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
+    }
+    Reset resetAlg;
+    resetAlg.reset(Scores &allScores, selectionFDR_, 0.5, )
+    allScores.reset();
+    allScores.calcQ(selectionFdr_);
+    allScores.normalizeScores(selectionFdr_);
+    calcAndOutputResult(allScores, xmlInterface);
+    return 1;
+  }
+
 
   CrossValidation crossValidation(quickValidation_, reportEachIteration_,
                                   testFdr_, selectionFdr_, initialSelectionFdr_, selectedCpos_,

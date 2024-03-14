@@ -22,7 +22,7 @@ class CompositionSorter {
     public:
         int addPSMs(Scores& psms); 
         std::string generateCompositionSignature(const std::string& peptide);
-        void sortScorePerPeptide();
+        int sortScorePerPeptide();
         Scores& inCompositionCompetition(unsigned int decoysPerTarget=1);
         int psmAndPeptide(Scores& scores, unsigned int decoysPerTarget=1);
     protected:

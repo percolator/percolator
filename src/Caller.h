@@ -110,7 +110,7 @@ class Caller {
     unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
     double selectedCpos_, selectedCneg_;
     bool reportEachIteration_, quickValidation_, trainBestPositive_,
-        skipNormalizeScores_, analytics_;
+        skipNormalizeScores_, analytics_, use_reset_alg_;
 
     // reporting parameters
     std::string call_;
