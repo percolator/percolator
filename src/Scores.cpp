@@ -287,6 +287,28 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
     }
 }
 
+int Scores::calcBalancedFDR(double treshhold) {
+    double c_decoy(0.5), c_target(0.0);
+    for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
+        if (score.isDecoy()) {
+            c_decoy += 1.0;
+        } else {
+            c_target += 1.0;
+        }
+        score.q = c_target/c_decoy * nullTargetWinProb_;
+    });
+    reverse(scores_.begin(), scores_.end());
+    double previous_q = 1.0;
+    for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
+        previous_q = std::min(score.q, previous_q);
+        score.q = previous_q;
+    });
+    reverse(scores_.begin(), scores_.end());
+    auto upper = lower_bound(scores_.begin(), scores_.end(), treshhold);
+    return upper - scores_.begin();
+}
+
+
 void Scores::print(int label, std::ostream& os) {
     std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
     os << "PSMId\t";
@@ -540,11 +562,23 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
 
 /**
  * Calculates the SVM cost/score of each PSM and sorts them
+ * and calculate q values for each PSM
  * @param w normal vector used for SVM cost
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
 int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+    onlyCalcScores(w);
+    return calcQ(fdr, skipDecoysPlusOne);
+}
+
+/**
+ * Calculates the SVM cost/score of each PSM and sorts them
+ * @param w normal vector used for SVM cost
+ * @param fdr FDR threshold specified by user (default 0.01)
+ * @return 0 on successfull execution
+ */
+int Scores::onlyCalcScores(std::vector<double>& w) {
     std::size_t ix;
     std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
     for (; scoreIt != scores_.end(); ++scoreIt) {
@@ -565,8 +599,9 @@ int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOn
             cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores found)." << endl;
         }
     }
-    return calcQ(fdr, skipDecoysPlusOne);
+    return 0;
 }
+
 
 void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
     combined.clear();

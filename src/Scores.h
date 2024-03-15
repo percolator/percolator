@@ -207,7 +207,7 @@ class AlgIn;
 class Scores {
  public:
   Scores(bool usePi0) : usePi0_(usePi0), pi0_(1.0), 
-    targetDecoySizeRatio_(1.0), totalNumberOfDecoys_(0),
+    targetDecoySizeRatio_(1.0), nullTargetWinProb_(1.0), totalNumberOfDecoys_(0),
     totalNumberOfTargets_(0), decoyPtr_(NULL), targetPtr_(NULL) {}
   ~Scores() {}
   void merge(vector<Scores>& sv, double fdr, bool skipNormalizeScores, std::vector< std::vector<double> >& all_w);
@@ -220,9 +220,11 @@ class Scores {
   void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);
   int calcScores(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
+  int onlyCalcScores(vector<double>& w);
   int calcQ(double fdr, bool skipDecoysPlusOne = false);
   void recalculateDescriptionOfCorrect(const double fdr);
   void calcPep();
+  int calcBalancedFDR(double treshhold);
   
   void populateWithPSMs(SetHandler& setHandler);
   
@@ -264,6 +266,10 @@ class Scores {
     scores_.push_back(sh);
   }
   
+  inline void setNullTargetWinProb(const double nullTargetWinProb) {
+    nullTargetWinProb_ = nullTargetWinProb;
+  }
+
   std::vector<PSMDescription*>& getPsms(PSMDescription* pPSM) {
     return peptidePsmMap_[pPSM];
   }
@@ -281,7 +287,7 @@ class Scores {
   bool usePi0_;
   
   double pi0_;
-  double targetDecoySizeRatio_;
+  double targetDecoySizeRatio_, nullTargetWinProb_;
   unsigned int totalNumberOfDecoys_, totalNumberOfTargets_;
   
   std::vector<ScoreHolder> scores_;

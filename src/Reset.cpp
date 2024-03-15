@@ -2,6 +2,8 @@
 #include "Scores.h"
 #include "CompositionSorter.h"
 #include "PseudoRandom.h"
+#include "Reset.h"
+#include "ssl.h"
 
 
 // From Algorithm S3 of the percolator-RESET supplementary material
@@ -23,33 +25,42 @@ int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test,
 }
 
 
-int Reset::calcBalancedFDR(Scores &scores) {
-    c = scores.sizeFactor;
-    double c_decoy(0.5), c_target(0.0);
-    std::for_each(scores.begin(), scores.end(), [&](ScoreHolder& score) {
-        if (score.isDecoy()) {
-            c_decoy += 1.0;
-        } else {
-            c_target += 1.0;
-        }
-        score.q = c_target/c_decoy * c;
-    })
-    std::reverse(scores.begin(), scores.end());
-    double previous_q = 1.0;
-    for_each(scores.begin(), scores.end(), [&](ScoreHolder& score) {
-        previous_q = std::min(score.q, previous_q);
-        score.q = previous_q;
-    })
-    std::reverse(scores.begin(), scores.end());
-    return 0;
-}
-
-
 int Reset::iterationOfReset(Scores &train, double selectionFDR, double threshold) {
-    calcBalancedFDR(train);
-    train.generateNegativeTrainingSet(svmInput_, 1.0);
-    train.generatePositiveTrainingSet(svmInput_, selectionFdr, 1.0, trainBestPositive_);
-    L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCposes[set], bestCposes[set] * bestCfracs[set]);
+    train.calcBalancedFDR(selectionFDR);
+    train.generateNegativeTrainingSet(*pSVMInput_, 1.0);
+    train.generatePositiveTrainingSet(*pSVMInput_, selectionFdr, 1.0, trainBestPositive_);
+
+    vector_double pWeights, Outputs;
+    pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
+    pWeights.vec = new double[pWeights.d];
+    
+    size_t numInputs = static_cast<std::size_t>(pSVMInput_->positives + pSVMInput_->negatives);
+    Outputs.vec = new double[numInputs];
+    Outputs.d = static_cast<int>(numInputs);
+    
+    for (int ix = 0; ix < pWeights.d; ix++) {
+        pWeights.vec[ix] = 0;
+    }
+    for (int ix = 0; ix < Outputs.d; ix++) {
+        Outputs.vec[ix] = 0;
+    }
+
+    // TODO: Set CPos,CNeg by X-val
+
+    L2_SVM_MFN(*pSVMInput_, 
+        options_, 
+        pWeights, 
+        Outputs, 
+        1.0, // Cpos
+        3.0 * train.getTargetDecoySizeRatio()); // CNeg
+    
+
+    for (std::size_t i = FeatureNames::getNumFeatures() + 1; i--;) {
+        w_[i] = static_cast<double>(pWeights.vec[i]);
+    }
+
+    train.onlyCalcScores(w_);
+    return train.calcBalancedFDR(selectionFDR);
 }
 
 int Reset::reset(Scores &psms, double selectionFDR, double fractionTraining) {

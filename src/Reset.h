@@ -23,12 +23,22 @@ class Scores;
 
 class Reset {
  public:
-  Reset();
-  ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
-  int reset(Scores &psms, double selectionFDR, double fractionTrain = 0.5);
-  int iterationOfReset(Scores &train, double selectionFDR, double threshold);
-  int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
+    Reset() {
+        options_.lambda = 1.0;
+        options_.lambda_u = 1.0;
+        options_.epsilon = EPSILON;
+        options_.cgitermax = CGITERMAX;
+        options_.mfnitermax = MFNITERMAX;
+    };
+    ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
+    int reset(Scores &psms, double selectionFDR, double fractionTrain = 0.5);
+    int iterationOfReset(Scores &train, double selectionFDR, double threshold);
+    int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
+
  protected:
     AlgIn * pSVMInput_ = nullptr;
+    std::vector< std::vector<double> > w_; // linear scoring weights from SVM
+    options options_;
+
 };
 #endif // RESET_H
