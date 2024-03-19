@@ -288,14 +288,14 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
 }
 
 int Scores::calcBalancedFDR(double treshhold) {
-    double c_decoy(0.5), c_target(0.0);
+    double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb_ / ( 1.0 - nullTargetWinProb_ ) );
     for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
         if (score.isDecoy()) {
             c_decoy += 1.0;
         } else {
             c_target += 1.0;
         }
-        score.q = c_target/c_decoy * nullTargetWinProb_;
+        score.q = ( c_target / c_decoy ) * factor;
     });
     reverse(scores_.begin(), scores_.end());
     double previous_q = 1.0;

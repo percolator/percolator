@@ -9,18 +9,16 @@
 // From Algorithm S3 of the percolator-RESET supplementary material
 // s - the probability of assigning a decoy to the training set (default: s = 1/2)
 int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTraining) {
-    std::for_each(allScores.begin(), allScores.end(), [&](const ScoreHolder& score)) {
+    std::for_each(allScores.begin(), allScores.end(), [&](const ScoreHolder& score) {
         if (score.isTarget()) {
             train.addScoreHolder(score);
             test.addScoreHolder(score);
-            continue;
-        }
-        if (PseudoRandom::lcg_uniform_rand() < fraction) {
+        } else if (PseudoRandom::lcg_uniform_rand() < fractionTraining) {
             train.addScoreHolder(score);
         } else {
-            train.addScoreHolder(score);
+            test.addScoreHolder(score);
         }
-    }
+    });
     return 0;
 }
 
@@ -63,10 +61,14 @@ int Reset::iterationOfReset(Scores &train, double selectionFDR, double threshold
     return train.calcBalancedFDR(selectionFDR);
 }
 
-int Reset::reset(Scores &psms, double selectionFDR, double fractionTraining) {
+int Reset::reset(Scores &psms, double selectionFDR, double fractionTraining, int decoysPerTarget) {
 
+    double factor = 1.0*(decoysPerTarget + 1)  - fractionTraining*decoysPerTarget;
+    unsigned int numIterations(5);
     Scores train(false), test(false);
     splitIntoTrainAndTest(psms, train, test, fractionTraining);
+    train.setNullTargetWinProb(factor/(1.0 + decoysPerTarget));
+    test.setNullTargetWinProb(1.0/factor);
     pSVMInput_ = new AlgIn(train.size() + test.getNegativeSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1));
 
     for (unsigned int i = 0; i < numIterations; i++) {    

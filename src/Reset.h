@@ -31,13 +31,13 @@ class Reset {
         options_.mfnitermax = MFNITERMAX;
     };
     ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
-    int reset(Scores &psms, double selectionFDR, double fractionTrain = 0.5);
+    int reset(Scores &psms, double selectionFDR, double fractionTraining = 0.5, int decoysPerTarget = 1);
     int iterationOfReset(Scores &train, double selectionFDR, double threshold);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
 
  protected:
     AlgIn * pSVMInput_ = nullptr;
-    std::vector< std::vector<double> > w_; // linear scoring weights from SVM
+    std::vector<double> w_; // linear scoring weights from SVM
     options options_;
 
 };
