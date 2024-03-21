@@ -41,9 +41,10 @@ int CompositionSorter::addPSMs(Scores& scores) {
         std::string signature = generateCompositionSignature(peptide);
         compositionToPeptidesToScore_[signature][peptide].push_back(&scr);
     }
+    return 0;
 }
 
-void CompositionSorter::sortScorePerPeptide() {
+int CompositionSorter::sortScorePerPeptide() {
     // Comparator for sorting ScoreHolder references
     auto compareScoreHolder = [](const ScoreHolder* lhs, const ScoreHolder* rhs) {
         return lhs->score > rhs->score; // For descending order
@@ -55,11 +56,11 @@ void CompositionSorter::sortScorePerPeptide() {
             std::sort(scores.begin(), scores.end(), compareScoreHolder);
         }
     }
+    return 0;
 }
 
 // Scores
-Scores& CompositionSorter::inCompositionCompetition(unsigned int decoysPerTarget) {
-    Scores bestScoreHolders(false);
+int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders, unsigned int decoysPerTarget) {
 
     for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
         std::vector<std::vector<const ScoreHolder*>> compositionGroups;
@@ -102,11 +103,11 @@ Scores& CompositionSorter::inCompositionCompetition(unsigned int decoysPerTarget
         }
      }
     // Select the first ScoreHolder in each group in compositionGroups and feed it to the bestScoreHolders vector
-    return bestScoreHolders;
+    return 0;
 }
        
 
-int CompositionSorter::psmAndPeptide(Scores& scores, unsigned int decoysPerTarget) {
+int CompositionSorter::psmAndPeptide(Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget) {
     //    psmLevelCompetition(); // Should be handled by the reader?
 
     // Populate the structure with the winning PSMs
@@ -116,5 +117,7 @@ int CompositionSorter::psmAndPeptide(Scores& scores, unsigned int decoysPerTarge
     CompositionSorter::sortScorePerPeptide();
 
     // Split out tuples of peptides of identical composition, and select the most high scoring peptide in each tuple
-    inCompositionCompetition(decoysPerTarget);
+    inCompositionCompetition(winnerPeptides, decoysPerTarget);
+
+    return 0;
 }

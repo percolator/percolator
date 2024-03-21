@@ -20,6 +20,7 @@
 
 #include "ssl.h"
 class Scores;
+class SanityCheck;
 
 class Reset {
  public:
@@ -31,8 +32,8 @@ class Reset {
         options_.mfnitermax = MFNITERMAX;
     };
     ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
-    int reset(Scores &psms, double selectionFDR, double fractionTraining = 0.5, int decoysPerTarget = 1);
-    int iterationOfReset(Scores &train, double selectionFDR, double threshold);
+    int reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget);
+    int iterationOfReset(Scores &train, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
 
  protected:

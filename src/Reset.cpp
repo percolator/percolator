@@ -1,9 +1,11 @@
 #include <algorithm>
 #include "Scores.h"
+#include "SanityCheck.h"
 #include "CompositionSorter.h"
 #include "PseudoRandom.h"
-#include "Reset.h"
+#include "Normalizer.h"
 #include "ssl.h"
+#include "Reset.h"
 
 
 // From Algorithm S3 of the percolator-RESET supplementary material
@@ -23,10 +25,10 @@ int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test,
 }
 
 
-int Reset::iterationOfReset(Scores &train, double selectionFDR, double threshold) {
+int Reset::iterationOfReset(Scores &train, double selectionFDR) {
     train.calcBalancedFDR(selectionFDR);
     train.generateNegativeTrainingSet(*pSVMInput_, 1.0);
-    train.generatePositiveTrainingSet(*pSVMInput_, selectionFdr, 1.0, trainBestPositive_);
+    train.generatePositiveTrainingSet(*pSVMInput_, selectionFDR, 1.0, false);
 
     vector_double pWeights, Outputs;
     pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
@@ -61,18 +63,35 @@ int Reset::iterationOfReset(Scores &train, double selectionFDR, double threshold
     return train.calcBalancedFDR(selectionFDR);
 }
 
-int Reset::reset(Scores &psms, double selectionFDR, double fractionTraining, int decoysPerTarget) {
+int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget) {
 
+    CompositionSorter sorter;
+
+    // select the representative peptides to train on
+    Scores winnerPeptides(false);
+    sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
+
+
+    // Setting up the training and test sets
     double factor = 1.0*(decoysPerTarget + 1)  - fractionTraining*decoysPerTarget;
     unsigned int numIterations(5);
     Scores train(false), test(false);
-    splitIntoTrainAndTest(psms, train, test, fractionTraining);
+    splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
     train.setNullTargetWinProb(factor/(1.0 + decoysPerTarget));
     test.setNullTargetWinProb(1.0/factor);
-    pSVMInput_ = new AlgIn(train.size() + test.getNegativeSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1));
+
+    train.recalculateSizes(); test.recalculateSizes();
+
+    pCheck->getInitDirection(train, Normalizer::getNormalizer(), w_, selectionFDR, selectionFDR);
+    train.getInitDirection(selectionFDR, w_);
+    train.onlyCalcScores(w_);
+
+    // Initialize the input for the SVM
+
+    pSVMInput_ = new AlgIn(train.size() + test.negSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1);
 
     for (unsigned int i = 0; i < numIterations; i++) {    
-        unsigned int foundPositives = iterationOfReset(train, selectionFdr);
+        unsigned int foundPositives = iterationOfReset(train, selectionFDR);
     }
     return 0;
 }

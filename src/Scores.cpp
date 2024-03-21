@@ -287,7 +287,7 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
     }
 }
 
-int Scores::calcBalancedFDR(double treshhold) {
+int Scores::calcBalancedFDR(double treshold) {
     double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb_ / ( 1.0 - nullTargetWinProb_ ) );
     for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
         if (score.isDecoy()) {
@@ -304,7 +304,10 @@ int Scores::calcBalancedFDR(double treshhold) {
         score.q = previous_q;
     });
     reverse(scores_.begin(), scores_.end());
-    auto upper = lower_bound(scores_.begin(), scores_.end(), treshhold);
+
+    // Calcultaing the number of target PSMs with q-value less than treshold
+    ScoreHolder limit(treshold, 1);
+    auto upper = lower_bound(scores_.begin(), scores_.end(), limit);
     return upper - scores_.begin();
 }
 

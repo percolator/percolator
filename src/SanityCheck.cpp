@@ -108,6 +108,35 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   return initPositives_;
 }
 
+int SanityCheck::getInitDirection(Scores& scores,
+                                  Normalizer* pNorm,
+                                  vector<double> & w,
+                                  double test_fdr,
+                                  double initial_train_fdr) {
+  test_fdr_= test_fdr;
+  initial_train_fdr_ = initial_train_fdr;
+  if (initWeightFN.size() > 0) {
+    vector<double> ww(FeatureNames::getNumFeatures() + 1);
+    ifstream weightStream(initWeightFN.data(), ios::in);
+    if (weightStream.is_open()) {
+      readWeights(weightStream, ww);
+      weightStream.close();
+      assert(pNorm);
+      pNorm->normalizeweight(ww, w);
+    } else {
+      std::cerr << "WARNING: Could not find weights input file " << initWeightFN
+                << ". Using default weights instead." << std::endl;
+      getDefaultDirection(w);
+    }
+  } else {
+    getDefaultDirection(w);
+  }
+  initPositives_ = scores.calcScores(w, test_fdr);
+  return initPositives_;
+}
+
+
+
 void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
     
   //If I have not been given a initial direction
@@ -136,6 +165,30 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
       }
       w[set][static_cast<std::size_t>(abs(initDefaultDir) - 1)] = (initDefaultDir < 0 ? -1 : 1);
     }
+  }
+}
+void SanityCheck::getDefaultDirection(vector<double>& w) {
+    
+  //If I have not been given a initial direction
+  if (!initDefaultDir) {
+    //if the default_weights from pin.xml are not present
+    if (default_weights.size() == 0) {
+      // Set init direction to be the most discriminative direction
+      calcInitDirection(w, 0);
+    } else {
+      // I want to assign the default vector that is present in the input file
+      for (size_t ix = 0; ix < w.size(); ix++) {
+        w[ix] = 0;
+        if (ix < default_weights.size()){
+          w[ix] = default_weights[ix];
+        }          
+      }
+    }
+  } else {
+    for (size_t ix = 0; ix < w.size(); ix++) {
+      w[ix] = 0;
+    }
+    w[static_cast<std::size_t>(abs(initDefaultDir) - 1)] = (initDefaultDir < 0 ? -1 : 1);
   }
 }
 
