@@ -35,6 +35,7 @@ class Reset {
     int reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget);
     int iterationOfReset(Scores &train, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
+    int splitIntoTrainAndTest(Scores &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
 
  protected:
     AlgIn * pSVMInput_ = nullptr;
