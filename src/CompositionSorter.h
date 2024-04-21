@@ -24,7 +24,9 @@ class CompositionSorter {
         std::string generateCompositionSignature(const std::string& peptide);
         int sortScorePerPeptide();
         int inCompositionCompetition(Scores& winnerPeptides, unsigned int decoysPerTarget=1);
+        int inCompositionCompetition(std::vector<ScoreHolder*>& bestScoreHolders, unsigned int decoysPerTarget=1);
         int psmAndPeptide(Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget=1);
+        int psmAndPeptide(Scores& scores, std::vector<ScoreHolder*>& winnerPeptides, unsigned int decoysPerTarget=1);
     protected:
-        std::unordered_map<std::string, std::map<std::string,std::vector<const ScoreHolder*>>, DJB2Hash> compositionToPeptidesToScore_;
+        std::unordered_map<std::string, std::map<std::string,std::vector<ScoreHolder*>>, DJB2Hash> compositionToPeptidesToScore_;
 };

@@ -88,12 +88,132 @@ int Reset::iterationOfReset(Scores &train, double selectionFDR) {
     return train.calcBalancedFDR(selectionFDR);
 }
 
+int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, double treshold) {
+    double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb / ( 1.0 - nullTargetWinProb ) );
+    for_each(scores.begin(), scores.end(), [&](ScoreHolder* pScore) {
+        if (pScore->isDecoy()) {
+            c_decoy += 1.0;
+        } else {
+            c_target += 1.0;
+        }
+        pScore->q = ( c_target / c_decoy ) * factor;
+    });
+    std::reverse(scores.begin(), scores.end());
+    double previous_q = 1.0;
+    for_each(scores.begin(), scores.end(), [&](ScoreHolder* pScore) {
+        previous_q = std::min(pScore->q, previous_q);
+        pScore->q = previous_q;
+    });
+    std::reverse(scores.begin(), scores.end());
+
+    // Calcultaing the number of target PSMs with q-value less than treshold
+    ScoreHolder limit(treshold, 1);
+    auto pointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return *a < *b; };
+    auto upper = std::lower_bound(scores.begin(), scores.end(), &limit, pointerComp);
+    return upper - scores.begin();
+}
+
+void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*> scores, const double cneg) {
+    std::size_t ix2 = 0;
+    // Using range-based for loop with auto
+    for (auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+        if (scorePtr->isDecoy()) {  // Directly use scorePtr, which is a ScoreHolder*
+            data.vals[ix2] = scorePtr->pPSM->features;  // Access members directly through the pointer
+            data.Y[ix2] = -1;
+            data.C[ix2++] = cneg;
+        }
+    }
+    data.negatives = static_cast<int>(ix2);
+}
+
+void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& scores,
+                                         const double fdr, const double cpos,
+                                         const bool trainBestPositive) {
+    std::size_t ix2 = static_cast<std::size_t>(data.negatives);
+    int p = 0;
+
+    auto last = scores.end();
+    // Range-based loop over the sorted and uniqued scores
+    for (auto it = scores.begin(); it != last; ++it) {
+        const auto scorePtr = *it;  // Dereferencing iterator to get the pointer to ScoreHolder
+        if (scorePtr->isTarget()) {
+            if (scorePtr->q <= fdr) {
+                data.vals[ix2] = scorePtr->pPSM->features;
+                data.Y[ix2] = 1;
+                data.C[ix2++] = cpos;
+                ++p;
+            }
+        }
+    }
+
+    data.positives = p;
+    data.m = static_cast<int>(ix2);
+}
+
+double calcScore(const double* feat, const std::vector<double>& w) const {
+    std::size_t ix = FeatureNames::getNumFeatures();
+    double score = w[ix];
+    for (; ix--;) {
+        score += feat[ix] * w[ix];
+    }
+    return score;
+}
+
+int onlyCalcScores(std::vector<ScoreHolder*> scores, std::vector<double>& w) {
+    std::size_t ix;
+    for (auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+      scorePtr->score = calcScore(scorePtr->pPSM->features, w);
+    }
+    auto reversePointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; }; // Pointer GreaterThen
+    sort(scores.begin(), scores.end(),reversePointerComp);
+    return 0;
+}
+
+
+int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
+    calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
+    generateNegativeTrainingSet(*pSVMInput_, train, 1.0);
+    generatePositiveTrainingSet(*pSVMInput_, train, selectionFDR, 1.0, false);
+
+    vector_double pWeights, Outputs;
+    pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
+    pWeights.vec = new double[pWeights.d];
+    
+    size_t numInputs = static_cast<std::size_t>(pSVMInput_->positives + pSVMInput_->negatives);
+    Outputs.vec = new double[numInputs];
+    Outputs.d = static_cast<int>(numInputs);
+    
+    for (int ix = 0; ix < pWeights.d; ix++) {
+        pWeights.vec[ix] = 0;
+    }
+    for (int ix = 0; ix < Outputs.d; ix++) {
+        Outputs.vec[ix] = 0;
+    }
+
+    // TODO: Set CPos,CNeg by X-val
+
+    L2_SVM_MFN(*pSVMInput_, 
+        options_, 
+        pWeights, 
+        Outputs, 
+        1.0, // Cpos
+        3.0 * pSVMInput_->positives / max(1.0, (double) pSVMInput_->negatives)); // CNeg
+    
+
+    for (std::size_t i = FeatureNames::getNumFeatures() + 1; i--;) {
+        w_[i] = static_cast<double>(pWeights.vec[i]);
+    }
+
+    onlyCalcScores(train, w_);
+    return calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
+}
+
 int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget) {
 
     CompositionSorter sorter;
 
     // select the representative peptides to train on
-    Scores winnerPeptides(false);
+    std::vector<ScoreHolder*> winnerPeptides;
 
     cerr << "Starting reset: psmAndPeptide" << endl;
     
@@ -104,7 +224,7 @@ int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double 
     // Setting up the training and test sets
     double factor = 1.0*(decoysPerTarget + 1)  - fractionTraining*decoysPerTarget;
     unsigned int numIterations(5);
-    Scores train(false), test(false);
+    std::vector<ScoreHolder*> train(false), test(false);
     splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
     train.setNullTargetWinProb(factor/(1.0 + decoysPerTarget));
     test.setNullTargetWinProb(1.0/factor);

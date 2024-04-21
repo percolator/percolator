@@ -33,6 +33,7 @@ class Reset {
     };
     ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
     int reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget);
+    int iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR);
     int iterationOfReset(Scores &train, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
     int splitIntoTrainAndTest(Scores &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
