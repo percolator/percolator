@@ -36,7 +36,7 @@ class Reset {
     int iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR);
     int iterationOfReset(Scores &train, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
-    int splitIntoTrainAndTest(Scores &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
+    int splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
 
  protected:
     AlgIn * pSVMInput_ = nullptr;

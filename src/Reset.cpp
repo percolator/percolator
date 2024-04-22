@@ -31,21 +31,21 @@ int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test,
 // Same as above but testing with pointers to SH instead of the direct objects 
 // From Algorithm S3 of the percolator-RESET supplementary material
 // s - the probability of assigning a decoy to the training set (default: s = 1/2)
-int Reset::splitIntoTrainAndTest(Scores &allScores, vector<ScoreHolder*> &train, vector<ScoreHolder*> &test, double fractionTraining) {
+int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<ScoreHolder*> &train, vector<ScoreHolder*> &test, double fractionTraining) {
 
     cerr << "Inside split" << endl;
 
-    std::for_each(allScores.begin(), allScores.end(), [&](ScoreHolder& score) {
-        cerr << score.score << " " << score.isTarget() << endl;
-        if (score.isTarget()) {
-            train.push_back(&score);
-            test.push_back(&score);
+    for(auto pScore : allScores) {
+        cerr << pScore->score << " " << pScore->isTarget() << endl;
+        if (pScore->isTarget()) {
+            train.push_back(pScore);
+            test.push_back(pScore);
         } else if (PseudoRandom::lcg_uniform_rand() < fractionTraining) {
-            train.push_back(&score);
+            train.push_back(pScore);
         } else {
-            test.push_back(&score);
+            test.push_back(pScore);
         }
-    });
+    }
     return 0;
 }
 
@@ -150,7 +150,7 @@ void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& s
     data.m = static_cast<int>(ix2);
 }
 
-double calcScore(const double* feat, const std::vector<double>& w) const {
+double calcScore(const double* feat, const std::vector<double>& w) {
     std::size_t ix = FeatureNames::getNumFeatures();
     double score = w[ix];
     for (; ix--;) {
@@ -167,6 +167,39 @@ int onlyCalcScores(std::vector<ScoreHolder*> scores, std::vector<double>& w) {
     auto reversePointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; }; // Pointer GreaterThen
     sort(scores.begin(), scores.end(),reversePointerComp);
     return 0;
+}
+
+int calcScores(std::vector<ScoreHolder*> scores, std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+    onlyCalcScores(scores, w);
+    return calcBalancedFDR(scores, fdr, skipDecoysPlusOne);
+}
+
+// Sets init direction to the feature giving best discrimination
+int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nullTargetWinProb, double selectionFDR) {
+    int maxIds(-1), maxDir(0), maxSign(0);
+
+    for (int ix = 0; ix < w.size(); ix++) {
+        for(auto scorePtr : scores) {
+            scorePtr->score = scorePtr->pPSM->features[ix];
+        }
+        std::sort(scores.begin(), scores.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
+        for (int dir = 1; dir > -2; dir -= 2) {
+            int numId = calcBalancedFDR(scores, nullTargetWinProb, selectionFDR);
+            if (numId > maxIds) {
+                maxIds = numId;
+                maxDir = ix;
+                maxSign = dir;
+            }
+            if(dir == 1) {
+                std::reverse(scores.begin(), scores.end());
+            }
+        }
+    }
+    for (int ix = 0; ix < w.size(); ix++) {
+        w[ix] = 0;
+    }
+    w[maxDir] = static_cast<double>(maxSign);
+    return calcScores(scores, w, selectionFDR, false);
 }
 
 
@@ -226,24 +259,19 @@ int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double 
     unsigned int numIterations(5);
     std::vector<ScoreHolder*> train(false), test(false);
     splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
-    train.setNullTargetWinProb(factor/(1.0 + decoysPerTarget));
-    test.setNullTargetWinProb(1.0/factor);
-    cerr << "Setting sizes" << endl;
+    double trainNullTargetWinProb(factor/(1.0 + decoysPerTarget)), testNullTargetWinProb(1/factor);
 
-    train.recalculateSizes(); test.recalculateSizes();
-
-    pCheck->getInitDirection(train, Normalizer::getNormalizer(), w_, selectionFDR, selectionFDR);
-    train.getInitDirection(selectionFDR, w_);
-    train.onlyCalcScores(w_);
+    setInitDirection(w_, train, trainNullTargetWinProb, selectionFDR);
 
     // Initialize the input for the SVM
 
     cerr << "Setting up SVM training" << endl;
-    pSVMInput_ = new AlgIn(train.size() + test.negSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1);
+    // pSVMInput_ = new AlgIn(train.size() + test.negSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1);
+    pSVMInput_ = new AlgIn(winnerPeptides.size(), static_cast<int>(FeatureNames::getNumFeatures()) + 1);
 
     cerr << "Training" << endl;
     for (unsigned int i = 0; i < numIterations; i++) {    
-        unsigned int foundPositives = iterationOfReset(train, selectionFDR);
+        unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
     return 0;
 }
