@@ -36,7 +36,7 @@ std::string CompositionSorter::generateCompositionSignature(const std::string& p
 }
 
 int CompositionSorter::addPSMs(Scores& scores) {
-    for (const auto& scr : scores) {
+    for (auto& scr : scores) {
         std::string peptide = scr.getPSM()->getPeptideSequence();
         std::string signature = generateCompositionSignature(peptide);
         compositionToPeptidesToScore_[signature][peptide].push_back(&scr);

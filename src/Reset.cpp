@@ -15,7 +15,7 @@ int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test,
     cerr << "Inside split" << endl;
 
     std::for_each(allScores.begin(), allScores.end(), [&](const ScoreHolder& score) {
-        cerr << score.score << " " << score.isTarget() << endl;
+        // cerr << score.score << " " << score.isTarget() << endl;
         if (score.isTarget()) {
             train.addScoreHolder(score);
             test.addScoreHolder(score);
@@ -36,7 +36,7 @@ int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<Sc
     cerr << "Inside split" << endl;
 
     for(auto pScore : allScores) {
-        cerr << pScore->score << " " << pScore->isTarget() << endl;
+        // cerr << pScore->score << " " << pScore->isTarget() << endl;
         if (pScore->isTarget()) {
             train.push_back(pScore);
             test.push_back(pScore);
