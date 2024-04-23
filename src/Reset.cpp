@@ -116,14 +116,16 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
 void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*> scores, const double cneg) {
     std::size_t ix2 = 0;
     // Using range-based for loop with auto
-    for (auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
-        if (scorePtr->isDecoy()) {  // Directly use scorePtr, which is a ScoreHolder*
+    for (const auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+        cerr << scorePtr->label << " " << scorePtr->isTarget() << " " << scorePtr->score << endl;
+        if (!scorePtr->isTarget()) {  // Directly use scorePtr, which is a ScoreHolder*
             data.vals[ix2] = scorePtr->pPSM->features;  // Access members directly through the pointer
             data.Y[ix2] = -1;
             data.C[ix2++] = cneg;
         }
     }
     data.negatives = static_cast<int>(ix2);
+    cerr << "Generated negative training set of size " << ix2 << endl;
 }
 
 void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& scores,
@@ -148,6 +150,7 @@ void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& s
 
     data.positives = p;
     data.m = static_cast<int>(ix2);
+    cerr << "Generated positive training set of size " << p << endl;
 }
 
 double calcScore(const double* feat, const std::vector<double>& w) {
@@ -204,17 +207,22 @@ int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nul
 
 
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
+    cerr << "Inside iterationOfReset" << endl;
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
+    cerr << "Generating training sets" << endl;
     generateNegativeTrainingSet(*pSVMInput_, train, 1.0);
     generatePositiveTrainingSet(*pSVMInput_, train, selectionFDR, 1.0, false);
+
 
     vector_double pWeights, Outputs;
     pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
     pWeights.vec = new double[pWeights.d];
+    cerr << "Made weight vector of length " << pWeights.d << endl;
     
     size_t numInputs = static_cast<std::size_t>(pSVMInput_->positives + pSVMInput_->negatives);
     Outputs.vec = new double[numInputs];
     Outputs.d = static_cast<int>(numInputs);
+    cerr << "Made output vector of length " << Outputs.d << endl;
     
     for (int ix = 0; ix < pWeights.d; ix++) {
         pWeights.vec[ix] = 0;
@@ -261,12 +269,13 @@ int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double 
     splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
     double trainNullTargetWinProb(factor/(1.0 + decoysPerTarget)), testNullTargetWinProb(1/factor);
 
-    setInitDirection(w_, train, trainNullTargetWinProb, selectionFDR);
+    // setInitDirection(w_, train, trainNullTargetWinProb, selectionFDR);
 
     // Initialize the input for the SVM
 
-    cerr << "Setting up SVM training" << endl;
+    cerr << "Setting up SVM training for a size of " << winnerPeptides.size() << " peptides." << endl;
     // pSVMInput_ = new AlgIn(train.size() + test.negSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1);
+    assert(pSVMInput_ == nullptr);
     pSVMInput_ = new AlgIn(winnerPeptides.size(), static_cast<int>(FeatureNames::getNumFeatures()) + 1);
 
     cerr << "Training" << endl;
