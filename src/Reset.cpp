@@ -36,7 +36,7 @@ int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<Sc
     cerr << "Inside split" << endl;
 
     for(auto& pScore : allScores) {
-        cerr << pScore->score << " " << pScore->isTarget() << endl;
+        // cerr << pScore->score << " " << pScore->isTarget() << endl;
         if (pScore->isTarget()) {
             train.push_back(pScore);
             test.push_back(pScore);
@@ -90,20 +90,20 @@ int Reset::iterationOfReset(Scores &train, double selectionFDR) {
 
 int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, double treshold) {
     double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb / ( 1.0 - nullTargetWinProb ) );
-    for_each(scores.begin(), scores.end(), [&](ScoreHolder* pScore) {
+    for(auto& pScore : scores) {
         if (pScore->isDecoy()) {
             c_decoy += 1.0;
         } else {
             c_target += 1.0;
         }
-        pScore->q = ( c_target / c_decoy ) * factor;
-    });
+        pScore->q = ( c_decoy / c_target ) * factor;
+    }
     std::reverse(scores.begin(), scores.end());
     double previous_q = 1.0;
-    for_each(scores.begin(), scores.end(), [&](ScoreHolder* pScore) {
+    for(auto& pScore : scores) {
         previous_q = std::min(pScore->q, previous_q);
         pScore->q = previous_q;
-    });
+    }
     std::reverse(scores.begin(), scores.end());
 
     // Calcultaing the number of target PSMs with q-value less than treshold
@@ -113,11 +113,10 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
     return upper - scores.begin();
 }
 
-void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*> scores, const double cneg) {
+void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*>& scores, const double cneg) {
     std::size_t ix2 = 0;
     // Using range-based for loop with auto
     for (const auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
-        cerr << scorePtr->label << " " << scorePtr->isTarget() << " " << scorePtr->score << endl;
         if (!scorePtr->isTarget()) {  // Directly use scorePtr, which is a ScoreHolder*
             data.vals[ix2] = scorePtr->pPSM->features;  // Access members directly through the pointer
             data.Y[ix2] = -1;
@@ -136,8 +135,8 @@ void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& s
 
     auto last = scores.end();
     // Range-based loop over the sorted and uniqued scores
-    for (auto it = scores.begin(); it != last; ++it) {
-        const auto& scorePtr = *it;  // Dereferencing iterator to get the pointer to ScoreHolder
+    for (const auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+        // cerr << scorePtr->label << " " << scorePtr->isTarget() << " " << scorePtr->score << " " << scorePtr->q << endl;
         if (scorePtr->isTarget()) {
             if (scorePtr->q <= fdr) {
                 data.vals[ix2] = scorePtr->pPSM->features;
@@ -151,6 +150,7 @@ void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& s
     data.positives = p;
     data.m = static_cast<int>(ix2);
     cerr << "Generated positive training set of size " << p << endl;
+    cerr << "positive +negative training set of size " << ix2 << endl;
 }
 
 double calcScore(const double* feat, const std::vector<double>& w) {
@@ -208,6 +208,7 @@ int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nul
 
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
     cerr << "Inside iterationOfReset" << endl;
+    std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
     cerr << "Generating training sets" << endl;
     generateNegativeTrainingSet(*pSVMInput_, train, 1.0);
@@ -249,8 +250,9 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
     return calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
 }
 
-int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget) {
+int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
 
+    w_ = w;
     CompositionSorter sorter;
 
     // select the representative peptides to train on

@@ -102,7 +102,7 @@ mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters
 cd $build_dir/percolator-noxml;
 echo "cmake percolator-noxml.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF -DCMAKE_CXX_FLAGS="-Wall -Wextra" $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";

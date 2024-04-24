@@ -1009,12 +1009,14 @@ int Caller::run() {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
     }
-    vector<double> w(DataSet::getNumFeatures(),0.0);
+    vector<double> w(DataSet::getNumFeatures()+1,0.0);
     SanityCheck sc;
-    sc.getInitDirection(allScores, Normalizer::getNormalizer(), w, selectionFdr_, initialSelectionFdr_);
+    sc.getInitDirection(allScores, pNorm_, w, selectionFdr_, initialSelectionFdr_);
 
     Reset resetAlg;
-    resetAlg.reset(allScores, selectionFdr_, pCheck_, 0.5, 1);
+    resetAlg.reset(allScores, selectionFdr_, pCheck_, 0.5, 1, w);
+
+    // Scores::reset() is a unfortunate name in this context
     allScores.reset();
     allScores.calcQ(selectionFdr_);
     // allScores.normalizeScores(selectionFdr_); Probably not needed
