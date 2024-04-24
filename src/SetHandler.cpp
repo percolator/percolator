@@ -146,13 +146,18 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
   // removes enumerator, label and if present optional fields
   reader.skip(static_cast<std::size_t>(2 + optionalFieldCount));
   int numFeatLeft = numFeatures;
-  while (!reader.error()) {
+  while (!reader.error() && numFeatLeft > 0) {
     std::string tmp = reader.readString();
-    if (numFeatLeft-- > 0) { 
+    if (!tmp.empty()) { // Ensure that the string is not empty or consider other validity checks
       featureNames.insertFeature(tmp);
+      numFeatLeft--;
     }
   }
-  
+  // Check if we have read the correct number of features
+  if (numFeatLeft != 0) {
+      cerr << "Not enough features read" << endl;
+      exit(-1);
+  } 
   featureNames.initFeatures();
   assert(numFeatures == DataSet::getNumFeatures());
 }
