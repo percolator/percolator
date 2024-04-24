@@ -1017,9 +1017,14 @@ int Caller::run() {
     resetAlg.reset(allScores, selectionFdr_, pCheck_, 0.5, 1, w);
 
     // Scores::reset() is a unfortunate name in this context
+    cerr << "Scores::reset()" << endl;
     allScores.reset();
+    cerr << "Scores::calcScores()" << endl;
+    allScores.calcScores(w, selectionFdr_);
+    cerr << "Scores::calcQ()" << endl;
     allScores.calcQ(selectionFdr_);
     // allScores.normalizeScores(selectionFdr_); Probably not needed
+    cerr << "Scores::calcAndOutputResults()" << endl;
     calcAndOutputResult(allScores, xmlInterface);
     return 1;
   }

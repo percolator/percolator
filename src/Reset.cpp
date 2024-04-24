@@ -284,6 +284,8 @@ int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double 
     for (unsigned int i = 0; i < numIterations; i++) {    
         unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
+    cerr << "Training Done!" << endl;
+    // Calculate test scores here. 
     return 0;
 }
 
