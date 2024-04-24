@@ -35,8 +35,8 @@ int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<Sc
 
     cerr << "Inside split" << endl;
 
-    for(auto pScore : allScores) {
-        // cerr << pScore->score << " " << pScore->isTarget() << endl;
+    for(auto& pScore : allScores) {
+        cerr << pScore->score << " " << pScore->isTarget() << endl;
         if (pScore->isTarget()) {
             train.push_back(pScore);
             test.push_back(pScore);
@@ -116,7 +116,7 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
 void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*> scores, const double cneg) {
     std::size_t ix2 = 0;
     // Using range-based for loop with auto
-    for (auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+    for (auto& scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
         if (scorePtr->isDecoy()) {  // Directly use scorePtr, which is a ScoreHolder*
             data.vals[ix2] = scorePtr->pPSM->features;  // Access members directly through the pointer
             data.Y[ix2] = -1;
@@ -135,7 +135,7 @@ void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& s
     auto last = scores.end();
     // Range-based loop over the sorted and uniqued scores
     for (auto it = scores.begin(); it != last; ++it) {
-        const auto scorePtr = *it;  // Dereferencing iterator to get the pointer to ScoreHolder
+        const auto& scorePtr = *it;  // Dereferencing iterator to get the pointer to ScoreHolder
         if (scorePtr->isTarget()) {
             if (scorePtr->q <= fdr) {
                 data.vals[ix2] = scorePtr->pPSM->features;
@@ -161,7 +161,7 @@ double calcScore(const double* feat, const std::vector<double>& w) {
 
 int onlyCalcScores(std::vector<ScoreHolder*> scores, std::vector<double>& w) {
     std::size_t ix;
-    for (auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+    for (auto& scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
       scorePtr->score = calcScore(scorePtr->pPSM->features, w);
     }
     auto reversePointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; }; // Pointer GreaterThen
@@ -179,7 +179,7 @@ int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nul
     int maxIds(-1), maxDir(0), maxSign(0);
 
     for (int ix = 0; ix < w.size(); ix++) {
-        for(auto scorePtr : scores) {
+        for(auto& scorePtr : scores) {
             scorePtr->score = scorePtr->pPSM->features[ix];
         }
         std::sort(scores.begin(), scores.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
@@ -261,7 +261,7 @@ int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double 
     splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
     double trainNullTargetWinProb(factor/(1.0 + decoysPerTarget)), testNullTargetWinProb(1/factor);
 
-    setInitDirection(w_, train, trainNullTargetWinProb, selectionFDR);
+    // setInitDirection(w_, train, trainNullTargetWinProb, selectionFDR); done before this?
 
     // Initialize the input for the SVM
 
