@@ -120,64 +120,53 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
 }
 
-
-void PosteriorEstimator::estimatePEPGeneralized(
-    vector<pair<double, bool> >& combined, vector<double>& peps,
-    bool include_negative) {
+void PosteriorEstimator::estimateTradPEP(
+                                     vector<pair<double, bool> >& combined,
+                                     double factor, vector<double>& peps,
+				       bool include_negative) {
   // Logistic regression on the data
+  size_t nTargets = 0, nDecoys = 0;
   LogisticRegression lr;
-  bool usePi0 = false;
-  double pi0 = 1.0;
-  estimate(combined, lr, usePi0, pi0);
+  estimateTrad(combined, lr);
   vector<double> xvals(0);
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
-  for (; elem != combined.end(); ++elem) {
-    xvals.push_back(elem->first);
-    if (elem->second || include_negative) {
+  for (; elem != combined.end(); ++elem)
+    if (elem->second) {
       xvals.push_back(elem->first);
+      ++nTargets;
+    } else {
+      if (include_negative) {
+        xvals.push_back(elem->first);
+      }
+      ++nDecoys;
     }
-  }
   lr.predict(xvals, peps);
+#define OUTPUT_DEBUG_FILES
+#undef OUTPUT_DEBUG_FILES
 #ifdef OUTPUT_DEBUG_FILES
   ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
   ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
   copy(peps.begin(), peps.end(), drIt);
   copy(xvals.begin(), xvals.end(), xvalIt);
 #endif
-  double top = exp(*max_element(peps.begin(), peps.end()));
-  top = top/(1+top);
-  bool crap = false;
+  double top = min(1.0, factor
+      * exp(*max_element(peps.begin(), peps.end())));
   vector<double>::iterator pep = peps.begin();
+  bool crap = false;
   for (; pep != peps.end(); ++pep) {
     if (crap) {
       *pep = top;
       continue;
     }
-    // eg = p/(1-p)
-    // eg - egp = p
-    // p = eg/(1+eg)
-    double eg = exp(*pep);
-    *pep = eg/(1+eg);
+    *pep = factor * exp(*pep);
     if (*pep >= top) {
       *pep = top;
       crap = true;
     }
   }
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
-  double high = *max_element(peps.begin(), peps.end());
-  double low = *min_element(peps.begin(), peps.end());
-  assert(high>low);
-
-  if (VERB > 2) {
-    cerr << "Highest generalized decoy rate =" << high
-	       << ", low rate = " << low << endl;
-  }
-
-  pep = peps.begin();
-  for (; pep != peps.end(); ++pep) {
-    *pep = (*pep - low)/(high-low);
-  }
 }
+
 
 void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
     LogisticRegression& lr, bool usePi0, double pi0) {
@@ -291,35 +280,72 @@ void PosteriorEstimator::finishStandalone(
     resultstream.close();
   }
 }
-
-void PosteriorEstimator::finishStandaloneGeneralized(
-    vector<pair<double, bool> >& combined, const vector<double>& peps) {
-	vector<double> q(0), xvals(0);
-	getQValuesFromPEP(peps, q);
-	vector<pair<double, bool> >::const_iterator elem = combined.begin();
-	for (; elem != combined.end(); ++elem) {
-	  if (!includeNegativesInResult && elem->second) {
-	    xvals.push_back(elem->first);
-	  } else if(includeNegativesInResult) {
-	    xvals.push_back(elem->first);
-	  }
-	}
-	vector<double>::iterator xval = xvals.begin();
-	vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
-	if (resultFileName.empty()) {
-		cout << "Score\tPEP\tq-value" << endl;
-		for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
-			cout << *xval << "\t" << *pep << "\t" << *qv << endl;
-		}
-	} else {
-		ofstream resultstream(resultFileName.c_str());
-		resultstream << "Score\tPEP\tq-value" << endl;
-		for (; xval != xvals.end(); ++xval, ++pep, ++qv) {
-			resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
-		}
-		resultstream.close();
-	}
+void PosteriorEstimator::estimateTrad(vector<pair<double, bool> >& combined,
+                                  LogisticRegression& lr) {
+  // switch sorting order
+  if (!reversed) {
+    reverse(combined.begin(), combined.end());
+  }
+  vector<double> medians, negatives, sizes;
+  binDataTrad(combined, medians, negatives, sizes);
+  lr.setData(medians, negatives, sizes);
+  lr.roughnessPenaltyIRLS();
+  // restore sorting order
+  if (!reversed) {
+    reverse(combined.begin(), combined.end());
+  }
 }
+
+
+void PosteriorEstimator::binDataTrad(
+                                 const vector<pair<double, bool> >& combined,
+                                 vector<double>& medians,
+                                 vector<double> & negatives,
+                                 vector<double> & sizes) {
+  // Create bins and count number of negatives in each bin
+  size_t binsLeft = noIntervals;
+  double targetedBinSize = max(floor(combined.size()
+      / (double)(noIntervals)), 1.0);
+  vector<pair<double, bool> >::const_iterator combinedIter =
+      combined.begin();
+  size_t firstIx, pastIx = 0;
+  while (pastIx < combined.size()) {
+    while (((combined.size() - pastIx) / targetedBinSize < binsLeft)
+        && binsLeft > 1) {
+      --binsLeft;
+    }
+    double binSize =
+        max((combined.size() - pastIx) / (double)(binsLeft--), 1.0);
+    firstIx = pastIx;
+    pastIx = min(combined.size(), (size_t)(firstIx + binSize));
+    // Handle ties
+    while ((pastIx < combined.size()) && (combined[pastIx - 1].first
+        == combined[pastIx].first)) {
+      ++pastIx;
+    }
+    int inBin = pastIx - firstIx;
+    assert(inBin > 0);
+    int negInBin = count_if(combinedIter, combinedIter + inBin, IsDecoy());
+    combinedIter += inBin;
+    double median = combined[firstIx + inBin / 2].first;
+    if (medians.size() > 0 && *(medians.rbegin()) == median) {
+      *(sizes.rbegin()) += inBin;
+      *(negatives.rbegin()) += negInBin;
+    } else {
+      medians.push_back(median);
+      sizes.push_back(inBin);
+      negatives.push_back(negInBin);
+      cerr << "Median = " << median << ", Num psms = " << inBin
+          << ", Num decoys = " << negInBin << endl;
+    }
+  }
+  if (VERB > 2) {
+    cerr << "Binned data into " << medians.size()
+      << " bins for PEP calcuation" << endl;
+  }
+}
+
+
 
 /*
  * If pi0 == 1.0 this is equal to the "traditional" binning
@@ -662,11 +688,6 @@ int PosteriorEstimator::run() {
     getPValues(combined, pvals);
   }
   vector<double> peps;
-  if (competition) {
-    estimatePEPGeneralized(combined, peps,includeNegativesInResult);
-    finishStandaloneGeneralized(combined, peps);
-    return true;
-  }
   
   double pi0 = 1.0;
   if (usePi0_) {
@@ -744,11 +765,6 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "output-file",
                    "Output results to file instead of stdout",
                    "file");
-  cmd.defineOption("g",
-                   "generalized",
-                   "Generalized target decoy competition, situations where PSMs known to more frequently be incorrect are mixed in with the correct PSMs",
-		               "",
-		               TRUE_IF_SET);
   cmd.defineOption("Y",
                    "tdc-input",
                    "Turns off the pi0 correction for search results from a concatenated database.",
@@ -778,9 +794,6 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   }
   if (cmd.optionSet("reverse")) {
     PosteriorEstimator::setReversed(true);
-  }
-  if (cmd.optionSet("generalized")) {
-    PosteriorEstimator::setGeneralized(true);
   }
   if (cmd.optionSet("tdc-input")) {
     PosteriorEstimator::setUsePi0(false);

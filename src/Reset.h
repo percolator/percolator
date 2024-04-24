@@ -32,9 +32,10 @@ class Reset {
         options_.mfnitermax = MFNITERMAX;
     };
     ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
-    int reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w);
+    int reset(Scores &psms, Scores &output, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w);
     int iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR);
     int iterationOfReset(Scores &train, double selectionFDR);
+    int evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
     int splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
 

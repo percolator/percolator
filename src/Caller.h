@@ -122,6 +122,7 @@ class Caller {
     void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
 
     void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
+    void writeResults(Scores& allScores, bool unique, bool writeOutput);
     void calculateProteinProbabilities(Scores& allScores);
     void checkIsWritable(const std::string& filePath);
 };

@@ -2,6 +2,7 @@
 #include "Scores.h"
 #include "SanityCheck.h"
 #include "CompositionSorter.h"
+#include "PosteriorEstimator.h"
 #include "PseudoRandom.h"
 #include "Normalizer.h"
 #include "ssl.h"
@@ -205,9 +206,17 @@ int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nul
     return calcScores(scores, w, selectionFDR, false);
 }
 
+void getScoreLabelPairs(std::vector<ScoreHolder*> scores, std::vector<pair<double, bool> >& combined) {
+    combined.clear(); // Clear the combined vector first
+    // Use a lambda function to transform each ScoreHolder pointer to a pair<double, bool>
+    std::transform(scores.begin(), scores.end(), std::back_inserter(combined),
+        [](ScoreHolder* sh) { return sh->toPair(); }); // Assuming toPair() is a member function of ScoreHolder
+}
+
+
+
 
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
-    cerr << "Inside iterationOfReset" << endl;
     std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
     cerr << "Generating training sets" << endl;
@@ -218,12 +227,10 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
     vector_double pWeights, Outputs;
     pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
     pWeights.vec = new double[pWeights.d];
-    cerr << "Made weight vector of length " << pWeights.d << endl;
     
     size_t numInputs = static_cast<std::size_t>(pSVMInput_->positives + pSVMInput_->negatives);
     Outputs.vec = new double[numInputs];
     Outputs.d = static_cast<int>(numInputs);
-    cerr << "Made output vector of length " << Outputs.d << endl;
     
     for (int ix = 0; ix < pWeights.d; ix++) {
         pWeights.vec[ix] = 0;
@@ -250,7 +257,31 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
     return calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
 }
 
-int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
+int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR) {
+
+    cerr << "Inside evaluateTestSet" << endl;
+    onlyCalcScores(test, w_); // Sorts the scores in descending order
+    std::sort(test.begin(),test.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; }); // Do we realy need this?
+    calcBalancedFDR(test, testNullTargetWinProb, selectionFDR);
+    // psms.onlyCalcScores(w_);
+
+    std::vector<pair<double, bool> > combined;
+    getScoreLabelPairs(test,combined);
+
+    std::vector<double> peps;
+    // Logistic regression on the data
+    double factor( testNullTargetWinProb / ( 1.0 - testNullTargetWinProb ));
+    cerr << "EstimatePEP, using factor=" << factor << endl;
+    PosteriorEstimator::estimateTradPEP(combined, factor, peps);
+    size_t ix = 0;
+    for (auto& pScore : test) {
+        pScore->pep = peps[ix++];
+    }
+    return 0;
+
+}
+
+int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
 
     w_ = w;
     CompositionSorter sorter;
@@ -285,7 +316,14 @@ int Reset::reset(Scores &psms, double selectionFDR, SanityCheck* pCheck, double 
         unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
     cerr << "Training Done!" << endl;
-    // Calculate test scores here. 
+    
+    evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+
+    for (ScoreHolder* ptr : test) {
+        if (ptr != nullptr) { // Check to ensure the pointer is not null
+            outS.addScoreHolder(*ptr); // Dereference the pointer and add to scores
+        }
+    }
     return 0;
 }
 

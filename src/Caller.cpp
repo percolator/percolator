@@ -759,6 +759,10 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
   }
 
   allScores.calcPep();
+  writeResults(allScores, isUniquePeptideRun, writeOutput);
+}
+
+void Caller::writeResults(Scores &allScores, bool isUniquePeptideRun, bool writeOutput) {
 
   if (VERB > 1 && writeOutput) {
     timer.stop();
@@ -1012,20 +1016,14 @@ int Caller::run() {
     vector<double> w(DataSet::getNumFeatures()+1,0.0);
     SanityCheck sc;
     sc.getInitDirection(allScores, pNorm_, w, selectionFdr_, initialSelectionFdr_);
+    Scores output(false);
 
     Reset resetAlg;
-    resetAlg.reset(allScores, selectionFdr_, pCheck_, 0.5, 1, w);
+    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
 
-    // Scores::reset() is a unfortunate name in this context
-    cerr << "Scores::reset()" << endl;
-    allScores.reset();
-    cerr << "Scores::calcScores()" << endl;
-    allScores.calcScores(w, selectionFdr_);
-    cerr << "Scores::calcQ()" << endl;
-    allScores.calcQ(selectionFdr_);
     // allScores.normalizeScores(selectionFdr_); Probably not needed
     cerr << "Scores::calcAndOutputResults()" << endl;
-    calcAndOutputResult(allScores, xmlInterface);
+    writeResults(output, true, true);
     return 1;
   }
 

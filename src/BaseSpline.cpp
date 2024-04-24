@@ -230,6 +230,7 @@ void BaseSpline::initiateQR() {
   int n = static_cast<int>(x.size());
   dx.resize(n-1);
   for (std::size_t ix = 0; static_cast<int>(ix) < n - 1; ix++) {
+    cerr << x[ix + 1] << " " << x[ix] << " " << x[ix + 1] - x[ix] << endl;
     dx.addElement(static_cast<int>(ix), x[ix + 1] - x[ix]);
     assert(dx[ix] > 0);
   }
