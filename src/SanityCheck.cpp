@@ -115,6 +115,9 @@ int SanityCheck::getInitDirection(Scores& scores,
                                   double initial_train_fdr) {
   test_fdr_= test_fdr;
   initial_train_fdr_ = initial_train_fdr;
+  pTrainset = new std::vector<Scores>();
+  pTrainset->push_back(scores);
+
   if (initWeightFN.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
     ifstream weightStream(initWeightFN.data(), ios::in);
@@ -129,6 +132,7 @@ int SanityCheck::getInitDirection(Scores& scores,
       getDefaultDirection(w);
     }
   } else {
+    cerr << "No weights file given, using default direction" << endl;
     getDefaultDirection(w);
   }
   initPositives_ = scores.calcScores(w, test_fdr);

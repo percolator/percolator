@@ -8,6 +8,32 @@
 #include "CompositionSorter.h"
 
 
+
+// helper for sorting ScoreHolder references by scan and score, to help TDC
+bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
+    // Primary sort by scan in ascending order
+    if (lhs->pPSM->scan != rhs->pPSM->scan) {
+        return lhs->pPSM->scan < rhs->pPSM->scan;
+    }
+    // Secondary sort by score in descending order
+    return lhs->score > rhs->score;
+}
+
+void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
+    // First, sort the vector using the custom comparator
+    std::sort(scoreHolders.begin(), scoreHolders.end(), compareByScanThenScore);
+
+    // Use a lambda to find the unique elements
+    auto newEnd = std::unique(scoreHolders.begin(), scoreHolders.end(),
+        [](const ScoreHolder* lhs, const ScoreHolder* rhs) {
+            return lhs->pPSM->scan == rhs->pPSM->scan;
+        });
+
+    // Erase the non-unique elements from the vector
+    scoreHolders.erase(newEnd, scoreHolders.end());
+}
+
+
 std::string CompositionSorter::generateCompositionSignature(const std::string& peptide) {
     std::map<std::string, int> counts;
 
@@ -35,7 +61,19 @@ std::string CompositionSorter::generateCompositionSignature(const std::string& p
     return signature;
 }
 
-int CompositionSorter::addPSMs(Scores& scores) {
+int CompositionSorter::addPSMs(Scores& scores, bool useTDC) {
+    if (useTDC) {
+        std::vector<ScoreHolder*> scoreHolders;
+        for (auto& scr : scores) {
+            scoreHolders.push_back(&scr);
+        }
+        targetDecoyCompetition(scoreHolders);
+        for (auto& pScr : scoreHolders) {
+            std::string peptide = pScr->getPSM()->getPeptideSequence();
+            std::string signature = generateCompositionSignature(peptide);
+            compositionToPeptidesToScore_[signature][peptide].push_back(pScr);
+        }
+    }
     for (auto& scr : scores) {
         std::string peptide = scr.getPSM()->getPeptideSequence();
         std::string signature = generateCompositionSignature(peptide);
@@ -59,52 +97,6 @@ int CompositionSorter::sortScorePerPeptide() {
     return 0;
 }
 
-// Scores
-int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders, unsigned int decoysPerTarget) {
-
-    for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
-        std::vector<std::vector<const ScoreHolder*>> compositionGroups;
-        std::vector<const ScoreHolder*> targets;
-        std::vector<const ScoreHolder*> decoys;
-        // Add the target peptides
-        for (auto& [peptide, scoreHolders] : peptideMap) {
-            if (scoreHolders.empty()) {
-                continue;
-            }
-            const ScoreHolder* firstScoreHolder = scoreHolders.front();
-            if (firstScoreHolder->label > 0) {
-                targets.push_back(firstScoreHolder);
-            } else {
-                decoys.push_back(firstScoreHolder);
-            }
-        }
-        // Format tuples of targets and decoys. Now we are not checking if there are enough decoys for each target.
-        // TODO: Check if there are enough decoys for each target
-        for (const ScoreHolder* target : targets) {
-            std::vector<const ScoreHolder*> group;
-            group.push_back(target); // Add the target ScoreHolder to the group
-
-            // Add decoysPerTarget number of decoys to the group
-            for (unsigned int i = 0; i < decoysPerTarget && !decoys.empty(); ++i) {
-                group.push_back(decoys.back()); // Add the last decoy to ensure unique selection if decoys are not repeated
-                decoys.pop_back(); // Remove the added decoy from the decoys list
-            }
-            compositionGroups.push_back(group); // Add the newly formed group to compositionGroups
-        }
-        // Sort each group in compositionGroups based on the ScoreHolder's score
-        // and add it to bestScoreHolders
-        for (auto& group : compositionGroups) {
-            if (group.empty())
-                continue; 
-            std::sort(group.begin(), group.end(), [](const ScoreHolder* a, const ScoreHolder* b) -> bool {
-                return a->score > b->score; // Sort in descending order of score
-            });
-            bestScoreHolders.addScoreHolder(*(group.front())); // Add the highest-scoring ScoreHolder
-        }
-     }
-    // Select the first ScoreHolder in each group in compositionGroups and feed it to the bestScoreHolders vector
-    return 0;
-}
 
 
 int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestScoreHolders, unsigned int decoysPerTarget) {
@@ -153,21 +145,6 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
     return 0;
 }
 
-
-int CompositionSorter::psmAndPeptide(Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget) {
-    //    psmLevelCompetition(); // Should be handled by the reader?
-
-    // Populate the structure with the winning PSMs
-    CompositionSorter::addPSMs(scores);
-
-    // Sort the PSMs for each peptide in decending order of score
-    CompositionSorter::sortScorePerPeptide();
-
-    // Split out tuples of peptides of identical composition, and select the most high scoring peptide in each tuple
-    inCompositionCompetition(winnerPeptides, decoysPerTarget);
-
-    return 0;
-}
 
 int CompositionSorter::psmAndPeptide(Scores& scores, std::vector<ScoreHolder *>& winnerPeptides, unsigned int decoysPerTarget) {
     //    psmLevelCompetition(); // Should be handled by the reader?

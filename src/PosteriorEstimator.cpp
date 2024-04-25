@@ -151,6 +151,7 @@ void PosteriorEstimator::estimateTradPEP(
 #endif
   double top = min(1.0, factor
       * exp(*max_element(peps.begin(), peps.end())));
+  cerr << top << " " << factor <<  endl;
   vector<double>::iterator pep = peps.begin();
   bool crap = false;
   for (; pep != peps.end(); ++pep) {
@@ -335,7 +336,9 @@ void PosteriorEstimator::binDataTrad(
       medians.push_back(median);
       sizes.push_back(inBin);
       negatives.push_back(negInBin);
-      cerr << "Median = " << median << ", Num psms = " << inBin
+    }
+    if (VERB > 3) {
+          cerr << "Median = " << median << ", Num psms = " << inBin
           << ", Num decoys = " << negInBin << endl;
     }
   }

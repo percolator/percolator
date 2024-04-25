@@ -19,12 +19,12 @@
 using namespace std;
 #include "ResultHolder.h"
 
-ResultHolder::ResultHolder() : score(0.0), q(1.0), posterior(1.0), pepSeq(""), prot("") {
+ResultHolder::ResultHolder() : score(0.0), q(1.0), posterior(1.0), pepSeq(""), prot(""), outputRT(false) {
 }
 
 ResultHolder::ResultHolder(const double sc, const double qq,
                            const double po, const string& i,
-                           const string& pe, const string& p, const string& fn) : score(sc), q(qq), posterior(po), id(i), pepSeq(pe), prot(p), fileName(fn) {
+                           const string& pe, const string& p, const string& fn) : score(sc), q(qq), posterior(po), id(i), pepSeq(pe), prot(p), fileName(fn),  outputRT(false) {
 }
 
 ResultHolder::~ResultHolder() {
@@ -49,6 +49,5 @@ ostream& operator<<(ostream& out, const ResultHolder& obj) {
     if (obj.outputRT) {
         out << "\t" << obj.retentionTime;
     }
-
     return out;
 }

@@ -272,13 +272,9 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
     // Logistic regression on the data
     double factor( testNullTargetWinProb / ( 1.0 - testNullTargetWinProb ));
     cerr << "EstimatePEP, using factor=" << factor << endl;
-    PosteriorEstimator::estimateTradPEP(combined, factor, peps);
+    PosteriorEstimator::estimateTradPEP(combined, factor, peps,  true);
     size_t ix = 0;
-    for (auto& pScore : test) {
-        pScore->pep = peps[ix++];
-    }
     return 0;
-
 }
 
 int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
@@ -326,4 +322,54 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
     }
     return 0;
 }
+
+int Reset::rereset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
+
+    w_ = w;
+
+    double factor = 1.0*(decoysPerTarget + 1)  - fractionTraining*decoysPerTarget;
+    double trainNullTargetWinProb(factor/(1.0 + decoysPerTarget)), testNullTargetWinProb(1/factor);
+    unsigned int numIterations(5);
+    std::vector<ScoreHolder*> train(false), test(false);
+
+    for (unsigned int i = 0; i < numIterations; i++) {    
+        CompositionSorter sorter;
+
+        // select the representative peptides to train on
+        std::vector<ScoreHolder*> winnerPeptides;
+
+        cerr << "rereset: psmAndPeptide" << endl;
+        psms.onlyCalcScores(w_);
+
+        sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
+
+        cerr << "Splitting into train/test" << endl;
+
+        // Setting up the training and test sets
+        train.clear(); test.clear();
+        splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
+    
+    
+        // Initialize the input for the SVM
+
+        if(!pSVMInput_) {
+            cerr << "Setting up SVM training for a size of " << winnerPeptides.size() << " peptides." << endl;
+            pSVMInput_ = new AlgIn(winnerPeptides.size(), static_cast<int>(FeatureNames::getNumFeatures()) + 1);
+        }
+
+        cerr << "Training" << endl;
+        unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
+    }
+    cerr << "Training Done!" << endl;
+    
+    evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+
+    for (ScoreHolder* ptr : test) {
+        if (ptr != nullptr) { // Check to ensure the pointer is not null
+            outS.addScoreHolder(*ptr); // Dereference the pointer and add to scores
+        }
+    }
+    return 0;
+}
+
 

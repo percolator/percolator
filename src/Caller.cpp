@@ -1015,6 +1015,7 @@ int Caller::run() {
     }
     vector<double> w(DataSet::getNumFeatures()+1,0.0);
     SanityCheck sc;
+    std::cerr << "Selecting best separating single variable." << std::endl;
     sc.getInitDirection(allScores, pNorm_, w, selectionFdr_, initialSelectionFdr_);
     Scores output(false);
 
@@ -1023,7 +1024,7 @@ int Caller::run() {
 
     // allScores.normalizeScores(selectionFdr_); Probably not needed
     cerr << "Scores::calcAndOutputResults()" << endl;
-    writeResults(output, true, true);
+    writeResults(output, false, true);
     return 1;
   }
 
