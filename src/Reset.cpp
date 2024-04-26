@@ -6,6 +6,7 @@
 #include "PseudoRandom.h"
 #include "Normalizer.h"
 #include "ssl.h"
+#include "DataSet.h"
 #include "Reset.h"
 
 
@@ -50,45 +51,6 @@ int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<Sc
     return 0;
 }
 
-
-int Reset::iterationOfReset(Scores &train, double selectionFDR) {
-    train.calcBalancedFDR(selectionFDR);
-    train.generateNegativeTrainingSet(*pSVMInput_, 1.0);
-    train.generatePositiveTrainingSet(*pSVMInput_, selectionFDR, 1.0, false);
-
-    vector_double pWeights, Outputs;
-    pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
-    pWeights.vec = new double[pWeights.d];
-    
-    size_t numInputs = static_cast<std::size_t>(pSVMInput_->positives + pSVMInput_->negatives);
-    Outputs.vec = new double[numInputs];
-    Outputs.d = static_cast<int>(numInputs);
-    
-    for (int ix = 0; ix < pWeights.d; ix++) {
-        pWeights.vec[ix] = 0;
-    }
-    for (int ix = 0; ix < Outputs.d; ix++) {
-        Outputs.vec[ix] = 0;
-    }
-
-    // TODO: Set CPos,CNeg by X-val
-
-    L2_SVM_MFN(*pSVMInput_, 
-        options_, 
-        pWeights, 
-        Outputs, 
-        1.0, // Cpos
-        3.0 * train.getTargetDecoySizeRatio()); // CNeg
-    
-
-    for (std::size_t i = FeatureNames::getNumFeatures() + 1; i--;) {
-        w_[i] = static_cast<double>(pWeights.vec[i]);
-    }
-
-    train.onlyCalcScores(w_);
-    return train.calcBalancedFDR(selectionFDR);
-}
-
 int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, double treshold) {
     double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb / ( 1.0 - nullTargetWinProb ) );
     for(auto& pScore : scores) {
@@ -108,8 +70,8 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
     std::reverse(scores.begin(), scores.end());
 
     // Calcultaing the number of target PSMs with q-value less than treshold
-    ScoreHolder limit(treshold, 1);
-    auto pointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return *a < *b; };
+    ScoreHolder limit; limit.q = treshold;
+    auto pointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return a->q < b->q; };
     auto upper = std::lower_bound(scores.begin(), scores.end(), &limit, pointerComp);
     return upper - scores.begin();
 }
@@ -213,9 +175,6 @@ void getScoreLabelPairs(std::vector<ScoreHolder*> scores, std::vector<pair<doubl
         [](ScoreHolder* sh) { return sh->toPair(); }); // Assuming toPair() is a member function of ScoreHolder
 }
 
-
-
-
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
     std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
@@ -261,8 +220,8 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
 
     cerr << "Inside evaluateTestSet" << endl;
     onlyCalcScores(test, w_); // Sorts the scores in descending order
-    std::sort(test.begin(),test.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; }); // Do we realy need this?
-    calcBalancedFDR(test, testNullTargetWinProb, selectionFDR);
+    std::sort(test.begin(),test.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; }); // Do we realy need this?
+    int peptidesUnderFDR = calcBalancedFDR(test, testNullTargetWinProb, selectionFDR);
     // psms.onlyCalcScores(w_);
 
     std::vector<pair<double, bool> > combined;
@@ -271,10 +230,9 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
     std::vector<double> peps;
     // Logistic regression on the data
     double factor( testNullTargetWinProb / ( 1.0 - testNullTargetWinProb ));
-    cerr << "EstimatePEP, using factor=" << factor << endl;
+    if (VERB>2) cerr << "EstimatePEP, using factor=" << factor << endl;
     PosteriorEstimator::estimateTradPEP(combined, factor, peps,  true);
-    size_t ix = 0;
-    return 0;
+    return peptidesUnderFDR;
 }
 
 int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
@@ -289,7 +247,7 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
     
     sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
 
-    cerr << "Splitting into train/test" << endl;
+    std::cerr << "Splitting into train/test" << endl;
 
     // Setting up the training and test sets
     double factor = 1.0*(decoysPerTarget + 1)  - fractionTraining*decoysPerTarget;
@@ -302,18 +260,30 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
 
     // Initialize the input for the SVM
 
-    cerr << "Setting up SVM training for a size of " << winnerPeptides.size() << " peptides." << endl;
+    if (VERB>1) std::cerr << "Setting up SVM training for a size of " << winnerPeptides.size() << " peptides." << endl;
     // pSVMInput_ = new AlgIn(train.size() + test.negSize() , static_cast<int>(FeatureNames::getNumFeatures()) + 1);
     assert(pSVMInput_ == nullptr);
     pSVMInput_ = new AlgIn(winnerPeptides.size(), static_cast<int>(FeatureNames::getNumFeatures()) + 1);
 
-    cerr << "Training" << endl;
+    if (VERB>1) std::cerr << "Training" << endl;
     for (unsigned int i = 0; i < numIterations; i++) {    
         unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
-    cerr << "Training Done!" << endl;
+    if (VERB>1) std::cerr << "Training Done!" << endl;
+
+    if (VERB>1) {
+        std::cerr << "Final feature weights" << endl;
+        for (size_t ix=0; ix < w_.size(); ix++) {
+            if (ix<FeatureNames::getNumFeatures()) {
+                std::cerr << DataSet::getFeatureNames().getFeatureName(ix) << "\t" << w_[ix] << endl;
+            } else {
+                std::cerr << "Intercept" << "\t" << w_[ix] << endl;
+            }
+        }
+    }
     
-    evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+    int underFDR = evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+    cerr << "Test set evaluation finds " << underFDR << " peptides under a FDR of " << selectionFDR << endl;
 
     for (ScoreHolder* ptr : test) {
         if (ptr != nullptr) { // Check to ensure the pointer is not null
@@ -362,7 +332,8 @@ int Reset::rereset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck*
     }
     cerr << "Training Done!" << endl;
     
-    evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+    int underFDR = evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+    cerr << "Test set evaluation finds " << underFDR << " number of peptides under FDR of " << selectionFDR << endl;
 
     for (ScoreHolder* ptr : test) {
         if (ptr != nullptr) { // Check to ensure the pointer is not null
