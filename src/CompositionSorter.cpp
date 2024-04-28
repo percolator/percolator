@@ -20,17 +20,31 @@ bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
 }
 
 void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
-    // First, sort the vector using the custom comparator
     std::sort(scoreHolders.begin(), scoreHolders.end(), compareByScanThenScore);
+    cerr << "Before TDC there are " << scoreHolders.size() << " PSMs." << endl;
+    cerr << scoreHolders[0]->pPSM->scan << " " << scoreHolders[0]->pPSM->getPeptideSequence() << " "; 
+    cerr << scoreHolders[1]->pPSM->scan << " " << scoreHolders[1]->pPSM->getPeptideSequence() << " "; 
+    cerr << scoreHolders[2]->pPSM->scan << " " << scoreHolders[2]->pPSM->getPeptideSequence() << endl; 
+    // First, sort the vector using the custom comparator
 
-    // Use a lambda to find the unique elements
-    auto newEnd = std::unique(scoreHolders.begin(), scoreHolders.end(),
-        [](const ScoreHolder* lhs, const ScoreHolder* rhs) {
-            return lhs->pPSM->scan == rhs->pPSM->scan;
-        });
+    // Use a map to track scan numbers and keep only the best score for each scan
+    std::map<int, ScoreHolder*> bestScoreByScan;
+    for (ScoreHolder* holder : scoreHolders) {
+        int scan = holder->pPSM->scan;
+        if (bestScoreByScan.find(scan) == bestScoreByScan.end() || bestScoreByScan[scan]->score < holder->score) {
+            bestScoreByScan[scan] = holder;
+        }
+    }
 
-    // Erase the non-unique elements from the vector
-    scoreHolders.erase(newEnd, scoreHolders.end());
+    // Clear the original scoreHolders and repopulate it with the best scores from each scan
+    scoreHolders.clear();
+    for (const auto& pair : bestScoreByScan) {
+        scoreHolders.push_back(pair.second);
+    }
+    cerr << "After TDC there are " << scoreHolders.size() << " PSMs." << endl;
+    cerr << scoreHolders[0]->pPSM->scan << " " << scoreHolders[0]->pPSM->getPeptideSequence() << " "; 
+    cerr << scoreHolders[1]->pPSM->scan << " " << scoreHolders[1]->pPSM->getPeptideSequence() << " "; 
+    cerr << scoreHolders[2]->pPSM->scan << " " << scoreHolders[2]->pPSM->getPeptideSequence() << endl; 
 }
 
 
@@ -57,7 +71,6 @@ std::string CompositionSorter::generateCompositionSignature(const std::string& p
         signature += aminoAcid;
         signature += std::to_string(count);
     }
-
     return signature;
 }
 
@@ -72,6 +85,7 @@ int CompositionSorter::addPSMs(Scores& scores, bool useTDC) {
             std::string peptide = pScr->getPSM()->getPeptideSequence();
             std::string signature = generateCompositionSignature(peptide);
             compositionToPeptidesToScore_[signature][peptide].push_back(pScr);
+            // cerr << "Pushed back " << peptide << " with signature " << signature << " there are now " << compositionToPeptidesToScore_[signature][peptide].size() << " such peptides" << endl;
         }
     }
     for (auto& scr : scores) {
@@ -100,13 +114,19 @@ int CompositionSorter::sortScorePerPeptide() {
 
 
 int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestScoreHolders, unsigned int decoysPerTarget) {
+    // Sort the PSMs for each peptide in decending order of score
+    CompositionSorter::sortScorePerPeptide();
+
+    cerr << "inCompositionCompetition, we start with "  << compositionToPeptidesToScore_.size() << " compositions." << endl;
 
     for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
+        cerr << "Composition " << composition << " contains " << peptideMap.size() << " peptides." << endl;
         std::vector<std::vector<ScoreHolder*>> compositionGroups;
         std::vector<ScoreHolder*> targets;
         std::vector<ScoreHolder*> decoys;
         // Add the target peptides
         for (auto& [peptide, scoreHolders] : peptideMap) {
+            cerr << "Peptide, " << peptide << ", has " <<  scoreHolders.size() << " instances." << endl;
             if (scoreHolders.empty()) {
                 continue;
             }
@@ -119,13 +139,14 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         }
         // Format tuples of targets and decoys. Now we are not checking if there are enough decoys for each target.
         // TODO: Check if there are enough decoys for each target
+        std::reverse(decoys.begin(), decoys.end());
         for (ScoreHolder* target : targets) {
             std::vector<ScoreHolder*> group;
             group.push_back(target); // Add the target ScoreHolder to the group
 
             // Add decoysPerTarget number of decoys to the group
             for (unsigned int i = 0; i < decoysPerTarget && !decoys.empty(); ++i) {
-                group.push_back(decoys.back()); // Add the last decoy to ensure unique selection if decoys are not repeated
+                group.push_back(decoys.back()); // Add the last decoy (the one first added to the vector)
                 decoys.pop_back(); // Remove the added decoy from the decoys list
             }
             compositionGroups.push_back(group); // Add the newly formed group to compositionGroups
@@ -139,9 +160,10 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
                 return a->score > b->score; // Sort in descending order of score
             });
             bestScoreHolders.push_back(group.front()); // Add the highest-scoring ScoreHolder
+            cerr << "Added pepide, " << group.front()->pPSM->getPeptideSequence() << ", with label=" << group.front()->label << endl; 
         }
-     }
-    // Select the first ScoreHolder in each group in compositionGroups and feed it to the bestScoreHolders vector
+    }
+    cerr << "inCompositionCompetition, ends with " << bestScoreHolders.size() << " peptides" << endl;
     return 0;
 }
 
@@ -151,9 +173,6 @@ int CompositionSorter::psmAndPeptide(Scores& scores, std::vector<ScoreHolder *>&
 
     // Populate the structure with the winning PSMs
     CompositionSorter::addPSMs(scores);
-
-    // Sort the PSMs for each peptide in decending order of score
-    CompositionSorter::sortScorePerPeptide();
 
     // Split out tuples of peptides of identical composition, and select the most high scoring peptide in each tuple
     inCompositionCompetition(winnerPeptides, decoysPerTarget);
