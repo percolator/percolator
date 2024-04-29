@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include "Globals.h"
 #include "Scores.h"
 #include "CompositionSorter.h"
 
@@ -15,16 +16,17 @@ bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
     if (lhs->pPSM->scan != rhs->pPSM->scan) {
         return lhs->pPSM->scan < rhs->pPSM->scan;
     }
-    // Secondary sort by score in descending order
+    // Secondary sort by charge in ascending order
+    //if (lhs->pPSM->charge != rhs->pPSM->charge) {
+    //    return lhs->pPSM->charge < rhs->pPSM->charge;
+    //}
+    // Thirdly sort by score in descending order
     return lhs->score > rhs->score;
 }
 
 void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
     std::sort(scoreHolders.begin(), scoreHolders.end(), compareByScanThenScore);
     cerr << "Before TDC there are " << scoreHolders.size() << " PSMs." << endl;
-    cerr << scoreHolders[0]->pPSM->scan << " " << scoreHolders[0]->pPSM->getPeptideSequence() << " "; 
-    cerr << scoreHolders[1]->pPSM->scan << " " << scoreHolders[1]->pPSM->getPeptideSequence() << " "; 
-    cerr << scoreHolders[2]->pPSM->scan << " " << scoreHolders[2]->pPSM->getPeptideSequence() << endl; 
     // First, sort the vector using the custom comparator
 
     // Use a map to track scan numbers and keep only the best score for each scan
@@ -42,9 +44,6 @@ void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
         scoreHolders.push_back(pair.second);
     }
     cerr << "After TDC there are " << scoreHolders.size() << " PSMs." << endl;
-    cerr << scoreHolders[0]->pPSM->scan << " " << scoreHolders[0]->pPSM->getPeptideSequence() << " "; 
-    cerr << scoreHolders[1]->pPSM->scan << " " << scoreHolders[1]->pPSM->getPeptideSequence() << " "; 
-    cerr << scoreHolders[2]->pPSM->scan << " " << scoreHolders[2]->pPSM->getPeptideSequence() << endl; 
 }
 
 
@@ -84,14 +83,16 @@ int CompositionSorter::addPSMs(Scores& scores, bool useTDC) {
         for (auto& pScr : scoreHolders) {
             std::string peptide = pScr->getPSM()->getPeptideSequence();
             std::string signature = generateCompositionSignature(peptide);
+            // cerr << "Will push back " << peptide << " with signature " << signature << " there are now " << compositionToPeptidesToScore_[signature][peptide].size() << " such peptides" << endl;
             compositionToPeptidesToScore_[signature][peptide].push_back(pScr);
             // cerr << "Pushed back " << peptide << " with signature " << signature << " there are now " << compositionToPeptidesToScore_[signature][peptide].size() << " such peptides" << endl;
         }
-    }
-    for (auto& scr : scores) {
-        std::string peptide = scr.getPSM()->getPeptideSequence();
-        std::string signature = generateCompositionSignature(peptide);
-        compositionToPeptidesToScore_[signature][peptide].push_back(&scr);
+    } else {
+        for (auto& scr : scores) {
+            std::string peptide = scr.getPSM()->getPeptideSequence();
+            std::string signature = generateCompositionSignature(peptide);
+            compositionToPeptidesToScore_[signature][peptide].push_back(&scr);
+        }
     }
     return 0;
 }
@@ -120,13 +121,13 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
     cerr << "inCompositionCompetition, we start with "  << compositionToPeptidesToScore_.size() << " compositions." << endl;
 
     for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
-        cerr << "Composition " << composition << " contains " << peptideMap.size() << " peptides." << endl;
+        // cerr << "Composition " << composition << " contains " << peptideMap.size() << " peptides." << endl;
         std::vector<std::vector<ScoreHolder*>> compositionGroups;
         std::vector<ScoreHolder*> targets;
         std::vector<ScoreHolder*> decoys;
         // Add the target peptides
         for (auto& [peptide, scoreHolders] : peptideMap) {
-            cerr << "Peptide, " << peptide << ", has " <<  scoreHolders.size() << " instances." << endl;
+            // cerr << "Peptide, " << peptide << ", with label=" << scoreHolders.front()->label << " has " <<  scoreHolders.size() << " instances." << endl;
             if (scoreHolders.empty()) {
                 continue;
             }
@@ -151,6 +152,18 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
             }
             compositionGroups.push_back(group); // Add the newly formed group to compositionGroups
         }
+        // Take care of the remaining decoys
+        for (ScoreHolder* decoy : decoys) {
+            std::vector<ScoreHolder*> group;
+            group.push_back(decoy); // Add the target ScoreHolder to the group
+
+            // Add decoysPerTarget number of decoys to the group
+            for (unsigned int i = 1; i < decoysPerTarget && !decoys.empty(); ++i) {
+                group.push_back(decoys.back()); // Add the last decoy (the one first added to the vector)
+                decoys.pop_back(); // Remove the added decoy from the decoys list
+            }
+            compositionGroups.push_back(group); // Add the newly formed group to compositionGroups
+        }       
         // Sort each group in compositionGroups based on the ScoreHolder's score
         // and add it to bestScoreHolders
         for (auto& group : compositionGroups) {
@@ -160,10 +173,15 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
                 return a->score > b->score; // Sort in descending order of score
             });
             bestScoreHolders.push_back(group.front()); // Add the highest-scoring ScoreHolder
-            cerr << "Added pepide, " << group.front()->pPSM->getPeptideSequence() << ", with label=" << group.front()->label << endl; 
+            // cerr << "Added pepide, " << group.front()->pPSM->getPeptideSequence() << ", with label=" << group.front()->label << " from a composition group with " << group.size() << " members." << endl; 
         }
     }
-    cerr << "inCompositionCompetition, ends with " << bestScoreHolders.size() << " peptides" << endl;
+    int numTargets = 0;
+    for (const auto pSH : bestScoreHolders) {
+        if (pSH->label>0) numTargets++;
+    }
+    if (VERB>1)
+        cerr << "inCompositionCompetition, ends with " << bestScoreHolders.size() << " peptides, whereof " << numTargets << " is target peptides." << endl;
     return 0;
 }
 

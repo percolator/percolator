@@ -14,8 +14,6 @@
 // s - the probability of assigning a decoy to the training set (default: s = 1/2)
 int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTraining) {
 
-    cerr << "Inside split" << endl;
-
     std::for_each(allScores.begin(), allScores.end(), [&](const ScoreHolder& score) {
         // cerr << score.score << " " << score.isTarget() << endl;
         if (score.isTarget()) {
@@ -35,10 +33,7 @@ int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test,
 // s - the probability of assigning a decoy to the training set (default: s = 1/2)
 int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<ScoreHolder*> &train, vector<ScoreHolder*> &test, double fractionTraining) {
 
-    cerr << "Inside split" << endl;
-
     for(auto& pScore : allScores) {
-        // cerr << pScore->score << " " << pScore->isTarget() << endl;
         if (pScore->isTarget()) {
             train.push_back(pScore);
             test.push_back(pScore);
@@ -76,7 +71,7 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
     return upper - scores.begin();
 }
 
-void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*>& scores, const double cneg) {
+void generateTrainingSet(AlgIn& data, std::vector<ScoreHolder*>& scores, const double cneg, const double cpos, const double fdr) {
     std::size_t ix2 = 0;
     // Using range-based for loop with auto
     for (const auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
@@ -87,17 +82,8 @@ void generateNegativeTrainingSet(AlgIn& data, std::vector<ScoreHolder*>& scores,
         }
     }
     data.negatives = static_cast<int>(ix2);
-    cerr << "Generated negative training set of size " << ix2 << endl;
-}
-
-void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& scores,
-                                         const double fdr, const double cpos,
-                                         const bool trainBestPositive) {
-    std::size_t ix2 = static_cast<std::size_t>(data.negatives);
     int p = 0;
-
-    auto last = scores.end();
-    // Range-based loop over the sorted and uniqued scores
+   // Range-based loop over the sorted and uniqued scores
     for (const auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
         // cerr << scorePtr->label << " " << scorePtr->isTarget() << " " << scorePtr->score << " " << scorePtr->q << endl;
         if (scorePtr->isTarget()) {
@@ -109,12 +95,13 @@ void generatePositiveTrainingSet(AlgIn& data, const std::vector<ScoreHolder*>& s
             }
         }
     }
-
     data.positives = p;
     data.m = static_cast<int>(ix2);
-    cerr << "Generated positive training set of size " << p << endl;
-    cerr << "positive +negative training set of size " << ix2 << endl;
+    cerr << "Generated positive training of size " << data.m << " where of "  << data.positives << " are target, and " << data.negatives << " are decoys." << endl;
 }
+
+
+
 
 double calcScore(const double* feat, const std::vector<double>& w) {
     std::size_t ix = FeatureNames::getNumFeatures();
@@ -179,8 +166,7 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
     std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
     cerr << "Generating training sets" << endl;
-    generateNegativeTrainingSet(*pSVMInput_, train, 1.0);
-    generatePositiveTrainingSet(*pSVMInput_, train, selectionFDR, 1.0, false);
+    generateTrainingSet(*pSVMInput_, train, 1.0, 1.0, selectionFDR);
 
 
     vector_double pWeights, Outputs;
@@ -218,7 +204,6 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
 
 int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR) {
 
-    cerr << "Inside evaluateTestSet" << endl;
     onlyCalcScores(test, w_); // Sorts the scores in descending order
     std::sort(test.begin(),test.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; }); // Do we realy need this?
     int peptidesUnderFDR = calcBalancedFDR(test, testNullTargetWinProb, selectionFDR);

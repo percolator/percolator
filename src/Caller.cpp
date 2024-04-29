@@ -375,7 +375,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "parameter-file",
       "Read flags from a parameter file. If flags are specified on the command line as well, these will override the ones in the parameter file.",
       "filename");
-  cmd.defineOption("",
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "reset-algorithm",
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
@@ -1023,7 +1023,6 @@ int Caller::run() {
     resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
 
     // allScores.normalizeScores(selectionFdr_); Probably not needed
-    cerr << "Scores::calcAndOutputResults()" << endl;
     writeResults(output, false, true);
     return 1;
   }
