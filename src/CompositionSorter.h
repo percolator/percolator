@@ -20,7 +20,8 @@ class Scores;
 
 class CompositionSorter {
     public:
-        int addPSMs(Scores& psms, bool useTDC=true); 
+        // int addPSMs(Scores& psms, bool useTDC=true); 
+        int addPSMs(Scores& psms, bool useTDC=false); 
         std::string generateCompositionSignature(const std::string& peptide);
         int sortScorePerPeptide();
         int inCompositionCompetition(std::vector<ScoreHolder*>& bestScoreHolders, unsigned int decoysPerTarget=1);
