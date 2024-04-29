@@ -9,18 +9,19 @@
 #include "CompositionSorter.h"
 
 
-
 // helper for sorting ScoreHolder references by scan and score, to help TDC
 bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
-    // Primary sort by scan in ascending order
+    // sort by file, scan, mass in ascending order
+    if (lhs->pPSM->specFileNr != rhs->pPSM->specFileNr) {
+        return lhs->pPSM->specFileNr < rhs->pPSM->specFileNr;
+    }
     if (lhs->pPSM->scan != rhs->pPSM->scan) {
         return lhs->pPSM->scan < rhs->pPSM->scan;
     }
-    // Secondary sort by charge in ascending order
-    //if (lhs->pPSM->charge != rhs->pPSM->charge) {
-    //    return lhs->pPSM->charge < rhs->pPSM->charge;
-    //}
-    // Thirdly sort by score in descending order
+    if (lhs->pPSM->expMass != rhs->pPSM->expMass) {
+        return lhs->pPSM->expMass < rhs->pPSM->expMass;
+    }
+    // Then sort by score in descending order
     return lhs->score > rhs->score;
 }
 
