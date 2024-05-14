@@ -26,6 +26,7 @@ class CompositionSorter {
         int sortScorePerPeptide();
         int inCompositionCompetition(std::vector<ScoreHolder*>& bestScoreHolders, unsigned int decoysPerTarget=1);
         int psmAndPeptide(Scores& scores, std::vector<ScoreHolder*>& winnerPeptides, unsigned int decoysPerTarget=1);
+        int psmsOnly(Scores& scores, std::vector<ScoreHolder*>& winnerPeptides);
     protected:
         std::unordered_map<std::string, std::map<std::string,std::vector<ScoreHolder*>>, DJB2Hash> compositionToPeptidesToScore_;
 };
