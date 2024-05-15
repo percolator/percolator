@@ -129,7 +129,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
     CompositionSorter::sortScorePerPeptide();
 
     if (VERB>1)
-        cerr << "inCompositionCompetition, we start with "  << compositionToPeptidesToScore_.size() << " compositions." << endl;
+        cerr << "Composition Matching starting with "  << compositionToPeptidesToScore_.size() << " compositions." << endl;
 
     std::vector<size_t> compSizeStat;
     std::vector<size_t> compTargetSizeStat;
@@ -216,7 +216,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         if (pSH->label>0) numTargets++;
     }
     if (VERB>1)
-        cerr << "inCompositionCompetition, ends with " << bestScoreHolders.size() << " peptides, whereof " << numTargets << " is target peptides." << endl;
+        cerr << "Composition Matching ends with " << bestScoreHolders.size() << " peptides, whereof " << numTargets << " is target peptides." << endl;
     return 0;
 }
 
@@ -252,6 +252,9 @@ int CompositionSorter::psmsOnly(Scores& scores, std::vector<ScoreHolder *>& winn
     for (const auto& entry : bestScoreHolders) {
         winnerPeptides.push_back(entry.second);
     }
+
+    if (VERB>1)
+        cerr << "Selected the best scoring PSM for each of the " << winnerPeptides.size() << " peptides from a dataset of " << scores.size() << " PSMs." << endl;
 
     return 0;
 }

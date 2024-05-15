@@ -97,10 +97,9 @@ void generateTrainingSet(AlgIn& data, std::vector<ScoreHolder*>& scores, const d
     }
     data.positives = p;
     data.m = static_cast<int>(ix2);
-    cerr << "Generated positive training of size " << data.m << " where of "  << data.positives << " are target, and " << data.negatives << " are decoys." << endl;
+    if (VERB > 1)
+        cerr << "Training with a set of size " << data.m << " preptides, where of "  << data.positives << " are target, and " << data.negatives << " are decoys." << endl;
 }
-
-
 
 
 double calcScore(const double* feat, const std::vector<double>& w) {
@@ -165,7 +164,6 @@ void getScoreLabelPairs(std::vector<ScoreHolder*> scores, std::vector<pair<doubl
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
     std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
-    cerr << "Generating training sets" << endl;
     generateTrainingSet(*pSVMInput_, train, 1.0, 1.0, selectionFDR);
 
 
