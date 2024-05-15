@@ -188,6 +188,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         }       
         // Sort each group in compositionGroups based on the ScoreHolder's score
         // and add it to bestScoreHolders
+        bestScoreHolders.clear();
         for (auto& group : compositionGroups) {
             if (group.empty())
                 continue; 
@@ -248,6 +249,7 @@ int CompositionSorter::psmsOnly(Scores& scores, std::vector<ScoreHolder *>& winn
     }
 
     // Collect the best ScoreHolders into a result vector
+    winnerPeptides.clear();
     winnerPeptides.reserve(bestScoreHolders.size());
     for (const auto& entry : bestScoreHolders) {
         winnerPeptides.push_back(entry.second);
