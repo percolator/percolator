@@ -220,7 +220,7 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
     return peptidesUnderFDR;
 }
 
-int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
+int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w, bool use_composition_match) {
 
     w_ = w;
     CompositionSorter sorter;
@@ -228,10 +228,13 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
     // select the representative peptides to train on
     std::vector<ScoreHolder*> winnerPeptides;
 
-    cerr << "Starting reset: psmAndPeptide" << endl;
-    
-    sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
-
+    if (use_composition_match) {
+        cerr << "Starting reset: psmAndPeptide" << endl;   
+        sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
+    } else {
+        cerr << "Starting reset: psmsOnly" << endl;   
+        sorter.psmsOnly(psms, winnerPeptides);
+    }
     std::cerr << "Splitting into train/test" << endl;
 
     // Setting up the training and test sets

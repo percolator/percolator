@@ -40,7 +40,7 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    analytics_(true), use_reset_alg_(false),
+    analytics_(true), use_reset_alg_(false), use_composition_match_(false),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -379,6 +379,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "reset-algorithm",
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "composition-match",
+      "Run an implementation of the Percolator-RESET psmsAndPeptides with target-decoy matching based on composition.",
+      "", TRUE_IF_SET);
   cmd.defineOption(
     "RT",
     "output-retention-time",
@@ -482,6 +486,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.optionSet("reset-algorithm")) {
     use_reset_alg_ = true;
+  }
+  if (cmd.optionSet("composition-match")) {
+    use_composition_match_ = true;
   }
   if (cmd.optionSet("xml-in")) {
     tabInput_ = false;
@@ -1020,7 +1027,7 @@ int Caller::run() {
     Scores output(false);
 
     Reset resetAlg;
-    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
+    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w, use_composition_match_);
 
     // allScores.normalizeScores(selectionFdr_); Probably not needed
     writeResults(output, false, true);

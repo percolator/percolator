@@ -133,13 +133,15 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
 
     std::vector<size_t> compSizeStat;
     std::vector<size_t> compTargetSizeStat;
+    std::vector<size_t> compNumTargetSizeStat;
     for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
         // cerr << "Composition " << composition << " contains " << peptideMap.size() << " peptides." << endl;
         std::vector<std::vector<ScoreHolder*>> compositionGroups;
         std::vector<ScoreHolder*> targets;
         std::vector<ScoreHolder*> decoys;
-        /// register lenth statistics for printouts
-        incVector(compSizeStat, composition.size());
+        /// register length statistics for printouts
+        size_t numberOfPeptidesInComposition = peptideMap.size();
+        incVector(compSizeStat, numberOfPeptidesInComposition);
         // Add the target peptides
         size_t numTargetPeptides = 0;
         for (auto& [peptide, scoreHolders] : peptideMap) {
@@ -151,11 +153,13 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
             if (firstScoreHolder->label > 0) {
                 targets.push_back(firstScoreHolder);
                 numTargetPeptides++;
+                incVector(compNumTargetSizeStat, numberOfPeptidesInComposition);
             } else {
                 decoys.push_back(firstScoreHolder);
             }
         }
-        incVector(compTargetSizeStat, numTargetPeptides);
+        if (numTargetPeptides>0)
+            incVector(compTargetSizeStat, numberOfPeptidesInComposition);
         // Format tuples of targets and decoys. Now we are not checking if there are enough decoys for each target.
         // TODO: Check if there are enough decoys for each target
         std::reverse(decoys.begin(), decoys.end());
@@ -195,14 +199,14 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         }
     }
     if (VERB>1) {
-        cerr << "Composition Group Statistics, Sizes of composition groups and number of target peptides in compostion groups." << endl;
-        cerr << "Size\tTotal\tTarget" << endl;
-        for (size_t ix = compSizeStat.size(); ix--;) {
+        cerr << "Composition Group Statistics: Sizes of composition groups, sizes with at least 1 target peptide, and avg. num targets per group." << endl;
+        cerr << "Size\tTotal\tIsTarget\tAvgTarget" << endl;
+        for (size_t ix = compSizeStat.size(); --ix;) {
             cerr << ix << '\t' << compSizeStat[ix] << '\t';
             if (ix < compTargetSizeStat.size()) {
-                cerr << compTargetSizeStat[ix] << endl;
+                cerr << compTargetSizeStat[ix] << '\t' << compTargetSizeStat[ix]/ix << endl;
             } else {
-                cerr << 0 << endl;
+                cerr << 0 << '\t' << 0 << endl;
             } 
         }
     }
