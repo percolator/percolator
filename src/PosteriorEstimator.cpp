@@ -779,28 +779,28 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
 		    TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
-  if (cmd.optionSet("verbose")) {
+  if (cmd.isOptionSet("verbose")) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
-  if (cmd.optionSet("number-of-bins")) {
+  if (cmd.isOptionSet("number-of-bins")) {
     noIntervals = cmd.getInt("number-of-bins", 1, INT_MAX);
   }
-  if (cmd.optionSet("epsilon-cross-validation")) {
+  if (cmd.isOptionSet("epsilon-cross-validation")) {
     BaseSpline::convergeEpsilon = cmd.getDouble("epsilon-cross-validation", 0.0, 1.0);
   }
-  if (cmd.optionSet("epsilon-step")) {
+  if (cmd.isOptionSet("epsilon-step")) {
     BaseSpline::stepEpsilon = cmd.getDouble("epsilon-step", 0.0, 1.0);
   }
-  if (cmd.optionSet("output-file")) {
+  if (cmd.isOptionSet("output-file")) {
     resultFileName = cmd.options["output-file"];
   }
-  if (cmd.optionSet("reverse")) {
+  if (cmd.isOptionSet("reverse")) {
     PosteriorEstimator::setReversed(true);
   }
-  if (cmd.optionSet("tdc-input")) {
+  if (cmd.isOptionSet("tdc-input")) {
     PosteriorEstimator::setUsePi0(false);
   }
-  if (cmd.optionSet("include-negative")) {
+  if (cmd.isOptionSet("include-negative")) {
     PosteriorEstimator::setNegative(true);
   }
   if (cmd.arguments.size() > 2) {

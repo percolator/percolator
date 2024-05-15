@@ -86,7 +86,7 @@ class CommandLineParser {
   }
 
   /* Parse the command-line options. Upon return, the options can be
-   * queried via options and/or optionSet(). The remaining cmdline
+   * queried via options and/or isOptionSet(). The remaining cmdline
    * arguments will be stored in arguments.
    */
   void parseArgs(int argc, char** argv);
@@ -97,7 +97,7 @@ class CommandLineParser {
 
   /* Return true if an option is present.
    */
-  inline bool optionSet(std::string dest) {
+  inline bool isOptionSet(std::string dest) {
     //return (options.find(dest) != options.end());
     return (options[dest].length() > 0);
   }
