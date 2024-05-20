@@ -56,7 +56,7 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
         } else {
             c_target += 1.0;
         }
-        pScore->q = ( c_decoy / c_target ) * factor;
+        pScore->q = ( c_decoy / max( 1.0, c_target ) ) * factor;
     }
     std::reverse(scores.begin(), scores.end());
     double previous_q = 1.0;
@@ -65,14 +65,19 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
         pScore->q = previous_q;
     }
     std::reverse(scores.begin(), scores.end());
+    // for(auto& pScore : scores) {
+    //    if ((pScore->q < 0.011) && (pScore->q > 0.009))
+    //         cerr << (pScore->isTarget()?'t':'d') << pScore->q << "," << pScore->score << " ";
+    // }
+    // cerr << endl;
 
     // Calcultaing the number of target PSMs with q-value less than treshold
     ScoreHolder limit; limit.q = treshold;
     auto pointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return a->q < b->q; };
     auto upper = std::lower_bound(scores.begin(), scores.end(), &limit, pointerComp);
-    cerr << "Balanced FDR reports " << upper - scores.begin() << " of " << scores.end() - scores.begin() << " scoreholders over FDR treshold. ";
-    cerr << (*upper)->q << ' ' << (*upper)->score << " ";
-    cerr << (*upper-1)->q << endl;
+    if (VERB>2) {
+        cerr << "Balanced FDR reports " << upper - scores.begin() << " of " << scores.end() - scores.begin() << " scoreholders over FDR treshold. ";
+    }
     return upper - scores.begin();
 }
 
@@ -118,19 +123,19 @@ double calcScore(const double* feat, const std::vector<double>& w) {
 
 // This function assign score to all score holders based on the weight vector w
 // and sorts the score holders in decending order
-int onlyCalcScores(std::vector<ScoreHolder*> scores, std::vector<double>& w) {
+int onlyCalcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w) {
     std::size_t ix;
     for (auto& scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
       scorePtr->score = calcScore(scorePtr->pPSM->features, w);
     }
-    auto reversePointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; }; // Pointer GreaterThen
+    auto reversePointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; }; // Pointer GreaterThen
     sort(scores.begin(), scores.end(),reversePointerComp);
     return 0;
 }
 
 // This function assign score to all score holders based on the weight vector w
 // and sorts the score holders in decending order and reports the number of scor holders over a FDR treshold.
-int calcScores(std::vector<ScoreHolder*> scores, std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+int calcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
     onlyCalcScores(scores, w);
     return calcBalancedFDR(scores, fdr, skipDecoysPlusOne);
 }
@@ -143,7 +148,7 @@ int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nul
         for(auto& scorePtr : scores) {
             scorePtr->score = scorePtr->pPSM->features[ix];
         }
-        std::sort(scores.begin(), scores.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
+        std::sort(scores.begin(), scores.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; });
         for (int dir = 1; dir > -2; dir -= 2) {
             int numId = calcBalancedFDR(scores, nullTargetWinProb, selectionFDR);
             if (numId > maxIds) {
@@ -179,8 +184,8 @@ int Reset::gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinPr
     int bestResult(0);
     double bestCpos(0.), bestCfrac(0.);
 
-    std::vector<double> cPosCandidates = {10000.,10.,1.0,0.1,0.0001};
-    std::vector<double> cFracCandidates = {0.001, 0.3, 1.0, 3.0, 1000.0};
+    std::vector<double> cPosCandidates = {100., 10., 1.0, 0.1, 0.01};
+    std::vector<double> cFracCandidates = {0.1, 0.3, 1.0, 3.0, 10.0};
     for (auto cPos : cPosCandidates) {
         for (auto cFrac : cFracCandidates) {
             svmTrain(cPos, cFrac);
@@ -199,6 +204,7 @@ int Reset::gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinPr
         cerr << "GridSearch found the optimal hyperParameters for SVM training, C+=" << bestCpos << ", and C-/C+=" << bestCfrac << "." << endl;  
     cPos_ = bestCpos;
     cFrac_ = bestCfrac;
+    return bestResult;
 }
 
 void Reset::svmTrain(const double cPos, const double cFrac) {
@@ -229,9 +235,7 @@ void Reset::svmTrain(const double cPos, const double cFrac) {
 
     for (std::size_t i = FeatureNames::getNumFeatures() + 1; i--;) {
         w_[i] = static_cast<double>(pWeights.vec[i]);
-        cerr << pWeights.vec[i] << '\t';
     }
-    cerr << endl;
 }
 
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
@@ -261,6 +265,13 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
     double factor( testNullTargetWinProb / ( 1.0 - testNullTargetWinProb ));
     if (VERB>2) cerr << "EstimatePEP, using factor=" << factor << endl;
     PosteriorEstimator::estimateTradPEP(combined, factor, peps,  true);
+    // Copy back the estimated PEPs to the score holders
+    std::transform(test.begin(), test.end(), peps.begin(), test.begin(),
+            [](ScoreHolder* pSH, double pep) {
+                pSH->pep = pep;
+                return pSH;
+            });
+
     return peptidesUnderFDR;
 }
 
