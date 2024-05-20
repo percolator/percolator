@@ -46,7 +46,6 @@ extern "C" {
 AlgIn::AlgIn(const unsigned int size, const int numFeat) {
   vals = new double*[size];
   Y = new double[size];
-  C = new double[size];
   n = numFeat;
   positives = 0;
   negatives = 0;
@@ -54,7 +53,6 @@ AlgIn::AlgIn(const unsigned int size, const int numFeat) {
 AlgIn::~AlgIn() {
   delete[] vals;
   delete[] Y;
-  delete[] C;
 }
 
 double cglsFun1(int active, int* J, const double* Y,

@@ -35,15 +35,17 @@ class Reset {
     int reset(Scores &psms, Scores &output, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w, bool use_composition_match = false);
     int rereset(Scores &psms, Scores &output, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w);
     int iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR);
-    int iterationOfReset(Scores &train, double selectionFDR);
     int evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTrain);
     int splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
 
  protected:
+    int gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinProb, const double selectionFDR);
+    void svmTrain(const double cPos, const double cFrac);
+
     AlgIn * pSVMInput_ = nullptr;
     std::vector<double> w_; // linear scoring weights from SVM
     options options_;
-
+    double cPos_,cFrac_;
 };
 #endif // RESET_H
