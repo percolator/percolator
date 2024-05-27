@@ -49,7 +49,7 @@ int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<Sc
 int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, double treshold) {
     // This function requies the scoreholders to be sorted in score decending order
     // prior to function call. 
-    double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb / ( 1.0 - nullTargetWinProb ) );
+    double c_decoy(1.0), c_target(0.0), factor( nullTargetWinProb / ( 1.0 - nullTargetWinProb ) );
     for(auto& pScore : scores) {
         if (pScore->isDecoy()) {
             c_decoy += 1.0;
@@ -186,6 +186,7 @@ int Reset::gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinPr
 
     std::vector<double> cPosCandidates = {100., 10., 1.0, 0.1, 0.01};
     std::vector<double> cFracCandidates = {0.1, 0.3, 1.0, 3.0, 10.0};
+#pragma omp parallel for schedule(dynamic, 1) ordered collapse(2)
     for (auto cPos : cPosCandidates) {
         for (auto cFrac : cFracCandidates) {
             svmTrain(cPos, cFrac);
