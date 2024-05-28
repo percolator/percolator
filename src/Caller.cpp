@@ -274,11 +274,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "picked-protein",
       "Use the picked protein-level FDR to infer protein probabilities. Provide the fasta file as the argument to this flag, which will be used for protein grouping based on an in-silico digest. If no fasta file is available or protein grouping is not desired, set this flag to \"auto\" to skip protein grouping.",
       "value");
-  cmd.defineOption("A",
-      "fido-protein",
-      "Use the Fido algorithm to infer protein probabilities",
-      "",
-      TRUE_IF_SET);
   cmd.defineOption("l",
       "results-proteins",
       "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A or -f is active)",
@@ -306,45 +301,6 @@ bool Caller::parseOptions(int argc, char **argv) {
       "If this option is set and multiple database proteins contain exactly the same set of peptides, then the IDs of these duplicated proteins will be reported as a comma-separated list, instead of the default behavior of randomly discarding all but one of the proteins. Commas inside protein IDs will be replaced by semicolons. Not available for Fido.",
       "",
       TRUE_IF_SET);
-  cmd.defineOption("a",
-      "fido-alpha",
-      "Set Fido's probability with which a present protein emits an associated peptide. \
-       Set by grid search if not specified.",
-      "value");
-  cmd.defineOption("b",
-      "fido-beta",
-      "Set Fido's probability of creation of a peptide from noise. Set by grid search if not specified.",
-      "value");
-  cmd.defineOption("G",
-      "fido-gamma",
-      "Set Fido's prior probability that a protein is present in the sample. Set by grid search if not specified.",
-      "value");
-  cmd.defineOption("q",
-      "fido-empirical-protein-q",
-      "Output empirical p-values and q-values for Fido using target-decoy analysis to XML output (only valid if -X flag is present).",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("d",
-      "fido-gridsearch-depth",
-      "Setting the gridsearch-depth to 0 (fastest), 1 or 2 (slowest) controls how much computational time is required for the estimation of alpha, beta and gamma parameters for Fido. Default = 0.",
-      "value");
-  cmd.defineOption("T",
-      "fido-fast-gridsearch",
-      "Apply the specified threshold to PSM, peptide and protein probabilities to obtain a faster estimate of the alpha, beta and gamma parameters. Default = 0; Recommended when set = 0.2.",
-      "value");
-  cmd.defineOption("C",
-      "fido-no-split-large-components",
-      "Do not approximate the posterior distribution by allowing large graph components to be split into subgraphs. The splitting is done by duplicating peptides with low probabilities. Splitting continues until the number of possible configurations of each subgraph is below 2^18.",
-      "",
-      TRUE_IF_SET);
-  cmd.defineOption("E",
-      "fido-protein-truncation-threshold",
-      "To speed up inference, proteins for which none of the associated peptides has a probability exceeding the specified threshold will be assigned probability = 0. Default = 0.01.",
-      "value");
-  cmd.defineOption("H",
-      "fido-gridsearch-mse-threshold",
-      "Q-value threshold that will be used in the computation of the MSE and ROC AUC score in the grid search. Recommended 0.05 for normal size datasets and 0.1 for large datasets. Default = 0.1",
-      "value");
   cmd.defineOption("",
       "no-analytics",
       "Swich off analytics reporting",
@@ -360,7 +316,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "spectral-counting-fdr",
-      "Activates spectral counting on protein level (either --fido-protein or --picked-protein has to be set) at the specified PSM q-value threshold. Adds two columns, \"spec_count_unique\" and \"spec_count_all\", to the protein tab separated output, containing the spectral count for the peptides unique to the protein and the spectral count including shared peptides respectively.",
+      "Activates spectral counting on protein level (--picked-protein has to be set) at the specified PSM q-value threshold. Adds two columns, \"spec_count_unique\" and \"spec_count_all\", to the protein tab separated output, containing the spectral count for the peptides unique to the protein and the spectral count including shared peptides respectively.",
       "value");
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "train-best-positive",
