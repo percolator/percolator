@@ -82,27 +82,31 @@ struct lessThanBaseName
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
   
-struct lexicOrderProb : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  static int compStrIt(std::string::iterator first1, std::string::iterator last1,
-                       std::string::iterator first2, std::string::iterator last2) {
-    for ( ; (first1 != last1) && (first2 != last2); first1++, first2++ ) {
-      if (*first1 < *first2) return 1;
-      if (*first2 < *first1) return -1;
+struct lexicOrderProb {
+    static int compStrIt(std::string_view sv1, std::string_view sv2) {
+        auto it1 = sv1.begin(), end1 = sv1.end();
+        auto it2 = sv2.begin(), end2 = sv2.end();
+
+        for (; it1 != end1 && it2 != end2; ++it1, ++it2) {
+            if (*it1 < *it2) return 1;
+            if (*it2 < *it1) return -1;
+        }
+        if (it2 != end2) return 1;
+        if (it1 != end1) return -1;
+        return 0;
     }
-    if (first2 != last2) return 1;
-    else if (first1 != last1) return -1;
-    else return 0;
-  }
-  
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    int peptCmp = compStrIt(__x.pPSM->getFullPeptideSequence().begin() + 2, 
-                            __x.pPSM->getFullPeptideSequence().end() - 2, 
-                            __y.pPSM->getFullPeptideSequence().begin() + 2, 
-                            __y.pPSM->getFullPeptideSequence().end() - 2);
-    return ( ( peptCmp == 1 ) 
-    || ( (peptCmp == 0) && (__x.label > __y.label) )
-    || ( (peptCmp == 0) && (__x.label == __y.label) && (__x.score > __y.score) ) );
-  }
+    
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        std::string_view peptSeqX(x.pPSM->getFullPeptideSequence().data() + 2, 
+                                  x.pPSM->getFullPeptideSequence().size() - 4);
+        std::string_view peptSeqY(y.pPSM->getFullPeptideSequence().data() + 2, 
+                                  y.pPSM->getFullPeptideSequence().size() - 4);
+
+        int peptCmp = compStrIt(peptSeqX, peptSeqY);
+        return ( ( peptCmp == 1 ) 
+                 || ( (peptCmp == 0) && (x.label > y.label) )
+                 || ( (peptCmp == 0) && (x.label == y.label) && (x.score > y.score) ) );
+    }
 };
 
 /**
@@ -122,61 +126,66 @@ inline unsigned int fast_uint_hash(unsigned int x) {
  * Orders ScoreHolders by a hash computed from the specFileNr and scan.
  * Uses the hash combination function h1 ^ (h2 << 1) suggested in https://en.cppreference.com/w/cpp/utility/hash
  */
-struct OrderScanHash : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    size_t hash_x = fast_uint_hash(__x.pPSM->specFileNr) ^ (fast_uint_hash(__x.pPSM->scan) << 1);
-    size_t hash_y = fast_uint_hash(__y.pPSM->specFileNr) ^ (fast_uint_hash(__y.pPSM->scan) << 1);
-    return (hash_x < hash_y);
-  }
+struct OrderScanHash {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        size_t hash_x = fast_uint_hash(x.pPSM->specFileNr) ^ (fast_uint_hash(x.pPSM->scan) << 1);
+        size_t hash_y = fast_uint_hash(y.pPSM->specFileNr) ^ (fast_uint_hash(y.pPSM->scan) << 1);
+        return hash_x < hash_y;
+    }
 };
 
-struct OrderScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan < __y.pPSM->scan) )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
-       && (__x.score > __y.score) ) );
-  }
+struct OrderScanMassCharge {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        if (x.pPSM->specFileNr != y.pPSM->specFileNr)
+            return x.pPSM->specFileNr < y.pPSM->specFileNr;
+        if (x.pPSM->scan != y.pPSM->scan)
+            return x.pPSM->scan < y.pPSM->scan;
+        if (x.pPSM->expMass != y.pPSM->expMass)
+            return x.pPSM->expMass < y.pPSM->expMass;
+        return x.score > y.score;
+    }
 };
 
-struct OrderScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan < __y.pPSM->scan) )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass < __y.pPSM->expMass) )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
-       && (__x.label > __y.label) )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass) 
-       && (__x.label == __y.label) && (__x.score > __y.score) ) );
-  }
+struct OrderScanMassLabelCharge {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        if (x.pPSM->specFileNr != y.pPSM->specFileNr)
+            return x.pPSM->specFileNr < y.pPSM->specFileNr;
+        if (x.pPSM->scan != y.pPSM->scan)
+            return x.pPSM->scan < y.pPSM->scan;
+        if (x.pPSM->expMass != y.pPSM->expMass)
+            return x.pPSM->expMass < y.pPSM->expMass;
+        if (x.label != y.label)
+            return x.label > y.label;
+        return x.score > y.score;
+    }
 };
 
-struct OrderScanLabel : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return ( (__x.pPSM->specFileNr < __y.pPSM->specFileNr )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan < __y.pPSM->scan) )
-    || ( (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.label > __y.label) ) );
-  }
+struct OrderScanLabel {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        if (x.pPSM->specFileNr != y.pPSM->specFileNr)
+            return x.pPSM->specFileNr < y.pPSM->specFileNr;
+        if (x.pPSM->scan != y.pPSM->scan)
+            return x.pPSM->scan < y.pPSM->scan;
+        return x.label > y.label;
+    }
 };
 
-
-struct UniqueScanMassCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.pPSM->expMass == __y.pPSM->expMass);
-  }
+struct UniqueScanMassCharge {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        return (x.pPSM->specFileNr == y.pPSM->specFileNr) && (x.pPSM->scan == y.pPSM->scan) && (x.pPSM->expMass == y.pPSM->expMass);
+    }
 };
 
-struct UniqueScanMassLabelCharge : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label) && (__x.pPSM->expMass == __y.pPSM->expMass);
-  }
+struct UniqueScanMassLabelCharge {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        return (x.pPSM->specFileNr == y.pPSM->specFileNr) && (x.pPSM->scan == y.pPSM->scan) && (x.label == y.label) && (x.pPSM->expMass == y.pPSM->expMass);
+    }
 };
 
-struct UniqueScanLabel : public binary_function<ScoreHolder, ScoreHolder, bool> {
-  bool operator()(const ScoreHolder& __x, const ScoreHolder& __y) const {
-    return (__x.pPSM->specFileNr == __y.pPSM->specFileNr) && (__x.pPSM->scan == __y.pPSM->scan) && (__x.label == __y.label);
-  }
+struct UniqueScanLabel {
+    bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
+        return (x.pPSM->specFileNr == y.pPSM->specFileNr) && (x.pPSM->scan == y.pPSM->scan) && (x.label == y.label);
+    }
 };
 
 inline string getRidOfUnprintablesAndUnicode(string inpString) {
