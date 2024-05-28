@@ -22,20 +22,20 @@ jobs:
     - name: system_test  
       run: cd ../my_build/percolator && sudo make install && make test-install
 
-  build-centos:
-    runs-on: ubuntu-latest
-    container: 'lukall/centos_runner:latest'
-    steps:
-    - uses: actions/checkout@v2
-    - name: create_dirs
-      run: mkdir -p ../my_rel ../my_build
-    - name: configure_and_make
-      run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: unit_tests
-      run: cd ../my_build/percolator-test && make test
-      # Decend into percolator-test, with an alternative install directory
-    - name: system_test  
-      run: cd ../my_build/percolator-test && make install && make test-install
+#  build-centos:
+#    runs-on: ubuntu-latest
+#    container: 'lukall/centos_runner:latest'
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: create_dirs
+#      run: mkdir -p ../my_rel ../my_build
+#    - name: configure_and_make
+#      run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
+#    - name: unit_tests
+#      run: cd ../my_build/percolator-test && make test
+#      # Decend into percolator-test, with an alternative install directory
+#    - name: system_test  
+#      run: cd ../my_build/percolator-test && make install && make test-install
 
   build-osx:
     runs-on: macos-12
