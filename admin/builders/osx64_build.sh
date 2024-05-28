@@ -126,23 +126,23 @@ if [ ! -d ${mac_os_xsd} ]; then
 #     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
 #  fi
   curl -OL ${mac_os_xsd_url}
-  tar -xjf ${mac_os_xsd}.tar.bz2
+  tar -xzf ${mac_os_xsd}.tar.gz
   cd ${mac_os_xsd}
   
-  # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000916.html
-  mv libxsd-frontend/version libxsd-frontend/version.txt
-  mv libcutl/version libcutl/version.txt
-  mv xsd/version xsd/version.txt
+#  # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000916.html
+#  mv libxsd-frontend/version libxsd-frontend/version.txt
+#  mv libcutl/version libcutl/version.txt
+#  mv xsd/version xsd/version.txt
 
   # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000918.html
   # https://www.boost.org/doc/libs/master/libs/config/doc/html/boost_config/boost_macro_reference.html
-  echo '# define BOOST_NO_CXX11_HDR_TUPLE' > tmp_file
-  cat libcutl/cutl/details/boost/config/stdlib/libcpp.hpp >> tmp_file
-  mv tmp_file libcutl/cutl/details/boost/config/stdlib/libcpp.hpp
+#  echo '# define BOOST_NO_CXX11_HDR_TUPLE' > tmp_file
+#  cat libcutl/cutl/details/boost/config/stdlib/libcpp.hpp >> tmp_file
+#  mv tmp_file libcutl/cutl/details/boost/config/stdlib/libcpp.hpp
 
-  echo '#include <iostream>' > tmp_file
-  cat libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx >> tmp_file
-  mv tmp_file libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx
+#  echo '#include <iostream>' > tmp_file
+#  cat libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx >> tmp_file
+#  mv tmp_file libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx
   
   make CPPFLAGS=-I../${mac_os_xerces}/src LDFLAGS=-L../${mac_os_xerces}/src/.libs
   ./xsd/xsd/xsd --version
