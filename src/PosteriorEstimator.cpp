@@ -555,8 +555,8 @@ void PosteriorEstimator::getPValues(const vector<pair<double, bool> >& combined,
     }
   }
   // p values sorted in ascending order
-  transform(p.begin(), p.end(), p.begin(), 
-            bind2nd(divides<double>(), (double)(nDecoys)));
+transform(p.begin(), p.end(), p.begin(), 
+          [nDecoys](double value) { return value / static_cast<double>(nDecoys); });
 }
 
 bool PosteriorEstimator::checkSeparation(std::vector<double>& p) {
@@ -638,40 +638,37 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
 int PosteriorEstimator::run() {
   ifstream target(targetFile.c_str(), ios::in), decoy(decoyFile.c_str(),
                                                       ios::in);
-  istream_iterator<double> tarIt(target), decIt(decoy);
+  istream_iterator<double> tarIt(target), decIt(decoy), tarEnd, decEnd;
   // Merge a labeled version of the two lists into a combined list
   vector<pair<double, bool> > combined;
   vector<double> pvals;
   if (!pvalInput) {
-    transform(tarIt,
-              istream_iterator<double> (),
-              back_inserter(combined),
-              bind2nd(ptr_fun(make_my_pair), true));
-    size_t targetSize = combined.size();
-    transform(decIt,
-              istream_iterator<double> (),
-              back_inserter(combined),
-              bind2nd(ptr_fun(make_my_pair), false));
-    if (VERB > 0) {
-      cerr << "Read " << targetSize << " target scores and "
-        << (combined.size() - targetSize) << " decoy scores" << endl;
-    }
+      std::transform(tarIt, tarEnd, std::back_inserter(combined),
+                       [](double value) { return make_my_pair(value, true); });
+      size_t targetSize = combined.size();
+      std::transform(decIt, decEnd, std::back_inserter(combined),
+                       [](double value) { return make_my_pair(value, false); });
+
+      if (VERB > 0) {
+            std::cerr << "Read " << targetSize << " target scores and "
+                      << (combined.size() - targetSize) << " decoy scores" << std::endl;
+      }
   } else {
-    copy(tarIt, istream_iterator<double> (), back_inserter(pvals));
-    sort(pvals.begin(), pvals.end());
-    transform(pvals.begin(),
-              pvals.end(),
-              back_inserter(combined),
-              bind2nd(ptr_fun(make_my_pair), true));
-    size_t nDec = pvals.size();
-    double step = 1.0 / 2.0 / (double)nDec;
-    for (size_t ix = 0; ix < nDec; ++ix) {
-      combined.push_back(make_my_pair(step * static_cast<double>(1 + 2 * ix), false));
-    }
-    reversed = true;
-    if (VERB > 0) {
-      cerr << "Read " << pvals.size() << " statistics" << endl;
-    }
+      std::copy(tarIt, tarEnd, std::back_inserter(pvals));
+      std::sort(pvals.begin(), pvals.end());
+      std::transform(pvals.begin(), pvals.end(), std::back_inserter(combined),
+                       [](double value) { return make_my_pair(value, true); });
+
+      size_t nDec = pvals.size();
+      double step = 1.0 / 2.0 / static_cast<double>(nDec);
+      for (size_t ix = 0; ix < nDec; ++ix) {
+          combined.push_back(make_my_pair(step * static_cast<double>(1 + 2 * ix), false));
+      }
+      reversed = true;
+
+      if (VERB > 0) {
+            std::cerr << "Read " << pvals.size() << " statistics" << std::endl;
+      }
   }
   if (reversed) {
     if (VERB > 0) {
