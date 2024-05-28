@@ -81,7 +81,7 @@ if(XML_SUPPORT)
   if(MINGW OR WIN32)
     set( "" )
   else()
-    set( xdr_flags  --generate-insertion XDR --generate-extraction XDR  )
+    set( xdr_flags  --generate-insertion XDR --generate-extraction XDR --std c++20 )
   endif()
 
   # RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
