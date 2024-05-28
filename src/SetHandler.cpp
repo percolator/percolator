@@ -531,6 +531,6 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
 }
 
 std::string& SetHandler::rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
   return s;
 }
