@@ -13,7 +13,7 @@
 #if _XERCES_VERSION >= 30000
 #  include <xercesc/dom/impl/DOMTextImpl.hpp>
 #endif
-#include <xsd/cxx/auto-array.hxx>
+// #include <xsd/cxx/auto-array.hxx>
 #include <xsd/cxx/xml/sax/std-input-source.hxx>
 #include <xsd/cxx/xml/sax/bits/error-handler-proxy.hxx>
 #include <xsd/cxx/tree/exceptions.hxx>
@@ -63,11 +63,13 @@ class parser_impl : public DefaultHandler {
  public:
   parser_impl();
 
-  xml::dom::unique_ptr<DOMDocument> start (istream& is, const string& id, 
+//  xml::dom::unique_ptr<DOMDocument> start (istream& is, const string& id, 
+  std::unique_ptr<DOMDocument> start (istream& is, const string& id, 
     bool val, string schemaDefinition, string schema_major, string schema_minor, 
     string schemaNamespace = "http://per-colator.com/percolator_in/", 
     bool noNameSpace = false);
-  xml::dom::unique_ptr<DOMDocument> next();
+//   xml::dom::unique_ptr<DOMDocument> next();
+  std::unique_ptr<DOMDocument> next();
 
   // SAX event handlers.
  private:
@@ -100,7 +102,8 @@ class parser_impl : public DefaultHandler {
 
   // DOM document being built.
   DOMImplementation& dom_impl_;
-  xml::dom::unique_ptr<DOMDocument> doc_;
+  // xml::dom::unique_ptr<DOMDocument> doc_;
+  std::unique_ptr<DOMDocument> doc_;
   DOMElement* cur_;
   MemoryManager* mm_;// (XMLPlatformUtils::fgMemoryManager);
   std::unique_ptr<XMLGrammarPool> gp_; // (new XMLGrammarPoolImpl (mm));
@@ -146,7 +149,8 @@ parser_impl::parser_impl() : clean_(true),
     dom_impl_(*DOMImplementationRegistry::getDOMImplementation(ls)) {}
 
 
-xml::dom::unique_ptr<DOMDocument> parser_impl::start(istream& is, 
+// xml::dom::unique_ptr<DOMDocument> parser_impl::start(istream& is, 
+std::unique_ptr<DOMDocument> parser_impl::start(istream& is, 
     const string& id, bool val, string schemaDefinition, string schema_major, 
     string schema_minor,string schemaNamespace, bool noNameSpace) {
   // Reset our state.
@@ -207,11 +211,12 @@ xml::dom::unique_ptr<DOMDocument> parser_impl::start(istream& is,
     }
 
     if (!r)
-      return xml::dom::unique_ptr<DOMDocument>(0);
+      return std::unique_ptr<DOMDocument>(nullptr);
+//      return xml::dom::unique_ptr<DOMDocument>(nullptr);
 
     break;
   }
-  return doc_;
+  return std::move(doc_);;
 }
 
 void error_handler::warning(const SAXParseException& e) {
@@ -255,12 +260,14 @@ void error_handler::handle(const SAXParseException& e, severity s) {
 }
 
 
-xml::dom::unique_ptr<DOMDocument> parser_impl::next() {
+// xml::dom::unique_ptr<DOMDocument> parser_impl::next() {
+std::unique_ptr<DOMDocument> parser_impl::next() {
   assert(doc_.get() == 0);
 
   //maybe remove?
   if (depth_ == 0)
-    return xml::dom::unique_ptr<DOMDocument>(0);
+    return std::unique_ptr<DOMDocument>(nullptr);
+    // return xml::dom::unique_ptr<DOMDocument>(nullptr);
 
   bool r (true);
 
@@ -268,16 +275,18 @@ xml::dom::unique_ptr<DOMDocument> parser_impl::next() {
     r = parser_->parseNext (token_);
   }
   if (!r)
-    return xml::dom::unique_ptr<DOMDocument>(0);
+    return std::unique_ptr<DOMDocument>(nullptr);
+//    return xml::dom::unique_ptr<DOMDocument>(nullptr);
 
   while (r && depth_ != docDepth_) {
     r = parser_->parseNext (token_);
   }
 
   if (!r)
-    return xml::dom::unique_ptr<DOMDocument>(0);
+    return std::unique_ptr<DOMDocument>(nullptr);
+//    return xml::dom::unique_ptr<DOMDocument>(nullptr);
 
-  return doc_;
+  return std::move(doc_);;
 }
 
 void parser_impl::startElement(const XMLCh* const uri,
@@ -341,7 +350,7 @@ void parser_impl::characters (const XMLCh* const s, const unsigned int length) {
   // Ignore text content (presumably whitespaces) in the root element.
   if (depth_ > 1) {
     // For Xerces-C++ 2-series we have to make copy.
-    xsd::cxx::auto_array<XMLCh> tmp(new XMLCh[length + 1]);
+    xsd::cxx::unique_ptr<XMLCh> tmp(new XMLCh[length + 1]);
     XMLString::copyNString(tmp.get(), s, length);
     cur_->appendChild(doc_->createTextNode(tmp.get()));
   }
@@ -355,13 +364,15 @@ void parser_impl::characters (const XMLCh* const s, const unsigned int length) {
 parser::parser() : impl_ (new parser_impl) {}
 parser::~parser() {}
 
-xml::dom::unique_ptr<DOMDocument> parser::start(istream& is, const string& id, 
+// xml::dom::unique_ptr<DOMDocument> parser::start(istream& is, const string& id, 
+std::unique_ptr<DOMDocument> parser::start(istream& is, const string& id, 
     bool val, string schemaDefinition, string schema_major, string schema_minor,
     string schemaNamespace, bool noNameSpace) {
   return impl_->start(is, id, val, schemaDefinition, schema_major, schema_minor, 
                       schemaNamespace, noNameSpace);
 }
 
-xml::dom::unique_ptr<DOMDocument> parser::next() {
+// xml::dom::unique_ptr<DOMDocument> parser::next() {
+std::unique_ptr<DOMDocument> parser::next() {
   return impl_->next ();
 }

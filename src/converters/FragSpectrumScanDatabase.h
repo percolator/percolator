@@ -85,7 +85,7 @@ class FragSpectrumScanDatabase {
     
     virtual void print(serializer & ser ) = 0;
     virtual void printTab(ostream &tabOutputStream) = 0;
-    void printTabFss(std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream);
+    void printTabFss(std::unique_ptr< ::percolatorInNs::fragSpectrumScan>& fss, std::ostream &tabOutputStream); // Pass by reference
     std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
     
     virtual void terminate() = 0;

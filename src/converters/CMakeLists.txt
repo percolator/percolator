@@ -256,10 +256,11 @@ endif()
 ###############################################################################
 
 if(BOOSTDB AND NOT TOKYODB AND NOT LEVELDB)
-  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive )
+  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive --std c++11)
 else()
-  set( xdr_flags --generate-insertion XDR --generate-extraction XDR  )
+  set( xdr_flags --generate-insertion XDR --generate-extraction XDR  --std c++11 )
 endif()
+add_definitions(-DXSD_CXX11)
 
 
 message(STATUS "Generating classes from xsd-schema using CodeSynthesis")

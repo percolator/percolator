@@ -78,10 +78,11 @@ set (BLAS_LIBRARIES ${BLAS_LIBRARIES} blas)
 ###############################################################################
 
 if(XML_SUPPORT)
+  add_definitions(-DXSD_CXX11)
   if(MINGW OR WIN32)
     set( "" )
   else()
-    set( xdr_flags  --generate-insertion XDR --generate-extraction XDR )
+    set( xdr_flags  --generate-insertion XDR --generate-extraction XDR --std c++11)
   endif()
 
   # RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)

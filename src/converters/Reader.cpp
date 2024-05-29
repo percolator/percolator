@@ -59,7 +59,7 @@ void Reader::init() {
   std::unique_ptr<percolatorInNs::process_info> proc_info (new ::percolatorInNs::process_info(command_line));
 
   // ... <experiment>
-  std::unique_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
+  std::unique_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", std::move(proc_info), std::move(fdes_p)));
 
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
@@ -314,7 +314,11 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
 	      database->init("");
 	    }
 	    databases.resize(lineNumber_par+1);
-	    databases[lineNumber_par]=database;
+      std::unique_ptr<FragSpectrumScanDatabase> unique_db = std::make_unique<serialize_scheme>();
+      boost::shared_ptr<FragSpectrumScanDatabase> shared_db(std::move(unique_db));
+
+      databases[lineNumber_par] = shared_db;
+
 	    assert(databases.size()==lineNumber_par+1);
     }
     if (VERB>1) {
@@ -358,7 +362,7 @@ void Reader::push_backFeatureDescription(const char * str, const char *descripti
   f_p->initialValue(initvalue);
   f_p->description(description);
   assert(f_p.get());
-  fd_sequence.push_back(f_p);
+  fd_sequence.push_back(std::move(f_p));
   return;
 }
 
