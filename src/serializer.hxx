@@ -7,7 +7,7 @@
 
 #include <string>
 #include <iosfwd>
-#include <memory> // std::auto_ptr
+#include <memory> // std::unique_ptr
 
 #include <xercesc/dom/DOMElement.hpp>
 
@@ -57,14 +57,14 @@ private:
   serialize (xercesc::DOMElement&);
 
 private:
-  std::auto_ptr<serializer_impl> impl_;
+  std::unique_ptr<serializer_impl> impl_;
 };
 
 template <typename T>
 inline void serializer::
 next (const std::string& name, const T& x)
 {
-  xsd::cxx::xml::dom::auto_ptr<xercesc::DOMElement> e (create (name));
+  xsd::cxx::xml::dom::unique_ptr<xercesc::DOMElement> e (create (name));
   *e << x;
   serialize (*e);
 }
@@ -73,7 +73,7 @@ template <typename T>
 inline void serializer::
 next (const std::string& ns, const std::string& name, const T& x)
 {
-  xsd::cxx::xml::dom::auto_ptr<xercesc::DOMElement> e (create (ns, name));
+  xsd::cxx::xml::dom::unique_ptr<xercesc::DOMElement> e (create (ns, name));
   *e << x;
   serialize (*e);
 }

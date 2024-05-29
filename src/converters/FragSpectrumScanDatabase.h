@@ -18,7 +18,7 @@
 #ifndef FRAGSPECTRUMSCANDATABASE_H
 #define FRAGSPECTRUMSCANDATABASE_H
  
-#include <memory>   // std::auto_ptr
+#include <memory>   // std::unique_ptr
 #include <iostream>
 #include <cstddef>  // size_t
 #include <cstring>  // memcpy
@@ -71,7 +71,7 @@ class FragSpectrumScanDatabase {
     
     bool initRTime(map<int, vector<double> >* scan2rt_par);
     
-    void savePsm(unsigned int scanNr, auto_ptr<peptideSpectrumMatch> psm_p );
+    void savePsm(unsigned int scanNr, unique_ptr<peptideSpectrumMatch> psm_p );
     
     virtual std::string toString() = 0;
     
@@ -79,13 +79,13 @@ class FragSpectrumScanDatabase {
     
     virtual bool init(std::string filename) = 0;
     
-    virtual auto_ptr<fragSpectrumScan> getFSS( unsigned int scanNr ) = 0;
+    virtual unique_ptr<fragSpectrumScan> getFSS( unsigned int scanNr ) = 0;
     
-    virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize) = 0;
+    virtual unique_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize) = 0;
     
     virtual void print(serializer & ser ) = 0;
     virtual void printTab(ostream &tabOutputStream) = 0;
-    void printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream);
+    void printTabFss(std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream);
     std::string decoratePeptide(const ::percolatorInNs::peptideType& peptide);
     
     virtual void terminate() = 0;

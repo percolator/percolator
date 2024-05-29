@@ -17,7 +17,7 @@ FragSpectrumScanDatabaseLeveldb::FragSpectrumScanDatabaseLeveldb(std::string id)
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
   xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
   xdr.x_op = XDR_ENCODE;
-  std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
+  std::unique_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
   assert(tmpPtr.get());
   oxdrp=tmpPtr;
 }
@@ -53,7 +53,7 @@ void FragSpectrumScanDatabaseLeveldb::terminate()
   bdb = 0;
 }
 
-std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLeveldb::deserializeFSSfromBinary( char * value, int valueSize ) 
+std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLeveldb::deserializeFSSfromBinary( char * value, int valueSize ) 
 {
   xml_schema::buffer buf2;
   buf2.capacity(valueSize);
@@ -68,7 +68,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLevel
   xdr2.x_op = XDR_DECODE;
   xml_schema::istream<XDR> ixdr(xdr2);
   xdrrec_skiprecord(&xdr2);
-  std::auto_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
+  std::unique_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
   
   //TODO this gives too many arguments in MINGW
   //xdr_destroy (&xdr2);
@@ -83,7 +83,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLevel
   return fss;
 }
 
-std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLeveldb::getFSS( unsigned int scanNr ) 
+std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLeveldb::getFSS( unsigned int scanNr ) 
 {
   assert(bdb);
   std::string skey = boost::lexical_cast<std::string>(scanNr);
@@ -92,10 +92,10 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseLevel
   itr->Seek(s1);
   if(!itr->Valid() || s1 != itr->key()){
     delete itr;
-    return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
+    return std::unique_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
   }
   char *retvalue = const_cast<char*>(itr->value().data());
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,itr->value().size()));
+  std::unique_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(retvalue,itr->value().size()));
   delete itr;
   return ret;
 }
@@ -106,7 +106,7 @@ void FragSpectrumScanDatabaseLeveldb::print(serializer & ser)
   leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
   for (it->SeekToFirst(); it->Valid(); it->Next()) {
     char *retvalue = const_cast<char*>(it->value().data());
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,it->value().size()));
+    std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,it->value().size()));
     ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
   }
   delete it;
@@ -118,7 +118,7 @@ void FragSpectrumScanDatabaseLeveldb::printTab(ostream &tabOutputStream) {
   leveldb::Iterator* it = bdb->NewIterator(leveldb::ReadOptions());
   for (it->SeekToFirst(); it->Valid(); it->Next()) {
     char *retvalue = const_cast<char*>(it->value().data());
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,it->value().size()));
+    std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(retvalue,it->value().size()));
     printTabFss(fss, tabOutputStream);
   }
   delete it;

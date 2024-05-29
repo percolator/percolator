@@ -23,7 +23,7 @@
 #include "MyException.h"
 
 #include <string>
-#include <memory>   // std::auto_ptr
+#include <memory>   // std::unique_ptr
 #include <cstddef>  // std::size_t
 
 #include <xercesc/util/PlatformUtils.hpp>
@@ -63,11 +63,11 @@ class parser_impl : public DefaultHandler {
  public:
   parser_impl();
 
-  xml::dom::auto_ptr<DOMDocument> start (istream& is, const string& id, 
+  xml::dom::unique_ptr<DOMDocument> start (istream& is, const string& id, 
     bool val, string schemaDefinition, string schema_major, string schema_minor, 
     string schemaNamespace = "http://per-colator.com/percolator_in/", 
     bool noNameSpace = false);
-  xml::dom::auto_ptr<DOMDocument> next();
+  xml::dom::unique_ptr<DOMDocument> next();
 
   // SAX event handlers.
  private:
@@ -93,24 +93,24 @@ class parser_impl : public DefaultHandler {
   bool clean_;
   XMLPScanToken token_;
   error_handler error_handler_;
-  std::auto_ptr<xml::sax::std_input_source> isrc_;
+  std::unique_ptr<xml::sax::std_input_source> isrc_;
 
   size_t depth_;
   size_t docDepth_;
 
   // DOM document being built.
   DOMImplementation& dom_impl_;
-  xml::dom::auto_ptr<DOMDocument> doc_;
+  xml::dom::unique_ptr<DOMDocument> doc_;
   DOMElement* cur_;
   MemoryManager* mm_;// (XMLPlatformUtils::fgMemoryManager);
-  std::auto_ptr<XMLGrammarPool> gp_; // (new XMLGrammarPoolImpl (mm));
-  std::auto_ptr<SAX2XMLReader> parser_; // (create_parser (gp.get ()));
+  std::unique_ptr<XMLGrammarPool> gp_; // (new XMLGrammarPoolImpl (mm));
+  std::unique_ptr<SAX2XMLReader> parser_; // (create_parser (gp.get ()));
 };
 
 const XMLCh ls[] = {chLatin_L, chLatin_S, chNull};
 
-std::auto_ptr<SAX2XMLReader> create_parser(XMLGrammarPool* pool, bool validate) {
-  std::auto_ptr<SAX2XMLReader> parser(
+std::unique_ptr<SAX2XMLReader> create_parser(XMLGrammarPool* pool, bool validate) {
+  std::unique_ptr<SAX2XMLReader> parser(
     pool
     ? XMLReaderFactory::createXMLReader(XMLPlatformUtils::fgMemoryManager, pool)
     : XMLReaderFactory::createXMLReader());
@@ -146,7 +146,7 @@ parser_impl::parser_impl() : clean_(true),
     dom_impl_(*DOMImplementationRegistry::getDOMImplementation(ls)) {}
 
 
-xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is, 
+xml::dom::unique_ptr<DOMDocument> parser_impl::start(istream& is, 
     const string& id, bool val, string schemaDefinition, string schema_major, 
     string schema_minor,string schemaNamespace, bool noNameSpace) {
   // Reset our state.
@@ -171,7 +171,7 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is,
     
     // Load the schemas into the grammar pool.
     {
-      std::auto_ptr<SAX2XMLReader> parser(create_parser(gp_.get(), val));
+      std::unique_ptr<SAX2XMLReader> parser(create_parser(gp_.get(), val));
       parser->setErrorHandler(&error_handler_);
       
       string s(schemaDefinition);
@@ -207,7 +207,7 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::start(istream& is,
     }
 
     if (!r)
-      return xml::dom::auto_ptr<DOMDocument>(0);
+      return xml::dom::unique_ptr<DOMDocument>(0);
 
     break;
   }
@@ -255,12 +255,12 @@ void error_handler::handle(const SAXParseException& e, severity s) {
 }
 
 
-xml::dom::auto_ptr<DOMDocument> parser_impl::next() {
+xml::dom::unique_ptr<DOMDocument> parser_impl::next() {
   assert(doc_.get() == 0);
 
   //maybe remove?
   if (depth_ == 0)
-    return xml::dom::auto_ptr<DOMDocument>(0);
+    return xml::dom::unique_ptr<DOMDocument>(0);
 
   bool r (true);
 
@@ -268,14 +268,14 @@ xml::dom::auto_ptr<DOMDocument> parser_impl::next() {
     r = parser_->parseNext (token_);
   }
   if (!r)
-    return xml::dom::auto_ptr<DOMDocument>(0);
+    return xml::dom::unique_ptr<DOMDocument>(0);
 
   while (r && depth_ != docDepth_) {
     r = parser_->parseNext (token_);
   }
 
   if (!r)
-    return xml::dom::auto_ptr<DOMDocument>(0);
+    return xml::dom::unique_ptr<DOMDocument>(0);
 
   return doc_;
 }
@@ -355,13 +355,13 @@ void parser_impl::characters (const XMLCh* const s, const unsigned int length) {
 parser::parser() : impl_ (new parser_impl) {}
 parser::~parser() {}
 
-xml::dom::auto_ptr<DOMDocument> parser::start(istream& is, const string& id, 
+xml::dom::unique_ptr<DOMDocument> parser::start(istream& is, const string& id, 
     bool val, string schemaDefinition, string schema_major, string schema_minor,
     string schemaNamespace, bool noNameSpace) {
   return impl_->start(is, id, val, schemaDefinition, schema_major, schema_minor, 
                       schemaNamespace, noNameSpace);
 }
 
-xml::dom::auto_ptr<DOMDocument> parser::next() {
+xml::dom::unique_ptr<DOMDocument> parser::next() {
   return impl_->next ();
 }

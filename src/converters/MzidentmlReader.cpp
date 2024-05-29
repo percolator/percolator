@@ -61,7 +61,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
     ifs.open(fn.c_str());
     parser p;
     bool validateSchema = true;
-    xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
+    xml_schema::dom::unique_ptr<xercesc::DOMDocument> doc
         (p.start(ifs, fn.c_str(), validateSchema, schemaDefinition, schema_major, 
                  schema_minor, scheme_namespace));
 
@@ -118,7 +118,7 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
     parser p;
-    xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
+    xml_schema::dom::unique_ptr<xercesc::DOMDocument> doc
             (p.start(ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
 
     //NOTE wouldnt be  better to use the get tag by Name to jump SequenceCollenction directly?

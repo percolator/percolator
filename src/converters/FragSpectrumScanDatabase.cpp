@@ -8,11 +8,11 @@ FragSpectrumScanDatabase::FragSpectrumScanDatabase(string id_par) :
 }
 
 void FragSpectrumScanDatabase::savePsm( unsigned int scanNr,
-    std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS(scanNr);
+    std::unique_ptr< percolatorInNs::peptideSpectrumMatch > psm_p ) {
+  std::unique_ptr< ::percolatorInNs::fragSpectrumScan>  fss = getFSS(scanNr);
   // if FragSpectrumScan does not yet exist, create it
   if (!fss.get()) {
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan>
+    std::unique_ptr< ::percolatorInNs::fragSpectrumScan>
     fs_p( new ::percolatorInNs::fragSpectrumScan(scanNr));
     fss = fs_p;
   }
@@ -27,7 +27,7 @@ bool FragSpectrumScanDatabase::initRTime(map<int, vector<double> >* scan2rt_par)
   return true;
 }
 
-void FragSpectrumScanDatabase::printTabFss(std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream) {
+void FragSpectrumScanDatabase::printTabFss(std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss, ostream &tabOutputStream) {
   int label = 0;
   BOOST_FOREACH (const ::percolatorInNs::peptideSpectrumMatch &psm, fss->peptideSpectrumMatch()) {
     if (psm.isDecoy()) {

@@ -34,17 +34,17 @@ void FragSpectrumScanDatabaseBoostdb::terminate()
   bdb = 0;
 }
 
-std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseBoostdb::getFSS( unsigned int scanNr ) 
+std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseBoostdb::getFSS( unsigned int scanNr ) 
 {
   mapdb::const_iterator it;
   it = bdb->find(scanNr);
   if(it == bdb->end()){
-    return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
+    return std::unique_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
   }
   std::istringstream istr (it->second);
   binary_iarchive ia (istr);
   xml_schema::istream<binary_iarchive> is (ia);
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is)); 
+  std::unique_ptr< ::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is)); 
   return ret;      
 }
 
@@ -57,7 +57,7 @@ void FragSpectrumScanDatabaseBoostdb::print(serializer & ser)
     std::istringstream istr (it->second);
     binary_iarchive ia (istr);
     xml_schema::istream<binary_iarchive> is (ia);
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));
+    std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));
     ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
   }
 
@@ -69,7 +69,7 @@ void FragSpectrumScanDatabaseBoostdb::printTab(ostream &tabOutputStream) {
     std::istringstream istr (it->second);
     binary_iarchive ia (istr);
     xml_schema::istream<binary_iarchive> is (ia);
-    std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));
+    std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss (new ::percolatorInNs::fragSpectrumScan (is));
     printTabFss(fss, tabOutputStream);
   }
 }

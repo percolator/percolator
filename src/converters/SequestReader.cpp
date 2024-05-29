@@ -113,7 +113,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
         bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
         const std::string & fn) {
 
-  std::auto_ptr< percolatorInNs::features > features_p(new percolatorInNs::features());
+  std::unique_ptr< percolatorInNs::features > features_p(new percolatorInNs::features());
   percolatorInNs::features::feature_sequence & f_seq = features_p->feature();
 
   if (!item.calculatedMassToCharge().present()) {
@@ -250,13 +250,13 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
       }
     }
 
-    std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
+    std::unique_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
     // Register the ptms
     for (unsigned int ix = 0; ix < peptideS.size(); ++ix) {
       if (freqAA.find(peptideS[ix]) == string::npos) {
         int accession = ptmMap[peptideS[ix]];
-        std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-        std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
+        std::unique_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
+        std::unique_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
         mod_p->uniMod(um_p);
         peptide_p->modification().push_back(mod_p);      
         peptideS.erase(ix--,1);      
@@ -265,10 +265,10 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
 
     ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch
             (features_p, peptide_p, psmId, isDecoy, observed_mass, theoretic_mass, charge);
-    std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
+    std::unique_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
 
     for (std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i) {
-      std::auto_ptr< percolatorInNs::occurence > oc_p(new percolatorInNs::occurence(*i, flankN, flankC));
+      std::unique_ptr< percolatorInNs::occurence > oc_p(new percolatorInNs::occurence(*i, flankN, flankC));
       psm_p->occurence().push_back(oc_p);
     }
 

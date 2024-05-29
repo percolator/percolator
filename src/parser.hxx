@@ -8,7 +8,7 @@
 #include <string>
 #include <fstream>
 #include <iosfwd>
-#include <memory> // std::auto_ptr
+#include <memory> // std::unique_ptr
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/dom/DOMDocument.hpp>
 #include <xercesc/util/XMLString.hpp>
@@ -36,7 +36,7 @@ class parser {
 
   // The start function returns a "carcase" of the complete document. That
   // is, the root element with all the attributes but without any content.
-  xsd::cxx::xml::dom::auto_ptr<xercesc::DOMDocument> start(std::istream& is, 
+  xsd::cxx::xml::dom::unique_ptr<xercesc::DOMDocument> start(std::istream& is, 
     const std::string& id, bool validate, std::string schemaDefinition, 
     std::string schema_major, std::string schema_minor,
     std::string schemaNamespace = "http://per-colator.com/percolator_in/", 
@@ -44,7 +44,7 @@ class parser {
 
   // The next function returns next first-level element with all its
   // attributes and content or 0 if no more available.
-  xsd::cxx::xml::dom::auto_ptr<xercesc::DOMDocument> next();
+  xsd::cxx::xml::dom::unique_ptr<xercesc::DOMDocument> next();
 
  private:
   parser(const parser&);
@@ -52,7 +52,7 @@ class parser {
   parser& operator= (const parser&);
 
  private:
-  std::auto_ptr<parser_impl> impl_;
+  std::unique_ptr<parser_impl> impl_;
 };
 
 #endif // PARSER_HXX

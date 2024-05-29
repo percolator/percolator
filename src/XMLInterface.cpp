@@ -87,7 +87,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
 
         string schemaDefinition = Globals::getInstance()->getXMLDir() + PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
         parser p;
-        xml_schema::dom::auto_ptr<DOMDocument> doc(p.start(
+        xml_schema::dom::unique_ptr<DOMDocument> doc(p.start(
             dataStream, xmlInputFN.c_str(), schemaValidation_,
             schemaDefinition, PIN_VERSION_MAJOR, PIN_VERSION_MINOR));
 

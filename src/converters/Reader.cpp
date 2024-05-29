@@ -52,14 +52,14 @@ void Reader::init() {
   xercesc::XMLPlatformUtils::Initialize ();
 
   // ... <featureDescriptions>
-  std::auto_ptr<percolatorInNs::featureDescriptions> fdes_p (new ::percolatorInNs::featureDescriptions());
+  std::unique_ptr<percolatorInNs::featureDescriptions> fdes_p (new ::percolatorInNs::featureDescriptions());
 
   // ... <process_info>
   percolatorInNs::process_info::command_line_type command_line = po.call;
-  std::auto_ptr<percolatorInNs::process_info> proc_info (new ::percolatorInNs::process_info(command_line));
+  std::unique_ptr<percolatorInNs::process_info> proc_info (new ::percolatorInNs::process_info(command_line));
 
   // ... <experiment>
-  std::auto_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
+  std::unique_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", proc_info, fdes_p));
 
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
@@ -231,7 +231,7 @@ void Reader::print(ostream &outputStream, bool xmlOutput) {
       // NOTE I should serialize in a Btree the object protein as the PSMs
       // FIXME the serialization is creating a gap \o between elements
       for (it = proteins.begin(); it != proteins.end(); it++) { 
-        std::auto_ptr< ::percolatorInNs::protein > p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
+        std::unique_ptr< ::percolatorInNs::protein > p (new ::percolatorInNs::protein((*it)->name,(*it)->length,
 							  (*it)->totalMass,(*it)->sequence,(*it)->id,(*it)->isDecoy));
         ser.next(PERCOLATOR_IN_NAMESPACE, "protein", *p);
       }
@@ -291,7 +291,7 @@ void Reader::translateFileToXML(const std::string &fn, bool isDecoy,
     // files. If this is not the case, add a new one
     if (databases.size() == lineNumber_par) {
 	    // initialize database
-	    std::auto_ptr<serialize_scheme> database(new serialize_scheme(fn));
+	    std::unique_ptr<serialize_scheme> database(new serialize_scheme(fn));
 
 	    //NOTE this is actually not needed in case we compile with the boost-serialization scheme
 	    //indicate this with a flag and avoid the creating of temp files when using boost-serialization
@@ -353,7 +353,7 @@ std::string Reader::createPsmId(const std::string& fileId, double expMass, unsig
   
 void Reader::push_backFeatureDescription(const char * str, const char *description, double initvalue) {
   percolatorInNs::featureDescriptions::featureDescription_sequence &fd_sequence = f_seq.featureDescription();
-  std::auto_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
+  std::unique_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
   //adds initial value and description to the description object
   f_p->initialValue(initvalue);
   f_p->description(description);
