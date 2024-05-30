@@ -286,6 +286,32 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
 #endif  // XML_SUPPORT
 }
 
+#ifdef XML_SUPPORT
+// Convert a peptide with or without modifications into a string
+std::string XMLInterface::decoratePeptide(const ::percolatorInNs::peptideType& peptide) {
+    std::list<std::pair<int, std::string> > mods;
+    std::string peptideSeq = peptide.peptideSequence();
+    percolatorInNs::peptideType::modification_const_iterator modIt;
+    modIt = peptide.modification().begin();
+    for (; modIt != peptide.modification().end(); ++modIt) {
+        std::stringstream ss;
+        if (modIt->uniMod().present()) {
+            ss << "[UNIMOD:" << modIt->uniMod().get().accession() << "]";
+            mods.push_back(std::pair<int, std::string>(modIt->location(), ss.str()));
+        }
+        if (modIt->freeMod().present()) {
+            ss << "[" << modIt->freeMod().get().moniker() << "]";
+            mods.push_back(std::pair<int, std::string>(modIt->location(), ss.str()));
+        }
+    }
+    mods.sort(greater<std::pair<int, std::string> >());
+    std::list<std::pair<int, std::string> >::const_iterator it;
+    for (it = mods.begin(); it != mods.end(); ++it) {
+        peptideSeq.insert(it->first, it->second);
+    }
+    return peptideSeq;
+}
+
 PSMDescription* XMLInterface::readPsm(
     const percolatorInNs::peptideSpectrumMatch& psm, unsigned scanNumber,
     bool readProteins, FeatureMemoryPool& featurePool) {
