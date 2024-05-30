@@ -73,42 +73,37 @@ public:
   bool inBounds(int i) const;
 
   class Iterator {
-    //  protected:
+      //  protected:
    public:
-    const Array<T>*array;
-    int location;
+      const Array<T>*array;
+      int location;
    public:
-    Iterator() {
-	    array = NULL;
-	    location = -1;
-    }
-    Iterator(const Array<T>*a, int loc) {
-      array = a;
-      location = loc;
-    }
-    int getLocation() const {
-      return location;
-    }
-    const Iterator & operator ++(int) {
-	    location++;
-	    return *this;
-    }
-    bool operator !=(const Iterator & rhs)
-    {
-      return ! ((*this) == rhs);
-    }
-    bool operator ==(const Iterator & rhs)
-    {
-      return array == rhs.array && location == rhs.location;
-    }
-    bool operator <(const Iterator & rhs)
-    {
-      return array == rhs.array && location < rhs.location;
-    }
-    const T & operator *() const
-    {
-      return (*array)[location];
-    }
+      Iterator() : array(nullptr), location(-1) {}
+
+      Iterator(const Array<T>* a, int loc) : array(a), location(loc) {}
+
+      int getLocation() const {
+        return location;
+      }
+
+      const Iterator & operator++(int) {
+        location++;
+        return *this;
+      }
+
+      bool operator!=(const Iterator & rhs) const {
+        return !(*this == rhs);
+      }
+
+      bool operator==(const Iterator & rhs) const {
+        return array == rhs.array && location == rhs.location;
+      }
+      bool operator <(const Iterator & rhs) {
+        return array == rhs.array && location < rhs.location;
+      }
+      const T & operator *() const {
+        return (*array)[location];
+      }
   };
 
   Iterator begin() const {
