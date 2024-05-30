@@ -1483,7 +1483,6 @@ void msmat_scans::get_scan( int scan_idx, vector<float> & inv ) const {
 
 
 void msmat_scans::get_chrom( int mz_idx, vector<float> & inv ) const {
-  msmat * volatile_this;
   //change the to_full_data to just modify the internal data object, keeping this const.. ?
   this->to_full_data();
   inv.resize(static_cast<std::size_t>(data->rows()));

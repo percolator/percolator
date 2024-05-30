@@ -17,6 +17,7 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
+#undef round
 #include <algorithm>
 using namespace std;
 #include "Normalizer.h"
