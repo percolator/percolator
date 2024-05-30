@@ -255,10 +255,16 @@ endif()
 # RUN CODESYNTHESIS
 ###############################################################################
 
-if(BOOSTDB AND NOT TOKYODB AND NOT LEVELDB)
-  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive --std c++11)
+if (WIN32 OR MINGW)
+  set(xdrcppver_flag "")
 else()
-  set( xdr_flags --generate-insertion XDR --generate-extraction XDR  --std c++11 )
+  set(xdrcppver_flag --std c++11 )
+endif()
+
+if(BOOSTDB AND NOT TOKYODB AND NOT LEVELDB)
+  set( xdr_flags --generate-ostream --hxx-prologue-file ${CMAKE_CURRENT_SOURCE_DIR}/library-prologue.hxx --generate-insertion boost::archive::binary_oarchive --generate-extraction boost::archive::binary_iarchive ${xdrcppver_flag})
+else()
+  set( xdr_flags --generate-insertion XDR --generate-extraction XDR  ${xdrcppver_flag} )
 endif()
 add_definitions(-DXSD_CXX11)
 
