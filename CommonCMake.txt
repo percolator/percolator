@@ -114,9 +114,9 @@ if(APPLE)
 endif()
 if(MINGW OR WIN32 OR APPLE)
   OPTION(BUILD_SHARED_LIBS "build static binaries." OFF)
-  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
+  OPTION(STATIC "build static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
 else(MINGW OR WIN32 OR APPLE)
-  OPTION(STATIC "build a static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
+  OPTION(STATIC "build static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
 endif()
 
 # Link Boost static and single threaded
@@ -131,15 +131,9 @@ set(Boost_ADDITIONAL_VERSIONS "1.46" "1.47.0" "1.47"
 # SET COMPILER OPTIONS
 ###############################################################################
 
-set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_STANDARD_REQUIRED YES)
 set (CMAKE_CXX_EXTENSIONS OFF)
-
-if(MSVC)
-    add_compile_options(/std:c++20)
-else()
-    add_compile_options(-std=c++20)
-endif()
 
 IF(APPLE)
   add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
