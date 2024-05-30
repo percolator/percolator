@@ -45,10 +45,10 @@ private:
   // Serializer.
   //
 #if _XERCES_VERSION >= 30000
-  xml::dom::unique_ptr<DOMLSOutput> out_;
-  xml::dom::unique_ptr<DOMLSSerializer> serializer_;
+  std::unique_ptr<DOMLSOutput> out_;
+  std::unique_ptr<DOMLSSerializer> serializer_;
 #else
-  xml::dom::unique_ptr<DOMWriter> serializer_;
+  std::unique_ptr<DOMWriter> serializer_;
 #endif
 
   std::unique_ptr<xml::dom::ostream_format_target> oft_;
@@ -59,7 +59,7 @@ private:
   // DOM document that we use to create the elements.
   //
   DOMImplementation& dom_impl_;
-  xml::dom::unique_ptr<DOMDocument> doc_;
+  std::unique_ptr<DOMDocument> doc_;
   //number of elements have been serialized so far. (mattia tomasoni)
   //
   size_t count_;

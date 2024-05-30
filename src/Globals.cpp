@@ -20,11 +20,6 @@
 #include <iostream>
 #include <cstdlib>
 
-#define NOMINMAX
-
-#undef byte  // Undefine byte to avoid conflict with std::byte
-#include <cstddef>
-
 Globals* Globals::glob = 0;
 
 Globals::~Globals() {
