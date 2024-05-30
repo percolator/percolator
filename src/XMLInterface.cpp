@@ -84,14 +84,20 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     xercesc::XMLPlatformUtils::Initialize();
     try {
         using namespace xercesc;
-
         string schemaDefinition = Globals::getInstance()->getXMLDir() + PIN_SCHEMA_LOCATION + string("percolator_in.xsd");
         parser p;
-        xml_schema::dom::unique_ptr<DOMDocument> doc(p.start(
-            dataStream, xmlInputFN.c_str(), schemaValidation_,
-            schemaDefinition, PIN_VERSION_MAJOR, PIN_VERSION_MINOR));
+        auto deleter = xsd::cxx::xml::dom::deleter<xercesc::DOMDocument>();
 
-        doc = p.next();
+        // Create the unique_ptr with the custom deleter
+        std::unique_ptr<xercesc::DOMDocument, decltype(deleter)> doc(nullptr, deleter);
+
+        // Initialize the unique_ptr with the document
+        doc.reset(p.start(dataStream, xmlInputFN.c_str(), schemaValidation_,
+                          schemaDefinition, PIN_VERSION_MAJOR, PIN_VERSION_MINOR).release());
+
+        // Assign new value to doc while maintaining the custom deleter
+        doc.reset(p.next().release());
+
         // read enzyme element
         // the enzyme element is a subelement but CodeSynthesis Xsd does not
         // generate a class for it. (I am trying to find a command line option
@@ -104,26 +110,26 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
         enzyme = Enzyme::createEnzyme(value);
 
         XMLString::release(&value);
-        doc = p.next();
+        doc.reset(p.next().release());
 
         // checking if database is present to jump it
         bool hasProteins = false;
         if (XMLString::equals(databasesStr, doc->getDocumentElement()->getTagName())) {
             // NOTE I dont really need this info, do I? good to have it though
             //  std::unique_ptr< ::percolatorInNs::databases > databases( new ::percolatorInNs::databases(*doc->getDocumentElement()));
-            doc = p.next();
+            doc.reset(p.next().release());
             hasProteins = true;
         }
 
         // read process_info element
         percolatorInNs::process_info processInfo(*doc->getDocumentElement());
         otherCall_ = processInfo.command_line();
-        doc = p.next();
+        doc.reset(p.next().release());
 
         if (XMLString::equals(calibrationStr, doc->getDocumentElement()->getTagName())) {
             // NOTE the calibration should define the initial direction
             // percolatorInNs::calibration calibration(*doc->getDocumentElement());
-            doc = p.next();
+            doc.reset(p.next().release());
         };
 
         // read feature names and initial values that are present in feature descriptions
@@ -174,10 +180,10 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
                 std::priority_queue<PSMDescriptionPriority> subsetPSMs;
                 std::map<ScanId, std::pair<size_t, bool> > scanIdLookUp;  // ScanId -> (priority, isDecoy)
                 unsigned int upperLimit = UINT_MAX;
-                for (doc = p.next();
+                for (doc.reset(p.next().release());
                      doc.get() != 0 && XMLString::equals(fragSpectrumScanStr,
                                                          doc->getDocumentElement()->getTagName());
-                     doc = p.next()) {
+                             doc.reset(p.next().release())) {
                     percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
                     percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
                     psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
@@ -215,10 +221,10 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
                 setHandler.addQueueToSets(subsetPSMs, targetSet, decoySet);
             } else {
                 std::map<ScanId, bool> scanIdLookUp;  // ScanId -> isDecoy
-                for (doc = p.next();
+                for (doc.reset(p.next().release());
                      doc.get() != 0 && XMLString::equals(fragSpectrumScanStr,
                                                          doc->getDocumentElement()->getTagName());
-                     doc = p.next()) {
+                     doc.reset(p.next().release())) {
                     percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
                     percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
                     psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
@@ -253,10 +259,10 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
 
         } else {  // read PSMs and immediately score them (second step of subset training option)
             const unsigned int numFeatures = FeatureNames::getNumFeatures();
-            for (doc = p.next();
+            for (doc.reset(p.next().release());
                  doc.get() != 0 && XMLString::equals(fragSpectrumScanStr,
                                                      doc->getDocumentElement()->getTagName());
-                 doc = p.next()) {
+                 doc.reset(p.next().release())) {
                 percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
                 percolatorInNs::fragSpectrumScan::peptideSpectrumMatch_const_iterator psmIt;
                 psmIt = fragSpectrumScan.peptideSpectrumMatch().begin();
@@ -276,7 +282,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
             unsigned numProteins = 0;
             if (hasProteins && ProteinProbEstimator::getCalcProteinLevelProb() /*&& Caller::protEstimator->getMayuFdr()*/) {
                 assert(protEstimator);  // should be initialized if -A or -f flag was used (which also sets calcProteinLevelProb)
-                for (doc = p.next(); doc.get() != 0 && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc = p.next()) {
+                for (doc.reset(p.next().release()); doc.get() != 0 && XMLString::equals(proteinStr, doc->getDocumentElement()->getTagName()); doc.reset(p.next().release())) {
                     ::percolatorInNs::protein protein(*doc->getDocumentElement());
                     protEstimator->addProteinDb(protein.isDecoy(), protein.name(), protein.sequence(), protein.length());
                     ++numProteins;
