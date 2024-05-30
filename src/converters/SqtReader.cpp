@@ -156,23 +156,23 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
   auto peptide_p = std::make_unique<percolatorInNs::peptideType>(peptideSeqNoMods);
 
   // Register the ptms
-  for (unsigned int ix = 0;ix < peptideSequence.size();++ix) {
-    if (freqAA.find(peptideSequence[ix]) == string::npos) {
-      std::unique_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
-      if (peptideSequence[ix] == '[') {
-        unsigned int posEnd = static_cast<unsigned int>(peptideSequence.substr(ix).find_first_of(']'));
-        std::string modAcc = peptideSequence.substr(ix + 1, posEnd - 1);
-        std::unique_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(modAcc));
-        mod_p->freeMod(std::move(fm_p));
-        peptideSequence.erase(ix--, posEnd + 1);
-      } else {
-        int accession = ptmMap[peptideSequence[ix]];
-        std::unique_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-        mod_p->uniMod(std::move(um_p));
-        peptideSequence.erase(ix--,1);
-      }
-      peptide_p->modification().push_back(std::move(mod_p));    
-    }  
+  for (unsigned int ix = 0; ix < peptideSequence.size(); ++ix) {
+    if (freqAA.find(peptideSequence[ix]) == std::string::npos) {
+        std::unique_ptr<percolatorInNs::modificationType> mod_p(new percolatorInNs::modificationType(static_cast<int>(ix)));
+        if (peptideSequence[ix] == '[') {
+            unsigned int posEnd = static_cast<unsigned int>(peptideSequence.substr(ix).find_first_of(']'));
+            std::string modAcc = peptideSequence.substr(ix + 1, posEnd - 1);
+            std::unique_ptr<percolatorInNs::freeMod> fm_p(new percolatorInNs::freeMod(modAcc));
+            mod_p->freeMod(*fm_p); // Dereference the unique_ptr
+            peptideSequence.erase(ix--, posEnd + 1);
+        } else {
+            int accession = ptmMap[peptideSequence[ix]];
+            std::unique_ptr<percolatorInNs::uniMod> um_p(new percolatorInNs::uniMod(accession));
+            mod_p->uniMod(*um_p); // Dereference the unique_ptr
+            peptideSequence.erase(ix--, 1);
+        }
+        peptide_p->modification().push_back(*mod_p); // Dereference the unique_ptr
+    }
   }
   
   if (po.iscombined) {

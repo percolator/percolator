@@ -52,14 +52,15 @@ void Reader::init() {
   xercesc::XMLPlatformUtils::Initialize ();
 
   // ... <featureDescriptions>
-  std::unique_ptr<percolatorInNs::featureDescriptions> fdes_p (new ::percolatorInNs::featureDescriptions());
+  std::unique_ptr<percolatorInNs::featureDescriptions> fdes_p(new ::percolatorInNs::featureDescriptions());
 
   // ... <process_info>
   percolatorInNs::process_info::command_line_type command_line = po.call;
-  std::unique_ptr<percolatorInNs::process_info> proc_info (new ::percolatorInNs::process_info(command_line));
+  std::unique_ptr<percolatorInNs::process_info> proc_info(new ::percolatorInNs::process_info(command_line));
 
-  // ... <experiment>
-  std::unique_ptr< ::percolatorInNs::experiment > ex_p (new ::percolatorInNs::experiment("mitt enzym", std::move(proc_info), std::move(fdes_p)));
+  // Create experiment object using dereferenced unique_ptr
+  ::percolatorInNs::experiment exp("mitt enzym", *proc_info, *fdes_p);
+  std::unique_ptr< ::percolatorInNs::experiment > ex_p(new ::percolatorInNs::experiment(std::move(exp)));
 
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
@@ -355,15 +356,15 @@ std::string Reader::createPsmId(const std::string& fileId, double expMass, unsig
   return id.str();
 }
   
-void Reader::push_backFeatureDescription(const char * str, const char *description, double initvalue) {
-  percolatorInNs::featureDescriptions::featureDescription_sequence &fd_sequence = f_seq.featureDescription();
-  std::unique_ptr< ::percolatorInNs::featureDescription > f_p( new ::percolatorInNs::featureDescription(str));
-  //adds initial value and description to the description object
-  f_p->initialValue(initvalue);
-  f_p->description(description);
-  assert(f_p.get());
-  fd_sequence.push_back(std::move(f_p));
-  return;
+void Reader::push_backFeatureDescription(const char *str, const char *description, double initvalue) {
+    percolatorInNs::featureDescriptions::featureDescription_sequence &fd_sequence = f_seq.featureDescription();
+    std::unique_ptr< ::percolatorInNs::featureDescription > f_p(new ::percolatorInNs::featureDescription(str));
+    // adds initial value and description to the description object
+    f_p->initialValue(initvalue);
+    f_p->description(description);
+    assert(f_p.get());
+    fd_sequence.push_back(*f_p); // Dereference the unique_ptr
+    return;
 }
 
 string Reader::getRidOfUnprintables(const string &inpString) {
