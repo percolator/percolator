@@ -106,17 +106,17 @@ mkdir -p ${build_dir}
 cd ${build_dir}
 
 # XercesC installation
-if [[ -d /usr/local/include/xercesc ]] # this implies homebrew installation ...
-	then
-	echo "Xerces is already installed."
-else
+#if [[ -d /usr/local/include/xercesc ]] # this implies homebrew installation ...
+#	then
+#	echo "Xerces is already installed."
+#else
 	curl -k -O ${mac_os_xerces_url}
 	tar xzf ${mac_os_xerces}.tar.gz
 	cd ${mac_os_xerces}/
 	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
 	make -j 2
 	sudo make install
-fi
+#fi
 
 cd ${build_dir}
 
