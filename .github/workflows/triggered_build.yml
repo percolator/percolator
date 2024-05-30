@@ -83,4 +83,3 @@ jobs:
       with:
         name: windows-packages
         path: ${GITHUB_WORKSPACE}\..\my_rel\percolator-noxml-windows-portable.zip
-E
