@@ -177,7 +177,7 @@ void getScoreLabelPairs(std::vector<ScoreHolder*> scores, std::vector<pair<doubl
 
 
 int Reset::gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinProb, const double selectionFDR) {
-    std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
+    std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
     generateTrainingSet(*pSVMInput_, train, 1.0, 1.0, selectionFDR);
 
@@ -242,7 +242,7 @@ void Reset::svmTrain(const double cPos, const double cFrac) {
 }
 
 int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR) {
-    std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return *a > *b; });
+    std::sort(train.begin(),train.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; });
     calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
     generateTrainingSet(*pSVMInput_, train, cPos_, cFrac_, selectionFDR);
     if (VERB > 1)
