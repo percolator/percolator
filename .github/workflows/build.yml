@@ -10,7 +10,7 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.2
+    - uses: actions/checkout@v4
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
@@ -26,7 +26,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    container: 'lukall/centos_runner:latest'
 #    steps:
-#    - uses: actions/checkout@v4.2
+#    - uses: actions/checkout@v4
 #    - name: create_dirs
 #      run: mkdir -p ../my_rel ../my_build
 #    - name: configure_and_make
@@ -40,7 +40,7 @@ jobs:
   build-osx:
     runs-on: macos-12
     steps:
-    - uses: actions/checkout@v4.2
+    - uses: actions/checkout@v4
     - name: create_dirs
       run: mkdir -p ../release ../build
     - name: configure_and_make
@@ -50,14 +50,13 @@ jobs:
     - name: system_test  
       run: cd ../build/percolator && sudo make install && make test-install
 
-
   build-windows:
     runs-on: windows-2019
     defaults:
       run:
         shell: cmd
     steps:
-    - uses: actions/checkout@v4.2
+    - uses: actions/checkout@v4
     - name: create_dirs
       run: CD .. || MKDIR my_rel my_build
     - name: configure_and_make
