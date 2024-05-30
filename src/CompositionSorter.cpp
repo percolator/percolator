@@ -67,7 +67,9 @@ std::string CompositionSorter::generateCompositionSignature(const std::string& p
     }
 
     std::string signature;
-    for (const auto& [aminoAcid, count] : counts) {
+    for (const auto& aminoAcidCountPair : counts) {
+        const auto& aminoAcid = aminoAcidCountPair.first;
+        const auto& count = aminoAcidCountPair.second;
         signature += aminoAcid;
         signature += std::to_string(count);
     }
@@ -105,8 +107,14 @@ int CompositionSorter::sortScorePerPeptide() {
     };
 
     // Iterating and sorting
-    for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
-        for (auto& [peptide, scores] : peptideMap) {
+    for (auto& compositionToPeptides : compositionToPeptidesToScore_) {
+        auto& composition = compositionToPeptides.first;
+        auto& peptideMap = compositionToPeptides.second;
+    
+        for (auto& peptideToScores : peptideMap) {
+            auto& peptide = peptideToScores.first;
+            auto& scores = peptideToScores.second;
+        
             std::sort(scores.begin(), scores.end(), compareScoreHolder);
         }
     }
@@ -134,7 +142,9 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
     std::vector<size_t> compSizeStat;
     std::vector<size_t> compTargetSizeStat;
     std::vector<size_t> compNumTargetSizeStat;
-    for (auto& [composition, peptideMap] : compositionToPeptidesToScore_) {
+    for (auto& compositionToPeptides : compositionToPeptidesToScore_) {
+    auto& composition = compositionToPeptides.first;
+    auto& peptideMap = compositionToPeptides.second;
         // cerr << "Composition " << composition << " contains " << peptideMap.size() << " peptides." << endl;
         std::vector<std::vector<ScoreHolder*>> compositionGroups;
         std::vector<ScoreHolder*> targets;
@@ -144,7 +154,9 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         incVector(compSizeStat, numberOfPeptidesInComposition);
         // Add the target peptides
         size_t numTargetPeptides = 0;
-        for (auto& [peptide, scoreHolders] : peptideMap) {
+        for (auto& peptideToScores : peptideMap) {
+            auto& peptide = peptideToScores.first;
+            auto& scoreHolders = peptideToScores.second;
             // cerr << "Peptide, " << peptide << ", with label=" << scoreHolders.front()->label << " has " <<  scoreHolders.size() << " instances." << endl;
             if (scoreHolders.empty()) {
                 continue;

@@ -131,7 +131,7 @@ set(Boost_ADDITIONAL_VERSIONS "1.46" "1.47.0" "1.47"
 # SET COMPILER OPTIONS
 ###############################################################################
 
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED YES)
 set (CMAKE_CXX_EXTENSIONS OFF)
 
