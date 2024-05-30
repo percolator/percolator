@@ -83,7 +83,7 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other);
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other);
   
 struct lexicOrderProb {
-    static int compStrIt(std::string_view sv1, std::string_view sv2) {
+    static int compStrIt(const std::string& sv1, const std::string& sv2) {
         auto it1 = sv1.begin(), end1 = sv1.end();
         auto it2 = sv2.begin(), end2 = sv2.end();
 
@@ -97,10 +97,11 @@ struct lexicOrderProb {
     }
     
     bool operator()(const ScoreHolder& x, const ScoreHolder& y) const {
-        std::string_view peptSeqX(x.pPSM->getFullPeptideSequence().data() + 2, 
-                                  x.pPSM->getFullPeptideSequence().size() - 4);
-        std::string_view peptSeqY(y.pPSM->getFullPeptideSequence().data() + 2, 
-                                  y.pPSM->getFullPeptideSequence().size() - 4);
+        const std::string& fullSeqX = x.pPSM->getFullPeptideSequence();
+        const std::string& fullSeqY = y.pPSM->getFullPeptideSequence();
+
+        std::string peptSeqX = fullSeqX.substr(2, fullSeqX.size() - 4);
+        std::string peptSeqY = fullSeqY.substr(2, fullSeqY.size() - 4);
 
         int peptCmp = compStrIt(peptSeqX, peptSeqY);
         return ( ( peptCmp == 1 ) 
